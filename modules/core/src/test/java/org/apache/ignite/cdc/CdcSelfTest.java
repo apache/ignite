@@ -24,11 +24,14 @@ import java.util.Collections;
 import java.util.EnumSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
@@ -38,8 +41,14 @@ import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cdc.CdcMain;
+import org.apache.ignite.internal.pagemem.wal.WALIterator;
+import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
+import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
+import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
+import org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.metric.MetricExporterSpi;
 import org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
@@ -49,10 +58,12 @@ import org.junit.runners.Parameterized;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_DATA_STORAGE_FOLDER_BY_CONSISTENT_ID;
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cdc.AbstractCdcTest.ChangeEventType.DELETE;
 import static org.apache.ignite.cdc.AbstractCdcTest.ChangeEventType.UPDATE;
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.cacheId;
+import static org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory.IteratorParametersBuilder;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
@@ -452,6 +463,92 @@ public class CdcSelfTest extends AbstractCdcTest {
         assertTrue(cnsmr.stopped());
     }
 
+    /** Tests that {@link DataEntry} index inside {@link DataRecord} commited. */
+    @Test
+    public void testReadBatchDataRecord() throws Exception {
+        int cntEntries = 10;
+        int commitCnt = cntEntries / 2;
+
+        // Create WAL data record with a few data entries per record.
+        IgniteEx srv = startGrids(2);
+
+        srv.cluster().state(ACTIVE);
+
+        IgniteCache<Integer, User> cache = srv.getOrCreateCache(new CacheConfiguration<Integer, User>()
+            .setName(DEFAULT_CACHE_NAME)
+            .setBackups(1)
+            .setAtomicityMode(TRANSACTIONAL));
+
+        Map<Integer, User> map = backupKeys(cache, cntEntries, 0).stream()
+            .collect(Collectors.toMap(key -> key, AbstractCdcTest::createUser));
+
+        cache.putAll(map);
+
+        checkWalDataRecord(srv, cntEntries);
+
+        // Commit a few events and stop CDC app.
+        BatchCommitConsumer batchCnsmr = new BatchCommitConsumer(commitCnt);
+
+        CdcMain cdc = createCdc(batchCnsmr, getConfiguration(srv.name()));
+
+        IgniteInternalFuture<?> fut = runAsync(cdc);
+
+        waitForSize(cntEntries, DEFAULT_CACHE_NAME, UPDATE, batchCnsmr);
+
+        fut.cancel();
+
+        assertTrue(batchCnsmr.stopped());
+
+        // Restart CDC app and continue listening event since commited.
+        UserCdcConsumer cnsmr = new BatchCommitConsumer(0);
+
+        cdc = createCdc(cnsmr, getConfiguration(srv.name()));
+
+        fut = runAsync(cdc);
+
+        waitForSize(cntEntries - commitCnt, DEFAULT_CACHE_NAME, UPDATE, cnsmr);
+
+        fut.cancel();
+
+        assertTrue(cnsmr.stopped());
+
+        // Check keys.
+        Collection<Integer> keysBeforeCommit = batchCnsmr.commited;
+        Collection<Integer> keysAfterCommit = F.flatCollections(cnsmr.data.values());
+
+        keysBeforeCommit.forEach(key -> assertFalse(keysAfterCommit.contains(key)));
+
+        assertEquals(commitCnt, keysBeforeCommit.size());
+        assertEquals(cntEntries, keysBeforeCommit.size() + keysAfterCommit.size());
+    }
+
+    /** */
+    private void checkWalDataRecord(IgniteEx srv, int expEntriesPerRec) throws IgniteCheckedException {
+        IteratorParametersBuilder param = new IteratorParametersBuilder()
+            .filesOrDirs(U.resolveWorkDirectory(U.defaultWorkDirectory(),
+                srv.configuration().getDataStorageConfiguration().getCdcWalPath(), false))
+            .filter((type, pointer) -> type == WALRecord.RecordType.DATA_RECORD_V2);
+
+        assertTrue(waitForCondition(() -> {
+            try (WALIterator iter = new IgniteWalIteratorFactory(log).iterator(param)) {
+                while (iter.hasNext()) {
+                    DataRecord rec = (DataRecord)iter.next().get2();
+
+                    assertEquals(expEntriesPerRec, rec.writeEntries().size());
+
+                    assertFalse(iter.hasNext());
+
+                    return true;
+                }
+            }
+            catch (IgniteCheckedException e) {
+                throw U.convertException(e);
+            }
+
+            return false;
+        }, getTestTimeout()));
+    }
+
     /** {@inheritDoc} */
     @Override public MetricExporterSpi[] metricExporters() {
         if (metricExporter == null)
@@ -471,4 +568,6 @@ public class CdcSelfTest extends AbstractCdcTest {
         for (int i = from; i < to; i++)
             cache.remove(i);
     }
+
+
 }

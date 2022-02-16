@@ -27,7 +27,10 @@ import java.util.Iterator;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cdc.CdcConsumer;
 import org.apache.ignite.cdc.CdcEvent;
+import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
+import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
+import org.apache.ignite.internal.util.typedef.T2;
 
 import static java.nio.file.StandardCopyOption.ATOMIC_MOVE;
 import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
@@ -39,7 +42,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.wal.WALPoi
  * Change Data Capture Consumer state.
  *
  * Each time {@link CdcConsumer#onEvents(Iterator)} returns {@code true}
- * current offset in WAL segment saved to file.
+ * current offset in WAL segment and {@link DataEntry} index inside {@link DataRecord} saved to file.
  * This allows to the {@link CdcConsumer} to continue consumption of the {@link CdcEvent}
  * from the last saved offset in case of fail or restart.
  *
@@ -66,14 +69,15 @@ public class CdcConsumerState {
 
     /**
      * Saves state to file.
-     * @param ptr WAL pointer.
+     *
+     * @param pos WAL pointer and index of {@link DataEntry} inside {@link DataRecord}.
      */
-    public void save(WALPointer ptr) throws IOException {
+    public void save(T2<WALPointer, Integer> pos) throws IOException {
         ByteBuffer buf = ByteBuffer.allocate(POINTER_SIZE);
 
-        buf.putLong(ptr.index());
-        buf.putInt(ptr.fileOffset());
-        buf.putInt(ptr.length());
+        buf.putLong(pos.get1().index());
+        buf.putInt(pos.get1().fileOffset());
+        buf.putInt(pos.get2());
         buf.flip();
 
         try (FileChannel ch = FileChannel.open(tmp, StandardOpenOption.CREATE, StandardOpenOption.WRITE)) {
@@ -89,7 +93,7 @@ public class CdcConsumerState {
      * Loads CDC state from file.
      * @return Saved state.
      */
-    public WALPointer load() {
+    public T2<WALPointer, Integer> load() {
         if (!Files.exists(state))
             return null;
 
@@ -102,9 +106,9 @@ public class CdcConsumerState {
 
             long idx = buf.getLong();
             int offset = buf.getInt();
-            int length = buf.getInt();
+            int entryIdx = buf.getInt();
 
-            return new WALPointer(idx, offset, length);
+            return new T2<>(new WALPointer(idx, offset, 0), entryIdx);
         }
         catch (IOException e) {
             throw new IgniteException("Failed to read state [file=" + state + ']', e);

@@ -26,6 +26,7 @@ import java.nio.file.Paths;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Stream;
@@ -42,7 +43,9 @@ import org.apache.ignite.internal.GridLoggerProxy;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.MarshallerContextImpl;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
+import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
+import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
 import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderResolver;
 import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderSettings;
@@ -53,8 +56,10 @@ import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
 import org.apache.ignite.internal.processors.resource.GridSpringResourceContext;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.startup.cmdline.CdcCommandLineStartup;
 
 import static org.apache.ignite.internal.IgniteKernal.NL;
@@ -182,7 +187,7 @@ public class CdcMain implements Runnable {
     private CdcConsumerState state;
 
     /** Save state to start from. */
-    private WALPointer initState;
+    private T2<WALPointer, Integer> initState;
 
     /** Stopped flag. */
     private volatile boolean stopped;
@@ -272,11 +277,11 @@ public class CdcMain implements Runnable {
                 initState = state.load();
 
                 if (initState != null) {
-                    committedSegmentIdx.value(initState.index());
-                    committedSegmentOffset.value(initState.fileOffset());
+                    committedSegmentIdx.value(initState.get1().index());
+                    committedSegmentOffset.value(initState.get1().fileOffset());
 
                     if (log.isInfoEnabled())
-                        log.info("Initial state loaded [state=" + initState + ']');
+                        log.info("Initial state loaded [state=" + initState.get1() + ", entryIdx=" + initState.get2() + ']');
                 }
 
                 consumer.start(mreg, kctx.metric().registry(metricName("cdc", "consumer")));
@@ -438,15 +443,15 @@ public class CdcMain implements Runnable {
         curSegmentIdx.value(segmentIdx);
 
         if (initState != null) {
-            if (segmentIdx > initState.index()) {
+            if (segmentIdx > initState.get1().index()) {
                 throw new IgniteException("Found segment greater then saved state. Some events are missed. Exiting! " +
                     "[state=" + initState + ", segment=" + segmentIdx + ']');
             }
 
-            if (segmentIdx < initState.index()) {
+            if (segmentIdx < initState.get1().index()) {
                 if (log.isInfoEnabled()) {
                     log.info("Already processed segment found. Skipping and deleting the file [segment=" +
-                        segmentIdx + ", state=" + initState.index() + ']');
+                        segmentIdx + ", state=" + initState.get1().index() + ']');
                 }
 
                 // WAL segment is a hard link to a segment file in the special Change Data Capture folder.
@@ -461,31 +466,33 @@ public class CdcMain implements Runnable {
                 }
             }
 
-            builder.from(initState);
-
-            initState = null;
+            builder.from(initState.get1());
         }
 
-        try (WALIterator it = factory.iterator(builder)) {
+        try (DataEntryIterator iter = new DataEntryIterator(factory.iterator(builder))) {
+            if (initState != null) {
+                iter.init(initState);
+
+                initState = null;
+            }
+
             boolean interrupted = Thread.interrupted();
 
-            while (it.hasNext() && !interrupted) {
-                Iterator<DataRecord> iter = F.iterator(it.iterator(), t -> (DataRecord)t.get2(), true);
-
+            while (iter.hasNext() && !interrupted) {
                 boolean commit = consumer.onRecords(iter);
 
                 if (commit) {
-                    assert it.lastRead().isPresent();
+                    T2<WALPointer, Integer> curState = iter.state();
 
-                    WALPointer ptr = it.lastRead().get().next();
+                    assert curState != null;
 
                     if (log.isDebugEnabled())
-                        log.debug("Saving state [ptr=" + ptr + ']');
+                        log.debug("Saving state [ptr=" + curState.get1() + ", entryIdx=" + curState.get2() + ']');
 
-                    state.save(ptr);
+                    state.save(curState);
 
-                    committedSegmentIdx.value(ptr.index());
-                    committedSegmentOffset.value(ptr.fileOffset());
+                    committedSegmentIdx.value(curState.get1().index());
+                    committedSegmentOffset.value(curState.get1().fileOffset());
 
                     // Can delete after new file state save.
                     if (!processedSegments.isEmpty()) {
@@ -647,5 +654,90 @@ public class CdcMain implements Runnable {
     /** */
     public static String cdcInstanceName(String igniteInstanceName) {
         return "cdc-" + igniteInstanceName;
+    }
+
+    /** Iterator over {@link DataEntry}. */
+    public static class DataEntryIterator implements Iterator<DataEntry>, AutoCloseable {
+        /** WAL iterator. */
+        private final WALIterator walIter;
+
+        /** Last {@link DataRecord}.*/
+        private IgniteBiTuple<WALPointer, WALRecord> lastWalRec;
+
+        /** Iterator over {@link DataEntry}. */
+        private Iterator<DataEntry> entries;
+
+        /** Last {@link DataEntry} index inside last {@link DataRecord}. */
+        private int entryIdx;
+
+        /** @param walIter WAL iterator. */
+        DataEntryIterator(WALIterator walIter) {
+            this.walIter = walIter;
+        }
+
+        /** @return Current state. See {@link CdcConsumerState}. */
+        public T2<WALPointer, Integer> state() {
+            return new T2<>(lastWalRec.get1(), entryIdx);
+        }
+
+        /** Initialize state. */
+        public void init(T2<WALPointer, Integer> state) {
+            for (int i = 0; i < state.get2(); i++) {
+                if (!hasNext())
+                    throw new IgniteException("Failed to restore entry index [rec=" + lastWalRec + ']');
+
+                next();
+            }
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean hasNext() {
+            advance();
+
+            return hasCurrent();
+        }
+
+        /** {@inheritDoc} */
+        @Override public DataEntry next() {
+            advance();
+
+            if (!hasCurrent())
+                throw new NoSuchElementException();
+
+            entryIdx++;
+
+            return entries.next();
+        }
+
+        /** */
+        private void advance() {
+            if (hasCurrent())
+                return;
+
+            while (walIter.hasNext()) {
+                lastWalRec = walIter.next();
+
+                DataRecord rec = (DataRecord)lastWalRec.get2();
+
+                entries = rec.writeEntries().iterator();
+
+                entryIdx = 0;
+
+                if (entries.hasNext())
+                    break;
+
+                entries = null;
+            }
+        }
+
+        /** */
+        private boolean hasCurrent() {
+            return entries != null && entries.hasNext();
+        }
+
+        /** {@inheritDoc} */
+        @Override public void close() throws IgniteCheckedException {
+            walIter.close();
+        }
     }
 }

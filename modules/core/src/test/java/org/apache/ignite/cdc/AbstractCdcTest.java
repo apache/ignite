@@ -28,6 +28,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import javax.management.DynamicMBean;
 import org.apache.ignite.IgniteCache;
@@ -42,6 +43,7 @@ import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.CI3;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.spi.metric.LongMetric;
 import org.apache.ignite.spi.metric.MetricExporterSpi;
@@ -107,8 +109,8 @@ public abstract class AbstractCdcTest extends GridCommonAbstractTest {
         return new CdcMain(cfg, null, cdcCfg) {
             @Override protected CdcConsumerState createState(Path stateDir) {
                 return new CdcConsumerState(stateDir) {
-                    @Override public void save(WALPointer ptr) throws IOException {
-                        super.save(ptr);
+                    @Override public void save(T2<WALPointer, Integer> pos) throws IOException {
+                        super.save(pos);
 
                         if (!F.isEmpty(conditions)) {
                             for (GridAbsPredicate p : conditions) {
@@ -337,6 +339,44 @@ public abstract class AbstractCdcTest extends GridCommonAbstractTest {
         /** {@inheritDoc} */
         @Override public Integer extract(CdcEvent evt) {
             return (Integer)evt.key();
+        }
+    }
+
+    /** Consumer to commit a few events. */
+    public static class BatchCommitConsumer extends UserCdcConsumer {
+        /** Count of events to commit. */
+        private final int commitCnt;
+
+        /** Commited keys. */
+        final List<Integer> commited = new ArrayList<>();
+
+        /** Event index. */
+        private final AtomicInteger evtIdx = new AtomicInteger();;
+
+        /** @param commitCnt Count of events to commit. */
+        BatchCommitConsumer(int commitCnt) {
+            this.commitCnt = commitCnt;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean onEvents(Iterator<CdcEvent> evts) {
+            while (evts.hasNext()) {
+                CdcEvent evt = evts.next();
+
+                data.computeIfAbsent(
+                    F.t(evt.value() == null ? DELETE : UPDATE, evt.cacheId()),
+                    k -> new ArrayList<>()).add(extract(evt));
+
+                if (evtIdx.incrementAndGet() == commitCnt) {
+                    assertEquals(commitCnt, F.flatCollections(data.values()).size());
+
+                    data.values().forEach(commited::addAll);
+
+                    return true;
+                }
+            }
+
+            return false;
         }
     }
 
