@@ -183,9 +183,21 @@ namespace Apache.Ignite.Core.Impl.Client
                     var serverIdleTimeoutMs = DoOutInOp(
                         ClientOp.GetIdleTimeout, null, r => r.Reader.ReadLong());
 
-                    _heartbeatInterval = serverIdleTimeoutMs > 0
-                        ? TimeSpan.FromMilliseconds((long)(serverIdleTimeoutMs / 3))
-                        : clientConfiguration.DefaultHeartbeatInterval;
+                    if (serverIdleTimeoutMs > 0)
+                    {
+                        _heartbeatInterval = TimeSpan.FromMilliseconds((long)(serverIdleTimeoutMs / 3));
+
+                        _logger.Info($"Server-side IdleTimeout is {serverIdleTimeoutMs}ms, " +
+                                     $"using 1/3 of it as heartbeat interval: {_heartbeatInterval}");
+                    }
+                    else
+                    {
+                        _heartbeatInterval = clientConfiguration.DefaultHeartbeatInterval;
+
+                        _logger.Info(
+                            $"Server-side IdleTimeout is not set, using {nameof(IgniteClientConfiguration)}." +
+                            $"{nameof(IgniteClientConfiguration.DefaultHeartbeatInterval)}: {_heartbeatInterval}");
+                    }
 
                     _heartbeatTimer = new Timer(SendHeartbeat, null, dueTime: _heartbeatInterval,
                         period: TimeSpan.FromMilliseconds(-1));
