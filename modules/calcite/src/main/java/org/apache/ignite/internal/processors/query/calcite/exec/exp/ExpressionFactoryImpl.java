@@ -24,6 +24,7 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.function.BiPredicate;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -257,12 +258,18 @@ public class ExpressionFactoryImpl<Row> implements ExpressionFactory<Row> {
             if (field == 0)
                 rows.add(currRow = factory.create());
 
-            RexLiteral literal = values.get(i);
-
-            handler.set(field, currRow, literal.getValueAs(types.get(field)));
+            handler.set(field, currRow, igniteLiteralValue(values.get(i), types.get(field)));
         }
 
         return rows;
+    }
+
+    /** TODO */
+    private Object igniteLiteralValue(RexLiteral literal, Class<?> valueType) {
+        if (valueType == UUID.class)
+            return UUID.fromString(literal.getValueAs(String.class));
+
+        return literal.getValueAs(valueType);
     }
 
     /**

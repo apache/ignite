@@ -1,11 +1,12 @@
 package org.apache.ignite.internal.processors.query.calcite.prepare;
 
-import org.apache.calcite.rel.type.RelDataType;
+import java.lang.reflect.InvocationHandler;
+import java.lang.reflect.Method;
+import java.lang.reflect.Proxy;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rex.RexBuilder;
 import org.apache.calcite.rex.RexLiteral;
-import org.apache.calcite.sql.type.SqlTypeName;
-import org.checkerframework.checker.nullness.qual.Nullable;
+import org.apache.calcite.util.NlsString;
 
 /** TODO */
 public class IgniteRexBuilder extends RexBuilder {
@@ -18,8 +19,9 @@ public class IgniteRexBuilder extends RexBuilder {
         super(typeFactory);
     }
 
-    /** TODO */
-    @Override protected RexLiteral makeLiteral(@Nullable Comparable o, RelDataType type, SqlTypeName typeName) {
-        return super.makeLiteral(o, type, typeName);
-    }
+//    @Override public RexLiteral makeCharLiteral(NlsString str) {
+//        RexLiteral rexLiteral = super.makeCharLiteral(str);
+//
+//
+//    }
 }
