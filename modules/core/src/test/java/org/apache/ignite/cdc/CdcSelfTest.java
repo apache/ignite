@@ -466,10 +466,12 @@ public class CdcSelfTest extends AbstractCdcTest {
     /** Tests that {@link DataEntry} index inside {@link DataRecord} commited. */
     @Test
     public void testReadBatchDataRecord() throws Exception {
-        int cntEntries = 10;
-        int commitCnt = cntEntries / 2;
+        int recCnt = 5;
+        int entriesPerRec = 10;
+        int commitCnt = entriesPerRec / 2;
+        int totalEntries = recCnt * entriesPerRec;
 
-        // Create WAL data record with a few data entries per record.
+        // Create WAL data records with a few data entries per record.
         IgniteEx srv = startGrids(2);
 
         srv.cluster().state(ACTIVE);
@@ -479,73 +481,80 @@ public class CdcSelfTest extends AbstractCdcTest {
             .setBackups(1)
             .setAtomicityMode(TRANSACTIONAL));
 
-        Map<Integer, User> map = backupKeys(cache, cntEntries, 0).stream()
-            .collect(Collectors.toMap(key -> key, AbstractCdcTest::createUser));
+        Map<Integer, User> vals = null;
 
-        cache.putAll(map);
+        for (int i = 0; i < recCnt; i++) {
+            int lastKey = vals == null ? 0 : vals.keySet().stream().mapToInt(value -> value).max().getAsInt() + 1;
 
-        checkWalDataRecord(srv, cntEntries);
+            vals = backupKeys(cache, entriesPerRec, lastKey).stream()
+                .collect(Collectors.toMap(key -> key, AbstractCdcTest::createUser));
 
-        // Commit a few events and stop CDC app.
-        BatchCommitConsumer batchCnsmr = new BatchCommitConsumer(commitCnt);
+            cache.putAll(vals);
+        }
 
-        CdcMain cdc = createCdc(batchCnsmr, getConfiguration(srv.name()));
+        checkWalDataRecord(srv, recCnt, entriesPerRec);
 
-        IgniteInternalFuture<?> fut = runAsync(cdc);
+        // Commit each time a few events and restart.
+        for (int commitedCnt = 0; commitedCnt < totalEntries; commitedCnt += commitCnt) {
+            // Commit a few events and stop CDC app.
+            BatchCommitConsumer batchCnsmr = new BatchCommitConsumer(commitCnt);
 
-        waitForSize(cntEntries, DEFAULT_CACHE_NAME, UPDATE, batchCnsmr);
+            CdcMain cdc = createCdc(batchCnsmr, getConfiguration(srv.name()));
 
-        fut.cancel();
+            IgniteInternalFuture<?> fut1 = runAsync(cdc);
 
-        assertTrue(batchCnsmr.stopped());
+            waitForSize(totalEntries - commitedCnt, DEFAULT_CACHE_NAME, UPDATE, batchCnsmr);
 
-        // Restart CDC app and continue listening event since commited.
-        UserCdcConsumer cnsmr = new BatchCommitConsumer(0);
+            fut1.cancel();
 
-        cdc = createCdc(cnsmr, getConfiguration(srv.name()));
+            assertTrue(batchCnsmr.stopped());
 
-        fut = runAsync(cdc);
+            // Restart CDC app and continue listening event since commited.
+            BatchCommitConsumer cnsmr = new BatchCommitConsumer(0);
 
-        waitForSize(cntEntries - commitCnt, DEFAULT_CACHE_NAME, UPDATE, cnsmr);
+            cdc = createCdc(cnsmr, getConfiguration(srv.name()));
 
-        fut.cancel();
+            IgniteInternalFuture<?> fut2 = runAsync(cdc);
 
-        assertTrue(cnsmr.stopped());
+            waitForSize(totalEntries - commitedCnt - commitCnt, DEFAULT_CACHE_NAME, UPDATE, cnsmr);
 
-        // Check keys.
-        Collection<Integer> keysBeforeCommit = batchCnsmr.commited;
-        Collection<Integer> keysAfterCommit = F.flatCollections(cnsmr.data.values());
+            fut2.cancel();
 
-        keysBeforeCommit.forEach(key -> assertFalse(keysAfterCommit.contains(key)));
+            // Check read keys.
+            Collection<Integer> keysBeforeCommit = batchCnsmr.commited;
+            Collection<Integer> keysAfterCommit = F.flatCollections(cnsmr.data.values());
 
-        assertEquals(commitCnt, keysBeforeCommit.size());
-        assertEquals(cntEntries, keysBeforeCommit.size() + keysAfterCommit.size());
+            keysBeforeCommit.forEach(key -> assertFalse(keysAfterCommit.contains(key)));
+
+            assertEquals(commitCnt, keysBeforeCommit.size());
+            assertEquals(totalEntries - commitedCnt, keysBeforeCommit.size() + keysAfterCommit.size());
+        }
     }
 
     /** */
-    private void checkWalDataRecord(IgniteEx srv, int expEntriesPerRec) throws IgniteCheckedException {
+    private void checkWalDataRecord(IgniteEx srv, int expRecCnt, int expEntriesPerRec) throws IgniteCheckedException {
         IteratorParametersBuilder param = new IteratorParametersBuilder()
             .filesOrDirs(U.resolveWorkDirectory(U.defaultWorkDirectory(),
                 srv.configuration().getDataStorageConfiguration().getCdcWalPath(), false))
             .filter((type, pointer) -> type == WALRecord.RecordType.DATA_RECORD_V2);
 
         assertTrue(waitForCondition(() -> {
+            int cnt = 0;
+
             try (WALIterator iter = new IgniteWalIteratorFactory(log).iterator(param)) {
                 while (iter.hasNext()) {
                     DataRecord rec = (DataRecord)iter.next().get2();
 
                     assertEquals(expEntriesPerRec, rec.writeEntries().size());
 
-                    assertFalse(iter.hasNext());
-
-                    return true;
+                    cnt++;
                 }
             }
             catch (IgniteCheckedException e) {
                 throw U.convertException(e);
             }
 
-            return false;
+            return expRecCnt == cnt;
         }, getTestTimeout()));
     }
 
