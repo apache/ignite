@@ -568,6 +568,4 @@ public class CdcSelfTest extends AbstractCdcTest {
         for (int i = from; i < to; i++)
             cache.remove(i);
     }
-
-
 }

@@ -88,6 +88,15 @@ public abstract class AbstractCdcTest extends GridCommonAbstractTest {
         super.beforeTest();
     }
 
+    /** {@inheritDoc} */
+    @Override protected void afterTestsStopped() throws Exception {
+        super.afterTestsStopped();
+
+        stopAllGrids();
+
+        cleanPersistenceDir();
+    }
+
     /** */
     protected CdcMain createCdc(CdcConsumer cnsmr, IgniteConfiguration cfg) {
         return createCdc(cnsmr, cfg, null);

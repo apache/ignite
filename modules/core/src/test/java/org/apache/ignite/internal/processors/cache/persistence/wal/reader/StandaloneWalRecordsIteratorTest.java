@@ -244,9 +244,6 @@ public class StandaloneWalRecordsIteratorTest extends GridCommonAbstractTest {
         // Iterating and filter out last record.
         iter = createWalIterator(dir, null, null, false, (type, ptr) -> type != lastRecType);
 
-//        iter = new FilteredWalIterator(createWalIterator(dir, null, null, false),
-//            objects -> objects.get2().type() != lastRecType);
-
         assertTrue(iter.hasNext());
 
         while (iter.hasNext()) {
