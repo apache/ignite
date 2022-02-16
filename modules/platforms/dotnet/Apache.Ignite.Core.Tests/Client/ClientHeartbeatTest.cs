@@ -66,19 +66,14 @@ namespace Apache.Ignite.Core.Tests.Client
         [Test]
         public void TestDefaultZeroIdleTimeoutUsesDefaultHeartbeatInterval()
         {
-            var cfg = TestUtils.GetTestConfiguration(name: "2");
-            cfg.ClientConnectorConfiguration = new ClientConnectorConfiguration
-            {
-                IdleTimeout = TimeSpan.Zero
-            };
-
-            using var ignite = Ignition.Start(cfg);
-            using var client = GetClient(true);
+            using var ignite = Ignition.Start(TestUtils.GetTestConfiguration(name: "2"));
+            using var client = GetClient(enableHeartbeats: true, port: IgniteClientConfiguration.DefaultPort + 1);
 
             var logger = (ListLogger)client.GetConfiguration().Logger;
             var logs = string.Join(Environment.NewLine, logger.Entries.Select(e => e.Message));
 
-            StringAssert.Contains("Server-side IdleTimeout is not set, using IgniteClientConfiguration.DefaultHeartbeatInterval: 00:30:00", logs);
+            StringAssert.Contains("Server-side IdleTimeout is not set, " +
+                                  "using IgniteClientConfiguration.DefaultHeartbeatInterval: 00:00:30", logs);
         }
 
         protected override IgniteConfiguration GetIgniteConfiguration()
@@ -102,19 +97,23 @@ namespace Apache.Ignite.Core.Tests.Client
             };
         }
 
-        private static IIgniteClient GetClient(bool enableHeartbeats, int heartbeatInterval = 0,
+        private static IIgniteClient GetClient(bool enableHeartbeats, int? heartbeatInterval = null,
             int port = IgniteClientConfiguration.DefaultPort)
         {
             var cfg = new IgniteClientConfiguration
             {
                 Endpoints = new List<string> { $"{IPAddress.Loopback}:{port}" },
                 EnableHeartbeats = enableHeartbeats,
-                DefaultHeartbeatInterval = TimeSpan.FromMilliseconds(heartbeatInterval),
                 Logger = new ListLogger
                 {
                     EnabledLevels = new[] { LogLevel.Debug, LogLevel.Info, LogLevel.Warn, LogLevel.Error }
                 }
             };
+
+            if (heartbeatInterval != null)
+            {
+                cfg.DefaultHeartbeatInterval = TimeSpan.FromMilliseconds(heartbeatInterval.Value);
+            }
 
             return Ignition.StartClient(cfg);
         }
