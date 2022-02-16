@@ -80,6 +80,10 @@ namespace Apache.Ignite.Core.Communication.Tcp
         /// <summary> Default value of <see cref="SelectorSpins"/> property. </summary>
         public const long DefaultSelectorSpins = 0;
 
+        /// <summary> This constant is ignored and it will be removed in future releases. </summary>
+        [Obsolete("This constant is ignored and it will be removed in future releases")]
+        public const int DefaultSharedMemoryPort = -1;
+
         /// <summary> Default socket buffer size. </summary>
         public const int DefaultSocketBufferSize = 32 * 1024;
 
@@ -298,10 +302,10 @@ namespace Apache.Ignite.Core.Communication.Tcp
         public bool UsePairedConnections { get; set; }
 
         /// <summary>
-        /// Value of this property will be ignored.
+        /// This property is ignored and it will be removed in future releases.
         /// </summary>
         [DefaultValue(-1)]
-        [Obsolete("Value of this property is ignored")]
+        [Obsolete("This property is ignored and it will be removed in future releases.")]
         [XmlIgnore]
         public int SharedMemoryPort { get; set; }
 

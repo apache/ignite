@@ -262,7 +262,7 @@ public abstract class TcpCommunicationConfigInitializer extends IgniteSpiAdapter
     }
 
     /**
-     * @deprecated This option is ignored.
+     * @deprecated This property is ignored and will be removed in future releases.
      */
     @IgniteSpiConfiguration(optional = true)
     @Deprecated
@@ -271,7 +271,7 @@ public abstract class TcpCommunicationConfigInitializer extends IgniteSpiAdapter
     }
 
     /**
-     * @deprecated This value is ignored.
+     * @deprecated This property is ignored and will be removed in future releases.
      */
     @Deprecated
     public int getSharedMemoryPort() {

@@ -70,7 +70,7 @@ public class TcpCommunicationConfiguration implements Serializable {
     /** Local port range. */
     private int locPortRange = DFLT_PORT_RANGE;
 
-    /** Local port which node uses to accept shared memory connections. */
+    /** This field is ignored and will be removed in future releases. */
     private int shmemPort = -1;
 
     /** Allocate direct buffer or heap buffer. */
@@ -214,7 +214,7 @@ public class TcpCommunicationConfiguration implements Serializable {
     }
 
     /**
-     * @deprecated This value is ignored.
+     * @deprecated This property is ignored and will be removed in future releases.
      */
     @Deprecated
     public int shmemPort() {
@@ -222,7 +222,7 @@ public class TcpCommunicationConfiguration implements Serializable {
     }
 
     /**
-     * @deprecated This function is ignored.
+     * @deprecated This property is ignored and will be removed in future releases.
      */
     @Deprecated
     public void shmemPort(int shmemPort) {
@@ -467,7 +467,7 @@ public class TcpCommunicationConfiguration implements Serializable {
     }
 
     /**
-     * @deprecated This value is ignored.
+     * @deprecated This property is deprecated and will be removed in future releases.
      */
     @Deprecated
     public int boundTcpShmemPort() {

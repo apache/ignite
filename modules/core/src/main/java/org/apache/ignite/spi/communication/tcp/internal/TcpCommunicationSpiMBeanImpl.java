@@ -81,6 +81,11 @@ public class TcpCommunicationSpiMBeanImpl extends IgniteSpiMBeanAdapter implemen
     }
 
     /** {@inheritDoc} */
+    @Override public int getSharedMemoryPort() {
+        return -1;
+    }
+
+    /** {@inheritDoc} */
     @Override public long getIdleConnectionTimeout() {
         return cfg.idleConnectionTimeout();
     }
