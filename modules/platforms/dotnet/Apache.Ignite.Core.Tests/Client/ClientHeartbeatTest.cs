@@ -80,6 +80,17 @@ namespace Apache.Ignite.Core.Tests.Client
                 "using IgniteClientConfiguration.FallbackHeartbeatInterval: 00:00:30", GetLogString(client));
         }
 
+        [Test]
+        public void TestCustomHeartbeatIntervalOverridesCalculatedFromIdleTimeout()
+        {
+            using var client = GetClient(enableHeartbeats: true, heartbeatInterval: 300);
+
+            Assert.AreEqual(TimeSpan.FromMilliseconds(300), client.GetConfiguration().HeartbeatInterval);
+
+            StringAssert.Contains("Server-side IdleTimeout is 2000ms, using configured IgniteClientConfiguration." +
+                                  "HeartbeatInterval: 00:00:00.3000000", GetLogString(client));
+        }
+
         protected override IgniteConfiguration GetIgniteConfiguration()
         {
             return new IgniteConfiguration(base.GetIgniteConfiguration())
