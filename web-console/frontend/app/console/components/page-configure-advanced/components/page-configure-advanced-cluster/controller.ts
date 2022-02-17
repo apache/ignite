@@ -21,7 +21,7 @@ import {take, pluck, switchMap, map, filter, distinctUntilChanged, publishReplay
 import {UIRouter} from '@uirouter/angularjs';
 
 // Controller for Clusters screen.
-export default class PageConfigureAdvancedCluster {
+export default class PageConsoleAdvancedCluster {
     static $inject = ['$uiRouter', 'ConfigSelectors', 'ConfigureState'];
 
     constructor(
@@ -57,5 +57,9 @@ export default class PageConfigureAdvancedCluster {
 
     save({cluster, download}) {
         this.ConfigureState.dispatchAction(advancedSaveCluster(cluster, download));
+    }
+    
+    call(event) {
+       return {id: this.clusterID, cmdName:event.name, updated:event.updated};
     }
 }

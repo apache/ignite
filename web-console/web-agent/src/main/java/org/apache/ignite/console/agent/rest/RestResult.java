@@ -71,7 +71,7 @@ public class RestResult {
      * @return Request result.
      */
     public static RestResult success(String data, String sesTok) {
-        RestResult res = new RestResult(0, null, data, sesTok);
+        RestResult res = new RestResult(0, null, sesTok, data);
         return res;
     }
 

@@ -46,6 +46,9 @@ public interface WebSocketEvents {
     
     /** 调用集群grid的服务 */
     public static final String AGENT_CALL_CLUSTER_SERVICE = "agent:callClusterService";
+    
+    /** 调用集群Control Command */
+    public static final String AGENT_CALL_CLUSTER_COMMAND = "agent:callClusterCommand";
 
     /** */
     public static final String ADMIN_ANNOUNCEMENT = "admin:announcement";

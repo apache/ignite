@@ -37,8 +37,8 @@
 
     <properties>
         <java.version>1.8</java.version>
-        <maven.compiler.source>1.8</maven.compiler.source>
-        <maven.compiler.target>1.8</maven.compiler.target>
+        <maven.compiler.source>11</maven.compiler.source>
+        <maven.compiler.target>11</maven.compiler.target>
         <node.version>v10.15.3</node.version>
         <spring.boot.version>2.2.6.RELEASE</spring.boot.version>
         <web-console.ignite.version>2.9.0-SNAPSHOT</web-console.ignite.version>
@@ -157,11 +157,9 @@
     </profiles>
 
     <build>
-        <plugins>
-        
+        <plugins>        
 	         <plugin>
-		          <artifactId>maven-javadoc-plugin</artifactId>
-		          <version>3.0.0-M1</version>
+		          <artifactId>maven-javadoc-plugin</artifactId>		          
 		          <configuration>
 		            <skip>true</skip>
 	              </configuration>

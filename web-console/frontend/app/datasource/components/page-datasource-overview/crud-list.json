@@ -130,22 +130,20 @@
         {
           "type": "operation",
           "label": "操作",
-          "width": "",
-          "buttons": [
-            {
-              "type": "button-group",
-              "buttons": [
+          "width": "120",
+          "buttons": [            
                 {
                   "type": "button",
+                  "icon": "fa fa-eye",
                   "label": "查看",
                   "level": "primary",
                   "actionType": "link",
                   "link": "/datasource/${id}/basic"
                 },
                 {
-                  "type": "button",
-                  "label": "修改",
-                  "level": "info",
+                   "type": "button",
+                   "label": "修改",   
+                   "level": "info",
                    "icon": "fa fa-pencil",
                    "tooltip": "编辑",
                    "actionType": "drawer",
@@ -215,19 +213,19 @@
                             }
                           ]
                         }                     
-                  
+                
                   }
                 },
                 {
                   "type": "button",
                   "label": "删除",
+                  "icon": "fa fa-times text-danger",
                   "level": "danger",
                   "actionType": "ajax",
                   "confirmText": "您确认要删除?",
                   "api": "delete:api/v1/datasource/$id"
                 }
-              ]
-            }
+              
           ],
           "placeholder": "-",
           "fixed": "right"

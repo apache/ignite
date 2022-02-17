@@ -20,8 +20,8 @@ import cluster from './components/page-configure-advanced-cluster';
 import models from './components/page-configure-advanced-models';
 import caches from './components/page-configure-advanced-caches';
 import cacheMericForm from './components/cache-edit-form';
-import clusterMericForm from './components/cluster-edit-form';
 import modelMericForm from './components/model-edit-form';
+import clusterControlOverview from './components/cluster-control-overview';
 
 export default angular
     .module('ignite-console.page-console-advanced', [
@@ -29,7 +29,7 @@ export default angular
         models.name,
         caches.name,
         modelMericForm.name,
-        cacheMericForm.name,
-        clusterMericForm.name
+        cacheMericForm.name,       
+        clusterControlOverview.name
     ])
     .component('pageConsoleAdvanced', component);

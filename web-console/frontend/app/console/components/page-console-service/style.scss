@@ -30,21 +30,7 @@ page-console-service {
         padding-left: 10px;
         padding-right: 10px;
     }
-
-    .pcb-cache-name-row {
-        $margin: 10px;
-
-        display: flex;
-        flex-direction: row;
-        max-width: 100%;
-
-        .ignite-form-field {
-            margin-right: $margin;
-            max-width: $max-row-width;
-            flex-grow: 10;
-        }
-    }
-
+    
     .pcb-section-notification {
         font-size: 14px;
         color: #757575;

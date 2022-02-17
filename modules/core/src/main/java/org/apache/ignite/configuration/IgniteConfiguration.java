@@ -257,28 +257,14 @@ public class IgniteConfiguration {
     /** Default policy for node shutdown. */
     public static final ShutdownPolicy DFLT_SHUTDOWN_POLICY = ShutdownPolicy.IMMEDIATE;
 
-    /**
-     *  Default timeout after which long query warning will be printed.
-     *
-     * @deprecated Please use {@link SqlConfiguration#DFLT_LONG_QRY_WARN_TIMEOUT}.
-     */
-    @Deprecated
-    public static final long DFLT_LONG_QRY_WARN_TIMEOUT = SqlConfiguration.DFLT_LONG_QRY_WARN_TIMEOUT;
-
+    
     /** Default number of MVCC vacuum threads.. */
     public static final int DFLT_MVCC_VACUUM_THREAD_CNT = 2;
 
     /** Default time interval between MVCC vacuum runs in milliseconds. */
     public static final long DFLT_MVCC_VACUUM_FREQUENCY = 5000;
 
-    /**
-     * Default SQL query history size.
-     *
-     * @deprecated Please use {@link SqlConfiguration#DFLT_SQL_QUERY_HISTORY_SIZE}.
-     */
-    @Deprecated
-    public static final int DFLT_SQL_QUERY_HISTORY_SIZE = SqlConfiguration.DFLT_SQL_QUERY_HISTORY_SIZE;
-
+   
     /** Optional local Ignite instance name. */
     private String igniteInstanceName;
 
@@ -475,9 +461,7 @@ public class IgniteConfiguration {
     /** Flag indicating whether cache sanity check is enabled. */
     private boolean cacheSanityCheckEnabled = DFLT_CACHE_SANITY_CHECK_ENABLED;
 
-    /** Discovery startup delay. */
-    @Deprecated
-    private long discoStartupDelay = DFLT_DISCOVERY_STARTUP_DELAY;
+    
 
     /** Tasks classes sharing mode. */
     private DeploymentMode deployMode = DFLT_DEPLOYMENT_MODE;
@@ -517,11 +501,7 @@ public class IgniteConfiguration {
 
     /** Client access configuration. */
     private ConnectorConfiguration connectorCfg = new ConnectorConfiguration();
-
-    /** ODBC configuration. */
-    @Deprecated
-    private OdbcConfiguration odbcCfg;
-
+    
     /** Warmup closure. Will be invoked before actual grid start. */
     private IgniteInClosure<IgniteConfiguration> warmupClos;
 
@@ -553,14 +533,6 @@ public class IgniteConfiguration {
     private ExecutorConfiguration[] execCfgs;
 
     /** Page memory configuration. */
-    @Deprecated
-    private MemoryConfiguration memCfg;
-
-    /** Persistence store configuration. */
-    @Deprecated
-    private PersistentStoreConfiguration pstCfg;
-
-    /** Page memory configuration. */
     private DataStorageConfiguration dsCfg;
 
     /**
@@ -589,10 +561,7 @@ public class IgniteConfiguration {
 
     /** Cluster state on start. */
     private ClusterState clusterStateOnStart;
-
-    /** SQL connector configuration. */
-    @Deprecated
-    private SqlConnectorConfiguration sqlConnCfg;
+   
 
     /** Client connector configuration. */
     private ClientConnectorConfiguration cliConnCfg = ClientListenerProcessor.DFLT_CLI_CFG;
@@ -671,8 +640,7 @@ public class IgniteConfiguration {
         binaryCfg = cfg.getBinaryConfiguration();
         clusterStateOnStart = cfg.getClusterStateOnStart();
         dsCfg = cfg.getDataStorageConfiguration();
-        memCfg = cfg.getMemoryConfiguration();
-        pstCfg = cfg.getPersistentStoreConfiguration();
+       
         cacheCfg = cfg.getCacheConfiguration();
         cacheKeyCfg = cfg.getCacheKeyConfiguration();
         cacheSanityCheckEnabled = cfg.isCacheSanityCheckEnabled();
@@ -686,7 +654,7 @@ public class IgniteConfiguration {
         daemon = cfg.isDaemon();
         dataStreamerPoolSize = cfg.getDataStreamerThreadPoolSize();
         deployMode = cfg.getDeploymentMode();
-        discoStartupDelay = cfg.getDiscoveryStartupDelay();
+        
         execCfgs = cfg.getExecutorConfiguration();
         failureDetectionTimeout = cfg.getFailureDetectionTimeout();
        
@@ -714,7 +682,7 @@ public class IgniteConfiguration {
         mvccVacuumFreq = cfg.getMvccVacuumFrequency();
         netTimeout = cfg.getNetworkTimeout();
         nodeId = cfg.getNodeId();
-        odbcCfg = cfg.getOdbcConfiguration();
+        
         p2pEnabled = cfg.isPeerClassLoadingEnabled();
         p2pLocClsPathExcl = cfg.getPeerClassLoadingLocalClassPathExclude();
         p2pMissedCacheSize = cfg.getPeerClassLoadingMissedResourcesCacheSize();
@@ -738,7 +706,7 @@ public class IgniteConfiguration {
         snapshotThreadPoolSize = cfg.getSnapshotThreadPoolSize();
         sndRetryCnt = cfg.getNetworkSendRetryCount();
         sndRetryDelay = cfg.getNetworkSendRetryDelay();
-        sqlConnCfg = cfg.getSqlConnectorConfiguration();
+        
         sslCtxFactory = cfg.getSslContextFactory();
         storeSesLsnrs = cfg.getCacheStoreSessionListenerFactories();
         stripedPoolSize = cfg.getStripedPoolSize();
@@ -2413,46 +2381,7 @@ public class IgniteConfiguration {
     public LoadBalancingSpi[] getLoadBalancingSpi() {
         return loadBalancingSpi;
     }
-
-    /**
-     * This value is used to expire messages from waiting list whenever node
-     * discovery discrepancies happen.
-     * <p>
-     * During startup, it is possible for some SPIs to have a small time window when
-     * <tt>Node A</tt> has discovered <tt>Node B</tt>, but <tt>Node B</tt>
-     * has not discovered <tt>Node A</tt> yet. Such time window is usually very small,
-     * a matter of milliseconds, but certain JMS providers, for example, may be very slow
-     * and hence have larger discovery delay window.
-     * <p>
-     * The default value of this property is {@code 60,000} specified by
-     * {@link #DFLT_DISCOVERY_STARTUP_DELAY}. This should be good enough for vast
-     * majority of configurations. However, if you do anticipate an even larger
-     * delay, you should increase this value.
-     *
-     * @return Time in milliseconds for when nodes can be out-of-sync.
-     * @deprecated Not used any more.
-     */
-    @Deprecated
-    public long getDiscoveryStartupDelay() {
-        return discoStartupDelay;
-    }
-
-    /**
-     * Sets time in milliseconds after which a certain metric value is considered expired.
-     * If not set explicitly, then default value is {@code 600,000} milliseconds (10 minutes).
-     *
-     * @param discoStartupDelay Time in milliseconds for when nodes
-     *      can be out-of-sync during startup.
-     * @return {@code this} for chaining.
-     * @deprecated Not used any more.
-     */
-    @Deprecated
-    public IgniteConfiguration setDiscoveryStartupDelay(long discoStartupDelay) {
-        this.discoStartupDelay = discoStartupDelay;
-
-        return this;
-    }
-
+    
     /**
      * Sets fully configured instance of {@link LoadBalancingSpi}.
      *
@@ -2751,69 +2680,7 @@ public class IgniteConfiguration {
         this.dsCfg = dsCfg;
 
         return this;
-    }
-
-    /**
-     * Gets page memory configuration.
-     *
-     * @return Memory configuration.
-     * @deprecated Use {@link DataStorageConfiguration} instead.
-     */
-    @Deprecated
-    public MemoryConfiguration getMemoryConfiguration() {
-        return memCfg;
-    }
-
-    /**
-     * Sets page memory configuration.
-     *
-     * @param memCfg Memory configuration.
-     * @return {@code this} for chaining.
-     * @deprecated Use {@link DataStorageConfiguration} instead.
-     */
-    @Deprecated
-    public IgniteConfiguration setMemoryConfiguration(MemoryConfiguration memCfg) {
-        this.memCfg = memCfg;
-
-        return this;
-    }
-
-    /**
-     * Gets persistence configuration used by Apache Ignite Persistent Store.
-     *
-     * @return Persistence configuration.
-     *
-     * @deprecated Part of old API. Use {@link DataStorageConfiguration} for configuring persistence instead.
-     */
-    @Deprecated
-    public PersistentStoreConfiguration getPersistentStoreConfiguration() {
-        return pstCfg;
-    }
-
-    /**
-     * @return Flag {@code true} if persistence is enabled, {@code false} if disabled.
-     *
-     * @deprecated Part of legacy configuration API. Doesn't work if new configuration API is used.
-     */
-    @Deprecated
-    public boolean isPersistentStoreEnabled() {
-        return pstCfg != null;
-    }
-
-    /**
-     * Sets persistence configuration activating Apache Ignite Persistent Store.
-     *
-     * @param pstCfg Persistence configuration.
-     * @return {@code this} for chaining.
-     *
-     * @deprecated Part of old API. Use {@link DataStorageConfiguration} for configuring persistence instead.
-     */
-    @Deprecated
-    public IgniteConfiguration setPersistentStoreConfiguration(PersistentStoreConfiguration pstCfg) {
-        this.pstCfg = pstCfg;
-
-        return this;
-    }
+    }    
 
     /**
      * Gets flag indicating whether the cluster will be active on start. If cluster is not active on start,
@@ -3169,30 +3036,7 @@ public class IgniteConfiguration {
         return this;
     }
 
-    /**
-     * Gets configuration for ODBC.
-     *
-     * @return ODBC configuration.
-     * @deprecated Use {@link #getClientConnectorConfiguration()} ()} instead.
-     */
-    @Deprecated
-    public OdbcConfiguration getOdbcConfiguration() {
-        return odbcCfg;
-    }
-
-    /**
-     * Sets configuration for ODBC.
-     *
-     * @param odbcCfg ODBC configuration.
-     * @return {@code this} for chaining.
-     * @deprecated Use {@link #setClientConnectorConfiguration(ClientConnectorConfiguration)} instead.
-     */
-    @Deprecated
-    public IgniteConfiguration setOdbcConfiguration(OdbcConfiguration odbcCfg) {
-        this.odbcCfg = odbcCfg;
-
-        return this;
-    }
+    
 
     /**
      * Gets configurations for services to be deployed on the grid.
@@ -3483,58 +3327,6 @@ public class IgniteConfiguration {
         this.execCfgs = execCfgs;
 
         return this;
-    }
-
-    /**
-     * Gets timeout in milliseconds after which long query warning will be printed.
-     *
-     * @return Timeout in milliseconds.
-     *
-     * @deprecated Use {@link SqlConfiguration#getLongQueryWarningTimeout()} instead.
-     */
-    @Deprecated
-    public long getLongQueryWarningTimeout() {
-        return sqlCfg.getLongQueryWarningTimeout();
-    }
-
-    /**
-     * Sets timeout in milliseconds after which long query warning will be printed.
-     *
-     * @param longQryWarnTimeout Timeout in milliseconds.
-     * @return {@code this} for chaining.
-     *
-     * @deprecated Use {@link SqlConfiguration#setLongQueryWarningTimeout(long)} instead.
-     */
-    @Deprecated
-    public IgniteConfiguration setLongQueryWarningTimeout(long longQryWarnTimeout) {
-        sqlCfg.setLongQueryWarningTimeout(longQryWarnTimeout);
-
-        return this;
-    }
-
-    /**
-     * Sets SQL connector configuration.
-     *
-     * @param sqlConnCfg SQL connector configuration.
-     * @return {@code this} for chaining.
-     * @deprecated Use {@link #setClientConnectorConfiguration(ClientConnectorConfiguration)} instead.
-     */
-    @Deprecated
-    public IgniteConfiguration setSqlConnectorConfiguration(SqlConnectorConfiguration sqlConnCfg) {
-        this.sqlConnCfg = sqlConnCfg;
-
-        return this;
-    }
-
-    /**
-     * Gets SQL connector configuration.
-     *
-     * @return SQL connector configuration.
-     * @deprecated Use {@link #getClientConnectorConfiguration()} instead.
-     */
-    @Deprecated
-    public SqlConnectorConfiguration getSqlConnectorConfiguration() {
-        return sqlConnCfg;
     }
 
     /**

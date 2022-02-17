@@ -187,10 +187,9 @@ form(novalidate name=form)
 
     .pc-form-actions-panel
         button-preview-project(ng-hide='true' cluster=model)
-
-        .pc-form-actions-panel__right-after
+        span.message {{ $ctrl.$scope.message }} 
         
-        p.message {{ $ctrl.$scope.message }}  |
+        .pc-form-actions-panel__right-after        
        
         button.btn-ignite.btn-ignite--link-success(
         type='button'

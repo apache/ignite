@@ -18,7 +18,7 @@ import get from 'lodash/get';
 import omit from 'lodash/fp/omit';
 import uuidv4 from 'uuid/v4';
 
-import {CacheModes, AtomicityModes, ShortCache} from '../types';
+import {CacheModes, AtomicityModes, ShortCache} from '../../configuration/types';
 import {Menu} from 'app/types';
 
 export default class Services {

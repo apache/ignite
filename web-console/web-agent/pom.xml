@@ -58,6 +58,14 @@
             <artifactId>ignite-rest-http</artifactId>
             <version>${web-console.ignite.version}</version>           
         </dependency>
+        
+         <dependency>
+             <groupId>org.apache.ignite</groupId>
+             <artifactId>ignite-control-utility</artifactId>
+             <version>${web-console.ignite.version}</version>           
+        </dependency>
+        
+        
 
         <dependency>
             <groupId>org.apache.ignite</groupId>

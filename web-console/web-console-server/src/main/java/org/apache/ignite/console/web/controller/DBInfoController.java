@@ -35,6 +35,21 @@ public class DBInfoController {
     public DBInfoController(DBInfoRepository datasourcesSrv) {
         this.datasourcesSrv = datasourcesSrv;
     }
+    
+    /**
+     * @param acc Account.
+     * @param datasourceId Notebook ID.
+     */
+    @ApiOperation(value = "get user's datasource.")
+    @GetMapping(path = "/{datasourceId}")
+    public ResponseEntity<DBInfoDto> get(
+        @AuthenticationPrincipal Account acc,
+        @PathVariable("datasourceId") UUID datasourceId
+    ) {
+    	DBInfoDto dto = datasourcesSrv.get(acc.getId(), datasourceId);
+    	
+        return ResponseEntity.ok(dto);
+    }
 
     /**
      * @param acc Account.

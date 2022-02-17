@@ -22,7 +22,7 @@ import {default as Models} from 'app/configuration/services/Models';
 
 import {default as IgniteVersion} from 'app/services/Version.service';
 import {Confirm} from 'app/services/Confirm.service';
-import {DomainModel} from '../../../../types';
+import {DomainModel} from 'app/configuration/types';
 import ErrorPopover from 'app/services/ErrorPopover.service';
 import LegacyUtilsFactory from 'app/services/LegacyUtils.service';
 import FormUtils from 'app/services/FormUtils.service';

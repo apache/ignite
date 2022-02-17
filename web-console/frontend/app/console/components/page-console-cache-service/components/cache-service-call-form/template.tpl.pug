@@ -13,20 +13,23 @@
     See the License for the specific language governing permissions and
     limitations under the License.
 
-include /app/helpers/jade/mixins
+form(
+    name='ui.inputForm'
+    id='service'
+    novalidate
+)
+    include ./templates/general
+    
 
-form(id='cluster' name='ui.inputForm' novalidate)
-    .panel-group       
-        
-
-.pc-form-actions-panel(n_g-show='$ctrl.$scope.selectedItem')
-    button-preview-project(cluster='$ctrl.cluster' ng-hide='$ctrl.isNew')
-
+.pc-form-actions-panel
+    span.message {{ $ctrl.$scope.message }}
     .pc-form-actions-panel__right-after
-
+    
+    
     button.btn-ignite.btn-ignite--link-success(
         type='button'
         ng-click='$ctrl.confirmAndReset()'
     )
         | Cancel
     pc-split-button(actions=`::$ctrl.formActions`)
+    

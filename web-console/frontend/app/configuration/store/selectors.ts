@@ -111,6 +111,13 @@ export default class ConfigSelectors {
 
     selectShortCachesValue = () => (state$) => state$.pipe(this.selectShortCaches(), selectValues);
 
+   /**
+     * @returns {(state$: Observable) => Observable<Array<string>>}
+     */
+    selectCacheNames = (cacheIDs) => (state$) => state$.pipe(
+        this.selectShortCaches(),
+        selectNames(cacheIDs)
+    );
     
     selectCacheToEdit = (cacheID) => (state$) => state$.pipe(
         this.selectCache(cacheID),

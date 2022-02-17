@@ -45,12 +45,9 @@ import pageConsoleOverview from './components/page-configure-overview';
 
 import itemsTable from '../configuration/components/pc-items-table';
 import pcUiGridFilters from '../configuration/components/pc-ui-grid-filters';
-import isInCollection from '../configuration/components/pcIsInCollection';
+
 import pcValidation from '../configuration/components/pcValidation';
-
 import pcSplitButton from '../configuration/components/pc-split-button';
-import uiAceTabs from '../configuration/components/ui-ace-tabs.directive';
-
 
 
 import {registerStates} from './states';
@@ -170,7 +167,5 @@ export default angular
     .service('Clusters', Clusters)
     .service('Caches', Caches) 
     .service('Models', Models) 
-    .service('Services', Services)       
-    .directive('pcIsInCollection', isInCollection)    
-    .directive('igniteUiAceTabs', uiAceTabs)
+    .service('Services', Services)
     .constant('JDBC_LINKS', JDBC_LINKS);

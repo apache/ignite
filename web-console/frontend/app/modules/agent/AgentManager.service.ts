@@ -503,6 +503,7 @@ export default class AgentManager {
         return this._sendToAgent('schemaImport:metadata', {jdbcDriverJar, jdbcDriverClass, jdbcUrl, info, schemas, tablesOnly});
     }
 
+    /** add@byron */
     startCluster(cluster) {
         return this._sendToAgent('agent:startCluster',cluster);
     }
@@ -514,6 +515,12 @@ export default class AgentManager {
     callClusterService(cluster,serviceName,payload) {
         return this._sendToAgent('agent:callClusterService',{id:cluster.id,name:cluster.name,serviceName:serviceName,args:payload});
     }
+    
+    callClusterCommand(cluster,cmdName,payload) {
+        return this._sendToAgent('agent:callClusterCommand',{id:cluster.id,name:cluster.name,cmdName:cmdName,args:payload});
+    }
+    
+    /** end@byron */
     
     /**
      * @param {Object} cluster

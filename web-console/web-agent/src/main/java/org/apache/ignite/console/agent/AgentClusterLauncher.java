@@ -374,28 +374,10 @@ public class AgentClusterLauncher {
     	
         if (ignite==null) {
         	
-        	String base64 = json.getString("blob");
-        	String prefix = "data:application/octet-stream;base64,";
+        	
         	String fileName = Utils.escapeFileName(json.getString("name"));
         	
-        	String work = U.workDirectory(null, null)+ "/config/";
-			U.mkdirs(new File(work));
-			
-			byte[] zip = Base64.decodeBase64(base64.substring(prefix.length()));
-			File zipFile = new File(work, fileName+".zip");
-			String descDir = work + fileName+"/";
-			
-			try {
-				FileOutputStream writer = new FileOutputStream(zipFile);
-				writer.write(zip);
-				writer.close();
-				
-				AgentUtils.unZip(zipFile, descDir);
-				
-			} catch (IOException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
+        	String work = U.workDirectory(null, null)+ "/config/";			
 			
 			
         	String cfgFile = String.format("%s%s/src/main/resources/META-INF/%s-server.xml", work, fileName,fileName);
@@ -417,5 +399,41 @@ public class AgentClusterLauncher {
 			
         }
         return ignite;
+    }
+    
+
+    /**
+     * Start ignite node with cacheEmployee and populate it with data.
+     * @throws IgniteCheckedException 
+     */
+    public static void saveBlobToFile(JsonObject json) throws IgniteCheckedException {    	
+    	String clusterId = json.getString("id");    	
+    	String base64 = json.getString("blob");    	 
+        String prefix = "data:application/octet-stream;base64,";
+        if (base64!=null && base64.startsWith(prefix)) {        	
+        	
+        	String fileName = Utils.escapeFileName(json.getString("name"));
+        	
+        	String work = U.workDirectory(null, null)+ "/config/";
+			U.mkdirs(new File(work));
+			
+			byte[] zip = Base64.decodeBase64(base64.substring(prefix.length()));
+			File zipFile = new File(work, fileName+".zip");
+			String descDir = work + fileName+"/";
+			
+			try {
+				FileOutputStream writer = new FileOutputStream(zipFile);
+				writer.write(zip);
+				writer.close();
+				
+				AgentUtils.unZip(zipFile, descDir);
+				
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}        	
+			
+        }
+        
     }
 }

@@ -17,8 +17,7 @@
 
 package org.apache.ignite;
 
-import org.apache.ignite.configuration.MemoryConfiguration;
-import org.apache.ignite.configuration.MemoryPolicyConfiguration;
+
 import org.apache.ignite.mxbean.DataRegionMetricsMXBean;
 import org.apache.ignite.spi.metric.ReadOnlyMetricRegistry;
 

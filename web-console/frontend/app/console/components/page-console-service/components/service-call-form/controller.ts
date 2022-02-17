@@ -25,7 +25,7 @@ import Caches from 'app/configuration/services/Caches';
 import FormUtilsFactory from 'app/services/FormUtils.service';
 import AgentManager from 'app/modules/agent/AgentManager.service';
 
-export default class ServiceEditFormController {
+export default class ServiceCallFormController {
     modelsMenu: Menu<string>;
 
     onCall: ng.ICompiledExpression;
@@ -52,27 +52,14 @@ export default class ServiceEditFormController {
                 {value: 'Custom', label: 'Custom'},
                 {value: null, label: 'Default'}
             ];
-
-            if (!this.IgniteVersion.currentSbj.getValue().hiveVersion
-                && _.get(this.clonedCache, 'cacheStoreFactory.kind') === 'HiveCacheJdbcPojoStoreFactory')
-                this.clonedCache.cacheStoreFactory.kind = null;
         };
 
         rebuildDropdowns();
 
-        const filterModel = () => {
-            if (
-                this.clonedCache &&
-                this.available('2.0.0') &&
-                get(this.clonedCache, 'affinity.kind') === 'Fair'
-            )
-                this.clonedCache.affinity.kind = null;
-
-        };
+        
 
         this.subscription = this.IgniteVersion.currentSbj.pipe(
-            tap(rebuildDropdowns),
-            tap(filterModel)
+            tap(rebuildDropdowns)
         )
         .subscribe();
 
@@ -80,9 +67,8 @@ export default class ServiceEditFormController {
         this.$scope.ui = this.IgniteFormUtils.formUI();
 
         this.formActions = [
-            {text: 'Load Data', icon: 'checkmark', click: () => this.confirmAndLoad(false)},
-            {text: 'Load Updated Data', icon: 'download', click: () => this.confirmAndLoad(true)},
-            {text: 'Clear Data', icon: 'checkmark', click: () => this.confirmAndClear()},
+            {text: 'Call Service', icon: 'checkmark', click: () => this.confirmAndCall()},
+            {text: 'Updated Data', icon: 'download', click: () => this.confirmAndLoad(true)},            
             {text: 'Writer Data', icon: 'checkmark', click: () => this.confirmAndWriter(true)}            
         ];
     }
@@ -93,20 +79,19 @@ export default class ServiceEditFormController {
 
     $onChanges(changes) {
         if (
-            'cache' in changes && get(this.clonedCache, 'id') !== get(this.cache, 'id')
+            'service' in changes && get(this.clonedService, 'id') !== get(this.service, 'id')
         ) {
-            this.clonedCache = cloneDeep(changes.cache.currentValue);
+            this.clonedService = cloneDeep(changes.service.currentValue);
             if (this.$scope.ui && this.$scope.ui.inputForm) {
                 this.$scope.ui.inputForm.$setPristine();
                 this.$scope.ui.inputForm.$setUntouched();
             }
         }
-        if ('models' in changes)
-            this.modelsMenu = (changes.models.currentValue || []).map((m) => ({value: m.id, label: m.valueType}));
+        
     }
 
     getValuesToCompare() {
-        return [this.cache, this.clonedCache].map(this.Caches.normalize);
+        return [this.service, this.clonedService];
     }
 
     loadData(updated:boolean) {        
@@ -124,8 +109,8 @@ export default class ServiceEditFormController {
         return this.callServiceForCache(serviceName,{});
     }
     
-    callServiceForCache(serviceName:string,params) {
-        let args = this.onCall({$event: {cache: this.clonedCache}});
+    callServiceForGrid(serviceName:string,params) {
+        let args = this.onCall({$event: {serviceName: this.clonedService}});
         let clusterId = args['id'];
         params = Object.assign(args,params);
         this.AgentManager.callClusterService({id: clusterId},serviceName,params).then((data) => {  
@@ -143,11 +128,13 @@ export default class ServiceEditFormController {
         });
     }
 
-    reset = (forReal) => forReal ? this.clonedCache = cloneDeep(this.cache) : void 0;
+    reset = (forReal) => forReal ? this.clonedService = cloneDeep(this.service) : void 0;
 
-    confirmAndClear() {
-        return this.IgniteConfirm.confirm('Are you sure you want to clear all data for current cache?')
-        .then(() => { this.clearData(); } );
+    confirmAndCall() {
+        if (this.$scope.ui.inputForm && this.$scope.ui.inputForm.$invalid)
+            return this.IgniteFormUtils.triggerValidation(this.$scope.ui.inputForm, this.$scope);
+        return this.IgniteConfirm.confirm('Are you sure you want to call service ' + this.service.name + ' for current grid?')
+        .then(() => { this.callServiceForGrid(this.service.id,this.clonedService); } );
     }
     
     confirmAndLoad(updated:boolean) {        

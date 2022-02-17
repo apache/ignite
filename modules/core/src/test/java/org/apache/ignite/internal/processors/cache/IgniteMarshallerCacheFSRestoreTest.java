@@ -33,7 +33,7 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.PersistentStoreConfiguration;
+
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.processors.marshaller.MappingProposedMessage;
@@ -95,9 +95,11 @@ public class IgniteMarshallerCacheFSRestoreTest extends GridCommonAbstractTest {
         cfg.setCacheConfiguration(singleCacheCfg);
 
         //persistence must be enabled to verify restoring mappings from FS case
-        if (isPersistenceEnabled)
-            cfg.setPersistentStoreConfiguration(new PersistentStoreConfiguration());
-
+        if (isPersistenceEnabled) {
+        	DataStorageConfiguration dsc = new DataStorageConfiguration();
+        	dsc.getDefaultDataRegionConfiguration().setPersistenceEnabled(true);
+        	cfg.setDataStorageConfiguration(dsc);            
+        }
         return cfg;
     }
 

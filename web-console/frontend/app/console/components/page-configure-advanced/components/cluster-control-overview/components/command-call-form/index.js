@@ -17,5 +17,5 @@
 import angular from 'angular';
 import component from './component';
 export default angular
-    .module('console.cluster-edit-form', [])
-    .component('clusterMericForm', component);
+    .module('console.command-call-form', [])
+    .component('commandCallForm', component);

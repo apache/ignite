@@ -992,7 +992,7 @@ export class NotebookCtrl {
                                 paragraph.reset($interval);
                             });
                         }),
-                        switchMap(() => refreshCaches(5000))
+                        switchMap(() => refreshCaches(60000))
                     );
                 })
             );

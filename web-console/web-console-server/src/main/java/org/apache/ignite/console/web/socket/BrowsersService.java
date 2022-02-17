@@ -181,6 +181,7 @@ public class BrowsersService extends AbstractSocketHandler {
                 case AGENT_START_CLUSTER:
                 case AGENT_STOP_CLUSTER:
                 case AGENT_CALL_CLUSTER_SERVICE:
+                case AGENT_CALL_CLUSTER_COMMAND:
                 	try {
                 		payload = fromJson(evt.getPayload());
 

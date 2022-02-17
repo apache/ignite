@@ -17,7 +17,7 @@
 import angular from 'angular';
 
 import component from './component';
-import gridColumnCategories from './components/pco-grid-column-categories/directive';
+import gridColumnCategories from '../pco-grid-column-categories/directive';
 
 export default angular
     .module('ignite-console.page-configure-overview', [])

@@ -17,7 +17,7 @@
 import angular from 'angular';
 
 import component from './component';
-import serviceCallForm from '../page-console-service/components/service-call-form';
+import serviceCallForm from './components/cache-service-call-form';
 
 export default angular
     .module('ignite-console.page-console-cache-service', [serviceCallForm.name])    

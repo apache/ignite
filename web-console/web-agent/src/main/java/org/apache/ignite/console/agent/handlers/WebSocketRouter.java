@@ -24,6 +24,7 @@ import java.net.URI;
 import java.net.URL;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
@@ -39,6 +40,10 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.logging.Formatter;
+import java.util.logging.LogRecord;
+import java.util.logging.Logger;
+import java.util.logging.StreamHandler;
 import java.util.stream.Stream;
 
 import org.apache.commons.codec.binary.Base64;
@@ -53,6 +58,7 @@ import org.apache.ignite.console.agent.AgentUtils;
 import org.apache.ignite.console.agent.rest.RestResult;
 import org.apache.ignite.console.agent.service.ClusterAgentService;
 import org.apache.ignite.console.demo.AgentClusterDemo;
+import org.apache.ignite.console.json.JsonArray;
 import org.apache.ignite.console.json.JsonObject;
 import org.apache.ignite.console.utils.Utils;
 import org.apache.ignite.console.websocket.AgentHandshakeRequest;
@@ -60,6 +66,9 @@ import org.apache.ignite.console.websocket.AgentHandshakeResponse;
 import org.apache.ignite.console.websocket.WebSocketRequest;
 import org.apache.ignite.console.websocket.WebSocketResponse;
 import org.apache.ignite.internal.IgnitionEx;
+import org.apache.ignite.internal.commandline.CommandHandler;
+import org.apache.ignite.internal.commandline.CommandList;
+import org.apache.ignite.internal.commandline.CommonArgParser;
 import org.apache.ignite.internal.processors.resource.GridSpringResourceContext;
 import org.apache.ignite.internal.processors.rest.protocols.http.jetty.GridJettyObjectMapper;
 import org.apache.ignite.internal.util.typedef.F;
@@ -369,8 +378,7 @@ public class WebSocketRouter implements AutoCloseable {
         log.info("Cluster start msg has been revoked: " + msg);
         JsonObject stat = new JsonObject();
         JsonObject json = fromJson(msg);
-        String base64 = json.getString("blob");
-        String prefix = "data:application/octet-stream;base64,";
+       
         String clusterId = json.getString("id");
         if(DEMO_CLUSTER_ID.equals(clusterId)) {
         	json.add("demo", true);
@@ -378,7 +386,9 @@ public class WebSocketRouter implements AutoCloseable {
         String clusterName = Utils.escapeFileName(json.getString("name"));
 		try {
 			
-			if(!json.getBoolean("demo",false) && base64!=null && base64.startsWith(prefix)) {	
+			AgentClusterLauncher.saveBlobToFile(json);
+			
+			if(!json.getBoolean("demo",false)) {	
 				// 启动一个独立的node，jvm内部的node之间相互隔离
 				Ignite ignite = AgentClusterLauncher.trySingleStart(json);
 				
@@ -501,6 +511,99 @@ public class WebSocketRouter implements AutoCloseable {
         return stat;
     }
 
+    
+    /**
+     * @param tok Token to revoke.
+     */
+    private Map<String,Object> processCallClusterCommand(String msg) {
+        log.info("Cluster cmd has been revoked: " + msg);
+        JsonObject stat = new JsonObject();
+        JsonObject json = fromJson(msg);
+        String nodeId = json.getString("id");
+        String cmdName = json.getString("cmdName","");
+        String clusterName = null;
+        stat.put("status", "stoped");        
+        
+        JsonArray args = json.getJsonArray("args");
+        
+        
+        Ignite ignite = null;
+        if(json.getString("name",null)!=null) {
+        	clusterName = Utils.escapeFileName(json.getString("name"));
+    	}
+        if(nodeId!=null) {        	
+        	try {
+        		ignite = Ignition.ignite(UUID.fromString(nodeId));	    		
+	    		stat.put("status", "started");
+	    		clusterName = null;
+    		}
+	    	catch(IgniteIllegalStateException e) {	
+	    		stat.put("message", e.getMessage());
+	    		stat.put("status", "stoped");
+	    		return stat;
+	    	}
+        }
+        if(clusterName!=null) {
+        	try {
+        		ignite = Ignition.ignite(clusterName);	    		
+	    		stat.put("status", "started");
+    		}
+	    	catch(IgniteIllegalStateException e) {	
+	    		stat.put("message", e.getMessage());
+	    		stat.put("status", "stoped");
+	    		return stat;
+	    	}
+    	}
+        
+        List<String> argsList = new ArrayList<>();
+        
+        String host = ignite.configuration().getConnectorConfiguration().getHost();
+        if(host!=null && !host.isBlank()) {
+	        argsList.add("--host");
+	        argsList.add(host);
+        }
+        argsList.add("--port");
+        argsList.add(""+ignite.configuration().getConnectorConfiguration().getPort());
+        //-argsList.add(cmdName);
+        if(args!=null) {
+        	args.forEach(e-> argsList.add(e.toString()));
+        }
+        
+        StringStreamHandler outHandder = new StringStreamHandler();
+        
+        Logger logger = CommandHandler.initLogger(CommandHandler.class.getName() + "Log");
+        logger.addHandler(outHandder);
+        CommandHandler hnd = new CommandHandler(logger);
+        hnd.console = null;
+        boolean experimentalEnabled = true;
+        if(cmdName.equals("commandList")) {        	
+        	List<JsonObject> results = new ArrayList<>(10);
+        	Arrays.stream(CommandList.values())
+            .filter(c -> experimentalEnabled || !c.command().experimental())
+            .forEach(c -> {
+            	c.command().printUsage(logger);
+            	JsonObject cmd = new JsonObject();
+            	cmd.put("name", c.name());
+            	cmd.put("text", c.text());
+            	cmd.put("usage", outHandder.getOutput());
+            	cmd.put("experimental", c.command().experimental());
+            	results.add(cmd);
+            });
+        	
+        	stat.put("result", results);
+        	return stat;
+        }
+        int code = hnd.execute(argsList);
+        stat.put("code",code);
+        if(code==CommandHandler.EXIT_CODE_OK) {
+        	stat.put("result", hnd.getLastOperationResult());
+        	stat.put("message", outHandder.getOutput());
+        }
+        else {
+        	stat.put("message", outHandder.getOutput());
+        }
+        return stat;
+    }
 
     /**
      * @param msg Message.
@@ -540,6 +643,11 @@ public class WebSocketRouter implements AutoCloseable {
                 	
                 case AGENT_CALL_CLUSTER_SERVICE:
                 	msgRet = processCallClusterService(evt.getPayload());
+                	send(ses, evt.response(msgRet));
+                	break;
+                	
+                case AGENT_CALL_CLUSTER_COMMAND:
+                	msgRet = processCallClusterCommand(evt.getPayload());
                 	send(ses, evt.response(msgRet));
                 	break;
 

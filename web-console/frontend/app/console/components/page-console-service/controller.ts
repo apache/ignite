@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import {Subject, BehaviorSubject, merge, combineLatest, from, empty} from 'rxjs';
+import {Subject, BehaviorSubject, merge, combineLatest, from, of, empty} from 'rxjs';
 import {tap, map, refCount, pluck, take, filter, publishReplay, switchMap, distinctUntilChanged} from 'rxjs/operators';
 import {UIRouter, TransitionService, StateService} from '@uirouter/angularjs';
 import naturalCompare from 'natural-compare-lite';
@@ -24,10 +24,10 @@ import ConfigSelectors from '../../../configuration/store/selectors';
 import Caches from '../../../configuration/services/Caches';
 import Services from '../../services/Services';
 import Version from 'app/services/Version.service';
-import {ShortCache} from '../../types';
+
 import {IColumnDefOf} from 'ui-grid';
 import AgentManager from 'app/modules/agent/AgentManager.service';
-// Controller for Caches screen.
+// Controller for service screen.
 export default class ServiceController {
     static $inject = [
         'ConfigSelectors',
@@ -69,78 +69,44 @@ export default class ServiceController {
                 placeholder: 'Filter by name…'
             },
             sortingAlgorithm: naturalCompare,
-            minWidth: 165
+            minWidth: 150
         },
         {
             name: 'description',
             displayName: 'Description',
             field: 'description',
-            enableHiding: false,
-            sort: {direction: 'asc', priority: 0},
+            enableHiding: false,           
             filter: {
                 placeholder: 'Filter by description…'
             },
             sortingAlgorithm: naturalCompare,
-            width: 300
+            width: 350
         },
         {
             name: 'mode',
             displayName: 'Mode',
             field: 'mode',
             multiselectFilterOptions: this.Services.serviceModes,
-            width: 100
+            width: 150
         },
         {
             name: 'cacheName',
             displayName: 'CacheName',
             field: 'cacheName',
             enableFiltering: false,
-            width: 100
+            width: 150
         },
         {
-            name: 'atomicityMode',
-            displayName: 'Atomicity',
-            field: 'atomicityMode',
-            multiselectFilterOptions: this.Services.atomicityModes,
-            width: 100
-        },
-        {
-            name: 'backups',
-            displayName: 'Backups',
-            field: 'backups',
-            width: 130,
+            name: 'affinityKey',
+            displayName: 'affinityKey',
+            field: 'affinityKey',
             enableFiltering: false,
-            cellTemplate: `
-                <div class="ui-grid-cell-contents">{{ grid.appScope.$ctrl.Services.getBackupsCount(row.entity) }}</div>
-            `
-        }
-    ];
-    
-    
-    cachesColumnDefs = [
-        {
-            name: 'name',
-            displayName: 'Name',
-            field: 'name',
-            enableHiding: false,
-            sort: {direction: 'asc', priority: 0},
-            filter: {
-                placeholder: 'Filter by name…'
-            },
-            sortingAlgorithm: naturalCompare,
-            minWidth: 165
-        },
-        {
-            name: 'cacheMode',
-            displayName: 'Mode',
-            field: 'mode',
-            multiselectFilterOptions: this.Caches.cacheModes,
-            width: 160
-        }
-        
+            width: 150
+        }       
     ];
 
-    $onInit() {
+
+    async  $onInit() {
         const serviceID$ = this.$uiRouter.globals.params$.pipe(
             pluck('serviceID'),
             publishReplay(1),
@@ -155,42 +121,25 @@ export default class ServiceController {
         );
        
         
-        this.serviceListSubject$ = new BehaviorSubject();
+        
         this.serviceMap = {
             'status':{ id: 'status', name:'status', description:'get cluster last status', mode: 'NodeSinger'},
             'serviceList':{ id: 'serviceList', name:'serviceList', description:'get cluster service list', mode: 'NodeSinger'}
         };
         this.serviceList = [this.serviceMap['status'],this.serviceMap['serviceList']];  
         
-        this.serviceList$ = this.serviceListSubject$.pipe(tap((val) => console.log(`BEFORE MAP: ${val[0]['id']}`)));
-        this.serviceListSubject$.next(this.serviceList);     
         
-        clusterID$.subscribe((v)=>{ 
-            this.clusterID = v; 
-            this.callService('serviceList').then((data) => {
-                if(data.message){
-                    this.message = data.message;
-                }  
-                this.serviceMap = Object.assign(data.result);
-                Object.keys(this.serviceMap).forEach((key) => {
-                   this.serviceMap[key]['id'] = key;
-                   this.serviceList.push(this.serviceMap[key]);
-                });
-                
-                this.serviceListSubject$.next(this.serviceList)
-            });  
-            
-        });
+        //this.serviceListSubject$.next(this.serviceList);     
         
-        
+        this.clusterID = await clusterID$.toPromise();
+        this.serviceList$ = from(this.callServiceList());
          
-        this.shortCaches$ = this.ConfigureState.state$.pipe(this.ConfigSelectors.selectCurrentShortCaches);
-        this.shortModels$ = this.ConfigureState.state$.pipe(this.ConfigSelectors.selectCurrentShortModels);
-        this.originalCache$ = serviceID$.pipe(
+        
+        this.originalService$ = serviceID$.pipe(
             distinctUntilChanged(),
             switchMap((id) => {
                 if(id in this.serviceMap){
-                    return from(this.serviceMap[id]).asObservable();
+                    return of(this.serviceMap[id]);
                 }
                 return empty();
                 
@@ -200,8 +149,8 @@ export default class ServiceController {
         );
 
         this.isNew$ = serviceID$.pipe(map((id) => id === 'new'));
-        this.itemEditTitle$ = combineLatest(this.isNew$, this.originalCache$, (isNew, cache) => {
-            return `${isNew ? 'Create' : 'Edit'} cache ${!isNew && !!cache && cache.name ? `‘${cache.name}’` : ''}`;
+        this.itemEditTitle$ = combineLatest(this.isNew$, this.originalService$, (isNew, service) => {
+            return `${isNew ? 'Deploy' : 'Select'} service ${!isNew && !!service && service.name ? `‘${service.name}’` : ''}`;
         });
         this.selectionManager = this.configSelectionManager({
             itemID$: serviceID$,
@@ -211,39 +160,33 @@ export default class ServiceController {
         });
 
         this.subscription = merge(
-            this.originalCache$,
+            this.originalService$,
             this.selectionManager.editGoes$.pipe(tap((id) => this.edit(id))),
             this.selectionManager.editLeaves$.pipe(tap((options) => this.$state.go('base.console.edit.service.select', null, options)))
         ).subscribe();
 
-        this.isBlocked$ = serviceID$;        
-
-        
+        this.isBlocked$ = serviceID$; 
         
         this.tableActions$ = this.selectionManager.selectedItemIDs$.pipe(map((selectedItems) => [
+            
             {
-                action: 'Clone',
-                click: () => this.clone(selectedItems),
-                available: false
-            },
-            {
-                action: 'Load Data',
+                action: 'Redeploy',
                 click: () => {
-                    this.call(selectedItems,'loadDataService');
+                    this.call(selectedItems,'redeploy');
                 },
                 available: true
             },
             {
-                action: 'Clear Data',
+                action: 'Undeploy',
                 click: () => {
-                    this.call(selectedItems,'clearDataService');
+                    this.call(selectedItems,'undeploy');
                 },
                 available: true
             },
             {
-                action: 'Write Data to Other Cluster',
+                action: 'Simple Call',
                 click: () => {
-                    this.call(selectedItems,'writeDataService');
+                    this.call(selectedItems,'callService');
                 },
                 available: true
             }
@@ -251,7 +194,7 @@ export default class ServiceController {
     }
 
     call(itemIDs: Array<string>, serviceName: string) {
-       this.callService(serviceName,{caches:itemIDs}).then((data) => {
+       this.callService(serviceName,{services:itemIDs}).then((data) => {
             if(data.message){
                 this.message = data.message;
             }
@@ -272,9 +215,36 @@ export default class ServiceController {
                 if(data.result){
                     resolve(data);
                 }    
-                else if(data.message){                    
+                else if(data.message){   
+                    this.message = data.message;
                     resolve(data)
-                }                 
+                }        
+            })   
+           .catch((e) => {
+                //this.$scope.message = ('Failed to callClusterService : '+serviceName+' Caused : '+e);    
+                reject(e)       
+            });
+        });   
+        
+    }
+    
+    callServiceList() {
+        let clusterID = this.clusterID;
+        return new Promise((resolve,reject) => {
+           this.AgentManager.callClusterService({id:clusterID},'serviceList').then((data) => {  
+                if(data.result){
+                    let serviceList = [];
+                    let serviceMap = Object.assign(data.result);
+                    Object.keys(serviceMap).forEach((key) => {
+                       serviceMap[key]['id'] = key;
+                       serviceList.push(serviceMap[key]);                       
+                    });    
+                    this.serviceMap = serviceMap;
+                    resolve(serviceList);
+                }  
+               else if(data.message){
+                   this.message = data.message;                   
+               }        
             })   
            .catch((e) => {
                 //this.$scope.message = ('Failed to callClusterService : '+serviceName+' Caused : '+e);    
@@ -288,7 +258,7 @@ export default class ServiceController {
         this.$state.go('base.console.edit.service.select', {serviceID});
     }
 
-    onCall({cache, updated}) {
-        return {id: this.clusterID, cache:cache, updated:updated};
+    onCall({name, updated}) {
+        return {id: this.clusterID, serviceName:name, updated:updated};
     }
 }

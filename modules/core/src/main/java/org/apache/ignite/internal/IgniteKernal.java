@@ -103,7 +103,6 @@ import org.apache.ignite.configuration.CollectionConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.MemoryConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.binary.BinaryEnumCache;
@@ -278,7 +277,6 @@ import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MARSHALLER;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MARSHALLER_COMPACT_FOOTER;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MARSHALLER_USE_BINARY_STRING_SER_VER_2;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MARSHALLER_USE_DFLT_SUID;
-import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MEMORY_CONFIG;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_NODE_CONSISTENT_ID;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_OFFHEAP_SIZE;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_PEER_CLASSLOADING;
@@ -1897,17 +1895,7 @@ public class IgniteKernal implements IgniteEx, Externalizable {
     /**
      * @throws IgniteCheckedException If duplicated SPI name found.
      */
-    private void addDataStorageConfigurationAttributes() throws IgniteCheckedException {
-        MemoryConfiguration memCfg = cfg.getMemoryConfiguration();
-
-        // Save legacy memory configuration if it's present.
-        if (memCfg != null) {
-            // Page size initialization is suspended, see IgniteCacheDatabaseSharedManager#checkPageSize.
-            // We should copy initialized value from new configuration.
-            memCfg.setPageSize(cfg.getDataStorageConfiguration().getPageSize());
-
-            add(ATTR_MEMORY_CONFIG, memCfg);
-        }
+    private void addDataStorageConfigurationAttributes() throws IgniteCheckedException {        
 
         // Save data storage configuration.
         add(ATTR_DATA_STORAGE_CONFIG, new JdkMarshaller().marshal(cfg.getDataStorageConfiguration()));

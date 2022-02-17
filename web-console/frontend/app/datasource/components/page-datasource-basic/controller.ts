@@ -100,19 +100,7 @@ export default class PageDatasourceBasicController {
        
     }
 
-    addCache() {
-        this.ConfigureState.dispatchAction({type: 'ADD_CACHE_TO_EDIT'});
-    }
-
-    removeCache(cache) {
-        this.ConfigureState.dispatchAction(
-            removeClusterItems(this.$uiRouter.globals.params.clusterID, 'caches', [cache.id], false, false)
-        );
-    }
-
-    changeCache(cache) {
-        return this.ConfigureState.dispatchAction(changeItem('caches', cache));
-    }
+   
 
     save(download = false) {
         if (this.form.$invalid)

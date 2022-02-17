@@ -21,9 +21,7 @@ export default {
     controller,
     templateUrl,
     bindings: {
-        cache: '<',
-        caches: '<',
-        models: '<',
+        service: '<',   
         onCall: '&'
     }
 };

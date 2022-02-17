@@ -24,7 +24,7 @@ import ConfigSelectors from '../../../configuration/store/selectors';
 import Caches from '../../../configuration/services/Caches';
 import Services from '../../services/Services';
 import Version from 'app/services/Version.service';
-import {ShortCache} from '../../types';
+import {ShortCache} from 'app/configuration/types';
 import {IColumnDefOf} from 'ui-grid';
 import AgentManager from 'app/modules/agent/AgentManager.service';
 // Controller for Caches screen.
@@ -111,8 +111,6 @@ export default class CacheServiceController {
             filter((v) => v),
             take(1)
         );
-       
-        
         
         this.serviceMap = {'status':{ id: 'status', name:'status', description:'get cluster last status', mode: 'NodeSinger'}};
         this.serviceList = [];        
@@ -122,6 +120,7 @@ export default class CacheServiceController {
             this.callService('serviceList').then((data) => {
                 if(data.message){
                     this.message = data.message;
+                    return;
                 }  
                 this.serviceMap = Object.assign(data.result);
                 Object.keys(this.serviceMap).forEach((key) => {
@@ -142,7 +141,7 @@ export default class CacheServiceController {
 
         this.isNew$ = cacheID$.pipe(map((id) => id === 'new'));
         this.itemEditTitle$ = combineLatest(this.isNew$, this.originalCache$, (isNew, cache) => {
-            return `${isNew ? 'Create' : 'Edit'} cache ${!isNew && !!cache && cache.name ? `‘${cache.name}’` : ''}`;
+            return `${isNew ? 'Create' : 'Select'} cache ${!isNew && !!cache && cache.name ? `‘${cache.name}’` : ''}`;
         });
         this.selectionManager = this.configSelectionManager({
             itemID$: cacheID$,
@@ -192,11 +191,14 @@ export default class CacheServiceController {
     }
 
     call(itemIDs: Array<string>, serviceName: string) {
-       this.callService(serviceName,{caches:itemIDs}).then((data) => {
-            if(data.message){
-                this.message = data.message;
-            }
-       });  
+       let cacheNames$ = this.ConfigureState.state$.pipe(this.ConfigSelectors.selectCacheNames(itemIDs));
+       cacheNames$.subscribe((cacheNames)=>{
+           this.callService(serviceName,{caches:cacheNames}).then((data) => {
+                if(data.message){
+                    this.message = data.message;
+                }
+           });  
+       });
     }
 
     $onDestroy() {
@@ -213,7 +215,8 @@ export default class CacheServiceController {
                 if(data.result){
                     resolve(data);
                 }    
-                else if(data.message){                    
+                else if(data.message){
+                    this.message = data.message;
                     resolve(data)
                 }                 
             })   

@@ -83,9 +83,6 @@ public class VisorBasicConfiguration extends VisorDataTransferObject {
     /** Logger used on node. */
     private String log;
 
-    /** Discovery startup delay. */
-    private long discoStartupDelay;
-
     /** MBean server name */
     private String mBeanSrv;
 
@@ -183,7 +180,7 @@ public class VisorBasicConfiguration extends VisorDataTransferObject {
         restart = ignite.isRestartEnabled();
         netTimeout = c.getNetworkTimeout();
         log = compactClass(c.getGridLogger());
-        discoStartupDelay = c.getDiscoveryStartupDelay();
+       
         mBeanSrv = compactClass(c.getMBeanServer());
         noAscii = boolValue(IGNITE_NO_ASCII, false);
         noDiscoOrder = boolValue(IGNITE_NO_DISCO_ORDER, false);
@@ -287,13 +284,7 @@ public class VisorBasicConfiguration extends VisorDataTransferObject {
         return log;
     }
 
-    /**
-     * @return Discovery startup delay.
-     */
-    public long getDiscoStartupDelay() {
-        return discoStartupDelay;
-    }
-
+    
     /**
      * @return MBean server name
      */
@@ -477,7 +468,7 @@ public class VisorBasicConfiguration extends VisorDataTransferObject {
         out.writeBoolean(restart);
         out.writeLong(netTimeout);
         U.writeString(out, log);
-        out.writeLong(discoStartupDelay);
+        
         U.writeString(out, mBeanSrv);
         out.writeBoolean(noAscii);
         out.writeBoolean(noDiscoOrder);
@@ -517,7 +508,7 @@ public class VisorBasicConfiguration extends VisorDataTransferObject {
         restart = in.readBoolean();
         netTimeout = in.readLong();
         log = U.readString(in);
-        discoStartupDelay = in.readLong();
+        
         mBeanSrv = U.readString(in);
         noAscii = in.readBoolean();
         noDiscoOrder = in.readBoolean();

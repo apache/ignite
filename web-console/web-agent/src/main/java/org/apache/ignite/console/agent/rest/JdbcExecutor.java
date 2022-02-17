@@ -57,6 +57,7 @@ import org.apache.ignite.logger.slf4j.Slf4jLogger;
 import org.eclipse.jetty.util.StringUtil;
 import org.h2.message.DbException;
 import org.h2.value.DataType;
+import org.json.JSONArray;
 import org.json.JSONObject;
 import org.slf4j.LoggerFactory;
 
@@ -139,11 +140,11 @@ public class JdbcExecutor implements AutoCloseable {
             	else {
             		conn = metadataReader.connect(null, jdbcDriverCls, jdbcUrl, jdbcInfo);
             	}
-            	JSONObject res;
+            	JSONObject res = new JSONObject();
             	if("org.apache.ignite.internal.visor.cache.VisorCacheNamesCollectorTask".equals(p2)) {
             		
             		Collection<String> schemas = metadataReader.schemas(conn,importSamples);
-            		res = new JSONObject();
+            		
                     JSONObject result = new JSONObject();
                     JSONObject caches = new JSONObject();
             		
@@ -155,6 +156,12 @@ public class JdbcExecutor implements AutoCloseable {
                     result.put("protocolVersion", 1);
                     res.put("result", result);
                    
+            	}
+            	else if("org.apache.ignite.internal.visor.cache.VisorCacheNodesTask".equals(p2)) {
+            		
+                    JSONArray result = new JSONArray();                    
+                    result.put(clusterId);                    
+                    res.put("result", result);                   
             	}
             	else if("metadata".equals(cmd)) {
             		
@@ -233,7 +240,7 @@ public class JdbcExecutor implements AutoCloseable {
             		
             	}
             	else {
-            		return null;
+            		//return null;
             	}
             	res.put("error", (String)null);
             	res.put("id", "~"+clusterId);

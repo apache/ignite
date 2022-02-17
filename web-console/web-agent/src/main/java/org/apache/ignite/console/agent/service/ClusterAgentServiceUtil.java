@@ -18,17 +18,17 @@ public class ClusterAgentServiceUtil  {
 	
 	public static List<String> cacheSelectList(Ignite ignite,JsonObject args) {		
 		int count = 0;		
-		String cacheId = null;
+		String cacheName = null;
 			
 		JsonArray selectCaches = args.getJsonArray("caches");
 		if(args.get("cache")!=null) {
-			cacheId = args.getJsonObject("cache").getString("id");
+			cacheName = args.getJsonObject("cache").getString("name");
 		}		
 		List<String> list = new ArrayList<>();
 		for(String cache: ignite.cacheNames()) {			
 			IgniteCache<?,?> igcache = ignite.cache(cache);
-			if(cacheId!=null) {
-				if(!igcache.getName().equals(cacheId)) {
+			if(cacheName!=null && !cacheName.isEmpty()) {
+				if(!igcache.getName().equals(cacheName)) {
 					continue;
 				}
 			}

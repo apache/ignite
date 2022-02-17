@@ -43,7 +43,7 @@ export default class PageDatasourceController {
         const isNew$ = this.clusterID$.pipe(map((v) => v === 'new'));
 
         this.clusterName$ = combineLatest(cluster$, isNew$, (cluster, isNew) => {
-            return `${isNew ? 'Create' : 'Edit'} DataSource configuration ${isNew ? '' : `‘${get(cluster, 'dbName')}’`}`;
+            return `${isNew ? 'Create' : 'Edit'} DataSource configuration ${isNew ? '' : `‘${get(cluster, 'id','')}’`}`;
         });
     }
 

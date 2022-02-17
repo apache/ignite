@@ -14,17 +14,11 @@
  * limitations under the License.
  */
 
-import controller from './controller';
-import templateUrl from './template.tpl.pug';
-import './style.scss';
+import angular from 'angular';
 
-export default {
-    controller,
-    templateUrl,
-    bindings: {
-        isNew: '<',
-        cluster: '<',
-        caches: '<',
-        onSave: '&'
-    }
-};
+import component from './component';
+import commandCallForm from './components/command-call-form';
+
+export default angular
+    .module('ignite-console.cluster-control-overview', [commandCallForm.name])    
+    .component('clusterControlOverview', component);

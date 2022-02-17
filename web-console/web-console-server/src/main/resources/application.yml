@@ -12,3 +12,6 @@ logging.config: classpath:META-INF/log4j2.xml
 #    key-store-type: JKS
 #    key-store: certificates/server.jks
 #    key-store-password: change_me
+
+spring.mail:
+  defaultTemplatePath: templates/mail/base.html

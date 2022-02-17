@@ -39,7 +39,7 @@ const shortCachesResolve = ['ConfigSelectors', 'ConfigureState', 'ConfigEffects'
 
 function registerStates($stateProvider) {
     // Setup the states.
-    $stateProvider
+  $stateProvider
     .state('base.console', {
         permission: 'configuration',
         url: '/console',
@@ -204,7 +204,23 @@ function registerStates($stateProvider) {
             async: 'NOWAIT'
         },
         tfMetaTags: {
-            title: 'Configure Cluster'
+            title: 'Control Cluster'
+        }
+    })
+    .state('base.console.edit.advanced.cluster.command', {
+        url: `/{serviceID}`,
+        permission: 'configuration',
+        resolve: {
+            
+        },
+        data: {
+            errorState: 'base.console.edit.advanced.cluster'
+        },
+        resolvePolicy: {
+            async: 'NOWAIT'
+        },
+        tfMetaTags: {
+            title: 'Configure Cluster Command'
         }
     })
     .state('base.console.edit.advanced.caches', {

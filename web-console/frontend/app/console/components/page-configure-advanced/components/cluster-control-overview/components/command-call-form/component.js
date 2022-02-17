@@ -13,8 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import controller from './controller';
+import templateUrl from './template.tpl.pug';
+import './style.scss';
 
-export const defaultNames = {
-    cluster: 'Cluster',
-    cache: 'Cache'   
+export default {
+    controller,
+    templateUrl,
+    bindings: {
+        service: '<',   
+        onCall: '&'
+    }
 };

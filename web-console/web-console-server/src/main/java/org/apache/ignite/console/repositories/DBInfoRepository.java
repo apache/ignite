@@ -69,6 +69,16 @@ public class DBInfoRepository {
             return datasourceTbl.loadAll(notebooksIds);
         });
     }
+    
+    /**
+     * @param accId Account ID.
+     * @return List of notebooks for specified account.
+     */
+    public DBInfoDto get(UUID accId,UUID datasourceID) {
+        return txMgr.doInTransaction(() -> {
+            return datasourceTbl.get(datasourceID);
+        });
+    }
 
     /**
      * Save notebook.
