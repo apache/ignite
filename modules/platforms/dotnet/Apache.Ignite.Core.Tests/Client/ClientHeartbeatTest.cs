@@ -68,17 +68,16 @@ namespace Apache.Ignite.Core.Tests.Client
         }
 
         [Test]
-        public void TestDefaultZeroIdleTimeoutUsesDefaultHeartbeatInterval()
+        public void TestDefaultZeroIdleTimeoutUsesFallbackHeartbeatInterval()
         {
             using var ignite = Ignition.Start(TestUtils.GetTestConfiguration(name: "2"));
             using var client = GetClient(enableHeartbeats: true, port: IgniteClientConfiguration.DefaultPort + 1);
 
-            Assert.AreEqual(IgniteClientConfiguration.DefaultHeartbeatInterval,
-                client.GetConfiguration().HeartbeatInterval);
+            Assert.AreEqual(TimeSpan.Zero, client.GetConfiguration().HeartbeatInterval);
 
             StringAssert.Contains(
                 "Server-side IdleTimeout is not set, " +
-                "using IgniteClientConfiguration.HeartbeatInterval: 00:00:30", GetLogString(client));
+                "using IgniteClientConfiguration.FallbackHeartbeatInterval: 00:00:30", GetLogString(client));
         }
 
         protected override IgniteConfiguration GetIgniteConfiguration()

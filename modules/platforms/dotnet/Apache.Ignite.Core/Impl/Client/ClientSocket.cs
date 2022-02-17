@@ -180,25 +180,7 @@ namespace Apache.Ignite.Core.Impl.Client
             {
                 if (_features.HasFeature(ClientBitmaskFeature.Heartbeat))
                 {
-                    var serverIdleTimeoutMs = DoOutInOp(
-                        ClientOp.GetIdleTimeout, null, r => r.Reader.ReadLong());
-
-                    if (serverIdleTimeoutMs > 0)
-                    {
-                        // ReSharper disable once PossibleLossOfFraction
-                        _heartbeatInterval = TimeSpan.FromMilliseconds(serverIdleTimeoutMs / 3);
-
-                        _logger.Info($"Server-side IdleTimeout is {serverIdleTimeoutMs}ms, " +
-                                     $"using 1/3 of it as heartbeat interval: {_heartbeatInterval}");
-                    }
-                    else
-                    {
-                        _heartbeatInterval = clientConfiguration.HeartbeatInterval;
-
-                        _logger.Info(
-                            $"Server-side IdleTimeout is not set, using {nameof(IgniteClientConfiguration)}." +
-                            $"{nameof(IgniteClientConfiguration.HeartbeatInterval)}: {_heartbeatInterval}");
-                    }
+                    _heartbeatInterval = GetHeartbeatInterval(clientConfiguration);
 
                     _heartbeatTimer = new Timer(SendHeartbeat, null, dueTime: _heartbeatInterval,
                         period: TimeSpan.FromMilliseconds(-1));
@@ -219,6 +201,54 @@ namespace Apache.Ignite.Core.Impl.Client
             // Continuously and asynchronously wait for data from server.
             // TaskCreationOptions.LongRunning actually means a new thread.
             TaskRunner.Run(WaitForMessages, TaskCreationOptions.LongRunning);
+        }
+
+        /// <summary>
+        /// Gets the heartbeat interval according to server-side and client-side configuration.
+        /// </summary>
+        private TimeSpan GetHeartbeatInterval(IgniteClientConfiguration clientConfiguration)
+        {
+            var serverIdleTimeoutMs = DoOutInOp(
+                ClientOp.GetIdleTimeout, null, r => r.Reader.ReadLong());
+
+            // ReSharper disable once PossibleLossOfFraction
+            var recommendedHeartbeatInterval = TimeSpan.FromMilliseconds(serverIdleTimeoutMs / 3);
+
+            if (recommendedHeartbeatInterval > TimeSpan.Zero)
+            {
+                if (clientConfiguration.HeartbeatInterval > TimeSpan.Zero &&
+                    clientConfiguration.HeartbeatInterval < recommendedHeartbeatInterval)
+                {
+                    _logger.Info(
+                        $"Server-side IdleTimeout is {serverIdleTimeoutMs}ms, " +
+                        $"using configured {nameof(IgniteClientConfiguration)}." +
+                        $"{nameof(IgniteClientConfiguration.HeartbeatInterval)}: " +
+                        clientConfiguration.HeartbeatInterval);
+
+                    return clientConfiguration.HeartbeatInterval;
+                }
+
+                _logger.Info($"Server-side IdleTimeout is {serverIdleTimeoutMs}ms, " +
+                             $"using 1/3 of it as heartbeat interval: {recommendedHeartbeatInterval}");
+
+                return recommendedHeartbeatInterval;
+            }
+
+            if (clientConfiguration.HeartbeatInterval > TimeSpan.Zero)
+            {
+                _logger.Info(
+                    $"Server-side IdleTimeout is not set, using configured {nameof(IgniteClientConfiguration)}." +
+                    $"{nameof(IgniteClientConfiguration.HeartbeatInterval)}: {clientConfiguration.HeartbeatInterval}");
+
+                return clientConfiguration.HeartbeatInterval;
+            }
+
+            _logger.Info(
+                $"Server-side IdleTimeout is not set, using {nameof(IgniteClientConfiguration)}." +
+                $"{nameof(IgniteClientConfiguration.FallbackHeartbeatInterval)}: " +
+                IgniteClientConfiguration.FallbackHeartbeatInterval);
+
+            return IgniteClientConfiguration.FallbackHeartbeatInterval;
         }
 
         /// <summary>
