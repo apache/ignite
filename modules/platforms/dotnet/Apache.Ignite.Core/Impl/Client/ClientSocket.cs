@@ -227,8 +227,11 @@ namespace Apache.Ignite.Core.Impl.Client
                     return clientConfiguration.HeartbeatInterval;
                 }
 
-                _logger.Info($"Server-side IdleTimeout is {serverIdleTimeoutMs}ms, " +
-                             $"using 1/3 of it as heartbeat interval: {recommendedHeartbeatInterval}");
+                _logger.Warn(
+                    $"Server-side IdleTimeout is {serverIdleTimeoutMs}ms, configured " +
+                    $"{nameof(IgniteClientConfiguration)}.{nameof(IgniteClientConfiguration.HeartbeatInterval)} " +
+                    $"is {clientConfiguration.HeartbeatInterval}, which is longer than recommended IdleTimeout / 3. " +
+                    $"Overriding heartbeat interval with IdleTimeout / 3: {recommendedHeartbeatInterval}");
 
                 return recommendedHeartbeatInterval;
             }

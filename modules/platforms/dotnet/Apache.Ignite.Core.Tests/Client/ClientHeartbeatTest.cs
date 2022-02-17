@@ -63,10 +63,6 @@ namespace Apache.Ignite.Core.Tests.Client
             Assert.IsTrue(client.GetConfiguration().EnableHeartbeats);
             Assert.AreEqual(1, client.GetCacheNames().Count);
 
-            StringAssert.Contains(
-                "Server-side IdleTimeout is 2000ms, using 1/3 of it as heartbeat interval: 00:00:00.6660000",
-                GetLogString(client));
-
             Thread.Sleep(IdleTimeout * 3);
 
             Assert.DoesNotThrow(() => client.GetCacheNames());
@@ -105,7 +101,9 @@ namespace Apache.Ignite.Core.Tests.Client
             Assert.AreEqual(TimeSpan.FromMilliseconds(3000), client.GetConfiguration().HeartbeatInterval);
 
             StringAssert.Contains(
-                "Server-side IdleTimeout is 2000ms, using 1/3 of it as heartbeat interval: 00:00:00.6660000",
+                "Server-side IdleTimeout is 2000ms, configured IgniteClientConfiguration.HeartbeatInterval is " +
+                "00:00:03, which is longer than recommended IdleTimeout / 3. " +
+                "Overriding heartbeat interval with IdleTimeout / 3: 00:00:00.6660000",
                 GetLogString(client));
         }
 
