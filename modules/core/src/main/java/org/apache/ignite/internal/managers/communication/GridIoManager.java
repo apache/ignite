@@ -3160,8 +3160,8 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
      * session. There are two types of handlers available:
      * {@link TransmissionHandler#chunkHandler(UUID, TransmissionMeta)} and
      * {@link TransmissionHandler#fileHandler(UUID, TransmissionMeta)}. You can use an appropriate
-     * {@link TransmissionPolicy} for {@link #send(File, long, long, Map, TransmissionPolicy)} method to switch
-     * between them.
+     * {@link TransmissionPolicy} for {@link #send(File, long, long, Map, TransmissionPolicy, FileIOFactory)} method
+     * to switch between them.
      *
      * <h2>Exceptions handling</h2>
      * <p>
