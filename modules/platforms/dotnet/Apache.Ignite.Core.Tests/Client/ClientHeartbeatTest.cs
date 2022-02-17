@@ -49,7 +49,7 @@ namespace Apache.Ignite.Core.Tests.Client
 
             Assert.AreEqual(1, client.GetCacheNames().Count);
 
-            Thread.Sleep(IdleTimeout * 3);
+            Thread.Sleep(IdleTimeout * 4);
 
             Assert.Catch(() => client.GetCacheNames());
         }
