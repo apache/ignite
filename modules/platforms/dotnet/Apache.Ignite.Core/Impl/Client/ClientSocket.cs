@@ -185,7 +185,8 @@ namespace Apache.Ignite.Core.Impl.Client
 
                     if (serverIdleTimeoutMs > 0)
                     {
-                        _heartbeatInterval = TimeSpan.FromMilliseconds((long)(serverIdleTimeoutMs / 3));
+                        // ReSharper disable once PossibleLossOfFraction
+                        _heartbeatInterval = TimeSpan.FromMilliseconds(serverIdleTimeoutMs / 3);
 
                         _logger.Info($"Server-side IdleTimeout is {serverIdleTimeoutMs}ms, " +
                                      $"using 1/3 of it as heartbeat interval: {_heartbeatInterval}");
