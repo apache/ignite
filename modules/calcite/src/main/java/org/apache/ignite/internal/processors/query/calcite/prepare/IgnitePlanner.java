@@ -64,11 +64,13 @@ import org.apache.calcite.sql.SqlOperatorTable;
 import org.apache.calcite.sql.parser.SqlParseException;
 import org.apache.calcite.sql.parser.SqlParser;
 import org.apache.calcite.sql.validate.SqlValidator;
+import org.apache.calcite.sql2rel.RelDecorrelator;
 import org.apache.calcite.sql2rel.SqlRexConvertletTable;
 import org.apache.calcite.sql2rel.SqlToRelConverter;
 import org.apache.calcite.tools.FrameworkConfig;
 import org.apache.calcite.tools.Planner;
 import org.apache.calcite.tools.Program;
+import org.apache.calcite.tools.RelBuilder;
 import org.apache.calcite.tools.RuleSets;
 import org.apache.calcite.tools.ValidationException;
 import org.apache.calcite.util.Pair;
@@ -474,6 +476,13 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
         };
 
         return relShuttle.visit(rel);
+    }
+
+    /** */
+    public RelNode decorrelate(RelNode rel) {
+        RelBuilder builder = ctx.config().getSqlToRelConverterConfig().getRelBuilderFactory().create(cluster(), null);
+
+        return RelDecorrelator.decorrelateQuery(rel, builder);
     }
 
     /** */

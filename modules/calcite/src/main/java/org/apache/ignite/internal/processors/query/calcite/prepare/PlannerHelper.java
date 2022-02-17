@@ -19,7 +19,7 @@ package org.apache.ignite.internal.processors.query.calcite.prepare;
 
 import java.util.ArrayList;
 import java.util.List;
-
+import java.util.Set;
 import com.google.common.collect.ImmutableSet;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelCollations;
@@ -49,6 +49,15 @@ import org.apache.ignite.internal.processors.query.calcite.util.HintUtils;
 
 /** */
 public class PlannerHelper {
+    /** */
+    public static final String DECORRELATE_RULE_NAME = "Decorrelate";
+
+    /** */
+    public static final String TRIM_FIELDS_RULE_NAME = "TrimUnusedFields";
+
+    /** */
+    public static final String REPLACE_CORRELATES_COLLISIONS_RULE_NAME = "ReplaceCorrelatesCollisions";
+
     /**
      * Default constructor.
      */
@@ -68,15 +77,22 @@ public class PlannerHelper {
 
             RelNode rel = root.rel;
 
-            if (HintUtils.containsDisabledRules(root.hints))
-                planner.setDisabledRules(HintUtils.disabledRules(root.hints));
+            Set<String> disabledRules = HintUtils.disabledRules(root.hints);
+
+            if (!disabledRules.isEmpty())
+                planner.setDisabledRules(disabledRules);
 
             // Transformation chain
-            rel = planner.transform(PlannerPhase.HEP_DECORRELATE, rel.getTraitSet(), rel);
+            rel = planner.transform(PlannerPhase.HEP_SUBQUERY_REWRITE, rel.getTraitSet(), rel);
 
-            rel = planner.replaceCorrelatesCollisions(rel);
+            if (!disabledRules.contains(REPLACE_CORRELATES_COLLISIONS_RULE_NAME))
+                rel = planner.replaceCorrelatesCollisions(rel);
 
-            rel = planner.trimUnusedFields(root.withRel(rel)).rel;
+            if (!disabledRules.contains(DECORRELATE_RULE_NAME))
+                rel = planner.decorrelate(rel);
+
+            if (!disabledRules.contains(TRIM_FIELDS_RULE_NAME))
+                rel = planner.trimUnusedFields(root.withRel(rel)).rel;
 
             rel = planner.transform(PlannerPhase.HEP_FILTER_PUSH_DOWN, rel.getTraitSet(), rel);
 

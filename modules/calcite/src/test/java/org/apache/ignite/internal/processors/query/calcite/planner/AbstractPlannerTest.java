@@ -58,6 +58,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheContextInfo;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.failure.FailureProcessor;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
+import org.apache.ignite.internal.processors.query.calcite.TestUtils;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.processors.query.calcite.exec.QueryTaskExecutorImpl;
 import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler;
@@ -219,6 +220,9 @@ public abstract class AbstractPlannerTest extends GridCommonAbstractTest {
 
     /** */
     protected PlanningContext plannerCtx(String sql, Collection<IgniteSchema> schemas, String... disabledRules) {
+        if (!F.isEmpty(disabledRules))
+            sql = injectHints(sql, disabledRules);
+
         PlanningContext ctx = PlanningContext.builder()
             .parentContext(baseQueryContext(schemas))
             .query(sql)
@@ -228,23 +232,32 @@ public abstract class AbstractPlannerTest extends GridCommonAbstractTest {
 
         assertNotNull(planner);
 
+        // In case we have not SELECT statement or already have hint in query.
         planner.setDisabledRules(ImmutableSet.copyOf(disabledRules));
 
         return ctx;
     }
 
     /** */
+    private static String injectHints(String sql, String... disabledRules) {
+        if ("SELECT".equalsIgnoreCase(sql.substring(0, 6)) && !sql.contains("/*+"))
+            return "SELECT " + TestUtils.disableRuleHint(disabledRules) + sql.substring(6);
+        else
+            return sql;
+    }
+
+    /** */
     protected IgniteRel physicalPlan(String sql, IgniteSchema publicSchema, String... disabledRules) throws Exception {
-        return physicalPlan(sql, plannerCtx(sql, publicSchema, disabledRules));
+        return physicalPlan(plannerCtx(sql, publicSchema, disabledRules));
     }
 
     /** */
     protected IgniteRel physicalPlan(String sql, Collection<IgniteSchema> schemas, String... disabledRules) throws Exception {
-        return physicalPlan(sql, plannerCtx(sql, schemas, disabledRules));
+        return physicalPlan(plannerCtx(sql, schemas, disabledRules));
     }
 
     /** */
-    protected IgniteRel physicalPlan(String sql, PlanningContext ctx) throws Exception {
+    protected IgniteRel physicalPlan(PlanningContext ctx) throws Exception {
         try (IgnitePlanner planner = ctx.planner()) {
             assertNotNull(planner);
 
@@ -260,8 +273,6 @@ public abstract class AbstractPlannerTest extends GridCommonAbstractTest {
 
             try {
                 IgniteRel rel = PlannerHelper.optimize(sqlNode, planner, log);
-
-//                System.out.println(RelOptUtil.toString(rel));
 
                 return rel;
             }
