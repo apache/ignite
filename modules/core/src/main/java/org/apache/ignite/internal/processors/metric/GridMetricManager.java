@@ -145,9 +145,6 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
     private static final OperatingSystemMXBean os = ManagementFactory.getOperatingSystemMXBean();
 
     /** */
-    private static final SunOperatingSystemMXBeanAccessor sunOs = sunOperatingSystemMXBeanAccessor();
-
-    /** */
     private static final RuntimeMXBean rt = ManagementFactory.getRuntimeMXBean();
 
     /** */
@@ -192,6 +189,9 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
     /** Nonheap memory metrics. */
     private final MemoryUsageMetrics nonHeap;
 
+    /** */
+    private final SunOperatingSystemMXBeanAccessor sunOs;
+
     /**
      * @param ctx Kernal context.
      */
@@ -216,6 +216,8 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
 
             return spiWithSql;
         }).get());
+
+        sunOs = sunOperatingSystemMXBeanAccessor();
 
         ctx.addNodeAttribute(ATTR_PHY_RAM, totalSysMemory());
 
@@ -297,11 +299,6 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
                     GridMetricManager.this.metastorage = metastorage;
                 }
             });
-
-        if (!sunOperatingSystemMXBeanAvailable()) {
-            log.warning("The 'com.sun.management.OperatingSystemMXBean' class is not available. " +
-                "System/JVM memory and CPU statistics may be not available.");
-        }
     }
 
     /** {@inheritDoc} */
@@ -583,32 +580,28 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
         }
     }
 
-    /** @return {@code True} if {@link com.sun.management.OperatingSystemMXBean} is available. */
-    private static boolean sunOperatingSystemMXBeanAvailable() {
+    /** @return Accessor for {@link com.sun.management.OperatingSystemMXBean}. */
+    private SunOperatingSystemMXBeanAccessor sunOperatingSystemMXBeanAccessor() {
         try {
-            return os instanceof com.sun.management.OperatingSystemMXBean;
+            if (os instanceof com.sun.management.OperatingSystemMXBean) {
+                com.sun.management.OperatingSystemMXBean sunOs = (com.sun.management.OperatingSystemMXBean)os;
+
+                return new SunOperatingSystemMXBeanAccessor() {
+                    @Override public long getProcessCpuTime() {
+                        return sunOs.getProcessCpuTime();
+                    }
+
+                    @Override public long getTotalPhysicalMemorySize() {
+                        return sunOs.getTotalPhysicalMemorySize();
+                    }
+                };
+            }
         } catch (@SuppressWarnings("ErrorNotRethrown") NoClassDefFoundError ignored) {
             // com.sun.management.OperatingSystemMXBean does not exist.
         }
 
-        return false;
-    }
-
-    /** @return Accessor for {@link com.sun.management.OperatingSystemMXBean}. */
-    private static SunOperatingSystemMXBeanAccessor sunOperatingSystemMXBeanAccessor() {
-        if (sunOperatingSystemMXBeanAvailable()) {
-            com.sun.management.OperatingSystemMXBean sunOs = (com.sun.management.OperatingSystemMXBean)os;
-
-            return new SunOperatingSystemMXBeanAccessor() {
-                @Override public long getProcessCpuTime() {
-                    return sunOs.getProcessCpuTime();
-                }
-
-                @Override public long getTotalPhysicalMemorySize() {
-                    return sunOs.getTotalPhysicalMemorySize();
-                }
-            };
-        }
+        log.warning("The 'com.sun.management.OperatingSystemMXBean' class is not available for class loader. " +
+            "System/JVM memory and CPU statistics may be not available.");
 
         return new SunOperatingSystemMXBeanAccessor() {
             @Override public long getProcessCpuTime() {
