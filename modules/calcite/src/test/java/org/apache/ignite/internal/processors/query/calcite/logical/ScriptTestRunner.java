@@ -149,17 +149,15 @@ public class ScriptTestRunner extends Runner {
 
         Description desc = Description.createTestDescription(dirName, fileName);
 
-        if (fileName.endsWith(".test_ignore")) {
-            notifier.fireTestIgnored(desc);
+        if (testRegex != null && !testRegex.matcher(test.toString()).find())
+            return;
+
+        if (testRegex == null && !fileName.endsWith(".test") && !fileName.endsWith(".test_slow")) {
+            if (fileName.endsWith(".test_ignore"))
+                notifier.fireTestIgnored(desc);
 
             return;
         }
-
-        if (
-            (!fileName.endsWith(".test") && !fileName.endsWith(".test_slow") && testRegex == null)
-                || (testRegex != null && !testRegex.matcher(test.toString()).find())
-        )
-            return;
 
         beforeTest();
 
