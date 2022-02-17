@@ -300,7 +300,7 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
 
         if (!sunOperatingSystemMXBeanAvailable()) {
             log.warning("The 'com.sun.management.OperatingSystemMXBean' class is not available. " +
-                "System/JVM memory and CPU statistics will not be available.");
+                "System/JVM memory and CPU statistics may be not be available.");
         }
     }
 
@@ -612,11 +612,11 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
 
         return new SunOperatingSystemMXBeanAccessor() {
             @Override public long getProcessCpuTime() {
-                return -1;
+                return U.<Long>property(os, "processCpuTime");
             }
 
             @Override public long getTotalPhysicalMemorySize() {
-                return -1;
+                return U.<Long>property(os, "totalPhysicalMemorySize");
             }
         };
     }
