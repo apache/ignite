@@ -145,6 +145,9 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
     private static final OperatingSystemMXBean os = ManagementFactory.getOperatingSystemMXBean();
 
     /** */
+    private static final SunOperatingSystemMXBeanAccessor sunOs = sunOperatingSystemMXBeanAccessor();
+
+    /** */
     private static final RuntimeMXBean rt = ManagementFactory.getRuntimeMXBean();
 
     /** */
@@ -568,13 +571,40 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
      */
     private long totalSysMemory() {
         try {
-            com.sun.management.OperatingSystemMXBean sunOs = (com.sun.management.OperatingSystemMXBean)os;
-
             return sunOs.getTotalPhysicalMemorySize();
         }
         catch (RuntimeException ignored) {
             return -1;
         }
+    }
+
+    /** @return Accessor for {@link com.sun.management.OperatingSystemMXBean}. */
+    private static SunOperatingSystemMXBeanAccessor sunOperatingSystemMXBeanAccessor() {
+        try {
+            com.sun.management.OperatingSystemMXBean sunOs = (com.sun.management.OperatingSystemMXBean)os;
+
+            return new SunOperatingSystemMXBeanAccessor() {
+                @Override public long getProcessCpuTime() {
+                    return sunOs.getProcessCpuTime();
+                }
+
+                @Override public long getTotalPhysicalMemorySize() {
+                    return sunOs.getTotalPhysicalMemorySize();
+                }
+            };
+        } catch (@SuppressWarnings("ErrorNotRethrown") NoClassDefFoundError ignored) {
+            // com.sun.management.OperatingSystemMXBean does not exist.
+        }
+
+        return new SunOperatingSystemMXBeanAccessor() {
+            @Override public long getProcessCpuTime() {
+                return -1;
+            }
+
+            @Override public long getTotalPhysicalMemorySize() {
+                return -1;
+            }
+        };
     }
 
     /** */
@@ -629,8 +659,6 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
             long cpuTime;
 
             try {
-                com.sun.management.OperatingSystemMXBean sunOs = (com.sun.management.OperatingSystemMXBean)os;
-
                 cpuTime = sunOs.getProcessCpuTime();
             }
             catch (RuntimeException ignored) {
@@ -694,5 +722,14 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
             committed.value(usage.getCommitted());
             max.value(usage.getMax());
         }
+    }
+
+    /** Accessor for {@link com.sun.management.OperatingSystemMXBean} methods. */
+    private interface SunOperatingSystemMXBeanAccessor {
+        /** @see com.sun.management.OperatingSystemMXBean#getProcessCpuTime() */
+        long getProcessCpuTime();
+
+        /** @see com.sun.management.OperatingSystemMXBean#getTotalPhysicalMemorySize() */
+        long getTotalPhysicalMemorySize();
     }
 }
