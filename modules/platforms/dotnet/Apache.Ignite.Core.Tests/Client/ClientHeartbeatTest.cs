@@ -73,6 +73,9 @@ namespace Apache.Ignite.Core.Tests.Client
             using var ignite = Ignition.Start(TestUtils.GetTestConfiguration(name: "2"));
             using var client = GetClient(enableHeartbeats: true, port: IgniteClientConfiguration.DefaultPort + 1);
 
+            Assert.AreEqual(IgniteClientConfiguration.DefaultHeartbeatInterval,
+                client.GetConfiguration().HeartbeatInterval);
+
             StringAssert.Contains(
                 "Server-side IdleTimeout is not set, " +
                 "using IgniteClientConfiguration.HeartbeatInterval: 00:00:30", GetLogString(client));
