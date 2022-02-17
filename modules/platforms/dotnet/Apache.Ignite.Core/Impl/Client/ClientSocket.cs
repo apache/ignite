@@ -216,8 +216,7 @@ namespace Apache.Ignite.Core.Impl.Client
 
             if (recommendedHeartbeatInterval > TimeSpan.Zero)
             {
-                if (clientConfiguration.HeartbeatInterval > TimeSpan.Zero &&
-                    clientConfiguration.HeartbeatInterval < recommendedHeartbeatInterval)
+                if (clientConfiguration.HeartbeatInterval < recommendedHeartbeatInterval)
                 {
                     _logger.Info(
                         $"Server-side IdleTimeout is {serverIdleTimeoutMs}ms, " +
@@ -234,21 +233,11 @@ namespace Apache.Ignite.Core.Impl.Client
                 return recommendedHeartbeatInterval;
             }
 
-            if (clientConfiguration.HeartbeatInterval > TimeSpan.Zero)
-            {
-                _logger.Info(
-                    $"Server-side IdleTimeout is not set, using configured {nameof(IgniteClientConfiguration)}." +
-                    $"{nameof(IgniteClientConfiguration.HeartbeatInterval)}: {clientConfiguration.HeartbeatInterval}");
-
-                return clientConfiguration.HeartbeatInterval;
-            }
-
             _logger.Info(
-                $"Server-side IdleTimeout is not set, using {nameof(IgniteClientConfiguration)}." +
-                $"{nameof(IgniteClientConfiguration.FallbackHeartbeatInterval)}: " +
-                IgniteClientConfiguration.FallbackHeartbeatInterval);
+                $"Server-side IdleTimeout is not set, using configured {nameof(IgniteClientConfiguration)}." +
+                $"{nameof(IgniteClientConfiguration.HeartbeatInterval)}: {clientConfiguration.HeartbeatInterval}");
 
-            return IgniteClientConfiguration.FallbackHeartbeatInterval;
+            return clientConfiguration.HeartbeatInterval;
         }
 
         /// <summary>
@@ -273,6 +262,13 @@ namespace Apache.Ignite.Core.Impl.Client
 
                 if (cfg.UserName == null)
                     throw new IgniteClientException("IgniteClientConfiguration.UserName cannot be null when Password is set.");
+            }
+
+            if (cfg.HeartbeatInterval <= TimeSpan.Zero)
+            {
+                throw new IgniteClientException(
+                    $"{nameof(IgniteClientConfiguration)}.{nameof(IgniteClientConfiguration.HeartbeatInterval)} " +
+                    "cannot be zero or less.");
             }
         }
 

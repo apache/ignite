@@ -66,10 +66,9 @@ namespace Apache.Ignite.Core.Client
         public static readonly TimeSpan DefaultSocketTimeout = TimeSpan.FromMilliseconds(5000);
 
         /// <summary>
-        /// Fallback value for <see cref="HeartbeatInterval"/>
-        /// when server-side <see cref="ClientConnectorConfiguration.IdleTimeout"/> is not set.
+        /// Default value for <see cref="HeartbeatInterval"/>.
         /// </summary>
-        public static readonly TimeSpan FallbackHeartbeatInterval = TimeSpan.FromSeconds(30);
+        public static readonly TimeSpan DefaultHeartbeatInterval = TimeSpan.FromSeconds(30);
 
         /// <summary>
         /// Initializes a new instance of the <see cref="IgniteClientConfiguration"/> class.
@@ -288,15 +287,15 @@ namespace Apache.Ignite.Core.Client
         /// <summary>
         /// Sets the heartbeat message interval.
         /// <para />
-        /// Default is <see cref="TimeSpan.Zero"/>: determine interval automatically from server-side
-        /// <see cref="ClientConnectorConfiguration.IdleTimeout"/> divided by 3, or use
-        /// <see cref="FallbackHeartbeatInterval"/> when <see cref="ClientConnectorConfiguration.IdleTimeout"/>
+        /// Default is <see cref="DefaultHeartbeatInterval"/>. Client determines interval automatically
+        /// from server-side <see cref="ClientConnectorConfiguration.IdleTimeout"/> divided by 3, or uses
+        /// <see cref="DefaultHeartbeatInterval"/> when <see cref="ClientConnectorConfiguration.IdleTimeout"/>
         /// is not set on the server.
         /// <para />
         /// When thin client connection is idle (no operations are performed), heartbeat messages are sent periodically
         /// to keep the connection alive and detect potential half-open state.
         /// </summary>
-        public TimeSpan HeartbeatInterval { get; set; }
+        public TimeSpan HeartbeatInterval { get; set; } = DefaultHeartbeatInterval;
 
         /// <summary>
         /// Gets or sets custom binary processor. Internal property for tests.
