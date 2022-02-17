@@ -295,6 +295,7 @@ namespace Apache.Ignite.Core.Client
         /// When thin client connection is idle (no operations are performed), heartbeat messages are sent periodically
         /// to keep the connection alive and detect potential half-open state.
         /// </summary>
+        [DefaultValue(typeof(TimeSpan), "00:00:30")]
         public TimeSpan HeartbeatInterval { get; set; } = DefaultHeartbeatInterval;
 
         /// <summary>

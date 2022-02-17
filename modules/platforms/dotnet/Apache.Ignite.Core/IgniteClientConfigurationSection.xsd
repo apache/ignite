@@ -355,6 +355,11 @@
                     <xs:documentation>Heartbeat interval.</xs:documentation>
                 </xs:annotation>
             </xs:attribute>
+            <xs:attribute name="enableHeartbeats" type="xs:boolean">
+                <xs:annotation>
+                    <xs:documentation>Enables periodic heartbeat messages.</xs:documentation>
+                </xs:annotation>
+            </xs:attribute>
         </xs:complexType>
     </xs:element>
 </xs:schema>
