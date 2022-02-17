@@ -80,6 +80,11 @@ public class MaintenancePersistenceTaskTest extends GridCommonAbstractTest {
         cleanPersistenceDir();
     }
 
+    /**
+     * Tests that executing "persistence --info" after "persistence --clean" works.
+     *
+     * @throws Exception If failed.
+     */
     @Test
     public void testInfoAfterClean() throws Exception {
         IgniteEx server1 = startGrid("test1");
