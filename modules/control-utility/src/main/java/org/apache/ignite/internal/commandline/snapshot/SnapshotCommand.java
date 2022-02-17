@@ -21,7 +21,6 @@ import java.util.logging.Logger;
 import org.apache.ignite.internal.client.GridClientConfiguration;
 import org.apache.ignite.internal.commandline.AbstractCommand;
 import org.apache.ignite.internal.commandline.CommandArgIterator;
-import org.apache.ignite.internal.commandline.CommandLogger;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager;
 import org.apache.ignite.mxbean.SnapshotMXBean;
 
@@ -39,15 +38,7 @@ public class SnapshotCommand extends AbstractCommand<Object> {
 
     /** {@inheritDoc} */
     @Override public Object execute(GridClientConfiguration clientCfg, Logger log) throws Exception {
-        try {
-            return cmd.execute(clientCfg, log);
-        }
-        catch (Throwable e) {
-            log.severe("Failed to perform operation.");
-            log.severe(CommandLogger.errorMessage(e));
-
-            throw e;
-        }
+        return cmd.execute(clientCfg, log);
     }
 
     /** {@inheritDoc} */

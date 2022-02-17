@@ -25,6 +25,7 @@ import org.apache.ignite.internal.commandline.AbstractCommand;
 import org.apache.ignite.internal.commandline.Command;
 import org.apache.ignite.internal.commandline.CommandArgIterator;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.visor.snapshot.VisorSnapshotTaskResult;
 
 import static org.apache.ignite.internal.commandline.TaskExecutor.executeTaskByNameOnNode;
 
@@ -56,7 +57,14 @@ public abstract class SnapshotSubcommand extends AbstractCommand<Object> {
     /** {@inheritDoc} */
     @Override public Object execute(GridClientConfiguration clientCfg, Logger log) throws Exception {
         try (GridClient client = Command.startClient(clientCfg)) {
-            return executeTaskByNameOnNode(client, taskCls.getName(), arg(), null, clientCfg);
+            VisorSnapshotTaskResult resWrapper = executeTaskByNameOnNode(client, taskCls.getName(), arg(), null, clientCfg);
+
+            if (resWrapper.error() != null)
+                throw resWrapper.error();
+
+            printResult(resWrapper.result(), log);
+
+            return resWrapper.result();
         }
     }
 
@@ -83,5 +91,15 @@ public abstract class SnapshotSubcommand extends AbstractCommand<Object> {
      */
     protected Map<String, String> generalUsageOptions() {
         return F.asMap(SNAPSHOT_NAME_ARG, "Snapshot name.");
+    }
+
+    /**
+     * Prints result of command execution.
+     *
+     * @param res Task result.
+     * @param log Logger.
+     */
+    protected void printResult(Object res, Logger log) {
+        log.info(String.valueOf(res));
     }
 }

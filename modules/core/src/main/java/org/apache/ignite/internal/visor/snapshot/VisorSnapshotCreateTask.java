@@ -21,14 +21,13 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSnapshot;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.visor.VisorJob;
-import org.apache.ignite.internal.visor.VisorOneNodeTask;
 import org.apache.ignite.lang.IgniteFuture;
 
 /**
  * @see IgniteSnapshot#createSnapshot(String)
  */
 @GridInternal
-public class VisorSnapshotCreateTask extends VisorOneNodeTask<VisorSnapshotCreateTaskArg, String> {
+public class VisorSnapshotCreateTask extends VisorSnapshotOneNodeTask<VisorSnapshotCreateTaskArg, String> {
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;
 
