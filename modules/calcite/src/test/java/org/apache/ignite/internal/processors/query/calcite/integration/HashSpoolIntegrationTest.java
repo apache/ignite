@@ -18,6 +18,8 @@
 package org.apache.ignite.internal.processors.query.calcite.integration;
 
 import org.apache.ignite.internal.processors.query.calcite.QueryChecker;
+import org.apache.ignite.internal.processors.query.calcite.TestUtils;
+import org.apache.ignite.internal.processors.query.calcite.prepare.PlannerHelper;
 import org.junit.Test;
 
 /**
@@ -30,7 +32,9 @@ public class HashSpoolIntegrationTest extends AbstractBasicIntegrationTest {
         executeSql("CREATE TABLE t(i1 INTEGER, i2 INTEGER)");
         executeSql("INSERT INTO t VALUES (null, 0), (1, 1), (2, 2), (3, null)");
 
-        assertQuery("SELECT i1, (SELECT i2 FROM t WHERE i1=t1.i1) FROM t t1")
+        String hint = TestUtils.disableRuleHint(PlannerHelper.DECORRELATE_RULE_NAME);
+
+        assertQuery("SELECT " + hint + " i1, (SELECT i2 FROM t WHERE i1=t1.i1) FROM t t1")
             .matches(QueryChecker.containsSubPlan("IgniteHashIndexSpool"))
             .returns(null, null)
             .returns(1, 1)
@@ -38,7 +42,7 @@ public class HashSpoolIntegrationTest extends AbstractBasicIntegrationTest {
             .returns(3, null)
             .check();
 
-        assertQuery("SELECT (SELECT i1 FROM t WHERE i2=t1.i2), i2 FROM t t1")
+        assertQuery("SELECT " + hint + " (SELECT i1 FROM t WHERE i2=t1.i2), i2 FROM t t1")
             .matches(QueryChecker.containsSubPlan("IgniteHashIndexSpool"))
             .returns(null, 0)
             .returns(1, 1)
@@ -55,9 +59,10 @@ public class HashSpoolIntegrationTest extends AbstractBasicIntegrationTest {
         executeSql("INSERT INTO t0 VALUES (null, 0), (1, null), (null, 2), (3, null), (1, 1)");
         executeSql("INSERT INTO t1 VALUES (null, 0), (null, 1), (2, null), (3, null), (1, 1)");
 
-        String sql = "SELECT /*+ DISABLE_RULE ('MergeJoinConverter', 'NestedLoopJoinConverter', " +
-            "'FilterSpoolMergeToSortedIndexSpoolRule')*/ * " +
-            "FROM t0 JOIN t1 ON t0.i1=t1.i1 AND t0.i2=t1.i2";
+        String hint = TestUtils.disableRuleHint("MergeJoinConverter", "NestedLoopJoinConverter",
+            "FilterSpoolMergeToSortedIndexSpoolRule");
+
+        String sql = "SELECT " + hint + " * FROM t0 JOIN t1 ON t0.i1=t1.i1 AND t0.i2=t1.i2";
 
         assertQuery(sql)
             .matches(QueryChecker.containsSubPlan("IgniteHashIndexSpool"))
@@ -71,7 +76,9 @@ public class HashSpoolIntegrationTest extends AbstractBasicIntegrationTest {
         executeSql("CREATE TABLE t(i INTEGER)");
         executeSql("INSERT INTO t VALUES (0), (1), (2)");
 
-        String sql = "SELECT i, (SELECT i FROM t WHERE i=t1.i AND i-1=0) FROM t AS t1";
+        String hint = TestUtils.disableRuleHint(PlannerHelper.DECORRELATE_RULE_NAME);
+
+        String sql = "SELECT " + hint + " i, (SELECT i FROM t WHERE i=t1.i AND i-1=0) FROM t AS t1";
 
         assertQuery(sql)
             .matches(QueryChecker.containsSubPlan("IgniteHashIndexSpool"))

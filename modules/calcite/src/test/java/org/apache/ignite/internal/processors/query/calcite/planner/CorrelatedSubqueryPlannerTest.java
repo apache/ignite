@@ -31,6 +31,7 @@ import org.apache.calcite.rex.RexFieldAccess;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.ignite.internal.processors.query.calcite.prepare.IgnitePlanner;
+import org.apache.ignite.internal.processors.query.calcite.prepare.PlannerHelper;
 import org.apache.ignite.internal.processors.query.calcite.prepare.PlannerPhase;
 import org.apache.ignite.internal.processors.query.calcite.prepare.PlanningContext;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteCorrelatedNestedLoopJoin;
@@ -66,7 +67,7 @@ public class CorrelatedSubqueryPlannerTest extends AbstractPlannerTest {
             "    OR c>d\n" +
             " ORDER BY 1;";
 
-        IgniteRel rel = physicalPlan(sql, schema, "FilterTableScanMergeRule");
+        IgniteRel rel = physicalPlan(sql, schema, "FilterTableScanMergeRule", PlannerHelper.DECORRELATE_RULE_NAME);
 
         IgniteFilter filter = findFirstNode(rel, byClass(IgniteFilter.class)
             .and(f -> RexUtils.hasCorrelation(((Filter)f).getCondition())));
@@ -234,7 +235,7 @@ public class CorrelatedSubqueryPlannerTest extends AbstractPlannerTest {
         RelNode rel = planner.rel(sqlNode).rel;
 
         // Convert sub-queries to correlates.
-        return planner.transform(PlannerPhase.HEP_DECORRELATE, rel.getTraitSet(), rel);
+        return planner.transform(PlannerPhase.HEP_SUBQUERY_REWRITE, rel.getTraitSet(), rel);
     }
 
     /**

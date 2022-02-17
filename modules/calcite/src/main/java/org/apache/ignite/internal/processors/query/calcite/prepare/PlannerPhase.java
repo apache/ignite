@@ -70,7 +70,7 @@ import static org.apache.ignite.internal.processors.query.calcite.prepare.Ignite
  */
 public enum PlannerPhase {
     /** */
-    HEP_DECORRELATE("Heuristic phase to decorrelate subqueries") {
+    HEP_SUBQUERY_REWRITE("Heuristic phase to rewrite subqueries") {
         /** {@inheritDoc} */
         @Override public RuleSet getRules(PlanningContext ctx) {
             return ctx.rules(

@@ -18,6 +18,8 @@
 package org.apache.ignite.internal.processors.query.calcite.integration;
 
 import org.apache.ignite.internal.processors.query.calcite.QueryChecker;
+import org.apache.ignite.internal.processors.query.calcite.TestUtils;
+import org.apache.ignite.internal.processors.query.calcite.prepare.PlannerHelper;
 import org.junit.Test;
 
 /**
@@ -45,7 +47,9 @@ public class CorrelatesIntegrationTest extends AbstractBasicIntegrationTest {
         sql("CREATE TABLE test(i1 INT, i2 INT)");
         sql("INSERT INTO test VALUES (1, 1), (2, 2)");
 
-        assertQuery("SELECT (SELECT t1.i1 + t1.i2 + t0.i2 FROM test t1 WHERE i1 = 1) FROM test t0")
+        String hint = TestUtils.disableRuleHint(PlannerHelper.DECORRELATE_RULE_NAME);
+
+        assertQuery("SELECT " + hint + " (SELECT t1.i1 + t1.i2 + t0.i2 FROM test t1 WHERE i1 = 1) FROM test t0")
             .matches(QueryChecker.containsSubPlan("IgniteTableSpool"))
             .returns(3)
             .returns(4)

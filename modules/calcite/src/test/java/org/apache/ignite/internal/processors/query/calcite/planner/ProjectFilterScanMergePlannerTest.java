@@ -21,6 +21,7 @@ import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.util.ImmutableBitSet;
+import org.apache.ignite.internal.processors.query.calcite.prepare.PlannerHelper;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteAggregate;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexScan;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableScan;
@@ -154,7 +155,9 @@ public class ProjectFilterScanMergePlannerTest extends AbstractPlannerTest {
                 .and(scan -> scan.condition() != null)
                 .and(scan -> "=($t1, $cor0.C)".equals(scan.condition().toString()))
                 .and(scan -> ImmutableBitSet.of(0, 2).equals(scan.requiredColumns()))
-            ))));
+            ))),
+            PlannerHelper.DECORRELATE_RULE_NAME
+        );
     }
 
     /** */
@@ -170,7 +173,10 @@ public class ProjectFilterScanMergePlannerTest extends AbstractPlannerTest {
                 .and(scan -> scan.condition() != null)
                 .and(scan -> "=($t0, $cor0.A)".equals(scan.condition().toString()))
                 .and(scan -> ImmutableBitSet.of(0).equals(scan.requiredColumns()))
-            ))), "ProjectFilterTransposeRule");
+            ))),
+            "ProjectFilterTransposeRule",
+            PlannerHelper.DECORRELATE_RULE_NAME
+        );
 
         // Filter on project that is not permutation should be merged too.
         sql = "SELECT (SELECT a FROM (SELECT a+1 AS a FROM tbl) AS t2 WHERE t2.a = t1.a) FROM tbl AS t1";
@@ -182,7 +188,10 @@ public class ProjectFilterScanMergePlannerTest extends AbstractPlannerTest {
                 .and(scan -> scan.condition() != null)
                 .and(scan -> "=(+($t0, 1), $cor0.A)".equals(scan.condition().toString()))
                 .and(scan -> ImmutableBitSet.of(0).equals(scan.requiredColumns()))
-            ))), "ProjectFilterTransposeRule");
+            ))),
+            "ProjectFilterTransposeRule",
+            PlannerHelper.DECORRELATE_RULE_NAME
+        );
     }
 
     /** */
@@ -199,7 +208,9 @@ public class ProjectFilterScanMergePlannerTest extends AbstractPlannerTest {
                 .and(scan -> scan.condition() != null)
                 .and(scan -> "=($t1, $cor0.C)".equals(scan.condition().toString()))
                 .and(scan -> ImmutableBitSet.of(0, 2).equals(scan.requiredColumns()))
-            ))));
+            ))),
+            PlannerHelper.DECORRELATE_RULE_NAME
+        );
     }
 
     /** */
@@ -215,7 +226,9 @@ public class ProjectFilterScanMergePlannerTest extends AbstractPlannerTest {
                 .and(scan -> scan.condition() != null)
                 .and(scan -> "=($t0, $cor0.C)".equals(scan.condition().toString()))
                 .and(scan -> ImmutableBitSet.of(0).equals(scan.requiredColumns()))
-            ))));
+            ))),
+            PlannerHelper.DECORRELATE_RULE_NAME
+        );
     }
 
     /** */

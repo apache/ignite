@@ -162,7 +162,7 @@ public class PlannerTest extends AbstractPlannerTest {
 
         assertNotNull(ctx);
 
-        IgniteRel phys = physicalPlan(sql, ctx);
+        IgniteRel phys = physicalPlan(ctx);
 
         assertNotNull(phys);
 
@@ -270,7 +270,7 @@ public class PlannerTest extends AbstractPlannerTest {
             .parameters(-10)
             .build();
 
-        IgniteRel phys = physicalPlan(sql, ctx);
+        IgniteRel phys = physicalPlan(ctx);
 
         assertNotNull(phys);
 
@@ -497,7 +497,7 @@ public class PlannerTest extends AbstractPlannerTest {
             .parameters(-10)
             .build();
 
-        IgniteRel phys = physicalPlan(sql, ctx);
+        IgniteRel phys = physicalPlan(ctx);
 
         assertNotNull(phys);
 
@@ -716,7 +716,7 @@ public class PlannerTest extends AbstractPlannerTest {
             .parameters(2)
             .build();
 
-        IgniteRel phys = physicalPlan(sql, ctx);
+        IgniteRel phys = physicalPlan(ctx);
 
         assertNotNull(phys);
 
@@ -799,7 +799,7 @@ public class PlannerTest extends AbstractPlannerTest {
             .parameters(2)
             .build();
 
-        IgniteRel phys = physicalPlan(sql, ctx);
+        IgniteRel phys = physicalPlan(ctx);
 
         assertNotNull(phys);
 
@@ -879,7 +879,7 @@ public class PlannerTest extends AbstractPlannerTest {
             .parameters(2)
             .build();
 
-        IgniteRel phys = physicalPlan(sql, ctx);
+        IgniteRel phys = physicalPlan(ctx);
 
         assertNotNull(phys);
 
@@ -961,7 +961,7 @@ public class PlannerTest extends AbstractPlannerTest {
             .parameters(2)
             .build();
 
-        IgniteRel phys = physicalPlan(sql, ctx);
+        IgniteRel phys = physicalPlan(ctx);
 
         assertNotNull(phys);
 
@@ -1037,7 +1037,7 @@ public class PlannerTest extends AbstractPlannerTest {
             .parameters(2)
             .build();
 
-        IgniteRel phys = physicalPlan(sql, ctx);
+        IgniteRel phys = physicalPlan(ctx);
 
         assertNotNull(phys);
 
