@@ -22,6 +22,7 @@ import java.util.Map;
 import java.util.logging.Logger;
 import org.apache.ignite.internal.commandline.CommandArgIterator;
 import org.apache.ignite.internal.commandline.argument.CommandArgUtils;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.visor.snapshot.VisorSnapshotCreateTask;
 import org.apache.ignite.internal.visor.snapshot.VisorSnapshotCreateTaskArg;
 
@@ -43,13 +44,15 @@ public class SnapshotCreateCommand extends SnapshotSubcommand {
         String snpName = argIter.nextArg("Expected snapshot name.");
         boolean sync = false;
 
-        if (argIter.hasNextSubArg()) {
+        while (argIter.hasNextSubArg()) {
             String arg = argIter.nextArg(null);
 
             SnapshotCreateCommandOption option = CommandArgUtils.of(arg, SnapshotCreateCommandOption.class);
 
-            if (option == null)
-                throw new IllegalArgumentException("Invalid argument: " + arg + ". ");
+            if (option == null) {
+                throw new IllegalArgumentException("Invalid argument: " + arg + ". " +
+                    "Possible options: " + F.concat(F.asList(SnapshotCreateCommandOption.values()), ", ") + '.');
+            }
 
             // The snapshot create command currently supports only one optional argument.
             assert option == SYNC;

@@ -64,14 +64,16 @@ public class SnapshotRestoreCommand extends SnapshotSubcommand {
         while (argIter.hasNextSubArg()) {
             String arg = argIter.nextArg(null);
 
-            if (restoreAction != VisorSnapshotRestoreTaskAction.START)
-                throw new IllegalArgumentException("Invalid argument: " + arg + '.');
+            if (restoreAction != VisorSnapshotRestoreTaskAction.START) {
+                throw new IllegalArgumentException("Invalid argument: " + arg + ". " +
+                    "Action \"--" + restoreAction.name().toLowerCase() + "\" does not support specified option.");
+            }
 
             SnapshotRestoreCommandOption option = CommandArgUtils.of(arg, SnapshotRestoreCommandOption.class);
 
             if (option == null) {
                 throw new IllegalArgumentException("Invalid argument: " + arg + ". " +
-                    "One of " + F.asList(SnapshotRestoreCommandOption.values()) + " is expected.");
+                    "Possible options: " + F.concat(F.asList(SnapshotRestoreCommandOption.values()), ", ") + '.');
             }
             else if (option == SnapshotRestoreCommandOption.GROUPS) {
                 String argDesc = "a comma-separated list of cache group names.";

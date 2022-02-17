@@ -70,7 +70,7 @@ public abstract class SnapshotSubcommand extends AbstractCommand<Object> {
         cmdArg = argIter.nextArg("Expected snapshot name.");
 
         if (argIter.hasNextSubArg())
-            throw new IllegalArgumentException("Invalid argument: " + argIter.peekNextArg() + '.');
+            throw new IllegalArgumentException("Unexpected argument: " + argIter.peekNextArg() + '.');
     }
 
     /** {@inheritDoc} */

@@ -3022,6 +3022,9 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         // Invalid command syntax check.
         assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute(h, "--snapshot", "create", snpName, "blah"));
+        assertContains(log, testOut.toString(), "Invalid argument: blah. Possible options: --sync.");
+
+        assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute(h, "--snapshot", "create", snpName, "--sync", "blah"));
         assertContains(log, testOut.toString(), "Invalid argument: blah.");
 
         List<String> args = new ArrayList<>(F.asList("--snapshot", "create", snpName));
@@ -3142,11 +3145,14 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute(h, "--snapshot", "restore", snpName, "blah"));
         assertContains(log, testOut.toString(), "Invalid argument: blah. One of [--start, --cancel, --status] is expected.");
 
-        assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute(h, "--snapshot", "restore", snpName, "--status", "blah"));
-        assertContains(log, testOut.toString(), "Invalid argument: blah.");
+        assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute(h, "--snapshot", "restore", snpName, "--status", "--sync"));
+        assertContains(log, testOut.toString(), "Invalid argument: --sync. Action \"--status\" does not support specified option.");
 
-        assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute(h, "--snapshot", "restore", snpName, "--sync", "--status"));
+        assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute(h, "--snapshot", "restore", snpName, "--sync", "--start"));
         assertContains(log, testOut.toString(), "Invalid argument: --sync.");
+
+        assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute(h, "--snapshot", "restore", snpName, "--start", "blah"));
+        assertContains(log, testOut.toString(), "Invalid argument: blah. Possible options: --groups, --sync.");
 
         autoConfirmation = true;
 
@@ -3210,7 +3216,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         CommandHandler h = new CommandHandler();
 
         assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute(h, "--snapshot", "restore", snpName, "--start", cacheName1));
-        assertContains(log, testOut.toString(), "Invalid argument: " + cacheName1 + ". One of [--groups, --sync] is expected.");
+        assertContains(log, testOut.toString(), "Invalid argument: " + cacheName1 + ". Possible options: --groups, --sync.");
 
         // Restore single cache group.
         assertEquals(EXIT_CODE_OK, execute(h, "--snapshot", "restore", snpName, "--start", "--groups", cacheName1));
