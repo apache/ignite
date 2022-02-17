@@ -37,6 +37,11 @@ namespace Apache.Ignite.Core.Tests.Client
         /** GridNioServer has hardcoded 2000ms idle check interval, so a smaller idle timeout does not make sense. */
         private static readonly int IdleTimeout = 2000;
 
+        public ClientHeartbeatTest() : base(gridCount: 2)
+        {
+            // No-op.
+        }
+
         [Test]
         public void TestServerDisconnectsIdleClientWithoutHeartbeats()
         {
@@ -71,7 +76,7 @@ namespace Apache.Ignite.Core.Tests.Client
         public void TestDefaultZeroIdleTimeoutUsesConfiguredHeartbeatInterval()
         {
             using var ignite = Ignition.Start(TestUtils.GetTestConfiguration(name: "2"));
-            using var client = GetClient(enableHeartbeats: true, port: IgniteClientConfiguration.DefaultPort + 1);
+            using var client = GetClient(enableHeartbeats: true, port: IgniteClientConfiguration.DefaultPort + 2);
 
             Assert.AreEqual(IgniteClientConfiguration.DefaultHeartbeatInterval,
                 client.GetConfiguration().HeartbeatInterval);
@@ -141,7 +146,8 @@ namespace Apache.Ignite.Core.Tests.Client
                 Logger = new ListLogger
                 {
                     EnabledLevels = new[] { LogLevel.Debug, LogLevel.Info, LogLevel.Warn, LogLevel.Error }
-                }
+                },
+                EnablePartitionAwareness = true
             };
 
             if (heartbeatInterval != null)
