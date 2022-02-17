@@ -22,9 +22,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import org.apache.calcite.plan.RelOptUtil;
@@ -58,12 +56,10 @@ import org.apache.ignite.internal.processors.query.calcite.prepare.IgnitePlanner
 import org.apache.ignite.internal.processors.query.calcite.prepare.MappingQueryContext;
 import org.apache.ignite.internal.processors.query.calcite.prepare.MultiStepPlan;
 import org.apache.ignite.internal.processors.query.calcite.prepare.MultiStepQueryPlan;
-import org.apache.ignite.internal.processors.query.calcite.prepare.PlannerHelper;
 import org.apache.ignite.internal.processors.query.calcite.prepare.PlannerPhase;
 import org.apache.ignite.internal.processors.query.calcite.prepare.PlanningContext;
 import org.apache.ignite.internal.processors.query.calcite.prepare.QueryTemplate;
 import org.apache.ignite.internal.processors.query.calcite.prepare.Splitter;
-import org.apache.ignite.internal.processors.query.calcite.prepare.ValidationResult;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteConvention;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteFilter;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
@@ -75,10 +71,8 @@ import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactor
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeSystem;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.GridTestKernalContext;
 import org.apache.ignite.thread.IgniteStripedThreadPoolExecutor;
-import org.checkerframework.checker.nullness.qual.Nullable;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -93,9 +87,6 @@ import static org.apache.ignite.internal.processors.query.calcite.CalciteQueryPr
 //@WithSystemProperty(key = "calcite.debug", value = "true")
 @SuppressWarnings({"TooBroadScope", "FieldCanBeLocal", "TypeMayBeWeakened"})
 public class PlannerTest extends AbstractPlannerTest {
-    /** */
-    private static final long PLANNER_TIMEOUT = 5_000;
-
     /**
      * @throws Exception If failed.
      */
@@ -171,7 +162,7 @@ public class PlannerTest extends AbstractPlannerTest {
 
         assertNotNull(ctx);
 
-        IgniteRel phys = physicalPlan(sql, ctx);
+        IgniteRel phys = physicalPlan(ctx);
 
         assertNotNull(phys);
 
@@ -279,7 +270,7 @@ public class PlannerTest extends AbstractPlannerTest {
             .parameters(-10)
             .build();
 
-        IgniteRel phys = physicalPlan(sql, ctx);
+        IgniteRel phys = physicalPlan(ctx);
 
         assertNotNull(phys);
 
@@ -506,7 +497,7 @@ public class PlannerTest extends AbstractPlannerTest {
             .parameters(-10)
             .build();
 
-        IgniteRel phys = physicalPlan(sql, ctx);
+        IgniteRel phys = physicalPlan(ctx);
 
         assertNotNull(phys);
 
@@ -725,7 +716,7 @@ public class PlannerTest extends AbstractPlannerTest {
             .parameters(2)
             .build();
 
-        IgniteRel phys = physicalPlan(sql, ctx);
+        IgniteRel phys = physicalPlan(ctx);
 
         assertNotNull(phys);
 
@@ -808,7 +799,7 @@ public class PlannerTest extends AbstractPlannerTest {
             .parameters(2)
             .build();
 
-        IgniteRel phys = physicalPlan(sql, ctx);
+        IgniteRel phys = physicalPlan(ctx);
 
         assertNotNull(phys);
 
@@ -888,7 +879,7 @@ public class PlannerTest extends AbstractPlannerTest {
             .parameters(2)
             .build();
 
-        IgniteRel phys = physicalPlan(sql, ctx);
+        IgniteRel phys = physicalPlan(ctx);
 
         assertNotNull(phys);
 
@@ -970,7 +961,7 @@ public class PlannerTest extends AbstractPlannerTest {
             .parameters(2)
             .build();
 
-        IgniteRel phys = physicalPlan(sql, ctx);
+        IgniteRel phys = physicalPlan(ctx);
 
         assertNotNull(phys);
 
@@ -1046,7 +1037,7 @@ public class PlannerTest extends AbstractPlannerTest {
             .parameters(2)
             .build();
 
-        IgniteRel phys = physicalPlan(sql, ctx);
+        IgniteRel phys = physicalPlan(ctx);
 
         assertNotNull(phys);
 
@@ -1306,112 +1297,6 @@ public class PlannerTest extends AbstractPlannerTest {
             );
 
             checkSplitAndSerialization(phys, publicSchema);
-        }
-    }
-
-    /** */
-    @Test
-    public void testLongPlanningTimeout() throws Exception {
-        IgniteTypeFactory f = new IgniteTypeFactory(IgniteTypeSystem.INSTANCE);
-
-        TestTable t1 = new TestTable(
-            new RelDataTypeFactory.Builder(f)
-                .add("A", f.createJavaType(Integer.class))
-                .add("B", f.createJavaType(Integer.class))
-                .build()) {
-
-            @Override public IgniteDistribution distribution() {
-                return IgniteDistributions.broadcast();
-            }
-        };
-
-        TestTable t2 = new TestTable(
-            new RelDataTypeFactory.Builder(f)
-                .add("A", f.createJavaType(Integer.class))
-                .add("C", f.createJavaType(Integer.class))
-                .build()) {
-
-            @Override public IgniteDistribution distribution() {
-                return IgniteDistributions.broadcast();
-            }
-        };
-
-        TestTable t3 = new TestTable(
-            new RelDataTypeFactory.Builder(f)
-                .add("B", f.createJavaType(Integer.class))
-                .add("C", f.createJavaType(Integer.class))
-                .build()) {
-
-            @Override public IgniteDistribution distribution() {
-                return IgniteDistributions.broadcast();
-            }
-        };
-
-        TestTable t4 = new TestTable(
-            new RelDataTypeFactory.Builder(f)
-                .add("A", f.createJavaType(Integer.class))
-                .add("C", f.createJavaType(Integer.class))
-                .build()) {
-
-            @Override public IgniteDistribution distribution() {
-                return IgniteDistributions.broadcast();
-            }
-        };
-
-        IgniteSchema publicSchema = new IgniteSchema("PUBLIC");
-
-        publicSchema.addTable("T1", t1);
-        publicSchema.addTable("T2", t2);
-        publicSchema.addTable("T3", t3);
-        publicSchema.addTable("T4", t4);
-
-        SchemaPlus schema = createRootSchema(false)
-            .add("PUBLIC", publicSchema);
-
-        String sql = "SELECT * FROM T1 JOIN T2 ON T1.A = T2.A JOIN T3 ON T3.B = T1.B AND T3.C = T2.C JOIN T4" +
-            " ON T4.C = T3.C AND T4.A = T1.A";
-
-        PlanningContext ctx = PlanningContext.builder()
-            .parentContext(BaseQueryContext.builder()
-                .frameworkConfig(newConfigBuilder(FRAMEWORK_CONFIG)
-                    .defaultSchema(schema)
-                    .costFactory(new IgniteCostFactory(1, 100, 1, 1))
-                    .build())
-                .logger(log)
-                .plannerTimeout(PLANNER_TIMEOUT)
-                .build()
-            )
-            .query(sql)
-            .build();
-
-        try (IgnitePlanner planner = ctx.planner()) {
-            assertNotNull(planner);
-
-            String qry = ctx.query();
-
-            assertNotNull(qry);
-
-            SqlNode sqlNode = planner.parse(qry);
-
-            ValidationResult validated = planner.validateAndGetTypeMetadata(sqlNode);
-
-            AtomicReference<IgniteRel> plan = new AtomicReference<>();
-
-            GridTestUtils.assertTimeout(2 * PLANNER_TIMEOUT, TimeUnit.MILLISECONDS, () -> {
-                plan.set(PlannerHelper.optimize(validated.sqlNode(), planner, log));
-            });
-
-            assertNotNull(plan.get());
-
-            new RelVisitor() {
-                @Override public void visit(
-                    RelNode node,
-                    int ordinal,
-                    @Nullable RelNode parent) {
-                    assertNotNull(node.getTraitSet().getTrait(IgniteConvention.INSTANCE.getTraitDef()));
-                    super.visit(node, ordinal, parent);
-                }
-            }.go(plan.get());
         }
     }
 }

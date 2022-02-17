@@ -59,19 +59,24 @@ public final class PlanningContext implements Context {
     /** */
     private final long startTs;
 
+    /** */
+    private final long plannerTimeout;
+
     /**
      * Private constructor, used by a builder.
      */
     private PlanningContext(
         Context parentCtx,
         String qry,
-        Object[] parameters
+        Object[] parameters,
+        long plannerTimeout
     ) {
         this.qry = qry;
         this.parameters = parameters;
 
         this.parentCtx = parentCtx;
         startTs = U.currentTimeMillis();
+        this.plannerTimeout = plannerTimeout;
     }
 
     /**
@@ -107,17 +112,15 @@ public final class PlanningContext implements Context {
     /**
      * @return Start timestamp in millis.
      */
-    public long getStartTs() {
+    public long startTs() {
         return startTs;
     }
 
     /**
      * @return Start timestamp in millis.
      */
-    public long getPlannerTimeout() {
-        BaseQueryContext ctx = parentCtx.unwrap(BaseQueryContext.class);
-
-        return ctx != null ? ctx.plannerTimeout() : 0;
+    public long plannerTimeout() {
+        return plannerTimeout;
     }
 
     /**
@@ -221,6 +224,9 @@ public final class PlanningContext implements Context {
         /** */
         private Object[] parameters;
 
+        /** */
+        private long plannerTimeout;
+
         /**
          * @param parentCtx Parent context.
          * @return Builder for chaining.
@@ -250,12 +256,22 @@ public final class PlanningContext implements Context {
         }
 
         /**
+         * @param plannerTimeout Planner timeout.
+         *
+         * @return Builder for chaining.
+         */
+        public Builder plannerTimeout(long plannerTimeout) {
+            this.plannerTimeout = plannerTimeout;
+            return this;
+        }
+
+        /**
          * Builds planner context.
          *
          * @return Planner context.
          */
         public PlanningContext build() {
-            return new PlanningContext(parentCtx, qry, parameters);
+            return new PlanningContext(parentCtx, qry, parameters, plannerTimeout);
         }
     }
 }

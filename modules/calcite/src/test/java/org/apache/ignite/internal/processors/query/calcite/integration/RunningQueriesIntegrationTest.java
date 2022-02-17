@@ -28,7 +28,15 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
+import com.google.common.util.concurrent.Uninterruptibles;
+import org.apache.calcite.plan.RelOptCluster;
+import org.apache.calcite.plan.RelOptPlanner;
+import org.apache.calcite.plan.RelOptTable;
+import org.apache.calcite.rel.RelCollation;
+import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.IgniteEx;
@@ -40,8 +48,12 @@ import org.apache.ignite.internal.processors.query.RunningQuery;
 import org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.processors.query.calcite.metadata.ColocationGroup;
+import org.apache.ignite.internal.processors.query.calcite.rel.logical.IgniteLogicalIndexScan;
 import org.apache.ignite.internal.processors.query.calcite.schema.CacheTableImpl;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteCacheTable;
+import org.apache.ignite.internal.processors.query.calcite.schema.IgniteIndex;
+import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
+import org.apache.ignite.internal.processors.query.calcite.util.IndexConditions;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
@@ -52,15 +64,15 @@ import org.junit.Test;
 
 import static java.util.stream.Collectors.joining;
 import static org.apache.ignite.IgniteSystemProperties.getLong;
-import static org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor.IGNITE_EXPERIMENTAL_SQL_ENGINE_PLANNER_TIMEOUT;
+import static org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor.IGNITE_CALCITE_PLANNER_TIMEOUT;
 
 /**
  *
  */
-@WithSystemProperty(key = IGNITE_EXPERIMENTAL_SQL_ENGINE_PLANNER_TIMEOUT, value = "5000")
+@WithSystemProperty(key = IGNITE_CALCITE_PLANNER_TIMEOUT, value = "2000")
 public class RunningQueriesIntegrationTest extends AbstractBasicIntegrationTest {
     /** */
-    private static final long PLANNER_TIMEOUT = getLong(IGNITE_EXPERIMENTAL_SQL_ENGINE_PLANNER_TIMEOUT, 0);
+    private static final long PLANNER_TIMEOUT = getLong(IGNITE_CALCITE_PLANNER_TIMEOUT, 0);
 
     /** */
     private static IgniteEx srv;
@@ -246,25 +258,91 @@ public class RunningQueriesIntegrationTest extends AbstractBasicIntegrationTest 
     /** */
     @Test
     public void testLongPlanningTimeout() throws Exception {
-        sql("CREATE TABLE T1(A INT, B INT)");
-        sql("CREATE TABLE T2(A INT, C INT)");
-        sql("CREATE TABLE T3(B INT, C INT)");
-        sql("CREATE TABLE T4(A INT, C INT)");
+        Stream.of("T1", "T2").forEach(tblName -> {
+            sql(String.format("CREATE TABLE %s(A INT, B INT)", tblName));
 
-        sql("INSERT INTO T1(A, B) VALUES (1, 1)");
-        sql("INSERT INTO T2(A, C) VALUES (1, 2)");
-        sql("INSERT INTO T3(B, C) VALUES (1, 2)");
-        sql("INSERT INTO T4(A, C) VALUES (1, 2)");
+            IgniteTable tbl = (IgniteTable)queryProcessor(client).schemaHolder().schema("PUBLIC").getTable(tblName);
+            IgniteIndex oldPk = tbl.getIndex("_key_PK");
+            tbl.addIndex(new SlowCollationIndex(oldPk));
 
-        String longJoinQry = "SELECT * FROM T1 JOIN T2 ON T1.A = T2.A JOIN T3 ON T3.B = T1.B AND T3.C = T2.C JOIN T4" +
-            " ON T4.C = T3.C AND T4.A = T1.A";
-
-        AtomicReference<List<List<?>>> res = new AtomicReference<>();
-        GridTestUtils.assertTimeout(3 * PLANNER_TIMEOUT, TimeUnit.MILLISECONDS, () -> {
-            res.set(sql(longJoinQry));
+            sql(String.format("INSERT INTO %s(A, B) VALUES (1, 1)", tblName));
         });
 
-        assertNotNull(res.get());
-        assertFalse(res.get().isEmpty());
+        String longJoinQry = "SELECT * FROM T1 JOIN T2 ON T1.A = T2.A";
+
+        try {
+            AtomicReference<List<List<?>>> res = new AtomicReference<>();
+            GridTestUtils.assertTimeout(3 * PLANNER_TIMEOUT, TimeUnit.MILLISECONDS, () -> {
+                res.set(sql(longJoinQry));
+            });
+
+            assertNotNull(res.get());
+            assertFalse(res.get().isEmpty());
+        }
+        catch (Exception e) {
+            assertTrue("Unexpected exception: " + e, e instanceof RelOptPlanner.CannotPlanException);
+        }
+    }
+
+    /** */
+    private static class SlowCollationIndex implements IgniteIndex {
+        /** */
+        private final IgniteIndex delegate;
+
+        /** */
+        public SlowCollationIndex(IgniteIndex delegate) {
+            this.delegate = delegate;
+        }
+
+        /** {@inheritDoc} */
+        @Override public RelCollation collation() {
+            Uninterruptibles.sleepUninterruptibly(200, TimeUnit.MILLISECONDS);
+
+            return delegate.collation();
+        }
+
+        /** {@inheritDoc} */
+        @Override public String name() {
+            return delegate.name();
+        }
+
+        /** {@inheritDoc} */
+        @Override public IgniteTable table() {
+            return delegate.table();
+        }
+
+        /** {@inheritDoc} */
+        @Override public IgniteLogicalIndexScan toRel(
+            RelOptCluster cluster,
+            RelOptTable relOptTbl,
+            @Nullable List<RexNode> proj,
+            @Nullable RexNode cond,
+            @Nullable ImmutableBitSet requiredColumns
+        ) {
+            return delegate.toRel(cluster, relOptTbl, proj, cond, requiredColumns);
+        }
+
+        /** {@inheritDoc} */
+        @Override public IndexConditions toIndexCondition(
+            RelOptCluster cluster,
+            @Nullable RexNode cond,
+            @Nullable ImmutableBitSet requiredColumns
+        ) {
+            return delegate.toIndexCondition(cluster, cond, requiredColumns);
+        }
+
+        /** {@inheritDoc} */
+        @Override public <Row> Iterable<Row> scan(
+            ExecutionContext<Row> execCtx,
+            ColocationGroup grp,
+            Predicate<Row> filters,
+            Supplier<Row> lowerIdxConditions,
+            Supplier<Row> upperIdxConditions,
+            Function<Row, Row> rowTransformer,
+            @Nullable ImmutableBitSet requiredColumns
+        ) {
+            return delegate.scan(execCtx, grp, filters, lowerIdxConditions, upperIdxConditions, rowTransformer,
+                requiredColumns);
+        }
     }
 }

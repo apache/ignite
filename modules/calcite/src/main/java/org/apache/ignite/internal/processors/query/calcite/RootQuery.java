@@ -83,6 +83,9 @@ public class RootQuery<RowT> extends Query<RowT> {
     private final BaseQueryContext ctx;
 
     /** */
+    private final long plannerTimeout;
+
+    /** */
     public RootQuery(
         String sql,
         SchemaPlus schema,
@@ -109,6 +112,8 @@ public class RootQuery<RowT> extends Query<RowT> {
         remoteFragments = new HashMap<>();
         waiting = new HashSet<>();
 
+        this.plannerTimeout = plannerTimeout;
+
         Context parent = Commons.convert(qryCtx);
 
         ctx = BaseQueryContext.builder()
@@ -118,7 +123,6 @@ public class RootQuery<RowT> extends Query<RowT> {
                     .defaultSchema(schema)
                     .build()
             )
-            .plannerTimeout(plannerTimeout)
             .logger(log)
             .build();
     }
@@ -132,8 +136,7 @@ public class RootQuery<RowT> extends Query<RowT> {
      * @param schema new schema.
      */
     public RootQuery<RowT> childQuery(SchemaPlus schema) {
-        return new RootQuery<>(sql, schema, params, QueryContext.of(cancel), exch, unregister, log,
-            context().plannerTimeout());
+        return new RootQuery<>(sql, schema, params, QueryContext.of(cancel), exch, unregister, log, plannerTimeout);
     }
 
     /** */
@@ -294,6 +297,7 @@ public class RootQuery<RowT> extends Query<RowT> {
                     .parentContext(ctx)
                     .query(sql)
                     .parameters(params)
+                    .plannerTimeout(plannerTimeout)
                     .build();
 
                 try {
