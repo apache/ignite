@@ -24,6 +24,7 @@ import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
@@ -669,6 +670,15 @@ public class CommandProcessor extends SqlCommandProcessor {
 
         if (!F.isEmpty(notNullFields))
             res.setNotNullFields(notNullFields);
+
+        // Fill key object with all fields for new tables.
+        res.fillAbsentPKsWithDefaults(true);
+
+        if (Objects.nonNull(createTbl.primaryKeyInlineSize()))
+            res.setPrimaryKeyInlineSize(createTbl.primaryKeyInlineSize());
+
+        if (Objects.nonNull(createTbl.affinityKeyInlineSize()))
+            res.setAffinityKeyInlineSize(createTbl.affinityKeyInlineSize());
 
         return res;
     }
