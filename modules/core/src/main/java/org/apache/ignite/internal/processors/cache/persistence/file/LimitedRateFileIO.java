@@ -25,12 +25,20 @@ import org.apache.ignite.IgniteInterruptedException;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.util.BasicRateLimiter;
 
+/**
+ * File I/O providing the ability to limit the transfer rate.
+ */
 public class LimitedRateFileIO extends FileIODecorator {
+    /** Transfer rate limiter. */
     private final BasicRateLimiter limiter;
+
+    /** Size of the data block to be transferred at once (in bytes). */
     private final int blockSize;
 
     /**
      * @param delegate File I/O delegate
+     * @param limiter Transfer rate limiter.
+     * @param blockSize Size of the data block to be transferred at once (in bytes).
      */
     public LimitedRateFileIO(FileIO delegate, BasicRateLimiter limiter, int blockSize) {
         super(delegate);
@@ -100,32 +108,69 @@ public class LimitedRateFileIO extends FileIODecorator {
     }
 
     /** {@inheritDoc} */
-    @Override public int read(ByteBuffer destBuf) throws IOException {
-        throw new UnsupportedOperationException();
-    }
-
-    /** {@inheritDoc} */
-    @Override public int read(ByteBuffer destBuf, long position) throws IOException {
-        throw new UnsupportedOperationException();
-    }
-
-    /** {@inheritDoc} */
-    @Override public int read(byte[] buf, int off, int len) throws IOException {
-        throw new UnsupportedOperationException();
-    }
-
-    /** {@inheritDoc} */
     @Override public int write(ByteBuffer srcBuf) throws IOException {
-        throw new UnsupportedOperationException();
+        int len = srcBuf.remaining();
+
+        acquire(len);
+
+        int remain = len;
+
+        while (remain > 0)
+            remain -= super.write(srcBuf);
+
+        return len;
     }
 
     /** {@inheritDoc} */
     @Override public int write(ByteBuffer srcBuf, long position) throws IOException {
-        throw new UnsupportedOperationException();
+        int len = srcBuf.remaining();
+
+        acquire(len);
+
+        int written = 0;
+
+        while (written < len)
+            written += super.write(srcBuf, position + written);
+
+        return written;
     }
 
     /** {@inheritDoc} */
     @Override public int write(byte[] buf, int off, int len) throws IOException {
-        throw new UnsupportedOperationException();
+        acquire(len);
+
+        int written = 0;
+
+        while (written < len)
+            written += super.write(buf, off + written, len - written);
+
+        return len;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int read(ByteBuffer destBuf) throws IOException {
+        return super.read(destBuf);
+    }
+
+    /** {@inheritDoc} */
+    @Override public int read(ByteBuffer destBuf, long position) throws IOException {
+        return super.read(destBuf, position);
+    }
+
+    /** {@inheritDoc} */
+    @Override public int read(byte[] buf, int off, int len) throws IOException {
+        return super.read(buf, off, len);
+    }
+
+    /**
+     * @param permits The number of permits to acquire.
+     */
+    private void acquire(int permits) {
+        try {
+            limiter.acquire(permits);
+        }
+        catch (IgniteInterruptedCheckedException e) {
+            throw new IgniteInterruptedException((InterruptedException)e.getCause());
+        }
     }
 }

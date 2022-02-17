@@ -168,7 +168,6 @@ import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.spi.systemview.view.SnapshotView;
 import org.jetbrains.annotations.Nullable;
 
-import static java.lang.String.format;
 import static java.nio.file.StandardOpenOption.READ;
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_BINARY_METADATA_PATH;
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_MARSHALLER_PATH;
@@ -455,7 +454,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                                 log.info("The snapshot transfer rate " + (newVal == 0 ? "is not limited." :
                                     "has been changed from '" + oldVal + "' to '" + newVal + "' KB/s."));
                             }
-                        }});
+                        }
+                    });
 
                     dispatcher.registerProperty(snapshotTransferRate);
                 }
@@ -2841,8 +2841,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
         /** The number of cache partition files expected to be processed. */
         private int partsCnt;
-
-
 
         /**
          * @param log Ignite logger.

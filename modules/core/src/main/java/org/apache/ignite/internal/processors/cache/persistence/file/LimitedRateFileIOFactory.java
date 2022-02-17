@@ -36,8 +36,9 @@ public class LimitedRateFileIOFactory implements FileIOFactory {
     private final BasicRateLimiter rateLimiter;
 
     /**
-     * The size of the data block to be transferred at once (in bytes). The smaller it is, the more uniform bandwidth
-     * limitation will be obtained, however at the expense of performance.
+     * Size of the data block to be transferred at once (in bytes).
+     * <p>
+     * The smaller it is, the more uniform bandwidth limitation will be obtained, however at the expense of performance.
      */
     private final int blockSize;
 
@@ -54,7 +55,7 @@ public class LimitedRateFileIOFactory implements FileIOFactory {
     /**
      * @param delegate File I/O factory delegate.
      * @param rate Max transfer rate in bytes/sec.
-     * @param blockSize The size of the data block to be transferred at once (in bytes).
+     * @param blockSize Size of the data block to be transferred at once (in bytes).
      */
     public LimitedRateFileIOFactory(FileIOFactory delegate, int rate, int blockSize) {
         this.delegate = delegate;
@@ -74,6 +75,8 @@ public class LimitedRateFileIOFactory implements FileIOFactory {
      * @param rate Max transfer rate in bytes/sec.
      */
     public void setRate(int rate) {
+        System.out.println(">xxx> set rate " + rate);
+
         rateLimiter.setRate(rate);
     }
 }

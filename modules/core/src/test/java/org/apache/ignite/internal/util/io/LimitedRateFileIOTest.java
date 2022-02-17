@@ -103,10 +103,16 @@ public class LimitedRateFileIOTest extends GridCommonAbstractTest {
         doLimitedChannelTransfer(4096, 1024, DATA_LEN);
     }
 
-    private void doLimitedChannelTransfer(int rate, int destBufLen, int dataLen) throws Exception {
+    /**
+     * @param rate Transfer rate in bytes/sec.
+     * @param destBufLen Destination channel buffer length.
+     * @param size Data length.
+     * @throws Exception If failed.
+     */
+    private void doLimitedChannelTransfer(int rate, int destBufLen, int size) throws Exception {
         File tmpDir = new File(U.defaultWorkDirectory(), TMP_DIR_NAME);
         File srcFile = new File(tmpDir, U.maskForFileName(getClass().getSimpleName()) + ".tmp.1");
-        byte[] srcData = new byte[dataLen];
+        byte[] srcData = new byte[size];
 
         ThreadLocalRandom.current().nextBytes(srcData);
 
@@ -116,7 +122,7 @@ public class LimitedRateFileIOTest extends GridCommonAbstractTest {
             }
         }
 
-        int expDuration = dataLen * 1000 / rate;
+        int expDuration = size * 1000 / rate;
 
         FileIOFactory ioFactory = new LimitedRateFileIOFactory(new RandomAccessFileIOFactory(), rate, rate);
         ByteArrayChannel testChannel = writeSrcChannel ?
@@ -143,13 +149,18 @@ public class LimitedRateFileIOTest extends GridCommonAbstractTest {
         assertTrue("time=" + delta + ", min=" + min + ", max=" + max, delta > min && delta < max);
     }
 
+    /** */
     static class ByteArrayChannel implements WritableByteChannel, ReadableByteChannel {
+        /** */
         private final byte[] data;
 
+        /** */
         private final int destBufCapacity;
 
+        /** */
         private int size;
 
+        /** */
         private int pos;
 
         /**
