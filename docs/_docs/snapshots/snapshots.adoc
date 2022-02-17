@@ -219,13 +219,13 @@ The `control.sh|bat` script provides the ability to start, stop, and get the sta
 
 [source,shell]
 ----
-# Start restoring all user-created cache groups from the snapshot "snapshot_09062021" in the bacgrkound.
+# Start restoring all user-created cache groups from the snapshot "snapshot_09062021" in the background.
 control.(sh|bat) --snapshot restore snapshot_09062021 --start
 
 # Start restoring all user-created cache groups from the snapshot "snapshot_09062021" and wait for the entire operation to complete.
 control.(sh|bat) --snapshot restore snapshot_09062021 --start --sync
 
-# Start restoring only "cache-group1" and "cache-group2" from the snapshot "snapshot_09062021" in the bacgrkound.
+# Start restoring only "cache-group1" and "cache-group2" from the snapshot "snapshot_09062021" in the background.
 control.(sh|bat) --snapshot restore snapshot_09062021 --start --groups cache-group1,cache-group2
 
 # Get the status of the restore operation for "snapshot_09062021".
