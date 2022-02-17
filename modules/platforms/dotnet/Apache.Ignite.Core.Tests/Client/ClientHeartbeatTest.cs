@@ -29,7 +29,7 @@ namespace Apache.Ignite.Core.Tests.Client
     using NUnit.Framework;
 
     /// <summary>
-    /// Tests client heartbeat functionality (<see cref="IgniteClientConfiguration.DefaultHeartbeatInterval"/>).
+    /// Tests client heartbeat functionality (<see cref="IgniteClientConfiguration.HeartbeatInterval"/>).
     /// </summary>
     [Category(TestUtils.CategoryIntensive)]
     public class ClientHeartbeatTest : ClientTestBase
@@ -54,7 +54,7 @@ namespace Apache.Ignite.Core.Tests.Client
         {
             using var client = GetClient(enableHeartbeats: true, heartbeatInterval: 1500);
 
-            Assert.AreEqual(1500, client.GetConfiguration().DefaultHeartbeatInterval.TotalMilliseconds);
+            Assert.AreEqual(1500, client.GetConfiguration().HeartbeatInterval.TotalMilliseconds);
             Assert.IsTrue(client.GetConfiguration().EnableHeartbeats);
             Assert.AreEqual(1, client.GetCacheNames().Count);
 
@@ -75,7 +75,7 @@ namespace Apache.Ignite.Core.Tests.Client
 
             StringAssert.Contains(
                 "Server-side IdleTimeout is not set, " +
-                "using IgniteClientConfiguration.DefaultHeartbeatInterval: 00:00:30", GetLogString(client));
+                "using IgniteClientConfiguration.HeartbeatInterval: 00:00:30", GetLogString(client));
         }
 
         protected override IgniteConfiguration GetIgniteConfiguration()
@@ -113,7 +113,7 @@ namespace Apache.Ignite.Core.Tests.Client
 
             if (heartbeatInterval != null)
             {
-                cfg.DefaultHeartbeatInterval = TimeSpan.FromMilliseconds(heartbeatInterval.Value);
+                cfg.HeartbeatInterval = TimeSpan.FromMilliseconds(heartbeatInterval.Value);
             }
 
             return Ignition.StartClient(cfg);

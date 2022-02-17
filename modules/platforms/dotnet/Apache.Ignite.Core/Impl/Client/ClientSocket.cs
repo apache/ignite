@@ -192,11 +192,11 @@ namespace Apache.Ignite.Core.Impl.Client
                     }
                     else
                     {
-                        _heartbeatInterval = clientConfiguration.DefaultHeartbeatInterval;
+                        _heartbeatInterval = clientConfiguration.HeartbeatInterval;
 
                         _logger.Info(
                             $"Server-side IdleTimeout is not set, using {nameof(IgniteClientConfiguration)}." +
-                            $"{nameof(IgniteClientConfiguration.DefaultHeartbeatInterval)}: {_heartbeatInterval}");
+                            $"{nameof(IgniteClientConfiguration.HeartbeatInterval)}: {_heartbeatInterval}");
                     }
 
                     _heartbeatTimer = new Timer(SendHeartbeat, null, dueTime: _heartbeatInterval,

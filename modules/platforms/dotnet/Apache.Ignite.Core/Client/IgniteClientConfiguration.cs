@@ -66,9 +66,9 @@ namespace Apache.Ignite.Core.Client
         public static readonly TimeSpan DefaultSocketTimeout = TimeSpan.FromMilliseconds(5000);
 
         /// <summary>
-        /// Default value for <see cref="DefaultHeartbeatInterval"/>.
+        /// Default value for <see cref="HeartbeatInterval"/>.
         /// </summary>
-        public static readonly TimeSpan DefaultDefaultHeartbeatInterval = TimeSpan.FromSeconds(30);
+        public static readonly TimeSpan DefaultHeartbeatInterval = TimeSpan.FromSeconds(30);
 
         /// <summary>
         /// Initializes a new instance of the <see cref="IgniteClientConfiguration"/> class.
@@ -141,7 +141,7 @@ namespace Apache.Ignite.Core.Client
             RetryLimit = cfg.RetryLimit;
             RetryPolicy = cfg.RetryPolicy;
             EnableHeartbeats = cfg.EnableHeartbeats;
-            DefaultHeartbeatInterval = cfg.DefaultHeartbeatInterval;
+            HeartbeatInterval = cfg.HeartbeatInterval;
         }
 
         /// <summary>
@@ -280,7 +280,7 @@ namespace Apache.Ignite.Core.Client
         /// When thin client connection is idle (no operations are performed), heartbeat messages are sent periodically
         /// to keep the connection alive and detect potential half-open state.
         /// <para />
-        /// See also <see cref="DefaultHeartbeatInterval"/>.
+        /// See also <see cref="HeartbeatInterval"/>.
         /// </summary>
         public bool EnableHeartbeats { get; set; }
 
@@ -291,12 +291,12 @@ namespace Apache.Ignite.Core.Client
         /// When <see cref="ClientConnectorConfiguration.IdleTimeout"/> is not set on the server,
         /// this property value is used.
         /// <para />
-        /// Default is <see cref="DefaultDefaultHeartbeatInterval"/>.
+        /// Default is <see cref="DefaultHeartbeatInterval"/>.
         /// <para />
         /// When thin client connection is idle (no operations are performed), heartbeat messages are sent periodically
         /// to keep the connection alive and detect potential half-open state.
         /// </summary>
-        public TimeSpan DefaultHeartbeatInterval { get; set; } = DefaultDefaultHeartbeatInterval;
+        public TimeSpan HeartbeatInterval { get; set; } = DefaultHeartbeatInterval;
 
         /// <summary>
         /// Gets or sets custom binary processor. Internal property for tests.

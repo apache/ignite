@@ -111,7 +111,7 @@ namespace Apache.Ignite.Core.Tests.Client
                     DefaultTransactionIsolation = TransactionIsolation.Serializable
                 },
                 RetryLimit = 33,
-                DefaultHeartbeatInterval = TimeSpan.FromSeconds(30)
+                HeartbeatInterval = TimeSpan.FromSeconds(30)
             };
 
             using (var xmlReader = XmlReader.Create(Path.Combine("Config", "Client", "IgniteClientConfiguration.xml")))
