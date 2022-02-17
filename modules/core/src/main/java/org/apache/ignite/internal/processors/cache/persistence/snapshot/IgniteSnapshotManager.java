@@ -461,7 +461,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 }
 
                 @Override public void onReadyToWrite() {
-                    DistributedConfigurationUtils.setDefaultValue(snapshotTransferRate, 0, log);
+                    DistributedConfigurationUtils.setDefaultValue(snapshotTransferRate, 16 * 1024, log);
                 }
             }
         );
