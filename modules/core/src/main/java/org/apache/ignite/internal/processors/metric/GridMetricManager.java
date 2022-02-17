@@ -297,6 +297,11 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
                     GridMetricManager.this.metastorage = metastorage;
                 }
             });
+
+        if (!sunOperatingSystemMXBeanAvailable()) {
+            log.warning("The 'com.sun.management.OperatingSystemMXBean' class is not available. " +
+                "System/JVM memory and CPU statistics will not be available.");
+        }
     }
 
     /** {@inheritDoc} */
@@ -578,9 +583,20 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
         }
     }
 
+    /** @return {@code True} if {@link com.sun.management.OperatingSystemMXBean} is available. */
+    private static boolean sunOperatingSystemMXBeanAvailable() {
+        try {
+            return os instanceof com.sun.management.OperatingSystemMXBean;
+        } catch (@SuppressWarnings("ErrorNotRethrown") NoClassDefFoundError ignored) {
+            // com.sun.management.OperatingSystemMXBean does not exist.
+        }
+
+        return false;
+    }
+
     /** @return Accessor for {@link com.sun.management.OperatingSystemMXBean}. */
     private static SunOperatingSystemMXBeanAccessor sunOperatingSystemMXBeanAccessor() {
-        try {
+        if (sunOperatingSystemMXBeanAvailable()) {
             com.sun.management.OperatingSystemMXBean sunOs = (com.sun.management.OperatingSystemMXBean)os;
 
             return new SunOperatingSystemMXBeanAccessor() {
@@ -592,8 +608,6 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
                     return sunOs.getTotalPhysicalMemorySize();
                 }
             };
-        } catch (@SuppressWarnings("ErrorNotRethrown") NoClassDefFoundError ignored) {
-            // com.sun.management.OperatingSystemMXBean does not exist.
         }
 
         return new SunOperatingSystemMXBeanAccessor() {
