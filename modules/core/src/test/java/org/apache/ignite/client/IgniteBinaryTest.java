@@ -22,6 +22,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
 import java.util.stream.Collectors;
+import javax.cache.Cache;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteBinary;
 import org.apache.ignite.IgniteCache;
@@ -35,14 +36,20 @@ import org.apache.ignite.binary.BinarySerializer;
 import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.binary.BinaryTypeConfiguration;
 import org.apache.ignite.binary.BinaryWriter;
+import org.apache.ignite.cache.CacheInterceptorAdapter;
 import org.apache.ignite.configuration.BinaryConfiguration;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.ClientConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.binary.BinaryObjectImpl;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
-import org.apache.ignite.testframework.GridTestUtils;
-import org.junit.Rule;
+import org.apache.ignite.internal.processors.odbc.ClientListenerProcessor;
+import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.mxbean.ClientProcessorMXBean;
+import org.apache.ignite.testframework.ListeningTestLogger;
+import org.apache.ignite.testframework.LogListener;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.rules.Timeout;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
@@ -51,11 +58,7 @@ import static org.junit.Assert.assertNull;
 /**
  * Ignite {@link BinaryObject} API system tests.
  */
-public class IgniteBinaryTest {
-    /** Per test timeout */
-    @Rule
-    public Timeout globalTimeout = new Timeout((int)GridTestUtils.DFLT_TEST_TIMEOUT);
-
+public class IgniteBinaryTest extends GridCommonAbstractTest {
     /**
      * Unmarshalling schema-less Ignite binary objects into Java static types.
      */
@@ -131,6 +134,76 @@ public class IgniteBinaryTest {
                 assertBinaryObjectsEqual(val, cachedVal);
             }
         }
+    }
+
+    /**
+     * Tests that {@code org.apache.ignite.cache.CacheInterceptor#onBeforePut(javax.cache.Cache.Entry, java.lang.Object)}
+     * throws correct exception in case while cache operations are called from thin client. Only BinaryObject`s are
+     * acceptable in this case.
+     */
+    @Test
+    public void testBinaryWithNotGenericInterceptor() throws Exception {
+        IgniteConfiguration ccfg = Config.getServerConfiguration()
+            .setCacheConfiguration(new CacheConfiguration("test").setInterceptor(new ThinBinaryValueInterceptor()));
+
+        String castErr = "cannot be cast to";
+        String treeErr = "B+Tree is corrupted";
+
+        ListeningTestLogger srvLog = new ListeningTestLogger(log);
+
+        LogListener lsnrCast = LogListener.matches(castErr).
+            andMatches(str -> !str.contains(treeErr)).build();
+
+        srvLog.registerListener(lsnrCast);
+
+        ccfg.setGridLogger(srvLog);
+
+        try (Ignite ign = Ignition.start(ccfg)) {
+            try (IgniteClient client =
+                     Ignition.startClient(new ClientConfiguration().setAddresses(Config.SERVER))
+            ) {
+                ClientCache<Integer, ThinBinaryValue> cache = client.cache("test");
+
+                try {
+                    cache.put(1, new ThinBinaryValue());
+
+                    fail();
+                }
+                catch (Exception e) {
+                    assertFalse(X.getFullStackTrace(e).contains(castErr));
+                }
+
+                ClientProcessorMXBean serverMxBean =
+                    getMxBean(ign.name(), "Clients", ClientListenerProcessor.class, ClientProcessorMXBean.class);
+
+                serverMxBean.showFullStackOnClientSide(true);
+
+                try {
+                    cache.put(1, new ThinBinaryValue());
+                }
+                catch (Exception e) {
+                    assertTrue(X.getFullStackTrace(e).contains(castErr));
+                }
+            }
+        }
+
+        assertTrue(lsnrCast.check());
+    }
+
+    /**
+     * Test interceptor implementation.
+     */
+    private static class ThinBinaryValueInterceptor extends CacheInterceptorAdapter<String, ThinBinaryValue> {
+        /** {@inheritDoc} */
+        @Override public ThinBinaryValue onBeforePut(Cache.Entry<String, ThinBinaryValue> entry, ThinBinaryValue newVal) {
+            return super.onBeforePut(entry, newVal);
+        }
+    }
+
+    /**
+     * Test value class.
+     */
+    private static class ThinBinaryValue {
     }
 
     /**

@@ -48,4 +48,14 @@ public interface ClientProcessorMXBean {
     public boolean dropConnection(
         @MXBeanParameter(name = "id", description = "Client connection ID.") long id
     );
+
+    /**
+     * If sets to {@code true} shows full stack trace otherwise highlevel short error message.
+     *
+     * @param show Show flag.
+     */
+    @MXBeanDescription("Show error full stack.")
+    void showFullStackOnClientSide(
+        @MXBeanParameter(name = "show", description = "Show error full stack.") boolean show
+    );
 }
