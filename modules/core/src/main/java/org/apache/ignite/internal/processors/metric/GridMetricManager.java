@@ -300,7 +300,7 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
 
         if (!sunOperatingSystemMXBeanAvailable()) {
             log.warning("The 'com.sun.management.OperatingSystemMXBean' class is not available. " +
-                "System/JVM memory and CPU statistics may be not be available.");
+                "System/JVM memory and CPU statistics may be not available.");
         }
     }
 
