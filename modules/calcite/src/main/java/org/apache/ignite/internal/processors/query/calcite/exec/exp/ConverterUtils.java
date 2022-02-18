@@ -361,8 +361,6 @@ public class ConverterUtils {
                         "toString",
                         operand));
             }
-            else if (toType == UUID.class && fromType == String.class)
-                return Expressions.call(UUID.class, "fromString", operand);
             else {
                 Expression result;
                 try {
@@ -390,6 +388,9 @@ public class ConverterUtils {
                 return result;
             }
         }
+        else if (toType == UUID.class && fromType == String.class)
+            return Expressions.call(UUID.class, "fromString", operand);
+
         return Expressions.convert_(operand, toType);
     }
 

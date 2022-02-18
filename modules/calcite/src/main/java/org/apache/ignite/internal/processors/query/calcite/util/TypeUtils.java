@@ -352,12 +352,12 @@ public class TypeUtils {
                 else
                     throw new IgniteException("Expected YEAR-MONTH interval literal");
             }
-            else if (UUID.class.equals(storageType)) {
-                if (literal instanceof SqlCharStringLiteral)
-                    internalVal = UUID.fromString(literal.getValueAs(String.class));
-                else
-                    throw new IgniteException("Expected string literal");
-            }
+//            else if (UUID.class.equals(storageType)) {
+//                if (literal instanceof SqlCharStringLiteral)
+//                    internalVal = UUID.fromString(literal.getValueAs(String.class));
+//                else
+//                    throw new IgniteException("Expected string literal");
+//            }
             else {
                 if (storageType instanceof Class)
                     internalVal = literal.getValueAs((Class<?>)storageType);
