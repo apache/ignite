@@ -804,7 +804,7 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                         boolean walEnabled = false;
 
                         // Log only there are at least one persistent or cdc enabled group.
-                        if (!near() && !F.isEmpty(dataEntries) && cctx.wal() != null) {
+                        if (!near() && !F.isEmpty(dataEntries) && cctx.cdcWal() != null) {
                             for (int i = 0; i < dataEntries.size(); i++) {
                                 CacheGroupContext grpCtx = dataEntries.get(i).get2().context().group();
 
