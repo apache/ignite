@@ -597,11 +597,9 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
                 };
             }
         } catch (@SuppressWarnings("ErrorNotRethrown") NoClassDefFoundError ignored) {
-            // com.sun.management.OperatingSystemMXBean does not exist.
+            log.warning("The 'com.sun.management.OperatingSystemMXBean' class is not available for class loader. " +
+                "System/JVM memory and CPU statistics may be not available.");
         }
-
-        log.warning("The 'com.sun.management.OperatingSystemMXBean' class is not available for class loader. " +
-            "System/JVM memory and CPU statistics may be not available.");
 
         return new SunOperatingSystemMXBeanAccessor() {
             @Override public long getProcessCpuTime() {
