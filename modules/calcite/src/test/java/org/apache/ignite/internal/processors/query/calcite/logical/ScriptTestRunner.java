@@ -61,10 +61,10 @@ public class ScriptTestRunner extends Runner {
 
     static {
         try {
-            log = new GridTestLog4jLogger("src/test/config/log4j-test.xml");
+            log = new GridTestLog4jLogger(U.resolveIgnitePath("modules/core/src/test/config/log4j-test.xml"));
         }
         catch (Exception e) {
-            e.printStackTrace();
+            e.printStackTrace(System.err);
 
             log = null;
 
@@ -98,7 +98,7 @@ public class ScriptTestRunner extends Runner {
         assert !F.isEmpty(env.scriptsRoot());
 
         nodes = env.nodes();
-        scriptsRoot = FS.getPath(env.scriptsRoot());
+        scriptsRoot = FS.getPath(U.resolveIgnitePath(env.scriptsRoot()).getPath());
         testRegex = F.isEmpty(env.regex()) ? null : Pattern.compile(env.regex());
         restartCluster = env.restart();
         timeout = env.timeout();
@@ -147,15 +147,19 @@ public class ScriptTestRunner extends Runner {
 
         String fileName = test.getFileName().toString();
 
-        if (
-            (!fileName.endsWith(".test") && !fileName.endsWith(".test_slow") && testRegex == null)
-                || (testRegex != null && !testRegex.matcher(test.toString()).find())
-        )
+        Description desc = Description.createTestDescription(dirName, fileName);
+
+        if (testRegex != null && !testRegex.matcher(test.toString()).find())
             return;
 
-        beforeTest();
+        if (testRegex == null && !fileName.endsWith(".test") && !fileName.endsWith(".test_slow")) {
+            if (fileName.endsWith(".test_ignore"))
+                notifier.fireTestIgnored(desc);
 
-        Description desc = Description.createTestDescription(dirName, fileName);
+            return;
+        }
+
+        beforeTest();
 
         notifier.fireTestStarted(desc);
 

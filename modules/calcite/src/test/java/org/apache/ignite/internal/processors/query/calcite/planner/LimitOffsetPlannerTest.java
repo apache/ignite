@@ -17,10 +17,6 @@
 
 package org.apache.ignite.internal.processors.query.calcite.planner;
 
-import java.util.Arrays;
-
-import org.apache.calcite.rel.RelCollations;
-import org.apache.calcite.rel.RelFieldCollation;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.util.ImmutableIntList;
@@ -36,8 +32,6 @@ import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactor
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeSystem;
 import org.apache.ignite.internal.util.typedef.F;
 import org.junit.Test;
-
-import static java.util.stream.Collectors.toList;
 
 /**
  * Planner test for LIMIT and OFFSET.
@@ -187,22 +181,8 @@ public class LimitOffsetPlannerTest extends AbstractPlannerTest {
             }
         };
 
-        if (!F.isEmpty(indexedColumns)) {
-            table.addIndex(
-                RelCollations.of(
-                    Arrays.stream(indexedColumns)
-                        .mapToObj(
-                            idx -> new RelFieldCollation(
-                                idx,
-                                RelFieldCollation.Direction.ASCENDING,
-                                RelFieldCollation.NullDirection.FIRST
-                            )
-                        )
-                        .collect(toList())
-                ),
-                "test_idx"
-            );
-        }
+        if (!F.isEmpty(indexedColumns))
+            table.addIndex("test_idx", indexedColumns);
 
         return createSchema(table);
     }

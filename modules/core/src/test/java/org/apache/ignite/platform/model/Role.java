@@ -23,8 +23,12 @@ public class Role {
     String name;
 
     /** */
-    public Role(String name) {
+    AccessLevel accessLevel;
+
+    /** */
+    public Role(String name, AccessLevel accessLevel) {
         this.name = name;
+        this.accessLevel = accessLevel;
     }
 
     /** */
@@ -35,5 +39,15 @@ public class Role {
     /** */
     public void setName(String name) {
         this.name = name;
+    }
+
+    /** */
+    public AccessLevel getAccessLevel() {
+        return accessLevel;
+    }
+
+    /** */
+    public void setAccessLevel(AccessLevel accessLevel) {
+        this.accessLevel = accessLevel;
     }
 }

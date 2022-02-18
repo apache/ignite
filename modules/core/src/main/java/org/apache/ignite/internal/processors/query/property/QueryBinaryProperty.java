@@ -25,6 +25,7 @@ import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.binary.BinaryObjectEx;
 import org.apache.ignite.internal.binary.BinaryObjectExImpl;
+import org.apache.ignite.internal.processors.cache.KeyCacheObjectImpl;
 import org.apache.ignite.internal.processors.query.GridQueryProperty;
 import org.apache.ignite.internal.util.typedef.F;
 
@@ -123,6 +124,11 @@ public class QueryBinaryProperty implements GridQueryProperty {
             BinaryObjectBuilder obj0 = (BinaryObjectBuilder)obj;
 
             return obj0.getField(propName);
+        }
+        else if (obj instanceof KeyCacheObjectImpl) {
+            KeyCacheObjectImpl obj0 = (KeyCacheObjectImpl)obj;
+
+            return obj0.value(null, false);
         }
         else
             throw new IgniteCheckedException("Unexpected binary object class [type=" + obj.getClass() + ']');

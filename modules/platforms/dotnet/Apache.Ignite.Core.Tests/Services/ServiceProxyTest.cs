@@ -24,9 +24,9 @@ namespace Apache.Ignite.Core.Tests.Services
     using System.Reflection;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Impl.Binary;
-    using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Impl.Memory;
     using Apache.Ignite.Core.Impl.Services;
+    using Apache.Ignite.Core.Platform;
     using Apache.Ignite.Core.Services;
     using NUnit.Framework;
 

@@ -22,6 +22,7 @@ import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Supplier;
 import com.google.common.collect.ImmutableList;
+import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.ignite.internal.processors.query.calcite.metadata.ColocationMappingException;
@@ -34,7 +35,6 @@ import org.apache.ignite.internal.processors.query.calcite.rel.IgniteReceiver;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSender;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
-import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.NotNull;
@@ -121,8 +121,8 @@ public class Fragment {
     }
 
     /** */
-    public Fragment copy() {
-        return new Cloner(Commons.cluster()).go(this);
+    public Fragment attach(RelOptCluster cluster) {
+        return root.getCluster() == cluster ? this : new Cloner(cluster).go(this);
     }
 
     /**

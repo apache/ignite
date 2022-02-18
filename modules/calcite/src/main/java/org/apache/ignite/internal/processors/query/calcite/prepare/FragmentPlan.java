@@ -28,7 +28,7 @@ public class FragmentPlan implements QueryPlan {
 
     /** */
     public FragmentPlan(IgniteRel root) {
-        RelOptCluster cluster = Commons.cluster();
+        RelOptCluster cluster = Commons.emptyCluster();
 
         this.root = new Cloner(cluster).visit(root);
     }

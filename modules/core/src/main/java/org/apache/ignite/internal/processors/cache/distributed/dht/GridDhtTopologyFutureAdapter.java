@@ -62,10 +62,13 @@ public abstract class GridDhtTopologyFutureAdapter extends GridFutureAdapter<Aff
         boolean valid = true;
 
         if (!grp.systemCache()) {
-            TopologyValidator validator = grp.topologyValidator();
+            for (TopologyValidator validator : grp.topologyValidators()) {
+                if (!validator.validate(topNodes)) {
+                    valid = false;
 
-            if (validator != null)
-                valid = validator.validate(topNodes);
+                    break;
+                }
+            }
         }
 
         return new CacheGroupValidation(valid, lostParts);

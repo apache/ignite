@@ -159,7 +159,7 @@ public class IgniteClusterSnapshotRestoreWithIndexingTest extends IgniteClusterS
         SnapshotEvent startEvt = evts.get(0);
 
         assertEquals(SNAPSHOT_NAME, startEvt.snapshotName());
-        assertTrue(startEvt.message().contains("grps=[" + DEFAULT_CACHE_NAME + ']'));
+        assertTrue(startEvt.message().contains("caches=[" + DEFAULT_CACHE_NAME + ']'));
     }
 
     /** {@inheritDoc} */

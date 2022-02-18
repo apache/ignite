@@ -53,6 +53,8 @@ public class CommandLinePrintPropertiesTest extends GridCommonAbstractTest {
 
                 SystemProperty ann = field.getAnnotation(SystemProperty.class);
 
+                assertNotNull("Field " + field.getName() + " has no SystemProperty annotation.", ann);
+
                 assertFalse(field.getName() + " value shouldn't ends with dot.", ann.value().endsWith("."));
                 assertFalse(field.getName() + " defaults shouldn't ends with dot.", ann.defaults().endsWith("."));
 

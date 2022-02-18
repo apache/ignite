@@ -28,6 +28,7 @@ import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteExperimental;
+import org.apache.ignite.mem.MemoryAllocator;
 import org.apache.ignite.mxbean.MetricsMxBean;
 import org.jetbrains.annotations.Nullable;
 
@@ -86,12 +87,6 @@ public class DataStorageConfiguration implements Serializable {
     public static final long DFLT_DATA_REGION_MAX_SIZE = Math.max(
         (long)(DFLT_DATA_REGION_FRACTION * U.getTotalMemoryAvailable()),
         DFLT_DATA_REGION_INITIAL_SIZE);
-
-    /** Default initial size of a memory chunk for the system cache (40 MB). */
-    private static final long DFLT_SYS_REG_INIT_SIZE = 40L * 1024 * 1024;
-
-    /** Default max size of a memory chunk for the system cache (100 MB). */
-    private static final long DFLT_SYS_REG_MAX_SIZE = 100L * 1024 * 1024;
 
     /** Default memory page size. */
     public static final int DFLT_PAGE_SIZE = 4 * 1024;
@@ -195,18 +190,15 @@ public class DataStorageConfiguration implements Serializable {
     /** Value used to indicate the use of half of the {@link #getMaxWalArchiveSize}. */
     public static final long HALF_MAX_WAL_ARCHIVE_SIZE = -1;
 
-    /** Initial size of a memory chunk reserved for system cache. */
-    private long sysRegionInitSize = DFLT_SYS_REG_INIT_SIZE;
-
-    /** Maximum size of a memory chunk reserved for system cache. */
-    private long sysRegionMaxSize = DFLT_SYS_REG_MAX_SIZE;
-
     /** Memory page size. */
     private int pageSize = IgniteSystemProperties.getInteger(
         IGNITE_DEFAULT_DATA_STORAGE_PAGE_SIZE, 0);
 
     /** Concurrency level. */
     private int concLvl;
+
+    /** Configuration of default data region. */
+    private SystemDataRegionConfiguration sysDataRegConf = new SystemDataRegionConfiguration();
 
     /** Configuration of default data region. */
     private DataRegionConfiguration dfltDataRegConf = new DataRegionConfiguration();
@@ -303,13 +295,11 @@ public class DataStorageConfiguration implements Serializable {
      */
     private long walAutoArchiveAfterInactivity = -1;
 
-    /** Time interval (in milliseconds) for force archiving of incompletely WAL segment. */
+    /** Time interval (in milliseconds) after last log of data change for force archiving of incompletely WAL segment. */
     @IgniteExperimental
     private long walForceArchiveTimeout = -1;
 
-    /**
-     * If true, threads that generate dirty pages too fast during ongoing checkpoint will be throttled.
-     */
+    /** If true, threads that generate dirty pages too fast during ongoing checkpoint will be throttled. */
     private boolean writeThrottlingEnabled = DFLT_WRITE_THROTTLING_ENABLED;
 
     /**
@@ -348,6 +338,9 @@ public class DataStorageConfiguration implements Serializable {
     /** Minimum size of wal archive folder, in bytes. */
     private long minWalArchiveSize = HALF_MAX_WAL_ARCHIVE_SIZE;
 
+    /** Default memory allocator for all data regions. */
+    @Nullable private MemoryAllocator memoryAllocator = null;
+
     /**
      * Creates valid durable memory configuration with all default values.
      */
@@ -359,23 +352,29 @@ public class DataStorageConfiguration implements Serializable {
      * Initial size of a data region reserved for system cache.
      *
      * @return Size in bytes.
+     * @deprecated use {@link SystemDataRegionConfiguration#getInitialSize}.
      */
+    @Deprecated
     public long getSystemRegionInitialSize() {
-        return sysRegionInitSize;
+        if (sysDataRegConf == null)
+            sysDataRegConf = new SystemDataRegionConfiguration();
+
+        return sysDataRegConf.getInitialSize();
     }
 
     /**
      * Sets initial size of a data region reserved for system cache.
      *
-     * Default value is {@link #DFLT_SYS_REG_INIT_SIZE}
-     *
      * @param sysRegionInitSize Size in bytes.
      * @return {@code this} for chaining.
+     * @deprecated use {@link SystemDataRegionConfiguration#setInitialSize(long)}.
      */
+    @Deprecated
     public DataStorageConfiguration setSystemRegionInitialSize(long sysRegionInitSize) {
-        A.ensure(sysRegionInitSize > 0, "System region initial size can not be less zero.");
+        if (sysDataRegConf == null)
+            sysDataRegConf = new SystemDataRegionConfiguration();
 
-        this.sysRegionInitSize = sysRegionInitSize;
+        sysDataRegConf.setInitialSize(sysRegionInitSize);
 
         return this;
     }
@@ -384,24 +383,30 @@ public class DataStorageConfiguration implements Serializable {
      * Maximum data region size reserved for system cache.
      *
      * @return Size in bytes.
+     * @deprecated use {@link SystemDataRegionConfiguration#getMaxSize()}.
      */
+    @Deprecated
     public long getSystemRegionMaxSize() {
-        return sysRegionMaxSize;
+        if (sysDataRegConf == null)
+            sysDataRegConf = new SystemDataRegionConfiguration();
+
+        return sysDataRegConf.getMaxSize();
     }
 
     /**
      * Sets maximum data region size reserved for system cache. The total size should not be less than 10 MB
      * due to internal data structures overhead.
      *
-     * Default value is {@link #DFLT_SYS_REG_MAX_SIZE}.
-     *
      * @param sysRegionMaxSize Maximum size in bytes for system cache data region.
      * @return {@code this} for chaining.
+     * @deprecated use {@link SystemDataRegionConfiguration#setMaxSize(long)}.
      */
+    @Deprecated
     public DataStorageConfiguration setSystemRegionMaxSize(long sysRegionMaxSize) {
-        A.ensure(sysRegionMaxSize > 0, "System region max size can not be less zero.");
+        if (sysDataRegConf == null)
+            sysDataRegConf = new SystemDataRegionConfiguration();
 
-        this.sysRegionMaxSize = sysRegionMaxSize;
+        sysDataRegConf.setMaxSize(sysRegionMaxSize);
 
         return this;
     }
@@ -494,13 +499,34 @@ public class DataStorageConfiguration implements Serializable {
     }
 
     /**
-     * Overrides configuration of default data region which is created automatically.
+     * Overrides configuration of default data region which has been created automatically.
      *
      * @param dfltDataRegConf Default data region configuration.
      * @return {@code this} for chaining.
      */
     public DataStorageConfiguration setDefaultDataRegionConfiguration(DataRegionConfiguration dfltDataRegConf) {
         this.dfltDataRegConf = dfltDataRegConf;
+
+        return this;
+    }
+
+    /**
+     * Configuration of system data region.
+     *
+     * @return Configuration of system data region.
+     */
+    public SystemDataRegionConfiguration getSystemDataRegionConfiguration() {
+        return sysDataRegConf;
+    }
+
+    /**
+     * Overrides configuration of system data region which has been created automatically.
+     *
+     * @param sysDataRegConf System data region configuration.
+     * @return {@code this} for chaining.
+     */
+    public DataStorageConfiguration setSystemDataRegionConfiguration(SystemDataRegionConfiguration sysDataRegConf) {
+        this.sysDataRegConf = sysDataRegConf;
 
         return this;
     }
@@ -1104,10 +1130,10 @@ public class DataStorageConfiguration implements Serializable {
     }
 
     /**
-     * @param walForceArchiveTimeout time in millis to run auto archiving segment (even if incomplete) after last
-     * record logging.<br> Positive value enables incomplete segment archiving after timeout (inactivity).<br> Zero or
-     * negative  value disables auto archiving.
-     * @return current configuration instance for chaining
+     * @param walForceArchiveTimeout Time in millis after last data change logged to run segment auto archivation
+     * (even if incomplete).<br> Positive value enables incomplete segment archivation after timeout.<br>
+     * Zero or negative value disables forcefull auto archiving.
+     * @return current configuration instance for chaining.
      */
     @IgniteExperimental
     public DataStorageConfiguration setWalForceArchiveTimeout(long walForceArchiveTimeout) {
@@ -1117,7 +1143,8 @@ public class DataStorageConfiguration implements Serializable {
     }
 
     /**
-     * @return time in millis to run auto archiving WAL segment (even if incomplete) after last record log
+     * @return time interval (in milliseconds) after last log of data change
+     * for force archiving of incompletely WAL segment.
      */
     @IgniteExperimental
     public long getWalForceArchiveTimeout() {
@@ -1338,6 +1365,27 @@ public class DataStorageConfiguration implements Serializable {
         }
 
         this.minWalArchiveSize = walArchiveMinSize;
+
+        return this;
+    }
+
+    /**
+     * @return Memory allocator instance.
+     */
+    @Nullable public MemoryAllocator getMemoryAllocator() {
+        return memoryAllocator;
+    }
+
+    /**
+     * Sets default memory allocator for all memory regions. If not specified, default, based on {@code Unsafe}
+     * allocator will be used. Allocator can be overrided for data region using
+     * {@link DataRegionConfiguration#setMemoryAllocator(MemoryAllocator)}
+     *
+     * @param allocator Memory allocator instance.
+     * @return {@code this} for chaining.
+     */
+    public DataStorageConfiguration setMemoryAllocator(MemoryAllocator allocator) {
+        memoryAllocator = allocator;
 
         return this;
     }

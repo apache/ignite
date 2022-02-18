@@ -1,19 +1,9 @@
 # name: test/sql/join/test_cross_product_parallelism.test_slow
 # description: Test cross product with parallelism
 # group: [join]
-# Ignore https://issues.apache.org/jira/browse/IGNITE-14555
 
 statement ok
-PRAGMA enable_verification
-
-statement ok
-PRAGMA threads=4
-
-statement ok
-PRAGMA force_parallelism
-
-statement ok
-CREATE TABLE integers AS SELECT * FROM range(0, 5000) tbl(i)
+CREATE TABLE integers AS SELECT * FROM system_range(0, 4999) tbl(i)
 
 # test if order remains the same
 query I

@@ -214,6 +214,11 @@ public class AccumulatorsFactory<Row> implements Supplier<List<AccumulatorWrappe
             List<RelDataType> inTypes = SqlTypeUtil.projectTypes(inputRowType, call.getArgList());
             List<RelDataType> outTypes = accumulator.argumentTypes(ctx.getTypeFactory());
 
+            if (call.getArgList().size() > outTypes.size()) {
+                throw new AssertionError("Unexpected number of arguments: " +
+                    "expected=" + outTypes.size() + ", actual=" + inTypes.size());
+            }
+
             if (call.ignoreNulls())
                 inTypes = Commons.transform(inTypes, this::nonNull);
 

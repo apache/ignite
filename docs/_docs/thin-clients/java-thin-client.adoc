@@ -241,7 +241,7 @@ interface is the entry-point to the APIs that can be used as follows:
 
 * Get or change the state of a cluster
 * Get a list of all cluster nodes
-* Create logical groups our of cluster nodes and use other Ignite APIs to perform certain operations on the group
+* Create logical groups of cluster nodes and use other Ignite APIs to perform certain operations on the group
 
 Use the instance of `IgniteClient` to obtain a reference to the `ClientCluster` interface:
 [source, java]

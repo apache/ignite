@@ -33,6 +33,7 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.h2.util.DateTimeUtils;
 import org.jetbrains.annotations.Nullable;
@@ -309,25 +310,10 @@ public class BasicSqlTypesIndexTest extends AbstractIndexingCommonTest {
         String idxTypeStr = "BINARY";
         Class<byte[]> idxCls = byte[].class;
 
-        Comparator<byte[]> comp = new Comparator<byte[]>() {
-            @Override public int compare(byte[] o1, byte[] o2) {
-                int res;
-                int len = Math.min(o1.length, o2.length);
-
-                for (int i = 0; i < len; i++) {
-                    if ((res = Byte.compare(o1[i], o2[i])) != 0)
-                        return res;
-                }
-
-                return Integer.compare(o1.length, o2.length);
-            }
-        };
-
-        // TODO: https://issues.apache.org/jira/browse/IGNITE-12313
-//        createPopulateAndVerify(idxTypeStr, idxCls, comp, PK, "BACKUPS=1");
-//        createPopulateAndVerify(idxTypeStr, idxCls, comp, PK, "BACKUPS=1,AFFINITY_KEY=idxVal");
-        createPopulateAndVerify(idxTypeStr, idxCls, comp, SECONDARY_DESC, "BACKUPS=1");
-        createPopulateAndVerify(idxTypeStr, idxCls, comp, SECONDARY_ASC, "BACKUPS=1");
+        createPopulateAndVerify(idxTypeStr, idxCls, F::compareArrays, PK, "BACKUPS=1");
+        createPopulateAndVerify(idxTypeStr, idxCls, F::compareArrays, PK, "BACKUPS=1,AFFINITY_KEY=idxVal");
+        createPopulateAndVerify(idxTypeStr, idxCls, F::compareArrays, SECONDARY_DESC, "BACKUPS=1");
+        createPopulateAndVerify(idxTypeStr, idxCls, F::compareArrays, SECONDARY_ASC, "BACKUPS=1");
     }
 
     /** */

@@ -116,8 +116,18 @@ public class QueryPlanCacheImpl extends AbstractService implements QueryPlanCach
     }
 
     /** {@inheritDoc} */
+    @Override public void onIndexRebuildStarted(String schemaName, String tblName) {
+        clear();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onIndexRebuildFinished(String schemaName, String tblName) {
+        clear();
+    }
+
+    /** {@inheritDoc} */
     @Override public void onSchemaCreated(String schemaName) {
-        // No-op
+        // No-op.
     }
 
     /** {@inheritDoc} */
@@ -126,7 +136,7 @@ public class QueryPlanCacheImpl extends AbstractService implements QueryPlanCach
         GridQueryTypeDescriptor typeDesc,
         GridCacheContextInfo<?, ?> cacheInfo
     ) {
-        // No-op
+        // No-op.
     }
 
     /** {@inheritDoc} */

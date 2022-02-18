@@ -19,9 +19,9 @@ package org.apache.ignite.internal.processors.query.calcite.exec.rel;
 
 import java.util.Arrays;
 import java.util.Iterator;
+import java.util.List;
 import java.util.UUID;
 import java.util.function.Predicate;
-
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
@@ -29,6 +29,7 @@ import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactor
 import org.apache.ignite.internal.processors.query.calcite.util.TypeUtils;
 import org.apache.ignite.internal.util.lang.GridTuple3;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.jetbrains.annotations.NotNull;
@@ -84,6 +85,11 @@ public class HashIndexSpoolExecutionTest extends AbstractExecutionTest {
                             null,
                             new Object[] {size / 2 + 1, null, null},
                             eqCnt
+                        ),
+                        new GridTuple3(
+                            (Predicate<Object[]>)r -> ((int)r[2]) == 0,
+                            new Object[] {size / 2 + 1, null, null},
+                            1
                         )
                     };
                 }
@@ -114,6 +120,7 @@ public class HashIndexSpoolExecutionTest extends AbstractExecutionTest {
                     ctx,
                     rowType,
                     ImmutableBitSet.of(0),
+                    testFilter,
                     () -> searchRow
                 );
 
@@ -129,25 +136,57 @@ public class HashIndexSpoolExecutionTest extends AbstractExecutionTest {
                     testFilter.delegate = bound.get1();
                     System.arraycopy(bound.get2(), 0, searchRow, 0, searchRow.length);
 
-                    int cnt = 0;
-
-                    while (root.hasNext()) {
-                        root.next();
-
-                        cnt++;
-                    }
-
-                    assertEquals(
-                        "Invalid result size",
-                        (int)bound.get3(),
-                        cnt);
-
-                    root.rewind();
+                    assertEquals("Invalid result size", (int)bound.get3(), root.rowsCount());
                 }
 
                 root.closeRewindableRoot();
             }
         }
+    }
+
+    /** */
+    @Test
+    public void testNullsInSearchRow() {
+        ExecutionContext<Object[]> ctx = executionContext(F.first(nodes()), UUID.randomUUID(), 0);
+        RelDataType rowType = TypeUtils.createRowType(ctx.getTypeFactory(), int.class, int.class);
+
+        ScanNode<Object[]> scan = new ScanNode<>(ctx, rowType, new TestTable(
+            4,
+            rowType,
+            (rowId) -> (rowId & 1) == 0 ? null : 1,
+            (rowId) -> (rowId & 2) == 0 ? null : 1
+        ));
+
+        Object[] searchRow = new Object[2];
+
+        IndexSpoolNode<Object[]> spool = IndexSpoolNode.createHashSpool(
+            ctx,
+            rowType,
+            ImmutableBitSet.of(0, 1),
+            null,
+            () -> searchRow
+        );
+
+        spool.register(scan);
+
+        RootRewindable<Object[]> root = new RootRewindable<>(ctx, rowType);
+
+        root.register(spool);
+
+        List<T2<Object[], Integer>> testBounds = F.asList(
+            new T2<>(new Object[] {null, null}, 0),
+            new T2<>(new Object[] {1, null}, 0),
+            new T2<>(new Object[] {null, 1}, 0),
+            new T2<>(new Object[] {1, 1}, 1)
+        );
+
+        for (T2<Object[], Integer> bound : testBounds) {
+            System.arraycopy(bound.get1(), 0, searchRow, 0, searchRow.length);
+
+            assertEquals("Invalid result size", (int)bound.get2(), root.rowsCount());
+        }
+
+        root.closeRewindableRoot();
     }
 
     /** */

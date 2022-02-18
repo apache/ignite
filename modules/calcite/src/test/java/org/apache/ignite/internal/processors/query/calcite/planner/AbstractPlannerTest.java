@@ -22,23 +22,17 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 import java.util.function.BiFunction;
-import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import com.google.common.collect.ImmutableSet;
-import org.apache.calcite.config.CalciteConnectionConfig;
-import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.AbstractRelNode;
-import org.apache.calcite.rel.RelCollation;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelRoot;
 import org.apache.calcite.rel.RelVisitor;
@@ -46,14 +40,9 @@ import org.apache.calcite.rel.core.TableModify;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rel.type.RelDataTypeField;
-import org.apache.calcite.rel.type.RelDataTypeImpl;
-import org.apache.calcite.rel.type.RelProtoDataType;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.schema.ColumnStrategy;
-import org.apache.calcite.schema.Schema;
 import org.apache.calcite.schema.SchemaPlus;
-import org.apache.calcite.schema.Statistic;
-import org.apache.calcite.sql.SqlCall;
 import org.apache.calcite.sql.SqlExplainLevel;
 import org.apache.calcite.sql.SqlFunction;
 import org.apache.calcite.sql.SqlNode;
@@ -85,21 +74,16 @@ import org.apache.ignite.internal.processors.query.calcite.prepare.MappingQueryC
 import org.apache.ignite.internal.processors.query.calcite.prepare.PlannerHelper;
 import org.apache.ignite.internal.processors.query.calcite.prepare.PlanningContext;
 import org.apache.ignite.internal.processors.query.calcite.prepare.Splitter;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexScan;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableScan;
-import org.apache.ignite.internal.processors.query.calcite.rel.logical.IgniteLogicalTableScan;
-import org.apache.ignite.internal.processors.query.calcite.schema.CacheIndexImpl;
 import org.apache.ignite.internal.processors.query.calcite.schema.CacheTableDescriptor;
 import org.apache.ignite.internal.processors.query.calcite.schema.ColumnDescriptor;
-import org.apache.ignite.internal.processors.query.calcite.schema.IgniteCacheTable;
-import org.apache.ignite.internal.processors.query.calcite.schema.IgniteIndex;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteSchema;
-import org.apache.ignite.internal.processors.query.calcite.schema.IgniteStatisticsImpl;
 import org.apache.ignite.internal.processors.query.calcite.schema.ModifyTuple;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeSystem;
-import org.apache.ignite.internal.processors.query.stat.ObjectStatisticsImpl;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -251,41 +235,39 @@ public abstract class AbstractPlannerTest extends GridCommonAbstractTest {
 
     /** */
     protected IgniteRel physicalPlan(String sql, IgniteSchema publicSchema, String... disabledRules) throws Exception {
-        return physicalPlan(sql, plannerCtx(sql, publicSchema, disabledRules));
+        return physicalPlan(plannerCtx(sql, publicSchema, disabledRules));
     }
 
     /** */
     protected IgniteRel physicalPlan(String sql, Collection<IgniteSchema> schemas, String... disabledRules) throws Exception {
-        return physicalPlan(sql, plannerCtx(sql, schemas, disabledRules));
+        return physicalPlan(plannerCtx(sql, schemas, disabledRules));
     }
 
     /** */
-    protected IgniteRel physicalPlan(String sql, PlanningContext ctx) throws Exception {
+    protected IgniteRel physicalPlan(PlanningContext ctx) throws Exception {
         try (IgnitePlanner planner = ctx.planner()) {
             assertNotNull(planner);
+            assertNotNull(ctx.query());
 
-            String qry = ctx.query();
+            return physicalPlan(planner, ctx.query());
+        }
+    }
 
-            assertNotNull(qry);
+    /** */
+    protected IgniteRel physicalPlan(IgnitePlanner planner, String qry) throws Exception {
+        // Parse
+        SqlNode sqlNode = planner.parse(qry);
 
-            // Parse
-            SqlNode sqlNode = planner.parse(qry);
+        // Validate
+        sqlNode = planner.validate(sqlNode);
 
-            // Validate
-            sqlNode = planner.validate(sqlNode);
+        try {
+            return PlannerHelper.optimize(sqlNode, planner, log);
+        }
+        catch (Throwable ex) {
+            System.err.println(planner.dump());
 
-            try {
-                IgniteRel rel = PlannerHelper.optimize(sqlNode, planner, log);
-
-//                System.out.println(RelOptUtil.toString(rel));
-
-                return rel;
-            }
-            catch (Throwable ex) {
-                System.err.println(planner.dump());
-
-                throw ex;
-            }
+            throw ex;
         }
     }
 
@@ -496,6 +478,30 @@ public abstract class AbstractPlannerTest extends GridCommonAbstractTest {
     }
 
     /**
+     * Predicate builder for "Index scan with given name" condition.
+     */
+    protected <T extends RelNode> Predicate<IgniteIndexScan> isIndexScan(String tableName, String idxName) {
+        return isInstanceOf(IgniteIndexScan.class).and(
+            n -> {
+                String scanTableName = Util.last(n.getTable().getQualifiedName());
+
+                if (!tableName.equalsIgnoreCase(scanTableName)) {
+                    lastErrorMsg = "Unexpected table name [exp=" + tableName + ", act=" + scanTableName + ']';
+
+                    return false;
+                }
+
+                if (!idxName.equals(n.indexName())) {
+                    lastErrorMsg = "Unexpected index name [exp=" + idxName + ", act=" + n.indexName() + ']';
+
+                    return false;
+                }
+
+                return true;
+            });
+    }
+
+    /**
      * Predicate builder for "Any child satisfy predicate" condition.
      */
     protected <T extends RelNode> Predicate<RelNode> hasChildThat(Predicate<T> predicate) {
@@ -638,7 +644,7 @@ public abstract class AbstractPlannerTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private BaseQueryContext baseQueryContext(Collection<IgniteSchema> schemas) {
+    protected BaseQueryContext baseQueryContext(Collection<IgniteSchema> schemas) {
         SchemaPlus rootSchema = createRootSchema(false);
         SchemaPlus dfltSchema = null;
 

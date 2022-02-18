@@ -196,7 +196,7 @@ public class ModifyNode<Row> extends AbstractNode<Row> implements SingleNode<Row
 
         GridCacheContext<Object, Object> cctx = desc.cacheContext();
         Map<Object, EntryProcessor<Object, Object, Long>> map = invokeMap(tuples);
-        Map<Object, EntryProcessorResult<Long>> res = cctx.cache().invokeAll(map);
+        Map<Object, EntryProcessorResult<Long>> res = cctx.cache().keepBinary().invokeAll(map);
 
         long updated = res.values().stream().mapToLong(EntryProcessorResult::get).sum();
 

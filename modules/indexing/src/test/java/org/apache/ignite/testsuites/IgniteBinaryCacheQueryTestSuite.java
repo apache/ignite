@@ -177,6 +177,7 @@ import org.apache.ignite.internal.processors.cache.index.IgniteDecimalSelfTest;
 import org.apache.ignite.internal.processors.cache.index.IndexMetricsTest;
 import org.apache.ignite.internal.processors.cache.index.LongIndexNameTest;
 import org.apache.ignite.internal.processors.cache.index.OptimizedMarshallerIndexNameTest;
+import org.apache.ignite.internal.processors.cache.index.PojoIndexLocalQueryTest;
 import org.apache.ignite.internal.processors.cache.index.QueryEntityValidationSelfTest;
 import org.apache.ignite.internal.processors.cache.index.SchemaExchangeSelfTest;
 import org.apache.ignite.internal.processors.cache.index.SqlPartitionEvictionTest;
@@ -655,6 +656,7 @@ import org.junit.runners.Suite;
 
     BasicSqlTypesIndexTest.class,
     BasicJavaTypesIndexTest.class,
+    PojoIndexLocalQueryTest.class,
 
     //Cancellation of queries.
     KillQueryTest.class,

@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.calcite.trait;
 
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -24,7 +25,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
-
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import org.apache.calcite.linq4j.Ord;
@@ -465,10 +465,26 @@ public class TraitUtils {
      * @param keys The keys to create collation from.
      * @return New collation.
      */
-    public static RelCollation createCollation(List<Integer> keys) {
+    public static RelCollation createCollation(Collection<Integer> keys) {
         return RelCollations.of(
-            keys.stream().map(RelFieldCollation::new).collect(Collectors.toList())
+            keys.stream().map(TraitUtils::createFieldCollation).collect(Collectors.toList())
         );
+    }
+
+    /**
+     * Creates field collation with default direction and nulls ordering.
+     */
+    public static RelFieldCollation createFieldCollation(int fieldIdx) {
+        return createFieldCollation(fieldIdx, true);
+    }
+
+    /**
+     * Creates field collation with default nulls ordering.
+     */
+    public static RelFieldCollation createFieldCollation(int fieldIdx, boolean asc) {
+        return asc
+            ? new RelFieldCollation(fieldIdx, RelFieldCollation.Direction.ASCENDING, RelFieldCollation.NullDirection.FIRST)
+            : new RelFieldCollation(fieldIdx, RelFieldCollation.Direction.DESCENDING, RelFieldCollation.NullDirection.LAST);
     }
 
     /**

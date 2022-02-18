@@ -153,6 +153,16 @@ public class SystemViewTableImpl extends AbstractTable implements IgniteTable {
         return false;
     }
 
+    /** {@inheritDoc} */
+    @Override public void markIndexRebuildInProgress(boolean mark) {
+        throw new AssertionError("Index rebuild in progress was marked for system view");
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean isIndexRebuildInProgress() {
+        return false;
+    }
+
     /** */
     private static class StatisticsImpl implements Statistic {
         /** {@inheritDoc} */

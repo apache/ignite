@@ -20,6 +20,7 @@
 
 #include <ignite/impl/thin/writable.h>
 #include <ignite/impl/thin/readable.h>
+#include <ignite/impl/thin/cache/continuous/continuous_query_client_holder.h>
 
 #include "impl/response_status.h"
 #include "impl/data_channel.h"
@@ -31,28 +32,15 @@ namespace ignite
     {
         namespace thin
         {
-            /**
-             * Message flags.
-             */
-            struct Flag
-            {
-                enum Type
-                {
-                    /** Failure flag. */
-                    FAILURE = 1,
-
-                    /** Affinity topology change flag. */
-                    AFFINITY_TOPOLOGY_CHANGED = 1 << 1,
-
-                    /** Server notification flag. */
-                    NOTIFICATION = 1 << 2
-                };
-            };
-
             CachePartitionsRequest::CachePartitionsRequest(const std::vector<int32_t>& cacheIds) :
                 cacheIds(cacheIds)
             {
                 // No-op.
+            }
+
+            void ResourceCloseRequest::Write(binary::BinaryWriterImpl& writer, const ProtocolVersion&) const
+            {
+                writer.WriteInt64(id);
             }
 
             void CachePartitionsRequest::Write(binary::BinaryWriterImpl& writer, const ProtocolVersion&) const
@@ -132,30 +120,6 @@ namespace ignite
             bool Response::IsFailure() const
             {
                 return (flags & Flag::FAILURE) != 0;
-            }
-
-            ClientCacheNodePartitionsResponse::ClientCacheNodePartitionsResponse(
-                std::vector<NodePartitions>& nodeParts):
-                nodeParts(nodeParts)
-            {
-                // No-op.
-            }
-
-            ClientCacheNodePartitionsResponse::~ClientCacheNodePartitionsResponse()
-            {
-                // No-op.
-            }
-
-            void ClientCacheNodePartitionsResponse::ReadOnSuccess(
-                binary::BinaryReaderImpl& reader, const ProtocolVersion&)
-            {
-                int32_t num = reader.ReadInt32();
-
-                nodeParts.clear();
-                nodeParts.resize(static_cast<size_t>(num));
-
-                for (int32_t i = 0; i < num; ++i)
-                    nodeParts[i].Read(reader);
             }
 
             CachePartitionsResponse::CachePartitionsResponse(std::vector<PartitionAwarenessGroup>& groups) :
@@ -292,7 +256,7 @@ namespace ignite
             }
 
             CacheGetSizeRequest::CacheGetSizeRequest(int32_t cacheId, bool binary, int32_t peekModes) :
-                CacheRequest<RequestType::CACHE_GET_SIZE>(cacheId, binary),
+                CacheRequest<MessageType::CACHE_GET_SIZE>(cacheId, binary),
                 peekModes(peekModes)
             {
                 // No-op.
@@ -300,7 +264,7 @@ namespace ignite
 
             void CacheGetSizeRequest::Write(binary::BinaryWriterImpl& writer, const ProtocolVersion& ver) const
             {
-                CacheRequest<RequestType::CACHE_GET_SIZE>::Write(writer, ver);
+                CacheRequest<MessageType::CACHE_GET_SIZE>::Write(writer, ver);
 
                 if (peekModes & ignite::thin::cache::CachePeekMode::ALL)
                 {
@@ -353,7 +317,7 @@ namespace ignite
                 int32_t cacheId,
                 const ignite::thin::cache::query::SqlFieldsQuery &qry
                 ) :
-                CacheRequest<RequestType::QUERY_SQL_FIELDS>(cacheId, false),
+                CacheRequest<MessageType::QUERY_SQL_FIELDS>(cacheId, false),
                 qry(qry)
             {
                 // No-op.
@@ -361,7 +325,7 @@ namespace ignite
 
             void SqlFieldsQueryRequest::Write(binary::BinaryWriterImpl& writer, const ProtocolVersion& ver) const
             {
-                CacheRequest<RequestType::QUERY_SQL_FIELDS>::Write(writer, ver);
+                CacheRequest<MessageType::QUERY_SQL_FIELDS>::Write(writer, ver);
 
                 if (qry.schema.empty())
                     writer.WriteNull();
@@ -413,9 +377,26 @@ namespace ignite
                 writer.WriteInt64(cursorId);
             }
 
-            void SqlFieldsCursorGetPageResponse::ReadOnSuccess(binary::BinaryReaderImpl&reader, const ProtocolVersion&)
+            void SqlFieldsCursorGetPageResponse::ReadOnSuccess(binary::BinaryReaderImpl& reader, const ProtocolVersion&)
             {
                 cursorPage.Get()->Read(reader);
+            }
+
+            void ContinuousQueryRequest::Write(binary::BinaryWriterImpl& writer, const ProtocolVersion& ver) const
+            {
+                CacheRequest<MessageType::QUERY_CONTINUOUS>::Write(writer, ver);
+
+                writer.WriteInt32(pageSize);
+                writer.WriteInt64(timeInterval);
+                writer.WriteBool(includeExpired);
+
+                // TODO: IGNITE-16291: Implement remote filters for Continuous Queries.
+                writer.WriteNull();
+            }
+
+            void ContinuousQueryResponse::ReadOnSuccess(binary::BinaryReaderImpl& reader, const ProtocolVersion&)
+            {
+                queryId = reader.ReadInt64();
             }
 
             void ComputeTaskExecuteRequest::Write(binary::BinaryWriterImpl& writer, const ProtocolVersion&) const
@@ -435,31 +416,15 @@ namespace ignite
                 taskId = reader.ReadInt64();
             }
 
-            void ComputeTaskFinishedNotification::Read(binary::BinaryReaderImpl& reader, const ProtocolVersion&)
+            void ComputeTaskFinishedNotification::ReadOnSuccess(binary::BinaryReaderImpl& reader, const ProtocolVersion&)
             {
-                int16_t flags = reader.ReadInt16();
-                if (!(flags & Flag::NOTIFICATION))
-                {
-                    IGNITE_ERROR_FORMATTED_1(IgniteError::IGNITE_ERR_GENERIC, "Was expecting notification but got "
-                        "different kind of message", "flags", flags)
-                }
+                result.Read(reader);
+            }
 
-                int16_t opCode = reader.ReadInt16();
-                if (opCode != RequestType::COMPUTE_TASK_FINISHED)
-                {
-                    IGNITE_ERROR_FORMATTED_2(IgniteError::IGNITE_ERR_GENERIC, "Unexpected notification type",
-                        "expected", (int)RequestType::COMPUTE_TASK_FINISHED, "actual", opCode)
-                }
-
-                if (flags & Flag::FAILURE)
-                {
-                    status = reader.ReadInt32();
-                    reader.ReadString(errorMessage);
-                }
-                else
-                {
-                    result.Read(reader);
-                }
+            void ClientCacheEntryEventNotification::ReadOnSuccess(binary::BinaryReaderImpl& reader, const ProtocolVersion&)
+            {
+                ignite::binary::BinaryRawReader reader0(&reader);
+                query.ReadAndProcessEvents(reader0);
             }
         }
     }

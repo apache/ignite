@@ -242,11 +242,11 @@ namespace Apache.Ignite.Core.Tests.Compute
         {
             _mode = ErrorMode.RmtResErrNotMarshalable;
 
-            BadException e = ExecuteWithError() as BadException;
+            var err = ExecuteWithError();
+            var badException = err as BadException;
 
-            Assert.IsNotNull(e);
-
-            Assert.AreEqual(ErrorMode.RmtResErrNotMarshalable, e.Mode);
+            Assert.IsNotNull(badException, err.ToString());
+            Assert.AreEqual(ErrorMode.RmtResErrNotMarshalable, badException.Mode);
         }
 
         /// <summary>
@@ -359,7 +359,7 @@ namespace Apache.Ignite.Core.Tests.Compute
             RmtJobErrNotMarshalable,
 
             /** Remote job result is not marshalable. */
-            RmtJobResNotMarshalable,            
+            RmtJobResNotMarshalable,
 
             /** Error occurred during local result processing. */
             LocResErr,
@@ -489,7 +489,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         }
 
         /// <summary>
-        /// 
+        ///
         /// </summary>
         [Serializable]
         private class GoodJob : IComputeJob<object>, ISerializable
@@ -498,7 +498,7 @@ namespace Apache.Ignite.Core.Tests.Compute
             private readonly bool _rmt;
 
             /// <summary>
-            /// 
+            ///
             /// </summary>
             /// <param name="rmt"></param>
             public GoodJob(bool rmt)
@@ -507,7 +507,7 @@ namespace Apache.Ignite.Core.Tests.Compute
             }
 
             /// <summary>
-            /// 
+            ///
             /// </summary>
             /// <param name="info"></param>
             /// <param name="context"></param>
@@ -565,7 +565,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         }
 
         /// <summary>
-        /// 
+        ///
         /// </summary>
         private class BadJob : IComputeJob<object>, IBinarizable
         {
@@ -595,16 +595,16 @@ namespace Apache.Ignite.Core.Tests.Compute
         }
 
         /// <summary>
-        /// 
+        ///
         /// </summary>
         [Serializable]
         private class GoodJobResult : ISerializable
         {
             /** */
             public readonly bool Rmt;
-            
+
             /// <summary>
-            /// 
+            ///
             /// </summary>
             /// <param name="rmt"></param>
             public GoodJobResult(bool rmt)
@@ -613,7 +613,7 @@ namespace Apache.Ignite.Core.Tests.Compute
             }
 
             /// <summary>
-            /// 
+            ///
             /// </summary>
             /// <param name="info"></param>
             /// <param name="context"></param>
@@ -630,7 +630,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         }
 
         /// <summary>
-        /// 
+        ///
         /// </summary>
         private class BadJobResult : IBinarizable
         {
@@ -638,7 +638,7 @@ namespace Apache.Ignite.Core.Tests.Compute
             public readonly bool Rmt;
 
             /// <summary>
-            /// 
+            ///
             /// </summary>
             /// <param name="rmt"></param>
             public BadJobResult(bool rmt)
@@ -660,7 +660,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         }
 
         /// <summary>
-        /// 
+        ///
         /// </summary>
         [Serializable]
         private class GoodTaskResult : ISerializable
@@ -669,7 +669,7 @@ namespace Apache.Ignite.Core.Tests.Compute
             public readonly int Res;
 
             /// <summary>
-            /// 
+            ///
             /// </summary>
             /// <param name="res"></param>
             public GoodTaskResult(int res)
@@ -678,7 +678,7 @@ namespace Apache.Ignite.Core.Tests.Compute
             }
 
             /// <summary>
-            /// 
+            ///
             /// </summary>
             /// <param name="info"></param>
             /// <param name="context"></param>
@@ -695,7 +695,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         }
 
         /// <summary>
-        /// 
+        ///
         /// </summary>
         private class BadTaskResult
         {
@@ -703,7 +703,7 @@ namespace Apache.Ignite.Core.Tests.Compute
             public readonly int Res;
 
             /// <summary>
-            /// 
+            ///
             /// </summary>
             /// <param name="res"></param>
             public BadTaskResult(int res)
@@ -720,9 +720,9 @@ namespace Apache.Ignite.Core.Tests.Compute
         {
             /** */
             public readonly ErrorMode Mode;
-            
+
             /// <summary>
-            /// 
+            ///
             /// </summary>
             /// <param name="mode"></param>
             public GoodException(ErrorMode mode)
@@ -731,7 +731,7 @@ namespace Apache.Ignite.Core.Tests.Compute
             }
 
             /// <summary>
-            /// 
+            ///
             /// </summary>
             /// <param name="info"></param>
             /// <param name="context"></param>
@@ -758,7 +758,7 @@ namespace Apache.Ignite.Core.Tests.Compute
             public readonly ErrorMode Mode;
 
             /// <summary>
-            /// 
+            ///
             /// </summary>
             /// <param name="mode"></param>
             public BadException(ErrorMode mode)

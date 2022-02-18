@@ -57,7 +57,7 @@ public class AbstractAggregatePlannerTest extends AbstractPlannerTest {
     /**
      * @return PARTITIONED test table (ID, VAL0, VAL1, GRP0, GRP1)
      */
-    @NotNull protected AbstractPlannerTest.TestTable createAffinityTable() {
+    @NotNull protected TestTable createAffinityTable() {
         IgniteTypeFactory f = new IgniteTypeFactory(IgniteTypeSystem.INSTANCE);
 
         return new TestTable(

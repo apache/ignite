@@ -19,7 +19,6 @@ package org.apache.ignite.internal.sql;
 
 import java.util.LinkedHashMap;
 import java.util.List;
-
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteCluster;
 import org.apache.ignite.IgniteLogger;
@@ -52,6 +51,7 @@ import org.apache.ignite.internal.sql.command.SqlDropUserCommand;
 import org.apache.ignite.internal.sql.command.SqlIndexColumn;
 import org.apache.ignite.internal.sql.command.SqlKillComputeTaskCommand;
 import org.apache.ignite.internal.sql.command.SqlKillContinuousQueryCommand;
+import org.apache.ignite.internal.sql.command.SqlKillQueryCommand;
 import org.apache.ignite.internal.sql.command.SqlKillScanQueryCommand;
 import org.apache.ignite.internal.sql.command.SqlKillServiceCommand;
 import org.apache.ignite.internal.sql.command.SqlKillTransactionCommand;
@@ -78,6 +78,7 @@ public class SqlCommandProcessor {
      * Constructor.
      *
      * @param ctx Kernal context.
+     * @param schemaMgr Schema manager.
      */
     public SqlCommandProcessor(GridKernalContext ctx, GridQuerySchemaManager schemaMgr) {
         this.ctx = ctx;
@@ -106,6 +107,8 @@ public class SqlCommandProcessor {
             processKillScanQueryCommand((SqlKillScanQueryCommand)cmdNative);
         else if (cmdNative instanceof SqlKillContinuousQueryCommand)
             processKillContinuousQueryCommand((SqlKillContinuousQueryCommand)cmdNative);
+        else if (cmdNative instanceof SqlKillQueryCommand)
+            processKillQueryCommand((SqlKillQueryCommand)cmdNative);
 
         return null;
     }
@@ -124,7 +127,8 @@ public class SqlCommandProcessor {
             || cmd instanceof SqlKillServiceCommand
             || cmd instanceof SqlKillTransactionCommand
             || cmd instanceof SqlKillScanQueryCommand
-            || cmd instanceof SqlKillContinuousQueryCommand;
+            || cmd instanceof SqlKillContinuousQueryCommand
+            || cmd instanceof SqlKillQueryCommand;
     }
 
     /**
@@ -138,6 +142,15 @@ public class SqlCommandProcessor {
             || cmd instanceof SqlCreateUserCommand
             || cmd instanceof SqlAlterUserCommand
             || cmd instanceof SqlDropUserCommand;
+    }
+
+    /**
+     * Process kill query command
+     *
+     * @param cmd Command.
+     */
+    private void processKillQueryCommand(SqlKillQueryCommand cmd) {
+        ctx.query().runningQueryManager().cancelQuery(cmd.nodeQueryId(), cmd.nodeId(), cmd.async());
     }
 
     /**

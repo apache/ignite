@@ -4256,9 +4256,12 @@ public abstract class IgniteUtils {
             return;
 
         try {
-            // Avoid tls 1.3 incompatibility https://bugs.openjdk.java.net/browse/JDK-8208526
-            sock.shutdownOutput();
-            sock.shutdownInput();
+            // Closing output and input first to avoid tls 1.3 incompatibility
+            // https://bugs.openjdk.java.net/browse/JDK-8208526
+            if (!sock.isOutputShutdown())
+                sock.shutdownOutput();
+            if (!sock.isInputShutdown())
+                sock.shutdownInput();
         }
         catch (ClosedChannelException | SocketException ex) {
             LT.warn(log, "Failed to shutdown socket", ex);
@@ -5548,6 +5551,24 @@ public abstract class IgniteUtils {
     }
 
     /**
+     * Writes long array to output stream.
+     *
+     * @param out Output stream to write to.
+     * @param arr Array to write.
+     * @throws IOException If write failed.
+     */
+    public static void writeLongArray(DataOutput out, @Nullable long[] arr) throws IOException {
+        if (arr == null)
+            out.writeInt(-1);
+        else {
+            out.writeInt(arr.length);
+
+            for (long b : arr)
+                out.writeLong(b);
+        }
+    }
+
+    /**
      * Reads boolean array from input stream accounting for <tt>null</tt> values.
      *
      * @param in Stream to read from.
@@ -5585,6 +5606,27 @@ public abstract class IgniteUtils {
 
         for (int i = 0; i < len; i++)
             res[i] = in.readInt();
+
+        return res;
+    }
+
+    /**
+     * Reads long array from input stream.
+     *
+     * @param in Stream to read from.
+     * @return Read long array, possibly <tt>null</tt>.
+     * @throws IOException If read failed.
+     */
+    @Nullable public static long[] readLongArray(DataInput in) throws IOException {
+        int len = in.readInt();
+
+        if (len == -1)
+            return null; // Value "-1" indicates null.
+
+        long[] res = new long[len];
+
+        for (int i = 0; i < len; i++)
+            res[i] = in.readLong();
 
         return res;
     }
@@ -6122,6 +6164,25 @@ public abstract class IgniteUtils {
      */
     public static <T extends Annotation> boolean hasAnnotation(Object o, Class<T> annCls) {
         return o != null && hasAnnotation(o.getClass(), annCls);
+    }
+
+    /**
+     * Provides all interfaces of {@code cls} including inherited ones. Excludes duplicated ones in case of multiple
+     * inheritance.
+     *
+     * @param cls Class to search for interfaces.
+     * @return Collection of interfaces of {@code cls}.
+     */
+    public static Collection<Class<?>> allInterfaces(Class<?> cls) {
+        Set<Class<?>> interfaces = new HashSet<>();
+
+        while (cls != null) {
+            interfaces.addAll(Arrays.asList(cls.getInterfaces()));
+
+            cls = cls.getSuperclass();
+        }
+
+        return interfaces;
     }
 
     /**

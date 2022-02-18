@@ -61,7 +61,7 @@ public abstract class AbstractMultiStepPlan implements MultiStepPlan {
 
     /** {@inheritDoc} */
     @Override public FragmentMapping mapping(Fragment fragment) {
-        return mapping(fragment.fragmentId());
+        return fragment.mapping();
     }
 
     /** {@inheritDoc} */

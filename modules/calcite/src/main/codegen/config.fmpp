@@ -64,6 +64,8 @@ data: {
       "CONTINUOUS"
       "SERVICE"
       "COMPUTE"
+      "ASYNC"
+      "QUERY"
       "UUID"
     ]
 
@@ -92,6 +94,8 @@ data: {
       "CONTINUOUS"
       "SERVICE"
       "COMPUTE"
+      "ASYNC"
+      "QUERY"
 
       # The following keywords are reserved in core Calcite,
       # are reserved in some version of SQL,
@@ -611,6 +615,7 @@ data: {
       "SqlKillService()"
       "SqlKillTransaction()"
       "SqlKillComputeTask()"
+      "SqlKillQuery()"
     ]
 
     # List of methods for parsing extensions to "CREATE [OR REPLACE]" calls.

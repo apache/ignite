@@ -183,7 +183,7 @@ public class IndexScan<Row> extends AbstractIndexScan<Row, IndexRow> {
             int fieldIdx = idxFieldMapping.getInt(i);
             Object key = rowHnd.get(fieldIdx, bound);
 
-            if (key != null) {
+            if (key != ectx.unspecifiedValue()) {
                 key = TypeUtils.fromInternal(ectx, key, fieldsStoreTypes[fieldIdx]);
 
                 keys[i] = IndexKeyFactory.wrap(key, idxRowHnd.indexKeyDefinitions().get(i).idxType(),
@@ -290,7 +290,7 @@ public class IndexScan<Row> extends AbstractIndexScan<Row, IndexRow> {
     /** {@inheritDoc} */
     @Override protected IndexQueryContext indexQueryContext() {
         IndexingQueryFilter filter = new IndexingQueryFilterImpl(kctx, topVer, parts);
-        return new IndexQueryContext(filter, mvccSnapshot);
+        return new IndexQueryContext(filter, null, mvccSnapshot);
     }
 
     /** */

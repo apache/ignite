@@ -239,7 +239,7 @@ public class H2TableDescriptor {
             false,
             unwrappedKeyAndAffinityCols,
             wrappedKeyCols,
-            -1,
+            tbl.rowDescriptor().tableDescriptor().type().primaryKeyInlineSize(),
             null
         );
 
@@ -304,7 +304,7 @@ public class H2TableDescriptor {
                     true,
                     colsWithUnwrappedKey,
                     cols,
-                    -1,
+                    tbl.rowDescriptor().tableDescriptor().type().affinityFieldInlineSize(),
                     null)
                 );
             }
@@ -402,7 +402,6 @@ public class H2TableDescriptor {
      * @param cacheVisitor Cache visitor.
      * @return Index.
      */
-    @SuppressWarnings("ZeroLengthArrayAllocation")
     public GridH2IndexBase createUserIndex(GridQueryIndexDescriptor idxDesc, @Nullable SchemaIndexCacheVisitor cacheVisitor) {
         IndexColumn keyCol = tbl.indexColumn(QueryUtils.KEY_COL, SortOrder.ASCENDING);
         IndexColumn affCol = tbl.getAffinityKeyColumn();

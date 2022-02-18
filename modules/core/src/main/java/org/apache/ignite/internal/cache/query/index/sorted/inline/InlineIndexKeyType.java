@@ -64,12 +64,17 @@ public interface InlineIndexKeyType {
      * @param off Offset.
      * @param key Index key.
      * @param maxSize Max size.
-     *
      * @return Amount of bytes actually stored.
      */
     public int put(long pageAddr, int off, IndexKey key, int maxSize);
 
     /**
+     * Gets index key from inline index tree.
+     *
+     * @param pageAddr Page address.
+     * @param off Offset.
+     * @param maxSize Max size.
+     * @return Index key extracted from index tree.
      */
     @Nullable public IndexKey get(long pageAddr, int off, int maxSize);
 
@@ -80,7 +85,6 @@ public interface InlineIndexKeyType {
      * @param off Offset.
      * @param maxSize Max size.
      * @param v Value that should be compare.
-     *
      * @return -1, 0 or 1 if inlined value less, equal or greater
      * than given respectively, or -2 if inlined part is not enough to compare.
      */

@@ -213,6 +213,10 @@ public class PoolProcessor extends GridProcessorAdapter {
     @GridToStringExclude
     private IgniteStripedThreadPoolExecutor rebalanceStripedExecSvc;
 
+    /** Executor to perform a data pages scanning during cache group re-encryption. */
+    @GridToStringExclude
+    private ThreadPoolExecutor reencryptExecSvc;
+
     /** Map of {@link IoPool}-s injected by Ignite plugins. */
     private final IoPool[] extPools = new IoPool[128];
 
@@ -521,6 +525,18 @@ public class PoolProcessor extends GridProcessorAdapter {
                 excHnd);
 
             snpExecSvc.allowCoreThreadTimeOut(true);
+
+            reencryptExecSvc = createExecutorService(
+                "reencrypt",
+                ctx.igniteInstanceName(),
+                1,
+                1,
+                DFLT_THREAD_KEEP_ALIVE_TIME,
+                new LinkedBlockingQueue<>(),
+                GridIoPolicy.UNDEFINED,
+                oomeHnd);
+
+            reencryptExecSvc.allowCoreThreadTimeOut(true);
         }
 
         if (cfg.getClientConnectorConfiguration() != null) {
@@ -605,6 +621,9 @@ public class PoolProcessor extends GridProcessorAdapter {
 
         if (thinClientExec != null)
             monitorExecutor("GridThinClientExecutor", thinClientExec);
+
+        if (reencryptExecSvc != null)
+            monitorExecutor("GridReencryptionExecutor", reencryptExecSvc);
 
         if (customExecs != null) {
             for (Map.Entry<String, ? extends ExecutorService> entry : customExecs.entrySet())
@@ -900,6 +919,13 @@ public class PoolProcessor extends GridProcessorAdapter {
     }
 
     /**
+     * @return Executor to perform a data pages scanning during cache group re-encryption.
+     */
+    public ExecutorService getReencryptionExecutorService() {
+        return reencryptExecSvc;
+    }
+
+    /**
      * Creates a {@link MetricRegistry} for an executor.
      *
      * @param name Name of the metric to register.
@@ -1173,6 +1199,10 @@ public class PoolProcessor extends GridProcessorAdapter {
             U.shutdownNow(getClass(), thinClientExec, log);
 
         thinClientExec = null;
+
+        U.shutdownNow(getClass(), reencryptExecSvc, log);
+
+        reencryptExecSvc = null;
 
         if (!F.isEmpty(customExecs)) {
             for (ThreadPoolExecutor exec : customExecs.values())
