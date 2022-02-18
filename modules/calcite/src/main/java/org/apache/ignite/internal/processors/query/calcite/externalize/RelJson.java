@@ -384,6 +384,14 @@ class RelJson {
                 }
                 else if (sqlTypeName == SqlTypeName.ARRAY)
                     type = typeFactory.createArrayType(toType(typeFactory, map.get("elementType")), -1);
+                else if (sqlTypeName == SqlTypeName.ANY) {
+                    String name = (String)map.get("name");
+
+                    if ("UUID".equals(name))
+                        type = ((IgniteTypeFactory)typeFactory).createUUIDType();
+                    else
+                        throw new AssertionError();
+                }
                 else if (precision == null)
                     type = typeFactory.createSqlType(sqlTypeName);
                 else if (scale == null)
@@ -689,7 +697,7 @@ class RelJson {
 
     /** */
     private Object toJson(RelDataType node) {
-        if (node instanceof JavaType) {
+        if (node instanceof JavaType && node.getSqlTypeName() != SqlTypeName.ANY) { // Java type except UDT.
             Map<String, Object> map = map();
             map.put("class", ((JavaType)node).getJavaClass().getName());
             if (node.isNullable())
@@ -712,6 +720,8 @@ class RelJson {
         else {
             Map<String, Object> map = map();
             map.put("type", toJson(node.getSqlTypeName()));
+            if (node.getSqlTypeName() == SqlTypeName.ANY)
+                map.put("name", node.toString());
             if (node.isNullable())
                 map.put("nullable", true);
             if (node.getSqlTypeName().allowsPrec())

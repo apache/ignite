@@ -264,10 +264,15 @@ public class IgniteTypeFactory extends JavaTypeFactoryImpl {
             else if (clazz == Period.class)
                 return createTypeWithNullability(createSqlIntervalType(INTERVAL_QUALIFIER_YEAR_MONTH), true);
             else if (clazz == UUID.class)
-                return createTypeWithNullability(new UUIDType(true), true);
+                return createTypeWithNullability(createUUIDType(), true);
         }
 
         return super.toSql(type);
+    }
+
+    /** TODO */
+    public UUIDType createUUIDType(){
+        return new UUIDType(true);
     }
 
     /** {@inheritDoc} */
@@ -303,7 +308,7 @@ public class IgniteTypeFactory extends JavaTypeFactoryImpl {
     }
 
     /** */
-    final class UUIDType extends JavaType {
+    public final class UUIDType extends JavaType {
         /** */
         public UUIDType(boolean nullable) {
             super(UUID.class, nullable);

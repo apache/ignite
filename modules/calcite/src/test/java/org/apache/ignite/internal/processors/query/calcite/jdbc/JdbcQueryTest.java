@@ -81,8 +81,10 @@ public class JdbcQueryTest extends GridCommonAbstractTest {
     public void myTestUUIDJdbc() throws Exception {
         stmt.execute("CREATE TABLE UUIDTestTbl(id INT, uid UUID, PRIMARY KEY(id))");
 
-        stmt.executeUpdate("insert into UUIDTestTbl values(1, '9e120341-627f-32be-8393-58b5d655b751')");
-        stmt.executeUpdate("insert into UUIDTestTbl values(2, '123e4567-e89b-12d3-a456-426614174000')");
+        stmt.executeUpdate("insert into UUIDTestTbl values(1, '9e120341-627f-32be-8393-58b5d655b751'), " +
+            "(2, '123e4567-e89b-12d3-a456-426614174000')");
+
+//        ResultSet rs = stmt.executeQuery("SELECT uid from UUIDTestTbl");
 
         ResultSet rs = stmt.executeQuery("SELECT uid from UUIDTestTbl where uid > '9e120341-627f-32be-8393-58b5d655b751'");
 

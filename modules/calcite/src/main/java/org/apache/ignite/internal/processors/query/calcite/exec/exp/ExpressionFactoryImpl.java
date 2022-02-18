@@ -35,6 +35,8 @@ import com.google.common.collect.Ordering;
 import com.google.common.primitives.Primitives;
 import org.apache.calcite.DataContext;
 import org.apache.calcite.adapter.enumerable.EnumUtils;
+import org.apache.calcite.adapter.enumerable.JavaRowFormat;
+import org.apache.calcite.adapter.enumerable.PhysTypeImpl;
 import org.apache.calcite.linq4j.function.Function1;
 import org.apache.calcite.linq4j.tree.BlockBuilder;
 import org.apache.calcite.linq4j.tree.Expression;
@@ -66,6 +68,7 @@ import org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.Accumula
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.AccumulatorsFactory;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.AggregateType;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
+import org.apache.ignite.internal.processors.query.calcite.type.UUIDSQLType;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.processors.query.calcite.util.IgniteMethod;
 import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashMap;
@@ -356,6 +359,9 @@ public class ExpressionFactoryImpl<Row> implements ExpressionFactory<Row> {
             new FieldGetter(hnd_, in1_, type);
 
         Function1<String, InputGetter> correlates = new CorrelatesBuilder(builder, ctx_, hnd_).build(nodes);
+
+//        List<Expression> projects = RexToLixTranslator.translateProjects(program, typeFactory, conformance,
+//            builder, type.getClass() == IgniteTypeFactory.UUIDType.class ? PhysTypeImpl.of(typeFactory, type, JavaRowFormat.SCALAR, true) : null, ctx_, inputGetter, correlates);
 
         List<Expression> projects = RexToLixTranslator.translateProjects(program, typeFactory, conformance,
             builder, null, ctx_, inputGetter, correlates);

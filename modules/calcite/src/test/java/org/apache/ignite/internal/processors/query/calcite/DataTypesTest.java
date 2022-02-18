@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.query.calcite;
 
 import java.util.List;
 import java.util.Objects;
+import java.util.UUID;
 import java.util.stream.Collectors;
 import com.google.common.collect.ImmutableSet;
 import org.apache.ignite.IgniteCache;
@@ -35,8 +36,21 @@ public class DataTypesTest extends AbstractBasicIntegrationTest {
     @Test
     public void testUUID(){
         try {
-            executeSql("create table tbl(id INT, uid UUID)");
-        } finally {
+            executeSql("CREATE TABLE t(id INT, uid UUID)");
+
+            executeSql("INSERT INTO t VALUES (1, '9e120341-627f-32be-8393-58b5d655b751')");
+            executeSql("INSERT INTO t VALUES (2, '123e4567-e89b-12d3-a456-426614174000')");
+
+            assertQuery("SELECT * FROM t")
+                .returns(1, UUID.fromString("9e120341-627f-32be-8393-58b5d655b751"))
+                .returns(2, UUID.fromString("123e4567-e89b-12d3-a456-426614174000"))
+                .check();
+
+            assertQuery("SELECT * FROM t WHERE uid < '123e4567-e89b-12d3-a456-426614174000'")
+                .returns(1, UUID.fromString("9e120341-627f-32be-8393-58b5d655b751"))
+                .check();
+        }
+        finally {
             executeSql("DROP TABLE if exists tbl");
         }
     }
