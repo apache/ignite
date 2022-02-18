@@ -17,6 +17,8 @@
 
 package org.apache.ignite.cdc;
 
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
@@ -24,6 +26,8 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -54,7 +58,11 @@ import org.apache.ignite.spi.systemview.view.CacheView;
 import org.apache.ignite.spi.systemview.view.SystemView;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
+import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.internal.processors.cache.CacheMetricsImpl.CACHE_METRICS;
 import static org.apache.ignite.internal.processors.cache.ClusterCachesInfo.CACHES_VIEW;
@@ -63,6 +71,7 @@ import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /** */
+@RunWith(Parameterized.class)
 public class CdcCacheVersionTest extends AbstractCdcTest {
     /** */
     public static final String FOR_OTHER_CLUSTER_ID = "for-other-cluster-id";
@@ -75,6 +84,16 @@ public class CdcCacheVersionTest extends AbstractCdcTest {
 
     /** */
     public static final int KEY_TO_UPD = 42;
+
+    /** */
+    @Parameterized.Parameter
+    public CacheAtomicityMode mode;
+
+    /** */
+    @Parameterized.Parameters(name = "mode={0}")
+    public static Collection<?> parameters() {
+        return Arrays.asList(TRANSACTIONAL, ATOMIC);
+    }
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -121,11 +140,13 @@ public class CdcCacheVersionTest extends AbstractCdcTest {
         UserCdcConsumer cnsmr = new UserCdcConsumer() {
             @Override public void checkEvent(CdcEvent evt) {
                 assertEquals(DFLT_CLUSTER_ID, evt.version().clusterId());
+                assertNotNull(evt.version().otherClusterVersion());
                 assertEquals(OTHER_CLUSTER_ID, evt.version().otherClusterVersion().clusterId());
             }
         };
 
-        IgniteCache<Integer, User> cache = ign.getOrCreateCache(FOR_OTHER_CLUSTER_ID);
+        IgniteCache<Integer, User> cache =
+            ign.getOrCreateCache(new CacheConfiguration<Integer, User>(FOR_OTHER_CLUSTER_ID).setAtomicityMode(mode));
 
         addAndWaitForConsumption(cnsmr, cfg, cache, null, this::addConflictData, 0, KEYS_CNT, true);
 
@@ -190,7 +211,8 @@ public class CdcCacheVersionTest extends AbstractCdcTest {
 
         CdcMain cdc = createCdc(cnsmr, cfg);
 
-        IgniteCache<Integer, User> cache = ign.getOrCreateCache("my-cache");
+        IgniteCache<Integer, User> cache =
+            ign.getOrCreateCache(new CacheConfiguration<Integer, User>("my-cache").setAtomicityMode(mode));
 
         IgniteInternalFuture<?> fut = runAsync(cdc);
 
