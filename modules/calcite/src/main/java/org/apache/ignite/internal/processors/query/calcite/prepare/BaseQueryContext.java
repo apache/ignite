@@ -266,7 +266,7 @@ public final class BaseQueryContext extends AbstractQueryContext {
     /**
      * Query context builder.
      */
-    @SuppressWarnings("PublicInnerClass") 
+    @SuppressWarnings("PublicInnerClass")
     public static class Builder {
         /** */
         private static final FrameworkConfig EMPTY_CONFIG =

@@ -25,9 +25,13 @@ import java.util.NoSuchElementException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
+import org.apache.calcite.plan.RelOptPlanner;
+import org.apache.calcite.rel.RelCollation;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.IgniteEx;
@@ -35,25 +39,34 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryEngine;
 import org.apache.ignite.internal.processors.query.QueryState;
+import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.RunningQuery;
 import org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.processors.query.calcite.metadata.ColocationGroup;
 import org.apache.ignite.internal.processors.query.calcite.schema.CacheTableImpl;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteCacheTable;
+import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Assert;
 import org.junit.Test;
 
 import static java.util.stream.Collectors.joining;
+import static org.apache.ignite.IgniteSystemProperties.getLong;
+import static org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor.IGNITE_CALCITE_PLANNER_TIMEOUT;
 
 /**
  *
  */
+@WithSystemProperty(key = IGNITE_CALCITE_PLANNER_TIMEOUT, value = "2000")
 public class RunningQueriesIntegrationTest extends AbstractBasicIntegrationTest {
+    /** */
+    private static final long PLANNER_TIMEOUT = getLong(IGNITE_CALCITE_PLANNER_TIMEOUT, 0);
+
     /** */
     private static IgniteEx srv;
 
@@ -233,5 +246,40 @@ public class RunningQueriesIntegrationTest extends AbstractBasicIntegrationTest 
             () -> serverEngine.runningQueries().isEmpty(), TIMEOUT_IN_MS));
 
         GridTestUtils.assertThrowsAnyCause(log, () -> fut.get(100), IgniteSQLException.class, "The query was cancelled while executing.");
+    }
+
+    /** */
+    @Test
+    public void testLongPlanningTimeout() {
+        Stream.of("T1", "T2").forEach(tblName -> {
+            sql(String.format("CREATE TABLE %s(A INT, B INT)", tblName));
+
+            IgniteTable tbl = (IgniteTable)queryProcessor(client).schemaHolder().schema("PUBLIC").getTable(tblName);
+
+            tbl.addIndex(new DelegatingIgniteIndex(tbl.getIndex(QueryUtils.PRIMARY_KEY_INDEX)) {
+                @Override public RelCollation collation() {
+                    doSleep(300);
+
+                    return delegate.collation();
+                }
+            });
+
+            sql(String.format("INSERT INTO %s(A, B) VALUES (1, 1)", tblName));
+        });
+
+        String longJoinQry = "SELECT * FROM T1 JOIN T2 ON T1.A = T2.A";
+
+        try {
+            AtomicReference<List<List<?>>> res = new AtomicReference<>();
+            GridTestUtils.assertTimeout(3 * PLANNER_TIMEOUT, TimeUnit.MILLISECONDS, () -> {
+                res.set(sql(longJoinQry));
+            });
+
+            assertNotNull(res.get());
+            assertFalse(res.get().isEmpty());
+        }
+        catch (Exception e) {
+            assertTrue("Unexpected exception: " + e, e instanceof RelOptPlanner.CannotPlanException);
+        }
     }
 }

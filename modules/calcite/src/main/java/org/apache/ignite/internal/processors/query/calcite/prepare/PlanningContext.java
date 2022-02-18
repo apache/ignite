@@ -31,6 +31,7 @@ import org.apache.calcite.tools.FrameworkConfig;
 import org.apache.calcite.tools.RuleSet;
 import org.apache.calcite.util.CancelFlag;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -55,18 +56,27 @@ public final class PlanningContext implements Context {
     /** */
     private IgnitePlanner planner;
 
+    /** */
+    private final long startTs;
+
+    /** */
+    private final long plannerTimeout;
+
     /**
      * Private constructor, used by a builder.
      */
     private PlanningContext(
         Context parentCtx,
         String qry,
-        Object[] parameters
+        Object[] parameters,
+        long plannerTimeout
     ) {
         this.qry = qry;
         this.parameters = parameters;
 
         this.parentCtx = parentCtx;
+        startTs = U.currentTimeMillis();
+        this.plannerTimeout = plannerTimeout;
     }
 
     /**
@@ -97,6 +107,20 @@ public final class PlanningContext implements Context {
      */
     public String schemaName() {
         return schema().getName();
+    }
+
+    /**
+     * @return Start timestamp in millis.
+     */
+    public long startTs() {
+        return startTs;
+    }
+
+    /**
+     * @return Start timestamp in millis.
+     */
+    public long plannerTimeout() {
+        return plannerTimeout;
     }
 
     /**
@@ -189,7 +213,7 @@ public final class PlanningContext implements Context {
     /**
      * Planner context builder.
      */
-    @SuppressWarnings("PublicInnerClass") 
+    @SuppressWarnings("PublicInnerClass")
     public static class Builder {
         /** */
         private Context parentCtx = Contexts.empty();
@@ -199,6 +223,9 @@ public final class PlanningContext implements Context {
 
         /** */
         private Object[] parameters;
+
+        /** */
+        private long plannerTimeout;
 
         /**
          * @param parentCtx Parent context.
@@ -229,12 +256,22 @@ public final class PlanningContext implements Context {
         }
 
         /**
+         * @param plannerTimeout Planner timeout.
+         *
+         * @return Builder for chaining.
+         */
+        public Builder plannerTimeout(long plannerTimeout) {
+            this.plannerTimeout = plannerTimeout;
+            return this;
+        }
+
+        /**
          * Builds planner context.
          *
          * @return Planner context.
          */
         public PlanningContext build() {
-            return new PlanningContext(parentCtx, qry, parameters);
+            return new PlanningContext(parentCtx, qry, parameters, plannerTimeout);
         }
     }
 }

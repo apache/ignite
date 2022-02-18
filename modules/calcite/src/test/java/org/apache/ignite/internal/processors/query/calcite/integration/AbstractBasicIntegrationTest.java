@@ -18,6 +18,14 @@
 package org.apache.ignite.internal.processors.query.calcite.integration;
 
 import java.util.List;
+import java.util.function.Function;
+import java.util.function.Predicate;
+import java.util.function.Supplier;
+import org.apache.calcite.plan.RelOptCluster;
+import org.apache.calcite.plan.RelOptTable;
+import org.apache.calcite.rel.RelCollation;
+import org.apache.calcite.rex.RexNode;
+import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.QueryEntity;
@@ -29,11 +37,18 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.query.QueryEngine;
 import org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor;
 import org.apache.ignite.internal.processors.query.calcite.QueryChecker;
+import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
+import org.apache.ignite.internal.processors.query.calcite.metadata.ColocationGroup;
+import org.apache.ignite.internal.processors.query.calcite.rel.logical.IgniteLogicalIndexScan;
+import org.apache.ignite.internal.processors.query.calcite.schema.IgniteIndex;
+import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
+import org.apache.ignite.internal.processors.query.calcite.util.IndexConditions;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsAnyCause;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
@@ -161,6 +176,66 @@ public class AbstractBasicIntegrationTest extends GridCommonAbstractTest {
 
         try (QueryCursor<List<?>> srvCursor = cur.get(0)) {
             return srvCursor.getAll();
+        }
+    }
+
+    /** */
+    public static class DelegatingIgniteIndex implements IgniteIndex {
+        /** */
+        protected final IgniteIndex delegate;
+
+        /** */
+        public DelegatingIgniteIndex(IgniteIndex delegate) {
+            this.delegate = delegate;
+        }
+
+        /** {@inheritDoc} */
+        @Override public RelCollation collation() {
+            return delegate.collation();
+        }
+
+        /** {@inheritDoc} */
+        @Override public String name() {
+            return delegate.name();
+        }
+
+        /** {@inheritDoc} */
+        @Override public IgniteTable table() {
+            return delegate.table();
+        }
+
+        /** {@inheritDoc} */
+        @Override public IgniteLogicalIndexScan toRel(
+            RelOptCluster cluster,
+            RelOptTable relOptTbl,
+            @Nullable List<RexNode> proj,
+            @Nullable RexNode cond,
+            @Nullable ImmutableBitSet requiredColumns
+        ) {
+            return delegate.toRel(cluster, relOptTbl, proj, cond, requiredColumns);
+        }
+
+        /** {@inheritDoc} */
+        @Override public IndexConditions toIndexCondition(
+            RelOptCluster cluster,
+            @Nullable RexNode cond,
+            @Nullable ImmutableBitSet requiredColumns
+        ) {
+            return delegate.toIndexCondition(cluster, cond, requiredColumns);
+        }
+
+        /** {@inheritDoc} */
+        @Override public <Row> Iterable<Row> scan(
+            ExecutionContext<Row> execCtx,
+            ColocationGroup grp,
+            Predicate<Row> filters,
+            Supplier<Row> lowerIdxConditions,
+            Supplier<Row> upperIdxConditions,
+            Function<Row, Row> rowTransformer,
+            @Nullable ImmutableBitSet requiredColumns
+        ) {
+            return delegate.scan(execCtx, grp, filters, lowerIdxConditions, upperIdxConditions, rowTransformer,
+                requiredColumns);
         }
     }
 

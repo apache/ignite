@@ -235,41 +235,39 @@ public abstract class AbstractPlannerTest extends GridCommonAbstractTest {
 
     /** */
     protected IgniteRel physicalPlan(String sql, IgniteSchema publicSchema, String... disabledRules) throws Exception {
-        return physicalPlan(sql, plannerCtx(sql, publicSchema, disabledRules));
+        return physicalPlan(plannerCtx(sql, publicSchema, disabledRules));
     }
 
     /** */
     protected IgniteRel physicalPlan(String sql, Collection<IgniteSchema> schemas, String... disabledRules) throws Exception {
-        return physicalPlan(sql, plannerCtx(sql, schemas, disabledRules));
+        return physicalPlan(plannerCtx(sql, schemas, disabledRules));
     }
 
     /** */
-    protected IgniteRel physicalPlan(String sql, PlanningContext ctx) throws Exception {
+    protected IgniteRel physicalPlan(PlanningContext ctx) throws Exception {
         try (IgnitePlanner planner = ctx.planner()) {
             assertNotNull(planner);
+            assertNotNull(ctx.query());
 
-            String qry = ctx.query();
+            return physicalPlan(planner, ctx.query());
+        }
+    }
 
-            assertNotNull(qry);
+    /** */
+    protected IgniteRel physicalPlan(IgnitePlanner planner, String qry) throws Exception {
+        // Parse
+        SqlNode sqlNode = planner.parse(qry);
 
-            // Parse
-            SqlNode sqlNode = planner.parse(qry);
+        // Validate
+        sqlNode = planner.validate(sqlNode);
 
-            // Validate
-            sqlNode = planner.validate(sqlNode);
+        try {
+            return PlannerHelper.optimize(sqlNode, planner, log);
+        }
+        catch (Throwable ex) {
+            System.err.println(planner.dump());
 
-            try {
-                IgniteRel rel = PlannerHelper.optimize(sqlNode, planner, log);
-
-//                System.out.println(RelOptUtil.toString(rel));
-
-                return rel;
-            }
-            catch (Throwable ex) {
-                System.err.println(planner.dump());
-
-                throw ex;
-            }
+            throw ex;
         }
     }
 
