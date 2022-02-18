@@ -19,7 +19,7 @@ This module contains password based authentication tests
 
 from ignitetest.services.ignite import IgniteService
 from ignitetest.services.ignite_app import IgniteApplicationService
-from ignitetest.services.utils.auth import DEFAULT_AUTH_PASSWORD, DEFAULT_AUTH_USERNAME
+from ignitetest.services.utils.auth import get_credentials
 from ignitetest.services.utils.control_utility import ControlUtility, ControlUtilityError
 from ignitetest.services.utils.ignite_configuration import IgniteConfiguration, DataStorageConfiguration
 from ignitetest.services.utils.ignite_configuration.data_storage import DataRegionConfiguration
@@ -31,8 +31,8 @@ from ignitetest.utils.version import DEV_BRANCH, LATEST, IgniteVersion
 
 WRONG_PASSWORD = "wrong_password"
 TEST_USERNAME = "admin"
-TEST_PASSWORD = "qwe123"
-TEST_PASSWORD2 = "123qwe"
+TEST_PASSWORD = "qwe1234"
+TEST_PASSWORD2 = "1234qwe"
 
 ADD_USER = 'adduser'
 UPDATE_USER = 'updateuser'
@@ -65,13 +65,14 @@ class AuthenticationTests(IgniteTest):
 
         servers.start()
 
-        ControlUtility(cluster=servers, username=DEFAULT_AUTH_USERNAME, password=DEFAULT_AUTH_PASSWORD).activate()
+        username, password = get_credentials(self.test_context.globals)
+        ControlUtility(cluster=servers, username=username, password=password).activate()
 
         client_cfg = IgniteThinClientConfiguration(
             addresses=servers.nodes[0].account.hostname + ":" + str(config.client_connector_configuration.port),
             version=IgniteVersion(ignite_version),
-            username=DEFAULT_AUTH_USERNAME,
-            password=DEFAULT_AUTH_PASSWORD)
+            username=username,
+            password=password)
 
         # Add new user
         check_authenticate(servers, TEST_USERNAME, TEST_PASSWORD, True)
