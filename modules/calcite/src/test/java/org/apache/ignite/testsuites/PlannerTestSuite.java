@@ -70,7 +70,7 @@ import org.junit.runners.Suite;
     JoinWithUsingPlannerTest.class,
     ProjectFilterScanMergePlannerTest.class,
     IndexRebuildPlannerTest.class,
-    PlannerTimeoutTest.class
+    PlannerTimeoutTest.class,
 })
 public class PlannerTestSuite {
 }

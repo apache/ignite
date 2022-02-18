@@ -2010,7 +2010,7 @@ public final class IgniteSystemProperties {
     /**
      * Determines whether to use the experimental sql, calcite based, engine.
      */
-    @SystemProperty(value = "Determines whether to use the experimental sql, calcite based, engine",
+    @SystemProperty(value = "Determines whether to use the experimental sql, calcite based, engine.",
         defaults = "" + DFLT_IGNITE_EXPERIMENTAL_SQL_ENGINE)
     public static final String IGNITE_EXPERIMENTAL_SQL_ENGINE = "IGNITE_EXPERIMENTAL_SQL_ENGINE";
 

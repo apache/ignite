@@ -99,12 +99,11 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
     private static final long DFLT_IGNITE_CALCITE_PLANNER_TIMEOUT = 15000;
 
     /**
-     * Determines whether to use the experimental sql, calcite based, engine.
+     * Planner timeout property name.
      */
-    @SystemProperty(value = "Timeout of experimental, calcite based, sql engine planner timeout, in ms",
-        type = Long.class, defaults = "" + DFLT_IGNITE_CALCITE_PLANNER_TIMEOUT)
-    public static final String IGNITE_CALCITE_PLANNER_TIMEOUT =
-        "IGNITE_CALCITE_PLANNER_TIMEOUT";
+    @SystemProperty(value = "Timeout of calcite based sql engine's planner, in ms", type = Long.class,
+        defaults = "" + DFLT_IGNITE_CALCITE_PLANNER_TIMEOUT)
+    public static final String IGNITE_CALCITE_PLANNER_TIMEOUT = "IGNITE_CALCITE_PLANNER_TIMEOUT";
 
     /** */
     public static final FrameworkConfig FRAMEWORK_CONFIG = Frameworks.newConfigBuilder()
