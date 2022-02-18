@@ -159,7 +159,7 @@ public class IgniteClusterActivateDeactivateTestWithPersistence extends IgniteCl
 
         // Let's check that all nodes in the cluster have the same state.
         for (Ignite node : G.allGrids()) {
-            IgniteEx n = (IgniteEx) node;
+            IgniteEx n = (IgniteEx)node;
 
             ClusterState state = n.context().state().clusterState().state();
 
@@ -218,7 +218,7 @@ public class IgniteClusterActivateDeactivateTestWithPersistence extends IgniteCl
 
         // Let's check that all nodes in the cluster have the same state.
         for (Ignite node : G.allGrids()) {
-            IgniteEx n = (IgniteEx) node;
+            IgniteEx n = (IgniteEx)node;
 
             ClusterState state = n.context().state().clusterState().state();
 
@@ -289,7 +289,7 @@ public class IgniteClusterActivateDeactivateTestWithPersistence extends IgniteCl
 
         // Let's check that all nodes in the cluster have the same state.
         for (Ignite node : G.allGrids()) {
-            IgniteEx n = (IgniteEx) node;
+            IgniteEx n = (IgniteEx)node;
 
             ClusterState state = n.context().state().clusterState().state();
 
