@@ -287,10 +287,10 @@ namespace Apache.Ignite.Core.Client
         /// <summary>
         /// Sets the heartbeat message interval.
         /// <para />
-        /// Default is <see cref="DefaultHeartbeatInterval"/>. Client determines interval automatically
-        /// from server-side <see cref="ClientConnectorConfiguration.IdleTimeout"/> divided by 3, or uses
-        /// <see cref="DefaultHeartbeatInterval"/> when <see cref="ClientConnectorConfiguration.IdleTimeout"/>
-        /// is not set on the server.
+        /// Default is <see cref="DefaultHeartbeatInterval"/>.
+        /// <para />
+        /// When server-side <see cref="ClientConnectorConfiguration.IdleTimeout"/> is not zero, effective heartbeat
+        /// interval is set to <c>Min(HeartbeatInterval, IdleTimeout / 3)</c>.
         /// <para />
         /// When thin client connection is idle (no operations are performed), heartbeat messages are sent periodically
         /// to keep the connection alive and detect potential half-open state.
