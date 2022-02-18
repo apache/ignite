@@ -890,6 +890,7 @@ namespace Apache.Ignite.Core.Impl.Client
             {
                 _stream.Write(buf, 0, len);
 
+                // Reset heartbeat timer - don't sent heartbeats when connection is active anyway.
                 _heartbeatTimer?.Change(dueTime: _heartbeatInterval, period: TimeSpan.FromMilliseconds(-1));
             }
             catch (Exception e)
