@@ -24,13 +24,11 @@ import org.apache.ignite.spi.communication.tcp.GridTcpCommunicationSpiConcurrent
 import org.apache.ignite.spi.communication.tcp.GridTcpCommunicationSpiConcurrentConnectSslSelfTest;
 import org.apache.ignite.spi.communication.tcp.GridTcpCommunicationSpiConfigSelfTest;
 import org.apache.ignite.spi.communication.tcp.GridTcpCommunicationSpiMultithreadedSelfTest;
-import org.apache.ignite.spi.communication.tcp.GridTcpCommunicationSpiMultithreadedShmemTest;
 import org.apache.ignite.spi.communication.tcp.GridTcpCommunicationSpiRecoveryAckSelfTest;
 import org.apache.ignite.spi.communication.tcp.GridTcpCommunicationSpiRecoveryFailureDetectionSelfTest;
 import org.apache.ignite.spi.communication.tcp.GridTcpCommunicationSpiRecoveryNoPairedConnectionsTest;
 import org.apache.ignite.spi.communication.tcp.GridTcpCommunicationSpiRecoverySelfTest;
 import org.apache.ignite.spi.communication.tcp.GridTcpCommunicationSpiRecoverySslSelfTest;
-import org.apache.ignite.spi.communication.tcp.GridTcpCommunicationSpiShmemSelfTest;
 import org.apache.ignite.spi.communication.tcp.GridTcpCommunicationSpiSkipWaitHandshakeOnClientTest;
 import org.apache.ignite.spi.communication.tcp.GridTcpCommunicationSpiSslSelfTest;
 import org.apache.ignite.spi.communication.tcp.GridTcpCommunicationSpiSslSmallBuffersSelfTest;
@@ -75,12 +73,10 @@ import org.junit.runners.Suite;
 
     GridTcpCommunicationSpiTcpSelfTest.class,
     GridTcpCommunicationSpiTcpNoDelayOffSelfTest.class,
-    GridTcpCommunicationSpiShmemSelfTest.class,
 
     GridTcpCommunicationSpiStartStopSelfTest.class,
 
     GridTcpCommunicationSpiMultithreadedSelfTest.class,
-    GridTcpCommunicationSpiMultithreadedShmemTest.class,
 
     GridTcpCommunicationSpiRecoveryFailureDetectionSelfTest.class,
     GridTcpCommunicationSpiTcpFailureDetectionSelfTest.class,
