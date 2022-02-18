@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.query.calcite.metadata;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -227,7 +226,7 @@ public class IgniteMdCollation implements MetadataHandler<BuiltInMetadata.Collat
     /** Helper method to determine a
      * {@link org.apache.calcite.rel.core.TableScan}'s collation. */
     public static List<RelCollation> table(RelOptTable table) {
-        return table.getCollationList() == null ? Collections.emptyList() : table.getCollationList();
+        return table.getCollationList();
     }
 
     /** Helper method to determine a

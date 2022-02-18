@@ -50,26 +50,18 @@ import org.apache.ignite.internal.util.typedef.F;
  * Ignite type factory.
  */
 public class IgniteTypeFactory extends JavaTypeFactoryImpl {
-    /**
-     * Interval qualifier to create year-month interval types.
-     */
+    /** Interval qualifier to create year-month interval types. */
     private static final SqlIntervalQualifier INTERVAL_QUALIFIER_YEAR_MONTH = new SqlIntervalQualifier(TimeUnit.YEAR,
         TimeUnit.MONTH, SqlParserPos.ZERO);
 
-    /**
-     * Interval qualifier to create day-time interval types.
-     */
+    /** Interval qualifier to create day-time interval types. */
     private static final SqlIntervalQualifier INTERVAL_QUALIFIER_DAY_TIME = new SqlIntervalQualifier(TimeUnit.DAY,
         TimeUnit.SECOND, SqlParserPos.ZERO);
 
-    /**
-     *
-     */
+    /** */
     private final Charset charset;
 
-    /**
-     *
-     */
+    /** */
     public IgniteTypeFactory() {
         this(IgniteTypeSystem.INSTANCE);
     }
@@ -90,9 +82,7 @@ public class IgniteTypeFactory extends JavaTypeFactoryImpl {
         }
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override public Type getJavaClass(RelDataType type) {
         if (type instanceof JavaType)
             return ((JavaType)type).getJavaClass();
@@ -248,9 +238,7 @@ public class IgniteTypeFactory extends JavaTypeFactoryImpl {
         }
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override public RelDataType leastRestrictive(List<RelDataType> types) {
         assert types != null;
         assert types.size() >= 1;
@@ -261,16 +249,12 @@ public class IgniteTypeFactory extends JavaTypeFactoryImpl {
         return super.leastRestrictive(types);
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override public Charset getDefaultCharset() {
         return charset;
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override public RelDataType toSql(RelDataType type) {
         if (type instanceof JavaType) {
             Class<?> clazz = ((JavaType)type).getJavaClass();
@@ -305,9 +289,7 @@ public class IgniteTypeFactory extends JavaTypeFactoryImpl {
         return super.createType(type);
     }
 
-    /**
-     *
-     */
+    /** */
     private boolean allEquals(List<RelDataType> types) {
         assert types.size() > 1;
 

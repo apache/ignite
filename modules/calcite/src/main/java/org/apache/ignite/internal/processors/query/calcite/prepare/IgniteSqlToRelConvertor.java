@@ -62,8 +62,6 @@ public class IgniteSqlToRelConvertor extends SqlToRelConverter {
         super(viewExpander, validator, catalogReader, cluster, convertletTable, cfg);
     }
 
-
-
     /** {@inheritDoc} */
     @Override protected RelRoot convertQueryRecursive(SqlNode qry, boolean top, @Nullable RelDataType targetRowType) {
             if (qry.getKind() == SqlKind.MERGE)
