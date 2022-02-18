@@ -117,7 +117,7 @@ public final class PlanningContext implements Context {
     }
 
     /**
-     * @return Start timestamp in millis.
+     * @return Planning timeout in millis.
      */
     public long plannerTimeout() {
         return plannerTimeout;
