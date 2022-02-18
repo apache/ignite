@@ -26,18 +26,36 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicLong;
-
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.SqlConfiguration;
+import org.apache.ignite.events.DiscoveryEvent;
+import org.apache.ignite.events.Event;
+import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.GridTopic;
+import org.apache.ignite.internal.managers.communication.GridIoPolicy;
+import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.managers.systemview.walker.SqlQueryHistoryViewWalker;
 import org.apache.ignite.internal.managers.systemview.walker.SqlQueryViewWalker;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
 import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
+import org.apache.ignite.internal.processors.query.messages.GridQueryKillRequest;
+import org.apache.ignite.internal.processors.query.messages.GridQueryKillResponse;
 import org.apache.ignite.internal.processors.tracing.Span;
+import org.apache.ignite.internal.util.GridSpinBusyLock;
+import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.internal.util.lang.GridPlainRunnable;
+import org.apache.ignite.internal.util.typedef.CIX2;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.systemview.view.SqlQueryHistoryView;
 import org.apache.ignite.spi.systemview.view.SqlQueryView;
 import org.jetbrains.annotations.Nullable;
@@ -66,6 +84,9 @@ public class RunningQueryManager {
 
     /** */
     public static final String SQL_QRY_HIST_VIEW_DESC = "SQL queries history.";
+
+    /** Undefined query ID value. */
+    public static final long UNDEFINED_QUERY_ID = 0L;
 
     /** Keep registered user queries. */
     private final ConcurrentMap<Long, GridRunningQueryInfo> runs = new ConcurrentHashMap<>();
@@ -97,8 +118,33 @@ public class RunningQueryManager {
     /** Kernal context. */
     private final GridKernalContext ctx;
 
+    /** Logger. */
+    private final IgniteLogger log;
+
     /** Current running query info. */
     private final ThreadLocal<GridRunningQueryInfo> currQryInfo = new ThreadLocal<>();
+
+    /** */
+    private final ReadWriteLock lock = new ReentrantReadWriteLock();
+
+    /** */
+    private GridSpinBusyLock busyLock;
+
+    /** Cancellation runs. */
+    private final ConcurrentMap<Long, CancelQueryFuture> cancellationRuns = new ConcurrentHashMap<>();
+
+    /** Query cancel request counter. */
+    private final AtomicLong qryCancelReqCntr = new AtomicLong();
+
+    /** Flag indicate that node is stopped or not. */
+    private volatile boolean stopped;
+
+    /** Local node message handler */
+    private final CIX2<ClusterNode, Message> locNodeMsgHnd = new CIX2<ClusterNode, Message>() {
+        @Override public void applyx(ClusterNode locNode, Message msg) {
+            onMessage(locNode.id(), msg);
+        }
+    };
 
     /**
      * Constructor.
@@ -107,6 +153,8 @@ public class RunningQueryManager {
      */
     public RunningQueryManager(GridKernalContext ctx) {
         this.ctx = ctx;
+
+        log = ctx.log(getClass());
 
         localNodeId = ctx.localNodeId();
 
@@ -136,17 +184,53 @@ public class RunningQueryManager {
             "on this node. This metric number included in the general 'failed' metric.");
     }
 
+    /** */
+    public void start(GridSpinBusyLock busyLock) {
+        this.busyLock = busyLock;
+
+        ctx.io().addMessageListener(GridTopic.TOPIC_QUERY, (nodeId, msg, plc) -> onMessage(nodeId, msg));
+
+        ctx.event().addLocalEventListener(new GridLocalEventListener() {
+            @Override public void onEvent(final Event evt) {
+                UUID nodeId = ((DiscoveryEvent)evt).eventNode().id();
+
+                List<GridFutureAdapter<String>> futs = new ArrayList<>();
+
+                lock.writeLock().lock();
+
+                try {
+                    Iterator<CancelQueryFuture> it = cancellationRuns.values().iterator();
+
+                    while (it.hasNext()) {
+                        CancelQueryFuture fut = it.next();
+
+                        if (fut.nodeId().equals(nodeId)) {
+                            futs.add(fut);
+
+                            it.remove();
+                        }
+                    }
+                }
+                finally {
+                    lock.writeLock().unlock();
+                }
+
+                futs.forEach(f -> f.onDone("Query node has left the grid: [nodeId=" + nodeId + "]"));
+            }
+        }, EventType.EVT_NODE_FAILED, EventType.EVT_NODE_LEFT);
+    }
+
     /**
-     * Register running query.
+     * Registers running query and returns an id associated with the query.
      *
      * @param qry Query text.
      * @param qryType Query type.
      * @param schemaName Schema name.
      * @param loc Local query flag.
      * @param cancel Query cancel. Should be passed in case query is cancelable, or {@code null} otherwise.
-     * @return Id of registered query.
+     * @return Id of registered query. Id is a positive number.
      */
-    public Long register(String qry, GridCacheQueryType qryType, String schemaName, boolean loc,
+    public long register(String qry, GridCacheQueryType qryType, String schemaName, boolean loc,
         @Nullable GridQueryCancel cancel,
         String qryInitiatorId) {
         long qryId = qryIdGen.incrementAndGet();
@@ -185,8 +269,8 @@ public class RunningQueryManager {
      * @param qryId id of the query, which is given by {@link #register register} method.
      * @param failReason exception that caused query execution fail, or {@code null} if query succeded.
      */
-    public void unregister(Long qryId, @Nullable Throwable failReason) {
-        if (qryId == null)
+    public void unregister(long qryId, @Nullable Throwable failReason) {
+        if (qryId <= 0)
             return;
 
         boolean failed = failReason != null;
@@ -297,7 +381,7 @@ public class RunningQueryManager {
      *
      * @param qryId Query id.
      */
-    public void cancel(Long qryId) {
+    public void cancelLocalQuery(long qryId) {
         GridRunningQueryInfo run = runs.get(qryId);
 
         if (run != null)
@@ -308,6 +392,10 @@ public class RunningQueryManager {
      * Cancel all executing queries and deregistering all of them.
      */
     public void stop() {
+        stopped = true;
+
+        completeCancellationFutures("Local node is stopping: [nodeId=" + ctx.localNodeId() + "]");
+
         Iterator<GridRunningQueryInfo> iter = runs.values().iterator();
 
         while (iter.hasNext()) {
@@ -325,6 +413,229 @@ public class RunningQueryManager {
     }
 
     /**
+     * Cancel query running on remote or local Node.
+     *
+     * @param queryId Query id.
+     * @param nodeId Node id, if {@code null}, cancel local query.
+     * @param async If {@code true}, execute asynchronously.
+     */
+    public void cancelQuery(long queryId, @Nullable UUID nodeId, boolean async) {
+        CancelQueryFuture fut;
+
+        lock.readLock().lock();
+
+        try {
+            if (stopped)
+                throw new IgniteSQLException("Failed to cancel query due to node is stopped [nodeId=" + nodeId +
+                    ", qryId=" + queryId + "]");
+
+            final ClusterNode node = nodeId != null ? ctx.discovery().node(nodeId) : ctx.discovery().localNode();
+
+            if (node != null) {
+                fut = new CancelQueryFuture(nodeId, queryId);
+
+                long reqId = qryCancelReqCntr.incrementAndGet();
+
+                cancellationRuns.put(reqId, fut);
+
+                final GridQueryKillRequest request = new GridQueryKillRequest(reqId, queryId, async);
+
+                if (node.isLocal() && !async)
+                    locNodeMsgHnd.apply(node, request);
+                else {
+                    try {
+                        if (node.isLocal()) {
+                            ctx.closure().runLocal(new GridPlainRunnable() {
+                                @Override public void run() {
+                                    if (!busyLock.enterBusy())
+                                        return;
+
+                                    try {
+                                        locNodeMsgHnd.apply(node, request);
+                                    }
+                                    finally {
+                                        busyLock.leaveBusy();
+                                    }
+                                }
+                            }, GridIoPolicy.MANAGEMENT_POOL);
+                        }
+                        else {
+                            ctx.io().sendGeneric(node, GridTopic.TOPIC_QUERY, GridTopic.TOPIC_QUERY.ordinal(), request,
+                                GridIoPolicy.MANAGEMENT_POOL);
+                        }
+                    }
+                    catch (IgniteCheckedException e) {
+                        cancellationRuns.remove(reqId);
+
+                        throw new IgniteSQLException("Failed to cancel query due communication problem " +
+                            "[nodeId=" + node.id() + ",qryId=" + queryId + ", errMsg=" + e.getMessage() + "]");
+                    }
+                }
+            }
+            else
+                throw new IgniteSQLException("Failed to cancel query, node is not alive [nodeId=" + nodeId + ", qryId="
+                    + queryId + "]");
+        }
+        finally {
+            lock.readLock().unlock();
+        }
+
+        try {
+            String err = fut != null ? fut.get() : null;
+
+            if (err != null) {
+                throw new IgniteSQLException("Failed to cancel query [nodeId=" + nodeId + ", qryId="
+                    + queryId + ", err=" + err + "]");
+            }
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteSQLException("Failed to cancel query [nodeId=" + nodeId + ", qryId="
+                + queryId + ", err=" + e + "]", e);
+        }
+    }
+
+    /**
+     * Client disconnected callback.
+     */
+    public void onDisconnected() {
+        completeCancellationFutures("Failed to cancel query because local client node has been disconnected from the cluster");
+    }
+
+    /**
+     * @param err Text of error to complete futures.
+     */
+    private void completeCancellationFutures(@Nullable String err) {
+        lock.writeLock().lock();
+
+        try {
+            Iterator<CancelQueryFuture> it = cancellationRuns.values().iterator();
+
+            while (it.hasNext()) {
+                CancelQueryFuture fut = it.next();
+
+                fut.onDone(err);
+
+                it.remove();
+            }
+        }
+        finally {
+            lock.writeLock().unlock();
+        }
+    }
+
+    /**
+     * @param nodeId Node ID.
+     * @param msg Message.
+     */
+    private void onMessage(UUID nodeId, Object msg) {
+        assert msg != null;
+
+        ClusterNode node = ctx.discovery().node(nodeId);
+
+        if (node == null)
+            return; // Node left, ignore.
+
+        boolean processed = true;
+
+        if (msg instanceof GridQueryKillRequest)
+            onQueryKillRequest((GridQueryKillRequest)msg, node);
+        if (msg instanceof GridQueryKillResponse)
+            onQueryKillResponse((GridQueryKillResponse)msg);
+        else
+            processed = false;
+
+        if (processed && log.isDebugEnabled())
+            log.debug("Processed response: " + nodeId + "->" + ctx.localNodeId() + " " + msg);
+    }
+
+    /**
+     * Process request to kill query.
+     *
+     * @param msg Message.
+     * @param node Cluster node.
+     */
+    private void onQueryKillRequest(GridQueryKillRequest msg, ClusterNode node) {
+        final long qryId = msg.nodeQryId();
+
+        String err = null;
+
+        GridRunningQueryInfo runningQryInfo = runs.get(qryId);
+
+        if (runningQryInfo == null)
+            err = "Query with provided ID doesn't exist " +
+                "[nodeId=" + ctx.localNodeId() + ", qryId=" + qryId + "]";
+        else if (!runningQryInfo.cancelable())
+            err = "Query doesn't support cancellation " +
+                "[nodeId=" + ctx.localNodeId() + ", qryId=" + qryId + "]";
+
+        if (msg.asyncResponse() || err != null)
+            sendKillResponse(msg, node, err);
+
+        if (err == null) {
+            try {
+                runningQryInfo.cancel();
+            } catch (Exception e) {
+                U.warn(log, "Cancellation of query failed: [qryId=" + qryId + "]", e);
+
+                if (!msg.asyncResponse())
+                    sendKillResponse(msg, node, e.getMessage());
+
+                return;
+            }
+
+            if (!msg.asyncResponse())
+                runningQryInfo.runningFuture().listen((f) -> sendKillResponse(msg, node, f.result()));
+        }
+    }
+
+    /**
+     * @param request Kill request message.
+     * @param node Initial kill request node.
+     * @param err Error message
+     */
+    private void sendKillResponse(GridQueryKillRequest request, ClusterNode node, @Nullable String err) {
+        GridQueryKillResponse response = new GridQueryKillResponse(request.requestId(), err);
+
+        if (node.isLocal()) {
+            locNodeMsgHnd.apply(node, response);
+
+            return;
+        }
+
+        try {
+            ctx.io().sendGeneric(node, GridTopic.TOPIC_QUERY, GridTopic.TOPIC_QUERY.ordinal(), response,
+                GridIoPolicy.MANAGEMENT_POOL);
+        }
+        catch (IgniteCheckedException e) {
+            U.warn(log, "Failed to send message [node=" + node + ", msg=" + response +
+                ", errMsg=" + e.getMessage() + "]");
+
+            U.warn(log, "Response on query cancellation wasn't send back: [qryId=" + request.nodeQryId() + "]");
+        }
+    }
+
+    /**
+     * Process response to kill query request.
+     *
+     * @param msg Message.
+     */
+    private void onQueryKillResponse(GridQueryKillResponse msg) {
+        CancelQueryFuture fut;
+
+        lock.readLock().lock();
+
+        try {
+            fut = cancellationRuns.remove(msg.requestId());
+        }
+        finally {
+            lock.readLock().unlock();
+        }
+
+        if (fut != null)
+            fut.onDone(msg.error());
+    }
+
+    /**
      * Gets query history statistics. Size of history could be configured via {@link
      * SqlConfiguration#setSqlQueryHistorySize(int)}
      *
@@ -336,10 +647,11 @@ public class RunningQueryManager {
 
     /**
      * Gets info about running query by their id.
-     * @param qryId
+     *
+     * @param qryId Query Id.
      * @return Running query info or {@code null} in case no running query for given id.
      */
-    public @Nullable GridRunningQueryInfo runningQueryInfo(Long qryId) {
+    public @Nullable GridRunningQueryInfo runningQueryInfo(long qryId) {
         return runs.get(qryId);
     }
 
@@ -353,5 +665,43 @@ public class RunningQueryManager {
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(RunningQueryManager.class, this);
+    }
+
+    /**
+     * Query cancel future.
+     */
+    private static class CancelQueryFuture extends GridFutureAdapter<String> {
+        /** Node id. */
+        private final UUID nodeId;
+
+        /** Node query id. */
+        private final long nodeQryId;
+
+        /**
+         * Constructor.
+         *
+         * @param nodeId Node id.
+         * @param nodeQryId Query id.
+         */
+        public CancelQueryFuture(UUID nodeId, long nodeQryId) {
+            assert nodeId != null;
+
+            this.nodeId = nodeId;
+            this.nodeQryId = nodeQryId;
+        }
+
+        /**
+         * @return Node id.
+         */
+        public UUID nodeId() {
+            return nodeId;
+        }
+
+        /**
+         * @return Node query id.
+         */
+        public long nodeQryId() {
+            return nodeQryId;
+        }
     }
 }

@@ -109,6 +109,13 @@ SELECT a, (SELECT CASE WHEN test.a=11 THEN 22 ELSE NULL END) FROM test ORDER BY 
 13	NULL
 
 query II
+SELECT a, (SELECT CASE WHEN test.a=11 THEN b ELSE NULL END FROM test tsub ORDER BY 1 LIMIT 1) FROM test ORDER BY a
+----
+11	21
+12	NULL
+13	NULL
+
+query II
 SELECT * from test where a=(SELECT MIN(a) FROM test t WHERE t.b=test.b) ORDER BY 1
 ----
 11	22

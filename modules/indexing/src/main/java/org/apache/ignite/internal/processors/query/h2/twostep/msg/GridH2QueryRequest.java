@@ -37,6 +37,7 @@ import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryMarshallable;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlQuery;
 import org.apache.ignite.internal.processors.cache.query.QueryTable;
+import org.apache.ignite.internal.processors.query.RunningQueryManager;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -160,6 +161,9 @@ public class GridH2QueryRequest implements Message, GridCacheQueryMarshallable {
     /** TX details holder for {@code SELECT FOR UPDATE}, or {@code null} if not applicable. */
     private GridH2SelectForUpdateTxDetails txReq;
 
+    /** Id of the query assigned by {@link RunningQueryManager} on originator node. */
+    private long qryId;
+
     /** */
     private boolean explicitTimeout;
 
@@ -189,6 +193,7 @@ public class GridH2QueryRequest implements Message, GridCacheQueryMarshallable {
         schemaName = req.schemaName;
         mvccSnapshot = req.mvccSnapshot;
         txReq = req.txReq;
+        qryId = req.qryId;
         explicitTimeout = req.explicitTimeout;
     }
 
@@ -505,6 +510,27 @@ public class GridH2QueryRequest implements Message, GridCacheQueryMarshallable {
     }
 
     /**
+     * Id of the query assigned by {@link RunningQueryManager} on originator node.
+     *
+     * @return Query id.
+     */
+    public long queryId() {
+        return qryId;
+    }
+
+    /**
+     * Sets id of the query assigned by {@link RunningQueryManager}.
+     *
+     * @param queryId Query id.
+     * @return {@code this} for chaining.
+     */
+    public GridH2QueryRequest queryId(long queryId) {
+        this.qryId = queryId;
+
+        return this;
+    }
+
+    /**
      * Checks if data page scan enabled.
      *
      * @return {@code true} If data page scan enabled, {@code false} if not, and {@code null} if not set.
@@ -667,6 +693,11 @@ public class GridH2QueryRequest implements Message, GridCacheQueryMarshallable {
 
                 writer.incrementState();
 
+            case 15:
+                if (!writer.writeLong("qryId", qryId))
+                    return false;
+
+                writer.incrementState();
         }
 
         return true;
@@ -800,6 +831,13 @@ public class GridH2QueryRequest implements Message, GridCacheQueryMarshallable {
 
                 reader.incrementState();
 
+            case 15:
+                qryId = reader.readLong("qryId");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
         }
 
         return reader.afterMessageRead(GridH2QueryRequest.class);
@@ -812,7 +850,7 @@ public class GridH2QueryRequest implements Message, GridCacheQueryMarshallable {
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 15;
+        return 16;
     }
 
     /** {@inheritDoc} */

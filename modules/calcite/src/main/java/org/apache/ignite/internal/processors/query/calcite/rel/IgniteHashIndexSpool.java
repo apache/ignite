@@ -46,7 +46,7 @@ public class IgniteHashIndexSpool extends Spool implements IgniteRel {
     /** Keys (number of the columns at the input row) to build hash index. */
     private final ImmutableBitSet keys;
 
-    /** Condition (used to calculate selectivity). */
+    /** Filters. */
     private final RexNode cond;
 
     /** */
@@ -77,7 +77,7 @@ public class IgniteHashIndexSpool extends Spool implements IgniteRel {
             input.getTraitSet().replace(IgniteConvention.INSTANCE),
             input.getInputs().get(0),
             input.getExpressionList("searchRow"),
-            null
+            input.getExpression("condition")
         );
     }
 
@@ -105,7 +105,9 @@ public class IgniteHashIndexSpool extends Spool implements IgniteRel {
     @Override public RelWriter explainTerms(RelWriter pw) {
         RelWriter writer = super.explainTerms(pw);
 
-        return writer.item("searchRow", searchRow);
+        return writer
+            .item("searchRow", searchRow)
+            .item("condition", cond);
     }
 
     /** {@inheritDoc} */

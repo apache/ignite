@@ -2,6 +2,23 @@
 # description: Test aggregates with scalar inputs
 # group: [aggregates]
 
+# test aggregate on scalar values
+query IIII
+SELECT COUNT(1), MIN(1),  MAX(1), SUM(1)
+----
+1
+1
+1
+1
+
+# test aggregate on scalar NULLs
+query IIII
+SELECT COUNT(NULL), MIN(NULL), MAX(NULL), SUM(NULL)
+----
+0
+NULL
+NULL
+NULL
 
 query III
 SELECT NULL as a, NULL as b, 1 as id UNION SELECT CAST('00:00:00' AS TIME) as a, CAST('12:34:56' AS TIME) as b, 2 as id ORDER BY 1 NULLS LAST

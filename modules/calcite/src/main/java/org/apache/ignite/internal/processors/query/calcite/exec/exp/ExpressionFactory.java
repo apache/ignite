@@ -100,7 +100,7 @@ public interface ExpressionFactory<Row> {
     /**
      * Creates row from RexNodes.
      *
-     * @param values Values.
+     * @param values Values ({@code null} values allowed in this list).
      * @return Row.
      */
     Supplier<Row> rowSource(List<RexNode> values);

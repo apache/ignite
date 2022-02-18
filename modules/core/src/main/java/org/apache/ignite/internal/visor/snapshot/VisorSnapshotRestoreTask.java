@@ -93,7 +93,7 @@ public class VisorSnapshotRestoreTask extends VisorOneNodeTask<VisorSnapshotRest
             boolean stopped = ignite.snapshot().cancelSnapshotRestore(arg.snapshotName()).get();
 
             return "Snapshot cache group restore operation " +
-                (stopped ? "canceled" : "is not in progress") + " [snapshot=" + arg.snapshotName() + ']';
+                (stopped ? "canceled" : "is NOT running") + " [snapshot=" + arg.snapshotName() + ']';
         }
     }
 

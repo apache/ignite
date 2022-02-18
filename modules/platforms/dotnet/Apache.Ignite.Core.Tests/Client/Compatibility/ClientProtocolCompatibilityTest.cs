@@ -201,7 +201,7 @@ namespace Apache.Ignite.Core.Tests.Client.Compatibility
         /// </summary>
         internal static void AssertNotSupportedFeatureOperation(Action action, ClientBitmaskFeature feature, ClientOp op)
         {
-            var ex = Assert.Throws<IgniteClientException>(() => action());
+            var ex = Assert.Catch<Exception>(() => action()).GetBaseException();
 
             var expectedMessage = string.Format(
                 "Operation {0} is not supported by the server. " +

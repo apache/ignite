@@ -127,12 +127,12 @@ public class RelJsonReader {
 
         /** {@inheritDoc} */
         @Override public RelOptCluster getCluster() {
-            return Commons.cluster();
+            return Commons.emptyCluster();
         }
 
         /** {@inheritDoc} */
         @Override public RelTraitSet getTraitSet() {
-            return Commons.cluster().traitSet();
+            return Commons.emptyCluster().traitSet();
         }
 
         /** {@inheritDoc} */
@@ -252,7 +252,7 @@ public class RelJsonReader {
         /** {@inheritDoc} */
         @Override public RelDataType getRowType(String tag) {
             Object o = jsonRel.get(tag);
-            return relJson.toType(Commons.typeFactory(Commons.cluster()), o);
+            return relJson.toType(Commons.typeFactory(Commons.emptyCluster()), o);
         }
 
         /** {@inheritDoc} */
@@ -260,7 +260,7 @@ public class RelJsonReader {
             List<RexNode> expressionList = getExpressionList(expressionsTag);
             List<String> names =
                 (List<String>)get(fieldsTag);
-            return Commons.typeFactory(Commons.cluster()).createStructType(
+            return Commons.typeFactory(Commons.emptyCluster()).createStructType(
                 new AbstractList<Map.Entry<String, RelDataType>>() {
                     @Override public Map.Entry<String, RelDataType> get(int index) {
                         return Pair.of(names.get(index),
@@ -323,7 +323,7 @@ public class RelJsonReader {
             Boolean distinct = (Boolean)jsonAggCall.get("distinct");
             List<Integer> operands = (List<Integer>)jsonAggCall.get("operands");
             Integer filterOperand = (Integer)jsonAggCall.get("filter");
-            RelDataType type = relJson.toType(Commons.typeFactory(Commons.cluster()), jsonAggCall.get("type"));
+            RelDataType type = relJson.toType(Commons.typeFactory(Commons.emptyCluster()), jsonAggCall.get("type"));
             String name = (String)jsonAggCall.get("name");
             return AggregateCall.create(aggregation, distinct, false, false, operands,
                 filterOperand == null ? -1 : filterOperand,

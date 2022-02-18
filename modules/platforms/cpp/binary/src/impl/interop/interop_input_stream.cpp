@@ -19,58 +19,90 @@
 
 #include <ignite/ignite_error.h>
 
-#include "ignite/impl/interop//interop_input_stream.h"
-
-/**
- * Common macro to read a single value.
- */
-#define IGNITE_INTEROP_IN_READ(type, len) { \
-    EnsureEnoughData(len); \
-    type res = *reinterpret_cast<type*>(data + pos); \
-    Shift(len); \
-    return res; \
-}
-
-/**
- * Common macro to read an array.
- */
-#define IGNITE_INTEROP_IN_READ_ARRAY(len, shift) { \
-    CopyAndShift(reinterpret_cast<int8_t*>(res), 0, ((len) << (shift))); \
-}
+#include "ignite/impl/interop/interop_input_stream.h"
 
 namespace ignite
 {
     namespace impl
     {
-        namespace interop 
+        namespace interop
         {
-            InteropInputStream::InteropInputStream(InteropMemory* mem)
+            class InputStreamHelper
             {
-                this->mem = mem;
+            public:
+                explicit InputStreamHelper(InteropInputStream& is0) : is(is0)
+                {
+                    // No-op;
+                };
 
-                data = mem->Data();
-                len = mem->Length();
-                pos = 0;
+                template<typename T>
+                T ReadPrimitiveAt(int32_t pos)
+                {
+                    int delta = pos + sizeof(T) - is.pos;
+
+                    if (delta > 0)
+                        is.EnsureEnoughData(delta);
+
+                    T res;
+                    std::memcpy(&res, is.data + pos, sizeof(T));
+                    return res;
+                }
+
+                template<typename T>
+                T ReadPrimitive()
+                {
+                    is.EnsureEnoughData(sizeof(T));
+
+                    T res;
+                    std::memcpy(&res, is.data + is.pos, sizeof(T));
+                    is.Shift(sizeof(T));
+                    return res;
+                }
+
+                template<typename T>
+                void ReadPrimitiveArray(T* res, int32_t len)
+                {
+                    is.CopyAndShift(res, 0, len * sizeof(T));
+                }
+
+            private:
+                InteropInputStream& is;
+            };
+
+            InteropInputStream::InteropInputStream(const InteropMemory* mem) :
+                mem(mem),
+                data(mem->Data()),
+                len(mem->Length()),
+                pos(0)
+            {
+                // No-op.
+            }
+
+            InteropInputStream::InteropInputStream(const InteropMemory *mem, int32_t len) :
+                mem(mem),
+                data(mem->Data()),
+                len(len),
+                pos(0)
+            {
+                if (len > mem->Length())
+                    IGNITE_ERROR_FORMATTED_3(IgniteError::IGNITE_ERR_MEMORY,
+                        "Requested input stream len is greater than memories length",
+                             "memPtr", mem->PointerLong(), "len", len, "memLen", mem->Length());
             }
 
             int8_t InteropInputStream::ReadInt8()
             {
-                IGNITE_INTEROP_IN_READ(int8_t, 1);
+                return InputStreamHelper(*this).ReadPrimitive<int8_t>();
             }
 
-            int32_t InteropInputStream::ReadInt8(int32_t pos)
+            int8_t InteropInputStream::ReadInt8(int32_t pos)
             {
-                int delta = pos + 1 - this->pos;
-
-                if (delta > 0)
-                    EnsureEnoughData(delta);
-
-                return *reinterpret_cast<int8_t*>(data + pos);
+                return InputStreamHelper(*this).ReadPrimitiveAt<int8_t>(pos);
             }
 
-            void InteropInputStream::ReadInt8Array(int8_t* const res, const int32_t len)
+            void InteropInputStream::ReadInt8Array(int8_t* res, int32_t len)
             {
-                IGNITE_INTEROP_IN_READ_ARRAY(len, 0);
+                return InputStreamHelper(*this).ReadPrimitiveArray<int8_t>(res, len);
             }
 
             bool InteropInputStream::ReadBool()
@@ -78,7 +110,7 @@ namespace ignite
                 return ReadInt8() == 1;
             }
 
-            void InteropInputStream::ReadBoolArray(bool* const res, const int32_t len)
+            void InteropInputStream::ReadBoolArray(bool* res, int32_t len)
             {
                 for (int i = 0; i < len; i++)
                     *(res + i) = ReadBool();
@@ -86,62 +118,52 @@ namespace ignite
 
             int16_t InteropInputStream::ReadInt16()
             {
-                IGNITE_INTEROP_IN_READ(int16_t, 2);
+                return InputStreamHelper(*this).ReadPrimitive<int16_t>();
             }
 
-            int32_t InteropInputStream::ReadInt16(int32_t pos)
+            int16_t InteropInputStream::ReadInt16(int32_t pos)
             {
-                int delta = pos + 2 - this->pos;
-
-                if (delta > 0)
-                    EnsureEnoughData(delta);
-
-                return *reinterpret_cast<int16_t*>(data + pos);
+                return InputStreamHelper(*this).ReadPrimitiveAt<int16_t>(pos);
             }
 
-            void InteropInputStream::ReadInt16Array(int16_t* const res, const int32_t len)
+            void InteropInputStream::ReadInt16Array(int16_t* res, int32_t len)
             {
-                IGNITE_INTEROP_IN_READ_ARRAY(len, 1);
+                return InputStreamHelper(*this).ReadPrimitiveArray<int16_t>(res, len);
             }
 
             uint16_t InteropInputStream::ReadUInt16()
             {
-                IGNITE_INTEROP_IN_READ(uint16_t, 2);
+                return InputStreamHelper(*this).ReadPrimitive<uint16_t>();
             }
 
-            void InteropInputStream::ReadUInt16Array(uint16_t* const res, const int32_t len)
+            void InteropInputStream::ReadUInt16Array(uint16_t* res, int32_t len)
             {
-                IGNITE_INTEROP_IN_READ_ARRAY(len, 1);
+                return InputStreamHelper(*this).ReadPrimitiveArray<uint16_t>(res, len);
             }
 
             int32_t InteropInputStream::ReadInt32()
             {
-                IGNITE_INTEROP_IN_READ(int32_t, 4);
+                return InputStreamHelper(*this).ReadPrimitive<int32_t>();
             }
 
             int32_t InteropInputStream::ReadInt32(int32_t pos)
             {
-                int delta = pos + 4 - this->pos;
-
-                if (delta > 0)
-                    EnsureEnoughData(delta);
-
-                return *reinterpret_cast<int32_t*>(data + pos);
+                return InputStreamHelper(*this).ReadPrimitiveAt<int32_t>(pos);
             }
 
-            void InteropInputStream::ReadInt32Array(int32_t* const res, const int32_t len)
+            void InteropInputStream::ReadInt32Array(int32_t* res, int32_t len)
             {
-                IGNITE_INTEROP_IN_READ_ARRAY(len, 2);
+                return InputStreamHelper(*this).ReadPrimitiveArray<int32_t>(res, len);
             }
 
             int64_t InteropInputStream::ReadInt64()
             {
-                IGNITE_INTEROP_IN_READ(int64_t, 8);
+                return InputStreamHelper(*this).ReadPrimitive<int64_t>();
             }
 
-            void InteropInputStream::ReadInt64Array(int64_t* const res, const int32_t len)
+            void InteropInputStream::ReadInt64Array(int64_t* res, int32_t len)
             {
-                IGNITE_INTEROP_IN_READ_ARRAY(len, 3);
+                return InputStreamHelper(*this).ReadPrimitiveArray<int64_t>(res, len);
             }
 
             float InteropInputStream::ReadFloat()
@@ -153,9 +175,9 @@ namespace ignite
                 return u.f;
             }
 
-            void InteropInputStream::ReadFloatArray(float* const res, const int32_t len)
+            void InteropInputStream::ReadFloatArray(float* res, int32_t len)
             {
-                IGNITE_INTEROP_IN_READ_ARRAY(len, 2);
+                return InputStreamHelper(*this).ReadPrimitiveArray<float>(res, len);
             }
 
             double InteropInputStream::ReadDouble()
@@ -167,9 +189,9 @@ namespace ignite
                 return u.d;
             }
 
-            void InteropInputStream::ReadDoubleArray(double* const res, const int32_t len)
+            void InteropInputStream::ReadDoubleArray(double* res, int32_t len)
             {
-                IGNITE_INTEROP_IN_READ_ARRAY(len, 3);
+                return InputStreamHelper(*this).ReadPrimitiveArray<double>(res, len);
             }
 
             int32_t InteropInputStream::Remaining() const
@@ -213,11 +235,12 @@ namespace ignite
                 }
             }
 
-            void InteropInputStream::CopyAndShift(int8_t* dest, int32_t off, int32_t cnt)
+            void InteropInputStream::CopyAndShift(void* dest, int32_t off, int32_t cnt)
             {
                 EnsureEnoughData(cnt);
 
-                memcpy(dest + off, data + pos, cnt);
+                if (dest != 0)
+                    std::memcpy(static_cast<int8_t*>(dest) + off, data + pos, cnt);
 
                 Shift(cnt);
             }

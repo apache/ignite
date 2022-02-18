@@ -62,6 +62,9 @@ namespace Apache.Ignite.Core.Tests.Client
         /** Server list log levels. */
         private readonly LogLevel[] _serverListLoggerLevels;
 
+        /** */
+        protected readonly bool _useBinaryArray;
+
         /// <summary>
         /// Initializes a new instance of the <see cref="ClientTestBase"/> class.
         /// </summary>
@@ -78,13 +81,15 @@ namespace Apache.Ignite.Core.Tests.Client
             bool enableSsl = false,
             bool enablePartitionAwareness = false,
             bool enableServerListLogging = false,
-            LogLevel[] serverListLoggerLevels = null)
+            LogLevel[] serverListLoggerLevels = null,
+            bool useBinaryArray = false)
         {
             _gridCount = gridCount;
             _enableSsl = enableSsl;
             _enablePartitionAwareness = enablePartitionAwareness;
             _enableServerListLogging = enableServerListLogging;
             _serverListLoggerLevels = serverListLoggerLevels ?? new[] { LogLevel.Debug, LogLevel.Warn, LogLevel.Error };
+            _useBinaryArray = useBinaryArray;
         }
 
         /// <summary>
@@ -222,7 +227,8 @@ namespace Apache.Ignite.Core.Tests.Client
                     }
                     : new TestUtils.TestContextLogger(),
                 SpringConfigUrl = _enableSsl ? Path.Combine("Config", "Client", "server-with-ssl.xml") : null,
-                RedirectJavaConsoleOutput = false
+                RedirectJavaConsoleOutput = false,
+                LifecycleHandlers = _useBinaryArray ? new[] { new SetUseBinaryArray() } : null
             };
         }
 

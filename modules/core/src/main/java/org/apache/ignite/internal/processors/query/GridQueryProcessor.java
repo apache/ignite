@@ -65,7 +65,6 @@ import org.apache.ignite.internal.binary.BinaryMetadata;
 import org.apache.ignite.internal.cache.query.index.IndexProcessor;
 import org.apache.ignite.internal.cache.query.index.IndexQueryProcessor;
 import org.apache.ignite.internal.cache.query.index.IndexQueryResult;
-import org.apache.ignite.internal.cache.query.index.sorted.inline.IndexQueryContext;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -912,6 +911,16 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         checkxEnabled();
 
         return idx;
+    }
+
+    /**
+     * @return Running query manager.
+     * @throws IgniteException If module is not enabled.
+     */
+    public RunningQueryManager runningQueryManager() throws IgniteException {
+        checkxEnabled();
+
+        return idx.runningQueryManager();
     }
 
     /**
@@ -2896,8 +2905,11 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             throw new CacheException("Execution of local SqlFieldsQuery on client node disallowed.");
 
         if (experimentalQueryEngine != null && useExperimentalSqlEngine) {
-            return experimentalQueryEngine.query(QueryContext.of(qry, cliCtx), qry.getSchema(), qry.getSql(),
-                X.EMPTY_OBJECT_ARRAY);
+            return experimentalQueryEngine.query(
+                QueryContext.of(qry, cliCtx),
+                qry.getSchema() == null ? schemaName(cctx) : qry.getSchema(),
+                qry.getSql(),
+                qry.getArgs() == null ? X.EMPTY_OBJECT_ARRAY : qry.getArgs());
         }
 
         return executeQuerySafe(cctx, () -> {
@@ -3078,7 +3090,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * Collect queries that already running more than specified duration.
+     * Collect local queries that already running more than specified duration.
      *
      * @param duration Duration to check.
      * @return Collection of long running queries.
@@ -3091,13 +3103,25 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     }
 
     /**
+     * Cancel query running on remote or local Node.
+     *
+     * @param queryId Query id.
+     * @param nodeId Node id, if {@code null}, cancel local query.
+     * @param async If {@code true}, execute asynchronously.
+     */
+    public void cancelQuery(long queryId, @Nullable UUID nodeId, boolean async) {
+        if (moduleEnabled())
+            idx.cancelQuery(queryId, nodeId, async);
+    }
+
+    /**
      * Cancel specified queries.
      *
      * @param queries Queries ID's to cancel.
      */
-    public void cancelQueries(Collection<Long> queries) {
+    public void cancelLocalQueries(Collection<Long> queries) {
         if (moduleEnabled())
-            idx.cancelQueries(queries);
+            idx.cancelLocalQueries(queries);
     }
 
     /**
@@ -3194,7 +3218,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         if (qryParallelism != null && qryParallelism > 1 && cfg.getCacheMode() != PARTITIONED)
             throw new IgniteSQLException("Segmented indices are supported for PARTITIONED mode only.");
 
-        QueryEntity entity0 = QueryUtils.normalizeQueryEntity(entity, sqlEscape);
+        QueryEntity entity0 = QueryUtils.normalizeQueryEntity(ctx, entity, sqlEscape);
 
         SchemaAddQueryEntityOperation op = new SchemaAddQueryEntityOperation(
                 UUID.randomUUID(),
@@ -3398,8 +3422,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param cacheName Cache name.
      * @param valCls Cache value class.
      * @param idxQryDesc Index query description.
-     * @param filter Optional user defined cache entries filter.
-     * @param filters Ignite specific cache entries filters.
+     * @param entryFilter Optional user defined cache entries filter.
+     * @param cacheFilter Ignite specific cache entries filters.
      * @param keepBinary Keep binary flag.
      * @return Key/value rows.
      * @throws IgniteCheckedException If failed.
@@ -3408,8 +3432,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         String cacheName,
         String valCls,
         final IndexQueryDesc idxQryDesc,
-        @Nullable IgniteBiPredicate<K, V> filter,
-        final IndexingQueryFilter filters,
+        @Nullable IgniteBiPredicate<K, V> entryFilter,
+        final IndexingQueryFilter cacheFilter,
         boolean keepBinary
     ) throws IgniteCheckedException {
         if (!busyLock.enterBusy())
@@ -3421,10 +3445,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             return executeQuery(GridCacheQueryType.INDEX, valCls, cctx,
                 new IgniteOutClosureX<IndexQueryResult<K, V>>() {
                     @Override public IndexQueryResult<K, V> applyx() throws IgniteCheckedException {
-                        IndexQueryContext qryCtx = new IndexQueryContext(filters, null);
-
-                        return idxQryPrc.queryLocal(cctx, idxQryDesc, filter, qryCtx, keepBinary);
-
+                        return idxQryPrc.queryLocal(cctx, idxQryDesc, entryFilter, cacheFilter, keepBinary);
                     }
                 }, true);
         }

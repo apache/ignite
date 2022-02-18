@@ -21,17 +21,27 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.GroupKey;
+import org.apache.ignite.internal.util.lang.GridFilteredIterator;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.X;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Runtime hash index based on on-heap hash map.
  */
 public class RuntimeHashIndex<Row> implements RuntimeIndex<Row> {
+    /**
+     * Placeholder for keys containing NULL values. Used to skip rows with such keys, since condition NULL=NULL
+     * should not satisfy the filter.
+     */
+    private static final GroupKey NULL_KEY = new GroupKey(X.EMPTY_OBJECT_ARRAY);
+
     /** */
     protected final ExecutionContext<Row> ectx;
 
@@ -58,7 +68,12 @@ public class RuntimeHashIndex<Row> implements RuntimeIndex<Row> {
 
     /** {@inheritDoc} */
     @Override public void push(Row r) {
-        List<Row> eqRows = rows.computeIfAbsent(key(r), k -> new ArrayList<>());
+        GroupKey key = key(r);
+
+        if (key == NULL_KEY)
+            return;
+
+        List<Row> eqRows = rows.computeIfAbsent(key, k -> new ArrayList<>());
 
         eqRows.add(r);
     }
@@ -69,16 +84,22 @@ public class RuntimeHashIndex<Row> implements RuntimeIndex<Row> {
     }
 
     /** */
-    public Iterable<Row> scan(Supplier<Row> searchRow) {
-        return new IndexScan(searchRow);
+    public Iterable<Row> scan(Supplier<Row> searchRow, @Nullable Predicate<Row> filter) {
+        return new IndexScan(searchRow, filter);
     }
 
     /** */
     private GroupKey key(Row r) {
         GroupKey.Builder b = GroupKey.builder(keys.cardinality());
 
-        for (Integer field : keys)
-            b.add(ectx.rowHandler().get(field, r));
+        for (Integer field : keys) {
+            Object fieldVal = ectx.rowHandler().get(field, r);
+
+            if (fieldVal == null)
+                return NULL_KEY;
+
+            b.add(fieldVal);
+        }
 
         return b.build();
     }
@@ -90,11 +111,16 @@ public class RuntimeHashIndex<Row> implements RuntimeIndex<Row> {
         /** Search row. */
         private final Supplier<Row> searchRow;
 
+        /** Row filter. */
+        private final Predicate<Row> filter;
+
         /**
          * @param searchRow Search row.
+         * @param filter Scan condition.
          */
-        IndexScan(Supplier<Row> searchRow) {
+        IndexScan(Supplier<Row> searchRow, @Nullable Predicate<Row> filter) {
             this.searchRow = searchRow;
+            this.filter = filter;
         }
 
         /** {@inheritDoc} */
@@ -104,9 +130,21 @@ public class RuntimeHashIndex<Row> implements RuntimeIndex<Row> {
 
         /** {@inheritDoc} */
         @NotNull @Override public Iterator<Row> iterator() {
-            List<Row> eqRows = rows.get(key(searchRow.get()));
+            GroupKey key = key(searchRow.get());
 
-            return eqRows == null ? Collections.emptyIterator() : eqRows.iterator();
+            if (key == NULL_KEY)
+                return Collections.emptyIterator();
+
+            List<Row> eqRows = rows.get(key);
+
+            if (eqRows == null)
+                return Collections.emptyIterator();
+
+            return filter == null ? eqRows.iterator() : new GridFilteredIterator<Row>(eqRows.iterator()) {
+                @Override protected boolean accept(Row row) {
+                    return filter.test(row);
+                }
+            };
         }
     }
 }

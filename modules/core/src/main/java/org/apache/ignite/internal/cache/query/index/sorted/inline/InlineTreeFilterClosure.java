@@ -45,20 +45,29 @@ public class InlineTreeFilterClosure implements BPlusTree.TreeRowClosure<IndexRo
     private final MvccSnapshot mvccSnapshot;
 
     /** */
-    private final IndexingQueryCacheFilter filter;
+    private final IndexingQueryCacheFilter cacheFilter;
 
     /** */
-    private final GridCacheContext cctx;
+    private final BPlusTree.TreeRowClosure<IndexRow, IndexRow> rowFilter;
+
+    /** */
+    private final GridCacheContext<?, ?> cctx;
 
     /** */
     private final IgniteLogger log;
 
     /** Constructor. */
-    public InlineTreeFilterClosure(IndexingQueryCacheFilter filter, MvccSnapshot mvccSnapshot,
-        GridCacheContext<?, ?> cctx, IgniteLogger log) {
-        assert (filter != null || mvccSnapshot != null) && cctx != null;
+    public InlineTreeFilterClosure(
+        IndexingQueryCacheFilter cacheFilter,
+        BPlusTree.TreeRowClosure<IndexRow, IndexRow> rowFilter,
+        MvccSnapshot mvccSnapshot,
+        GridCacheContext<?, ?> cctx,
+        IgniteLogger log
+    ) {
+        assert (cacheFilter != null || mvccSnapshot != null) && cctx != null;
 
-        this.filter = filter;
+        this.cacheFilter = cacheFilter;
+        this.rowFilter = rowFilter;
         this.mvccSnapshot = mvccSnapshot;
         this.cctx = cctx;
         this.log = log;
@@ -68,10 +77,16 @@ public class InlineTreeFilterClosure implements BPlusTree.TreeRowClosure<IndexRo
     @Override public boolean apply(BPlusTree<IndexRow, IndexRow> tree, BPlusIO<IndexRow> io,
         long pageAddr, int idx) throws IgniteCheckedException {
 
-        boolean val = filter == null || applyFilter((InlineIO)io, pageAddr, idx);
+        boolean val = cacheFilter == null || applyFilter((InlineIO)io, pageAddr, idx);
 
-        if (mvccSnapshot != null)
-            return val && applyMvcc((InlineIO)io, pageAddr, idx);
+        if (!val)
+            return false;
+
+        if (rowFilter != null)
+            val = rowFilter.apply(tree, io, pageAddr, idx);
+
+        if (val && mvccSnapshot != null)
+            return applyMvcc((InlineIO)io, pageAddr, idx);
 
         return val;
     }
@@ -83,9 +98,9 @@ public class InlineTreeFilterClosure implements BPlusTree.TreeRowClosure<IndexRo
      * @return {@code True} if row passes the filter.
      */
     private boolean applyFilter(InlineIO io, long pageAddr, int idx) {
-        assert filter != null;
+        assert cacheFilter != null;
 
-        return filter.applyPartition(PageIdUtils.partId(pageId(io.link(pageAddr, idx))));
+        return cacheFilter.applyPartition(PageIdUtils.partId(pageId(io.link(pageAddr, idx))));
     }
 
     /**

@@ -30,6 +30,7 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
+import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.internal.processors.authentication.AuthenticationProcessorSelfTest.authenticate;
 import static org.apache.ignite.internal.processors.security.NoOpIgniteSecurityProcessor.SECURITY_DISABLED_ERROR_MSG;
 import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.ALLOW_ALL;
@@ -124,7 +125,7 @@ public class AuthenticationConfigurationClusterTest extends GridCommonAbstractTe
      * Checks that a new node cannot join a cluster with a different authentication enable state.
      *
      * @param client Is joining node client.
-     * @param authEnabled Whether authentication is enabled on joining node.
+     * @param authEnabled Whether authentication is enabled on server node, which accepts join of new node.
      * @throws Exception If failed.
      */
     private void checkNodeJoinFailed(boolean client, boolean authEnabled) throws Exception {
@@ -210,5 +211,24 @@ public class AuthenticationConfigurationClusterTest extends GridCommonAbstractTe
             },
             IgniteCheckedException.class,
             "Invalid security configuration: both authentication is enabled and external security plugin is provided.");
+    }
+
+    /**
+     * Tests that client node configured with authentication but without persistence could start and join the cluster.
+     */
+    @Test
+    public void testClientNodeWithoutPersistence() throws Exception {
+        startGrid(configuration(0, true, false))
+            .cluster().state(ACTIVE);
+
+        IgniteConfiguration clientCfg = configuration(1, true, true);
+
+        clientCfg.getDataStorageConfiguration()
+            .getDefaultDataRegionConfiguration()
+            .setPersistenceEnabled(false);
+
+        startGrid(clientCfg);
+
+        assertEquals("Unexpected cluster size", 2, grid(1).cluster().nodes().size());
     }
 }

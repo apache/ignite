@@ -1902,11 +1902,6 @@ public class BinaryUtils {
             }
 
             case GridBinaryMarshaller.OBJ: {
-                Object obj = handles.getHandle(start);
-
-                if (obj != null)
-                    return obj;
-
                 checkProtocolVersion(in.readByte());
 
                 int len = length(in, start);
@@ -2078,7 +2073,9 @@ public class BinaryUtils {
 
         int len = in.readInt();
 
-        Object[] arr = deserialize ? (Object[])Array.newInstance(compType, len) : new Object[len];
+        Object[] arr = (deserialize && !BinaryObject.class.isAssignableFrom(compType))
+            ? (Object[])Array.newInstance(compType, len)
+            : new Object[len];
 
         handles.setHandle(arr, hPos);
 
@@ -2115,7 +2112,7 @@ public class BinaryUtils {
             compClsName = doReadClassName(in);
 
         int len = in.readInt();
-        
+
         Object[] arr = new Object[len];
 
         BinaryArray res = isEnumArray
@@ -2141,11 +2138,6 @@ public class BinaryUtils {
         BinaryReaderHandlesHolder handles, boolean detach, boolean deserialize, BinaryCollectionFactory factory)
         throws BinaryObjectException {
         int hPos = positionForHandle(in);
-
-        Object obj = handles.getHandle(hPos);
-
-        if (obj != null)
-            return (Collection<?>)obj;
 
         int size = in.readInt();
 
@@ -2218,11 +2210,6 @@ public class BinaryUtils {
         BinaryReaderHandlesHolder handles, boolean detach, boolean deserialize, BinaryMapFactory factory)
         throws BinaryObjectException {
         int hPos = positionForHandle(in);
-
-        Object obj = handles.getHandle(hPos);
-
-        if (obj != null)
-            return (Map<?, ?>)obj;
 
         int size = in.readInt();
 

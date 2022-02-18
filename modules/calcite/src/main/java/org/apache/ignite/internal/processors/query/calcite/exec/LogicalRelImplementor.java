@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.calcite.exec;
 
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
@@ -91,6 +92,7 @@ import org.apache.ignite.internal.processors.query.calcite.rel.agg.IgniteReduceS
 import org.apache.ignite.internal.processors.query.calcite.rel.agg.IgniteSingleHashAggregate;
 import org.apache.ignite.internal.processors.query.calcite.rel.agg.IgniteSingleSortAggregate;
 import org.apache.ignite.internal.processors.query.calcite.rel.set.IgniteSetOp;
+import org.apache.ignite.internal.processors.query.calcite.rule.LogicalScanConverterRule;
 import org.apache.ignite.internal.processors.query.calcite.schema.CacheTableDescriptor;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteIndex;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
@@ -99,6 +101,7 @@ import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribut
 import org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
+import org.apache.ignite.internal.processors.query.calcite.util.RexUtils;
 import org.apache.ignite.internal.util.typedef.F;
 
 import static org.apache.calcite.rel.RelDistribution.Type.HASH_DISTRIBUTED;
@@ -298,13 +301,107 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
         Supplier<Row> upper = upperCond == null ? null : expressionFactory.rowSource(upperCond);
         Function<Row, Row> prj = projects == null ? null : expressionFactory.project(projects, rowType);
 
+        ColocationGroup grp = ctx.group(rel.sourceId());
+
         IgniteIndex idx = tbl.getIndex(rel.indexName());
 
-        ColocationGroup group = ctx.group(rel.sourceId());
+        if (idx != null && !tbl.isIndexRebuildInProgress()) {
+            Iterable<Row> rowsIter = idx.scan(ctx, grp, filters, lower, upper, prj, requiredColumns);
 
-        Iterable<Row> rowsIter = idx.scan(ctx, group, filters, lower, upper, prj, requiredColumns);
+            return new ScanNode<>(ctx, rowType, rowsIter);
+        }
+        else {
+            // Index was invalidated after planning, workaround through table-scan -> sort -> index spool.
+            // If there are correlates in filter or project, spool node is required to provide ability to rewind input.
+            // Sort node is required if output should be sorted or if spool node required (to provide search by
+            // index conditions).
+            // Additionally, project node is required in case of spool inserted, since spool requires unmodified
+            // original input for filtering by index conditions.
+            boolean filterHasCorrelation = condition != null && RexUtils.hasCorrelation(condition);
+            boolean projectHasCorrelation = projects != null && RexUtils.hasCorrelation(projects);
+            boolean spoolNodeRequired = projectHasCorrelation || filterHasCorrelation;
+            boolean projNodeRequired = projects != null && spoolNodeRequired;
 
-        return new ScanNode<>(ctx, rowType, rowsIter);
+            Iterable<Row> rowsIter = tbl.scan(
+                ctx,
+                grp,
+                filterHasCorrelation ? null : filters,
+                projNodeRequired ? null : prj,
+                requiredColumns
+            );
+
+            // If there are projects in the scan node - after the scan we already have target row type.
+            if (!spoolNodeRequired && projects != null)
+                rowType = rel.getRowType();
+
+            Node<Row> node = new ScanNode<>(ctx, rowType, rowsIter);
+
+            RelCollation collation = rel.collation();
+
+            if ((!spoolNodeRequired && projects != null) || requiredColumns != null) {
+                collation = collation.apply(LogicalScanConverterRule.createMapping(
+                    spoolNodeRequired ? null : projects,
+                    requiredColumns,
+                    tbl.getRowType(typeFactory).getFieldCount()
+                ));
+            }
+
+            boolean sortNodeRequired = !collation.getFieldCollations().isEmpty();
+
+            if (sortNodeRequired) {
+                SortNode<Row> sortNode = new SortNode<>(ctx, rowType, expressionFactory.comparator(collation));
+
+                sortNode.register(node);
+
+                node = sortNode;
+            }
+
+            if (spoolNodeRequired) {
+                if (lowerCond != null || upperCond != null) {
+                    if (requiredColumns != null) {
+                        // Remap index find predicate according to rowType of the spool.
+                        int cardinality = requiredColumns.cardinality();
+                        List<RexNode> remappedLowerCond = lowerCond != null ? new ArrayList<>(cardinality) : null;
+                        List<RexNode> remappedUpperCond = upperCond != null ? new ArrayList<>(cardinality) : null;
+
+                        for (int i = requiredColumns.nextSetBit(0); i != -1; i = requiredColumns.nextSetBit(i + 1)) {
+                            if (remappedLowerCond != null)
+                                remappedLowerCond.add(lowerCond.get(i));
+
+                            if (remappedUpperCond != null)
+                                remappedUpperCond.add(upperCond.get(i));
+                        }
+
+                        lower = remappedLowerCond == null ? null : expressionFactory.rowSource(remappedLowerCond);
+                        upper = remappedUpperCond == null ? null : expressionFactory.rowSource(remappedUpperCond);
+                    }
+                }
+
+                IndexSpoolNode<Row> spoolNode = IndexSpoolNode.createTreeSpool(
+                    ctx,
+                    rowType,
+                    collation,
+                    expressionFactory.comparator(collation),
+                    filterHasCorrelation ? filters : null, // Not correlated filter included into table scan.
+                    lower,
+                    upper
+                );
+
+                spoolNode.register(node);
+
+                node = spoolNode;
+            }
+
+            if (projNodeRequired) {
+                ProjectNode<Row> projectNode = new ProjectNode<>(ctx, rel.getRowType(), prj);
+
+                projectNode.register(node);
+
+                node = projectNode;
+            }
+
+            return node;
+        }
     }
 
     /** {@inheritDoc} */
@@ -420,10 +517,13 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
     @Override public Node<Row> visit(IgniteHashIndexSpool rel) {
         Supplier<Row> searchRow = expressionFactory.rowSource(rel.searchRow());
 
+        Predicate<Row> filter = expressionFactory.predicate(rel.condition(), rel.getRowType());
+
         IndexSpoolNode<Row> node = IndexSpoolNode.createHashSpool(
             ctx,
             rel.getRowType(),
             ImmutableBitSet.of(rel.keys()),
+            filter,
             searchRow
         );
 

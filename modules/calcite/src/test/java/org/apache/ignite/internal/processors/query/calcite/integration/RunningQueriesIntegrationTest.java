@@ -19,27 +19,54 @@
 package org.apache.ignite.internal.processors.query.calcite.integration;
 
 import java.util.Collection;
+import java.util.Iterator;
 import java.util.List;
+import java.util.NoSuchElementException;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.stream.IntStream;
-
+import java.util.stream.Stream;
+import org.apache.calcite.plan.RelOptPlanner;
+import org.apache.calcite.rel.RelCollation;
+import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryEngine;
 import org.apache.ignite.internal.processors.query.QueryState;
+import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.RunningQuery;
+import org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor;
+import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
+import org.apache.ignite.internal.processors.query.calcite.metadata.ColocationGroup;
+import org.apache.ignite.internal.processors.query.calcite.schema.CacheTableImpl;
+import org.apache.ignite.internal.processors.query.calcite.schema.IgniteCacheTable;
+import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.junits.WithSystemProperty;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.junit.Assert;
 import org.junit.Test;
 
 import static java.util.stream.Collectors.joining;
+import static org.apache.ignite.IgniteSystemProperties.getLong;
+import static org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor.IGNITE_CALCITE_PLANNER_TIMEOUT;
 
 /**
  *
  */
+@WithSystemProperty(key = IGNITE_CALCITE_PLANNER_TIMEOUT, value = "2000")
 public class RunningQueriesIntegrationTest extends AbstractBasicIntegrationTest {
+    /** */
+    private static final long PLANNER_TIMEOUT = getLong(IGNITE_CALCITE_PLANNER_TIMEOUT, 0);
+
     /** */
     private static IgniteEx srv;
 
@@ -94,62 +121,82 @@ public class RunningQueriesIntegrationTest extends AbstractBasicIntegrationTest 
     }
 
     /**
-     * Execute query with a lot of JOINs to produce very long excution phase.
+     * Execute query with a latch on excution phase.
      * Cancel query on execution phase and check query registry is empty on the all nodes of the cluster.
      */
     @Test
-    public void testCancelAtExecutionPhase() throws IgniteCheckedException {
-        QueryEngine cliEngine = queryProcessor(client);
-        QueryEngine srvEngine = queryProcessor(srv);
-        int cnt = 6;
+    public void testCancelAtExecutionPhase() throws Exception {
+        CalciteQueryProcessor cliEngine = queryProcessor(client);
+        CalciteQueryProcessor srvEngine = queryProcessor(srv);
 
         sql("CREATE TABLE person (id int, val varchar)");
+        sql("INSERT INTO person (id, val) VALUES (?, ?)", 0, "val0");
 
-        String data = IntStream.range(0, 1000).mapToObj((i) -> "(" + i + "," + i + ")").collect(joining(", "));
-        String insertSql = "INSERT INTO person (id, val) VALUES " + data;
+        IgniteCacheTable oldTbl = (IgniteCacheTable)srvEngine.schemaHolder().schema("PUBLIC").getTable("PERSON");
 
-        sql(insertSql);
+        CountDownLatch scanLatch = new CountDownLatch(1);
+        AtomicBoolean stop = new AtomicBoolean();
 
-        String bigJoin = IntStream.range(0, cnt).mapToObj((i) -> "person p" + i).collect(joining(", "));
-        String sql = "SELECT * FROM " + bigJoin;
+        IgniteCacheTable newTbl = new CacheTableImpl(srv.context(), oldTbl.descriptor()) {
+            @Override public <Row> Iterable<Row> scan(
+                ExecutionContext<Row> execCtx,
+                ColocationGroup grp,
+                Predicate<Row> filter,
+                Function<Row, Row> rowTransformer,
+                @Nullable ImmutableBitSet usedColumns
+            ) {
+                return new Iterable<Row>() {
+                    @NotNull @Override public Iterator<Row> iterator() {
+                        scanLatch.countDown();
 
-        IgniteInternalFuture<List<List<?>>> fut = GridTestUtils.runAsync(() -> sql(sql));
+                        return new Iterator<Row>() {
+                            @Override public boolean hasNext() {
+                                // Produce rows until stopped.
+                                return !stop.get();
+                            }
 
-        // The query is executing on client.
-        Assert.assertTrue(GridTestUtils.waitForCondition(
-            () -> {
-                Collection<? extends RunningQuery> queries = cliEngine.runningQueries();
+                            @Override public Row next() {
+                                if (stop.get())
+                                    throw new NoSuchElementException();
 
-                return !queries.isEmpty() && F.first(queries).state() == QueryState.EXECUTING;
-            },
-            TIMEOUT_IN_MS));
+                                return execCtx.rowHandler().factory().create();
+                            }
+                        };
+                    }
+                };
+            }
+        };
 
-        // The query is executing on sever.
-        Assert.assertTrue(GridTestUtils.waitForCondition(
-            () -> {
-                Collection<? extends RunningQuery> queries = srvEngine.runningQueries();
+        srvEngine.schemaHolder().schema("PUBLIC").add("PERSON", newTbl);
 
-                return !queries.isEmpty() && F.first(queries).state() == QueryState.EXECUTING;
-            },
-            TIMEOUT_IN_MS));
+        IgniteInternalFuture<List<List<?>>> fut = GridTestUtils.runAsync(() -> sql("SELECT * FROM person"));
 
-        Collection<? extends RunningQuery> running = cliEngine.runningQueries();
+        try {
+            scanLatch.await(TIMEOUT_IN_MS, TimeUnit.MILLISECONDS);
 
-        assertEquals(1, running.size());
+            // Check state on server.
+            assertEquals(1, srvEngine.runningQueries().size());
+            assertEquals(QueryState.EXECUTING, F.first(srvEngine.runningQueries()).state());
 
-        RunningQuery qry = F.first(running);
+            // Check state on client.
+            assertEquals(1, cliEngine.runningQueries().size());
+            RunningQuery qry = F.first(cliEngine.runningQueries());
+            assertEquals(QueryState.EXECUTING, qry.state());
 
-        assertSame(qry, cliEngine.runningQuery(qry.id()));
+            qry.cancel();
 
-        qry.cancel();
+            Assert.assertTrue(GridTestUtils.waitForCondition(
+                () -> srvEngine.runningQueries().isEmpty(), TIMEOUT_IN_MS));
 
-        Assert.assertTrue(GridTestUtils.waitForCondition(
-            () -> cliEngine.runningQueries().isEmpty(), TIMEOUT_IN_MS));
+            Assert.assertTrue(GridTestUtils.waitForCondition(
+                () -> cliEngine.runningQueries().isEmpty(), TIMEOUT_IN_MS));
+        }
+        finally {
+            stop.set(true);
+        }
 
-        Assert.assertTrue(GridTestUtils.waitForCondition(
-            () -> srvEngine.runningQueries().isEmpty(), TIMEOUT_IN_MS));
-
-        GridTestUtils.assertThrowsAnyCause(log, () -> fut.get(100), IgniteSQLException.class, "The query was cancelled while executing.");
+        GridTestUtils.assertThrowsAnyCause(log,
+            () -> fut.get(100), IgniteSQLException.class, "The query was cancelled while executing.");
     }
 
     /**
@@ -199,5 +246,40 @@ public class RunningQueriesIntegrationTest extends AbstractBasicIntegrationTest 
             () -> serverEngine.runningQueries().isEmpty(), TIMEOUT_IN_MS));
 
         GridTestUtils.assertThrowsAnyCause(log, () -> fut.get(100), IgniteSQLException.class, "The query was cancelled while executing.");
+    }
+
+    /** */
+    @Test
+    public void testLongPlanningTimeout() {
+        Stream.of("T1", "T2").forEach(tblName -> {
+            sql(String.format("CREATE TABLE %s(A INT, B INT)", tblName));
+
+            IgniteTable tbl = (IgniteTable)queryProcessor(client).schemaHolder().schema("PUBLIC").getTable(tblName);
+
+            tbl.addIndex(new DelegatingIgniteIndex(tbl.getIndex(QueryUtils.PRIMARY_KEY_INDEX)) {
+                @Override public RelCollation collation() {
+                    doSleep(300);
+
+                    return delegate.collation();
+                }
+            });
+
+            sql(String.format("INSERT INTO %s(A, B) VALUES (1, 1)", tblName));
+        });
+
+        String longJoinQry = "SELECT * FROM T1 JOIN T2 ON T1.A = T2.A";
+
+        try {
+            AtomicReference<List<List<?>>> res = new AtomicReference<>();
+            GridTestUtils.assertTimeout(3 * PLANNER_TIMEOUT, TimeUnit.MILLISECONDS, () -> {
+                res.set(sql(longJoinQry));
+            });
+
+            assertNotNull(res.get());
+            assertFalse(res.get().isEmpty());
+        }
+        catch (Exception e) {
+            assertTrue("Unexpected exception: " + e, e instanceof RelOptPlanner.CannotPlanException);
+        }
     }
 }

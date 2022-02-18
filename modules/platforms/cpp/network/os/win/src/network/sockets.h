@@ -82,6 +82,32 @@ namespace ignite
              *     WaitResult::SUCCESS on success.
              */
             int WaitOnSocket(SocketHandle socket, int32_t timeout, bool rd);
+
+            /**
+             * Try and set socket options.
+             *
+             * @param socket Socket.
+             * @param bufSize Buffer size.
+             * @param noDelay Set no-delay mode.
+             * @param outOfBand Set out-of-Band mode.
+             * @param keepAlive Keep alive mode.
+             */
+            void TrySetSocketOptions(SOCKET socket, int bufSize, BOOL noDelay, BOOL outOfBand, BOOL keepAlive);
+
+            /**
+             * Set non blocking mode for socket.
+             *
+             * @param socket Socket.
+             * @param nonBlocking Non-blocking mode.
+             */
+            bool SetNonBlockingMode(SOCKET socket, bool nonBlocking);
+
+            /**
+             * Init windows sockets.
+             *
+             * Thread-safe.
+             */
+            void InitWsa();
         }
     }
 }

@@ -882,6 +882,25 @@ public class SchemaManager implements GridQuerySchemaManager {
         return null;
     }
 
+    /**
+     * Mark tables for index rebuild, so that their indexes are not used.
+     *
+     * @param cacheName Cache name.
+     * @param mark Mark/unmark flag, {@code true} if index rebuild started, {@code false} if finished.
+     */
+    public void markIndexRebuild(String cacheName, boolean mark) {
+        for (H2TableDescriptor tblDesc : tablesForCache(cacheName)) {
+            assert tblDesc.table() != null;
+
+            tblDesc.table().markRebuildFromHashInProgress(mark);
+
+            if (mark)
+                lsnr.onIndexRebuildStarted(tblDesc.schemaName(), tblDesc.tableName());
+            else
+                lsnr.onIndexRebuildFinished(tblDesc.schemaName(), tblDesc.tableName());
+        }
+    }
+
     /** {@inheritDoc} */
     @Override public GridQueryTypeDescriptor typeDescriptorForTable(String schemaName, String tableName) {
         GridH2Table dataTable = dataTable(schemaName, tableName);
@@ -927,6 +946,12 @@ public class SchemaManager implements GridQuerySchemaManager {
 
         /** {@inheritDoc} */
         @Override public void onIndexDropped(String schemaName, String tblName, String idxName) {}
+
+        /** {@inheritDoc} */
+        @Override public void onIndexRebuildStarted(String schemaName, String tblName) {}
+
+        /** {@inheritDoc} */
+        @Override public void onIndexRebuildFinished(String schemaName, String tblName) {}
 
         /** {@inheritDoc} */
         @Override public void onSqlTypeCreated(
@@ -1022,6 +1047,16 @@ public class SchemaManager implements GridQuerySchemaManager {
          */
         @Override public void onIndexDropped(String schemaName, String tblName, String idxName) {
             lsnrs.forEach(lsnr -> lsnr.onIndexDropped(schemaName, tblName, idxName));
+        }
+
+        /** {@inheritDoc} */
+        @Override public void onIndexRebuildStarted(String schemaName, String tblName) {
+            lsnrs.forEach(lsnr -> lsnr.onIndexRebuildStarted(schemaName, tblName));
+        }
+
+        /** {@inheritDoc} */
+        @Override public void onIndexRebuildFinished(String schemaName, String tblName) {
+            lsnrs.forEach(lsnr -> lsnr.onIndexRebuildFinished(schemaName, tblName));
         }
 
         /** {@inheritDoc} */

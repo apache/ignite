@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.query.calcite.planner;
 
 import java.util.List;
 import org.apache.calcite.plan.RelOptUtil;
-import org.apache.calcite.rel.RelCollations;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.util.ImmutableIntList;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteExchange;
@@ -55,7 +54,7 @@ public class JoinColocationPlannerTest extends AbstractPlannerTest {
             "VAL", String.class
         );
 
-        tbl.addIndex(RelCollations.of(0), "PK");
+        tbl.addIndex("PK", 0);
 
         IgniteSchema schema = createSchema(tbl);
 
@@ -88,7 +87,7 @@ public class JoinColocationPlannerTest extends AbstractPlannerTest {
             "VAL", String.class
         );
 
-        tbl.addIndex(RelCollations.of(ImmutableIntList.of(0, 1)), "PK");
+        tbl.addIndex("PK", 0, 1);
 
         IgniteSchema schema = createSchema(tbl);
 
@@ -123,7 +122,7 @@ public class JoinColocationPlannerTest extends AbstractPlannerTest {
             "VAL", String.class
         );
 
-        complexTbl.addIndex(RelCollations.of(ImmutableIntList.of(0, 1)), "PK");
+        complexTbl.addIndex("PK", 0, 1);
 
         TestTable simpleTbl = createTable(
             "SIMPLE_TBL",
@@ -133,7 +132,7 @@ public class JoinColocationPlannerTest extends AbstractPlannerTest {
             "VAL", String.class
         );
 
-        simpleTbl.addIndex(RelCollations.of(0), "PK");
+        simpleTbl.addIndex("PK", 0);
 
         IgniteSchema schema = createSchema(complexTbl, simpleTbl);
 
@@ -172,7 +171,7 @@ public class JoinColocationPlannerTest extends AbstractPlannerTest {
             "VAL", String.class
         );
 
-        complexTblDirect.addIndex(RelCollations.of(ImmutableIntList.of(0, 1)), "PK");
+        complexTblDirect.addIndex("PK", 0, 1);
 
         TestTable complexTblIndirect = createTable(
             "COMPLEX_TBL_INDIRECT",
@@ -182,7 +181,7 @@ public class JoinColocationPlannerTest extends AbstractPlannerTest {
             "VAL", String.class
         );
 
-        complexTblIndirect.addIndex(RelCollations.of(ImmutableIntList.of(0, 1)), "PK");
+        complexTblIndirect.addIndex("PK", 0, 1);
 
         IgniteSchema schema = createSchema(complexTblDirect, complexTblIndirect);
 

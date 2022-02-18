@@ -16,13 +16,16 @@
  */
 package org.apache.ignite.internal.processors.query.calcite.sql;
 
+import java.util.UUID;
 import org.apache.calcite.sql.SqlCharStringLiteral;
 import org.apache.calcite.sql.SqlDdl;
 import org.apache.calcite.sql.SqlNumericLiteral;
 import org.apache.calcite.sql.SqlOperator;
 import org.apache.calcite.sql.parser.SqlParserPos;
+import org.apache.calcite.util.Pair;
 import org.apache.ignite.internal.processors.query.calcite.sql.kill.IgniteSqlKillComputeTask;
 import org.apache.ignite.internal.processors.query.calcite.sql.kill.IgniteSqlKillContinuousQuery;
+import org.apache.ignite.internal.processors.query.calcite.sql.kill.IgniteSqlKillQuery;
 import org.apache.ignite.internal.processors.query.calcite.sql.kill.IgniteSqlKillScanQuery;
 import org.apache.ignite.internal.processors.query.calcite.sql.kill.IgniteSqlKillService;
 import org.apache.ignite.internal.processors.query.calcite.sql.kill.IgniteSqlKillTransaction;
@@ -77,5 +80,31 @@ public abstract class IgniteSqlKill extends SqlDdl {
         SqlCharStringLiteral sesId
     ) {
         return new IgniteSqlKillComputeTask(pos, sesId);
+    }
+
+    /** */
+    public static IgniteSqlKill createQueryKill(
+        SqlParserPos pos,
+        SqlCharStringLiteral globalQueryId,
+        UUID nodeId,
+        long queryId,
+        boolean isAsync
+    ) {
+        return new IgniteSqlKillQuery(pos, globalQueryId, nodeId, queryId, isAsync);
+    }
+
+    /** */
+    public static Pair<UUID, Long> parseGlobalQueryId(String globalQryId) {
+        String[] ids = globalQryId.split("_");
+
+        if (ids.length != 2)
+            return null;
+
+        try {
+            return Pair.of(UUID.fromString(ids[0]), Long.parseLong(ids[1]));
+        }
+        catch (Exception ignore) {
+            return null;
+        }
     }
 }

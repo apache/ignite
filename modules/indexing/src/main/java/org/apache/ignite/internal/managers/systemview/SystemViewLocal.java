@@ -156,7 +156,7 @@ class SystemViewLocal<R> extends SqlAbstractLocalSystemView {
                 Value[] data = new Value[sysView.walker().count()];
 
                 sysView.walker().visitAll(row, new AttributeWithValueVisitor() {
-                    @Override public <T> void accept(int idx, String name, Class<T> clazz, T val) {
+                    @Override public <T> void accept(int idx, String name, Class<T> clazz, @Nullable T val) {
                         if (val == null)
                             data[idx] = ValueNull.INSTANCE;
                         else

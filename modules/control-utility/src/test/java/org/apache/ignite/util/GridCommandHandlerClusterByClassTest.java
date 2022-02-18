@@ -58,6 +58,7 @@ import org.apache.ignite.configuration.AtomicConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.IgniteVersionUtils;
 import org.apache.ignite.internal.commandline.CommandHandler;
 import org.apache.ignite.internal.commandline.CommandList;
 import org.apache.ignite.internal.commandline.CommonArgParser;
@@ -112,6 +113,9 @@ import static org.apache.ignite.internal.commandline.cache.CacheDestroy.CACHE_NA
 import static org.apache.ignite.internal.commandline.cache.CacheDestroy.DESTROY_ALL_ARG;
 import static org.apache.ignite.internal.commandline.cache.CacheSubcommands.DESTROY;
 import static org.apache.ignite.internal.commandline.cache.CacheSubcommands.HELP;
+import static org.apache.ignite.internal.commandline.consistency.ConsistencyCommand.CACHE;
+import static org.apache.ignite.internal.commandline.consistency.ConsistencyCommand.PARTITION;
+import static org.apache.ignite.internal.commandline.consistency.ConsistencyCommand.STRATEGY;
 import static org.apache.ignite.testframework.GridTestUtils.assertContains;
 import static org.apache.ignite.testframework.GridTestUtils.assertNotContains;
 import static org.apache.ignite.testframework.GridTestUtils.readResource;
@@ -130,6 +134,9 @@ import static org.apache.ignite.util.TestStorageUtils.corruptDataEntry;
 public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClusterByClassAbstractTest {
     /** Special word for defining any char sequence from special word to the end of line in golden copy of help output */
     private static final String ANY = "<!any!>";
+
+    /** Special word for defining copyright message in golden copy of help output. */
+    private static final String COPYRIGHT = "<!copyright!>";
 
     /** Error stack trace prefix. */
     protected static final String ERROR_STACK_TRACE_PREFIX = "Error stack trace:";
@@ -395,6 +402,9 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
 
             for (int i = 0; i < correctOutputLines.size(); i++) {
                 String cLine = correctOutputLines.get(i);
+
+                cLine = cLine.replace(COPYRIGHT, IgniteVersionUtils.COPYRIGHT);
+
                 // Remove all spaces from end of line.
                 String line = outputLines.get(i).replaceAll("\\s+$", "");
 
@@ -1654,7 +1664,8 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
         cmdArgs.put(WAL, asList(new String[] {"print"}, new String[] {"delete"}));
         cmdArgs.put(METADATA, asList(new String[] {"help"}, new String[] {"list"}));
         cmdArgs.put(TRACING_CONFIGURATION, Collections.singletonList(new String[] {"get_all"}));
-        cmdArgs.put(CONSISTENCY, Collections.singletonList(new String[] {"repair", "cache", "0"}));
+        cmdArgs.put(CONSISTENCY, Collections.singletonList(
+            new String[] {"repair", CACHE, "cache", PARTITION, "0", STRATEGY, "LWW"}));
 
         String warning = String.format(
             "To use experimental command add --enable-experimental parameter for %s",
