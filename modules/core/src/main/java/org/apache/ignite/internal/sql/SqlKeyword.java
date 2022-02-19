@@ -20,6 +20,7 @@ package org.apache.ignite.internal.sql;
 import java.lang.reflect.Field;
 import java.util.HashSet;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.util.typedef.F;
 
 /**
@@ -347,7 +348,11 @@ public class SqlKeyword {
      * @return {@code True} if it is a keyword.
      */
     public static boolean isKeyword(String str) {
-        return KEYWORDS.contains(str);
+        boolean isFallback = IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_SQL_PARSER_DISABLE_H2_FALLBACK);
+        if (isFallback) {
+            return KEYWORDS.contains(str);
+        }
+        return false;
     }
 
     /**
