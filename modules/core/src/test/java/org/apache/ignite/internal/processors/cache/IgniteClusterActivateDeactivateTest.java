@@ -1419,6 +1419,9 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
         if (persistenceEnabled())
             ignite.cluster().state(ACTIVE);
 
+        // Create a new cache in order to trigger all needed checks on deactivation.
+        ignite.getOrCreateCache("test-partitioned-cache");
+
         checkDeactivation(ignite, () -> mxBean.active(false), false);
 
         checkDeactivation(ignite, () -> mxBean.clusterState(INACTIVE.name()), false);
