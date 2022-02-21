@@ -14,8 +14,6 @@
 // limitations under the License.
 = Transparent Data Encryption
 
-WARNING: This feature is in beta and not recommended for use in production environments.
-
 == Overview
 Transparent data encryption (TDE) allows users to encrypt their data at rest.
 
@@ -43,7 +41,7 @@ Transparent Data Encryption has some limitations that you should be aware of bef
 
 *Snapshots and Recovery*
 
-* No support for snapshots. Snapshots are not encrypted and it's not possible to recover from a snapshot that includes an encrypted table or cache.
+* Encryption, changing of master key or cache group key are not allowed during snapshot operations.
 
 == Configuration
 To enable encryption in the cluster, provide a master key in the configuration of each server node. A configuration example is shown below.
