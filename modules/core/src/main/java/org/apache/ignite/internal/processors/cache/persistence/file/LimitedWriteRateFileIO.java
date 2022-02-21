@@ -57,115 +57,31 @@ public class LimitedWriteRateFileIO extends FileIODecorator {
         return limitedTransfer((pos, len) -> super.transferFrom(src, pos, len), position, count);
     }
 
-    private long limitedTransfer(IOOperationEx fileOp, long position, long count) throws IOException {
-        long totalWritten = 0;
-
-        while (totalWritten < count) {
-            long transferCnt = Math.min(count - totalWritten, blockSize);
-
-            acquire((int)transferCnt);
-
-            long written = 0;
-
-            do {
-                long pos = position + totalWritten + written;
-                long len = transferCnt - written;
-
-                written += fileOp.run(pos, len);
-            }
-            while (written < transferCnt);
-
-            totalWritten += written;
-        }
-
-        return totalWritten;
-    }
-
     /** {@inheritDoc} */
     @Override public int write(ByteBuffer srcBuf) throws IOException {
         int count = srcBuf.remaining();
 
-        int totalWritten = 0;
+        return limitedWrite((offs, len) -> {
+            srcBuf.limit(srcBuf.position() + len);
 
-        while (totalWritten < count) {
-            int transferCnt = Math.min(count - totalWritten, blockSize);
-
-            acquire(transferCnt);
-
-            int written = 0;
-
-            do {
-                long pos = totalWritten + written;
-                int len = transferCnt - written;
-                srcBuf.limit(srcBuf.position() + len);
-
-                written += super.write(srcBuf);
-
-                System.out.println(">xxx> written=" + written + ", pos=" + srcBuf.position());
-            }
-            while (written < transferCnt);
-
-            totalWritten += written;
-        }
-
-//        acquire(count);
-//
-//        int remain = count;
-//
-//        while (remain > 0)
-//            remain -= super.write(srcBuf);
-
-        return count;
-
-//        return (int)limitedTransfer((pos, len) -> super.write(srcBuf, pos), 0, count);
-//
-//        long totalWritten = 0;
-//
-//        while (totalWritten < count) {
-//            long transferCnt = Math.min(count - totalWritten, blockSize);
-//
-//            acquire((int)transferCnt);
-//
-//            long written = 0;
-//
-//            do {
-//                long pos = totalWritten + written;
-//                long len = transferCnt - written;
-//
-//                written += fileOp.run(pos, len);
-//            }
-//            while (written < transferCnt);
-//
-//            totalWritten += written;
-//        }
-//
-//        return totalWritten;
+            return super.write(srcBuf);
+        }, count);
     }
 
     /** {@inheritDoc} */
     @Override public int write(ByteBuffer srcBuf, long position) throws IOException {
-        int len = srcBuf.remaining();
+        int count = srcBuf.remaining();
 
-        acquire(len);
+        return limitedWrite((offs, len) -> {
+            srcBuf.limit(srcBuf.position() + len);
 
-        int written = 0;
-
-        while (written < len)
-            written += super.write(srcBuf, position + written);
-
-        return written;
+            return super.write(srcBuf, position + offs);
+        }, count);
     }
 
     /** {@inheritDoc} */
-    @Override public int write(byte[] buf, int off, int len) throws IOException {
-        acquire(len);
-
-        int written = 0;
-
-        while (written < len)
-            written += super.write(buf, off + written, len - written);
-
-        return len;
+    @Override public int write(byte[] buf, int off, int count) throws IOException {
+        return limitedWrite((offs, len) -> super.write(buf, off + offs, len), count);
     }
 
     /** {@inheritDoc} */
@@ -184,6 +100,66 @@ public class LimitedWriteRateFileIO extends FileIODecorator {
     }
 
     /**
+     * @param writeOp Write operation.
+     * @param count Number of bytes to write.
+     * @return Number of written bytes.
+     * @throws IOException if failed.
+     */
+    private int limitedWrite(WriteOperation writeOp, int count) throws IOException {
+        int totalWritten = 0;
+
+        while (totalWritten < count) {
+            int transferCnt = Math.min(count - totalWritten, blockSize);
+
+            acquire(transferCnt);
+
+            int written = 0;
+
+            do {
+                int len = transferCnt - written;
+
+                written += writeOp.run(totalWritten, len);
+            }
+            while (written < transferCnt);
+
+            totalWritten += written;
+        }
+
+        return count;
+    }
+
+    /**
+     * @param transferOp Transfer operation.
+     * @param position The relative offset of the written channel.
+     * @param count Number of bytes to transfer.
+     * @return Number of transferred bytes.
+     * @throws IOException if failed.
+     */
+    private long limitedTransfer(TransferOperation transferOp, long position, long count) throws IOException {
+        long totalWritten = 0;
+
+        while (totalWritten < count) {
+            long transferCnt = Math.min(count - totalWritten, blockSize);
+
+            acquire((int)transferCnt);
+
+            long written = 0;
+
+            do {
+                long pos = position + totalWritten + written;
+                long len = transferCnt - written;
+
+                written += transferOp.run(pos, len);
+            }
+            while (written < transferCnt);
+
+            totalWritten += written;
+        }
+
+        return totalWritten;
+    }
+
+    /**
      * @param permits The number of permits to acquire.
      */
     private void acquire(int permits) {
@@ -198,7 +174,7 @@ public class LimitedWriteRateFileIO extends FileIODecorator {
     /**
      *
      */
-    protected interface IOOperationEx {
+    protected interface TransferOperation {
         /**
          * @param pos The position within the file at which the transfer is to begin.
          * @param count The maximum number of bytes to be transferred.
@@ -206,5 +182,18 @@ public class LimitedWriteRateFileIO extends FileIODecorator {
          * @return Number of bytes operated.
          */
         public long run(long pos, long count) throws IOException;
+    }
+
+    /**
+     *
+     */
+    protected interface WriteOperation {
+        /**
+         * @param pos The position within the file at which the transfer is to begin.
+         * @param count The maximum number of bytes to be transferred.
+         *
+         * @return Number of bytes operated.
+         */
+        public int run(int pos, int count) throws IOException;
     }
 }

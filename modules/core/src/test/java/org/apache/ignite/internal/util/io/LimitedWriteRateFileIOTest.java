@@ -18,20 +18,17 @@
 package org.apache.ignite.internal.util.io;
 
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.channels.WritableByteChannel;
 import java.nio.file.OpenOption;
-import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 import org.apache.commons.io.FileUtils;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
-import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.LimitedWriteRateFileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.LimitedWriteRateFileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
@@ -41,6 +38,11 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
+import static java.nio.file.StandardOpenOption.APPEND;
+import static java.nio.file.StandardOpenOption.CREATE;
+import static java.nio.file.StandardOpenOption.READ;
+import static java.nio.file.StandardOpenOption.TRUNCATE_EXISTING;
+import static java.nio.file.StandardOpenOption.WRITE;
 import static org.junit.Assert.assertArrayEquals;
 
 /**
@@ -49,10 +51,13 @@ import static org.junit.Assert.assertArrayEquals;
 @RunWith(Parameterized.class)
 public class LimitedWriteRateFileIOTest extends GridCommonAbstractTest {
     /** Test buffer length. */
-    private static final int DATA_LEN = 32 * 1024 + 1;
+    private static final int DATA_LEN = 32 * 1024 + 2;
 
     /** Temp directory name. */
     private static final String TMP_DIR_NAME = "temp";
+
+    /** Temp file. */
+    private static File tempFile;
 
     /** Write rate. */
     @Parameterized.Parameter(0)
@@ -65,8 +70,6 @@ public class LimitedWriteRateFileIOTest extends GridCommonAbstractTest {
     /** Data length. */
     @Parameterized.Parameter(2)
     public int dataLen;
-
-//    public boolean transfer = false;
 
     /** Parameters. */
     @Parameterized.Parameters(name = "rate={0}, bufLen={1}, dataLen={2}")
@@ -88,6 +91,9 @@ public class LimitedWriteRateFileIOTest extends GridCommonAbstractTest {
 
         if (!tmpDir.exists())
             tmpDir.mkdirs();
+
+        tempFile = new File(new File(U.defaultWorkDirectory(), TMP_DIR_NAME),
+            U.maskForFileName(getClass().getSimpleName()) + ".tmp.1");
     }
 
     /** {@inheritDoc} */
@@ -102,7 +108,22 @@ public class LimitedWriteRateFileIOTest extends GridCommonAbstractTest {
      */
     @Test
     public void testLimitedTransferTo() throws Exception {
-        doLimitedChannelTransfer(false, false);
+        ByteArrayChannel destChannel = new ByteArrayChannel(bufLen, (int)U.MB);
+        byte[] srcData = generateData(dataLen);
+        int offset = dataLen / 2;
+
+        FileUtils.writeByteArrayToFile(tempFile, srcData);
+
+        long startTime = System.currentTimeMillis();
+
+        try (FileIO src = limitedRateFileIO(READ)) {
+            src.transferTo(offset, srcData.length - offset, destChannel);
+        }
+
+        long delta = System.currentTimeMillis() - startTime;
+
+        assertArrayEquals(Arrays.copyOfRange(srcData, offset, srcData.length), destChannel.data());
+        checkTimings(delta, offset);
     }
 
     /**
@@ -110,7 +131,47 @@ public class LimitedWriteRateFileIOTest extends GridCommonAbstractTest {
      */
     @Test
     public void testLimitedTransferFrom() throws Exception {
-        doLimitedChannelTransfer(true, false);
+        byte[] srcData = generateData(dataLen);
+        int offset = dataLen / 2;
+        ByteArrayChannel srcChannel =
+            new ByteArrayChannel(bufLen, Arrays.copyOfRange(srcData, offset, dataLen), dataLen - offset);
+
+        if (offset > 0)
+            FileUtils.writeByteArrayToFile(tempFile, Arrays.copyOfRange(srcData, 0, offset));
+
+        long startTime = System.currentTimeMillis();
+
+        try (FileIO dest = limitedRateFileIO(CREATE, WRITE, offset == 0 ? TRUNCATE_EXISTING : APPEND)) {
+            dest.transferFrom(srcChannel, offset, srcData.length - offset);
+        }
+
+        long delta = System.currentTimeMillis() - startTime;
+
+        assertArrayEquals(srcData, FileUtils.readFileToByteArray(tempFile));
+        checkTimings(delta, offset);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testLimitedBytebufferWritePosition() throws Exception {
+        byte[] srcData = generateData(dataLen);
+        int offset = dataLen / 2;
+
+        if (offset > 0)
+            FileUtils.writeByteArrayToFile(tempFile, Arrays.copyOfRange(srcData, 0, offset));
+
+        long startTime = System.currentTimeMillis();
+
+        try (FileIO dest = limitedRateFileIO(CREATE, WRITE, offset == 0 ? TRUNCATE_EXISTING : APPEND)) {
+            dest.write(ByteBuffer.wrap(Arrays.copyOfRange(srcData, offset, dataLen)), offset);
+        }
+
+        long delta = System.currentTimeMillis() - startTime;
+
+        assertArrayEquals(srcData, FileUtils.readFileToByteArray(tempFile));
+        checkTimings(delta, offset);
     }
 
     /**
@@ -118,60 +179,62 @@ public class LimitedWriteRateFileIOTest extends GridCommonAbstractTest {
      */
     @Test
     public void testLimitedBytebufferWrite() throws Exception {
-        doLimitedChannelTransfer(true, true);
+        byte[] srcData = generateData(dataLen);
+
+        long startTime = System.currentTimeMillis();
+
+        try (FileIO dest = limitedRateFileIO(CREATE, WRITE, TRUNCATE_EXISTING)) {
+            dest.write(ByteBuffer.wrap(srcData));
+        }
+
+        long delta = System.currentTimeMillis() - startTime;
+
+        assertArrayEquals(srcData, FileUtils.readFileToByteArray(tempFile));
+        checkTimings(delta, 0);
     }
 
     /**
-     * @param rate Transfer rate in bytes/sec.
-     * @param destBufLen Destination channel buffer length.
-     * @param size Data length.
      * @throws Exception If failed.
      */
-    private void doLimitedChannelTransfer(boolean writeSrcChannel, boolean transfer) throws Exception {
-        File tmpDir = new File(U.defaultWorkDirectory(), TMP_DIR_NAME);
-        File srcFile = new File(tmpDir, U.maskForFileName(getClass().getSimpleName()) + ".tmp.1");
-        byte[] srcData = new byte[dataLen];
+    @Test
+    public void testLimitedWrite() throws Exception {
+        byte[] srcData = generateData(dataLen);
+        int offset = dataLen / 2;
 
-        ThreadLocalRandom.current().nextBytes(srcData);
+        if (offset > 0)
+            FileUtils.writeByteArrayToFile(tempFile, Arrays.copyOfRange(srcData, 0, offset));
 
-        if (!writeSrcChannel) {
-            try (FileOutputStream out = new FileOutputStream(srcFile)) {
-                out.write(srcData);
-            }
+        long startTime = System.currentTimeMillis();
+
+        try (FileIO dest = limitedRateFileIO(CREATE, WRITE, offset == 0 ? TRUNCATE_EXISTING : APPEND)) {
+            dest.write(srcData, offset, dataLen - offset);
         }
 
-        int expDuration = dataLen * 1000 / rate;
+        long delta = System.currentTimeMillis() - startTime;
 
-        FileIOFactory ioFactory = new LimitedWriteRateFileIOFactory(new RandomAccessFileIOFactory(), rate, rate);
-        ByteArrayChannel testChannel = writeSrcChannel ?
-            new ByteArrayChannel(bufLen, srcData, srcData.length) : new ByteArrayChannel(bufLen, (int)U.MB);
+        assertArrayEquals(srcData, FileUtils.readFileToByteArray(tempFile));
+        checkTimings(delta, offset);
+    }
 
-        long startTime = U.currentTimeMillis();
+    private byte[] generateData(int len) {
+        byte[] data = new byte[len];
 
-        OpenOption[] options = !writeSrcChannel ? new OpenOption[] {StandardOpenOption.READ} :
-            new OpenOption[] {StandardOpenOption.CREATE, StandardOpenOption.WRITE, StandardOpenOption.TRUNCATE_EXISTING};
+        ThreadLocalRandom.current().nextBytes(data);
 
-        try (FileIO src = ioFactory.create(srcFile, options)) {
-            if (writeSrcChannel) {
-                if (transfer)
-                    src.transferFrom(testChannel, 0, srcData.length);
-                else {
-                    long written = src.write(ByteBuffer.wrap(srcData));
+        return data;
+    }
 
-                    assertEquals(dataLen, written);
-                }
-            }
-            else
-                src.transferTo(0, srcFile.length(), testChannel);
-        }
-
-        long delta = U.currentTimeMillis() - startTime;
-
-        assertArrayEquals(srcData, writeSrcChannel ? FileUtils.readFileToByteArray(srcFile) : testChannel.data());
-
+    private void checkTimings(long delta, int offset) {
+        int expDuration = (dataLen - offset) * 1000 / rate;
         int min = Math.round((float)expDuration / 2);
         int max = expDuration * 2;
+
         assertTrue("time=" + delta + ", min=" + min + ", max=" + max, delta > min && delta < max);
+    }
+
+    private FileIO limitedRateFileIO(OpenOption... modes) throws IOException {
+        return new LimitedWriteRateFileIOFactory(new RandomAccessFileIOFactory(), rate, rate)
+            .create(tempFile, modes);
     }
 
     /** */
