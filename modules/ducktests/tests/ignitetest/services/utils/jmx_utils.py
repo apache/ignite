@@ -76,7 +76,7 @@ class JmxClient:
         :param domain: Domain of MBean
         :return: JmxMBean instance
         """
-        cmd = "echo $'open %s\\n beans -d %s \\n close' | %s | grep -o '%s'" \
+        cmd = "echo $'open %s\\n beans -d %s \\n close' | %s | grep -E -o '%s'" \
               % (self.pid, domain, self.jmx_util_cmd, pattern)
 
         name = next(self.__run_cmd(cmd)).strip()

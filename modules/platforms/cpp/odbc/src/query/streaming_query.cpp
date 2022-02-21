@@ -49,11 +49,6 @@ namespace ignite
                 return connection.GetStreamingContext().Execute(sql, params);
             }
 
-            const meta::ColumnMetaVector* StreamingQuery::GetMeta()
-            {
-                return 0;
-            }
-
             SqlResult::Type StreamingQuery::FetchNextRow(app::ColumnBindingMap&)
             {
                 return SqlResult::AI_NO_DATA;

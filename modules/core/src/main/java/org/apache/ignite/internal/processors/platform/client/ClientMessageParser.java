@@ -94,6 +94,12 @@ public class ClientMessageParser implements ClientListenerMessageParser {
     /** */
     private static final short OP_RESOURCE_CLOSE = 0;
 
+    /** */
+    private static final short OP_HEARTBEAT = 1;
+
+    /** */
+    private static final short OP_GET_IDLE_TIMEOUT = 2;
+
     /* Cache operations */
     /** */
     private static final short OP_CACHE_GET = 1000;
@@ -360,6 +366,12 @@ public class ClientMessageParser implements ClientListenerMessageParser {
 
             case OP_RESOURCE_CLOSE:
                 return new ClientResourceCloseRequest(reader);
+
+            case OP_HEARTBEAT:
+                return new ClientRequest(reader);
+
+            case OP_GET_IDLE_TIMEOUT:
+                return new ClientGetIdleTimeoutRequest(reader);
 
             case OP_CACHE_CONTAINS_KEY:
                 return new ClientCacheContainsKeyRequest(reader);

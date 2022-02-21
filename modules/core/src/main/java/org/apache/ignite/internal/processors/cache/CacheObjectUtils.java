@@ -83,7 +83,7 @@ public class CacheObjectUtils {
      * @param keepBinary Keep binary flag.
      * @return Unwrapped collection.
      */
-    public static Collection<Object> unwrapBinariesIfNeeded(CacheObjectValueContext ctx, Collection<Object> col,
+    public static Collection<Object> unwrapBinariesIfNeeded(CacheObjectValueContext ctx, Collection<?> col,
         boolean keepBinary) {
         return unwrapBinariesIfNeeded(ctx, col, keepBinary, true);
     }
@@ -94,7 +94,7 @@ public class CacheObjectUtils {
      * @param cpy Copy flag.
      * @return Unwrapped collection.
      */
-    private static Collection<Object> unwrapKnownCollection(CacheObjectValueContext ctx, Collection<Object> col,
+    private static Collection<Object> unwrapKnownCollection(CacheObjectValueContext ctx, Collection<?> col,
         boolean keepBinary, boolean cpy) {
         Collection<Object> col0 = BinaryUtils.newKnownCollection(col);
 
@@ -135,7 +135,7 @@ public class CacheObjectUtils {
      * @param cpy Copy value flag.
      * @return Unwrapped collection.
      */
-    private static Collection<Object> unwrapBinariesIfNeeded(CacheObjectValueContext ctx, Collection<Object> col,
+    private static Collection<Object> unwrapBinariesIfNeeded(CacheObjectValueContext ctx, Collection<?> col,
         boolean keepBinary, boolean cpy) {
         Collection<Object> col0 = BinaryUtils.newKnownCollection(col);
 

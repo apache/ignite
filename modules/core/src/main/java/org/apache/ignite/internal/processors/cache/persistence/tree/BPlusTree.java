@@ -138,7 +138,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.tree.io.Pa
  * general rules to avoid deadlocks.
  * <ul>
  *     <li>
- *         Pages within a level always locked from right to left.
+ *         Pages within a level always locked from left to right.
  *     </li>
  *     <li>
  *         If there's already a lock on the page of level X then no locks should be acquired on levels less than X.
@@ -4825,14 +4825,23 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
 
                     assert needReplaceInner != TRUE;
 
-                    if (tail.getCount() == 0 && tail.lvl != 0 && getRootLevel() == tail.lvl) {
+                    // Loop is needed to prevent the rare case when, after parallel remove of keys, empty root remains.
+                    // B+tree after removes key: [empty_root] - [empty_inner_node] - [5] ==>
+                    // B+tree after cutting empty root: [5]
+                    while (tail.getCount() == 0 && tail.lvl != 0 && getRootLevel() == tail.lvl) {
                         // Free root if it became empty after merge.
+
                         cutRoot(tail.lvl);
-                        freePage(tail.pageId, tail.page, tail.buf, tail.walPlc, false);
+                        freePage(tail.pageId, tail.page, tail.buf, tail.walPlc, true);
+
+                        tail = tail.down;
+
+                        assert tail.sibling == null : tail;
 
                         // Exit: we are done.
                     }
-                    else if (tail.sibling != null &&
+
+                    if (tail.sibling != null &&
                         tail.getCount() + tail.sibling.getCount() < tail.io.getMaxCount(tail.buf, pageSize())) {
                         // Release everything lower than tail, we've already merged this path.
                         doReleaseTail(tail.down);

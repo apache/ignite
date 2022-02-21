@@ -24,6 +24,8 @@ namespace Apache.Ignite.Core.Impl.Client
     {
         // General purpose.
         ResourceClose = 0,
+        Heartbeat = 1,
+        GetIdleTimeout = 2,
 
         // Cache.
         CacheGet = 1000,

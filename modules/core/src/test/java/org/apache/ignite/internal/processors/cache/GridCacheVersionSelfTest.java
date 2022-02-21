@@ -47,10 +47,18 @@ public class GridCacheVersionSelfTest extends GridCommonAbstractTest {
         ver = version(0x7FFFFFF, 15);
         assertEquals(0x7FFFFFF, ver.nodeOrder());
         assertEquals(15, ver.dataCenterId());
+        assertEquals(
+            ver.toString(),
+            "GridCacheVersion [topVer=0, order=0, nodeOrder=" + 0x7FFFFFF + ", dataCenterId=15]"
+        );
 
         ver = version(0x7FFFFFF, 31);
         assertEquals(0x7FFFFFF, ver.nodeOrder());
         assertEquals(31, ver.dataCenterId());
+        assertEquals(
+            ver.toString(),
+            "GridCacheVersion [topVer=0, order=0, nodeOrder=" + 0x7FFFFFF + ", dataCenterId=31]"
+        );
 
         // Check max dr ID with some topology versions.
         ver = version(11, 31);

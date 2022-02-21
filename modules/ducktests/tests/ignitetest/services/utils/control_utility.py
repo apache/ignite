@@ -197,9 +197,9 @@ class ControlUtility:
 
         while datetime.now() < delta_time:
             for node in self._cluster.nodes:
-                mbean = JmxClient(node).find_mbean('.*name=snapshot')
+                mbean = JmxClient(node).find_mbean('.*clsLdr=[[:xdigit:]]+,name=snapshot')
 
-                if snapshot_name != next(mbean.LastSnapshotName):
+                if snapshot_name != next(mbean.LastSnapshotName, ""):
                     continue
 
                 start_time = int(next(mbean.LastSnapshotStartTime))
@@ -252,7 +252,8 @@ class ControlUtility:
     @staticmethod
     def __parse_tx_info(output):
         tx_info_pattern = re.compile(
-            "Near XID version: (?P<xid_full>GridCacheVersion \\[topVer=\\d+, order=\\d+, nodeOrder=\\d+\\])\\n\\s+"
+            "Near XID version: "
+            "(?P<xid_full>GridCacheVersion \\[topVer=\\d+, order=\\d+, nodeOrder=\\d+(, dataCenterId=\\d+)?\\])\\n\\s+"
             "Near XID version \\(UUID\\): (?P<xid>[^\\s]+)\\n\\s+"
             "Isolation: (?P<isolation>[^\\s]+)\\n\\s+"
             "Concurrency: (?P<concurrency>[^\\s]+)\\n\\s+"
