@@ -1562,7 +1562,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             updateCntr0 = nextPartitionCounter(tx, updateCntr);
 
             if (tx != null && cctx.group().persistenceEnabled() && cctx.group().walEnabled())
-                logPtr = logTxUpdate(tx, val, expireTime, updateCntr0);
+                logPtr = logTxUpdate(tx, val, newVer, expireTime, updateCntr0);
 
             update(val, expireTime, ttl, newVer, true);
 
@@ -1787,7 +1787,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             updateCntr0 = nextPartitionCounter(tx, updateCntr);
 
             if (tx != null && cctx.group().persistenceEnabled() && cctx.group().walEnabled())
-                logPtr = logTxUpdate(tx, null, 0, updateCntr0);
+                logPtr = logTxUpdate(tx, null, newVer, 0, updateCntr0);
 
             drReplicate(drType, null, newVer, topVer);
 
@@ -4352,6 +4352,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
     /**
      * @param tx Transaction.
      * @param val Value.
+     * @param newVer New entry version.
      * @param expireTime Expire time (or 0 if not applicable).
      * @param updCntr Update counter.
      * @throws IgniteCheckedException In case of log failure.
@@ -4359,6 +4360,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
     protected WALPointer logTxUpdate(
         IgniteInternalTx tx,
         CacheObject val,
+        GridCacheVersion newVer,
         long expireTime,
         long updCntr
     ) throws IgniteCheckedException {
@@ -4377,7 +4379,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 val,
                 op,
                 tx.nearXidVersion(),
-                tx.writeVersion(),
+                GridCacheVersionEx.addConflictVersion(tx.writeVersion(), newVer),
                 expireTime,
                 key.partition(),
                 updCntr,
@@ -6229,13 +6231,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             }
 
             // Incorporate conflict version into new version if needed.
-            if (conflictVer != null && conflictVer != newVer) {
-                newVer = new GridCacheVersionEx(newVer.topologyVersion(),
-                    newVer.order(),
-                    newVer.nodeOrder(),
-                    newVer.dataCenterId(),
-                    conflictVer);
-            }
+                newVer = GridCacheVersionEx.addConflictVersion(newVer, conflictVer);
 
             if (op == UPDATE) {
                 assert writeObj != null;

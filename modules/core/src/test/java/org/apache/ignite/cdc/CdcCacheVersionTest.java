@@ -31,9 +31,14 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cdc.CdcMain;
+import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
+import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
+import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
+import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.CacheConflictResolutionManager;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectImpl;
@@ -43,6 +48,8 @@ import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.KeyCacheObjectImpl;
 import org.apache.ignite.internal.processors.cache.dr.GridCacheDrInfo;
+import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
+import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.version.CacheVersionConflictResolver;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionConflictContext;
@@ -53,6 +60,7 @@ import org.apache.ignite.plugin.AbstractCachePluginProvider;
 import org.apache.ignite.plugin.AbstractTestPluginProvider;
 import org.apache.ignite.plugin.CachePluginContext;
 import org.apache.ignite.plugin.CachePluginProvider;
+import org.apache.ignite.plugin.PluginContext;
 import org.apache.ignite.spi.metric.IntMetric;
 import org.apache.ignite.spi.systemview.view.CacheView;
 import org.apache.ignite.spi.systemview.view.SystemView;
@@ -61,9 +69,11 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
+import static java.lang.Boolean.TRUE;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
+import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.DATA_RECORD_V2;
 import static org.apache.ignite.internal.processors.cache.CacheMetricsImpl.CACHE_METRICS;
 import static org.apache.ignite.internal.processors.cache.ClusterCachesInfo.CACHES_VIEW;
 import static org.apache.ignite.internal.processors.cache.version.GridCacheVersionManager.DATA_VER_CLUSTER_ID;
@@ -90,6 +100,12 @@ public class CdcCacheVersionTest extends AbstractCdcTest {
     public CacheAtomicityMode mode;
 
     /** */
+    private static boolean testWal;
+
+    /** */
+    private static AtomicLong walRecChecked = new AtomicLong();
+
+    /** */
     @Parameterized.Parameters(name = "mode={0}")
     public static Collection<?> parameters() {
         return Arrays.asList(TRANSACTIONAL, ATOMIC);
@@ -105,76 +121,107 @@ public class CdcCacheVersionTest extends AbstractCdcTest {
             .setDefaultDataRegionConfiguration(new DataRegionConfiguration().setPersistenceEnabled(true)));
 
         cfg.setPluginProviders(new AbstractTestPluginProvider() {
+            /** {@inheritDoc} */
             @Override public String name() {
                 return "ConflictResolverProvider";
             }
 
+            /** {@inheritDoc} */
             @Override public CachePluginProvider createCacheProvider(CachePluginContext ctx) {
-                if (!ctx.igniteCacheConfiguration().getName().equals(FOR_OTHER_CLUSTER_ID))
+                if (ctx.igniteConfiguration().isClientMode() == TRUE ||
+                    !ctx.igniteCacheConfiguration().getName().equals(FOR_OTHER_CLUSTER_ID))
                     return null;
 
                 return new AbstractCachePluginProvider() {
                     @Override public @Nullable Object createComponent(Class cls) {
-                        if (cls != CacheConflictResolutionManager.class)
+                        if (cls != CacheConflictResolutionManager.class || !testWal)
                             return null;
 
                         return new TestCacheConflictResolutionManager();
                     }
                 };
             }
+
+            /** {@inheritDoc} */
+            @Override public <T> @Nullable T createComponent(PluginContext ctx, Class<T> cls) {
+                if (ctx.igniteConfiguration().isClientMode() != TRUE &&
+                    IgniteWriteAheadLogManager.class.equals(cls) &&
+                    testWal)
+                    return (T)new TestFileWriteAheadLogManager(((IgniteEx)ctx.grid()).context());
+
+                return null;
+            }
         });
 
         return cfg;
     }
 
-    /** Simplest CDC test with usage of {@link IgniteInternalCache#putAllConflict(Map)}. */
+    /** Test that conflict version is writtern to WAL. */
     @Test
-    public void testReadAllKeysFromOtherCluster() throws Exception {
-        IgniteConfiguration cfg = getConfiguration("ignite-conflict-resolver");
+    public void testConflictVersionWritten() throws Exception {
+        testWal = true;
 
-        IgniteEx ign = startGrid(cfg);
+        for (int i = 0; i < 2; i++) {
+            stopAllGrids();
+            cleanPersistenceDir();
 
-        ign.context().cache().context().versions().dataCenterId(DFLT_CLUSTER_ID);
-        ign.cluster().state(ACTIVE);
+            doTestConflictVersionWritten(i + 1);
+        }
+    }
 
-        UserCdcConsumer cnsmr = new UserCdcConsumer() {
-            @Override public void checkEvent(CdcEvent evt) {
-                assertEquals(DFLT_CLUSTER_ID, evt.version().clusterId());
-                assertNotNull(evt.version().otherClusterVersion());
-                assertEquals(OTHER_CLUSTER_ID, evt.version().otherClusterVersion().clusterId());
-            }
-        };
+    /** */
+    private void doTestConflictVersionWritten(int gridCnt) throws Exception {
+        startGrids(gridCnt);
+        IgniteEx cli = startClientGrid(gridCnt);
 
-        IgniteCache<Integer, User> cache =
-            ign.getOrCreateCache(new CacheConfiguration<Integer, User>(FOR_OTHER_CLUSTER_ID).setAtomicityMode(mode));
+        for (int i=0; i<gridCnt; i++) {
+            grid(i).context().cache().context().versions().dataCenterId(DFLT_CLUSTER_ID);
 
-        addAndWaitForConsumption(cnsmr, cfg, cache, null, this::addConflictData, 0, KEYS_CNT, true);
+            assertEquals(
+                DFLT_CLUSTER_ID,
+                grid(i).context().metric().registry(CACHE_METRICS).<IntMetric>findMetric(DATA_VER_CLUSTER_ID).value()
+            );
 
-        assertEquals(
-            DFLT_CLUSTER_ID,
-            ign.context().metric().registry(CACHE_METRICS).<IntMetric>findMetric(DATA_VER_CLUSTER_ID).value()
-        );
-
-        boolean found = false;
-
-        SystemView<CacheView> caches = ign.context().systemView().view(CACHES_VIEW);
-
-        for (CacheView v : caches) {
-            if (v.cacheName().equals(FOR_OTHER_CLUSTER_ID)) {
-                assertEquals(v.conflictResolver(), "TestCacheConflictResolutionManager");
-
-                found = true;
-            }
-            else
-                assertNull(v.conflictResolver());
+            assertTrue(
+                "Test must use test WAL implementation",
+                grid(i).context().cache().context().wal() instanceof TestFileWriteAheadLogManager
+            );
         }
 
-        assertTrue(found);
+        cli.cluster().state(ACTIVE);
+
+        IgniteCache<Integer, User> cache =
+            cli.getOrCreateCache(new CacheConfiguration<Integer, User>(FOR_OTHER_CLUSTER_ID).setAtomicityMode(mode));
+
+        for (int i=0; i<gridCnt; i++) {
+            boolean found = false;
+
+            SystemView<CacheView> caches = grid(i).context().systemView().view(CACHES_VIEW);
+
+            for (CacheView v : caches) {
+                if (v.cacheName().equals(FOR_OTHER_CLUSTER_ID)) {
+                    assertEquals(v.conflictResolver(), "TestCacheConflictResolutionManager");
+
+                    found = true;
+                }
+                else
+                    assertNull(v.conflictResolver());
+            }
+
+            assertTrue(found);
+        }
+
+        // Put data with conflict version.
+        // Conflict version will be checked during WAL record and conflict resolution.
+        addConflictData(cache, 0, KEYS_CNT);
+
     }
 
     /** */
     @Test
     public void testOrderIncrease() throws Exception {
+        testWal = false;
+
         IgniteConfiguration cfg = getConfiguration("ignite-0");
 
         IgniteEx ign = startGrid(cfg);
@@ -270,6 +317,9 @@ public class CdcCacheVersionTest extends AbstractCdcTest {
 
                     res.useNew();
 
+                    GridCacheVersion newVer = newEntry.version();
+                    assertEquals(OTHER_CLUSTER_ID, newVer.dataCenterId());
+
                     return res;
                 }
 
@@ -277,6 +327,31 @@ public class CdcCacheVersionTest extends AbstractCdcTest {
                     return "TestCacheConflictResolutionManager";
                 }
             };
+        }
+    }
+
+    /** WAL manager that counts how many times replay has been called. */
+    private static class TestFileWriteAheadLogManager extends FileWriteAheadLogManager {
+        /** */
+        public TestFileWriteAheadLogManager(GridKernalContext ctx) {
+            super(ctx);
+        }
+
+        /** {@inheritDoc} */
+        @Override public WALPointer log(WALRecord rec) throws IgniteCheckedException {
+            if (rec.type() == DATA_RECORD_V2) {
+                assertEquals(1, ((DataRecord)rec).entryCount());
+
+                DataEntry dataEntry = ((DataRecord)rec).writeEntries().get(0);
+
+                assertEquals(DFLT_CLUSTER_ID, dataEntry.writeVersion().dataCenterId());
+                assertNotNull(dataEntry.writeVersion().conflictVersion());
+                assertEquals(OTHER_CLUSTER_ID, dataEntry.writeVersion().conflictVersion().dataCenterId());
+
+                walRecChecked.incrementAndGet();
+            }
+
+            return super.log(rec);
         }
     }
 }
