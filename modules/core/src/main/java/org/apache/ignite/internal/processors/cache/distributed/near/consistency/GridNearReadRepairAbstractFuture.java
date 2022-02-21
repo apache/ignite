@@ -206,8 +206,11 @@ public abstract class GridNearReadRepairAbstractFuture extends GridFutureAdapter
         IgniteInternalTx prevTx = ctx.tm().tx(tx); // Within the original tx.
 
         try {
-            for (GridPartitionedGetFuture<KeyCacheObject, EntryGetResult> fut : futs.values())
+            for (GridPartitionedGetFuture<KeyCacheObject, EntryGetResult> fut : futs.values()) {
+                assert !fut.initialized();
+
                 fut.init(topVer);
+            }
         }
         finally {
             ctx.tm().tx(prevTx);
