@@ -46,6 +46,7 @@ import org.apache.hadoop.yarn.api.records.FinalApplicationStatus;
 import org.apache.hadoop.yarn.api.records.NodeId;
 import org.apache.hadoop.yarn.api.records.Priority;
 import org.apache.hadoop.yarn.api.records.Resource;
+import org.apache.hadoop.yarn.api.records.UpdateContainerRequest;
 import org.apache.hadoop.yarn.client.api.AMRMClient;
 import org.apache.hadoop.yarn.client.api.NMClient;
 import org.apache.hadoop.yarn.client.api.async.AMRMClientAsync;
@@ -457,6 +458,11 @@ public class IgniteApplicationMasterSelfTest {
         }
 
         /** {@inheritDoc} */
+        @Override public void requestContainerUpdate(Container container, UpdateContainerRequest request) {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
         @Override public void releaseAssignedContainer(ContainerId containerId) {
             releasedConts.add(containerId);
         }
@@ -513,6 +519,16 @@ public class IgniteApplicationMasterSelfTest {
         }
 
         /** {@inheritDoc} */
+        @Override public void increaseContainerResource(Container container) throws YarnException, IOException {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Override public void updateContainerResource(Container container) throws YarnException, IOException {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
         @Override public void stopContainer(ContainerId containerId, NodeId nodeId) throws YarnException, IOException {
             // No-op.
         }
@@ -521,6 +537,27 @@ public class IgniteApplicationMasterSelfTest {
         @Override public ContainerStatus getContainerStatus(ContainerId containerId, NodeId nodeId)
             throws YarnException, IOException {
             return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void reInitializeContainer(ContainerId id, ContainerLaunchContext context,
+            boolean b) throws YarnException, IOException {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Override public void restartContainer(ContainerId id) throws YarnException, IOException {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Override public void rollbackLastReInitialization(ContainerId id) throws YarnException, IOException {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Override public void commitLastReInitialization(ContainerId id) throws YarnException, IOException {
+            // No-op.
         }
 
         /** {@inheritDoc} */
