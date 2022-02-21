@@ -246,7 +246,7 @@ public class CdcCacheVersionTest extends AbstractCdcTest {
 
     /** */
     private void checkResolverAndWal() throws IgniteInterruptedCheckedException {
-        // Conflict resolver for ATOMIC caches invoked only once.
+        // Conflict resolver for ATOMIC caches invoked only on primary.
         long expConflictResolverCnt = atomicityMode == ATOMIC ? KEYS_CNT : (KEYS_CNT * (long)gridCnt);
 
         if (!waitForCondition(() -> CONFLICT_CHECKED.get() == expConflictResolverCnt, WAL_ARCHIVE_TIMEOUT))
