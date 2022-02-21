@@ -6231,7 +6231,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             }
 
             // Incorporate conflict version into new version if needed.
-                newVer = GridCacheVersionEx.addConflictVersion(newVer, conflictVer);
+            newVer = GridCacheVersionEx.addConflictVersion(newVer, conflictVer);
 
             if (op == UPDATE) {
                 assert writeObj != null;
