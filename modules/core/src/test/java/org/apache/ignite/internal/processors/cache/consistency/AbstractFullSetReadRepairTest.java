@@ -283,7 +283,7 @@ public abstract class AbstractFullSetReadRepairTest extends AbstractReadRepairTe
                 .map(Map.Entry::getKey)
                 .collect(Collectors.toSet());
 
-            assertEquals(expectedToBeIrreparableKeys, irreparableKeys);
+            assertEqualsUnorderedCollections(expectedToBeIrreparableKeys, irreparableKeys);
         }
 
         assertEquals(irreparableKeys == null, data.repairable());

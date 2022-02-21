@@ -1853,7 +1853,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
         return backups;
     }
 
-    /**
+    /** Checks ordered collection.
      * @param exp Expected.
      * @param act Actual.
      */
@@ -1875,6 +1875,24 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
 
             idx++;
         }
+    }
+
+    /** Checks unordered collection.
+     * @param exp Expected.
+     * @param act Actual.
+     */
+    protected void assertEqualsUnorderedCollections(Collection<?> exp, Collection<?> act) {
+        Set<?> set = new HashSet<>(act);
+
+        for (Object obj : exp) {
+            boolean rmvd = set.remove(obj);
+
+            if (!rmvd)
+                fail("Collections are not equal:\nMissed:\t" + obj + "\nExpected:\t" + exp + "\nActual:\t" + act);
+        }
+
+        if (!set.isEmpty())
+            fail("Collections are not equal:\nExpected:\t" + exp + "\nActual:\t" + act);
     }
 
     /**

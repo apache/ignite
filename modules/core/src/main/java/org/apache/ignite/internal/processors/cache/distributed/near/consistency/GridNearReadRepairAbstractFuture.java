@@ -62,7 +62,7 @@ public abstract class GridNearReadRepairAbstractFuture extends GridFutureAdapter
         AtomicIntegerFieldUpdater.newUpdater(GridNearReadRepairAbstractFuture.class, "lsnrCalls");
 
     /** Affinity node's get futures. */
-    protected final Map<ClusterNode, GridPartitionedGetFuture<KeyCacheObject, EntryGetResult>> futs = new HashMap<>();
+    protected final Map<ClusterNode, GridPartitionedGetFuture<KeyCacheObject, EntryGetResult>> futs;
 
     /** Context. */
     protected final GridCacheContext<KeyCacheObject, EntryGetResult> ctx;
@@ -89,7 +89,7 @@ public abstract class GridNearReadRepairAbstractFuture extends GridFutureAdapter
     protected final IgniteInternalTx tx;
 
     /** Primaries per key. */
-    protected final Map<KeyCacheObject, ClusterNode> primaries = new HashMap<>();
+    protected final Map<KeyCacheObject, ClusterNode> primaries;
 
     /** Strategy. */
     protected final ReadRepairStrategy strategy;
@@ -132,7 +132,7 @@ public abstract class GridNearReadRepairAbstractFuture extends GridFutureAdapter
         IgniteCacheExpiryPolicy expiryPlc,
         IgniteInternalTx tx) {
         this.ctx = ctx;
-        this.keys = keys;
+        this.keys = Collections.unmodifiableCollection(keys);
         this.readThrough = readThrough;
         this.taskName = taskName;
         this.deserializeBinary = deserializeBinary;
@@ -148,6 +148,8 @@ public abstract class GridNearReadRepairAbstractFuture extends GridFutureAdapter
 
         this.topVer = canRemap ? ctx.affinity().affinityTopologyVersion() : topVer;
 
+        Map<KeyCacheObject, ClusterNode> primaries = new HashMap<>();
+
         Map<ClusterNode, Collection<KeyCacheObject>> mappings = new HashMap<>();
 
         for (KeyCacheObject key : keys) {
@@ -162,6 +164,10 @@ public abstract class GridNearReadRepairAbstractFuture extends GridFutureAdapter
         if (mappings.isEmpty())
             onDone(new ClusterTopologyServerNotFoundException("Failed to map keys for cache " +
                 "(all partition nodes left the grid) [topVer=" + this.topVer + ", cache=" + ctx.name() + ']'));
+
+        this.primaries = Collections.unmodifiableMap(primaries);
+
+        Map<ClusterNode, GridPartitionedGetFuture<KeyCacheObject, EntryGetResult>> futs = new HashMap<>();
 
         for (Map.Entry<ClusterNode, Collection<KeyCacheObject>> mapping : mappings.entrySet()) {
             ClusterNode node = mapping.getKey();
@@ -187,6 +193,8 @@ public abstract class GridNearReadRepairAbstractFuture extends GridFutureAdapter
 
             fut.listen(this::onResult);
         }
+
+        this.futs = Collections.unmodifiableMap(futs);
     }
 
     /**
