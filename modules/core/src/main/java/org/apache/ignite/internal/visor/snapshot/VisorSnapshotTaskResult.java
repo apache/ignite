@@ -31,10 +31,10 @@ public class VisorSnapshotTaskResult extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0L;
 
     /** Task result. */
-    private Object res;
+    private @Nullable Object res;
 
     /** Error. */
-    private Exception err;
+    private @Nullable Exception err;
 
     /** Default constructor. */
     public VisorSnapshotTaskResult() {
@@ -67,8 +67,7 @@ public class VisorSnapshotTaskResult extends IgniteDataTransferObject {
     }
 
     /** {@inheritDoc} */
-    @Override protected void readExternalData(byte protoVer, ObjectInput in)
-        throws IOException, ClassNotFoundException {
+    @Override protected void readExternalData(byte ver, ObjectInput in) throws IOException, ClassNotFoundException {
         res = in.readObject();
         err = (Exception)in.readObject();
     }
