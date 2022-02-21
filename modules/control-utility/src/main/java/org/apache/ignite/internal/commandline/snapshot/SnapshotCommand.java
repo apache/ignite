@@ -61,7 +61,7 @@ public class SnapshotCommand extends AbstractCommand<Object> {
 
     /** {@inheritDoc} */
     @Override public String confirmationPrompt() {
-        return cmd.confirmationPrompt();
+        return cmd == null ? null : cmd.confirmationPrompt();
     }
 
     /** {@inheritDoc} */
