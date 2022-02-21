@@ -144,12 +144,10 @@ public class CdcCacheVersionTest extends AbstractCdcTest {
             .setDefaultDataRegionConfiguration(new DataRegionConfiguration().setPersistenceEnabled(true)));
 
         cfg.setPluginProviders(new AbstractTestPluginProvider() {
-            /** {@inheritDoc} */
             @Override public String name() {
                 return "ConflictResolverProvider";
             }
 
-            /** {@inheritDoc} */
             @Override public CachePluginProvider createCacheProvider(CachePluginContext ctx) {
                 if (ctx.igniteConfiguration().isClientMode() == TRUE ||
                     !ctx.igniteCacheConfiguration().getName().equals(FOR_OTHER_CLUSTER_ID))
@@ -165,7 +163,6 @@ public class CdcCacheVersionTest extends AbstractCdcTest {
                 };
             }
 
-            /** {@inheritDoc} */
             @Override public <T> @Nullable T createComponent(PluginContext ctx, Class<T> cls) {
                 if (ctx.igniteConfiguration().isClientMode() != TRUE &&
                     IgniteWriteAheadLogManager.class.equals(cls) &&
@@ -196,7 +193,7 @@ public class CdcCacheVersionTest extends AbstractCdcTest {
             );
 
             assertTrue(
-                "Test must use test WAL implementation",
+                "Must use test WAL implementation",
                 grid(i).context().cache().context().wal() instanceof TestFileWriteAheadLogManager
             );
         }
@@ -241,7 +238,7 @@ public class CdcCacheVersionTest extends AbstractCdcTest {
 
         checkResolverAndWal();
 
-        // Removing existing data.
+        // Removing existing data with conflict version.
         removeConflictData(cli, cache, 0, KEYS_CNT);
 
         checkResolverAndWal();
@@ -305,8 +302,9 @@ public class CdcCacheVersionTest extends AbstractCdcTest {
 
         CdcMain cdc = createCdc(cnsmr, cfg);
 
-        IgniteCache<Integer, User> cache =
-            ign.getOrCreateCache(new CacheConfiguration<Integer, User>("my-cache").setAtomicityMode(atomicityMode));
+        IgniteCache<Integer, User> cache = ign.getOrCreateCache(new CacheConfiguration<Integer, User>("my-cache")
+            .setAtomicityMode(atomicityMode)
+            .setCacheMode(cacheMode));
 
         IgniteInternalFuture<?> fut = runAsync(cdc);
 
