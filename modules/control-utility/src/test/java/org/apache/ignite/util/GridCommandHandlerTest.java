@@ -968,7 +968,10 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         CountDownLatch latch = getNewStateLatch(ignite.cluster().state(), state);
 
-        assertEquals(EXIT_CODE_OK, execute("--set-state", strState));
+        if (state == INACTIVE)
+            assertEquals(EXIT_CODE_OK, execute("--set-state", strState, "--force"));
+        else
+            assertEquals(EXIT_CODE_OK, execute("--set-state", strState));
 
         latch.await(getTestTimeout(), TimeUnit.MILLISECONDS);
 
