@@ -531,7 +531,7 @@ public class CacheNoAffinityExchangeTest extends GridCommonAbstractTest {
         awaitPartitionMapExchange();
 
         StringBuilder failures = new StringBuilder();
-        errs.forEach((k,v) -> failures.append("nodeId=").append(k).append(", err=").append(v).append(U.nl()));
+        errs.forEach((k, v) -> failures.append("nodeId=").append(k).append(", err=").append(v).append(U.nl()));
 
         assertTrue(
             "Failure handler should not be triggered " + failures.toString(),
@@ -584,7 +584,7 @@ public class CacheNoAffinityExchangeTest extends GridCommonAbstractTest {
         awaitPartitionMapExchange();
 
         StringBuilder failures = new StringBuilder();
-        errs.forEach((k,v) -> failures.append("nodeId=").append(k).append(", err=").append(v).append(U.nl()));
+        errs.forEach((k, v) -> failures.append("nodeId=").append(k).append(", err=").append(v).append(U.nl()));
 
         assertTrue(
             "Failure handler should not be triggered " + failures.toString(),
