@@ -18,13 +18,11 @@
 namespace Apache.Ignite.Core.Impl.Common
 {
     using System;
-    using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
     using System.Linq.Expressions;
-    using System.Reflection;
 
     /// <summary>
-    /// Does type casts without extra boxing. 
+    /// Does type casts without extra boxing.
     /// Should be used when casting compile-time incompatible value types instead of "(T)(object)x".
     /// </summary>
     /// <typeparam name="T">Target type</typeparam>
@@ -64,7 +62,7 @@ namespace Apache.Ignite.Core.Impl.Common
             /// <summary>
             /// Compiled caster delegate.
             /// </summary>
-            [SuppressMessage("Microsoft.Performance", "CA1823:AvoidUnusedPrivateFields", 
+            [SuppressMessage("Microsoft.Performance", "CA1823:AvoidUnusedPrivateFields",
                 Justification = "Incorrect warning")]
             [SuppressMessage("Microsoft.Design", "CA1000:DoNotDeclareStaticMembersOnGenericTypes",
                 Justification = "Intended usage to leverage compiler caching.")]

@@ -83,7 +83,7 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
     static final String CACHE_NAME_PREFIX = "cache-";
 
     /** Non-persistent data region name. */
-    private static final String NO_PERSISTENCE_REGION = "no-persistence-region";
+    protected static final String NO_PERSISTENCE_REGION = "no-persistence-region";
 
     /** */
     private static final int DEFAULT_CACHES_COUNT = 2;
@@ -1418,6 +1418,9 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
 
         if (persistenceEnabled())
             ignite.cluster().state(ACTIVE);
+
+        // Create a new cache in order to trigger all needed checks on deactivation.
+        ignite.getOrCreateCache("test-partitioned-cache");
 
         checkDeactivation(ignite, () -> mxBean.active(false), false);
 

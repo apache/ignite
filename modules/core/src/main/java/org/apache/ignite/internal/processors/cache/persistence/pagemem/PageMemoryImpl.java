@@ -929,6 +929,12 @@ public class PageMemoryImpl implements PageMemoryEx {
 
                     tryToRestorePage(fullId, buf);
 
+                    // Mark the page as dirty because it has been restored.
+                    setDirty(fullId, lockedPageAbsPtr, true, false);
+
+                    // And save the page snapshot in the WAL.
+                    beforeReleaseWrite(fullId, pageAddr, true);
+
                     statHolder.trackPhysicalAndLogicalRead(pageAddr);
 
                     dataRegionMetrics.onPageRead();

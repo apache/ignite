@@ -25,6 +25,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Queue;
 import java.util.Random;
 import java.util.Set;
 import java.util.TreeMap;
@@ -34,6 +35,7 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.ThreadLocalRandom;
@@ -1724,7 +1726,13 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
         }
         finally {
             stop.set(true);
-            putRmvOpBarrier.reset();
+
+            // To ensure that an BrokenBarrierException is thrown on method CyclicBarrier#await in other threads.
+            while (!asyncRunFut.isDone()) {
+                putRmvOpBarrier.reset();
+
+                U.sleep(10);
+            }
 
             asyncRunFut.get();
         }
@@ -2507,6 +2515,98 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
             second.join();
 
             assertNull(failed.get());
+        }
+    }
+
+    /**
+     * Test checks a rare case when, after a parallel removal from the b+tree (cleaning),
+     * an empty leaf could remain. Schematically, this can happen like this:
+     *
+     * B+tree before clearing:
+     *            [ 2 ]
+     *         /         \
+     *    [ 1 ]         [ 3 | 4 ]
+     *    /   \       /     |    \
+     * [ 1 ] [ 2 ]  [ 3 ] [ 4 ] [ 5 ]
+     *
+     * Parallel deletions of keys:
+     *
+     * Remove 2:
+     *       [ 1 ]
+     *     /       \
+     *  [ ]       [ 3 | 4 ]
+     *   |       /    |    \
+     * [ 1 ]  [ 3 ] [ 4 ] [ 5 ]
+     *
+     * Remove 5:
+     *       [ 1 ]
+     *     /       \
+     *  [ ]       [ 3 ]
+     *   |       /    \
+     * [ 1 ]  [ 3 ]  [ 4 ]
+     *
+     * Remove 4:
+     *     [ 1 ]
+     *    /     \
+     *  [ ]     [ ]
+     *   |       |
+     * [ 1 ]   [ 3 ]
+     *
+     * Remove 3:
+     * [ 1 ]
+     *   |
+     *  [ ]
+     *   |
+     * [ 1 ]
+     *
+     * Remove 1 before cutting root and inner node:
+     *  [ ]
+     *   |
+     *  [ ]
+     *
+     * ^^^ An empty leaf remains so that this does not happen when "1" is removed,
+     * an empty root and an inner node remain, which we will cut off (BPlusTree.Remove#cutRoot).
+     *
+     * Remove 1 after cutting root and inner node:
+     *  [ ]
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testEmptyLeafAfterConcurrentRemoves() throws Exception {
+        MAX_PER_PAGE = 2;
+
+        for (int i = 0; i < 500; i++) {
+            TestTree tree = createTestTree(true);
+
+            List<Long> values = new ArrayList<>();
+
+            for (long j = 0; j < 32; j++) {
+                values.add(j);
+
+                tree.put(j);
+            }
+
+            Collections.shuffle(values);
+
+            Queue<Long> queue = new ConcurrentLinkedQueue<>(values);
+
+            int threads = 8;
+
+            CyclicBarrier barrier = new CyclicBarrier(threads);
+
+            GridTestUtils.runMultiThreaded(() -> {
+                barrier.await(getTestTimeout(), TimeUnit.MILLISECONDS);
+
+                Long remove;
+
+                while ((remove = queue.poll()) != null)
+                    tree.remove(remove);
+
+                return null;
+            }, threads, "remove-from-tree-test-thread");
+
+            tree.validateTree();
         }
     }
 
