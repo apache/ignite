@@ -25,13 +25,15 @@ import java.nio.channels.ReadableByteChannel;
 import java.nio.channels.WritableByteChannel;
 import java.nio.file.OpenOption;
 import java.nio.file.StandardOpenOption;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 import org.apache.commons.io.FileUtils;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
-import org.apache.ignite.internal.processors.cache.persistence.file.LimitedRateFileIO;
-import org.apache.ignite.internal.processors.cache.persistence.file.LimitedRateFileIOFactory;
+import org.apache.ignite.internal.processors.cache.persistence.file.LimitedWriteRateFileIO;
+import org.apache.ignite.internal.processors.cache.persistence.file.LimitedWriteRateFileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -42,24 +44,40 @@ import org.junit.runners.Parameterized;
 import static org.junit.Assert.assertArrayEquals;
 
 /**
- * Test {@link LimitedRateFileIO}.
+ * Test {@link LimitedWriteRateFileIO}.
  */
 @RunWith(Parameterized.class)
-public class LimitedRateFileIOTest extends GridCommonAbstractTest {
+public class LimitedWriteRateFileIOTest extends GridCommonAbstractTest {
     /** Test buffer length. */
-    private static final int DATA_LEN = 32 * 1024;
+    private static final int DATA_LEN = 32 * 1024 + 1;
 
     /** Temp directory name. */
     private static final String TMP_DIR_NAME = "temp";
 
-    /** Write to source channel flag. */
-    @Parameterized.Parameter
-    public boolean writeSrcChannel;
+    /** Write rate. */
+    @Parameterized.Parameter(0)
+    public int rate;
+
+    /** Destination buffer length. */
+    @Parameterized.Parameter(1)
+    public int bufLen;
+
+    /** Data length. */
+    @Parameterized.Parameter(2)
+    public int dataLen;
+
+//    public boolean transfer = false;
 
     /** Parameters. */
-    @Parameterized.Parameters(name = "write={0}")
-    public static Iterable<Boolean> parameters() {
-        return Arrays.asList(false, true);
+    @Parameterized.Parameters(name = "rate={0}, bufLen={1}, dataLen={2}")
+    public static Iterable<Object[]> parameters() {
+        List<Object[]> params = new ArrayList<>();
+
+        params.add(new Object[] {4096, 65536, DATA_LEN});
+        params.add(new Object[] {1024, 1024, 8192});
+        params.add(new Object[] {4096, 1024, DATA_LEN});
+
+        return params;
     }
 
     /** {@inheritDoc} */
@@ -83,24 +101,24 @@ public class LimitedRateFileIOTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @Test
-    public void testLimitedTransfer() throws Exception {
-        doLimitedChannelTransfer(4096, 65536, DATA_LEN);
+    public void testLimitedTransferTo() throws Exception {
+        doLimitedChannelTransfer(false, false);
     }
 
     /**
      * @throws Exception If failed.
      */
     @Test
-    public void testLimitedChannelTransferMinRate() throws Exception {
-        doLimitedChannelTransfer(1024, 1024, 8192);
+    public void testLimitedTransferFrom() throws Exception {
+        doLimitedChannelTransfer(true, false);
     }
 
     /**
      * @throws Exception If failed.
      */
     @Test
-    public void testLimitedChannelTransferFewerDestBuf() throws Exception {
-        doLimitedChannelTransfer(4096, 1024, DATA_LEN);
+    public void testLimitedBytebufferWrite() throws Exception {
+        doLimitedChannelTransfer(true, true);
     }
 
     /**
@@ -109,10 +127,10 @@ public class LimitedRateFileIOTest extends GridCommonAbstractTest {
      * @param size Data length.
      * @throws Exception If failed.
      */
-    private void doLimitedChannelTransfer(int rate, int destBufLen, int size) throws Exception {
+    private void doLimitedChannelTransfer(boolean writeSrcChannel, boolean transfer) throws Exception {
         File tmpDir = new File(U.defaultWorkDirectory(), TMP_DIR_NAME);
         File srcFile = new File(tmpDir, U.maskForFileName(getClass().getSimpleName()) + ".tmp.1");
-        byte[] srcData = new byte[size];
+        byte[] srcData = new byte[dataLen];
 
         ThreadLocalRandom.current().nextBytes(srcData);
 
@@ -122,11 +140,11 @@ public class LimitedRateFileIOTest extends GridCommonAbstractTest {
             }
         }
 
-        int expDuration = size * 1000 / rate;
+        int expDuration = dataLen * 1000 / rate;
 
-        FileIOFactory ioFactory = new LimitedRateFileIOFactory(new RandomAccessFileIOFactory(), rate, rate);
+        FileIOFactory ioFactory = new LimitedWriteRateFileIOFactory(new RandomAccessFileIOFactory(), rate, rate);
         ByteArrayChannel testChannel = writeSrcChannel ?
-            new ByteArrayChannel(destBufLen, srcData, srcData.length) : new ByteArrayChannel(destBufLen, (int)U.MB);
+            new ByteArrayChannel(bufLen, srcData, srcData.length) : new ByteArrayChannel(bufLen, (int)U.MB);
 
         long startTime = U.currentTimeMillis();
 
@@ -134,8 +152,15 @@ public class LimitedRateFileIOTest extends GridCommonAbstractTest {
             new OpenOption[] {StandardOpenOption.CREATE, StandardOpenOption.WRITE, StandardOpenOption.TRUNCATE_EXISTING};
 
         try (FileIO src = ioFactory.create(srcFile, options)) {
-            if (writeSrcChannel)
-                src.transferFrom(testChannel, 0, srcData.length);
+            if (writeSrcChannel) {
+                if (transfer)
+                    src.transferFrom(testChannel, 0, srcData.length);
+                else {
+                    long written = src.write(ByteBuffer.wrap(srcData));
+
+                    assertEquals(dataLen, written);
+                }
+            }
             else
                 src.transferTo(0, srcFile.length(), testChannel);
         }

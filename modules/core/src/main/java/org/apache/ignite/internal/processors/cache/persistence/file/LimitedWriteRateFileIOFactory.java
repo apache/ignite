@@ -23,9 +23,9 @@ import java.nio.file.OpenOption;
 import org.apache.ignite.internal.util.BasicRateLimiter;
 
 /**
- * File I/O factory which provides {@link LimitedRateFileIO} implementation of {@link FileIO}.
+ * File I/O factory which provides {@link LimitedWriteRateFileIO} implementation of {@link FileIO}.
  */
-public class LimitedRateFileIOFactory implements FileIOFactory {
+public class LimitedWriteRateFileIOFactory implements FileIOFactory {
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;
 
@@ -48,7 +48,7 @@ public class LimitedRateFileIOFactory implements FileIOFactory {
     /**
      * @param delegate File I/O factory delegate.
      */
-    public LimitedRateFileIOFactory(FileIOFactory delegate) {
+    public LimitedWriteRateFileIOFactory(FileIOFactory delegate) {
         this(delegate, 0, DEFAULT_BLOCK_SIZE);
     }
 
@@ -57,7 +57,7 @@ public class LimitedRateFileIOFactory implements FileIOFactory {
      * @param rate Max transfer rate in bytes/sec.
      * @param blockSize Size of the data block to be transferred at once (in bytes).
      */
-    public LimitedRateFileIOFactory(FileIOFactory delegate, int rate, int blockSize) {
+    public LimitedWriteRateFileIOFactory(FileIOFactory delegate, int rate, int blockSize) {
         this.delegate = delegate;
         this.blockSize = blockSize;
 
@@ -68,15 +68,13 @@ public class LimitedRateFileIOFactory implements FileIOFactory {
     @Override public FileIO create(File file, OpenOption... modes) throws IOException {
         FileIO fileIO = delegate.create(file, modes);
 
-        return rateLimiter.isUnlimited() ? fileIO : new LimitedRateFileIO(fileIO, rateLimiter, blockSize);
+        return rateLimiter.isUnlimited() ? fileIO : new LimitedWriteRateFileIO(fileIO, rateLimiter, blockSize);
     }
 
     /**
      * @param rate Max transfer rate in bytes/sec.
      */
     public void setRate(int rate) {
-        System.out.println(">xxx> set rate " + rate);
-
         rateLimiter.setRate(rate);
     }
 }

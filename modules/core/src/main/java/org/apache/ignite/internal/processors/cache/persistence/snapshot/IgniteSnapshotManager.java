@@ -116,7 +116,7 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStore;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
-import org.apache.ignite.internal.processors.cache.persistence.file.LimitedRateFileIOFactory;
+import org.apache.ignite.internal.processors.cache.persistence.file.LimitedWriteRateFileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderSettings;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetastorageLifecycleListener;
@@ -342,7 +342,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     private File tmpWorkDir;
 
     /** Factory to working with delta as file storage. */
-    private volatile LimitedRateFileIOFactory ioFactory = new LimitedRateFileIOFactory(new RandomAccessFileIOFactory());
+    private volatile LimitedWriteRateFileIOFactory ioFactory = new LimitedWriteRateFileIOFactory(new RandomAccessFileIOFactory());
 
     /** File store manager to create page store for restore. */
     private volatile FilePageStoreManager storeMgr;
@@ -1846,7 +1846,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @param ioFactory Factory to create IO interface over a page stores.
      */
     public void ioFactory(FileIOFactory ioFactory) {
-        this.ioFactory = new LimitedRateFileIOFactory(ioFactory);
+        this.ioFactory = new LimitedWriteRateFileIOFactory(ioFactory);
     }
 
     /**

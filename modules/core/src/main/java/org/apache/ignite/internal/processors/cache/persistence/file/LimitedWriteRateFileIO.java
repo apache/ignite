@@ -28,7 +28,7 @@ import org.apache.ignite.internal.util.BasicRateLimiter;
 /**
  * File I/O providing the ability to limit the transfer rate.
  */
-public class LimitedRateFileIO extends FileIODecorator {
+public class LimitedWriteRateFileIO extends FileIODecorator {
     /** Transfer rate limiter. */
     private final BasicRateLimiter limiter;
 
@@ -40,7 +40,7 @@ public class LimitedRateFileIO extends FileIODecorator {
      * @param limiter Transfer rate limiter.
      * @param blockSize Size of the data block to be transferred at once (in bytes).
      */
-    public LimitedRateFileIO(FileIO delegate, BasicRateLimiter limiter, int blockSize) {
+    public LimitedWriteRateFileIO(FileIO delegate, BasicRateLimiter limiter, int blockSize) {
         super(delegate);
 
         this.limiter = limiter;
@@ -49,59 +49,33 @@ public class LimitedRateFileIO extends FileIODecorator {
 
     /** {@inheritDoc} */
     @Override public long transferTo(long position, long count, WritableByteChannel target) throws IOException {
-        long totalWritten = 0;
-
-        try {
-            while (totalWritten < count) {
-                long transferCnt = Math.min(count - totalWritten, blockSize);
-
-                limiter.acquire((int)transferCnt);
-
-                long written = 0;
-
-                do {
-                    long pos = position + totalWritten + written;
-                    long len = transferCnt - written;
-
-                    written += super.transferTo(pos, len, target);
-                }
-                while (written < transferCnt);
-
-                totalWritten += written;
-            }
-        }
-        catch (IgniteInterruptedCheckedException e) {
-            throw new IgniteInterruptedException((InterruptedException)e.getCause());
-        }
-
-        return totalWritten;
+        return limitedTransfer((pos, len) -> super.transferTo(pos, len, target), position, count);
     }
 
     /** {@inheritDoc} */
     @Override public long transferFrom(ReadableByteChannel src, long position, long count) throws IOException {
+        return limitedTransfer((pos, len) -> super.transferFrom(src, pos, len), position, count);
+    }
+
+    private long limitedTransfer(IOOperationEx fileOp, long position, long count) throws IOException {
         long totalWritten = 0;
 
-        try {
-            while (totalWritten < count) {
-                long transferCnt = Math.min(count - totalWritten, blockSize);
+        while (totalWritten < count) {
+            long transferCnt = Math.min(count - totalWritten, blockSize);
 
-                limiter.acquire((int)transferCnt);
+            acquire((int)transferCnt);
 
-                long written = 0;
+            long written = 0;
 
-                do {
-                    long pos = position + totalWritten + written;
-                    long len = transferCnt - written;
+            do {
+                long pos = position + totalWritten + written;
+                long len = transferCnt - written;
 
-                    written += super.transferFrom(src, pos, len);
-                }
-                while (written < transferCnt);
-
-                totalWritten += written;
+                written += fileOp.run(pos, len);
             }
-        }
-        catch (IgniteInterruptedCheckedException e) {
-            throw new IgniteInterruptedException((InterruptedException)e.getCause());
+            while (written < transferCnt);
+
+            totalWritten += written;
         }
 
         return totalWritten;
@@ -109,16 +83,63 @@ public class LimitedRateFileIO extends FileIODecorator {
 
     /** {@inheritDoc} */
     @Override public int write(ByteBuffer srcBuf) throws IOException {
-        int len = srcBuf.remaining();
+        int count = srcBuf.remaining();
 
-        acquire(len);
+        int totalWritten = 0;
 
-        int remain = len;
+        while (totalWritten < count) {
+            int transferCnt = Math.min(count - totalWritten, blockSize);
 
-        while (remain > 0)
-            remain -= super.write(srcBuf);
+            acquire(transferCnt);
 
-        return len;
+            int written = 0;
+
+            do {
+                long pos = totalWritten + written;
+                int len = transferCnt - written;
+                srcBuf.limit(srcBuf.position() + len);
+
+                written += super.write(srcBuf);
+
+                System.out.println(">xxx> written=" + written + ", pos=" + srcBuf.position());
+            }
+            while (written < transferCnt);
+
+            totalWritten += written;
+        }
+
+//        acquire(count);
+//
+//        int remain = count;
+//
+//        while (remain > 0)
+//            remain -= super.write(srcBuf);
+
+        return count;
+
+//        return (int)limitedTransfer((pos, len) -> super.write(srcBuf, pos), 0, count);
+//
+//        long totalWritten = 0;
+//
+//        while (totalWritten < count) {
+//            long transferCnt = Math.min(count - totalWritten, blockSize);
+//
+//            acquire((int)transferCnt);
+//
+//            long written = 0;
+//
+//            do {
+//                long pos = totalWritten + written;
+//                long len = transferCnt - written;
+//
+//                written += fileOp.run(pos, len);
+//            }
+//            while (written < transferCnt);
+//
+//            totalWritten += written;
+//        }
+//
+//        return totalWritten;
     }
 
     /** {@inheritDoc} */
@@ -172,5 +193,18 @@ public class LimitedRateFileIO extends FileIODecorator {
         catch (IgniteInterruptedCheckedException e) {
             throw new IgniteInterruptedException((InterruptedException)e.getCause());
         }
+    }
+
+    /**
+     *
+     */
+    protected interface IOOperationEx {
+        /**
+         * @param pos The position within the file at which the transfer is to begin.
+         * @param count The maximum number of bytes to be transferred.
+         *
+         * @return Number of bytes operated.
+         */
+        public long run(long pos, long count) throws IOException;
     }
 }
