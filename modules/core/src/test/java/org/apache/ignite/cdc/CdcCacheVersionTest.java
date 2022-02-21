@@ -206,7 +206,7 @@ public class CdcCacheVersionTest extends AbstractCdcTest {
                 .setAtomicityMode(atomicityMode)
                 .setBackups(gridCnt - 1));
 
-        for (int i=0; i<gridCnt; i++) {
+        for (int i = 0; i < gridCnt; i++) {
             boolean found = false;
 
             SystemView<CacheView> caches = grid(i).context().systemView().view(CACHES_VIEW);
