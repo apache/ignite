@@ -106,9 +106,6 @@ public abstract class GridNearReadRepairAbstractFuture extends GridFutureAdapter
     /** Listener calls. */
     private volatile int lsnrCalls;
 
-    /** Finishing. */
-    private boolean finishing;
-
     /**
      * Creates a new instance of GridNearReadRepairAbstractFuture.
      *
@@ -254,25 +251,17 @@ public abstract class GridNearReadRepairAbstractFuture extends GridFutureAdapter
             }
             else
                 onDone(finished.error());
-
-            return;
         }
-        else
-            LSNR_CALLS_UPD.incrementAndGet(this);
+        else {
+            int calls = LSNR_CALLS_UPD.incrementAndGet(this);
 
-        assert lsnrCalls <= futs.size();
+            assert calls <= futs.size();
 
-        if (isDone() || lsnrCalls != futs.size())
-            return;
-
-        synchronized (this) {
-            if (finishing)
+            if (isDone() || calls != futs.size())
                 return;
-            else
-                finishing = true;
-        }
 
-        reduce();
+            reduce();
+        }
     }
 
     /**
