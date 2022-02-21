@@ -50,14 +50,15 @@ public class VisorSnapshotTaskResult extends IgniteDataTransferObject {
         this.res = res;
     }
 
-    /** @return Task result. */
-    public @Nullable Object result() {
-        return res;
-    }
+    /**
+     * @return Task result.
+     * @throws Exception if the job was completed with an error.
+     */
+    public @Nullable Object result() throws Exception {
+        if (err != null)
+            throw err;
 
-    /** @return Error. */
-    public @Nullable Exception error() {
-        return err;
+        return res;
     }
 
     /** {@inheritDoc} */

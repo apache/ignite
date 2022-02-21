@@ -57,14 +57,11 @@ public abstract class SnapshotSubcommand extends AbstractCommand<Object> {
     /** {@inheritDoc} */
     @Override public Object execute(GridClientConfiguration clientCfg, Logger log) throws Exception {
         try (GridClient client = Command.startClient(clientCfg)) {
-            VisorSnapshotTaskResult resWrapper = executeTaskByNameOnNode(client, taskCls.getName(), arg(), null, clientCfg);
+            VisorSnapshotTaskResult taskRes = executeTaskByNameOnNode(client, taskCls.getName(), arg(), null, clientCfg);
 
-            if (resWrapper.error() != null)
-                throw resWrapper.error();
+            printResult(taskRes.result(), log);
 
-            printResult(resWrapper.result(), log);
-
-            return resWrapper.result();
+            return taskRes.result();
         }
     }
 
