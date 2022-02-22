@@ -53,7 +53,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheLocalTxStoreExceptio
 import org.apache.ignite.internal.processors.cache.GridCacheMissingCommitVersionSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheMixedPartitionExchangeSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheMvccFlagsTest;
-import org.apache.ignite.internal.processors.cache.GridCacheMvccSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheNearTxStoreExceptionSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheOffHeapAtomicMultiThreadedUpdateSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheOffHeapMultiThreadedUpdateSelfTest;
