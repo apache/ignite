@@ -114,10 +114,10 @@ public class CdcCacheVersionTest extends AbstractCdcTest {
     public int gridCnt;
 
     /** */
-    private final AtomicLong walRecChecked = new AtomicLong();
+    private final AtomicLong walRecCheckedCntr = new AtomicLong();
 
     /** */
-    private final AtomicLong conflictChecked = new AtomicLong();
+    private final AtomicLong conflictCheckedCntr = new AtomicLong();
 
 
     /** */
@@ -241,8 +241,8 @@ public class CdcCacheVersionTest extends AbstractCdcTest {
         TransactionConcurrency concurrency,
         TransactionIsolation isolation
     ) throws Exception {
-        conflictChecked.set(0);
-        walRecChecked.set(0);
+        conflictCheckedCntr.set(0);
+        walRecCheckedCntr.set(0);
 
         // Put data with conflict version.
         // Conflict version will be checked during WAL record and conflict resolution.
@@ -266,16 +266,16 @@ public class CdcCacheVersionTest extends AbstractCdcTest {
         // Conflict resolver for ATOMIC caches invoked only on primary.
         long expConflictResolverCnt = atomicityMode == ATOMIC ? KEYS_CNT : (KEYS_CNT * (long)gridCnt);
 
-        if (!waitForCondition(() -> conflictChecked.get() == expConflictResolverCnt, WAL_ARCHIVE_TIMEOUT))
-            fail("Expected " + expConflictResolverCnt + " but was " + conflictChecked.get());
+        if (!waitForCondition(() -> conflictCheckedCntr.get() == expConflictResolverCnt, WAL_ARCHIVE_TIMEOUT))
+            fail("Expected " + expConflictResolverCnt + " but was " + conflictCheckedCntr.get());
 
         long expWalRecCnt = (long)KEYS_CNT * gridCnt;
 
-        if (!waitForCondition(() -> walRecChecked.get() == expWalRecCnt, WAL_ARCHIVE_TIMEOUT))
-            fail("Expected " + expWalRecCnt + " but was " + walRecChecked.get());
+        if (!waitForCondition(() -> walRecCheckedCntr.get() == expWalRecCnt, WAL_ARCHIVE_TIMEOUT))
+            fail("Expected " + expWalRecCnt + " but was " + walRecCheckedCntr.get());
 
-        conflictChecked.set(0);
-        walRecChecked.set(0);
+        conflictCheckedCntr.set(0);
+        walRecCheckedCntr.set(0);
     }
 
     /** */
@@ -291,14 +291,14 @@ public class CdcCacheVersionTest extends AbstractCdcTest {
             .setAtomicityMode(atomicityMode)
             .setCacheMode(cacheMode));
 
-        walRecChecked.set(0);
+        walRecCheckedCntr.set(0);
 
         // Update the same key several time.
         // Expect {@link CacheEntryVersion#order()} will monotically increase.
         for (int i = 0; i < KEYS_CNT; i++)
             cache.put(KEY_TO_UPD, createUser(i));
 
-        assertTrue(waitForCondition(() -> walRecChecked.get() == KEYS_CNT, getTestTimeout()));
+        assertTrue(waitForCondition(() -> walRecCheckedCntr.get() == KEYS_CNT, getTestTimeout()));
     }
 
     /** */
@@ -396,7 +396,7 @@ public class CdcCacheVersionTest extends AbstractCdcTest {
                     if (!oldEntry.isStartVersion())
                         assertEquals(OTHER_CLUSTER_ID, oldEntry.version().dataCenterId());
 
-                    conflictChecked.incrementAndGet();
+                    conflictCheckedCntr.incrementAndGet();
 
                     return res;
                 }
@@ -433,7 +433,7 @@ public class CdcCacheVersionTest extends AbstractCdcTest {
                     assertNotNull(dataEntry.writeVersion().conflictVersion());
                     assertEquals(OTHER_CLUSTER_ID, dataEntry.writeVersion().conflictVersion().dataCenterId());
 
-                    walRecChecked.incrementAndGet();
+                    walRecCheckedCntr.incrementAndGet();
                 }
             }
             else if (((DataRecord)rec).get(0).cacheId() == CU.cacheId(ORDER_INCREASE)) {
@@ -446,7 +446,7 @@ public class CdcCacheVersionTest extends AbstractCdcTest {
 
                     prevOrder = dataRec.get(i).writeVersion().order();
 
-                    walRecChecked.incrementAndGet();
+                    walRecCheckedCntr.incrementAndGet();
                 }
             }
 
