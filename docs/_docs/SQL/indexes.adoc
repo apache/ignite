@@ -82,7 +82,10 @@ SqlFieldsQuery qry = new SqlFieldsQuery("SELECT id, name FROM Person" +
 Use the link:sql-reference/ddl#create-index[CREATE/DROP INDEX] commands if you need to manage indexes or make an object's new fields visible to the SQL engine at​ runtime.
 ====
 
+For more detail, also refer to the link:https://ignite.apache.org/docs/latest/sql-reference/ddl#create-table[CREATE TABLE,window=_blank] section.
+
 === Indexing Nested Objects
+
 Fields of nested objects can also be indexed and queried using annotations. For example, consider a `Person` object that has an `Address` object as a field:
 
 [source,java]
@@ -134,6 +137,7 @@ Note that you do not need to specify `address.street` in the WHERE clause of the
 WARNING: If you create indexes for nested objects, you won't be able to run UPDATE or INSERT statements on the table.
 
 === Registering Indexed Types
+
 After indexed and queryable fields are defined, they have to be registered in the SQL engine along with the object types they belong to.
 
 To specify which types should be indexed, pass the corresponding key-value pairs in the `CacheConfiguration.setIndexedTypes()` method as shown in the example below.
