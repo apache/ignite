@@ -476,7 +476,7 @@ public class GridNearCacheEntry extends GridDistributedCacheEntry {
     @Override protected WALPointer logTxUpdate(
         IgniteInternalTx tx,
         CacheObject val,
-        GridCacheVersion newVer,
+        GridCacheVersion writeVer,
         long expireTime,
         long updCntr
     ) {

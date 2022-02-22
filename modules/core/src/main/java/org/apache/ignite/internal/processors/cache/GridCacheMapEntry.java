@@ -4353,7 +4353,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
     /**
      * @param tx Transaction.
      * @param val Value.
-     * @param newVer New entry version.
+     * @param writeVer New entry version.
      * @param expireTime Expire time (or 0 if not applicable).
      * @param updCntr Update counter.
      * @throws IgniteCheckedException In case of log failure.
@@ -4361,7 +4361,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
     protected WALPointer logTxUpdate(
         IgniteInternalTx tx,
         CacheObject val,
-        GridCacheVersion newVer,
+        GridCacheVersion writeVer,
         long expireTime,
         long updCntr
     ) throws IgniteCheckedException {
@@ -4380,7 +4380,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 val,
                 op,
                 tx.nearXidVersion(),
-                newVer,
+                writeVer,
                 expireTime,
                 key.partition(),
                 updCntr,
