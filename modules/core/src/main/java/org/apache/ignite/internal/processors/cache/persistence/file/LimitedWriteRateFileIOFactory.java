@@ -29,9 +29,6 @@ public class LimitedWriteRateFileIOFactory implements FileIOFactory {
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;
 
-    /** Default transfer block size. */
-    private static final int DEFAULT_BLOCK_SIZE = 64 * 1024;
-
     /** Transfer rate limiter. */
     private final BasicRateLimiter rateLimiter;
 
@@ -47,17 +44,10 @@ public class LimitedWriteRateFileIOFactory implements FileIOFactory {
 
     /**
      * @param delegate File I/O factory delegate.
-     */
-    public LimitedWriteRateFileIOFactory(FileIOFactory delegate) {
-        this(delegate, 0, DEFAULT_BLOCK_SIZE);
-    }
-
-    /**
-     * @param delegate File I/O factory delegate.
      * @param rate Max transfer rate in bytes/sec.
      * @param blockSize Size of the data block to be transferred at once (in bytes).
      */
-    public LimitedWriteRateFileIOFactory(FileIOFactory delegate, int rate, int blockSize) {
+    public LimitedWriteRateFileIOFactory(FileIOFactory delegate, long rate, int blockSize) {
         this.delegate = delegate;
         this.blockSize = blockSize;
 
@@ -74,7 +64,14 @@ public class LimitedWriteRateFileIOFactory implements FileIOFactory {
     /**
      * @param rate Max transfer rate in bytes/sec.
      */
-    public void setRate(int rate) {
+    public void setRate(long rate) {
         rateLimiter.setRate(rate);
+    }
+
+    /**
+     * @return Factory delegate.
+     */
+    public FileIOFactory delegate() {
+        return delegate;
     }
 }

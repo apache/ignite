@@ -143,7 +143,7 @@ public class BasicRateLimiter {
      * @param permits The number of permits.
      * @return Time in microseconds to wait until the resource can be acquired, never negative.
      */
-    private long reserve(int permits) {
+    private long reserve(long permits) {
         A.ensure(permits > 0, "Requested permits (" + permits + ") must be positive");
 
         synchronized (mux) {

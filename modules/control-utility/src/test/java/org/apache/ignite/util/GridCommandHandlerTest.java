@@ -69,6 +69,7 @@ import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.failure.StopNodeFailureHandler;
 import org.apache.ignite.internal.GridJobExecuteResponse;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -81,6 +82,8 @@ import org.apache.ignite.internal.client.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.commandline.CommandHandler;
 import org.apache.ignite.internal.commandline.cache.argument.FindAndDeleteGarbageArg;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
+import org.apache.ignite.internal.pagemem.store.PageStore;
+import org.apache.ignite.internal.pagemem.store.PageStoreCollection;
 import org.apache.ignite.internal.processors.cache.ClusterStateTestUtils;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
@@ -142,6 +145,7 @@ import static org.apache.ignite.cache.PartitionLossPolicy.READ_ONLY_SAFE;
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.cluster.ClusterState.ACTIVE_READ_ONLY;
 import static org.apache.ignite.cluster.ClusterState.INACTIVE;
+import static org.apache.ignite.configuration.IgniteConfiguration.DFLT_FAILURE_DETECTION_TIMEOUT;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.internal.commandline.CommandHandler.CONFIRM_MSG;
@@ -160,7 +164,9 @@ import static org.apache.ignite.internal.encryption.AbstractEncryptionTest.MASTE
 import static org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager.IGNITE_PDS_SKIP_CHECKPOINT_ON_NODE_STOP;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.AbstractSnapshotSelfTest.doSnapshotCancellationTest;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.AbstractSnapshotSelfTest.snp;
+import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.SNAPSHOT_LIMITED_TRANSFER_BLOCK_SIZE;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.SNAPSHOT_METRICS;
+import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.SNAPSHOT_TRANSFER_RATE_DMS_KEY;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.resolveSnapshotWorkDirectory;
 import static org.apache.ignite.internal.processors.cache.verify.IdleVerifyUtility.GRID_NOT_IDLE_MSG;
 import static org.apache.ignite.internal.processors.diagnostic.DiagnosticProcessor.DEFAULT_TARGET_FOLDER;
@@ -2992,6 +2998,47 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         assertEquals(EXIT_CODE_UNEXPECTED_ERROR, execute(h, "--encryption", "change_master_key", MASTER_KEY_NAME_2));
 
         assertContains(log, testOut.toString(), "Master key change was rejected. The cluster is inactive.");
+    }
+
+    /** @throws Exception If failed. */
+    @Test
+    @WithSystemProperty(key = SNAPSHOT_LIMITED_TRANSFER_BLOCK_SIZE, value = "1")
+    public void testChangeSnapshotTransferRateInRuntime() throws Exception {
+        int keysCnt = 10_000;
+        String snpName = "snapshot_02052020";
+
+        StopNodeFailureHandler failHnd = new StopNodeFailureHandler();
+        failHnd.setIgnoredFailureTypes(Collections.emptySet());
+
+        IgniteConfiguration cfg = getConfiguration(getTestIgniteInstanceName(0))
+            .setFailureHandler(failHnd)
+            .setFailureDetectionTimeout(5_000);
+
+        IgniteEx ignite = startGrid(cfg);
+
+        ignite.cluster().state(ACTIVE);
+
+        createCacheAndPreload(ignite, keysCnt);
+
+        // Set transfer rate to 1 byte/sec.
+        assertEquals(EXIT_CODE_OK, execute("--property", "set", "--name", SNAPSHOT_TRANSFER_RATE_DMS_KEY, "--val", "1"));
+
+        IgniteFuture<Void> snpFut = ignite.snapshot().createSnapshot(snpName);
+
+        // Make sure there are no blocks in critical sections.
+        U.sleep(cfg.getFailureDetectionTimeout());
+
+        assertFalse(snpFut.isDone());
+
+        // Set transfer rate to unlimited.
+        assertEquals(EXIT_CODE_OK, execute("--property", "set", "--name", SNAPSHOT_TRANSFER_RATE_DMS_KEY, "--val", "0"));
+
+        long totalPartsSize = ((PageStoreCollection)ignite.context().cache().context().pageStore())
+            .getStores(CU.cacheId(DEFAULT_CACHE_NAME)).stream().mapToLong(PageStore::size).sum();
+
+        assertTrue(totalPartsSize > TimeUnit.MILLISECONDS.toSeconds(getTestTimeout()));
+
+        snpFut.get(getTestTimeout() / 2);
     }
 
     /** @throws Exception If failed. */
