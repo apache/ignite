@@ -230,9 +230,6 @@ public class CdcCacheVersionTest extends AbstractCdcTest {
             assertTrue(found);
         }
 
-        CONFLICT_CHECKED.set(0);
-        WAL_REC_CHECKED.set(0);
-
         if (atomicityMode == ATOMIC)
             doCheck(cli, cache);
         else {
@@ -252,6 +249,9 @@ public class CdcCacheVersionTest extends AbstractCdcTest {
     }
 
     private void doCheck(IgniteEx cli, IgniteCache<Integer, User> cache) throws IgniteInterruptedCheckedException {
+        CONFLICT_CHECKED.set(0);
+        WAL_REC_CHECKED.set(0);
+
         // Put data with conflict version.
         // Conflict version will be checked during WAL record and conflict resolution.
         addConflictData(cli, cache, 0, KEYS_CNT);
