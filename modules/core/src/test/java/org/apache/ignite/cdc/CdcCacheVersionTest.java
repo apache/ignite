@@ -258,7 +258,7 @@ public class CdcCacheVersionTest extends AbstractCdcTest {
         }
 
         for (int i = 0; i < gridCnt; i++) {
-            boolean found = false;
+            boolean dfltCacheFound = false;
 
             assertFalse(grid(i).context().clientNode());
 
@@ -268,13 +268,13 @@ public class CdcCacheVersionTest extends AbstractCdcTest {
                 if (v.cacheName().equals(DEFAULT_CACHE_NAME)) {
                     assertEquals(v.conflictResolver(), "TestCacheConflictResolutionManager");
 
-                    found = true;
+                    dfltCacheFound = true;
                 }
                 else
                     assertNull(v.conflictResolver());
             }
 
-            assertTrue(found);
+            assertTrue(dfltCacheFound);
         }
 
     }
