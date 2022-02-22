@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -88,12 +89,6 @@ import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 @RunWith(Parameterized.class)
 public class CdcCacheVersionTest extends AbstractCdcTest {
     /** */
-    public static final String FOR_OTHER_CLUSTER = "for-other-cluster";
-
-    /** */
-    public static final String ORDER_INCREASE = "order-increase";
-
-    /** */
     public static final byte DFLT_CLUSTER_ID = 1;
 
     /** */
@@ -124,6 +119,9 @@ public class CdcCacheVersionTest extends AbstractCdcTest {
     private volatile Function<GridKernalContext, IgniteWriteAheadLogManager> walProvider;
 
     /** */
+    private volatile Supplier<CacheVersionConflictResolver> conflictResolutionMgrSupplier;
+
+    /** */
     @Parameterized.Parameters(name = "atomicity={0}, mode={1}, gridCnt={2}")
     public static Collection<?> parameters() {
         List<Object[]> params = new ArrayList<>();
@@ -151,15 +149,15 @@ public class CdcCacheVersionTest extends AbstractCdcTest {
             }
 
             @Override public CachePluginProvider createCacheProvider(CachePluginContext ctx) {
-                if (!ctx.igniteCacheConfiguration().getName().equals(FOR_OTHER_CLUSTER))
+                if (!ctx.igniteCacheConfiguration().getName().equals(DEFAULT_CACHE_NAME))
                     return null;
 
                 return new AbstractCachePluginProvider() {
                     @Override public @Nullable Object createComponent(Class cls) {
-                        if (cls != CacheConflictResolutionManager.class)
+                        if (cls != CacheConflictResolutionManager.class || conflictResolutionMgrSupplier == null)
                             return null;
 
-                        return new TestCacheConflictResolutionManager();
+                        return new TestCacheConflictResolutionManager<>();
                     }
                 };
             }
@@ -188,7 +186,7 @@ public class CdcCacheVersionTest extends AbstractCdcTest {
                 for (int i = 0; i < dataRec.entryCount(); i++) {
                     DataEntry dataEntry = dataRec.writeEntries().get(i);
 
-                    assertEquals(CU.cacheId(FOR_OTHER_CLUSTER), dataEntry.cacheId());
+                    assertEquals(CU.cacheId(DEFAULT_CACHE_NAME), dataEntry.cacheId());
                     assertEquals(DFLT_CLUSTER_ID, dataEntry.writeVersion().dataCenterId());
                     assertNotNull(dataEntry.writeVersion().conflictVersion());
                     assertEquals(OTHER_CLUSTER_ID, dataEntry.writeVersion().conflictVersion().dataCenterId());
@@ -197,6 +195,33 @@ public class CdcCacheVersionTest extends AbstractCdcTest {
                 }
 
                 return super.log(rec);
+            }
+        };
+
+        conflictResolutionMgrSupplier = () -> new CacheVersionConflictResolver() {
+            @Override public <K1, V1> GridCacheVersionConflictContext<K1, V1> resolve(
+                CacheObjectValueContext ctx,
+                GridCacheVersionedEntryEx<K1, V1> oldEntry,
+                GridCacheVersionedEntryEx<K1, V1> newEntry,
+                boolean atomicVerComparator
+            ) {
+                GridCacheVersionConflictContext<K1, V1> res =
+                    new GridCacheVersionConflictContext<>(ctx, oldEntry, newEntry);
+
+                res.useNew();
+
+                assertEquals(OTHER_CLUSTER_ID, newEntry.version().dataCenterId());
+
+                if (!oldEntry.isStartVersion())
+                    assertEquals(OTHER_CLUSTER_ID, oldEntry.version().dataCenterId());
+
+                conflictCheckedCntr.incrementAndGet();
+
+                return res;
+            }
+
+            @Override public String toString() {
+                return "TestCacheConflictResolutionManager";
             }
         };
 
@@ -215,7 +240,7 @@ public class CdcCacheVersionTest extends AbstractCdcTest {
         cli.cluster().state(ACTIVE);
 
         IgniteCache<Integer, User> cache = cli.getOrCreateCache(
-            new CacheConfiguration<Integer, User>(FOR_OTHER_CLUSTER)
+            new CacheConfiguration<Integer, User>(DEFAULT_CACHE_NAME)
                 .setCacheMode(cacheMode)
                 .setAtomicityMode(atomicityMode)
                 .setBackups(Integer.MAX_VALUE));
@@ -240,7 +265,7 @@ public class CdcCacheVersionTest extends AbstractCdcTest {
             SystemView<CacheView> caches = grid(i).context().systemView().view(CACHES_VIEW);
 
             for (CacheView v : caches) {
-                if (v.cacheName().equals(FOR_OTHER_CLUSTER)) {
+                if (v.cacheName().equals(DEFAULT_CACHE_NAME)) {
                     assertEquals(v.conflictResolver(), "TestCacheConflictResolutionManager");
 
                     found = true;
@@ -313,7 +338,7 @@ public class CdcCacheVersionTest extends AbstractCdcTest {
                 DataRecord dataRec = (DataRecord)rec;
 
                 for (int i = 0; i < dataRec.entryCount(); i++) {
-                    assertEquals(CU.cacheId(ORDER_INCREASE), dataRec.get(i).cacheId());
+                    assertEquals(CU.cacheId(DEFAULT_CACHE_NAME), dataRec.get(i).cacheId());
                     assertEquals(KEY_TO_UPD, (int)dataRec.get(i).key().value(null, false));
                     assertTrue(dataRec.get(i).writeVersion().order() > prevOrder);
 
@@ -332,9 +357,10 @@ public class CdcCacheVersionTest extends AbstractCdcTest {
 
         ign.cluster().state(ACTIVE);
 
-        IgniteCache<Integer, User> cache = ign.getOrCreateCache(new CacheConfiguration<Integer, User>(ORDER_INCREASE)
-            .setAtomicityMode(atomicityMode)
-            .setCacheMode(cacheMode));
+        IgniteCache<Integer, User> cache = ign.getOrCreateCache(
+            new CacheConfiguration<Integer, User>(DEFAULT_CACHE_NAME)
+                .setAtomicityMode(atomicityMode)
+                .setCacheMode(cacheMode));
 
         walRecCheckedCntr.set(0);
 
@@ -424,32 +450,7 @@ public class CdcCacheVersionTest extends AbstractCdcTest {
 
         /** {@inheritDoc} */
         @Override public CacheVersionConflictResolver conflictResolver() {
-            return new CacheVersionConflictResolver() {
-                @Override public <K1, V1> GridCacheVersionConflictContext<K1, V1> resolve(
-                    CacheObjectValueContext ctx,
-                    GridCacheVersionedEntryEx<K1, V1> oldEntry,
-                    GridCacheVersionedEntryEx<K1, V1> newEntry,
-                    boolean atomicVerComparator
-                ) {
-                    GridCacheVersionConflictContext<K1, V1> res =
-                        new GridCacheVersionConflictContext<>(ctx, oldEntry, newEntry);
-
-                    res.useNew();
-
-                    assertEquals(OTHER_CLUSTER_ID, newEntry.version().dataCenterId());
-
-                    if (!oldEntry.isStartVersion())
-                        assertEquals(OTHER_CLUSTER_ID, oldEntry.version().dataCenterId());
-
-                    conflictCheckedCntr.incrementAndGet();
-
-                    return res;
-                }
-
-                @Override public String toString() {
-                    return "TestCacheConflictResolutionManager";
-                }
-            };
+            return conflictResolutionMgrSupplier.get();
         }
     }
 }
