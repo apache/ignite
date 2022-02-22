@@ -99,7 +99,7 @@ if (WIN32)
                 
     set_target_properties(${TARGET} PROPERTIES OUTPUT_NAME "ignite.odbc")
 else()
-    target_link_libraries(${TARGET} ignite-common ignite-binary ignite-network)
+    target_link_libraries(${TARGET} ignite-common ignite-binary ignite-network odbcinst)
 endif()
 
 if (WIN32 AND ${WITH_ODBC_MSI})
