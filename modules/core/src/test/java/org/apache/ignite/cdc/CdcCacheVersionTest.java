@@ -121,7 +121,7 @@ public class CdcCacheVersionTest extends AbstractCdcTest {
     private final AtomicLong conflictCheckedCntr = new AtomicLong();
 
     /** */
-    private Function<GridKernalContext, IgniteWriteAheadLogManager> walProvider;
+    private volatile Function<GridKernalContext, IgniteWriteAheadLogManager> walProvider;
 
     /** */
     @Parameterized.Parameters(name = "atomicity={0}, mode={1}, gridCnt={2}")
