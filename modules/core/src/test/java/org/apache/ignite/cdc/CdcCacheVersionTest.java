@@ -334,7 +334,6 @@ public class CdcCacheVersionTest extends AbstractCdcTest {
                 if (rec.type() != DATA_RECORD_V2)
                     return super.log(rec);
 
-
                 DataRecord dataRec = (DataRecord)rec;
 
                 for (int i = 0; i < dataRec.entryCount(); i++) {
