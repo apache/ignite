@@ -21,7 +21,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.EnumSet;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
@@ -36,9 +35,7 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
-import org.apache.ignite.internal.cdc.CdcMain;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
@@ -58,7 +55,6 @@ import org.apache.ignite.internal.processors.cache.version.CacheVersionConflictR
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionConflictContext;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionedEntryEx;
-import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.plugin.AbstractCachePluginProvider;
 import org.apache.ignite.plugin.AbstractTestPluginProvider;
@@ -76,7 +72,6 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
-import static java.lang.Boolean.TRUE;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -86,14 +81,16 @@ import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType
 import static org.apache.ignite.internal.processors.cache.CacheMetricsImpl.CACHE_METRICS;
 import static org.apache.ignite.internal.processors.cache.ClusterCachesInfo.CACHES_VIEW;
 import static org.apache.ignite.internal.processors.cache.version.GridCacheVersionManager.DATA_VER_CLUSTER_ID;
-import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /** */
 @RunWith(Parameterized.class)
 public class CdcCacheVersionTest extends AbstractCdcTest {
     /** */
-    public static final String FOR_OTHER_CLUSTER_ID = "for-other-cluster-id";
+    public static final String FOR_OTHER_CLUSTER = "for-other-cluster";
+
+    /** */
+    public static final String ORDER_INCREASE = "order-increase";
 
     /** */
     public static final byte DFLT_CLUSTER_ID = 1;
@@ -117,16 +114,11 @@ public class CdcCacheVersionTest extends AbstractCdcTest {
     public int gridCnt;
 
     /** */
-    private TransactionConcurrency concurrency;
-
-    /** */
-    private TransactionIsolation isolation;
-
-    /** */
     private static final AtomicLong WAL_REC_CHECKED = new AtomicLong();
 
     /** */
     private static final AtomicLong CONFLICT_CHECKED = new AtomicLong();
+
 
     /** */
     @Parameterized.Parameters(name = "atomicity={0}, mode={1}, gridCnt={2}")
@@ -156,8 +148,7 @@ public class CdcCacheVersionTest extends AbstractCdcTest {
             }
 
             @Override public CachePluginProvider createCacheProvider(CachePluginContext ctx) {
-                if (ctx.igniteConfiguration().isClientMode() == TRUE ||
-                    !ctx.igniteCacheConfiguration().getName().equals(FOR_OTHER_CLUSTER_ID))
+                if (!ctx.igniteCacheConfiguration().getName().equals(FOR_OTHER_CLUSTER))
                     return null;
 
                 return new AbstractCachePluginProvider() {
@@ -171,8 +162,7 @@ public class CdcCacheVersionTest extends AbstractCdcTest {
             }
 
             @Override public <T> @Nullable T createComponent(PluginContext ctx, Class<T> cls) {
-                if (ctx.igniteConfiguration().isClientMode() != TRUE &&
-                    IgniteWriteAheadLogManager.class.equals(cls))
+                if (IgniteWriteAheadLogManager.class.equals(cls))
                     return (T)new TestFileWriteAheadLogManager(((IgniteEx)ctx.grid()).context());
 
                 return null;
@@ -205,10 +195,22 @@ public class CdcCacheVersionTest extends AbstractCdcTest {
         cli.cluster().state(ACTIVE);
 
         IgniteCache<Integer, User> cache = cli.getOrCreateCache(
-            new CacheConfiguration<Integer, User>(FOR_OTHER_CLUSTER_ID)
+            new CacheConfiguration<Integer, User>(FOR_OTHER_CLUSTER)
                 .setCacheMode(cacheMode)
                 .setAtomicityMode(atomicityMode)
                 .setBackups(gridCnt - 1));
+
+        if (atomicityMode == ATOMIC)
+            putRemoveCheck(cli, cache, null, null);
+        else {
+            // Check operations for transaction cache without explicit transaction.
+            putRemoveCheck(cli, cache, null, null);
+
+            // Check operations for transaction cache with explicit transaction in all modes.
+            for (TransactionConcurrency concurrency : TransactionConcurrency.values())
+                for (TransactionIsolation isolation : TransactionIsolation.values())
+                    putRemoveCheck(cli, cache, concurrency, isolation);
+        }
 
         for (int i = 0; i < gridCnt; i++) {
             boolean found = false;
@@ -218,8 +220,8 @@ public class CdcCacheVersionTest extends AbstractCdcTest {
             SystemView<CacheView> caches = grid(i).context().systemView().view(CACHES_VIEW);
 
             for (CacheView v : caches) {
-                if (v.cacheName().equals(FOR_OTHER_CLUSTER_ID)) {
-                    assertEquals(v.conflictResolver(), "TestCacheConflictResolutionManager");
+                if (v.cacheName().equals(FOR_OTHER_CLUSTER)) {
+                    assertEquals("" + i, v.conflictResolver(), "TestCacheConflictResolutionManager");
 
                     found = true;
                 }
@@ -230,41 +232,31 @@ public class CdcCacheVersionTest extends AbstractCdcTest {
             assertTrue(found);
         }
 
-        if (atomicityMode == ATOMIC)
-            doCheck(cli, cache);
-        else {
-            for (TransactionConcurrency concurrency : TransactionConcurrency.values()) {
-                for (TransactionIsolation isolation : TransactionIsolation.values()) {
-                    this.concurrency = concurrency;
-                    this.isolation = isolation;
-
-                    doCheck(cli, cache);
-                }
-            }
-
-            concurrency = null;
-            isolation = null;
-        }
-
     }
 
-    private void doCheck(IgniteEx cli, IgniteCache<Integer, User> cache) throws IgniteInterruptedCheckedException {
+    /** */
+    private void putRemoveCheck(
+        IgniteEx cli,
+        IgniteCache<Integer, User> cache,
+        TransactionConcurrency concurrency,
+        TransactionIsolation isolation
+    ) throws Exception {
         CONFLICT_CHECKED.set(0);
         WAL_REC_CHECKED.set(0);
 
         // Put data with conflict version.
         // Conflict version will be checked during WAL record and conflict resolution.
-        addConflictData(cli, cache, 0, KEYS_CNT);
+        addConflictData(cli, cache, 0, KEYS_CNT, concurrency, isolation);
 
         checkResolverAndWal();
 
         // Replacing existing data.
-        addConflictData(cli, cache, 0, KEYS_CNT);
+        addConflictData(cli, cache, 0, KEYS_CNT, concurrency, isolation);
 
         checkResolverAndWal();
 
         // Removing existing data with conflict version.
-        removeConflictData(cli, cache, 0, KEYS_CNT);
+        removeConflictData(cli, cache, 0, KEYS_CNT, concurrency, isolation);
 
         checkResolverAndWal();
     }
@@ -295,54 +287,29 @@ public class CdcCacheVersionTest extends AbstractCdcTest {
 
         ign.cluster().state(ACTIVE);
 
-        AtomicLong updCntr = new AtomicLong(0);
-
-        CdcConsumer cnsmr = new CdcConsumer() {
-            private long order = -1;
-
-            @Override public boolean onEvents(Iterator<CdcEvent> evts) {
-                evts.forEachRemaining(evt -> {
-                    assertEquals(KEY_TO_UPD, evt.key());
-
-                    assertTrue(evt.version().order() > order);
-
-                    order = evt.version().order();
-
-                    updCntr.incrementAndGet();
-                });
-
-                return true;
-            }
-
-            @Override public void start(MetricRegistry mreg) {
-                // No-op.
-            }
-
-            @Override public void stop() {
-                // No-op.
-            }
-        };
-
-        CdcMain cdc = createCdc(cnsmr, cfg);
-
-        IgniteCache<Integer, User> cache = ign.getOrCreateCache(new CacheConfiguration<Integer, User>("my-cache")
+        IgniteCache<Integer, User> cache = ign.getOrCreateCache(new CacheConfiguration<Integer, User>(ORDER_INCREASE)
             .setAtomicityMode(atomicityMode)
             .setCacheMode(cacheMode));
 
-        IgniteInternalFuture<?> fut = runAsync(cdc);
+        WAL_REC_CHECKED.set(0);
 
         // Update the same key several time.
         // Expect {@link CacheEntryVersion#order()} will monotically increase.
         for (int i = 0; i < KEYS_CNT; i++)
             cache.put(KEY_TO_UPD, createUser(i));
 
-        assertTrue(waitForCondition(() -> updCntr.get() == KEYS_CNT, getTestTimeout()));
-
-        fut.cancel();
+        assertTrue(waitForCondition(() -> WAL_REC_CHECKED.get() == KEYS_CNT, getTestTimeout()));
     }
 
     /** */
-    private void addConflictData(IgniteEx cli, IgniteCache<Integer, User> cache, int from, int to) {
+    private void addConflictData(
+        IgniteEx cli,
+        IgniteCache<Integer, User> cache,
+        int from,
+        int to,
+        TransactionConcurrency concurrency,
+        TransactionIsolation isolation
+    ) {
         try {
             IgniteInternalCache<Integer, User> intCache = cli.cachex(cache.getName());
 
@@ -372,7 +339,14 @@ public class CdcCacheVersionTest extends AbstractCdcTest {
     }
 
     /** */
-    private void removeConflictData(IgniteEx cli, IgniteCache<Integer, User> cache, int from, int to) {
+    private void removeConflictData(
+        IgniteEx cli,
+        IgniteCache<Integer, User> cache,
+        int from,
+        int to,
+        TransactionConcurrency concurrency,
+        TransactionIsolation isolation
+    ) {
         try {
             IgniteInternalCache<Integer, User> intCache = cli.cachex(cache.getName());
 
@@ -437,13 +411,19 @@ public class CdcCacheVersionTest extends AbstractCdcTest {
     /** WAL manager that counts how many times replay has been called. */
     private static class TestFileWriteAheadLogManager extends FileWriteAheadLogManager {
         /** */
+        private long prevOrder = -1;
+
+        /** */
         public TestFileWriteAheadLogManager(GridKernalContext ctx) {
             super(ctx);
         }
 
         /** {@inheritDoc} */
         @Override public WALPointer log(WALRecord rec) throws IgniteCheckedException {
-            if (rec.type() == DATA_RECORD_V2 && ((DataRecord)rec).get(0).cacheId() == CU.cacheId(FOR_OTHER_CLUSTER_ID)) {
+            if (rec.type() != DATA_RECORD_V2)
+                return super.log(rec);
+
+            if (((DataRecord)rec).get(0).cacheId() == CU.cacheId(FOR_OTHER_CLUSTER)) {
                 DataRecord dataRec = (DataRecord)rec;
 
                 for (int i = 0; i < dataRec.entryCount(); i++) {
@@ -452,6 +432,19 @@ public class CdcCacheVersionTest extends AbstractCdcTest {
                     assertEquals(DFLT_CLUSTER_ID, dataEntry.writeVersion().dataCenterId());
                     assertNotNull(dataEntry.writeVersion().conflictVersion());
                     assertEquals(OTHER_CLUSTER_ID, dataEntry.writeVersion().conflictVersion().dataCenterId());
+
+                    WAL_REC_CHECKED.incrementAndGet();
+                }
+            }
+            else if (((DataRecord)rec).get(0).cacheId() == CU.cacheId(ORDER_INCREASE)) {
+                DataRecord dataRec = (DataRecord)rec;
+
+                for (int i = 0; i < dataRec.entryCount(); i++) {
+                    assertEquals(KEY_TO_UPD, (int)dataRec.get(i).key().value(null, false));
+
+                    assertTrue(dataRec.get(i).writeVersion().order() > prevOrder);
+
+                    prevOrder = dataRec.get(i).writeVersion().order();
 
                     WAL_REC_CHECKED.incrementAndGet();
                 }
