@@ -27,22 +27,4 @@ public enum VisorSnapshotRestoreTaskAction {
 
     /** Status of the snapshot restore operation. */
     STATUS;
-
-    /**
-     * @param cmdArg Command line argument.
-     * @return Snapshot restore operation management action.
-     */
-    public static VisorSnapshotRestoreTaskAction fromCmdArg(String cmdArg) {
-        for (VisorSnapshotRestoreTaskAction val : values()) {
-            if (cmdArg.equalsIgnoreCase(val.cmdName()))
-                return val;
-        }
-
-        throw new IllegalArgumentException("Unexpected command line argument \"" + cmdArg + "\"");
-    }
-
-    /** @return Command line argument name. */
-    public String cmdName() {
-        return "--" + name().toLowerCase();
-    }
 }

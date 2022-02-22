@@ -680,7 +680,8 @@ public class SnapshotRestoreProcess {
                     }
 
                     if (cacheDir.list().length > 0) {
-                        throw new IgniteCheckedException("Unable to restore cache group, directory is not empty " +
+                        throw new IgniteCheckedException("Unable to restore cache group - directory is not empty. " +
+                            "Cache group should be destroyed manually before perform restore operation " +
                             "[group=" + grpName + ", dir=" + cacheDir + ']');
                     }
 
