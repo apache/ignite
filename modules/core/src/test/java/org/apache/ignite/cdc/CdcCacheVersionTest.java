@@ -59,6 +59,7 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionConflictContext;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionedEntryEx;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.plugin.AbstractCachePluginProvider;
 import org.apache.ignite.plugin.AbstractTestPluginProvider;
 import org.apache.ignite.plugin.CachePluginContext;
@@ -67,6 +68,9 @@ import org.apache.ignite.plugin.PluginContext;
 import org.apache.ignite.spi.metric.IntMetric;
 import org.apache.ignite.spi.systemview.view.CacheView;
 import org.apache.ignite.spi.systemview.view.SystemView;
+import org.apache.ignite.transactions.Transaction;
+import org.apache.ignite.transactions.TransactionConcurrency;
+import org.apache.ignite.transactions.TransactionIsolation;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -113,7 +117,10 @@ public class CdcCacheVersionTest extends AbstractCdcTest {
     public int gridCnt;
 
     /** */
-    private static boolean testWal;
+    private TransactionConcurrency concurrency;
+
+    /** */
+    private TransactionIsolation isolation;
 
     /** */
     private static final AtomicLong WAL_REC_CHECKED = new AtomicLong();
@@ -128,8 +135,8 @@ public class CdcCacheVersionTest extends AbstractCdcTest {
 
         for (CacheAtomicityMode atomicity : EnumSet.of(ATOMIC, TRANSACTIONAL))
             for (CacheMode mode : EnumSet.of(PARTITIONED, REPLICATED))
-                for (int i = 1; i < 4; i++)
-                    params.add(new Object[] {atomicity, mode, i});
+                for (int gridCnt : new int[] {1, 3})
+                    params.add(new Object[] {atomicity, mode, gridCnt});
 
         return params;
     }
@@ -155,7 +162,7 @@ public class CdcCacheVersionTest extends AbstractCdcTest {
 
                 return new AbstractCachePluginProvider() {
                     @Override public @Nullable Object createComponent(Class cls) {
-                        if (cls != CacheConflictResolutionManager.class || !testWal)
+                        if (cls != CacheConflictResolutionManager.class)
                             return null;
 
                         return new TestCacheConflictResolutionManager();
@@ -165,8 +172,7 @@ public class CdcCacheVersionTest extends AbstractCdcTest {
 
             @Override public <T> @Nullable T createComponent(PluginContext ctx, Class<T> cls) {
                 if (ctx.igniteConfiguration().isClientMode() != TRUE &&
-                    IgniteWriteAheadLogManager.class.equals(cls) &&
-                    testWal)
+                    IgniteWriteAheadLogManager.class.equals(cls))
                     return (T)new TestFileWriteAheadLogManager(((IgniteEx)ctx.grid()).context());
 
                 return null;
@@ -179,8 +185,6 @@ public class CdcCacheVersionTest extends AbstractCdcTest {
     /** Test that conflict version is writtern to WAL. */
     @Test
     public void testConflictVersionWritten() throws Exception {
-        testWal = true;
-
         startGrids(gridCnt);
         IgniteEx cli = startClientGrid(gridCnt);
 
@@ -209,6 +213,8 @@ public class CdcCacheVersionTest extends AbstractCdcTest {
         for (int i = 0; i < gridCnt; i++) {
             boolean found = false;
 
+            assertFalse(grid(i).context().clientNode());
+
             SystemView<CacheView> caches = grid(i).context().systemView().view(CACHES_VIEW);
 
             for (CacheView v : caches) {
@@ -227,6 +233,25 @@ public class CdcCacheVersionTest extends AbstractCdcTest {
         CONFLICT_CHECKED.set(0);
         WAL_REC_CHECKED.set(0);
 
+        if (atomicityMode == ATOMIC)
+            doCheck(cli, cache);
+        else {
+            for (TransactionConcurrency concurrency : TransactionConcurrency.values()) {
+                for (TransactionIsolation isolation : TransactionIsolation.values()) {
+                    this.concurrency = concurrency;
+                    this.isolation = isolation;
+
+                    doCheck(cli, cache);
+                }
+            }
+
+            concurrency = null;
+            isolation = null;
+        }
+
+    }
+
+    private void doCheck(IgniteEx cli, IgniteCache<Integer, User> cache) throws IgniteInterruptedCheckedException {
         // Put data with conflict version.
         // Conflict version will be checked during WAL record and conflict resolution.
         addConflictData(cli, cache, 0, KEYS_CNT);
@@ -264,8 +289,6 @@ public class CdcCacheVersionTest extends AbstractCdcTest {
     /** */
     @Test
     public void testOrderIncrease() throws Exception {
-        testWal = false;
-
         IgniteConfiguration cfg = getConfiguration("ignite-0");
 
         IgniteEx ign = startGrid(cfg);
@@ -334,7 +357,14 @@ public class CdcCacheVersionTest extends AbstractCdcTest {
                 drMap.put(key, new GridCacheDrInfo(val, new GridCacheVersion(1, i, 1, OTHER_CLUSTER_ID)));
             }
 
-            intCache.putAllConflict(drMap);
+            if (concurrency != null) {
+                try (Transaction tx = cli.transactions().txStart(concurrency, isolation)) {
+                    intCache.putAllConflict(drMap);
+                    tx.commit();
+                }
+            }
+            else
+                intCache.putAllConflict(drMap);
         }
         catch (IgniteCheckedException e) {
             throw new IgniteException(e);
@@ -355,7 +385,14 @@ public class CdcCacheVersionTest extends AbstractCdcTest {
                 );
             }
 
-            intCache.removeAllConflict(drMap);
+            if (concurrency != null) {
+                try (Transaction tx = cli.transactions().txStart(concurrency, isolation)) {
+                    intCache.removeAllConflict(drMap);
+                    tx.commit();
+                }
+            }
+            else
+                intCache.removeAllConflict(drMap);
         }
         catch (IgniteCheckedException e) {
             throw new IgniteException(e);
@@ -406,7 +443,7 @@ public class CdcCacheVersionTest extends AbstractCdcTest {
 
         /** {@inheritDoc} */
         @Override public WALPointer log(WALRecord rec) throws IgniteCheckedException {
-            if (rec.type() == DATA_RECORD_V2) {
+            if (rec.type() == DATA_RECORD_V2 && ((DataRecord)rec).get(0).cacheId() == CU.cacheId(FOR_OTHER_CLUSTER_ID)) {
                 DataRecord dataRec = (DataRecord)rec;
 
                 for (int i = 0; i < dataRec.entryCount(); i++) {
