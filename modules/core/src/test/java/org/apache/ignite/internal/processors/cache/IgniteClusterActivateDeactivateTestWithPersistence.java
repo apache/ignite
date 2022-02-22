@@ -136,8 +136,9 @@ public class IgniteClusterActivateDeactivateTestWithPersistence extends IgniteCl
             "It is assumed that the default data storage region is persistent.",
             dfltDataRegion.isPersistenceEnabled());
 
-        // Create a new cache that is placed into pesristent data region.
-        clientNode.getOrCreateCache(new CacheConfiguration<>("test-client-cache")
+        // Create new caches that are placed into the default pesristent data region.
+        clientNode.getOrCreateCache(new CacheConfiguration<>("test-client-cache-default-region-implicit"));
+        clientNode.getOrCreateCache(new CacheConfiguration<>("test-client-cache-default-region-explicit")
             .setDataRegionName(dfltDataRegion.getName()));
 
         // Try to deactivate the cluster without the `force` flag.
