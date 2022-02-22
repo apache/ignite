@@ -106,8 +106,6 @@ public class IgniteCacheTestSuite12 {
         GridTestUtils.addTestIfNeeded(suite, EvictionWhilePartitionGroupIsReservedTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, DelayedOwningDuringExchangeTest.class, ignoredTests);
 
-
-
         return suite;
     }
 }
