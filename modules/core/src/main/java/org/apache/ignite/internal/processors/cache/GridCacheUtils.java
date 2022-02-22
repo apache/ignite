@@ -1974,15 +1974,16 @@ public class GridCacheUtils {
      * @param name Name of data region configuration to find.
      * @return Data region configuration with the specified name
      *          or {@code null} if the given data storage configuration does not contain such data region.
+     *          If the {@code name} of required data region is {@code null}, the default data region is returned.
      */
     @Nullable public static DataRegionConfiguration findDataRegionConfiguration(
         @Nullable DataStorageConfiguration dsCfg,
         @Nullable String name
     ) {
-        if (dsCfg == null || name == null)
+        if (dsCfg == null)
             return null;
 
-        if (dsCfg.getDefaultDataRegionConfiguration().getName().equals(name))
+        if (name == null || dsCfg.getDefaultDataRegionConfiguration().getName().equals(name))
             return dsCfg.getDefaultDataRegionConfiguration();
 
         DataRegionConfiguration[] regions = dsCfg.getDataRegionConfigurations();
@@ -2007,6 +2008,7 @@ public class GridCacheUtils {
      * @param name Name of data region configuration to find.
      * @return Data region configuration with the specified name
      *          or {@code null} if the given data storage configuration does not contain such data region.
+     *          If the {@code name} of required data region is {@code null}, the default data region is returned.
      */
     @Nullable public static DataRegionConfiguration findRemoteDataRegionConfiguration(
         ClusterNode node,
