@@ -24,6 +24,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Function;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -119,6 +120,8 @@ public class CdcCacheVersionTest extends AbstractCdcTest {
     /** */
     private final AtomicLong conflictCheckedCntr = new AtomicLong();
 
+    /** */
+    private Function<GridKernalContext, IgniteWriteAheadLogManager> walProvider;
 
     /** */
     @Parameterized.Parameters(name = "atomicity={0}, mode={1}, gridCnt={2}")
@@ -163,7 +166,7 @@ public class CdcCacheVersionTest extends AbstractCdcTest {
 
             @Override public <T> @Nullable T createComponent(PluginContext ctx, Class<T> cls) {
                 if (IgniteWriteAheadLogManager.class.equals(cls))
-                    return (T)new TestFileWriteAheadLogManager(((IgniteEx)ctx.grid()).context());
+                    return (T)walProvider.apply(((IgniteEx)ctx.grid()).context());
 
                 return null;
             }
@@ -175,6 +178,28 @@ public class CdcCacheVersionTest extends AbstractCdcTest {
     /** Test that conflict version is writtern to WAL. */
     @Test
     public void testConflictVersionWritten() throws Exception {
+        walProvider = (ctx) -> new FileWriteAheadLogManager(ctx) {
+            @Override public WALPointer log(WALRecord rec) throws IgniteCheckedException {
+                if (rec.type() != DATA_RECORD_V2)
+                    return super.log(rec);
+
+                DataRecord dataRec = (DataRecord)rec;
+
+                for (int i = 0; i < dataRec.entryCount(); i++) {
+                    DataEntry dataEntry = dataRec.writeEntries().get(i);
+
+                    assertEquals(CU.cacheId(FOR_OTHER_CLUSTER), dataEntry.cacheId());
+                    assertEquals(DFLT_CLUSTER_ID, dataEntry.writeVersion().dataCenterId());
+                    assertNotNull(dataEntry.writeVersion().conflictVersion());
+                    assertEquals(OTHER_CLUSTER_ID, dataEntry.writeVersion().conflictVersion().dataCenterId());
+
+                    walRecCheckedCntr.incrementAndGet();
+                }
+
+                return super.log(rec);
+            }
+        };
+
         startGrids(gridCnt);
         IgniteEx cli = startClientGrid(gridCnt);
 
@@ -184,11 +209,6 @@ public class CdcCacheVersionTest extends AbstractCdcTest {
             assertEquals(
                 DFLT_CLUSTER_ID,
                 grid(i).context().metric().registry(CACHE_METRICS).<IntMetric>findMetric(DATA_VER_CLUSTER_ID).value()
-            );
-
-            assertTrue(
-                "Must use test WAL implementation",
-                grid(i).context().cache().context().wal() instanceof TestFileWriteAheadLogManager
             );
         }
 
@@ -281,6 +301,31 @@ public class CdcCacheVersionTest extends AbstractCdcTest {
     /** */
     @Test
     public void testOrderIncrease() throws Exception {
+        walProvider = (ctx) -> new FileWriteAheadLogManager(ctx) {
+            /** */
+            private long prevOrder = -1;
+
+            @Override public WALPointer log(WALRecord rec) throws IgniteCheckedException {
+                if (rec.type() != DATA_RECORD_V2)
+                    return super.log(rec);
+
+
+                DataRecord dataRec = (DataRecord)rec;
+
+                for (int i = 0; i < dataRec.entryCount(); i++) {
+                    assertEquals(CU.cacheId(ORDER_INCREASE), dataRec.get(i).cacheId());
+                    assertEquals(KEY_TO_UPD, (int)dataRec.get(i).key().value(null, false));
+                    assertTrue(dataRec.get(i).writeVersion().order() > prevOrder);
+
+                    prevOrder = dataRec.get(i).writeVersion().order();
+
+                    walRecCheckedCntr.incrementAndGet();
+                }
+
+                return super.log(rec);
+            }
+        };
+
         IgniteConfiguration cfg = getConfiguration("ignite-0");
 
         IgniteEx ign = startGrid(cfg);
@@ -405,52 +450,6 @@ public class CdcCacheVersionTest extends AbstractCdcTest {
                     return "TestCacheConflictResolutionManager";
                 }
             };
-        }
-    }
-
-    /** WAL manager that counts how many times replay has been called. */
-    private class TestFileWriteAheadLogManager extends FileWriteAheadLogManager {
-        /** */
-        private long prevOrder = -1;
-
-        /** */
-        public TestFileWriteAheadLogManager(GridKernalContext ctx) {
-            super(ctx);
-        }
-
-        /** {@inheritDoc} */
-        @Override public WALPointer log(WALRecord rec) throws IgniteCheckedException {
-            if (rec.type() != DATA_RECORD_V2)
-                return super.log(rec);
-
-            if (((DataRecord)rec).get(0).cacheId() == CU.cacheId(FOR_OTHER_CLUSTER)) {
-                DataRecord dataRec = (DataRecord)rec;
-
-                for (int i = 0; i < dataRec.entryCount(); i++) {
-                    DataEntry dataEntry = dataRec.writeEntries().get(i);
-
-                    assertEquals(DFLT_CLUSTER_ID, dataEntry.writeVersion().dataCenterId());
-                    assertNotNull(dataEntry.writeVersion().conflictVersion());
-                    assertEquals(OTHER_CLUSTER_ID, dataEntry.writeVersion().conflictVersion().dataCenterId());
-
-                    walRecCheckedCntr.incrementAndGet();
-                }
-            }
-            else if (((DataRecord)rec).get(0).cacheId() == CU.cacheId(ORDER_INCREASE)) {
-                DataRecord dataRec = (DataRecord)rec;
-
-                for (int i = 0; i < dataRec.entryCount(); i++) {
-                    assertEquals(KEY_TO_UPD, (int)dataRec.get(i).key().value(null, false));
-
-                    assertTrue(dataRec.get(i).writeVersion().order() > prevOrder);
-
-                    prevOrder = dataRec.get(i).writeVersion().order();
-
-                    walRecCheckedCntr.incrementAndGet();
-                }
-            }
-
-            return super.log(rec);
         }
     }
 }
