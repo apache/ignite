@@ -33,21 +33,61 @@ import org.junit.Test;
  * Test SQL data types.
  */
 public class DataTypesTest extends AbstractBasicIntegrationTest {
+    /** Tests UUID type. */
     @Test
     public void testUUID(){
         try {
-            executeSql("CREATE TABLE t(id INT, uid UUID)");
+            executeSql("CREATE TABLE t(id INT, name VARCHAR(255), uid UUID, primary key (id))");
+//            executeSql("CREATE INDEX uuid_idx ON t (uid);");
 
-            executeSql("INSERT INTO t VALUES (1, '9e120341-627f-32be-8393-58b5d655b751')");
-            executeSql("INSERT INTO t VALUES (2, '123e4567-e89b-12d3-a456-426614174000')");
+            executeSql("INSERT INTO t VALUES (1, 'fd10556e-fc27-4a99-b5e4-89b8344cb3ce', " +
+                "'9e120341-627f-32be-8393-58b5d655b751')");
+            // Name == UUID
+            executeSql("INSERT INTO t VALUES (2, '123e4567-e89b-12d3-a456-426614174000', " +
+                "'123e4567-e89b-12d3-a456-426614174000')");
 
             assertQuery("SELECT * FROM t")
-                .returns(1, UUID.fromString("9e120341-627f-32be-8393-58b5d655b751"))
-                .returns(2, UUID.fromString("123e4567-e89b-12d3-a456-426614174000"))
+                .returns(1, "fd10556e-fc27-4a99-b5e4-89b8344cb3ce", UUID.fromString("9e120341-627f-32be-8393-58b5d655b751"))
+                .returns(2, "123e4567-e89b-12d3-a456-426614174000", UUID.fromString("123e4567-e89b-12d3-a456-426614174000"))
+                .check();
+
+            assertQuery("SELECT * FROM t WHERE id < 2")
+                .returns(1, "123e4567-e89b-12d3-a456-426614174000", UUID.fromString("123e4567-e89b-12d3-a456-426614174000"))
                 .check();
 
             assertQuery("SELECT * FROM t WHERE uid < '123e4567-e89b-12d3-a456-426614174000'")
-                .returns(1, UUID.fromString("9e120341-627f-32be-8393-58b5d655b751"))
+                .returns(1, "fd10556e-fc27-4a99-b5e4-89b8344cb3ce", UUID.fromString("9e120341-627f-32be-8393-58b5d655b751"))
+                .check();
+
+            assertQuery("SELECT * FROM t WHERE '123e4567-e89b-12d3-a456-426614174000' > uid")
+                .returns(1, "fd10556e-fc27-4a99-b5e4-89b8344cb3ce", UUID.fromString("9e120341-627f-32be-8393-58b5d655b751"))
+                .check();
+
+            assertQuery("SELECT * FROM t WHERE name = uid")
+                .returns(2, "123e4567-e89b-12d3-a456-426614174000", UUID.fromString("123e4567-e89b-12d3-a456-426614174000"))
+                .check();
+
+            assertQuery("SELECT * FROM t WHERE name != uid")
+                .returns(1, "fd10556e-fc27-4a99-b5e4-89b8344cb3ce", UUID.fromString("9e120341-627f-32be-8393-58b5d655b751"))
+                .check();
+
+            assertQuery("SELECT count(*), uid FROM t group by uid order by uid")
+                .returns(1L, UUID.fromString("9e120341-627f-32be-8393-58b5d655b751"))
+                .returns(1L, UUID.fromString("123e4567-e89b-12d3-a456-426614174000"))
+                .check();
+
+            assertQuery("SELECT count(*), uid FROM t group by uid having uid = " +
+                "'123e4567-e89b-12d3-a456-426614174000' order by uid")
+                .returns(1L, UUID.fromString("123e4567-e89b-12d3-a456-426614174000"))
+                .check();
+
+            assertQuery("SELECT t1.* from t t1, (select * from t) t2 where t1.uid = t2.name")
+                .returns(2, "123e4567-e89b-12d3-a456-426614174000", UUID.fromString("123e4567-e89b-12d3-a456-426614174000"))
+                .check();
+
+            assertQuery("SELECT t1.* from t t1, (select * from t) t2 where t1.uid = t2.uid")
+                .returns(1, "fd10556e-fc27-4a99-b5e4-89b8344cb3ce", UUID.fromString("9e120341-627f-32be-8393-58b5d655b751"))
+                .returns(2, "123e4567-e89b-12d3-a456-426614174000", UUID.fromString("123e4567-e89b-12d3-a456-426614174000"))
                 .check();
         }
         finally {

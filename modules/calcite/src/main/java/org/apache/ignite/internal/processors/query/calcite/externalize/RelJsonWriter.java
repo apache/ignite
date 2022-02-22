@@ -144,9 +144,8 @@ public class RelJsonWriter implements RelWriter {
         }
         // omit 'inputs: ["3"]' if "3" is the preceding rel
         final List<Object> list = explainInputs(rel.getInputs());
-        if (list.size() != 1 || !list.get(0).equals(previousId)) {
+        if (list.size() != 1 || !list.get(0).equals(previousId))
             map.put("inputs", list);
-        }
 
         final String id = Integer.toString(relIdMap.size());
         relIdMap.put(rel, id);

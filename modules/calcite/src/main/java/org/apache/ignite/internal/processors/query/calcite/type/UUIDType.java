@@ -6,24 +6,34 @@ import org.apache.calcite.rel.type.RelDataTypeImpl;
 import org.apache.calcite.sql.type.SqlTypeFamily;
 import org.apache.calcite.sql.type.SqlTypeName;
 
-/** TODO */
-public class UUIDSQLType extends RelDataTypeImpl {
-    /** TODO */
-    UUIDSQLType() {
+/** UUID SQL type. */
+public class UUIDType extends RelDataTypeImpl {
+    /** Nullable flag. */
+    private final boolean nullable;
+
+    /** Ctor. */
+    public UUIDType(boolean nullable) {
+        this.nullable = nullable;
+
         computeDigest();
     }
 
-    /** TODO */
-    @Override public SqlTypeName getSqlTypeName() {
-        return SqlTypeName.ANY;
+    /** {@inheritDoc} */
+    @Override public boolean isNullable() {
+        return nullable;
     }
 
-    /** TODO */
+    /** {@inheritDoc} */
     @Override public RelDataTypeFamily getFamily() {
         return SqlTypeFamily.ANY;
     }
 
-    /** TODO */
+    /** {@inheritDoc} */
+    @Override public SqlTypeName getSqlTypeName() {
+        return SqlTypeName.ANY;
+    }
+
+    /** {@inheritDoc} */
     @Override protected void generateTypeString(StringBuilder sb, boolean withDetail) {
         sb.append("UUID");
     }

@@ -34,7 +34,6 @@ import org.apache.calcite.avatica.util.ByteString;
 import org.apache.calcite.avatica.util.TimeUnit;
 import org.apache.calcite.jdbc.JavaTypeFactoryImpl;
 import org.apache.calcite.rel.type.RelDataType;
-import org.apache.calcite.rel.type.RelDataTypeFamily;
 import org.apache.calcite.rel.type.RelDataTypeSystem;
 import org.apache.calcite.runtime.Geometries;
 import org.apache.calcite.sql.SqlIntervalQualifier;
@@ -42,8 +41,6 @@ import org.apache.calcite.sql.SqlUtil;
 import org.apache.calcite.sql.parser.SqlParserPos;
 import org.apache.calcite.sql.type.BasicSqlType;
 import org.apache.calcite.sql.type.IntervalSqlType;
-import org.apache.calcite.sql.type.SqlTypeFamily;
-import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.ignite.internal.util.typedef.F;
 
 /**
@@ -142,6 +139,9 @@ public class IgniteTypeFactory extends JavaTypeFactoryImpl {
                     break;
             }
         }
+        else if (type instanceof UUIDType)
+            return UUID.class;
+
         switch (type.getSqlTypeName()) {
             case ROW:
                 return Object[].class; // At now
@@ -162,6 +162,8 @@ public class IgniteTypeFactory extends JavaTypeFactoryImpl {
     public Type getResultClass(RelDataType type) {
         if (type instanceof JavaType)
             return ((JavaType)type).getJavaClass();
+        else if (type instanceof UUIDType)
+            return UUID.class;
         else if (type instanceof BasicSqlType || type instanceof IntervalSqlType) {
             switch (type.getSqlTypeName()) {
                 case VARCHAR:
@@ -270,23 +272,23 @@ public class IgniteTypeFactory extends JavaTypeFactoryImpl {
         return super.toSql(type);
     }
 
-    /** TODO */
+    /**
+     * @return UUID SQL type.
+     */
     public UUIDType createUUIDType(){
         return new UUIDType(true);
+//        return new IgniteTypeFactory.UUIDType(true);
     }
 
     /** {@inheritDoc} */
     @Override public RelDataType createTypeWithNullability(RelDataType type, boolean nullable) {
-        /** TODO: copy */
         if (type instanceof UUIDType && type.isNullable() != nullable)
             type = new UUIDType(nullable);
 
         return super.createTypeWithNullability(type, nullable);
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override public RelDataType createType(Type type) {
         if (type == Duration.class || type == Period.class)
             return createJavaType((Class<?>)type);
@@ -306,27 +308,4 @@ public class IgniteTypeFactory extends JavaTypeFactoryImpl {
 
         return true;
     }
-
-    /** */
-    public final class UUIDType extends JavaType {
-        /** */
-        public UUIDType(boolean nullable) {
-            super(UUID.class, nullable);
-        }
-
-        /** */
-        @Override public RelDataTypeFamily getFamily() {
-            return SqlTypeFamily.ANY;
-        }
-
-        /** TODO */
-        @Override public SqlTypeName getSqlTypeName() {
-            return SqlTypeName.ANY;
-        }
-
-        /** TODO */
-        @Override protected void generateTypeString(StringBuilder sb, boolean withDetail) {
-            sb.append("UUID");
-        }
-    };
 }

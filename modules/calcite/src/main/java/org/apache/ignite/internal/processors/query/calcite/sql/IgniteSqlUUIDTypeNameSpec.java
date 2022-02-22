@@ -25,27 +25,27 @@ import org.apache.calcite.sql.validate.SqlValidator;
 import org.apache.calcite.util.Litmus;
 
 /**
- * A SQL type name specification of UUID type.
+ * SQL type name specification for UUID type.
  */
 public class IgniteSqlUUIDTypeNameSpec extends SqlTypeNameSpec {
-    /** Constructor. */
+    /** Ctor. */
     public IgniteSqlUUIDTypeNameSpec(SqlParserPos pos) {
         super(new SqlIdentifier("UUID", pos), pos);
     }
 
-    /** TODO */
+    /** {@inheritDoc} */
     @Override public RelDataType deriveType(SqlValidator validator) {
         return validator.getTypeFactory().createJavaType(java.util.UUID.class);
     }
 
-    /** TODO */
+    /** {@inheritDoc} */
     @Override public void unparse(SqlWriter writer, int leftPrec, int rightPrec) {
         writer.keyword("UUID");
 
         getTypeName().unparse(writer, leftPrec, rightPrec);
     }
 
-    /** TODO */
+    /** {@inheritDoc} */
     @Override public boolean equalsDeep(SqlTypeNameSpec spec, Litmus litmus) {
         return getTypeName().equalsDeep(spec.getTypeName(), litmus);
     }
