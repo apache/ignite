@@ -33,6 +33,9 @@ public interface PagesWriteThrottlePolicy {
     public long LOGGING_THRESHOLD = TimeUnit.SECONDS.toNanos(
         IgniteSystemProperties.getInteger(IGNITE_THROTTLE_LOG_THRESHOLD, DFLT_THROTTLE_LOG_THRESHOLD));
 
+    /** Checkpoint buffer fullfill upper bound. */
+    static final float CP_BUF_FILL_THRESHOLD = 2f / 3;
+
     /**
      * Callback to apply throttling delay.
      * @param isPageInCheckpoint flag indicating if current page is in scope of current checkpoint.
