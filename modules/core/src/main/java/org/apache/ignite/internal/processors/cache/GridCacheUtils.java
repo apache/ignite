@@ -1968,6 +1968,56 @@ public class GridCacheUtils {
     }
 
     /**
+     * Finds and returns a data region configuration with the specified name.
+     *
+     * @param dsCfg Data storage configuration.
+     * @param name Name of data region configuration to find.
+     * @return Data region configuration with the specified name
+     *          or {@code null} if the given data storage configuration does not contain such data region.
+     */
+    @Nullable public static DataRegionConfiguration findDataRegionConfiguration(
+        @Nullable DataStorageConfiguration dsCfg,
+        @Nullable String name
+    ) {
+        if (dsCfg == null || name == null)
+            return null;
+
+        if (dsCfg.getDefaultDataRegionConfiguration().getName().equals(name))
+            return dsCfg.getDefaultDataRegionConfiguration();
+
+        DataRegionConfiguration[] regions = dsCfg.getDataRegionConfigurations();
+
+        if (regions == null)
+            return null;
+
+        for (int i = 0; i < regions.length; ++i) {
+            if (regions[i].getName().equals(name))
+                return regions[i];
+        }
+
+        return null;
+    }
+
+    /**
+     * Finds and returns a data region configuration with the specified name that is configured on remote node.
+     *
+     * @param node Remote node.
+     * @param marshaller JDK marshaller that is used in order to extract data storage configuration.
+     * @param clsLdr Classloader  that is used in order to extract data storage configuration.
+     * @param name Name of data region configuration to find.
+     * @return Data region configuration with the specified name
+     *          or {@code null} if the given data storage configuration does not contain such data region.
+     */
+    @Nullable public static DataRegionConfiguration findRemoteDataRegionConfiguration(
+        ClusterNode node,
+        JdkMarshaller marshaller,
+        ClassLoader clsLdr,
+        @Nullable String name
+    ) {
+        return findDataRegionConfiguration(extractDataStorage(node, marshaller, clsLdr), name);
+    }
+
+    /**
      * @return {@code true} if persistence is enabled for a default data region, {@code false} if not.
      */
     public static boolean isDefaultDataRegionPersistent(DataStorageConfiguration cfg) {
