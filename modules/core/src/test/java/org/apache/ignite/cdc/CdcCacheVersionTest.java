@@ -183,7 +183,7 @@ public class CdcCacheVersionTest extends AbstractCdcTest {
 
                 DataRecord dataRec = (DataRecord)rec;
 
-                for (int i = 0; i < dataRec.entryCount(); i++) {
+                for (int i = 0; i < dataRec.writeEntries().size(); i++) {
                     DataEntry dataEntry = dataRec.writeEntries().get(i);
 
                     assertEquals(CU.cacheId(DEFAULT_CACHE_NAME), dataEntry.cacheId());
@@ -334,15 +334,14 @@ public class CdcCacheVersionTest extends AbstractCdcTest {
                 if (rec.type() != DATA_RECORD_V2)
                     return super.log(rec);
 
-
                 DataRecord dataRec = (DataRecord)rec;
 
-                for (int i = 0; i < dataRec.entryCount(); i++) {
-                    assertEquals(CU.cacheId(DEFAULT_CACHE_NAME), dataRec.get(i).cacheId());
-                    assertEquals(KEY_TO_UPD, (int)dataRec.get(i).key().value(null, false));
-                    assertTrue(dataRec.get(i).writeVersion().order() > prevOrder);
+                for (int i = 0; i < dataRec.writeEntries().size(); i++) {
+                    assertEquals(CU.cacheId(DEFAULT_CACHE_NAME), dataRec.writeEntries().get(i).cacheId());
+                    assertEquals(KEY_TO_UPD, (int)dataRec.writeEntries().get(i).key().value(null, false));
+                    assertTrue(dataRec.writeEntries().get(i).writeVersion().order() > prevOrder);
 
-                    prevOrder = dataRec.get(i).writeVersion().order();
+                    prevOrder = dataRec.writeEntries().get(i).writeVersion().order();
 
                     walRecCheckedCntr.incrementAndGet();
                 }
