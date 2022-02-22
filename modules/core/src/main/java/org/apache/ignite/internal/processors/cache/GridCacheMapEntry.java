@@ -1562,7 +1562,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             updateCntr0 = nextPartitionCounter(tx, updateCntr);
 
             if (tx != null && cctx.group().persistenceEnabled() && cctx.group().walEnabled())
-                logPtr = logTxUpdate(tx, val, newVer, expireTime, updateCntr0);
+                logPtr = logTxUpdate(tx, val, addConflictVersion(tx.writeVersion(), newVer), expireTime, updateCntr0);
 
             update(val, expireTime, ttl, newVer, true);
 
@@ -1787,7 +1787,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             updateCntr0 = nextPartitionCounter(tx, updateCntr);
 
             if (tx != null && cctx.group().persistenceEnabled() && cctx.group().walEnabled())
-                logPtr = logTxUpdate(tx, null, newVer, 0, updateCntr0);
+                logPtr = logTxUpdate(tx, null, addConflictVersion(tx.writeVersion(), newVer), 0, updateCntr0);
+
 
             drReplicate(drType, null, newVer, topVer);
 
@@ -4379,7 +4380,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 val,
                 op,
                 tx.nearXidVersion(),
-                addConflictVersion(tx.writeVersion(), newVer),
+                newVer,
                 expireTime,
                 key.partition(),
                 updCntr,
