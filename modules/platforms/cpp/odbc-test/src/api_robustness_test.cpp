@@ -243,7 +243,7 @@ BOOST_AUTO_TEST_CASE(TestSQLConnect)
 
 BOOST_AUTO_TEST_CASE(TestSQLConnectFailedDSN)
 {
-    // Tests that DSN parsing using
+    // Tests that SQLConnect using DSN doesn't fail with link error (especially on linux).
     Prepare();
 
     SQLCHAR dsnConnStr[] = "DSN=IGNITETEST";
