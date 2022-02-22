@@ -3,9 +3,12 @@ Apache Ignite Calcite Module
 
 Apache Ignite Calcite module provides experimental Apache Calcite based query engine.
 
-To enable Calcite module when starting a standalone node, move 'optional/ignite-calcite' folder to
-'libs' folder before running 'ignite.{sh|bat}' script. The content of the module folder will
-be added to classpath in this case.
+To enable Calcite based engine explicit `CalciteQueryEngineConfiguration` instance should be added to
+`SqlConfiguration.QueryEnginesConfiguration` property (see `SqlConfiguration.setQueryEnginesConfiguration()`).
+Also, Calcite module libraries should be in a classpath.
+
+When starting a standalone node, move 'optional/ignite-calcite' folder to 'libs' folder before running
+'ignite.{sh|bat}' script. The content of the module folder will be added to classpath in this case.
 
 Note: At now some logic from ignite-indexing module is reused, this means ignite-indexing module also
 has to be present at classpath.

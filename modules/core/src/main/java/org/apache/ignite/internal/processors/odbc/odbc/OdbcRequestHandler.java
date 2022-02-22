@@ -171,6 +171,7 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
             lazy,
             skipReducerOnUpdate,
             null,
+            null,
             null
         );
 
