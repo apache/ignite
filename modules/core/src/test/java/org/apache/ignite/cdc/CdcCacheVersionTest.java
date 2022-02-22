@@ -198,7 +198,7 @@ public class CdcCacheVersionTest extends AbstractCdcTest {
             new CacheConfiguration<Integer, User>(FOR_OTHER_CLUSTER)
                 .setCacheMode(cacheMode)
                 .setAtomicityMode(atomicityMode)
-                .setBackups(gridCnt - 1));
+                .setBackups(Integer.MAX_VALUE));
 
         if (atomicityMode == ATOMIC)
             putRemoveCheck(cli, cache, null, null);
@@ -221,7 +221,7 @@ public class CdcCacheVersionTest extends AbstractCdcTest {
 
             for (CacheView v : caches) {
                 if (v.cacheName().equals(FOR_OTHER_CLUSTER)) {
-                    assertEquals("" + i, v.conflictResolver(), "TestCacheConflictResolutionManager");
+                    assertEquals(v.conflictResolver(), "TestCacheConflictResolutionManager");
 
                     found = true;
                 }
