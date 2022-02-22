@@ -79,7 +79,6 @@ import org.apache.ignite.internal.processors.cache.tree.mvcc.data.ResultType;
 import org.apache.ignite.internal.processors.cache.version.GridCacheLazyPlainVersionedEntry;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionConflictContext;
-import org.apache.ignite.internal.processors.cache.version.GridCacheVersionEx;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionedEntryEx;
 import org.apache.ignite.internal.processors.dr.GridDrType;
 import org.apache.ignite.internal.processors.platform.PlatformProcessor;
@@ -129,6 +128,7 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.topolo
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.MVCC_MAX_SNAPSHOT;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.compareIgnoreOpCounter;
 import static org.apache.ignite.internal.processors.cache.persistence.CacheDataRowAdapter.RowData.NO_KEY;
+import static org.apache.ignite.internal.processors.cache.version.GridCacheVersionEx.addConflictVersion;
 import static org.apache.ignite.internal.processors.dr.GridDrType.DR_NONE;
 
 /**
@@ -1558,7 +1558,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             updateCntr0 = nextPartitionCounter(tx, updateCntr);
 
             if (tx != null && cctx.group().persistenceEnabled() && cctx.group().walEnabled())
-                logPtr = logTxUpdate(tx, val, expireTime, updateCntr0);
+                logPtr = logTxUpdate(tx, val, addConflictVersion(tx.writeVersion(), newVer), expireTime, updateCntr0);
 
             update(val, expireTime, ttl, newVer, true);
 
@@ -1783,7 +1783,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             updateCntr0 = nextPartitionCounter(tx, updateCntr);
 
             if (tx != null && cctx.group().persistenceEnabled() && cctx.group().walEnabled())
-                logPtr = logTxUpdate(tx, null, 0, updateCntr0);
+                logPtr = logTxUpdate(tx, null, addConflictVersion(tx.writeVersion(), newVer), 0, updateCntr0);
 
             drReplicate(drType, null, newVer, topVer);
 
@@ -4348,6 +4348,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
     /**
      * @param tx Transaction.
      * @param val Value.
+     * @param writeVer New entry version.
      * @param expireTime Expire time (or 0 if not applicable).
      * @param updCntr Update counter.
      * @throws IgniteCheckedException In case of log failure.
@@ -4355,6 +4356,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
     protected WALPointer logTxUpdate(
         IgniteInternalTx tx,
         CacheObject val,
+        GridCacheVersion writeVer,
         long expireTime,
         long updCntr
     ) throws IgniteCheckedException {
@@ -4373,7 +4375,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 val,
                 op,
                 tx.nearXidVersion(),
-                tx.writeVersion(),
+                writeVer,
                 expireTime,
                 key.partition(),
                 updCntr,
@@ -6225,13 +6227,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             }
 
             // Incorporate conflict version into new version if needed.
-            if (conflictVer != null && conflictVer != newVer) {
-                newVer = new GridCacheVersionEx(newVer.topologyVersion(),
-                    newVer.order(),
-                    newVer.nodeOrder(),
-                    newVer.dataCenterId(),
-                    conflictVer);
-            }
+            newVer = addConflictVersion(newVer, conflictVer);
 
             if (op == UPDATE) {
                 assert writeObj != null;
