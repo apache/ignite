@@ -270,20 +270,20 @@ public abstract class AbstractFullSetReadRepairTest extends AbstractReadRepairTe
      * @param data Data.
      */
     protected void check(ReadRepairData data, IgniteIrreparableConsistencyViolationException e, boolean evtRecorded) {
-        Collection<?> irreparableKeys = e != null ? e.irreparableKeys() : null;
+        Collection<Object> irreparableKeys = e != null ? e.irreparableKeys() : null;
 
         if (e != null) {
-            Collection<?> repairableKeys = e.repairableKeys();
+            Collection<Object> repairableKeys = e.repairableKeys();
 
             if (repairableKeys != null)
                 assertTrue(Collections.disjoint(repairableKeys, irreparableKeys));
 
-            Collection<?> expectedToBeIrreparableKeys = data.data.entrySet().stream()
+            Collection<Object> expectedToBeIrreparableKeys = data.data.entrySet().stream()
                 .filter(entry -> !entry.getValue().repairable)
                 .map(Map.Entry::getKey)
                 .collect(Collectors.toSet());
 
-            assertEqualsUnorderedCollections(expectedToBeIrreparableKeys, irreparableKeys);
+            assertEqualsCollectionsIgnoringOrder(expectedToBeIrreparableKeys, irreparableKeys);
         }
 
         assertEquals(irreparableKeys == null, data.repairable());
