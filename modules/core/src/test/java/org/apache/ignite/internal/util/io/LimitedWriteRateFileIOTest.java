@@ -27,6 +27,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.TimeUnit;
 import org.apache.commons.io.FileUtils;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.LimitedWriteRateFileIO;
@@ -41,7 +42,6 @@ import org.junit.runners.Parameterized;
 import static java.nio.file.StandardOpenOption.APPEND;
 import static java.nio.file.StandardOpenOption.CREATE;
 import static java.nio.file.StandardOpenOption.READ;
-import static java.nio.file.StandardOpenOption.TRUNCATE_EXISTING;
 import static java.nio.file.StandardOpenOption.WRITE;
 import static org.junit.Assert.assertArrayEquals;
 
@@ -103,6 +103,13 @@ public class LimitedWriteRateFileIOTest extends GridCommonAbstractTest {
         super.afterTestsStopped();
     }
 
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        super.beforeTest();
+
+        tempFile.delete();
+    }
+
     /**
      * @throws Exception If failed.
      */
@@ -114,16 +121,9 @@ public class LimitedWriteRateFileIOTest extends GridCommonAbstractTest {
 
         FileUtils.writeByteArrayToFile(tempFile, srcData);
 
-        long startTime = System.currentTimeMillis();
-
-        try (FileIO src = limitedRateFileIO(READ)) {
-            src.transferTo(offset, srcData.length - offset, destChannel);
-        }
-
-        long delta = System.currentTimeMillis() - startTime;
+        checkExecTime((src) -> src.transferTo(offset, srcData.length - offset, destChannel), offset, READ);
 
         assertArrayEquals(Arrays.copyOfRange(srcData, offset, srcData.length), destChannel.data());
-        checkTimings(delta, offset);
     }
 
     /**
@@ -133,45 +133,16 @@ public class LimitedWriteRateFileIOTest extends GridCommonAbstractTest {
     public void testLimitedTransferFrom() throws Exception {
         byte[] srcData = generateData(dataLen);
         int offset = dataLen / 2;
+
+        if (offset > 0)
+            FileUtils.writeByteArrayToFile(tempFile, Arrays.copyOfRange(srcData, 0, offset));
+
         ByteArrayChannel srcChannel =
             new ByteArrayChannel(bufLen, Arrays.copyOfRange(srcData, offset, dataLen), dataLen - offset);
 
-        if (offset > 0)
-            FileUtils.writeByteArrayToFile(tempFile, Arrays.copyOfRange(srcData, 0, offset));
-
-        long startTime = System.currentTimeMillis();
-
-        try (FileIO dest = limitedRateFileIO(CREATE, WRITE, offset == 0 ? TRUNCATE_EXISTING : APPEND)) {
-            dest.transferFrom(srcChannel, offset, srcData.length - offset);
-        }
-
-        long delta = System.currentTimeMillis() - startTime;
+        checkExecTime((dest) -> dest.transferFrom(srcChannel, offset, dataLen - offset), offset, CREATE, WRITE, APPEND);
 
         assertArrayEquals(srcData, FileUtils.readFileToByteArray(tempFile));
-        checkTimings(delta, offset);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testLimitedBytebufferWritePosition() throws Exception {
-        byte[] srcData = generateData(dataLen);
-        int offset = dataLen / 2;
-
-        if (offset > 0)
-            FileUtils.writeByteArrayToFile(tempFile, Arrays.copyOfRange(srcData, 0, offset));
-
-        long startTime = System.currentTimeMillis();
-
-        try (FileIO dest = limitedRateFileIO(CREATE, WRITE, offset == 0 ? TRUNCATE_EXISTING : APPEND)) {
-            dest.write(ByteBuffer.wrap(Arrays.copyOfRange(srcData, offset, dataLen)), offset);
-        }
-
-        long delta = System.currentTimeMillis() - startTime;
-
-        assertArrayEquals(srcData, FileUtils.readFileToByteArray(tempFile));
-        checkTimings(delta, offset);
     }
 
     /**
@@ -180,17 +151,15 @@ public class LimitedWriteRateFileIOTest extends GridCommonAbstractTest {
     @Test
     public void testLimitedBytebufferWrite() throws Exception {
         byte[] srcData = generateData(dataLen);
+        int offset = dataLen / 2;
 
-        long startTime = System.currentTimeMillis();
+        if (offset > 0)
+            FileUtils.writeByteArrayToFile(tempFile, Arrays.copyOfRange(srcData, 0, offset));
 
-        try (FileIO dest = limitedRateFileIO(CREATE, WRITE, TRUNCATE_EXISTING)) {
-            dest.write(ByteBuffer.wrap(srcData));
-        }
-
-        long delta = System.currentTimeMillis() - startTime;
+        checkExecTime((dest) -> offset == 0 ? dest.write(ByteBuffer.wrap(srcData)) :
+            dest.write(ByteBuffer.wrap(Arrays.copyOfRange(srcData, offset, dataLen)), offset), offset, CREATE, WRITE, APPEND);
 
         assertArrayEquals(srcData, FileUtils.readFileToByteArray(tempFile));
-        checkTimings(delta, 0);
     }
 
     /**
@@ -204,16 +173,9 @@ public class LimitedWriteRateFileIOTest extends GridCommonAbstractTest {
         if (offset > 0)
             FileUtils.writeByteArrayToFile(tempFile, Arrays.copyOfRange(srcData, 0, offset));
 
-        long startTime = System.currentTimeMillis();
-
-        try (FileIO dest = limitedRateFileIO(CREATE, WRITE, offset == 0 ? TRUNCATE_EXISTING : APPEND)) {
-            dest.write(srcData, offset, dataLen - offset);
-        }
-
-        long delta = System.currentTimeMillis() - startTime;
+        checkExecTime((dest) -> dest.write(srcData, offset, dataLen - offset), offset, CREATE, WRITE, APPEND);
 
         assertArrayEquals(srcData, FileUtils.readFileToByteArray(tempFile));
-        checkTimings(delta, offset);
     }
 
     private byte[] generateData(int len) {
@@ -224,17 +186,27 @@ public class LimitedWriteRateFileIOTest extends GridCommonAbstractTest {
         return data;
     }
 
-    private void checkTimings(long delta, int offset) {
-        int expDuration = (dataLen - offset) * 1000 / rate;
-        int min = Math.round((float)expDuration / 2);
-        int max = expDuration * 2;
+    private void checkExecTime(IoFunction func, int offset, OpenOption... modes) throws IOException {
+        LimitedWriteRateFileIOFactory ioFactory =
+            new LimitedWriteRateFileIOFactory(new RandomAccessFileIOFactory(), rate, rate);
 
-        assertTrue("time=" + delta + ", min=" + min + ", max=" + max, delta > min && delta < max);
-    }
+        int payloadLen = dataLen - offset;
 
-    private FileIO limitedRateFileIO(OpenOption... modes) throws IOException {
-        return new LimitedWriteRateFileIOFactory(new RandomAccessFileIOFactory(), rate, rate)
-            .create(tempFile, modes);
+        try (FileIO io = ioFactory.create(tempFile, modes)) {
+            long startTime = System.currentTimeMillis();
+
+            long written = func.apply(io);
+
+            long delta = System.currentTimeMillis() - startTime;
+
+            assertEquals(payloadLen, written);
+
+            long expDuration = TimeUnit.SECONDS.toMillis(payloadLen / rate);
+            long min = Math.round((double)expDuration / 2);
+            long max = expDuration * 2;
+
+            assertTrue("time=" + delta + ", min=" + min + ", max=" + max, delta > min && delta < max);
+        }
     }
 
     /** */
@@ -308,5 +280,15 @@ public class LimitedWriteRateFileIOTest extends GridCommonAbstractTest {
         public byte[] data() {
             return Arrays.copyOf(data, size);
         }
+    }
+
+    /** I/O function.*/
+    private interface IoFunction {
+        /**
+         * @param fileIo I/O file interface to use.
+         * @return Number of written bytes.
+         * @throws IOException If failed.
+         */
+        long apply(FileIO fileIo) throws IOException;
     }
 }

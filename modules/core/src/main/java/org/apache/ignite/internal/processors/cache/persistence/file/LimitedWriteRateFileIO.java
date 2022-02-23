@@ -84,21 +84,6 @@ public class LimitedWriteRateFileIO extends FileIODecorator {
         return limitedWrite((offs, len) -> super.write(buf, off + offs, len), count);
     }
 
-    /** {@inheritDoc} */
-    @Override public int read(ByteBuffer destBuf) throws IOException {
-        return super.read(destBuf);
-    }
-
-    /** {@inheritDoc} */
-    @Override public int read(ByteBuffer destBuf, long position) throws IOException {
-        return super.read(destBuf, position);
-    }
-
-    /** {@inheritDoc} */
-    @Override public int read(byte[] buf, int off, int len) throws IOException {
-        return super.read(buf, off, len);
-    }
-
     /**
      * @param writeOp Write operation.
      * @param count Number of bytes to write.
