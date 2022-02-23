@@ -2455,11 +2455,6 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                         }
 
                         if (readRepairStrategy != null) { // Checking and repairing each locked entry (if necessary).
-                            AffinityTopologyVersion topVer = topologyVersionSnapshot();
-
-                            if (topVer == null)
-                                topVer = entryTopVer;
-
                             return new GridNearReadRepairFuture(
                                 topVer != null ? topVer : topologyVersion(),
                                 cacheCtx,
