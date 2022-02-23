@@ -230,14 +230,14 @@ public class GridCommandHandlerPropertiesTest extends GridCommandHandlerClusterB
     public void testPropertySnapshotTransferRate() {
         assertDistributedPropertyEquals(SNAPSHOT_TRANSFER_RATE_DMS_KEY, DFLT_SNAPSHOT_TRANSFER_RATE);
 
-        int newVal = 1024;
+        long newVal = 1024;
 
         assertEquals(
             EXIT_CODE_OK,
             execute(
                 "--property", "set",
                 "--name", SNAPSHOT_TRANSFER_RATE_DMS_KEY,
-                "--val", Integer.toString(newVal)
+                "--val", Long.toString(newVal)
             )
         );
 
