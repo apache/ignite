@@ -1127,22 +1127,38 @@ public class CacheGroupContext {
             log.debug("Affinity is ready for topology version, will send response [topVer=" + topVer +
                 ", node=" + nodeId + ']');
 
-        AffinityAssignment assignment = aff.cachedAffinity(topVer);
+        AffinityAssignment assignment;
+        GridDhtAffinityAssignmentResponse res;
+        try {
+            assignment = aff.cachedAffinity(topVer);
 
-        GridDhtAffinityAssignmentResponse res = new GridDhtAffinityAssignmentResponse(
-            req.futureId(),
-            grpId,
-            topVer,
-            assignment.assignment());
+            res = new GridDhtAffinityAssignmentResponse(
+                req.futureId(),
+                grpId,
+                topVer,
+                assignment.assignment());
 
-        if (aff.centralizedAffinityFunction()) {
-            assert assignment.idealAssignment() != null;
+            if (aff.centralizedAffinityFunction()) {
+                assert assignment.idealAssignment() != null;
 
-            res.idealAffinityAssignment(assignment.idealAssignment());
+                res.idealAffinityAssignment(assignment.idealAssignment());
+            }
+
+            if (req.sendPartitionsState())
+                res.partitionMap(top.partitionMap(true));
         }
+        catch (IllegalStateException err) {
+            res = new GridDhtAffinityAssignmentResponse(
+                req.futureId(),
+                grpId,
+                topVer,
+                Collections.emptyList());
 
-        if (req.sendPartitionsState())
-            res.partitionMap(top.partitionMap(true));
+            res.affinityAssignmentsError(
+                new IgniteCheckedException("Failed to prepare the required affinity assignment " +
+                    "[nodeId=" + nodeId + ", topVer=" + topVer + ']',
+                    err));
+        }
 
         try {
             ctx.io().send(nodeId, res, AFFINITY_POOL);

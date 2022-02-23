@@ -85,6 +85,9 @@ public class PagesWriteSpeedBasedThrottle implements PagesWriteThrottlePolicy {
     /** Threads set. Contains identifiers of all threads which were marking pages for current checkpoint. */
     private final GridConcurrentHashSet<Long> threadIds = new GridConcurrentHashSet<>();
 
+    /** Threads set. Contains threads which is currently parked because of throttling. */
+    private final GridConcurrentHashSet<Thread> parkedThreads = new GridConcurrentHashSet<>();
+
     /**
      * Used for calculating speed of marking pages dirty.
      * Value from past 750-1000 millis only.
@@ -244,7 +247,14 @@ public class PagesWriteSpeedBasedThrottle implements PagesWriteThrottlePolicy {
                 + " for timeout(ms)=" + (throttleParkTimeNs / 1_000_000));
         }
 
-        LockSupport.parkNanos(throttleParkTimeNs);
+        parkedThreads.add(Thread.currentThread());
+
+        try {
+            LockSupport.parkNanos(throttleParkTimeNs);
+        }
+        finally {
+            parkedThreads.remove(Thread.currentThread());
+        }
     }
 
     /**
@@ -469,6 +479,7 @@ public class PagesWriteSpeedBasedThrottle implements PagesWriteThrottlePolicy {
         speedCpWrite.finishInterval();
         speedMarkAndAvgParkTime.finishInterval();
         threadIds.clear();
+        parkedThreads.forEach(LockSupport::unpark);
     }
 
     /**
@@ -520,6 +531,7 @@ public class PagesWriteSpeedBasedThrottle implements PagesWriteThrottlePolicy {
 
     /**
      * Measurement shows how much throttling time is involved into average marking time.
+     *
      * @return metric started from 0.0 and showing how much throttling is involved into current marking process.
      */
     public double throttleWeight() {
@@ -534,6 +546,22 @@ public class PagesWriteSpeedBasedThrottle implements PagesWriteThrottlePolicy {
             return 0;
 
         return 1.0 * throttleParkTime() / timeForOnePage;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void tryWakeupThrottledThreads() {
+        if (!shouldThrottle()) {
+            exponentialBackoffCntr.set(0);
+
+            parkedThreads.forEach(LockSupport::unpark);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean shouldThrottle() {
+        int checkpointBufLimit = (int)(pageMemory.checkpointBufferPagesSize() * CP_BUF_FILL_THRESHOLD);
+
+        return pageMemory.checkpointBufferPagesCount() > checkpointBufLimit;
     }
 
     /**
