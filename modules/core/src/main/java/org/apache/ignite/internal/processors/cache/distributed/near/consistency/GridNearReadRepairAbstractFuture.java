@@ -271,9 +271,6 @@ public abstract class GridNearReadRepairAbstractFuture extends GridFutureAdapter
         }
         else {
             if (LSNR_CALLS_UPD.incrementAndGet(this) == futs.size()) {
-                if (isFailed())
-                    return;
-
                 assert remapCalls == 0 : remapCalls;
 
                 assert !isDone();
