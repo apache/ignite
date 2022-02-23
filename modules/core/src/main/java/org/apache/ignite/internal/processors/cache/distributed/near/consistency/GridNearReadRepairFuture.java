@@ -124,7 +124,7 @@ public class GridNearReadRepairFuture extends GridNearReadRepairAbstractFuture {
     }
 
     /** {@inheritDoc} */
-    @Override protected GridNearReadRepairAbstractFuture remap(AffinityTopologyVersion topVer) {
+    @Override protected GridNearReadRepairAbstractFuture remapFuture(AffinityTopologyVersion topVer) {
         return new GridNearReadRepairFuture(
             topVer,
             ctx,

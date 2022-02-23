@@ -61,6 +61,10 @@ public abstract class GridNearReadRepairAbstractFuture extends GridFutureAdapter
     private static final AtomicIntegerFieldUpdater<GridNearReadRepairAbstractFuture> LSNR_CALLS_UPD =
         AtomicIntegerFieldUpdater.newUpdater(GridNearReadRepairAbstractFuture.class, "lsnrCalls");
 
+    /** Remap calls upd. */
+    private static final AtomicIntegerFieldUpdater<GridNearReadRepairAbstractFuture> REMAP_CALLS_UPD =
+        AtomicIntegerFieldUpdater.newUpdater(GridNearReadRepairAbstractFuture.class, "remapCalls");
+
     /** Affinity node's get futures. */
     protected final Map<ClusterNode, GridPartitionedGetFuture<KeyCacheObject, EntryGetResult>> futs;
 
@@ -106,6 +110,9 @@ public abstract class GridNearReadRepairAbstractFuture extends GridFutureAdapter
     /** Listener calls. */
     private volatile int lsnrCalls;
 
+    /** Remap calls. */
+    private volatile int remapCalls;
+
     /**
      * Creates a new instance of GridNearReadRepairAbstractFuture.
      *
@@ -146,17 +153,7 @@ public abstract class GridNearReadRepairAbstractFuture extends GridFutureAdapter
 
         this.strategy = strategy;
 
-        if (remappedFut != null) {
-            remapCnt = remappedFut.remapCnt + 1;
-
-            listen(f -> {
-                assert !remappedFut.isDone();
-
-                remappedFut.onDone(f.result(), f.error());
-            });
-        }
-        else
-            remapCnt = 0;
+        remapCnt = remappedFut != null ? remappedFut.remapCnt + 1 : 0;
 
         canRemap = topVer == null;
 
@@ -227,7 +224,24 @@ public abstract class GridNearReadRepairAbstractFuture extends GridFutureAdapter
     /**
      * @param topVer Topology version.
      */
-    protected abstract GridNearReadRepairAbstractFuture remap(AffinityTopologyVersion topVer);
+    protected void remap(AffinityTopologyVersion topVer) {
+        assert !isDone();
+
+        if (REMAP_CALLS_UPD.compareAndSet(this, 0, 1)) {
+            GridNearReadRepairAbstractFuture fut = remapFuture(topVer);
+
+            fut.listen(f -> {
+                assert !isDone();
+
+                onDone(f.result(), f.error());
+            });
+        }
+    }
+
+    /**
+     * @param topVer Topology version.
+     */
+    protected abstract GridNearReadRepairAbstractFuture remapFuture(AffinityTopologyVersion topVer);
 
     /**
      * Collects results of each 'get' future and prepares an overall result of the operation.
@@ -256,14 +270,16 @@ public abstract class GridNearReadRepairAbstractFuture extends GridFutureAdapter
                 onDone(finished.error());
         }
         else {
-            int calls = LSNR_CALLS_UPD.incrementAndGet(this);
+            if (LSNR_CALLS_UPD.incrementAndGet(this) == futs.size()) {
+                if (isFailed())
+                    return;
 
-            assert calls <= futs.size();
+                assert remapCalls == 0 : remapCalls;
 
-            if (isDone() || calls != futs.size())
-                return;
+                assert !isDone();
 
-            reduce();
+                reduce();
+            }
         }
     }
 
