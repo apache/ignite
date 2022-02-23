@@ -70,6 +70,44 @@ public class GridNearReadRepairFuture extends GridNearReadRepairAbstractFuture {
         boolean recovery,
         IgniteCacheExpiryPolicy expiryPlc,
         IgniteInternalTx tx) {
+        this(topVer,
+            ctx,
+            keys,
+            strategy,
+            readThrough,
+            taskName,
+            deserializeBinary,
+            recovery,
+            expiryPlc,
+            tx,
+            null);
+    }
+
+    /**
+     * @param topVer Affinity topology version.
+     * @param ctx Cache context.
+     * @param keys Keys.
+     * @param strategy Read repair strategy.
+     * @param readThrough Read-through flag.
+     * @param taskName Task name.
+     * @param deserializeBinary Deserialize binary flag.
+     * @param recovery Partition recovery flag.
+     * @param expiryPlc Expiry policy.
+     * @param tx Transaction.
+     * @param remappedFut Remapped future.
+     */
+    private GridNearReadRepairFuture(
+        AffinityTopologyVersion topVer,
+        GridCacheContext ctx,
+        Collection<KeyCacheObject> keys,
+        ReadRepairStrategy strategy,
+        boolean readThrough,
+        String taskName,
+        boolean deserializeBinary,
+        boolean recovery,
+        IgniteCacheExpiryPolicy expiryPlc,
+        IgniteInternalTx tx,
+        GridNearReadRepairFuture remappedFut) {
         super(topVer,
             ctx,
             keys,
@@ -79,23 +117,15 @@ public class GridNearReadRepairFuture extends GridNearReadRepairAbstractFuture {
             deserializeBinary,
             recovery,
             expiryPlc,
-            tx);
+            tx,
+            remappedFut);
 
         assert ctx.transactional() : "Atomic cache should not be recovered using this future";
     }
 
-    /**
-     *
-     */
-    public GridNearReadRepairFuture prepared() {
-        init();
-
-        return this;
-    }
-
     /** {@inheritDoc} */
-    @Override protected void remap(AffinityTopologyVersion topVer) {
-        GridNearReadRepairFuture fut = new GridNearReadRepairFuture(
+    @Override protected GridNearReadRepairAbstractFuture remap(AffinityTopologyVersion topVer) {
+        return new GridNearReadRepairFuture(
             topVer,
             ctx,
             keys,
@@ -106,8 +136,6 @@ public class GridNearReadRepairFuture extends GridNearReadRepairAbstractFuture {
             recovery,
             expiryPlc,
             tx);
-
-        fut.initOnRemap(this);
     }
 
     /** {@inheritDoc} */

@@ -95,7 +95,7 @@ public abstract class GridNearReadRepairAbstractFuture extends GridFutureAdapter
     protected final ReadRepairStrategy strategy;
 
     /** Remap count. */
-    protected volatile int remapCnt;
+    protected final int remapCnt;
 
     /** Remap flag. */
     private final boolean canRemap;
@@ -119,6 +119,7 @@ public abstract class GridNearReadRepairAbstractFuture extends GridFutureAdapter
      * @param recovery Partition recovery flag.
      * @param expiryPlc Expiry policy.
      * @param tx Transaction. Can be {@code null} in case of atomic cache.
+     * @param remappedFut Remapped future.
      */
     protected GridNearReadRepairAbstractFuture(
         AffinityTopologyVersion topVer,
@@ -130,7 +131,8 @@ public abstract class GridNearReadRepairAbstractFuture extends GridFutureAdapter
         boolean deserializeBinary,
         boolean recovery,
         IgniteCacheExpiryPolicy expiryPlc,
-        IgniteInternalTx tx) {
+        IgniteInternalTx tx,
+        GridNearReadRepairAbstractFuture remappedFut) {
         this.ctx = ctx;
         this.keys = Collections.unmodifiableCollection(keys);
         this.readThrough = readThrough;
@@ -143,6 +145,18 @@ public abstract class GridNearReadRepairAbstractFuture extends GridFutureAdapter
         assert strategy != null;
 
         this.strategy = strategy;
+
+        if (remappedFut != null) {
+            remapCnt = remappedFut.remapCnt + 1;
+
+            listen(f -> {
+                assert !remappedFut.isDone();
+
+                remappedFut.onDone(f.result(), f.error());
+            });
+        }
+        else
+            remapCnt = 0;
 
         canRemap = topVer == null;
 
@@ -195,13 +209,6 @@ public abstract class GridNearReadRepairAbstractFuture extends GridFutureAdapter
         }
 
         this.futs = Collections.unmodifiableMap(futs);
-    }
-
-    /**
-     *
-     */
-    protected final void init() {
-        assert !futs.isEmpty();
 
         IgniteInternalTx prevTx = ctx.tm().tx(tx); // Within the original tx.
 
@@ -218,24 +225,9 @@ public abstract class GridNearReadRepairAbstractFuture extends GridFutureAdapter
     }
 
     /**
-     * @param fut Future to be notified.
-     */
-    protected final void initOnRemap(GridNearReadRepairAbstractFuture fut) {
-        remapCnt = fut.remapCnt + 1;
-
-        listen(f -> {
-            assert !fut.isDone();
-
-            fut.onDone(f.result(), f.error());
-        });
-
-        init();
-    }
-
-    /**
      * @param topVer Topology version.
      */
-    protected abstract void remap(AffinityTopologyVersion topVer);
+    protected abstract GridNearReadRepairAbstractFuture remap(AffinityTopologyVersion topVer);
 
     /**
      * Collects results of each 'get' future and prepares an overall result of the operation.

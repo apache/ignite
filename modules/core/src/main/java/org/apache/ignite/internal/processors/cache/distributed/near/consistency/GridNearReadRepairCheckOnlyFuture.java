@@ -78,7 +78,7 @@ public class GridNearReadRepairCheckOnlyFuture extends GridNearReadRepairAbstrac
         boolean needVer,
         boolean keepCacheObjects,
         IgniteInternalTx tx) {
-        super(null,
+        this(topVer,
             ctx,
             keys,
             strategy,
@@ -87,7 +87,55 @@ public class GridNearReadRepairCheckOnlyFuture extends GridNearReadRepairAbstrac
             deserializeBinary,
             recovery,
             expiryPlc,
-            tx);
+            skipVals,
+            needVer,
+            keepCacheObjects,
+            tx,
+            null);
+    }
+
+    /**
+     * @param topVer Topology version.
+     * @param ctx Cache context.
+     * @param keys Keys.
+     * @param strategy Read repair strategy.
+     * @param readThrough Read-through flag.
+     * @param taskName Task name.
+     * @param deserializeBinary Deserialize binary flag.
+     * @param recovery Partition recovery flag.
+     * @param expiryPlc Expiry policy.
+     * @param skipVals Skip values flag.
+     * @param needVer Need version flag.
+     * @param keepCacheObjects Keep cache objects flag.
+     * @param tx Transaction. Can be {@code null} in case of atomic cache.
+     * @param remappedFut Remapped future.
+     */
+    private GridNearReadRepairCheckOnlyFuture(
+        AffinityTopologyVersion topVer,
+        GridCacheContext ctx,
+        Collection<KeyCacheObject> keys,
+        ReadRepairStrategy strategy,
+        boolean readThrough,
+        String taskName,
+        boolean deserializeBinary,
+        boolean recovery,
+        IgniteCacheExpiryPolicy expiryPlc,
+        boolean skipVals,
+        boolean needVer,
+        boolean keepCacheObjects,
+        IgniteInternalTx tx,
+        GridNearReadRepairCheckOnlyFuture remappedFut) {
+        super(topVer,
+            ctx,
+            keys,
+            strategy,
+            readThrough,
+            taskName,
+            deserializeBinary,
+            recovery,
+            expiryPlc,
+            tx,
+            remappedFut);
 
         this.skipVals = skipVals;
         this.needVer = needVer;
@@ -95,8 +143,8 @@ public class GridNearReadRepairCheckOnlyFuture extends GridNearReadRepairAbstrac
     }
 
     /** {@inheritDoc} */
-    @Override protected void remap(AffinityTopologyVersion topVer) {
-        GridNearReadRepairCheckOnlyFuture fut = new GridNearReadRepairCheckOnlyFuture(
+    @Override protected GridNearReadRepairAbstractFuture remap(AffinityTopologyVersion topVer) {
+        return new GridNearReadRepairCheckOnlyFuture(
             topVer,
             ctx,
             keys,
@@ -109,9 +157,8 @@ public class GridNearReadRepairCheckOnlyFuture extends GridNearReadRepairAbstrac
             skipVals,
             needVer,
             keepCacheObjects,
-            tx);
-
-        fut.initOnRemap(this);
+            tx,
+            this);
     }
 
     /** {@inheritDoc} */
@@ -146,8 +193,6 @@ public class GridNearReadRepairCheckOnlyFuture extends GridNearReadRepairAbstrac
      * @return Future represents 1 entry's value.
      */
     public <K, V> IgniteInternalFuture<V> single() {
-        init();
-
         return chain((fut) -> {
             try {
                 final Map<K, V> map = new IgniteBiTuple<>();
@@ -174,8 +219,6 @@ public class GridNearReadRepairCheckOnlyFuture extends GridNearReadRepairAbstrac
      * @return Future represents entries map.
      */
     public <K, V> IgniteInternalFuture<Map<K, V>> multi() {
-        init();
-
         return chain((fut) -> {
             try {
                 final Map<K, V> map = U.newHashMap(keys.size());
