@@ -675,8 +675,8 @@ class FileWriteHandleImpl extends AbstractFileHandle implements FileWriteHandle 
         /** {@inheritDoc} */
         @Override public void fsync(MappedByteBuffer buf, int index, int len) throws IgniteCheckedException {
             try {
-                boolean isSync = (boolean) JDK15FSyncer.isSync.get(buf);
-                long address = (long) JDK15FSyncer.address.get(buf);
+                boolean isSync = (boolean)JDK15FSyncer.isSync.get(buf);
+                long address = (long)JDK15FSyncer.address.get(buf);
 
                 assert address % PAGE_SIZE == 0 : "Buffer's address is not aligned: " + address;
 
