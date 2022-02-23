@@ -28,7 +28,7 @@ JVM_PARAMS_GENERIC = "-server -XX:+DisableExplicitGC -XX:+AlwaysPreTouch " \
 
 
 def create_jvm_settings(heap_size=DEFAULT_HEAP, gc_settings=JVM_PARAMS_GC_G1, generic_params=JVM_PARAMS_GENERIC,
-                        opts=None, gc_dump_path=None, oom_path=None):
+                        gc_dump_path=None, oom_path=None):
     """
     Provides settings string for JVM process.
     param opts: JVM options to merge. Adds new or rewrites default values. Can be list or string.
@@ -42,9 +42,6 @@ def create_jvm_settings(heap_size=DEFAULT_HEAP, gc_settings=JVM_PARAMS_GC_G1, ge
         out_of_mem_dump = "-XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=" + oom_path
 
     as_string = f"-Xmx{heap_size} -Xms{heap_size} {gc_settings} {gc_dump} {out_of_mem_dump} {generic_params}".strip()
-
-    if opts:
-        return merge_jvm_settings(as_string, opts)
 
     return as_string.split()
 
@@ -90,7 +87,7 @@ def _to_map(params):
 
 def _remove_duplicates(params: dict):
     """Removes specific duplicates"""
-    duplicates = {"-Xmx": False, "-Xms": False}
+    duplicates = {"-Xmx": False, "-Xms": False, "-Xss": False, "-Xmn": False}
 
     for param_key in reversed(list(params.keys())):
         for dup_key, _ in duplicates.items():

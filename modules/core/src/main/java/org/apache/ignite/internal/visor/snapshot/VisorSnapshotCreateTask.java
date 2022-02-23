@@ -19,42 +19,45 @@ package org.apache.ignite.internal.visor.snapshot;
 
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSnapshot;
-import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotMXBeanImpl;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.visor.VisorJob;
-import org.apache.ignite.internal.visor.VisorOneNodeTask;
+import org.apache.ignite.lang.IgniteFuture;
 
 /**
  * @see IgniteSnapshot#createSnapshot(String)
  */
 @GridInternal
-public class VisorSnapshotCreateTask extends VisorOneNodeTask<String, String> {
+public class VisorSnapshotCreateTask extends VisorSnapshotOneNodeTask<VisorSnapshotCreateTaskArg, String> {
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Override protected VisorJob<String, String> job(String arg) {
+    @Override protected VisorJob<VisorSnapshotCreateTaskArg, String> job(VisorSnapshotCreateTaskArg arg) {
         return new VisorSnapshotCreateJob(arg, debug);
     }
 
     /** */
-    private static class VisorSnapshotCreateJob extends VisorJob<String, String> {
+    private static class VisorSnapshotCreateJob extends VisorJob<VisorSnapshotCreateTaskArg, String> {
         /** Serial version uid. */
         private static final long serialVersionUID = 0L;
 
         /**
-         * @param name Snapshot name.
+         * @param arg Snapshot create task argument.
          * @param debug Flag indicating whether debug information should be printed into node log.
          */
-        protected VisorSnapshotCreateJob(String name, boolean debug) {
-            super(name, debug);
+        protected VisorSnapshotCreateJob(VisorSnapshotCreateTaskArg arg, boolean debug) {
+            super(arg, debug);
         }
 
         /** {@inheritDoc} */
-        @Override protected String run(String name) throws IgniteException {
-            new SnapshotMXBeanImpl(ignite.context()).createSnapshot(name);
+        @Override protected String run(VisorSnapshotCreateTaskArg arg) throws IgniteException {
+            IgniteFuture<Void> fut = ignite.snapshot().createSnapshot(arg.snapshotName());
 
-            return "Snapshot operation started: " + name;
+            if (arg.sync() || fut.isDone())
+                fut.get();
+
+            return "Snapshot operation " +
+                (arg.sync() ? "completed successfully" : "started") + ": " + arg.snapshotName();
         }
     }
 }
