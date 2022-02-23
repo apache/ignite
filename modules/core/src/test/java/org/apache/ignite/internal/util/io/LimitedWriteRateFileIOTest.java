@@ -20,6 +20,7 @@ package org.apache.ignite.internal.util.io;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.channels.Channel;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.channels.WritableByteChannel;
 import java.nio.file.OpenOption;
@@ -50,8 +51,8 @@ import static org.junit.Assert.assertArrayEquals;
  */
 @RunWith(Parameterized.class)
 public class LimitedWriteRateFileIOTest extends GridCommonAbstractTest {
-    /** Test buffer length. */
-    private static final int DATA_LEN = 32 * 1024 + 2;
+    /** Estimated duration of an I/O operation. */
+    private static final int DURATION_SEC = 4;
 
     /** Temp directory name. */
     private static final String TMP_DIR_NAME = "temp";
@@ -67,18 +68,27 @@ public class LimitedWriteRateFileIOTest extends GridCommonAbstractTest {
     @Parameterized.Parameter(1)
     public int bufLen;
 
-    /** Data length. */
+    /** Flag for writing only part of the data to check the write with an offset. */
     @Parameterized.Parameter(2)
-    public int dataLen;
+    public boolean checkOffset;
+
+    /** Binary data. */
+    private byte[] data;
+
+    /** File offset. */
+    private int offset;
 
     /** Parameters. */
-    @Parameterized.Parameters(name = "rate={0}, bufLen={1}, dataLen={2}")
+    @Parameterized.Parameters(name = "rate={0}, bufLen={1}, checkOffset={2}")
     public static Iterable<Object[]> parameters() {
         List<Object[]> params = new ArrayList<>();
 
-        params.add(new Object[] {4096, 65536, DATA_LEN});
-        params.add(new Object[] {1024, 1024, 8192});
-        params.add(new Object[] {4096, 1024, DATA_LEN});
+        params.add(new Object[] {4096, 65536, true});
+        params.add(new Object[] {4096, 65536, false});
+        params.add(new Object[] {4096, 1, true});
+        params.add(new Object[] {4096, 1, false});
+        params.add(new Object[] {1, 1, true});
+        params.add(new Object[] {1, 1, false});
 
         return params;
     }
@@ -108,6 +118,14 @@ public class LimitedWriteRateFileIOTest extends GridCommonAbstractTest {
         super.beforeTest();
 
         tempFile.delete();
+
+        int len = DURATION_SEC * rate + 1;;
+        offset = checkOffset ? len : 0;
+        data = new byte[len + offset];
+
+        ThreadLocalRandom.current().nextBytes(data);
+
+        log.info("Test params: length=" + data.length + ", offset=" + offset);
     }
 
     /**
@@ -115,15 +133,13 @@ public class LimitedWriteRateFileIOTest extends GridCommonAbstractTest {
      */
     @Test
     public void testLimitedTransferTo() throws Exception {
-        ByteArrayChannel destChannel = new ByteArrayChannel(bufLen, (int)U.MB);
-        byte[] srcData = generateData(dataLen);
-        int offset = dataLen / 2;
+        WritableByteArrayChannel destChannel = new WritableByteArrayChannel(bufLen, data.length);
 
-        FileUtils.writeByteArrayToFile(tempFile, srcData);
+        FileUtils.writeByteArrayToFile(tempFile, data);
 
-        checkExecTime((src) -> src.transferTo(offset, srcData.length - offset, destChannel), offset, READ);
+        checkExecTime((src) -> src.transferTo(offset, data.length - offset, destChannel), READ);
 
-        assertArrayEquals(Arrays.copyOfRange(srcData, offset, srcData.length), destChannel.data());
+        assertArrayEquals(Arrays.copyOfRange(data, offset, data.length), destChannel.data());
     }
 
     /**
@@ -131,35 +147,21 @@ public class LimitedWriteRateFileIOTest extends GridCommonAbstractTest {
      */
     @Test
     public void testLimitedTransferFrom() throws Exception {
-        byte[] srcData = generateData(dataLen);
-        int offset = dataLen / 2;
+        checkLimitedWrite((dest) -> {
+            ReadableByteArrayChannel srcChannel =
+                new ReadableByteArrayChannel(bufLen, Arrays.copyOfRange(data, offset, data.length));
 
-        if (offset > 0)
-            FileUtils.writeByteArrayToFile(tempFile, Arrays.copyOfRange(srcData, 0, offset));
-
-        ByteArrayChannel srcChannel =
-            new ByteArrayChannel(bufLen, Arrays.copyOfRange(srcData, offset, dataLen), dataLen - offset);
-
-        checkExecTime((dest) -> dest.transferFrom(srcChannel, offset, dataLen - offset), offset, CREATE, WRITE, APPEND);
-
-        assertArrayEquals(srcData, FileUtils.readFileToByteArray(tempFile));
+            return dest.transferFrom(srcChannel, offset, data.length - offset);
+        });
     }
 
     /**
      * @throws Exception If failed.
      */
     @Test
-    public void testLimitedBytebufferWrite() throws Exception {
-        byte[] srcData = generateData(dataLen);
-        int offset = dataLen / 2;
-
-        if (offset > 0)
-            FileUtils.writeByteArrayToFile(tempFile, Arrays.copyOfRange(srcData, 0, offset));
-
-        checkExecTime((dest) -> offset == 0 ? dest.write(ByteBuffer.wrap(srcData)) :
-            dest.write(ByteBuffer.wrap(Arrays.copyOfRange(srcData, offset, dataLen)), offset), offset, CREATE, WRITE, APPEND);
-
-        assertArrayEquals(srcData, FileUtils.readFileToByteArray(tempFile));
+    public void testLimitedBufferWrite() throws Exception {
+        checkLimitedWrite((dest) -> offset == 0 ? dest.write(ByteBuffer.wrap(data)) :
+            dest.write(ByteBuffer.wrap(Arrays.copyOfRange(data, offset, data.length)), offset));
     }
 
     /**
@@ -167,41 +169,41 @@ public class LimitedWriteRateFileIOTest extends GridCommonAbstractTest {
      */
     @Test
     public void testLimitedWrite() throws Exception {
-        byte[] srcData = generateData(dataLen);
-        int offset = dataLen / 2;
+        checkLimitedWrite((dest) -> dest.write(data, offset, data.length - offset));
+    }
 
+    /**
+     * @param op I/O operation.
+     * @throws IOException if failed.
+     */
+    private void checkLimitedWrite(TestIOOperation op) throws IOException {
         if (offset > 0)
-            FileUtils.writeByteArrayToFile(tempFile, Arrays.copyOfRange(srcData, 0, offset));
+            FileUtils.writeByteArrayToFile(tempFile, Arrays.copyOfRange(data, 0, offset));
 
-        checkExecTime((dest) -> dest.write(srcData, offset, dataLen - offset), offset, CREATE, WRITE, APPEND);
+        checkExecTime(op, CREATE, WRITE, APPEND);
 
-        assertArrayEquals(srcData, FileUtils.readFileToByteArray(tempFile));
+        assertArrayEquals(data, FileUtils.readFileToByteArray(tempFile));
     }
 
-    private byte[] generateData(int len) {
-        byte[] data = new byte[len];
-
-        ThreadLocalRandom.current().nextBytes(data);
-
-        return data;
-    }
-
-    private void checkExecTime(IoFunction func, int offset, OpenOption... modes) throws IOException {
+    /**
+     * @param op I/O operation.
+     * @param modes Open modes.
+     * @throws IOException if failed.
+     */
+    private void checkExecTime(TestIOOperation op, OpenOption... modes) throws IOException {
         LimitedWriteRateFileIOFactory ioFactory =
             new LimitedWriteRateFileIOFactory(new RandomAccessFileIOFactory(), rate, rate);
 
-        int payloadLen = dataLen - offset;
-
-        try (FileIO io = ioFactory.create(tempFile, modes)) {
+        try (FileIO fileIo = ioFactory.create(tempFile, modes)) {
             long startTime = System.currentTimeMillis();
 
-            long written = func.apply(io);
+            long written = op.run(fileIo);
 
             long delta = System.currentTimeMillis() - startTime;
 
-            assertEquals(payloadLen, written);
+            assertEquals(data.length - offset, written);
 
-            long expDuration = TimeUnit.SECONDS.toMillis(payloadLen / rate);
+            long expDuration = TimeUnit.SECONDS.toMillis(DURATION_SEC);
             long min = Math.round((double)expDuration / 2);
             long max = expDuration * 2;
 
@@ -209,60 +211,16 @@ public class LimitedWriteRateFileIOTest extends GridCommonAbstractTest {
         }
     }
 
-    /** */
-    static class ByteArrayChannel implements WritableByteChannel, ReadableByteChannel {
-        /** */
-        private final byte[] data;
+    /** Byte array channel. */
+    private abstract static class ByteArrayChannel implements Channel {
+        /** Data buffer. */
+        protected byte[] data;
 
-        /** */
-        private final int destBufCapacity;
+        /** Single operation buffer capacity. */
+        protected int opBufCap;
 
-        /** */
-        private int size;
-
-        /** */
-        private int pos;
-
-        /**
-         * @param destBufCapacity Max internal buffer size.
-         */
-        public ByteArrayChannel(int destBufCapacity, int capacity) {
-            this(destBufCapacity, new byte[capacity], 0);
-        }
-
-        /**
-         * @param destBufCapacity Max internal buffer size.
-         */
-        public ByteArrayChannel(int destBufCapacity, byte[] src, int size) {
-            this.destBufCapacity = destBufCapacity;
-            this.size = size;
-
-            data = src;
-        }
-
-        /** {@inheritDoc} */
-        @Override public int write(ByteBuffer src) throws IOException {
-            int len = Math.min(src.remaining(), destBufCapacity);
-
-            src.get(data, pos, len);
-
-            size += len;
-
-            pos = size;
-
-            return len;
-        }
-
-        /** {@inheritDoc} */
-        @Override public int read(ByteBuffer dst) throws IOException {
-            int len = Math.min(Math.min(size - pos, destBufCapacity), dst.remaining());
-
-            dst.put(data, pos, len);
-
-            pos += len;
-
-            return len;
-        }
+        /** Buffer limit. */
+        protected int limit;
 
         /** {@inheritDoc} */
         @Override public boolean isOpen() {
@@ -274,21 +232,71 @@ public class LimitedWriteRateFileIOTest extends GridCommonAbstractTest {
             // No-op.
         }
 
-        /**
-         * @return Internal data buffer copy.
-         */
+        /** @return Internal data buffer copy. */
         public byte[] data() {
-            return Arrays.copyOf(data, size);
+            return Arrays.copyOf(data, limit);
         }
     }
 
-    /** I/O function.*/
-    private interface IoFunction {
+    /** */
+    private static class WritableByteArrayChannel extends ByteArrayChannel implements WritableByteChannel {
+        /**
+         * @param opBufCap Single operation buffer capacity.
+         * @param capacity Internal buffer capacity.
+         */
+        public WritableByteArrayChannel(int opBufCap, int capacity) {
+            this.opBufCap = opBufCap;
+
+            data = new byte[capacity];
+        }
+
+        /** {@inheritDoc} */
+        @Override public int write(ByteBuffer src) throws IOException {
+            int len = Math.min(src.remaining(), opBufCap);
+
+            src.get(data, limit, len);
+
+            limit += len;
+
+            return len;
+        }
+    }
+
+    /** */
+    private static class ReadableByteArrayChannel extends ByteArrayChannel implements ReadableByteChannel {
+        /** Buffer position. */
+        private int pos;
+
+        /**
+         * @param opBufCap Single operation buffer capacity.
+         * @param data Binary data to read from the channel.
+         */
+        protected ReadableByteArrayChannel(int opBufCap, byte[] data) {
+            this.opBufCap = opBufCap;
+            this.data = data;
+
+            limit = data.length;
+        }
+
+        /** {@inheritDoc} */
+        @Override public int read(ByteBuffer dst) throws IOException {
+            int len = Math.min(Math.min(limit - pos, opBufCap), dst.remaining());
+
+            dst.put(data, pos, len);
+
+            pos += len;
+
+            return len;
+        }
+    }
+
+    /** Abstract I/O operation. */
+    private interface TestIOOperation {
         /**
          * @param fileIo I/O file interface to use.
          * @return Number of written bytes.
          * @throws IOException If failed.
          */
-        long apply(FileIO fileIo) throws IOException;
+        long run(FileIO fileIo) throws IOException;
     }
 }

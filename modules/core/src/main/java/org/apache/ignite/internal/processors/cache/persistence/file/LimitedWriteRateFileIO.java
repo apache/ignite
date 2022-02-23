@@ -156,9 +156,7 @@ public class LimitedWriteRateFileIO extends FileIODecorator {
         }
     }
 
-    /**
-     *
-     */
+    /** Transfer operation. */
     protected interface TransferOperation {
         /**
          * @param pos The position within the file at which the transfer is to begin.
@@ -169,9 +167,7 @@ public class LimitedWriteRateFileIO extends FileIODecorator {
         public long run(long pos, long count) throws IOException;
     }
 
-    /**
-     *
-     */
+    /** Write operation. */
     protected interface WriteOperation {
         /**
          * @param pos The position within the file at which the transfer is to begin.

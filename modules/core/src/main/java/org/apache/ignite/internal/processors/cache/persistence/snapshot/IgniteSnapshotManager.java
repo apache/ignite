@@ -356,8 +356,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      */
     private File tmpWorkDir;
 
-    /** Factory to working with delta as file storage. */
-    private volatile LimitedWriteRateFileIOFactory limitedRateIOFactory;
+    /** I/O factory used for snapshot file operations. */
+    private volatile LimitedWriteRateFileIOFactory limitedRateIuFactory;
 
     /** File store manager to create page store for restore. */
     private volatile FilePageStoreManager storeMgr;
@@ -463,7 +463,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                                 return;
                             }
 
-                            limitedRateIOFactory.setRate(newVal);
+                            limitedRateIuFactory.setRate(newVal);
 
                             if (log.isInfoEnabled()) {
                                 log.info("The snapshot transfer rate " + (newVal == 0 ? "is not limited." :
@@ -1731,7 +1731,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         SnapshotSender snpSndr
     ) {
         AbstractSnapshotFutureTask<?> task = registerTask(snpName, new SnapshotFutureTask(cctx, srcNodeId, snpName,
-            tmpWorkDir, limitedRateIOFactory.delegate(), snpSndr, parts, withMetaStorage, locBuff));
+            tmpWorkDir, limitedRateIuFactory.delegate(), snpSndr, parts, withMetaStorage, locBuff));
 
         if (!withMetaStorage) {
             for (Integer grpId : parts.keySet()) {
@@ -1863,7 +1863,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @param ioFactory Factory to create IO interface over a page stores.
      */
     public void ioFactory(FileIOFactory ioFactory) {
-        limitedRateIOFactory = new LimitedWriteRateFileIOFactory(ioFactory, DFLT_SNAPSHOT_TRANSFER_RATE,
+        limitedRateIuFactory = new LimitedWriteRateFileIOFactory(ioFactory, DFLT_SNAPSHOT_TRANSFER_RATE,
                 IgniteSystemProperties.getInteger(SNAPSHOT_LIMITED_TRANSFER_BLOCK_SIZE, DFLT_SNAPSHOT_TRANSFER_BLOCK_SIZE));
     }
 
@@ -1871,7 +1871,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @return Factory to create IO interface over a page stores.
      */
     public FileIOFactory ioFactory() {
-        return limitedRateIOFactory;
+        return limitedRateIuFactory;
     }
 
     /**
@@ -2597,7 +2597,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                                 nodeId,
                                 snpName,
                                 tmpWorkDir,
-                                limitedRateIOFactory.delegate(),
+                                limitedRateIuFactory.delegate(),
                                 rmtSndrFactory.apply(rqId, nodeId),
                                 reqMsg0.parts()));
 
@@ -3018,7 +3018,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             try {
                 File cacheDir = U.resolveWorkDirectory(dbDir.getAbsolutePath(), cacheDirName, false);
 
-                copy(limitedRateIOFactory, ccfg, new File(cacheDir, ccfg.getName()), ccfg.length());
+                copy(limitedRateIuFactory, ccfg, new File(cacheDir, ccfg.getName()), ccfg.length());
             }
             catch (IgniteCheckedException e) {
                 throw new IgniteException(e);
@@ -3059,7 +3059,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 if (!snpPart.exists() || snpPart.delete())
                     snpPart.createNewFile();
 
-                copy(limitedRateIOFactory, part, snpPart, len);
+                copy(limitedRateIuFactory, part, snpPart, len);
 
                 if (log.isDebugEnabled()) {
                     log.debug("Partition has been snapshot [snapshotDir=" + dbDir.getAbsolutePath() +
@@ -3084,8 +3084,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             boolean encrypted = cctx.cache().isEncrypted(pair.getGroupId());
 
             FileIOFactory ioFactory = encrypted ? ((FilePageStoreManager)cctx.pageStore())
-                .encryptedFileIoFactory(IgniteSnapshotManager.this.limitedRateIOFactory, pair.getGroupId()) :
-                IgniteSnapshotManager.this.limitedRateIOFactory;
+                .encryptedFileIoFactory(IgniteSnapshotManager.this.limitedRateIuFactory, pair.getGroupId()) :
+                IgniteSnapshotManager.this.limitedRateIuFactory;
 
             try (FileIO fileIo = ioFactory.create(delta, READ);
                  FilePageStore pageStore = (FilePageStore)storeMgr.getPageStoreFactory(pair.getGroupId(), encrypted)
