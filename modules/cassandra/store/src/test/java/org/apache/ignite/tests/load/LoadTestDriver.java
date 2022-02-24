@@ -24,7 +24,7 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.cache.store.CacheStore;
 import org.apache.ignite.cache.store.cassandra.common.SystemHelper;
 import org.apache.ignite.tests.utils.TestsHelper;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.Logger;
 
 /**
  * Basic load test driver to be inherited by specific implementation for particular use-case.

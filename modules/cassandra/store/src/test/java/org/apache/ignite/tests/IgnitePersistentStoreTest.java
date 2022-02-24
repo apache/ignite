@@ -52,7 +52,8 @@ import org.apache.ignite.tests.utils.TestsHelper;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
@@ -65,7 +66,7 @@ import org.springframework.core.io.ClassPathResource;
  */
 public class IgnitePersistentStoreTest {
     /** */
-    private static final Logger LOGGER = Logger.getLogger(IgnitePersistentStoreTest.class.getName());
+    private static final Logger LOGGER = LogManager.getLogger(IgnitePersistentStoreTest.class.getName());
 
     /** */
     @BeforeClass
