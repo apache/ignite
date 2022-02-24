@@ -980,7 +980,8 @@ namespace Apache.Ignite.Core.Tests.Client
             var ex = Assert.Catch<Exception>(() =>
                 client.GetCompute().ExecuteJavaTask<object>(ComputeApiTest.EchoTask, -42)).GetBaseException();
 
-            Assert.AreEqual("x", ex.Message);
+            StringAssert.StartsWith("Remote job threw user exception", ex.Message);
+            StringAssert.Contains("at org.apache.ignite.platform.PlatformComputeEchoTask$EchoJob.execute", ex.Message);
         }
 
         /// <summary>
