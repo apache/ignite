@@ -35,6 +35,7 @@ namespace Apache.Ignite.Core.Tests.Client
     using Apache.Ignite.Core.Log;
     using Apache.Ignite.Core.Tests.Client.Cache;
     using Apache.Ignite.Core.Tests.Client.Compute;
+    using Apache.Ignite.Core.Tests.Compute;
     using NUnit.Framework;
 
     /// <summary>
@@ -976,7 +977,9 @@ namespace Apache.Ignite.Core.Tests.Client
 
             using var client = StartClient();
 
-            var ex = Assert.Catch<Exception>(() => client.GetCompute().ExecuteJavaTask<object>("foo", 0)).GetBaseException();
+            var ex = Assert.Catch<Exception>(() =>
+                client.GetCompute().ExecuteJavaTask<object>(ComputeApiTest.EchoTask, -42)).GetBaseException();
+
             Assert.AreEqual("x", ex.Message);
         }
 
