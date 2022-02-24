@@ -26,7 +26,9 @@ import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.util.BasicRateLimiter;
 
 /**
- * File I/O providing the ability to limit the transfer rate.
+ * File I/O providing the ability to limit the write rate.
+ * <p>
+ * Note: read operations are not limited, only write and transfer operations are limited.
  */
 public class LimitedWriteRateFileIO extends FileIODecorator {
     /** Transfer rate limiter. */
@@ -49,19 +51,19 @@ public class LimitedWriteRateFileIO extends FileIODecorator {
 
     /** {@inheritDoc} */
     @Override public long transferTo(long position, long count, WritableByteChannel target) throws IOException {
-        return limitedTransfer((pos, len) -> super.transferTo(pos, len, target), position, count);
+        return limitedTransfer((offset, len) -> super.transferTo(position + offset, len, target), count);
     }
 
     /** {@inheritDoc} */
     @Override public long transferFrom(ReadableByteChannel src, long position, long count) throws IOException {
-        return limitedTransfer((pos, len) -> super.transferFrom(src, pos, len), position, count);
+        return limitedTransfer((offset, len) -> super.transferFrom(src, position + offset, len), count);
     }
 
     /** {@inheritDoc} */
     @Override public int write(ByteBuffer srcBuf) throws IOException {
         int count = srcBuf.remaining();
 
-        return limitedWrite((offs, len) -> {
+        return limitedWrite((offset, len) -> {
             srcBuf.limit(srcBuf.position() + len);
 
             return super.write(srcBuf);
@@ -72,16 +74,16 @@ public class LimitedWriteRateFileIO extends FileIODecorator {
     @Override public int write(ByteBuffer srcBuf, long position) throws IOException {
         int count = srcBuf.remaining();
 
-        return limitedWrite((offs, len) -> {
+        return limitedWrite((offset, len) -> {
             srcBuf.limit(srcBuf.position() + len);
 
-            return super.write(srcBuf, position + offs);
+            return super.write(srcBuf, position + offset);
         }, count);
     }
 
     /** {@inheritDoc} */
     @Override public int write(byte[] buf, int off, int count) throws IOException {
-        return limitedWrite((offs, len) -> super.write(buf, off + offs, len), count);
+        return limitedWrite((offset, len) -> super.write(buf, off + offset, len), count);
     }
 
     /**
@@ -91,23 +93,21 @@ public class LimitedWriteRateFileIO extends FileIODecorator {
      * @throws IOException if failed.
      */
     private int limitedWrite(WriteOperation writeOp, int count) throws IOException {
-        int totalWritten = 0;
+        int pos = 0;
 
-        while (totalWritten < count) {
-            int transferCnt = Math.min(count - totalWritten, blockSize);
+        while (pos < count) {
+            int blockLen = Math.min(count - pos, blockSize);
 
-            acquire(transferCnt);
+            acquire(blockLen);
 
             int written = 0;
 
             do {
-                int len = transferCnt - written;
-
-                written += writeOp.run(totalWritten, len);
+                written += writeOp.run(pos + written, blockLen - written);
             }
-            while (written < transferCnt);
+            while (written < blockLen);
 
-            totalWritten += written;
+            pos += written;
         }
 
         return count;
@@ -115,33 +115,29 @@ public class LimitedWriteRateFileIO extends FileIODecorator {
 
     /**
      * @param transferOp Transfer operation.
-     * @param position The relative offset of the written channel.
      * @param count Number of bytes to transfer.
      * @return Number of transferred bytes.
      * @throws IOException if failed.
      */
-    private long limitedTransfer(TransferOperation transferOp, long position, long count) throws IOException {
-        long totalWritten = 0;
+    private long limitedTransfer(TransferOperation transferOp, long count) throws IOException {
+        long pos = 0;
 
-        while (totalWritten < count) {
-            long transferCnt = Math.min(count - totalWritten, blockSize);
+        while (pos < count) {
+            long blockLen = Math.min(count - pos, blockSize);
 
-            acquire((int)transferCnt);
+            acquire((int)blockLen);
 
             long written = 0;
 
             do {
-                long pos = position + totalWritten + written;
-                long len = transferCnt - written;
-
-                written += transferOp.run(pos, len);
+                written += transferOp.run(pos + written, blockLen - written);
             }
-            while (written < transferCnt);
+            while (written < blockLen);
 
-            totalWritten += written;
+            pos += written;
         }
 
-        return totalWritten;
+        return pos;
     }
 
     /**
@@ -157,24 +153,24 @@ public class LimitedWriteRateFileIO extends FileIODecorator {
     }
 
     /** Transfer operation. */
-    protected interface TransferOperation {
+    private interface TransferOperation {
         /**
-         * @param pos The position within the file at which the transfer is to begin.
-         * @param count The maximum number of bytes to be transferred.
+         * @param offset Operation offset.
+         * @param count Maximum number of bytes to be transferred.
          *
          * @return Number of bytes operated.
          */
-        public long run(long pos, long count) throws IOException;
+        public long run(long offset, long count) throws IOException;
     }
 
     /** Write operation. */
-    protected interface WriteOperation {
+    private interface WriteOperation {
         /**
-         * @param pos The position within the file at which the transfer is to begin.
-         * @param count The maximum number of bytes to be transferred.
+         * @param offset Operation offset.
+         * @param count Maximum number of bytes to be transferred.
          *
          * @return Number of bytes operated.
          */
-        public int run(int pos, int count) throws IOException;
+        public int run(int offset, int count) throws IOException;
     }
 }

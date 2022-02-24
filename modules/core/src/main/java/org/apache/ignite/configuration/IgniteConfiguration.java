@@ -231,9 +231,6 @@ public class IgniteConfiguration {
     /** Default number of threads to perform snapshot operations. The default value is <tt>4</tt>. */
     public static final int DFLT_SNAPSHOT_THREAD_POOL_SIZE = 4;
 
-    /** Default snapshot rate limit (KB/s). The value is {@code 0}, which means that file transfer rate is not limited. */
-//    public static final int DFLT_SNAPSHOT_RATE_LIMIT_KBPS = 0;
-
     /** Default value for late affinity assignment flag. */
     @Deprecated
     public static final boolean DFLT_LATE_AFF_ASSIGNMENT = true;
@@ -572,10 +569,6 @@ public class IgniteConfiguration {
 
     /** Total number of threads to perform snapshot operation. By default, the {@link #DFLT_SNAPSHOT_THREAD_POOL_SIZE} is used. */
     private int snapshotThreadPoolSize = DFLT_SNAPSHOT_THREAD_POOL_SIZE;
-
-//    // todo approximate to file block size (4kb x N)
-//    // todo >= 4k bytes
-//    private int snapshotRateLimit = DFLT_SNAPSHOT_RATE_LIMIT_KBPS;
 
     /** Active on start flag. */
     @Deprecated
@@ -3212,20 +3205,6 @@ public class IgniteConfiguration {
 
         return this;
     }
-
-//    /**
-//     * @return
-//     */
-//    public int getSnapshotMaxTransferRate() {
-//        return snapshotRateLimit;
-//    }
-//
-//    // todo bounds check
-//    public IgniteConfiguration setSnapshotMaxTransferRate(int snapshotRateLimit) {
-//        this.snapshotRateLimit = snapshotRateLimit;
-//
-//        return this;
-//    }
 
     /**
      * Gets grid warmup closure. This closure will be executed before actual grid instance start. Configuration of

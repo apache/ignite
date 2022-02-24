@@ -1038,7 +1038,6 @@ public class IgniteKernal implements IgniteEx, Externalizable {
         ackRebalanceConfiguration();
         ackIPv4StackFlagIsSet();
         ackWaitForBackupsOnShutdownPropertyIsUsed();
-        ackSnapshotConfiguration();
 
         // Ack 3-rd party licenses location.
         if (log.isInfoEnabled() && cfg.getIgniteHome() != null)
@@ -2921,28 +2920,6 @@ public class IgniteKernal implements IgniteEx, Externalizable {
                 log,
                 "Peer class loading is enabled (disable it in production for performance and " +
                     "deployment consistency reasons)");
-    }
-
-    /**
-     * Acknowledge that the snapshot configuration properties are setted correctly.
-     *
-     * @throws IgniteCheckedException If snapshot configuration validation fail.
-     */
-    private void ackSnapshotConfiguration() throws IgniteCheckedException {
-        if (cfg.isClientMode()) {
-            if (cfg.getSnapshotThreadPoolSize() != IgniteConfiguration.DFLT_SNAPSHOT_THREAD_POOL_SIZE)
-                U.warn(log, "Setting the snapshot pool size has no effect on the client mode");
-
-            if (!cfg.getSnapshotPath().equals(IgniteConfiguration.DFLT_SNAPSHOT_DIRECTORY))
-                U.warn(log, "Setting the snapshot path has no effect on the client mode");
-
-            return;
-        }
-
-        if (cfg.getSnapshotThreadPoolSize() < 1) {
-            throw new IgniteCheckedException("Snapshot thread pool size minimal allowed value is 1. " +
-                "Change IgniteConfiguration.snapshotThreadPoolSize property before next start.");
-        }
     }
 
     /**

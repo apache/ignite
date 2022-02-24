@@ -212,12 +212,12 @@ public class GridCommandHandlerPropertiesTest extends GridCommandHandlerClusterB
         int newVal = DFLT_PDS_WAL_REBALANCE_THRESHOLD * 2;
 
         assertEquals(
-            EXIT_CODE_OK,
-            execute(
-                "--property", "set",
-                "--name", HISTORICAL_REBALANCE_THRESHOLD_DMS_KEY,
-                "--val", Integer.toString(newVal)
-            )
+                EXIT_CODE_OK,
+                execute(
+                        "--property", "set",
+                        "--name", HISTORICAL_REBALANCE_THRESHOLD_DMS_KEY,
+                        "--val", Integer.toString(newVal)
+                )
         );
 
         assertDistributedPropertyEquals(HISTORICAL_REBALANCE_THRESHOLD_DMS_KEY, newVal);
