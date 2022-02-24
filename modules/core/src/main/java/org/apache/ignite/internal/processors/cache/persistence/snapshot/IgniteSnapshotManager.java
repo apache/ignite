@@ -230,10 +230,6 @@ import static org.apache.ignite.spi.systemview.view.SnapshotView.SNAPSHOT_SYS_VI
  */
 public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     implements IgniteSnapshot, PartitionsExchangeAware, MetastorageLifecycleListener, IgniteChangeGlobalStateSupport {
-    /** Skip checkpoint on node stop flag. */
-    @SystemProperty(value = "Sets the minimum block size for limited snapshot transfer")
-    public static final String SNAPSHOT_LIMITED_TRANSFER_BLOCK_SIZE = "SNAPSHOT_LIMITED_TRANSFER_BLOCK_SIZE";
-
     /** File with delta pages suffix. */
     public static final String DELTA_SUFFIX = ".delta";
 
@@ -275,6 +271,10 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
     /** Snapshot transfer rate is unlimited by default. */
     public static final long DFLT_SNAPSHOT_TRANSFER_RATE = 0L;
+
+    /** Minimum block size for limited snapshot transfer. */
+    @SystemProperty(value = "Sets the minimum block size for limited snapshot transfer")
+    public static final String SNAPSHOT_LIMITED_TRANSFER_BLOCK_SIZE = "SNAPSHOT_LIMITED_TRANSFER_BLOCK_SIZE";
 
     /** Snapshot limited transfer block size is 16 KB by default. */
     public static final int DFLT_SNAPSHOT_TRANSFER_BLOCK_SIZE = 16 * 1024;
@@ -357,7 +357,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     private File tmpWorkDir;
 
     /** I/O factory used for snapshot file operations. */
-    private volatile LimitedWriteRateFileIOFactory limitedRateIuFactory;
+    private volatile LimitedWriteRateFileIOFactory ioFactory;
 
     /** File store manager to create page store for restore. */
     private volatile FilePageStoreManager storeMgr;
@@ -463,7 +463,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                                 return;
                             }
 
-                            limitedRateIuFactory.setRate(newVal);
+                            ioFactory.setRate(newVal);
 
                             if (log.isInfoEnabled()) {
                                 log.info("The snapshot transfer rate " + (newVal == 0 ? "is not limited." :
@@ -1731,7 +1731,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         SnapshotSender snpSndr
     ) {
         AbstractSnapshotFutureTask<?> task = registerTask(snpName, new SnapshotFutureTask(cctx, srcNodeId, snpName,
-            tmpWorkDir, limitedRateIuFactory.delegate(), snpSndr, parts, withMetaStorage, locBuff));
+            tmpWorkDir, ioFactory.delegate(), snpSndr, parts, withMetaStorage, locBuff));
 
         if (!withMetaStorage) {
             for (Integer grpId : parts.keySet()) {
@@ -1863,7 +1863,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @param ioFactory Factory to create IO interface over a page stores.
      */
     public void ioFactory(FileIOFactory ioFactory) {
-        limitedRateIuFactory = new LimitedWriteRateFileIOFactory(ioFactory, DFLT_SNAPSHOT_TRANSFER_RATE,
+        this.ioFactory = new LimitedWriteRateFileIOFactory(ioFactory, DFLT_SNAPSHOT_TRANSFER_RATE,
                 IgniteSystemProperties.getInteger(SNAPSHOT_LIMITED_TRANSFER_BLOCK_SIZE, DFLT_SNAPSHOT_TRANSFER_BLOCK_SIZE));
     }
 
@@ -1871,7 +1871,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @return Factory to create IO interface over a page stores.
      */
     public FileIOFactory ioFactory() {
-        return limitedRateIuFactory;
+        return ioFactory;
     }
 
     /**
@@ -2597,7 +2597,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                                 nodeId,
                                 snpName,
                                 tmpWorkDir,
-                                limitedRateIuFactory.delegate(),
+                                ioFactory.delegate(),
                                 rmtSndrFactory.apply(rqId, nodeId),
                                 reqMsg0.parts()));
 
@@ -3018,7 +3018,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             try {
                 File cacheDir = U.resolveWorkDirectory(dbDir.getAbsolutePath(), cacheDirName, false);
 
-                copy(limitedRateIuFactory, ccfg, new File(cacheDir, ccfg.getName()), ccfg.length());
+                copy(ioFactory, ccfg, new File(cacheDir, ccfg.getName()), ccfg.length());
             }
             catch (IgniteCheckedException e) {
                 throw new IgniteException(e);
@@ -3059,7 +3059,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 if (!snpPart.exists() || snpPart.delete())
                     snpPart.createNewFile();
 
-                copy(limitedRateIuFactory, part, snpPart, len);
+                copy(ioFactory, part, snpPart, len);
 
                 if (log.isDebugEnabled()) {
                     log.debug("Partition has been snapshot [snapshotDir=" + dbDir.getAbsolutePath() +
@@ -3084,8 +3084,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             boolean encrypted = cctx.cache().isEncrypted(pair.getGroupId());
 
             FileIOFactory ioFactory = encrypted ? ((FilePageStoreManager)cctx.pageStore())
-                .encryptedFileIoFactory(IgniteSnapshotManager.this.limitedRateIuFactory, pair.getGroupId()) :
-                IgniteSnapshotManager.this.limitedRateIuFactory;
+                .encryptedFileIoFactory(IgniteSnapshotManager.this.ioFactory, pair.getGroupId()) :
+                IgniteSnapshotManager.this.ioFactory;
 
             try (FileIO fileIo = ioFactory.create(delta, READ);
                  FilePageStore pageStore = (FilePageStore)storeMgr.getPageStoreFactory(pair.getGroupId(), encrypted)
