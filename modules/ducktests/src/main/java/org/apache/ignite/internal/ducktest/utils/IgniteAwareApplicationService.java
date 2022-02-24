@@ -28,15 +28,15 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.processors.resource.GridSpringResourceContext;
 import org.apache.ignite.lang.IgniteBiTuple;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  *
  */
 public class IgniteAwareApplicationService {
     /** Logger. */
-    private static final Logger log = LoggerFactory.getLogger(IgniteAwareApplicationService.class);
+    private static final Logger log = LogManager.getLogger(IgniteAwareApplicationService.class);
 
     /** Application modes. */
     private enum IgniteServiceType {
