@@ -3009,7 +3009,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         StopNodeFailureHandler failHnd = new StopNodeFailureHandler();
         failHnd.setIgnoredFailureTypes(Collections.emptySet());
 
-        IgniteConfiguration cfg = getConfiguration(getTestIgniteInstanceName(0))
+        IgniteConfiguration cfg = optimize(getConfiguration(getTestIgniteInstanceName(0)))
             .setFailureHandler(failHnd)
             .setFailureDetectionTimeout(5_000);
 
