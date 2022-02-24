@@ -954,6 +954,33 @@ namespace Apache.Ignite.Core.Tests.Client
         }
 
         /// <summary>
+        /// Tests that server exception stack trace is included in error details when enabled.
+        /// </summary>
+        [Test]
+        public void TestSendServerExceptionStackTraceToClient()
+        {
+            var ignite = Ignition.Start(new IgniteConfiguration(TestUtils.GetTestConfiguration())
+            {
+                ClientConnectorConfiguration = new ClientConnectorConfiguration
+                {
+                    ThinClientConfiguration = new ThinClientConfiguration
+                    {
+                        SendServerExceptionStackTraceToClient = true,
+                        MaxActiveComputeTasksPerConnection = 1
+                    }
+                }
+            });
+
+            Assert.IsTrue(ignite.GetConfiguration().ClientConnectorConfiguration.ThinClientConfiguration
+                .SendServerExceptionStackTraceToClient);
+
+            using var client = StartClient();
+
+            var ex = Assert.Catch<Exception>(() => client.GetCompute().ExecuteJavaTask<object>("foo", 0)).GetBaseException();
+            Assert.AreEqual("x", ex.Message);
+        }
+
+        /// <summary>
         /// Starts the client.
         /// </summary>
         private static IIgniteClient StartClient()
