@@ -234,7 +234,6 @@ public class GridMapQueryExecutor {
             else
                 segments.set(0, parallelism);
 
-
             final Object[] params = req.parameters();
 
             final int timeout = req.timeout() > 0 || req.explicitTimeout()
