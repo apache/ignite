@@ -501,6 +501,14 @@
                                 <title>Capture Data Change API</title>
                                 <packages>org.apache.ignite.cdc*</packages>
                             </group>
+                            <group>
+                                <title>Calcite-based SQL engine</title>
+                                <packages>org.apache.ignite.calcite</packages>
+                            </group>
+                            <group>
+                                <title>Ignite-indexing SQL engine</title>
+                                <packages>org.apache.ignite.indexing</packages>
+                            </group>
                         </groups>
                         <bottom>
                             <![CDATA[
