@@ -25,6 +25,7 @@ namespace Apache.Ignite.Core.Client
     using System.Xml;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Client.Transactions;
+    using Apache.Ignite.Core.Configuration;
     using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Client;
     using Apache.Ignite.Core.Impl.Common;
@@ -63,6 +64,11 @@ namespace Apache.Ignite.Core.Client
         /// Default socket timeout.
         /// </summary>
         public static readonly TimeSpan DefaultSocketTimeout = TimeSpan.FromMilliseconds(5000);
+
+        /// <summary>
+        /// Default value for <see cref="HeartbeatInterval"/>.
+        /// </summary>
+        public static readonly TimeSpan DefaultHeartbeatInterval = TimeSpan.FromSeconds(30);
 
         /// <summary>
         /// Initializes a new instance of the <see cref="IgniteClientConfiguration"/> class.
@@ -134,6 +140,8 @@ namespace Apache.Ignite.Core.Client
 
             RetryLimit = cfg.RetryLimit;
             RetryPolicy = cfg.RetryPolicy;
+            EnableHeartbeats = cfg.EnableHeartbeats;
+            HeartbeatInterval = cfg.HeartbeatInterval;
         }
 
         /// <summary>
@@ -265,6 +273,30 @@ namespace Apache.Ignite.Core.Client
         /// Default is <c>0</c>: no limit on retries.
         /// </summary>
         public int RetryLimit { get; set; }
+
+        /// <summary>
+        /// Gets or sets a value indicating whether heartbeats are enabled.
+        /// <para />
+        /// When thin client connection is idle (no operations are performed), heartbeat messages are sent periodically
+        /// to keep the connection alive and detect potential half-open state.
+        /// <para />
+        /// See also <see cref="HeartbeatInterval"/>.
+        /// </summary>
+        public bool EnableHeartbeats { get; set; }
+
+        /// <summary>
+        /// Sets the heartbeat message interval.
+        /// <para />
+        /// Default is <see cref="DefaultHeartbeatInterval"/>.
+        /// <para />
+        /// When server-side <see cref="ClientConnectorConfiguration.IdleTimeout"/> is not zero, effective heartbeat
+        /// interval is set to <c>Min(HeartbeatInterval, IdleTimeout / 3)</c>.
+        /// <para />
+        /// When thin client connection is idle (no operations are performed), heartbeat messages are sent periodically
+        /// to keep the connection alive and detect potential half-open state.
+        /// </summary>
+        [DefaultValue(typeof(TimeSpan), "00:00:30")]
+        public TimeSpan HeartbeatInterval { get; set; } = DefaultHeartbeatInterval;
 
         /// <summary>
         /// Gets or sets custom binary processor. Internal property for tests.

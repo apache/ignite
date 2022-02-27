@@ -265,15 +265,15 @@ public class QueryUtils {
      * @param cfg Cache config.
      * @return Normalized query entities.
      */
-    public static Collection<QueryEntity> normalizeQueryEntities(Collection<QueryEntity> entities,
-        CacheConfiguration<?, ?> cfg) {
+    public static Collection<QueryEntity> normalizeQueryEntities(GridKernalContext ctx,
+        Collection<QueryEntity> entities, CacheConfiguration<?, ?> cfg) {
         Collection<QueryEntity> normalEntities = new ArrayList<>(entities.size());
 
         for (QueryEntity entity : entities) {
             if (!F.isEmpty(entity.getNotNullFields()))
                 checkNotNullAllowed(cfg);
 
-            normalEntities.add(normalizeQueryEntity(entity, cfg.isSqlEscapeAll()));
+            normalEntities.add(normalizeQueryEntity(ctx, entity, cfg.isSqlEscapeAll()));
         }
 
         return normalEntities;
@@ -287,7 +287,7 @@ public class QueryUtils {
      * @param escape Escape flag taken form configuration.
      * @return Normalized query entity.
      */
-    public static QueryEntity normalizeQueryEntity(QueryEntity entity, boolean escape) {
+    public static QueryEntity normalizeQueryEntity(GridKernalContext ctx, QueryEntity entity, boolean escape) {
         if (escape) {
             String tblName = tableName(entity);
 
@@ -315,7 +315,7 @@ public class QueryUtils {
             return entity;
         }
 
-        QueryEntity normalEntity = entity instanceof QueryEntityEx ? new QueryEntityEx() : new QueryEntity();
+        QueryEntityEx normalEntity = new QueryEntityEx();
 
         // Propagate plain properties.
         normalEntity.setKeyType(entity.getKeyType());
@@ -328,6 +328,11 @@ public class QueryUtils {
         normalEntity.setDefaultFieldValues(entity.getDefaultFieldValues());
         normalEntity.setFieldsPrecision(entity.getFieldsPrecision());
         normalEntity.setFieldsScale(entity.getFieldsScale());
+
+        if (entity instanceof QueryEntityEx) {
+            normalEntity.setPrimaryKeyInlineSize(((QueryEntityEx)entity).getPrimaryKeyInlineSize());
+            normalEntity.setAffinityKeyInlineSize(((QueryEntityEx)entity).getAffinityKeyInlineSize());
+        }
 
         // Normalize table name.
         String normalTblName = entity.getTableName();
@@ -375,6 +380,11 @@ public class QueryUtils {
         normalEntity.setIndexes(normalIdxs);
 
         validateQueryEntity(normalEntity);
+
+        if (!ctx.recoveryMode())
+            normalEntity.fillAbsentPKsWithDefaults(true);
+        else if (entity instanceof QueryEntityEx)
+            normalEntity.fillAbsentPKsWithDefaults(((QueryEntityEx)entity).fillAbsentPKsWithDefaults());
 
         return normalEntity;
     }
@@ -472,6 +482,9 @@ public class QueryUtils {
         desc.schemaName(schemaName);
 
         desc.aliases(qryEntity.getAliases());
+
+        if (qryEntity instanceof QueryEntityEx)
+            desc.setFillAbsentPKsWithDefaults(((QueryEntityEx)qryEntity).fillAbsentPKsWithDefaults());
 
         // Key and value classes still can be available if they are primitive or JDK part.
         // We need that to set correct types for _key and _val columns.
@@ -597,6 +610,13 @@ public class QueryUtils {
         }
 
         desc.typeId(valTypeId);
+
+        if (qryEntity instanceof QueryEntityEx) {
+            QueryEntityEx qe = (QueryEntityEx)qryEntity;
+
+            desc.primaryKeyInlineSize(qe.getPrimaryKeyInlineSize() != null ? qe.getPrimaryKeyInlineSize() : -1);
+            desc.affinityFieldInlineSize(qe.getAffinityKeyInlineSize() != null ? qe.getAffinityKeyInlineSize() : -1);
+        }
 
         return new QueryTypeCandidate(typeId, altTypeId, desc);
     }

@@ -211,4 +211,36 @@ public interface GridQueryTypeDescriptor {
      * @param keys Primary keys.
      */
     public void primaryKeyFields(Set<String> keys);
+
+    /**
+     * @return {@code true} if absent PK parts should be filled with defaults, {@code false} otherwise.
+     */
+    public boolean fillAbsentPKsWithDefaults();
+
+    /**
+     * Sets up fillAbsentPKsWithDefaults flag.
+     *
+     * @param fillAbsentPKsWithDefaults Flag.
+     */
+    public void setFillAbsentPKsWithDefaults(boolean fillAbsentPKsWithDefaults);
+
+    /**
+     * Gets primary key index INLINE_SIZE.
+     */
+    public int primaryKeyInlineSize();
+
+    /**
+     * Sets primary key index INLINE_SIZE.
+     */
+    public void primaryKeyInlineSize(int pkInlineSize);
+
+    /**
+     * Gets affinity fields index INLINE_SIZE.
+     */
+    public int affinityFieldInlineSize();
+
+    /**
+     * Sets affinity fields index INLINE_SIZE.
+     */
+    public void affinityFieldInlineSize(int affFieldInlineSize);
 }

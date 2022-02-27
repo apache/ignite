@@ -68,6 +68,24 @@ namespace ignite
                     /** An event type indicating that the cache entry was removed by expiration policy. */
                     EXPIRED = 3
                 };
+
+                static Type FromInt8(int8_t val)
+                {
+                    switch (val)
+                    {
+                        case CREATED:
+                        case UPDATED:
+                        case REMOVED:
+                        case EXPIRED:
+                            return static_cast<Type>(val);
+
+                        default:
+                        {
+                            IGNITE_ERROR_FORMATTED_1(IgniteError::IGNITE_ERR_BINARY,
+                                 "Unsupported CacheEntryEventType", "val", val);
+                        }
+                    }
+                }
             };
 
             /**
@@ -183,14 +201,8 @@ namespace ignite
                     this->hasOldValue = reader.TryReadObject(this->oldVal);
                     this->hasValue = reader.TryReadObject(this->val);
 
-                    int8_t intType = reader.ReadInt8();
-                    if (intType < 0 || intType > 3)
-                    {
-                        std::string errMsg = "Event type is not supported: " + common::LexicalCast<std::string>(intType);
-                        throw IgniteError(IgniteError::IGNITE_ERR_GENERIC, errMsg.c_str());
-                    }
-
-                    eventType = static_cast<CacheEntryEventType::Type>(intType);
+                    int8_t eventTypeByte = reader.ReadInt8();
+                    this->eventType = CacheEntryEventType::FromInt8(eventTypeByte);
                 }
 
                 /** Old value. */
