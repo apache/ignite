@@ -467,7 +467,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
                             if (log.isInfoEnabled()) {
                                 log.info("The snapshot transfer rate " + (newVal == 0 ? "is not limited." :
-                                    "has been changed from '" + oldVal + "' to '" + newVal + "' KB/s."));
+                                    "has been changed from '" + oldVal + "' to '" + newVal + "' bytes/sec."));
                             }
                         }
                     });

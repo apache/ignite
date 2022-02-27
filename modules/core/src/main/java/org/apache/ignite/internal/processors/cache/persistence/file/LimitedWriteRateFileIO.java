@@ -61,6 +61,11 @@ public class LimitedWriteRateFileIO extends FileIODecorator {
 
     /** {@inheritDoc} */
     @Override public int write(ByteBuffer srcBuf) throws IOException {
+        return writeFully(srcBuf);
+    }
+
+    /** {@inheritDoc} */
+    @Override public int writeFully(ByteBuffer srcBuf) throws IOException {
         int count = srcBuf.remaining();
 
         return limitedWrite((offset, len) -> {
@@ -72,6 +77,11 @@ public class LimitedWriteRateFileIO extends FileIODecorator {
 
     /** {@inheritDoc} */
     @Override public int write(ByteBuffer srcBuf, long position) throws IOException {
+        return writeFully(srcBuf, position);
+    }
+
+    /** {@inheritDoc} */
+    @Override public int writeFully(ByteBuffer srcBuf, long position) throws IOException {
         int count = srcBuf.remaining();
 
         return limitedWrite((offset, len) -> {
@@ -83,6 +93,11 @@ public class LimitedWriteRateFileIO extends FileIODecorator {
 
     /** {@inheritDoc} */
     @Override public int write(byte[] buf, int off, int count) throws IOException {
+        return writeFully(buf, off, count);
+    }
+
+    /** {@inheritDoc} */
+    @Override public int writeFully(byte[] buf, int off, int count) throws IOException {
         return limitedWrite((offset, len) -> super.write(buf, off + offset, len), count);
     }
 

@@ -119,7 +119,7 @@ public class LimitedWriteRateFileIOTest extends GridCommonAbstractTest {
 
         tempFile.delete();
 
-        int len = DURATION_SEC * rate + 1;;
+        int len = DURATION_SEC * rate + 1;
         offset = checkOffset ? len : 0;
         data = new byte[len + offset];
 
