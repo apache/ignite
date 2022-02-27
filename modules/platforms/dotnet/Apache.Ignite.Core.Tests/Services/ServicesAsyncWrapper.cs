@@ -169,13 +169,12 @@ namespace Apache.Ignite.Core.Tests.Services
             return _services.GetServiceDescriptors();
         }
 
+#pragma warning disable 618 
         /** <inheritDoc /> */
-#pragma warning disable 618
         public T GetService<T>(string name)
         {
             return _services.GetService<T>(name);
         }
-
         /** <inheritDoc /> */
         public ICollection<T> GetServices<T>(string name)
         {

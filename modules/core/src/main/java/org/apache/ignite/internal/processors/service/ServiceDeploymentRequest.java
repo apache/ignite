@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.service;
 
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.services.ServiceConfiguration;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -29,13 +30,13 @@ public class ServiceDeploymentRequest extends ServiceChangeAbstractRequest {
     private static final long serialVersionUID = 0L;
 
     /** Service configuration. */
-    private final LazyServiceConfiguration cfg;
+    private final ServiceConfiguration cfg;
 
     /**
      * @param srvcId Service id.
      * @param cfg Service configuration.
      */
-    public ServiceDeploymentRequest(@NotNull IgniteUuid srvcId, @NotNull LazyServiceConfiguration cfg) {
+    public ServiceDeploymentRequest(@NotNull IgniteUuid srvcId, @NotNull ServiceConfiguration cfg) {
         super(srvcId);
 
         this.cfg = cfg;
@@ -44,7 +45,7 @@ public class ServiceDeploymentRequest extends ServiceChangeAbstractRequest {
     /**
      * @return Service configuration.
      */
-    public LazyServiceConfiguration configuration() {
+    public ServiceConfiguration configuration() {
         return cfg;
     }
 

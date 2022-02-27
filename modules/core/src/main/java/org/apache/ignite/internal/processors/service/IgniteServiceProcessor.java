@@ -642,7 +642,7 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
      */
     private PreparedConfigurations<IgniteUuid> prepareServiceConfigurations(Collection<ServiceConfiguration> cfgs,
         IgnitePredicate<ClusterNode> dfltNodeFilter) {
-        List<LazyServiceConfiguration> cfgsCp = new ArrayList<>(cfgs.size());
+        List<ServiceConfiguration> cfgsCp = new ArrayList<>(cfgs.size());
 
         List<GridServiceDeploymentFuture<IgniteUuid>> failedFuts = null;
 
@@ -758,7 +758,7 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
 
             PreparedConfigurations<IgniteUuid> srvcCfg = prepareServiceConfigurations(cfgs, dfltNodeFilter);
 
-            List<LazyServiceConfiguration> cfgsCp = srvcCfg.cfgs;
+            List<ServiceConfiguration> cfgsCp = srvcCfg.cfgs;
 
             List<GridServiceDeploymentFuture<IgniteUuid>> failedFuts = srvcCfg.failedFuts;
 
@@ -768,7 +768,7 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
                 try {
                     Collection<ServiceChangeAbstractRequest> reqs = new ArrayList<>();
 
-                    for (LazyServiceConfiguration cfg : cfgsCp) {
+                    for (ServiceConfiguration cfg : cfgsCp) {
                         IgniteUuid srvcId = IgniteUuid.randomUuid();
 
                         GridServiceDeploymentFuture<IgniteUuid> fut = new GridServiceDeploymentFuture<>(cfg, srvcId);
@@ -1243,7 +1243,7 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
      * @param top Service topology.
      * @throws IgniteCheckedException In case of deployment errors.
      */
-    void redeploy(IgniteUuid srvcId, LazyServiceConfiguration cfg,
+    void redeploy(IgniteUuid srvcId, ServiceConfiguration cfg,
         Map<UUID, Integer> top) throws IgniteCheckedException {
         String name = cfg.getName();
         String cacheName = cfg.getCacheName();
@@ -1681,12 +1681,12 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
                 }
             }
 
-            for (LazyServiceConfiguration srvcCfg : prepCfgs.cfgs) {
-                ServiceInfo srvcInfo = new ServiceInfo(ctx.localNodeId(), IgniteUuid.randomUuid(), srvcCfg, true);
+            for (ServiceConfiguration srvcCfg : prepCfgs.cfgs) {
+                ServiceInfo serviceInfo = new ServiceInfo(ctx.localNodeId(), IgniteUuid.randomUuid(), srvcCfg, true);
 
-                srvcInfo.context(ctx);
+                serviceInfo.context(ctx);
 
-                staticServicesInfo.add(srvcInfo);
+                staticServicesInfo.add(serviceInfo);
             }
         }
 
@@ -1733,7 +1733,7 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
                         "exists : [" + "srvcId" + reqSrvcId + ", srvcTop=" + oldDesc.topologySnapshot() + ']');
                 }
                 else {
-                    LazyServiceConfiguration cfg = ((ServiceDeploymentRequest)req).configuration();
+                    ServiceConfiguration cfg = ((ServiceDeploymentRequest)req).configuration();
 
                     if (ctx.security().enabled())
                         err = checkPermissions(((ServiceDeploymentRequest)req).configuration().getName(), SERVICE_DEPLOY);
@@ -1992,11 +1992,11 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
      * @param cfg Service configuration.
      * @return Created metric registry.
      */
-    private ReadOnlyMetricRegistry createServiceMetrics(ServiceContextImpl srvcCtx, LazyServiceConfiguration cfg) {
+    private ReadOnlyMetricRegistry createServiceMetrics(ServiceContextImpl srvcCtx, ServiceConfiguration cfg) {
         MetricRegistry metricRegistry = ctx.metric().registry(serviceMetricRegistryName(srvcCtx.name()));
 
-        if (cfg.knownMtdNames() != null) {
-            for (String definedMtdName : cfg.knownMtdNames()) {
+        if (cfg instanceof LazyServiceConfiguration && ((LazyServiceConfiguration)cfg).knownMtdNames() != null) {
+            for (String definedMtdName : ((LazyServiceConfiguration)cfg).knownMtdNames()) {
                 metricRegistry.histogram(definedMtdName, DEFAULT_INVOCATION_BOUNDS,
                     DESCRIPTION_OF_INVOCATION_METRIC_PREF + '\'' + definedMtdName + "()'");
             }

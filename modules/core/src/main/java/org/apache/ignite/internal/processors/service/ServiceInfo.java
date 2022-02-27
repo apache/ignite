@@ -27,6 +27,7 @@ import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.services.Service;
+import org.apache.ignite.services.ServiceConfiguration;
 import org.apache.ignite.services.ServiceDescriptor;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -48,7 +49,7 @@ public class ServiceInfo implements ServiceDescriptor {
     private final IgniteUuid srvcId;
 
     /** Service configuration. */
-    private final LazyServiceConfiguration cfg;
+    private final ServiceConfiguration cfg;
 
     /** Statically configured flag. */
     private final boolean staticCfg;
@@ -65,7 +66,7 @@ public class ServiceInfo implements ServiceDescriptor {
      * @param srvcId Service id.
      * @param cfg Service configuration.
      */
-    public ServiceInfo(@NotNull UUID originNodeId, @NotNull IgniteUuid srvcId, @NotNull LazyServiceConfiguration cfg) {
+    public ServiceInfo(@NotNull UUID originNodeId, @NotNull IgniteUuid srvcId, @NotNull ServiceConfiguration cfg) {
         this(originNodeId, srvcId, cfg, false);
     }
 
@@ -75,7 +76,7 @@ public class ServiceInfo implements ServiceDescriptor {
      * @param cfg Service configuration.
      * @param staticCfg Statically configured flag.
      */
-    public ServiceInfo(@NotNull UUID originNodeId, @NotNull IgniteUuid srvcId, @NotNull LazyServiceConfiguration cfg,
+    public ServiceInfo(@NotNull UUID originNodeId, @NotNull IgniteUuid srvcId, @NotNull ServiceConfiguration cfg,
         boolean staticCfg) {
         this.originNodeId = originNodeId;
         this.srvcId = srvcId;
@@ -106,7 +107,7 @@ public class ServiceInfo implements ServiceDescriptor {
      *
      * @return Service configuration.
      */
-    public LazyServiceConfiguration configuration() {
+    public ServiceConfiguration configuration() {
         return cfg;
     }
 
@@ -137,7 +138,7 @@ public class ServiceInfo implements ServiceDescriptor {
             if (srvcCls != null)
                 return srvcCls;
 
-            String clsName = cfg.serviceClassName();
+            String clsName = ((LazyServiceConfiguration)cfg).serviceClassName();
 
             try {
                 srvcCls = (Class<? extends Service>)Class.forName(clsName);

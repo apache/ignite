@@ -45,7 +45,7 @@ public class ServiceInfoSelfTest {
     private IgniteUuid srvcId = IgniteUuid.randomUuid();
 
     /** Service configuration. */
-    private LazyServiceConfiguration cfg = configuration();
+    private ServiceConfiguration cfg = configuration();
 
     /** Subject under test. */
     private ServiceInfo sut = new ServiceInfo(nodeId, srvcId, cfg);
@@ -124,7 +124,7 @@ public class ServiceInfoSelfTest {
     /**
      * @return Service configuration.
      */
-    private LazyServiceConfiguration configuration() {
+    private ServiceConfiguration configuration() {
         ServiceConfiguration cfg = new ServiceConfiguration();
 
         cfg.setName("testConfig");
@@ -135,7 +135,7 @@ public class ServiceInfoSelfTest {
         cfg.setService(new TestService());
         cfg.setNodeFilter(ClusterNode::isLocal);
 
-        return new LazyServiceConfiguration(cfg, new byte[0]);
+        return cfg;
     }
 
     /**
