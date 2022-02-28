@@ -94,6 +94,9 @@ public class FileHandleManagerImpl implements FileHandleManager {
     /** Fsync delay. */
     private final long fsyncDelay;
 
+    /** FileWriteHandle factory */
+    private final FileWriteHandleFactory fileWriteHandleService;
+
     /**
      * @param cctx Context.
      * @param metrics Data storage metrics.
@@ -114,7 +117,8 @@ public class FileHandleManagerImpl implements FileHandleManager {
         WALMode mode,
         int walBufferSize,
         long maxWalSegmentSize,
-        long fsyncDelay
+        long fsyncDelay,
+        FileWriteHandleFactory fileWriteHandleFactory
     ) {
         this.cctx = cctx;
         log = cctx.logger(FileHandleManagerImpl.class);
@@ -126,6 +130,7 @@ public class FileHandleManagerImpl implements FileHandleManager {
         this.walBufferSize = walBufferSize;
         this.maxWalSegmentSize = maxWalSegmentSize;
         this.fsyncDelay = fsyncDelay;
+        this.fileWriteHandleService = fileWriteHandleFactory;
         walWriter = new WALWriter(log);
 
         if (mode != WALMode.NONE && mode != WALMode.FSYNC) {
@@ -163,7 +168,7 @@ public class FileHandleManagerImpl implements FileHandleManager {
 
         rbuf.init(position);
 
-        return new FileWriteHandleImpl(
+        return fileWriteHandleService.build(
             cctx, fileIO, rbuf, serializer, metrics, walWriter, position,
             mode, mmap, true, fsyncDelay, maxWalSegmentSize
         );
@@ -182,7 +187,7 @@ public class FileHandleManagerImpl implements FileHandleManager {
             rbuf = currentHandle().buf.reset();
 
         try {
-            return new FileWriteHandleImpl(
+            return fileWriteHandleService.build(
                 cctx, fileIO, rbuf, serializer, metrics, walWriter, 0,
                 mode, mmap, false, fsyncDelay, maxWalSegmentSize
             );
