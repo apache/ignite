@@ -35,10 +35,22 @@ import org.junit.Test;
 public class DataTypesTest extends AbstractBasicIntegrationTest {
     /** Tests UUID type. */
     @Test
-    public void testUUID(){
+    public void testUUIDWithoutIndex() {
+        testUUID(false);
+    }
+
+    /** Tests UUID type with indexed UUID field. */
+    @Test
+    public void testUUIDWithIndex() {
+        testUUID(true);
+    }
+
+    /** Tests UUID type with indexed UUID field. */
+    private void testUUID(boolean indexed) {
         try {
             executeSql("CREATE TABLE t(id INT, name VARCHAR(255), uid UUID, primary key (id))");
-//            executeSql("CREATE INDEX uuid_idx ON t (uid);");
+            if(indexed)
+                executeSql("CREATE INDEX uuid_idx ON t (uid);");
 
             executeSql("INSERT INTO t VALUES (1, 'fd10556e-fc27-4a99-b5e4-89b8344cb3ce', " +
                 "'9e120341-627f-32be-8393-58b5d655b751')");
@@ -49,10 +61,6 @@ public class DataTypesTest extends AbstractBasicIntegrationTest {
             assertQuery("SELECT * FROM t")
                 .returns(1, "fd10556e-fc27-4a99-b5e4-89b8344cb3ce", UUID.fromString("9e120341-627f-32be-8393-58b5d655b751"))
                 .returns(2, "123e4567-e89b-12d3-a456-426614174000", UUID.fromString("123e4567-e89b-12d3-a456-426614174000"))
-                .check();
-
-            assertQuery("SELECT * FROM t WHERE id < 2")
-                .returns(1, "123e4567-e89b-12d3-a456-426614174000", UUID.fromString("123e4567-e89b-12d3-a456-426614174000"))
                 .check();
 
             assertQuery("SELECT * FROM t WHERE uid < '123e4567-e89b-12d3-a456-426614174000'")

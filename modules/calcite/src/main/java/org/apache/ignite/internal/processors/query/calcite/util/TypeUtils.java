@@ -62,6 +62,7 @@ import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler;
 import org.apache.ignite.internal.processors.query.calcite.schema.ColumnDescriptor;
 import org.apache.ignite.internal.processors.query.calcite.schema.TableDescriptor;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
+import org.apache.ignite.internal.processors.query.calcite.type.UUIDType;
 import org.apache.ignite.internal.util.typedef.F;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -113,7 +114,7 @@ public class TypeUtils {
         }
 
         // Do not make a cast when we don't know specific type (ANY) of the origin node.
-        if (toType.getSqlTypeName() == SqlTypeName.ANY
+        if ((toType.getSqlTypeName() == SqlTypeName.ANY && toType.getClass() != UUIDType.class)
             || fromType.getSqlTypeName() == SqlTypeName.ANY) {
             return false;
         }
@@ -345,7 +346,7 @@ public class TypeUtils {
                 else
                     throw new IgniteException("Expected DAY-TIME interval literal");
             }
-            else if (Period.class.equals(storageType)){
+            else if (Period.class.equals(storageType)) {
                 if (literal instanceof SqlIntervalLiteral &&
                     literal.getValueAs(SqlIntervalLiteral.IntervalValue.class).getIntervalQualifier().isYearMonth())
                     internalVal = literal.getValueAs(Long.class).intValue();

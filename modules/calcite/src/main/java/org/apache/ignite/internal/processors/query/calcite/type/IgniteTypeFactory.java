@@ -162,8 +162,6 @@ public class IgniteTypeFactory extends JavaTypeFactoryImpl {
     public Type getResultClass(RelDataType type) {
         if (type instanceof JavaType)
             return ((JavaType)type).getJavaClass();
-        else if (type instanceof UUIDType)
-            return UUID.class;
         else if (type instanceof BasicSqlType || type instanceof IntervalSqlType) {
             switch (type.getSqlTypeName()) {
                 case VARCHAR:
@@ -227,6 +225,9 @@ public class IgniteTypeFactory extends JavaTypeFactoryImpl {
                     break;
             }
         }
+        else if (type instanceof UUIDType)
+            return UUID.class;
+
         switch (type.getSqlTypeName()) {
             case ROW:
                 return Object[].class; // At now
@@ -272,12 +273,9 @@ public class IgniteTypeFactory extends JavaTypeFactoryImpl {
         return super.toSql(type);
     }
 
-    /**
-     * @return UUID SQL type.
-     */
-    public UUIDType createUUIDType(){
+    /** @return UUID SQL type. */
+    public UUIDType createUUIDType() {
         return new UUIDType(true);
-//        return new IgniteTypeFactory.UUIDType(true);
     }
 
     /** {@inheritDoc} */

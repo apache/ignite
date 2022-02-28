@@ -23,7 +23,6 @@ import org.apache.calcite.sql.SqlCall;
 import org.apache.calcite.sql.SqlDataTypeSpec;
 import org.apache.calcite.sql.SqlDynamicParam;
 import org.apache.calcite.sql.SqlNode;
-import org.apache.calcite.sql.SqlNodeList;
 import org.apache.calcite.sql.SqlUserDefinedTypeNameSpec;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.sql.parser.SqlParserPos;
@@ -95,17 +94,6 @@ public class IgniteTypeCoercion extends TypeCoercionImpl {
             return type2;
 
         return super.commonTypeForBinaryComparison(type1, type2);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected boolean coerceColumnType(
-        SqlValidatorScope scope,
-        SqlNodeList nodeList,
-        int idx,
-        RelDataType targetType)
-    {
-        // TODO UUID support.
-        return super.coerceColumnType(scope, nodeList, idx, targetType);
     }
 
     /** {@inheritDoc} */
