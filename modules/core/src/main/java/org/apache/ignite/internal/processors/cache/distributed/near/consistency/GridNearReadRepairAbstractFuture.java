@@ -29,6 +29,7 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.CacheEntryVersion;
 import org.apache.ignite.cache.ReadRepairStrategy;
 import org.apache.ignite.cluster.ClusterNode;
@@ -340,6 +341,7 @@ public abstract class GridNearReadRepairAbstractFuture extends GridFutureAdapter
         boolean includeSensitive = S.includeSensitive();
 
         Map<KeyCacheObject, Object> sensitiveKeyMap = new HashMap<>();
+        Map<ByteArrayWrapper, Object> sensitiveValMap = new HashMap<>();
 
         Map<Object, CacheConsistencyViolationEvent.EntriesInfo> entries = new HashMap<>();
 
@@ -360,7 +362,7 @@ public abstract class GridNearReadRepairAbstractFuture extends GridFutureAdapter
                     EntryGetResult res = fut.result().get(key);
                     CacheEntryVersion ver = res != null ? res.version() : null;
 
-                    Object val = sensitiveValue(includeSensitive, res);
+                    Object val = sensitiveValue(includeSensitive, res, sensitiveValMap);
 
                     boolean primary = primaries.get(key).equals(fut.affNode());
                     boolean correct = fixedEntries != null &&
@@ -381,7 +383,7 @@ public abstract class GridNearReadRepairAbstractFuture extends GridFutureAdapter
 
             for (Map.Entry<KeyCacheObject, EntryGetResult> entry : fixedEntries.entrySet()) {
                 Object key = sensitiveKeyMap.get(entry.getKey());
-                Object val = sensitiveValue(includeSensitive, entry.getValue());
+                Object val = sensitiveValue(includeSensitive, entry.getValue(), sensitiveValMap);
 
                 fixed.put(key, val);
             }
@@ -399,12 +401,25 @@ public abstract class GridNearReadRepairAbstractFuture extends GridFutureAdapter
     /**
      *
      */
-    private Object sensitiveValue(boolean includeSensitive, EntryGetResult res) {
-        return includeSensitive ?
-            res != null ?
-                ctx.unwrapBinaryIfNeeded(res.value(), !deserializeBinary, false, null) :
-                null :
-            "[HIDDEN_VALUE]";
+    private Object sensitiveValue(boolean includeSensitive, EntryGetResult res,
+        Map<ByteArrayWrapper, Object> sensitiveValMap) {
+        if (res != null) {
+            CacheObject val = res.value();
+
+            try {
+                ByteArrayWrapper wrapped = new ByteArrayWrapper(val.valueBytes(ctx.cacheObjectContext()));
+
+                return sensitiveValMap.computeIfAbsent(wrapped, w ->
+                    includeSensitive ?
+                        ctx.unwrapBinaryIfNeeded(val, !deserializeBinary, false, null) :
+                        "[HIDDEN_VALUE#" + UUID.randomUUID() + "]");
+            }
+            catch (IgniteCheckedException e) {
+                throw new IgniteException("Failed to unmarshall object.", e);
+            }
+        }
+        else
+            return null;
     }
 
     /**
@@ -485,6 +500,29 @@ public abstract class GridNearReadRepairAbstractFuture extends GridFutureAdapter
         /** {@inheritDoc} */
         @Override public boolean isCorrect() {
             return correct;
+        }
+    }
+
+    /**
+     *
+     */
+    protected static final class ByteArrayWrapper {
+        /** Array. */
+        final byte[] arr;
+
+        /** */
+        public ByteArrayWrapper(byte[] arr) {
+            this.arr = arr;
+        }
+
+        /** */
+        @Override public boolean equals(Object o) {
+            return Arrays.equals(arr, ((ByteArrayWrapper)o).arr);
+        }
+
+        /** */
+        @Override public int hashCode() {
+            return Arrays.hashCode(arr);
         }
     }
 }

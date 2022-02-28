@@ -150,7 +150,7 @@ public class GridCommandHandlerConsistencyTest extends GridCommandHandlerCluster
 
         LogListener lsnrUnmaskedKey = matches("Key: 0 (cache: ").build(); // Unmasked key.
         LogListener lsnrMaskedKey = matches("Key: [HIDDEN_KEY#").build(); // Masked key.
-        LogListener lsnrMaskedVal = matches("Value: [HIDDEN_VALUE]").build(); // Masked value.
+        LogListener lsnrMaskedVal = matches("Value: [HIDDEN_VALUE#").build(); // Masked value.
 
         listeningLog.registerListener(lsnrUnmaskedKey);
         listeningLog.registerListener(lsnrMaskedKey);

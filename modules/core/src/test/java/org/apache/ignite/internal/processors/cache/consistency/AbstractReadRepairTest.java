@@ -27,6 +27,7 @@ import java.util.Map;
 import java.util.TreeMap;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import org.apache.ignite.Ignite;
@@ -77,7 +78,7 @@ public abstract class AbstractReadRepairTest extends GridCommonAbstractTest {
     private static final ConcurrentLinkedDeque<CacheConsistencyViolationEvent> evtDeq = new ConcurrentLinkedDeque<>();
 
     /** Key. */
-    protected static int iterableKey;
+    private static final AtomicInteger iterableKey = new AtomicInteger();
 
     /** Backups count. */
     protected Integer backupsCount() {
@@ -140,7 +141,7 @@ public abstract class AbstractReadRepairTest extends GridCommonAbstractTest {
     @Override protected void afterTestsStopped() throws Exception {
         super.afterTestsStopped();
 
-        log.info("Checked " + iterableKey + " keys");
+        log.info("Checked " + iterableKey.get() + " keys");
 
         stopAllGrids();
 
@@ -279,9 +280,11 @@ public abstract class AbstractReadRepairTest extends GridCommonAbstractTest {
 
             try {
                 for (int j = 0; j < cnt; j++) {
-                    InconsistentMapping res = setDifferentValuesForSameKey(++iterableKey, misses, nulls, strategy);
+                    int curKey = iterableKey.incrementAndGet();
 
-                    results.put(iterableKey, res);
+                    InconsistentMapping res = setDifferentValuesForSameKey(curKey, misses, nulls, strategy);
+
+                    results.put(curKey, res);
                 }
 
                 for (Ignite node : G.allGrids()) { // Check that cache filled properly.
