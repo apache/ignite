@@ -671,7 +671,7 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
                     String[] knownSvcMdtNames = cfg instanceof PlatformServiceConfiguration ?
                         ((PlatformServiceConfiguration)cfg).mtdNames() : null;
 
-                    cfgsCp.add(new LazyServiceConfiguration(cfg, srvcBytes).knownMtdNames(knownSvcMdtNames));
+                    cfgsCp.add(new LazyServiceConfiguration(cfg, srvcBytes).platformMtdNames(knownSvcMdtNames));
                 }
                 catch (Exception e) {
                     U.error(log, "Failed to marshal service with configured marshaller " +
@@ -1995,8 +1995,8 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
     private ReadOnlyMetricRegistry createServiceMetrics(ServiceContextImpl srvcCtx, ServiceConfiguration cfg) {
         MetricRegistry metricRegistry = ctx.metric().registry(serviceMetricRegistryName(srvcCtx.name()));
 
-        if (cfg instanceof LazyServiceConfiguration && ((LazyServiceConfiguration)cfg).knownMtdNames() != null) {
-            for (String definedMtdName : ((LazyServiceConfiguration)cfg).knownMtdNames()) {
+        if (cfg instanceof LazyServiceConfiguration && ((LazyServiceConfiguration)cfg).platformMtdNames() != null) {
+            for (String definedMtdName : ((LazyServiceConfiguration)cfg).platformMtdNames()) {
                 metricRegistry.histogram(definedMtdName, DEFAULT_INVOCATION_BOUNDS,
                     DESCRIPTION_OF_INVOCATION_METRIC_PREF + '\'' + definedMtdName + "()'");
             }

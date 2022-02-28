@@ -40,9 +40,9 @@ public class LazyServiceConfiguration extends ServiceConfiguration {
     /** */
     private byte[] srvcBytes;
 
-    /** Known service methods to build service statistics. */
+    /** Names of platform service methods to build service statistics. */
     @GridToStringExclude
-    private String[] knownMtdNames;
+    private String[] platformMtdNames;
 
     /**
      * Default constructor.
@@ -125,15 +125,15 @@ public class LazyServiceConfiguration extends ServiceConfiguration {
     }
 
     /** */
-    LazyServiceConfiguration knownMtdNames(String[] knownMtdNames) {
-        this.knownMtdNames = knownMtdNames;
+    LazyServiceConfiguration platformMtdNames(String[] platformMtdNames) {
+        this.platformMtdNames = platformMtdNames;
 
         return this;
     }
 
     /** @return Names of known service methods. */
-    String[] knownMtdNames() {
-        return knownMtdNames;
+    String[] platformMtdNames() {
+        return platformMtdNames;
     }
 
     /** {@inheritDoc} */
