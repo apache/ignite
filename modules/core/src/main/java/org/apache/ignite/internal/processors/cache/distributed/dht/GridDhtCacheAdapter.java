@@ -1081,7 +1081,11 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
      * @param srcNodeId The Id of a node that sends original ttl request.
      * @param incomingReq Original ttl request.
      */
-    private void sendTtlUpdateRequest(UUID srcNodeId, GridCacheTtlUpdateRequest incomingReq) {
+    private void sendTtlUpdateRequest(
+        UUID srcNodeId,
+        GridCacheTtlUpdateRequest incomingReq,
+        Map<KeyCacheObject, Collection<UUID>> readersMap
+    ) {
         ctx.closures().runLocalSafe(new GridPlainRunnable() {
             @SuppressWarnings({"ForLoopReplaceableByForEach"})
             @Override public void run() {
@@ -1115,16 +1119,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
                         req.addEntry(key, incomingReq.version(i));
                     }
 
-                    GridDhtCacheEntry entry = ctx.dht().entryExx(key, incomingReq.topologyVersion());
-
-                    Collection<UUID> readers = null;
-
-                    try {
-                        readers = entry.readers();
-                    }
-                    catch (GridCacheEntryRemovedException e) {
-                        U.error(log, "Failed to send TTL update request.", e);
-                    }
+                    Collection<UUID> readers = readersMap.get(key);
 
                     for (UUID reader : readers) {
                         // There's no need to send and update ttl request to the node that send us the initial
@@ -1169,8 +1164,10 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
      * @param req Request.
      */
     private void processTtlUpdateRequest(UUID srcNodeId, GridCacheTtlUpdateRequest req) {
+        Map<KeyCacheObject, Collection<UUID>> readersMap = null;
+
         if (req.keys() != null)
-            updateTtl(this, req.keys(), req.versions(), req.ttl());
+            readersMap = updateTtl(this, req.keys(), req.versions(), req.ttl());
 
         if (req.nearKeys() != null) {
             GridNearCacheAdapter<K, V> near = near();
@@ -1180,7 +1177,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
             updateTtl(near, req.nearKeys(), req.nearVersions(), req.ttl());
         }
 
-        sendTtlUpdateRequest(srcNodeId, req);
+        sendTtlUpdateRequest(srcNodeId, req, readersMap);
     }
 
     /**
@@ -1189,7 +1186,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
      * @param vers Entries versions.
      * @param ttl TTL.
      */
-    private void updateTtl(GridCacheAdapter<K, V> cache,
+    private Map<KeyCacheObject, Collection<UUID>> updateTtl(GridCacheAdapter<K, V> cache,
         List<KeyCacheObject> keys,
         List<GridCacheVersion> vers,
         long ttl) {
@@ -1197,6 +1194,8 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
         assert keys.size() == vers.size();
 
         int size = keys.size();
+        boolean dhtCache = cache instanceof GridDhtCacheAdapter;
+        Map<KeyCacheObject, Collection<UUID>> readers = dhtCache ? new HashMap<>() : Collections.emptyMap();
 
         for (int i = 0; i < size; i++) {
             try {
@@ -1210,6 +1209,9 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
                             entry.unswap(false);
 
                             entry.updateTtl(vers.get(i), ttl);
+
+                            if (dhtCache)
+                                readers.put(keys.get(i), ((GridDhtCacheEntry)entry).readers());
 
                             break;
                         }
@@ -1234,6 +1236,8 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
                 log.error("Failed to unswap entry.", e);
             }
         }
+
+        return readers;
     }
 
     /** {@inheritDoc} */
