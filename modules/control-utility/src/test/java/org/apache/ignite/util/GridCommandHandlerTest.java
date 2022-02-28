@@ -82,8 +82,6 @@ import org.apache.ignite.internal.client.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.commandline.CommandHandler;
 import org.apache.ignite.internal.commandline.cache.argument.FindAndDeleteGarbageArg;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
-import org.apache.ignite.internal.pagemem.store.PageStore;
-import org.apache.ignite.internal.pagemem.store.PageStoreCollection;
 import org.apache.ignite.internal.processors.cache.ClusterStateTestUtils;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
@@ -3031,11 +3029,6 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         // Set transfer rate to unlimited.
         assertEquals(EXIT_CODE_OK, execute("--property", "set", "--name", SNAPSHOT_TRANSFER_RATE_DMS_KEY, "--val", "0"));
-
-        long totalPartsSize = ((PageStoreCollection)ignite.context().cache().context().pageStore())
-            .getStores(CU.cacheId(DEFAULT_CACHE_NAME)).stream().mapToLong(PageStore::size).sum();
-
-        assertTrue(totalPartsSize > TimeUnit.MILLISECONDS.toSeconds(getTestTimeout()));
 
         snpFut.get(getTestTimeout() / 2);
     }
