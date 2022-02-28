@@ -2605,18 +2605,4 @@ public final class GridTestUtils {
     public static void suppressException(RunnableX runnableX) {
         runnableX.run();
     }
-
-    /**
-     * Matcher to verify size of the collection.
-     *
-     * @param size Required size.
-     * @return {@code true} in case collection is not null and has an exactly the same size.
-     */
-    public static <T extends Collection<?>> Matcher<T> hasSize(int size) {
-        return new CustomMatcher<T>("should be non empty with size=" + size) {
-            @Override public boolean matches(Object item) {
-                return item instanceof Collection && ((Collection<?>)item).size() == size;
-            }
-        };
-    }
 }

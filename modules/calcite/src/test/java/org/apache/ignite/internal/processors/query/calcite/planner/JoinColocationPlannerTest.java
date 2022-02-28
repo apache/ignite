@@ -30,7 +30,7 @@ import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribut
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.junit.Test;
 
-import static org.apache.ignite.testframework.GridTestUtils.hasSize;
+import static org.apache.ignite.internal.processors.query.calcite.TestUtils.hasSize;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.CoreMatchers.is;
