@@ -23,13 +23,12 @@ import org.apache.ignite.internal.processors.cache.verify.IdleVerifyResultV2;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.future.IgniteFutureImpl;
 import org.apache.ignite.internal.visor.VisorJob;
-import org.apache.ignite.internal.visor.VisorOneNodeTask;
 
 /**
  * @see IgniteSnapshotManager#checkSnapshot(String)
  */
 @GridInternal
-public class VisorSnapshotCheckTask extends VisorOneNodeTask<String, IdleVerifyResultV2> {
+public class VisorSnapshotCheckTask extends VisorSnapshotOneNodeTask<String, IdleVerifyResultV2> {
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;
 

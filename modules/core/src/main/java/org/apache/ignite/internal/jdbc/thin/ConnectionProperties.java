@@ -560,14 +560,14 @@ public interface ConnectionProperties {
     public void setKeepBinary(boolean keepBinary);
 
     /**
-     * @return {@code True} if experimental query engine is enabled for a connection.
+     * @return SQL query engine name to use by a connection.
      */
-    public boolean isUseExperimentalQueryEngine();
+    public String getQueryEngine();
 
     /**
-     * Sets use experimental query engine flag.
+     * Sets SQL query engine for a connection.
      *
-     * @param useExperimentalQueryEngine {@code True} if experimental query engine is enabled for a connection.
+     * @param qryEngine SQL Query engine name.
      */
-    public void setUseExperimentalQueryEngine(boolean useExperimentalQueryEngine);
+    public void setQueryEngine(String qryEngine);
 }

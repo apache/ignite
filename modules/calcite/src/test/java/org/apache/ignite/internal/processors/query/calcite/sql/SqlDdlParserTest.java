@@ -62,7 +62,7 @@ public class SqlDdlParserTest extends GridCommonAbstractTest {
      */
     @Test
     public void test() throws SqlParseException {
-        String query = "create table test (e as UUID)";
+        String query = "create table test (e UUID)";
 
         SqlNode node = parse(query);
     }

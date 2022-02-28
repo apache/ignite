@@ -84,7 +84,9 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.topology.Evic
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.PartitionEvictionOrderTest;
 import org.apache.ignite.internal.processors.cache.persistence.defragmentation.LinkMapTest;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.ClockPageReplacementFlagsTest;
+import org.apache.ignite.internal.processors.cache.persistence.pagemem.ExponentialBackoffTest;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PagePoolTest;
+import org.apache.ignite.internal.processors.cache.persistence.pagemem.ProgressSpeedCalculationTest;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.SegmentedLruPageListTest;
 import org.apache.ignite.internal.processors.cache.query.continuous.DiscoveryDataDeserializationFailureHanderTest;
 import org.apache.ignite.internal.processors.cache.transactions.AtomicOperationsInTxTest;
@@ -329,7 +331,9 @@ import org.junit.runners.Suite;
     RemoveAllDeadlockTest.class,
 
     NoopCheckpointSpiLoggingTest.class,
-    JvmConfigurationSuggestionsTest.class
+    JvmConfigurationSuggestionsTest.class,
+    ExponentialBackoffTest.class,
+    ProgressSpeedCalculationTest.class
 })
 public class IgniteBasicTestSuite {
 }

@@ -38,7 +38,6 @@ import org.apache.ignite.cache.query.BulkLoadContextCursor;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.QueryCancelledException;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.internal.GridComponent;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteVersionUtils;
 import org.apache.ignite.internal.ThinProtocolFeature;
@@ -67,8 +66,6 @@ import org.apache.ignite.internal.processors.odbc.SqlListenerUtils;
 import org.apache.ignite.internal.processors.query.GridQueryCancel;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.NestedTxMode;
-import org.apache.ignite.internal.processors.query.QueryContext;
-import org.apache.ignite.internal.processors.query.QueryEngine;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.SqlClientContext;
 import org.apache.ignite.internal.sql.optimizer.affinity.PartitionResult;
@@ -167,9 +164,6 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
     /** Register that keeps non-cancelled requests. */
     private Map<Long, JdbcQueryDescriptor> reqRegister = new HashMap<>();
 
-    /** Experimental query engine. */
-    private QueryEngine experimentalQueryEngine;
-
     /**
      * Constructor.
      * @param busyLock Shutdown latch.
@@ -182,7 +176,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
      * @param autoCloseCursors Flag to automatically close server cursors.
      * @param lazy Lazy query execution flag.
      * @param skipReducerOnUpdate Skip reducer on update flag.
-     * @param useExperimentalQueryEngine Enable experimental query engine.
+     * @param qryEngine Name of SQL query engine to use.
      * @param dataPageScanEnabled Enable scan data page mode.
      * @param updateBatchSize Size of internal batch for DML queries.
      * @param protocolVer Protocol version.
@@ -199,7 +193,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
         boolean autoCloseCursors,
         boolean lazy,
         boolean skipReducerOnUpdate,
-        boolean useExperimentalQueryEngine,
+        @Nullable String qryEngine,
         NestedTxMode nestedTxMode,
         @Nullable Boolean dataPageScanEnabled,
         @Nullable Integer updateBatchSize,
@@ -227,7 +221,8 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
             lazy,
             skipReducerOnUpdate,
             dataPageScanEnabled,
-            updateBatchSize
+            updateBatchSize,
+            qryEngine
         );
 
         this.busyLock = busyLock;
@@ -235,17 +230,6 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
         this.autoCloseCursors = autoCloseCursors;
         this.nestedTxMode = nestedTxMode;
         this.protocolVer = protocolVer;
-
-        if (useExperimentalQueryEngine) {
-            for (GridComponent cmp : connCtx.kernalContext().components()) {
-                if (!(cmp instanceof QueryEngine))
-                    continue;
-
-                experimentalQueryEngine = (QueryEngine)cmp;
-
-                break;
-            }
-        }
 
         log = connCtx.kernalContext().log(getClass());
 
@@ -576,7 +560,6 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
      * @param req Execute query request.
      * @return Response.
      */
-    @SuppressWarnings("unchecked")
     private JdbcResponse executeQuery(JdbcQueryExecuteRequest req) {
         GridQueryCancel cancel = null;
 
@@ -768,11 +751,6 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
 
     /** */
     private List<FieldsQueryCursor<List<?>>> querySqlFields(SqlFieldsQueryEx qry, GridQueryCancel cancel) {
-        if (experimentalQueryEngine != null) {
-            return experimentalQueryEngine.query(QueryContext.of(qry, cliCtx, cancel), qry.getSchema(),
-                qry.getSql(), qry.getArgs());
-        }
-
         return connCtx.kernalContext().query().querySqlFields(null, qry,
             cliCtx, true, protocolVer.compareTo(VER_2_3_0) < 0, cancel);
     }

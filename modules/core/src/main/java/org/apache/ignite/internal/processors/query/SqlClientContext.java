@@ -64,6 +64,9 @@ public class SqlClientContext implements AutoCloseable {
     /** Update internal batch size. */
     private final @Nullable Integer updateBatchSize;
 
+    /** Name of the SQL query engine to use. */
+    private final @Nullable String qryEngine;
+
     /** Monitor for stream operations. */
     private final Object muxStreamer = new Object();
 
@@ -109,13 +112,20 @@ public class SqlClientContext implements AutoCloseable {
      * @param skipReducerOnUpdate Skip reducer on update flag.
      * @param dataPageScanEnabled Enable scan data page mode.
      * @param updateBatchSize Size of internal batch for DML queries.
+     * @param qryEngine Name of the SQL engine to use.
      */
-    public SqlClientContext(GridKernalContext ctx, Factory<GridWorker> orderedBatchWorkerFactory,
-        boolean distributedJoins, boolean enforceJoinOrder,
-        boolean collocated, boolean replicatedOnly, boolean lazy, boolean skipReducerOnUpdate,
+    public SqlClientContext(GridKernalContext ctx,
+        Factory<GridWorker> orderedBatchWorkerFactory,
+        boolean distributedJoins,
+        boolean enforceJoinOrder,
+        boolean collocated,
+        boolean replicatedOnly,
+        boolean lazy,
+        boolean skipReducerOnUpdate,
         @Nullable Boolean dataPageScanEnabled,
-        @Nullable Integer updateBatchSize
-        ) {
+        @Nullable Integer updateBatchSize,
+        @Nullable String qryEngine
+    ) {
         this.ctx = ctx;
         this.orderedBatchWorkerFactory = orderedBatchWorkerFactory;
         this.distributedJoins = distributedJoins;
@@ -126,6 +136,7 @@ public class SqlClientContext implements AutoCloseable {
         this.skipReducerOnUpdate = skipReducerOnUpdate;
         this.dataPageScanEnabled = dataPageScanEnabled;
         this.updateBatchSize = updateBatchSize;
+        this.qryEngine = qryEngine;
 
         log = ctx.log(SqlClientContext.class.getName());
     }
@@ -240,6 +251,13 @@ public class SqlClientContext implements AutoCloseable {
      */
     public @Nullable Integer updateBatchSize() {
         return updateBatchSize;
+    }
+
+    /**
+     * @return Name of the SQL query engine to use.
+     */
+    public @Nullable String queryEngine() {
+        return qryEngine;
     }
 
     /**
