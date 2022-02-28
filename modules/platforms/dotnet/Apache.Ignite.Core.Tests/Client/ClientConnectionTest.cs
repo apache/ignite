@@ -35,6 +35,7 @@ namespace Apache.Ignite.Core.Tests.Client
     using Apache.Ignite.Core.Log;
     using Apache.Ignite.Core.Tests.Client.Cache;
     using Apache.Ignite.Core.Tests.Client.Compute;
+    using Apache.Ignite.Core.Tests.Compute;
     using NUnit.Framework;
 
     /// <summary>
@@ -951,6 +952,36 @@ namespace Apache.Ignite.Core.Tests.Client
             {
                 Assert.AreEqual(1, client.GetCluster().GetNodes().Count);
             }
+        }
+
+        /// <summary>
+        /// Tests that server exception stack trace is included in error details when enabled.
+        /// </summary>
+        [Test]
+        public void TestSendServerExceptionStackTraceToClient()
+        {
+            var ignite = Ignition.Start(new IgniteConfiguration(TestUtils.GetTestConfiguration())
+            {
+                ClientConnectorConfiguration = new ClientConnectorConfiguration
+                {
+                    ThinClientConfiguration = new ThinClientConfiguration
+                    {
+                        SendServerExceptionStackTraceToClient = true,
+                        MaxActiveComputeTasksPerConnection = 1
+                    }
+                }
+            });
+
+            Assert.IsTrue(ignite.GetConfiguration().ClientConnectorConfiguration.ThinClientConfiguration
+                .SendServerExceptionStackTraceToClient);
+
+            using var client = StartClient();
+
+            var ex = Assert.Catch<Exception>(() =>
+                client.GetCompute().ExecuteJavaTask<object>(ComputeApiTest.EchoTask, -42)).GetBaseException();
+
+            StringAssert.StartsWith("Remote job threw user exception", ex.Message);
+            StringAssert.Contains("at org.apache.ignite.platform.PlatformComputeEchoTask$EchoJob.execute", ex.Message);
         }
 
         /// <summary>

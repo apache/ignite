@@ -1579,6 +1579,11 @@
                                             <xs:documentation>Active compute tasks per connection limit. Or 0 if compute grid functionality is disabled for thin clients.</xs:documentation>
                                         </xs:annotation>
                                     </xs:attribute>
+                                    <xs:attribute name="sendServerExceptionStackTraceToClient" type="xs:boolean">
+                                        <xs:annotation>
+                                            <xs:documentation>Whether to send full server exception stack trace to clients.</xs:documentation>
+                                        </xs:annotation>
+                                    </xs:attribute>
                                 </xs:complexType>
                             </xs:element>
                         </xs:all>
