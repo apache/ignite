@@ -152,7 +152,7 @@ public interface IgniteTable extends TranslatableTable {
     /**
      * Returns index rebuild flag.
      *
-     * @param {@code True} if index rebuild in progress.
+     * @return {@code True} if index rebuild in progress.
      */
     boolean isIndexRebuildInProgress();
 }

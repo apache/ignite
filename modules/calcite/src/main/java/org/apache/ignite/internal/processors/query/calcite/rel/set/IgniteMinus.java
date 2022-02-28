@@ -41,7 +41,7 @@ public abstract class IgniteMinus extends Minus implements IgniteSetOp {
         super(cluster, traits, inputs, all);
     }
 
-    /** {@inheritDoc} */
+    /** */
     protected IgniteMinus(RelInput input) {
         super(TraitUtils.changeTraits(input, IgniteConvention.INSTANCE));
     }

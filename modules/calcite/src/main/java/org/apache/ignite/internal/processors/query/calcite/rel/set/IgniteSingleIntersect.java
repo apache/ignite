@@ -30,7 +30,7 @@ import org.apache.ignite.internal.processors.query.calcite.util.Commons;
  * Physical node for INTERSECT operator which inputs satisfy SINGLE distribution.
  */
 public class IgniteSingleIntersect extends IgniteIntersect implements IgniteSingleSetOp {
-    /** {@inheritDoc} */
+    /** */
     public IgniteSingleIntersect(
         RelOptCluster cluster,
         RelTraitSet traitSet,

@@ -39,7 +39,7 @@ import static org.apache.ignite.internal.processors.query.calcite.trait.TraitUti
  *
  */
 public abstract class IgniteAggregate extends Aggregate implements IgniteRel {
-    /** {@inheritDoc} */
+    /** */
     protected IgniteAggregate(
         RelOptCluster cluster,
         RelTraitSet traitSet,
@@ -51,7 +51,7 @@ public abstract class IgniteAggregate extends Aggregate implements IgniteRel {
         super(cluster, traitSet, ImmutableList.of(), input, groupSet, groupSets, aggCalls);
     }
 
-    /** {@inheritDoc} */
+    /** */
     protected IgniteAggregate(RelInput input) {
         super(changeTraits(input, IgniteConvention.INSTANCE));
     }
