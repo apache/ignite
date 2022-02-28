@@ -29,9 +29,6 @@ public class AttributeNames {
     /** Paired connection. */
     private final String pairedConn;
 
-    /** Shmem port. */
-    private final String shmemPort;
-
     /** Addresses. */
     private final String addrs;
 
@@ -49,7 +46,6 @@ public class AttributeNames {
 
     /**
      * @param pairedConn Paired connection.
-     * @param shmemPort Shmem port.
      * @param addrs Addresses.
      * @param hostNames Host names.
      * @param extAttrs Externalizable attributes.
@@ -58,14 +54,12 @@ public class AttributeNames {
      */
     public AttributeNames(
         String pairedConn,
-        String shmemPort,
         String addrs,
         String hostNames,
         String extAttrs,
         String port,
         String forceClientServerConnections) {
         this.pairedConn = pairedConn;
-        this.shmemPort = shmemPort;
         this.addrs = addrs;
         this.hostNames = hostNames;
         this.extAttrs = extAttrs;
@@ -78,13 +72,6 @@ public class AttributeNames {
      */
     public String pairedConnection() {
         return pairedConn;
-    }
-
-    /**
-     * @return Shmem port.
-     */
-    public String shmemPort() {
-        return shmemPort;
     }
 
     /**
