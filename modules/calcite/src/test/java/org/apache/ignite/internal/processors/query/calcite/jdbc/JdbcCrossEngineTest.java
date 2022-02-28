@@ -29,8 +29,12 @@ import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-import java.util.function.Consumer;
+import java.util.function.IntConsumer;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.calcite.CalciteQueryEngineConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.SqlConfiguration;
+import org.apache.ignite.indexing.IndexingQueryEngineConfiguration;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -39,23 +43,39 @@ import org.junit.Test;
  */
 public class JdbcCrossEngineTest extends GridCommonAbstractTest {
     /** URL. */
-    private static final String url = "jdbc:ignite:thin://127.0.0.1?useExperimentalQueryEngine=";
+    private static final String url = "jdbc:ignite:thin://127.0.0.1";
 
     /** Nodes count. */
     private static final int nodesCnt = 3;
 
+    /** SQL engine names. */
+    private final String[] engineNames = new String[] {
+        IndexingQueryEngineConfiguration.ENGINE_NAME,
+        CalciteQueryEngineConfiguration.ENGINE_NAME
+    };
+
     /** Connections. */
-    private final Connection[] conns = new Connection[2];
+    private final Connection[] conns = new Connection[engineNames.length];
 
     /** Statements. */
-    private final Statement[] stmts = new Statement[2];
+    private final Statement[] stmts = new Statement[engineNames.length];
+
+    /** {@inheritDoc} */
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        return super.getConfiguration(igniteInstanceName).setSqlConfiguration(
+            new SqlConfiguration().setQueryEnginesConfiguration(
+                new IndexingQueryEngineConfiguration(),
+                new CalciteQueryEngineConfiguration()
+            )
+        );
+    }
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         startGrids(nodesCnt);
 
-        for (int i = 0; i < conns.length; i++) {
-            conns[i] = DriverManager.getConnection(url + (i == 0 ? "false" : "true"));
+        for (int i = 0; i < engineNames.length; i++) {
+            conns[i] = DriverManager.getConnection(url + "?queryEngine=" + engineNames[i]);
             conns[i].setSchema("PUBLIC");
             stmts[i] = conns[i].createStatement();
 
@@ -66,7 +86,7 @@ public class JdbcCrossEngineTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        for (int i = 0; i < conns.length; i++) {
+        for (int i = 0; i < engineNames.length; i++) {
             if (stmts[i] != null && !stmts[i].isClosed()) {
                 stmts[i].close();
 
@@ -108,12 +128,27 @@ public class JdbcCrossEngineTest extends GridCommonAbstractTest {
     /** */
     private void checkInsertDefaultValue(String sqlType, String sqlVal, Object expectedVal) {
         crossCheck(
-            stmt -> execute(stmt, "CREATE TABLE test (id INT PRIMARY KEY, val " + sqlType + " DEFAULT " + sqlVal + ")"),
-            stmt -> {
+            engineIdx -> {
+                Statement stmt = stmts[engineIdx];
+
+                List<List<Object>> res = executeQuery(stmt, "SELECT QUERY_ENGINE()");
+
+                assertEquals(engineNames[engineIdx], res.get(0).get(0));
+
+                execute(stmt,
+                    "CREATE TABLE test (id INT PRIMARY KEY, val " + sqlType + " DEFAULT " + sqlVal + ")");
+            },
+            engineIdx -> {
+                Statement stmt = stmts[engineIdx];
+
                 try {
+                    List<List<Object>> res = executeQuery(stmt, "SELECT QUERY_ENGINE()");
+
+                    assertEquals(engineNames[engineIdx], res.get(0).get(0));
+
                     execute(stmt, "INSERT INTO test (id) VALUES (0)");
 
-                    List<List<Object>> res = executeQuery(stmt, "SELECT val FROM test");
+                    res = executeQuery(stmt, "SELECT val FROM test");
 
                     if (expectedVal.getClass().isArray())
                         assertTrue(Objects.deepEquals(expectedVal, res.get(0).get(0)));
@@ -158,12 +193,12 @@ public class JdbcCrossEngineTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private void crossCheck(Consumer<Statement> consumer1, Consumer<Statement> consumer2) {
-        // Execute consumer1 on non-experimental engine, consumer2 in experimental engine.
-        consumer1.accept(stmts[0]);
-        consumer2.accept(stmts[1]);
-        // Execute consumer1 on non-experimental engine, consumer2 in experimental engine.
-        consumer1.accept(stmts[1]);
-        consumer2.accept(stmts[0]);
+    private void crossCheck(IntConsumer consumer1, IntConsumer consumer2) {
+        // Execute consumer1 on indexing engine, consumer2 on calcite engine.
+        consumer1.accept(0);
+        consumer2.accept(1);
+        // Execute consumer1 on calcite engine, consumer2 on indexing engine.
+        consumer1.accept(1);
+        consumer2.accept(0);
     }
 }

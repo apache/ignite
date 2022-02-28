@@ -153,7 +153,7 @@ public class GridDhtAssignmentFetchFuture extends GridFutureAdapter<GridDhtAffin
         }
 
         if (res0 != null)
-            onDone(res);
+            onDone(res, res0.affinityAssignmentsError());
     }
 
     /**

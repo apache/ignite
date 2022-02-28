@@ -45,6 +45,7 @@ import java.util.UUID;
 import javax.cache.CacheException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.indexing.IndexingQueryEngineConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.binary.BinaryArray;
 import org.apache.ignite.internal.binary.BinaryUtils;
@@ -1044,6 +1045,13 @@ public class H2Utils {
         }
 
         return keyCols.toArray(new IndexColumn[0]);
+    }
+
+    /**
+     * @return Query engine name.
+     */
+    public static String queryEngine() {
+        return IndexingQueryEngineConfiguration.ENGINE_NAME;
     }
 
     /**

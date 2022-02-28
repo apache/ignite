@@ -25,6 +25,7 @@ import java.util.function.LongFunction;
 import org.apache.calcite.sql.validate.SqlValidatorException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.calcite.CalciteQueryEngineConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
@@ -67,6 +68,12 @@ public class FunctionsTest extends GridCommonAbstractTest {
     public void testLength() {
         checkQuery("SELECT LENGTH('TEST')").returns(4).check();
         checkQuery("SELECT LENGTH(NULL)").returns(NULL_RESULT).check();
+    }
+
+    /** */
+    @Test
+    public void testQueryEngine() {
+        checkQuery("SELECT QUERY_ENGINE()").returns(CalciteQueryEngineConfiguration.ENGINE_NAME).check();
     }
 
     /** */

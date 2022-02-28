@@ -762,6 +762,7 @@ public class GridAffinityAssignmentCache {
     /**
      * @param topVer Topology version.
      * @return Assignment.
+     * @throws IllegalStateException If affinity assignment is not initialized for the given topology version.
      */
     public AffinityAssignment readyAffinity(AffinityTopologyVersion topVer) {
         AffinityAssignment cache = head.get();
@@ -776,6 +777,7 @@ public class GridAffinityAssignmentCache {
                     ", topVer=" + topVer +
                     ", head=" + head.get().topologyVersion() +
                     ", history=" + affCache.keySet() +
+                    ", maxNonShallowHistorySize=" + MAX_NON_SHALLOW_HIST_SIZE +
                     ']');
             }
         }
@@ -788,6 +790,9 @@ public class GridAffinityAssignmentCache {
      *
      * @param topVer Topology version.
      * @return Cached affinity.
+     * @throws IllegalArgumentException in case of the specified topology version {@code topVer}
+     *                                  is earlier than affinity is calculated
+     *                                  or the history of assignments is already cleaned.
      */
     public AffinityAssignment cachedAffinity(AffinityTopologyVersion topVer) {
         AffinityTopologyVersion lastAffChangeTopVer =
@@ -802,6 +807,9 @@ public class GridAffinityAssignmentCache {
      * @param topVer Topology version for which affinity assignment is requested.
      * @param lastAffChangeTopVer Topology version of last affinity assignment change.
      * @return Cached affinity.
+     * @throws IllegalArgumentException in case of the specified topology version {@code topVer}
+     *                                  is earlier than affinity is calculated
+     *                                  or the history of assignments is already cleaned.
      */
     public AffinityAssignment cachedAffinity(
         AffinityTopologyVersion topVer,
@@ -836,17 +844,20 @@ public class GridAffinityAssignmentCache {
                     ", lastAffChangeTopVer=" + lastAffChangeTopVer +
                     ", head=" + head.get().topologyVersion() +
                     ", history=" + affCache.keySet() +
+                    ", maxNonShallowHistorySize=" + MAX_NON_SHALLOW_HIST_SIZE +
                     ']');
             }
 
             if (cache.topologyVersion().compareTo(topVer) > 0) {
                 throw new IllegalStateException("Getting affinity for too old topology version that is already " +
-                    "out of history [locNode=" + ctx.discovery().localNode() +
+                    "out of history (try to increase '" + IGNITE_AFFINITY_HISTORY_SIZE + "' system property)" +
+                    " [locNode=" + ctx.discovery().localNode() +
                     ", grp=" + cacheOrGrpName +
                     ", topVer=" + topVer +
                     ", lastAffChangeTopVer=" + lastAffChangeTopVer +
                     ", head=" + head.get().topologyVersion() +
                     ", history=" + affCache.keySet() +
+                    ", maxNonShallowHistorySize=" + MAX_NON_SHALLOW_HIST_SIZE +
                     ']');
             }
         }

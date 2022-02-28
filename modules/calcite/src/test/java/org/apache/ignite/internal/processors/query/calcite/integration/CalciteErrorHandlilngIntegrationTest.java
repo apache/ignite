@@ -26,8 +26,10 @@ import java.util.function.Supplier;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
+import org.apache.ignite.calcite.CalciteQueryEngineConfiguration;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.SqlConfiguration;
 import org.apache.ignite.failure.FailureHandler;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexTree;
@@ -48,17 +50,21 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.After;
 import org.junit.Test;
 
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_EXPERIMENTAL_SQL_ENGINE;
 import static org.apache.ignite.internal.processors.query.calcite.exec.LogicalRelImplementor.CNLJ_NOT_SUPPORTED_JOIN_ASSERTION_MSG;
 
 /** */
 @WithSystemProperty(key = "calcite.debug", value = "false")
-@WithSystemProperty(key = IGNITE_EXPERIMENTAL_SQL_ENGINE, value = "true")
 public class CalciteErrorHandlilngIntegrationTest extends GridCommonAbstractTest {
     /** */
     @After
     public void cleanUp() {
         stopAllGrids();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        return super.getConfiguration(igniteInstanceName).setSqlConfiguration(
+            new SqlConfiguration().setQueryEnginesConfiguration(new CalciteQueryEngineConfiguration()));
     }
 
     /**

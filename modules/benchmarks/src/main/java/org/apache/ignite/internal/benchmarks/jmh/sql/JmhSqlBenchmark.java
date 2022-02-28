@@ -23,13 +23,15 @@ import java.util.concurrent.TimeUnit;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
-import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
+import org.apache.ignite.calcite.CalciteQueryEngineConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.SqlConfiguration;
+import org.apache.ignite.indexing.IndexingQueryEngineConfiguration;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.openjdk.jmh.annotations.Benchmark;
@@ -99,6 +101,9 @@ public class JmhSqlBenchmark {
         cfg.setIgniteInstanceName(igniteInstanceName);
         cfg.setLocalHost("127.0.0.1");
         cfg.setDiscoverySpi(new TcpDiscoverySpi().setIpFinder(IP_FINDER));
+        cfg.setSqlConfiguration(new SqlConfiguration().setQueryEnginesConfiguration(
+            "CALCITE".equals(engine) ? new CalciteQueryEngineConfiguration() : new IndexingQueryEngineConfiguration()
+        ));
 
         return cfg;
     }
@@ -108,11 +113,6 @@ public class JmhSqlBenchmark {
      */
     @Setup(Level.Trial)
     public void setup() {
-        if ("CALCITE".equals(engine))
-            System.setProperty(IgniteSystemProperties.IGNITE_EXPERIMENTAL_SQL_ENGINE, "true");
-        else
-            System.clearProperty(IgniteSystemProperties.IGNITE_EXPERIMENTAL_SQL_ENGINE);
-
         for (int i = 0; i < SRV_NODES_CNT; i++)
             servers[i] = Ignition.start(configuration("server" + i));
 

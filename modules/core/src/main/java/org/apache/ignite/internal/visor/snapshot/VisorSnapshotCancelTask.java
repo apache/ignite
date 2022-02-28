@@ -22,13 +22,12 @@ import org.apache.ignite.IgniteSnapshot;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotMXBeanImpl;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.visor.VisorJob;
-import org.apache.ignite.internal.visor.VisorOneNodeTask;
 
 /**
  * @see IgniteSnapshot#cancelSnapshot(String)
  */
 @GridInternal
-public class VisorSnapshotCancelTask extends VisorOneNodeTask<String, String> {
+public class VisorSnapshotCancelTask extends VisorSnapshotOneNodeTask<String, String> {
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;
 
