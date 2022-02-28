@@ -136,7 +136,7 @@ public class CdcCacheVersionTest extends AbstractCdcTest {
         for (CacheAtomicityMode atomicity : EnumSet.of(ATOMIC, TRANSACTIONAL))
             for (CacheMode mode : EnumSet.of(PARTITIONED, REPLICATED))
                 for (int gridCnt : new int[] {1, 3})
-                    for(boolean persistenceEnabled = new boolean[] {false, true};
+                    for (boolean persistenceEnabled : new boolean[] {false, true})
                         params.add(new Object[] {atomicity, mode, gridCnt, persistenceEnabled});
 
         return params;
@@ -260,6 +260,7 @@ public class CdcCacheVersionTest extends AbstractCdcTest {
             new CacheConfiguration<Integer, User>(DEFAULT_CACHE_NAME)
                 .setCacheMode(cacheMode)
                 .setAtomicityMode(atomicityMode)
+                .setDataRegionName("cdc")
                 .setBackups(Integer.MAX_VALUE));
 
         if (atomicityMode == ATOMIC)
@@ -376,6 +377,7 @@ public class CdcCacheVersionTest extends AbstractCdcTest {
         IgniteCache<Integer, User> cache = ign.getOrCreateCache(
             new CacheConfiguration<Integer, User>(DEFAULT_CACHE_NAME)
                 .setAtomicityMode(atomicityMode)
+                .setDataRegionName("cdc")
                 .setCacheMode(cacheMode));
 
         IgniteCache<Integer, User> notCdcCache = ign.getOrCreateCache(
@@ -386,7 +388,7 @@ public class CdcCacheVersionTest extends AbstractCdcTest {
         // Update the same key several time.
         // Expect {@link CacheEntryVersion#order()} will monotically increase.
         for (int i = 0; i < KEYS_CNT; i++) {
-            cdcCache.put(KEY_TO_UPD, createUser(i));
+            cache.put(KEY_TO_UPD, createUser(i));
             notCdcCache.put(KEY_TO_UPD, createUser(i));
         }
 

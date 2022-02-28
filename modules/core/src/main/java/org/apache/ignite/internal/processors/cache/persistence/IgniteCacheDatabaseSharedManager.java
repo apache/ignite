@@ -1136,7 +1136,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      * @throws IgniteCheckedException If fails.
      */
     public void startMemoryRestore(GridKernalContext kctx, TimeBag startTimer) throws IgniteCheckedException {
-        if (!CU.isCdcEnabled(kctx.config()))
+        if (!CU.isCdcEnabled(kctx.config()) || kctx.clientNode())
             return;
 
         WALIterator iter = cctx.cdcWal().replay(null, (type, ptr) -> true);

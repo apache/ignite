@@ -827,7 +827,7 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                         }
 
                         if (ptr != null)
-                            cctx.wal().flush(ptr, false);
+                            cctx.cdcWal().flush(ptr, false);
                     }
                     catch (Throwable ex) {
                         state(UNKNOWN);

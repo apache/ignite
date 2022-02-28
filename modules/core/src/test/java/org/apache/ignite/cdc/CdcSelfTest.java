@@ -77,29 +77,21 @@ public class CdcSelfTest extends AbstractCdcTest {
 
     /** */
     @Parameterized.Parameter(2)
-    public Supplier<MetricExporterSpi> metricExporter;
-
-    /** */
-    @Parameterized.Parameter(3)
     public boolean persistenceEnabled;
 
     /** */
-    @Parameterized.Parameter(4)
+    @Parameterized.Parameter(3)
     public int pageSz;
 
     /** */
-    @Parameterized.Parameters(name = "consistentId={0}, wal={1}, metrics={2}, persistence={3}, page={4}")
+    @Parameterized.Parameters(name = "consistentId={0}, wal={1}, persistence={2}, page={3}")
     public static Collection<?> parameters() {
         List<Object[]> params = new ArrayList<>();
 
         for (WALMode mode : EnumSet.of(WALMode.FSYNC, WALMode.LOG_ONLY, WALMode.BACKGROUND))
             for (boolean specificConsistentId : new boolean[] {false, true})
-                for (boolean persistenceEnabled : new boolean[] {true, false}) {
-                    Supplier<MetricExporterSpi> jmx = JmxMetricExporterSpi::new;
-
-                    params.add(new Object[] {specificConsistentId, mode, null, persistenceEnabled, 0});
-                    params.add(new Object[] {specificConsistentId, mode, jmx, persistenceEnabled, 8192});
-                }
+                for (boolean persistenceEnabled : new boolean[] {true, false})
+                    params.add(new Object[] {specificConsistentId, mode, persistenceEnabled, 8192});
 
         return params;
     }
@@ -215,9 +207,9 @@ public class CdcSelfTest extends AbstractCdcTest {
 
         addData(cache, 0, KEYS_CNT / 2);
 
-        long segIdx = ign.context().cache().context().wal().lastArchivedSegment();
+        long segIdx = ign.context().cache().context().cdcWal().lastArchivedSegment();
 
-        waitForCondition(() -> ign.context().cache().context().wal().lastArchivedSegment() > segIdx, getTestTimeout());
+        waitForCondition(() -> ign.context().cache().context().cdcWal().lastArchivedSegment() > segIdx, getTestTimeout());
 
         addData(cache, KEYS_CNT / 2, KEYS_CNT);
 
@@ -553,14 +545,6 @@ public class CdcSelfTest extends AbstractCdcTest {
         fut.cancel();
 
         assertTrue(cnsmr.stopped());
-    }
-
-    /** {@inheritDoc} */
-    @Override public MetricExporterSpi[] metricExporters() {
-        if (metricExporter == null)
-            return null;
-
-        return new MetricExporterSpi[] {metricExporter.get()};
     }
 
     /** */
