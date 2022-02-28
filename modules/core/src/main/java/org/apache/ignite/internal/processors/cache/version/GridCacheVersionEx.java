@@ -52,7 +52,7 @@ public class GridCacheVersionEx extends GridCacheVersion {
      * @param dataCenterId Data center ID.
      * @param drVer DR version.
      */
-    public GridCacheVersionEx(int topVer, long order, int nodeOrder, byte dataCenterId,
+    private GridCacheVersionEx(int topVer, long order, int nodeOrder, byte dataCenterId,
         GridCacheVersion drVer) {
         super(topVer, order, nodeOrder, dataCenterId);
 
@@ -170,5 +170,17 @@ public class GridCacheVersionEx extends GridCacheVersion {
             ", nodeOrder=" + nodeOrder() +
             ", dataCenterId=" + dataCenterId() +
             ", drVer=" + drVer + ']';
+    }
+
+    /** @return If {@code ver != conflictVer} then {@code ver} with {@code conflictVer} added to it. */
+    public static GridCacheVersion addConflictVersion(GridCacheVersion ver, GridCacheVersion conflictVer) {
+        if (conflictVer == null || conflictVer == ver)
+            return ver;
+
+        return new GridCacheVersionEx(ver.topologyVersion(),
+            ver.order(),
+            ver.nodeOrder(),
+            ver.dataCenterId(),
+            conflictVer);
     }
 }
