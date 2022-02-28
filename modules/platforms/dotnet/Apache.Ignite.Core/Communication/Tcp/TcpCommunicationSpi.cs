@@ -19,6 +19,7 @@ namespace Apache.Ignite.Core.Communication.Tcp
 {
     using System;
     using System.ComponentModel;
+    using System.Xml.Serialization;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Impl.Binary;
 
@@ -79,7 +80,8 @@ namespace Apache.Ignite.Core.Communication.Tcp
         /// <summary> Default value of <see cref="SelectorSpins"/> property. </summary>
         public const long DefaultSelectorSpins = 0;
 
-        /// <summary> Default value of <see cref="SharedMemoryPort"/> property. </summary>
+        /// <summary> This constant is ignored and it will be removed in future releases. </summary>
+        [Obsolete("This constant is ignored and it will be removed in future releases")]
         public const int DefaultSharedMemoryPort = -1;
 
         /// <summary> Default socket buffer size. </summary>
@@ -111,7 +113,6 @@ namespace Apache.Ignite.Core.Communication.Tcp
             MaxConnectTimeout = DefaultMaxConnectTimeout;
             MessageQueueLimit = DefaultMessageQueueLimit;
             ReconnectCount = DefaultReconnectCount;
-            SharedMemoryPort = DefaultSharedMemoryPort;
             SelectorsCount = DefaultSelectorsCount;
             SelectorSpins = DefaultSelectorSpins;
             SocketReceiveBufferSize = DefaultSocketBufferSize;
@@ -142,7 +143,7 @@ namespace Apache.Ignite.Core.Communication.Tcp
             ReconnectCount = reader.ReadInt();
             SelectorsCount = reader.ReadInt();
             SelectorSpins = reader.ReadLong();
-            SharedMemoryPort = reader.ReadInt();
+            reader.ReadInt();
             SlowClientQueueLimit = reader.ReadInt();
             SocketReceiveBufferSize = reader.ReadInt();
             SocketSendBufferSize = reader.ReadInt();
@@ -301,9 +302,11 @@ namespace Apache.Ignite.Core.Communication.Tcp
         public bool UsePairedConnections { get; set; }
 
         /// <summary>
-        /// Gets or sets a local port to accept shared memory connections.
+        /// This property is ignored and it will be removed in future releases.
         /// </summary>
-        [DefaultValue(DefaultSharedMemoryPort)]
+        [DefaultValue(-1)]
+        [Obsolete("This property is ignored and it will be removed in future releases.")]
+        [XmlIgnore]
         public int SharedMemoryPort { get; set; }
 
         /// <summary>
@@ -349,7 +352,7 @@ namespace Apache.Ignite.Core.Communication.Tcp
             writer.WriteInt(ReconnectCount);
             writer.WriteInt(SelectorsCount);
             writer.WriteLong(SelectorSpins);
-            writer.WriteInt(SharedMemoryPort);
+            writer.WriteInt(-1);
             writer.WriteInt(SlowClientQueueLimit);
             writer.WriteInt(SocketReceiveBufferSize);
             writer.WriteInt(SocketSendBufferSize);

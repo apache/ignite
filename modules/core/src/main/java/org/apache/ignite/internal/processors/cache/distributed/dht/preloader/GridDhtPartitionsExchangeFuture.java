@@ -4410,15 +4410,25 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         Collection<Integer> affReq = msg.cacheGroupsAffinityRequest();
 
         if (affReq != null) {
-            Map<Integer, CacheGroupAffinityMessage> cachesAff = U.newHashMap(affReq.size());
+            try {
+                Map<Integer, CacheGroupAffinityMessage> cachesAff = U.newHashMap(affReq.size());
 
-            CacheGroupAffinityMessage.createAffinityMessages(
-                cctx,
-                finishState.resTopVer,
-                affReq,
-                cachesAff);
+                CacheGroupAffinityMessage.createAffinityMessages(
+                    cctx,
+                    finishState.resTopVer,
+                    affReq,
+                    cachesAff);
 
-            fullMsg.joinedNodeAffinity(cachesAff);
+                fullMsg.joinedNodeAffinity(cachesAff);
+            }
+            catch (IllegalStateException e) {
+                // Cannot create affinity message.
+                Map<UUID, Exception> errs = Collections.singletonMap(
+                    nodeId,
+                    node.isClient() ? new IgniteNeedReconnectException(node, e) : new IgniteCheckedException(e));
+
+                fullMsg.setErrorsMap(errs);
+            }
         }
 
         if (!fullMsg.exchangeId().equals(msg.exchangeId())) {
