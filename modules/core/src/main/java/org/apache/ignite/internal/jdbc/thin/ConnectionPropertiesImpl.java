@@ -258,9 +258,9 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
     private BooleanProperty keepBinary = new BooleanProperty("keepBinary",
         "Whether to keep binary objects in binary form.", false, false);
 
-    /** Whether an experimental SQL engine enabled for a connection. */
-    private BooleanProperty useExperimentalQueryEngine = new BooleanProperty("useExperimentalQueryEngine",
-        "Enables experimental query engine.", false, false);
+    /** Use specified SQL query engine for a connection. */
+    private final StringProperty qryEngine = new StringProperty("queryEngine",
+        "Use specified SQL query engine for a connection.", null, null, false, null);
 
     /** Properties array. */
     private final ConnectionProperty[] propsArray = {
@@ -281,7 +281,7 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
         connTimeout,
         disabledFeatures,
         keepBinary,
-        useExperimentalQueryEngine
+        qryEngine
     };
 
     /** {@inheritDoc} */
@@ -691,13 +691,13 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isUseExperimentalQueryEngine() {
-        return useExperimentalQueryEngine.value();
+    @Override public String getQueryEngine() {
+        return qryEngine.value();
     }
 
     /** {@inheritDoc} */
-    @Override public void setUseExperimentalQueryEngine(boolean useExperimentalQueryEngine) {
-        this.useExperimentalQueryEngine.setValue(useExperimentalQueryEngine);
+    @Override public void setQueryEngine(String qryEngine) {
+        this.qryEngine.setValue(qryEngine);
     }
 
     /**

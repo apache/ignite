@@ -278,16 +278,19 @@ public class PageMemoryImplTest extends GridCommonAbstractTest {
 
         int pagesForStartThrottling = 10;
 
+        //Number of pages which were poll from checkpoint buffer for throttling.
+        AtomicInteger cpBufferPollPages = new AtomicInteger();
+
         // Create a 1 mb page memory.
         PageMemoryImpl memory = createPageMemory(
             1,
             plc,
             pageStoreMgr,
             pageStoreMgr,
-            new IgniteInClosure<FullPageId>() {
-                @Override public void apply(FullPageId fullPageId) {
-                    assertTrue(allocated.contains(fullPageId));
-                }
+            (IgniteInClosure<FullPageId>)fullPageId -> {
+                //First increment then get because pageStoreMgr.storedPages always contains at least one page
+                // which was written before throttling.
+                assertEquals(cpBufferPollPages.incrementAndGet(), pageStoreMgr.storedPages.size());
             }
         );
 
@@ -305,10 +308,16 @@ public class PageMemoryImplTest extends GridCommonAbstractTest {
 
         GridMultiCollectionWrapper<FullPageId> markedPages = memory.beginCheckpoint(new GridFinishedFuture());
 
-        for (int i = 0; i < 10 + (memory.checkpointBufferPagesSize() * 2 / 3); i++)
+        for (int i = 0; i < pagesForStartThrottling + (memory.checkpointBufferPagesSize() * 2 / 3); i++)
             writePage(memory, allocated.get(i), (byte)1);
 
         doCheckpoint(markedPages, memory, pageStoreMgr);
+
+        //There is 'pagesForStartThrottling - 1' because we should write pagesForStartThrottling pages
+        // from checkpoint buffer before throttling will be disabled but at least one page always would be written
+        // outside of throttling and in our case we certainly know that this page is also contained in checkpoint buffer
+        // (because all of our pages are in checkpoint buffer).
+        assertEquals(pagesForStartThrottling - 1, cpBufferPollPages.get());
     }
 
     /**
@@ -335,7 +344,7 @@ public class PageMemoryImplTest extends GridCommonAbstractTest {
 
             memory.checkpointWritePage(cpPage, buf, pageStoreWriter, null);
 
-            while (memory.shouldThrottle()) {
+            while (memory.isCpBufferOverflowThresholdExceeded()) {
                 FullPageId cpPageId = memory.pullPageFromCpBuffer();
 
                 if (cpPageId.equals(FullPageId.NULL_PAGE))
@@ -689,7 +698,7 @@ public class PageMemoryImplTest extends GridCommonAbstractTest {
      */
     private static class TestPageStoreManager extends NoOpPageStoreManager implements PageStoreWriter {
         /** */
-        private Map<FullPageId, byte[]> storedPages = new HashMap<>();
+        public Map<FullPageId, byte[]> storedPages = new HashMap<>();
 
         /** {@inheritDoc} */
         @Override public void read(int grpId, long pageId, ByteBuffer pageBuf, boolean keepCrc) throws IgniteCheckedException {

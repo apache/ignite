@@ -25,6 +25,9 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.Types;
 import java.util.concurrent.TimeUnit;
+import org.apache.ignite.calcite.CalciteQueryEngineConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.SqlConfiguration;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -36,7 +39,7 @@ import org.junit.Test;
 @WithSystemProperty(key = "calcite.debug", value = "true")
 public class JdbcQueryTest extends GridCommonAbstractTest {
     /** URL. */
-    private final String url = "jdbc:ignite:thin://127.0.0.1?useExperimentalQueryEngine=true";
+    private final String url = "jdbc:ignite:thin://127.0.0.1?queryEngine=" + CalciteQueryEngineConfiguration.ENGINE_NAME;
 
     /** Nodes count. */
     private final int nodesCnt = 3;
@@ -46,6 +49,12 @@ public class JdbcQueryTest extends GridCommonAbstractTest {
 
     /** Statement. */
     private Statement stmt;
+
+    /** {@inheritDoc} */
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        return super.getConfiguration(igniteInstanceName).setSqlConfiguration(
+            new SqlConfiguration().setQueryEnginesConfiguration(new CalciteQueryEngineConfiguration()));
+    }
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {

@@ -56,7 +56,10 @@ public enum ClientBitmaskFeature implements ThinProtocolFeature {
     GET_SERVICE_DESCRIPTORS(9),
 
     /** Invoke service methods with caller context. */
-    SERVICE_INVOKE_CALLCTX(10);
+    SERVICE_INVOKE_CALLCTX(10),
+
+    /** Handle OP_HEARTBEAT and OP_GET_IDLE_TIMEOUT. */
+    HEARTBEAT(11);
 
     /** */
     private static final EnumSet<ClientBitmaskFeature> ALL_FEATURES_AS_ENUM_SET =

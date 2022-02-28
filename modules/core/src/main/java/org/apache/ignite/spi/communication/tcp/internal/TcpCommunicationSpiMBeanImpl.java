@@ -82,7 +82,7 @@ public class TcpCommunicationSpiMBeanImpl extends IgniteSpiMBeanAdapter implemen
 
     /** {@inheritDoc} */
     @Override public int getSharedMemoryPort() {
-        return cfg.shmemPort();
+        return -1;
     }
 
     /** {@inheritDoc} */

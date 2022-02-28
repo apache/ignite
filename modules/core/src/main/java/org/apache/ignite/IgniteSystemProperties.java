@@ -129,7 +129,6 @@ import static org.apache.ignite.internal.processors.performancestatistics.FilePe
 import static org.apache.ignite.internal.processors.performancestatistics.FilePerformanceStatisticsWriter.DFLT_CACHED_STRINGS_THRESHOLD;
 import static org.apache.ignite.internal.processors.performancestatistics.FilePerformanceStatisticsWriter.DFLT_FILE_MAX_SIZE;
 import static org.apache.ignite.internal.processors.performancestatistics.FilePerformanceStatisticsWriter.DFLT_FLUSH_SIZE;
-import static org.apache.ignite.internal.processors.query.GridQueryProcessor.DFLT_IGNITE_EXPERIMENTAL_SQL_ENGINE;
 import static org.apache.ignite.internal.processors.query.QueryUtils.DFLT_INDEXING_DISCOVERY_HISTORY_SIZE;
 import static org.apache.ignite.internal.processors.query.schema.SchemaIndexCachePartitionWorker.DFLT_IGNITE_INDEX_REBUILD_BATCH_SIZE;
 import static org.apache.ignite.internal.processors.rest.GridRestProcessor.DFLT_SES_TIMEOUT;
@@ -671,9 +670,10 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_H2_DEBUG_CONSOLE_PORT = "IGNITE_H2_DEBUG_CONSOLE_PORT";
 
     /**
-     * If this property is set to {@code true} then shared memory space native debug will be enabled.
+     * @deprecated This property is ignored and will be deleted in future releases.
      */
-    @SystemProperty("Enables native debug of the shared memory space")
+    @Deprecated
+    @SystemProperty("This option is ignored and will be deleted in future releases")
     public static final String IGNITE_IPC_SHMEM_SPACE_DEBUG = "IGNITE_IPC_SHMEM_SPACE_DEBUG";
 
     /**
@@ -2013,13 +2013,6 @@ public final class IgniteSystemProperties {
     @SystemProperty(value = "Maximum performance statistics cached strings threshold. String caching is " +
         "stopped when the threshold is exceeded", type = Integer.class, defaults = "" + DFLT_CACHED_STRINGS_THRESHOLD)
     public static final String IGNITE_PERF_STAT_CACHED_STRINGS_THRESHOLD = "IGNITE_PERF_STAT_CACHED_STRINGS_THRESHOLD";
-
-    /**
-     * Determines whether to use the experimental sql, calcite based, engine.
-     */
-    @SystemProperty(value = "Determines whether to use the experimental sql, calcite based, engine.",
-        defaults = "" + DFLT_IGNITE_EXPERIMENTAL_SQL_ENGINE)
-    public static final String IGNITE_EXPERIMENTAL_SQL_ENGINE = "IGNITE_EXPERIMENTAL_SQL_ENGINE";
 
     /**
      * Calcite-based SQL engine. Buffer size (count of rows) for query execution nodes.
