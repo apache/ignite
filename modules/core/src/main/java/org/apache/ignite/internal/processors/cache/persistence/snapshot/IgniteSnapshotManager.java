@@ -91,6 +91,7 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteFeatures;
 import org.apache.ignite.internal.IgniteFutureCancelledCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.cluster.DistributedConfigurationUtils;
@@ -118,7 +119,6 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStore;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
-import org.apache.ignite.internal.processors.cache.persistence.file.LimitedWriteRateFileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderSettings;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetastorageLifecycleListener;
@@ -141,6 +141,7 @@ import org.apache.ignite.internal.processors.marshaller.MappedName;
 import org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageImpl;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.task.GridInternal;
+import org.apache.ignite.internal.util.BasicRateLimiter;
 import org.apache.ignite.internal.util.GridBusyLock;
 import org.apache.ignite.internal.util.GridCloseableIteratorAdapter;
 import org.apache.ignite.internal.util.distributed.DistributedProcess;
@@ -186,6 +187,7 @@ import static org.apache.ignite.internal.MarshallerContextImpl.mappingFileStoreW
 import static org.apache.ignite.internal.MarshallerContextImpl.resolveMappingFileStoreWorkDir;
 import static org.apache.ignite.internal.MarshallerContextImpl.saveMappings;
 import static org.apache.ignite.internal.events.DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT;
+import static org.apache.ignite.internal.managers.communication.GridIoManager.DFLT_CHUNK_SIZE_BYTES;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYSTEM_POOL;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.FLAG_DATA;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
@@ -270,14 +272,15 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     public static final String SNAPSHOT_TRANSFER_RATE_DMS_KEY = "snapshotTransferRate";
 
     /** Snapshot transfer rate is unlimited by default. */
-    public static final long DFLT_SNAPSHOT_TRANSFER_RATE = 0L;
+    public static final long DFLT_SNAPSHOT_TRANSFER_RATE_BYTES = 50 * 1024 * 1024L;
 
     /** Minimum block size for limited snapshot transfer. */
     @SystemProperty(value = "Sets the minimum block size for limited snapshot transfer")
     public static final String SNAPSHOT_LIMITED_TRANSFER_BLOCK_SIZE = "SNAPSHOT_LIMITED_TRANSFER_BLOCK_SIZE";
 
-    /** Snapshot limited transfer block size is 16 KB by default. */
-    public static final int DFLT_SNAPSHOT_TRANSFER_BLOCK_SIZE = 16 * 1024;
+    /** Snapshot limited transfer block size (in bytes). */
+    private static final int SNAPSHOT_TRANSFER_BLOCK_SIZE_BYTES =
+        IgniteSystemProperties.getInteger(SNAPSHOT_LIMITED_TRANSFER_BLOCK_SIZE, DFLT_CHUNK_SIZE_BYTES);
 
     /** Snapshot operation finish log message. */
     private static final String SNAPSHOT_FINISHED_MSG = "Cluster-wide snapshot operation finished successfully: ";
@@ -335,6 +338,9 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     /** Distributed process to restore cache group from the snapshot. */
     private final SnapshotRestoreProcess restoreCacheGrpProc;
 
+    /** Transfer rate limiter. */
+    private final BasicRateLimiter transferRateLimiter = new BasicRateLimiter(DFLT_SNAPSHOT_TRANSFER_RATE_BYTES);
+
     /** Resolved persistent data storage settings. */
     private volatile PdsFolderSettings pdsSettings;
 
@@ -357,7 +363,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     private File tmpWorkDir;
 
     /** I/O factory used for snapshot file operations. */
-    private volatile LimitedWriteRateFileIOFactory ioFactory;
+    private volatile FileIOFactory ioFactory = new RandomAccessFileIOFactory();
 
     /** File store manager to create page store for restore. */
     private volatile FilePageStoreManager storeMgr;
@@ -402,7 +408,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
         marsh = MarshallerUtils.jdkMarshaller(ctx.igniteInstanceName());
 
-        restoreCacheGrpProc = new SnapshotRestoreProcess(ctx);
+        restoreCacheGrpProc = new SnapshotRestoreProcess(ctx, transferRateLimiter);
 
         // Manage remote snapshots.
         snpRmtMgr = new SequentialRemoteSnapshotManager();
@@ -463,7 +469,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                                 return;
                             }
 
-                            ioFactory.setRate(newVal);
+                            transferRateLimiter.setRate(newVal);
 
                             if (log.isInfoEnabled()) {
                                 log.info("The snapshot transfer rate " + (newVal == 0 ? "is not limited." :
@@ -476,12 +482,11 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 }
 
                 @Override public void onReadyToWrite() {
-                    DistributedConfigurationUtils.setDefaultValue(snapshotTransferRate, DFLT_SNAPSHOT_TRANSFER_RATE, log);
+                    DistributedConfigurationUtils.setDefaultValue(snapshotTransferRate,
+                        DFLT_SNAPSHOT_TRANSFER_RATE_BYTES, log);
                 }
             }
         );
-
-        ioFactory(new RandomAccessFileIOFactory());
 
         handlers.initialize(ctx, ctx.pools().getSnapshotExecutorService());
 
@@ -1731,7 +1736,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         SnapshotSender snpSndr
     ) {
         AbstractSnapshotFutureTask<?> task = registerTask(snpName, new SnapshotFutureTask(cctx, srcNodeId, snpName,
-            tmpWorkDir, ioFactory.delegate(), snpSndr, parts, withMetaStorage, locBuff));
+            tmpWorkDir, ioFactory, snpSndr, parts, withMetaStorage, locBuff, transferRateLimiter));
 
         if (!withMetaStorage) {
             for (Integer grpId : parts.keySet()) {
@@ -1818,7 +1823,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             databaseRelativePath(pdsSettings.folderName()),
             cctx.gridIO().openTransmissionSender(nodeId, DFLT_INITIAL_SNAPSHOT_TOPIC),
             rqId,
-            ioFactory());
+            transferRateLimiter);
     }
 
     /** Snapshot finished successfully or already restored. Key can be removed. */
@@ -1863,8 +1868,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @param ioFactory Factory to create IO interface over a page stores.
      */
     public void ioFactory(FileIOFactory ioFactory) {
-        this.ioFactory = new LimitedWriteRateFileIOFactory(ioFactory, DFLT_SNAPSHOT_TRANSFER_RATE,
-                IgniteSystemProperties.getInteger(SNAPSHOT_LIMITED_TRANSFER_BLOCK_SIZE, DFLT_SNAPSHOT_TRANSFER_BLOCK_SIZE));
+        this.ioFactory = ioFactory;
     }
 
     /**
@@ -1910,11 +1914,12 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
     /**
      * @param factory Factory to produce FileIO access.
+     * @param rateLimiter Transfer rate limiter.
      * @param from Copy from file.
      * @param to Copy data to file.
      * @param length Number of bytes to copy from beginning.
      */
-    static void copy(FileIOFactory factory, File from, File to, long length) {
+    static void copy(FileIOFactory factory, BasicRateLimiter rateLimiter, File from, File to, long length) {
         try (FileIO src = factory.create(from, READ);
              FileChannel dest = new FileOutputStream(to).getChannel()) {
             if (src.size() < length) {
@@ -1924,10 +1929,34 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
             src.position(0);
 
-            long written = 0;
+            if (rateLimiter.isUnlimited()) {
+                long written = 0;
 
-            while (written < length)
-                written += src.transferTo(written, length - written, dest);
+                while (written < length)
+                    written += src.transferTo(written, length - written, dest);
+
+                return;
+            }
+
+            long pos = 0;
+
+            while (pos < length) {
+                long blockLen = Math.min(length - pos, SNAPSHOT_TRANSFER_BLOCK_SIZE_BYTES);
+
+                rateLimiter.acquire((int)blockLen);
+
+                long written = 0;
+
+                do {
+                    written += src.transferTo(pos + written, blockLen - written, dest);
+                }
+                while (written < blockLen);
+
+                pos += written;
+            }
+        }
+        catch (IgniteInterruptedCheckedException e) {
+            throw new IgniteInterruptedException((InterruptedException)e.getCause());
         }
         catch (IOException e) {
             throw new IgniteException(e);
@@ -2597,7 +2626,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                                 nodeId,
                                 snpName,
                                 tmpWorkDir,
-                                ioFactory.delegate(),
+                                ioFactory,
                                 rmtSndrFactory.apply(rqId, nodeId),
                                 reqMsg0.parts()));
 
@@ -2854,8 +2883,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         /** Local node persistent directory with consistent id. */
         private final String relativeNodePath;
 
-        /** File I/O factory. */
-        private final FileIOFactory fileIOFactory;
+        /** Transfer rate limiter. */
+        private final BasicRateLimiter rateLimiter;
 
         /** The number of cache partition files expected to be processed. */
         private int partsCnt;
@@ -2864,7 +2893,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
          * @param log Ignite logger.
          * @param sndr File sender instance.
          * @param rqId Snapshot name.
-         * @param fileIOFactory File I/O factory.
+         * @param rateLimiter File I/O factory.
          */
         public RemoteSnapshotSender(
             IgniteLogger log,
@@ -2872,14 +2901,14 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             String relativeNodePath,
             GridIoManager.TransmissionSender sndr,
             String rqId,
-            FileIOFactory fileIOFactory
+            BasicRateLimiter rateLimiter
         ) {
             super(log, new SequentialExecutorWrapper(log, exec));
 
             this.sndr = sndr;
             this.rqId = rqId;
             this.relativeNodePath = relativeNodePath;
-            this.fileIOFactory = fileIOFactory;
+            this.rateLimiter = rateLimiter;
         }
 
         /** {@inheritDoc} */
@@ -2897,7 +2926,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 assert len > 0 : "Requested partitions has incorrect file length " +
                     "[pair=" + pair + ", cacheDirName=" + cacheDirName + ']';
 
-                sndr.send(part, 0, len, transmissionParams(rqId, cacheDirName, pair), TransmissionPolicy.FILE, fileIOFactory);
+                sndr.send(part, 0, len, transmissionParams(rqId, cacheDirName, pair), TransmissionPolicy.FILE, rateLimiter);
 
                 if (log.isInfoEnabled()) {
                     log.info("Partition file has been send [part=" + part.getName() + ", pair=" + pair +
@@ -3018,7 +3047,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             try {
                 File cacheDir = U.resolveWorkDirectory(dbDir.getAbsolutePath(), cacheDirName, false);
 
-                copy(ioFactory, ccfg, new File(cacheDir, ccfg.getName()), ccfg.length());
+                copy(ioFactory, transferRateLimiter, ccfg, new File(cacheDir, ccfg.getName()), ccfg.length());
             }
             catch (IgniteCheckedException e) {
                 throw new IgniteException(e);
@@ -3059,7 +3088,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 if (!snpPart.exists() || snpPart.delete())
                     snpPart.createNewFile();
 
-                copy(ioFactory, part, snpPart, len);
+                copy(ioFactory, transferRateLimiter, part, snpPart, len);
 
                 if (log.isDebugEnabled()) {
                     log.debug("Partition has been snapshot [snapshotDir=" + dbDir.getAbsolutePath() +

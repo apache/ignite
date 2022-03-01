@@ -34,7 +34,7 @@ import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_IN
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK;
 import static org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager.DFLT_PDS_WAL_REBALANCE_THRESHOLD;
 import static org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager.HISTORICAL_REBALANCE_THRESHOLD_DMS_KEY;
-import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.DFLT_SNAPSHOT_TRANSFER_RATE;
+import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.DFLT_SNAPSHOT_TRANSFER_RATE_BYTES;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.SNAPSHOT_TRANSFER_RATE_DMS_KEY;
 import static org.apache.ignite.testframework.GridTestUtils.assertContains;
 
@@ -228,7 +228,7 @@ public class GridCommandHandlerPropertiesTest extends GridCommandHandlerClusterB
      */
     @Test
     public void testPropertySnapshotTransferRate() {
-        assertDistributedPropertyEquals(SNAPSHOT_TRANSFER_RATE_DMS_KEY, DFLT_SNAPSHOT_TRANSFER_RATE);
+        assertDistributedPropertyEquals(SNAPSHOT_TRANSFER_RATE_DMS_KEY, DFLT_SNAPSHOT_TRANSFER_RATE_BYTES);
 
         long newVal = 1024;
 

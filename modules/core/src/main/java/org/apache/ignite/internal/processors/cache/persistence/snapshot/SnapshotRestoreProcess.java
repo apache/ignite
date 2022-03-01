@@ -66,6 +66,7 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStor
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.ClusterSnapshotFuture;
 import org.apache.ignite.internal.processors.cluster.DiscoveryDataClusterState;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
+import org.apache.ignite.internal.util.BasicRateLimiter;
 import org.apache.ignite.internal.util.distributed.DistributedProcess;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -131,6 +132,9 @@ public class SnapshotRestoreProcess {
     /** Logger. */
     private final IgniteLogger log;
 
+    /** Transfer rate limiter. */
+    private final BasicRateLimiter rateLimiter;
+
     /** Future to be completed when the cache restore process is complete (this future will be returned to the user). */
     private volatile ClusterSnapshotFuture fut;
 
@@ -142,9 +146,11 @@ public class SnapshotRestoreProcess {
 
     /**
      * @param ctx Kernal context.
+     * @param rateLimiter Transfer rate limiter.
      */
-    public SnapshotRestoreProcess(GridKernalContext ctx) {
+    public SnapshotRestoreProcess(GridKernalContext ctx, BasicRateLimiter rateLimiter) {
         this.ctx = ctx;
+        this.rateLimiter = rateLimiter;
 
         log = ctx.log(getClass());
 
@@ -1316,7 +1322,7 @@ public class SnapshotRestoreProcess {
      * @param srcDir Snapshot directory to copy from.
      * @param targetDir Destination directory to copy to.
      */
-    private static void copyLocalAsync(
+    private void copyLocalAsync(
         IgniteSnapshotManager mgr,
         SnapshotRestoreContext opCtx,
         File srcDir,
@@ -1338,7 +1344,7 @@ public class SnapshotRestoreProcess {
                         ", snpDir=" + snpFile.getAbsolutePath() + ", name=" + snpFile.getName() + ']');
                 }
 
-                IgniteSnapshotManager.copy(mgr.ioFactory(), snpFile, partFile.toFile(), snpFile.length());
+                IgniteSnapshotManager.copy(mgr.ioFactory(), rateLimiter, snpFile, partFile.toFile(), snpFile.length());
 
                 return partFile;
             }, mgr.snapshotExecutorService())
