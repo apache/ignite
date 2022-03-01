@@ -54,9 +54,9 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
 
 /**
- * Test suite to verify parsing of the DDL command.
+ * Test suite to verify parsing of the custom (DDL and others) command.
  */
-public class SqlDdlParserTest extends GridCommonAbstractTest {
+public class SqlCustomParserTest extends GridCommonAbstractTest {
     /**
      * Very simple case where only table name and a few columns are presented.
      */
@@ -733,6 +733,22 @@ public class SqlDdlParserTest extends GridCommonAbstractTest {
         assertParserThrows("kill query '" + UUID.randomUUID() + "_a1233415'", SqlParseException.class);
         assertParserThrows("kill query '123' '123'", SqlParseException.class);
         assertParserThrows("kill query", SqlParseException.class);
+    }
+
+    /**
+     * Test parsing COMMIT and ROLLBACK statements.
+     */
+    @Test
+    public void testCommitRollback() throws Exception {
+        assertTrue(parse("commit transaction") instanceof IgniteSqlCommit);
+        assertTrue(parse("commit") instanceof IgniteSqlCommit);
+        assertTrue(parse("rollback transaction") instanceof IgniteSqlRollback);
+        assertTrue(parse("rollback") instanceof IgniteSqlRollback);
+
+        assertParserThrows("commit transaction 123", SqlParseException.class);
+        assertParserThrows("commit 123", SqlParseException.class);
+        assertParserThrows("rollback transaction 123", SqlParseException.class);
+        assertParserThrows("rollback 123", SqlParseException.class);
     }
 
     /** */

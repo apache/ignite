@@ -63,6 +63,7 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.lang.IgniteBiTuple;
+import org.jetbrains.annotations.Nullable;
 
 import static java.sql.ResultSetMetaData.columnNoNulls;
 import static java.sql.ResultSetMetaData.columnNullable;
@@ -135,6 +136,7 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
      * @param collocated Collocated flag.
      * @param lazy Lazy flag.
      * @param skipReducerOnUpdate Skip reducer on update flag.
+     * @param qryEngine Name of SQL query engine to use.
      * @param nestedTxMode Nested transaction mode.
      * @param ver Client protocol version.
      */
@@ -149,6 +151,7 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
         boolean collocated,
         boolean lazy,
         boolean skipReducerOnUpdate,
+        @Nullable String qryEngine,
         NestedTxMode nestedTxMode,
         ClientListenerProtocolVersion ver,
         OdbcConnectionContext connCtx) {
@@ -172,7 +175,7 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
             skipReducerOnUpdate,
             null,
             null,
-            null
+            qryEngine
         );
 
         this.busyLock = busyLock;
