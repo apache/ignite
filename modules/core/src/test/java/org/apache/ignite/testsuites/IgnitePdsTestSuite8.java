@@ -68,6 +68,7 @@ public class IgnitePdsTestSuite8 {
         List<Class<?>> suite = new ArrayList<>();
 
         // Page lock tracker tests.
+        GridTestUtils.addTestIfNeeded(suite, ToStringDumpHelperTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, PageLockTrackerManagerTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, SharedPageLockTrackerTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, ToFileDumpProcessorTest.class, ignoredTests);
@@ -78,7 +79,6 @@ public class IgnitePdsTestSuite8 {
         GridTestUtils.addTestIfNeeded(suite, HistoricalReservationTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, CircledRebalanceTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, NoUnnecessaryRebalanceTest.class, ignoredTests);
-        GridTestUtils.addTestIfNeeded(suite, ToStringDumpHelperTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, PageLockTrackerResourcesTest.class, ignoredTests);
 
         GridTestUtils.addTestIfNeeded(suite, IgnitePdsCacheEntriesExpirationTest.class, ignoredTests);
