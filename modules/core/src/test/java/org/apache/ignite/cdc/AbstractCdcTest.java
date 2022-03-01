@@ -358,7 +358,7 @@ public abstract class AbstractCdcTest extends GridCommonAbstractTest {
         final List<Integer> commited = new ArrayList<>();
 
         /** Event index. */
-        private final AtomicInteger evtIdx = new AtomicInteger();;
+        private final AtomicInteger evtIdx = new AtomicInteger();
 
         /** @param commitCnt Count of events to commit. */
         BatchCommitConsumer(int commitCnt) {
