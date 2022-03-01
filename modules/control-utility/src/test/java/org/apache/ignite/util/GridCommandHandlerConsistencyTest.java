@@ -159,7 +159,7 @@ public class GridCommandHandlerConsistencyTest extends GridCommandHandlerCluster
         List<LogListener> listeners = new ArrayList<>();
 
         // It's unable to check just "Key:" count while https://issues.apache.org/jira/browse/IGNITE-15316 not fixed
-        if (S.includeSensitive())
+        if (S.includeSensitive()) {
             for (int i = 0; i < PARTITIONS; i++) {
                 LogListener keyListener = matches("Key: " + i + " (cache: ").build();
 
@@ -167,6 +167,7 @@ public class GridCommandHandlerConsistencyTest extends GridCommandHandlerCluster
 
                 listeners.add(keyListener);
             }
+        }
 
         assertEquals(EXIT_CODE_OK, execute("--cache", "idle_verify"));
         assertContains(log, testOut.toString(),
@@ -176,21 +177,23 @@ public class GridCommandHandlerConsistencyTest extends GridCommandHandlerCluster
 
         readRepair(brokenParts, txCacheName, fixesPerEntry);
 
-        if (S.includeSensitive())
+        if (S.includeSensitive()) {
             for (LogListener listener : listeners) {
                 assertTrue(listener.check());
 
                 listener.reset();
             }
+        }
 
         if (fixesPerEntry != null && fixesPerEntry > 0)
             assertEquals(PARTITIONS, brokenParts.get()); // Half fixed.
 
         readRepair(brokenParts, atomicCacheName, fixesPerEntry != null ? 0 : null);
 
-        if (S.includeSensitive())
+        if (S.includeSensitive()) {
             for (LogListener listener : listeners)
                 assertTrue(listener.check());
+        }
 
         if (fixesPerEntry != null && fixesPerEntry > 0)
             assertEquals(PARTITIONS, brokenParts.get()); // Atomics still broken.
