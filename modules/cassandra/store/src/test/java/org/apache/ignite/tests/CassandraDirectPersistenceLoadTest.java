@@ -26,7 +26,7 @@ import org.apache.ignite.tests.utils.CacheStoreHelper;
 import org.apache.ignite.tests.utils.CassandraHelper;
 import org.apache.ignite.tests.utils.TestsHelper;
 import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.core.Logger;
 
 /**
  * Load tests for {@link org.apache.ignite.cache.store.cassandra.CassandraCacheStore} implementation of
@@ -34,7 +34,7 @@ import org.apache.logging.log4j.Logger;
  */
 public class CassandraDirectPersistenceLoadTest extends LoadTestDriver {
     /** */
-    private static final Logger LOGGER = LogManager.getLogger("CassandraLoadTests");
+    private static final Logger LOGGER = (Logger)LogManager.getLogger("CassandraLoadTests");
 
     /**
      *
@@ -102,7 +102,7 @@ public class CassandraDirectPersistenceLoadTest extends LoadTestDriver {
             TestsHelper.getLoadTestsCacheName(),
             TestsHelper.getLoadTestsPersistenceSettings(),
             CassandraHelper.getAdminDataSrc(),
-            LogManager.getLogger(logName));
+            (Logger)LogManager.getLogger(logName));
     }
 
 }

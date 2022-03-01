@@ -122,7 +122,7 @@ public class Log4J2Logger implements IgniteLogger, LoggerNodeIdAndApplicationAwa
      */
     private Log4J2Logger(final Logger impl, String path) {
         assert impl != null;
-        
+
         addConsoleAppenderIfNeeded(new C1<Boolean, Logger>() {
             @Override public Logger apply(Boolean init) {
                 return impl;
@@ -131,6 +131,15 @@ public class Log4J2Logger implements IgniteLogger, LoggerNodeIdAndApplicationAwa
 
         quiet = quiet0;
         cfg = path;
+    }
+
+    /**
+     * Creates new logger with given implementation.
+     *
+     * @param impl Log4j implementation to use.
+     */
+    public Log4J2Logger(final Logger impl) {
+        this(impl, null);
     }
 
     /**
