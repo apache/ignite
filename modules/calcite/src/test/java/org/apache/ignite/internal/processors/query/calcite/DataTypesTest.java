@@ -33,23 +33,24 @@ import org.junit.Test;
  * Test SQL data types.
  */
 public class DataTypesTest extends AbstractBasicIntegrationTest {
-    /** Tests UUID type. */
+    /** Tests UUID without index. */
     @Test
     public void testUUIDWithoutIndex() {
         testUUID(false);
     }
 
-    /** Tests UUID type with indexed UUID field. */
+    /** Tests UUID with the index. */
     @Test
     public void testUUIDWithIndex() {
         testUUID(true);
     }
 
-    /** Tests UUID type with indexed UUID field. */
+    /** Tests UUID type. */
     private void testUUID(boolean indexed) {
         try {
             executeSql("CREATE TABLE t(id INT, name VARCHAR(255), uid UUID, primary key (id))");
-            if(indexed)
+
+            if (indexed)
                 executeSql("CREATE INDEX uuid_idx ON t (uid);");
 
             executeSql("INSERT INTO t VALUES (1, 'fd10556e-fc27-4a99-b5e4-89b8344cb3ce', " +
