@@ -34,15 +34,15 @@ public class GridCommonAbstractTestSelfTest extends GridCommonAbstractTest {
             Arrays.asList(1, 2, 3),
             Arrays.asList(1, 2, 3));
 
-        asserFailed(() -> assertEqualsCollections(
+        assertFailed(() -> assertEqualsCollections(
             Arrays.asList(1, 2, 3),
             Arrays.asList(2, 3, 1)));
 
-        asserFailed(() -> assertEqualsCollections(
+        assertFailed(() -> assertEqualsCollections(
             Arrays.asList(1, 2, 3, null),
             Arrays.asList(2, 3, 1)));
 
-        asserFailed(() -> assertEqualsCollections(
+        assertFailed(() -> assertEqualsCollections(
             Arrays.asList(1, 2, 3),
             Arrays.asList(2, 3, 1, null)));
     }
@@ -64,27 +64,27 @@ public class GridCommonAbstractTestSelfTest extends GridCommonAbstractTest {
             Arrays.asList(1, 2, 2, 3),
             Arrays.asList(2, 3, 2, 1));
 
-        asserFailed(() -> assertEqualsCollectionsIgnoringOrder(
+        assertFailed(() -> assertEqualsCollectionsIgnoringOrder(
             Arrays.asList(1, 2, 3),
             Arrays.asList(2, 3, 1, 2)));
 
-        asserFailed(() -> assertEqualsCollectionsIgnoringOrder(
+        assertFailed(() -> assertEqualsCollectionsIgnoringOrder(
             Arrays.asList(1, 2, 3),
             Arrays.asList(1, 2, 2, 3)));
 
-        asserFailed(() -> assertEqualsCollectionsIgnoringOrder(
+        assertFailed(() -> assertEqualsCollectionsIgnoringOrder(
             Arrays.asList(1, 2, 2, 3),
             Arrays.asList(1, 1, 2, 3)));
 
-        asserFailed(() -> assertEqualsCollectionsIgnoringOrder(
+        assertFailed(() -> assertEqualsCollectionsIgnoringOrder(
             Arrays.asList(1, 2, 2),
             Arrays.asList(1, 2, 2, 4)));
 
-        asserFailed(() -> assertEqualsCollectionsIgnoringOrder(
+        assertFailed(() -> assertEqualsCollectionsIgnoringOrder(
             Arrays.asList(1, 2, 2),
             Arrays.asList(1, 2, 2, null)));
 
-        asserFailed(() -> assertEqualsCollectionsIgnoringOrder(
+        assertFailed(() -> assertEqualsCollectionsIgnoringOrder(
             Arrays.asList(1, 2, 2, null),
             Arrays.asList(1, 2, 2)));
     }
@@ -106,7 +106,7 @@ public class GridCommonAbstractTestSelfTest extends GridCommonAbstractTest {
                 put(2, 2);
             }});
 
-        asserFailed(() -> assertEqualsMaps(
+        assertFailed(() -> assertEqualsMaps(
             new HashMap<Integer, Integer>() {{
                 put(1, 1);
                 put(2, 2);
@@ -119,7 +119,7 @@ public class GridCommonAbstractTestSelfTest extends GridCommonAbstractTest {
                 put(4, 4);
             }}));
 
-        asserFailed(() -> assertEqualsMaps(
+        assertFailed(() -> assertEqualsMaps(
             new HashMap<Integer, Integer>() {{
                 put(1, 1);
                 put(2, 2);
@@ -133,7 +133,7 @@ public class GridCommonAbstractTestSelfTest extends GridCommonAbstractTest {
                 put(4, 4);
             }}));
 
-        asserFailed(() -> assertEqualsMaps(
+        assertFailed(() -> assertEqualsMaps(
             new HashMap<Integer, Integer>() {{
                 put(1, 1);
                 put(2, 2);
@@ -146,7 +146,7 @@ public class GridCommonAbstractTestSelfTest extends GridCommonAbstractTest {
                 put(3, 3);
             }}));
 
-        asserFailed(() -> assertEqualsMaps(
+        assertFailed(() -> assertEqualsMaps(
             new HashMap<Integer, Integer>() {{
                 put(1, 1);
                 put(2, 2);
@@ -163,7 +163,7 @@ public class GridCommonAbstractTestSelfTest extends GridCommonAbstractTest {
     /**
      * @param r Runnable.
      */
-    private void asserFailed(Runnable r) {
+    private void assertFailed(Runnable r) {
         boolean failed = false;
 
         try {
