@@ -362,7 +362,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      */
     private File tmpWorkDir;
 
-    /** I/O factory used for snapshot file operations. */
+    /** Factory to working with delta as file storage. */
     private volatile FileIOFactory ioFactory = new RandomAccessFileIOFactory();
 
     /** File store manager to create page store for restore. */
@@ -1929,30 +1929,28 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
             src.position(0);
 
-            if (rateLimiter.isUnlimited()) {
-                long written = 0;
+            boolean unlimited = rateLimiter.isUnlimited();
+            long written = 0;
 
-                while (written < length)
+            while (written < length) {
+                if (unlimited) {
                     written += src.transferTo(written, length - written, dest);
 
-                return;
-            }
+                    continue;
+                }
 
-            long pos = 0;
-
-            while (pos < length) {
-                long blockLen = Math.min(length - pos, SNAPSHOT_TRANSFER_BLOCK_SIZE_BYTES);
+                long blockLen = Math.min(length - written, SNAPSHOT_TRANSFER_BLOCK_SIZE_BYTES);
 
                 rateLimiter.acquire((int)blockLen);
 
-                long written = 0;
+                long blockWritten = 0;
 
                 do {
-                    written += src.transferTo(pos + written, blockLen - written, dest);
+                    blockWritten += src.transferTo(written + blockWritten, blockLen - blockWritten, dest);
                 }
-                while (written < blockLen);
+                while (blockWritten < blockLen);
 
-                pos += written;
+                written += blockWritten;
             }
         }
         catch (IgniteInterruptedCheckedException e) {
@@ -2893,7 +2891,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
          * @param log Ignite logger.
          * @param sndr File sender instance.
          * @param rqId Snapshot name.
-         * @param rateLimiter File I/O factory.
+         * @param rateLimiter Transfer rate limiter.
          */
         public RemoteSnapshotSender(
             IgniteLogger log,

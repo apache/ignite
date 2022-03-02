@@ -96,7 +96,7 @@ class FileSender extends AbstractTransmission {
      * @param oo Channel to write meta info to.
      * @param rcvMeta Connection meta received.
      * @throws IOException If a transport exception occurred.
-     * @throws IgniteInterruptedCheckedException If thread interrupted.
+     * @throws IgniteInterruptedCheckedException If thread has been interrupted.
      */
     public void send(WritableByteChannel ch,
         ObjectOutput oo,
@@ -117,7 +117,7 @@ class FileSender extends AbstractTransmission {
 
         while (hasNextChunk()) {
             if (Thread.currentThread().isInterrupted())
-                throw new IgniteInterruptedCheckedException("Sender thread has been interruped");
+                throw new IgniteInterruptedCheckedException("Sender thread has been interrupted");
 
             if (stopped())
                 throw new IgniteException("Sender has been cancelled due to the local node is stopping");
@@ -160,22 +160,20 @@ class FileSender extends AbstractTransmission {
     /**
      * @param ch Channel to write data to.
      * @throws IOException If fails.
+     * @throws IgniteInterruptedCheckedException If thread has been interrupted.
      */
     private void writeChunk(WritableByteChannel ch) throws IOException, IgniteInterruptedCheckedException {
         int batchSize = (int)Math.min(chunkSize, meta.count() - transferred);
-
+        boolean limited = rateLimiter.acquire(batchSize);
         long sent = 0;
 
-        if (rateLimiter.acquire(batchSize)) {
-            do {
-                sent += fileIo.transferTo(meta.offset() + transferred + sent, batchSize - sent, ch);
-            }
-            while (sent < batchSize);
+        do {
+            sent += fileIo.transferTo(meta.offset() + transferred + sent, batchSize - sent, ch);
         }
-        else
-            sent = fileIo.transferTo(meta.offset() + transferred, batchSize, ch);
+        while (limited && sent < batchSize && !Thread.currentThread().isInterrupted() && !stopped());
 
-        transferred += sent;
+        if (sent > 0)
+            transferred += sent;
     }
 
     /** {@inheritDoc} */
