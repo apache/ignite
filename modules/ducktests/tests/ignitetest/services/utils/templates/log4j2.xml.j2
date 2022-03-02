@@ -25,6 +25,11 @@
 
     <Appenders>
 
+        <!-- Console Appender -->
+        <Console name="Console" target="SYSTEM_OUT" follow="true">
+            <PatternLayout pattern="${LOG_PATTERN}"/>
+        </Console>
+
         <!-- File Appenders on need basis -->
         <RollingFile name="FILE" fileName="${APP_LOG_ROOT}/ignite.log"
             filePattern="${APP_LOG_ROOT}/ignite-%d{yyyy-MM-dd}-%i.log">
@@ -61,6 +66,7 @@
         </Logger>
 
         <Root level="info">
+            <AppenderRef ref="Console"/>
             <AppenderRef ref="FILE"/>
         </Root>
 

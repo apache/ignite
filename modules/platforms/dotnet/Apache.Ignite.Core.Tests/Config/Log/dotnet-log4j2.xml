@@ -18,6 +18,11 @@
 <Configuration status="WARN" monitorInterval="30">
 
     <Appenders>
+        <!-- Console Appender -->
+        <Console name="Console" target="SYSTEM_OUT" follow="true">
+            <PatternLayout pattern="[%d{ISO8601}][%-5p][%t][%c{1}] %m%n"/>
+        </Console>
+
         <!-- File Appenders on need basis -->
         <RollingFile name="FILE" fileName="${IGNITE_HOME}/work/log/dotnet-logger-test.log">
             <PatternLayout pattern="[%d{ISO8601}][%-5p][%t][%c{1}] %m%n"/>
@@ -26,7 +31,6 @@
             </Policies>
             <DefaultRolloverStrategy max="10"/>
         </RollingFile>
-
     </Appenders>
 
     <Loggers>
@@ -53,6 +57,7 @@
         </Logger>
 
         <Root level="info">
+            <AppenderRef ref="Console"/>
             <AppenderRef ref="FILE"/>
         </Root>
 
