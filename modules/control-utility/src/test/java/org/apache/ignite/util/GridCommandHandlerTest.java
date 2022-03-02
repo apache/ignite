@@ -3017,20 +3017,43 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         createCacheAndPreload(ignite, keysCnt);
 
+        Function<Integer, Integer> propFunc =
+            (num) -> execute("--property", "set", "--name", SNAPSHOT_TRANSFER_RATE_DMS_KEY, "--val", String.valueOf(num));
+
         // Set transfer rate to 1 byte/sec.
-        assertEquals(EXIT_CODE_OK, execute("--property", "set", "--name", SNAPSHOT_TRANSFER_RATE_DMS_KEY, "--val", "1"));
+        assertEquals(EXIT_CODE_OK, (int)propFunc.apply(1));
 
         IgniteFuture<Void> snpFut = ignite.snapshot().createSnapshot(snpName);
 
         // Make sure there are no blocks in critical sections.
         U.sleep(cfg.getFailureDetectionTimeout());
-
         assertFalse(snpFut.isDone());
 
         // Set transfer rate to unlimited.
-        assertEquals(EXIT_CODE_OK, execute("--property", "set", "--name", SNAPSHOT_TRANSFER_RATE_DMS_KEY, "--val", "0"));
+        assertEquals(EXIT_CODE_OK, (int)propFunc.apply(0));
 
         snpFut.get(getTestTimeout() / 2);
+
+        // Check restore.
+        ignite.destroyCache(DEFAULT_CACHE_NAME);
+
+        assertEquals(EXIT_CODE_OK, (int)propFunc.apply(1));
+
+        snpFut = ignite.snapshot().restoreSnapshot(snpName, null);
+
+        U.sleep(cfg.getFailureDetectionTimeout());
+        assertFalse(snpFut.isDone());
+
+        assertEquals(EXIT_CODE_OK, (int)propFunc.apply(0));
+
+        snpFut.get(getTestTimeout() / 2);
+
+        IgniteCache<Object, Object> cache = ignite.cache(DEFAULT_CACHE_NAME);
+
+        assertNotNull(cache);
+
+        for (int i = 0; i < keysCnt; i++)
+            assertEquals("key=" + i, i, cache.get(i));
     }
 
     /** @throws Exception If failed. */
