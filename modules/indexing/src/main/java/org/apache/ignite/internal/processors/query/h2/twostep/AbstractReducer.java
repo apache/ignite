@@ -17,10 +17,10 @@
 
 package org.apache.ignite.internal.processors.query.h2.twostep;
 
-import java.util.Collection;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -111,12 +111,12 @@ public abstract class AbstractReducer implements Reducer {
     }
 
     /** {@inheritDoc} */
-    @Override public void setSources(Collection<ClusterNode> nodes, int segmentsCnt) {
+    @Override public void setSources(Map<ClusterNode, Integer> nodesToSegmentsCnt) {
         assert srcNodes == null;
 
-        srcNodes = new HashSet<>(nodes.size());
+        srcNodes = new HashSet<>(nodesToSegmentsCnt.size());
 
-        for (ClusterNode node : nodes) {
+        for (ClusterNode node : nodesToSegmentsCnt.keySet()) {
             if (!srcNodes.add(node.id()))
                 throw new IllegalStateException();
         }

@@ -35,12 +35,18 @@ namespace Apache.Ignite.Core.Configuration
         public const int DefaultMaxActiveComputeTasksPerConnection = 0;
 
         /// <summary>
+        /// Default value for <see cref="SendServerExceptionStackTraceToClient"/> property.
+        /// </summary>
+        public const bool DefaultSendServerExceptionStackTraceToClient = false;
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="ThinClientConfiguration"/> class.
         /// </summary>
         public ThinClientConfiguration()
         {
             MaxActiveTxPerConnection = DefaultMaxActiveTxPerConnection;
             MaxActiveComputeTasksPerConnection = DefaultMaxActiveComputeTasksPerConnection;
+            SendServerExceptionStackTraceToClient = DefaultSendServerExceptionStackTraceToClient;
         }
 
         /// <summary>
@@ -55,5 +61,14 @@ namespace Apache.Ignite.Core.Configuration
         /// </summary>
         [DefaultValue(DefaultMaxActiveComputeTasksPerConnection)]
         public int MaxActiveComputeTasksPerConnection { get; set; }
+
+        /// <summary>
+        /// Gets or sets a value indicating whether server exception stack trace
+        /// should be included in client exception details, or just the message.
+        /// <para />
+        /// Default is <c>false</c>.
+        /// </summary>
+        [DefaultValue(DefaultSendServerExceptionStackTraceToClient)]
+        public bool SendServerExceptionStackTraceToClient { get; set; }
     }
 }
