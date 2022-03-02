@@ -17,13 +17,20 @@
 
 package org.apache.ignite.logger.log4j;
 
+import java.util.Enumeration;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
+import org.apache.log4j.Appender;
 import org.apache.log4j.BasicConfigurator;
+import org.apache.log4j.Logger;
 import org.junit.Before;
 import org.junit.Test;
+import org.mockito.Mockito;
 
 import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.when;
 
 /**
  * Log4j initialized test.
@@ -33,6 +40,8 @@ public class GridLog4jInitializedTest {
     /** */
     @Before
     public void setUp() {
+        Log4JLogger.cleanup();
+
         BasicConfigurator.configure();
     }
 
@@ -58,5 +67,20 @@ public class GridLog4jInitializedTest {
         log.error("This is 'error' message.", new Exception("It's a test error exception"));
 
         assert log.getLogger(GridLog4jInitializedTest.class.getName()) instanceof Log4JLogger;
+    }
+
+    /** */
+    @Test
+    public void testLogDeprecated() {
+        Logger mock = mock(Logger.class);
+        Enumeration<Appender> enumeration = mock(Enumeration.class);
+
+        when(enumeration.hasMoreElements()).thenReturn(false);
+
+        when(mock.getAllAppenders()).thenReturn(enumeration);
+
+        new Log4JLogger(mock);
+
+        Mockito.verify(mock, times(1)).warn(Log4JLogger.WARN_MSG);
     }
 }
