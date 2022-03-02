@@ -55,12 +55,6 @@
 
         <dependency>
             <groupId>${project.groupId}</groupId>
-            <artifactId>ignite-log4j2</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>${project.groupId}</groupId>
             <artifactId>ignite-spark</artifactId>
             <version>${project.version}</version>
             <exclusions>
@@ -79,10 +73,6 @@
                 <exclusion>
                     <groupId>org.apache.zookeeper</groupId>
                     <artifactId>zookeeper</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>log4j</groupId>
-                    <artifactId>log4j</artifactId>
                 </exclusion>
             </exclusions>
         </dependency>
