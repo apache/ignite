@@ -86,7 +86,7 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_QUIET;
 public class Log4JLogger implements IgniteLogger, LoggerNodeIdAndApplicationAware, Log4jFileAware {
     /** */
     public static final String WARN_MSG = "You are using a deprecated API, it will be removed."
-        + U.nl() + "Pleas use depandency ignite-log4j2";
+        + U.nl() + "Please use the ignite-log4j2 depandency.";
 
     /** Appenders. */
     private static Collection<FileAppender> fileAppenders = new GridConcurrentHashSet<>();
