@@ -43,10 +43,10 @@
                 <property name="queryEnginesConfiguration">
                     <list>
                         <bean class="org.apache.ignite.indexing.IndexingQueryEngineConfiguration">
-                            <property name="default" value="false"/>
+                            <property name="default" value="true"/>
                         </bean>
                         <bean class="org.apache.ignite.calcite.CalciteQueryEngineConfiguration">
-                            <property name="default" value="true"/>
+                            <property name="default" value="false"/>
                         </bean>
                     </list>
                 </property>

@@ -2244,10 +2244,4 @@ BOOST_AUTO_TEST_CASE(TestManyCursorsSelectMerge2)
     }
 }
 
-BOOST_AUTO_TEST_CASE(TestCrossEngineConnection)
-{
-    Connect("DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;SCHEMA=cache;QUERY_ENGINE=CALCITE");
-
-}
-
 BOOST_AUTO_TEST_SUITE_END()

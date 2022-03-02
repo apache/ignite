@@ -70,6 +70,7 @@ set(SOURCES
         src/cursor_binding_test.cpp
         src/sql_schema_test.cpp
         src/test_server.cpp
+        src/cross_engine_test.cpp
         ../odbc/src/log.cpp
         ../odbc/src/cursor.cpp
         ../odbc/src/diagnostic/diagnostic_record.cpp

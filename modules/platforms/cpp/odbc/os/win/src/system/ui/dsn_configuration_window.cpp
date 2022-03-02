@@ -314,7 +314,6 @@ namespace ignite
 
                     rowPos += INTERVAL + ROW_HEIGHT;
 
-
                     engineModeLabel = CreateLabel(labelPosX, rowPos, LABEL_WIDTH, ROW_HEIGHT,
                                                   "SQL query engine:", ChildId::ENGINE_MODE_LABEL);
                     engineModeComboBox = CreateComboBox(editPosX, rowPos, editSizeX, ROW_HEIGHT,
