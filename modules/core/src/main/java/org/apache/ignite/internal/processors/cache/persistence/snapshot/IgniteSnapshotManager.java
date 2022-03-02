@@ -272,7 +272,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     public static final String SNAPSHOT_TRANSFER_RATE_DMS_KEY = "snapshotTransferRate";
 
     /** Snapshot transfer rate is unlimited by default. */
-    public static final long DFLT_SNAPSHOT_TRANSFER_RATE_BYTES = 50 * 1024 * 1024L;
+    public static final long DFLT_SNAPSHOT_TRANSFER_RATE_BYTES = 0L;
 
     /** Minimum block size for limited snapshot transfer. */
     @SystemProperty(value = "Sets the minimum block size for limited snapshot transfer")
