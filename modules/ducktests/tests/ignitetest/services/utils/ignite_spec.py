@@ -164,7 +164,7 @@ class IgniteSpec(metaclass=ABCMeta):
         """
         libs = self.service.modules or []
 
-        libs.append("log4j")
+        libs.append("log4j2")
         libs.append("ducktests")
 
         return list(map(lambda m: os.path.join(self._module(m), "*"), libs))
