@@ -23,16 +23,19 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -46,6 +49,7 @@ import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory;
+import org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory.IteratorParametersBuilder;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -63,7 +67,6 @@ import static org.apache.ignite.cdc.AbstractCdcTest.ChangeEventType.DELETE;
 import static org.apache.ignite.cdc.AbstractCdcTest.ChangeEventType.UPDATE;
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.cacheId;
-import static org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory.IteratorParametersBuilder;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
@@ -125,7 +128,9 @@ public class CdcSelfTest extends AbstractCdcTest {
             cfg.getDataStorageConfiguration().setPageSize(pageSz);
 
         cfg.setCacheConfiguration(
-            new CacheConfiguration<>(TX_CACHE_NAME).setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
+            new CacheConfiguration<>(TX_CACHE_NAME)
+                .setAtomicityMode(TRANSACTIONAL)
+                .setBackups(1)
         );
 
         return cfg;
@@ -195,6 +200,76 @@ public class CdcSelfTest extends AbstractCdcTest {
         stopAllGrids();
 
         cleanPersistenceDir();
+    }
+
+    /** */
+    @Test
+    public void testCommitByOneAndRestart() throws Exception {
+        Ignite ign = startGrids(2);
+
+        ign.cluster().state(ACTIVE);
+
+        IgniteCache<Integer, User> txCache = ign.cache(TX_CACHE_NAME);
+
+        addData(txCache, 0, KEYS_CNT);
+
+        List<Integer> expPrimaryKeys = new LinkedList<>();
+        List<Integer> expBackupKeys = new LinkedList<>();
+
+        txCache.localEntries(CachePeekMode.PRIMARY).forEach(e -> expPrimaryKeys.add(e.getKey()));
+        txCache.localEntries(CachePeekMode.BACKUP).forEach(e -> expBackupKeys.add(e.getKey()));
+
+        assertEquals(KEYS_CNT, expPrimaryKeys.size() + expBackupKeys.size());
+
+        for (int i = 0; i < KEYS_CNT; i++) {
+            AtomicReference<Integer> commitedKey = new AtomicReference<>();
+
+            UserCdcConsumer cnsmr = new UserCdcConsumer() {
+                @Override public boolean onEvents(Iterator<CdcEvent> evts) {
+                    CdcEvent evt = evts.next();
+
+                    super.onEvents(Collections.singleton(evt).iterator());
+
+                    return commitedKey.compareAndSet(null, (Integer)evt.key());
+                }
+            };
+
+            CdcMain cdc = createCdc(cnsmr, getConfiguration(ign.name()));
+
+            IgniteInternalFuture<?> fut = runAsync(cdc);
+
+            assertTrue(waitForCondition(
+                () -> F.eqNotOrdered(expPrimaryKeys, cnsmr.data(UPDATE, cacheId(TX_CACHE_NAME))) &&
+                    F.eqNotOrdered(expBackupKeys, cnsmr.backupData(UPDATE, cacheId(TX_CACHE_NAME))), getTestTimeout()));
+
+            checkMetrics(cdc, KEYS_CNT - i);
+
+            fut.cancel();
+
+            assertTrue(cnsmr.stopped());
+            assertTrue(expPrimaryKeys.remove(commitedKey.get()) || expBackupKeys.remove(commitedKey.get()));
+        }
+
+        checkMultipleDataEntryPerRecord(ign);
+    }
+
+    /** Checks that WAL contains multiple {@link DataEntry} per {@link DataRecord}. */
+    private void checkMultipleDataEntryPerRecord(Ignite ign) throws IgniteCheckedException {
+        IteratorParametersBuilder param = new IteratorParametersBuilder()
+            .filesOrDirs(U.resolveWorkDirectory(U.defaultWorkDirectory(),
+                ign.configuration().getDataStorageConfiguration().getCdcWalPath(), false))
+            .filter((type, pointer) -> type == WALRecord.RecordType.DATA_RECORD_V2);
+
+        try (WALIterator iter = new IgniteWalIteratorFactory(log).iterator(param)) {
+            while (iter.hasNext()) {
+                DataRecord rec = (DataRecord)iter.next().get2();
+
+                if (rec.writeEntries().size() > 1)
+                    return;
+            }
+        }
+
+        fail("There are no multiple DataEntry per DataRecord.");
     }
 
     /** */
@@ -463,103 +538,6 @@ public class CdcSelfTest extends AbstractCdcTest {
         assertTrue(cnsmr.stopped());
     }
 
-    /** Tests that {@link DataEntry} index inside {@link DataRecord} commited. */
-    @Test
-    public void testReadBatchDataRecord() throws Exception {
-        int recCnt = 5;
-        int entriesPerRec = 10;
-        int commitCnt = entriesPerRec / 2;
-        int totalEntries = recCnt * entriesPerRec;
-
-        // Create WAL data records with a few data entries per record.
-        IgniteEx srv = startGrids(2);
-
-        srv.cluster().state(ACTIVE);
-
-        IgniteCache<Integer, User> cache = srv.getOrCreateCache(new CacheConfiguration<Integer, User>()
-            .setName(DEFAULT_CACHE_NAME)
-            .setBackups(1)
-            .setAtomicityMode(TRANSACTIONAL));
-
-        Map<Integer, User> vals = null;
-
-        for (int i = 0; i < recCnt; i++) {
-            int lastKey = vals == null ? 0 : vals.keySet().stream().mapToInt(value -> value).max().getAsInt() + 1;
-
-            vals = backupKeys(cache, entriesPerRec, lastKey).stream()
-                .collect(Collectors.toMap(key -> key, AbstractCdcTest::createUser));
-
-            cache.putAll(vals);
-        }
-
-        checkWalDataRecord(srv, recCnt, entriesPerRec);
-
-        // Commit each time a few events and restart.
-        for (int commitedCnt = 0; commitedCnt < totalEntries;) {
-            // Commit a few events and stop CDC app.
-            BatchCommitConsumer batchCnsmr = new BatchCommitConsumer(commitCnt);
-
-            CdcMain cdc = createCdc(batchCnsmr, getConfiguration(srv.name()));
-
-            IgniteInternalFuture<?> fut1 = runAsync(cdc);
-
-            waitForSize(totalEntries - commitedCnt, DEFAULT_CACHE_NAME, UPDATE, batchCnsmr);
-
-            fut1.cancel();
-
-            assertTrue(batchCnsmr.stopped());
-
-            commitedCnt += commitCnt;
-
-            // Restart CDC app and continue listening event since commited.
-            BatchCommitConsumer cnsmr = new BatchCommitConsumer(0);
-
-            cdc = createCdc(cnsmr, getConfiguration(srv.name()));
-
-            IgniteInternalFuture<?> fut2 = runAsync(cdc);
-
-            waitForSize(totalEntries - commitedCnt, DEFAULT_CACHE_NAME, UPDATE, cnsmr);
-
-            fut2.cancel();
-
-            // Check read keys.
-            Collection<Integer> keysBeforeCommit = batchCnsmr.commited;
-            Collection<Integer> keysAfterCommit = F.flatCollections(cnsmr.data.values());
-
-            keysBeforeCommit.forEach(key -> assertFalse(keysAfterCommit.contains(key)));
-
-            assertEquals(commitCnt, keysBeforeCommit.size());
-            assertEquals(totalEntries - commitedCnt, keysAfterCommit.size());
-        }
-    }
-
-    /** */
-    private void checkWalDataRecord(IgniteEx srv, int expRecCnt, int expEntriesPerRec) throws IgniteCheckedException {
-        IteratorParametersBuilder param = new IteratorParametersBuilder()
-            .filesOrDirs(U.resolveWorkDirectory(U.defaultWorkDirectory(),
-                srv.configuration().getDataStorageConfiguration().getCdcWalPath(), false))
-            .filter((type, pointer) -> type == WALRecord.RecordType.DATA_RECORD_V2);
-
-        assertTrue(waitForCondition(() -> {
-            int cnt = 0;
-
-            try (WALIterator iter = new IgniteWalIteratorFactory(log).iterator(param)) {
-                while (iter.hasNext()) {
-                    DataRecord rec = (DataRecord)iter.next().get2();
-
-                    assertEquals(expEntriesPerRec, rec.writeEntries().size());
-
-                    cnt++;
-                }
-            }
-            catch (IgniteCheckedException e) {
-                throw U.convertException(e);
-            }
-
-            return expRecCnt == cnt;
-        }, getTestTimeout()));
-    }
-
     /** {@inheritDoc} */
     @Override public MetricExporterSpi[] metricExporters() {
         if (metricExporter == null)
@@ -570,7 +548,17 @@ public class CdcSelfTest extends AbstractCdcTest {
 
     /** */
     public static void addData(IgniteCache<Integer, User> cache, int from, int to) {
-        for (int i = from; i < to; i++)
+        int cnt = to - from;
+
+        for (int i = from; i < from + cnt / 3; i++)
+            cache.put(i, createUser(i));
+
+        Map<Integer, User> vals = IntStream.range(from + cnt / 3, from + 2 * cnt / 3).boxed()
+            .collect(Collectors.toMap(key -> key, AbstractCdcTest::createUser));
+
+        cache.putAll(vals);
+
+        for (int i = from + 2 * cnt / 3; i < to; i++)
             cache.put(i, createUser(i));
     }
 

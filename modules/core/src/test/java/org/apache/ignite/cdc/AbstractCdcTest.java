@@ -28,7 +28,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadLocalRandom;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import javax.management.DynamicMBean;
 import org.apache.ignite.IgniteCache;
@@ -274,8 +273,11 @@ public abstract class AbstractCdcTest extends GridCommonAbstractTest {
 
     /** */
     public abstract static class TestCdcConsumer<T> implements CdcConsumer {
-        /** Keys */
+        /** Primary keys. */
         final ConcurrentMap<IgniteBiTuple<ChangeEventType, Integer>, List<T>> data = new ConcurrentHashMap<>();
+
+        /** Backup keys. */
+        final ConcurrentMap<IgniteBiTuple<ChangeEventType, Integer>, List<T>> backupData = new ConcurrentHashMap<>();
 
         /** */
         private volatile boolean stopped;
@@ -293,10 +295,7 @@ public abstract class AbstractCdcTest extends GridCommonAbstractTest {
         /** {@inheritDoc} */
         @Override public boolean onEvents(Iterator<CdcEvent> evts) {
             evts.forEachRemaining(evt -> {
-                if (!evt.primary())
-                    return;
-
-                data.computeIfAbsent(
+                (evt.primary() ? data : backupData).computeIfAbsent(
                     F.t(evt.value() == null ? DELETE : UPDATE, evt.cacheId()),
                     k -> new ArrayList<>()).add(extract(evt));
 
@@ -317,9 +316,14 @@ public abstract class AbstractCdcTest extends GridCommonAbstractTest {
             return true;
         }
 
-        /** @return Read keys. */
+        /** @return Read primary keys. */
         public List<T> data(ChangeEventType op, int cacheId) {
-            return data.get(F.t(op, cacheId));
+            return data.computeIfAbsent(F.t(op, cacheId), k -> new ArrayList<>());
+        }
+
+        /** @return Read backup keys. */
+        public List<T> backupData(ChangeEventType op, int cacheId) {
+            return backupData.computeIfAbsent(F.t(op, cacheId), k -> new ArrayList<>());
         }
 
         /** */
@@ -346,44 +350,6 @@ public abstract class AbstractCdcTest extends GridCommonAbstractTest {
         /** {@inheritDoc} */
         @Override public Integer extract(CdcEvent evt) {
             return (Integer)evt.key();
-        }
-    }
-
-    /** Consumer to commit a few events. */
-    public static class BatchCommitConsumer extends UserCdcConsumer {
-        /** Count of events to commit. */
-        private final int commitCnt;
-
-        /** Commited keys. */
-        final List<Integer> commited = new ArrayList<>();
-
-        /** Event index. */
-        private final AtomicInteger evtIdx = new AtomicInteger();;
-
-        /** @param commitCnt Count of events to commit. */
-        BatchCommitConsumer(int commitCnt) {
-            this.commitCnt = commitCnt;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean onEvents(Iterator<CdcEvent> evts) {
-            while (evts.hasNext()) {
-                CdcEvent evt = evts.next();
-
-                data.computeIfAbsent(
-                    F.t(evt.value() == null ? DELETE : UPDATE, evt.cacheId()),
-                    k -> new ArrayList<>()).add(extract(evt));
-
-                if (evtIdx.incrementAndGet() == commitCnt) {
-                    assertEquals(commitCnt, F.flatCollections(data.values()).size());
-
-                    data.values().forEach(commited::addAll);
-
-                    return true;
-                }
-            }
-
-            return false;
         }
     }
 
