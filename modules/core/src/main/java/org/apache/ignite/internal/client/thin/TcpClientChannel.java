@@ -25,6 +25,8 @@ import java.util.Collection;
 import java.util.EnumSet;
 import java.util.Map;
 import java.util.Queue;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
@@ -149,6 +151,12 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
     /** Send/receive timeout in milliseconds. */
     private final int timeout;
 
+    /** Heartbeat timer. */
+    private final Timer heartbeatTimer;
+
+    /** Last send operation timestamp. */
+    private volatile long lastSendMillis;
+
     /** Constructor. */
     TcpClientChannel(ClientChannelConfiguration cfg, ClientConnectionMultiplexer connMgr)
         throws ClientConnectionException, ClientAuthenticationException, ClientProtocolError {
@@ -168,8 +176,9 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
 
         handshake(DEFAULT_VERSION, cfg.getUserName(), cfg.getUserPassword(), cfg.getUserAttributes());
 
-        if (protocolCtx.isFeatureSupported(HEARTBEAT) && cfg.getHeartbeatsEnabled())
-            initHeartbeats(cfg.getHeartbeatInterval());
+        heartbeatTimer = protocolCtx.isFeatureSupported(HEARTBEAT) && cfg.getHeartbeatsEnabled()
+                ? initHeartbeats(cfg.getHeartbeatInterval())
+                : null;
     }
 
     /** {@inheritDoc} */
@@ -192,6 +201,9 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
      */
     private void close(Exception cause) {
         if (closed.compareAndSet(false, true)) {
+            if (heartbeatTimer != null)
+                heartbeatTimer.cancel();
+
             U.closeQuiet(sock);
 
             for (ClientRequestFuture pendingReq : pendingReqs.values())
@@ -688,6 +700,7 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
 
         try {
             sock.send(buf, onDone);
+            lastSendMillis = System.currentTimeMillis();
         }
         catch (IgniteCheckedException e) {
             throw new ClientConnectionException(e.getMessage(), e);
@@ -711,15 +724,42 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
 
     /**
      * Initializes heartbeats.
+     *
      * @param heartbeatInterval Heartbeat interval, in milliseconds.
+     * @return Heartbeat timer.
      */
-    private void initHeartbeats(long heartbeatInterval) {
-        // TODO
+    private Timer initHeartbeats(long heartbeatInterval) {
+        Timer timer = new Timer("tcp-client-channel-heartbeats-" + hashCode());
+
+        // TODO: Request server-side value.
+        timer.schedule(new HeartbeatTask(heartbeatInterval), heartbeatInterval, heartbeatInterval);
+
+        return timer;
     }
 
     /**
      *
      */
     private static class ClientRequestFuture extends GridFutureAdapter<ByteBuffer> {
+    }
+
+    /**
+     * Sends heartbeat messages.
+     */
+    private class HeartbeatTask extends TimerTask {
+        private final long interval;
+
+        public HeartbeatTask(long interval) {
+            this.interval = interval;
+        }
+
+        @Override public void run() {
+            try {
+                if (System.currentTimeMillis() - lastSendMillis > interval)
+                    service(ClientOperation.HEARTBEAT, null, null);
+            } catch (Throwable ignored) {
+                // Ignore failed heartbeats.
+            }
+        }
     }
 }
