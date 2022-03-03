@@ -138,6 +138,7 @@ import org.apache.ignite.spi.GridSpiLocalHostInjectionTest;
 import org.apache.ignite.spi.checkpoint.noop.NoopCheckpointSpiLoggingTest;
 import org.apache.ignite.startup.properties.NotStringSystemPropertyTest;
 import org.apache.ignite.testframework.MessageOrderLogListenerTest;
+import org.apache.ignite.testframework.test.ClientGridStartTest;
 import org.apache.ignite.testframework.test.ConfigVariationsExecutionTest;
 import org.apache.ignite.testframework.test.ConfigVariationsTestSuiteBuilderTest;
 import org.apache.ignite.testframework.test.ListeningTestLoggerTest;
@@ -309,6 +310,7 @@ import org.junit.runners.Suite;
     NotStringSystemPropertyTest.class,
     ConfigVariationsExecutionTest.class,
     ConfigVariationsTestSuiteBuilderTest.class,
+    ClientGridStartTest.class,
 
     DeadLockOnNodeLeftExchangeTest.class,
 
