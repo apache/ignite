@@ -31,8 +31,7 @@ class ClientERRTest(IgniteTest):
     """
     Test Clients
     """
-    NUM_NODES = 4
-
+    NUM_NODES = 40
 
     @cluster(num_nodes=NUM_NODES)
     @ignite_versions(str(DEV_BRANCH), str(LATEST))
