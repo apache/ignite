@@ -45,6 +45,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Optional;
 import java.util.Queue;
 import java.util.Set;
 import java.util.UUID;
@@ -1902,6 +1903,12 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
             CUR_PLC.set(plc);
 
         UUID newSecSubjId = secSubjId != null ? secSubjId : nodeId;
+
+        ClusterNode node = Optional.ofNullable(ctx.discovery().node(newSecSubjId))
+            .orElseGet(() -> ctx.discovery().historicalNode(newSecSubjId));
+
+        if (node == null)
+            throw new IgniteException("ALARM >>>>> I found it!!! :)");
 
         try (OperationSecurityContext s = ctx.security().withContext(newSecSubjId)) {
             lsnr.onMessage(nodeId, msg, plc);
