@@ -32,7 +32,6 @@ import org.apache.ignite.cache.ReadRepairStrategy;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.CacheConsistencyViolationEvent;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException;
 import org.apache.ignite.internal.managers.eventstorage.GridEventStorageManager;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -101,9 +100,6 @@ public abstract class GridNearReadRepairAbstractFuture extends GridFutureAdapter
     /** Remap count. */
     protected final int remapCnt;
 
-    /** Remap flag. */
-    private final boolean canRemap;
-
     /** Latest mapped topology version. */
     private final AffinityTopologyVersion topVer;
 
@@ -155,9 +151,7 @@ public abstract class GridNearReadRepairAbstractFuture extends GridFutureAdapter
 
         remapCnt = remappedFut != null ? remappedFut.remapCnt + 1 : 0;
 
-        canRemap = topVer == null;
-
-        this.topVer = canRemap ? ctx.affinity().affinityTopologyVersion() : topVer;
+        this.topVer = topVer == null ? ctx.affinity().affinityTopologyVersion() : topVer;
 
         Map<KeyCacheObject, ClusterNode> primaries = new HashMap<>();
 
@@ -250,22 +244,8 @@ public abstract class GridNearReadRepairAbstractFuture extends GridFutureAdapter
      */
     protected final void onResult(IgniteInternalFuture<Map<KeyCacheObject, EntryGetResult>> finished) {
         if (finished.error() != null) {
-            if (finished.error() instanceof ClusterTopologyServerNotFoundException) {
-                if (remapCnt >= MAX_REMAP_CNT) {
-                    onDone(new ClusterTopologyCheckedException("Failed to remap keys to a new nodes after " +
-                        MAX_REMAP_CNT + " attempts (keys got remapped to the same node) ]"));
-                }
-                else if (!canRemap)
-                    remap(topVer);
-                else {
-                    long maxTopVer = Math.max(topVer.topologyVersion() + 1, ctx.discovery().topologyVersion());
-
-                    AffinityTopologyVersion awaitTopVer = new AffinityTopologyVersion(maxTopVer);
-
-                    ctx.shared().exchange().affinityReadyFuture(awaitTopVer)
-                        .listen((f) -> remap(awaitTopVer));
-                }
-            }
+            if (finished.error() instanceof ClusterTopologyServerNotFoundException)
+                onDone(new UnsupportedOperationException("Operation can not be performed on unstable topology.", finished.error()));
             else
                 onDone(finished.error());
         }

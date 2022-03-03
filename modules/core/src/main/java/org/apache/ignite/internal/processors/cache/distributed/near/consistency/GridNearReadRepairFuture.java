@@ -125,17 +125,7 @@ public class GridNearReadRepairFuture extends GridNearReadRepairAbstractFuture {
 
     /** {@inheritDoc} */
     @Override protected GridNearReadRepairAbstractFuture remapFuture(AffinityTopologyVersion topVer) {
-        return new GridNearReadRepairFuture(
-            topVer,
-            ctx,
-            keys,
-            strategy,
-            readThrough,
-            taskName,
-            deserializeBinary,
-            recovery,
-            expiryPlc,
-            tx);
+        throw new UnsupportedOperationException("Method should never be called.");
     }
 
     /** {@inheritDoc} */
