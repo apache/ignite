@@ -710,7 +710,7 @@ public final class ClientConfiguration implements Serializable {
      * @param heartbeatsEnabled Whether to enable heartbeats.
      * @return {@code this} for chaining.
      */
-    public ClientConfiguration setHeartbeatsEnabled(boolean heartbeatsEnabled) {
+    public ClientConfiguration setHeartbeatEnabled(boolean heartbeatEnabled) {
         this.heartbeatsEnabled = heartbeatsEnabled;
 
         return this;
