@@ -695,7 +695,7 @@ public final class ClientConfiguration implements Serializable {
      *
      * @return Whether heartbeats are enabled.
      */
-    public boolean getHeartbeatsEnabled() {
+    public boolean isHeartbeatEnabled() {
         return heartbeatsEnabled;
     }
 
