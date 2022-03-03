@@ -23,14 +23,12 @@ import org.apache.ignite.compute.ComputeTaskFuture;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.loadtests.GridLoadTestStatistics;
-import org.apache.ignite.logger.log4j.Log4JLogger;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.config.GridTestProperties;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
-import org.apache.log4j.Level;
 import org.junit.Ignore;
 import org.junit.Test;
 
@@ -52,10 +50,6 @@ public class SingleSplitsLoadTest extends GridCommonAbstractTest {
 
         cfg.setCommunicationSpi(new TcpCommunicationSpi());
         cfg.setDiscoverySpi(new TcpDiscoverySpi());
-
-        Log4JLogger log = (Log4JLogger)cfg.getGridLogger().getLogger(null);
-
-        log.setLevel(Level.INFO);
 
         return cfg;
     }

@@ -22,8 +22,8 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.log4j.Level;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.LogManager;
 import org.apache.spark.sql.AnalysisException;
 import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Row;
@@ -59,8 +59,8 @@ public class JavaIgniteCatalogExample {
                 .getOrCreate();
 
         //Adjust the logger to exclude the logs of no interest.
-        Logger.getRootLogger().setLevel(Level.ERROR);
-        Logger.getLogger("org.apache.ignite").setLevel(Level.INFO);
+        LogManager.getRootLogger().atLevel(Level.ERROR);
+        LogManager.getLogger("org.apache.ignite").atLevel(Level.INFO);
 
         System.out.println("List of available tables:");
 
