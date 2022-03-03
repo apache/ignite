@@ -131,7 +131,7 @@ public final class ClientConfiguration implements Serializable {
     private Executor asyncContinuationExecutor;
 
     /** Whether heartbeats should be enabled. */
-    private boolean enableHeartbeats;
+    private boolean heartbeatsEnabled;
 
     /** Heartbeat interval, in milliseconds. */
     private long heartbeatInterval = 30_000L;
@@ -681,6 +681,26 @@ public final class ClientConfiguration implements Serializable {
      */
     public ClientConfiguration setAsyncContinuationExecutor(Executor asyncContinuationExecutor) {
         this.asyncContinuationExecutor = asyncContinuationExecutor;
+
+        return this;
+    }
+
+    public boolean getHeartbeatsEnabled() {
+        return heartbeatsEnabled;
+    }
+
+    public ClientConfiguration setHeartbeatsEnabled(boolean heartbeatsEnabled) {
+        this.heartbeatsEnabled = heartbeatsEnabled;
+
+        return this;
+    }
+
+    public long getHeartbeatInterval() {
+        return heartbeatInterval;
+    }
+
+    public ClientConfiguration setHeartbeatInterval(long heartbeatInterval) {
+        this.heartbeatInterval = heartbeatInterval;
 
         return this;
     }
