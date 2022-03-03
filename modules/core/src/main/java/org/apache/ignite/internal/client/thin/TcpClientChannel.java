@@ -569,6 +569,8 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
             error = "At least one Ignite server node must be specified in the Ignite client configuration";
         else if (addr.getPort() < 1024 || addr.getPort() > 49151)
             error = String.format("Ignite client port %s is out of valid ports range 1024...49151", addr.getPort());
+        else if (cfg.getHeartbeatInterval() <= 0)
+            error = "heartbeatInterval cannot be zero or less.";
 
         if (error != null)
             throw new IllegalArgumentException(error);
@@ -725,16 +727,34 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
     /**
      * Initializes heartbeats.
      *
-     * @param heartbeatInterval Heartbeat interval, in milliseconds.
+     * @param configuredInterval Configured heartbeat interval, in milliseconds.
      * @return Heartbeat timer.
      */
-    private Timer initHeartbeats(long heartbeatInterval) {
+    private Timer initHeartbeats(long configuredInterval) {
+        long heartbeatInterval = getHeartbeatInterval(configuredInterval);
+
         Timer timer = new Timer("tcp-client-channel-heartbeats-" + hashCode());
 
-        // TODO: Request server-side value.
         timer.schedule(new HeartbeatTask(heartbeatInterval), heartbeatInterval, heartbeatInterval);
 
         return timer;
+    }
+
+    /**
+     * Gets the heartbeat interval based on the configured value and served-side idle timeout.
+     *
+     * @param configuredInterval Configured interval.
+     * @return Resolved interval.
+     */
+    private long getHeartbeatInterval(long configuredInterval) {
+        long serverIdleTimeoutMs = service(ClientOperation.GET_IDLE_TIMEOUT, null, null);
+
+        if (serverIdleTimeoutMs <= 0)
+            return configuredInterval;
+
+        long recommendedHeartbeatInterval = serverIdleTimeoutMs / 3;
+
+        return Math.min(configuredInterval, recommendedHeartbeatInterval);
     }
 
     /**
