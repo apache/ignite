@@ -87,6 +87,14 @@ public class GridCommonAbstractTestSelfTest extends GridCommonAbstractTest {
         assertFailed(() -> assertEqualsCollectionsIgnoringOrder(
             Arrays.asList(1, 2, 2, null),
             Arrays.asList(1, 2, 2)));
+
+        assertFailed(() -> assertEqualsCollectionsIgnoringOrder(
+            Arrays.asList(1, 2, 2, 3),
+            Arrays.asList(1, 2, 2, null)));
+
+        assertFailed(() -> assertEqualsCollectionsIgnoringOrder(
+            Arrays.asList(1, 2, 2, null),
+            Arrays.asList(1, 2, 2, 3)));
     }
 
     /**

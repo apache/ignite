@@ -1892,10 +1892,6 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
         for (T obj : exp)
             assertEquals("Collections are not equal (element " + obj + " frequency is different):",
                 Collections.frequency(exp, obj), Collections.frequency(act, obj));
-
-        for (T obj : act)
-            assertEquals("Collections are not equal (element " + obj + " frequency is different):",
-                Collections.frequency(exp, obj), Collections.frequency(act, obj));
     }
 
     /**
