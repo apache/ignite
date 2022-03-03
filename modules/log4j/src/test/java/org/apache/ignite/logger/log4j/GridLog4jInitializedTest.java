@@ -33,8 +33,6 @@ public class GridLog4jInitializedTest {
     /** */
     @Before
     public void setUp() {
-        Log4JLogger.cleanup();
-
         BasicConfigurator.configure();
     }
 
