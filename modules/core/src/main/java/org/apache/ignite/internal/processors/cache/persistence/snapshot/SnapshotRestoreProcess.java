@@ -1338,7 +1338,7 @@ public class SnapshotRestoreProcess {
                         ", snpDir=" + snpFile.getAbsolutePath() + ", name=" + snpFile.getName() + ']');
                 }
 
-                IgniteSnapshotManager.copy(mgr.ioFactory(), snpFile, partFile.toFile(), snpFile.length(), null);
+                IgniteSnapshotManager.copy(mgr.ioFactory(), snpFile, partFile.toFile(), snpFile.length());
 
                 return partFile;
             }, mgr.snapshotExecutorService())

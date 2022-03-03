@@ -270,6 +270,9 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
     /** Direct protocol version. */
     public static final byte DIRECT_PROTO_VER = 3;
 
+    /** Current IO policy. */
+    private static final ThreadLocal<Byte> CUR_PLC = new ThreadLocal<>();
+
     /**
      * Default chunk size in bytes used for sending\receiving files over a {@link SocketChannel}.
      * Setting the transfer chunk size more than <tt>1 MB</tt> is meaningless because there is
@@ -279,10 +282,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
      * <p>
      * Default value is {@code 256Kb}.
      */
-    public static final int DFLT_CHUNK_SIZE_BYTES = 256 * 1024;
-
-    /** Current IO policy. */
-    private static final ThreadLocal<Byte> CUR_PLC = new ThreadLocal<>();
+    private static final int DFLT_CHUNK_SIZE_BYTES = 256 * 1024;
 
     /** Mutex to achieve consistency of transmission handlers and receiver contexts. */
     private final Object rcvMux = new Object();

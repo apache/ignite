@@ -727,7 +727,7 @@ class SnapshotFutureTask extends AbstractSnapshotFutureTask<Set<GroupPartitionId
                 File newCcfgFile = new File(cacheWorkDir, ccfgFile.getName());
                 newCcfgFile.createNewFile();
 
-                copy(ioFactory, ccfgFile, newCcfgFile, ccfgFile.length(), null);
+                copy(ioFactory, ccfgFile, newCcfgFile, ccfgFile.length());
 
                 this.ccfgFile = newCcfgFile;
                 fromTemp = true;

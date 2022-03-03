@@ -280,6 +280,10 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     /** Snapshot operation fail log message. */
     private static final String SNAPSHOT_FAILED_MSG = "Cluster-wide snapshot operation failed: ";
 
+    /** Error message while copying the snapshot file. */
+    private static final String FILE_HAS_NOT_ENOUGH_LENGTH_ERR = "The source file to copy is not long enough " +
+        "[expected=%d, actual=%d]";
+
     /** Default snapshot topic to receive snapshots from remote node. */
     private static final Object DFLT_INITIAL_SNAPSHOT_TOPIC = GridTopic.TOPIC_SNAPSHOT.topic("rmt_snp");
 
@@ -1908,33 +1912,49 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @param from Copy from file.
      * @param to Copy data to file.
      * @param length Number of bytes to copy from beginning.
-     * @param rateLimiter Transfer rate limiter.
      */
-    static void copy(FileIOFactory factory, File from, File to, long length, @Nullable BasicRateLimiter rateLimiter) {
+    static void copy(FileIOFactory factory, File from, File to, long length) {
         try (FileIO src = factory.create(from, READ);
              FileChannel dest = new FileOutputStream(to).getChannel()) {
-            if (src.size() < length) {
-                throw new IgniteException("The source file to copy has to enough length " +
-                    "[expected=" + length + ", actual=" + src.size() + ']');
-            }
+            if (src.size() < length)
+                throw new IgniteException(String.format(FILE_HAS_NOT_ENOUGH_LENGTH_ERR, length, src.size()));
 
-            src.position(0);
+            long written = 0;
 
-            boolean unlimited = rateLimiter == null || rateLimiter.isUnlimited();
+            while (written < length)
+                written += src.transferTo(written, length - written, dest);
+        }
+        catch (IOException e) {
+            throw new IgniteException(e);
+        }
+    }
+
+    /**
+     * Copies a file with regard to the limitation of the snapshot transfer rate.
+     *
+     * @param from Copy from file.
+     * @param to Copy data to file.
+     * @param length Number of bytes to copy from beginning.
+     */
+    private void limitedCopy(File from, File to, long length) {
+        if (transferRateLimiter.isUnlimited()) {
+            copy(ioFactory, from, to, length);
+
+            return;
+        }
+
+        try (FileIO src = ioFactory.create(from, READ);
+             FileChannel dest = new FileOutputStream(to).getChannel()) {
+            if (src.size() < length)
+                throw new IgniteException(String.format(FILE_HAS_NOT_ENOUGH_LENGTH_ERR, length, src.size()));
+
             long written = 0;
 
             while (written < length) {
-                if (unlimited) {
-                    written += src.transferTo(written, length - written, dest);
-
-                    continue;
-                }
-
                 long blockLen = Math.min(length - written, SNAPSHOT_LIMITED_TRANSFER_BLOCK_SIZE_BYTES);
-
-                rateLimiter.acquire(blockLen);
-
                 long blockWritten = 0;
+
+                transferRateLimiter.acquire(blockLen);
 
                 do {
                     blockWritten += src.transferTo(written + blockWritten, blockLen - blockWritten, dest);
@@ -3030,7 +3050,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             try {
                 File cacheDir = U.resolveWorkDirectory(dbDir.getAbsolutePath(), cacheDirName, false);
 
-                copy(ioFactory, ccfg, new File(cacheDir, ccfg.getName()), ccfg.length(), null);
+                copy(ioFactory, ccfg, new File(cacheDir, ccfg.getName()), ccfg.length());
             }
             catch (IgniteCheckedException e) {
                 throw new IgniteException(e);
@@ -3071,7 +3091,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 if (!snpPart.exists() || snpPart.delete())
                     snpPart.createNewFile();
 
-                copy(ioFactory, part, snpPart, len, transferRateLimiter);
+                limitedCopy(part, snpPart, len);
 
                 if (log.isDebugEnabled()) {
                     log.debug("Partition has been snapshot [snapshotDir=" + dbDir.getAbsolutePath() +
