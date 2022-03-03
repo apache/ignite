@@ -339,8 +339,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
                     if (stateFinishMsg.clusterActive()) {
                         for (PendingDiscoveryEvent pendingEvt : pendingEvts) {
-                            if (log.isDebugEnabled())
-                                log.debug("Process pending event: " + pendingEvt.event());
+                            if (log.isInfoEnabled())
+                                log.info("Process pending event: " + pendingEvt.event());
 
                             onDiscoveryEvent(pendingEvt.event(), pendingEvt.discoCache());
                         }
@@ -597,6 +597,9 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
             if (!n.isClient() && !n.isDaemon())
                 exchActs = cctx.kernalContext().state().autoAdjustExchangeActions(exchActs);
+
+            if (log.isInfoEnabled())
+                log.info("Process non custom event [evt=" + evt + ", exchId=" + exchId + ", locJoin=" + locJoin + ", exchActs=" + exchActs + ']');
 
             exchFut = exchangeFuture(exchId, evt, cache, exchActs, null);
         }
@@ -859,8 +862,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
             fut = exchangeFuture(
                 exchId,
-                reconnect ? null : discoEvt,
-                reconnect ? null : discoCache,
+                reconnect ? null : null /*discoEvt*/,
+                reconnect ? null : null /*discoCache*/,
                 null,
                 null);
         }
