@@ -46,7 +46,6 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.topology.Part
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheOffheapManager;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.PagesList;
-import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager;
 import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryEventBuffer;
 import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryHandler;
 import org.apache.ignite.internal.util.GridConfigurationFinder;
@@ -102,8 +101,7 @@ public final class CommandLineStartup {
         CacheContinuousQueryHandler.class,
         OffheapReadWriteLock.class,
         TcpCommunicationConfiguration.class,
-        BinaryArray.class,
-        IgniteSnapshotManager.class
+        BinaryArray.class
     ));
 
     static {

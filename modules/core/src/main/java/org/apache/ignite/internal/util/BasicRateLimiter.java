@@ -121,7 +121,7 @@ public class BasicRateLimiter {
      * @param permits The number of permits to acquire.
      * @throws IllegalArgumentException If the requested number of permits is negative or zero.
      */
-    public void acquire(int permits) throws IgniteInterruptedCheckedException {
+    public void acquire(long permits) throws IgniteInterruptedCheckedException {
         if (unlimited)
             return;
 

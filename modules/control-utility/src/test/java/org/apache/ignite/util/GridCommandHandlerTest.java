@@ -69,7 +69,6 @@ import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.failure.StopNodeFailureHandler;
 import org.apache.ignite.internal.GridJobExecuteResponse;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -161,7 +160,7 @@ import static org.apache.ignite.internal.encryption.AbstractEncryptionTest.MASTE
 import static org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager.IGNITE_PDS_SKIP_CHECKPOINT_ON_NODE_STOP;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.AbstractSnapshotSelfTest.doSnapshotCancellationTest;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.AbstractSnapshotSelfTest.snp;
-import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.SNAPSHOT_LIMITED_TRANSFER_BLOCK_SIZE;
+import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.SNAPSHOT_LIMITED_TRANSFER_BLOCK_SIZE_BYTES;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.SNAPSHOT_METRICS;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.SNAPSHOT_TRANSFER_RATE_DMS_KEY;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.resolveSnapshotWorkDirectory;
@@ -2999,17 +2998,11 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
     /** @throws Exception If failed. */
     @Test
-    @WithSystemProperty(key = SNAPSHOT_LIMITED_TRANSFER_BLOCK_SIZE, value = "1")
     public void testChangeSnapshotTransferRateInRuntime() throws Exception {
         int keysCnt = 10_000;
-        String snpName = "snapshot_02052020";
-
-        StopNodeFailureHandler failHnd = new StopNodeFailureHandler();
-        failHnd.setIgnoredFailureTypes(Collections.emptySet());
 
         IgniteConfiguration cfg = optimize(getConfiguration(getTestIgniteInstanceName(0)))
-            .setFailureHandler(failHnd)
-            .setFailureDetectionTimeout(5_000);
+            .setSnapshotThreadPoolSize(1);
 
         IgniteEx ignite = startGrid(cfg);
 
@@ -3017,22 +3010,29 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         createCacheAndPreload(ignite, keysCnt);
 
+        // Estimate snapshot creation time.
+        long start = System.currentTimeMillis();
+
+        ignite.snapshot().createSnapshot("snapshot1").get(getTestTimeout());
+
+        long maxOpTime = (System.currentTimeMillis() - start) * 2;
+
         Function<Integer, Integer> propFunc =
             (num) -> execute("--property", "set", "--name", SNAPSHOT_TRANSFER_RATE_DMS_KEY, "--val", String.valueOf(num));
 
-        // Set transfer rate to 1 byte/sec.
-        assertEquals(EXIT_CODE_OK, (int)propFunc.apply(1));
+        // Limit the transfer rate.
+        assertEquals(EXIT_CODE_OK, (int)propFunc.apply(SNAPSHOT_LIMITED_TRANSFER_BLOCK_SIZE_BYTES));
 
-        IgniteFuture<Void> snpFut = ignite.snapshot().createSnapshot(snpName);
+        IgniteFuture<Void> snpFut = ignite.snapshot().createSnapshot("snapshot2");
 
-        // Make sure there are no blocks in critical sections.
-        U.sleep(cfg.getFailureDetectionTimeout());
+        // Make sure that the operation has been slowed down.
+        U.sleep(maxOpTime);
         assertFalse(snpFut.isDone());
 
         // Set transfer rate to unlimited.
         assertEquals(EXIT_CODE_OK, (int)propFunc.apply(0));
 
-        snpFut.get(getTestTimeout() / 2);
+        snpFut.get(maxOpTime);
     }
 
     /** @throws Exception If failed. */

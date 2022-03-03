@@ -73,8 +73,6 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteInterruptedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSnapshot;
-import org.apache.ignite.IgniteSystemProperties;
-import org.apache.ignite.SystemProperty;
 import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.compute.ComputeTask;
@@ -273,13 +271,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     /** Snapshot transfer rate is unlimited by default. */
     public static final long DFLT_SNAPSHOT_TRANSFER_RATE_BYTES = 0L;
 
-    /** Minimum block size for limited snapshot transfer. */
-    @SystemProperty(value = "Sets the minimum block size for limited snapshot transfer")
-    public static final String SNAPSHOT_LIMITED_TRANSFER_BLOCK_SIZE = "SNAPSHOT_LIMITED_TRANSFER_BLOCK_SIZE";
-
-    /** Snapshot limited transfer block size (in bytes). */
-    private static final int SNAPSHOT_TRANSFER_BLOCK_SIZE_BYTES =
-        IgniteSystemProperties.getInteger(SNAPSHOT_LIMITED_TRANSFER_BLOCK_SIZE, GridIoManager.DFLT_CHUNK_SIZE_BYTES);
+    /** Maximum block size for limited snapshot transfer (64KB by default). */
+    public static final int SNAPSHOT_LIMITED_TRANSFER_BLOCK_SIZE_BYTES = 64 * 1024;
 
     /** Snapshot operation finish log message. */
     private static final String SNAPSHOT_FINISHED_MSG = "Cluster-wide snapshot operation finished successfully: ";
@@ -1937,9 +1930,9 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                     continue;
                 }
 
-                long blockLen = Math.min(length - written, SNAPSHOT_TRANSFER_BLOCK_SIZE_BYTES);
+                long blockLen = Math.min(length - written, SNAPSHOT_LIMITED_TRANSFER_BLOCK_SIZE_BYTES);
 
-                rateLimiter.acquire((int)blockLen);
+                rateLimiter.acquire(blockLen);
 
                 long blockWritten = 0;
 
