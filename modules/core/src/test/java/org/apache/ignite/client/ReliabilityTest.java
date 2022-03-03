@@ -593,22 +593,6 @@ public class ReliabilityTest extends AbstractThinClientTest {
     }
 
     /**
-     * Tests that server disconnects idle clients when heartbeats are not enabled.
-     */
-    @Test
-    public void testServerDisconnectsIdleClientWithoutHeartbeats() throws Exception {
-        IgniteConfiguration serverCfg = getConfiguration().setClientConnectorConfiguration(
-                new ClientConnectorConfiguration().setIdleTimeout(2000));
-
-        try (Ignite ignite = startGrid(serverCfg); IgniteClient client = startClient(ignite)) {
-            Thread.sleep(6000);
-
-            GridTestUtils.assertThrowsAnyCause(null, client::cacheNames, ClientConnectionException.class,
-                    "Channel is closed");
-        }
-    }
-
-    /**
      * Performs cache put.
      *
      * @param cache Cache.
