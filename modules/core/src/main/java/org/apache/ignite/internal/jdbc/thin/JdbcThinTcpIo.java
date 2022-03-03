@@ -382,7 +382,8 @@ public class JdbcThinTcpIo {
                     + ", url=" + connProps.getUrl() + " address=" + sockAddr + ']', SqlStateCode.CONNECTION_REJECTED);
             }
 
-            if (VER_2_8_0.equals(srvProtoVer0)
+            if (VER_2_9_0.equals(srvProtoVer0)
+                || VER_2_8_0.equals(srvProtoVer0)
                 || VER_2_7_0.equals(srvProtoVer0)
                 || VER_2_5_0.equals(srvProtoVer0)
                 || VER_2_4_0.equals(srvProtoVer0)

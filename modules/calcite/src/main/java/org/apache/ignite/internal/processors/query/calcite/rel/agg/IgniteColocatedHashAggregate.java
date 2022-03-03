@@ -36,13 +36,13 @@ import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRelVisitor;
  *
  */
 public class IgniteColocatedHashAggregate extends IgniteColocatedAggregateBase implements IgniteHashAggregateBase {
-    /** {@inheritDoc} */
+    /** */
     public IgniteColocatedHashAggregate(RelOptCluster cluster, RelTraitSet traitSet, RelNode input, ImmutableBitSet groupSet,
         List<ImmutableBitSet> groupSets, List<AggregateCall> aggCalls) {
         super(cluster, traitSet, input, groupSet, groupSets, aggCalls);
     }
 
-    /** {@inheritDoc} */
+    /** */
     public IgniteColocatedHashAggregate(RelInput input) {
         super(input);
     }

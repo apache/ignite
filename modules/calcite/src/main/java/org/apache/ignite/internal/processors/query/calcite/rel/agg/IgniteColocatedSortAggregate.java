@@ -43,7 +43,7 @@ public class IgniteColocatedSortAggregate extends IgniteColocatedAggregateBase i
     /** Collation. */
     private final RelCollation collation;
 
-    /** {@inheritDoc} */
+    /** */
     public IgniteColocatedSortAggregate(
         RelOptCluster cluster,
         RelTraitSet traitSet,
@@ -61,7 +61,7 @@ public class IgniteColocatedSortAggregate extends IgniteColocatedAggregateBase i
         this.collation = collation;
     }
 
-    /** {@inheritDoc} */
+    /** */
     public IgniteColocatedSortAggregate(RelInput input) {
         super(input);
 
