@@ -280,10 +280,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     /** Snapshot operation fail log message. */
     private static final String SNAPSHOT_FAILED_MSG = "Cluster-wide snapshot operation failed: ";
 
-    /** Error message while copying the snapshot file. */
-    private static final String FILE_HAS_NOT_ENOUGH_LENGTH_ERR = "The source file to copy is not long enough " +
-        "[expected=%d, actual=%d]";
-
     /** Default snapshot topic to receive snapshots from remote node. */
     private static final Object DFLT_INITIAL_SNAPSHOT_TOPIC = GridTopic.TOPIC_SNAPSHOT.topic("rmt_snp");
 
@@ -1914,47 +1910,39 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @param length Number of bytes to copy from beginning.
      */
     static void copy(FileIOFactory factory, File from, File to, long length) {
-        try (FileIO src = factory.create(from, READ);
-             FileChannel dest = new FileOutputStream(to).getChannel()) {
-            if (src.size() < length)
-                throw new IgniteException(String.format(FILE_HAS_NOT_ENOUGH_LENGTH_ERR, length, src.size()));
-
-            long written = 0;
-
-            while (written < length)
-                written += src.transferTo(written, length - written, dest);
-        }
-        catch (IOException e) {
-            throw new IgniteException(e);
-        }
+        copy(factory, from, to, length, null);
     }
 
     /**
-     * Copies a file with regard to the limitation of the snapshot transfer rate.
-     *
+     * @param factory Factory to produce FileIO access.
      * @param from Copy from file.
      * @param to Copy data to file.
      * @param length Number of bytes to copy from beginning.
+     * @param rateLimiter Transfer rate limiter.
      */
-    private void limitedCopy(File from, File to, long length) {
-        if (transferRateLimiter.isUnlimited()) {
-            copy(ioFactory, from, to, length);
-
-            return;
-        }
-
-        try (FileIO src = ioFactory.create(from, READ);
+    static void copy(FileIOFactory factory, File from, File to, long length, @Nullable BasicRateLimiter rateLimiter) {
+        try (FileIO src = factory.create(from, READ);
              FileChannel dest = new FileOutputStream(to).getChannel()) {
-            if (src.size() < length)
-                throw new IgniteException(String.format(FILE_HAS_NOT_ENOUGH_LENGTH_ERR, length, src.size()));
+            if (src.size() < length) {
+                throw new IgniteException("The source file to copy is not long enough " +
+                    "[expected=" + length + ", actual=" + src.size() + ']');
+            }
 
+            boolean unlimited = rateLimiter == null || rateLimiter.isUnlimited();
             long written = 0;
 
             while (written < length) {
-                long blockLen = Math.min(length - written, SNAPSHOT_LIMITED_TRANSFER_BLOCK_SIZE_BYTES);
-                long blockWritten = 0;
+                if (unlimited) {
+                    written += src.transferTo(written, length - written, dest);
 
-                transferRateLimiter.acquire(blockLen);
+                    continue;
+                }
+
+                long blockLen = Math.min(length - written, SNAPSHOT_LIMITED_TRANSFER_BLOCK_SIZE_BYTES);
+
+                rateLimiter.acquire(blockLen);
+
+                long blockWritten = 0;
 
                 do {
                     blockWritten += src.transferTo(written + blockWritten, blockLen - blockWritten, dest);
@@ -3091,7 +3079,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 if (!snpPart.exists() || snpPart.delete())
                     snpPart.createNewFile();
 
-                limitedCopy(part, snpPart, len);
+                copy(ioFactory, part, snpPart, len, transferRateLimiter);
 
                 if (log.isDebugEnabled()) {
                     log.debug("Partition has been snapshot [snapshotDir=" + dbDir.getAbsolutePath() +
