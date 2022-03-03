@@ -204,27 +204,25 @@ namespace ignite
              *
              * @param req Request message.
              * @param rsp Response message.
-             * @param timeout Timeout. 0 means disabled and -1 means to use default connection timeout.
+             * @param timeout Timeout. 0 means disabled.
              * @return @c true on success, @c false on timeout.
              * @throw OdbcError on error.
              */
             template<typename ReqT, typename RspT>
-            bool SyncMessage(const ReqT& req, RspT& rsp, int32_t timeout0)
+            bool SyncMessage(const ReqT& req, RspT& rsp, int32_t timeout)
             {
-                int32_t actualTimeout = timeout0 < 0 ? timeout : timeout0;
-
                 EnsureConnected();
 
                 std::vector<int8_t> tempBuffer;
 
                 parser.Encode(req, tempBuffer);
 
-                bool success = Send(tempBuffer.data(), tempBuffer.size(), actualTimeout);
+                bool success = Send(tempBuffer.data(), tempBuffer.size(), timeout);
 
                 if (!success)
                     return false;
 
-                success = Receive(tempBuffer, actualTimeout);
+                success = Receive(tempBuffer, timeout);
 
                 if (!success)
                     return false;

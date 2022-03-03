@@ -1952,13 +1952,15 @@ BOOST_AUTO_TEST_CASE(TestConnectionTimeoutQuery)
 
 BOOST_AUTO_TEST_CASE(TestConnectionTimeoutQueryExpires)
 {
-    Connect("DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;SCHEMA=cache");
+    Connect("DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;SCHEMA=cache;PAGE_SIZE=500000");
 
     SQLRETURN ret = SQLSetConnectAttr(dbc, SQL_ATTR_CONNECTION_TIMEOUT, reinterpret_cast<SQLPOINTER>(1), 0);
 
     ODBC_FAIL_ON_ERROR(ret, SQL_HANDLE_DBC, dbc);
 
-    ret = InsertTestBatchNoCheck(0, 500000);
+    SQLCHAR req[] = "select delay(5000)";
+
+    ret = SQLExecDirect(stmt, req, SQL_NTS);
 
     BOOST_REQUIRE_EQUAL(ret, SQL_ERROR);
 
