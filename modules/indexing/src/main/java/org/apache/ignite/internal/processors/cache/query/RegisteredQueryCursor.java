@@ -19,6 +19,7 @@
 package org.apache.ignite.internal.processors.cache.query;
 
 import java.util.Iterator;
+import java.util.Spliterator;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.cache.query.QueryCancelledException;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
@@ -96,6 +97,24 @@ public class RegisteredQueryCursor<T> extends QueryCursorImpl<T> {
             failReason = e;
 
             qrySpan.addTag(ERROR, e::getMessage);
+
+            if (QueryUtils.wasCancelled(failReason))
+                unregisterQuery();
+
+            throw e;
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public Spliterator<T> spliterator() {
+        try {
+            if (lazy())
+                return new RegisteredSpliterator(super.spliterator());
+            else
+                return super.spliterator();
+        }
+        catch (Exception e) {
+            failReason = e;
 
             if (QueryUtils.wasCancelled(failReason))
                 unregisterQuery();
@@ -188,6 +207,51 @@ public class RegisteredQueryCursor<T> extends QueryCursorImpl<T> {
 
                 throw e;
             }
+        }
+    }
+
+    /**
+     *
+     */
+    private class RegisteredSpliterator implements Spliterator<T> {
+        /** Delegate iterator. */
+        final Spliterator<T> delegateSplit;
+
+        /**
+         * @param spliterator Result set spliterator.
+         */
+        private RegisteredSpliterator(Spliterator<T> spliterator) {
+            delegateSplit = spliterator;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean tryAdvance(java.util.function.Consumer<? super T> action) {
+            try {
+                 return delegateSplit.tryAdvance(action);
+             }
+             catch (Exception e) {
+                 failReason = e;
+
+                 if (QueryUtils.wasCancelled(failReason))
+                     unregisterQuery();
+
+                 throw e;
+             }
+        }
+
+        /** {@inheritDoc} */
+        @Override public Spliterator<T> trySplit() {
+            return delegateSplit.trySplit();
+        }
+
+        /** {@inheritDoc} */
+        @Override public long estimateSize() {
+            return delegateSplit.estimateSize();
+        }
+
+        /** {@inheritDoc} */
+        @Override public int characteristics() {
+            return delegateSplit.characteristics();
         }
     }
 }

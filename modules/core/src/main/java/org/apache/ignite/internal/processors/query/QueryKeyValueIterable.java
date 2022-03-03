@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.query;
 
 import java.util.Iterator;
 import java.util.List;
+import java.util.Spliterator;
 import javax.cache.Cache;
 import org.apache.ignite.cache.query.QueryCursor;
 
@@ -41,6 +42,11 @@ public class QueryKeyValueIterable<K, V> implements Iterable<Cache.Entry<K, V>> 
     /** {@inheritDoc} */
     @Override public Iterator<Cache.Entry<K, V>> iterator() {
         return new QueryKeyValueIterator<>(cur.iterator());
+    }
+
+    /** {@inheritDoc} */
+    @Override public Spliterator<Cache.Entry<K, V>> spliterator() {
+        return new QueryKeyValueSpliterator<>(cur.spliterator());
     }
 
     /**

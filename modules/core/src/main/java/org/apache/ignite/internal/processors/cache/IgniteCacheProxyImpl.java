@@ -29,6 +29,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Set;
+import java.util.Spliterator;
+import java.util.Spliterators;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
@@ -750,9 +752,13 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
                         return cur != null ? cur.getAll() : Collections.<Cache.Entry<K, V>>emptyList();
                     }
 
-                    @Override public void close() {
-                        if (cur != null)
-                            cur.close();
+                @Override public Spliterator<Entry<K, V>> spliterator() {
+                    return cur != null ? cur.spliterator() : Spliterators.emptySpliterator();
+                }
+
+                @Override public void close() {
+                    if (cur != null)
+                        cur.close();
 
                         try {
                             ctx.kernalContext().continuous().stopRoutine(routineId).get();

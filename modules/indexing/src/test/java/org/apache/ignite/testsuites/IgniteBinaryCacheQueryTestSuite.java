@@ -236,6 +236,7 @@ import org.apache.ignite.internal.processors.query.KillQueryOnClientDisconnectTe
 import org.apache.ignite.internal.processors.query.KillQueryTest;
 import org.apache.ignite.internal.processors.query.MultipleStatementsSqlQuerySelfTest;
 import org.apache.ignite.internal.processors.query.RemoveConstantsFromQueryTest;
+import org.apache.ignite.internal.processors.query.QueryCursorSpliteratorCallsTest;
 import org.apache.ignite.internal.processors.query.RunningQueriesTest;
 import org.apache.ignite.internal.processors.query.SqlFieldTypeValidationOnKeyValueInsertTest;
 import org.apache.ignite.internal.processors.query.SqlFieldTypeValidationTypesTest;
@@ -430,6 +431,7 @@ import org.junit.runners.Suite;
     IgniteCacheMultipleIndexedTypesTest.class,
     CacheDataPageScanQueryTest.class,
     QueryDataPageScanTest.class,
+    QueryCursorSpliteratorCallsTest.class,
 
     GridSubqueryJoinOptimizerSelfTest.class,
 
