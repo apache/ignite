@@ -110,9 +110,12 @@ public class ThinClientConfiguration {
 
     /**
      * @param sendServerExcStackTraceToClient If {@code true} sends a server exception stack to the client side.
+     * @return {@code this} for chaining.
      */
-    public void sendServerExceptionStackTraceToClient(boolean sendServerExcStackTraceToClient) {
+    public ThinClientConfiguration sendServerExceptionStackTraceToClient(boolean sendServerExcStackTraceToClient) {
         this.sendServerExcStackTraceToClient = sendServerExcStackTraceToClient;
+
+        return this;
     }
 
     /** {@inheritDoc} */

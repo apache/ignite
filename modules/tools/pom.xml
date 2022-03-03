@@ -38,10 +38,20 @@
         <profile>
             <id>java-9+</id>
             <activation>
-                <jdk>[1.9,)</jdk>
+                <jdk>[1.9,15)</jdk>
             </activation>
             <properties>
                 <src.javaspecific.dir>src/main/java11</src.javaspecific.dir>
+            </properties>
+        </profile>
+
+        <profile>
+            <id>java-15+</id>
+            <activation>
+                <jdk>[15,)</jdk>
+            </activation>
+            <properties>
+                <src.javaspecific.dir>src/main/java15</src.javaspecific.dir>
             </properties>
         </profile>
 

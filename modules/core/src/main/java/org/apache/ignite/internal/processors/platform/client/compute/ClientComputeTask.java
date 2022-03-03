@@ -32,6 +32,8 @@ import org.apache.ignite.internal.processors.platform.client.ClientStatus;
 import org.apache.ignite.internal.processors.platform.client.IgniteClientException;
 import org.apache.ignite.internal.processors.task.GridTaskProcessor;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
 
 import static org.apache.ignite.internal.processors.platform.client.ClientMessageParser.OP_COMPUTE_TASK_FINISHED;
@@ -121,8 +123,13 @@ class ClientComputeTask implements ClientCloseableResource {
             try {
                 ClientNotification notification;
 
-                if (f.error() != null)
-                    notification = new ClientNotification(OP_COMPUTE_TASK_FINISHED, taskId, f.error().getMessage());
+                if (f.error() != null) {
+                    String msg = ctx.kernalContext().sqlListener().sendServerExceptionStackTraceToClient()
+                            ? f.error().getMessage() + U.nl() + X.getFullStackTrace(f.error())
+                            : f.error().getMessage();
+
+                    notification = new ClientNotification(OP_COMPUTE_TASK_FINISHED, taskId, msg);
+                }
                 else if (f.isCancelled())
                     notification = new ClientNotification(OP_COMPUTE_TASK_FINISHED, taskId, "Task was cancelled");
                 else
