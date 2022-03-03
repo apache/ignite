@@ -1958,7 +1958,7 @@ BOOST_AUTO_TEST_CASE(TestConnectionTimeoutQueryExpires)
 
     ODBC_FAIL_ON_ERROR(ret, SQL_HANDLE_DBC, dbc);
 
-    ret = InsertTestBatchNoCheck(0, 5000);
+    ret = InsertTestBatchNoCheck(0, 500000);
 
     BOOST_REQUIRE_EQUAL(ret, SQL_ERROR);
 
