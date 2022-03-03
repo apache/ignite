@@ -130,6 +130,12 @@ public final class ClientConfiguration implements Serializable {
     /** Executor for async operations continuations. */
     private Executor asyncContinuationExecutor;
 
+    /** Whether heartbeats should be enabled. */
+    private boolean enableHeartbeats;
+
+    /** Heartbeat interval, in milliseconds. */
+    private long heartbeatInterval = 30_000L;
+
     /**
      * @return Host addresses.
      */
