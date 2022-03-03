@@ -685,16 +685,48 @@ public final class ClientConfiguration implements Serializable {
         return this;
     }
 
+    /**
+     * Gets a value indicating whether heartbeats are enabled.
+     * <p />
+     * When thin client connection is idle (no operations are performed), heartbeat messages are sent periodically
+     * to keep the connection alive and detect potential half-open state.
+     * <p />
+     * See also {@link ClientConfiguration#heartbeatInterval}.
+     *
+     * @return Whether heartbeats are enabled.
+     */
     public boolean getHeartbeatsEnabled() {
         return heartbeatsEnabled;
     }
 
+    /**
+     * Sets a value indicating whether heartbeats are enabled.
+     * <p />
+     * When thin client connection is idle (no operations are performed), heartbeat messages are sent periodically
+     * to keep the connection alive and detect potential half-open state.
+     * <p />
+     * See also {@link ClientConfiguration#heartbeatInterval}.
+     *
+     * @return {@code this} for chaining.
+     */
     public ClientConfiguration setHeartbeatsEnabled(boolean heartbeatsEnabled) {
         this.heartbeatsEnabled = heartbeatsEnabled;
 
         return this;
     }
 
+    /**
+     * Sets the heartbeat message interval. Default is 30 seconds.
+     * <p />
+     * When server-side <see cref="ClientConnectorConfiguration.IdleTimeout"/> is not zero, effective heartbeat
+     * interval is set to <code>min(heartbeatInterval, idleTimeout / 3)</code>.
+     * <p />
+     * When thin client connection is idle (no operations are performed), heartbeat messages are sent periodically
+     * to keep the connection alive and detect potential half-open state.
+     *
+     *
+     * @return
+     */
     public long getHeartbeatInterval() {
         return heartbeatInterval;
     }
