@@ -50,15 +50,15 @@ If you use Ignite as a library in your application, the default logging configur
 You can provide a custom configuration file via the `java.util.logging.config.file` system property.
 
 == Using Log4j
+
 [CAUTION]
 ====
 [discrete]
-=== Ignite-Log4j Deprecation
-Log4j 1.x had reached end of life and contains critical vulnerabilities. See
-link:https://blogs.apache.org/foundation/entry/apache_logging_services_project_announces[the announcement]
-  Please, be aware this module will be removed in the next releases.
-  Use link:logging#using-log4j2[ignite-log4j2] module instead.
+The ignite-log4j module is deprecated and will be removed in the next releases.
+Log4j 1.x had link:https://blogs.apache.org/foundation/entry/apache_logging_services_project_announces[reached end of life] and contains critical vulnerabilities.
+Use link:logging#using-log4j2[ignite-log4j2] module instead.
 ====
+
 NOTE: Before using Log4j, enable the link:setup#enabling-modules[ignite-log4j] module.
 
 To enable Log4j logger, set the `gridLogger` property of `IgniteConfiguration`, as shown in the following example:
