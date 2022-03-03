@@ -70,6 +70,7 @@ import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.client.thin.ProtocolBitmaskFeature.HEARTBEAT;
 import static org.apache.ignite.internal.client.thin.ProtocolBitmaskFeature.USER_ATTRIBUTES;
 import static org.apache.ignite.internal.client.thin.ProtocolVersion.LATEST_VER;
 import static org.apache.ignite.internal.client.thin.ProtocolVersion.V1_0_0;
@@ -166,6 +167,9 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
         sock = connMgr.open(cfg.getAddress(), this, this);
 
         handshake(DEFAULT_VERSION, cfg.getUserName(), cfg.getUserPassword(), cfg.getUserAttributes());
+
+        if (protocolCtx.isFeatureSupported(HEARTBEAT) && cfg.getHeartbeatsEnabled())
+            initHeartbeats(cfg.getHeartbeatInterval());
     }
 
     /** {@inheritDoc} */
@@ -703,6 +707,14 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
      */
     private ClientException handleIOError(String chInfo, @Nullable IOException ex) {
         return new ClientConnectionException("Ignite cluster is unavailable [" + chInfo + ']', ex);
+    }
+
+    /**
+     * Initializes heartbeats.
+     * @param heartbeatInterval Heartbeat interval, in milliseconds.
+     */
+    private void initHeartbeats(long heartbeatInterval) {
+        // TODO
     }
 
     /**

@@ -99,7 +99,7 @@ final class ClientChannelConfiguration {
     /** Heartbeats. */
     private final boolean heartbeatsEnabled;
 
-    /** Heartbeat interval. */
+    /** Heartbeat interval, in milliseconds. */
     private final long heartbeatInterval;
 
     /**
@@ -296,7 +296,7 @@ final class ClientChannelConfiguration {
     }
 
     /**
-     * @return Heartbeat interval.
+     * @return Heartbeat interval, in milliseconds.
      */
     public long getHeartbeatInterval() {
         return heartbeatInterval;

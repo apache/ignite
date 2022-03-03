@@ -716,7 +716,7 @@ public final class ClientConfiguration implements Serializable {
     }
 
     /**
-     * Gets the heartbeat message interval. Default is 30 seconds.
+     * Gets the heartbeat message interval, in milliseconds. Default is <code>30_000</code>.
      * <p />
      * When server-side <see cref="ClientConnectorConfiguration.IdleTimeout"/> is not zero, effective heartbeat
      * interval is set to <code>min(heartbeatInterval, idleTimeout / 3)</code>.
@@ -731,7 +731,7 @@ public final class ClientConfiguration implements Serializable {
     }
 
     /**
-     * Sets the heartbeat message interval. Default is 30 seconds.
+     * Sets the heartbeat message interval, in milliseconds. Default is <code>30_000</code>.
      * <p />
      * When server-side <see cref="ClientConnectorConfiguration.IdleTimeout"/> is not zero, effective heartbeat
      * interval is set to <code>min(heartbeatInterval, idleTimeout / 3)</code>.
