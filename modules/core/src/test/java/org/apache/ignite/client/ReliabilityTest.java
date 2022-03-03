@@ -39,7 +39,10 @@ import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.query.Query;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
+import org.apache.ignite.configuration.ClientConfiguration;
+import org.apache.ignite.configuration.ClientConnectorConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.failure.FailureHandler;
 import org.apache.ignite.internal.client.thin.AbstractThinClientTest;
 import org.apache.ignite.internal.client.thin.ClientOperation;
@@ -567,6 +570,41 @@ public class ReliabilityTest extends AbstractThinClientTest {
                 } catch (Throwable ignore) {
                 }
             }
+        }
+    }
+
+    /**
+     * Tests that server does not disconnect idle clients when heartbeats are enabled.
+     */
+    @Test
+    public void testServerDoesNotDisconnectIdleClientWithHeartbeats() throws Exception {
+        IgniteConfiguration serverCfg = getConfiguration().setClientConnectorConfiguration(
+                new ClientConnectorConfiguration().setIdleTimeout(2000));
+
+        ClientConfiguration clientCfg = new ClientConfiguration()
+                .setAddresses("127.0.0.1")
+                .setHeartbeatsEnabled(true)
+                .setHeartbeatInterval(500);
+
+        try (Ignite ignored = startGrid(serverCfg); IgniteClient client = Ignition.startClient(clientCfg)) {
+            Thread.sleep(6000);
+            assertEquals(0, client.cacheNames().size());
+        }
+    }
+
+    /**
+     * Tests that server disconnects idle clients when heartbeats are not enabled.
+     */
+    @Test
+    public void testServerDisconnectsIdleClientWithoutHeartbeats() throws Exception {
+        IgniteConfiguration serverCfg = getConfiguration().setClientConnectorConfiguration(
+                new ClientConnectorConfiguration().setIdleTimeout(2000));
+
+        try (Ignite ignite = startGrid(serverCfg); IgniteClient client = startClient(ignite)) {
+            Thread.sleep(6000);
+
+            GridTestUtils.assertThrowsAnyCause(null, client::cacheNames, ClientConnectionException.class,
+                    "Channel is closed");
         }
     }
 
