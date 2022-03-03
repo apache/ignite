@@ -42,8 +42,6 @@ import org.apache.ignite.internal.cdc.CdcMain;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.spi.metric.MetricExporterSpi;
-import org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -80,18 +78,14 @@ public class CdcSelfTest extends AbstractCdcTest {
     public boolean persistenceEnabled;
 
     /** */
-    @Parameterized.Parameter(3)
-    public int pageSz;
-
-    /** */
-    @Parameterized.Parameters(name = "consistentId={0}, wal={1}, persistence={2}, page={3}")
+    @Parameterized.Parameters(name = "consistentId={0}, wal={1}, persistence={2}")
     public static Collection<?> parameters() {
         List<Object[]> params = new ArrayList<>();
 
         for (WALMode mode : EnumSet.of(WALMode.FSYNC, WALMode.LOG_ONLY, WALMode.BACKGROUND))
             for (boolean specificConsistentId : new boolean[] {false, true})
                 for (boolean persistenceEnabled : new boolean[] {true, false})
-                    params.add(new Object[] {specificConsistentId, mode, persistenceEnabled, 8192});
+                    params.add(new Object[] {specificConsistentId, mode, persistenceEnabled});
 
         return params;
     }
@@ -109,9 +103,6 @@ public class CdcSelfTest extends AbstractCdcTest {
             .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
                 .setPersistenceEnabled(persistenceEnabled)
                 .setCdcEnabled(true)));
-
-        if (pageSz != 0)
-            cfg.getDataStorageConfiguration().setPageSize(pageSz);
 
         cfg.setCacheConfiguration(
             new CacheConfiguration<>(TX_CACHE_NAME).setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
