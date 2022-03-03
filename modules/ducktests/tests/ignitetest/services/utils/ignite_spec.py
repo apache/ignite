@@ -101,7 +101,7 @@ class IgniteSpec(metaclass=ABCMeta):
 
         if self.service.config and self.service.config.service_type == IgniteServiceType.THIN_CLIENT:
             default_jvm_opts = merge_jvm_settings(default_jvm_opts,
-                                                  ["-Dlog4j.configuration=file:" + self.service.log_config_file])
+                                                  ["-Dlog4j.configurationFile=file:" + self.service.log_config_file])
 
         if self.service.context.globals.get(JFR_ENABLED, False):
             default_jvm_opts = merge_jvm_settings(default_jvm_opts,
