@@ -119,19 +119,16 @@ public class BasicRateLimiter {
      * can be granted. Tells the amount of time slept, if any.
      *
      * @param permits The number of permits to acquire.
-     * @return {@code False} If the rate is not limited and permits are not acquired.
      * @throws IllegalArgumentException If the requested number of permits is negative or zero.
      */
-    public boolean acquire(int permits) throws IgniteInterruptedCheckedException {
+    public void acquire(int permits) throws IgniteInterruptedCheckedException {
         if (unlimited)
-            return false;
+            return;
 
         long microsToWait = reserve(permits);
 
         try {
             MICROSECONDS.sleep(microsToWait);
-
-            return true;
         }
         catch (InterruptedException e) {
             Thread.currentThread().interrupt();

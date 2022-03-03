@@ -66,7 +66,6 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStor
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.ClusterSnapshotFuture;
 import org.apache.ignite.internal.processors.cluster.DiscoveryDataClusterState;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
-import org.apache.ignite.internal.util.BasicRateLimiter;
 import org.apache.ignite.internal.util.distributed.DistributedProcess;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -132,9 +131,6 @@ public class SnapshotRestoreProcess {
     /** Logger. */
     private final IgniteLogger log;
 
-    /** Transfer rate limiter. */
-    private final BasicRateLimiter rateLimiter;
-
     /** Future to be completed when the cache restore process is complete (this future will be returned to the user). */
     private volatile ClusterSnapshotFuture fut;
 
@@ -146,11 +142,9 @@ public class SnapshotRestoreProcess {
 
     /**
      * @param ctx Kernal context.
-     * @param rateLimiter Transfer rate limiter.
      */
-    public SnapshotRestoreProcess(GridKernalContext ctx, BasicRateLimiter rateLimiter) {
+    public SnapshotRestoreProcess(GridKernalContext ctx) {
         this.ctx = ctx;
-        this.rateLimiter = rateLimiter;
 
         log = ctx.log(getClass());
 
@@ -928,8 +922,13 @@ public class SnapshotRestoreProcess {
                             .orElse(Collections.emptySet())
                             .contains(partFut.partId);
 
-                        if (doCopy)
-                            copyLocalAsync(opCtx0, snpCacheDir, tmpCacheDir, partFut);
+                        if (doCopy) {
+                            copyLocalAsync(ctx.cache().context().snapshotMgr(),
+                                opCtx0,
+                                snpCacheDir,
+                                tmpCacheDir,
+                                partFut);
+                        }
 
                         return doCopy;
                     });
@@ -951,7 +950,11 @@ public class SnapshotRestoreProcess {
                             allParts.computeIfAbsent(grpId, g -> new HashSet<>())
                                 .add(idxFut = new PartitionRestoreFuture(INDEX_PARTITION, opCtx0.processedParts));
 
-                            copyLocalAsync(opCtx0, snpCacheDir, tmpCacheDir, idxFut);
+                            copyLocalAsync(ctx.cache().context().snapshotMgr(),
+                                opCtx0,
+                                snpCacheDir,
+                                tmpCacheDir,
+                                idxFut);
                         }
                     }
                 }
@@ -1308,15 +1311,20 @@ public class SnapshotRestoreProcess {
     }
 
     /**
+     * @param mgr Ignite snapshot manager.
      * @param opCtx Snapshot operation context.
      * @param srcDir Snapshot directory to copy from.
-     * @param destDir Destination directory to copy to.
-     * @param partFut Partition restore future, will be completed when copying of the associated partition is finished.
+     * @param targetDir Destination directory to copy to.
      */
-    private void copyLocalAsync(SnapshotRestoreContext opCtx, File srcDir, File destDir, PartitionRestoreFuture partFut) {
-        IgniteSnapshotManager mgr = ctx.cache().context().snapshotMgr();
+    private static void copyLocalAsync(
+        IgniteSnapshotManager mgr,
+        SnapshotRestoreContext opCtx,
+        File srcDir,
+        File targetDir,
+        PartitionRestoreFuture partFut
+    ) {
         File snpFile = new File(srcDir, FilePageStoreManager.getPartitionFileName(partFut.partId));
-        Path partFile = Paths.get(destDir.getAbsolutePath(), FilePageStoreManager.getPartitionFileName(partFut.partId));
+        Path partFile = Paths.get(targetDir.getAbsolutePath(), FilePageStoreManager.getPartitionFileName(partFut.partId));
 
         CompletableFuture.supplyAsync(() -> {
                 if (opCtx.stopChecker.getAsBoolean())
@@ -1330,7 +1338,7 @@ public class SnapshotRestoreProcess {
                         ", snpDir=" + snpFile.getAbsolutePath() + ", name=" + snpFile.getName() + ']');
                 }
 
-                IgniteSnapshotManager.copy(mgr.ioFactory(), rateLimiter, snpFile, partFile.toFile(), snpFile.length());
+                IgniteSnapshotManager.copy(mgr.ioFactory(), snpFile, partFile.toFile(), snpFile.length(), null);
 
                 return partFile;
             }, mgr.snapshotExecutorService())

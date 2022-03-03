@@ -108,7 +108,6 @@ import org.apache.ignite.internal.processors.tracing.MTC;
 import org.apache.ignite.internal.processors.tracing.MTC.TraceSurroundings;
 import org.apache.ignite.internal.processors.tracing.Span;
 import org.apache.ignite.internal.processors.tracing.SpanTags;
-import org.apache.ignite.internal.util.BasicRateLimiter;
 import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashSet;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.StripedCompositeReadWriteLock;
@@ -271,9 +270,6 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
     /** Direct protocol version. */
     public static final byte DIRECT_PROTO_VER = 3;
 
-    /** Current IO policy. */
-    private static final ThreadLocal<Byte> CUR_PLC = new ThreadLocal<>();
-
     /**
      * Default chunk size in bytes used for sending\receiving files over a {@link SocketChannel}.
      * Setting the transfer chunk size more than <tt>1 MB</tt> is meaningless because there is
@@ -284,6 +280,9 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
      * Default value is {@code 256Kb}.
      */
     public static final int DFLT_CHUNK_SIZE_BYTES = 256 * 1024;
+
+    /** Current IO policy. */
+    private static final ThreadLocal<Byte> CUR_PLC = new ThreadLocal<>();
 
     /** Mutex to achieve consistency of transmission handlers and receiver contexts. */
     private final Object rcvMux = new Object();
@@ -3161,8 +3160,8 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
      * session. There are two types of handlers available:
      * {@link TransmissionHandler#chunkHandler(UUID, TransmissionMeta)} and
      * {@link TransmissionHandler#fileHandler(UUID, TransmissionMeta)}. You can use an appropriate
-     * {@link TransmissionPolicy} for {@link #send(File, long, long, Map, TransmissionPolicy, BasicRateLimiter)} method
-     * to switch between them.
+     * {@link TransmissionPolicy} for {@link #send(File, long, long, Map, TransmissionPolicy)} method to switch
+     * between them.
      *
      * <h2>Exceptions handling</h2>
      * <p>
@@ -3279,7 +3278,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
             Map<String, Serializable> params,
             TransmissionPolicy plc
         ) throws IgniteCheckedException, InterruptedException, IOException {
-            send(file, 0, file.length(), params, plc, new BasicRateLimiter(0));
+            send(file, 0, file.length(), params, plc);
         }
 
         /**
@@ -3291,7 +3290,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
             File file,
             TransmissionPolicy plc
         ) throws IgniteCheckedException, InterruptedException, IOException {
-            send(file, 0, file.length(), new HashMap<>(), plc, new BasicRateLimiter(0));
+            send(file, 0, file.length(), new HashMap<>(), plc);
         }
 
         /**
@@ -3300,7 +3299,6 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
          * @param cnt Number of bytes to transfer.
          * @param params Additional file params.
          * @param plc The policy of handling data on remote.
-         * @param rateLimiter Transfer rate limiter.
          * @throws IgniteCheckedException If fails.
          */
         public void send(
@@ -3308,8 +3306,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
             long offset,
             long cnt,
             Map<String, Serializable> params,
-            TransmissionPolicy plc,
-            BasicRateLimiter rateLimiter
+            TransmissionPolicy plc
         ) throws IgniteCheckedException, InterruptedException, IOException {
             long startTime = U.currentTimeMillis();
             int retries = 0;
@@ -3324,8 +3321,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
                 () -> stopping || senderStopFlags.get(sesKey).get(),
                 log,
                 fileIoFactory,
-                DFLT_CHUNK_SIZE_BYTES,
-                rateLimiter)
+                DFLT_CHUNK_SIZE_BYTES)
             ) {
                 if (log.isDebugEnabled()) {
                     log.debug("Start writing file to remote node [file=" + file.getName() +

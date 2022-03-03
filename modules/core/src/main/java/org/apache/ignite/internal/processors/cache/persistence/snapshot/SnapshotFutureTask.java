@@ -68,7 +68,6 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.FastCrc;
 import org.apache.ignite.internal.processors.marshaller.MappedName;
 import org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageImpl;
-import org.apache.ignite.internal.util.BasicRateLimiter;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.IgniteThrowableRunner;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
@@ -142,9 +141,6 @@ class SnapshotFutureTask extends AbstractSnapshotFutureTask<Set<GroupPartitionId
     /** Flag indicates that task already scheduled on checkpoint. */
     private final AtomicBoolean started = new AtomicBoolean();
 
-    /** Transfer rate limiter. */
-    private final BasicRateLimiter rateLimiter;
-
     /**
      * @param cctx Shared context.
      * @param srcNodeId Node id which cause snapshot task creation.
@@ -154,7 +150,6 @@ class SnapshotFutureTask extends AbstractSnapshotFutureTask<Set<GroupPartitionId
      * @param snpSndr Factory which produces snapshot receiver instance.
      * @param parts Map of cache groups and its partitions to include into snapshot, if set of partitions
      * is {@code null} than all OWNING partitions for given cache groups will be included into snapshot.
-     * @param rateLimiter Transfer rate limiter.
      */
     public SnapshotFutureTask(
         GridCacheSharedContext<?, ?> cctx,
@@ -165,8 +160,7 @@ class SnapshotFutureTask extends AbstractSnapshotFutureTask<Set<GroupPartitionId
         SnapshotSender snpSndr,
         Map<Integer, Set<Integer>> parts,
         boolean withMetaStorage,
-        ThreadLocal<ByteBuffer> locBuff,
-        BasicRateLimiter rateLimiter
+        ThreadLocal<ByteBuffer> locBuff
     ) {
         super(cctx, srcNodeId, snpName, tmpWorkDir, ioFactory, snpSndr, parts);
 
@@ -179,7 +173,6 @@ class SnapshotFutureTask extends AbstractSnapshotFutureTask<Set<GroupPartitionId
         this.withMetaStorage = withMetaStorage;
         this.pageStore = (FilePageStoreManager)cctx.pageStore();
         this.locBuff = locBuff;
-        this.rateLimiter = rateLimiter;
     }
 
     /**
@@ -734,7 +727,7 @@ class SnapshotFutureTask extends AbstractSnapshotFutureTask<Set<GroupPartitionId
                 File newCcfgFile = new File(cacheWorkDir, ccfgFile.getName());
                 newCcfgFile.createNewFile();
 
-                copy(ioFactory, rateLimiter, ccfgFile, newCcfgFile, ccfgFile.length());
+                copy(ioFactory, ccfgFile, newCcfgFile, ccfgFile.length(), null);
 
                 this.ccfgFile = newCcfgFile;
                 fromTemp = true;

@@ -3033,27 +3033,6 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         assertEquals(EXIT_CODE_OK, (int)propFunc.apply(0));
 
         snpFut.get(getTestTimeout() / 2);
-
-        // Check restore.
-        ignite.destroyCache(DEFAULT_CACHE_NAME);
-
-        assertEquals(EXIT_CODE_OK, (int)propFunc.apply(1));
-
-        snpFut = ignite.snapshot().restoreSnapshot(snpName, null);
-
-        U.sleep(cfg.getFailureDetectionTimeout());
-        assertFalse(snpFut.isDone());
-
-        assertEquals(EXIT_CODE_OK, (int)propFunc.apply(0));
-
-        snpFut.get(getTestTimeout() / 2);
-
-        IgniteCache<Object, Object> cache = ignite.cache(DEFAULT_CACHE_NAME);
-
-        assertNotNull(cache);
-
-        for (int i = 0; i < keysCnt; i++)
-            assertEquals("key=" + i, i, cache.get(i));
     }
 
     /** @throws Exception If failed. */

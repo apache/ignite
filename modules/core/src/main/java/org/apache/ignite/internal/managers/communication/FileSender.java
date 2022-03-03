@@ -27,10 +27,8 @@ import java.util.Map;
 import java.util.function.BooleanSupplier;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
-import org.apache.ignite.internal.util.BasicRateLimiter;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -53,10 +51,6 @@ class FileSender extends AbstractTransmission {
     @GridToStringExclude
     private FileIO fileIo;
 
-    /** Transfer rate limiter. */
-    @GridToStringExclude
-    private BasicRateLimiter rateLimiter;
-
     /**
      * @param file File which is going to be sent by chunks.
      * @param off File offset.
@@ -67,7 +61,6 @@ class FileSender extends AbstractTransmission {
      * @param log Ignite logger.
      * @param factory Factory to produce IO interface on given file.
      * @param chunkSize Size of chunks.
-     * @param rateLimiter Transfer rate limiter.
      * @throws IOException If fails.
      */
     public FileSender(
@@ -79,16 +72,13 @@ class FileSender extends AbstractTransmission {
         BooleanSupplier stopChecker,
         IgniteLogger log,
         FileIOFactory factory,
-        int chunkSize,
-        BasicRateLimiter rateLimiter
+        int chunkSize
     ) throws IOException {
         super(new TransmissionMeta(file.getName(), off, cnt, params, plc, null), stopChecker, log, chunkSize);
 
         assert file != null;
 
         fileIo = factory.create(file);
-
-        this.rateLimiter = rateLimiter;
     }
 
     /**
@@ -96,12 +86,12 @@ class FileSender extends AbstractTransmission {
      * @param oo Channel to write meta info to.
      * @param rcvMeta Connection meta received.
      * @throws IOException If a transport exception occurred.
-     * @throws IgniteInterruptedCheckedException If thread has been interrupted.
+     * @throws InterruptedException If thread interrupted.
      */
     public void send(WritableByteChannel ch,
         ObjectOutput oo,
         @Nullable TransmissionMeta rcvMeta
-    ) throws IOException, IgniteInterruptedCheckedException {
+    ) throws IOException, InterruptedException {
         updateSenderState(rcvMeta);
 
         // Write flag to remote to keep currnet transmission opened.
@@ -117,7 +107,7 @@ class FileSender extends AbstractTransmission {
 
         while (hasNextChunk()) {
             if (Thread.currentThread().isInterrupted())
-                throw new IgniteInterruptedCheckedException("Sender thread has been interrupted");
+                throw new InterruptedException("Sender thread has been interruped");
 
             if (stopped())
                 throw new IgniteException("Sender has been cancelled due to the local node is stopping");
@@ -160,17 +150,11 @@ class FileSender extends AbstractTransmission {
     /**
      * @param ch Channel to write data to.
      * @throws IOException If fails.
-     * @throws IgniteInterruptedCheckedException If thread has been interrupted.
      */
-    private void writeChunk(WritableByteChannel ch) throws IOException, IgniteInterruptedCheckedException {
-        int batchSize = (int)Math.min(chunkSize, meta.count() - transferred);
-        boolean limited = rateLimiter.acquire(batchSize);
-        long sent = 0;
+    private void writeChunk(WritableByteChannel ch) throws IOException {
+        long batchSize = Math.min(chunkSize, meta.count() - transferred);
 
-        do {
-            sent += fileIo.transferTo(meta.offset() + transferred + sent, batchSize - sent, ch);
-        }
-        while (limited && sent < batchSize && !Thread.currentThread().isInterrupted() && !stopped());
+        long sent = fileIo.transferTo(meta.offset() + transferred, batchSize, ch);
 
         if (sent > 0)
             transferred += sent;
