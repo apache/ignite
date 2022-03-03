@@ -77,6 +77,7 @@ public class GridLog4jInitializedTest {
     private static class LoggerTest extends Logger {
         /** Deprecated message is printed. */
         volatile boolean deprecatedMsgIsPrinted;
+
         /** */
         protected LoggerTest(String name) {
             super(name);
