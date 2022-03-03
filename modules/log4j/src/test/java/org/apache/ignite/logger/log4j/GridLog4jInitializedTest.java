@@ -20,7 +20,6 @@ package org.apache.ignite.logger.log4j;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
 import org.apache.log4j.BasicConfigurator;
-import org.apache.log4j.Logger;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -61,32 +60,5 @@ public class GridLog4jInitializedTest {
         log.error("This is 'error' message.", new Exception("It's a test error exception"));
 
         assert log.getLogger(GridLog4jInitializedTest.class.getName()) instanceof Log4JLogger;
-    }
-
-    /** */
-    @Test
-    public void testLogDeprecated() {
-        LoggerTest test = new LoggerTest("test");
-
-        new Log4JLogger(test);
-
-        assertTrue(test.deprecatedMsgIsPrinted);
-    }
-
-    /** */
-    private static class LoggerTest extends Logger {
-        /** Deprecated message is printed. */
-        volatile boolean deprecatedMsgIsPrinted;
-
-        /** */
-        protected LoggerTest(String name) {
-            super(name);
-        }
-
-        /** {@inheritDoc} */
-        @Override public void warn(Object message) {
-            if (message == Log4JLogger.DEPRECATED_MSG)
-                deprecatedMsgIsPrinted = true;
-        }
     }
 }

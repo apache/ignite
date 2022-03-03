@@ -155,6 +155,8 @@ public class Log4JLogger implements IgniteLogger, LoggerNodeIdAndApplicationAwar
             quiet = true;
 
         cfg = null;
+
+        warning(DEPRECATED_MSG);
     }
 
     /**
@@ -173,6 +175,8 @@ public class Log4JLogger implements IgniteLogger, LoggerNodeIdAndApplicationAwar
 
         quiet = quiet0;
         cfg = null;
+
+        warning(DEPRECATED_MSG);
     }
 
     /**
@@ -244,6 +248,8 @@ public class Log4JLogger implements IgniteLogger, LoggerNodeIdAndApplicationAwar
         });
 
         quiet = quiet0;
+
+        warning(DEPRECATED_MSG);
     }
 
     /**
@@ -294,6 +300,8 @@ public class Log4JLogger implements IgniteLogger, LoggerNodeIdAndApplicationAwar
         });
 
         quiet = quiet0;
+
+        warning(DEPRECATED_MSG);
     }
 
     /**
@@ -341,6 +349,8 @@ public class Log4JLogger implements IgniteLogger, LoggerNodeIdAndApplicationAwar
         });
 
         quiet = quiet0;
+
+        warning(DEPRECATED_MSG);
     }
 
     /**
@@ -463,8 +473,6 @@ public class Log4JLogger implements IgniteLogger, LoggerNodeIdAndApplicationAwar
             quiet0 = quiet;
             inited = true;
         }
-
-        warning(DEPRECATED_MSG);
     }
 
     /**
