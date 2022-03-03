@@ -707,6 +707,7 @@ public final class ClientConfiguration implements Serializable {
      * <p />
      * See also {@link ClientConfiguration#heartbeatInterval}.
      *
+     * @param heartbeatsEnabled Whether to enable heartbeats.
      * @return {@code this} for chaining.
      */
     public ClientConfiguration setHeartbeatsEnabled(boolean heartbeatsEnabled) {
@@ -739,6 +740,7 @@ public final class ClientConfiguration implements Serializable {
      * When thin client connection is idle (no operations are performed), heartbeat messages are sent periodically
      * to keep the connection alive and detect potential half-open state.     *
      *
+     * @param heartbeatInterval Heartbeat interval, in milliseconds.
      * @return {@code this} for chaining.
      */
     public ClientConfiguration setHeartbeatInterval(long heartbeatInterval) {

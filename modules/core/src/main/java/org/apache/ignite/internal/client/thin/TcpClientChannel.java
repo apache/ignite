@@ -767,12 +767,15 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
      * Sends heartbeat messages.
      */
     private class HeartbeatTask extends TimerTask {
+        /** Heartbeat interval. */
         private final long interval;
 
+        /** Constructor. */
         public HeartbeatTask(long interval) {
             this.interval = interval;
         }
 
+        /** {@inheritDoc} */
         @Override public void run() {
             try {
                 if (System.currentTimeMillis() - lastSendMillis > interval)
