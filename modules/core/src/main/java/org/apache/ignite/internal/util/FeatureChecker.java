@@ -30,6 +30,19 @@ public class FeatureChecker {
         "--add-opens=jdk.management/com.sun.management.internal=ALL-UNNAMED\n" +
         "--illegal-access=permit";
 
+    /** Required Options to Run on Java 15 and higher. */
+    public static final String JAVA_15_OPTIONS =
+        "--add-opens=java.base/jdk.internal.misc=ALL-UNNAMED\n" +
+        "--add-opens=java.base/sun.nio.ch=ALL-UNNAMED\n" +
+        "--add-opens=java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED\n" +
+        "--add-opens=jdk.internal.jvmstat/sun.jvmstat.monitor=ALL-UNNAMED\n" +
+        "--add-opens=java.base/sun.reflect.generics.reflectiveObjects=ALL-UNNAMED\n" +
+        "--add-opens=jdk.management/com.sun.management.internal=ALL-UNNAMED\n" +
+        "--add-opens=java.base/java.io=ALL-UNNAMED\n" +
+        "--add-opens=java.base/java.nio=ALL-UNNAMED\n" +
+        "--add-opens=java.base/java.util=ALL-UNNAMED\n" +
+        "--add-opens=java.base/java.lang=ALL-UNNAMED";
+
     /** Java version specific warning to be added in case access failed */
     public static final String JAVA_VER_SPECIFIC_WARN =
         "\nPlease add the following parameters to JVM startup settings and restart the application: {parameters: " +
