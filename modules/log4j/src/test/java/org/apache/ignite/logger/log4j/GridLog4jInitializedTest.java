@@ -17,20 +17,14 @@
 
 package org.apache.ignite.logger.log4j;
 
-import java.util.Enumeration;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
-import org.apache.log4j.Appender;
 import org.apache.log4j.BasicConfigurator;
 import org.apache.log4j.Logger;
 import org.junit.Before;
 import org.junit.Test;
-import org.mockito.Mockito;
 
 import static org.junit.Assert.assertTrue;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.when;
 
 /**
  * Log4j initialized test.
@@ -72,15 +66,26 @@ public class GridLog4jInitializedTest {
     /** */
     @Test
     public void testLogDeprecated() {
-        Logger mock = mock(Logger.class);
-        Enumeration<Appender> enumeration = mock(Enumeration.class);
+        LoggerTest test = new LoggerTest("test");
 
-        when(enumeration.hasMoreElements()).thenReturn(false);
+        new Log4JLogger(test);
 
-        when(mock.getAllAppenders()).thenReturn(enumeration);
+        assertTrue(test.deprecatedMsgIsPrinted);
+    }
 
-        new Log4JLogger(mock);
+    /** */
+    private static class LoggerTest extends Logger {
+        /** Deprecated message is printed. */
+        volatile boolean deprecatedMsgIsPrinted;
+        /** */
+        protected LoggerTest(String name) {
+            super(name);
+        }
 
-        Mockito.verify(mock, times(1)).warn(Log4JLogger.WARN_MSG);
+        /** {@inheritDoc} */
+        @Override public void warn(Object message) {
+            if (message == Log4JLogger.DEPRECATED_MSG)
+                deprecatedMsgIsPrinted = true;
+        }
     }
 }

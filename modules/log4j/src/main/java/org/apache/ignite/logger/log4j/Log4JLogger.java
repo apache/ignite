@@ -79,14 +79,16 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_QUIET;
  * logger in your task/job code. See {@link org.apache.ignite.resources.LoggerResource} annotation about logger
  * injection.
  *
- * @deprecated log4j 1.2.17 is not supported and contains critical vulnerabilities.
- * Use dependency ignite-log4j2.
+ * @deprecated Log4j 1.x had reached end of life and contains critical vulnerabilities. See
+ * <a href="https://blogs.apache.org/foundation/entry/apache_logging_services_project_announces">the announcement</a>.
+ * Please, be aware this module will be removed in the next releases.
+ * Use <a href="https://ignite.apache.org/docs/latest/logging#using-log4j2">ignite-log4j2</a> module instead.
  */
 @Deprecated
 public class Log4JLogger implements IgniteLogger, LoggerNodeIdAndApplicationAware, Log4jFileAware {
     /** */
-    public static final String WARN_MSG = "You are using a deprecated API, it will be removed."
-        + U.nl() + "Please use the ignite-log4j2 depandency.";
+    public static final String DEPRECATED_MSG = "The 'ignite-log4j' module is deprecated and will be removed in the " +
+        "next releases. Use 'ignite-log4j2' module instead.";
 
     /** Appenders. */
     private static Collection<FileAppender> fileAppenders = new GridConcurrentHashSet<>();
@@ -462,7 +464,7 @@ public class Log4JLogger implements IgniteLogger, LoggerNodeIdAndApplicationAwar
             inited = true;
         }
 
-        warning(WARN_MSG);
+        warning(DEPRECATED_MSG);
     }
 
     /**
