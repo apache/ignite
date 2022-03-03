@@ -176,8 +176,8 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
 
         handshake(DEFAULT_VERSION, cfg.getUserName(), cfg.getUserPassword(), cfg.getUserAttributes());
 
-        heartbeatTimer = protocolCtx.isFeatureSupported(HEARTBEAT) && cfg.getHeartbeatsEnabled()
-                ? initHeartbeats(cfg.getHeartbeatInterval())
+        heartbeatTimer = protocolCtx.isFeatureSupported(HEARTBEAT) && cfg.getHeartbeatEnabled()
+                ? initHeartbeat(cfg.getHeartbeatInterval())
                 : null;
     }
 
@@ -730,7 +730,7 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
      * @param configuredInterval Configured heartbeat interval, in milliseconds.
      * @return Heartbeat timer.
      */
-    private Timer initHeartbeats(long configuredInterval) {
+    private Timer initHeartbeat(long configuredInterval) {
         long heartbeatInterval = getHeartbeatInterval(configuredInterval);
 
         Timer timer = new Timer("tcp-client-channel-heartbeats-" + hashCode());

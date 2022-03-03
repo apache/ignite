@@ -583,7 +583,7 @@ public class ReliabilityTest extends AbstractThinClientTest {
 
         ClientConfiguration clientCfg = new ClientConfiguration()
                 .setAddresses("127.0.0.1")
-                .setHeartbeatsEnabled(true)
+                .setHeartbeatEnabled(true)
                 .setHeartbeatInterval(500);
 
         try (Ignite ignored = startGrid(serverCfg); IgniteClient client = Ignition.startClient(clientCfg)) {
