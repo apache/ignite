@@ -1217,16 +1217,11 @@ public class CacheGroupContext {
      * @see CdcMain
      */
     public boolean walOrCdcEnabled() {
-        if (persistenceEnabled)
-            return walEnabled();
-
-        if (systemCache())
-            return false;
-
+        // Data region is null for client and non affinity nodes.
         if (dataRegion == null)
             return false;
 
-        return dataRegion.config().isCdcEnabled() && walEnabled();
+        return walEnabled() && (persistenceEnabled || dataRegion.config().isCdcEnabled());
     }
 
     /**

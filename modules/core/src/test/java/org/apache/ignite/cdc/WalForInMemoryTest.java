@@ -37,6 +37,7 @@ import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccess
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory.IteratorParametersBuilder;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -134,6 +135,11 @@ public class WalForInMemoryTest extends GridCommonAbstractTest {
             IgniteBiTuple<WALPointer, WALRecord> rec = iter.next();
 
             assertTrue(rec.get2() instanceof DataRecord);
+
+            DataRecord dataRec = (DataRecord)rec.get2();
+
+            for (int i = 0; i < dataRec.entryCount(); i++)
+                assertEquals(CU.cacheId(DEFAULT_CACHE_NAME), dataRec.get(i).cacheId());
 
             walRecCnt++;
         }
