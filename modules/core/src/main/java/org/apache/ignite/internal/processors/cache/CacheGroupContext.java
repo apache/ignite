@@ -1216,7 +1216,7 @@ public class CacheGroupContext {
      * @return {@code True} if {@link WALRecord} should be logged into WAL.
      * @see CdcMain
      */
-    public boolean walOrCdcEnabled() {
+    public boolean walForCdcEnabled() {
         // Data region is null for client and non affinity nodes.
         if (dataRegion == null)
             return false;
