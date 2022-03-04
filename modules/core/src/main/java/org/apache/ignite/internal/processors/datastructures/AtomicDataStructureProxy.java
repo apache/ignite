@@ -114,9 +114,9 @@ public abstract class AtomicDataStructureProxy<V extends AtomicDataStructureValu
     /**
      * Check removed status.
      *
-     * @throws IllegalStateException If removed.
+     * @throws IgniteException If removed.
      */
-    protected void checkRemoved() throws IllegalStateException {
+    protected void checkRemoved() throws IgniteException {
         if (rmvd)
             throw removedError();
 
@@ -175,8 +175,8 @@ public abstract class AtomicDataStructureProxy<V extends AtomicDataStructureValu
     /**
      * @return Error.
      */
-    private IllegalStateException removedError() {
-        return new IllegalStateException("Sequence was removed from cache: " + name);
+    private IgniteException removedError() {
+        return new IgniteException("Sequence was removed from cache: " + name);
     }
 
     /**

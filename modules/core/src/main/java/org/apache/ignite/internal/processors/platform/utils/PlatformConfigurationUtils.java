@@ -1952,6 +1952,7 @@ public class PlatformConfigurationUtils {
             cfg.setThinClientConfiguration(new ThinClientConfiguration()
                 .setMaxActiveTxPerConnection(in.readInt())
                 .setMaxActiveComputeTasksPerConnection(in.readInt())
+                .sendServerExceptionStackTraceToClient(in.readBoolean())
             );
         }
 
@@ -1991,6 +1992,7 @@ public class PlatformConfigurationUtils {
                 w.writeBoolean(true);
                 w.writeInt(thinCfg.getMaxActiveTxPerConnection());
                 w.writeInt(thinCfg.getMaxActiveComputeTasksPerConnection());
+                w.writeBoolean(thinCfg.sendServerExceptionStackTraceToClient());
             }
             else
                 w.writeBoolean(false);

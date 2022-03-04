@@ -241,6 +241,20 @@ BOOST_AUTO_TEST_CASE(TestSQLConnect)
     SQLGetInfo(dbc, SQL_DRIVER_NAME, 0, 0, 0);
 }
 
+BOOST_AUTO_TEST_CASE(TestSQLConnectFailedDSN)
+{
+    // Tests that SQLConnect using DSN doesn't fail with link error (especially on linux).
+    Prepare();
+
+    SQLCHAR dsnConnStr[] = "DSN=IGNITETEST";
+
+    SQLRETURN ret = SQLConnect(dbc, dsnConnStr, sizeof(dsnConnStr), 0, 0, 0, 0);
+
+    BOOST_REQUIRE(!SQL_SUCCEEDED(ret));
+    BOOST_CHECK_EQUAL(GetOdbcErrorState(SQL_HANDLE_DBC, dbc), "IM002");
+    BOOST_TEST_MESSAGE("Expected error: " << GetOdbcErrorMessage(SQL_HANDLE_DBC, dbc));
+}
+
 BOOST_AUTO_TEST_CASE(TestSQLPrepare)
 {
     // There are no checks because we do not really care what is the result of these

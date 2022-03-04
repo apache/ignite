@@ -108,13 +108,20 @@ public class BasicRateLimiter {
     }
 
     /**
+     * @return {@code True} if the rate is not limited.
+     */
+    public boolean isUnlimited() {
+        return unlimited;
+    }
+
+    /**
      * Acquires the given number of permits from this {@code RateLimiter}, blocking until the request
      * can be granted. Tells the amount of time slept, if any.
      *
      * @param permits The number of permits to acquire.
      * @throws IllegalArgumentException If the requested number of permits is negative or zero.
      */
-    public void acquire(int permits) throws IgniteInterruptedCheckedException {
+    public void acquire(long permits) throws IgniteInterruptedCheckedException {
         if (unlimited)
             return;
 
@@ -136,7 +143,7 @@ public class BasicRateLimiter {
      * @param permits The number of permits.
      * @return Time in microseconds to wait until the resource can be acquired, never negative.
      */
-    private long reserve(int permits) {
+    private long reserve(long permits) {
         A.ensure(permits > 0, "Requested permits (" + permits + ") must be positive");
 
         synchronized (mux) {
