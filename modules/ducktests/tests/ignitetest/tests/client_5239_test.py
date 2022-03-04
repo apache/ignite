@@ -31,7 +31,7 @@ class ClientERRTest(IgniteTest):
     """
     Test Clients
     """
-    NUM_NODES = 40
+    NUM_NODES = 45
 
     @cluster(num_nodes=NUM_NODES)
     @ignite_versions(str(DEV_BRANCH), str(LATEST))
@@ -48,7 +48,7 @@ class ClientERRTest(IgniteTest):
 
         servers = IgniteService(self.test_context,
                                 config=config,
-                                num_nodes=int(self.NUM_NODES/2),
+                                num_nodes=int(self.NUM_NODES-5),
                                 startup_timeout_sec=120)
 
         servers.start()
@@ -60,7 +60,7 @@ class ClientERRTest(IgniteTest):
         app = IgniteApplicationService(
             self.test_context,
             client_cfg,
-            num_nodes=int(self.NUM_NODES/2),
+            num_nodes=5,
             startup_timeout_sec=120,
             java_class_name="org.apache.ignite.internal.ducktest.tests.client_test.IgniteCachePutClient",
             params={"cacheName": "test_cache", "pacing": 10}
