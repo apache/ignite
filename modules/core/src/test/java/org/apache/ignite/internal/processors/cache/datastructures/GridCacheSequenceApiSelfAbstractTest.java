@@ -26,6 +26,7 @@ import java.util.UUID;
 import java.util.concurrent.Callable;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteAtomicSequence;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.AtomicConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -338,7 +339,7 @@ public abstract class GridCacheSequenceApiSelfAbstractTest extends IgniteAtomics
 
             fail("Exception expected.");
         }
-        catch (IllegalStateException e) {
+        catch (IgniteException e) {
             info("Caught expected exception: " + e);
         }
     }

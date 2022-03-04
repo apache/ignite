@@ -37,6 +37,7 @@ import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineRecommen
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointEntry;
+import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointMarkersStorage;
 import org.apache.ignite.internal.processors.metastorage.DistributedMetaStorage;
 import org.apache.ignite.internal.processors.performancestatistics.FilePerformanceStatisticsWriter;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCachePartitionWorker;
@@ -90,6 +91,7 @@ import static org.apache.ignite.internal.processors.cache.mvcc.MvccCachingManage
 import static org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager.DFLT_DEFRAGMENTATION_REGION_SIZE_PERCENTAGE;
 import static org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager.DFLT_PDS_WAL_REBALANCE_THRESHOLD;
 import static org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointHistory.DFLT_PDS_MAX_CHECKPOINT_MEMORY_HISTORY_SIZE;
+import static org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointMarkersStorage.DFLT_IGNITE_CHECKPOINT_MAP_SNAPSHOT_THRESHOLD;
 import static org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointWorkflow.DFLT_CHECKPOINT_PARALLEL_SORT_THRESHOLD;
 import static org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.PageLockTrackerFactory.DFLT_PAGE_LOCK_TRACKER_CAPACITY;
 import static org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.PageLockTrackerFactory.HEAP_LOG;
@@ -668,9 +670,10 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_H2_DEBUG_CONSOLE_PORT = "IGNITE_H2_DEBUG_CONSOLE_PORT";
 
     /**
-     * If this property is set to {@code true} then shared memory space native debug will be enabled.
+     * @deprecated This property is ignored and will be deleted in future releases.
      */
-    @SystemProperty("Enables native debug of the shared memory space")
+    @Deprecated
+    @SystemProperty("This option is ignored and will be deleted in future releases")
     public static final String IGNITE_IPC_SHMEM_SPACE_DEBUG = "IGNITE_IPC_SHMEM_SPACE_DEBUG";
 
     /**
@@ -1135,8 +1138,11 @@ public final class IgniteSystemProperties {
     /**
      * Threshold of the checkpoint quantity since the last earliest checkpoint map snapshot.
      * After this thresold is reached, a snapshot of the earliest checkpoint map will be captured.
-     * Default is {@code 5}.
+     * Default is {@link CheckpointMarkersStorage#DFLT_IGNITE_CHECKPOINT_MAP_SNAPSHOT_THRESHOLD}.
      */
+    @SystemProperty(value = "Threshold of the checkpoint quantity since the last earliest checkpoint map snapshot. " +
+        "After this thresold is reached, a snapshot of the earliest checkpoint map will be captured",
+        type = Integer.class, defaults = "" + DFLT_IGNITE_CHECKPOINT_MAP_SNAPSHOT_THRESHOLD)
     public static final String IGNITE_CHECKPOINT_MAP_SNAPSHOT_THRESHOLD = "IGNITE_CHECKPOINT_MAP_SNAPSHOT_THRESHOLD";
 
     /** Ignite page memory concurrency level. */
@@ -1729,6 +1735,13 @@ public final class IgniteSystemProperties {
      */
     @SystemProperty("Allow use composite _key, _val columns at the INSERT/UPDATE/MERGE statements")
     public static final String IGNITE_SQL_ALLOW_KEY_VAL_UPDATES = "IGNITE_SQL_ALLOW_KEY_VAL_UPDATES";
+
+    /**
+     * Forcibly fills missing columns belonging to the primary key with nulls or default values if those have been specified.
+     */
+    @SystemProperty(value = "Forcibly fills missing columns belonging to the primary key with nulls " +
+        "or default values if those have been specified", defaults = "false")
+    public static final String IGNITE_SQL_FILL_ABSENT_PK_WITH_DEFAULTS = "IGNITE_SQL_FILL_ABSENT_PK_WITH_DEFAULTS";
 
     /**
      * Interval between logging of time of next auto-adjust.

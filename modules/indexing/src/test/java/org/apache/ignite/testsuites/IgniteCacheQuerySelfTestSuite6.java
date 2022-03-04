@@ -40,6 +40,7 @@ import org.apache.ignite.internal.processors.cache.query.continuous.GridCacheCon
 import org.apache.ignite.internal.processors.cache.query.continuous.GridCacheContinuousQueryReplicatedAtomicSelfTest;
 import org.apache.ignite.internal.processors.cache.query.continuous.IgniteCacheContinuousQueryClientTest;
 import org.apache.ignite.internal.processors.performancestatistics.PerformanceStatisticsQueryTest;
+import org.apache.ignite.internal.processors.query.IgniteInsertNullableDuplicatesSqlTest;
 import org.apache.ignite.internal.processors.query.IgniteSqlSinglePartitionMultiParallelismTest;
 import org.apache.ignite.internal.processors.query.MemLeakOnSqlWithClientReconnectTest;
 import org.junit.runner.RunWith;
@@ -50,6 +51,7 @@ import org.junit.runners.Suite;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
+    IgniteInsertNullableDuplicatesSqlTest.class,
     GridCacheContinuousQueryPartitionAtomicOneNodeTest.class,
     CacheContinuousWithTransformerPartitionedSelfTest.class,
     GridCacheContinuousQueryLocalAtomicSelfTest.class,

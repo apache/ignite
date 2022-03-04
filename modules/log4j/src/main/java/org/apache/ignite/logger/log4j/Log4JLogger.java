@@ -78,8 +78,18 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_QUIET;
  * It's recommended to use Ignite logger injection instead of using/instantiating
  * logger in your task/job code. See {@link org.apache.ignite.resources.LoggerResource} annotation about logger
  * injection.
+ *
+ * @deprecated Log4j 1.x had reached end of life and contains critical vulnerabilities. See
+ * <a href="https://blogs.apache.org/foundation/entry/apache_logging_services_project_announces">the announcement</a>.
+ * Please, be aware this module will be removed in the next releases.
+ * Use <a href="https://ignite.apache.org/docs/latest/logging#using-log4j2">ignite-log4j2</a> module instead.
  */
+@Deprecated
 public class Log4JLogger implements IgniteLogger, LoggerNodeIdAndApplicationAware, Log4jFileAware {
+    /** */
+    public static final String DEPRECATED_MSG = "The 'ignite-log4j' module is deprecated and will be removed in the " +
+        "next releases. Use 'ignite-log4j2' module instead.";
+
     /** Appenders. */
     private static Collection<FileAppender> fileAppenders = new GridConcurrentHashSet<>();
 
@@ -145,6 +155,8 @@ public class Log4JLogger implements IgniteLogger, LoggerNodeIdAndApplicationAwar
             quiet = true;
 
         cfg = null;
+
+        warning(DEPRECATED_MSG);
     }
 
     /**
@@ -163,6 +175,8 @@ public class Log4JLogger implements IgniteLogger, LoggerNodeIdAndApplicationAwar
 
         quiet = quiet0;
         cfg = null;
+
+        warning(DEPRECATED_MSG);
     }
 
     /**
@@ -234,6 +248,8 @@ public class Log4JLogger implements IgniteLogger, LoggerNodeIdAndApplicationAwar
         });
 
         quiet = quiet0;
+
+        warning(DEPRECATED_MSG);
     }
 
     /**
@@ -284,6 +300,8 @@ public class Log4JLogger implements IgniteLogger, LoggerNodeIdAndApplicationAwar
         });
 
         quiet = quiet0;
+
+        warning(DEPRECATED_MSG);
     }
 
     /**
@@ -331,6 +349,8 @@ public class Log4JLogger implements IgniteLogger, LoggerNodeIdAndApplicationAwar
         });
 
         quiet = quiet0;
+
+        warning(DEPRECATED_MSG);
     }
 
     /**

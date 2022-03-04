@@ -429,10 +429,6 @@ group=TODO ,name= TODO
 --
 ////
 
-== Monitoring Data Center Replication
-
-Refer to the link:data-center-replication/managing-and-monitoring#dr_jmx[Managing and Monitoring Replication] page.
-
 
 ////
 == Monitoring Memory Consumption

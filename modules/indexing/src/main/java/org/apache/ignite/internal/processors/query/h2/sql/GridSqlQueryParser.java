@@ -524,6 +524,12 @@ public class GridSqlQueryParser {
     private static final String PARAM_PARALLELISM = "PARALLELISM";
 
     /** */
+    private static final String PARAM_PK_INLINE_SIZE = "PK_INLINE_SIZE";
+
+    /** */
+    private static final String PARAM_AFFINITY_INDEX_INLINE_SIZE = "AFFINITY_INDEX_INLINE_SIZE";
+
+    /** */
     private final IdentityHashMap<Object, Object> h2ObjToGridObj = new IdentityHashMap<>();
 
     /** */
@@ -1688,6 +1694,24 @@ public class GridSqlQueryParser {
 
             case PARAM_ENCRYPTED:
                 res.encrypted(F.isEmpty(val) || Boolean.parseBoolean(val));
+
+                break;
+
+            case PARAM_PK_INLINE_SIZE:
+                ensureNotEmpty(name, val);
+
+                int pkInlineSize = parseIntParam(PARAM_PK_INLINE_SIZE, val);
+
+                res.primaryKeyInlineSize(pkInlineSize);
+
+                break;
+
+            case PARAM_AFFINITY_INDEX_INLINE_SIZE:
+                ensureNotEmpty(name, val);
+
+                int affInlineSize = parseIntParam(PARAM_AFFINITY_INDEX_INLINE_SIZE, val);
+
+                res.affinityKeyInlineSize(affInlineSize);
 
                 break;
 
