@@ -188,7 +188,7 @@ sudo docker run -d \
 
 By default, the Ignite Docker image starts with the following modules enabled:
 
-- ignite-log4j,
+- ignite-log4j2,
 - ignite-spring,
 - ignite-indexing.
 
@@ -202,7 +202,7 @@ The following parameters can be passed as environment variables in the docker co
 | `CONFIG_URI` | URL to the Ignite configuration file (can also be relative to the META-INF folder on the class path).
 The downloaded config file is saved to ./ignite-config.xml | N/A
 
-| `OPTION_LIBS` | A list of link:setup#enabling-modules[modules] that will be enabled for the node. | ignite-log4j, ignite-spring, ignite-indexing
+| `OPTION_LIBS` | A list of link:setup#enabling-modules[modules] that will be enabled for the node. | ignite-log4j2, ignite-spring, ignite-indexing
 
 | `JVM_OPTS` | JVM arguments passed to the Ignite instance.| N/A
 

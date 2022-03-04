@@ -87,7 +87,7 @@
     <None Update="Config\native-client-test-cache.xml" CopyToOutputDirectory="PreserveNewest" />
     <None Update="Config\marshaller-default.xml" CopyToOutputDirectory="PreserveNewest" />
     <None Update="Config\Apache.Ignite.exe.config.test2" CopyToOutputDirectory="PreserveNewest" />
-    <None Update="Config\Log\dotnet-log4j.xml" CopyToOutputDirectory="PreserveNewest" />
+    <None Update="Config\Log\dotnet-log4j2.xml" CopyToOutputDirectory="PreserveNewest" />
     <None Update="Config\Log\custom-log.xml" CopyToOutputDirectory="PreserveNewest" />
     <None Update="Config\KeyStore\server.jks" CopyToOutputDirectory="PreserveNewest" />
     <None Update="Config\KeyStore\trust.jks" CopyToOutputDirectory="PreserveNewest" />
