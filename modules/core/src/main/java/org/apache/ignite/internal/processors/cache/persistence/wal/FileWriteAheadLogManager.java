@@ -32,6 +32,7 @@ import java.nio.ByteOrder;
 import java.nio.channels.ClosedByInterruptException;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.sql.Time;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -481,6 +482,8 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                     resolveFolders.folderName(),
                     "change data capture directory"
                 );
+
+                checkHardLinkAvailable();
             }
 
             serializer = new RecordSerializerFactoryImpl(cctx).createSerializer(serializerVer);
@@ -675,6 +678,35 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         }
     }
 
+    /** @throws IgniteCheckedException If creating hard links is not available. */
+    private void checkHardLinkAvailable() throws IgniteCheckedException {
+        File tmp = new File(walArchiveDir, "check-hard-link.tmp");
+        Path link = walCdcDir.toPath().resolve(tmp.getName());
+
+        try {
+            if (!tmp.exists())
+                tmp.createNewFile();
+
+            if (link.toFile().exists())
+                Files.delete(link);
+        }
+        catch (IOException e) {
+            throw new IgniteCheckedException("Unable to create temporary file to check hard links.", e);
+        }
+
+        try {
+            Files.createLink(link, tmp.toPath());
+        }
+        catch (Exception e) {
+            throw new IgniteCheckedException("Creating hard links is not available [walArchiveDir=" + walArchiveDir +
+                ", walCdcDir=" + walCdcDir + ']', e);
+        }
+        finally {
+            U.delete(tmp);
+            U.delete(link);
+        }
+    }
+
     /**
      * Method is called twice on deactivate and stop.
      * It shutdown workers but do not deallocate them to avoid duplication.
@@ -688,13 +720,15 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         stopAutoRollover();
 
         try {
-            fileHandleManager.onDeactivate();
+            if (fileHandleManager != null)
+                fileHandleManager.onDeactivate();
         }
         catch (Exception e) {
             U.error(log, "Failed to gracefully close WAL segment: " + currHnd, e);
         }
 
-        segmentAware.interrupt();
+        if (segmentAware != null)
+            segmentAware.interrupt();
 
         try {
             if (archiver != null)
