@@ -21,6 +21,7 @@ import java.io.Serializable;
 import java.util.Collection;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.internal.managers.encryption.GroupKeyEncrypted;
 import org.apache.ignite.internal.pagemem.store.IgnitePageStoreManager;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.T2;
@@ -53,6 +54,15 @@ public class StoredCacheData implements Serializable {
     private CacheConfigurationEnrichment cacheConfigurationEnrichment;
 
     /**
+     * Encryption key. {@code Null} if encryption is disabled.
+     * <p>
+     * To restore an encrypted snapshot, we have to read the keys it was encrypted with. The better place for the is
+     * Metastore. But it is currently unreadable as simple structure. Once it is done, we should move snapshot
+     * encryption keys there.
+     */
+    private GroupKeyEncrypted grpKeyEncrypted;
+
+    /**
      * Constructor.
      *
      * @param ccfg Cache configuration.
@@ -72,6 +82,7 @@ public class StoredCacheData implements Serializable {
         this.qryEntities = cacheData.qryEntities;
         this.sql = cacheData.sql;
         this.cacheConfigurationEnrichment = cacheData.cacheConfigurationEnrichment;
+        this.grpKeyEncrypted = cacheData.grpKeyEncrypted;
     }
 
     /**
@@ -116,6 +127,20 @@ public class StoredCacheData implements Serializable {
         this.sql = sql;
 
         return this;
+    }
+
+    /**
+     * @return Ciphered encryption key for this cache or cache group. {@code Null} if not encrypted.
+     */
+    public GroupKeyEncrypted groupKeyEncrypted() {
+        return grpKeyEncrypted;
+    }
+
+    /**
+     * @param grpKeyEncrypted Ciphered encryption key for this cache or cache group.
+     */
+    public void groupKeyEncrypted(GroupKeyEncrypted grpKeyEncrypted) {
+        this.grpKeyEncrypted = grpKeyEncrypted;
     }
 
     /**

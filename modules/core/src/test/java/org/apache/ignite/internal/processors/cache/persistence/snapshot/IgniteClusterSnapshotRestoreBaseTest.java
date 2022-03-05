@@ -25,7 +25,6 @@ import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.util.distributed.DistributedProcess;
 import org.apache.ignite.internal.util.distributed.SingleNodeMessage;
 import org.apache.ignite.lang.IgniteFuture;
-import org.junit.runners.Parameterized;
 
 /**
  * Snapshot restore test base.
@@ -39,12 +38,6 @@ public abstract class IgniteClusterSnapshotRestoreBaseTest extends AbstractSnaps
 
     /** Default shared cache group name. */
     protected static final String SHARED_GRP = "shared";
-
-    /** Parameters. Encrypted snapshots are not supported. */
-    @Parameterized.Parameters(name = "Encryption is disabled")
-    public static Iterable<Boolean> disabledEncryption() {
-        return Collections.singletonList(false);
-    }
 
     /**
      * @param nodesCnt Nodes count.
