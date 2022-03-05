@@ -685,7 +685,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             FileStore cdcStore = Files.getFileStore(walCdcDir.toPath());
 
             if (!F.eq(walStore.name(), cdcStore.name())) {
-                throw new IgniteCheckedException("WAL and CDC directories are not stored at the same " +
+                throw new IgniteCheckedException("WAL archive and CDC directories are not stored at the same " +
                     "device or partition. Creating hard links is not available. " +
                     "[walStoreName=" + walStore.name() + ", cdcStoreName=" + cdcStore.name() + ']');
             }
