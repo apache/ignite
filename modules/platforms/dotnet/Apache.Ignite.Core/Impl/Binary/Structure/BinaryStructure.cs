@@ -230,6 +230,25 @@ namespace Apache.Ignite.Core.Impl.Binary.Structure
             return actionIdx >= path.Length - 1;
         }
 
+        public IEnumerable<BinaryStructureEntry> GetEntries(int pathIdx)
+        {
+            var path = _paths[pathIdx];
+
+            foreach (var entry in path)
+            {
+                if (entry.IsEmpty)
+                    yield break;
+
+                if (entry.IsJumpTable)
+                {
+                    // TODO
+                    continue;
+                }
+
+                yield return entry;
+            }
+        }
+
         /// <summary>
         /// Copy and possibly expand paths.
         /// </summary>
