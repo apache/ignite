@@ -25,6 +25,7 @@ import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.internal.processors.query.calcite.QueryChecker;
 import org.apache.ignite.internal.util.typedef.F;
 import org.junit.Test;
 
@@ -416,6 +417,40 @@ public class SetOpIntegrationTest extends AbstractBasicIntegrationTest {
 
         assertEquals(2, rows.size());
         assertEquals(2, F.size(rows, r -> r.get(0).equals("Igor1")));
+    }
+
+    /** */
+    @Test
+    public void testSetOpColocated() {
+        executeSql("CREATE TABLE emp(empid INTEGER, deptid INTEGER, name VARCHAR, PRIMARY KEY(empid, deptid)) " +
+            "WITH AFFINITY_KEY=deptid");
+        executeSql("CREATE TABLE dept(deptid INTEGER, name VARCHAR, PRIMARY KEY(deptid))");
+
+        executeSql("INSERT INTO emp VALUES (0, 0, 'test0'), (1, 0, 'test1'), (2, 1, 'test2')");
+        executeSql("INSERT INTO dept VALUES (0, 'test0'), (1, 'test1'), (2, 'test2')");
+
+        assertQuery("SELECT deptid, name FROM emp EXCEPT SELECT deptid, name FROM dept")
+            .matches(QueryChecker.matches(".*IgniteExchange.*IgniteColocatedMinus.*"))
+            .returns(0, "test1")
+            .returns(1, "test2")
+            .check();
+
+        assertQuery("SELECT deptid, name FROM dept EXCEPT SELECT deptid, name FROM emp")
+            .matches(QueryChecker.matches(".*IgniteExchange.*IgniteColocatedMinus.*"))
+            .returns(1, "test1")
+            .returns(2, "test2")
+            .check();
+
+        assertQuery("SELECT deptid FROM dept EXCEPT SELECT deptid FROM emp")
+            .matches(QueryChecker.matches(".*IgniteExchange.*IgniteColocatedMinus.*"))
+            .returns(2)
+            .check();
+
+        assertQuery("SELECT deptid FROM dept INTERSECT SELECT deptid FROM emp")
+            .matches(QueryChecker.matches(".*IgniteExchange.*IgniteColocatedIntersect.*"))
+            .returns(0)
+            .returns(1)
+            .check();
     }
 
     /**

@@ -17,12 +17,12 @@
 
 package org.apache.ignite.internal.processors.query.calcite.rel;
 
+import org.apache.ignite.internal.processors.query.calcite.rel.agg.IgniteColocatedHashAggregate;
+import org.apache.ignite.internal.processors.query.calcite.rel.agg.IgniteColocatedSortAggregate;
 import org.apache.ignite.internal.processors.query.calcite.rel.agg.IgniteMapHashAggregate;
 import org.apache.ignite.internal.processors.query.calcite.rel.agg.IgniteMapSortAggregate;
 import org.apache.ignite.internal.processors.query.calcite.rel.agg.IgniteReduceHashAggregate;
 import org.apache.ignite.internal.processors.query.calcite.rel.agg.IgniteReduceSortAggregate;
-import org.apache.ignite.internal.processors.query.calcite.rel.agg.IgniteSingleHashAggregate;
-import org.apache.ignite.internal.processors.query.calcite.rel.agg.IgniteSingleSortAggregate;
 import org.apache.ignite.internal.processors.query.calcite.rel.set.IgniteSetOp;
 
 /**
@@ -87,7 +87,7 @@ public interface IgniteRelVisitor<T> {
     /**
      * See {@link IgniteRelVisitor#visit(IgniteRel)}
      */
-    T visit(IgniteSingleHashAggregate rel);
+    T visit(IgniteColocatedHashAggregate rel);
 
     /**
      * See {@link IgniteRelVisitor#visit(IgniteRel)}
@@ -102,7 +102,7 @@ public interface IgniteRelVisitor<T> {
     /**
      * See {@link IgniteRelVisitor#visit(IgniteRel)}
      */
-    T visit(IgniteSingleSortAggregate rel);
+    T visit(IgniteColocatedSortAggregate rel);
 
     /**
      * See {@link IgniteRelVisitor#visit(IgniteRel)}

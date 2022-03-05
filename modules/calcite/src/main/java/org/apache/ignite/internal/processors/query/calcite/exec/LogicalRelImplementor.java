@@ -85,12 +85,12 @@ import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableSpool;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTrimExchange;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteUnionAll;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteValues;
+import org.apache.ignite.internal.processors.query.calcite.rel.agg.IgniteColocatedHashAggregate;
+import org.apache.ignite.internal.processors.query.calcite.rel.agg.IgniteColocatedSortAggregate;
 import org.apache.ignite.internal.processors.query.calcite.rel.agg.IgniteMapHashAggregate;
 import org.apache.ignite.internal.processors.query.calcite.rel.agg.IgniteMapSortAggregate;
 import org.apache.ignite.internal.processors.query.calcite.rel.agg.IgniteReduceHashAggregate;
 import org.apache.ignite.internal.processors.query.calcite.rel.agg.IgniteReduceSortAggregate;
-import org.apache.ignite.internal.processors.query.calcite.rel.agg.IgniteSingleHashAggregate;
-import org.apache.ignite.internal.processors.query.calcite.rel.agg.IgniteSingleSortAggregate;
 import org.apache.ignite.internal.processors.query.calcite.rel.set.IgniteSetOp;
 import org.apache.ignite.internal.processors.query.calcite.rule.LogicalScanConverterRule;
 import org.apache.ignite.internal.processors.query.calcite.schema.CacheTableDescriptor;
@@ -600,7 +600,7 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
     }
 
     /** {@inheritDoc} */
-    @Override public Node<Row> visit(IgniteSingleHashAggregate rel) {
+    @Override public Node<Row> visit(IgniteColocatedHashAggregate rel) {
         AggregateType type = AggregateType.SINGLE;
 
         RelDataType rowType = rel.getRowType();
@@ -659,7 +659,7 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
     }
 
     /** {@inheritDoc} */
-    @Override public Node<Row> visit(IgniteSingleSortAggregate rel) {
+    @Override public Node<Row> visit(IgniteColocatedSortAggregate rel) {
         AggregateType type = AggregateType.SINGLE;
 
         RelDataType rowType = rel.getRowType();

@@ -68,6 +68,11 @@ public abstract class DistributionFunction {
         return CU.UNDEFINED_CACHE_ID;
     }
 
+    /** */
+    public Object identity() {
+        return type().shortName;
+    }
+
     /**
      * Creates a destination based on this function algorithm, given nodes mapping and given distribution keys.
      *
@@ -301,8 +306,8 @@ public abstract class DistributionFunction {
             return new Partitioned<>(assignments, affinity);
         }
 
-        /** */
-        public Object identity() {
+        /** {@inheritDoc} */
+        @Override public Object identity() {
             return identity;
         }
 
