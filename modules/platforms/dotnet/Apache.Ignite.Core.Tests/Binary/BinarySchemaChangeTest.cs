@@ -19,7 +19,6 @@ namespace Apache.Ignite.Core.Tests.Binary
 {
     using System.Linq;
     using Apache.Ignite.Core.Binary;
-    using Apache.Ignite.Core.Cache.Configuration;
     using NUnit.Framework;
 
     /// <summary>
@@ -41,11 +40,8 @@ namespace Apache.Ignite.Core.Tests.Binary
         {
             _grid = Ignition.Start(Config("Config\\Compute\\compute-grid1.xml"));
             _clientGrid = Ignition.Start(Config("Config\\Compute\\compute-grid3.xml"));
-            _grid.GetOrCreateCache<int, object>(new CacheConfiguration
-            {
-                Name = CacheName,
-                CacheMode = CacheMode.Replicated
-            });
+
+            _grid.GetOrCreateCache<int, object>(CacheName);
         }
 
         [TearDown]
@@ -57,14 +53,38 @@ namespace Apache.Ignite.Core.Tests.Binary
         [Test]
         public void TestChangedSchema()
         {
-            var objWith2Fields = new TestObj { Fields = new[] { "Field1", "Field2" }, Field1 = "test1", Field2 = "test2" };
-            var objWith1Field = new TestObj { Fields = new[] { "Field1" }, Field1 = "test1" };
+            var objWith3Fields = new TestObj
+            {
+                Fields = new[] { "Field1", "Field2", "Field3" },
+                Field1 = "1",
+                Field2 = "2",
+                Field3 = "3"
+            };
 
-            _clientGrid.GetOrCreateCache<int, TestObj>(CacheName).Put(1, objWith2Fields);
-            _grid.GetOrCreateCache<int, TestObj>(CacheName).Get(1);
-            _grid.GetOrCreateCache<int, TestObj>(CacheName).Remove(1);
-            _clientGrid.GetCache<int, TestObj>(CacheName).Put(1, objWith1Field);
-            _grid.GetCache<int, TestObj>(CacheName).Get(1);
+            var objWith2Fields = new TestObj
+            {
+                Fields = new[] { "Field1", "Field2" },
+                Field1 = "test1",
+                Field2 = "test2"
+            };
+
+            var objWith1Field = new TestObj
+            {
+                Fields = new[] { "Field1" },
+                Field1 = "test1"
+            };
+
+            var clientCache = _clientGrid.GetCache<int, TestObj>(CacheName);
+            var serverCache = _grid.GetCache<int, TestObj>(CacheName);
+
+            clientCache.Put(1, objWith2Fields);
+            serverCache.Get(1);
+
+            clientCache.Put(2, objWith1Field);
+            serverCache.Get(2);
+
+            clientCache.Put(3, objWith3Fields);
+            serverCache.Get(3);
         }
 
         private static IgniteConfiguration Config(string springUrl)
