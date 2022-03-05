@@ -127,7 +127,7 @@ namespace Apache.Ignite.Core.Impl.Binary.Structure
             }
             else if (!_portStruct.IsPathEnd(_curStructPath, _curStructAction) && isNewSchema)
             {
-                // Subset of current schema is a different schema without new fields.
+                // Subset of current schema is a different schema and should be saved.
                 writer.SaveMetadata(_desc, null);
             }
         }
