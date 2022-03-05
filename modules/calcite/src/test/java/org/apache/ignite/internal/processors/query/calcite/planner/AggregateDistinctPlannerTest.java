@@ -103,9 +103,9 @@ public class AggregateDistinctPlannerTest extends AbstractAggregatePlannerTest {
             IgniteColocatedSortAggregate.class,
             IgniteMapSortAggregate.class,
             IgniteReduceSortAggregate.class,
-            "HashColocatedAggregateConverterRule",
-            "HashMapReduceAggregateConverterRule",
-            "SortColocatedAggregateConverterRule"
+            "ColocatedHashAggregateConverterRule",
+            "MapReduceHashAggregateConverterRule",
+            "ColocatedSortAggregateConverterRule"
         ),
 
         /**
@@ -115,9 +115,9 @@ public class AggregateDistinctPlannerTest extends AbstractAggregatePlannerTest {
             IgniteColocatedHashAggregate.class,
             IgniteMapHashAggregate.class,
             IgniteReduceHashAggregate.class,
-            "SortColocatedAggregateConverterRule",
-            "SortMapReduceAggregateConverterRule",
-            "HashColocatedAggregateConverterRule"
+            "ColocatedSortAggregateConverterRule",
+            "MapReduceSortAggregateConverterRule",
+            "ColocatedHashAggregateConverterRule"
         );
 
         /** */

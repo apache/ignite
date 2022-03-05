@@ -194,8 +194,8 @@ public class AggregatePlannerTest extends AbstractAggregatePlannerTest {
         IgniteRel phys = physicalPlan(
             sql,
             publicSchema,
-            F.concat(algo.rulesToDisable, "SortMapReduceAggregateConverterRule",
-                "HashMapReduceAggregateConverterRule")
+            F.concat(algo.rulesToDisable, "MapReduceSortAggregateConverterRule",
+                "MapReduceHashAggregateConverterRule")
         );
 
         IgniteColocatedAggregateBase singleAgg = findFirstNode(phys, byClass(algo.colocated));
@@ -205,8 +205,8 @@ public class AggregatePlannerTest extends AbstractAggregatePlannerTest {
         phys = physicalPlan(
             sql,
             publicSchema,
-            F.concat(algo.rulesToDisable, "SortColocatedAggregateConverterRule",
-                "HashColocatedAggregateConverterRule")
+            F.concat(algo.rulesToDisable, "ColocatedSortAggregateConverterRule",
+                "ColocatedHashAggregateConverterRule")
         );
 
         IgniteReduceAggregateBase rdcAgg = findFirstNode(phys, byClass(algo.reduce));
@@ -424,7 +424,7 @@ public class AggregatePlannerTest extends AbstractAggregatePlannerTest {
             IgniteColocatedSortAggregate.class,
             IgniteMapSortAggregate.class,
             IgniteReduceSortAggregate.class,
-            "HashColocatedAggregateConverterRule", "HashMapReduceAggregateConverterRule"
+            "ColocatedHashAggregateConverterRule", "MapReduceHashAggregateConverterRule"
         ),
 
         /** */
@@ -432,7 +432,7 @@ public class AggregatePlannerTest extends AbstractAggregatePlannerTest {
             IgniteColocatedHashAggregate.class,
             IgniteMapHashAggregate.class,
             IgniteReduceHashAggregate.class,
-            "SortColocatedAggregateConverterRule", "SortMapReduceAggregateConverterRule"
+            "ColocatedSortAggregateConverterRule", "MapReduceSortAggregateConverterRule"
         );
 
         /** */

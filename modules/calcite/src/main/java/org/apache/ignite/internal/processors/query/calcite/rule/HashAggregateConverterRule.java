@@ -37,10 +37,10 @@ import org.apache.ignite.internal.processors.query.calcite.util.HintUtils;
  */
 public class HashAggregateConverterRule {
     /** */
-    public static final RelOptRule COLOCATED = new HashColocatedAggregateConverterRule();
+    public static final RelOptRule COLOCATED = new ColocatedHashAggregateConverterRule();
 
     /** */
-    public static final RelOptRule MAP_REDUCE = new HashMapReduceAggregateConverterRule();
+    public static final RelOptRule MAP_REDUCE = new MapReduceHashAggregateConverterRule();
 
     /** */
     private HashAggregateConverterRule() {
@@ -48,10 +48,10 @@ public class HashAggregateConverterRule {
     }
 
     /** */
-    private static class HashColocatedAggregateConverterRule extends AbstractIgniteConverterRule<LogicalAggregate> {
+    private static class ColocatedHashAggregateConverterRule extends AbstractIgniteConverterRule<LogicalAggregate> {
         /** */
-        HashColocatedAggregateConverterRule() {
-            super(LogicalAggregate.class, "HashColocatedAggregateConverterRule");
+        ColocatedHashAggregateConverterRule() {
+            super(LogicalAggregate.class, "ColocatedHashAggregateConverterRule");
         }
 
         /** {@inheritDoc} */
@@ -77,10 +77,10 @@ public class HashAggregateConverterRule {
     }
 
     /** */
-    private static class HashMapReduceAggregateConverterRule extends AbstractIgniteConverterRule<LogicalAggregate> {
+    private static class MapReduceHashAggregateConverterRule extends AbstractIgniteConverterRule<LogicalAggregate> {
         /** */
-        HashMapReduceAggregateConverterRule() {
-            super(LogicalAggregate.class, "HashMapReduceAggregateConverterRule");
+        MapReduceHashAggregateConverterRule() {
+            super(LogicalAggregate.class, "MapReduceHashAggregateConverterRule");
         }
 
         /** {@inheritDoc} */

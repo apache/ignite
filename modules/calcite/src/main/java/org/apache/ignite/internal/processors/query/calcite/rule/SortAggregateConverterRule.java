@@ -40,10 +40,10 @@ import org.apache.ignite.internal.util.typedef.F;
  */
 public class SortAggregateConverterRule {
     /** */
-    public static final RelOptRule COLOCATED = new SortColocatedAggregateConverterRule();
+    public static final RelOptRule COLOCATED = new ColocatedSortAggregateConverterRule();
 
     /** */
-    public static final RelOptRule MAP_REDUCE = new SortMapReduceAggregateConverterRule();
+    public static final RelOptRule MAP_REDUCE = new MapReduceSortAggregateConverterRule();
 
     /** */
     private SortAggregateConverterRule() {
@@ -51,10 +51,10 @@ public class SortAggregateConverterRule {
     }
 
     /** */
-    private static class SortColocatedAggregateConverterRule extends AbstractIgniteConverterRule<LogicalAggregate> {
+    private static class ColocatedSortAggregateConverterRule extends AbstractIgniteConverterRule<LogicalAggregate> {
         /** */
-        SortColocatedAggregateConverterRule() {
-            super(LogicalAggregate.class, "SortColocatedAggregateConverterRule");
+        ColocatedSortAggregateConverterRule() {
+            super(LogicalAggregate.class, "ColocatedSortAggregateConverterRule");
         }
 
         /** {@inheritDoc} */
@@ -93,10 +93,10 @@ public class SortAggregateConverterRule {
     }
 
     /** */
-    private static class SortMapReduceAggregateConverterRule extends AbstractIgniteConverterRule<LogicalAggregate> {
+    private static class MapReduceSortAggregateConverterRule extends AbstractIgniteConverterRule<LogicalAggregate> {
         /** */
-        SortMapReduceAggregateConverterRule() {
-            super(LogicalAggregate.class, "SortMapReduceAggregateConverterRule");
+        MapReduceSortAggregateConverterRule() {
+            super(LogicalAggregate.class, "MapReduceSortAggregateConverterRule");
         }
 
         /** {@inheritDoc} */
