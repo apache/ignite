@@ -128,6 +128,8 @@ namespace Apache.Ignite.Core.Impl.Binary.Structure
             else if (!_portStruct.IsPathEnd(_curStructPath, _curStructAction))
             {
                 // Subset of current schema is a different schema.
+                // TODO: Get fields up to _curStructAction
+                // metaHnd.OnFieldWrite, OnObjectWriteFinished, SaveMetadata
                 throw new NotSupportedException("TODO");
             }
         }
