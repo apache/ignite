@@ -31,8 +31,8 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.channels.ClosedByInterruptException;
 import java.nio.file.FileAlreadyExistsException;
+import java.nio.file.FileStore;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.sql.Time;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -680,30 +680,18 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
     /** @throws IgniteCheckedException If creating hard links is not available. */
     private void checkHardLinkAvailable() throws IgniteCheckedException {
-        File tmp = new File(walArchiveDir, "check-hard-link.tmp");
-        Path link = walCdcDir.toPath().resolve(tmp.getName());
-
         try {
-            if (!tmp.exists())
-                tmp.createNewFile();
+            FileStore walStore = Files.getFileStore(walArchiveDir.toPath());
+            FileStore cdcStore = Files.getFileStore(walCdcDir.toPath());
 
-            if (link.toFile().exists())
-                Files.delete(link);
+            if (!F.eq(walStore.name(), cdcStore.name())) {
+                throw new IgniteCheckedException("WAL and CDC directories are not stored at the same " +
+                    "device or partition. Creating hard links is not available. " +
+                    "[walStoreName=" + walStore.name() + ", cdcStoreName=" + cdcStore.name() + ']');
+            }
         }
         catch (IOException e) {
-            throw new IgniteCheckedException("Unable to create temporary file to check hard links.", e);
-        }
-
-        try {
-            Files.createLink(link, tmp.toPath());
-        }
-        catch (Exception e) {
-            throw new IgniteCheckedException("Creating hard links is not available [walArchiveDir=" + walArchiveDir +
-                ", walCdcDir=" + walCdcDir + ']', e);
-        }
-        finally {
-            U.delete(tmp);
-            U.delete(link);
+            throw new IgniteCheckedException("Unable to check WAL and CDC file stores.", e);
         }
     }
 
