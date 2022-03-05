@@ -38,8 +38,13 @@ namespace Apache.Ignite.Core.Tests.Binary
         [SetUp]
         public void SetUp()
         {
-            _grid = Ignition.Start(Config("Config\\Compute\\compute-grid1.xml"));
-            _clientGrid = Ignition.Start(Config("Config\\Compute\\compute-grid3.xml"));
+            _grid = Ignition.Start(TestUtils.GetTestConfiguration());
+
+            _clientGrid = Ignition.Start(new IgniteConfiguration(TestUtils.GetTestConfiguration())
+            {
+                ClientMode = true,
+                IgniteInstanceName = "client"
+            });
 
             _grid.GetOrCreateCache<int, object>(CacheName);
         }
@@ -51,7 +56,7 @@ namespace Apache.Ignite.Core.Tests.Binary
         }
 
         [Test]
-        public void TestChangedSchema()
+        public void TestAddRemoveFieldsUpdatesSchema()
         {
             var objWith3Fields = new TestObj
             {
@@ -87,18 +92,6 @@ namespace Apache.Ignite.Core.Tests.Binary
             serverCache.Get(3);
         }
 
-        private static IgniteConfiguration Config(string springUrl)
-        {
-            return new IgniteConfiguration(TestUtils.GetTestConfiguration())
-            {
-                SpringConfigUrl = springUrl,
-                BinaryConfiguration = new BinaryConfiguration
-                {
-                    NameMapper = BinaryBasicNameMapper.SimpleNameInstance
-                }
-            };
-        }
-
         private class TestObj : IBinarizable
         {
             public string[] Fields { get; set; }
@@ -113,11 +106,13 @@ namespace Apache.Ignite.Core.Tests.Binary
             {
                 writer.WriteStringArray(nameof(Fields), Fields);
 
-                if (Fields.Contains("Field1"))
+                if (Fields.Contains(nameof(Field1)))
                     writer.WriteString(nameof(Field1), Field1);
-                if (Fields.Contains("Field2"))
+
+                if (Fields.Contains(nameof(Field2)))
                     writer.WriteString(nameof(Field2), Field2);
-                if (Fields.Contains("Field3"))
+
+                if (Fields.Contains(nameof(Field3)))
                     writer.WriteString(nameof(Field3), Field3);
 
             }
@@ -126,11 +121,13 @@ namespace Apache.Ignite.Core.Tests.Binary
             {
                 Fields = reader.ReadStringArray(nameof(Fields));
 
-                if (Fields.Contains("Field1"))
+                if (Fields.Contains(nameof(Field1)))
                     Field1 = reader.ReadString(nameof(Field1));
-                if (Fields.Contains("Field2"))
+
+                if (Fields.Contains(nameof(Field2)))
                     Field2 = reader.ReadString(nameof(Field2));
-                if (Fields.Contains("Field3"))
+
+                if (Fields.Contains(nameof(Field3)))
                     Field3 = reader.ReadString(nameof(Field3));
             }
         }
