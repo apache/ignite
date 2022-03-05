@@ -124,6 +124,11 @@ namespace Apache.Ignite.Core.Impl.Binary.Structure
                 writer.SaveMetadata(_desc, null);
                 _desc.UpdateWriteStructure(_curStructPath, null);
             }
+            // TODO: Check if _curStructAction + _curStructPath form a complete path.
+            else if (_curStructAction < _portStruct.FieldTypes.Count)
+            {
+                // Subset of current schema is still a different schema.
+            }
         }
 
         /// <summary>
