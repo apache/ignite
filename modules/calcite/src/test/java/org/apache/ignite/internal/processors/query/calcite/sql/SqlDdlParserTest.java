@@ -61,16 +61,6 @@ public class SqlDdlParserTest extends GridCommonAbstractTest {
      * Very simple case where only table name and a few columns are presented.
      */
     @Test
-    public void test() throws SqlParseException {
-        String query = "create table test (e UUID)";
-
-        SqlNode node = parse(query);
-    }
-
-    /**
-     * Very simple case where only table name and a few columns are presented.
-     */
-    @Test
     public void createTableSimpleCase() throws SqlParseException {
         String query = "create table my_table(id int, val varchar)";
 

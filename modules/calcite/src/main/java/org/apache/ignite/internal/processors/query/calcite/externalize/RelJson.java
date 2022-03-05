@@ -699,7 +699,7 @@ class RelJson {
 
     /** */
     private Object toJson(RelDataType node) {
-        if (node instanceof JavaType && node.getSqlTypeName() != SqlTypeName.ANY) { // Java type except UDT.
+        if (node instanceof JavaType) {
             Map<String, Object> map = map();
             map.put("class", ((JavaType)node).getJavaClass().getName());
             if (node.isNullable())

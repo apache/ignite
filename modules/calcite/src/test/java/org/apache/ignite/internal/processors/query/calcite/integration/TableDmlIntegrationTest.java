@@ -25,6 +25,7 @@ import java.time.Period;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
+import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
@@ -460,6 +461,9 @@ public class TableDmlIntegrationTest extends AbstractBasicIntegrationTest {
     /** */
     @Test
     public void testInsertDefaultValue() {
+        UUID uuid = UUID.randomUUID();
+        checkDefaultValue("UUID", '\'' + uuid.toString() + '\'', uuid);
+
         checkDefaultValue("BOOLEAN", "TRUE", Boolean.TRUE);
         checkDefaultValue("BOOLEAN NOT NULL", "TRUE", Boolean.TRUE);
         checkDefaultValue("BIGINT", "10", 10L);
@@ -481,6 +485,8 @@ public class TableDmlIntegrationTest extends AbstractBasicIntegrationTest {
         checkDefaultValue("TIMESTAMP", "TIMESTAMP '2021-01-01 01:01:01'", Timestamp.valueOf("2021-01-01 01:01:01"));
         checkDefaultValue("BINARY(3)", "x'010203'", new byte[] {1, 2, 3});
         checkDefaultValue("VARBINARY", "x'010203'", new byte[] {1, 2, 3});
+
+
 
         checkWrongDefault("VARCHAR", "10");
         checkWrongDefault("INT", "'10'");

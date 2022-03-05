@@ -62,7 +62,6 @@ import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler;
 import org.apache.ignite.internal.processors.query.calcite.schema.ColumnDescriptor;
 import org.apache.ignite.internal.processors.query.calcite.schema.TableDescriptor;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
-import org.apache.ignite.internal.processors.query.calcite.type.UUIDType;
 import org.apache.ignite.internal.util.typedef.F;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -114,9 +113,8 @@ public class TypeUtils {
         }
 
         // Do not make a cast when we don't know specific type (ANY) of the origin node.
-        if ((toType.getSqlTypeName() == SqlTypeName.ANY && toType.getClass() != UUIDType.class)
-            || fromType.getSqlTypeName() == SqlTypeName.ANY) {
-            return false;
+        if (toType.getSqlTypeName() == SqlTypeName.ANY || fromType.getSqlTypeName() == SqlTypeName.ANY) {
+            return toType.getClass() != fromType.getClass();
         }
 
         // No need to cast between char and varchar.

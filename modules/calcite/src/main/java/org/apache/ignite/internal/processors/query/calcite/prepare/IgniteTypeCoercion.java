@@ -30,7 +30,7 @@ import org.apache.calcite.sql.type.SqlTypeUtil;
 import org.apache.calcite.sql.validate.SqlValidator;
 import org.apache.calcite.sql.validate.SqlValidatorScope;
 import org.apache.calcite.sql.validate.implicit.TypeCoercionImpl;
-import org.apache.ignite.internal.processors.query.calcite.type.UUIDType;
+import org.apache.ignite.internal.processors.query.calcite.type.UuidType;
 
 /**
  * Implementation of implicit type cast.
@@ -48,7 +48,7 @@ public class IgniteTypeCoercion extends TypeCoercionImpl {
         int idx,
         RelDataType targetType)
     {
-        if (targetType instanceof UUIDType) {
+        if (targetType instanceof UuidType) {
             SqlNode operand = call.getOperandList().get(idx);
 
             if (operand instanceof SqlDynamicParam)
@@ -87,10 +87,10 @@ public class IgniteTypeCoercion extends TypeCoercionImpl {
         if (type1 == null || type2 == null)
             return null;
 
-        if (type1 instanceof UUIDType && SqlTypeUtil.isCharacter(type2))
+        if (type1 instanceof UuidType && SqlTypeUtil.isCharacter(type2))
             return type1;
 
-        if (type2 instanceof UUIDType && SqlTypeUtil.isCharacter(type1))
+        if (type2 instanceof UuidType && SqlTypeUtil.isCharacter(type1))
             return type2;
 
         return super.commonTypeForBinaryComparison(type1, type2);

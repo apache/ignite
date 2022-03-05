@@ -23,12 +23,12 @@ import org.apache.calcite.sql.type.SqlTypeFamily;
 import org.apache.calcite.sql.type.SqlTypeName;
 
 /** UUID SQL type. */
-public class UUIDType extends RelDataTypeImpl {
+public class UuidType extends RelDataTypeImpl {
     /** Nullable flag. */
     private final boolean nullable;
 
     /** Ctor. */
-    public UUIDType(boolean nullable) {
+    public UuidType(boolean nullable) {
         this.nullable = nullable;
 
         computeDigest();

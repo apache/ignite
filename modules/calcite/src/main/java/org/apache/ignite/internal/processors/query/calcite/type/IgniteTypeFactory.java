@@ -139,7 +139,7 @@ public class IgniteTypeFactory extends JavaTypeFactoryImpl {
                     break;
             }
         }
-        else if (type instanceof UUIDType)
+        else if (type instanceof UuidType)
             return UUID.class;
 
         switch (type.getSqlTypeName()) {
@@ -225,7 +225,7 @@ public class IgniteTypeFactory extends JavaTypeFactoryImpl {
                     break;
             }
         }
-        else if (type instanceof UUIDType)
+        else if (type instanceof UuidType)
             return UUID.class;
 
         switch (type.getSqlTypeName()) {
@@ -274,14 +274,14 @@ public class IgniteTypeFactory extends JavaTypeFactoryImpl {
     }
 
     /** @return UUID SQL type. */
-    public UUIDType createUUIDType() {
-        return new UUIDType(true);
+    public RelDataType createUUIDType() {
+        return canonize(new UuidType(true));
     }
 
     /** {@inheritDoc} */
     @Override public RelDataType createTypeWithNullability(RelDataType type, boolean nullable) {
-        if (type instanceof UUIDType && type.isNullable() != nullable)
-            type = new UUIDType(nullable);
+        if (type instanceof UuidType && type.isNullable() != nullable)
+            type = new UuidType(nullable);
 
         return super.createTypeWithNullability(type, nullable);
     }
