@@ -43,8 +43,8 @@ import org.hamcrest.Matcher;
 import org.junit.Ignore;
 import org.junit.Test;
 
+import static org.apache.ignite.internal.processors.query.calcite.TestUtils.hasSize;
 import static org.apache.ignite.internal.util.IgniteUtils.map;
-import static org.apache.ignite.testframework.GridTestUtils.hasSize;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.hasItem;
 import static org.hamcrest.CoreMatchers.nullValue;
