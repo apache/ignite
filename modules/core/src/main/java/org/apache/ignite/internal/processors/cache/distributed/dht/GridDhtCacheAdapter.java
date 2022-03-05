@@ -1080,6 +1080,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
     /**
      * @param srcNodeId The Id of a node that sends original ttl request.
      * @param incomingReq Original ttl request.
+     * @param readersMap Mapping of the node ID to entry readers.
      */
     private void sendTtlUpdateRequest(
         UUID srcNodeId,
@@ -1185,17 +1186,19 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
      * @param keys Entries keys.
      * @param vers Entries versions.
      * @param ttl TTL.
+     * @return Mapping of the node ID to entry readers, {@code null} for non-DHT cache.
      */
-    private Map<KeyCacheObject, Collection<UUID>> updateTtl(GridCacheAdapter<K, V> cache,
+    private @Nullable Map<KeyCacheObject, Collection<UUID>> updateTtl(
+        GridCacheAdapter<K, V> cache,
         List<KeyCacheObject> keys,
         List<GridCacheVersion> vers,
-        long ttl) {
+        long ttl
+    ) {
         assert !F.isEmpty(keys);
         assert keys.size() == vers.size();
 
         int size = keys.size();
-        boolean dhtCache = cache instanceof GridDhtCacheAdapter;
-        Map<KeyCacheObject, Collection<UUID>> readers = dhtCache ? new HashMap<>() : Collections.emptyMap();
+        Map<KeyCacheObject, Collection<UUID>> readers = null;
 
         for (int i = 0; i < size; i++) {
             try {
@@ -1210,8 +1213,12 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
 
                             entry.updateTtl(vers.get(i), ttl);
 
-                            if (dhtCache)
+                            if (cache.isDht()) {
+                                if (readers == null)
+                                    readers = new HashMap<>();
+
                                 readers.put(keys.get(i), ((GridDhtCacheEntry)entry).readers());
+                            }
 
                             break;
                         }
