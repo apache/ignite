@@ -69,7 +69,7 @@ public interface IgniteSetOp extends TraitsAwareIgniteRel {
 
         double mem = 0.5 * inputRows * aggregateFieldsCount() * IgniteCost.AVERAGE_FIELD_SIZE;
 
-        return costFactory.makeCost(inputRows, inputRows * IgniteCost.ROW_PASS_THROUGH_COST, 0, mem, 0);
+        return costFactory.makeCost(inputRows, inputRows * IgniteCost.HASH_LOOKUP_COST, 0, mem, 0);
     }
 
     /** Aggregate type. */

@@ -15,44 +15,48 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.calcite.rel.set;
+package org.apache.ignite.internal.processors.query.calcite.rel.agg;
 
 import java.util.List;
+
 import org.apache.calcite.plan.RelOptCluster;
+import org.apache.calcite.plan.RelOptCost;
+import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelInput;
 import org.apache.calcite.rel.RelNode;
+import org.apache.calcite.rel.core.Aggregate;
+import org.apache.calcite.rel.core.AggregateCall;
+import org.apache.calcite.rel.metadata.RelMetadataQuery;
+import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRelVisitor;
-import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 
 /**
- * Physical node for MINUS (EXCEPT) operator which inputs satisfy SINGLE distribution.
+ *
  */
-public class IgniteSingleMinus extends IgniteMinus implements IgniteSingleSetOp {
+public class IgniteColocatedHashAggregate extends IgniteColocatedAggregateBase implements IgniteHashAggregateBase {
     /** {@inheritDoc} */
-    public IgniteSingleMinus(
-        RelOptCluster cluster,
-        RelTraitSet traitSet,
-        List<RelNode> inputs,
-        boolean all
-    ) {
-        super(cluster, traitSet, inputs, all);
+    public IgniteColocatedHashAggregate(RelOptCluster cluster, RelTraitSet traitSet, RelNode input, ImmutableBitSet groupSet,
+        List<ImmutableBitSet> groupSets, List<AggregateCall> aggCalls) {
+        super(cluster, traitSet, input, groupSet, groupSets, aggCalls);
     }
 
-    /** */
-    public IgniteSingleMinus(RelInput input) {
+    /** {@inheritDoc} */
+    public IgniteColocatedHashAggregate(RelInput input) {
         super(input);
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteSingleMinus copy(RelTraitSet traitSet, List<RelNode> inputs, boolean all) {
-        return new IgniteSingleMinus(getCluster(), traitSet, inputs, all);
+    @Override public Aggregate copy(RelTraitSet traitSet, RelNode input, ImmutableBitSet groupSet,
+        List<ImmutableBitSet> groupSets, List<AggregateCall> aggCalls) {
+        return new IgniteColocatedHashAggregate(getCluster(), traitSet, input, groupSet, groupSets, aggCalls);
     }
 
     /** {@inheritDoc} */
     @Override public IgniteRel clone(RelOptCluster cluster, List<IgniteRel> inputs) {
-        return new IgniteSingleMinus(cluster, getTraitSet(), Commons.cast(inputs), all);
+        return new IgniteColocatedHashAggregate(cluster, getTraitSet(), sole(inputs),
+            getGroupSet(), getGroupSets(), getAggCallList());
     }
 
     /** {@inheritDoc} */
@@ -61,7 +65,7 @@ public class IgniteSingleMinus extends IgniteMinus implements IgniteSingleSetOp 
     }
 
     /** {@inheritDoc} */
-    @Override public int aggregateFieldsCount() {
-        return getInput(0).getRowType().getFieldCount() + COUNTER_FIELDS_CNT;
+    @Override public RelOptCost computeSelfCost(RelOptPlanner planner, RelMetadataQuery mq) {
+        return computeSelfCostHash(planner, mq);
     }
 }
