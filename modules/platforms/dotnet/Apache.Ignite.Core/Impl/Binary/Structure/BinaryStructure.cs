@@ -227,7 +227,7 @@ namespace Apache.Ignite.Core.Impl.Binary.Structure
         {
             BinaryStructureEntry[] path = _paths[pathIdx];
 
-            return actionIdx == path.Length - 1;
+            return actionIdx >= path.Length - 1;
         }
 
         /// <summary>

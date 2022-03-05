@@ -17,6 +17,7 @@
 
 namespace Apache.Ignite.Core.Impl.Binary.Structure
 {
+    using System;
     using System.Collections.Generic;
 
     /// <summary>
@@ -127,7 +128,7 @@ namespace Apache.Ignite.Core.Impl.Binary.Structure
             else if (!_portStruct.IsPathEnd(_curStructPath, _curStructAction))
             {
                 // Subset of current schema is a different schema.
-                //
+                throw new NotSupportedException("TODO");
             }
         }
 
