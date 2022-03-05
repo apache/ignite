@@ -128,19 +128,8 @@ namespace Apache.Ignite.Core.Impl.Binary.Structure
             }
             else if (!_portStruct.IsPathEnd(_curStructPath, _curStructAction) && isNewSchema)
             {
-                // Subset of current schema is a different schema.
-                // TODO: Get fields up to _curStructAction
-                // metaHnd.OnFieldWrite, OnObjectWriteFinished, SaveMetadata
-                var metaHnd = writer.Marshaller.GetBinaryTypeHandler(_desc);
-
-                if (metaHnd != null)
-                {
-                    foreach (var entry in _portStruct.GetEntries(_curStructPath))
-                    {
-                        // TODO: type?
-                        metaHnd.OnFieldWrite(entry.Id, entry.Name, 0);
-                    }
-                }
+                // Subset of current schema is a different schema without new fields.
+                writer.SaveMetadata(_desc, null);
             }
         }
 
