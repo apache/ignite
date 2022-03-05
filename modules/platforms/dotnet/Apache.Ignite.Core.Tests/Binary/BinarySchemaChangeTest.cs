@@ -17,14 +17,19 @@
 
 namespace Apache.Ignite.Core.Tests.Binary
 {
-    using System.Collections.Generic;
+    using System.Linq;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache.Configuration;
     using NUnit.Framework;
 
-    public class BinaryChangeSchemaTest
+    /// <summary>
+    /// Tests that schema can be changed for an existing binary type.
+    /// </summary>
+    public class BinarySchemaChangeTest
     {
+        /** */
         private const string CacheName = "TEST";
+
         /** */
         private IIgnite _grid;
 
@@ -52,14 +57,14 @@ namespace Apache.Ignite.Core.Tests.Binary
         [Test]
         public void TestChangedSchema()
         {
-            var objWith2Fields = new TestObj { fields = new List<string> { "Field1", "Field2" }, Field1 = "test1", Field2 = "test2" };
-            var objWith1Field = new TestObj { fields = new List<string> { "Field1" }, Field1 = "test1" };
+            var objWith2Fields = new TestObj { Fields = new[] { "Field1", "Field2" }, Field1 = "test1", Field2 = "test2" };
+            var objWith1Field = new TestObj { Fields = new[] { "Field1" }, Field1 = "test1" };
 
             _clientGrid.GetOrCreateCache<int, TestObj>(CacheName).Put(1, objWith2Fields);
-            _grid.GetOrCreateCache<int, TestObj>(CacheName).TryGet(1, out var res);
+            _grid.GetOrCreateCache<int, TestObj>(CacheName).Get(1);
             _grid.GetOrCreateCache<int, TestObj>(CacheName).Remove(1);
             _clientGrid.GetCache<int, TestObj>(CacheName).Put(1, objWith1Field);
-            _grid.GetCache<int, TestObj>(CacheName).TryGet(1, out res);
+            _grid.GetCache<int, TestObj>(CacheName).Get(1);
         }
 
         private static IgniteConfiguration Config(string springUrl)
@@ -74,37 +79,38 @@ namespace Apache.Ignite.Core.Tests.Binary
             };
         }
 
-        public class TestObj : IBinarizable
+        private class TestObj : IBinarizable
         {
-            public List<string> fields = new List<string>();
-            public string Field1;
-            public string Field2;
-            public string Field3;
+            public string[] Fields { get; set; }
+
+            public string Field1 { get; set; }
+
+            public string Field2 { get; set; }
+
+            public string Field3 { get; set; }
 
             public void WriteBinary(IBinaryWriter writer)
             {
-                writer.WriteCollection(nameof(fields), fields);
+                writer.WriteStringArray(nameof(Fields), Fields);
 
-                if (fields.Contains("Field1"))
+                if (Fields.Contains("Field1"))
                     writer.WriteString(nameof(Field1), Field1);
-                if (fields.Contains("Field2"))
+                if (Fields.Contains("Field2"))
                     writer.WriteString(nameof(Field2), Field2);
-                if (fields.Contains("Field3"))
+                if (Fields.Contains("Field3"))
                     writer.WriteString(nameof(Field3), Field3);
 
             }
 
-            /// <inheritdoc />
             public void ReadBinary(IBinaryReader reader)
             {
-                fields = (List<string>)reader.ReadCollection(nameof(fields), (size) => new List<string>(size),
-                    (col, obj) => ((List<string>)col).Add((string)obj));
+                Fields = reader.ReadStringArray(nameof(Fields));
 
-                if (fields.Contains("Field1"))
+                if (Fields.Contains("Field1"))
                     Field1 = reader.ReadString(nameof(Field1));
-                if (fields.Contains("Field2"))
+                if (Fields.Contains("Field2"))
                     Field2 = reader.ReadString(nameof(Field2));
-                if (fields.Contains("Field3"))
+                if (Fields.Contains("Field3"))
                     Field3 = reader.ReadString(nameof(Field3));
             }
         }
