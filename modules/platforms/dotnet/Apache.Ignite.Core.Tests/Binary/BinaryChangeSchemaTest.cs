@@ -1,3 +1,20 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 namespace Apache.Ignite.Core.Tests.Binary
 {
     using System.Collections.Generic;
@@ -19,7 +36,7 @@ namespace Apache.Ignite.Core.Tests.Binary
         {
             _grid = Ignition.Start(Config("Config\\Compute\\compute-grid1.xml"));
             _clientGrid = Ignition.Start(Config("Config\\Compute\\compute-grid3.xml"));
-            _grid.GetOrCreateCache<int, object>(new CacheConfiguration()
+            _grid.GetOrCreateCache<int, object>(new CacheConfiguration
             {
                 Name = CacheName,
                 CacheMode = CacheMode.Replicated
@@ -35,9 +52,8 @@ namespace Apache.Ignite.Core.Tests.Binary
         [Test]
         public void TestChangedSchema()
         {
-            var objWith2Fields = new TestObj()
-                { fields = new List<string>() { "Field1", "Field2" }, Field1 = "test1", Field2 = "test2" };
-            var objWith1Field = new TestObj() { fields = new List<string>() { "Field1" }, Field1 = "test1" };
+            var objWith2Fields = new TestObj { fields = new List<string> { "Field1", "Field2" }, Field1 = "test1", Field2 = "test2" };
+            var objWith1Field = new TestObj { fields = new List<string> { "Field1" }, Field1 = "test1" };
 
             _clientGrid.GetOrCreateCache<int, TestObj>(CacheName).Put(1, objWith2Fields);
             _grid.GetOrCreateCache<int, TestObj>(CacheName).TryGet(1, out var res);
@@ -51,7 +67,7 @@ namespace Apache.Ignite.Core.Tests.Binary
             return new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
                 SpringConfigUrl = springUrl,
-                BinaryConfiguration = new BinaryConfiguration()
+                BinaryConfiguration = new BinaryConfiguration
                 {
                     NameMapper = BinaryBasicNameMapper.SimpleNameInstance
                 }

@@ -17,7 +17,6 @@
 
 namespace Apache.Ignite.Core.Impl.Binary.Structure
 {
-    using System;
     using System.Collections.Generic;
 
     /// <summary>

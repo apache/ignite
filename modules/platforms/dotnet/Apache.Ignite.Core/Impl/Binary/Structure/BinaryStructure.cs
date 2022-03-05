@@ -223,6 +223,12 @@ namespace Apache.Ignite.Core.Impl.Binary.Structure
             return res;
         }
 
+        /// <summary>
+        /// Gets a value indicating whether specified action index is at the path end or further.
+        /// </summary>
+        /// <param name="pathIdx">Path index.</param>
+        /// <param name="actionIdx">Action index.</param>
+        /// <returns>True when specified action is at or beyond the path end; false otherwise.</returns>
         public bool IsPathEnd(int pathIdx, int actionIdx)
         {
             BinaryStructureEntry[] path = _paths[pathIdx];
