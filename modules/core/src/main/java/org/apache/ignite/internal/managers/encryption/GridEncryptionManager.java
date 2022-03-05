@@ -868,15 +868,16 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
      *
      * @param grpId Cache group ID.
      * @param encKey Encryption key
+     * @param encKeyId Key id to use. If {@code null}, {@link #INITIAL_KEY_ID} is used.
      */
-    public void setInitialGroupKey(int grpId, @Nullable byte[] encKey) {
+    public void setInitialGroupKey(int grpId, @Nullable byte[] encKey, @Nullable Integer encKeyId) {
         if (encKey == null || ctx.clientNode())
             return;
 
         removeGroupKey(grpId);
 
         withMasterKeyChangeReadLock(() -> {
-            addGroupKey(grpId, new GroupKeyEncrypted(INITIAL_KEY_ID, encKey));
+            addGroupKey(grpId, new GroupKeyEncrypted(encKeyId == null ? INITIAL_KEY_ID : encKeyId, encKey));
 
             return null;
         });
