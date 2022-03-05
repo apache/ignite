@@ -39,29 +39,30 @@ import org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils;
 /**
  *
  */
-public class IgniteSingleSortAggregate extends IgniteSingleAggregateBase implements IgniteSortAggregateBase {
+public class IgniteColocatedSortAggregate extends IgniteColocatedAggregateBase implements IgniteSortAggregateBase {
     /** Collation. */
     private final RelCollation collation;
 
     /** {@inheritDoc} */
-    public IgniteSingleSortAggregate(
+    public IgniteColocatedSortAggregate(
         RelOptCluster cluster,
         RelTraitSet traitSet,
         RelNode input,
         ImmutableBitSet groupSet,
         List<ImmutableBitSet> groupSets,
-        List<AggregateCall> aggCalls
+        List<AggregateCall> aggCalls,
+        RelCollation collation
     ) {
         super(cluster, traitSet, input, groupSet, groupSets, aggCalls);
 
-        assert !TraitUtils.collation(traitSet).isDefault();
-        assert !groupSet.isEmpty() && groupSets.size() == 1;
+        assert Objects.nonNull(collation);
+        assert !collation.isDefault();
 
-        collation = TraitUtils.collation(traitSet);
+        this.collation = collation;
     }
 
     /** {@inheritDoc} */
-    public IgniteSingleSortAggregate(RelInput input) {
+    public IgniteColocatedSortAggregate(RelInput input) {
         super(input);
 
         collation = input.getCollation();
@@ -73,13 +74,14 @@ public class IgniteSingleSortAggregate extends IgniteSingleAggregateBase impleme
     /** {@inheritDoc} */
     @Override public Aggregate copy(RelTraitSet traitSet, RelNode input, ImmutableBitSet groupSet,
         List<ImmutableBitSet> groupSets, List<AggregateCall> aggCalls) {
-        return new IgniteSingleSortAggregate(getCluster(), traitSet, input, groupSet, groupSets, aggCalls);
+        return new IgniteColocatedSortAggregate(
+            getCluster(), traitSet, input, groupSet, groupSets, aggCalls, TraitUtils.collation(traitSet));
     }
 
     /** {@inheritDoc} */
     @Override public IgniteRel clone(RelOptCluster cluster, List<IgniteRel> inputs) {
-        return new IgniteSingleSortAggregate(cluster, getTraitSet().replace(collation), sole(inputs),
-            getGroupSet(), getGroupSets(), getAggCallList());
+        return new IgniteColocatedSortAggregate(cluster, getTraitSet().replace(collation), sole(inputs),
+            getGroupSet(), getGroupSets(), getAggCallList(), collation);
     }
 
     /** {@inheritDoc} */
@@ -94,8 +96,6 @@ public class IgniteSingleSortAggregate extends IgniteSingleAggregateBase impleme
 
     /** {@inheritDoc} */
     @Override public RelCollation collation() {
-        assert collation.equals(super.collation());
-
         return collation;
     }
 

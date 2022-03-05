@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.query.calcite.integration;
 import java.util.List;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.processors.query.calcite.QueryChecker;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
 
@@ -160,5 +161,37 @@ public class AggregatesIntegrationTest extends AbstractBasicIntegrationTest {
         val = res.get(1).get(0);
 
         assertEquals("Ilya", val);
+    }
+
+    /** */
+    @Test
+    public void testColocatedAggregate() throws Exception {
+        executeSql("CREATE TABLE t1(id INT, val0 VARCHAR, val1 VARCHAR, val2 VARCHAR, PRIMARY KEY(id, val1)) " +
+            "WITH AFFINITY_KEY=val1");
+
+        executeSql("CREATE TABLE t2(id INT, val0 VARCHAR, val1 VARCHAR, val2 VARCHAR, PRIMARY KEY(id, val1)) " +
+            "WITH AFFINITY_KEY=val1");
+
+        for (int i = 0; i < 100; i++)
+            executeSql("INSERT INTO t1 VALUES (?, ?, ?, ?)", i, "val" + i, "val" + i % 2, "val" + i);
+
+        executeSql("INSERT INTO t2 VALUES (0, 'val0', 'val0', 'val0'), (1, 'val1', 'val1', 'val1')");
+
+        String sql = "SELECT val1, count(val2) FROM t1 GROUP BY val1";
+
+        assertQuery(sql)
+            .matches(QueryChecker.matches(".*Exchange.*Colocated.*Aggregate.*"))
+            .returns("val0", 50L)
+            .returns("val1", 50L)
+            .check();
+
+        sql = "SELECT t2.val1, agg.cnt " +
+            "FROM t2 JOIN (SELECT val1, COUNT(val2) AS cnt FROM t1 GROUP BY val1) AS agg ON t2.val1 = agg.val1";
+
+        assertQuery(sql)
+            .matches(QueryChecker.matches(".*Exchange.*Join.*Colocated.*Aggregate.*"))
+            .returns("val0", 50L)
+            .returns("val1", 50L)
+            .check();
     }
 }
