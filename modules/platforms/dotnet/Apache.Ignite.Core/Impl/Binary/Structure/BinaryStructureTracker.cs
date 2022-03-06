@@ -125,7 +125,7 @@ namespace Apache.Ignite.Core.Impl.Binary.Structure
                 writer.SaveMetadata(_desc, null);
                 _desc.UpdateWriteStructure(_curStructPath, null);
             }
-            else if (!_portStruct.IsPathEnd(_curStructPath, _curStructAction) && isNewSchema)
+            else if (isNewSchema && _portStruct != null && !_portStruct.IsPathEnd(_curStructPath, _curStructAction))
             {
                 // Subset of current schema is a different schema and should be saved.
                 writer.SaveMetadata(_desc, null);
