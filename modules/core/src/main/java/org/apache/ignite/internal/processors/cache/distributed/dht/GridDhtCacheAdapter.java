@@ -1199,6 +1199,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
 
         int size = keys.size();
         Map<KeyCacheObject, Collection<UUID>> readers = null;
+        boolean dhtCache = cache.isDht() || cache.isDhtAtomic() || cache.isColocated();
 
         for (int i = 0; i < size; i++) {
             try {
@@ -1213,7 +1214,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
 
                             entry.updateTtl(vers.get(i), ttl);
 
-                            if (cache.isDht()) {
+                            if (dhtCache) {
                                 if (readers == null)
                                     readers = new HashMap<>();
 
