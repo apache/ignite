@@ -57,12 +57,16 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIoRes
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
 import org.apache.ignite.internal.processors.cache.tree.mvcc.data.MvccDataRow;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.maintenance.MaintenanceTask;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.cache.query.index.sorted.inline.types.NullableInlineIndexKeyType.CANT_BE_COMPARE;
 import static org.apache.ignite.internal.cache.query.index.sorted.inline.types.NullableInlineIndexKeyType.COMPARE_UNSUPPORTED;
+import static org.apache.ignite.internal.cache.query.index.sorted.maintenance.MaintenanceRebuildIndexUtils.mergeTasks;
+import static org.apache.ignite.internal.cache.query.index.sorted.maintenance.MaintenanceRebuildIndexUtils.toMaintenanceTask;
 
 /**
  * BPlusTree where nodes stores inlined index keys.
@@ -581,8 +585,34 @@ public class InlineIndexTree extends BPlusTree<IndexRow, IndexRow> {
      * @return New CorruptedTreeException instance.
      */
     @Override protected CorruptedTreeException corruptedTreeException(String msg, Throwable cause, int grpId, long... pageIds) {
-        CorruptedTreeException e = new CorruptedTreeException(msg, cause, grpName, def.idxName().cacheName(),
-            def.idxName().idxName(), grpId, pageIds);
+        IndexName idx = def.idxName();
+
+        String indexName = idx.idxName();
+        String cacheName = idx.cacheName();
+        String tableName = idx.tableName();
+
+        CorruptedTreeException e = new CorruptedTreeException(msg, cause, grpName, cacheName,
+            indexName, grpId, pageIds);
+
+        String errorMsg = "Index " + idx + " of the table " + tableName + " (cache " + cacheName + ") is " +
+            "corrupted, to fix this issue a rebuild is required. On the next restart, node will enter the " +
+            "maintenance mode and rebuild corrupted indexes.";
+
+        log.warning(errorMsg);
+
+        int cacheId = CU.cacheId(cacheName);
+
+        try {
+            MaintenanceTask task = toMaintenanceTask(cacheId, indexName);
+
+            grpCtx.shared().kernalContext().maintenanceRegistry().registerMaintenanceTask(
+                task,
+                oldTask -> mergeTasks(oldTask, task)
+            );
+        }
+        catch (IgniteCheckedException ex) {
+            log.warning("Failed to register maintenance record for corrupted partition files.", ex);
+        }
 
         processFailure(FailureType.CRITICAL_ERROR, e);
 

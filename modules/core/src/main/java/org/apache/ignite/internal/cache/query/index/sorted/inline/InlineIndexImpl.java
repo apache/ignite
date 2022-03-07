@@ -37,7 +37,6 @@ import org.apache.ignite.internal.metric.IoStatisticsHolderIndex;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
-import org.apache.ignite.internal.processors.cache.persistence.metastorage.pendingtask.DurableBackgroundTask;
 import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.indexing.IndexingQueryCacheFilter;
@@ -419,6 +418,16 @@ public class InlineIndexImpl extends AbstractIndex implements InlineIndex {
 
     /** {@inheritDoc} */
     @Override public void destroy(boolean softDel) {
+        try {
+            destroy0(softDel, false);
+        }
+        catch (IgniteCheckedException e) {
+            // Should NEVER happen because renameImmediately is false here, but just in case:
+            throw new IgniteException(e);
+        }
+    }
+
+    public void destroy0(boolean softDel, boolean renameImmediately) throws IgniteCheckedException {
         // Already destroyed.
         if (!destroyed.compareAndSet(false, true))
             return;
@@ -435,7 +444,7 @@ public class InlineIndexImpl extends AbstractIndex implements InlineIndex {
             if (cctx.group().persistenceEnabled() ||
                 cctx.shared().kernalContext().state().clusterState().state() != INACTIVE) {
                 // Actual destroy index task.
-                DurableBackgroundTask<Long> task = new DurableBackgroundCleanupIndexTreeTaskV2(
+                DurableBackgroundCleanupIndexTreeTaskV2 task = new DurableBackgroundCleanupIndexTreeTaskV2(
                     cctx.group().name(),
                     cctx.name(),
                     def.idxName().idxName(),
@@ -444,6 +453,10 @@ public class InlineIndexImpl extends AbstractIndex implements InlineIndex {
                     segments.length,
                     segments
                 );
+
+                if (renameImmediately) {
+                    task.renameIndexTrees(cctx.group());
+                }
 
                 cctx.kernalContext().durableBackgroundTask().executeAsync(task, cctx.config());
             }
@@ -454,5 +467,9 @@ public class InlineIndexImpl extends AbstractIndex implements InlineIndex {
     @Override public boolean canHandle(CacheDataRow row) throws IgniteCheckedException {
         return cctx.kernalContext().query().belongsToTable(
             cctx, def.idxName().cacheName(), def.idxName().tableName(), row.key(), row.value());
+    }
+
+    public SortedIndexDefinition indexDefinition() {
+        return def;
     }
 }
