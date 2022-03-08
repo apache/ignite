@@ -19,6 +19,7 @@ package org.apache.ignite.internal.commandline.cache;
 
 import java.util.Collection;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.logging.Logger;
 import org.apache.ignite.internal.client.GridClient;
@@ -30,13 +31,11 @@ import org.apache.ignite.internal.commandline.CommandLogger;
 import org.apache.ignite.internal.commandline.TaskExecutor;
 import org.apache.ignite.internal.commandline.argument.CommandArgUtils;
 import org.apache.ignite.internal.commandline.cache.argument.CacheMetricsCommandArg;
-import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.internal.visor.cache.VisorCacheMetricsStatusTask;
-import org.apache.ignite.internal.visor.cache.VisorCacheMetricsStatusTaskArg;
-import org.apache.ignite.internal.visor.cache.VisorCacheMetricsToggleTask;
-import org.apache.ignite.internal.visor.cache.VisorCacheMetricsToggleTaskArg;
+import org.apache.ignite.internal.visor.cache.VisorCacheMetricsTask;
+import org.apache.ignite.internal.visor.cache.VisorCacheMetricsTaskArg;
+import org.apache.ignite.internal.visor.cache.VisorCacheMetricsTaskResult;
 
 import static org.apache.ignite.internal.commandline.CommandLogger.optional;
 import static org.apache.ignite.internal.commandline.CommandLogger.or;
@@ -47,19 +46,19 @@ import static org.apache.ignite.internal.commandline.cache.argument.CacheMetrics
 import static org.apache.ignite.internal.commandline.cache.argument.CacheMetricsCommandArg.STATUS;
 
 /**
- * Cache sub-command for a cache metrics collection management: enabling/disabling or showing status.
+ * Cache sub-command for a cache metrics collection management. It provides to enable, disable or show status.
  */
-public class CacheMetrics extends AbstractCommand<CacheMetrics.Arguments> {
-    /** Parsed arguments. */
-    private Arguments arguments;
+public class CacheMetrics extends AbstractCommand<VisorCacheMetricsTaskArg> {
+    /** Task argument. */
+    private VisorCacheMetricsTaskArg arg;
 
     /** {@inheritDoc} */
     @Override public Object execute(GridClientConfiguration clientCfg, Logger log) throws Exception {
         try (GridClient client = Command.startClient(clientCfg)) {
-            Object taskResult = TaskExecutor.executeTaskByNameOnNode(client, arguments.taskClsName, arguments.taskArg,
-                null, clientCfg);
+            VisorCacheMetricsTaskResult taskResult = TaskExecutor.executeTaskByNameOnNode(client,
+                VisorCacheMetricsTask.class.getName(), arg, null, clientCfg);
 
-            return processTaskResult(log, taskResult);
+            return processTaskResult(log, Objects.requireNonNull(taskResult));
         }
         catch (Throwable e) {
             log.severe("Failed to perform operation.");
@@ -73,63 +72,51 @@ public class CacheMetrics extends AbstractCommand<CacheMetrics.Arguments> {
      * @param log Logger.
      * @param taskResult Task result.
      */
-    private String processTaskResult(Logger log, Object taskResult) {
-        String resultMsg = "";
+    private String processTaskResult(Logger log, VisorCacheMetricsTaskResult taskResult) {
+        String resultMsg;
 
         String emptyResultMsg = "Empty result: none of the specified caches were found.";
         String notFoundCachesMsg = "Not found caches:" + U.nl();
 
-        switch (arguments.subCmdArg) {
-            case ENABLE:
-            case DISABLE:
-                Set<String> toggleTaskResult = (Set<String>)taskResult;
+        if (!taskResult.processedCaches().isEmpty()) {
+            Collection<String> toggleTaskResult = taskResult.processedCaches();
 
-                if (toggleTaskResult.isEmpty()) {
-                    resultMsg = emptyResultMsg;
+            String successMsg = "Command performed successfully for caches:";
 
-                    log.warning(resultMsg);
-                }
-                else {
-                    String successMsg = "Command performed successfully for caches:";
+            resultMsg = successMsg + U.nl() + toggleTaskResult;
 
-                    resultMsg = successMsg + U.nl() + toggleTaskResult;
+            Collection<String> notFoundCaches = F.view(arg.cacheNames(),
+                name -> !toggleTaskResult.contains(name));
 
-                    Collection<String> notFoundCaches = F.view(arguments.cacheNames,
-                        name -> !toggleTaskResult.contains(name));
+            if (!notFoundCaches.isEmpty())
+                resultMsg += U.nl() + notFoundCachesMsg + notFoundCaches;
 
-                    if (!notFoundCaches.isEmpty())
-                        resultMsg += U.nl() + notFoundCachesMsg + notFoundCaches;
+            log.info(resultMsg);
+        }
+        else if (!taskResult.cacheMetricsModes().isEmpty()) {
+            Map<String, Boolean> statusTaskResult = taskResult.cacheMetricsModes();
 
-                    log.info(resultMsg);
-                }
+            resultMsg = "[Cache Name -> Status]:" + U.nl();
 
-                break;
-            case STATUS:
-                Map<String, Boolean> statusTaskResult = (Map<String, Boolean>)taskResult;
+            Collection<String> rowsCollection = F.transform(statusTaskResult.entrySet(),
+                e -> e.getKey() + " -> " + (e.getValue() ? "ENABLED" : "DISABLED"));
 
-                if (statusTaskResult.isEmpty()) {
-                    resultMsg = emptyResultMsg;
+            String rowsStr = String.join(U.nl(), rowsCollection);
 
-                    log.warning(resultMsg);
-                }
-                else {
-                    resultMsg = "[Cache Name -> Status]:" + U.nl();
+            resultMsg += rowsStr;
 
-                    Collection<String> rowsCollection = F.transform(statusTaskResult.entrySet(),
-                        e -> e.getKey() + " -> " + (e.getValue() ? "ENABLED" : "DISABLED"));
+            Collection<String> notFoundCaches = F.view(arg.cacheNames(),
+                name -> !statusTaskResult.containsKey(name));
 
-                    String rowsStr = String.join(U.nl(), rowsCollection);
+            if (!notFoundCaches.isEmpty())
+                resultMsg += U.nl() + notFoundCachesMsg + notFoundCaches;
 
-                    resultMsg += rowsStr;
+            log.info(resultMsg);
+        }
+        else {
+            resultMsg = emptyResultMsg;
 
-                    Collection<String> notFoundCaches = F.view(arguments.cacheNames,
-                        name -> !statusTaskResult.containsKey(name));
-
-                    if (!notFoundCaches.isEmpty())
-                        resultMsg += U.nl() + notFoundCachesMsg + notFoundCaches;
-
-                    log.info(resultMsg);
-                }
+            log.warning(resultMsg);
         }
 
         return resultMsg;
@@ -144,8 +131,8 @@ public class CacheMetrics extends AbstractCommand<CacheMetrics.Arguments> {
     }
 
     /** {@inheritDoc} */
-    @Override public Arguments arg() {
-        return arguments;
+    @Override public VisorCacheMetricsTaskArg arg() {
+        return arg;
     }
 
     /** {@inheritDoc} */
@@ -175,61 +162,12 @@ public class CacheMetrics extends AbstractCommand<CacheMetrics.Arguments> {
                 throw new IllegalArgumentException("Expected " + cacheArgErrorMsg);
         }
 
-        arguments = new Arguments(subCmdArg, applyToAllCaches, caches);
+        arg = applyToAllCaches ? new VisorCacheMetricsTaskArg(subCmdArg.taskArgumentSubCommand()) :
+            new VisorCacheMetricsTaskArg(subCmdArg.taskArgumentSubCommand(), caches);
     }
 
     /** {@inheritDoc} */
     @Override public String name() {
         return METRICS.text().toUpperCase();
-    }
-
-    /**
-     * Container for command arguments.
-     */
-    public static class Arguments {
-        /** Metrics sub-command argument. */
-        private final CacheMetricsCommandArg subCmdArg;
-
-        /** Apply to all caches flag. */
-        private final boolean applyToAllCaches;
-
-        /** Affected cache names. */
-        private final Set<String> cacheNames;
-
-        /** Task class name, obtained from command parameters. */
-        private String taskClsName;
-
-        /** Task argument, obtained from command parameters. */
-        private IgniteDataTransferObject taskArg;
-
-        /** */
-        Arguments(CacheMetricsCommandArg subCmdArg, boolean applyToAllCaches, Set<String> cacheNames) {
-            this.subCmdArg = subCmdArg;
-            this.applyToAllCaches = applyToAllCaches;
-            this.cacheNames = cacheNames;
-
-            processArgs();
-        }
-
-        /** */
-        private void processArgs() {
-            switch (subCmdArg) {
-                case ENABLE:
-                case DISABLE:
-                    taskArg = applyToAllCaches ?
-                        new VisorCacheMetricsToggleTaskArg(subCmdArg == ENABLE, applyToAllCaches) :
-                        new VisorCacheMetricsToggleTaskArg(subCmdArg == ENABLE, cacheNames);
-
-                    taskClsName = VisorCacheMetricsToggleTask.class.getName();
-
-                    break;
-                case STATUS:
-                    taskArg = applyToAllCaches ?
-                        new VisorCacheMetricsStatusTaskArg(applyToAllCaches) :
-                        new VisorCacheMetricsStatusTaskArg(cacheNames);
-
-                    taskClsName = VisorCacheMetricsStatusTask.class.getName();
-            }
-        }
     }
 }

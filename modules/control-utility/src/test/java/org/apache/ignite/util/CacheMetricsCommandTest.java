@@ -68,8 +68,8 @@ public class CacheMetricsCommandTest extends GridCommandHandlerAbstractTest {
 
     /** Not found cache. */
     private static final String NOT_FOUND_CACHE = "not-found-cache";
-    /** Status disabled. */
 
+    /** Status disabled. */
     private static final String STATUS_DISABLED = "DISABLED";
 
     /** Status enabled. */
@@ -104,7 +104,7 @@ public class CacheMetricsCommandTest extends GridCommandHandlerAbstractTest {
      */
     @Test
     public void testEnableDisable() {
-        createCachesWithMetricStatuses(t(CACHE_ONE, false), t(CACHE_TWO, true), t(NON_METRIC_CACHE, false));
+        createCachesWithMetricsModes(t(CACHE_ONE, false), t(CACHE_TWO, true), t(NON_METRIC_CACHE, false));
 
         checkExecutionOk(successToggle(CACHE_ONE), COMMAND_ENABLE, CACHE_ONE);
         checkExecutionOk(successToggle(CACHE_TWO), COMMAND_DISABLE, CACHE_TWO);
@@ -125,7 +125,7 @@ public class CacheMetricsCommandTest extends GridCommandHandlerAbstractTest {
      */
     @Test
     public void testEnableDisableAll() {
-        createCachesWithMetricStatuses(t(CACHE_ONE, false));
+        createCachesWithMetricsModes(t(CACHE_ONE, false));
 
         checkExecutionOk(successToggle(CACHE_ONE), COMMAND_ENABLE, ALL_CACHES);
         checkClusterMetrics(t(CACHE_ONE, true));
@@ -133,7 +133,7 @@ public class CacheMetricsCommandTest extends GridCommandHandlerAbstractTest {
         checkExecutionOk(successToggle(CACHE_ONE), COMMAND_DISABLE, ALL_CACHES);
         checkClusterMetrics(t(CACHE_ONE, false));
 
-        createCachesWithMetricStatuses(t(CACHE_TWO, true), t(CACHE_THREE, false));
+        createCachesWithMetricsModes(t(CACHE_TWO, true), t(CACHE_THREE, false));
 
         checkExecutionOk(successToggle(CACHE_ONE, CACHE_TWO, CACHE_THREE), COMMAND_DISABLE, ALL_CACHES);
         checkClusterMetrics(t(CACHE_ONE, false), t(CACHE_TWO, false), t(CACHE_THREE, false));
@@ -147,7 +147,7 @@ public class CacheMetricsCommandTest extends GridCommandHandlerAbstractTest {
      */
     @Test
     public void testNotFoundCacheEnableDisable() {
-        createCachesWithMetricStatuses(t(CACHE_ONE, false));
+        createCachesWithMetricsModes(t(CACHE_ONE, false));
 
         String cacheArg = String.join(",", CACHE_ONE, CACHE_TWO, NOT_FOUND_CACHE);
 
@@ -157,7 +157,7 @@ public class CacheMetricsCommandTest extends GridCommandHandlerAbstractTest {
         checkExecutionOk(msgCacheTwoNotFoundCache, COMMAND_ENABLE, cacheArg);
         checkClusterMetrics(t(CACHE_ONE, true));
 
-        createCachesWithMetricStatuses(t(CACHE_TWO, true));
+        createCachesWithMetricsModes(t(CACHE_TWO, true));
 
         String msgNotFoundCache = String.join(U.nl(), successToggle(CACHE_ONE, CACHE_TWO), notFound(NOT_FOUND_CACHE));
 
@@ -170,7 +170,7 @@ public class CacheMetricsCommandTest extends GridCommandHandlerAbstractTest {
      */
     @Test
     public void testStatus() {
-        createCachesWithMetricStatuses(t(CACHE_ONE, false), t(CACHE_TWO, true), t(NON_METRIC_CACHE, false));
+        createCachesWithMetricsModes(t(CACHE_ONE, false), t(CACHE_TWO, true), t(NON_METRIC_CACHE, false));
 
         checkExecutionOk(successStatus(t(CACHE_ONE, STATUS_DISABLED)), COMMAND_STATUS, CACHE_ONE);
         checkExecutionOk(successStatus(t(CACHE_TWO, STATUS_ENABLED)), COMMAND_STATUS, CACHE_TWO);
@@ -196,11 +196,11 @@ public class CacheMetricsCommandTest extends GridCommandHandlerAbstractTest {
      */
     @Test
     public void testStatusAll() {
-        createCachesWithMetricStatuses(t(CACHE_ONE, false));
+        createCachesWithMetricsModes(t(CACHE_ONE, false));
 
         checkExecutionOk(successStatus(t(CACHE_ONE, STATUS_DISABLED)), COMMAND_STATUS, ALL_CACHES);
 
-        createCachesWithMetricStatuses(t(CACHE_TWO, true), t(CACHE_THREE, false));
+        createCachesWithMetricsModes(t(CACHE_TWO, true), t(CACHE_THREE, false));
 
         checkExecutionOk(successStatus(t(CACHE_ONE, STATUS_DISABLED), t(CACHE_TWO, STATUS_ENABLED), 
             t(CACHE_THREE, STATUS_DISABLED)), COMMAND_STATUS, ALL_CACHES);
@@ -218,7 +218,7 @@ public class CacheMetricsCommandTest extends GridCommandHandlerAbstractTest {
      */
     @Test
     public void testNotFoundCacheStatus() {
-        createCachesWithMetricStatuses(t(CACHE_ONE, false));
+        createCachesWithMetricsModes(t(CACHE_ONE, false));
 
         String cacheArg = String.join(",", CACHE_ONE, CACHE_TWO, NOT_FOUND_CACHE);
 
@@ -227,7 +227,7 @@ public class CacheMetricsCommandTest extends GridCommandHandlerAbstractTest {
 
         checkExecutionOk(msgCacheTwoNotFoundCache, COMMAND_STATUS, cacheArg);
 
-        createCachesWithMetricStatuses(t(CACHE_TWO, true));
+        createCachesWithMetricsModes(t(CACHE_TWO, true));
 
         String msgNotFoundCache = String.join(U.nl(), successStatus(t(CACHE_ONE, STATUS_DISABLED),
                 t(CACHE_TWO, STATUS_ENABLED)), notFound(NOT_FOUND_CACHE));
@@ -310,28 +310,28 @@ public class CacheMetricsCommandTest extends GridCommandHandlerAbstractTest {
     }
 
     /**
-     * @param cacheMetricsStatuses Metrics statuses.
+     * @param cacheMetricsModes Metrics modes.
      */
-    private void createCachesWithMetricStatuses(IgniteBiTuple<String, Boolean>... cacheMetricsStatuses) {
-        for (IgniteBiTuple<String, Boolean> nameAndState : cacheMetricsStatuses) {
+    private void createCachesWithMetricsModes(IgniteBiTuple<String, Boolean>... cacheMetricsModes) {
+        for (IgniteBiTuple<String, Boolean> nameAndState : cacheMetricsModes) {
             grid(0).getOrCreateCache(new CacheConfiguration<>().
                 setName(nameAndState.get1())
                 .setStatisticsEnabled(nameAndState.get2()));
         }
 
-        checkClusterMetrics(cacheMetricsStatuses);
+        checkClusterMetrics(cacheMetricsModes);
     }
 
     /**
-     * @param expectedMetricsStatuses Expected cache metrics statuses.
+     * @param expectedMetricsModes Expected cache metrics modes.
      */
-    private void checkClusterMetrics(IgniteBiTuple<String, Boolean>... expectedMetricsStatuses) {
+    private void checkClusterMetrics(IgniteBiTuple<String, Boolean>... expectedMetricsModes) {
         for (Ignite ignite : G.allGrids()) {
-            for (IgniteBiTuple<String, Boolean> nameAndState : expectedMetricsStatuses) {
+            for (IgniteBiTuple<String, Boolean> nameAndState : expectedMetricsModes) {
                 String cacheName = nameAndState.get1();
                 boolean cacheMetricsEnabled = ignite.cache(cacheName).metrics().isStatisticsEnabled();
 
-                assertEquals("Unexpected metrics status for cache: " + cacheName,
+                assertEquals("Unexpected metrics mode for cache: " + cacheName,
                     nameAndState.get2().booleanValue(), cacheMetricsEnabled);
             }
         }
@@ -349,12 +349,12 @@ public class CacheMetricsCommandTest extends GridCommandHandlerAbstractTest {
     /**
      * Form expected <tt>--status</tt> command output with table of processed caches.
      *
-     * @param expectedMetricsStatuses Expected metrics statuses.
+     * @param expectedMetricsModes Expected metrics modes.
      */
-    private String successStatus(IgniteBiTuple<String, String>... expectedMetricsStatuses) {
+    private String successStatus(IgniteBiTuple<String, String>... expectedMetricsModes) {
         String tableHdr = "[Cache Name -> Status]:";
 
-        String tableRows = Arrays.stream(expectedMetricsStatuses)
+        String tableRows = Arrays.stream(expectedMetricsModes)
             .map(t -> t.get1() + " -> " + t.get2())
             .collect(Collectors.joining(U.nl()));
 

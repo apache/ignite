@@ -26,9 +26,9 @@ import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
- * Task argument for {@link VisorCacheMetricsStatusTask}.
+ * Task argument for {@link VisorCacheMetricsTask}.
  */
-public class VisorCacheMetricsStatusTaskArg extends IgniteDataTransferObject {
+public class VisorCacheMetricsTaskArg extends IgniteDataTransferObject {
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;
 
@@ -38,46 +38,59 @@ public class VisorCacheMetricsStatusTaskArg extends IgniteDataTransferObject {
     /** Names of a caches which will be affected by task when <tt>applyToAllCaches</tt> is <code>false</code>. */
     private Set<String> cacheNames;
 
+    /** Cache metrics sub-command. */
+    private SubCommand subCmd;
+
     /**
      * Default constructor.
      */
-    public VisorCacheMetricsStatusTaskArg() {
+    public VisorCacheMetricsTaskArg() {
         // No-op.
     }
 
     /**
      * @param cacheNames Affected cache names.
      */
-    public VisorCacheMetricsStatusTaskArg(Set<String> cacheNames) {
+    public VisorCacheMetricsTaskArg(SubCommand subCmd, Set<String> cacheNames) {
+        this.subCmd = subCmd;
         this.cacheNames = Collections.unmodifiableSet(cacheNames);
 
         applyToAllCaches = false;
     }
 
     /**
-     * @param applyToAllCaches Apply to all caches flag.
+     * Construct task argument for operations which affect all caches.
+     *
+     * @param subCmd Operation type.
      */
-    public VisorCacheMetricsStatusTaskArg(boolean applyToAllCaches) {
-        this.applyToAllCaches = applyToAllCaches;
+    public VisorCacheMetricsTaskArg(SubCommand subCmd) {
+        this.subCmd = subCmd;
+
+        applyToAllCaches = true;
 
         cacheNames = Collections.emptySet();
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
         out.writeBoolean(applyToAllCaches);
         U.writeCollection(out, cacheNames);
+        U.writeEnum(out, subCmd);
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException,
         ClassNotFoundException {
         applyToAllCaches = in.readBoolean();
         cacheNames = U.readSet(in);
+        subCmd = U.readEnum(in, SubCommand.class);
+    }
+
+    /**
+     * @return Names of a caches which will be affected by task when <tt>applyToAllCaches</tt> is <code>false</code>.
+     */
+    public Set<String> cacheNames() {
+        return Collections.unmodifiableSet(cacheNames);
     }
 
     /**
@@ -88,9 +101,24 @@ public class VisorCacheMetricsStatusTaskArg extends IgniteDataTransferObject {
     }
 
     /**
-     * @return Names of a caches which will be affected by task when <tt>allCaches</tt> is <code>false</code>.
+     * @return Cache metrics sub-command.
      */
-    public Set<String> cacheNames() {
-        return Collections.unmodifiableSet(cacheNames);
+    public SubCommand subCommand() {
+        return subCmd;
+    }
+
+    /**
+     * Sub-command enum.
+     */
+    @SuppressWarnings("PublicInnerClass")
+    public enum SubCommand {
+        /** Enable sub-command.*/
+        ENABLE,
+
+        /** Disable sub-command.*/
+        DISABLE,
+
+        /** Status sub-command.*/
+        STATUS
     }
 }

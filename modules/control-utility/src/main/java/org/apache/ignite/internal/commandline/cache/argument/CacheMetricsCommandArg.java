@@ -19,34 +19,50 @@ package org.apache.ignite.internal.commandline.cache.argument;
 
 import org.apache.ignite.internal.commandline.argument.CommandArg;
 import org.apache.ignite.internal.commandline.cache.CacheMetrics;
+import org.apache.ignite.internal.visor.cache.VisorCacheMetricsTaskArg;
+import org.apache.ignite.internal.visor.cache.VisorCacheMetricsTaskArg.SubCommand;
 
 /**
  * Command arguments for {@link CacheMetrics} command.
  */
 public enum CacheMetricsCommandArg implements CommandArg {
     /** Enable. */
-    ENABLE("--enable"),
+    ENABLE("--enable", SubCommand.ENABLE),
 
     /** Disable. */
-    DISABLE("--disable"),
+    DISABLE("--disable", SubCommand.DISABLE),
 
     /** Status. */
-    STATUS("--status"),
+    STATUS("--status", SubCommand.STATUS),
 
     /** Perform command for all caches instead of defined list. */
-    ALL_CACHES("--all-caches");
+    ALL_CACHES("--all-caches", null);
 
     /** Enable statistics flag. */
     private final String name;
 
-    /** */
-    CacheMetricsCommandArg(String name) {
+    /** Sub-command value for {@link VisorCacheMetricsTaskArg}.*/
+    private final SubCommand taskArgSubCmd;
+
+    /**
+     * @param name Name.
+     * @param taskArgSubCmd Sub-command value for {@link VisorCacheMetricsTaskArg}.
+     */
+    CacheMetricsCommandArg(String name, SubCommand taskArgSubCmd) {
         this.name = name;
+        this.taskArgSubCmd = taskArgSubCmd;
     }
 
     /** {@inheritDoc} */
     @Override public String argName() {
         return name;
+    }
+
+    /**
+     * @return /** Sub-command value for {@link VisorCacheMetricsTaskArg}.
+     */
+    public SubCommand taskArgumentSubCommand() {
+        return taskArgSubCmd;
     }
 
     /** {@inheritDoc} */
