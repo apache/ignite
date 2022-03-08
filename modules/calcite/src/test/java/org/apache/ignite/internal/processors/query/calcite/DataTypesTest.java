@@ -35,68 +35,91 @@ import org.junit.Test;
 public class DataTypesTest extends AbstractBasicIntegrationTest {
     /** Tests UUID without index. */
     @Test
-    public void testUUIDWithoutIndex() {
-        testUUID(false);
+    public void testUuidWithoutIndex() {
+        testUuid(false);
     }
 
     /** Tests UUID with the index. */
     @Test
-    public void testUUIDWithIndex() {
-        testUUID(true);
+    public void testUuidWithIndex() {
+        testUuid(true);
     }
 
     /** Tests UUID type. */
-    private void testUUID(boolean indexed) {
+    private void testUuid(boolean indexed) {
         try {
             executeSql("CREATE TABLE t(id INT, name VARCHAR(255), uid UUID, primary key (id))");
 
             if (indexed)
                 executeSql("CREATE INDEX uuid_idx ON t (uid);");
 
-            executeSql("INSERT INTO t VALUES (1, 'fd10556e-fc27-4a99-b5e4-89b8344cb3ce', " +
-                "'9e120341-627f-32be-8393-58b5d655b751')");
+            UUID uuid1 = UUID.randomUUID();
+            UUID uuid2 = UUID.randomUUID();
+
+            UUID max = uuid1.compareTo(uuid2) > 0 ? uuid1 : uuid2;
+            UUID min = max == uuid1 ? uuid2 : uuid1;
+            UUID sum = new UUID(uuid1.getMostSignificantBits() + uuid2.getMostSignificantBits(),
+                uuid1.getLeastSignificantBits() + uuid2.getLeastSignificantBits());
+            UUID avg = new UUID(sum.getMostSignificantBits() / 2, sum.getLeastSignificantBits() / 2);
+
+            executeSql("INSERT INTO t VALUES (1, 'fd10556e-fc27-4a99-b5e4-89b8344cb3ce', '" + uuid1 + "')");
             // Name == UUID
-            executeSql("INSERT INTO t VALUES (2, '123e4567-e89b-12d3-a456-426614174000', " +
-                "'123e4567-e89b-12d3-a456-426614174000')");
+            executeSql("INSERT INTO t VALUES (2, '" + uuid2 + "', '" + uuid2 + "')");
 
             assertQuery("SELECT * FROM t")
-                .returns(1, "fd10556e-fc27-4a99-b5e4-89b8344cb3ce", UUID.fromString("9e120341-627f-32be-8393-58b5d655b751"))
-                .returns(2, "123e4567-e89b-12d3-a456-426614174000", UUID.fromString("123e4567-e89b-12d3-a456-426614174000"))
+                .returns(1, "fd10556e-fc27-4a99-b5e4-89b8344cb3ce", uuid1)
+                .returns(2, uuid2.toString(), uuid2)
                 .check();
 
-            assertQuery("SELECT * FROM t WHERE uid < '123e4567-e89b-12d3-a456-426614174000'")
-                .returns(1, "fd10556e-fc27-4a99-b5e4-89b8344cb3ce", UUID.fromString("9e120341-627f-32be-8393-58b5d655b751"))
+            assertQuery("SELECT uid FROM t WHERE uid < '" + max + "'")
+                .returns(min)
                 .check();
 
-            assertQuery("SELECT * FROM t WHERE '123e4567-e89b-12d3-a456-426614174000' > uid")
-                .returns(1, "fd10556e-fc27-4a99-b5e4-89b8344cb3ce", UUID.fromString("9e120341-627f-32be-8393-58b5d655b751"))
+            assertQuery("SELECT uid FROM t WHERE '" + max + "' > uid")
+                .returns(min)
                 .check();
 
             assertQuery("SELECT * FROM t WHERE name = uid")
-                .returns(2, "123e4567-e89b-12d3-a456-426614174000", UUID.fromString("123e4567-e89b-12d3-a456-426614174000"))
+                .returns(2, uuid2.toString(), uuid2)
                 .check();
 
             assertQuery("SELECT * FROM t WHERE name != uid")
-                .returns(1, "fd10556e-fc27-4a99-b5e4-89b8344cb3ce", UUID.fromString("9e120341-627f-32be-8393-58b5d655b751"))
+                .returns(1, "fd10556e-fc27-4a99-b5e4-89b8344cb3ce", uuid1)
                 .check();
 
             assertQuery("SELECT count(*), uid FROM t group by uid order by uid")
-                .returns(1L, UUID.fromString("9e120341-627f-32be-8393-58b5d655b751"))
-                .returns(1L, UUID.fromString("123e4567-e89b-12d3-a456-426614174000"))
+                .returns(1L, min)
+                .returns(1L, max)
                 .check();
 
             assertQuery("SELECT count(*), uid FROM t group by uid having uid = " +
-                "'123e4567-e89b-12d3-a456-426614174000' order by uid")
-                .returns(1L, UUID.fromString("123e4567-e89b-12d3-a456-426614174000"))
+                "'" + uuid1 + "' order by uid")
+                .returns(1L, uuid1)
                 .check();
 
             assertQuery("SELECT t1.* from t t1, (select * from t) t2 where t1.uid = t2.name")
-                .returns(2, "123e4567-e89b-12d3-a456-426614174000", UUID.fromString("123e4567-e89b-12d3-a456-426614174000"))
+                .returns(2, uuid2.toString(), uuid2)
                 .check();
 
             assertQuery("SELECT t1.* from t t1, (select * from t) t2 where t1.uid = t2.uid")
-                .returns(1, "fd10556e-fc27-4a99-b5e4-89b8344cb3ce", UUID.fromString("9e120341-627f-32be-8393-58b5d655b751"))
-                .returns(2, "123e4567-e89b-12d3-a456-426614174000", UUID.fromString("123e4567-e89b-12d3-a456-426614174000"))
+                .returns(1, "fd10556e-fc27-4a99-b5e4-89b8344cb3ce", uuid1)
+                .returns(2, uuid2.toString(), uuid2)
+                .check();
+
+            assertQuery("SELECT max(uid) from t")
+                .returns(max)
+                .check();
+
+            assertQuery("SELECT min(uid) from t")
+                .returns(min)
+                .check();
+
+            assertQuery("SELECT avg(uid) from t")
+                .returns(avg)
+                .check();
+
+            assertQuery("SELECT sum(uid) from t")
+                .returns(sum)
                 .check();
         }
         finally {

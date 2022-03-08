@@ -461,9 +461,6 @@ public class TableDmlIntegrationTest extends AbstractBasicIntegrationTest {
     /** */
     @Test
     public void testInsertDefaultValue() {
-        UUID uuid = UUID.randomUUID();
-        checkDefaultValue("UUID", '\'' + uuid.toString() + '\'', uuid);
-
         checkDefaultValue("BOOLEAN", "TRUE", Boolean.TRUE);
         checkDefaultValue("BOOLEAN NOT NULL", "TRUE", Boolean.TRUE);
         checkDefaultValue("BIGINT", "10", 10L);
@@ -486,7 +483,8 @@ public class TableDmlIntegrationTest extends AbstractBasicIntegrationTest {
         checkDefaultValue("BINARY(3)", "x'010203'", new byte[] {1, 2, 3});
         checkDefaultValue("VARBINARY", "x'010203'", new byte[] {1, 2, 3});
 
-
+        UUID uuid = UUID.randomUUID();
+        checkDefaultValue("UUID", '\'' + uuid.toString() + '\'', uuid);
 
         checkWrongDefault("VARCHAR", "10");
         checkWrongDefault("INT", "'10'");
@@ -499,6 +497,9 @@ public class TableDmlIntegrationTest extends AbstractBasicIntegrationTest {
         checkWrongDefault("INTERVAL MONTHS", "INTERVAL '10' DAYS");
         checkWrongDefault("VARBINARY", "'10'");
         checkWrongDefault("VARBINARY", "10");
+        checkWrongDefault("VARBINARY", "10");
+        checkWrongDefault("VARBINARY", "10");
+        checkWrongDefault("UUID", "FALSE");
     }
 
     /** */
