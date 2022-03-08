@@ -427,6 +427,13 @@ public class InlineIndexImpl extends AbstractIndex implements InlineIndex {
         }
     }
 
+    /**
+     * Destroys the index and if {@code renameImmediately} is {@code true} renames index trees.
+     *
+     * @param softDel If {@code true} then perform logical deletion.
+     * @param renameImmediately If {@code true} then rename index trees immediately.
+     * @throws IgniteCheckedException If failed to rename index trees.
+     */
     public void destroy0(boolean softDel, boolean renameImmediately) throws IgniteCheckedException {
         // Already destroyed.
         if (!destroyed.compareAndSet(false, true))
@@ -469,6 +476,9 @@ public class InlineIndexImpl extends AbstractIndex implements InlineIndex {
             cctx, def.idxName().cacheName(), def.idxName().tableName(), row.key(), row.value());
     }
 
+    /**
+     * @return Index definition.
+     */
     public SortedIndexDefinition indexDefinition() {
         return def;
     }
