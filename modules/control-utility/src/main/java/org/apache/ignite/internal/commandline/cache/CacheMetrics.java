@@ -18,10 +18,8 @@
 package org.apache.ignite.internal.commandline.cache;
 
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
-import java.util.TreeSet;
 import java.util.logging.Logger;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.client.GridClientConfiguration;
@@ -34,6 +32,7 @@ import org.apache.ignite.internal.commandline.argument.CommandArgUtils;
 import org.apache.ignite.internal.commandline.cache.argument.CacheMetricsCommandArg;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.cache.VisorCacheMetricsStatusTask;
 import org.apache.ignite.internal.visor.cache.VisorCacheMetricsStatusTaskArg;
 import org.apache.ignite.internal.visor.cache.VisorCacheMetricsToggleTask;
@@ -51,9 +50,6 @@ import static org.apache.ignite.internal.commandline.cache.argument.CacheMetrics
  * Cache sub-command for a cache metrics collection management: enabling/disabling or showing status.
  */
 public class CacheMetrics extends AbstractCommand<CacheMetrics.Arguments> {
-    /** System-dependent separator. */
-    public static final String SEP = System.lineSeparator();
-
     /** Parsed arguments. */
     private Arguments arguments;
 
@@ -81,7 +77,7 @@ public class CacheMetrics extends AbstractCommand<CacheMetrics.Arguments> {
         String resultMsg = "";
 
         String emptyResultMsg = "Empty result: none of the specified caches were found.";
-        String notFoundCachesMsg = "Not found caches:" + SEP;
+        String notFoundCachesMsg = "Not found caches:" + U.nl();
 
         switch (arguments.subCmdArg) {
             case ENABLE:
@@ -96,13 +92,13 @@ public class CacheMetrics extends AbstractCommand<CacheMetrics.Arguments> {
                 else {
                     String successMsg = "Command performed successfully for caches:";
 
-                    resultMsg = successMsg + SEP + toggleTaskResult;
+                    resultMsg = successMsg + U.nl() + toggleTaskResult;
 
                     Collection<String> notFoundCaches = F.view(arguments.cacheNames,
                         name -> !toggleTaskResult.contains(name));
 
                     if (!notFoundCaches.isEmpty())
-                        resultMsg += SEP + notFoundCachesMsg + notFoundCaches;
+                        resultMsg += U.nl() + notFoundCachesMsg + notFoundCaches;
 
                     log.info(resultMsg);
                 }
@@ -117,12 +113,12 @@ public class CacheMetrics extends AbstractCommand<CacheMetrics.Arguments> {
                     log.warning(resultMsg);
                 }
                 else {
-                    resultMsg = "[Cache Name -> Status]:" + SEP;
+                    resultMsg = "[Cache Name -> Status]:" + U.nl();
 
                     Collection<String> rowsCollection = F.transform(statusTaskResult.entrySet(),
                         e -> e.getKey() + " -> " + (e.getValue() ? "ENABLED" : "DISABLED"));
 
-                    String rowsStr = String.join(SEP, rowsCollection);
+                    String rowsStr = String.join(U.nl(), rowsCollection);
 
                     resultMsg += rowsStr;
 
@@ -130,7 +126,7 @@ public class CacheMetrics extends AbstractCommand<CacheMetrics.Arguments> {
                         name -> !statusTaskResult.containsKey(name));
 
                     if (!notFoundCaches.isEmpty())
-                        resultMsg += SEP + notFoundCachesMsg + notFoundCaches;
+                        resultMsg += U.nl() + notFoundCachesMsg + notFoundCaches;
 
                     log.info(resultMsg);
                 }
@@ -163,19 +159,23 @@ public class CacheMetrics extends AbstractCommand<CacheMetrics.Arguments> {
         if (subCmdArg == null)
             throw new IllegalArgumentException(incorrectSubCmdMsg);
 
-        String readCacheArg = argIter.nextArg("Expected comma-separated cache names list or '" + ALL_CACHES +
-            "' argument.");
+        String cacheArgErrorMsg = "cache names list or '" + ALL_CACHES + "' argument.";
 
-        CacheMetricsCommandArg allCachesArg = CommandArgUtils.of(readCacheArg, CacheMetricsCommandArg.class);
+        Set<String> caches = argIter.nextStringSet(cacheArgErrorMsg);
 
-        boolean applyToAllCaches = allCachesArg != null;
+        String allCachesStr;
+        boolean applyToAllCaches = false;
 
-        Set<String> cacheNames = new TreeSet<>();
+        if (caches.isEmpty()) {
+            allCachesStr = argIter.nextArg("Expected " + cacheArgErrorMsg);
 
-        if (!applyToAllCaches)
-            Collections.addAll(cacheNames, readCacheArg.split(","));
+            applyToAllCaches = ALL_CACHES.argName().equals(allCachesStr);
 
-        arguments = new Arguments(subCmdArg, applyToAllCaches, cacheNames);
+            if (!applyToAllCaches)
+                throw new IllegalArgumentException("Expected " + cacheArgErrorMsg);
+        }
+
+        arguments = new Arguments(subCmdArg, applyToAllCaches, caches);
     }
 
     /** {@inheritDoc} */

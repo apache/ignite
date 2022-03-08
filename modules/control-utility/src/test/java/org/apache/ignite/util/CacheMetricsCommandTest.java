@@ -29,13 +29,13 @@ import org.apache.ignite.internal.commandline.cache.CacheMetrics;
 import org.apache.ignite.internal.commandline.cache.argument.CacheMetricsCommandArg;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
 
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_INVALID_ARGUMENTS;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK;
-import static org.apache.ignite.internal.commandline.cache.CacheMetrics.SEP;
 import static org.apache.ignite.internal.util.lang.GridFunc.t;
 
 /**
@@ -79,7 +79,7 @@ public class CacheMetricsCommandTest extends GridCommandHandlerAbstractTest {
     private static final String EMPTY_RESULT_MESSAGE = "Empty result: none of the specified caches were found.";
 
     /** Not found caches message. */
-    private static final String NOT_FOUND_MESSAGE = "Not found caches:" + SEP;
+    private static final String NOT_FOUND_MESSAGE = "Not found caches:" + U.nl();
 
     /** {@inheritDoc} */
     @Override public void beforeTest() throws Exception {
@@ -151,7 +151,7 @@ public class CacheMetricsCommandTest extends GridCommandHandlerAbstractTest {
 
         String cacheArg = String.join(",", CACHE_ONE, CACHE_TWO, NOT_FOUND_CACHE);
 
-        String msgCacheTwoNotFoundCache = String.join(SEP, successToggle(CACHE_ONE),
+        String msgCacheTwoNotFoundCache = String.join(U.nl(), successToggle(CACHE_ONE),
             notFound(CACHE_TWO, NOT_FOUND_CACHE));
 
         checkExecutionOk(msgCacheTwoNotFoundCache, COMMAND_ENABLE, cacheArg);
@@ -159,7 +159,7 @@ public class CacheMetricsCommandTest extends GridCommandHandlerAbstractTest {
 
         createCachesWithMetricStatuses(t(CACHE_TWO, true));
 
-        String msgNotFoundCache = String.join(SEP, successToggle(CACHE_ONE, CACHE_TWO), notFound(NOT_FOUND_CACHE));
+        String msgNotFoundCache = String.join(U.nl(), successToggle(CACHE_ONE, CACHE_TWO), notFound(NOT_FOUND_CACHE));
 
         checkExecutionOk(msgNotFoundCache, COMMAND_DISABLE, cacheArg);
         checkClusterMetrics(t(CACHE_ONE, false), t(CACHE_TWO, false));
@@ -222,14 +222,14 @@ public class CacheMetricsCommandTest extends GridCommandHandlerAbstractTest {
 
         String cacheArg = String.join(",", CACHE_ONE, CACHE_TWO, NOT_FOUND_CACHE);
 
-        String msgCacheTwoNotFoundCache = String.join(SEP, successStatus(t(CACHE_ONE, STATUS_DISABLED)),
+        String msgCacheTwoNotFoundCache = String.join(U.nl(), successStatus(t(CACHE_ONE, STATUS_DISABLED)),
             notFound(CACHE_TWO, NOT_FOUND_CACHE));
 
         checkExecutionOk(msgCacheTwoNotFoundCache, COMMAND_STATUS, cacheArg);
 
         createCachesWithMetricStatuses(t(CACHE_TWO, true));
 
-        String msgNotFoundCache = String.join(SEP, successStatus(t(CACHE_ONE, STATUS_DISABLED),
+        String msgNotFoundCache = String.join(U.nl(), successStatus(t(CACHE_ONE, STATUS_DISABLED),
                 t(CACHE_TWO, STATUS_ENABLED)), notFound(NOT_FOUND_CACHE));
 
         checkExecutionOk(msgNotFoundCache, COMMAND_STATUS, cacheArg);
@@ -262,14 +262,15 @@ public class CacheMetricsCommandTest extends GridCommandHandlerAbstractTest {
 
         checkInvalidArguments("Check arguments. Expected correct sub-command.", "bad-command");
 
-        checkInvalidArguments("Check arguments. Expected comma-separated cache names list " +
-            "or '--all-caches' argument.", COMMAND_ENABLE);
+        String cacheArgErrorMsg = "cache names list or '" + ALL_CACHES + "' argument.";
 
-        checkInvalidArguments("Check arguments. Expected comma-separated cache names list " +
-            "or '--all-caches' argument.", COMMAND_DISABLE);
+        checkInvalidArguments(cacheArgErrorMsg, COMMAND_ENABLE);
 
-        checkInvalidArguments("Check arguments. Expected comma-separated cache names list " +
-            "or '--all-caches' argument.", COMMAND_STATUS);
+        checkInvalidArguments(cacheArgErrorMsg, COMMAND_DISABLE);
+
+        checkInvalidArguments(cacheArgErrorMsg, COMMAND_STATUS);
+
+        checkInvalidArguments(cacheArgErrorMsg, COMMAND_STATUS, "--all");
 
         checkInvalidArguments("Check arguments. Unexpected argument of --cache subcommand: " + CACHE_TWO,
             COMMAND_ENABLE, CACHE_ONE, CACHE_TWO);
@@ -342,7 +343,7 @@ public class CacheMetricsCommandTest extends GridCommandHandlerAbstractTest {
      * @param cacheNames Cache names.
      */
     private String successToggle(String... cacheNames) {
-        return "Command performed successfully for caches:" + SEP + Arrays.toString(cacheNames);
+        return "Command performed successfully for caches:" + U.nl() + Arrays.toString(cacheNames);
     }
 
     /**
@@ -355,9 +356,9 @@ public class CacheMetricsCommandTest extends GridCommandHandlerAbstractTest {
 
         String tableRows = Arrays.stream(expectedMetricsStatuses)
             .map(t -> t.get1() + " -> " + t.get2())
-            .collect(Collectors.joining(SEP));
+            .collect(Collectors.joining(U.nl()));
 
-        return tableHdr + SEP + tableRows;
+        return tableHdr + U.nl() + tableRows;
     }
 
     /**
