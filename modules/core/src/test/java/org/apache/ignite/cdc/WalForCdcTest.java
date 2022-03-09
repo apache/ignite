@@ -21,9 +21,11 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
+import java.util.function.BiConsumer;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -54,7 +56,7 @@ import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /** Check only {@link DataRecord} written to the WAL for in-memory cache. */
 @RunWith(Parameterized.class)
-public class WalForInMemoryTest extends GridCommonAbstractTest {
+public class WalForCdcTest extends GridCommonAbstractTest {
     /** */
     private static final int RECORD_COUNT = 10;
 
@@ -65,6 +67,9 @@ public class WalForInMemoryTest extends GridCommonAbstractTest {
     /** */
     @Parameterized.Parameter(1)
     public CacheAtomicityMode atomicityMode;
+
+    /** */
+    private boolean persistenceEnabled;
 
     /** */
     @Parameterized.Parameters(name = "mode={0}, atomicityMode={1}")
@@ -86,7 +91,7 @@ public class WalForInMemoryTest extends GridCommonAbstractTest {
             .setWalMode(WALMode.FSYNC)
             .setWalForceArchiveTimeout(WAL_ARCHIVE_TIMEOUT)
             .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
-                .setPersistenceEnabled(false)
+                .setPersistenceEnabled(persistenceEnabled)
                 .setCdcEnabled(true)));
 
         return cfg;
@@ -102,7 +107,18 @@ public class WalForInMemoryTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void testOnlyDataRecordWritten() throws Exception {
+        persistenceEnabled = false;
+
+        doTestWal((ignite, cache) -> {
+            for (int i = 0; i < RECORD_COUNT; i++)
+                cache.put(i, i);
+        });
+    }
+
+    private void doTestWal(BiConsumer<IgniteEx, IgniteCache<Integer, Integer>> putData) throws Exception {
         IgniteEx ignite = startGrid(0);
+
+        ignite.cluster().state(ClusterState.ACTIVE);
 
         IgniteCache<Integer, Integer> cache = ignite.createCache(
             new CacheConfiguration<Integer, Integer>(DEFAULT_CACHE_NAME)
@@ -111,8 +127,7 @@ public class WalForInMemoryTest extends GridCommonAbstractTest {
 
         long archiveIdx = ignite.context().cache().context().cdcWal().lastArchivedSegment();
 
-        for (int i = 0; i < RECORD_COUNT; i++)
-            cache.put(i, i);
+        putData.accept(ignite, cache);
 
         assertTrue(waitForCondition(
             () -> archiveIdx < ignite.context().cache().context().cdcWal().lastArchivedSegment(),
@@ -134,6 +149,9 @@ public class WalForInMemoryTest extends GridCommonAbstractTest {
         while (iter.hasNext()) {
             IgniteBiTuple<WALPointer, WALRecord> rec = iter.next();
 
+            if (persistenceEnabled && (!(rec.get2() instanceof DataRecord)))
+                continue;
+
             assertTrue(rec.get2() instanceof DataRecord);
 
             DataRecord dataRec = (DataRecord)rec.get2();
@@ -145,5 +163,26 @@ public class WalForInMemoryTest extends GridCommonAbstractTest {
         }
 
         assertEquals(RECORD_COUNT, walRecCnt);
+    }
+
+    /** */
+    @Test
+    public void testWalDisable() throws Exception {
+        persistenceEnabled = true;
+
+        doTestWal((ignite, cache) -> {
+            for (int i = 0; i < RECORD_COUNT / 2; i++)
+                cache.put(i, i);
+
+            ignite.cluster().disableWal(DEFAULT_CACHE_NAME);
+
+            for (int i = 0; i < RECORD_COUNT; i++)
+                cache.put(i, i);
+
+            ignite.cluster().enableWal(DEFAULT_CACHE_NAME);
+
+            for (int i = RECORD_COUNT / 2; i < RECORD_COUNT; i++)
+                cache.put(i, i);
+        });
     }
 }
