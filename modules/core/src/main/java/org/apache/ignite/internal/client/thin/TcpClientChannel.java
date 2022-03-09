@@ -106,6 +106,9 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
         V1_0_0
     );
 
+    /** GridNioServer has minimum idle check interval of 2 seconds, even if idleTimeout is lower. */
+    private static final long MIN_RECOMMENDED_HEARTBEAT_INTERVAL = 500;
+
     /** Preallocated empty bytes. */
     public static final byte[] EMPTY_BYTES = new byte[0];
 
@@ -753,6 +756,9 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
             return configuredInterval;
 
         long recommendedHeartbeatInterval = serverIdleTimeoutMs / 3;
+
+        if (recommendedHeartbeatInterval < MIN_RECOMMENDED_HEARTBEAT_INTERVAL)
+            recommendedHeartbeatInterval = MIN_RECOMMENDED_HEARTBEAT_INTERVAL;
 
         return Math.min(configuredInterval, recommendedHeartbeatInterval);
     }
