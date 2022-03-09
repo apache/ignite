@@ -19,18 +19,25 @@ package org.apache.ignite.internal.cdc;
 
 import java.util.EnumSet;
 import java.util.Iterator;
+import java.util.NoSuchElementException;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cdc.CdcConsumer;
 import org.apache.ignite.cdc.CdcEvent;
+import org.apache.ignite.internal.pagemem.wal.WALIterator;
 import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.UnwrappedDataEntry;
+import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.GridCacheOperation;
+import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 
@@ -166,5 +173,92 @@ public class WalRecordsConsumer<K, V> {
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(WalRecordsConsumer.class, this);
+    }
+
+    /** Iterator over {@link DataEntry}. */
+    public static class DataEntryIterator implements Iterator<DataEntry>, AutoCloseable {
+        /** WAL iterator. */
+        private final WALIterator walIter;
+
+        /** Current preloaded WAL record. */
+        private IgniteBiTuple<WALPointer, WALRecord> curRec;
+
+        /** */
+        private DataEntry next;
+
+        /** Index of {@link #next} inside WAL record. */
+        private int entryIdx;
+
+        /** @param walIter WAL iterator. */
+        DataEntryIterator(WALIterator walIter) {
+            this.walIter = walIter;
+
+            advance();
+        }
+
+        /** @return Current state. */
+        T2<WALPointer, Integer> state() {
+            return hasNext() ?
+                new T2<>(curRec.get1(), entryIdx) :
+                new T2<>(curRec.get1().next(), 0);
+        }
+
+        /** Initialize state. */
+        void init(int idx) {
+            for (int i = 0; i < idx; i++) {
+                if (!hasNext())
+                    throw new IgniteException("Failed to restore entry index [idx=" + idx + ", rec=" + curRec + ']');
+
+                next();
+            }
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean hasNext() {
+            return next != null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public DataEntry next() {
+            if (!hasNext())
+                throw new NoSuchElementException();
+
+            DataEntry e = next;
+
+            next = null;
+
+            advance();
+
+            return e;
+        }
+
+        /** */
+        private void advance() {
+            if (curRec != null) {
+                entryIdx++;
+
+                DataRecord rec = (DataRecord)curRec.get2();
+
+                if (entryIdx < rec.entryCount()) {
+                    next = rec.get(entryIdx);
+
+                    return;
+                }
+
+                entryIdx = 0;
+            }
+
+            if (!walIter.hasNext())
+                return;
+
+            curRec = walIter.next();
+
+            next = ((DataRecord)curRec.get2()).get(entryIdx);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void close() throws IgniteCheckedException {
+            walIter.close();
+        }
     }
 }
