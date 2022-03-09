@@ -20,6 +20,7 @@ package org.apache.ignite.testsuites;
 import org.apache.ignite.internal.encryption.CacheGroupReencryptionTest;
 import org.apache.ignite.internal.processors.cache.IgnitePdsSingleNodeWithIndexingAndGroupPutGetPersistenceSelfTest;
 import org.apache.ignite.internal.processors.cache.IgnitePdsSingleNodeWithIndexingPutGetPersistenceTest;
+import org.apache.ignite.internal.processors.cache.index.AffinityIndexShadowingTest;
 import org.apache.ignite.internal.processors.cache.index.ClientReconnectWithSqlTableConfiguredTest;
 import org.apache.ignite.internal.processors.cache.index.DropIndexTest;
 import org.apache.ignite.internal.processors.cache.index.ForceRebuildIndexTest;
@@ -70,7 +71,8 @@ import org.junit.runners.Suite;
     ResumeRebuildIndexTest.class,
     ResumeCreateIndexTest.class,
     RenameIndexTreeTest.class,
-    DropIndexTest.class
+    DropIndexTest.class,
+    AffinityIndexShadowingTest.class
 })
 public class IgnitePdsWithIndexingTestSuite {
 }
