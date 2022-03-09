@@ -1239,6 +1239,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             _frame.HasCustomTypeData = false;
 
             var schemaIdx = _schema.PushSchema();
+            bool isNewSchema = false;
 
             try
             {
@@ -1273,7 +1274,10 @@ namespace Apache.Ignite.Core.Impl.Binary
 
                     // Update schema in type descriptor
                     if (desc.Schema.Get(schemaId) == null)
+                    {
                         desc.Schema.Add(schemaId, _schema.GetSchema(schemaIdx));
+                        isNewSchema = true;
+                    }
                 }
                 else
                     schemaOffset = headerSize;
@@ -1304,7 +1308,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             }
 
             // Apply structure updates if any.
-            _frame.Struct.UpdateWriterStructure(this);
+            _frame.Struct.UpdateWriterStructure(this, isNewSchema);
 
             // Restore old frame.
             _frame = oldFrame;
