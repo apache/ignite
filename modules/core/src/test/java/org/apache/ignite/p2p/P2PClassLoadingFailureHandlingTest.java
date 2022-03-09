@@ -134,7 +134,9 @@ public class P2PClassLoadingFailureHandlingTest extends GridCommonAbstractTest {
     }
 
     /***/
-    private void assertThatFailureHandlerIsNotCalled() {
+    private void assertThatFailureHandlerIsNotCalled() throws InterruptedException {
+        letFailurePropagateToFailureHandler();
+
         StringWriter stringWriter = new StringWriter();
         if (failure.get() != null) {
             failure.get().printStackTrace(new PrintWriter(stringWriter));
@@ -269,7 +271,6 @@ public class P2PClassLoadingFailureHandlingTest extends GridCommonAbstractTest {
 
         cache.put(1, "1");
 
-        letFailurePropagateToFailureHandler();
         assertThatFailureHandlerIsNotCalled();
     }
 
