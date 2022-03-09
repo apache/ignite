@@ -786,7 +786,8 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
             try {
                 if (System.currentTimeMillis() - lastSendMillis > interval)
                     service(ClientOperation.HEARTBEAT, null, null);
-            } catch (Throwable ignored) {
+            }
+            catch (Throwable ignored) {
                 // Ignore failed heartbeats.
             }
         }
