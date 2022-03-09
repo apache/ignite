@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 import java.io.IOException;
 import java.io.InvalidObjectException;
 import java.io.Serializable;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -32,6 +33,7 @@ import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPa
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Snapshot metadata file.
@@ -73,14 +75,18 @@ public class SnapshotMetadata implements Serializable {
     @GridToStringInclude
     private transient Map<Integer, Set<Integer>> locParts = new HashMap<>();
 
+    /** Master key digest for encrypted caches. */
+    @GridToStringInclude
+    @Nullable private final byte[] masterKeyDigest;
+
     /**
-     * @param rqId Unique snapshot request id.
-     * @param snpName Snapshot name.
+     * F@param snpName Snapshot name.
      * @param consId Consistent id of a node to which this metadata relates.
      * @param folderName Directory name which stores the data files.
      * @param pageSize Page size of stored snapshot data.
      * @param grpIds The list of cache groups ids which were included into snapshot.
      * @param bltNodes The set of affected by snapshot baseline nodes.
+     * @param masterKeyDigest Master key digest for encrypted caches.
      */
     public SnapshotMetadata(
         UUID rqId,
@@ -90,7 +96,8 @@ public class SnapshotMetadata implements Serializable {
         int pageSize,
         List<Integer> grpIds,
         Set<String> bltNodes,
-        Set<GroupPartitionId> pairs
+        Set<GroupPartitionId> pairs,
+        @Nullable byte[] masterKeyDigest
     ) {
         this.rqId = rqId;
         this.snpName = snpName;
@@ -99,6 +106,7 @@ public class SnapshotMetadata implements Serializable {
         this.pageSize = pageSize;
         this.grpIds = grpIds;
         this.bltNodes = bltNodes;
+        this.masterKeyDigest = masterKeyDigest;
 
         pairs.forEach(p ->
             locParts.computeIfAbsent(p.getGroupId(), k -> new HashSet<>())
@@ -220,7 +228,15 @@ public class SnapshotMetadata implements Serializable {
             snapshotName().equals(compare.snapshotName()) &&
             pageSize() == compare.pageSize() &&
             Objects.equals(cacheGroupIds(), compare.cacheGroupIds()) &&
+            Arrays.equals(masterKeyDigest, compare.masterKeyDigest) &&
             Objects.equals(baselineNodes(), compare.baselineNodes());
+    }
+
+    /**
+     * @return Master key digest for encrypted caches.
+     */
+    public byte[] masterKeyDigest() {
+        return masterKeyDigest;
     }
 
     /** {@inheritDoc} */

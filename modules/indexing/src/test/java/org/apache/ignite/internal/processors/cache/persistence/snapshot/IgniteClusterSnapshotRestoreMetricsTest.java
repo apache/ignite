@@ -83,6 +83,7 @@ public class IgniteClusterSnapshotRestoreMetricsTest extends IgniteClusterSnapsh
         return new CacheConfiguration<>(dfltCacheCfg)
             .setName(name)
             .setSqlSchema(name)
+            .setEncryptionEnabled(encryption)
             .setQueryEntities(Collections.singletonList(
                 new QueryEntity(Integer.class.getName(), Account.class.getName())
                 .setFields(new LinkedHashMap<>(F.asMap(
