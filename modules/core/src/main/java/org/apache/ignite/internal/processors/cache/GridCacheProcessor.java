@@ -85,6 +85,7 @@ import org.apache.ignite.internal.cluster.DetachedClusterNode;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.managers.discovery.IgniteDiscoverySpi;
+import org.apache.ignite.internal.managers.encryption.GroupKeyEncrypted;
 import org.apache.ignite.internal.managers.systemview.walker.CacheGroupIoViewWalker;
 import org.apache.ignite.internal.managers.systemview.walker.CachePagesListViewWalker;
 import org.apache.ignite.internal.managers.systemview.walker.PartitionStateViewWalker;
@@ -3567,6 +3568,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 false,
                 null,
                 ccfg != null && ccfg.isEncryptionEnabled() ? grpKeys.iterator().next() : null,
+                null,
                 ccfg != null && ccfg.isEncryptionEnabled() ? masterKeyDigest : null);
 
             if (req != null) {
@@ -3807,7 +3809,11 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             Iterator<byte[]> grpKeysIter = grpKeys.iterator();
 
             for (StoredCacheData ccfg : storedCacheDataList) {
-                assert !ccfg.config().isEncryptionEnabled() || grpKeysIter.hasNext();
+                assert ccfg.groupKeyEncrypted() == null || ccfg.config().isEncryptionEnabled();
+
+                // Reuse encription key if passed for this group. Take next generated otherwise.
+                GroupKeyEncrypted encrKey = ccfg.config().isEncryptionEnabled() ? (ccfg.groupKeyEncrypted() != null ?
+                    ccfg.groupKeyEncrypted() : new GroupKeyEncrypted(0, grpKeysIter.next())) : null;
 
                 DynamicCacheChangeRequest req = prepareCacheChangeRequest(
                     ccfg.config(),
@@ -3820,8 +3826,10 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                     restartId,
                     disabledAfterStart,
                     ccfg.queryEntities(),
-                    ccfg.config().isEncryptionEnabled() ? grpKeysIter.next() : null,
-                    ccfg.config().isEncryptionEnabled() ? masterKeyDigest : null);
+                    encrKey != null ? encrKey.key() : null,
+                    encrKey != null ? encrKey.id() : null,
+                    encrKey != null ? masterKeyDigest : null
+                );
 
                 if (req != null) {
                     if (req.clientStartOnly()) {
@@ -5099,6 +5107,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @param disabledAfterStart If true, cache proxies will be only activated after {@link #restartProxies()}.
      * @param qryEntities Query entities.
      * @param encKey Encryption key.
+     * @param encKeyId Id of the encryption key.
      * @param masterKeyDigest Master key digest.
      * @return Request or {@code null} if cache already exists.
      * @throws IgniteCheckedException if some of pre-checks failed
@@ -5116,6 +5125,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         boolean disabledAfterStart,
         @Nullable Collection<QueryEntity> qryEntities,
         @Nullable byte[] encKey,
+        @Nullable Integer encKeyId,
         @Nullable byte[] masterKeyDigest
     ) throws IgniteCheckedException {
         DynamicCacheDescriptor desc = cacheDescriptor(cacheName);
@@ -5131,6 +5141,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         req.masterKeyDigest(masterKeyDigest);
 
         req.encryptionKey(encKey);
+
+        req.encryptionKeyId(encKeyId);
 
         req.restartId(restartId);
 
