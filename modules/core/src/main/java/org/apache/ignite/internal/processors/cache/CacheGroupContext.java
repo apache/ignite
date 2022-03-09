@@ -27,6 +27,7 @@ import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReadWriteLock;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteCluster;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.affinity.AffinityFunction;
 import org.apache.ignite.cluster.ClusterNode;
@@ -1206,7 +1207,11 @@ public class CacheGroupContext {
     }
 
     /**
+     * Value returned by this method can be changed runtime by the user or during rebalance.
+     *
      * @return WAL enabled flag.
+     * @see IgniteCluster#disableWal(String)
+     * @see IgniteCluster#enableWal(String)
      */
     public boolean walEnabled() {
         return localWalEnabled && globalWalEnabled;
