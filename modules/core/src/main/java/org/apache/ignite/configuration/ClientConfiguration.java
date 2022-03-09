@@ -719,7 +719,7 @@ public final class ClientConfiguration implements Serializable {
     /**
      * Gets the heartbeat message interval, in milliseconds. Default is <code>30_000</code>.
      * <p />
-     * When server-side <see cref="ClientConnectorConfiguration.IdleTimeout"/> is not zero, effective heartbeat
+     * When server-side {@link ClientConnectorConfiguration#getIdleTimeout()} is not zero, effective heartbeat
      * interval is set to <code>min(heartbeatInterval, idleTimeout / 3)</code>.
      * <p />
      * When thin client connection is idle (no operations are performed), heartbeat messages are sent periodically
@@ -734,7 +734,7 @@ public final class ClientConfiguration implements Serializable {
     /**
      * Sets the heartbeat message interval, in milliseconds. Default is <code>30_000</code>.
      * <p />
-     * When server-side <see cref="ClientConnectorConfiguration.IdleTimeout"/> is not zero, effective heartbeat
+     * When server-side {@link ClientConnectorConfiguration#getIdleTimeout()} is not zero, effective heartbeat
      * interval is set to <code>min(heartbeatInterval, idleTimeout / 3)</code>.
      * <p />
      * When thin client connection is idle (no operations are performed), heartbeat messages are sent periodically
