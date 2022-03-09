@@ -97,6 +97,19 @@ It should be just enough to process source cluster load.
 Each instance of application will process configured subset of topic partitions to spread the load.
 `KafkaConsumer` for each partition will be created to ensure fair reads.
 
+==== Installation
+
+Build `cdc-ext` module with maven:
+```console
+  $~/src/ignite-extensions/> mvn clean package -DskipTests
+  $~/src/ignite-extensions/> ls modules/cdc-ext/target | grep zip
+ignite-cdc-ext.zip
+```
+
+Unpack `ignite-cdc-ext.zip` archive to `$IGNITE_HOME` folder.
+Now, you have additional binary `$IGNITE_HOME/bin/kafka-to-ignite.sh` and `$IGNITE_HOME/libs/optional/ignite-cdc-ext` module.
+Please, enable `ignite-cdc-ext` to be able to run `kafka-to-ignite.sh`.
+
 ==== Configuration
 
 Application configuration should be done using POJO classes or Spring xml file like regular Ignite node configuration.
