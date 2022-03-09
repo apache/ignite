@@ -73,7 +73,7 @@ class ConsistencyTest(IgniteTest):
                 "tx": False
             },
             startup_timeout_sec=180,
-            num_nodes=self.test_context.available_cluster_size)
+            num_nodes=self.available_cluster_size)
 
         for node in ignites.nodes:  # copying default AI config with log path replacement
             ignites.init_persistent(node)

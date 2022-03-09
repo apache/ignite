@@ -80,8 +80,9 @@ class IgniteTest(Test):
         super().__init__(test_context=test_context)
 
     @property
-    def test_context(self) -> IgniteTestContext:
-        return self.test_context
+    def available_cluster_size(self):
+        # noinspection PyUnresolvedReferences
+        return self.test_context.available_cluster_size
 
     @staticmethod
     def monotonic():

@@ -150,7 +150,7 @@ class CellularAffinity(IgniteTest):
         """
         Tests Cellular switch tx latency.
         """
-        cluster_size = self.test_context.available_cluster_size
+        cluster_size = self.available_cluster_size
 
         cells_amount = math.floor((cluster_size - self.ZOOKEPER_CLUSTER_SIZE) / (self.NODES_PER_CELL + 1))
 

@@ -51,7 +51,7 @@ class SnapshotTest(IgniteTest):
             metric_exporter='org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi'
         )
 
-        nodes = IgniteService(self.test_context, ignite_config, num_nodes=self.test_context.available_cluster_size - 1)
+        nodes = IgniteService(self.test_context, ignite_config, num_nodes=self.available_cluster_size - 1)
         nodes.start()
 
         control_utility = ControlUtility(nodes)
