@@ -115,6 +115,28 @@ public class WalForCdcTest extends GridCommonAbstractTest {
         });
     }
 
+    /** */
+    @Test
+    public void testWalDisable() throws Exception {
+        persistenceEnabled = true;
+
+        doTestWal((ignite, cache) -> {
+            for (int i = 0; i < RECORD_COUNT / 2; i++)
+                cache.put(i, i);
+
+            ignite.cluster().disableWal(DEFAULT_CACHE_NAME);
+
+            for (int i = 0; i < RECORD_COUNT; i++)
+                cache.put(i, i);
+
+            ignite.cluster().enableWal(DEFAULT_CACHE_NAME);
+
+            for (int i = RECORD_COUNT / 2; i < RECORD_COUNT; i++)
+                cache.put(i, i);
+        });
+    }
+
+    /** */
     private void doTestWal(BiConsumer<IgniteEx, IgniteCache<Integer, Integer>> putData) throws Exception {
         IgniteEx ignite = startGrid(0);
 
@@ -163,26 +185,5 @@ public class WalForCdcTest extends GridCommonAbstractTest {
         }
 
         assertEquals(RECORD_COUNT, walRecCnt);
-    }
-
-    /** */
-    @Test
-    public void testWalDisable() throws Exception {
-        persistenceEnabled = true;
-
-        doTestWal((ignite, cache) -> {
-            for (int i = 0; i < RECORD_COUNT / 2; i++)
-                cache.put(i, i);
-
-            ignite.cluster().disableWal(DEFAULT_CACHE_NAME);
-
-            for (int i = 0; i < RECORD_COUNT; i++)
-                cache.put(i, i);
-
-            ignite.cluster().enableWal(DEFAULT_CACHE_NAME);
-
-            for (int i = RECORD_COUNT / 2; i < RECORD_COUNT; i++)
-                cache.put(i, i);
-        });
     }
 }
