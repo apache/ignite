@@ -471,7 +471,7 @@ public class CdcMain implements Runnable {
 
         try (DataEntryIterator iter = new DataEntryIterator(factory.iterator(builder))) {
             if (initState != null) {
-                iter.init(initState);
+                iter.init(initState.entryIndex());
 
                 initState = null;
             }
@@ -661,30 +661,34 @@ public class CdcMain implements Runnable {
         /** WAL iterator. */
         private final WALIterator walIter;
 
-        /** Last {@link DataRecord}.*/
-        private IgniteBiTuple<WALPointer, WALRecord> lastWalRec;
+        /** Current preloaded WAL record. */
+        private IgniteBiTuple<WALPointer, WALRecord> curRec;
 
-        /** Iterator over {@link DataEntry}. */
-        private Iterator<DataEntry> entries;
+        /** */
+        private DataEntry next;
 
-        /** Last {@link DataEntry} index inside last {@link DataRecord}. */
+        /** Index of {@link #next} inside WAL record. */
         private int entryIdx;
 
         /** @param walIter WAL iterator. */
         DataEntryIterator(WALIterator walIter) {
             this.walIter = walIter;
+
+            advance();
         }
 
         /** @return Current state. */
         public CdcState state() {
-            return new CdcState(lastWalRec.get1(), entryIdx);
+            return hasNext() ?
+                new CdcState(curRec.get1(), entryIdx) :
+                new CdcState(curRec.get1().next(), 0);
         }
 
         /** Initialize state. */
-        public void init(CdcState state) {
-            for (int i = 0; i < state.entryIndex(); i++) {
+        public void init(int idx) {
+            for (int i = 0; i < idx; i++) {
                 if (!hasNext())
-                    throw new IgniteException("Failed to restore entry index [rec=" + lastWalRec + ']');
+                    throw new IgniteException("Failed to restore entry index [idx=" + idx + ", rec=" + curRec + ']');
 
                 next();
             }
@@ -692,47 +696,45 @@ public class CdcMain implements Runnable {
 
         /** {@inheritDoc} */
         @Override public boolean hasNext() {
-            advance();
-
-            return hasCurrent();
+            return next != null;
         }
 
         /** {@inheritDoc} */
         @Override public DataEntry next() {
-            advance();
-
-            if (!hasCurrent())
+            if (!hasNext())
                 throw new NoSuchElementException();
 
-            entryIdx++;
+            DataEntry e = next;
 
-            return entries.next();
+            next = null;
+
+            advance();
+
+            return e;
         }
 
         /** */
         private void advance() {
-            if (hasCurrent())
-                return;
+            if (curRec != null) {
+                entryIdx++;
 
-            while (walIter.hasNext()) {
-                lastWalRec = walIter.next();
+                DataRecord rec = (DataRecord)curRec.get2();
 
-                DataRecord rec = (DataRecord)lastWalRec.get2();
+                if (entryIdx < rec.entryCount()) {
+                    next = rec.get(entryIdx);
 
-                entries = rec.writeEntries().iterator();
+                    return;
+                }
 
                 entryIdx = 0;
-
-                if (entries.hasNext())
-                    break;
-
-                entries = null;
             }
-        }
 
-        /** */
-        private boolean hasCurrent() {
-            return entries != null && entries.hasNext();
+            if (!walIter.hasNext())
+                return;
+
+            curRec = walIter.next();
+
+            next = ((DataRecord)curRec.get2()).get(entryIdx);
         }
 
         /** {@inheritDoc} */

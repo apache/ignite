@@ -23,7 +23,6 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cdc.CdcConsumer;
 import org.apache.ignite.cdc.CdcEvent;
-import org.apache.ignite.internal.cdc.CdcMain.DataEntryIterator;
 import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.UnwrappedDataEntry;
@@ -111,7 +110,7 @@ public class WalRecordsConsumer<K, V> {
      * @param entries Data entries iterator.
      * @return {@code True} if current offset in WAL should be commited.
      */
-    public boolean onRecords(DataEntryIterator entries) {
+    public boolean onRecords(Iterator<DataEntry> entries) {
         Iterator<CdcEvent> evts = F.iterator(new Iterator<DataEntry>() {
             @Override public boolean hasNext() {
                 return entries.hasNext();

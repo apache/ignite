@@ -264,7 +264,7 @@ public class CdcSelfTest extends AbstractCdcTest {
             while (iter.hasNext()) {
                 DataRecord rec = (DataRecord)iter.next().get2();
 
-                if (rec.writeEntries().size() > 1)
+                if (rec.entryCount() > 1)
                     return;
             }
         }
