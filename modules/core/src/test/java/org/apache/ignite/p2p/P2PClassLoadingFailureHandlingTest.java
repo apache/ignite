@@ -17,7 +17,9 @@
 
 package org.apache.ignite.p2p;
 
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.io.PrintWriter;
+import java.io.StringWriter;
+import java.util.concurrent.atomic.AtomicReference;
 import javax.cache.Cache;
 import javax.cache.CacheException;
 import javax.cache.processor.EntryProcessor;
@@ -61,7 +63,7 @@ public class P2PClassLoadingFailureHandlingTest extends GridCommonAbstractTest {
     private static final String CACHE_NAME = "cache";
 
     /** */
-    private final AtomicBoolean failureHandlerCalled = new AtomicBoolean(false);
+    private final AtomicReference<Throwable> failure = new AtomicReference<>();
 
     /***/
     private Ignite client;
@@ -81,7 +83,7 @@ public class P2PClassLoadingFailureHandlingTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected FailureHandler getFailureHandler(String igniteInstanceName) {
-        return new FailureHandlerWithCallback(ctx -> failureHandlerCalled.set(true));
+        return new FailureHandlerWithCallback(ctx -> failure.set(ctx.error()));
     }
 
     /** {@inheritDoc} */
@@ -133,7 +135,12 @@ public class P2PClassLoadingFailureHandlingTest extends GridCommonAbstractTest {
 
     /***/
     private void assertThatFailureHandlerIsNotCalled() {
-        assertFalse("Failure handler should not be called", failureHandlerCalled.get());
+        StringWriter stringWriter = new StringWriter();
+        if (failure.get() != null) {
+            failure.get().printStackTrace(new PrintWriter(stringWriter));
+        }
+
+        assertNull("Failure handler should not be called, but it was with " + stringWriter, failure.get());
     }
 
     /***/
@@ -260,10 +267,15 @@ public class P2PClassLoadingFailureHandlingTest extends GridCommonAbstractTest {
 
         IgniteCache<Integer, String> cache = client.createCache(CACHE_NAME);
 
-        Throwable ex = assertThrows(log, () -> cache.put(1, "1"), IgniteException.class, "Failed to update keys");
-        assertThatCauseIsP2PClassLoadingIssue(ex);
+        cache.put(1, "1");
 
+        letFailurePropagateToFailureHandler();
         assertThatFailureHandlerIsNotCalled();
+    }
+
+    /***/
+    private void letFailurePropagateToFailureHandler() throws InterruptedException {
+        Thread.sleep(100);
     }
 
     /***/
