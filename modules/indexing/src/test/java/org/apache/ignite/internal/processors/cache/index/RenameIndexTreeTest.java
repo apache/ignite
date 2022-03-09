@@ -296,7 +296,7 @@ public class RenameIndexTreeTest extends AbstractRebuildIndexTest {
         String idxName = "IDX0";
         createIdx(cache, idxName);
 
-        InlineIndexImpl idx = (InlineIndexImpl) index(n, cache, idxName);
+        InlineIndexImpl idx = (InlineIndexImpl)index(n, cache, idxName);
 
         GridCacheContext<Integer, Person> cctx = cacheContext(cache);
 

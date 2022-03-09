@@ -692,10 +692,16 @@ public class H2TreeIndex extends H2TreeIndexBase {
         return new H2TreeIndex(inlineIndex, tbl, indexColumns, idxDef.primary(), log);
     }
 
+    /**
+     * @return Index's id.
+     */
     public UUID indexId() {
         return queryIndex.id();
     }
 
+    /**
+     * @return Index.
+     */
     public InlineIndexImpl index() {
         return queryIndex;
     }

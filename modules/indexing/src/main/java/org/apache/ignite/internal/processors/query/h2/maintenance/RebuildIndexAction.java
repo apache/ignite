@@ -81,7 +81,7 @@ public class RebuildIndexAction implements MaintenanceAction<Boolean> {
     @Override public Boolean execute() {
         GridKernalContext kernalContext = indexing.kernalContext();
 
-        GridCacheDatabaseSharedManager database = (GridCacheDatabaseSharedManager) kernalContext.cache()
+        GridCacheDatabaseSharedManager database = (GridCacheDatabaseSharedManager)kernalContext.cache()
             .context().database();
 
         CheckpointManager manager = database.getCheckpointManager();
@@ -210,7 +210,7 @@ public class RebuildIndexAction implements MaintenanceAction<Boolean> {
 
         InlineIndexImpl queryIndex = newIndex.unwrap(InlineIndexImpl.class);
 
-        H2TreeIndex newIdx = oldIndex.createCopy(queryIndex, (SortedIndexDefinition) definition);
+        H2TreeIndex newIdx = oldIndex.createCopy(queryIndex, (SortedIndexDefinition)definition);
 
         schemaManager.createIndex(
             targetTable.getSchema().getName(),
@@ -259,7 +259,7 @@ public class RebuildIndexAction implements MaintenanceAction<Boolean> {
             if (index != null) {
                 assert index instanceof H2TreeIndex;
 
-                targetIndex = (H2TreeIndex) index;
+                targetIndex = (H2TreeIndex)index;
                 break;
             }
         }

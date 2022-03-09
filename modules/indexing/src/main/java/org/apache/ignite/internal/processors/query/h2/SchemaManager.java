@@ -648,6 +648,16 @@ public class SchemaManager {
             throw e;
         }
     }
+
+    /**
+     * Creates index dynamically.
+     *
+     * @param schemaName Schema name.
+     * @param tblName Table name.
+     * @param h2Idx Index.
+     * @param ifNotExists If-not-exists.
+     * @throws IgniteCheckedException If failed.
+     */
     public void createIndex(String schemaName, String tblName, GridH2IndexBase h2Idx, boolean ifNotExists)
         throws IgniteCheckedException {
         // Locate table.

@@ -174,7 +174,7 @@ public class IndexCorruptionRebuildTest extends GridCommonAbstractTest {
                 ).forEach(cache::query);
         }
 
-        IgniteH2Indexing indexing = (IgniteH2Indexing) srv.context().query().getIndexing();
+        IgniteH2Indexing indexing = (IgniteH2Indexing)srv.context().query().getIndexing();
 
         corruptIndex(srv, indexing, CACHE_NAME_1, FAIL_IDX_1);
         corruptIndex(srv, indexing, CACHE_NAME_1, FAIL_IDX_2);
@@ -209,8 +209,8 @@ public class IndexCorruptionRebuildTest extends GridCommonAbstractTest {
         Collection<DurableBackgroundTaskState<?>> durableTasks = tasks(srv.context().durableBackgroundTask()).values();
 
         Map<Integer, Set<String>> indexTasksByCache = durableTasks.stream().collect(Collectors.groupingBy(
-            state -> CU.cacheId(((DurableBackgroundCleanupIndexTreeTaskV2) state.task()).cacheName()),
-            Collectors.mapping(state -> ((DurableBackgroundCleanupIndexTreeTaskV2) state.task()).idxName(), toSet())
+            state -> CU.cacheId(((DurableBackgroundCleanupIndexTreeTaskV2)state.task()).cacheName()),
+            Collectors.mapping(state -> ((DurableBackgroundCleanupIndexTreeTaskV2)state.task()).idxName(), toSet())
         ));
 
         checkCacheToCorruptedIndexMap(indexTasksByCache);
@@ -260,13 +260,13 @@ public class IndexCorruptionRebuildTest extends GridCommonAbstractTest {
      */
     private void corruptIndex(IgniteEx srv, IgniteH2Indexing indexing, String cacheName,
         String idxName) throws IgniteCheckedException {
-        PageMemoryEx mem = (PageMemoryEx) srv.context().cache().context().cacheContext(CU.cacheId(cacheName))
+        PageMemoryEx mem = (PageMemoryEx)srv.context().cache().context().cacheContext(CU.cacheId(cacheName))
             .dataRegion().pageMemory();
 
         Collection<H2TableDescriptor> tables = indexing.schemaManager().tablesForCache(cacheName);
 
         for (H2TableDescriptor descriptor : tables) {
-            H2TreeIndex index = (H2TreeIndex) descriptor.table().getIndex(idxName);
+            H2TreeIndex index = (H2TreeIndex)descriptor.table().getIndex(idxName);
             int segments = index.segmentsCount();
 
             for (int segment = 0; segment < segments; segment++) {
