@@ -1628,6 +1628,9 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
         try {
             transVal = trans.apply(evt);
         }
+        catch (NoClassDefFoundError e) {
+            P2PClassLoadingIssues.rethrowDisarmedP2PClassLoadingFailure(e);
+        }
         catch (Exception e) {
             U.error(log, e);
         }
