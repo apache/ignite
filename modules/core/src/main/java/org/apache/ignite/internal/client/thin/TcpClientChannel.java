@@ -25,6 +25,8 @@ import java.util.Collection;
 import java.util.EnumSet;
 import java.util.Map;
 import java.util.Queue;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
@@ -70,6 +72,7 @@ import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.client.thin.ProtocolBitmaskFeature.HEARTBEAT;
 import static org.apache.ignite.internal.client.thin.ProtocolBitmaskFeature.USER_ATTRIBUTES;
 import static org.apache.ignite.internal.client.thin.ProtocolVersion.LATEST_VER;
 import static org.apache.ignite.internal.client.thin.ProtocolVersion.V1_0_0;
@@ -102,6 +105,9 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
         V1_1_0,
         V1_0_0
     );
+
+    /** GridNioServer has minimum idle check interval of 2 seconds, even if idleTimeout is lower. */
+    private static final long MIN_RECOMMENDED_HEARTBEAT_INTERVAL = 500;
 
     /** Preallocated empty bytes. */
     public static final byte[] EMPTY_BYTES = new byte[0];
@@ -148,6 +154,12 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
     /** Send/receive timeout in milliseconds. */
     private final int timeout;
 
+    /** Heartbeat timer. */
+    private final Timer heartbeatTimer;
+
+    /** Last send operation timestamp. */
+    private volatile long lastSendMillis;
+
     /** Constructor. */
     TcpClientChannel(ClientChannelConfiguration cfg, ClientConnectionMultiplexer connMgr)
         throws ClientConnectionException, ClientAuthenticationException, ClientProtocolError {
@@ -166,6 +178,10 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
         sock = connMgr.open(cfg.getAddress(), this, this);
 
         handshake(DEFAULT_VERSION, cfg.getUserName(), cfg.getUserPassword(), cfg.getUserAttributes());
+
+        heartbeatTimer = protocolCtx.isFeatureSupported(HEARTBEAT) && cfg.getHeartbeatEnabled()
+                ? initHeartbeat(cfg.getHeartbeatInterval())
+                : null;
     }
 
     /** {@inheritDoc} */
@@ -188,6 +204,9 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
      */
     private void close(Exception cause) {
         if (closed.compareAndSet(false, true)) {
+            if (heartbeatTimer != null)
+                heartbeatTimer.cancel();
+
             U.closeQuiet(sock);
 
             for (ClientRequestFuture pendingReq : pendingReqs.values())
@@ -553,6 +572,8 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
             error = "At least one Ignite server node must be specified in the Ignite client configuration";
         else if (addr.getPort() < 1024 || addr.getPort() > 49151)
             error = String.format("Ignite client port %s is out of valid ports range 1024...49151", addr.getPort());
+        else if (cfg.getHeartbeatInterval() <= 0)
+            error = "heartbeatInterval cannot be zero or less.";
 
         if (error != null)
             throw new IllegalArgumentException(error);
@@ -684,6 +705,7 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
 
         try {
             sock.send(buf, onDone);
+            lastSendMillis = System.currentTimeMillis();
         }
         catch (IgniteCheckedException e) {
             throw new ClientConnectionException(e.getMessage(), e);
@@ -706,8 +728,68 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
     }
 
     /**
+     * Initializes heartbeats.
+     *
+     * @param configuredInterval Configured heartbeat interval, in milliseconds.
+     * @return Heartbeat timer.
+     */
+    private Timer initHeartbeat(long configuredInterval) {
+        long heartbeatInterval = getHeartbeatInterval(configuredInterval);
+
+        Timer timer = new Timer("tcp-client-channel-heartbeats-" + hashCode());
+
+        timer.schedule(new HeartbeatTask(heartbeatInterval), heartbeatInterval, heartbeatInterval);
+
+        return timer;
+    }
+
+    /**
+     * Gets the heartbeat interval based on the configured value and served-side idle timeout.
+     *
+     * @param configuredInterval Configured interval.
+     * @return Resolved interval.
+     */
+    private long getHeartbeatInterval(long configuredInterval) {
+        long serverIdleTimeoutMs = service(ClientOperation.GET_IDLE_TIMEOUT, null, in -> in.in().readLong());
+
+        if (serverIdleTimeoutMs <= 0)
+            return configuredInterval;
+
+        long recommendedHeartbeatInterval = serverIdleTimeoutMs / 3;
+
+        if (recommendedHeartbeatInterval < MIN_RECOMMENDED_HEARTBEAT_INTERVAL)
+            recommendedHeartbeatInterval = MIN_RECOMMENDED_HEARTBEAT_INTERVAL;
+
+        return Math.min(configuredInterval, recommendedHeartbeatInterval);
+    }
+
+    /**
      *
      */
     private static class ClientRequestFuture extends GridFutureAdapter<ByteBuffer> {
+    }
+
+    /**
+     * Sends heartbeat messages.
+     */
+    private class HeartbeatTask extends TimerTask {
+        /** Heartbeat interval. */
+        private final long interval;
+
+        /** Constructor. */
+        public HeartbeatTask(long interval) {
+            this.interval = interval;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void run() {
+            try {
+                if (System.currentTimeMillis() - lastSendMillis > interval)
+                    service(ClientOperation.HEARTBEAT, null, null);
+            }
+            catch (Throwable ignored) {
+                // Ignore failed heartbeats.
+            }
+        }
     }
 }
