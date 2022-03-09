@@ -20,7 +20,7 @@ package org.apache.ignite.internal.cache.query.index.sorted.maintenance;
 import java.util.Objects;
 
 /**
- * {@link RebuildIndexAction}'s parameters.
+ * RebuildIndexAction's parameters.
  */
 public class MaintenanceRebuildIndexTarget {
     /** Cache id. */
