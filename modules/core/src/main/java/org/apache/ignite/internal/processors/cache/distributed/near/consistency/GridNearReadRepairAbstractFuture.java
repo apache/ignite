@@ -17,7 +17,9 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.near.consistency;
 
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -25,7 +27,9 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheEntryVersion;
+import org.apache.ignite.cache.ReadRepairStrategy;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.CacheConsistencyViolationEvent;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -33,6 +37,7 @@ import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException;
 import org.apache.ignite.internal.managers.eventstorage.GridEventStorageManager;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.EntryGetResult;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.IgniteCacheExpiryPolicy;
@@ -88,13 +93,16 @@ public abstract class GridNearReadRepairAbstractFuture extends GridFutureAdapter
     protected final IgniteInternalTx tx;
 
     /** Primaries per key. */
-    private volatile Map<KeyCacheObject, ClusterNode> primaries;
+    protected volatile Map<KeyCacheObject, ClusterNode> primaries;
+
+    /** Strategy. */
+    protected final ReadRepairStrategy strategy;
 
     /** Remap flag. */
     private final boolean canRemap;
 
     /** Latest mapped topology version. */
-    private AffinityTopologyVersion topVer;
+    private volatile AffinityTopologyVersion topVer;
 
     /**
      * Creates a new instance of GridNearReadRepairAbstractFuture.
@@ -102,6 +110,7 @@ public abstract class GridNearReadRepairAbstractFuture extends GridFutureAdapter
      * @param topVer Topology version.
      * @param ctx Cache context.
      * @param keys Keys.
+     * @param strategy Read repair strategy.
      * @param readThrough Read-through flag.
      * @param taskName Task name.
      * @param deserializeBinary Deserialize binary flag.
@@ -113,6 +122,7 @@ public abstract class GridNearReadRepairAbstractFuture extends GridFutureAdapter
         AffinityTopologyVersion topVer,
         GridCacheContext<KeyCacheObject, EntryGetResult> ctx,
         Collection<KeyCacheObject> keys,
+        ReadRepairStrategy strategy,
         boolean readThrough,
         String taskName,
         boolean deserializeBinary,
@@ -128,17 +138,26 @@ public abstract class GridNearReadRepairAbstractFuture extends GridFutureAdapter
         this.expiryPlc = expiryPlc;
         this.tx = tx;
 
+        assert strategy != null;
+
+        this.strategy = strategy;
+
         canRemap = topVer == null;
 
-        map(canRemap ? ctx.affinity().affinityTopologyVersion() : topVer);
+        this.topVer = canRemap ? ctx.affinity().affinityTopologyVersion() : topVer;
     }
 
     /**
-     * @param topVer Affinity topology version.
+     *
      */
-    protected synchronized void map(AffinityTopologyVersion topVer) {
-        this.topVer = topVer;
+    protected final void init() {
+        map();
+    }
 
+    /**
+     *
+     */
+    private synchronized void map() {
         assert futs.isEmpty() : "Remapping started without the clean-up.";
 
         Map<KeyCacheObject, ClusterNode> primaryNodes = new HashMap<>();
@@ -199,10 +218,12 @@ public abstract class GridNearReadRepairAbstractFuture extends GridFutureAdapter
     /**
      * @param topVer Topology version.
      */
-    protected void remap(AffinityTopologyVersion topVer) {
+    protected final void remap(AffinityTopologyVersion topVer) {
         futs.clear();
 
-        map(topVer);
+        this.topVer = topVer;
+
+        map();
     }
 
     /**
@@ -210,7 +231,7 @@ public abstract class GridNearReadRepairAbstractFuture extends GridFutureAdapter
      *
      * @param finished Future represents a result of GET operation.
      */
-    protected synchronized void onResult(IgniteInternalFuture<Map<KeyCacheObject, EntryGetResult>> finished) {
+    protected final synchronized void onResult(IgniteInternalFuture<Map<KeyCacheObject, EntryGetResult>> finished) {
         if (isDone() // All subfutures (including currently processing) were successfully finished at previous future processing.
             || (topVer == null) // Remapping, ignoring any updates until remapped.
             || !futs.containsValue((GridPartitionedGetFuture<KeyCacheObject, EntryGetResult>)finished)) // Remapped.
@@ -255,49 +276,116 @@ public abstract class GridNearReadRepairAbstractFuture extends GridFutureAdapter
     protected abstract void reduce();
 
     /**
+     * Checks consistency.
+     *
+     * @return Regular `get` result when data is consistent.
+     */
+    protected final Map<KeyCacheObject, EntryGetResult> check() throws IgniteCheckedException {
+        Map<KeyCacheObject, EntryGetResult> resMap = new HashMap<>(keys.size());
+        Set<KeyCacheObject> inconsistentKeys = new HashSet<>();
+
+        for (GridPartitionedGetFuture<KeyCacheObject, EntryGetResult> fut : futs.values()) {
+            for (KeyCacheObject key : fut.keys()) {
+                EntryGetResult curRes = fut.result().get(key);
+
+                if (!resMap.containsKey(key)) {
+                    resMap.put(key, curRes);
+
+                    continue;
+                }
+
+                EntryGetResult prevRes = resMap.get(key);
+
+                if (curRes != null) {
+                    if (prevRes == null || prevRes.version().compareTo(curRes.version()) != 0)
+                        inconsistentKeys.add(key);
+                    else {
+                        CacheObject curVal = curRes.value();
+                        CacheObject prevVal = prevRes.value();
+
+                        byte[] curBytes = curVal.valueBytes(ctx.cacheObjectContext());
+                        byte[] prevBytes = prevVal.valueBytes(ctx.cacheObjectContext());
+
+                        if (!Arrays.equals(curBytes, prevBytes))
+                            inconsistentKeys.add(key);
+
+                    }
+                }
+                else if (prevRes != null)
+                    inconsistentKeys.add(key);
+            }
+        }
+
+        if (!inconsistentKeys.isEmpty())
+            throw new IgniteConsistencyViolationException(inconsistentKeys);
+
+        return resMap;
+    }
+
+    /**
      * @param fixedEntries Fixed map.
      */
-    protected void recordConsistencyViolation(
-        Set<KeyCacheObject> inconsistentKeys,
-        Map<KeyCacheObject, EntryGetResult> fixedEntries
+    protected final void recordConsistencyViolation(
+        Collection<KeyCacheObject> inconsistentKeys,
+        Map<KeyCacheObject, EntryGetResult> fixedEntries,
+        ReadRepairStrategy strategy
     ) {
         GridEventStorageManager evtMgr = ctx.gridEvents();
 
         if (!evtMgr.isRecordable(EVT_CONSISTENCY_VIOLATION))
             return;
 
-        Map<Object, Map<ClusterNode, CacheConsistencyViolationEvent.EntryInfo>> originalMap = new HashMap<>();
+        Map<Object, Map<ClusterNode, CacheConsistencyViolationEvent.EntryInfo>> entries = new HashMap<>();
 
         for (Map.Entry<ClusterNode, GridPartitionedGetFuture<KeyCacheObject, EntryGetResult>> pair : futs.entrySet()) {
             ClusterNode node = pair.getKey();
 
             GridPartitionedGetFuture<KeyCacheObject, EntryGetResult> fut = pair.getValue();
 
-            for (Map.Entry<KeyCacheObject, EntryGetResult> entry : fut.result().entrySet()) {
-                KeyCacheObject key = entry.getKey();
-
+            for (KeyCacheObject key : fut.keys()) {
                 if (inconsistentKeys.contains(key)) {
-                    EntryGetResult res = entry.getValue();
-                    CacheEntryVersion ver = res.version();
-
-                    Object val = ctx.unwrapBinaryIfNeeded(res.value(), !deserializeBinary, false, null);
-
                     Map<ClusterNode, CacheConsistencyViolationEvent.EntryInfo> map =
-                        originalMap.computeIfAbsent(
-                            ctx.unwrapBinaryIfNeeded(key, false, false, null), k -> new HashMap<>());
+                        entries.computeIfAbsent(
+                            ctx.unwrapBinaryIfNeeded(key, !deserializeBinary, false, null), k -> new HashMap<>());
+
+                    EntryGetResult res = fut.result().get(key);
+                    CacheEntryVersion ver = res != null ? res.version() : null;
+
+                    Object val = res != null ? ctx.unwrapBinaryIfNeeded(res.value(), !deserializeBinary, false, null) : null;
 
                     boolean primary = primaries.get(key).equals(fut.affNode());
-                    boolean correct = fixedEntries != null && fixedEntries.get(key).equals(res);
+                    boolean correct = fixedEntries != null &&
+                        ((fixedEntries.get(key) != null && fixedEntries.get(key).equals(res)) ||
+                            (fixedEntries.get(key) == null && res == null));
 
                     map.put(node, new EventEntryInfo(val, ver, primary, correct));
                 }
             }
         }
 
+        Map<Object, Object> fixed;
+
+        if (fixedEntries == null)
+            fixed = Collections.emptyMap();
+        else {
+            fixed = new HashMap<>();
+
+            for (Map.Entry<KeyCacheObject, EntryGetResult> entry : fixedEntries.entrySet()) {
+                Object key = ctx.unwrapBinaryIfNeeded(entry.getKey(), !deserializeBinary, false, null);
+                Object val = entry.getValue() != null ?
+                    ctx.unwrapBinaryIfNeeded(entry.getValue().value(), !deserializeBinary, false, null) : null;
+
+                fixed.put(key, val);
+            }
+        }
+
         evtMgr.record(new CacheConsistencyViolationEvent(
+            ctx.name(),
             ctx.discovery().localNode(),
-            "Consistency violation fixed.",
-            originalMap));
+            "Consistency violation was " + (fixed == null ? "NOT " : "") + "fixed.",
+            entries,
+            fixed,
+            strategy));
     }
 
     /**

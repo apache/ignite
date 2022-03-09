@@ -148,7 +148,7 @@ public abstract class H2IndexCostedBase extends BaseIndex {
                     if (colStats == null) {
                         double cardinality = (double)column.getSelectivity() / 100;
                         totalCardinality = 1 - (1 - totalCardinality) * (1 - cardinality);
-                        distinctRows = Math.round((double) rowCount * totalCardinality);
+                        distinctRows = Math.round((double)rowCount * totalCardinality);
                     }
                     else {
                         double cardinality;
@@ -156,7 +156,7 @@ public abstract class H2IndexCostedBase extends BaseIndex {
                         if (nonNulls == 0)
                             cardinality = 1;
                         else
-                            cardinality = (double) colStats.distinct() / nonNulls;
+                            cardinality = (double)colStats.distinct() / nonNulls;
                         totalCardinality = 1 - (1 - totalCardinality) * (1 - cardinality);
                         distinctRows = Math.round(rowCount * totalCardinality);
                     }
@@ -590,7 +590,7 @@ public abstract class H2IndexCostedBase extends BaseIndex {
         boolean isScanIndex,
         HashSet<Column> allColumnsSet
     ) {
-        ObjectStatisticsImpl locTblStats = (ObjectStatisticsImpl) tbl.tableStatistics();
+        ObjectStatisticsImpl locTblStats = (ObjectStatisticsImpl)tbl.tableStatistics();
 
         if (locTblStats != null)
             rowCount = locTblStats.rowCount();

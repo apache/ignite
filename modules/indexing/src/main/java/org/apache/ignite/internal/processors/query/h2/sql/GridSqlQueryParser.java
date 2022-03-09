@@ -524,6 +524,12 @@ public class GridSqlQueryParser {
     private static final String PARAM_PARALLELISM = "PARALLELISM";
 
     /** */
+    private static final String PARAM_PK_INLINE_SIZE = "PK_INLINE_SIZE";
+
+    /** */
+    private static final String PARAM_AFFINITY_INDEX_INLINE_SIZE = "AFFINITY_INDEX_INLINE_SIZE";
+
+    /** */
     private final IdentityHashMap<Object, Object> h2ObjToGridObj = new IdentityHashMap<>();
 
     /** */
@@ -683,7 +689,7 @@ public class GridSqlQueryParser {
                         IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
                 }
 
-                Query qry = VIEW_QUERY.get((TableView) tbl);
+                Query qry = VIEW_QUERY.get((TableView)tbl);
 
                 res = new GridSqlSubquery(parseQuery(qry));
             }
@@ -1691,6 +1697,24 @@ public class GridSqlQueryParser {
 
                 break;
 
+            case PARAM_PK_INLINE_SIZE:
+                ensureNotEmpty(name, val);
+
+                int pkInlineSize = parseIntParam(PARAM_PK_INLINE_SIZE, val);
+
+                res.primaryKeyInlineSize(pkInlineSize);
+
+                break;
+
+            case PARAM_AFFINITY_INDEX_INLINE_SIZE:
+                ensureNotEmpty(name, val);
+
+                int affInlineSize = parseIntParam(PARAM_AFFINITY_INDEX_INLINE_SIZE, val);
+
+                res.affinityKeyInlineSize(affInlineSize);
+
+                break;
+
             default:
                 throw new IgniteSQLException("Unsupported parameter: " + name, IgniteQueryErrorCode.PARSING);
         }
@@ -1788,7 +1812,7 @@ public class GridSqlQueryParser {
 
         assert table instanceof GridH2Table : table;
 
-        return (GridH2Table) table;
+        return (GridH2Table)table;
     }
 
     /**
@@ -1894,13 +1918,13 @@ public class GridSqlQueryParser {
         // check all involved caches
         for (Object o : parserObjects) {
             if (o instanceof GridSqlMerge)
-                o = ((GridSqlMerge) o).into();
+                o = ((GridSqlMerge)o).into();
             else if (o instanceof GridSqlInsert)
-                o = ((GridSqlInsert) o).into();
+                o = ((GridSqlInsert)o).into();
             else if (o instanceof GridSqlUpdate)
-                o = ((GridSqlUpdate) o).target();
+                o = ((GridSqlUpdate)o).target();
             else if (o instanceof GridSqlDelete)
-                o = ((GridSqlDelete) o).from();
+                o = ((GridSqlDelete)o).from();
 
             if (o instanceof GridSqlAlias)
                 o = GridSqlAlias.unwrap((GridSqlAst)o);

@@ -49,7 +49,7 @@
                         <configuration>
                             <excludeTransitive>false</excludeTransitive>
                             <excludeArtifactIds>
-                                fastutil,h2,ignite-shmem,annotations,arpack_combined_all,
+                                fastutil,h2,annotations,arpack_combined_all,
                                 cache-api,commons-math3,commons-rng-client-api,commons-rng-core,
                                 commons-rng-simple,core,ignite-ml
                             </excludeArtifactIds>
@@ -86,6 +86,12 @@
             <groupId>org.apache.hadoop</groupId>
             <artifactId>hadoop-common</artifactId>
             <version>2.9.1</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.slf4j</groupId>
+                    <artifactId>slf4j-log4j12</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
 
         <dependency>

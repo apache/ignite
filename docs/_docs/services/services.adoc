@@ -45,9 +45,9 @@ Refer to a service example implementation in the Apache Ignite link:{githubUrl}/
 A service implements the javadoc:org.apache.ignite.services.Service[Service] interface.
 The `Service` interface has three methods:
 
-* `init(ServiceContext)`: this method is called by Ignite before the service is deployed (and before the `execute()` method is called)
-* `execute(ServiceContext)`: starts execution of the service
-* `cancel(ServiceContext)`:  cancels service execution
+* `init()`: this method is called by Ignite before the service is deployed (and before the `execute()` method is called)
+* `execute()`: starts execution of the service
+* `cancel()`:  cancels service execution
 
 //The service must be available in the classpash of all server nodes. *TODO: deployment options*
 
@@ -261,6 +261,35 @@ Use the following procedure to redeploy the service:
 
 In this way, you don't have to stop the server nodes, so you don't interrupt the operation of your cluster.
 
+== Service Statistics
+
+You can measure durations of your service's methods. If you want this analytics, enable service statistics in the
+service configuration. Service statistics are collected under name "Services" in
+link:monitoring-metrics/new-metrics-system.adoc[metrics], in
+link:monitoring-metrics/system-views.adoc[system views], and in JMX.
+
+[tabs]
+--
+tab:Java[]
+[source, java]
+----
+include::{javaFile}[tags=start-with-statistics, indent=0]
+----
+tab:C#/.NET[]
+tab:C++[]
+--
+
+[NOTE]
+====
+You should be aware:
+
+1. Direct references to the services like `IgniteServices.service(name)` corrupt the statistics. Use the proxies
+instead (`IgniteServices.serviceProxy(...)`).
+2. Overloaded service methods have the same metric by the method name.
+3. Service statistics do not take in account serialization and network issues.
+4. Service statistics slows down the invocations of service methods. It's not
+an issue for real jobs like working with a DB or a cache.
+====
 
 // TODO: add how to  call java services from .NET
 

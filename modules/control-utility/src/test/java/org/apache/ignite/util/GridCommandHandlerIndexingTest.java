@@ -244,19 +244,9 @@ public class GridCommandHandlerIndexingTest extends GridCommandHandlerClusterPer
 
         forceCheckpoint();
 
-        File idxPath = indexPartition(ignite, GROUP_NAME);
+        enableCheckpoints(ignite, false);
 
-        stopAllGrids();
-
-        corruptIndexPartition(idxPath, 1024, 4096);
-
-        startGrids(GRID_CNT);
-
-        awaitPartitionMapExchange();
-
-        forceCheckpoint();
-
-        enableCheckpoints(G.allGrids(), false);
+        corruptIndexPartition(indexPartition(ignite, GROUP_NAME), 1024, 4096);
 
         injectTestSystemOut();
 
@@ -321,7 +311,7 @@ public class GridCommandHandlerIndexingTest extends GridCommandHandlerClusterPer
     private File indexPartition(Ignite ig, String groupName) {
         IgniteEx ig0 = (IgniteEx)ig;
 
-        FilePageStoreManager pageStoreManager = ((FilePageStoreManager) ig0.context().cache().context().pageStore());
+        FilePageStoreManager pageStoreManager = ((FilePageStoreManager)ig0.context().cache().context().pageStore());
 
         return new File(pageStoreManager.cacheWorkDir(true, groupName), INDEX_FILE_NAME);
     }

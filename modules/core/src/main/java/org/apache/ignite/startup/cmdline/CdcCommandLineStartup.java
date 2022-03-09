@@ -17,15 +17,10 @@
 
 package org.apache.ignite.startup.cmdline;
 
-import java.net.URL;
-import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteSystemProperties;
-import org.apache.ignite.cdc.CdcConfiguration;
 import org.apache.ignite.cdc.CdcLoader;
 import org.apache.ignite.internal.cdc.CdcMain;
-import org.apache.ignite.internal.util.spring.IgniteSpringHelper;
 import org.apache.ignite.internal.util.typedef.X;
 import org.jetbrains.annotations.Nullable;
 
@@ -113,24 +108,6 @@ public class CdcCommandLineStartup {
 
             exit("Failed to run CDC: " + e.getMessage() + note, false, -1);
         }
-    }
-
-    /**
-     * @param cfgUrl String configuration URL.
-     * @param spring Ignite spring helper.
-     * @return CDC consumer defined in spring configuration.
-     * @throws IgniteCheckedException in case of load error.
-     */
-    private static CdcConfiguration consumerConfig(
-        URL cfgUrl,
-        IgniteSpringHelper spring
-    ) throws IgniteCheckedException {
-        Map<Class<?>, Object> cdcCfgs = spring.loadBeans(cfgUrl, CdcConfiguration.class);
-
-        if (cdcCfgs == null || cdcCfgs.size() != 1)
-            exit("Exact 1 CaptureDataChangeConfiguration configuration should be defined", false, 1);
-
-        return (CdcConfiguration)cdcCfgs.values().iterator().next();
     }
 
     /**

@@ -17,7 +17,26 @@
 
 <Project>
     <PropertyGroup>
+        <LangVersion>8</LangVersion>
+
         <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
         <WarningsAsErrors/>
+
+        <Company>Apache Software Foundation</Company>
+        <Authors>Apache Ignite</Authors>
+        <Copyright>© Apache Software Foundation</Copyright>
+        <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
+        <RepositoryUrl>https://github.com/apache/ignite</RepositoryUrl>
+        <RepositoryType>git</RepositoryType>
+        <PackageProjectUrl>https://ignite.apache.org/</PackageProjectUrl>
+        <PackageIcon>logo_ignite_128x128.png</PackageIcon>
+        <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+        <PackageTags>Apache;Ignite;In-Memory;Distributed;Computing;SQL;NoSQL;Database;Cache;Grid;Map;Reduce;LINQ</PackageTags>
     </PropertyGroup>
+    <ItemGroup>
+        <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies" Version="1.0.2" PrivateAssets="All" />
+    </ItemGroup>
+    <ItemGroup>
+        <None Include="$(MSBuildThisFileDirectory)\logo_ignite_128x128.png" Pack="true" PackagePath=""/>
+    </ItemGroup>
 </Project>

@@ -41,9 +41,14 @@ namespace Apache.Ignite.Core.Tests
     using Apache.Ignite.Core.Impl.Client;
     using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Impl.Unmanaged.Jni;
+    using Apache.Ignite.Core.Lifecycle;
     using Apache.Ignite.Core.Log;
+    using Apache.Ignite.Core.Resource;
     using Apache.Ignite.Core.Tests.Process;
     using NUnit.Framework;
+    using NUnit.Framework.Interfaces;
+    using NUnit.Framework.Internal;
+    using ILogger = Apache.Ignite.Core.Log.ILogger;
 
     /// <summary>
     /// Test utility methods.
@@ -439,19 +444,18 @@ namespace Apache.Ignite.Core.Tests
         /// <param name="timeout">Timeout, in milliseconds.</param>
         public static void AssertHandleRegistryHasItems(IIgnite grid, int expectedCount, int timeout)
         {
-            var handleRegistry = ((Ignite)grid).HandleRegistry;
+            Func<IEnumerable<KeyValuePair<long, object>>> getItems = () =>
+                ((Ignite)grid).HandleRegistry.GetItems().Where(x => !(x.Value is LifecycleHandlerHolder));
 
-            expectedCount++;  // Skip default lifecycle bean
-
-            if (WaitForCondition(() => handleRegistry.Count == expectedCount, timeout))
+            if (WaitForCondition(() => getItems().Count() == expectedCount, timeout))
                 return;
 
-            var items = handleRegistry.GetItems().Where(x => !(x.Value is LifecycleHandlerHolder)).ToList();
+            var items = getItems().ToList();
 
             if (items.Any())
             {
                 Assert.Fail("HandleRegistry is not empty in grid '{0}' (expected {1}, actual {2}):\n '{3}'",
-                    grid.Name, expectedCount, handleRegistry.Count,
+                    grid.Name, expectedCount, items.Count,
                     items.Select(x => x.ToString()).Aggregate((x, y) => x + "\n" + y));
             }
         }
@@ -594,7 +598,7 @@ namespace Apache.Ignite.Core.Tests
         /// <summary>
         /// Gets the default code-based test configuration.
         /// </summary>
-        public static IgniteConfiguration GetTestConfiguration(bool? jvmDebug = null, string name = null)
+        public static IgniteConfiguration GetTestConfiguration(bool? jvmDebug = null, string name = null, bool noLogger = false)
         {
             return new IgniteConfiguration
             {
@@ -616,7 +620,7 @@ namespace Apache.Ignite.Core.Tests
                 },
                 FailureHandler = new NoOpFailureHandler(),
                 WorkDirectory = WorkDir,
-                Logger = new TestContextLogger()
+                Logger = noLogger ? null : new TestContextLogger()
             };
         }
 
@@ -654,10 +658,11 @@ namespace Apache.Ignite.Core.Tests
 
             try
             {
-                proc.AttachProcessConsoleReader();
+                var reader = new ListDataReader();
+                proc.AttachProcessConsoleReader(reader, new IgniteProcessConsoleOutputReader());
 
-                Assert.IsTrue(proc.WaitForExit(50000));
-                Assert.AreEqual(0, proc.ExitCode);
+                Assert.IsTrue(proc.WaitForExit(50000), string.Join("\n", reader.GetOutput()));
+                Assert.AreEqual(0, proc.ExitCode, string.Join("\n", reader.GetOutput()));
             }
             finally
             {
@@ -690,6 +695,19 @@ namespace Apache.Ignite.Core.Tests
         /// </summary>
         public class TestContextLogger : ILogger
         {
+            private readonly TestExecutionContext _ctx = TestExecutionContext.CurrentContext;
+
+            private readonly ITestListener _listener;
+
+            public TestContextLogger()
+            {
+                var prop = _ctx.GetType().GetProperty("Listener", BindingFlags.Instance | BindingFlags.NonPublic);
+
+                Debug.Assert(prop != null);
+
+                _listener = (ITestListener)prop.GetValue(_ctx);
+            }
+
             /** <inheritdoc /> */
             public void Log(LogLevel level, string message, object[] args, IFormatProvider formatProvider,
                 string category, string nativeErrorInfo, Exception ex)
@@ -703,11 +721,7 @@ namespace Apache.Ignite.Core.Tests
                     ? string.Format(formatProvider ?? CultureInfo.InvariantCulture, message, args)
                     : message;
 
-#if NETCOREAPP
-                TestContext.Progress.WriteLine(text);
-#else
-                Console.WriteLine(text);
-#endif
+                _listener.TestOutput(new TestOutput(text + Environment.NewLine, "Progress", _ctx.CurrentTest?.Id, _ctx.CurrentTest?.FullName));
             }
 
             /** <inheritdoc /> */
@@ -715,6 +729,27 @@ namespace Apache.Ignite.Core.Tests
             {
                 return level >= LogLevel.Info;
             }
+        }
+    }
+
+    /** */
+    public  class SetUseBinaryArray : ILifecycleHandler
+    {
+        /** Task name. */
+        private const string SetUseTypedArrayTask = "org.apache.ignite.platform.PlatformSetUseBinaryArrayTask";
+
+        /** */
+        [InstanceResource]
+        private readonly IIgnite _ignite = null;
+
+        /** <inheritdoc /> */
+        public void OnLifecycleEvent(LifecycleEventType evt)
+        {
+            if (evt != LifecycleEventType.AfterNodeStart && evt != LifecycleEventType.BeforeNodeStop)
+                return;
+
+            _ignite.GetCompute()
+                .ExecuteJavaTask<object>(SetUseTypedArrayTask, evt == LifecycleEventType.AfterNodeStart);
         }
     }
 }

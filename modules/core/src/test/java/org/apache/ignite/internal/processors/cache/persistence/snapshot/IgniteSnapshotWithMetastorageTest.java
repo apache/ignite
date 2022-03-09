@@ -21,6 +21,7 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.FutureTask;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -140,7 +141,7 @@ public class IgniteSnapshotWithMetastorageTest extends AbstractSnapshotSelfTest 
     public void testMetastorageUpdateOnSnapshotFail() throws Exception {
         AtomicInteger keyCnt = new AtomicInteger();
         AtomicBoolean stop = new AtomicBoolean();
-        Set<String> writtenKeys = new TreeSet<>();
+        Set<String> writtenKeys = new ConcurrentSkipListSet<>();
 
         IgniteEx ignite = startGridsWithCache(2, dfltCacheCfg, CACHE_KEYS_RANGE);
 

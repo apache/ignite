@@ -88,6 +88,7 @@ import static org.apache.ignite.internal.processors.cache.GridCacheOperation.REL
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.UPDATE;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.EVICTED;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.RENTING;
+import static org.apache.ignite.internal.processors.cache.version.GridCacheVersionEx.addConflictVersion;
 import static org.apache.ignite.internal.processors.dr.GridDrType.DR_BACKUP;
 import static org.apache.ignite.internal.processors.dr.GridDrType.DR_NONE;
 import static org.apache.ignite.transactions.TransactionState.COMMITTED;
@@ -628,7 +629,7 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                                                     val,
                                                     op,
                                                     nearXidVersion(),
-                                                    writeVersion(),
+                                                    addConflictVersion(writeVersion(), txEntry.conflictVersion()),
                                                     0,
                                                     txEntry.key().partition(),
                                                     txEntry.updateCounter(),
@@ -963,9 +964,9 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
             if (e instanceof IgniteCheckedException)
                 throw new IgniteException(e);
             else if (e instanceof RuntimeException)
-                throw (RuntimeException) e;
+                throw (RuntimeException)e;
             else
-                throw (Error) e;
+                throw (Error)e;
         }
     }
 

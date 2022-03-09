@@ -65,8 +65,10 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.MalformedURLException;
 import java.net.NetworkInterface;
+import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketException;
+import java.net.SocketTimeoutException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
@@ -199,7 +201,6 @@ import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
 import org.apache.ignite.internal.IgniteDeploymentCheckedException;
-import org.apache.ignite.internal.IgniteFeatures;
 import org.apache.ignite.internal.IgniteFutureCancelledCheckedException;
 import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -231,9 +232,9 @@ import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxSerializationCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.internal.util.future.IgniteFinishedFutureImpl;
 import org.apache.ignite.internal.util.future.IgniteFutureImpl;
 import org.apache.ignite.internal.util.io.GridFilenameUtils;
-import org.apache.ignite.internal.util.ipc.shmem.IpcSharedMemoryNativeLoader;
 import org.apache.ignite.internal.util.lang.GridClosureException;
 import org.apache.ignite.internal.util.lang.GridPeerDeployAware;
 import org.apache.ignite.internal.util.lang.GridTuple;
@@ -251,6 +252,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteClosure;
+import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteFutureCancelledException;
 import org.apache.ignite.lang.IgniteFutureTimeoutException;
 import org.apache.ignite.lang.IgniteOutClosure;
@@ -583,9 +585,6 @@ public abstract class IgniteUtils {
     /** */
     private static final ConcurrentMap<ClassLoader, ConcurrentMap<String, Class>> classCache =
         new ConcurrentHashMap<>();
-
-    /** */
-    private static volatile Boolean hasShmem;
 
     /** Object.hashCode() */
     private static Method hashCodeMtd;
@@ -4242,9 +4241,12 @@ public abstract class IgniteUtils {
             return;
 
         try {
-            // Avoid tls 1.3 incompatibility https://bugs.openjdk.java.net/browse/JDK-8208526
-            sock.shutdownOutput();
-            sock.shutdownInput();
+            // Closing output and input first to avoid tls 1.3 incompatibility
+            // https://bugs.openjdk.java.net/browse/JDK-8208526
+            if (!sock.isOutputShutdown())
+                sock.shutdownOutput();
+            if (!sock.isInputShutdown())
+                sock.shutdownInput();
         }
         catch (ClosedChannelException | SocketException ex) {
             LT.warn(log, "Failed to shutdown socket", ex);
@@ -5534,6 +5536,24 @@ public abstract class IgniteUtils {
     }
 
     /**
+     * Writes long array to output stream.
+     *
+     * @param out Output stream to write to.
+     * @param arr Array to write.
+     * @throws IOException If write failed.
+     */
+    public static void writeLongArray(DataOutput out, @Nullable long[] arr) throws IOException {
+        if (arr == null)
+            out.writeInt(-1);
+        else {
+            out.writeInt(arr.length);
+
+            for (long b : arr)
+                out.writeLong(b);
+        }
+    }
+
+    /**
      * Reads boolean array from input stream accounting for <tt>null</tt> values.
      *
      * @param in Stream to read from.
@@ -5571,6 +5591,27 @@ public abstract class IgniteUtils {
 
         for (int i = 0; i < len; i++)
             res[i] = in.readInt();
+
+        return res;
+    }
+
+    /**
+     * Reads long array from input stream.
+     *
+     * @param in Stream to read from.
+     * @return Read long array, possibly <tt>null</tt>.
+     * @throws IOException If read failed.
+     */
+    @Nullable public static long[] readLongArray(DataInput in) throws IOException {
+        int len = in.readInt();
+
+        if (len == -1)
+            return null; // Value "-1" indicates null.
+
+        long[] res = new long[len];
+
+        for (int i = 0; i < len; i++)
+            res[i] = in.readLong();
 
         return res;
     }
@@ -6111,6 +6152,25 @@ public abstract class IgniteUtils {
     }
 
     /**
+     * Provides all interfaces of {@code cls} including inherited ones. Excludes duplicated ones in case of multiple
+     * inheritance.
+     *
+     * @param cls Class to search for interfaces.
+     * @return Collection of interfaces of {@code cls}.
+     */
+    public static Collection<Class<?>> allInterfaces(Class<?> cls) {
+        Set<Class<?>> interfaces = new HashSet<>();
+
+        while (cls != null) {
+            interfaces.addAll(Arrays.asList(cls.getInterfaces()));
+
+            cls = cls.getSuperclass();
+        }
+
+        return interfaces;
+    }
+
+    /**
      * Gets simple class name taking care of empty names.
      *
      * @param cls Class to get the name for.
@@ -6261,7 +6321,7 @@ public abstract class IgniteUtils {
             return -1;
         }
 
-        return (attr instanceof Long) ? (Long) attr : -1;
+        return (attr instanceof Long) ? (Long)attr : -1;
     }
 
     /**
@@ -10455,28 +10515,6 @@ public abstract class IgniteUtils {
     }
 
     /**
-     * @return Whether shared memory libraries exist.
-     */
-    public static boolean hasSharedMemory() {
-        if (hasShmem == null) {
-            if (isWindows())
-                hasShmem = false;
-            else {
-                try {
-                    IpcSharedMemoryNativeLoader.load(null);
-
-                    hasShmem = true;
-                }
-                catch (IgniteCheckedException ignore) {
-                    hasShmem = false;
-                }
-            }
-        }
-
-        return hasShmem;
-    }
-
-    /**
      * @param lock Lock.
      * @throws IgniteInterruptedCheckedException If interrupted.
      */
@@ -12013,29 +12051,32 @@ public abstract class IgniteUtils {
     }
 
     /**
-     * Broadcasts given job to nodes that support ignite feature.
+     * Broadcasts given job to nodes that match filter.
      *
      * @param kctx Kernal context.
      * @param job Ignite job.
      * @param srvrsOnly Broadcast only on server nodes.
-     * @param feature Ignite feature.
+     * @param nodeFilter Node filter.
      */
-    public static void broadcastToNodesSupportingFeature(
+    public static IgniteFuture<Void> broadcastToNodesWithFilterAsync(
         GridKernalContext kctx,
         IgniteRunnable job,
         boolean srvrsOnly,
-        IgniteFeatures feature
+        IgnitePredicate<ClusterNode> nodeFilter
     ) {
         ClusterGroup cl = kctx.grid().cluster();
 
         if (srvrsOnly)
             cl = cl.forServers();
 
-        ClusterGroup grp = cl.forPredicate(node -> IgniteFeatures.nodeSupports(node, feature));
+        ClusterGroup grp = nodeFilter != null ? cl.forPredicate(nodeFilter) : cl;
+
+        if (grp.nodes().isEmpty())
+            return new IgniteFinishedFutureImpl<>();
 
         IgniteCompute compute = kctx.grid().compute(grp);
 
-        compute.broadcast(job);
+        return compute.broadcastAsync(job);
     }
 
     /**
@@ -12249,4 +12290,24 @@ public abstract class IgniteUtils {
         return safeAbs(hash % size);
     }
 
+    /**
+     * Invokes {@link ServerSocket#accept()} method on the passed server socked, working around the
+     * https://bugs.openjdk.java.net/browse/JDK-8247750 in the process.
+     *
+     * @param srvrSock Server socket.
+     * @return New socket.
+     * @throws IOException If an I/O error occurs when waiting for a connection.
+     * @see ServerSocket#accept()
+     */
+    public static Socket acceptServerSocket(ServerSocket srvrSock) throws IOException {
+        while (true) {
+            try {
+                return srvrSock.accept();
+            }
+            catch (SocketTimeoutException e) {
+                if (srvrSock.getSoTimeout() > 0)
+                    throw e;
+            }
+        }
+    }
 }

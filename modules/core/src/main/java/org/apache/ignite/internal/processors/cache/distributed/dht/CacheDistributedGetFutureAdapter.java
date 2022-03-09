@@ -203,6 +203,13 @@ public abstract class CacheDistributedGetFutureAdapter<K, V>
     }
 
     /**
+     * @return Keys.
+     */
+    public Collection<KeyCacheObject> keys() {
+        return keys;
+    }
+
+    /**
      * @param part Partition.
      * @return {@code True} if partition is in owned state.
      */

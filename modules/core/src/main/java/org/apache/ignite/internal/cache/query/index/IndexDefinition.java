@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.cache.query.index;
 
-import java.util.List;
+import java.util.LinkedHashMap;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyDefinition;
 
 /**
@@ -30,7 +30,7 @@ public interface IndexDefinition {
     public IndexName idxName();
 
     /**
-     * @return List of index key definitions.
+     * @return Ordered map of index field names to index key definitions.
      */
-    public List<IndexKeyDefinition> indexKeyDefinitions();
+    public LinkedHashMap<String, IndexKeyDefinition> indexKeyDefinitions();
 }

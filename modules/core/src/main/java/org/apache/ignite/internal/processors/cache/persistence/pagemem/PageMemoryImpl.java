@@ -929,6 +929,12 @@ public class PageMemoryImpl implements PageMemoryEx {
 
                     tryToRestorePage(fullId, buf);
 
+                    // Mark the page as dirty because it has been restored.
+                    setDirty(fullId, lockedPageAbsPtr, true, false);
+
+                    // And save the page snapshot in the WAL.
+                    beforeReleaseWrite(fullId, pageAddr, true);
+
                     statHolder.trackPhysicalAndLogicalRead(pageAddr);
 
                     dataRegionMetrics.onPageRead();
@@ -946,7 +952,7 @@ public class PageMemoryImpl implements PageMemoryEx {
         int resCntr = checkpointPool.releaseFreePage(tmpBufPtr);
 
         if (resCntr == checkpointBufferPagesSize() / 2 && writeThrottle != null)
-            writeThrottle.tryWakeupThrottledThreads();
+            writeThrottle.wakeupThrottledThreads();
     }
 
     /**
@@ -1900,8 +1906,8 @@ public class PageMemoryImpl implements PageMemoryEx {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean shouldThrottle() {
-        return writeThrottle.shouldThrottle();
+    @Override public boolean isCpBufferOverflowThresholdExceeded() {
+        return writeThrottle.isCpBufferOverflowThresholdExceeded();
     }
 
     /** {@inheritDoc} */

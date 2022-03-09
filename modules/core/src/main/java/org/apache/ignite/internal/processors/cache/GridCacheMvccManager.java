@@ -332,7 +332,7 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
 
         for (GridCacheFuture<?> fut : futs.values()) {
             if (fut instanceof GridDhtTxFinishFuture) {
-                GridDhtTxFinishFuture finishTxFuture = (GridDhtTxFinishFuture) fut;
+                GridDhtTxFinishFuture finishTxFuture = (GridDhtTxFinishFuture)fut;
 
                 if (cctx.tm().needWaitTransaction(finishTxFuture.tx(), topVer))
                     res.add(ignoreErrors(finishTxFuture));

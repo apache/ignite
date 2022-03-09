@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.h2.index;
 
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.stream.Collectors;
 import org.apache.ignite.internal.cache.query.index.IndexName;
@@ -40,7 +41,7 @@ import org.h2.value.CompareMode;
  */
 public class QueryIndexDefinition implements SortedIndexDefinition {
     /** Wrapped key definitions. */
-    private List<IndexKeyDefinition> keyDefs;
+    private LinkedHashMap<String, IndexKeyDefinition> keyDefs;
 
     /** List of unwrapped index columns. */
     private List<IndexColumn> h2UnwrappedCols;
@@ -126,7 +127,7 @@ public class QueryIndexDefinition implements SortedIndexDefinition {
     }
 
     /** {@inheritDoc} */
-    @Override public List<IndexKeyDefinition> indexKeyDefinitions() {
+    @Override public LinkedHashMap<String, IndexKeyDefinition> indexKeyDefinitions() {
         if (keyDefs == null)
             throw new IllegalStateException("Index key definitions is not initialized yet.");
 

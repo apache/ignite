@@ -56,6 +56,7 @@ import org.apache.ignite.cache.CacheEntryProcessor;
 import org.apache.ignite.cache.CacheManager;
 import org.apache.ignite.cache.CacheMetrics;
 import org.apache.ignite.cache.CachePeekMode;
+import org.apache.ignite.cache.ReadRepairStrategy;
 import org.apache.ignite.cache.query.AbstractContinuousQuery;
 import org.apache.ignite.cache.query.ContinuousQuery;
 import org.apache.ignite.cache.query.ContinuousQueryWithTransformer;
@@ -369,7 +370,7 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteCache<K, V> withReadRepair() {
+    @Override public IgniteCache<K, V> withReadRepair(ReadRepairStrategy strategy) {
         throw new UnsupportedOperationException();
     }
 
@@ -545,7 +546,7 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
         if (query instanceof TextQuery) {
             TextQuery q = (TextQuery)query;
 
-            qry = ctx.queries().createFullTextQuery(q.getType(), q.getText(), q.getLimit(), isKeepBinary);
+            qry = ctx.queries().createFullTextQuery(q.getType(), q.getText(), q.getLimit(), q.getPageSize(), isKeepBinary);
 
             if (grp != null)
                 qry.projection(grp);
@@ -571,7 +572,7 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
                 }, false);
         }
         else if (query instanceof IndexQuery) {
-            IndexQuery q = (IndexQuery) query;
+            IndexQuery q = (IndexQuery)query;
 
             qry = ctx.queries().createIndexQuery(q, isKeepBinary);
 
@@ -890,17 +891,17 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
 
         if (ctx.binaryMarshaller()) {
             if (qry instanceof SqlQuery) {
-                final SqlQuery sqlQry = (SqlQuery) qry;
+                final SqlQuery sqlQry = (SqlQuery)qry;
 
                 convertToBinary(sqlQry.getArgs());
             }
             else if (qry instanceof SpiQuery) {
-                final SpiQuery spiQry = (SpiQuery) qry;
+                final SpiQuery spiQry = (SpiQuery)qry;
 
                 convertToBinary(spiQry.getArgs());
             }
             else if (qry instanceof SqlFieldsQuery) {
-                final SqlFieldsQuery fieldsQry = (SqlFieldsQuery) qry;
+                final SqlFieldsQuery fieldsQry = (SqlFieldsQuery)qry;
 
                 convertToBinary(fieldsQry.getArgs());
             }
@@ -2101,13 +2102,13 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
             e = X.cause(e, CacheException.class);
 
         if (e instanceof IgniteCheckedException)
-            return CU.convertToCacheException((IgniteCheckedException) e);
+            return CU.convertToCacheException((IgniteCheckedException)e);
 
         if (X.hasCause(e, CacheStoppedException.class))
             return CU.convertToCacheException(X.cause(e, CacheStoppedException.class));
 
         if (e instanceof RuntimeException)
-            return (RuntimeException) e;
+            return (RuntimeException)e;
 
         throw new IllegalStateException("Unknown exception", e);
     }

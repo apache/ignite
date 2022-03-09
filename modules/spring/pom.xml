@@ -49,43 +49,7 @@
 
         <dependency>
             <groupId>org.springframework</groupId>
-            <artifactId>spring-core</artifactId>
-            <version>${spring.version}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.springframework</groupId>
-            <artifactId>spring-aop</artifactId>
-            <version>${spring.version}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.springframework</groupId>
-            <artifactId>spring-beans</artifactId>
-            <version>${spring.version}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.springframework</groupId>
             <artifactId>spring-context</artifactId>
-            <version>${spring.version}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.springframework</groupId>
-            <artifactId>spring-expression</artifactId>
-            <version>${spring.version}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.springframework</groupId>
-            <artifactId>spring-tx</artifactId>
-            <version>${spring.version}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.springframework</groupId>
-            <artifactId>spring-jdbc</artifactId>
             <version>${spring.version}</version>
         </dependency>
 
@@ -161,16 +125,27 @@
                     <instructions>
                         <Fragment-Host>${project.groupId}.ignite-core</Fragment-Host>
                         <Require-Bundle>
-                            org.apache.servicemix.bundles.spring-beans,
                             org.apache.servicemix.bundles.spring-context,
-                            org.apache.servicemix.bundles.spring-context-support,
-                            org.apache.servicemix.bundles.spring-core,
-                            org.apache.servicemix.bundles.spring-expression,
-                            org.apache.servicemix.bundles.spring-jdbc,
-                            org.apache.servicemix.bundles.spring-tx
                         </Require-Bundle>
                     </instructions>
                 </configuration>
+            </plugin>
+
+            <plugin>
+                <artifactId>maven-dependency-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>copy-libs</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>copy-dependencies</goal>
+                        </goals>
+                        <configuration>
+                            <includeGroupIds>org.springframework,commons-logging</includeGroupIds>
+                            <excludeTransitive>false</excludeTransitive>
+                        </configuration>
+                    </execution>
+                </executions>
             </plugin>
 
             <plugin>

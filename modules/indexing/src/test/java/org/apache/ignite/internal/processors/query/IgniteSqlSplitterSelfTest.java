@@ -1797,7 +1797,6 @@ public class IgniteSqlSplitterSelfTest extends AbstractIndexingCommonTest {
     /**
      *
      */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-1886")
     @Test
     public void testFunctionNpe() {
         IgniteCache<Integer, User> userCache = ignite(0).createCache(

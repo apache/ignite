@@ -17,6 +17,9 @@
 
 package org.apache.ignite.internal.processors.query.h2.index;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
 import org.apache.ignite.internal.binary.BinaryObjectImpl;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyDefinition;
@@ -56,10 +59,10 @@ public class QueryIndexRowHandler implements InlineIndexRowHandler {
 
     /** */
     public QueryIndexRowHandler(GridH2Table h2table, List<IndexColumn> h2IdxColumns,
-        List<IndexKeyDefinition> keyDefs, List<InlineIndexKeyType> keyTypes, IndexKeyTypeSettings keyTypeSettings) {
+        LinkedHashMap<String, IndexKeyDefinition> keyDefs, List<InlineIndexKeyType> keyTypes, IndexKeyTypeSettings keyTypeSettings) {
         this.h2IdxColumns = h2IdxColumns;
         this.keyTypes = keyTypes;
-        this.keyDefs = keyDefs;
+        this.keyDefs = Collections.unmodifiableList(new ArrayList<>(keyDefs.values()));
         this.h2Table = h2table;
         cacheDesc = h2table.rowDescriptor();
         this.keyTypeSettings = keyTypeSettings;

@@ -1654,6 +1654,11 @@ public class GridCacheContext<K, V> implements Externalizable {
         return conflictRslvr != null;
     }
 
+    /** @return Conflict resolver. */
+    public CacheVersionConflictResolver conflictResolver() {
+        return conflictRslvr;
+    }
+
     /**
      * Resolve DR conflict.
      *
@@ -1766,7 +1771,7 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @param keepBinary Keep binary flag.
      * @return Unwrapped collection.
      */
-    public Collection<Object> unwrapBinariesIfNeeded(Collection<Object> col, boolean keepBinary) {
+    public Collection<Object> unwrapBinariesIfNeeded(Collection<?> col, boolean keepBinary) {
         return CacheObjectUtils.unwrapBinariesIfNeeded(cacheObjCtx, col, keepBinary);
     }
 
@@ -2009,7 +2014,7 @@ public class GridCacheContext<K, V> implements Externalizable {
         final V1 v;
 
         if (!needVer)
-            v = (V1) val;
+            v = (V1)val;
         else if (getRes == null) {
             v = expireTime != 0 || ttl != 0
                 ? (V1)new EntryGetWithTtlResult(val, ver, false, expireTime, ttl)
@@ -2140,7 +2145,8 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @return {@code True} if it is possible to directly read offheap instead of using {@link GridCacheEntryEx#innerGet}.
      */
     public boolean readNoEntry(@Nullable IgniteCacheExpiryPolicy expiryPlc, boolean readers) {
-        return mvccEnabled() || (!config().isOnheapCacheEnabled() && !readers && expiryPlc == null);
+        return mvccEnabled()
+                || (!config().isOnheapCacheEnabled() && !readers && expiryPlc == null && config().getPlatformCacheConfiguration() == null);
     }
 
     /**

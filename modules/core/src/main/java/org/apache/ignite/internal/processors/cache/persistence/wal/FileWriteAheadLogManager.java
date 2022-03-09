@@ -70,6 +70,7 @@ import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.managers.eventstorage.GridEventStorageManager;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
+import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.MarshalledRecord;
 import org.apache.ignite.internal.pagemem.wal.record.MemoryRecoveryRecord;
 import org.apache.ignite.internal.pagemem.wal.record.PageSnapshot;
@@ -145,6 +146,7 @@ import static org.apache.ignite.events.EventType.EVT_WAL_SEGMENT_ARCHIVED;
 import static org.apache.ignite.events.EventType.EVT_WAL_SEGMENT_COMPACTED;
 import static org.apache.ignite.failure.FailureType.CRITICAL_ERROR;
 import static org.apache.ignite.failure.FailureType.SYSTEM_WORKER_TERMINATION;
+import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.DATA_RECORD_V2;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.TMP_SUFFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.ZIP_SUFFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.FileDescriptor.fileName;
@@ -342,8 +344,12 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
      */
     private final AtomicLong lastRecordLoggedMs = new AtomicLong();
 
-    /** Last rollover time. */
-    private AtomicLong lastRolloverMs;
+    /**
+     * Container with last {@link DataRecord} logged timestamp.<br> Zero value means there was no records logged to current
+     * segment, skip possible archiving for this case<br> Value is filled only for case {@link
+     * #walAutoArchiveAfterInactivity} > 0
+     */
+    private final AtomicLong lastDataRecordLoggedMs = new AtomicLong();
 
     /**
      * Cancellable task for {@link WALMode#BACKGROUND}, should be cancelled at shutdown.
@@ -416,9 +422,6 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         walForceArchiveTimeout = dsCfg.getWalForceArchiveTimeout();
 
         timeoutRolloverMux = (walAutoArchiveAfterInactivity > 0 || walForceArchiveTimeout > 0) ? new Object() : null;
-
-        if (walForceArchiveTimeout > 0)
-            lastRolloverMs = new AtomicLong();
 
         maxWalArchiveSize = dsCfg.getMaxWalArchiveSize();
 
@@ -796,8 +799,11 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         assert timeoutRolloverMux != null;
 
         synchronized (timeoutRolloverMux) {
+            if (timeoutRollover != null)
+                return;
+
             long nextEndTime = walForceArchiveTimeout > 0
-                ? nextTimeout(lastRolloverMs.get(), walForceArchiveTimeout)
+                ? nextTimeout(lastDataRecordLoggedMs.get(), walForceArchiveTimeout)
                 : nextTimeout(lastRecordLoggedMs.get(), walAutoArchiveAfterInactivity);
 
             cctx.time().addTimeoutObject(timeoutRollover = new TimeoutRollover(nextEndTime));
@@ -806,7 +812,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
     /** */
     private long nextTimeout(long lastEvt, long timeout) {
-        return lastEvt <= 0 ? U.currentTimeMillis() : lastEvt + timeout;
+        return (lastEvt <= 0 ? U.currentTimeMillis() : lastEvt) + timeout;
     }
 
     /** {@inheritDoc} */
@@ -827,7 +833,10 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             return; //no records were logged to current segment, does not consider inactivity.
 
         if (walForceArchiveTimeout > 0) {
-            if (!checkTimeout(lastRolloverMs, walForceArchiveTimeout))
+            if (lastDataRecordLoggedMs.get() == 0)
+                return; //no data records were logged to current segment, do not rollover.
+
+            if (!checkTimeout(lastDataRecordLoggedMs, walForceArchiveTimeout))
                 return;
         }
         else if (!checkTimeout(lastRecordLoggedMs, walAutoArchiveAfterInactivity))
@@ -933,8 +942,16 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             if (ptr != null) {
                 metrics.onWalRecordLogged(rec.size());
 
-                if (walAutoArchiveAfterInactivity > 0 || walForceArchiveTimeout > 0)
-                    lastRecordLoggedMs.set(U.currentTimeMillis());
+                if (walAutoArchiveAfterInactivity > 0 || walForceArchiveTimeout > 0) {
+                    long millis = U.currentTimeMillis();
+
+                    lastRecordLoggedMs.set(millis);
+
+                    // Only data records handled by CDC.
+                    // No need to forcefully rollover for other record types.
+                    if (walForceArchiveTimeout > 0 && rec.type() == DATA_RECORD_V2)
+                        lastDataRecordLoggedMs.set(millis);
+                }
 
                 return ptr;
             }
@@ -1365,7 +1382,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                 lastRecordLoggedMs.set(0);
 
                 if (walForceArchiveTimeout > 0)
-                    lastRolloverMs.set(U.currentTimeMillis());
+                    lastDataRecordLoggedMs.set(0);
             }
 
             // Let other threads to proceed with new segment.
@@ -1463,9 +1480,9 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                 }
 
                 if (e instanceof StorageException)
-                    throw (StorageException) e;
+                    throw (StorageException)e;
 
-                throw e instanceof IOException ? (IOException) e : new IOException(e);
+                throw e instanceof IOException ? (IOException)e : new IOException(e);
             }
         }
         catch (IOException e) {
@@ -2636,7 +2653,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
      */
     public static ByteBuffer prepareSerializerVersionBuffer(long idx, int ver, boolean compacted, ByteBuffer buf) {
         // Write record type.
-        buf.put((byte) (WALRecord.RecordType.HEADER_RECORD.ordinal() + 1));
+        buf.put((byte)(WALRecord.RecordType.HEADER_RECORD.ordinal() + 1));
 
         // Write position.
         RecordV1Serializer.putPosition(buf, new WALPointer(idx, 0, 0));
@@ -2841,7 +2858,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                     currDesc = zipFile;
             }
 
-            return (ReadFileHandle) super.initReadHandle(currDesc, start);
+            return (ReadFileHandle)super.initReadHandle(currDesc, start);
         }
 
         /** {@inheritDoc} */
@@ -2863,9 +2880,10 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
             if (start != null) {
                 if (!F.isEmpty(descs)) {
-                    if (descs[0].idx() > start.index())
+                    if (descs[0].idx() > start.index()) {
                         throw new IgniteCheckedException("WAL history is too short " +
                             "[descs=" + Arrays.asList(descs) + ", start=" + start + ']');
+                    }
 
                     for (AbstractFileDescriptor desc : descs) {
                         if (desc.idx() == start.index()) {
@@ -3514,11 +3532,11 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             assert timeoutRolloverMux != null;
 
             synchronized (timeoutRolloverMux) {
+                timeoutRollover = null;
+
                 if (!cancel) {
-                    if (log.isDebugEnabled()) {
-                        log.debug("Checking if WAL rollover required (" +
-                            new Time(U.currentTimeMillis()).toString() + ")");
-                    }
+                    if (log.isDebugEnabled())
+                        log.debug("Checking if WAL rollover required (" + new Time(U.currentTimeMillis()) + ")");
 
                     checkWalRolloverRequired();
 
@@ -3557,6 +3575,8 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                     timeoutRollover.cancel();
 
                     cctx.time().removeTimeoutObject(timeoutRollover);
+
+                    this.timeoutRollover = null;
                 }
             }
         }

@@ -28,6 +28,8 @@ import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteServices;
+import org.apache.ignite.internal.IgniteServicesImpl;
+import org.apache.ignite.internal.binary.BinaryArray;
 import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.processors.platform.PlatformAbstractTarget;
@@ -49,6 +51,8 @@ import org.apache.ignite.services.ServiceConfiguration;
 import org.apache.ignite.services.ServiceDeploymentException;
 import org.apache.ignite.services.ServiceDescriptor;
 import org.jetbrains.annotations.NotNull;
+
+import static org.apache.ignite.internal.IgniteServicesImpl.DFLT_TIMEOUT;
 
 /**
  * Interop services.
@@ -103,10 +107,10 @@ public class PlatformServices extends PlatformAbstractTarget {
     private static final int OP_DOTNET_DEPLOY_ALL_ASYNC = 16;
 
     /** */
-    private static final byte PLATFORM_JAVA = 0;
+    public static final byte PLATFORM_JAVA = 0;
 
     /** */
-    private static final byte PLATFORM_DOTNET = 1;
+    public static final byte PLATFORM_DOTNET = 1;
 
     /** */
     private static final CopyOnWriteConcurrentMap<T3<Class, String, Integer>, Method> SVC_METHODS
@@ -206,7 +210,7 @@ public class PlatformServices extends PlatformAbstractTarget {
                 PlatformUtils.writeNullableCollection(writer, svcs,
                     new PlatformWriterClosure<Service>() {
                         @Override public void write(BinaryRawWriterEx writer, Service svc) {
-                            writer.writeLong(((PlatformService) svc).pointer());
+                            writer.writeLong(((PlatformService)svc).pointer());
                         }
                     },
                     new IgnitePredicate<Service>() {
@@ -285,8 +289,10 @@ public class PlatformServices extends PlatformAbstractTarget {
                 else
                     args = null;
 
+                Map<String, Object> callAttrs = reader.readMap();
+
                 try {
-                    Object result = svc.invoke(mthdName, srvKeepBinary, args);
+                    Object result = svc.invoke(mthdName, srvKeepBinary, args, callAttrs);
 
                     PlatformUtils.writeInvocationResult(writer, result, null);
                 }
@@ -381,9 +387,9 @@ public class PlatformServices extends PlatformAbstractTarget {
                     throw new IgniteException("Failed to find deployed service: " + name);
 
                 Object proxy = PlatformService.class.isAssignableFrom(d.serviceClass())
-                    ? services.serviceProxy(name, PlatformService.class, sticky)
+                    ? ((IgniteServicesImpl)services).serviceProxy(name, PlatformService.class, sticky, DFLT_TIMEOUT, true)
                     : new GridServiceProxy<>(services.clusterGroup(), name, Service.class, sticky, 0,
-                        platformCtx.kernalContext());
+                        platformCtx.kernalContext(), null, true);
 
                 return new ServiceProxyHolder(proxy, d.serviceClass(), platformContext());
             }
@@ -605,13 +611,14 @@ public class PlatformServices extends PlatformAbstractTarget {
          * @param mthdName Method name.
          * @param srvKeepBinary Binary flag.
          * @param args Args.
+         * @param callAttrs Service call context attributes.
          * @return Invocation result.
          * @throws IgniteCheckedException On error.
          * @throws NoSuchMethodException On error.
          */
-        public Object invoke(String mthdName, boolean srvKeepBinary, Object[] args) throws Throwable {
+        public Object invoke(String mthdName, boolean srvKeepBinary, Object[] args, Map<String, Object> callAttrs) throws Throwable {
             if (isPlatformService())
-                return ((PlatformService)proxy).invokeMethod(mthdName, srvKeepBinary, args);
+                return ((PlatformService)proxy).invokeMethod(mthdName, srvKeepBinary, false, args, callAttrs);
             else {
                 assert proxy instanceof GridServiceProxy;
 
@@ -620,9 +627,11 @@ public class PlatformServices extends PlatformAbstractTarget {
                     args = PlatformUtils.unwrapBinariesInArray(args);
 
                 Method mtd = getMethod(serviceClass, mthdName, args);
-                convertArrayArgs(args, mtd);
 
-                return ((GridServiceProxy)proxy).invokeMethod(mtd, args);
+                if (!BinaryArray.useBinaryArrays())
+                    convertArrayArgs(args, mtd);
+
+                return ((GridServiceProxy)proxy).invokeMethod(mtd, args, callAttrs);
             }
         }
 

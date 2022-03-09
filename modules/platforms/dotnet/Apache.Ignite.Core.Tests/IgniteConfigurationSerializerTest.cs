@@ -331,8 +331,6 @@ namespace Apache.Ignite.Core.Tests
             Assert.AreEqual("cde", ds.StoragePath);
             Assert.AreEqual(TimeSpan.FromSeconds(7), ds.MetricsRateTimeInterval);
             Assert.AreEqual(8, ds.MetricsSubIntervalCount);
-            Assert.AreEqual(9, ds.SystemRegionInitialSize);
-            Assert.AreEqual(10, ds.SystemRegionMaxSize);
             Assert.AreEqual(11, ds.WalThreadLocalBufferSize);
             Assert.AreEqual("abc", ds.WalArchivePath);
             Assert.AreEqual(TimeSpan.FromSeconds(12), ds.WalFlushFrequency);
@@ -372,6 +370,10 @@ namespace Apache.Ignite.Core.Tests
             Assert.AreEqual(6, dr.MetricsSubIntervalCount);
             Assert.AreEqual("swap2", dr.SwapPath);
             Assert.IsFalse(dr.MetricsEnabled);
+
+            var sysDr = ds.SystemDataRegionConfiguration;
+            Assert.AreEqual(9, sysDr.InitialSize);
+            Assert.AreEqual(10, sysDr.MaxSize);
 
             Assert.IsInstanceOf<SslContextFactory>(cfg.SslContextFactory);
 
@@ -1029,8 +1031,6 @@ namespace Apache.Ignite.Core.Tests
                     MetricsRateTimeInterval = TimeSpan.FromSeconds(9),
                     CheckpointWriteOrder = Core.Configuration.CheckpointWriteOrder.Sequential,
                     WriteThrottlingEnabled = true,
-                    SystemRegionInitialSize = 64 * 1024 * 1024,
-                    SystemRegionMaxSize = 128 * 1024 * 1024,
                     ConcurrencyLevel = 1,
                     PageSize = 5 * 1024,
                     WalAutoArchiveAfterInactivity = TimeSpan.FromSeconds(19),
@@ -1068,6 +1068,11 @@ namespace Apache.Ignite.Core.Tests
                             MetricsSubIntervalCount = 7,
                             SwapPath = Path.GetTempPath()
                         }
+                    },
+                    SystemDataRegionConfiguration = new SystemDataRegionConfiguration
+                    {
+                        InitialSize = 64 * 1024 * 1024,
+                        MaxSize = 128 * 1024 * 1024,
                     }
                 },
                 SslContextFactory = new SslContextFactory(),

@@ -211,7 +211,7 @@ public class IgniteMarshallerCacheFSRestoreTest extends GridCommonAbstractTest {
             startGrid(0);
         }
         catch (IgniteCheckedException e) {
-            verifyException((IgniteCheckedException) e.getCause());
+            verifyException((IgniteCheckedException)e.getCause());
         }
     }
 
@@ -258,7 +258,7 @@ public class IgniteMarshallerCacheFSRestoreTest extends GridCommonAbstractTest {
                 DiscoveryNotification notification
             ) {
                 DiscoveryCustomMessage customMsg = notification.getCustomMsgData() == null ? null
-                    : (DiscoveryCustomMessage) U.field(notification.getCustomMsgData(), "delegate");
+                    : (DiscoveryCustomMessage)U.field(notification.getCustomMsgData(), "delegate");
 
                 if (customMsg != null) {
                     //don't want to make this class public, using equality of class name instead of instanceof operator

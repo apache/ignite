@@ -38,7 +38,6 @@ import static org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi.DFLT_P
 import static org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi.DFLT_PORT_RANGE;
 import static org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi.DFLT_RECONNECT_CNT;
 import static org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi.DFLT_SELECTORS_CNT;
-import static org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi.DFLT_SHMEM_PORT;
 import static org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi.DFLT_SOCK_BUF_SIZE;
 import static org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi.DFLT_SOCK_WRITE_TIMEOUT;
 import static org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi.DFLT_TCP_NODELAY;
@@ -71,8 +70,8 @@ public class TcpCommunicationConfiguration implements Serializable {
     /** Local port range. */
     private int locPortRange = DFLT_PORT_RANGE;
 
-    /** Local port which node uses to accept shared memory connections. */
-    private int shmemPort = DFLT_SHMEM_PORT;
+    /** This field is ignored and will be removed in future releases. */
+    private int shmemPort = -1;
 
     /** Allocate direct buffer or heap buffer. */
     private boolean directBuf = true;
@@ -215,17 +214,18 @@ public class TcpCommunicationConfiguration implements Serializable {
     }
 
     /**
-     * @return Local port which node uses to accept shared memory connections.
+     * @deprecated This property is ignored and will be removed in future releases.
      */
+    @Deprecated
     public int shmemPort() {
         return shmemPort;
     }
 
     /**
-     * @param shmemPort New local port which node uses to accept shared memory connections.
+     * @deprecated This property is ignored and will be removed in future releases.
      */
+    @Deprecated
     public void shmemPort(int shmemPort) {
-        this.shmemPort = shmemPort;
     }
 
     /**
@@ -467,17 +467,18 @@ public class TcpCommunicationConfiguration implements Serializable {
     }
 
     /**
-     * @return Bound port for shared memory server.
+     * @deprecated This property is deprecated and will be removed in future releases.
      */
+    @Deprecated
     public int boundTcpShmemPort() {
         return boundTcpShmemPort;
     }
 
     /**
-     * @param boundTcpShmemPort New bound port for shared memory server.
+     * @deprecated Setter is ignored.
      */
     public void boundTcpShmemPort(int boundTcpShmemPort) {
-        this.boundTcpShmemPort = boundTcpShmemPort;
+        // No-op.
     }
 
     /**

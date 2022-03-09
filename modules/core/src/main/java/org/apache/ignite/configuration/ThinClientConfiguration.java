@@ -37,6 +37,9 @@ public class ThinClientConfiguration {
     /** Active compute tasks per connection limit. */
     private int maxActiveComputeTasksPerConn = DFLT_MAX_ACTIVE_COMPUTE_TASKS_PER_CONNECTION;
 
+    /** If {@code true} sends a server exception stack trace to the client side. */
+    private boolean sendServerExcStackTraceToClient;
+
     /**
      * Creates thin-client configuration with all default values.
      */
@@ -54,6 +57,7 @@ public class ThinClientConfiguration {
 
         maxActiveTxPerConn = cfg.maxActiveTxPerConn;
         maxActiveComputeTasksPerConn = cfg.maxActiveComputeTasksPerConn;
+        sendServerExcStackTraceToClient = cfg.sendServerExcStackTraceToClient;
     }
 
     /**
@@ -93,6 +97,23 @@ public class ThinClientConfiguration {
      */
     public ThinClientConfiguration setMaxActiveComputeTasksPerConnection(int maxActiveComputeTasksPerConn) {
         this.maxActiveComputeTasksPerConn = maxActiveComputeTasksPerConn;
+
+        return this;
+    }
+
+    /**
+     * @return If {@code true} sends a server exception stack to the client side.
+     */
+    public boolean sendServerExceptionStackTraceToClient() {
+        return sendServerExcStackTraceToClient;
+    }
+
+    /**
+     * @param sendServerExcStackTraceToClient If {@code true} sends a server exception stack to the client side.
+     * @return {@code this} for chaining.
+     */
+    public ThinClientConfiguration sendServerExceptionStackTraceToClient(boolean sendServerExcStackTraceToClient) {
+        this.sendServerExcStackTraceToClient = sendServerExcStackTraceToClient;
 
         return this;
     }

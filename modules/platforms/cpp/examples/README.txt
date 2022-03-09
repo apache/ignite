@@ -14,18 +14,31 @@ Common requirements
    $IGNITE_HOME/platforms/cpp/DEVNOTES.txt for build instructions and to $IGNITE_HOME/platforms/cpp/odbc/README.txt.
    for installation instructions.
 
-Running examples on Linux and MacOS
+Running examples.
 ----------------------------------
 
 Prerequisites:
- * GCC, g++, CMake >= 3.6 must be installed
+ * C++ compiler and SDK:
+  Linux and Mac OS X:
+   * clang >= 3.9 or gcc >= 3.6
+  Windows:
+   * Visual Studio 2010 or later
+   * Windows SDK 7.1 or later
+ * CMake >= 3.6 must be installed
  * Apache Ignite C++ should be installed. Refer to $IGNITE_HOME/platforms/cpp/DEVNOTES.txt for instructions.
 
 To build examples execute the following commands one by one from examples root directory:
- * mkdir cmake-build-release
- * cd ./cmake-build-release
- * cmake -DCMAKE_BUILD_TYPE=[Release|Debug] [-DIGNITE_CPP_DIR=<ignite_install_dir>] ..
- * make
+ * mkdir cmake-build-[debug|release]
+ * cd ./cmake-build-[debug|release]
+ * run CMake configuration:
+  * on Linux or Mac OS X:
+     cmake .. -DCMAKE_BUILD_TYPE=[Release|Debug] [-DIGNITE_CPP_DIR=<ignite_install_dir>]
+  * on Windows:
+     cmake .. -DCMAKE_GENERATOR_PLATFORM=[Win32|x64] [-DIGNITE_CPP_DIR=<ignite_install_dir>]
+ * cmake --build . --config [Release|Debug]
+
+CMake by default generate on Windows Visual Studio projects. You can find generated projects in CMake
+build directory (./cmake-build-[release|debug]) and open examples.sln in Visual Studio.
 
 If Apache Ignite C++ is installed in default directories (i.e. /usr/local or /usr), setting IGNITE_CPP_DIR property
 is not necessary. As a result executables will be in corresponding subdirectories in cmake-build-release directory.
@@ -33,12 +46,8 @@ is not necessary. As a result executables will be in corresponding subdirectorie
 For odbc-example additionaly ODBC Driver Manager must be present and installed on your platform and
 Apache Ignite ODBC driver must be built and installed according to instructions for your platform.
 
-Running examples on Windows
-----------------------------------
 
-Prerequisites:
- * Microsoft Visual Studio (tm) 2010 or higher must be installed.
- * Windows SDK 7.1 must be installed.
-
-Open Visual Studio solution %IGNITE_HOME%\platforms\cpp\examples\project\vs\ignite-examples.sln and select proper
-platform (x64 or x86). Run the solution.
+Importing CMake projects to Visual Studio (tm) (since 2015):
+------------------------------------------------------------
+ Use CMakeSettings.json.in files in examples root directory as a template of real CMakeSettings.json.
+ Edit it manually to set up correct environment variables and import CMake projects as usual.

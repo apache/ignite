@@ -34,7 +34,7 @@
         <property name="workDirectory" value="{{ service.work_dir }}" />
         <property name="gridLogger">
             <bean class="org.apache.ignite.logger.log4j.Log4JLogger">
-                <constructor-arg type="java.lang.String" value="{{ service.config_dir }}/ignite-log4j.xml"/>
+                <constructor-arg type="java.lang.String" value="{{ service.config_dir }}/{{ config.log4j_config }}"/>
             </bean>
         </property>
 

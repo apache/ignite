@@ -365,7 +365,7 @@ public abstract class IgniteDbAbstractTest extends GridCommonAbstractTest {
             if (this == o) return true;
             if (o == null || getClass() != o.getClass()) return false;
 
-            final LargeDbValue that = (LargeDbValue) o;
+            final LargeDbValue that = (LargeDbValue)o;
 
             if (str1 != null ? !str1.equals(that.str1) : that.str1 != null) return false;
             if (str2 != null ? !str2.equals(that.str2) : that.str2 != null) return false;

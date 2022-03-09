@@ -18,22 +18,18 @@
 package org.apache.ignite.internal.processors.cache.distributed.near.consistency;
 
 import java.util.Collection;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.cache.CacheEntryVersion;
+import org.apache.ignite.cache.ReadRepairStrategy;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.EntryGetResult;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.IgniteCacheExpiryPolicy;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridPartitionedGetFuture;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.util.lang.GridClosureException;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 
@@ -55,6 +51,7 @@ public class GridNearReadRepairCheckOnlyFuture extends GridNearReadRepairAbstrac
      *
      * @param ctx Cache context.
      * @param keys Keys.
+     * @param strategy Read repair strategy.
      * @param readThrough Read-through flag.
      * @param taskName Task name.
      * @param deserializeBinary Deserialize binary flag.
@@ -68,6 +65,7 @@ public class GridNearReadRepairCheckOnlyFuture extends GridNearReadRepairAbstrac
     public GridNearReadRepairCheckOnlyFuture(
         GridCacheContext ctx,
         Collection<KeyCacheObject> keys,
+        ReadRepairStrategy strategy,
         boolean readThrough,
         String taskName,
         boolean deserializeBinary,
@@ -80,6 +78,7 @@ public class GridNearReadRepairCheckOnlyFuture extends GridNearReadRepairAbstrac
         super(null,
             ctx,
             keys,
+            strategy,
             readThrough,
             taskName,
             deserializeBinary,
@@ -90,54 +89,34 @@ public class GridNearReadRepairCheckOnlyFuture extends GridNearReadRepairAbstrac
         this.skipVals = skipVals;
         this.needVer = needVer;
         this.keepCacheObjects = keepCacheObjects;
+
+        init();
     }
 
     /** {@inheritDoc} */
     @Override protected void reduce() {
-        Map<KeyCacheObject, EntryGetResult> resMap = new HashMap<>();
-
-        Map<KeyCacheObject, T2<Object, CacheEntryVersion>> prevMap = new HashMap<>();
-
-        Set<KeyCacheObject> inconsistentKeys = new HashSet<>();
-
-        for (GridPartitionedGetFuture<KeyCacheObject, EntryGetResult> fut : futs.values()) {
-            for (Map.Entry<KeyCacheObject, EntryGetResult> entry : fut.result().entrySet()) {
-                KeyCacheObject curKey = entry.getKey();
-                EntryGetResult curRes = entry.getValue();
-
-                Object curVal = ctx.unwrapBinaryIfNeeded(curRes.value(), !deserializeBinary, false, null);
-
-                T2<Object, CacheEntryVersion> prev = prevMap.get(curKey);
-
-                if (prev != null) {
-                    Object prevVal = prev.get1();
-                    CacheEntryVersion prevVer = prev.get2();
-
-                    if (prevVer.compareTo(curRes.version()) != 0 || !prevVal.equals(curVal))
-                        inconsistentKeys.add(curKey);
-                }
-                else {
-                    resMap.put(curKey, curRes);
-
-                    prevMap.put(curKey, new T2<>(curVal, curRes.version()));
-                }
-            }
+        try {
+            onDone(check());
         }
+        catch (IgniteConsistencyViolationException e) {
+            Set<KeyCacheObject> inconsistentKeys = e.keys();
 
-        if (!inconsistentKeys.isEmpty()) {
             if (REMAP_CNT_UPD.incrementAndGet(this) > MAX_REMAP_CNT) {
-                if (!ctx.transactional()) // Will not be fixed, should be recorded as is.
-                    recordConsistencyViolation(inconsistentKeys, /*nothing fixed*/ null);
+                if (ctx.atomic() || strategy == ReadRepairStrategy.CHECK_ONLY) { // Will not be fixed, should be recorded as is.
+                    recordConsistencyViolation(inconsistentKeys, /*nothing fixed*/ null, ReadRepairStrategy.CHECK_ONLY);
 
-                onDone(new IgniteConsistencyViolationException("Distributed cache consistency violation detected."));
+                    onDone(new IgniteIrreparableConsistencyViolationException(null,
+                        ctx.unwrapBinariesIfNeeded(inconsistentKeys, !deserializeBinary)));
+                }
+                else // Should be fixed by concurrent tx(s).
+                    onDone(e);
             }
             else
                 remap(ctx.affinity().affinityTopologyVersion()); // Rechecking possible "false positive" case.
-
-            return;
         }
-
-        onDone(resMap);
+        catch (IgniteCheckedException e) {
+            onDone(e);
+        }
     }
 
     /**
@@ -150,23 +129,7 @@ public class GridNearReadRepairCheckOnlyFuture extends GridNearReadRepairAbstrac
             try {
                 final Map<K, V> map = new IgniteBiTuple<>();
 
-                for (Map.Entry<KeyCacheObject, EntryGetResult> entry : fut.get().entrySet()) {
-                    EntryGetResult getRes = entry.getValue();
-
-                    ctx.addResult(map,
-                        entry.getKey(),
-                        getRes.value(),
-                        skipVals,
-                        keepCacheObjects,
-                        deserializeBinary,
-                        false,
-                        getRes,
-                        getRes.version(),
-                        0,
-                        0,
-                        needVer,
-                        null);
-                }
+                addResult(fut, map);
 
                 if (skipVals) {
                     Boolean val = map.isEmpty() ? false : (Boolean)F.firstValue(map);
@@ -192,23 +155,7 @@ public class GridNearReadRepairCheckOnlyFuture extends GridNearReadRepairAbstrac
             try {
                 final Map<K, V> map = U.newHashMap(keys.size());
 
-                for (Map.Entry<KeyCacheObject, EntryGetResult> entry : fut.get().entrySet()) {
-                    EntryGetResult getRes = entry.getValue();
-
-                    ctx.addResult(map,
-                        entry.getKey(),
-                        getRes.value(),
-                        skipVals,
-                        keepCacheObjects,
-                        deserializeBinary,
-                        false,
-                        getRes,
-                        getRes.version(),
-                        0,
-                        0,
-                        needVer,
-                        null);
-                }
+                addResult(fut, map);
 
                 return map;
             }
@@ -216,5 +163,30 @@ public class GridNearReadRepairCheckOnlyFuture extends GridNearReadRepairAbstrac
                 throw new GridClosureException(e);
             }
         });
+    }
+
+    /**
+     *
+     */
+    private <K, V> void addResult(IgniteInternalFuture<Map<KeyCacheObject, EntryGetResult>> fut,
+        Map<K, V> map) throws IgniteCheckedException {
+        for (Map.Entry<KeyCacheObject, EntryGetResult> entry : fut.get().entrySet()) {
+            EntryGetResult getRes = entry.getValue();
+
+            if (getRes != null)
+                ctx.addResult(map,
+                    entry.getKey(),
+                    getRes.value(),
+                    skipVals,
+                    keepCacheObjects,
+                    deserializeBinary,
+                    false,
+                    getRes,
+                    getRes.version(),
+                    0,
+                    0,
+                    needVer,
+                    U.deploymentClassLoader(ctx.kernalContext(), U.contextDeploymentClassLoaderId(ctx.kernalContext())));
+        }
     }
 }

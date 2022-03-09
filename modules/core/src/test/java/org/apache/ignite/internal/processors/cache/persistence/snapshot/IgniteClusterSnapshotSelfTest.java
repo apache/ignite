@@ -43,6 +43,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.cluster.ClusterTopologyException;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -107,7 +108,8 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
     /** Cache configuration for test. */
     private static final CacheConfiguration<Integer, Integer> atomicCcfg = new CacheConfiguration<Integer, Integer>("atomicCacheName")
         .setAtomicityMode(CacheAtomicityMode.ATOMIC)
-        .setBackups(2);
+        .setBackups(2)
+        .setAffinity(new RendezvousAffinityFunction(false, CACHE_PARTITIONS_COUNT));
 
     /** {@code true} if node should be started in separate jvm. */
     protected volatile boolean jvm;
@@ -328,6 +330,8 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
 
         CacheConfiguration<Integer, Account> eastCcfg = txCacheConfig(new CacheConfiguration<>("east"));
         CacheConfiguration<Integer, Account> westCcfg = txCacheConfig(new CacheConfiguration<>("west"));
+
+        dfltCacheCfg = null;
 
         startGridsWithCache(grids, clientsCnt, key -> new Account(key, balance), eastCcfg, westCcfg);
 
@@ -579,7 +583,7 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
 
         IgniteFuture<?> fut = ignite.snapshot().createSnapshot(SNAPSHOT_NAME);
 
-        U.await(partProcessed);
+        U.await(partProcessed, TIMEOUT, TimeUnit.MILLISECONDS);
 
         stopGrid(1);
 
@@ -624,7 +628,7 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
 
         cfg2.getDataStorageConfiguration()
             .setFileIOFactory(new HaltJvmFileIOFactory(new RandomAccessFileIOFactory(),
-                (Predicate<File> & Serializable) file -> {
+                (Predicate<File> & Serializable)file -> {
                     // Trying to create FileIO over partition file.
                     return file.getAbsolutePath().contains(SNAPSHOT_NAME);
                 }));
@@ -1150,25 +1154,6 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
         assertSnapshotCacheKeys(snpIg.cache(dfltCacheCfg.getName()));
     }
 
-    /** @throws Exception If fails. */
-    @Test
-    public void testClusterSnapshotInMemoryFail() throws Exception {
-        persistence = false;
-
-        IgniteEx srv = startGrid(0);
-
-        srv.cluster().state(ACTIVE);
-
-        IgniteEx clnt = startClientGrid(1);
-
-        IgniteFuture<?> fut = clnt.snapshot().createSnapshot(SNAPSHOT_NAME);
-
-        assertThrowsAnyCause(log,
-            fut::get,
-            IgniteException.class,
-            "Snapshots on an in-memory clusters are not allowed.");
-    }
-
     /**
      * @param ignite Ignite instance.
      * @param started Latch will be released when delta partition processing starts.
@@ -1189,7 +1174,7 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
                 started.countDown();
 
                 try {
-                    U.await(blocked);
+                    U.await(blocked, TIMEOUT, TimeUnit.MILLISECONDS);
 
                     if (log.isInfoEnabled())
                         log.info("Latch released. Processing delta file continued: " + delta.getName());

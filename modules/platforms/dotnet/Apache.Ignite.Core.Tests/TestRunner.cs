@@ -15,20 +15,13 @@
 * limitations under the License.
 */
 
-#if (!NETCOREAPP)
 namespace Apache.Ignite.Core.Tests
 {
     using System;
     using System.Collections.Generic;
-    using System.Diagnostics;
     using System.Linq;
     using System.Reflection;
-    using Apache.Ignite.Core.Tests.Binary.Serializable;
-    using Apache.Ignite.Core.Tests.Cache;
-    using Apache.Ignite.Core.Tests.Client.Cache;
-    using Apache.Ignite.Core.Tests.Compute;
-    using Apache.Ignite.Core.Tests.Memory;
-    using NUnit.ConsoleRunner;
+    using NUnit.Framework;
 
     /// <summary>
     /// Console test runner.
@@ -38,116 +31,53 @@ namespace Apache.Ignite.Core.Tests
         [STAThread]
         static void Main(string[] args)
         {
-            Debug.Listeners.Add(new TextWriterTraceListener(Console.Out));
-            Debug.AutoFlush = true;
+            System.Diagnostics.Debug.AutoFlush = true;
 
-            if (args.Length == 1 && args[0] == "-basicTests")
-            {
-                RunBasicTests();
-
-                return;
-            }
+#if (!NETCOREAPP)
+            System.Diagnostics.Debug.Listeners.Add(new System.Diagnostics.TextWriterTraceListener(Console.Out));
+#endif
 
             if (args.Length == 2)
             {
-                //Debugger.Launch();
-                var testClass = Type.GetType(args[0]);
-                var method = args[1];
+                TestOne(args[0], args[1]);
 
-                if (testClass == null || testClass.GetMethods().All(x => x.Name != method))
-                    throw new InvalidOperationException("Failed to find method: " + testClass + "." + method);
-
-                Environment.ExitCode = TestOne(testClass, method);
                 return;
             }
 
-            Environment.ExitCode = TestAllInAssembly();
-        }
-
-        /// <summary>
-        /// Runs some basic tests.
-        /// </summary>
-        private static void RunBasicTests()
-        {
-            Console.WriteLine(">>> Starting basic tests...");
-
-            var basicTests = new[]
-            {
-                typeof(ComputeApiTest),
-                typeof(SqlDmlTest),
-                typeof(LinqTest),
-                typeof(PersistenceTest),
-                typeof(CacheTest)
-            };
-
-            Environment.ExitCode = TestAll(basicTests, true);
-
-            Console.WriteLine(">>> Test run finished.");
+            // Default: test startup.
+            new IgniteStartStopTest().TestStartDefault();
         }
 
         /// <summary>
         /// Runs specified test method.
         /// </summary>
-        private static int TestOne(Type testClass, string method, bool sameDomain = false)
+        private static void TestOne(string className, string methodName)
         {
-            string[] args =
-            {
-                "-noshadow",
-                "-domain:" + (sameDomain ? "None" : "Single"),
-                "-run:" + testClass.FullName + "." + method,
-                Assembly.GetAssembly(testClass).Location
-            };
+            var fixtureClass = Type.GetType(className);
 
-            return Runner.Main(args);
+            if (fixtureClass == null)
+            {
+                throw new InvalidOperationException("Failed to find class: " + className);
+            }
+
+            var fixture = Activator.CreateInstance(fixtureClass);
+
+            foreach (var setUpMethod in GetMethodsWithAttr<SetUpAttribute>(fixtureClass))
+            {
+                setUpMethod.Invoke(fixture, Array.Empty<object>());
+            }
+
+            var testMethod = fixtureClass.GetMethod(methodName);
+
+            if (testMethod == null)
+                throw new InvalidOperationException("Failed to find method: " + fixtureClass + "." + methodName);
+
+            testMethod.Invoke(fixture, Array.Empty<object>());
         }
 
-        /// <summary>
-        /// Runs all tests in specified class.
-        /// </summary>
-        private static int TestAll(IEnumerable<Type> testClass, bool sameDomain = false)
+        private static IEnumerable<MethodInfo> GetMethodsWithAttr<T>(Type testClass)
         {
-            var args = new List<string>
-            {
-                "-noshadow",
-                "-domain:" + (sameDomain ? "None" : "Single"),
-                "-run:" + string.Join(",", testClass.Select(x => x.FullName)),
-                Assembly.GetAssembly(typeof(TestRunner)).Location
-            };
-
-            return Runner.Main(args.ToArray());
-        }
-
-        /// <summary>
-        /// Runs all tests in assembly.
-        /// </summary>
-        private static int TestAllInAssembly(bool sameDomain = false)
-        {
-            string[] args =
-            {
-                "-noshadow",
-                "-domain:" + (sameDomain ? "None" : "Single"),
-                Assembly.GetAssembly(typeof(InteropMemoryTest)).Location
-            };
-
-            return Runner.Main(args);
+            return testClass.GetMethods().Where(m => m.GetCustomAttributes(true).Any(a => a is T));
         }
     }
 }
-#else
-namespace Apache.Ignite.Core.Tests
-{
-    /// <summary>
-    /// Test runner.
-    /// </summary>
-    internal static class TestRunner
-    {
-        /// <summary>
-        /// Console entry point.
-        /// </summary>
-        private static void Main()
-        {
-            new IgniteStartStopTest().TestStartDefault();
-        }
-    }
-}
-#endif

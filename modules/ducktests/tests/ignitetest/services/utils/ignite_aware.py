@@ -242,8 +242,8 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
         """
         return len(self.pids(node)) > 0
 
-    @staticmethod
-    def await_event_on_node(evt_message, node, timeout_sec, from_the_beginning=False, backoff_sec=.1):
+    def await_event_on_node(self, evt_message, node, timeout_sec, from_the_beginning=False, backoff_sec=.1,
+                            log_file=None):
         """
         Await for specific event message in a node's log file.
         :param evt_message: Event message.
@@ -252,13 +252,15 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
         :param from_the_beginning: If True, search for message from the beginning of log file.
         :param backoff_sec: Number of seconds to back off between each failure to meet the condition
                 before checking again.
+        :param log_file: Explicit log file.
         """
-        with monitor_log(node, node.log_file, from_the_beginning) as monitor:
+        with monitor_log(node, os.path.join(self.log_dir, log_file) if log_file else node.log_file,
+                         from_the_beginning) as monitor:
             monitor.wait_until(evt_message, timeout_sec=timeout_sec, backoff_sec=backoff_sec,
                                err_msg="Event [%s] was not triggered on '%s' in %d seconds" % (evt_message, node.name,
                                                                                                timeout_sec))
 
-    def await_event(self, evt_message, timeout_sec, from_the_beginning=False, backoff_sec=.1):
+    def await_event(self, evt_message, timeout_sec, from_the_beginning=False, backoff_sec=.1, log_file=None):
         """
         Await for specific event messages on all nodes.
         :param evt_message: Event message.
@@ -266,10 +268,11 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
         :param from_the_beginning: If True, search for message from the beggining of log file.
         :param backoff_sec: Number of seconds to back off between each failure to meet the condition
                 before checking again.
+        :param log_file: Explicit log file.
         """
         for node in self.nodes:
             self.await_event_on_node(evt_message, node, timeout_sec, from_the_beginning=from_the_beginning,
-                                     backoff_sec=backoff_sec)
+                                     backoff_sec=backoff_sec, log_file=log_file)
 
     @staticmethod
     def event_time(evt_message, node):
@@ -484,7 +487,9 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
         Update the node log file.
         """
         if not hasattr(node, 'log_file'):
-            node.log_file = os.path.join(self.log_dir, "ignite.log")
+            # '*' here is to support LoggerNodeIdAndApplicationAware loggers generates logs like 'ignite-367efed9.log'
+            # default Ignite configuration uses o.a.i.l.l.Log4jRollingFileAppender generates such files.
+            node.log_file = os.path.join(self.log_dir, "ignite*.log")
 
         cnt = list(node.account.ssh_capture(f'ls {self.log_dir} | '
                                             f'grep -E "^ignite.log(.[0-9]+)?$" | '

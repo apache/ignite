@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.query.h2.index.client;
 
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import org.apache.ignite.internal.cache.query.index.Index;
 import org.apache.ignite.internal.cache.query.index.IndexDefinition;
@@ -43,13 +45,14 @@ public class ClientIndexFactory implements IndexFactory {
 
     /** {@inheritDoc} */
     @Override public Index createIndex(GridCacheContext<?, ?> cctx, IndexDefinition definition) {
-        ClientIndexDefinition def = (ClientIndexDefinition) definition;
+        ClientIndexDefinition def = (ClientIndexDefinition)definition;
 
-        List<IndexKeyDefinition> keyDefs = definition.indexKeyDefinitions();
+        LinkedHashMap<String, IndexKeyDefinition> keyDefs = definition.indexKeyDefinitions();
 
-        List<InlineIndexKeyType> keyTypes = InlineIndexKeyTypeRegistry.types(keyDefs, DUMMY_SETTINGS);
+        List<InlineIndexKeyType> keyTypes = InlineIndexKeyTypeRegistry.types(keyDefs.values(), DUMMY_SETTINGS);
 
-        int inlineSize = InlineIndexTree.computeInlineSize(keyTypes, keyDefs, def.getCfgInlineSize(), def.getMaxInlineSize());
+        int inlineSize = InlineIndexTree.computeInlineSize(keyTypes, new ArrayList<>(keyDefs.values()),
+            def.getCfgInlineSize(), def.getMaxInlineSize());
 
         return new ClientInlineIndex(def.idxName().idxName(), inlineSize);
     }

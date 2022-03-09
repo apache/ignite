@@ -115,7 +115,12 @@ public class QueryParser {
 
     /** Query parser metrics holder. */
     private final QueryParserMetricsHolder metricsHolder;
-
+    
+    /**
+     * Forcibly fills missing columns belonging to the primary key with nulls or default values if those have been specified.
+     */
+    private final boolean forceFillAbsentPKsWithDefaults;
+    
     /** */
     private volatile GridBoundedConcurrentLinkedHashMap<QueryDescriptor, QueryParserCacheEntry> cache =
         new GridBoundedConcurrentLinkedHashMap<>(CACHE_SIZE);
@@ -132,6 +137,9 @@ public class QueryParser {
 
         this.log = idx.kernalContext().log(QueryParser.class);
         this.metricsHolder = new QueryParserMetricsHolder(idx.kernalContext().metric());
+    
+        this.forceFillAbsentPKsWithDefaults = IgniteSystemProperties.getBoolean(
+                IgniteSystemProperties.IGNITE_SQL_FILL_ABSENT_PK_WITH_DEFAULTS, false);
     }
 
     /**
@@ -734,7 +742,8 @@ public class QueryParser {
                 stmt,
                 mvccEnabled,
                 idx,
-                log
+                log,
+                forceFillAbsentPKsWithDefaults
             );
         }
         catch (Exception e) {
@@ -766,7 +775,7 @@ public class QueryParser {
      * @param isQry {@code true} for select queries, otherwise (DML/DDL queries) {@code false}.
      */
     private static void checkQueryType(SqlFieldsQuery qry, boolean isQry) {
-        Boolean qryFlag = qry instanceof SqlFieldsQueryEx ? ((SqlFieldsQueryEx) qry).isQuery() : null;
+        Boolean qryFlag = qry instanceof SqlFieldsQueryEx ? ((SqlFieldsQueryEx)qry).isQuery() : null;
 
         if (qryFlag != null && qryFlag != isQry)
             throw new IgniteSQLException("Given statement type does not match that declared by JDBC driver",

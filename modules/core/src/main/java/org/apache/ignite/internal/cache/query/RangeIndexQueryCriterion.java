@@ -120,4 +120,9 @@ public final class RangeIndexQueryCriterion implements IndexQueryCriterion {
     @Override public String field() {
         return field;
     }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return field + (lowerIncl ? "[" : "(") + lower + "; " + upper + (upperIncl ? "]" : ")");
+    }
 }

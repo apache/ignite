@@ -28,8 +28,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.QueryIndexType;
+import org.apache.ignite.internal.binary.BinaryArray;
+import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
@@ -135,6 +138,18 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
     /** Primary key fields. */
     private Set<String> pkFields;
 
+    /** Whether absent PK parts should be filled with defaults or not. */
+    private boolean fillAbsentPKsWithDefaults;
+
+    /** */
+    private int pkInlineSize;
+
+    /** */
+    private int affFieldInlineSize;
+
+    /** Logger. */
+    private final IgniteLogger log;
+
     /**
      * Constructor.
      *
@@ -144,6 +159,7 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
     public QueryTypeDescriptorImpl(String cacheName, CacheObjectContext coCtx) {
         this.cacheName = cacheName;
         this.coCtx = coCtx;
+        this.log = coCtx.kernalContext().log(getClass());
     }
 
     /**
@@ -604,7 +620,7 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
             boolean isKey = false;
 
             if (F.eq(prop.name(), keyFieldAlias()) || (keyFieldName == null && F.eq(prop.name(), KEY_FIELD_NAME))) {
-                propVal = key instanceof KeyCacheObject ? ((CacheObject) key).value(coCtx, true) : key;
+                propVal = key instanceof KeyCacheObject ? ((CacheObject)key).value(coCtx, true) : key;
 
                 isKey = true;
             }
@@ -620,11 +636,11 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
             }
 
             if (validateTypes && propVal != null) {
-                if (!(propVal instanceof BinaryObject)) {
+                if (!(propVal instanceof BinaryObject) || propVal instanceof BinaryArray) {
                     if (!U.box(prop.type()).isAssignableFrom(U.box(propVal.getClass()))) {
                         // Some reference type arrays end up being converted to Object[]
-                        if (!(prop.type().isArray() && Object[].class == propVal.getClass() &&
-                            Arrays.stream((Object[]) propVal).
+                        if (!(prop.type().isArray() && BinaryUtils.isObjectArray(propVal.getClass()) &&
+                            Arrays.stream(BinaryUtils.rawArrayFromBinary(propVal)).
                             noneMatch(x -> x != null && !U.box(prop.type().getComponentType()).isAssignableFrom(U.box(x.getClass())))))
                         {
                             throw new IgniteSQLException("Type for a column '" + prop.name() +
@@ -687,7 +703,7 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
                 Class<?> propType;
 
                 if (F.eq(idxField, keyFieldAlias()) || F.eq(idxField, KEY_FIELD_NAME)) {
-                    propVal = key instanceof KeyCacheObject ? ((CacheObject) key).value(coCtx, true) : key;
+                    propVal = key instanceof KeyCacheObject ? ((CacheObject)key).value(coCtx, true) : key;
 
                     propType = propVal == null ? null : propVal.getClass();
                 }
@@ -705,11 +721,11 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
                 if (propVal == null)
                     continue;
 
-                if (!(propVal instanceof BinaryObject)) {
+                if (!(propVal instanceof BinaryObject) || propVal instanceof BinaryArray) {
                     if (!U.box(propType).isAssignableFrom(U.box(propVal.getClass()))) {
                         // Some reference type arrays end up being converted to Object[]
-                        if (!(propType.isArray() && Object[].class == propVal.getClass() &&
-                            Arrays.stream((Object[]) propVal).
+                        if (!(propType.isArray() && BinaryUtils.isObjectArray(propVal.getClass()) &&
+                            Arrays.stream(BinaryUtils.rawArrayFromBinary(propVal)).
                                 noneMatch(x -> x != null && !U.box(propType.getComponentType()).isAssignableFrom(U.box(x.getClass())))))
                         {
                             throw new IgniteSQLException("Type for a column '" + idxField +
@@ -718,9 +734,14 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
                                 propVal.getClass().getSimpleName() + "'");
                         }
                     }
-                }
-                else if (coCtx.kernalContext().cacheObjects().typeId(propType.getName()) !=
+                } else if (coCtx.kernalContext().cacheObjects().typeId(propType.getName()) !=
                     ((BinaryObject)propVal).type().typeId()) {
+                    // Check for classes/enums implementing indexed interfaces.
+                    final Class<?> cls = U.classForName(((BinaryObject)propVal).type().typeName(), null, true);
+
+                    if ((cls == null && propType == Object.class) || (cls != null && propType.isAssignableFrom(cls)))
+                        continue;
+
                     throw new IgniteSQLException("Type for a column '" + idxField +
                         "' is not compatible with index definition. Expected '" +
                         propType.getSimpleName() + "', actual type '" +
@@ -751,5 +772,35 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
     /** {@inheritDoc} */
     @Override public void primaryKeyFields(Set<String> keys) {
         pkFields = keys;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean fillAbsentPKsWithDefaults() {
+        return fillAbsentPKsWithDefaults;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void setFillAbsentPKsWithDefaults(boolean fillAbsentPKsWithDefaults) {
+        this.fillAbsentPKsWithDefaults = fillAbsentPKsWithDefaults;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int primaryKeyInlineSize() {
+        return pkInlineSize;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void primaryKeyInlineSize(int pkInlineSize) {
+        this.pkInlineSize = pkInlineSize;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int affinityFieldInlineSize() {
+        return affFieldInlineSize;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void affinityFieldInlineSize(int affFieldInlineSize) {
+        this.affFieldInlineSize = affFieldInlineSize;
     }
 }

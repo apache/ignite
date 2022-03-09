@@ -18,22 +18,32 @@
 package org.apache.ignite.compatibility.testframework.util;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.InputStreamReader;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import com.google.common.base.Charsets;
 import com.google.common.io.CharStreams;
+import org.apache.ignite.internal.util.GridStringBuilder;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.maven.model.Model;
+import org.apache.maven.model.RepositoryBase;
+import org.apache.maven.model.io.xpp3.MavenXpp3Reader;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+
+import static org.apache.ignite.internal.util.lang.GridFunc.isEmpty;
 
 /**
  * Provides some useful methods to work with Maven.
@@ -41,6 +51,9 @@ import org.jetbrains.annotations.Nullable;
 public class MavenUtils {
     /** Path to Maven local repository. For caching. */
     private static String locRepPath = null;
+
+    /** */
+    private static final String MAVEN_DEPENDENCY_PLUGIN = "org.apache.maven.plugins:maven-dependency-plugin:3.2.0";
 
     /** */
     private static final String GG_MVN_REPO = "http://www.gridgainsystems.com/nexus/content/repositories/external";
@@ -142,6 +155,29 @@ public class MavenUtils {
         return output.substring(output.lastIndexOf('>', endTagPos) + 1, endTagPos);
     }
 
+    /** @return Collection of configured repositories for the Maven project. */
+    private static Collection<String> mavenProjectRepositories() throws Exception {
+        String workDir = System.getProperty("user.dir");
+
+        File prjPomFile = new File(workDir, "pom.xml");
+
+        if (!prjPomFile.exists())
+            return Collections.emptyList();
+
+        Path outPath = Files.createTempFile("effective-pom", "");
+
+        try {
+            exec(buildMvnCommand() + " -f " + workDir + " help:effective-pom -Doutput=" + outPath.toAbsolutePath());
+
+            Model model = new MavenXpp3Reader().read(new FileInputStream(outPath.toFile()));
+
+            return F.transform(model.getRepositories(), RepositoryBase::getUrl);
+        }
+        finally {
+            Files.deleteIfExists(outPath);
+        }
+    }
+
     /**
      * Downloads and stores in local repository an artifact with given identifier.
      *
@@ -156,15 +192,24 @@ public class MavenUtils {
 
         String localProxyMavenSettingsFromEnv = System.getenv("LOCAL_PROXY_MAVEN_SETTINGS");
 
-        SB mavenCommandArgs = new SB(" org.apache.maven.plugins:maven-dependency-plugin:3.0.2:get -Dartifact=" + artifact);
+        GridStringBuilder mavenCommandArgs = new SB(" ").a(MAVEN_DEPENDENCY_PLUGIN).a(":get -Dartifact=" + artifact);
 
-        if (!F.isEmpty(localProxyMavenSettingsFromEnv))
+        if (!isEmpty(localProxyMavenSettingsFromEnv))
             localProxyMavenSettings = Paths.get(localProxyMavenSettingsFromEnv);
 
         if (Files.exists(localProxyMavenSettings))
             mavenCommandArgs.a(" -s " + localProxyMavenSettings.toString());
-        else
-            mavenCommandArgs.a(useGgRepo ? " -DremoteRepositories=" + GG_MVN_REPO : "");
+        else {
+            Collection<String> repos = new ArrayList<>();
+
+            if (useGgRepo)
+                repos.add(GG_MVN_REPO);
+
+            repos.addAll(mavenProjectRepositories());
+
+            if (!repos.isEmpty())
+                mavenCommandArgs.a(" -DremoteRepositories=").a(String.join(",", repos));
+        }
 
         exec(buildMvnCommand() + mavenCommandArgs.toString());
 

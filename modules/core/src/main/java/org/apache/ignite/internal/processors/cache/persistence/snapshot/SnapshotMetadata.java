@@ -17,7 +17,11 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
+import java.io.IOException;
+import java.io.InvalidObjectException;
 import java.io.Serializable;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -28,6 +32,8 @@ import java.util.UUID;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Snapshot metadata file.
@@ -67,16 +73,20 @@ public class SnapshotMetadata implements Serializable {
      * since for instance, due to the node filter there is no cache data on node.
      */
     @GridToStringInclude
-    private final Map<Integer, Set<Integer>> locParts = new HashMap<>();
+    private transient Map<Integer, Set<Integer>> locParts = new HashMap<>();
+
+    /** Master key digest for encrypted caches. */
+    @GridToStringInclude
+    @Nullable private final byte[] masterKeyDigest;
 
     /**
-     * @param rqId Unique snapshot request id.
-     * @param snpName Snapshot name.
+     * F@param snpName Snapshot name.
      * @param consId Consistent id of a node to which this metadata relates.
      * @param folderName Directory name which stores the data files.
      * @param pageSize Page size of stored snapshot data.
      * @param grpIds The list of cache groups ids which were included into snapshot.
      * @param bltNodes The set of affected by snapshot baseline nodes.
+     * @param masterKeyDigest Master key digest for encrypted caches.
      */
     public SnapshotMetadata(
         UUID rqId,
@@ -86,7 +96,8 @@ public class SnapshotMetadata implements Serializable {
         int pageSize,
         List<Integer> grpIds,
         Set<String> bltNodes,
-        Set<GroupPartitionId> pairs
+        Set<GroupPartitionId> pairs,
+        @Nullable byte[] masterKeyDigest
     ) {
         this.rqId = rqId;
         this.snpName = snpName;
@@ -95,6 +106,7 @@ public class SnapshotMetadata implements Serializable {
         this.pageSize = pageSize;
         this.grpIds = grpIds;
         this.bltNodes = bltNodes;
+        this.masterKeyDigest = masterKeyDigest;
 
         pairs.forEach(p ->
             locParts.computeIfAbsent(p.getGroupId(), k -> new HashSet<>())
@@ -155,7 +167,56 @@ public class SnapshotMetadata implements Serializable {
      * saved on the local node because some of them may be skipped due to cache node filter).
      */
     public Map<Integer, Set<Integer>> partitions() {
-        return locParts;
+        return Collections.unmodifiableMap(locParts);
+    }
+
+    /** Save the state of this <tt>HashMap</tt> partitions and cache groups to a stream. */
+    private void writeObject(java.io.ObjectOutputStream s)
+        throws java.io.IOException {
+        // Write out any hidden serialization.
+        s.defaultWriteObject();
+
+        // Write out size of map.
+        s.writeInt(locParts.size());
+
+        // Write out all elements in the proper order.
+        for (Map.Entry<Integer, Set<Integer>> e : locParts.entrySet()) {
+            s.writeInt(e.getKey());
+            s.writeInt(e.getValue().size());
+
+            for (Integer partId : e.getValue())
+                s.writeInt(partId);
+        }
+    }
+
+    /** Reconstitute the <tt>HashMap</tt> instance of partitions and cache groups from a stream. */
+    private void readObject(java.io.ObjectInputStream s) throws IOException, ClassNotFoundException {
+        // Read in any hidden serialization.
+        s.defaultReadObject();
+
+        // Read size and verify non-negative.
+        int size = s.readInt();
+
+        if (size < 0)
+            throw new InvalidObjectException("Illegal size: " + size);
+
+        locParts = U.newHashMap(size);
+
+        // Read in all elements in the proper order.
+        for (int i = 0; i < size; i++) {
+            int grpId = s.readInt();
+            int total = s.readInt();
+
+            if (total < 0)
+                throw new InvalidObjectException("Illegal size: " + total);
+
+            Set<Integer> parts = U.newHashSet(total);
+
+            for (int k = 0; k < total; k++)
+                parts.add(s.readInt());
+
+            locParts.put(grpId, parts);
+        }
     }
 
     /**
@@ -167,7 +228,15 @@ public class SnapshotMetadata implements Serializable {
             snapshotName().equals(compare.snapshotName()) &&
             pageSize() == compare.pageSize() &&
             Objects.equals(cacheGroupIds(), compare.cacheGroupIds()) &&
+            Arrays.equals(masterKeyDigest, compare.masterKeyDigest) &&
             Objects.equals(baselineNodes(), compare.baselineNodes());
+    }
+
+    /**
+     * @return Master key digest for encrypted caches.
+     */
+    public byte[] masterKeyDigest() {
+        return masterKeyDigest;
     }
 
     /** {@inheritDoc} */

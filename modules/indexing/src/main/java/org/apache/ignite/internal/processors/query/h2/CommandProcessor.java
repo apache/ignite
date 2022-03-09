@@ -25,6 +25,7 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -32,7 +33,6 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
-
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteCluster;
 import org.apache.ignite.IgniteDataStreamer;
@@ -407,7 +407,7 @@ public class CommandProcessor {
      * @return Result.
      */
     public CommandResult runCommand(String sql, SqlCommand cmdNative, GridSqlStatement cmdH2,
-        QueryParameters params, @Nullable SqlClientContext cliCtx, Long qryId) throws IgniteCheckedException {
+        QueryParameters params, @Nullable SqlClientContext cliCtx, long qryId) throws IgniteCheckedException {
         assert cmdNative != null || cmdH2 != null;
 
         // Do execute.
@@ -420,24 +420,24 @@ public class CommandProcessor {
             if (isDdl(cmdNative))
                 runCommandNativeDdl(sql, cmdNative);
             else if (cmdNative instanceof SqlBulkLoadCommand) {
-                res = processBulkLoadCommand((SqlBulkLoadCommand) cmdNative, qryId);
+                res = processBulkLoadCommand((SqlBulkLoadCommand)cmdNative, qryId);
 
                 unregister = false;
             }
             else if (cmdNative instanceof SqlSetStreamingCommand)
                 processSetStreamingCommand((SqlSetStreamingCommand)cmdNative, cliCtx);
             else if (cmdNative instanceof SqlKillQueryCommand)
-                processKillQueryCommand((SqlKillQueryCommand) cmdNative);
+                processKillQueryCommand((SqlKillQueryCommand)cmdNative);
             else if (cmdNative instanceof SqlKillComputeTaskCommand)
-                processKillComputeTaskCommand((SqlKillComputeTaskCommand) cmdNative);
+                processKillComputeTaskCommand((SqlKillComputeTaskCommand)cmdNative);
             else if (cmdNative instanceof SqlKillTransactionCommand)
-                processKillTxCommand((SqlKillTransactionCommand) cmdNative);
+                processKillTxCommand((SqlKillTransactionCommand)cmdNative);
             else if (cmdNative instanceof SqlKillServiceCommand)
-                processKillServiceTaskCommand((SqlKillServiceCommand) cmdNative);
+                processKillServiceTaskCommand((SqlKillServiceCommand)cmdNative);
             else if (cmdNative instanceof SqlKillScanQueryCommand)
-                processKillScanQueryCommand((SqlKillScanQueryCommand) cmdNative);
+                processKillScanQueryCommand((SqlKillScanQueryCommand)cmdNative);
             else if (cmdNative instanceof SqlKillContinuousQueryCommand)
-                processKillContinuousQueryCommand((SqlKillContinuousQueryCommand) cmdNative);
+                processKillContinuousQueryCommand((SqlKillContinuousQueryCommand)cmdNative);
             else
                 processTxCommand(cmdNative, params);
         }
@@ -576,6 +576,7 @@ public class CommandProcessor {
             .map(t -> {
                 if (t.key().schema() == null) {
                     StatisticsKey key = new StatisticsKey(cmd.schemaName(), t.key().obj());
+
                     return new StatisticsObjectConfiguration(key, t.columns().values(),
                         t.maxPartitionObsolescencePercent());
                 }
@@ -738,11 +739,11 @@ public class CommandProcessor {
                 ctx.security().dropUser(dropCmd.userName());
             }
             else if (cmd instanceof SqlAnalyzeCommand)
-                processAnalyzeCommand((SqlAnalyzeCommand) cmd);
+                processAnalyzeCommand((SqlAnalyzeCommand)cmd);
             else if (cmd instanceof SqlRefreshStatitsicsCommand)
-                processRefreshStatisticsCommand((SqlRefreshStatitsicsCommand) cmd);
+                processRefreshStatisticsCommand((SqlRefreshStatitsicsCommand)cmd);
             else if (cmd instanceof SqlDropStatisticsCommand)
-                processDropStatisticsCommand((SqlDropStatisticsCommand) cmd);
+                processDropStatisticsCommand((SqlDropStatisticsCommand)cmd);
             else
                 throw new IgniteSQLException("Unsupported DDL operation: " + sql,
                     IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
@@ -813,7 +814,7 @@ public class CommandProcessor {
                     newIdx, cmd.ifNotExists(), 0);
             }
             else if (cmdH2 instanceof GridSqlDropIndex) {
-                GridSqlDropIndex cmd = (GridSqlDropIndex) cmdH2;
+                GridSqlDropIndex cmd = (GridSqlDropIndex)cmdH2;
 
                 isDdlOnSchemaSupported(cmd.schemaName());
 
@@ -1237,6 +1238,15 @@ public class CommandProcessor {
         if (!F.isEmpty(notNullFields))
             res.setNotNullFields(notNullFields);
 
+        // Fill key object with all fields for new tables.
+        res.fillAbsentPKsWithDefaults(true);
+
+        if (Objects.nonNull(createTbl.primaryKeyInlineSize()))
+            res.setPrimaryKeyInlineSize(createTbl.primaryKeyInlineSize());
+
+        if (Objects.nonNull(createTbl.affinityKeyInlineSize()))
+            res.setAffinityKeyInlineSize(createTbl.affinityKeyInlineSize());
+
         return res;
     }
 
@@ -1409,7 +1419,7 @@ public class CommandProcessor {
      * @return The context (which is the result of the first request/response).
      * @throws IgniteCheckedException If something failed.
      */
-    private FieldsQueryCursor<List<?>> processBulkLoadCommand(SqlBulkLoadCommand cmd, Long qryId)
+    private FieldsQueryCursor<List<?>> processBulkLoadCommand(SqlBulkLoadCommand cmd, long qryId)
         throws IgniteCheckedException {
         if (cmd.packetSize() == null)
             cmd.packetSize(BulkLoadAckClientParameters.DFLT_PACKET_SIZE);

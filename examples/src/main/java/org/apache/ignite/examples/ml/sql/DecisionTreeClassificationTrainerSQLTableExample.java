@@ -157,7 +157,7 @@ public class DecisionTreeClassificationTrainerSQLTableExample {
             return null;
 
         if (obj instanceof Number) {
-            Number num = (Number) obj;
+            Number num = (Number)obj;
 
             return num.doubleValue();
         }

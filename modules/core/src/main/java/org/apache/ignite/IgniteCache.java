@@ -44,6 +44,7 @@ import org.apache.ignite.cache.CacheMetrics;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cache.PartitionLossPolicy;
+import org.apache.ignite.cache.ReadRepairStrategy;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.Query;
 import org.apache.ignite.cache.query.QueryCursor;
@@ -188,10 +189,11 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * <li>{@link IgniteCache#get} && {@link IgniteCache#getAsync}</li>
      * <li>{@link IgniteCache#getAll} && {@link IgniteCache#getAllAsync}</li>
      * </ul>
+     * @param strategy Read Repair strategy.
      * @return Cache with explicit consistency check on each read and repair if necessary.
      */
     @IgniteExperimental
-    public IgniteCache<K, V> withReadRepair();
+    public IgniteCache<K, V> withReadRepair(ReadRepairStrategy strategy);
 
     /**
      * Returns cache that will operate with binary objects.
@@ -1577,7 +1579,9 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * <p>
      * @return Future that will be completed when rebalancing is finished. Future.get() returns {@code true}
      *      when rebalance was successfully finished.
+     * @deprecated Use baseline topology feature instead. Please, be aware this API will be removed in the next releases.
      */
+    @Deprecated
     public IgniteFuture<Boolean> rebalance();
 
     /**

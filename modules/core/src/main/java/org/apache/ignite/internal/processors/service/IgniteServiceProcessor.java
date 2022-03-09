@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.service;
 
+import java.io.Externalizable;
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -39,6 +41,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.ignite.IgniteCheckedException;
@@ -58,13 +61,18 @@ import org.apache.ignite.internal.managers.deployment.GridDeployment;
 import org.apache.ignite.internal.managers.discovery.CustomEventListener;
 import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.managers.systemview.walker.ServiceViewWalker;
+import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.DynamicCacheChangeBatch;
 import org.apache.ignite.internal.processors.cache.DynamicCacheChangeRequest;
+import org.apache.ignite.internal.processors.cache.ValidationOnNodeJoinUtils;
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateMessage;
 import org.apache.ignite.internal.processors.cluster.DiscoveryDataClusterState;
 import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
+import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.platform.services.PlatformService;
+import org.apache.ignite.internal.processors.security.OperationSecurityContext;
+import org.apache.ignite.internal.processors.security.SecurityContext;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -76,25 +84,35 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
+import org.apache.ignite.plugin.security.SecurityException;
 import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.services.Service;
 import org.apache.ignite.services.ServiceConfiguration;
+import org.apache.ignite.services.ServiceContext;
 import org.apache.ignite.services.ServiceDeploymentException;
 import org.apache.ignite.services.ServiceDescriptor;
+import org.apache.ignite.spi.IgniteNodeValidationResult;
 import org.apache.ignite.spi.communication.CommunicationSpi;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag;
 import org.apache.ignite.spi.discovery.DiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.metric.ReadOnlyMetricRegistry;
 import org.apache.ignite.spi.systemview.view.ServiceView;
 import org.apache.ignite.thread.IgniteThreadFactory;
 import org.apache.ignite.thread.OomExceptionHandler;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static org.apache.ignite.configuration.DeploymentMode.ISOLATED;
 import static org.apache.ignite.configuration.DeploymentMode.PRIVATE;
 import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
 import static org.apache.ignite.internal.GridComponent.DiscoveryDataExchangeType.SERVICE_PROC;
+import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
+import static org.apache.ignite.internal.processors.security.SecurityUtils.nodeSecurityContext;
+import static org.apache.ignite.internal.util.IgniteUtils.allInterfaces;
+import static org.apache.ignite.plugin.security.SecurityPermission.SERVICE_DEPLOY;
 
 /**
  * Ignite service processor.
@@ -109,12 +127,27 @@ import static org.apache.ignite.internal.GridComponent.DiscoveryDataExchangeType
  */
 @SkipDaemon
 @SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter")
-public class IgniteServiceProcessor extends ServiceProcessorAdapter implements IgniteChangeGlobalStateSupport {
+public class IgniteServiceProcessor extends GridProcessorAdapter implements IgniteChangeGlobalStateSupport {
     /** */
     public static final String SVCS_VIEW = "services";
 
     /** */
     public static final String SVCS_VIEW_DESC = "Services";
+
+    /** Base name domain for invocation metrics. */
+    private static final String SERVICE_METRIC_REGISTRY = "Services";
+
+    /** Description for the service method invocation metric. */
+    private static final String DESCRIPTION_OF_INVOCATION_METRIC_PREF = "Duration in milliseconds of ";
+
+    /** Default bounds of invocation histogram in nanoseconds. */
+    public static final long[] DEFAULT_INVOCATION_BOUNDS = new long[] {
+        NANOSECONDS.convert(1, MILLISECONDS),
+        NANOSECONDS.convert(10, MILLISECONDS),
+        NANOSECONDS.convert(50, MILLISECONDS),
+        NANOSECONDS.convert(200, MILLISECONDS),
+        NANOSECONDS.convert(1000, MILLISECONDS)
+    };
 
     /** Local service instances. */
     private final ConcurrentMap<IgniteUuid, Collection<ServiceContextImpl>> locServices = new ConcurrentHashMap<>();
@@ -306,6 +339,8 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
 
         deployedServices.clear();
 
+        ctx.metric().remove(SERVICE_METRIC_REGISTRY);
+
         locServices.values().stream().flatMap(Collection::stream).forEach(srvcCtx -> {
             cancel(srvcCtx);
 
@@ -358,6 +393,24 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
         ArrayList<ServiceInfo> staticServicesInfo = staticallyConfiguredServices(true);
 
         dataBag.addJoiningNodeData(SERVICE_PROC.ordinal(), new ServiceProcessorJoinNodeDiscoveryData(staticServicesInfo));
+    }
+
+    /** {@inheritDoc} */
+    @Override public @Nullable IgniteNodeValidationResult validateNode(
+        ClusterNode node,
+        DiscoveryDataBag.JoiningNodeDiscoveryData data
+    ) {
+        if (data.joiningNodeData() == null || !ctx.security().enabled())
+            return null;
+
+        List<ServiceInfo> svcs = ((ServiceProcessorJoinNodeDiscoveryData)data.joiningNodeData()).services();
+
+        SecurityException err = checkDeployPermissionDuringJoin(node, svcs);
+
+        if (err != null)
+            return new IgniteNodeValidationResult(node.id(), err.getMessage());
+
+        return null;
     }
 
     /** {@inheritDoc} */
@@ -516,18 +569,33 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
                 throw new IgniteException("Service configuration check failed (" + desc + ")");
     }
 
-    /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<?> deployNodeSingleton(ClusterGroup prj, String name, Service srvc) {
+    /**
+     * @param prj Grid projection.
+     * @param name Service name.
+     * @param srvc Service.
+     * @return Future.
+     */
+    public IgniteInternalFuture<?> deployNodeSingleton(ClusterGroup prj, String name, Service srvc) {
         return deployMultiple(prj, name, srvc, 0, 1);
     }
 
-    /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<?> deployClusterSingleton(ClusterGroup prj, String name, Service srvc) {
+    /**
+     * @param name Service name.
+     * @param srvc Service instance.
+     * @return Future.
+     */
+    public IgniteInternalFuture<?> deployClusterSingleton(ClusterGroup prj, String name, Service srvc) {
         return deployMultiple(prj, name, srvc, 1, 1);
     }
 
-    /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<?> deployMultiple(ClusterGroup prj, String name, Service srvc, int totalCnt,
+    /**
+     * @param name Service name.
+     * @param srvc Service.
+     * @param totalCnt Total count.
+     * @param maxPerNodeCnt Max per-node count.
+     * @return Future.
+     */
+    public IgniteInternalFuture<?> deployMultiple(ClusterGroup prj, String name, Service srvc, int totalCnt,
         int maxPerNodeCnt) {
         ServiceConfiguration cfg = new ServiceConfiguration();
 
@@ -539,8 +607,14 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
         return deployAll(prj, Collections.singleton(cfg));
     }
 
-    /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<?> deployKeyAffinitySingleton(String name, Service srvc, String cacheName,
+    /**
+     * @param name Service name.
+     * @param srvc Service.
+     * @param cacheName Cache name.
+     * @param affKey Affinity key.
+     * @return Future.
+     */
+    public IgniteInternalFuture<?> deployKeyAffinitySingleton(String name, Service srvc, String cacheName,
         Object affKey) {
         A.notNull(affKey, "affKey");
 
@@ -585,9 +659,6 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
 
                 err = e;
             }
-
-            if (err == null)
-                err = checkPermissions(cfg.getName(), SecurityPermission.SERVICE_DEPLOY);
 
             if (err == null) {
                 try {
@@ -638,8 +709,12 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
         }
     }
 
-    /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<?> deployAll(ClusterGroup prj, Collection<ServiceConfiguration> cfgs) {
+    /**
+     * @param prj Grid projection.
+     * @param cfgs Service configurations.
+     * @return Future for deployment.
+     */
+    public IgniteInternalFuture<?> deployAll(ClusterGroup prj, Collection<ServiceConfiguration> cfgs) {
         if (prj == null)
             // Deploy to servers by default if no projection specified.
             return deployAll(cfgs, ctx.cluster().get().forServers().predicate());
@@ -730,19 +805,27 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
         }
     }
 
-    /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<?> cancel(String name) {
+    /**
+     * @param name Service name.
+     * @return Future.
+     */
+    public IgniteInternalFuture<?> cancel(String name) {
         return cancelAll(Collections.singleton(name));
     }
 
-    /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<?> cancelAll() {
+    /**
+     * @return Future.
+     */
+    public IgniteInternalFuture<?> cancelAll() {
         return cancelAll(deployedServices.values().stream().map(ServiceInfo::name).collect(Collectors.toSet()));
     }
 
-    /** {@inheritDoc} */
+    /**
+     * @param servicesNames Name of services to deploy.
+     * @return Future.
+     */
     @SuppressWarnings("unchecked")
-    @Override public IgniteInternalFuture<?> cancelAll(@NotNull Collection<String> servicesNames) {
+    public IgniteInternalFuture<?> cancelAll(@NotNull Collection<String> servicesNames) {
         opsLock.readLock().lock();
 
         try {
@@ -827,8 +910,13 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
         }
     }
 
-    /** {@inheritDoc} */
-    @Override public Map<UUID, Integer> serviceTopology(String name, long timeout) throws IgniteCheckedException {
+    /**
+     * @param name Service name.
+     * @param timeout If greater than 0 limits task execution time. Cannot be negative.
+     * @return Service topology.
+     * @throws IgniteCheckedException On error.
+     */
+    public Map<UUID, Integer> serviceTopology(String name, long timeout) throws IgniteCheckedException {
         assert timeout >= 0;
 
         long startTime = U.currentTimeMillis();
@@ -864,13 +952,19 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
         }
     }
 
-    /** {@inheritDoc} */
-    @Override public Collection<ServiceDescriptor> serviceDescriptors() {
+    /**
+     * @return Collection of service descriptors.
+     */
+    public Collection<ServiceDescriptor> serviceDescriptors() {
         return new ArrayList<>(registeredServices.values());
     }
 
-    /** {@inheritDoc} */
-    @Override public <T> T service(String name) {
+    /**
+     * @param name Service name.
+     * @param <T> Service type.
+     * @return Service by specified service name.
+     */
+    public <T> T service(String name) {
         if (!enterBusy())
             return null;
 
@@ -901,8 +995,11 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
         }
     }
 
-    /** {@inheritDoc} */
-    @Override public ServiceContextImpl serviceContext(String name) {
+    /**
+     * @param name Service name.
+     * @return Service by specified service name.
+     */
+    public ServiceContextImpl serviceContext(String name) {
         if (!enterBusy())
             return null;
 
@@ -942,47 +1039,37 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
         return locServices.get(srvcId);
     }
 
-    /** {@inheritDoc} */
-    @Override public <T> T serviceProxy(ClusterGroup prj, String name, Class<? super T> srvcCls, boolean sticky,
-        long timeout)
-        throws IgniteException {
+    /**
+     * @param prj Grid projection.
+     * @param name Service name.
+     * @param srvcCls Service class.
+     * @param sticky Whether multi-node request should be done.
+     * @param callAttrsProvider Service call context attributes provider.
+     * @param timeout If greater than 0 limits service acquire time. Cannot be negative.
+     * @param <T> Service interface type.
+     * @return The proxy of a service by its name and class.
+     * @throws IgniteException If failed to create proxy.
+     */
+    public <T> T serviceProxy(
+        ClusterGroup prj,
+        String name,
+        Class<? super T> srvcCls,
+        boolean sticky,
+        @Nullable Supplier<Map<String, Object>> callAttrsProvider,
+        long timeout,
+        boolean keepBinary
+    ) throws IgniteException {
         ctx.security().authorize(name, SecurityPermission.SERVICE_INVOKE);
 
-        if (hasLocalNode(prj)) {
-            ServiceContextImpl ctx = serviceContext(name);
-
-            if (ctx != null) {
-                Service srvc = ctx.service();
-
-                if (srvc != null) {
-                    if (srvcCls.isAssignableFrom(srvc.getClass()))
-                        return (T)srvc;
-                    else if (!PlatformService.class.isAssignableFrom(srvc.getClass())) {
-                        throw new IgniteException("Service does not implement specified interface [srvcCls="
-                                + srvcCls.getName() + ", srvcCls=" + srvc.getClass().getName() + ']');
-                    }
-                }
-            }
-        }
-
-        return new GridServiceProxy<T>(prj, name, srvcCls, sticky, timeout, ctx).proxy();
+        return new GridServiceProxy<T>(prj, name, srvcCls, sticky, timeout, ctx, callAttrsProvider, keepBinary).proxy();
     }
 
     /**
-     * @param prj Grid nodes projection.
-     * @return Whether given projection contains any local node.
+     * @param name Service name.
+     * @param <T> Service type.
+     * @return Services by specified service name.
      */
-    private boolean hasLocalNode(ClusterGroup prj) {
-        for (ClusterNode n : prj.nodes()) {
-            if (n.isLocal())
-                return true;
-        }
-
-        return false;
-    }
-
-    /** {@inheritDoc} */
-    @Override public <T> Collection<T> services(String name) {
+    public <T> Collection<T> services(String name) {
         if (!enterBusy())
             return null;
 
@@ -1175,7 +1262,8 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
                         UUID.randomUUID(),
                         cacheName,
                         affKey,
-                        Executors.newSingleThreadExecutor(threadFactory));
+                        Executors.newSingleThreadExecutor(threadFactory),
+                        cfg.isStatisticsEnabled());
 
                     ctxs.add(srvcCtx);
 
@@ -1184,11 +1272,13 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
             }
         }
 
+        ReadOnlyMetricRegistry invocationMetrics = null;
+
         for (final ServiceContextImpl srvcCtx : toInit) {
             final Service srvc;
 
             try {
-                srvc = copyAndInject(cfg);
+                srvc = copyAndInject(cfg, srvcCtx);
 
                 // Initialize service.
                 srvc.init(srvcCtx);
@@ -1209,6 +1299,13 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
             if (log.isInfoEnabled())
                 log.info("Starting service instance [name=" + srvcCtx.name() + ", execId=" +
                     srvcCtx.executionId() + ']');
+
+            if (cfg.isStatisticsEnabled()) {
+                if (invocationMetrics == null)
+                    invocationMetrics = createServiceMetrics(srvcCtx);
+
+                srvcCtx.metrics(invocationMetrics);
+            }
 
             // Start service in its own thread.
             final ExecutorService exe = srvcCtx.executor();
@@ -1253,10 +1350,11 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
 
     /**
      * @param cfg Service configuration.
+     * @param svcCtx Service context to be injected into the service.
      * @return Copy of service.
      * @throws IgniteCheckedException If failed.
      */
-    private Service copyAndInject(ServiceConfiguration cfg) throws IgniteCheckedException {
+    private Service copyAndInject(ServiceConfiguration cfg, ServiceContext svcCtx) throws IgniteCheckedException {
         if (cfg instanceof LazyServiceConfiguration) {
             LazyServiceConfiguration srvcCfg = (LazyServiceConfiguration)cfg;
 
@@ -1267,7 +1365,7 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
             Service srvc = U.unmarshal(marsh, bytes,
                 U.resolveClassLoader(srvcDep != null ? srvcDep.classLoader() : null, ctx.config()));
 
-            ctx.resource().inject(srvc);
+            ctx.resource().inject(srvc, svcCtx);
 
             return srvc;
         }
@@ -1279,7 +1377,7 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
 
                 Service cp = U.unmarshal(marsh, bytes, U.resolveClassLoader(srvc.getClass().getClassLoader(), ctx.config()));
 
-                ctx.resource().inject(cp);
+                ctx.resource().inject(cp, svcCtx);
 
                 return cp;
             }
@@ -1295,14 +1393,20 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
      * @param ctxs Contexts to cancel.
      * @param cancelCnt Number of contexts to cancel.
      */
-    private void cancel(Iterable<ServiceContextImpl> ctxs, int cancelCnt) {
+    private void cancel(Collection<ServiceContextImpl> ctxs, int cancelCnt) {
         for (Iterator<ServiceContextImpl> it = ctxs.iterator(); it.hasNext(); ) {
-            cancel(it.next());
+            ServiceContextImpl svcCtx = it.next();
+
+            cancel(svcCtx);
 
             it.remove();
 
-            if (--cancelCnt == 0)
+            if (--cancelCnt == 0) {
+                if (ctxs.isEmpty())
+                    ctx.metric().remove(serviceMetricRegistryName(svcCtx.name()));
+
                 break;
+            }
         }
     }
 
@@ -1504,14 +1608,28 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
             F.eq(ctx.discovery().localNode(), coordinator());
     }
 
-    /** {@inheritDoc} */
-    @Override public void onLocalJoin(DiscoveryEvent evt, DiscoCache discoCache) {
+    /**
+     * Callback for local join events for which the regular events are not generated.
+     * <p/>
+     * Local join event is expected in cases of joining to topology or client reconnect.
+     *
+     * @param evt Discovery event.
+     * @param discoCache Discovery cache.
+     */
+    public void onLocalJoin(DiscoveryEvent evt, DiscoCache discoCache) {
         assert ctx.localNodeId().equals(evt.eventNode().id());
         assert evt.type() == EVT_NODE_JOINED;
 
         if (isLocalNodeCoordinator()) {
             // First node start, method onGridDataReceived(DiscoveryDataBag.GridDiscoveryData) has not been called.
             ArrayList<ServiceInfo> staticServicesInfo = staticallyConfiguredServices(false);
+
+            if (ctx.security().enabled()) {
+                SecurityException err = checkDeployPermissionDuringJoin(evt.node(), staticServicesInfo);
+
+                if (err != null)
+                    throw err;
+            }
 
             staticServicesInfo.forEach(this::registerService);
         }
@@ -1601,7 +1719,7 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
             ServiceInfo oldDesc = registeredServices.get(reqSrvcId);
 
             if (req instanceof ServiceDeploymentRequest) {
-                IgniteCheckedException err = null;
+                Exception err = null;
 
                 if (oldDesc != null) { // In case of a collision of IgniteUuid.randomUuid() (almost impossible case)
                     err = new IgniteCheckedException("Failed to deploy service. Service with generated id already" +
@@ -1610,36 +1728,41 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
                 else {
                     ServiceConfiguration cfg = ((ServiceDeploymentRequest)req).configuration();
 
-                    oldDesc = lookupInRegisteredServices(cfg.getName());
+                    if (ctx.security().enabled())
+                        err = checkPermissions(((ServiceDeploymentRequest)req).configuration().getName(), SERVICE_DEPLOY);
 
-                    if (oldDesc == null) {
-                        if (cfg.getCacheName() != null && ctx.cache().cacheDescriptor(cfg.getCacheName()) == null) {
-                            err = new IgniteCheckedException("Failed to deploy service, " +
-                                "affinity cache is not found, cfg=" + cfg);
+                    if (err == null) {
+                        oldDesc = lookupInRegisteredServices(cfg.getName());
+
+                        if (oldDesc == null) {
+                            if (cfg.getCacheName() != null && ctx.cache().cacheDescriptor(cfg.getCacheName()) == null) {
+                                err = new IgniteCheckedException("Failed to deploy service, " +
+                                    "affinity cache is not found, cfg=" + cfg);
+                            }
+                            else {
+                                ServiceInfo desc = new ServiceInfo(snd.id(), reqSrvcId, cfg);
+
+                                registerService(desc);
+
+                                toDeploy.put(reqSrvcId, desc);
+                            }
                         }
                         else {
-                            ServiceInfo desc = new ServiceInfo(snd.id(), reqSrvcId, cfg);
+                            if (!oldDesc.configuration().equalsIgnoreNodeFilter(cfg)) {
+                                err = new IgniteCheckedException("Failed to deploy service " +
+                                    "(service already exists with different configuration) : " +
+                                    "[deployed=" + oldDesc.configuration() + ", new=" + cfg + ']');
+                            }
+                            else {
+                                GridServiceDeploymentFuture<IgniteUuid> fut = depFuts.remove(reqSrvcId);
 
-                            registerService(desc);
+                                if (fut != null) {
+                                    fut.onDone();
 
-                            toDeploy.put(reqSrvcId, desc);
-                        }
-                    }
-                    else {
-                        if (!oldDesc.configuration().equalsIgnoreNodeFilter(cfg)) {
-                            err = new IgniteCheckedException("Failed to deploy service " +
-                                "(service already exists with different configuration) : " +
-                                "[deployed=" + oldDesc.configuration() + ", new=" + cfg + ']');
-                        }
-                        else {
-                            GridServiceDeploymentFuture<IgniteUuid> fut = depFuts.remove(reqSrvcId);
-
-                            if (fut != null) {
-                                fut.onDone();
-
-                                if (log.isDebugEnabled()) {
-                                    log.debug("Service sent to deploy is already deployed : " +
-                                        "[srvcId=" + oldDesc.serviceId() + ", cfg=" + oldDesc.configuration());
+                                    if (log.isDebugEnabled()) {
+                                        log.debug("Service sent to deploy is already deployed : " +
+                                            "[srvcId=" + oldDesc.serviceId() + ", cfg=" + oldDesc.configuration());
+                                    }
                                 }
                             }
                         }
@@ -1819,5 +1942,78 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
      */
     private void leaveBusy() {
         opsLock.readLock().unlock();
+    }
+
+    /**
+     * Checks {@link SecurityPermission#SERVICE_DEPLOY} for each service.
+     * This method must use {@link SecurityContext} from node attributes because join not finished in time of validation.
+     * This mean SecurityProcessor doesn't know about joining node and can't return it security context based on node id.
+     *
+     * @param node Node to check.
+     * @param svcs Statically configured services.
+     * @return {@code SecurityException} in case node permissions not enough.
+     * @see ValidationOnNodeJoinUtils
+     */
+    private SecurityException checkDeployPermissionDuringJoin(ClusterNode node, List<ServiceInfo> svcs) {
+        SecurityContext secCtx;
+
+        try {
+            secCtx = nodeSecurityContext(marsh, U.resolveClassLoader(ctx.config()), node);
+
+            assert secCtx != null;
+        }
+        catch (SecurityException err) {
+            return err;
+        }
+
+        try (OperationSecurityContext ignored = ctx.security().withContext(secCtx)) {
+            for (ServiceInfo desc : svcs) {
+                SecurityException err = checkPermissions(desc.name(), SERVICE_DEPLOY);
+
+                if (err != null)
+                    return err;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Creates metrics registry for the invocation histograms.
+     *
+     * @param srvcCtx ServiceContext.
+     * @return Created metric registry.
+     */
+    private ReadOnlyMetricRegistry createServiceMetrics(ServiceContextImpl srvcCtx) {
+        MetricRegistry metricRegistry = ctx.metric().registry(serviceMetricRegistryName(srvcCtx.name()));
+
+        for (Class<?> itf : allInterfaces(srvcCtx.service().getClass())) {
+            for (Method mtd : itf.getMethods()) {
+                if (metricIgnored(mtd.getDeclaringClass()))
+                    continue;
+
+                metricRegistry.histogram(mtd.getName(), DEFAULT_INVOCATION_BOUNDS, DESCRIPTION_OF_INVOCATION_METRIC_PREF +
+                    '\'' + mtd.getName() + "()'");
+            }
+        }
+
+        return metricRegistry;
+    }
+
+    /**
+     * @return {@code True} if metrics should not be created for this class or interface.
+     */
+    private static boolean metricIgnored(Class<?> cls) {
+        return Service.class.equals(cls) || Externalizable.class.equals(cls) || PlatformService.class.equals(cls);
+    }
+
+    /**
+     * Gives proper name for service metric registry.
+     *
+     * @param srvcName Name of the service.
+     * @return registry name for service {@code srvcName}.
+     */
+    static String serviceMetricRegistryName(String srvcName) {
+        return metricName(SERVICE_METRIC_REGISTRY, srvcName);
     }
 }

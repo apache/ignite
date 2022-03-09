@@ -25,6 +25,8 @@ import java.util.concurrent.ForkJoinPool;
 import javax.cache.configuration.Factory;
 import javax.net.ssl.SSLContext;
 import org.apache.ignite.client.ClientAddressFinder;
+import org.apache.ignite.client.ClientRetryAllPolicy;
+import org.apache.ignite.client.ClientRetryPolicy;
 import org.apache.ignite.client.SslMode;
 import org.apache.ignite.client.SslProtocol;
 import org.apache.ignite.internal.client.thin.TcpIgniteClient;
@@ -122,8 +124,17 @@ public final class ClientConfiguration implements Serializable {
     /** Retry limit. */
     private int retryLimit = 0;
 
+    /** Retry policy. */
+    private ClientRetryPolicy retryPolicy = new ClientRetryAllPolicy();
+
     /** Executor for async operations continuations. */
     private Executor asyncContinuationExecutor;
+
+    /** Whether heartbeats should be enabled. */
+    private boolean heartbeatEnabled;
+
+    /** Heartbeat interval, in milliseconds. */
+    private long heartbeatInterval = 30_000L;
 
     /**
      * @return Host addresses.
@@ -582,6 +593,32 @@ public final class ClientConfiguration implements Serializable {
         return this;
     }
 
+    /**
+     * Gets the retry policy.
+     *
+     * @return Retry policy.
+     */
+    public ClientRetryPolicy getRetryPolicy() {
+        return retryPolicy;
+    }
+
+    /**
+     * Sets the retry policy. When a request fails due to a connection error, and multiple server connections
+     * are available, Ignite will retry the request if the specified policy allows it.
+     * <p />
+     * When {@link ClientConfiguration#retryLimit} is set, retry count will be limited even if the specified policy returns {@code true}.
+     * <p />
+     * Default is {@link ClientRetryAllPolicy}.
+     *
+     * @param retryPolicy Retry policy.
+     * @return {@code this} for chaining.
+     */
+    public ClientConfiguration setRetryPolicy(ClientRetryPolicy retryPolicy) {
+        this.retryPolicy = retryPolicy;
+
+        return this;
+    }
+
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(ClientConfiguration.class, this);
@@ -644,6 +681,70 @@ public final class ClientConfiguration implements Serializable {
      */
     public ClientConfiguration setAsyncContinuationExecutor(Executor asyncContinuationExecutor) {
         this.asyncContinuationExecutor = asyncContinuationExecutor;
+
+        return this;
+    }
+
+    /**
+     * Gets a value indicating whether heartbeats are enabled.
+     * <p />
+     * When thin client connection is idle (no operations are performed), heartbeat messages are sent periodically
+     * to keep the connection alive and detect potential half-open state.
+     * <p />
+     * See also {@link ClientConfiguration#heartbeatInterval}.
+     *
+     * @return Whether heartbeats are enabled.
+     */
+    public boolean isHeartbeatEnabled() {
+        return heartbeatEnabled;
+    }
+
+    /**
+     * Sets a value indicating whether heartbeats are enabled.
+     * <p />
+     * When thin client connection is idle (no operations are performed), heartbeat messages are sent periodically
+     * to keep the connection alive and detect potential half-open state.
+     * <p />
+     * See also {@link ClientConfiguration#heartbeatInterval}.
+     *
+     * @param heartbeatEnabled Whether to enable heartbeats.
+     * @return {@code this} for chaining.
+     */
+    public ClientConfiguration setHeartbeatEnabled(boolean heartbeatEnabled) {
+        this.heartbeatEnabled = heartbeatEnabled;
+
+        return this;
+    }
+
+    /**
+     * Gets the heartbeat message interval, in milliseconds. Default is <code>30_000</code>.
+     * <p />
+     * When server-side {@link ClientConnectorConfiguration#getIdleTimeout()} is not zero, effective heartbeat
+     * interval is set to <code>min(heartbeatInterval, idleTimeout / 3)</code>.
+     * <p />
+     * When thin client connection is idle (no operations are performed), heartbeat messages are sent periodically
+     * to keep the connection alive and detect potential half-open state.     *
+     *
+     * @return Heartbeat interval.
+     */
+    public long getHeartbeatInterval() {
+        return heartbeatInterval;
+    }
+
+    /**
+     * Sets the heartbeat message interval, in milliseconds. Default is <code>30_000</code>.
+     * <p />
+     * When server-side {@link ClientConnectorConfiguration#getIdleTimeout()} is not zero, effective heartbeat
+     * interval is set to <code>min(heartbeatInterval, idleTimeout / 3)</code>.
+     * <p />
+     * When thin client connection is idle (no operations are performed), heartbeat messages are sent periodically
+     * to keep the connection alive and detect potential half-open state.     *
+     *
+     * @param heartbeatInterval Heartbeat interval, in milliseconds.
+     * @return {@code this} for chaining.
+     */
+    public ClientConfiguration setHeartbeatInterval(long heartbeatInterval) {
+        this.heartbeatInterval = heartbeatInterval;
 
         return this;
     }

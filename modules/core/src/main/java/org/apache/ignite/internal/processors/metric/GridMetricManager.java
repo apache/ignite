@@ -189,6 +189,9 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
     /** Nonheap memory metrics. */
     private final MemoryUsageMetrics nonHeap;
 
+    /** */
+    private final SunOperatingSystemMXBeanAccessor sunOs;
+
     /**
      * @param ctx Kernal context.
      */
@@ -213,6 +216,8 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
 
             return spiWithSql;
         }).get());
+
+        sunOs = sunOperatingSystemMXBeanAccessor();
 
         ctx.addNodeAttribute(ATTR_PHY_RAM, totalSysMemory());
 
@@ -271,10 +276,10 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
 
                     try {
                         metastorage.iterate(HITRATE_CFG_PREFIX, (name, val) -> onHitRateConfigChanged(
-                            name.substring(HITRATE_CFG_PREFIX.length() + 1), (Long) val));
+                            name.substring(HITRATE_CFG_PREFIX.length() + 1), (Long)val));
 
                         metastorage.iterate(HISTOGRAM_CFG_PREFIX, (name, val) -> onHistogramConfigChanged(
-                            name.substring(HISTOGRAM_CFG_PREFIX.length() + 1), (long[]) val));
+                            name.substring(HISTOGRAM_CFG_PREFIX.length() + 1), (long[])val));
                     }
                     catch (IgniteCheckedException e) {
                         throw new IgniteException(e);
@@ -282,11 +287,11 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
 
                     metastorage.listen(n -> n.startsWith(HITRATE_CFG_PREFIX),
                         (name, oldVal, newVal) -> onHitRateConfigChanged(
-                            name.substring(HITRATE_CFG_PREFIX.length() + 1), (Long) newVal));
+                            name.substring(HITRATE_CFG_PREFIX.length() + 1), (Long)newVal));
 
                     metastorage.listen(n -> n.startsWith(HISTOGRAM_CFG_PREFIX),
                         (name, oldVal, newVal) -> onHistogramConfigChanged(
-                            name.substring(HISTOGRAM_CFG_PREFIX.length() + 1), (long[]) newVal));
+                            name.substring(HISTOGRAM_CFG_PREFIX.length() + 1), (long[])newVal));
                 }
 
                 /** {@inheritDoc} */
@@ -523,7 +528,7 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
             return null;
         }
 
-        return (T) m;
+        return (T)m;
     }
 
     /**
@@ -568,13 +573,43 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
      */
     private long totalSysMemory() {
         try {
-            com.sun.management.OperatingSystemMXBean sunOs = (com.sun.management.OperatingSystemMXBean) os;
-
             return sunOs.getTotalPhysicalMemorySize();
         }
         catch (RuntimeException ignored) {
             return -1;
         }
+    }
+
+    /** @return Accessor for {@link com.sun.management.OperatingSystemMXBean}. */
+    private SunOperatingSystemMXBeanAccessor sunOperatingSystemMXBeanAccessor() {
+        try {
+            if (os instanceof com.sun.management.OperatingSystemMXBean) {
+                com.sun.management.OperatingSystemMXBean sunOs = (com.sun.management.OperatingSystemMXBean)os;
+
+                return new SunOperatingSystemMXBeanAccessor() {
+                    @Override public long getProcessCpuTime() {
+                        return sunOs.getProcessCpuTime();
+                    }
+
+                    @Override public long getTotalPhysicalMemorySize() {
+                        return sunOs.getTotalPhysicalMemorySize();
+                    }
+                };
+            }
+        } catch (@SuppressWarnings("ErrorNotRethrown") NoClassDefFoundError ignored) {
+            log.warning("The 'com.sun.management.OperatingSystemMXBean' class is not available for class loader. " +
+                "System/JVM memory and CPU statistics may be not available.");
+        }
+
+        return new SunOperatingSystemMXBeanAccessor() {
+            @Override public long getProcessCpuTime() {
+                return U.<Long>property(os, "processCpuTime");
+            }
+
+            @Override public long getTotalPhysicalMemorySize() {
+                return U.<Long>property(os, "totalPhysicalMemorySize");
+            }
+        };
     }
 
     /** */
@@ -629,8 +664,6 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
             long cpuTime;
 
             try {
-                com.sun.management.OperatingSystemMXBean sunOs = (com.sun.management.OperatingSystemMXBean) os;
-
                 cpuTime = sunOs.getProcessCpuTime();
             }
             catch (RuntimeException ignored) {
@@ -694,5 +727,14 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
             committed.value(usage.getCommitted());
             max.value(usage.getMax());
         }
+    }
+
+    /** Accessor for {@link com.sun.management.OperatingSystemMXBean} methods. */
+    private interface SunOperatingSystemMXBeanAccessor {
+        /** @see com.sun.management.OperatingSystemMXBean#getProcessCpuTime() */
+        long getProcessCpuTime();
+
+        /** @see com.sun.management.OperatingSystemMXBean#getTotalPhysicalMemorySize() */
+        long getTotalPhysicalMemorySize();
     }
 }

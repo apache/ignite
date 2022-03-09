@@ -27,7 +27,6 @@ import org.apache.ignite.internal.cache.query.index.IndexName;
 import org.apache.ignite.internal.cache.query.index.SortOrder;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyDefinition;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypeSettings;
-import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypes;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexRow;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexRowCache;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexRowImpl;
@@ -77,9 +76,6 @@ public class InlineIndexTree extends BPlusTree<IndexRow, IndexRow> {
 
     /** Amount of bytes to store inlined index keys. */
     private final int inlineSize;
-
-    /** Index key type settings for this tree. */
-    private final IndexKeyTypeSettings keyTypeSettings;
 
     /** Recommends change inline size if needed. */
     private final InlineRecommender recommender;
@@ -192,8 +188,6 @@ public class InlineIndexTree extends BPlusTree<IndexRow, IndexRow> {
             setIos(inlineSize, mvccEnabled);
         }
 
-        this.keyTypeSettings = keyTypeSettings;
-
         initTree(initNew, inlineSize);
 
         this.recommender = recommender;
@@ -221,10 +215,10 @@ public class InlineIndexTree extends BPlusTree<IndexRow, IndexRow> {
             return metaInfo.inlineObjectSupported();
         else {
             try {
-                if (InlineObjectBytesDetector.objectMayBeInlined(metaInfo.inlineSize(), def.indexKeyDefinitions())) {
+                if (InlineObjectBytesDetector.objectMayBeInlined(metaInfo.inlineSize(), def.indexKeyDefinitions().values())) {
                     try {
                         InlineObjectBytesDetector inlineObjDetector = new InlineObjectBytesDetector(
-                            metaInfo.inlineSize(), def.indexKeyDefinitions(), def.idxName(), log);
+                            metaInfo.inlineSize(), def.indexKeyDefinitions().values(), def.idxName(), log);
 
                         // Create a settings for case where java objects inilned as byte array.
                         IndexKeyTypeSettings keyTypeSettings = new IndexKeyTypeSettings()
@@ -273,7 +267,7 @@ public class InlineIndexTree extends BPlusTree<IndexRow, IndexRow> {
 
         int off = io.offset(idx);
 
-        List<IndexKeyDefinition> keyDefs = def.indexKeyDefinitions();
+        List<IndexKeyDefinition> keyDefs = rowHnd.indexKeyDefinitions();
 
         List<InlineIndexKeyType> keyTypes = rowHandler().inlineIndexKeyTypes();
 
@@ -292,38 +286,18 @@ public class InlineIndexTree extends BPlusTree<IndexRow, IndexRow> {
 
                 InlineIndexKeyType keyType = keyTypes.get(keyIdx);
 
-                IndexKeyDefinition keyDef = keyDefs.get(keyIdx);
-
-                int cmp = COMPARE_UNSUPPORTED;
-
-                // Value can be set up by user in query with different data type.
-                // By default do not compare different types.
-                if (keyDef.validate(row.key(keyIdx))) {
-                    if (keyType.type() != IndexKeyTypes.JAVA_OBJECT || keyTypeSettings.inlineObjSupported()) {
-                        cmp = keyType.compare(pageAddr, off + fieldOff, maxSize, row.key(keyIdx));
-
-                        fieldOff += keyType.inlineSize(pageAddr, off + fieldOff);
-                    }
-                    // If inlining of POJO is not supported then fallback to previous logic.
-                    else
-                        break;
-                }
-
-                // Can't compare as inlined bytes are not enough for comparation.
-                if (cmp == CANT_BE_COMPARE)
-                    break;
-
-                // Try compare stored values for inlined keys with different approach?
-                if (cmp == COMPARE_UNSUPPORTED)
-                    cmp = def.rowComparator().compareKey(
-                        pageAddr, off + fieldOff, maxSize, row.key(keyIdx), keyType.type());
+                int cmp = def.rowComparator().compareKey(pageAddr, off + fieldOff, maxSize, row.key(keyIdx), keyType);
 
                 if (cmp == CANT_BE_COMPARE || cmp == COMPARE_UNSUPPORTED)
                     break;
+                else
+                    fieldOff += keyType.inlineSize(pageAddr, off + fieldOff);
 
-                if (cmp != 0)
+                if (cmp != 0) {
+                    IndexKeyDefinition keyDef = keyDefs.get(keyIdx);
+
                     return applySortOrder(cmp, keyDef.order().sortOrder());
-
+                }
             } catch (Exception e) {
                 throw new IgniteException("Failed to store new index row.", e);
             }
@@ -341,7 +315,7 @@ public class InlineIndexTree extends BPlusTree<IndexRow, IndexRow> {
                 return ret;
         }
 
-        return mvccCompare((MvccIO) io, pageAddr, idx, row);
+        return mvccCompare((MvccIO)io, pageAddr, idx, row);
     }
 
     /** */
@@ -355,10 +329,10 @@ public class InlineIndexTree extends BPlusTree<IndexRow, IndexRow> {
             if (row.key(i) == null)
                 return 0;
 
-            int c = def.rowComparator().compareKey(currRow, row, i);
+            int c = def.rowComparator().compareRow(currRow, row, i);
 
             if (c != 0)
-                return applySortOrder(Integer.signum(c), def.indexKeyDefinitions().get(i).order().sortOrder());
+                return applySortOrder(Integer.signum(c), rowHnd.indexKeyDefinitions().get(i).order().sortOrder());
         }
 
         return 0;
@@ -607,8 +581,8 @@ public class InlineIndexTree extends BPlusTree<IndexRow, IndexRow> {
      * @return New CorruptedTreeException instance.
      */
     @Override protected CorruptedTreeException corruptedTreeException(String msg, Throwable cause, int grpId, long... pageIds) {
-        CorruptedTreeException e = new CorruptedTreeException(msg, cause, grpId, grpName, def.idxName().cacheName(),
-            def.idxName().idxName(), pageIds);
+        CorruptedTreeException e = new CorruptedTreeException(msg, cause, grpName, def.idxName().cacheName(),
+            def.idxName().idxName(), grpId, pageIds);
 
         processFailure(FailureType.CRITICAL_ERROR, e);
 

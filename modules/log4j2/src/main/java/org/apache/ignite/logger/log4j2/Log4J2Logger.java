@@ -18,7 +18,6 @@
 package org.apache.ignite.logger.log4j2;
 
 import java.io.File;
-import java.lang.reflect.Field;
 import java.net.URL;
 import java.nio.charset.Charset;
 import java.util.Map;
@@ -237,27 +236,18 @@ public class Log4J2Logger implements IgniteLogger, LoggerNodeIdAndApplicationAwa
                     return ((RollingFileAppender)a).getFileName();
 
                 if (a instanceof RoutingAppender) {
-                    try {
-                        RoutingAppender routing = (RoutingAppender)a;
+                    RoutingAppender routing = (RoutingAppender)a;
 
-                        Field appsFiled = routing.getClass().getDeclaredField("appenders");
+                    Map<String, AppenderControl> appenders = routing.getAppenders();
 
-                        appsFiled.setAccessible(true);
+                    for (AppenderControl control : appenders.values()) {
+                        Appender innerApp = control.getAppender();
 
-                        Map<String, AppenderControl> appenders = (Map<String, AppenderControl>)appsFiled.get(routing);
+                        if (innerApp instanceof FileAppender)
+                            return normalize(((FileAppender)innerApp).getFileName());
 
-                        for (AppenderControl control : appenders.values()) {
-                            Appender innerApp = control.getAppender();
-
-                            if (innerApp instanceof FileAppender)
-                                return normalize(((FileAppender)innerApp).getFileName());
-
-                            if (innerApp instanceof RollingFileAppender)
-                                return normalize(((RollingFileAppender)innerApp).getFileName());
-                        }
-                    }
-                    catch (IllegalAccessException | NoSuchFieldException e) {
-                        error("Failed to get file name (was the implementation of log4j2 changed?).", e);
+                        if (innerApp instanceof RollingFileAppender)
+                            return normalize(((RollingFileAppender)innerApp).getFileName());
                     }
                 }
             }

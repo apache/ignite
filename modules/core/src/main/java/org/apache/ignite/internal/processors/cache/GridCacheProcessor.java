@@ -41,13 +41,15 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import javax.cache.CacheException;
+import javax.cache.expiry.EternalExpiryPolicy;
+import javax.cache.expiry.ExpiryPolicy;
 import javax.management.MBeanServer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -83,6 +85,7 @@ import org.apache.ignite.internal.cluster.DetachedClusterNode;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.managers.discovery.IgniteDiscoverySpi;
+import org.apache.ignite.internal.managers.encryption.GroupKeyEncrypted;
 import org.apache.ignite.internal.managers.systemview.walker.CacheGroupIoViewWalker;
 import org.apache.ignite.internal.managers.systemview.walker.CachePagesListViewWalker;
 import org.apache.ignite.internal.managers.systemview.walker.PartitionStateViewWalker;
@@ -121,6 +124,7 @@ import org.apache.ignite.internal.processors.cache.persistence.checkpoint.Checkp
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.FreeList;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.PagesList;
+import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetastorageLifecycleListener;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.ReadOnlyMetastorage;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
@@ -154,7 +158,6 @@ import org.apache.ignite.internal.processors.query.schema.SchemaNodeLeaveExchang
 import org.apache.ignite.internal.processors.query.schema.message.SchemaAbstractDiscoveryMessage;
 import org.apache.ignite.internal.processors.query.schema.message.SchemaProposeDiscoveryMessage;
 import org.apache.ignite.internal.processors.security.IgniteSecurity;
-import org.apache.ignite.internal.processors.service.GridServiceProcessor;
 import org.apache.ignite.internal.suggestions.GridPerformanceSuggestions;
 import org.apache.ignite.internal.util.F0;
 import org.apache.ignite.internal.util.IgniteCollectors;
@@ -339,6 +342,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     /** Cache configuration enricher. */
     private CacheConfigurationEnricher enricher;
 
+    /** */
+    public static final String EXPRITY_POLICY_MSG = "expiryPolicy=[type=%s, isEagerTtl=%s]";
+
     /**
      * @param ctx Kernal context.
      */
@@ -467,7 +473,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             sharedCtx.walState().onNodeLeft(task0.node().id());
         }
         else if (task instanceof FinishPreloadingTask) {
-            FinishPreloadingTask task0 = (FinishPreloadingTask) task;
+            FinishPreloadingTask task0 = (FinishPreloadingTask)task;
 
             CacheGroupContext grp = cacheGroup(task0.groupId());
 
@@ -732,9 +738,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         // Escape if cluster inactive.
         if (!active)
             return;
-
-        if (ctx.service() instanceof GridServiceProcessor)
-            ((GridServiceProcessor)ctx.service()).onUtilityCacheStarted();
 
         awaitRebalance(joinVer).get();
     }
@@ -2317,6 +2320,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             dataRegion = ctx.config().getDataStorageConfiguration().getDefaultDataRegionConfiguration().getName();
 
         if (log.isInfoEnabled()) {
+            String expPlcInfo = buildExpirePolicyInfo(cacheCtx);
+
             log.info("Started cache [name=" + cfg.getName() +
                 ", id=" + cacheCtx.cacheId() +
                 (cfg.getGroupName() != null ? ", group=" + cfg.getGroupName() : "") +
@@ -2324,7 +2329,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 ", mode=" + cfg.getCacheMode() +
                 ", atomicity=" + cfg.getAtomicityMode() +
                 ", backups=" + cfg.getBackups() +
-                ", mvcc=" + cacheCtx.mvccEnabled() + ']');
+                ", mvcc=" + cacheCtx.mvccEnabled() +
+                (expPlcInfo != null ? ", " + expPlcInfo : "") + ']');
         }
 
         grp.onCacheStarted(cacheCtx);
@@ -2397,6 +2403,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             desc.schema() != null ? desc.schema() : new QuerySchema(), desc.sql());
 
         if (log.isInfoEnabled()) {
+            String expPlcInfo = buildExpirePolicyInfo(cacheCtx);
+
             log.info("Started cache in recovery mode [name=" + cfg.getName() +
                 ", id=" + cacheCtx.cacheId() +
                 (cfg.getGroupName() != null ? ", group=" + cfg.getGroupName() : "") +
@@ -2404,10 +2412,25 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 ", mode=" + cfg.getCacheMode() +
                 ", atomicity=" + cfg.getAtomicityMode() +
                 ", backups=" + cfg.getBackups() +
-                ", mvcc=" + cacheCtx.mvccEnabled() + ']');
+                ", mvcc=" + cacheCtx.mvccEnabled() +
+                (expPlcInfo != null ? ", " + expPlcInfo : "") + ']');
         }
 
         return cacheCtx;
+    }
+
+    /**
+     * Build formatted string with expire policy info.
+     *
+     * @param cacheCtx - cache context.
+     * @return formatted expire policy info.
+     */
+    private String buildExpirePolicyInfo(@NotNull GridCacheContext cacheCtx) {
+        ExpiryPolicy expPlc = cacheCtx.expiry();
+        if (expPlc == null || expPlc instanceof EternalExpiryPolicy)
+            return null;
+
+        return String.format(EXPRITY_POLICY_MSG, expPlc.getClass().getName(), cacheCtx.ttl().eagerTtlEnabled());
     }
 
     /**
@@ -2820,9 +2843,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                         }
 
                         for (ExchangeActions.CacheActionData action : cachesToStopByGrp.getValue()) {
-                            stopGateway(action.request());
-
                             context().tm().rollbackTransactionsForStoppingCache(action.descriptor().cacheId());
+
+                            stopGateway(action.request());
 
                             String cacheName = action.request().cacheName();
 
@@ -2954,12 +2977,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         if (exchActions == null)
             return;
 
-        if (exchActions.systemCachesStarting() && exchActions.stateChangeRequest() == null) {
+        if (exchActions.systemCachesStarting() && exchActions.stateChangeRequest() == null)
             ctx.dataStructures().restoreStructuresState(ctx);
-
-            if (ctx.service() instanceof GridServiceProcessor)
-                ((GridServiceProcessor)ctx.service()).updateUtilityCache();
-        }
 
         if (err == null)
             processCacheStopRequestOnExchangeDone(exchActions);
@@ -3545,6 +3564,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 false,
                 null,
                 ccfg != null && ccfg.isEncryptionEnabled() ? grpKeys.iterator().next() : null,
+                null,
                 ccfg != null && ccfg.isEncryptionEnabled() ? masterKeyDigest : null);
 
             if (req != null) {
@@ -3785,7 +3805,11 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             Iterator<byte[]> grpKeysIter = grpKeys.iterator();
 
             for (StoredCacheData ccfg : storedCacheDataList) {
-                assert !ccfg.config().isEncryptionEnabled() || grpKeysIter.hasNext();
+                assert ccfg.groupKeyEncrypted() == null || ccfg.config().isEncryptionEnabled();
+
+                // Reuse encription key if passed for this group. Take next generated otherwise.
+                GroupKeyEncrypted encrKey = ccfg.config().isEncryptionEnabled() ? (ccfg.groupKeyEncrypted() != null ?
+                    ccfg.groupKeyEncrypted() : new GroupKeyEncrypted(0, grpKeysIter.next())) : null;
 
                 DynamicCacheChangeRequest req = prepareCacheChangeRequest(
                     ccfg.config(),
@@ -3798,8 +3822,10 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                     restartId,
                     disabledAfterStart,
                     ccfg.queryEntities(),
-                    ccfg.config().isEncryptionEnabled() ? grpKeysIter.next() : null,
-                    ccfg.config().isEncryptionEnabled() ? masterKeyDigest : null);
+                    encrKey != null ? encrKey.key() : null,
+                    encrKey != null ? encrKey.id() : null,
+                    encrKey != null ? masterKeyDigest : null
+                );
 
                 if (req != null) {
                     if (req.clientStartOnly()) {
@@ -4034,6 +4060,13 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             return CacheType.DATA_STRUCTURES;
         else
             return CacheType.USER;
+    }
+
+    /**
+     * @return {@code True} if cache group {@code cacheGrpId} is encrypted. {@code False} otherwise.
+     */
+    public boolean isEncrypted(int cacheGrpId) {
+        return cacheGrpId != MetaStorage.METASTORAGE_CACHE_ID && cacheGroup(cacheGrpId).config().isEncryptionEnabled();
     }
 
     /**
@@ -5070,6 +5103,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @param disabledAfterStart If true, cache proxies will be only activated after {@link #restartProxies()}.
      * @param qryEntities Query entities.
      * @param encKey Encryption key.
+     * @param encKeyId Id of the encryption key.
      * @param masterKeyDigest Master key digest.
      * @return Request or {@code null} if cache already exists.
      * @throws IgniteCheckedException if some of pre-checks failed
@@ -5087,6 +5121,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         boolean disabledAfterStart,
         @Nullable Collection<QueryEntity> qryEntities,
         @Nullable byte[] encKey,
+        @Nullable Integer encKeyId,
         @Nullable byte[] masterKeyDigest
     ) throws IgniteCheckedException {
         DynamicCacheDescriptor desc = cacheDescriptor(cacheName);
@@ -5102,6 +5137,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         req.masterKeyDigest(masterKeyDigest);
 
         req.encryptionKey(encKey);
+
+        req.encryptionKeyId(encKeyId);
 
         req.restartId(restartId);
 
@@ -5163,7 +5200,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 if (restartId != null)
                     req.schema(new QuerySchema(qryEntities == null ? cfg.getQueryEntities() : qryEntities));
                 else
-                    req.schema(new QuerySchema(qryEntities != null ? QueryUtils.normalizeQueryEntities(qryEntities, cfg)
+                    req.schema(new QuerySchema(qryEntities != null ? QueryUtils.normalizeQueryEntities(ctx, qryEntities, cfg)
                             : cfg.getQueryEntities()));
             }
         }
@@ -5321,7 +5358,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @return Cache configuration splitter with or without old format support depending on cluster state.
      */
     private CacheConfigurationSplitter backwardCompatibleSplitter() {
-        IgniteDiscoverySpi spi = (IgniteDiscoverySpi) ctx.discovery().getInjectedDiscoverySpi();
+        IgniteDiscoverySpi spi = (IgniteDiscoverySpi)ctx.discovery().getInjectedDiscoverySpi();
 
         boolean oldFormat = !spi.allNodesSupport(IgniteFeatures.SPLITTED_CACHE_CONFIGURATIONS);
 
@@ -5519,66 +5556,75 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             if (log.isInfoEnabled())
                 log.info("Restoring partition state for local groups.");
 
-            AtomicLong totalProcessed = new AtomicLong();
-
             AtomicReference<IgniteCheckedException> restoreStateError = new AtomicReference<>();
 
             ExecutorService sysPool = ctx.pools().getSystemExecutorService();
 
-            CountDownLatch completionLatch = new CountDownLatch(forGroups.size());
+            final int totalPart = forGroups.stream().mapToInt(grpCtx -> grpCtx.affinity().partitions()).sum();
 
-            AtomicReference<SortedSet<T3<Long, Long, GroupPartitionId>>> topPartRef = new AtomicReference<>();
+            CountDownLatch completionLatch = new CountDownLatch(totalPart);
 
-            long totalPart = forGroups.stream().mapToLong(grpCtx -> grpCtx.affinity().partitions()).sum();
+            Map<Thread, RestorePartitionStateThreadContext> threadCtxs = new ConcurrentHashMap<>();
 
-            for (CacheGroupContext grp : forGroups) {
-                sysPool.execute(() -> {
-                    try {
-                        Map<Integer, Long> processed = grp.offheap().restorePartitionStates(partStates);
+            final int topPartRefLimit = 5;
 
-                        totalProcessed.addAndGet(processed.size());
+            for (CacheGroupContext grpCtx : forGroups) {
+                for (int i = 0; i < grpCtx.affinity().partitions(); i++) {
+                    final int partId = i;
 
-                        if (log.isInfoEnabled()) {
-                            TreeSet<T3<Long, Long, GroupPartitionId>> top =
-                                new TreeSet<>(processedPartitionComparator());
+                    sysPool.execute(() -> {
+                        GroupPartitionId grpPartId = new GroupPartitionId(grpCtx.groupId(), partId);
 
-                            long ts = System.currentTimeMillis();
+                        try {
+                            long time = grpCtx.offheap().restoreStateOfPartition(partId, partStates.get(grpPartId));
 
-                            for (Map.Entry<Integer, Long> e : processed.entrySet()) {
-                                top.add(new T3<>(e.getValue(), ts, new GroupPartitionId(grp.groupId(), e.getKey())));
+                            if (log.isInfoEnabled()) {
+                                T3<Long, Long, GroupPartitionId> curPart = new T3<>(time, U.currentTimeMillis(), grpPartId);
 
-                                trimToSize(top, 5);
+                                RestorePartitionStateThreadContext threadCtx = threadCtxs.computeIfAbsent(
+                                    Thread.currentThread(),
+                                    t -> new RestorePartitionStateThreadContext()
+                                );
+
+                                Comparator<T3<Long, Long, GroupPartitionId>> cmp = processedPartitionComparator();
+
+                                threadCtx.topPartRef.updateAndGet(prev -> {
+                                    if (prev == null ||
+                                        cmp.compare(prev.last(), curPart) < 0) {
+                                        SortedSet<T3<Long, Long, GroupPartitionId>> top = new TreeSet<>(cmp);
+
+                                        top.add(curPart);
+
+                                        if (prev != null)
+                                            top.addAll(prev);
+
+                                        trimToSize(top, topPartRefLimit);
+
+                                        return top;
+                                    }
+                                    else
+                                        return prev;
+                                });
+
+                                threadCtx.incrementProcessedCnt();
                             }
-
-                            topPartRef.updateAndGet(top0 -> {
-                                if (top0 == null)
-                                    return top;
-
-                                for (T3<Long, Long, GroupPartitionId> t2 : top0) {
-                                    top.add(t2);
-
-                                    trimToSize(top, 5);
-                                }
-
-                                return top;
-                            });
                         }
-                    }
-                    catch (IgniteCheckedException | RuntimeException | Error e) {
-                        U.error(log, "Failed to restore partition state for " +
-                            "groupName=" + grp.name() + " groupId=" + grp.groupId(), e);
+                        catch (IgniteCheckedException | RuntimeException | Error e) {
+                            U.error(log, "Failed to restore partition state for " +
+                                "groupName=" + grpCtx.name() + " groupId=" + grpCtx.groupId(), e);
 
-                        restoreStateError.compareAndSet(
-                            null,
-                            e instanceof IgniteCheckedException
+                            IgniteCheckedException ex = e instanceof IgniteCheckedException
                                 ? ((IgniteCheckedException)e)
-                                : new IgniteCheckedException(e)
-                        );
-                    }
-                    finally {
-                        completionLatch.countDown();
-                    }
-                });
+                                : new IgniteCheckedException(e);
+
+                            if (!restoreStateError.compareAndSet(null, ex))
+                                restoreStateError.get().addSuppressed(ex);
+                        }
+                        finally {
+                            completionLatch.countDown();
+                        }
+                    });
+                }
             }
 
             boolean printTop = false;
@@ -5592,15 +5638,19 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
                     while (!completionLatch.await(timeout, TimeUnit.MILLISECONDS)) {
                         if (log.isInfoEnabled()) {
-                            @Nullable SortedSet<T3<Long, Long, GroupPartitionId>> top = topPartRef.get();
+                            SortedSet<T3<Long, Long, GroupPartitionId>> top =
+                                collectTopProcessedParts(threadCtxs.values(), topPartRefLimit);
+
+                            long totalProcessed = threadCtxs.values().stream().mapToLong(c -> c.processedCnt).sum();
 
                             log.info("Restore partitions state progress [grpCnt=" +
                                 (forGroups.size() - completionLatch.getCount()) + '/' + forGroups.size() +
-                                ", partitionCnt=" + totalProcessed.get() + '/' + totalPart + (top == null ? "" :
+                                ", partitionCnt=" + totalProcessed + '/' + totalPart + (top.isEmpty() ? "" :
                                 ", topProcessedPartitions=" + toStringTopProcessingPartitions(top, forGroups)) + ']');
                         }
 
                         timeout = TIMEOUT_OUTPUT_RESTORE_PARTITION_STATE_PROGRESS / 5;
+
                         printTop = true;
                     }
                 }
@@ -5609,20 +5659,50 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 throw new IgniteInterruptedException(e);
             }
 
+            for (CacheGroupContext grpCtx : forGroups)
+                grpCtx.offheap().confirmPartitionStatesRestored();
+
             // Checking error after all task applied.
             if (restoreStateError.get() != null)
                 throw restoreStateError.get();
 
             if (log.isInfoEnabled()) {
-                SortedSet<T3<Long, Long, GroupPartitionId>> t = printTop ? topPartRef.get() : null;
+                SortedSet<T3<Long, Long, GroupPartitionId>> t =
+                    printTop ? collectTopProcessedParts(threadCtxs.values(), topPartRefLimit) : null;
+
+                long totalProcessed = threadCtxs.values().stream().mapToLong(c -> c.processedCnt).sum();
 
                 log.info("Finished restoring partition state for local groups [" +
                     "groupsProcessed=" + forGroups.size() +
-                    ", partitionsProcessed=" + totalProcessed.get() +
+                    ", partitionsProcessed=" + totalProcessed +
                     ", time=" + U.humanReadableDuration(U.currentTimeMillis() - startRestorePart) +
                     (t == null ? "" : ", topProcessedPartitions=" + toStringTopProcessingPartitions(t, forGroups)) +
                     "]");
             }
+        }
+
+        /**
+         * Collects top processed partitions from thread local contexts of restore partition state process.
+         *
+         * @param threadCtxs Thread local contexts.
+         * @param topPartRefLimit Limit of top partitions collection size.
+         */
+        private SortedSet<T3<Long, Long, GroupPartitionId>> collectTopProcessedParts(
+            Collection<RestorePartitionStateThreadContext> threadCtxs,
+            int topPartRefLimit
+        ) {
+            SortedSet<T3<Long, Long, GroupPartitionId>> top = new TreeSet<>(processedPartitionComparator());
+
+            for (RestorePartitionStateThreadContext threadCtx : threadCtxs) {
+                SortedSet<T3<Long, Long, GroupPartitionId>> threadTop = threadCtx.topPartRef.get();
+
+                if (threadTop != null)
+                    top.addAll(threadTop);
+            }
+
+            trimToSize(top, topPartRefLimit);
+
+            return top;
         }
 
         /**
@@ -5939,13 +6019,36 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     /**
      * Comparator of processed partitions.
      * T3 -> 1 - duration, 2 - timestamp, 3 - partition of group.
-     * Sort order: duration -> timestamp -> partition of group.
+     * Sort order: duration -> timestamp (reversed order) -> partition of group.
      *
      * @return Comparator.
      */
     static Comparator<T3<Long, Long, GroupPartitionId>> processedPartitionComparator() {
         Comparator<T3<Long, Long, GroupPartitionId>> comp = Comparator.comparing(T3::get1);
 
-        return comp.thenComparing(T3::get2).thenComparing(T3::get3);
+        return comp.thenComparing(T3::get2, Comparator.reverseOrder()).thenComparing(T3::get3);
+    }
+
+    /**
+     * Thread local context of restore partition state progress.
+     */
+    private static class RestorePartitionStateThreadContext {
+        /** Field updater. */
+        static final AtomicLongFieldUpdater<RestorePartitionStateThreadContext> PROCESSED_CNT_UPD =
+            AtomicLongFieldUpdater.newUpdater(RestorePartitionStateThreadContext.class, "processedCnt");
+
+        /** Top partitions by processing time. */
+        final AtomicReference<SortedSet<T3<Long, Long, GroupPartitionId>>> topPartRef =
+            new AtomicReference<>();
+
+        /** Processed partitions count. It is always updated from the same thread. */
+        volatile long processedCnt = 0;
+
+        /**
+         * Increment {@code processedCnt} field.
+         */
+        void incrementProcessedCnt() {
+            PROCESSED_CNT_UPD.incrementAndGet(this);
+        }
     }
 }

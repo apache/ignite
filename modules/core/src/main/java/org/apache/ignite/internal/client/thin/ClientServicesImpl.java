@@ -17,18 +17,29 @@
 
 package org.apache.ignite.internal.client.thin;
 
+import java.io.IOException;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.client.ClientClusterGroup;
 import org.apache.ignite.client.ClientException;
+import org.apache.ignite.client.ClientFeatureNotSupportedByServerException;
+import org.apache.ignite.client.ClientServiceDescriptor;
 import org.apache.ignite.client.ClientServices;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
+import org.apache.ignite.internal.binary.BinaryReaderExImpl;
+import org.apache.ignite.internal.processors.service.ServiceCallContextImpl;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.platform.PlatformServiceMethod;
+import org.apache.ignite.platform.PlatformType;
+import org.apache.ignite.services.ServiceCallContext;
+import org.apache.ignite.services.ServiceCallContextBuilder;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Implementation of {@link ClientServices}.
@@ -67,11 +78,83 @@ class ClientServicesImpl implements ClientServices {
 
     /** {@inheritDoc} */
     @Override public <T> T serviceProxy(String name, Class<? super T> svcItf, long timeout) {
+        return serviceProxy(name, svcItf, null, timeout);
+    }
+
+    /** {@inheritDoc} */
+    @Override public <T> T serviceProxy(String name, Class<? super T> svcItf, ServiceCallContext callCtx) {
+        return serviceProxy(name, svcItf, callCtx, 0);
+    }
+
+    /** {@inheritDoc} */
+    @Override public <T> T serviceProxy(String name, Class<? super T> svcItf, ServiceCallContext callCtx, long timeout) {
         A.notNullOrEmpty(name, "name");
         A.notNull(svcItf, "svcItf");
+        A.ensure(callCtx == null || callCtx instanceof ServiceCallContextImpl,
+            "\"callCtx\" has an invalid type. Custom implementation of " + ServiceCallContext.class.getSimpleName() +
+                " is not supported. Please use " + ServiceCallContextBuilder.class.getSimpleName() + " to create it.");
 
         return (T)Proxy.newProxyInstance(svcItf.getClassLoader(), new Class[] {svcItf},
-            new ServiceInvocationHandler<>(name, timeout, grp));
+            new ServiceInvocationHandler<>(name, timeout, grp,
+                callCtx == null ? null : ((ServiceCallContextImpl)callCtx).values()));
+    }
+
+    /** {@inheritDoc} */
+    @Override public Collection<ClientServiceDescriptor> serviceDescriptors() {
+        return ch.service(ClientOperation.SERVICE_GET_DESCRIPTORS,
+            req -> checkGetServiceDescriptorsSupported(req.clientChannel().protocolCtx()),
+            res -> {
+                try (BinaryReaderExImpl reader = utils.createBinaryReader(res.in())) {
+                    int sz = res.in().readInt();
+
+                    Collection<ClientServiceDescriptor> svcs = new ArrayList<>(sz);
+
+                    for (int i = 0; i < sz; i++)
+                        svcs.add(readServiceDescriptor(reader));
+
+                    return svcs;
+                }
+                catch (IOException e) {
+                    throw new ClientException(e);
+                }
+            }
+        );
+    }
+
+    /** {@inheritDoc} */
+    @Override public ClientServiceDescriptor serviceDescriptor(String name) {
+        A.notNullOrEmpty(name, "name");
+
+        return ch.service(ClientOperation.SERVICE_GET_DESCRIPTOR,
+            req -> {
+                checkGetServiceDescriptorsSupported(req.clientChannel().protocolCtx());
+
+                try (BinaryRawWriterEx writer = utils.createBinaryWriter(req.out())) {
+                    writer.writeString(name);
+                }
+            },
+            res -> {
+                try (BinaryReaderExImpl reader = utils.createBinaryReader(res.in())) {
+                    return readServiceDescriptor(reader);
+                }
+                catch (IOException e) {
+                    throw new ClientException(e);
+                }
+            }
+        );
+    }
+
+    /** */
+    private ClientServiceDescriptorImpl readServiceDescriptor(BinaryReaderExImpl reader) {
+        return new ClientServiceDescriptorImpl(
+            reader.readString(),
+            reader.readString(),
+            reader.readInt(),
+            reader.readInt(),
+            reader.readString(),
+            reader.readUuid(),
+            reader.readByte() == 0 ? PlatformType.JAVA : PlatformType.DOTNET
+        );
     }
 
     /**
@@ -101,14 +184,25 @@ class ClientServicesImpl implements ClientServices {
         /** Cluster group. */
         private final ClientClusterGroupImpl grp;
 
+        /** Service call context attributes. */
+        private final Map<String, Object> callAttrs;
+
         /**
          * @param name Service name.
          * @param timeout Timeout.
+         * @param grp Cluster group.
+         * @param callAttrs Service call context attributes.
          */
-        private ServiceInvocationHandler(String name, long timeout, ClientClusterGroupImpl grp) {
+        private ServiceInvocationHandler(
+            String name,
+            long timeout,
+            ClientClusterGroupImpl grp,
+            @Nullable Map<String, Object> callAttrs
+        ) {
             this.name = name;
             this.timeout = timeout;
             this.grp = grp;
+            this.callAttrs = callAttrs;
         }
 
         /** {@inheritDoc} */
@@ -131,6 +225,9 @@ class ClientServicesImpl implements ClientServices {
 
         /**
          * @param ch Payload output channel.
+         * @param nodeIds Node IDs.
+         * @param method Method to call.
+         * @param args Method args.
          */
         private void writeServiceInvokeRequest(
             PayloadOutputChannel ch,
@@ -138,7 +235,8 @@ class ClientServicesImpl implements ClientServices {
             Method method,
             Object[] args
         ) {
-            ch.clientChannel().protocolCtx().checkFeatureSupported(ProtocolBitmaskFeature.SERVICE_INVOKE);
+            ch.clientChannel().protocolCtx().checkFeatureSupported(callAttrs != null ?
+                ProtocolBitmaskFeature.SERVICE_INVOKE_CALLCTX : ProtocolBitmaskFeature.SERVICE_INVOKE);
 
             try (BinaryRawWriterEx writer = utils.createBinaryWriter(ch.out())) {
                 writer.writeString(name);
@@ -174,7 +272,23 @@ class ClientServicesImpl implements ClientServices {
                         writer.writeObject(args[i]);
                     }
                 }
+
+                if (callAttrs != null)
+                    writer.writeMap(callAttrs);
+                else if (ch.clientChannel().protocolCtx().isFeatureSupported(ProtocolBitmaskFeature.SERVICE_INVOKE_CALLCTX))
+                    writer.writeMap(null);
             }
         }
+    }
+
+    /**
+     * Check that Get Service Descriptors API is supported by server.
+     *
+     * @param protocolCtx Protocol context.
+     */
+    private void checkGetServiceDescriptorsSupported(ProtocolContext protocolCtx)
+        throws ClientFeatureNotSupportedByServerException {
+        if (!protocolCtx.isFeatureSupported(ProtocolBitmaskFeature.GET_SERVICE_DESCRIPTORS))
+            throw new ClientFeatureNotSupportedByServerException(ProtocolBitmaskFeature.GET_SERVICE_DESCRIPTORS);
     }
 }

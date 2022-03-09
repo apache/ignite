@@ -47,6 +47,7 @@ public abstract class AbstractDataInnerIO extends BPlusInnerIO<CacheSearchRow> i
     /** {@inheritDoc} */
     @Override public final void storeByOffset(long pageAddr, int off, CacheSearchRow row) {
         assert row.link() != 0;
+        assertPageType(pageAddr);
 
         PageUtils.putLong(pageAddr, off, row.link());
         off += 8;
@@ -112,6 +113,8 @@ public abstract class AbstractDataInnerIO extends BPlusInnerIO<CacheSearchRow> i
         long srcPageAddr,
         int srcIdx)
     {
+        assertPageType(dstPageAddr);
+
         RowLinkIO rowIo = ((RowLinkIO)srcIo);
 
         long link = rowIo.getLink(srcPageAddr, srcIdx);
@@ -165,6 +168,8 @@ public abstract class AbstractDataInnerIO extends BPlusInnerIO<CacheSearchRow> i
 
     /** {@inheritDoc} */
     @Override public void visit(long pageAddr, IgniteInClosure<CacheSearchRow> c) {
+        assertPageType(pageAddr);
+
         int cnt = getCount(pageAddr);
 
         for (int i = 0; i < cnt; i++)

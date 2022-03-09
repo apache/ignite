@@ -83,7 +83,7 @@ public final class UpdatePlanBuilder {
     /** Allow hidden key value columns at the INSERT/UPDATE/MERGE statements (not final for tests). */
     private static boolean ALLOW_KEY_VAL_UPDATES = IgniteSystemProperties.getBoolean(
         IgniteSystemProperties.IGNITE_SQL_ALLOW_KEY_VAL_UPDATES, false);
-
+    
     /**
      * Constructor.
      */
@@ -99,6 +99,7 @@ public final class UpdatePlanBuilder {
      * @param stmt Statement.
      * @param mvccEnabled MVCC enabled flag.
      * @param idx Indexing.
+     * @param forceFillAbsentPKsWithDefaults ForceFillAbsentPKsWithDefaults enabled flag.
      * @return Update plan.
      */
     @SuppressWarnings("ConstantConditions")
@@ -107,10 +108,11 @@ public final class UpdatePlanBuilder {
         GridSqlStatement stmt,
         boolean mvccEnabled,
         IgniteH2Indexing idx,
-        IgniteLogger log
+        IgniteLogger log,
+        boolean forceFillAbsentPKsWithDefaults
     ) throws IgniteCheckedException {
         if (stmt instanceof GridSqlMerge || stmt instanceof GridSqlInsert)
-            return planForInsert(planKey, stmt, idx, mvccEnabled, log);
+            return planForInsert(planKey, stmt, idx, mvccEnabled, log, forceFillAbsentPKsWithDefaults);
         else if (stmt instanceof GridSqlUpdate || stmt instanceof GridSqlDelete)
             return planForUpdate(planKey, stmt, idx, mvccEnabled, log);
         else
@@ -134,7 +136,8 @@ public final class UpdatePlanBuilder {
         GridSqlStatement stmt,
         IgniteH2Indexing idx,
         boolean mvccEnabled,
-        IgniteLogger log
+        IgniteLogger log,
+        boolean forceFillAbsentPKsWithDefaults
     ) throws IgniteCheckedException {
         GridSqlQuery sel = null;
 
@@ -157,7 +160,7 @@ public final class UpdatePlanBuilder {
         if (stmt instanceof GridSqlInsert) {
             mode = UpdateMode.INSERT;
 
-            GridSqlInsert ins = (GridSqlInsert) stmt;
+            GridSqlInsert ins = (GridSqlInsert)stmt;
 
             target = ins.into();
 
@@ -182,7 +185,7 @@ public final class UpdatePlanBuilder {
         else if (stmt instanceof GridSqlMerge) {
             mode = UpdateMode.MERGE;
 
-            GridSqlMerge merge = (GridSqlMerge) stmt;
+            GridSqlMerge merge = (GridSqlMerge)stmt;
 
             target = merge.into();
 
@@ -206,7 +209,7 @@ public final class UpdatePlanBuilder {
 
         // Let's set the flag only for subqueries that have their FROM specified.
         isTwoStepSubqry &= (sel != null && (sel instanceof GridSqlUnion ||
-            (sel instanceof GridSqlSelect && ((GridSqlSelect) sel).from() != null)));
+            (sel instanceof GridSqlSelect && ((GridSqlSelect)sel).from() != null)));
 
         int keyColIdx = -1;
         int valColIdx = -1;
@@ -224,14 +227,25 @@ public final class UpdatePlanBuilder {
 
         int[] colTypes = new int[cols.length];
 
+        GridQueryTypeDescriptor type = desc.type();
+
+        Set<String> rowKeys = desc.getRowKeyColumnNames();
+
+        boolean onlyVisibleColumns = true;
+        
         for (int i = 0; i < cols.length; i++) {
             GridSqlColumn col = cols[i];
 
+            if (!col.column().getVisible())
+                onlyVisibleColumns = false;
+            
             String colName = col.columnName();
 
             colNames[i] = colName;
 
             colTypes[i] = col.resultType().type();
+
+            rowKeys.remove(colName);
 
             int colId = col.column().getColumnId();
 
@@ -255,6 +269,33 @@ public final class UpdatePlanBuilder {
                 hasKeyProps = true;
             else
                 hasValProps = true;
+        }
+    
+        rowKeys.removeIf(rowKey -> desc.type().property(rowKey).defaultValue() != null);
+        
+        boolean fillAbsentPKsWithNullsOrDefaults = type.fillAbsentPKsWithDefaults()
+                || forceFillAbsentPKsWithDefaults;
+        
+        if (fillAbsentPKsWithNullsOrDefaults && onlyVisibleColumns && !rowKeys.isEmpty()) {
+            String[] extendedColNames = new String[rowKeys.size() + colNames.length];
+            int[] extendedColTypes = new int[rowKeys.size() + colTypes.length];
+
+            System.arraycopy(colNames, 0, extendedColNames, 0, colNames.length);
+            System.arraycopy(colTypes, 0, extendedColTypes, 0, colTypes.length);
+
+            int currId = colNames.length;
+
+            for (String key : rowKeys) {
+                Column col = tbl.dataTable().getColumn(key);
+
+                extendedColNames[currId] = col.getName();
+                extendedColTypes[currId] = col.getType();
+
+                currId++;
+            }
+
+            colNames = extendedColNames;
+            colTypes = extendedColTypes;
         }
 
         verifyDmlColumns(tbl.dataTable(), F.viewReadOnly(Arrays.asList(cols), TO_H2_COL));
@@ -312,7 +353,8 @@ public final class UpdatePlanBuilder {
             rowsNum,
             null,
             distributed,
-            false
+            false,
+            fillAbsentPKsWithNullsOrDefaults
         );
     }
 
@@ -374,7 +416,7 @@ public final class UpdatePlanBuilder {
             mode = UpdateMode.UPDATE;
         }
         else if (stmt instanceof GridSqlDelete) {
-            GridSqlDelete del = (GridSqlDelete) stmt;
+            GridSqlDelete del = (GridSqlDelete)stmt;
             target = del.from();
             fastUpdate = DmlAstUtils.getFastDeleteArgs(del);
             mode = UpdateMode.DELETE;
@@ -408,7 +450,7 @@ public final class UpdatePlanBuilder {
             GridSqlSelect sel;
 
             if (stmt instanceof GridSqlUpdate) {
-                List<GridSqlColumn> updatedCols = ((GridSqlUpdate) stmt).cols();
+                List<GridSqlColumn> updatedCols = ((GridSqlUpdate)stmt).cols();
 
                 int valColIdx = -1;
 
@@ -474,7 +516,8 @@ public final class UpdatePlanBuilder {
                     0,
                     null,
                     distributed,
-                    sel.canBeLazy()
+                    sel.canBeLazy(),
+                    false
                 );
             }
             else {
@@ -593,7 +636,8 @@ public final class UpdatePlanBuilder {
             0,
             null,
             null,
-            true
+            true,
+            false
         );
     }
 
@@ -748,7 +792,7 @@ public final class UpdatePlanBuilder {
         if (!(statement instanceof GridSqlUpdate))
             return;
 
-        GridSqlUpdate update = (GridSqlUpdate) statement;
+        GridSqlUpdate update = (GridSqlUpdate)statement;
 
         GridSqlElement updTarget = update.target();
 

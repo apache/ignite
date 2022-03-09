@@ -271,6 +271,11 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
     @Override public void stop(boolean cancel) throws IgniteCheckedException {
         stopSpi();
 
+        Map<IgnitePredicate<? extends Event>, int[]> evtLsnrs = ctx.config().getLocalEventListeners();
+
+        if (evtLsnrs != null)
+            U.stopLifecycleAware(log, evtLsnrs.keySet());
+
         if (log.isDebugEnabled())
             log.debug(stopInfo());
     }
@@ -280,7 +285,11 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
         Map<IgnitePredicate<? extends Event>, int[]> evtLsnrs = ctx.config().getLocalEventListeners();
 
         if (evtLsnrs != null) {
-            for (IgnitePredicate<? extends Event> lsnr : evtLsnrs.keySet())
+            Set<IgnitePredicate<? extends Event>> lsnrs = evtLsnrs.keySet();
+
+            U.startLifecycleAware(lsnrs);
+
+            for (IgnitePredicate<? extends Event> lsnr : lsnrs)
                 addLocalEventListener(lsnr, evtLsnrs.get(lsnr));
         }
 

@@ -17,28 +17,27 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
-import java.io.File;
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.function.Function;
-import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteCache;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.binary.BinaryObjectBuilder;
-import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.processors.cache.CacheGroupDescriptor;
-import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
-import org.apache.ignite.internal.util.typedef.G;
-import org.apache.ignite.internal.util.typedef.internal.CU;
-import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.internal.TestRecordingCommunicationSpi;
+import org.apache.ignite.internal.util.distributed.DistributedProcess;
+import org.apache.ignite.internal.util.distributed.SingleNodeMessage;
+import org.apache.ignite.lang.IgniteFuture;
 
 /**
  * Snapshot restore test base.
  */
 public abstract class IgniteClusterSnapshotRestoreBaseTest extends AbstractSnapshotSelfTest {
-    /** Cache value builder. */
-    protected abstract Function<Integer, Object> valueBuilder();
+    /** Cache 1 name. */
+    protected static final String CACHE1 = "cache1";
+
+    /** Cache 2 name. */
+    protected static final String CACHE2 = "cache2";
+
+    /** Default shared cache group name. */
+    protected static final String SHARED_GRP = "shared";
 
     /**
      * @param nodesCnt Nodes count.
@@ -51,68 +50,26 @@ public abstract class IgniteClusterSnapshotRestoreBaseTest extends AbstractSnaps
     }
 
     /**
-     * @param nodesCnt Nodes count.
-     * @param keysCnt Number of keys to create.
-     * @param startClient {@code True} to start an additional client node.
-     * @return Ignite coordinator instance.
-     * @throws Exception if failed.
+     * @param spi Test communication spi.
+     * @param restorePhase The type of distributed process on which communication is blocked.
+     * @param grpName Cache group name.
+     * @return Snapshot restore future.
+     * @throws InterruptedException if interrupted.
      */
-    protected IgniteEx startGridsWithSnapshot(int nodesCnt, int keysCnt, boolean startClient) throws Exception {
-        IgniteEx ignite = startGridsWithCache(nodesCnt, keysCnt, valueBuilder(), dfltCacheCfg);
+    protected IgniteFuture<Void> waitForBlockOnRestore(
+        TestRecordingCommunicationSpi spi,
+        DistributedProcess.DistributedProcessType restorePhase,
+        String grpName
+    ) throws InterruptedException {
+        spi.blockMessages((node, msg) ->
+            msg instanceof SingleNodeMessage && ((SingleNodeMessage<?>)msg).type() == restorePhase.ordinal());
 
-        if (startClient)
-            ignite = startClientGrid("client");
+        IgniteFuture<Void> fut =
+            grid(0).snapshot().restoreSnapshot(SNAPSHOT_NAME, Collections.singleton(grpName));
 
-        ignite.snapshot().createSnapshot(SNAPSHOT_NAME).get(TIMEOUT);
+        spi.waitForBlocked();
 
-        ignite.cache(dfltCacheCfg.getName()).destroy();
-
-        awaitPartitionMapExchange();
-
-        return ignite;
-    }
-
-    /**
-     * @param cache Cache.
-     * @param keysCnt Expected number of keys.
-     */
-    protected void assertCacheKeys(IgniteCache<Object, Object> cache, int keysCnt) {
-        assertEquals(keysCnt, cache.size());
-
-        for (int i = 0; i < keysCnt; i++)
-            assertEquals(valueBuilder().apply(i), cache.get(i));
-    }
-
-    /**
-     * @param ccfg Cache configuration.
-     * @throws IgniteCheckedException if failed.
-     */
-    protected void ensureCacheAbsent(CacheConfiguration<?, ?> ccfg) throws IgniteCheckedException {
-        String cacheName = ccfg.getName();
-
-        for (Ignite ignite : G.allGrids()) {
-            GridKernalContext kctx = ((IgniteEx)ignite).context();
-
-            if (kctx.clientNode())
-                continue;
-
-            CacheGroupDescriptor desc = kctx.cache().cacheGroupDescriptors().get(CU.cacheId(cacheName));
-
-            assertNull("nodeId=" + kctx.localNodeId() + ", cache=" + cacheName, desc);
-
-            boolean success = GridTestUtils.waitForCondition(
-                () -> !kctx.cache().context().snapshotMgr().isRestoring(),
-                TIMEOUT);
-
-            assertTrue("The process has not finished on the node " + kctx.localNodeId(), success);
-
-            File dir = ((FilePageStoreManager)kctx.cache().context().pageStore()).cacheWorkDir(ccfg);
-
-            String errMsg = String.format("%s, dir=%s, exists=%b, files=%s",
-                ignite.name(), dir, dir.exists(), Arrays.toString(dir.list()));
-
-            assertTrue(errMsg, !dir.exists() || dir.list().length == 0);
-        }
+        return fut;
     }
 
     /** */

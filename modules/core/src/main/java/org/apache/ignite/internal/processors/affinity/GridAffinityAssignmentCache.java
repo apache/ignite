@@ -38,6 +38,7 @@ import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.affinity.AffinityCentralizedFunction;
 import org.apache.ignite.cache.affinity.AffinityFunction;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -59,6 +60,7 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_AFFINITY_HISTORY_S
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PART_DISTRIBUTION_WARN_THRESHOLD;
 import static org.apache.ignite.IgniteSystemProperties.getFloat;
 import static org.apache.ignite.IgniteSystemProperties.getInteger;
+import static org.apache.ignite.cache.CacheMode.LOCAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.internal.events.DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT;
 
@@ -163,7 +165,7 @@ public class GridAffinityAssignmentCache {
      * @param backups Number of backups.
      * @param locCache Local cache flag.
      */
-    public GridAffinityAssignmentCache(GridKernalContext ctx,
+    private GridAffinityAssignmentCache(GridKernalContext ctx,
         String cacheOrGrpName,
         int grpId,
         AffinityFunction aff,
@@ -193,6 +195,22 @@ public class GridAffinityAssignmentCache {
         similarAffKey = ctx.affinity().similaryAffinityKey(aff, nodeFilter, backups, partsCnt);
 
         assert similarAffKey != null;
+    }
+
+    /**
+     * @param ctx Kernal context.
+     * @param aff Initialized affinity function.
+     * @param ccfg Cache configuration.
+     * @return Affinity assignment cache instance.
+     */
+    public static GridAffinityAssignmentCache create(GridKernalContext ctx, AffinityFunction aff, CacheConfiguration<?, ?> ccfg) {
+        return new GridAffinityAssignmentCache(ctx,
+            CU.cacheOrGroupName(ccfg),
+            CU.cacheGroupId(ccfg),
+            aff,
+            ccfg.getNodeFilter(),
+            ccfg.getBackups(),
+            ccfg.getCacheMode() == LOCAL);
     }
 
     /**
@@ -338,7 +356,7 @@ public class GridAffinityAssignmentCache {
         if (!locCache) {
             sorted = new ArrayList<>(discoCache.cacheGroupAffinityNodes(groupId()));
 
-            Collections.sort(sorted, NodeOrderComparator.getInstance());
+            sorted.sort(NodeOrderComparator.getInstance());
         }
         else
             sorted = Collections.singletonList(ctx.discovery().localNode());
@@ -744,6 +762,7 @@ public class GridAffinityAssignmentCache {
     /**
      * @param topVer Topology version.
      * @return Assignment.
+     * @throws IllegalStateException If affinity assignment is not initialized for the given topology version.
      */
     public AffinityAssignment readyAffinity(AffinityTopologyVersion topVer) {
         AffinityAssignment cache = head.get();
@@ -758,6 +777,7 @@ public class GridAffinityAssignmentCache {
                     ", topVer=" + topVer +
                     ", head=" + head.get().topologyVersion() +
                     ", history=" + affCache.keySet() +
+                    ", maxNonShallowHistorySize=" + MAX_NON_SHALLOW_HIST_SIZE +
                     ']');
             }
         }
@@ -770,6 +790,9 @@ public class GridAffinityAssignmentCache {
      *
      * @param topVer Topology version.
      * @return Cached affinity.
+     * @throws IllegalArgumentException in case of the specified topology version {@code topVer}
+     *                                  is earlier than affinity is calculated
+     *                                  or the history of assignments is already cleaned.
      */
     public AffinityAssignment cachedAffinity(AffinityTopologyVersion topVer) {
         AffinityTopologyVersion lastAffChangeTopVer =
@@ -784,6 +807,9 @@ public class GridAffinityAssignmentCache {
      * @param topVer Topology version for which affinity assignment is requested.
      * @param lastAffChangeTopVer Topology version of last affinity assignment change.
      * @return Cached affinity.
+     * @throws IllegalArgumentException in case of the specified topology version {@code topVer}
+     *                                  is earlier than affinity is calculated
+     *                                  or the history of assignments is already cleaned.
      */
     public AffinityAssignment cachedAffinity(
         AffinityTopologyVersion topVer,
@@ -818,17 +844,20 @@ public class GridAffinityAssignmentCache {
                     ", lastAffChangeTopVer=" + lastAffChangeTopVer +
                     ", head=" + head.get().topologyVersion() +
                     ", history=" + affCache.keySet() +
+                    ", maxNonShallowHistorySize=" + MAX_NON_SHALLOW_HIST_SIZE +
                     ']');
             }
 
             if (cache.topologyVersion().compareTo(topVer) > 0) {
                 throw new IllegalStateException("Getting affinity for too old topology version that is already " +
-                    "out of history [locNode=" + ctx.discovery().localNode() +
+                    "out of history (try to increase '" + IGNITE_AFFINITY_HISTORY_SIZE + "' system property)" +
+                    " [locNode=" + ctx.discovery().localNode() +
                     ", grp=" + cacheOrGrpName +
                     ", topVer=" + topVer +
                     ", lastAffChangeTopVer=" + lastAffChangeTopVer +
                     ", head=" + head.get().topologyVersion() +
                     ", history=" + affCache.keySet() +
+                    ", maxNonShallowHistorySize=" + MAX_NON_SHALLOW_HIST_SIZE +
                     ']');
             }
         }

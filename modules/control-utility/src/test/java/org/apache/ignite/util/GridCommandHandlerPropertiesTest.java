@@ -34,6 +34,8 @@ import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_IN
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK;
 import static org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager.DFLT_PDS_WAL_REBALANCE_THRESHOLD;
 import static org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager.HISTORICAL_REBALANCE_THRESHOLD_DMS_KEY;
+import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.DFLT_SNAPSHOT_TRANSFER_RATE_BYTES;
+import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.SNAPSHOT_TRANSFER_RATE_DMS_KEY;
 import static org.apache.ignite.testframework.GridTestUtils.assertContains;
 
 /**
@@ -222,6 +224,27 @@ public class GridCommandHandlerPropertiesTest extends GridCommandHandlerClusterB
     }
 
     /**
+     * Check the set command for property 'snapshotTransferRate'.
+     */
+    @Test
+    public void testPropertySnapshotTransferRate() {
+        assertDistributedPropertyEquals(SNAPSHOT_TRANSFER_RATE_DMS_KEY, DFLT_SNAPSHOT_TRANSFER_RATE_BYTES);
+
+        long newVal = 1024;
+
+        assertEquals(
+            EXIT_CODE_OK,
+            execute(
+                "--property", "set",
+                "--name", SNAPSHOT_TRANSFER_RATE_DMS_KEY,
+                "--val", Long.toString(newVal)
+            )
+        );
+
+        assertDistributedPropertyEquals(SNAPSHOT_TRANSFER_RATE_DMS_KEY, newVal);
+    }
+
+    /**
      * Validates that distributed property has specified value across all nodes.
      *
      * @param propName Distributed property name.
@@ -230,7 +253,7 @@ public class GridCommandHandlerPropertiesTest extends GridCommandHandlerClusterB
      */
     private <T extends Serializable> void assertDistributedPropertyEquals(String propName, T expected) {
         for (Ignite ign : G.allGrids()) {
-            IgniteEx ignEx = (IgniteEx) ign;
+            IgniteEx ignEx = (IgniteEx)ign;
 
             if (ign.configuration().isClientMode())
                 continue;

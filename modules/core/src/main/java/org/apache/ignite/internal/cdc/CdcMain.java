@@ -430,6 +430,9 @@ public class CdcMain implements Runnable {
                 .filesOrDirs(segment.toFile())
                 .addFilter((type, ptr) -> type == DATA_RECORD_V2);
 
+        if (igniteCfg.getDataStorageConfiguration().getPageSize() != 0)
+            builder.pageSize(igniteCfg.getDataStorageConfiguration().getPageSize());
+
         long segmentIdx = segmentIndex(segment);
 
         curSegmentIdx.value(segmentIdx);
@@ -474,7 +477,10 @@ public class CdcMain implements Runnable {
                 if (commit) {
                     assert it.lastRead().isPresent();
 
-                    WALPointer ptr = it.lastRead().get();
+                    WALPointer ptr = it.lastRead().get().next();
+
+                    if (log.isDebugEnabled())
+                        log.debug("Saving state [ptr=" + ptr + ']');
 
                     state.save(ptr);
 

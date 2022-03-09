@@ -32,9 +32,12 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.DeploymentMode;
 import org.apache.ignite.configuration.DiskPageCompression;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.binary.BinaryArray;
+import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineRecommender;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointEntry;
+import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointMarkersStorage;
 import org.apache.ignite.internal.processors.metastorage.DistributedMetaStorage;
 import org.apache.ignite.internal.processors.performancestatistics.FilePerformanceStatisticsWriter;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCachePartitionWorker;
@@ -49,15 +52,16 @@ import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.cache.CacheManager.DFLT_JCACHE_DEFAULT_ISOLATED;
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_USE_ASYNC_FILE_IO_FACTORY;
-import static org.apache.ignite.internal.IgniteKernal.DFLT_EVENT_DRIVEN_SERVICE_PROCESSOR_ENABLED;
 import static org.apache.ignite.internal.IgniteKernal.DFLT_LOG_CLASSPATH_CONTENT_ON_STARTUP;
 import static org.apache.ignite.internal.IgniteKernal.DFLT_LONG_OPERATIONS_DUMP_TIMEOUT;
 import static org.apache.ignite.internal.IgniteKernal.DFLT_PERIODIC_STARVATION_CHECK_FREQ;
 import static org.apache.ignite.internal.LongJVMPauseDetector.DEFAULT_JVM_PAUSE_DETECTOR_THRESHOLD;
 import static org.apache.ignite.internal.LongJVMPauseDetector.DFLT_JVM_PAUSE_DETECTOR_LAST_EVENTS_COUNT;
 import static org.apache.ignite.internal.LongJVMPauseDetector.DFLT_JVM_PAUSE_DETECTOR_PRECISION;
+import static org.apache.ignite.internal.binary.BinaryArray.DFLT_IGNITE_USE_BINARY_ARRAYS;
 import static org.apache.ignite.internal.binary.streams.BinaryMemoryAllocator.DFLT_MARSHAL_BUFFERS_PER_THREAD_POOL_SIZE;
 import static org.apache.ignite.internal.binary.streams.BinaryMemoryAllocator.DFLT_MARSHAL_BUFFERS_RECHECK;
+import static org.apache.ignite.internal.cache.query.index.sorted.inline.InlineRecommender.DFLT_THROTTLE_INLINE_SIZE_CALCULATION;
 import static org.apache.ignite.internal.managers.discovery.GridDiscoveryManager.DFLT_DISCOVERY_HISTORY_SIZE;
 import static org.apache.ignite.internal.processors.affinity.AffinityAssignment.DFLT_AFFINITY_BACKUPS_THRESHOLD;
 import static org.apache.ignite.internal.processors.affinity.GridAffinityAssignmentCache.DFLT_AFFINITY_HISTORY_SIZE;
@@ -87,6 +91,7 @@ import static org.apache.ignite.internal.processors.cache.mvcc.MvccCachingManage
 import static org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager.DFLT_DEFRAGMENTATION_REGION_SIZE_PERCENTAGE;
 import static org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager.DFLT_PDS_WAL_REBALANCE_THRESHOLD;
 import static org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointHistory.DFLT_PDS_MAX_CHECKPOINT_MEMORY_HISTORY_SIZE;
+import static org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointMarkersStorage.DFLT_IGNITE_CHECKPOINT_MAP_SNAPSHOT_THRESHOLD;
 import static org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointWorkflow.DFLT_CHECKPOINT_PARALLEL_SORT_THRESHOLD;
 import static org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.PageLockTrackerFactory.DFLT_PAGE_LOCK_TRACKER_CAPACITY;
 import static org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.PageLockTrackerFactory.HEAP_LOG;
@@ -665,9 +670,10 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_H2_DEBUG_CONSOLE_PORT = "IGNITE_H2_DEBUG_CONSOLE_PORT";
 
     /**
-     * If this property is set to {@code true} then shared memory space native debug will be enabled.
+     * @deprecated This property is ignored and will be deleted in future releases.
      */
-    @SystemProperty("Enables native debug of the shared memory space")
+    @Deprecated
+    @SystemProperty("This option is ignored and will be deleted in future releases")
     public static final String IGNITE_IPC_SHMEM_SPACE_DEBUG = "IGNITE_IPC_SHMEM_SPACE_DEBUG";
 
     /**
@@ -1128,6 +1134,16 @@ public final class IgniteSystemProperties {
     @SystemProperty("Prefer historical rebalance if there's enough history regardless off all heuristics. " +
         "This property is intended for integration or performance tests")
     public static final String IGNITE_PREFER_WAL_REBALANCE = "IGNITE_PREFER_WAL_REBALANCE";
+
+    /**
+     * Threshold of the checkpoint quantity since the last earliest checkpoint map snapshot.
+     * After this thresold is reached, a snapshot of the earliest checkpoint map will be captured.
+     * Default is {@link CheckpointMarkersStorage#DFLT_IGNITE_CHECKPOINT_MAP_SNAPSHOT_THRESHOLD}.
+     */
+    @SystemProperty(value = "Threshold of the checkpoint quantity since the last earliest checkpoint map snapshot. " +
+        "After this thresold is reached, a snapshot of the earliest checkpoint map will be captured",
+        type = Integer.class, defaults = "" + DFLT_IGNITE_CHECKPOINT_MAP_SNAPSHOT_THRESHOLD)
+    public static final String IGNITE_CHECKPOINT_MAP_SNAPSHOT_THRESHOLD = "IGNITE_CHECKPOINT_MAP_SNAPSHOT_THRESHOLD";
 
     /** Ignite page memory concurrency level. */
     @SystemProperty(value = "Ignite page memory concurrency level", type = Integer.class)
@@ -1632,24 +1648,6 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_DEFAULT_DATA_STORAGE_PAGE_SIZE = "IGNITE_DEFAULT_DATA_STORAGE_PAGE_SIZE";
 
     /**
-     * Manages the type of the implementation of the service processor (implementation of the {@link IgniteServices}).
-     * All nodes in the cluster must have the same value of this property.
-     * <p/>
-     * If the property is {@code true} then event-driven implementation of the service processor will be used.
-     * <p/>
-     * If the property is {@code false} then internal cache based implementation of service processor will be used.
-     * <p/>
-     * Default is {@code true}.
-     */
-    @SystemProperty(value = "Manages the type of the implementation of the service processor " +
-        "(implementation of the IgniteServices). All nodes in the cluster must have the same value of this property. " +
-        "If the property is true then event-driven implementation of the service processor will be used. If the " +
-        "property is false then internal cache based implementation of service processor will be used",
-        defaults = "" + DFLT_EVENT_DRIVEN_SERVICE_PROCESSOR_ENABLED)
-    public static final String IGNITE_EVENT_DRIVEN_SERVICE_PROCESSOR_ENABLED
-        = "IGNITE_EVENT_DRIVEN_SERVICE_PROCESSOR_ENABLED";
-
-    /**
      * When set to {@code true}, cache metrics are not included into the discovery metrics update message (in this
      * case message contains only cluster metrics). By default cache metrics are included into the message and
      * calculated each time the message is sent.
@@ -1737,6 +1735,13 @@ public final class IgniteSystemProperties {
      */
     @SystemProperty("Allow use composite _key, _val columns at the INSERT/UPDATE/MERGE statements")
     public static final String IGNITE_SQL_ALLOW_KEY_VAL_UPDATES = "IGNITE_SQL_ALLOW_KEY_VAL_UPDATES";
+
+    /**
+     * Forcibly fills missing columns belonging to the primary key with nulls or default values if those have been specified.
+     */
+    @SystemProperty(value = "Forcibly fills missing columns belonging to the primary key with nulls " +
+        "or default values if those have been specified", defaults = "false")
+    public static final String IGNITE_SQL_FILL_ABSENT_PK_WITH_DEFAULTS = "IGNITE_SQL_FILL_ABSENT_PK_WITH_DEFAULTS";
 
     /**
      * Interval between logging of time of next auto-adjust.
@@ -1910,7 +1915,9 @@ public final class IgniteSystemProperties {
      * When enabled, node will wait until all of its data is backed up before shutting down.
      * Please note that it will completely prevent last node in cluster from shutting down if any caches exist
      * that have backups configured.
+     * @deprecated Use {@link ShutdownPolicy} instead.
      */
+    @Deprecated
     @IgniteExperimental
     @SystemProperty("Enables node to wait until all of its data is backed up before " +
         "shutting down. Please note that it will completely prevent last node in cluster from shutting down if any " +
@@ -2014,6 +2021,22 @@ public final class IgniteSystemProperties {
     @SystemProperty(value = "Count of rows, being processed within a single checkpoint lock when indexes are rebuilt",
         type = Integer.class, defaults = "" + DFLT_IGNITE_INDEX_REBUILD_BATCH_SIZE)
     public static final String IGNITE_INDEX_REBUILD_BATCH_SIZE = "IGNITE_INDEX_REBUILD_BATCH_SIZE";
+
+    /**
+     * Throttle frequency for an index row inline size calculation and logging index inline size recommendation.
+     * The default value is {@link InlineRecommender#DFLT_THROTTLE_INLINE_SIZE_CALCULATION}.
+     */
+    @SystemProperty(value = "Throttle frequency for an index row inline size calculation and logging index inline size recommendation",
+        type = Integer.class, defaults = "" + DFLT_THROTTLE_INLINE_SIZE_CALCULATION)
+    public static final String IGNITE_THROTTLE_INLINE_SIZE_CALCULATION = "IGNITE_THROTTLE_INLINE_SIZE_CALCULATION";
+
+    /**
+     * Enables storage of typed arrays.
+     * The default value is {@link BinaryArray#DFLT_IGNITE_USE_BINARY_ARRAYS}.
+     */
+    @SystemProperty(value = "Flag to enable store of array in binary format and keep component type",
+        defaults = "" + DFLT_IGNITE_USE_BINARY_ARRAYS)
+    public static final String IGNITE_USE_BINARY_ARRAYS = "IGNITE_USE_BINARY_ARRAYS";
 
     /**
      * Enforces singleton.

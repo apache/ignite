@@ -148,7 +148,7 @@ namespace Apache.Ignite.Core.Tests.Services
         int testParams(params object[] args);
 
         /** */
-        ServicesTest.PlatformComputeBinarizable testBinarizable(ServicesTest.PlatformComputeBinarizable x);
+        PlatformComputeBinarizable testBinarizable(PlatformComputeBinarizable x);
 
         /** */
         object[] testBinarizableArrayOfObjects(object[] x);
@@ -157,7 +157,7 @@ namespace Apache.Ignite.Core.Tests.Services
         IBinaryObject[] testBinaryObjectArray(IBinaryObject[] x);
 
         /** */
-        ServicesTest.PlatformComputeBinarizable[] testBinarizableArray(ServicesTest.PlatformComputeBinarizable[] x);
+        PlatformComputeBinarizable[] testBinarizableArray(PlatformComputeBinarizable[] x);
 
         /** */
         ICollection testBinarizableCollection(ICollection x);
@@ -179,7 +179,7 @@ namespace Apache.Ignite.Core.Tests.Services
 
         /** */
         Employee[] testEmployees(Employee[] emps);
-        
+
         /** */
         Account[] testAccounts();
 
@@ -208,6 +208,12 @@ namespace Apache.Ignite.Core.Tests.Services
         void testException(string exceptionClass);
 
         /** */
+        object testRoundtrip(object x);
+
+        /** */
         void sleep(long delayMs);
+
+        /** */
+        object contextAttribute(string name);
     }
 }

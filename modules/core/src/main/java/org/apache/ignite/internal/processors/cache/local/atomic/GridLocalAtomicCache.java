@@ -33,6 +33,7 @@ import javax.cache.processor.EntryProcessor;
 import javax.cache.processor.EntryProcessorException;
 import javax.cache.processor.EntryProcessorResult;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.cache.ReadRepairStrategy;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheEntryPredicate;
@@ -319,7 +320,7 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
         boolean deserializeBinary,
         boolean needVer,
         boolean recovery,
-        boolean readRepair) throws IgniteCheckedException {
+        ReadRepairStrategy readRepairStrategy) throws IgniteCheckedException {
         A.notNull(keys, "keys");
 
         String taskName = ctx.kernalContext().job().currentTaskName();
@@ -341,7 +342,7 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
         final String taskName,
         final boolean deserializeBinary,
         boolean recovery,
-        boolean readRepair,
+        ReadRepairStrategy readRepairStrategy,
         final boolean skipVals,
         final boolean needVer
     ) {
@@ -545,7 +546,7 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
             taskName,
             deserializeBinary,
             opCtx != null && opCtx.recovery(),
-            false,
+            null,
             /*force primary*/false,
             expiry,
             skipVals,
@@ -581,7 +582,7 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
 
         final boolean keepBinary = opCtx != null && opCtx.isKeepBinary();
 
-        Map<K, EntryProcessorResult<T>> entryProcessorRes = (Map<K, EntryProcessorResult<T>>) updateAllInternal(
+        Map<K, EntryProcessorResult<T>> entryProcessorRes = (Map<K, EntryProcessorResult<T>>)updateAllInternal(
                 TRANSFORM,
                 invokeMap.keySet(),
                 invokeMap.values(),
@@ -687,7 +688,7 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
 
         CacheOperationContext opCtx = ctx.operationContextPerCall();
 
-        Map<K, EntryProcessorResult<T>> entryProcessorResult = (Map<K, EntryProcessorResult<T>>) updateAllInternal(
+        Map<K, EntryProcessorResult<T>> entryProcessorResult = (Map<K, EntryProcessorResult<T>>)updateAllInternal(
                 TRANSFORM,
                 map.keySet(),
                 map.values(),

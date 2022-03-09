@@ -225,8 +225,11 @@ public class IgniteConfiguration {
     /** Default value for cache sanity check enabled flag. */
     public static final boolean DFLT_CACHE_SANITY_CHECK_ENABLED = true;
 
-    /** Default relative working directory path for snapshot operation result. */
+    /** Default relative working directory path for snapshot operation result. The default directory is <tt>snapshots</tt>. */
     public static final String DFLT_SNAPSHOT_DIRECTORY = "snapshots";
+
+    /** Default number of threads to perform snapshot operations. The default value is <tt>4</tt>. */
+    public static final int DFLT_SNAPSHOT_THREAD_POOL_SIZE = 4;
 
     /** Default value for late affinity assignment flag. */
     @Deprecated
@@ -564,6 +567,9 @@ public class IgniteConfiguration {
      */
     private String snapshotPath = DFLT_SNAPSHOT_DIRECTORY;
 
+    /** Total number of threads to perform snapshot operation. By default, the {@link #DFLT_SNAPSHOT_THREAD_POOL_SIZE} is used. */
+    private int snapshotThreadPoolSize = DFLT_SNAPSHOT_THREAD_POOL_SIZE;
+
     /** Active on start flag. */
     @Deprecated
     private boolean activeOnStart = DFLT_ACTIVE_ON_START;
@@ -723,6 +729,7 @@ public class IgniteConfiguration {
         segResolveAttempts = cfg.getSegmentationResolveAttempts();
         segResolvers = cfg.getSegmentationResolvers();
         snapshotPath = cfg.getSnapshotPath();
+        snapshotThreadPoolSize = cfg.getSnapshotThreadPoolSize();
         sndRetryCnt = cfg.getNetworkSendRetryCount();
         sndRetryDelay = cfg.getNetworkSendRetryDelay();
         sqlConnCfg = cfg.getSqlConnectorConfiguration();
@@ -1747,6 +1754,25 @@ public class IgniteConfiguration {
     }
 
     /**
+     * @return Total number of threads to perform snapshot operation. By default,
+     * the {@link #DFLT_SNAPSHOT_THREAD_POOL_SIZE} is used.
+     */
+    public int getSnapshotThreadPoolSize() {
+        return snapshotThreadPoolSize;
+    }
+
+    /**
+     * @param snapshotThreadPoolSize Total number of threads to perform snapshot operation. By default,
+     * the {@link #DFLT_SNAPSHOT_THREAD_POOL_SIZE} is used.
+     * @return {@code this} for chaining.
+     */
+    public IgniteConfiguration setSnapshotThreadPoolSize(int snapshotThreadPoolSize) {
+        this.snapshotThreadPoolSize = snapshotThreadPoolSize;
+
+        return this;
+    }
+
+    /**
      * Gets Max count of threads can be used at rebalancing.
      * Minimum is 1.
      * @return count.
@@ -2177,7 +2203,7 @@ public class IgniteConfiguration {
      * on arrive to mapped node. This approach suits well for large amount of small
      * jobs (which is a wide-spread use case). User still can control the number
      * of concurrent jobs by setting maximum thread pool size defined by
-     * IgniteConfiguration.getPublicThreadPoolSize() configuration property.
+     * {@link IgniteConfiguration#getPublicThreadPoolSize()} configuration property.
      *
      * @return Grid collision SPI implementation or {@code null} to use default implementation.
      */
@@ -3160,7 +3186,7 @@ public class IgniteConfiguration {
     }
 
     /**
-     * @return By default the relative {@link #DFLT_SNAPSHOT_DIRECTORY} is used. The value can be
+     * @return By default, the relative {@link #DFLT_SNAPSHOT_DIRECTORY} is used. The value can be
      * configured as relative path starting from the Ignites {@link #getWorkDirectory()} or
      * the value can be represented as an absolute snapshot working path.
      */
@@ -3169,7 +3195,7 @@ public class IgniteConfiguration {
     }
 
     /**
-     * @param snapshotPath By default the relative {@link #DFLT_SNAPSHOT_DIRECTORY} is used.
+     * @param snapshotPath By default, the relative {@link #DFLT_SNAPSHOT_DIRECTORY} is used.
      * The value can be configured as relative path starting from the Ignites {@link #getWorkDirectory()}
      * or the value can be represented as an absolute snapshot working path instead.
      * @return {@code this} for chaining.

@@ -69,7 +69,7 @@ public abstract class AbstractInlineLeafIO extends BPlusLeafIO<IndexRow> impleme
         short type = mvcc ? PageIO.T_H2_EX_REF_MVCC_LEAF_START : PageIO.T_H2_EX_REF_LEAF_START;
 
         for (short payload = 1; payload <= PageIO.MAX_PAYLOAD_SIZE; payload++) {
-            short ioType = (short) (type + payload - 1);
+            short ioType = (short)(type + payload - 1);
 
             AbstractInlineLeafIO io = mvcc ? new MvccInlineLeafIO(ioType, payload) : new InlineLeafIO(ioType, payload);
 
@@ -83,6 +83,7 @@ public abstract class AbstractInlineLeafIO extends BPlusLeafIO<IndexRow> impleme
     @SuppressWarnings("ForLoopReplaceableByForEach")
     @Override public final void storeByOffset(long pageAddr, int off, IndexRow row) {
         assert row.link() != 0 : row;
+        assertPageType(pageAddr);
 
         int fieldOff = 0;
 
@@ -121,14 +122,16 @@ public abstract class AbstractInlineLeafIO extends BPlusLeafIO<IndexRow> impleme
             long mvccCntr = mvccCounter(pageAddr, idx);
             int mvccOpCntr = mvccOperationCounter(pageAddr, idx);
 
-            return ((InlineIndexTree) tree).createMvccIndexRow(link, mvccCrdVer, mvccCntr, mvccOpCntr);
+            return ((InlineIndexTree)tree).createMvccIndexRow(link, mvccCrdVer, mvccCntr, mvccOpCntr);
         }
 
-        return ((InlineIndexTree) tree).createIndexRow(link);
+        return ((InlineIndexTree)tree).createIndexRow(link);
     }
 
     /** {@inheritDoc} */
     @Override public final void store(long dstPageAddr, int dstIdx, BPlusIO<IndexRow> srcIo, long srcPageAddr, int srcIdx) {
+        assertPageType(dstPageAddr);
+
         int srcOff = srcIo.offset(srcIdx);
 
         byte[] payload = PageUtils.getBytes(srcPageAddr, srcOff, inlineSize);
@@ -137,7 +140,7 @@ public abstract class AbstractInlineLeafIO extends BPlusLeafIO<IndexRow> impleme
 
         PageUtils.putBytes(dstPageAddr, dstOff, payload);
 
-        IORowHandler.store(dstPageAddr, dstOff + inlineSize, (InlineIO) srcIo, srcPageAddr, srcIdx, storeMvccInfo());
+        IORowHandler.store(dstPageAddr, dstOff + inlineSize, (InlineIO)srcIo, srcPageAddr, srcIdx, storeMvccInfo());
     }
 
     /** {@inheritDoc} */

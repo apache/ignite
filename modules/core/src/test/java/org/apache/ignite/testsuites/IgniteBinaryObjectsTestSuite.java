@@ -18,6 +18,7 @@
 package org.apache.ignite.testsuites;
 
 import org.apache.ignite.internal.binary.BinaryArrayIdentityResolverSelfTest;
+import org.apache.ignite.internal.binary.BinaryArraySelfTest;
 import org.apache.ignite.internal.binary.BinaryBasicIdMapperSelfTest;
 import org.apache.ignite.internal.binary.BinaryBasicNameMapperSelfTest;
 import org.apache.ignite.internal.binary.BinaryConfigurationConsistencySelfTest;
@@ -122,6 +123,7 @@ import org.junit.runners.Suite;
     BinaryFooterOffsetsHeapSelfTest.class,
     BinaryFooterOffsetsOffheapSelfTest.class,
     BinaryEnumsSelfTest.class,
+    BinaryArraySelfTest.class,
     GridDefaultBinaryMappersBinaryMetaDataSelfTest.class,
     GridSimpleLowerCaseBinaryMappersBinaryMetaDataSelfTest.class,
     GridBinaryAffinityKeySelfTest.class,

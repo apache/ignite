@@ -25,14 +25,16 @@ import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Objects;
+import java.util.UUID;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
-
 import javax.cache.CacheException;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
+import org.apache.ignite.cache.QueryIndexType;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
@@ -48,6 +50,8 @@ import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.h2.H2TableDescriptor;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
+import org.apache.ignite.internal.processors.query.h2.database.H2TreeIndex;
+import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -59,7 +63,7 @@ import org.h2.table.Column;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
-import static org.apache.ignite.internal.cache.query.index.sorted.inline.InlineRecommender.IGNITE_THROTTLE_INLINE_SIZE_CALCULATION;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_THROTTLE_INLINE_SIZE_CALCULATION;
 import static org.apache.ignite.internal.processors.query.h2.H2TableDescriptor.PK_IDX_NAME;
 import static org.apache.ignite.internal.processors.query.h2.opt.H2TableScanIndex.SCAN_INDEX_NAME_SUFFIX;
 
@@ -1519,6 +1523,96 @@ public class BasicIndexTest extends AbstractIndexingCommonTest {
         assertNull(GridTestUtils.getFieldValue(tblDesc1, "luceneIdx"));
     }
 
+    /**
+     * Checks that part of the composite key assembled in BinaryObjectBuilder can pass the validation correctly
+     * if you specify Object type when creating the index.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testCacheSecondaryCompositeIndex() throws Exception {
+        inlineSize = 70;
+
+        startGrid();
+
+        String cacheName = "TEST";
+
+        List<QueryIndex> indexes = Collections.singletonList(
+            new QueryIndex("val_obj", QueryIndexType.SORTED).setInlineSize(inlineSize)
+        );
+
+        grid().createCache(new CacheConfiguration<>()
+            .setName(cacheName)
+            .setSqlSchema(cacheName)
+            .setAffinity(new RendezvousAffinityFunction(false, 4))
+            .setQueryEntities(Collections.singleton(new QueryEntity()
+                .setTableName(cacheName)
+                .setKeyType(Integer.class.getName())
+                .setKeyFieldName("id")
+                .setValueType("TEST_VAL_SECONDARY_COMPOSITE")
+                .addQueryField("id", Integer.class.getName(), null)
+                .addQueryField("val_obj", Object.class.getName(), null)
+                .setIndexes(indexes)
+            ))
+        );
+
+        BinaryObjectBuilder bob = grid().binary().builder("TEST_VAL_SECONDARY_COMPOSITE");
+        BinaryObjectBuilder bobInner = grid().binary().builder("inner");
+
+        bobInner.setField("inner_k", 0);
+        bobInner.setField("inner_uuid", UUID.randomUUID());
+
+        bob.setField("val_obj", bobInner.build());
+
+        IgniteCache<Object, Object> cache = grid().cache(cacheName);
+
+        cache.put(0, bob.build());
+
+        BinaryObjectBuilder alice = grid().binary().builder("TEST_VAL_SECONDARY_COMPOSITE");
+        BinaryObjectBuilder aliceInner = grid().binary().builder("inner2");
+
+        aliceInner.setField("inner_k2", 0);
+        aliceInner.setField("inner_uuid2", UUID.randomUUID());
+
+        alice.setField("val_obj", aliceInner.build());
+
+        cache.put(1, alice.build());
+
+        List<List<?>> rows = execSql(cache.withKeepBinary(), "SELECT id, val_obj FROM " + cacheName);
+
+        assertEquals(2, rows.size());
+
+        for (List<?> row : rows) {
+            assertNotNull(row.get(0));
+            assertNotNull("id = " + row.get(0), row.get(1));
+        }
+    }
+
+    /** */
+    @Test
+    public void testCreateSystemIndexWithSpecifiedInlineSizeByDdl() throws Exception {
+        inlineSize = 10;
+
+        final int pkInlineSize = 22;
+        final int affInlineSize = 23;
+
+        IgniteEx ign = startGrid();
+
+        sql("CREATE TABLE TEST (ID VARCHAR, ID_AFF INT, VAL INT, "
+                + "PRIMARY KEY (ID, ID_AFF)) WITH"
+                + "\""
+                + "AFFINITY_KEY=ID_AFF,"
+                + "PK_INLINE_SIZE=" + pkInlineSize + ","
+                + "AFFINITY_INDEX_INLINE_SIZE=" + affInlineSize
+                + "\""
+        );
+
+        GridH2Table tbl = ((IgniteH2Indexing)ign.context().query().getIndexing()).schemaManager().dataTable("PUBLIC", "TEST");
+
+        assertEquals(pkInlineSize, ((H2TreeIndex)tbl.getIndex("_key_PK")).inlineSize());
+        assertEquals(affInlineSize, ((H2TreeIndex)tbl.getIndex("AFFINITY_KEY")).inlineSize());
+    }
+
     /** */
     private void checkAll() {
         IgniteCache<Key, Val> cache = grid(0).cache(DEFAULT_CACHE_NAME);
@@ -1575,9 +1669,9 @@ public class BasicIndexTest extends AbstractIndexingCommonTest {
         assertEquals(100, data.size());
 
         for (List<?> row : data) {
-            Key key = (Key) row.get(0);
+            Key key = (Key)row.get(0);
 
-            Val val = (Val) row.get(1);
+            Val val = (Val)row.get(1);
 
             long i = key.keyLong;
 
@@ -1634,9 +1728,9 @@ public class BasicIndexTest extends AbstractIndexingCommonTest {
         assertEquals(10, data.size());
 
         for (List<?> row : data) {
-            Key key = (Key) row.get(0);
+            Key key = (Key)row.get(0);
 
-            Val val = (Val) row.get(1);
+            Val val = (Val)row.get(1);
 
             long i = key.keyLong;
 
@@ -1662,9 +1756,9 @@ public class BasicIndexTest extends AbstractIndexingCommonTest {
         assertEquals(10, data.size());
 
         for (List<?> row : data) {
-            Key key = (Key) row.get(0);
+            Key key = (Key)row.get(0);
 
-            Val val = (Val) row.get(1);
+            Val val = (Val)row.get(1);
 
             long i = key.keyLong;
 
@@ -1765,7 +1859,7 @@ public class BasicIndexTest extends AbstractIndexingCommonTest {
             if (o == null || getClass() != o.getClass())
                 return false;
 
-            Key key = (Key) o;
+            Key key = (Key)o;
 
             return keyLong == key.keyLong &&
                 Objects.equals(keyStr, key.keyStr) &&
@@ -1815,7 +1909,7 @@ public class BasicIndexTest extends AbstractIndexingCommonTest {
             if (o == null || getClass() != o.getClass())
                 return false;
 
-            Val val = (Val) o;
+            Val val = (Val)o;
 
             return valLong == val.valLong &&
                 Objects.equals(valStr, val.valStr) &&
@@ -1857,7 +1951,7 @@ public class BasicIndexTest extends AbstractIndexingCommonTest {
             if (o == null || getClass() != o.getClass())
                 return false;
 
-            Pojo pojo = (Pojo) o;
+            Pojo pojo = (Pojo)o;
 
             return pojoLong == pojo.pojoLong;
         }

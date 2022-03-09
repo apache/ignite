@@ -52,6 +52,8 @@ import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.managers.discovery.IgniteDiscoverySpi;
 import org.apache.ignite.internal.managers.encryption.GridEncryptionManager;
+import org.apache.ignite.internal.managers.encryption.GroupKey;
+import org.apache.ignite.internal.managers.encryption.GroupKeyEncrypted;
 import org.apache.ignite.internal.managers.systemview.walker.CacheGroupViewWalker;
 import org.apache.ignite.internal.managers.systemview.walker.CacheViewWalker;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -177,7 +179,7 @@ public class ClusterCachesInfo {
         ctx.systemView().registerView(CACHES_VIEW, CACHES_VIEW_DESC,
             new CacheViewWalker(),
             registeredCaches.values(),
-            CacheView::new);
+            (desc) -> new CacheView(desc, ctx));
 
         ctx.systemView().registerView(CACHE_GRPS_VIEW, CACHE_GRPS_VIEW_DESC,
             new CacheGroupViewWalker(),
@@ -995,6 +997,8 @@ public class ClusterCachesInfo {
         DynamicCacheChangeRequest req,
         String cacheName
     ) {
+        assert exchangeActions != null;
+
         CacheConfiguration<?, ?> ccfg = req.startCacheConfiguration();
 
         IgniteCheckedException err = null;
@@ -1038,7 +1042,7 @@ public class ClusterCachesInfo {
         if (err == null && req.restartId() == null) {
             IgniteSnapshotManager snapshotMgr = ctx.cache().context().snapshotMgr();
 
-            if (snapshotMgr.isRestoring(cacheName, ccfg.getGroupName())) {
+            if (snapshotMgr.isRestoring(ccfg)) {
                 err = new IgniteCheckedException("Cache start failed. A cache or group with the same name is " +
                     "currently being restored from a snapshot [cache=" + cacheName +
                     (ccfg.getGroupName() == null ? "" : ", group=" + ccfg.getGroupName()) + ']');
@@ -1066,6 +1070,7 @@ public class ClusterCachesInfo {
             req.initiatingNodeId(),
             req.deploymentId(),
             req.encryptionKey(),
+            req.encryptionKeyId(),
             req.cacheConfigurationEnrichment()
         );
 
@@ -1405,7 +1410,7 @@ public class ClusterCachesInfo {
      * @param clusterWideCacheData Cluster wide cache data.
      */
     public void validateNoNewCachesWithNewFormat(CacheNodeCommonDiscoveryData clusterWideCacheData) {
-        IgniteDiscoverySpi spi = (IgniteDiscoverySpi) ctx.discovery().getInjectedDiscoverySpi();
+        IgniteDiscoverySpi spi = (IgniteDiscoverySpi)ctx.discovery().getInjectedDiscoverySpi();
 
         boolean allowSplitCacheConfigurations = spi.allNodesSupport(IgniteFeatures.SPLITTED_CACHE_CONFIGURATIONS);
 
@@ -2024,7 +2029,7 @@ public class ClusterCachesInfo {
                     ", conflictingCacheName=" + desc.cacheName() + ']';
         }
 
-        int grpId = CU.cacheGroupId(cfg.getName(), cfg.getGroupName());
+        int grpId = CU.cacheGroupId(cfg);
 
         if (cfg.getGroupName() != null) {
             if (cacheGroupByName(cfg.getGroupName()) == null) {
@@ -2139,6 +2144,7 @@ public class ClusterCachesInfo {
             nodeId,
             joinData.cacheDeploymentId(),
             null,
+            null,
             cacheInfo.cacheData().cacheConfigurationEnrichment()
         );
 
@@ -2164,6 +2170,22 @@ public class ClusterCachesInfo {
 
         DynamicCacheDescriptor old = registeredCaches.put(cfg.getName(), desc);
         registeredCachesById.put(desc.cacheId(), desc);
+
+        if (cacheInfo.cacheData().groupKeyEncrypted() != null) {
+            int grpId = CU.cacheGroupId(cacheInfo.cacheData().config());
+
+            assert cacheInfo.cacheData().config().isEncryptionEnabled();
+
+            GroupKeyEncrypted restoredKey = cacheInfo.cacheData().groupKeyEncrypted();
+            GroupKey activeKey = ctx.encryption().getActiveKey(grpId);
+
+            if (activeKey == null)
+                ctx.encryption().setInitialGroupKey(grpId, restoredKey.key(), restoredKey.id());
+            else {
+                assert activeKey.equals(new GroupKey(restoredKey.id(),
+                    ctx.config().getEncryptionSpi().decryptKey(restoredKey.key())));
+            }
+        }
 
         assert old == null : old;
     }
@@ -2261,6 +2283,7 @@ public class ClusterCachesInfo {
      * @param rcvdFrom Node ID cache was recived from.
      * @param deploymentId Deployment ID.
      * @param encKey Encryption key.
+     * @param encKeyId Id of encryption key.
      * @param cacheCfgEnrichment Cache configuration enrichment.
      * @return Group descriptor.
      */
@@ -2272,6 +2295,7 @@ public class ClusterCachesInfo {
         UUID rcvdFrom,
         IgniteUuid deploymentId,
         @Nullable byte[] encKey,
+        @Nullable Integer encKeyId,
         CacheConfigurationEnrichment cacheCfgEnrichment
     ) {
         if (startedCacheCfg.getGroupName() != null) {
@@ -2284,7 +2308,7 @@ public class ClusterCachesInfo {
             }
         }
 
-        int grpId = CU.cacheGroupId(startedCacheCfg.getName(), startedCacheCfg.getGroupName());
+        int grpId = CU.cacheGroupId(startedCacheCfg);
 
         Map<String, Integer> caches = Collections.singletonMap(startedCacheCfg.getName(), cacheId);
 
@@ -2312,7 +2336,7 @@ public class ClusterCachesInfo {
         );
 
         if (startedCacheCfg.isEncryptionEnabled())
-            ctx.encryption().setInitialGroupKey(grpId, encKey);
+            ctx.encryption().setInitialGroupKey(grpId, encKey, encKeyId);
 
         CacheGroupDescriptor old = registeredCacheGrps.put(grpId, grpDesc);
 

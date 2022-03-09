@@ -39,6 +39,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import javax.cache.Cache;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -79,9 +80,11 @@ import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.logger.NullLogger;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.apache.ignite.testframework.wal.record.RecordUtils;
 import org.apache.ignite.transactions.Transaction;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -205,6 +208,8 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
         stopAllGrids();
 
         cleanPersistenceDir();
+
+        forceArchiveSegmentMs = 0;
     }
 
     /**
@@ -279,7 +284,8 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
                 if (walRecord.type() == DATA_RECORD_V2 || walRecord.type() == MVCC_DATA_RECORD) {
                     DataRecord record = (DataRecord)walRecord;
 
-                    for (DataEntry entry : record.writeEntries()) {
+                    for (int i = 0; i < record.entryCount(); i++) {
+                        DataEntry entry = record.get(i);
                         KeyCacheObject key = entry.key();
                         CacheObject val = entry.value();
 
@@ -401,6 +407,37 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
         stopGrid();
 
         assertTrue(recordedAfterSleep);
+    }
+
+    /** Tests force time out not applied without data records logged. */
+    @Test
+    public void testSegmentNotArchivedWithoutDataRecord() throws Exception {
+        AtomicLong forceArchiveSegment = new AtomicLong();
+
+        forceArchiveSegmentMs = 1000;
+
+        IgniteEx ignite = startGrid();
+
+        ignite.events().localListen(e -> {
+            forceArchiveSegment.incrementAndGet();
+
+            return true;
+        }, EVT_WAL_SEGMENT_ARCHIVED);
+
+        ignite.cluster().state(ACTIVE);
+
+        assertFalse(GridTestUtils.waitForCondition(() -> forceArchiveSegment.get() > 0, 3L * forceArchiveSegmentMs));
+
+        assertEquals(0, forceArchiveSegment.get());
+
+        putDummyRecords(ignite, 1);
+
+        assertTrue(GridTestUtils.waitForCondition(() -> forceArchiveSegment.get() == 1, getTestTimeout()));
+
+        // Log some record to check only DataRecord force rollover.
+        ignite.context().cache().context().wal().log(RecordUtils.buildWalRecord(WALRecord.RecordType.PAGE_RECORD));
+
+        assertFalse(GridTestUtils.waitForCondition(() -> forceArchiveSegment.get() > 1, 3L * forceArchiveSegmentMs));
     }
 
     /**
@@ -1019,11 +1056,11 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
             0,
             null,
             dataRecord -> {
-                final List<DataEntry> entries = dataRecord.writeEntries();
-
                 sb.append("{");
 
-                for (DataEntry entry : entries) {
+                for (int i = 0; i < dataRecord.entryCount(); i++) {
+                    DataEntry entry = dataRecord.get(i);
+
                     GridCacheOperation op = entry.op();
                     Integer cnt = operationsFound.get(op);
 
@@ -1102,9 +1139,9 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
         Map<GridCacheOperation, Integer> operationsFound = new EnumMap<>(GridCacheOperation.class);
 
         IgniteInClosure<DataRecord> drHnd = dataRecord -> {
-            List<? extends DataEntry> entries = dataRecord.writeEntries();
+            for (int i = 0; i < dataRecord.entryCount(); i++) {
+                DataEntry entry = dataRecord.get(i);
 
-            for (DataEntry entry : entries) {
                 GridCacheOperation op = entry.op();
                 Integer cnt = operationsFound.get(op);
 
@@ -1189,9 +1226,9 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
         Map<GridCacheOperation, Integer> operationsFound = new EnumMap<>(GridCacheOperation.class);
 
         IgniteInClosure<DataRecord> drHnd = dataRecord -> {
-            List<? extends DataEntry> entries = dataRecord.writeEntries();
+            for (int i = 0; i < dataRecord.entryCount(); i++) {
+                DataEntry entry = dataRecord.get(i);
 
-            for (DataEntry entry : entries) {
                 GridCacheOperation op = entry.op();
                 Integer cnt = operationsFound.get(op);
 
@@ -1279,11 +1316,11 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
         Map<GridCacheOperation, Integer> operationsFound = new EnumMap<>(GridCacheOperation.class);
 
         IgniteInClosure<DataRecord> drHnd = dataRecord -> {
-            List<DataEntry> entries = dataRecord.writeEntries();
-
             sb.append("{");
 
-            for (DataEntry entry : entries) {
+            for (int i = 0; i < dataRecord.entryCount(); i++) {
+                DataEntry entry = dataRecord.get(i);
+
                 GridCacheOperation op = entry.op();
                 Integer cnt = operationsFound.get(op);
 
@@ -1607,9 +1644,9 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
                         if (dataRecordHnd != null)
                             dataRecordHnd.apply(dataRecord);
 
-                        List<DataEntry> entries = dataRecord.writeEntries();
+                        for (int i = 0; i < dataRecord.entryCount(); i++) {
+                            DataEntry entry = dataRecord.get(i);
 
-                        for (DataEntry entry : entries) {
                             if (walRecord.type() == DATA_RECORD_V2) {
                                 assertEquals(primary, (entry.flags() & DataEntry.PRIMARY_FLAG) != 0);
                                 assertEquals(rebalance, (entry.flags() & DataEntry.PRELOAD_FLAG) != 0);

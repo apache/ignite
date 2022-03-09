@@ -144,13 +144,10 @@
                 <exclude>${project.groupId}:ignite-sqlline</exclude>
                 <!-- Removed from slim packaging are: -->
                 <exclude>${project.groupId}:ignite-aop</exclude>
-                <exclude>${project.groupId}:ignite-aws</exclude>
-                <exclude>${project.groupId}:ignite-azure</exclude>
                 <exclude>${project.groupId}:ignite-cassandra-serializers</exclude>
                 <exclude>${project.groupId}:ignite-cassandra-store</exclude>
                 <exclude>${project.groupId}:ignite-cloud</exclude>
                 <exclude>${project.groupId}:ignite-direct-io</exclude>
-                <exclude>${project.groupId}:ignite-gce</exclude>
                 <exclude>${project.groupId}:ignite-jcl</exclude>
                 <exclude>${project.groupId}:ignite-mesos</exclude>
                 <exclude>${project.groupId}:ignite-ml</exclude>

@@ -35,6 +35,18 @@ public class ClientMessage implements Message, Externalizable {
     /** */
     private static final long serialVersionUID = -4609408156037304495L;
 
+    /** Limit handshake size to 64 MiB. */
+    private static final int MAX_HANDSHAKE_SIZE = 64 * 1024 * 1024;
+
+    /** First 3 bytes in handshake are either 1 1 0 (handshake = 1, major version = 1)... */
+    private static final int HANDSHAKE_HEADER = 1 + (1 << 8);
+
+    /** ...or 1 2 0 (handshake = 1, major version = 2). */
+    private static final int HANDSHAKE_HEADER2 = 1 + (2 << 8);
+
+    /** */
+    private final boolean isFirstMessage;
+
     /** */
     private byte[] data;
 
@@ -48,16 +60,29 @@ public class ClientMessage implements Message, Externalizable {
     private int msgSize;
 
     /** */
-    public ClientMessage() {}
+    private int firstMessageHeader;
+
+    /** */
+    public ClientMessage() {
+        isFirstMessage = false;
+    }
+
+    /** */
+    public ClientMessage(boolean isFirstMessage) {
+        this.isFirstMessage = isFirstMessage;
+    }
 
     /** */
     public ClientMessage(byte[] data) {
+        //noinspection AssignmentOrReturnOfFieldWithMutableType
         this.data = data;
+        isFirstMessage = false;
     }
 
     /** */
     public ClientMessage(BinaryHeapOutputStream stream) {
         this.stream = stream;
+        isFirstMessage = false;
     }
 
     /** {@inheritDoc} */
@@ -69,7 +94,7 @@ public class ClientMessage implements Message, Externalizable {
 
         if (cnt < 0) {
             for (; cnt < 0 && buf.hasRemaining(); cnt++)
-                buf.put((byte) ((msgSize >> (8 * (4 + cnt))) & 0xFF));
+                buf.put((byte)((msgSize >> (8 * (4 + cnt))) & 0xFF));
 
             if (cnt < 0)
                 return false;
@@ -109,6 +134,16 @@ public class ClientMessage implements Message, Externalizable {
 
     /** {@inheritDoc} */
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
+        throw new UnsupportedOperationException();
+    }
+
+    /**
+     * Reads this message from provided byte buffer.
+     *
+     * @param buf Byte buffer.
+     * @return Whether message was fully read.
+     */
+    public boolean readFrom(ByteBuffer buf) throws IOException {
         if (cnt < 0) {
             for (; cnt < 0 && buf.hasRemaining(); cnt++)
                 msgSize |= (buf.get() & 0xFF) << (8 * (4 + cnt));
@@ -116,10 +151,13 @@ public class ClientMessage implements Message, Externalizable {
             if (cnt < 0)
                 return false;
 
-            data = new byte[msgSize];
+            if (msgSize <= 0)
+                throw new IOException("Message size must be greater than 0: " + msgSize);
+
+            if (isFirstMessage && msgSize > MAX_HANDSHAKE_SIZE)
+                throw new IOException("Client handshake size limit exceeded: " + msgSize + " > " + MAX_HANDSHAKE_SIZE);
         }
 
-        assert data != null;
         assert cnt >= 0;
         assert msgSize > 0;
 
@@ -130,6 +168,31 @@ public class ClientMessage implements Message, Externalizable {
 
             if (missing > 0) {
                 int len = Math.min(missing, remaining);
+
+                if (isFirstMessage) {
+                    // Sanity check: first 3 bytes in handshake are always 1 1 0 (handshake = 1, major version = 1).
+                    // Do not allocate the buffer before validating the header to protect us from garbage data sent by unrelated application
+                    // connecting on our port by accident.
+                    while (len > 0 && cnt < 3) {
+                        firstMessageHeader |= (buf.get() & 0xFF) << (8 * cnt);
+                        cnt++;
+                        len--;
+                    }
+
+                    if (cnt < 3)
+                        return false;
+
+                    if (firstMessageHeader != HANDSHAKE_HEADER && firstMessageHeader != HANDSHAKE_HEADER2)
+                        throw new IOException("Handshake header check failed: " + firstMessageHeader);
+
+                    // Header is valid, create buffer and set first bytes.
+                    data = new byte[msgSize];
+                    data[0] = 1;
+                    data[1] = (byte)(firstMessageHeader >> 8);
+                }
+
+                if (data == null)
+                    data = new byte[msgSize];
 
                 buf.get(data, cnt, len);
 
@@ -172,6 +235,7 @@ public class ClientMessage implements Message, Externalizable {
             stream = null;
         }
 
+        //noinspection AssignmentOrReturnOfFieldWithMutableType
         return data;
     }
 
