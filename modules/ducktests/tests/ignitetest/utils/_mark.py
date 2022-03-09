@@ -24,6 +24,7 @@ from ducktape.cluster.cluster_spec import ClusterSpec
 from ducktape.mark._mark import Ignore, Mark, _inject
 
 from ignitetest.utils.version import IgniteVersion
+from ignitetest.utils.ignite_test import IgniteTestContext
 
 
 class IgnoreIf(Ignore):
@@ -161,7 +162,7 @@ class ParametrizableClusterMetadata(Mark):
             if not ctx.cluster_use_metadata:
                 ctx.cluster_use_metadata = self.metadata
 
-        return context_list
+        return list(map(lambda _ctx: IgniteTestContext.resolve(_ctx), context_list))
 
     @staticmethod
     def _extract_cluster_size(seed_context):
