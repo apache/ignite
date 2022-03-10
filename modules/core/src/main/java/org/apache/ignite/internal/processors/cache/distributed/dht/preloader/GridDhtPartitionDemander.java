@@ -1767,21 +1767,28 @@ public class GridDhtPartitionDemander {
                     return;
                 }
 
-                // Delay owning until checkpoint is finished.
-                if (grp.persistenceEnabled() && !grp.localWalEnabled() && !cancelled) {
+                if (grp.cdcEnabled() && !grp.localWalEnabled() && !cancelled) {
                     if (log.isDebugEnabled()) {
                         log.debug("Delaying partition owning for a group [name=" +
                             grp.cacheOrGroupName() + ", ver=" + topVer + ']');
                     }
 
-                    // Force new checkpoint to make sure owning state is captured.
-                    CheckpointProgress cp = ctx.database().forceCheckpoint(WalStateManager.reason(grp.groupId(), topVer));
+                    // Delay owning until checkpoint is finished.
+                    if (grp.persistenceEnabled()) {
+                        // Force new checkpoint to make sure owning state is captured.
+                        CheckpointProgress cp = ctx.database().forceCheckpoint(WalStateManager.reason(grp.groupId(), topVer));
 
-                    cp.onStateChanged(PAGE_SNAPSHOT_TAKEN, () -> grp.localWalEnabled(true, false));
+                        cp.onStateChanged(PAGE_SNAPSHOT_TAKEN, () -> grp.localWalEnabled(true, false));
 
-                    cp.onStateChanged(FINISHED, () -> {
+                        cp.onStateChanged(FINISHED, () -> {
+                            ctx.exchange().finishPreloading(topVer, grp.groupId(), rebalanceId);
+                        });
+                    }
+                    else {
+                        grp.localWalEnabled(true, false);
+
                         ctx.exchange().finishPreloading(topVer, grp.groupId(), rebalanceId);
-                    });
+                    }
                 }
                 else {
                     onDone(!cancelled);

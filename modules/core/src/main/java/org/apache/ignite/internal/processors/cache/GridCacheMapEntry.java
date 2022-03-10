@@ -1213,7 +1213,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 counters.accumulateSizeDelta(cctx.cacheId(), partition(), -1);
             }
 
-            if (cctx.group().walOrCdcEnabled()) {
+            if (cctx.group().cdcEnabled() && cctx.group().walEnabled()) {
                 logPtr = cctx.shared().cdcWal().log(new MvccDataRecord(new MvccDataEntry(
                     cctx.cacheId(),
                     key,
@@ -1342,7 +1342,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 counters.accumulateSizeDelta(cctx.cacheId(), partition(), -1);
             }
 
-            if (cctx.group().walOrCdcEnabled())
+            if (cctx.group().cdcEnabled() && cctx.group().walEnabled())
                 logPtr = logMvccUpdate(tx, null, 0, 0L, mvccVer);
 
             update(null, 0, 0, newVer, true);
@@ -1561,7 +1561,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
             updateCntr0 = nextPartitionCounter(tx, updateCntr);
 
-            if (tx != null && cctx.group().walOrCdcEnabled())
+            if (tx != null && cctx.group().cdcEnabled() && cctx.group().walEnabled())
                 logPtr = logTxUpdate(tx, val, addConflictVersion(tx.writeVersion(), newVer), expireTime, updateCntr0);
 
             update(val, expireTime, ttl, newVer, true);
@@ -1786,7 +1786,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
             updateCntr0 = nextPartitionCounter(tx, updateCntr);
 
-            if (tx != null && cctx.group().walOrCdcEnabled())
+            if (tx != null && cctx.group().cdcEnabled() && cctx.group().walEnabled())
                 logPtr = logTxUpdate(tx, null, addConflictVersion(tx.writeVersion(), newVer), 0, updateCntr0);
 
             drReplicate(drType, null, newVer, topVer);
@@ -3350,7 +3350,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         try {
             checkObsolete();
 
-            boolean walEnabled = !cctx.isNear() && cctx.group().walOrCdcEnabled();
+            boolean walEnabled = !cctx.isNear() && cctx.group().cdcEnabled() && cctx.group().walEnabled();
 
             long expTime = expireTime < 0 ? CU.toExpireTime(ttl) : expireTime;
 
@@ -4330,7 +4330,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         assert cctx.atomic();
 
         try {
-            if (cctx.group().walOrCdcEnabled())
+            if (cctx.group().cdcEnabled() && cctx.group().walEnabled())
                 cctx.shared().cdcWal().log(new DataRecord(new DataEntry(
                     cctx.cacheId(),
                     key,
@@ -5310,7 +5310,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                     counters.accumulateSizeDelta(cctx.cacheId(), entry.partition(), -1);
                 }
 
-                if (cctx.group().walOrCdcEnabled())
+                if (cctx.group().cdcEnabled() && cctx.group().walEnabled())
                     entry.logMvccUpdate(tx, null, 0, 0, mvccVer);
 
                 entry.update(null, 0, 0, newVer, true);
@@ -5658,7 +5658,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                     counters.accumulateSizeDelta(cctx.cacheId(), entry.partition(), -1);
                 }
 
-                if (cctx.group().walOrCdcEnabled())
+                if (cctx.group().cdcEnabled() && cctx.group().walEnabled())
                     logPtr = cctx.shared().cdcWal().log(new MvccDataRecord(new MvccDataEntry(
                         cctx.cacheId(),
                         entry.key(),
@@ -6855,7 +6855,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         try {
             checkObsolete();
 
-            boolean walEnabled = cctx.group().walOrCdcEnabled();
+            boolean walEnabled = cctx.group().cdcEnabled() && cctx.group().walEnabled();
 
             List<DataEntry> walEntries = walEnabled ? new ArrayList<>(entries.size() + 1) : Collections.EMPTY_LIST;
 
@@ -6964,7 +6964,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             if (cctx.offheap().mvccApplyHistoryIfAbsent(this, entryHist)) {
                 updated = true;
 
-                if (!cctx.isNear() && cctx.group().walOrCdcEnabled()) {
+                if (!cctx.isNear() && cctx.group().cdcEnabled() && cctx.group().walEnabled()) {
                     MvccDataRecord rec;
 
                     if (entryHist.size() == 1) {

@@ -21,8 +21,10 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
-import java.util.function.BiConsumer;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Consumer;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cluster.ClusterState;
@@ -94,6 +96,8 @@ public class WalForCdcTest extends GridCommonAbstractTest {
                 .setPersistenceEnabled(persistenceEnabled)
                 .setCdcEnabled(true)));
 
+        cfg.setConsistentId(igniteInstanceName);
+
         return cfg;
     }
 
@@ -109,9 +113,35 @@ public class WalForCdcTest extends GridCommonAbstractTest {
     public void testOnlyDataRecordWritten() throws Exception {
         persistenceEnabled = false;
 
-        doTestWal((ignite, cache) -> {
+        IgniteEx ignite = startGrid(0);
+
+        ignite.cluster().state(ClusterState.ACTIVE);
+
+        AtomicInteger cntr = new AtomicInteger();
+
+        // Check only `DataRecords` written in WAL for in-memory cache with CDC enabled.
+        doTestWal(ignite, cache -> {
             for (int i = 0; i < RECORD_COUNT; i++)
-                cache.put(i, i);
+                cache.put(keyForNode(ignite.affinity(DEFAULT_CACHE_NAME), cntr, ignite.localNode()), i);
+        });
+
+        // Check no WAL written during rebalance.
+        IgniteEx ignite1 = startGrid(1);
+
+        awaitPartitionMapExchange(false, true, null);
+
+        // Can't use `waitForCondition` because if test passed
+        // then no `DataRecords` loged therefore no segment archivation.
+        Thread.sleep(3 * WAL_ARCHIVE_TIMEOUT);
+
+        int walRecCnt = checkDataRecords(ignite1);
+
+        assertEquals(0, walRecCnt);
+
+        // Check `DataRecords` written on second node after rebalance.
+        doTestWal(ignite1, cache -> {
+            for (int i = 0; i < RECORD_COUNT; i++)
+                cache.put(keyForNode(ignite1.affinity(DEFAULT_CACHE_NAME), cntr, ignite1.localNode()), i);
         });
     }
 
@@ -120,7 +150,11 @@ public class WalForCdcTest extends GridCommonAbstractTest {
     public void testWalDisable() throws Exception {
         persistenceEnabled = true;
 
-        doTestWal((ignite, cache) -> {
+        IgniteEx ignite = startGrid(0);
+
+        ignite.cluster().state(ClusterState.ACTIVE);
+
+        doTestWal(ignite, cache -> {
             for (int i = 0; i < RECORD_COUNT / 2; i++)
                 cache.put(i, i);
 
@@ -137,28 +171,32 @@ public class WalForCdcTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private void doTestWal(BiConsumer<IgniteEx, IgniteCache<Integer, Integer>> putData) throws Exception {
-        IgniteEx ignite = startGrid(0);
-
-        ignite.cluster().state(ClusterState.ACTIVE);
-
-        IgniteCache<Integer, Integer> cache = ignite.createCache(
+    private void doTestWal(IgniteEx ignite, Consumer<IgniteCache<Integer, Integer>> putData) throws Exception {
+        IgniteCache<Integer, Integer> cache = ignite.getOrCreateCache(
             new CacheConfiguration<Integer, Integer>(DEFAULT_CACHE_NAME)
                 .setCacheMode(mode)
                 .setAtomicityMode(atomicityMode));
 
         long archiveIdx = ignite.context().cache().context().cdcWal().lastArchivedSegment();
 
-        putData.accept(ignite, cache);
+        putData.accept(cache);
 
         assertTrue(waitForCondition(
             () -> archiveIdx < ignite.context().cache().context().cdcWal().lastArchivedSegment(),
             getTestTimeout()
         ));
 
+        int walRecCnt = checkDataRecords(ignite);
+
+        assertEquals(RECORD_COUNT, walRecCnt);
+    }
+
+    /** */
+    private int checkDataRecords(IgniteEx ignite) throws IgniteCheckedException {
         String archive = U.resolveWorkDirectory(
             U.defaultWorkDirectory(),
-            ignite.configuration().getDataStorageConfiguration().getWalArchivePath(),
+            ignite.configuration().getDataStorageConfiguration().getWalArchivePath() + "/" +
+                U.maskForFileName(ignite.configuration().getIgniteInstanceName()),
             false
         ).getAbsolutePath();
 
@@ -184,6 +222,6 @@ public class WalForCdcTest extends GridCommonAbstractTest {
             walRecCnt++;
         }
 
-        assertEquals(RECORD_COUNT, walRecCnt);
+        return walRecCnt;
     }
 }

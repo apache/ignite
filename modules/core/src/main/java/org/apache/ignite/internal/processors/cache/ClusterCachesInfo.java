@@ -2322,14 +2322,10 @@ public class ClusterCachesInfo {
         else if (persistent)
             walGloballyEnabled = ctx.cache().context().database().walEnabled(grpId, false);
         else {
-            if (!CU.isSystemCache(startedCacheCfg.getName())) {
-                DataRegionConfiguration drCfg =
-                    CU.findDataRegion(ctx.config().getDataStorageConfiguration(), startedCacheCfg.getDataRegionName());
+            DataRegionConfiguration drCfg =
+                CU.findDataRegion(ctx.config().getDataStorageConfiguration(), startedCacheCfg.getDataRegionName());
 
-                walGloballyEnabled = drCfg != null && drCfg.isCdcEnabled();
-            }
-            else
-                walGloballyEnabled = false;
+            walGloballyEnabled = drCfg != null && drCfg.isCdcEnabled();
         }
 
         CacheGroupDescriptor grpDesc = new CacheGroupDescriptor(

@@ -37,12 +37,10 @@ import org.apache.ignite.configuration.TopologyValidator;
 import org.apache.ignite.events.CacheRebalancingEvent;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.cdc.CdcMain;
 import org.apache.ignite.internal.metric.IoStatisticsHolder;
 import org.apache.ignite.internal.metric.IoStatisticsHolderCache;
 import org.apache.ignite.internal.metric.IoStatisticsHolderIndex;
 import org.apache.ignite.internal.metric.IoStatisticsHolderNoOp;
-import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
 import org.apache.ignite.internal.processors.affinity.AffinityAssignment;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.affinity.GridAffinityAssignmentCache;
@@ -1099,6 +1097,14 @@ public class CacheGroupContext {
     }
 
     /**
+     * @return Persistence or CDC enabled flag.
+     */
+    public boolean cdcEnabled() {
+        // Data region is null for client and non affinity nodes.
+        return persistenceEnabled || (dataRegion != null && dataRegion.config().isCdcEnabled());
+    }
+
+    /**
      * @param nodeId Node ID.
      * @param req Request.
      */
@@ -1215,18 +1221,6 @@ public class CacheGroupContext {
      */
     public boolean walEnabled() {
         return localWalEnabled && globalWalEnabled;
-    }
-
-    /**
-     * @return {@code True} if {@link DataRecord} should be logged into WAL.
-     * @see CdcMain
-     */
-    public boolean walOrCdcEnabled() {
-        // Data region is null for client and non affinity nodes.
-        if (dataRegion == null)
-            return false;
-
-        return walEnabled() && (persistenceEnabled || dataRegion.config().isCdcEnabled());
     }
 
     /**
