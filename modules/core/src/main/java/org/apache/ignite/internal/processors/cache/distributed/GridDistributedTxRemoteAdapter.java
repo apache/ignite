@@ -805,7 +805,7 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                         boolean walEnabled = false;
 
                         // Log only there are at least one persistent or cdc enabled group.
-                        if (!near() && !F.isEmpty(dataEntries) && cctx.cdcWal() != null) {
+                        if (!near() && !F.isEmpty(dataEntries) && cctx.wal(true) != null) {
                             for (int i = 0; i < dataEntries.size(); i++) {
                                 CacheGroupContext grpCtx = dataEntries.get(i).get2().context().group();
 
@@ -823,11 +823,11 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                                 .map(tuple -> tuple.get1().partitionCounter(tuple.get2().updateCounter()))
                                 .collect(Collectors.toList());
 
-                            ptr = cctx.cdcWal().log(new DataRecord(entriesWithCounters));
+                            ptr = cctx.wal(true).log(new DataRecord(entriesWithCounters));
                         }
 
                         if (ptr != null)
-                            cctx.cdcWal().flush(ptr, false);
+                            cctx.wal(true).flush(ptr, false);
                     }
                     catch (Throwable ex) {
                         state(UNKNOWN);

@@ -54,6 +54,7 @@ import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cdc.CdcSelfTest.WAL_ARCHIVE_TIMEOUT;
+import static org.apache.ignite.testframework.GridTestUtils.getFieldValue;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /** Check only {@link DataRecord} written to the WAL for in-memory cache. */
@@ -72,6 +73,9 @@ public class WalForCdcTest extends GridCommonAbstractTest {
 
     /** */
     private boolean persistenceEnabled;
+
+    /** */
+    private boolean cdcEnabled;
 
     /** */
     @Parameterized.Parameters(name = "mode={0}, atomicityMode={1}")
@@ -94,7 +98,7 @@ public class WalForCdcTest extends GridCommonAbstractTest {
             .setWalForceArchiveTimeout(WAL_ARCHIVE_TIMEOUT)
             .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
                 .setPersistenceEnabled(persistenceEnabled)
-                .setCdcEnabled(true)));
+                .setCdcEnabled(cdcEnabled)));
 
         cfg.setConsistentId(igniteInstanceName);
 
@@ -106,13 +110,14 @@ public class WalForCdcTest extends GridCommonAbstractTest {
         stopAllGrids();
 
         cleanPersistenceDir();
+
+        cdcEnabled = true;
+        persistenceEnabled = false;
     }
 
     /** */
     @Test
     public void testOnlyDataRecordWritten() throws Exception {
-        persistenceEnabled = false;
-
         IgniteEx ignite = startGrid(0);
 
         ignite.cluster().state(ClusterState.ACTIVE);
@@ -171,18 +176,36 @@ public class WalForCdcTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @Test
+    public void testWalDisabledIfPersistenceAndCdcDisabled() throws Exception {
+        persistenceEnabled = false;
+        cdcEnabled = false;
+
+        IgniteEx ignite = startGrid(0);
+
+        ignite.cluster().state(ClusterState.ACTIVE);
+
+        ignite.getOrCreateCache(new CacheConfiguration<Integer, Integer>(DEFAULT_CACHE_NAME)
+                .setCacheMode(mode)
+                .setAtomicityMode(atomicityMode));
+
+        assertNull(ignite.context().cache().context().wal());
+        assertNull(getFieldValue(ignite.context().cache().context(), "cdcWalMgr"));
+    }
+
+    /** */
     private void doTestWal(IgniteEx ignite, Consumer<IgniteCache<Integer, Integer>> putData) throws Exception {
         IgniteCache<Integer, Integer> cache = ignite.getOrCreateCache(
             new CacheConfiguration<Integer, Integer>(DEFAULT_CACHE_NAME)
                 .setCacheMode(mode)
                 .setAtomicityMode(atomicityMode));
 
-        long archiveIdx = ignite.context().cache().context().cdcWal().lastArchivedSegment();
+        long archiveIdx = ignite.context().cache().context().wal(true).lastArchivedSegment();
 
         putData.accept(cache);
 
         assertTrue(waitForCondition(
-            () -> archiveIdx < ignite.context().cache().context().cdcWal().lastArchivedSegment(),
+            () -> archiveIdx < ignite.context().cache().context().wal(true).lastArchivedSegment(),
             getTestTimeout()
         ));
 

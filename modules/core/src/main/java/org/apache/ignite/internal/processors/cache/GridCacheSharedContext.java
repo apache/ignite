@@ -114,7 +114,7 @@ public class GridCacheSharedContext<K, V> {
     /** Write ahead log manager. {@code Null} if persistence is not enabled. */
     @Nullable private IgniteWriteAheadLogManager walMgr;
 
-    /** Write ahead log manager for CDC. {@code Null} if persistence and cdc is not enabled. */
+    /** Write ahead log manager for CDC. {@code Null} if persistence AND CDC is not enabled. */
     @Nullable private IgniteWriteAheadLogManager cdcWalMgr;
 
     /** Write ahead log state manager. */
@@ -779,8 +779,10 @@ public class GridCacheSharedContext<K, V> {
     /**
      * @return Write ahead log manager.
      */
-    @Nullable public IgniteWriteAheadLogManager cdcWal() {
-        return cdcWalMgr;
+    @Nullable public IgniteWriteAheadLogManager wal(boolean forCdc) {
+        assert !forCdc || cdcWalMgr != null;
+
+        return walMgr != null ? walMgr : (forCdc ? cdcWalMgr : null);
     }
 
     /**

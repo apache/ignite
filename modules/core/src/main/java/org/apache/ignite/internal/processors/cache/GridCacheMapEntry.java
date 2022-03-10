@@ -1214,7 +1214,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             }
 
             if (cctx.group().cdcEnabled() && cctx.group().walEnabled()) {
-                logPtr = cctx.shared().cdcWal().log(new MvccDataRecord(new MvccDataEntry(
+                logPtr = cctx.shared().wal(true).log(new MvccDataRecord(new MvccDataEntry(
                     cctx.cacheId(),
                     key,
                     val,
@@ -3466,7 +3466,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
                 if (walEnabled) {
                     if (cctx.mvccEnabled()) {
-                        cctx.shared().cdcWal().log(new MvccDataRecord(new MvccDataEntry(
+                        cctx.shared().wal(true).log(new MvccDataRecord(new MvccDataEntry(
                             cctx.cacheId(),
                             key,
                             val,
@@ -3479,7 +3479,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                             mvccVer == null ? MvccUtils.INITIAL_VERSION : mvccVer
                         )));
                     } else {
-                        cctx.shared().cdcWal().log(new DataRecord(new DataEntry(
+                        cctx.shared().wal(true).log(new DataRecord(new DataEntry(
                             cctx.cacheId(),
                             key,
                             val,
@@ -4331,7 +4331,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
         try {
             if (cctx.group().cdcEnabled() && cctx.group().walEnabled())
-                cctx.shared().cdcWal().log(new DataRecord(new DataEntry(
+                cctx.shared().wal(true).log(new DataRecord(new DataEntry(
                     cctx.cacheId(),
                     key,
                     val,
@@ -4373,7 +4373,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             else
                 op = this.val == null ? GridCacheOperation.CREATE : UPDATE;
 
-            return cctx.shared().cdcWal().log(new DataRecord(new DataEntry(
+            return cctx.shared().wal(true).log(new DataRecord(new DataEntry(
                 cctx.cacheId(),
                 key,
                 val,
@@ -4410,7 +4410,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             else
                 op = this.val == null ? GridCacheOperation.CREATE : UPDATE;
 
-            return cctx.shared().cdcWal().log(new MvccDataRecord(new MvccDataEntry(
+            return cctx.shared().wal(true).log(new MvccDataRecord(new MvccDataEntry(
                 cctx.cacheId(),
                 key,
                 val,
@@ -5659,7 +5659,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 }
 
                 if (cctx.group().cdcEnabled() && cctx.group().walEnabled())
-                    logPtr = cctx.shared().cdcWal().log(new MvccDataRecord(new MvccDataEntry(
+                    logPtr = cctx.shared().wal(true).log(new MvccDataRecord(new MvccDataEntry(
                         cctx.cacheId(),
                         entry.key(),
                         val,
@@ -6925,7 +6925,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             }
 
             if (walEnabled)
-                logPtr = cctx.shared().cdcWal().log(new MvccDataRecord(walEntries));
+                logPtr = cctx.shared().wal(true).log(new MvccDataRecord(walEntries));
         }
         finally {
             if (lockedByCurrentThread()) {
@@ -6982,7 +6982,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                         rec = new MvccDataRecord(dataEntries);
                     }
 
-                    logPtr = cctx.shared().cdcWal().log(rec);
+                    logPtr = cctx.shared().wal(true).log(rec);
                 }
             }
         }

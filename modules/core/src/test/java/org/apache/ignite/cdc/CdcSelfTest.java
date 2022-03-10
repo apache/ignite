@@ -198,9 +198,9 @@ public class CdcSelfTest extends AbstractCdcTest {
 
         addData(cache, 0, KEYS_CNT / 2);
 
-        long segIdx = ign.context().cache().context().cdcWal().lastArchivedSegment();
+        long segIdx = ign.context().cache().context().wal(true).lastArchivedSegment();
 
-        waitForCondition(() -> ign.context().cache().context().cdcWal().lastArchivedSegment() > segIdx, getTestTimeout());
+        waitForCondition(() -> ign.context().cache().context().wal(true).lastArchivedSegment() > segIdx, getTestTimeout());
 
         addData(cache, KEYS_CNT / 2, KEYS_CNT);
 

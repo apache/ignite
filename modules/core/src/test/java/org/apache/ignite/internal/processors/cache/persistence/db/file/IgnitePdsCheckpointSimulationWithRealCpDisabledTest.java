@@ -332,7 +332,7 @@ public class IgnitePdsCheckpointSimulationWithRealCpDisabledTest extends GridCom
         GridCacheContext<Object, Object> cctx = sharedCtx.cache().cache(mvcc ? MVCC_CACHE_NAME : CACHE_NAME).context();
 
         GridCacheDatabaseSharedManager db = (GridCacheDatabaseSharedManager)sharedCtx.database();
-        IgniteWriteAheadLogManager wal = sharedCtx.cdcWal();
+        IgniteWriteAheadLogManager wal = sharedCtx.wal(true);
 
         assertTrue(wal.isAlwaysWriteFullPages());
 
