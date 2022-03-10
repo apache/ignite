@@ -609,12 +609,14 @@ data: {
     statementParserMethods: [
       "SqlAlterTable()",
       "SqlAlterUser()",
-      "SqlKillScanQuery()"
-      "SqlKillContinuousQuery()"
-      "SqlKillService()"
-      "SqlKillTransaction()"
-      "SqlKillComputeTask()"
-      "SqlKillQuery()"
+      "SqlKillScanQuery()",
+      "SqlKillContinuousQuery()",
+      "SqlKillService()",
+      "SqlKillTransaction()",
+      "SqlKillComputeTask()",
+      "SqlKillQuery()",
+      "SqlCommitTransaction()",
+      "SqlRollbackTransaction()"
     ]
 
     # List of methods for parsing extensions to "CREATE [OR REPLACE]" calls.

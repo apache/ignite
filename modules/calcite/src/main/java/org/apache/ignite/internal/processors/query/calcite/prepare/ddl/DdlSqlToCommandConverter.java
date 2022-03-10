@@ -53,9 +53,11 @@ import org.apache.ignite.internal.processors.query.calcite.prepare.PlanningConte
 import org.apache.ignite.internal.processors.query.calcite.prepare.ValidationResult;
 import org.apache.ignite.internal.processors.query.calcite.sql.IgniteSqlAlterTableAddColumn;
 import org.apache.ignite.internal.processors.query.calcite.sql.IgniteSqlAlterTableDropColumn;
+import org.apache.ignite.internal.processors.query.calcite.sql.IgniteSqlCommit;
 import org.apache.ignite.internal.processors.query.calcite.sql.IgniteSqlCreateTable;
 import org.apache.ignite.internal.processors.query.calcite.sql.IgniteSqlCreateTableOption;
 import org.apache.ignite.internal.processors.query.calcite.sql.IgniteSqlCreateTableOptionEnum;
+import org.apache.ignite.internal.processors.query.calcite.sql.IgniteSqlRollback;
 import org.apache.ignite.internal.processors.query.calcite.util.TypeUtils;
 import org.apache.ignite.internal.util.typedef.F;
 
@@ -139,6 +141,9 @@ public class DdlSqlToCommandConverter {
 
         if (ddlNode instanceof IgniteSqlAlterTableDropColumn)
             return convertAlterTableDrop((IgniteSqlAlterTableDropColumn)ddlNode, ctx);
+
+        if (ddlNode instanceof IgniteSqlCommit || ddlNode instanceof IgniteSqlRollback)
+            return new TransactionCommand();
 
         if (SqlToNativeCommandConverter.isSupported(ddlNode))
             return SqlToNativeCommandConverter.convert(ddlNode, ctx);
@@ -375,7 +380,7 @@ public class DdlSqlToCommandConverter {
 
         return ((SqlIdentifier)opt.value()).getSimple();
     }
-    
+
     /**
      * Creates a validator for an option which value should be value of given enumeration.
      *

@@ -51,6 +51,7 @@ import org.apache.ignite.internal.processors.query.calcite.prepare.ddl.CreateTab
 import org.apache.ignite.internal.processors.query.calcite.prepare.ddl.DdlCommand;
 import org.apache.ignite.internal.processors.query.calcite.prepare.ddl.DropTableCommand;
 import org.apache.ignite.internal.processors.query.calcite.prepare.ddl.NativeCommandWrapper;
+import org.apache.ignite.internal.processors.query.calcite.prepare.ddl.TransactionCommand;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteCacheTable;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
@@ -97,21 +98,19 @@ public class DdlCommandHandler {
     /** */
     public void handle(UUID qryId, DdlCommand cmd) throws IgniteCheckedException {
         try {
+            if (cmd instanceof TransactionCommand)
+                return;
+
             if (cmd instanceof CreateTableCommand)
                 handle0((CreateTableCommand)cmd);
-
             else if (cmd instanceof DropTableCommand)
                 handle0((DropTableCommand)cmd);
-
             else if (cmd instanceof AlterTableAddCommand)
                 handle0((AlterTableAddCommand)cmd);
-
             else if (cmd instanceof AlterTableDropCommand)
                 handle0((AlterTableDropCommand)cmd);
-
             else if (cmd instanceof NativeCommandWrapper)
                 nativeCmdHnd.handle(qryId, (NativeCommandWrapper)cmd);
-
             else {
                 throw new IgniteSQLException("Unsupported DDL operation [" +
                     "cmdName=" + (cmd == null ? null : cmd.getClass().getSimpleName()) + "; " +
