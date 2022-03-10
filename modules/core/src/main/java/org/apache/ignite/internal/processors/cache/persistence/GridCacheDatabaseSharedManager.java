@@ -457,6 +457,13 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     }
 
     /**
+     * @return Checkpoint manager or {@code null} if this node is a client node.
+     */
+    @Nullable public CheckpointManager getCheckpointManager() {
+        return checkpointManager;
+    }
+
+    /**
      * Returns true if historical rebalance is preferred,
      * false means using heuristic for determine rebalance type.
      *

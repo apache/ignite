@@ -15,8 +15,28 @@
  * limitations under the License.
  */
 
+package org.apache.ignite.testsuites.nightly;
+
+import org.apache.ignite.cache.query.SqlFieldsQuery;
+import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testsuites.IgniteBinaryCacheQueryTestSuite3;
+import org.junit.BeforeClass;
+import org.junit.runner.RunWith;
+import org.junit.runners.Suite;
+
 /**
- * <!-- Package description. -->
- * Contains utils functionality for indices in kNN algorithms.
+ * Test suite for cache queries with lazy mode.
  */
-package org.apache.ignite.ml.knn.utils.indices;
+@RunWith(Suite.class)
+@Suite.SuiteClasses({
+    IgniteBinaryCacheQueryTestSuite3.class,
+})
+public class IgniteBinaryCacheQueryLazyTestSuite3 {
+    /**
+     * Setup lazy mode default.
+     */
+    @BeforeClass
+    public static void setupLazy() {
+        GridTestUtils.setFieldValue(SqlFieldsQuery.class, "DFLT_LAZY", true);
+    }
+}

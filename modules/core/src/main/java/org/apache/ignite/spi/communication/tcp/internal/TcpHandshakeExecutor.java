@@ -103,16 +103,26 @@ public class TcpHandshakeExecutor {
             }
 
             if (handBuff.remaining() < NodeIdMessage.MESSAGE_FULL_SIZE) {
-                buf = ByteBuffer.allocate(1000);
+                ByteBuffer readBuf = ByteBuffer.allocate(1000);
 
-                int read = ch.read(buf);
+                while (handBuff.remaining() < NodeIdMessage.MESSAGE_FULL_SIZE) {
+                    int read = ch.read(readBuf);
 
-                if (read == -1)
-                    throw new HandshakeException("Failed to read remote node ID (connection closed).");
+                    if (read == -1)
+                        throw new HandshakeException("Failed to read remote node ID (connection closed).");
 
-                buf.flip();
+                    readBuf.flip();
 
-                buf = sslHnd.decode(buf);
+                    sslHnd.decode(readBuf);
+
+                    if (handBuff.remaining() >= DIRECT_TYPE_SIZE) {
+                        break;
+                    }
+
+                    readBuf.flip();
+                }
+
+                buf = handBuff;
 
                 if (handBuff.remaining() >= DIRECT_TYPE_SIZE) {
                     short msgType = makeMessageType(handBuff.get(0), handBuff.get(1));

@@ -16,7 +16,6 @@
  */
 package org.apache.ignite.spark
 
-import javax.cache.Cache
 import org.apache.ignite.cache.query._
 import org.apache.ignite.cluster.ClusterNode
 import org.apache.ignite.configuration.CacheConfiguration
@@ -31,6 +30,7 @@ import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
 import org.apache.spark.sql.types._
 
+import javax.cache.Cache
 import scala.collection.JavaConversions._
 
 /**
@@ -62,7 +62,7 @@ class IgniteRDD[K, V] (
 
         val cur = cache.query(qry)
 
-        TaskContext.get().addTaskCompletionListener((_) ⇒ cur.close())
+        TaskContext.get().addTaskCompletionListener[Unit]((_) ⇒ cur.close())
 
         new IgniteQueryIterator[Cache.Entry[K, V], (K, V)](cur.iterator(), entry ⇒ {
             (entry.getKey, entry.getValue)
