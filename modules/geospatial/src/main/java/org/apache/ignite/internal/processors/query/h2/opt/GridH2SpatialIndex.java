@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.query.h2.opt;
 
-import java.util.HashSet;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexRow;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexValueCursor;
 import org.apache.ignite.internal.processors.query.h2.H2Cursor;
@@ -28,11 +27,7 @@ import org.h2.engine.Session;
 import org.h2.index.Cursor;
 import org.h2.index.IndexLookupBatch;
 import org.h2.index.IndexType;
-import org.h2.index.SpatialIndex;
-import org.h2.index.SpatialTreeIndex;
 import org.h2.result.SearchRow;
-import org.h2.result.SortOrder;
-import org.h2.table.Column;
 import org.h2.table.IndexColumn;
 import org.h2.table.TableFilter;
 import org.h2.value.Value;
@@ -40,16 +35,18 @@ import org.h2.value.ValueGeometry;
 import org.locationtech.jts.geom.Geometry;
 
 /**
- * H2 wrapper for spatial index.
+ * H2 wrapper for a Geo-Spatial index.
  */
-public class GridH2SpatialIndex extends GridH2IndexBase implements SpatialIndex {
+public class GridH2SpatialIndex extends GriH2SpatialBaseIndex {
     /** */
     private final GeoSpatialIndexImpl delegate;
 
     /** */
     public GridH2SpatialIndex(GeoSpatialIndexImpl idx) {
-        super(idx.def.rowHandler().getTable(), idx.def.idxName().idxName(),
-            idx.def.rowHandler().getH2IdxColumns().toArray(new IndexColumn[0]), IndexType.createNonUnique(false, false, true));
+        super(idx.def.rowHandler().getTable(),
+            idx.def.idxName().idxName(),
+            idx.def.rowHandler().getH2IdxColumns().toArray(new IndexColumn[0]),
+            IndexType.createNonUnique(false, false, true));
 
         delegate = idx;
     }
@@ -57,21 +54,6 @@ public class GridH2SpatialIndex extends GridH2IndexBase implements SpatialIndex 
     /** {@inheritDoc} */
     @Override public IndexLookupBatch createLookupBatch(TableFilter[] filters, int filter) {
         return delegate.createLookupBatch(filters, filter);
-    }
-
-    /** {@inheritDoc} */
-    @Override public H2CacheRow put(H2CacheRow row) {
-        throw new IllegalStateException("Must not be invoked.");
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean putx(H2CacheRow row) {
-        throw new IllegalStateException("Must not be invoked.");
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean removex(SearchRow row) {
-        throw new IllegalStateException("Must not be invoked.");
     }
 
     /** {@inheritDoc} */
@@ -84,12 +66,6 @@ public class GridH2SpatialIndex extends GridH2IndexBase implements SpatialIndex 
         delegate.destroy(!rmIdx);
 
         super.destroy(rmIdx);
-    }
-
-    /** {@inheritDoc} */
-    @Override public double getCost(Session ses, int[] masks, TableFilter[] filters, int filter,
-        SortOrder sortOrder, HashSet<Column> cols) {
-        return SpatialTreeIndex.getCostRangeIndex(masks, columns) / 10;
     }
 
     /** {@inheritDoc} */

@@ -182,7 +182,7 @@ public class GridH2Table extends TableBase {
 
     /** Index manager. */
     @GridToStringExclude
-    private IndexProcessor idxMgr;
+    private final IndexProcessor idxProc;
 
     /** Table name. Use it to persist table name for destroy index after destroying table. */
     private String tableName;
@@ -201,7 +201,7 @@ public class GridH2Table extends TableBase {
         GridH2RowDescriptor desc,
         H2TableDescriptor tblDesc,
         GridCacheContextInfo cacheInfo,
-        IndexProcessor idxMgr
+        IndexProcessor idxProc
     ) {
         super(createTblData);
 
@@ -209,7 +209,7 @@ public class GridH2Table extends TableBase {
 
         this.desc = desc;
         this.cacheInfo = cacheInfo;
-        this.idxMgr = idxMgr;
+        this.idxProc = idxProc;
 
         this.tableName = createTblData.tableName;
 
@@ -754,11 +754,18 @@ public class GridH2Table extends TableBase {
                 }
             };
 
-            idxMgr.removeIndex(cacheContext(), deleteDef.idxName(), !rmIndex);
+            idxProc.removeIndex(cacheContext(), deleteDef.idxName(), !rmIndex);
 
             // Call it too, if H2 index stores some state.
             h2idx.destroy(rmIndex);
         }
+    }
+
+    /**
+     * @return Index Processor.
+     */
+    public IndexProcessor idxProc() {
+        return idxProc;
     }
 
     /**

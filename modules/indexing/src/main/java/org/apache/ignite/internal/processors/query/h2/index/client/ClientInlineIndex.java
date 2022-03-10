@@ -148,7 +148,7 @@ public class ClientInlineIndex implements InlineIndex {
     /**
      * @return Exception about unsupported operation.
      */
-    private static IgniteException unsupported() {
+    public static IgniteException unsupported() {
         return new IgniteSQLException("Shouldn't be invoked on non-affinity node.");
     }
 }
