@@ -26,6 +26,7 @@
 #include <boost/test/unit_test.hpp>
 
 #include "ignite/odbc/engine_mode.h"
+#include "ignite/odbc/utility.h"
 #include "ignite/ignition.h"
 #include "ignite/impl/binary/binary_utils.h"
 
@@ -41,6 +42,7 @@ using namespace ignite::binary;
 using namespace ignite::impl::binary;
 using namespace ignite::impl::interop;
 using namespace ignite::odbc;
+using namespace ignite::utility;
 
 using namespace boost::unit_test;
 
@@ -98,11 +100,7 @@ struct CrossEngineTestSuiteFixture : public odbc::OdbcTestSuite
         ret = SQLFreeStmt(stmt, SQL_CLOSE);
         ODBC_FAIL_ON_ERROR(ret, SQL_HANDLE_STMT, stmt);
 
-        return ToString(strBuf, strLen);
-    }
-
-    static inline std::string ToString(const SQLCHAR* buf, SQLLEN len) {
-        return std::string(reinterpret_cast<const char*>(buf), len);
+        return SqlStringToString(strBuf, static_cast<int32_t>(strLen));
     }
 
     Ignite grid;

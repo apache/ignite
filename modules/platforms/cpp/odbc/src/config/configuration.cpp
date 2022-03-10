@@ -532,7 +532,7 @@ namespace ignite
 
             template<>
             void Configuration::AddToMap(ArgumentMap& map, const std::string& key,
-                                         const SettableValue<EngineMode::Type>& value)
+                const SettableValue<EngineMode::Type>& value)
             {
                 if (value.IsSet())
                     map[key] = EngineMode::ToString(value.GetValue());

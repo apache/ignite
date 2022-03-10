@@ -94,7 +94,7 @@ namespace ignite
                 EngineMode::Type mode = config.GetEngineMode();
 
                 if (mode == EngineMode::DEFAULT)
-                    writer.WriteString(0, 0);
+                    writer.WriteString(NULL, 0);
 
                 writer.WriteString(EngineMode::ToString(mode));
             }
