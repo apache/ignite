@@ -106,7 +106,7 @@ public class IgnitePdsNodeJoinWithCachesStopping extends GridCommonAbstractTest 
      */
     @Test
     public void testStartStopCacheWithLongPME() throws Exception {
-        IgniteEx crd = (IgniteEx) startGridsMultiThreaded(2);
+        IgniteEx crd = (IgniteEx)startGridsMultiThreaded(2);
 
         IgniteEx client = startClientGrid(2);
 
