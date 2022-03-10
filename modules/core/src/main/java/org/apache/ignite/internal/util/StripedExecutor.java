@@ -34,9 +34,11 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.locks.LockSupport;
+import java.util.function.LongConsumer;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
+import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -44,6 +46,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.internal.util.worker.GridWorkerListener;
 import org.apache.ignite.lang.IgniteInClosure;
+import org.apache.ignite.thread.ExecutorServiceMetricsAware;
 import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.NotNull;
 
@@ -53,7 +56,7 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_DATA_STREAMING_EXE
 /**
  * Striped executor.
  */
-public class StripedExecutor implements ExecutorService {
+public class StripedExecutor implements ExecutorService, ExecutorServiceMetricsAware {
     /** @see IgniteSystemProperties#IGNITE_DATA_STREAMING_EXECUTOR_SERVICE_TASKS_STEALING_THRESHOLD */
     public static final int DFLT_DATA_STREAMING_EXECUTOR_SERVICE_TASKS_STEALING_THRESHOLD = 4;
 
@@ -65,6 +68,9 @@ public class StripedExecutor implements ExecutorService {
 
     /** */
     private final IgniteLogger log;
+
+    /** Task execution time metric. */
+    private LongConsumer execTimeMetric;
 
     /**
      * @param cnt Count.
@@ -88,7 +94,7 @@ public class StripedExecutor implements ExecutorService {
 
     /**
      * @param cnt Count.
-     * @param igniteInstanceName Node name.
+     * @param nodeName Node name.
      * @param poolName Pool name.
      * @param log Logger.
      * @param errHnd Critical failure handler.
@@ -97,7 +103,7 @@ public class StripedExecutor implements ExecutorService {
      */
     public StripedExecutor(
         int cnt,
-        String igniteInstanceName,
+        String nodeName,
         String poolName,
         final IgniteLogger log,
         IgniteInClosure<Throwable> errHnd,
@@ -118,8 +124,8 @@ public class StripedExecutor implements ExecutorService {
         try {
             for (int i = 0; i < cnt; i++) {
                 stripes[i] = stealTasks
-                    ? new StripeConcurrentQueue(igniteInstanceName, poolName, i, log, stripes, errHnd, gridWorkerLsnr)
-                    : new StripeConcurrentQueue(igniteInstanceName, poolName, i, log, errHnd, gridWorkerLsnr);
+                    ? new StripeConcurrentQueue(nodeName, poolName, i, log, stripes, errHnd, gridWorkerLsnr, this::addExecTime)
+                    : new StripeConcurrentQueue(nodeName, poolName, i, log, errHnd, gridWorkerLsnr, this::addExecTime);
             }
 
             for (int i = 0; i < cnt; i++)
@@ -472,6 +478,54 @@ public class StripedExecutor implements ExecutorService {
     }
 
     /** {@inheritDoc} */
+    @Override public void registerMetrics(MetricRegistry mreg) {
+        mreg.register("StripesCount", this::stripesCount, "Stripes count.");
+        mreg.register("Shutdown", this::isShutdown, IS_SHUTDOWN_DESC);
+        mreg.register("Terminated", this::isTerminated, IS_TERMINATED_DESC);
+
+        mreg.register("DetectStarvation",
+            this::detectStarvation,
+            "True if possible starvation in striped pool is detected.");
+
+        mreg.register("TotalQueueSize",
+            this::queueSize,
+            "Total queue size of all stripes.");
+
+        mreg.register("TotalCompletedTasksCount",
+            this::completedTasks,
+            "Completed tasks count of all stripes.");
+
+        mreg.register("StripesCompletedTasksCounts",
+            this::stripesCompletedTasks,
+            long[].class,
+            "Number of completed tasks per stripe.");
+
+        mreg.register("ActiveCount",
+            this::activeStripesCount,
+            "Number of active tasks of all stripes.");
+
+        mreg.register("StripesActiveStatuses",
+            this::stripesActiveStatuses,
+            boolean[].class,
+            "Number of active tasks per stripe.");
+
+        mreg.register("StripesQueueSizes",
+            this::stripesQueueSizes,
+            int[].class,
+            "Size of queue per stripe.");
+
+        execTimeMetric = mreg.histogram(TASK_EXEC_TIME_NAME, TASK_EXEC_TIME_HISTOGRAM_BUCKETS, TASK_EXEC_TIME_DESC);
+    }
+
+    /**
+     * @param time Execution time of the task.
+     */
+    private void addExecTime(long time) {
+        if (execTimeMetric != null)
+            execTimeMetric.accept(time);
+    }
+
+    /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(StripedExecutor.class, this);
     }
@@ -502,7 +556,10 @@ public class StripedExecutor implements ExecutorService {
         protected Thread thread;
 
         /** Critical failure handler. */
-        private IgniteInClosure<Throwable> errHnd;
+        private final IgniteInClosure<Throwable> errHnd;
+
+        /** Task execution time consumer. */
+        private final LongConsumer execTimeConsumer;
 
         /**
          * @param igniteInstanceName Ignite instance name.
@@ -511,6 +568,7 @@ public class StripedExecutor implements ExecutorService {
          * @param log Logger.
          * @param errHnd Exception handler.
          * @param gridWorkerLsnr listener to link with stripe worker.
+         * @param execTimeConsumer Task execution time consumer.
          */
         public Stripe(
             String igniteInstanceName,
@@ -518,7 +576,8 @@ public class StripedExecutor implements ExecutorService {
             int idx,
             IgniteLogger log,
             IgniteInClosure<Throwable> errHnd,
-            GridWorkerListener gridWorkerLsnr
+            GridWorkerListener gridWorkerLsnr,
+            LongConsumer execTimeConsumer
         ) {
             super(igniteInstanceName, poolName + "-stripe-" + idx, log, gridWorkerLsnr);
 
@@ -526,6 +585,7 @@ public class StripedExecutor implements ExecutorService {
             this.idx = idx;
             this.log = log;
             this.errHnd = errHnd;
+            this.execTimeConsumer = execTimeConsumer;
         }
 
         /**
@@ -571,6 +631,8 @@ public class StripedExecutor implements ExecutorService {
                         finally {
                             active = false;
                             completedCnt++;
+
+                            execTimeConsumer.accept(U.currentTimeMillis() - lastStartedTs);
                         }
                     }
 
@@ -661,6 +723,7 @@ public class StripedExecutor implements ExecutorService {
          * @param log Logger.
          * @param errHnd Critical failure handler.
          * @param gridWorkerLsnr listener to link with stripe worker.
+         * @param execTimeConsumer Task execution time consumer.
          */
         StripeConcurrentQueue(
             String igniteInstanceName,
@@ -668,9 +731,10 @@ public class StripedExecutor implements ExecutorService {
             int idx,
             IgniteLogger log,
             IgniteInClosure<Throwable> errHnd,
-            GridWorkerListener gridWorkerLsnr
+            GridWorkerListener gridWorkerLsnr,
+            LongConsumer execTimeConsumer
         ) {
-            this(igniteInstanceName, poolName, idx, log, null, errHnd, gridWorkerLsnr);
+            this(igniteInstanceName, poolName, idx, log, null, errHnd, gridWorkerLsnr, execTimeConsumer);
         }
 
         /**
@@ -680,6 +744,7 @@ public class StripedExecutor implements ExecutorService {
          * @param log Logger.
          * @param errHnd Critical failure handler.
          * @param gridWorkerLsnr listener to link with stripe worker.
+         * @param execTimeConsumer Task execution time consumer.
          */
         StripeConcurrentQueue(
             String igniteInstanceName,
@@ -688,7 +753,8 @@ public class StripedExecutor implements ExecutorService {
             IgniteLogger log,
             Stripe[] others,
             IgniteInClosure<Throwable> errHnd,
-            GridWorkerListener gridWorkerLsnr
+            GridWorkerListener gridWorkerLsnr,
+            LongConsumer execTimeConsumer
         ) {
             super(
                 igniteInstanceName,
@@ -696,7 +762,8 @@ public class StripedExecutor implements ExecutorService {
                 idx,
                 log,
                 errHnd,
-                gridWorkerLsnr);
+                gridWorkerLsnr,
+                execTimeConsumer);
 
             this.others = others;
 

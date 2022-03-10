@@ -28,8 +28,6 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.RejectedExecutionHandler;
-import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -65,11 +63,11 @@ import org.apache.ignite.mxbean.StripedExecutorMXBean;
 import org.apache.ignite.mxbean.ThreadPoolMXBean;
 import org.apache.ignite.plugin.extensions.communication.IoPool;
 import org.apache.ignite.spi.systemview.view.StripedExecutorTaskView;
+import org.apache.ignite.thread.ExecutorServiceMetricsAware;
 import org.apache.ignite.thread.IgniteStripedThreadPoolExecutor;
 import org.apache.ignite.thread.IgniteThreadPoolExecutor;
 import org.jetbrains.annotations.Nullable;
 
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.configuration.IgniteConfiguration.DFLT_THREAD_KEEP_ALIVE_TIME;
 import static org.apache.ignite.failure.FailureType.SYSTEM_WORKER_TERMINATION;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.SNAPSHOT_RUNNER_THREAD_PREFIX;
@@ -79,49 +77,6 @@ import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metr
  * Processor which abstracts out thread pool management.
  */
 public class PoolProcessor extends GridProcessorAdapter {
-    /** */
-    public static final String ACTIVE_COUNT_DESC = "Approximate number of threads that are actively executing tasks.";
-
-    /** */
-    public static final String COMPLETED_TASK_DESC = "Approximate total number of tasks that have completed execution.";
-
-    /** */
-    public static final String CORE_SIZE_DESC = "The core number of threads.";
-
-    /** */
-    public static final String LARGEST_SIZE_DESC = "Largest number of threads that have ever simultaneously been in the pool.";
-
-    /** */
-    public static final String MAX_SIZE_DESC = "The maximum allowed number of threads.";
-
-    /** */
-    public static final String POOL_SIZE_DESC = "Current number of threads in the pool.";
-
-    /** */
-    public static final String TASK_COUNT_DESC = "Approximate total number of tasks that have been scheduled for execution.";
-
-    /** */
-    public static final String QUEUE_SIZE_DESC = "Current size of the execution queue.";
-
-    /** */
-    public static final String KEEP_ALIVE_TIME_DESC = "Thread keep-alive time, which is the amount of time which threads in excess of " +
-        "the core pool size may remain idle before being terminated.";
-
-    /** */
-    public static final String IS_SHUTDOWN_DESC = "True if this executor has been shut down.";
-
-    /** */
-    public static final String IS_TERMINATED_DESC = "True if all tasks have completed following shut down.";
-
-    /** */
-    public static final String IS_TERMINATING_DESC = "True if terminating but not yet terminated.";
-
-    /** */
-    public static final String REJ_HND_DESC = "Class name of current rejection handler.";
-
-    /** */
-    public static final String THRD_FACTORY_DESC = "Class name of thread factory used to create new threads.";
-
     /** Name of the system view for a data streamer {@link StripedExecutor} queue view. */
     public static final String STREAM_POOL_QUEUE_VIEW = metricName("datastream", "threadpool", "queue");
 
@@ -602,7 +557,7 @@ public class PoolProcessor extends GridProcessorAdapter {
         monitorExecutor("GridRebalanceExecutor", rebalanceExecSvc);
         monitorExecutor("GridRebalanceStripedExecutor", rebalanceStripedExecSvc);
 
-        monitorStripedPool("GridDataStreamExecutor", dataStreamerExecSvc);
+        monitorExecutor("GridDataStreamExecutor", dataStreamerExecSvc);
 
         if (idxExecSvc != null)
             monitorExecutor("GridIndexingExecutor", idxExecSvc);
@@ -612,7 +567,7 @@ public class PoolProcessor extends GridProcessorAdapter {
 
         if (stripedExecSvc != null) {
             // Striped executor uses a custom adapter.
-            monitorStripedPool("StripedExecutor", stripedExecSvc);
+            monitorExecutor("StripedExecutor", stripedExecSvc);
         }
 
         if (snpExecSvc != null)
@@ -928,103 +883,9 @@ public class PoolProcessor extends GridProcessorAdapter {
      * @param execSvc Executor to register a metric for.
      */
     private void monitorExecutor(String name, ExecutorService execSvc) {
-        MetricRegistry mreg = ctx.metric().registry(metricName(THREAD_POOLS, name));
+        assert execSvc instanceof ExecutorServiceMetricsAware : "Cannot register metrics for executor " + name;
 
-        if (execSvc instanceof ThreadPoolExecutor) {
-            ThreadPoolExecutor exec = (ThreadPoolExecutor)execSvc;
-
-            mreg.register("ActiveCount", exec::getActiveCount, ACTIVE_COUNT_DESC);
-            mreg.register("CompletedTaskCount", exec::getCompletedTaskCount, COMPLETED_TASK_DESC);
-            mreg.register("CorePoolSize", exec::getCorePoolSize, CORE_SIZE_DESC);
-            mreg.register("LargestPoolSize", exec::getLargestPoolSize, LARGEST_SIZE_DESC);
-            mreg.register("MaximumPoolSize", exec::getMaximumPoolSize, MAX_SIZE_DESC);
-            mreg.register("PoolSize", exec::getPoolSize, POOL_SIZE_DESC);
-            mreg.register("TaskCount", exec::getTaskCount, TASK_COUNT_DESC);
-            mreg.register("QueueSize", () -> exec.getQueue().size(), QUEUE_SIZE_DESC);
-            mreg.register("KeepAliveTime", () -> exec.getKeepAliveTime(MILLISECONDS), KEEP_ALIVE_TIME_DESC);
-            mreg.register("Shutdown", exec::isShutdown, IS_SHUTDOWN_DESC);
-            mreg.register("Terminated", exec::isTerminated, IS_TERMINATED_DESC);
-            mreg.register("Terminating", exec::isTerminating, IS_TERMINATING_DESC);
-            mreg.register("RejectedExecutionHandlerClass", () -> {
-                RejectedExecutionHandler hnd = exec.getRejectedExecutionHandler();
-
-                return hnd == null ? "" : hnd.getClass().getName();
-            }, String.class, REJ_HND_DESC);
-            mreg.register("ThreadFactoryClass", () -> {
-                ThreadFactory factory = exec.getThreadFactory();
-
-                return factory == null ? "" : factory.getClass().getName();
-            }, String.class, THRD_FACTORY_DESC);
-        }
-        else {
-            mreg.longMetric("ActiveCount", ACTIVE_COUNT_DESC).value(0);
-            mreg.longMetric("CompletedTaskCount", COMPLETED_TASK_DESC).value(0);
-            mreg.longMetric("CorePoolSize", CORE_SIZE_DESC).value(0);
-            mreg.longMetric("LargestPoolSize", LARGEST_SIZE_DESC).value(0);
-            mreg.longMetric("MaximumPoolSize", MAX_SIZE_DESC).value(0);
-            mreg.longMetric("PoolSize", POOL_SIZE_DESC).value(0);
-            mreg.longMetric("TaskCount", TASK_COUNT_DESC);
-            mreg.longMetric("QueueSize", QUEUE_SIZE_DESC).value(0);
-            mreg.longMetric("KeepAliveTime", KEEP_ALIVE_TIME_DESC).value(0);
-            mreg.register("Shutdown", execSvc::isShutdown, IS_SHUTDOWN_DESC);
-            mreg.register("Terminated", execSvc::isTerminated, IS_TERMINATED_DESC);
-            mreg.longMetric("Terminating", IS_TERMINATING_DESC);
-            mreg.objectMetric("RejectedExecutionHandlerClass", String.class, REJ_HND_DESC).value("");
-            mreg.objectMetric("ThreadFactoryClass", String.class, THRD_FACTORY_DESC).value("");
-        }
-    }
-
-    /**
-     * Creates a {@link MetricRegistry} for a stripped executor.
-     *
-     * @param name name of the bean to register
-     * @param svc Executor.
-     */
-    private void monitorStripedPool(String name, StripedExecutor svc) {
-        MetricRegistry mreg = ctx.metric().registry(metricName(THREAD_POOLS, name));
-
-        mreg.register("DetectStarvation",
-            svc::detectStarvation,
-            "True if possible starvation in striped pool is detected.");
-
-        mreg.register("StripesCount",
-            svc::stripesCount,
-            "Stripes count.");
-
-        mreg.register("Shutdown",
-            svc::isShutdown,
-            "True if this executor has been shut down.");
-
-        mreg.register("Terminated",
-            svc::isTerminated,
-            "True if all tasks have completed following shut down.");
-
-        mreg.register("TotalQueueSize",
-            svc::queueSize,
-            "Total queue size of all stripes.");
-
-        mreg.register("TotalCompletedTasksCount",
-            svc::completedTasks,
-            "Completed tasks count of all stripes.");
-
-        mreg.register("StripesCompletedTasksCounts",
-            svc::stripesCompletedTasks,
-            long[].class,
-            "Number of completed tasks per stripe.");
-
-        mreg.register("ActiveCount",
-            svc::activeStripesCount,
-            "Number of active tasks of all stripes.");
-
-        mreg.register("StripesActiveStatuses",
-            svc::stripesActiveStatuses,
-            boolean[].class,
-            "Number of active tasks per stripe.");
-
-        mreg.register("StripesQueueSizes",
-            svc::stripesQueueSizes,
-            int[].class,
-            "Size of queue per stripe.");
+        ((ExecutorServiceMetricsAware)execSvc).registerMetrics(ctx.metric().registry(metricName(THREAD_POOLS, name)));
     }
 
     /**

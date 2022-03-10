@@ -40,22 +40,6 @@ public class SecurityAwareStripedExecutor extends StripedExecutor {
         String poolName,
         IgniteLogger log,
         IgniteInClosure<Throwable> errHnd,
-        GridWorkerListener gridWorkerLsnr,
-        long failureDetectionTimeout
-    ) {
-        super(cnt, igniteInstanceName, poolName, log, errHnd, gridWorkerLsnr, failureDetectionTimeout);
-
-        this.security = security;
-    }
-
-    /** */
-    public SecurityAwareStripedExecutor(
-        IgniteSecurity security,
-        int cnt,
-        String igniteInstanceName,
-        String poolName,
-        IgniteLogger log,
-        IgniteInClosure<Throwable> errHnd,
         boolean stealTasks,
         GridWorkerListener gridWorkerLsnr,
         long failureDetectionTimeout

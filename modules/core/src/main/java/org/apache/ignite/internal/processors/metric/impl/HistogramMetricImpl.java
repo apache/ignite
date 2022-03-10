@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.metric.impl;
 
 import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicLongArray;
+import java.util.function.LongConsumer;
 import org.apache.ignite.internal.processors.metric.AbstractMetric;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.spi.metric.HistogramMetric;
@@ -27,7 +28,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Histogram metric implementation.
  */
-public class HistogramMetricImpl extends AbstractMetric implements HistogramMetric {
+public class HistogramMetricImpl extends AbstractMetric implements HistogramMetric, LongConsumer {
     /** Holder of measurements. */
     private volatile HistogramHolder holder;
 
@@ -40,6 +41,11 @@ public class HistogramMetricImpl extends AbstractMetric implements HistogramMetr
         super(name, desc);
 
         holder = new HistogramHolder(bounds);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void accept(long x) {
+        value(x);
     }
 
     /**

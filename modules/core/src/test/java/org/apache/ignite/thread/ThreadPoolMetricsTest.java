@@ -17,16 +17,28 @@
 
 package org.apache.ignite.thread;
 
+import java.lang.reflect.Field;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.List;
+import java.util.Set;
+import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.processors.pool.PoolProcessor;
+import org.apache.ignite.internal.util.StripedExecutor;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.AbstractTestPluginProvider;
+import org.apache.ignite.spi.metric.HistogramMetric;
 import org.apache.ignite.spi.metric.ReadOnlyMetricRegistry;
 import org.apache.ignite.spi.systemview.view.SystemView;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -39,6 +51,8 @@ import static org.apache.ignite.internal.processors.pool.PoolProcessor.STREAM_PO
 import static org.apache.ignite.internal.processors.pool.PoolProcessor.SYS_POOL_QUEUE_VIEW;
 import static org.apache.ignite.internal.processors.pool.PoolProcessor.THREAD_POOLS;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
+import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
+import static org.apache.ignite.thread.ExecutorServiceMetricsAware.TASK_EXEC_TIME_NAME;
 
 /**
  * Tests that thread pool metrics are available before the start of all Ignite components happened.
@@ -68,22 +82,25 @@ public class ThreadPoolMetricsTest extends GridCommonAbstractTest {
         STREAM_POOL_QUEUE_VIEW
     );
 
-    /** Latch that indicates whether the start of Ignite components was launched. */
-    public final CountDownLatch startLaunchedLatch = new CountDownLatch(1);
+    /**
+     * Tests that thread pool metrics are available before the start of all Ignite components happened.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testThreadPoolMetrics() throws Exception {
+        // Latch that indicates whether the start of Ignite components was launched.
+        CountDownLatch startLaunchedLatch = new CountDownLatch(1);
 
-    /** Latch that indicates whether the start of Ignite components was unblocked. */
-    public final CountDownLatch startUnblockedLatch = new CountDownLatch(1);
+        // Latch that indicates whether the start of Ignite components was unblocked.
+        CountDownLatch startUnblockedLatch = new CountDownLatch(1);
 
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        return super.getConfiguration(igniteInstanceName)
-            .setPluginProviders(new AbstractTestPluginProvider() {
-                /** {@inheritDoc} */
+        IgniteInternalFuture<IgniteEx> startFut = runAsync(() -> startGrid(
+            getConfiguration(getTestIgniteInstanceName()).setPluginProviders(new AbstractTestPluginProvider() {
                 @Override public String name() {
                     return "test-stuck-plugin";
                 }
 
-                /** {@inheritDoc} */
                 @Override public void onIgniteStart() {
                     startLaunchedLatch.countDown();
 
@@ -94,18 +111,7 @@ public class ThreadPoolMetricsTest extends GridCommonAbstractTest {
                         throw new IgniteException(e);
                     }
                 }
-            });
-    }
-
-    /**
-     * Tests that thread pool metrics are available before the start of all Ignite components happened.
-     *
-     * @throws Exception If failed.
-     */
-    @Test
-    @SuppressWarnings("Convert2MethodRef")
-    public void testThreadPoolMetrics() throws Exception {
-        IgniteInternalFuture<IgniteEx> startFut = runAsync(() -> startGrid());
+            })));
 
         try {
             assertTrue(startLaunchedLatch.await(getTestTimeout(), MILLISECONDS));
@@ -127,5 +133,84 @@ public class ThreadPoolMetricsTest extends GridCommonAbstractTest {
         }
 
         startFut.get(getTestTimeout(), MILLISECONDS);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testThreadPoolTaskTimeMetric() throws Exception {
+        IgniteEx ignite = startGrid(getConfiguration(getTestIgniteInstanceName())
+            .setConnectorConfiguration(new ConnectorConfiguration()));
+
+        PoolProcessor poolProc = ignite.context().pools();
+
+        int taskCnt = 10;
+
+        List<Callable<Integer>> tasks = new ArrayList<>();
+        AtomicInteger cntr = new AtomicInteger();
+
+        for (int i = 0; i < taskCnt; i++) {
+            tasks.add(() -> {
+                U.sleep(1);
+
+                return cntr.decrementAndGet();
+            });
+        }
+
+        for (Field field : poolProc.getClass().getDeclaredFields()) {
+            cntr.set(taskCnt);
+
+            if (ExecutorService.class.isAssignableFrom(field.getType())) {
+                ExecutorService execSvc = U.field(poolProc, field.getName());
+
+                if (execSvc == null) {
+                    System.out.println(field.getName() + "=null");
+
+                    continue;
+                }
+
+                if (execSvc instanceof StripedExecutor || execSvc instanceof IgniteStripedThreadPoolExecutor) {
+                    for (int i = 0; i < taskCnt; i++) {
+                        Callable<?> call = tasks.get(i);
+                        Runnable r = () -> {
+                            try {
+                                call.call();
+                            }
+                            catch (Exception e) {
+                                throw F.wrap(e);
+                            }
+                        };
+
+                        if (execSvc instanceof IgniteStripedThreadPoolExecutor)
+                            ((IgniteStripedThreadPoolExecutor)execSvc).execute(r, taskCnt - i - 1);
+                        else
+                            execSvc.execute(r);
+                    }
+
+                    waitForCondition(() -> cntr.get() == 0, 5_000);
+                }
+                else
+                    execSvc.invokeAll(tasks, getTestTimeout(), MILLISECONDS);
+
+                assertEquals(field.getName(), 0, cntr.get());
+            }
+        }
+
+        Set<ReadOnlyMetricRegistry> registries = StreamSupport.stream(ignite.context().metric().spliterator(), false)
+            .filter(metric -> metric.name().startsWith(THREAD_POOLS))
+            .collect(Collectors.toSet());
+
+        for (ReadOnlyMetricRegistry mreg : registries) {
+            HistogramMetric histogram = mreg.findMetric(TASK_EXEC_TIME_NAME);
+
+            String poolName = "pool=" + mreg.name();
+
+            assertNotNull(poolName, histogram);
+
+            long[] res = histogram.value();
+
+            assertTrue(poolName + ": exp=" + taskCnt + ", actual=" + res[0], res[0] >= taskCnt);
+        }
     }
 }
