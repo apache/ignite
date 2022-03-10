@@ -37,7 +37,7 @@ public class VisorConsistencyStatusTask extends AbstractConsistencyTask<Void, St
     public static final String NOTHING_FOUND = "Consistency check/repair operations were NOT found.";
 
     /** Status map. */
-    public static final ConcurrentHashMap<VisorConsistencyRepairTaskArg, String> MAP = new ConcurrentHashMap<>();
+    public static final ConcurrentHashMap<String, String> MAP = new ConcurrentHashMap<>();
 
     /** {@inheritDoc} */
     @Override protected VisorJob<Void, String> job(Void arg) {
@@ -80,13 +80,9 @@ public class VisorConsistencyStatusTask extends AbstractConsistencyTask<Void, St
 
             StringBuilder sb = new StringBuilder();
 
-            for (Map.Entry<VisorConsistencyRepairTaskArg, String> entry : MAP.entrySet()) {
-                VisorConsistencyRepairTaskArg args = entry.getKey();
-                String status = entry.getValue();
-
-                sb.append("\n    Cache: ").append(args.cacheName()).append("\n")
-                    .append("    Partition: ").append(args.part()).append("\n")
-                    .append("    Status: ").append(status).append("\n");
+            for (Map.Entry<String, String> entry : MAP.entrySet()) {
+                sb.append("\n    Job: ").append(entry.getKey()).append("\n")
+                    .append("    Status: ").append(entry.getValue()).append("\n");
             }
 
             return sb.toString();
