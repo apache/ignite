@@ -62,7 +62,7 @@ class IgniteConfiguration(NamedTuple):
     rebalance_batches_prefetch_count: int = None
     rebalance_throttle: int = None
     local_event_listeners: str = None
-    include_event_types: set[str] = set()
+    include_event_types: set = set()
     event_storage_spi: str = None
     log4j_config: str = IgnitePathAware.IGNITE_LOG_CONFIG_NAME
 
