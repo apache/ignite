@@ -120,8 +120,8 @@
             <property name="localEventListeners" ref="{{ config.local_event_listeners }}"/>
         {% endif %}
 
-        {% if config.include_event_types %}
-            <property name="includeEventTypes" ref="{{ config.include_event_types }}"/>
+        {% if config.include_event_types | length > 0 %}
+            <property name="includeEventTypes" ref="eventTypes"/>
         {% endif %}
 
         {% if config.event_storage_spi %}
@@ -132,4 +132,8 @@
     </bean>
 
     {{ misc_utils.ext_beans(config) }}
+
+    {% if config.include_event_types | length > 0 %}
+        {{ misc_utils.event_types(config) }}
+    {% endif %}
 </beans>
