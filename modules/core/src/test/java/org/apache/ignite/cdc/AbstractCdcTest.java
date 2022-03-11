@@ -275,11 +275,8 @@ public abstract class AbstractCdcTest extends GridCommonAbstractTest {
 
     /** */
     public abstract static class TestCdcConsumer<T> implements CdcConsumer {
-        /** Primary keys. */
+        /** Keys */
         final ConcurrentMap<IgniteBiTuple<ChangeEventType, Integer>, List<T>> data = new ConcurrentHashMap<>();
-
-        /** Backup keys. */
-        final ConcurrentMap<IgniteBiTuple<ChangeEventType, Integer>, List<T>> backupData = new ConcurrentHashMap<>();
 
         /** */
         private volatile boolean stopped;
@@ -297,7 +294,10 @@ public abstract class AbstractCdcTest extends GridCommonAbstractTest {
         /** {@inheritDoc} */
         @Override public boolean onEvents(Iterator<CdcEvent> evts) {
             evts.forEachRemaining(evt -> {
-                (evt.primary() ? data : backupData).computeIfAbsent(
+                if (!evt.primary())
+                    return;
+
+                data.computeIfAbsent(
                     F.t(evt.value() == null ? DELETE : UPDATE, evt.cacheId()),
                     k -> new ArrayList<>()).add(extract(evt));
 
@@ -318,14 +318,9 @@ public abstract class AbstractCdcTest extends GridCommonAbstractTest {
             return true;
         }
 
-        /** @return Read primary keys. */
+        /** @return Read keys. */
         public List<T> data(ChangeEventType op, int cacheId) {
-            return data.computeIfAbsent(F.t(op, cacheId), k -> new ArrayList<>());
-        }
-
-        /** @return Read backup keys. */
-        public List<T> backupData(ChangeEventType op, int cacheId) {
-            return backupData.computeIfAbsent(F.t(op, cacheId), k -> new ArrayList<>());
+            return data.get(F.t(op, cacheId));
         }
 
         /** */
