@@ -153,7 +153,7 @@ link:https://github.com/apache/ignite/blob/master/modules/core/src/main/java/org
 
 Default link:https://github.com/apache/ignite-extensions/blob/master/modules/cdc-ext/src/main/java/org/apache/ignite/cdc/conflictresolve/CacheVersionConflictResolverImpl.java[implementation] is available in cdc-ext.
 
-==== Configuration
+=== Configuration
 
 [cols="20%,45%,35%",opts="header"]
 |===
@@ -163,7 +163,7 @@ Default link:https://github.com/apache/ignite-extensions/blob/master/modules/cdc
 | `conflictResolveField` | Value field to resolve conflict with. Optional. Field values must implement `java.lang.Comparable`. | null
 |===
 
-==== Conflict resolve algorithm
+=== Conflict resolve algorithm
 
 Replicated changes contain some additional data. Specifically, entry version from source cluster supplied with the changed data.
 Default conflict resolve algorithm based on entry version and `conflictResolveField`.
@@ -174,7 +174,7 @@ Conflict resolution field should contain user provided monotonically increasing 
 . If `conflictResolveField` if provided then field values comparison used to determine order.
 . Conflict resolution failed. Update will be ignored.
 
-==== Configuration example
+=== Configuration example
 Configuration is done via Ignite node plugin:
 
 ```xml
