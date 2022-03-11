@@ -553,6 +553,8 @@
       url: extensions-and-integrations/php-pdo
     - title: Performance Statistics
       url: extensions-and-integrations/performance-statistics
+    - title: Change Data Capture
+      url: extensions-and-integrations/change-data-capture-extensions
 - title: Plugins
   url: plugins
 - title: Performance and Troubleshooting
