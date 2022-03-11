@@ -19,7 +19,7 @@ This module contains password based authentication tests
 
 from ignitetest.services.ignite import IgniteService
 from ignitetest.services.ignite_app import IgniteApplicationService
-from ignitetest.services.utils.auth import DEFAULT_AUTH_PASSWORD, DEFAULT_AUTH_USERNAME
+from ignitetest.services.utils.auth import DEFAULT_AUTH_PASSWORD, DEFAULT_AUTH_USERNAME, is_auth_enabled
 from ignitetest.services.utils.control_utility import ControlUtility, ControlUtilityError
 from ignitetest.services.utils.ignite_configuration import IgniteConfiguration, DataStorageConfiguration
 from ignitetest.services.utils.ignite_configuration.data_storage import DataRegionConfiguration
@@ -28,6 +28,7 @@ from ignitetest.services.utils.ignite_configuration import IgniteThinClientConfi
 from ignitetest.services.utils.ssl.client_connector_configuration import ClientConnectorConfiguration
 from ignitetest.utils.ignite_test import IgniteTest
 from ignitetest.utils.version import DEV_BRANCH, LATEST, IgniteVersion
+from ignitetest.utils import ignore_if
 
 WRONG_PASSWORD = "wrong_password"
 TEST_USERNAME = "admin"
@@ -47,6 +48,7 @@ class AuthenticationTests(IgniteTest):
     NUM_NODES = 2
 
     @cluster(num_nodes=NUM_NODES)
+    @ignore_if(lambda _, _globals: is_auth_enabled(_globals))
     @ignite_versions(str(DEV_BRANCH), str(LATEST))
     def test_change_users(self, ignite_version):
         """
