@@ -1,9 +1,11 @@
 package org.apache.ignite.util;
 
+import java.util.UUID;
+import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.CacheAtomicityMode;
-import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.client.ClientCache;
 import org.apache.ignite.client.ClientException;
 import org.apache.ignite.client.ClientTransaction;
@@ -11,8 +13,8 @@ import org.apache.ignite.client.Config;
 import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.ClientConfiguration;
+import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -21,10 +23,6 @@ import org.apache.ignite.internal.processors.platform.cache.expiry.PlatformExpir
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-
-import java.util.UUID;
-import java.util.concurrent.TimeUnit;
-import java.util.function.Consumer;
 
 /**
  *
@@ -39,8 +37,6 @@ public class ThinClientExpirePolicyTest extends GridCommonAbstractTest {
 
         while (!Thread.currentThread().isInterrupted()) {
             try {
-//                TimeUnit.MILLISECONDS.sleep(10);
-
                 ClientTransaction tx = client.transactions().txStart();
 
                 UUID uuid = UUID.randomUUID();
@@ -48,9 +44,8 @@ public class ThinClientExpirePolicyTest extends GridCommonAbstractTest {
                 cache.put(uuid, uuid);
 
                 tx.commit();
-            } catch (ClientException e) {
-                e.printStackTrace();
-                System.err.println(cache.size(CachePeekMode.PRIMARY));
+            }
+            catch (ClientException e) {
                 // No-op.
             }
         }
@@ -105,18 +100,6 @@ public class ThinClientExpirePolicyTest extends GridCommonAbstractTest {
         startIgniteClientDaemonThread(clientConsumer);
         startIgniteClientDaemonThread(clientConsumer);
         startIgniteClientDaemonThread(clientConsumer);
-        startIgniteClientDaemonThread(clientConsumer);
-        startIgniteClientDaemonThread(clientConsumer);
-        startIgniteClientDaemonThread(clientConsumer);
-        startIgniteClientDaemonThread(clientConsumer);
-        startIgniteClientDaemonThread(clientConsumer);
-        startIgniteClientDaemonThread(clientConsumer);
-        startIgniteClientDaemonThread(clientConsumer);
-        startIgniteClientDaemonThread(clientConsumer);
-        startIgniteClientDaemonThread(clientConsumer);
-        startIgniteClientDaemonThread(clientConsumer);
-        startIgniteClientDaemonThread(clientConsumer);
-        startIgniteClientDaemonThread(clientConsumer);
 
         TimeUnit.SECONDS.sleep(30);
 
@@ -137,11 +120,9 @@ public class ThinClientExpirePolicyTest extends GridCommonAbstractTest {
 
         TimeUnit.SECONDS.sleep(20);
 
-        assertEquals(3, igniteEx.context().discovery().aliveServerNodes().size());
-        assertEquals(3, G.allGrids().size());
+        assertEquals(2, igniteEx.context().discovery().aliveServerNodes().size());
         assertEquals(ClusterState.ACTIVE, G.allGrids().get(0).cluster().state());
         assertEquals(ClusterState.ACTIVE, G.allGrids().get(1).cluster().state());
-        assertEquals(ClusterState.ACTIVE, G.allGrids().get(2).cluster().state());
     }
 
     /**

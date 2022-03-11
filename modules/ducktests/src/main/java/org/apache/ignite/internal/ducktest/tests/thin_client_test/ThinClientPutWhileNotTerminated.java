@@ -17,13 +17,11 @@
 
 package org.apache.ignite.internal.ducktest.tests.thin_client_test;
 
+import java.util.UUID;
 import com.fasterxml.jackson.databind.JsonNode;
 import org.apache.ignite.client.ClientCache;
 import org.apache.ignite.client.ClientException;
 import org.apache.ignite.internal.ducktest.utils.IgniteAwareApplication;
-
-import java.util.UUID;
-import java.util.concurrent.TimeUnit;
 
 /**
  *
@@ -42,9 +40,8 @@ public class ThinClientPutWhileNotTerminated extends IgniteAwareApplication {
         while (!terminated()) {
             try {
                 UUID uuid = UUID.randomUUID();
-                cache.put(uuid, uuid);
 
-                TimeUnit.MILLISECONDS.sleep(100);
+                cache.put(uuid, uuid);
             } catch (ClientException ignored) {
                 // No-op.
             }

@@ -69,7 +69,7 @@ public class GridCacheSharedTtlCleanupManager extends GridCacheSharedManagerAdap
         if (mgrs.isEmpty())
             startCleanupWorker();
 
-        mgrs.put(mgr.context().cacheId(), mgr);
+        mgrs.putIfAbsent(mgr.context().cacheId(), mgr);
     }
 
     /**

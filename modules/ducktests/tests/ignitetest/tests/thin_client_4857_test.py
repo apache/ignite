@@ -83,7 +83,7 @@ class ThinClient4857Test(IgniteTest):
                                                 IgniteThinClientConfiguration(addresses=addresses,
                                                                               version=IgniteVersion(ignite_version)),
                                                 java_class_name=self.JAVA_CLIENT_CLASS_NAME,
-                                                num_nodes=2,
+                                                num_nodes=4,
                                                 params={"cacheName": ThinClient4857Test.CACHE_NAME, "tr": "true"})
 
         ignite.start()
