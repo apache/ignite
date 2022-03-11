@@ -65,6 +65,6 @@ Inspection profile is placed to IDEA [Project_Default](.idea/inspectionProfiles/
 ### Building project
 Usually all Maven builds are to be run with skipped tests:
 ```
-mvn -DskipTests
+./mvnw -DskipTests
 ```
 See also [DEVNOTES.txt](DEVNOTES.txt)

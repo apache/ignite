@@ -33,9 +33,9 @@ at https://ignite.apache.org/download.cgi#sources.
 
 There are some ways to gain required libs from sources:
 
-1) Run "mvn clean install -DskipTests -P lgpl" at Apache Ignite sources.
+1) Run "./mvnw clean install -DskipTests -P lgpl" at Apache Ignite sources.
 This case will install lgpl-based libs to local maven repository.
 
-2) Run "mvn clean package -DskipTests -Prelease,lgpl -Dignite.edition=apache-ignite-lgpl" at Apache Ignite sources.
+2) Run "./mvnw clean package -DskipTests -Prelease,lgpl -Dignite.edition=apache-ignite-lgpl" at Apache Ignite sources.
 Required libs will appear at /target/release-package/libs/optional subfolders.
 Found libs should be copied to global or project's classpath.
