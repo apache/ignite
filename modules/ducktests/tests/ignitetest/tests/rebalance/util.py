@@ -97,7 +97,7 @@ def start_ignite(test_context, ignite_version: str, rebalance_params: RebalanceP
     :param rebalance_params: Rebalance parameters.
     :return: IgniteService.
     """
-    node_count = len(test_context.cluster) - rebalance_params.preloaders
+    node_count = test_context.available_cluster_size - rebalance_params.preloaders
 
     if rebalance_params.persistent:
         data_storage = DataStorageConfiguration(
