@@ -47,6 +47,7 @@ public class ServiceSingleNodeDeploymentResult implements Message {
      * Empty constructor for marshalling purposes.
      */
     public ServiceSingleNodeDeploymentResult() {
+        System.out.println("Hello");
     }
 
     /**
