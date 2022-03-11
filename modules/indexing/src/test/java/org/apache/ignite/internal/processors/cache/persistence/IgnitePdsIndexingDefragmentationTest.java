@@ -403,7 +403,7 @@ public class IgnitePdsIndexingDefragmentationTest extends IgnitePdsDefragmentati
         /**
          * Whether index rebuild happened.
          */
-        private boolean rebuiltIndexes;
+        private volatile boolean rebuiltIndexes;
 
         /** {@inheritDoc} */
         @Override @Nullable public IgniteInternalFuture<?> rebuild(

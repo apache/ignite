@@ -298,7 +298,7 @@ public class ValidateIndexesClosure implements IgniteCallable<VisorValidateIndex
                         continue;
 
                     for (GridQueryTypeDescriptor type : types) {
-                        GridH2Table gridH2Tbl = h2Indexing.schemaManager().dataTable(cacheName, type.tableName());
+                        GridH2Table gridH2Tbl = h2Indexing.schemaManager().dataTable(type.schemaName(), type.tableName());
 
                         if (isNull(gridH2Tbl))
                             continue;
