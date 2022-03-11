@@ -2500,7 +2500,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                                                         keepCacheObjects,
                                                         deserializeBinary,
                                                         false,
-                                                        getRes,
+                                                        null,
                                                         getRes.version(),
                                                         0,
                                                         0,

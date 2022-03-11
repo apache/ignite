@@ -25,8 +25,11 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.CacheEntryVersion;
 import org.apache.ignite.cache.ReadRepairStrategy;
 import org.apache.ignite.cluster.ClusterNode;
@@ -43,6 +46,7 @@ import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridPartitionedGetFuture;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_NEAR_GET_MAX_REMAPS;
 import static org.apache.ignite.IgniteSystemProperties.getInteger;
@@ -325,7 +329,12 @@ public abstract class GridNearReadRepairAbstractFuture extends GridFutureAdapter
         if (!evtMgr.isRecordable(EVT_CONSISTENCY_VIOLATION))
             return;
 
-        Map<Object, Map<ClusterNode, CacheConsistencyViolationEvent.EntryInfo>> entries = new HashMap<>();
+        boolean includeSensitive = S.includeSensitive();
+
+        Map<KeyCacheObject, Object> sensitiveKeyMap = new HashMap<>();
+        Map<ByteArrayWrapper, Object> sensitiveValMap = new HashMap<>();
+
+        Map<Object, CacheConsistencyViolationEvent.EntriesInfo> entries = new HashMap<>();
 
         for (Map.Entry<ClusterNode, GridPartitionedGetFuture<KeyCacheObject, EntryGetResult>> pair : futs.entrySet()) {
             ClusterNode node = pair.getKey();
@@ -334,21 +343,24 @@ public abstract class GridNearReadRepairAbstractFuture extends GridFutureAdapter
 
             for (KeyCacheObject key : fut.keys()) {
                 if (inconsistentKeys.contains(key)) {
-                    Map<ClusterNode, CacheConsistencyViolationEvent.EntryInfo> map =
-                        entries.computeIfAbsent(
-                            ctx.unwrapBinaryIfNeeded(key, !deserializeBinary, false, null), k -> new HashMap<>());
+                    sensitiveKeyMap.computeIfAbsent(key, k -> includeSensitive
+                        ? ctx.unwrapBinaryIfNeeded(k, !deserializeBinary, false, null)
+                        : "[HIDDEN_KEY#" + UUID.randomUUID() + "]");
+
+                    CacheConsistencyViolationEvent.EntriesInfo entriesInfo =
+                        entries.computeIfAbsent(sensitiveKeyMap.get(key), k -> new EventEntriesInfo(key.partition()));
 
                     EntryGetResult res = fut.result().get(key);
                     CacheEntryVersion ver = res != null ? res.version() : null;
 
-                    Object val = res != null ? ctx.unwrapBinaryIfNeeded(res.value(), !deserializeBinary, false, null) : null;
+                    Object val = sensitiveValue(includeSensitive, res, sensitiveValMap);
 
                     boolean primary = primaries.get(key).equals(fut.affNode());
                     boolean correct = fixedEntries != null &&
                         ((fixedEntries.get(key) != null && fixedEntries.get(key).equals(res)) ||
                             (fixedEntries.get(key) == null && res == null));
 
-                    map.put(node, new EventEntryInfo(val, ver, primary, correct));
+                    entriesInfo.getMapping().put(node, new EventEntryInfo(val, ver, primary, correct));
                 }
             }
         }
@@ -361,9 +373,8 @@ public abstract class GridNearReadRepairAbstractFuture extends GridFutureAdapter
             fixed = new HashMap<>();
 
             for (Map.Entry<KeyCacheObject, EntryGetResult> entry : fixedEntries.entrySet()) {
-                Object key = ctx.unwrapBinaryIfNeeded(entry.getKey(), !deserializeBinary, false, null);
-                Object val = entry.getValue() != null ?
-                    ctx.unwrapBinaryIfNeeded(entry.getValue().value(), !deserializeBinary, false, null) : null;
+                Object key = sensitiveKeyMap.get(entry.getKey());
+                Object val = sensitiveValue(includeSensitive, entry.getValue(), sensitiveValMap);
 
                 fixed.put(key, val);
             }
@@ -376,6 +387,58 @@ public abstract class GridNearReadRepairAbstractFuture extends GridFutureAdapter
             entries,
             fixed,
             strategy));
+    }
+
+    /**
+     *
+     */
+    private Object sensitiveValue(boolean includeSensitive, EntryGetResult res,
+        Map<ByteArrayWrapper, Object> sensitiveValMap) {
+        if (res != null) {
+            CacheObject val = res.value();
+
+            try {
+                ByteArrayWrapper wrapped = new ByteArrayWrapper(val.valueBytes(ctx.cacheObjectContext()));
+
+                return sensitiveValMap.computeIfAbsent(wrapped, w ->
+                    includeSensitive ?
+                        ctx.unwrapBinaryIfNeeded(val, !deserializeBinary, false, null) :
+                        "[HIDDEN_VALUE#" + UUID.randomUUID() + "]");
+            }
+            catch (IgniteCheckedException e) {
+                throw new IgniteException("Failed to unmarshall object.", e);
+            }
+        }
+        else
+            return null;
+    }
+
+    /**
+     *
+     */
+    private static final class EventEntriesInfo implements CacheConsistencyViolationEvent.EntriesInfo {
+        /** Mapping. */
+        final Map<ClusterNode, CacheConsistencyViolationEvent.EntryInfo> mapping = new HashMap<>();
+
+        /** Partition. */
+        final int partition;
+
+        /**
+         * @param partition Partition.
+         */
+        public EventEntriesInfo(int partition) {
+            this.partition = partition;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Map<ClusterNode, CacheConsistencyViolationEvent.EntryInfo> getMapping() {
+            return mapping;
+        }
+
+        /** {@inheritDoc} */
+        @Override public int partition() {
+            return partition;
+        }
     }
 
     /**
@@ -428,6 +491,29 @@ public abstract class GridNearReadRepairAbstractFuture extends GridFutureAdapter
         /** {@inheritDoc} */
         @Override public boolean isCorrect() {
             return correct;
+        }
+    }
+
+    /**
+     *
+     */
+    protected static final class ByteArrayWrapper {
+        /** Array. */
+        final byte[] arr;
+
+        /** */
+        public ByteArrayWrapper(byte[] arr) {
+            this.arr = arr;
+        }
+
+        /** */
+        @Override public boolean equals(Object o) {
+            return Arrays.equals(arr, ((ByteArrayWrapper)o).arr);
+        }
+
+        /** */
+        @Override public int hashCode() {
+            return Arrays.hashCode(arr);
         }
     }
 }
