@@ -31,10 +31,11 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -69,6 +70,7 @@ import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_WAL_
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.cacheId;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
+import static org.junit.Assume.assumeTrue;
 
 /** */
 @RunWith(Parameterized.class)
@@ -206,9 +208,8 @@ public class CdcSelfTest extends AbstractCdcTest {
     /** */
     @Test
     public void testReadOneByOneForBackup() throws Exception {
-        // CDC with 2 local nodes can't determine correct PDS directory without specificConsistentId;
-        if (!specificConsistentId)
-            return;
+        assumeTrue("CDC with 2 local nodes can't determine correct PDS directory without specificConsistentId.",
+            specificConsistentId);
 
         IgniteEx ign = startGrids(2);
 
@@ -216,26 +217,15 @@ public class CdcSelfTest extends AbstractCdcTest {
 
         IgniteCache<Integer, Integer> txCache = ign.cache(TX_CACHE_NAME);
 
-        AtomicInteger cntr = new AtomicInteger();
-
-        Map<Integer, Integer> batch = new TreeMap<>();
-
         int keysCnt = 3;
 
-        for (int i = 0; i < keysCnt; i++)
-            batch.put(keyForNode(ign.affinity(TX_CACHE_NAME), cntr, ign.localNode()), i);
-
-        long lastSegIdx1 = ign.context().cache().context().wal().lastArchivedSegment();
-        long lastSegIdx2 = grid(1).context().cache().context().wal().lastArchivedSegment();
+        Map<Integer, Integer> batch = primaryKeys(txCache, keysCnt).stream()
+            .collect(Collectors.toMap(key -> key, val -> val, (a, b) -> a, TreeMap::new));
 
         // Put data in batch because it will be logged in form of `DataRecord(List<DataEntry)` on backup node.
         txCache.putAll(batch);
 
-        assertTrue(waitForCondition(() -> lastSegIdx1 < ign.context().cache().context().wal().lastArchivedSegment() &&
-            lastSegIdx2 < grid(1).context().cache().context().wal().lastArchivedSegment(), 5 * WAL_ARCHIVE_TIMEOUT));
-
-
-        // Check `DataRecord(List<DataEntry)` loged.
+        // Check `DataRecord(List<DataEntry>)` logged.
         File archive = U.resolveWorkDirectory(
             U.defaultWorkDirectory(),
             grid(1).configuration().getDataStorageConfiguration().getWalArchivePath(),
@@ -245,21 +235,21 @@ public class CdcSelfTest extends AbstractCdcTest {
         IteratorParametersBuilder param = new IteratorParametersBuilder().filesOrDirs(archive)
             .filter((type, pointer) -> type == WALRecord.RecordType.DATA_RECORD_V2);
 
-        try (WALIterator iter = new IgniteWalIteratorFactory(log).iterator(param)) {
-            boolean found = false;
+        assertTrue("DataRecord(List<DataEntry>) should be logged.", waitForCondition(() -> {
+            try (WALIterator iter = new IgniteWalIteratorFactory(log).iterator(param)) {
+                while (iter.hasNext()) {
+                    DataRecord rec = (DataRecord)iter.next().get2();
 
-            while (iter.hasNext()) {
-                DataRecord rec = (DataRecord)iter.next().get2();
-
-                if (rec.entryCount() > 1) {
-                    found = true;
-
-                    break;
+                    if (rec.entryCount() > 1)
+                        return true;
                 }
             }
+            catch (IgniteCheckedException e) {
+                throw U.convertException(e);
+            }
 
-            assertTrue("DataRecord(List<DataEntry) should be loged", found);
-        }
+            return false;
+        }, getTestTimeout()));
 
         for (int i = 0; i < 2; i++) {
             IgniteEx grid = grid(i);
@@ -271,7 +261,7 @@ public class CdcSelfTest extends AbstractCdcTest {
             CdcConsumer cnsmr = new CdcConsumer() {
                 @Override public boolean onEvents(Iterator<CdcEvent> evts) {
                     if (!firstEvt.get())
-                        throw new RuntimeException("Expected fail");
+                        throw new RuntimeException("Expected fail.");
 
                     assertTrue(evts.hasNext());
 
@@ -280,7 +270,7 @@ public class CdcSelfTest extends AbstractCdcTest {
                     firstEvt.set(false);
 
                     if (data.size() == keysCnt)
-                        throw new RuntimeException("Expected fail");
+                        throw new RuntimeException("Expected fail.");
 
                     return true;
                 }
@@ -306,7 +296,7 @@ public class CdcSelfTest extends AbstractCdcTest {
                 firstEvt.set(true);
             }
 
-            assertTrue(batch.keySet().containsAll(data));
+            assertTrue(F.eqNotOrdered(batch.keySet(), data));
         }
     }
 
