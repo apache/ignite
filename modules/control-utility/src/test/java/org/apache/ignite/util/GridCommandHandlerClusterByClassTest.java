@@ -72,6 +72,7 @@ import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.datastructures.GridCacheInternalKeyImpl;
+import org.apache.ignite.internal.processors.platform.cache.expiry.PlatformExpiryPolicyFactory;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.X;
@@ -87,6 +88,9 @@ import org.apache.ignite.transactions.TransactionRollbackException;
 import org.apache.ignite.transactions.TransactionState;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
+
+import javax.cache.expiry.CreatedExpiryPolicy;
+import javax.cache.expiry.Duration;
 
 import static java.util.Arrays.asList;
 import static java.util.Arrays.stream;
@@ -1329,6 +1333,7 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
                 new CacheConfiguration<>()
                     .setAffinity(new RendezvousAffinityFunction(false, 32))
                     .setBackups(1)
+                    .setExpiryPolicyFactory(new PlatformExpiryPolicyFactory(1, 2, 3))
                     .setName(DEFAULT_CACHE_NAME + i)
             );
         }
@@ -1359,6 +1364,7 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
 
             assertContains(log, outStr, "partitions=32");
             assertContains(log, outStr, "function=o.a.i.cache.affinity.rendezvous.RendezvousAffinityFunction");
+            assertContains(log, outStr, "create=1 MILLISECONDS, access=3 MILLISECONDS, update=2 MILLISECONDS");
         }
         else if (MULTI_LINE.text().equals(outputFormat)) {
             for (int i = 0; i < cachesCnt; i++)
@@ -1366,6 +1372,9 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
 
             assertContains(log, outStr, "Affinity Partitions: 32");
             assertContains(log, outStr, "Affinity Function: o.a.i.cache.affinity.rendezvous.RendezvousAffinityFunction");
+            assertContains(log, outStr, "Expiry Policy Create Time: 1 MILLISECONDS");
+            assertContains(log, outStr, "Expiry Policy Access Time: 3 MILLISECONDS");
+            assertContains(log, outStr, "Expiry Policy Update Time: 2 MILLISECONDS");
         }
         else
             fail("Unknown output format: " + outputFormat);

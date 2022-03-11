@@ -77,6 +77,9 @@ public class VisorCacheConfiguration extends VisorDataTransferObject {
     /** Default lock acquisition timeout. */
     private long dfltLockTimeout;
 
+    /** Cache expiry policy config. */
+    private VisorCacheExpiryPolicyConfiguration expiryPolicyCfg;
+
     /** Cache affinity config. */
     private VisorCacheAffinityConfiguration affinityCfg;
 
@@ -213,6 +216,7 @@ public class VisorCacheConfiguration extends VisorDataTransferObject {
         partLossPlc = ccfg.getPartitionLossPolicy();
         qryParallelism = ccfg.getQueryParallelism();
 
+        expiryPolicyCfg = new VisorCacheExpiryPolicyConfiguration(ccfg);
         affinityCfg = new VisorCacheAffinityConfiguration(ccfg);
         rebalanceCfg = new VisorCacheRebalanceConfiguration(ccfg);
         evictCfg = new VisorCacheEvictionConfiguration(ccfg);
@@ -313,6 +317,13 @@ public class VisorCacheConfiguration extends VisorDataTransferObject {
      */
     public List<VisorCacheJdbcType> getJdbcTypes() {
         return jdbcTypes;
+    }
+
+    /**
+     * @return Cache expiry policy config.
+     */
+    public VisorCacheExpiryPolicyConfiguration getExpiryPolicyCfg() {
+        return expiryPolicyCfg;
     }
 
     /**
@@ -559,6 +570,7 @@ public class VisorCacheConfiguration extends VisorDataTransferObject {
         out.writeInt(maxConcurrentAsyncOps);
         U.writeString(out, interceptor);
         out.writeLong(dfltLockTimeout);
+        out.writeObject(expiryPolicyCfg);
         out.writeObject(affinityCfg);
         out.writeObject(rebalanceCfg);
         out.writeObject(evictCfg);
@@ -607,6 +619,7 @@ public class VisorCacheConfiguration extends VisorDataTransferObject {
         maxConcurrentAsyncOps = in.readInt();
         interceptor = U.readString(in);
         dfltLockTimeout = in.readLong();
+        expiryPolicyCfg = (VisorCacheExpiryPolicyConfiguration)in.readObject();
         affinityCfg = (VisorCacheAffinityConfiguration)in.readObject();
         rebalanceCfg = (VisorCacheRebalanceConfiguration)in.readObject();
         evictCfg = (VisorCacheEvictionConfiguration)in.readObject();

@@ -44,6 +44,7 @@ import org.apache.ignite.internal.visor.cache.VisorCacheEvictionConfiguration;
 import org.apache.ignite.internal.visor.cache.VisorCacheNearConfiguration;
 import org.apache.ignite.internal.visor.cache.VisorCacheRebalanceConfiguration;
 import org.apache.ignite.internal.visor.cache.VisorCacheStoreConfiguration;
+import org.apache.ignite.internal.visor.cache.VisorCacheExpiryPolicyConfiguration;
 import org.apache.ignite.internal.visor.query.VisorQueryConfiguration;
 import org.apache.ignite.internal.visor.verify.VisorViewCacheCmd;
 import org.apache.ignite.internal.visor.verify.VisorViewCacheTask;
@@ -234,6 +235,7 @@ public class CacheViewer extends AbstractCommand<CacheViewer.Arguments> {
     private static Map<String, Object> mapToPairs(VisorCacheConfiguration cfg) {
         Map<String, Object> params = new LinkedHashMap<>();
 
+        VisorCacheExpiryPolicyConfiguration expiryPolicyCfg = cfg.getExpiryPolicyCfg();
         VisorCacheAffinityConfiguration affinityCfg = cfg.getAffinityConfiguration();
         VisorCacheNearConfiguration nearCfg = cfg.getNearConfiguration();
         VisorCacheRebalanceConfiguration rebalanceCfg = cfg.getRebalanceConfiguration();
@@ -266,6 +268,11 @@ public class CacheViewer extends AbstractCommand<CacheViewer.Arguments> {
 
         params.put("Write Synchronization Mode", cfg.getWriteSynchronizationMode());
         params.put("Invalidate", cfg.isInvalidate());
+
+        params.put("Expiry Policy Create Time", expiryPolicyCfg.getCreate());
+        params.put("Expiry Policy Access Time", expiryPolicyCfg.getAccess());
+        params.put("Expiry Policy Update Time", expiryPolicyCfg.getUpdate());
+        params.put("Expiry Policy Factory Class Name", cfg.getExpiryPolicyFactory());
 
         params.put("Affinity Function", affinityCfg.getFunction());
         params.put("Affinity Backups", affinityCfg.getPartitionedBackups());
@@ -313,7 +320,6 @@ public class CacheViewer extends AbstractCommand<CacheViewer.Arguments> {
 
         params.put("Loader Factory Class Name", cfg.getLoaderFactory());
         params.put("Writer Factory Class Name", cfg.getWriterFactory());
-        params.put("Expiry Policy Factory Class Name", cfg.getExpiryPolicyFactory());
 
         params.put("Query Execution Time Threshold", qryCfg.getLongQueryWarningTimeout());
         params.put("Query Escaped Names", qryCfg.isSqlEscapeAll());
