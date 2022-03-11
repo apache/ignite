@@ -437,8 +437,8 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
         Collection<CacheGroupContext> grpContexts = cctx.cache().cacheGroups();
 
         for (CacheGroupContext grp : grpContexts) {
-            if (grp.isLocal() || !grp.affinityNode() || !grp.cdcEnabled() || !grp.localWalEnabled()
-                || !grp.rebalanceEnabled() || !grp.shared().isRebalanceEnabled())
+            if (grp.isLocal() || !grp.affinityNode() || !(grp.persistenceEnabled() || grp.cdcEnabled())
+                || !grp.localWalEnabled() || !grp.rebalanceEnabled() || !grp.shared().isRebalanceEnabled())
                 continue;
 
             List<GridDhtLocalPartition> locParts = grp.topology().localPartitions();

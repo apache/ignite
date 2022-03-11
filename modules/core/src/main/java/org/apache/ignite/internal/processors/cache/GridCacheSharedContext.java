@@ -773,11 +773,12 @@ public class GridCacheSharedContext<K, V> {
      * @return Write ahead log manager.
      */
     @Nullable public IgniteWriteAheadLogManager wal() {
-        return walMgr;
+        return wal(false);
     }
 
     /**
      * @return Write ahead log manager.
+     * @param forCdc If {@code true} then wal queried to log CDC related stuff.
      */
     @Nullable public IgniteWriteAheadLogManager wal(boolean forCdc) {
         assert !forCdc || cdcWalMgr != null;

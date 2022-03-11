@@ -1767,7 +1767,7 @@ public class GridDhtPartitionDemander {
                     return;
                 }
 
-                if (grp.cdcEnabled() && !grp.localWalEnabled() && !cancelled) {
+                if ((grp.persistenceEnabled() || grp.cdcEnabled()) && !grp.localWalEnabled() && !cancelled) {
                     if (log.isDebugEnabled()) {
                         log.debug("Delaying partition owning for a group [name=" +
                             grp.cacheOrGroupName() + ", ver=" + topVer + ']');

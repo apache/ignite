@@ -32,7 +32,6 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
 import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
@@ -94,7 +93,6 @@ public class WalForCdcTest extends GridCommonAbstractTest {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setDataStorageConfiguration(new DataStorageConfiguration()
-            .setWalMode(WALMode.FSYNC)
             .setWalForceArchiveTimeout(WAL_ARCHIVE_TIMEOUT)
             .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
                 .setPersistenceEnabled(persistenceEnabled)
@@ -118,20 +116,20 @@ public class WalForCdcTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void testOnlyDataRecordWritten() throws Exception {
-        IgniteEx ignite = startGrid(0);
+        IgniteEx ignite1 = startGrid(0);
 
-        ignite.cluster().state(ClusterState.ACTIVE);
+        ignite1.cluster().state(ClusterState.ACTIVE);
 
         AtomicInteger cntr = new AtomicInteger();
 
         // Check only `DataRecords` written in WAL for in-memory cache with CDC enabled.
-        doTestWal(ignite, cache -> {
+        doTestWal(ignite1, cache -> {
             for (int i = 0; i < RECORD_COUNT; i++)
-                cache.put(keyForNode(ignite.affinity(DEFAULT_CACHE_NAME), cntr, ignite.localNode()), i);
-        });
+                cache.put(keyForNode(ignite1.affinity(DEFAULT_CACHE_NAME), cntr, ignite1.localNode()), i);
+        }, RECORD_COUNT);
 
         // Check no WAL written during rebalance.
-        IgniteEx ignite1 = startGrid(1);
+        IgniteEx ignite2 = startGrid(1);
 
         awaitPartitionMapExchange(false, true, null);
 
@@ -139,7 +137,7 @@ public class WalForCdcTest extends GridCommonAbstractTest {
         // then no `DataRecords` loged therefore no segment archivation.
         Thread.sleep(3 * WAL_ARCHIVE_TIMEOUT);
 
-        int walRecCnt = checkDataRecords(ignite1);
+        int walRecCnt = checkDataRecords(ignite2);
 
         assertEquals(0, walRecCnt);
 
@@ -147,7 +145,12 @@ public class WalForCdcTest extends GridCommonAbstractTest {
         doTestWal(ignite1, cache -> {
             for (int i = 0; i < RECORD_COUNT; i++)
                 cache.put(keyForNode(ignite1.affinity(DEFAULT_CACHE_NAME), cntr, ignite1.localNode()), i);
-        });
+        }, RECORD_COUNT * 2);
+
+        doTestWal(ignite2, cache -> {
+            for (int i = 0; i < RECORD_COUNT; i++)
+                cache.put(keyForNode(ignite2.affinity(DEFAULT_CACHE_NAME), cntr, ignite2.localNode()), i);
+        }, RECORD_COUNT * (mode == REPLICATED ? 2 : 1));
     }
 
     /** */
@@ -172,7 +175,7 @@ public class WalForCdcTest extends GridCommonAbstractTest {
 
             for (int i = RECORD_COUNT / 2; i < RECORD_COUNT; i++)
                 cache.put(i, i);
-        });
+        }, RECORD_COUNT);
     }
 
     /** */
@@ -194,7 +197,11 @@ public class WalForCdcTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private void doTestWal(IgniteEx ignite, Consumer<IgniteCache<Integer, Integer>> putData) throws Exception {
+    private void doTestWal(
+        IgniteEx ignite,
+        Consumer<IgniteCache<Integer, Integer>> putData,
+        int expWalRecCnt
+    ) throws Exception {
         IgniteCache<Integer, Integer> cache = ignite.getOrCreateCache(
             new CacheConfiguration<Integer, Integer>(DEFAULT_CACHE_NAME)
                 .setCacheMode(mode)
@@ -211,7 +218,7 @@ public class WalForCdcTest extends GridCommonAbstractTest {
 
         int walRecCnt = checkDataRecords(ignite);
 
-        assertEquals(RECORD_COUNT, walRecCnt);
+        assertEquals(expWalRecCnt, walRecCnt);
     }
 
     /** */
