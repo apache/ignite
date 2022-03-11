@@ -196,18 +196,20 @@ public class CdcSelfTest extends AbstractCdcTest {
 
         IgniteCache<Integer, User> cache = ign.getOrCreateCache(DEFAULT_CACHE_NAME);
 
-        addData(cache, 0, KEYS_CNT / 2);
+        int keysCnt = 10;
+
+        addData(cache, 0, keysCnt / 2);
 
         long segIdx = ign.context().cache().context().wal(true).lastArchivedSegment();
 
         waitForCondition(() -> ign.context().cache().context().wal(true).lastArchivedSegment() > segIdx, getTestTimeout());
 
-        addData(cache, KEYS_CNT / 2, KEYS_CNT);
+        addData(cache, keysCnt / 2, keysCnt);
 
         AtomicInteger expKey = new AtomicInteger();
         int lastKey = 0;
 
-        while (expKey.get() != KEYS_CNT) {
+        while (expKey.get() != keysCnt) {
             String errMsg = "Expected fail";
 
             IgniteInternalFuture<?> fut = runAsync(createCdc(new CdcConsumer() {
@@ -225,7 +227,7 @@ public class CdcSelfTest extends AbstractCdcTest {
                     expKey.incrementAndGet();
 
                     // Fail application if all expected data read e.g. next event doesn't exist.
-                    if (expKey.get() == KEYS_CNT)
+                    if (expKey.get() == keysCnt)
                         throw new RuntimeException(errMsg);
 
                     oneConsumed = true;
