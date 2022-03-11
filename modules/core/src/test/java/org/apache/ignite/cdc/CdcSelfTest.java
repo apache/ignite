@@ -17,25 +17,24 @@
 
 package org.apache.ignite.cdc;
 
+import java.io.File;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
+import java.util.HashSet;
 import java.util.Iterator;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.TreeMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -45,11 +44,11 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cdc.CdcMain;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
-import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory.IteratorParametersBuilder;
+import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -66,6 +65,7 @@ import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cdc.AbstractCdcTest.ChangeEventType.DELETE;
 import static org.apache.ignite.cdc.AbstractCdcTest.ChangeEventType.UPDATE;
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
+import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_WAL_ARCHIVE_PATH;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.cacheId;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
@@ -122,7 +122,8 @@ public class CdcSelfTest extends AbstractCdcTest {
             .setCdcEnabled(true)
             .setWalMode(walMode)
             .setWalForceArchiveTimeout(WAL_ARCHIVE_TIMEOUT)
-            .setDefaultDataRegionConfiguration(new DataRegionConfiguration().setPersistenceEnabled(true)));
+            .setDefaultDataRegionConfiguration(new DataRegionConfiguration().setPersistenceEnabled(true))
+            .setWalArchivePath(DFLT_WAL_ARCHIVE_PATH + "/" + U.maskForFileName(igniteInstanceName)));
 
         if (pageSz != 0)
             cfg.getDataStorageConfiguration().setPageSize(pageSz);
@@ -204,72 +205,109 @@ public class CdcSelfTest extends AbstractCdcTest {
 
     /** */
     @Test
-    public void testCommitByOneAndRestart() throws Exception {
-        Ignite ign = startGrids(2);
+    public void testReadOneByOneForBackup() throws Exception {
+        // CDC with 2 local nodes can't determine correct PDS directory without specificConsistentId;
+        if (!specificConsistentId)
+            return;
+
+        IgniteEx ign = startGrids(2);
 
         ign.cluster().state(ACTIVE);
 
-        IgniteCache<Integer, User> txCache = ign.cache(TX_CACHE_NAME);
+        IgniteCache<Integer, Integer> txCache = ign.cache(TX_CACHE_NAME);
 
-        addData(txCache, 0, KEYS_CNT);
+        AtomicInteger cntr = new AtomicInteger();
 
-        List<Integer> expPrimaryKeys = new LinkedList<>();
-        List<Integer> expBackupKeys = new LinkedList<>();
+        Map<Integer, Integer> batch = new TreeMap<>();
 
-        txCache.localEntries(CachePeekMode.PRIMARY).forEach(e -> expPrimaryKeys.add(e.getKey()));
-        txCache.localEntries(CachePeekMode.BACKUP).forEach(e -> expBackupKeys.add(e.getKey()));
+        int keysCnt = 3;
 
-        assertEquals(KEYS_CNT, expPrimaryKeys.size() + expBackupKeys.size());
+        for (int i = 0; i < keysCnt; i++)
+            batch.put(keyForNode(ign.affinity(TX_CACHE_NAME), cntr, ign.localNode()), i);
 
-        for (int i = 0; i < KEYS_CNT; i++) {
-            AtomicReference<Integer> commitedKey = new AtomicReference<>();
+        long lastSegIdx1 = ign.context().cache().context().wal().lastArchivedSegment();
+        long lastSegIdx2 = grid(1).context().cache().context().wal().lastArchivedSegment();
 
-            UserCdcConsumer cnsmr = new UserCdcConsumer() {
-                @Override public boolean onEvents(Iterator<CdcEvent> evts) {
-                    CdcEvent evt = evts.next();
+        // Put data in batch because it will be logged in form of `DataRecord(List<DataEntry)` on backup node.
+        txCache.putAll(batch);
 
-                    super.onEvents(Collections.singleton(evt).iterator());
+        assertTrue(waitForCondition(() -> lastSegIdx1 < ign.context().cache().context().wal().lastArchivedSegment() &&
+            lastSegIdx2 < grid(1).context().cache().context().wal().lastArchivedSegment(), 5 * WAL_ARCHIVE_TIMEOUT));
 
-                    return commitedKey.compareAndSet(null, (Integer)evt.key());
-                }
-            };
 
-            CdcMain cdc = createCdc(cnsmr, getConfiguration(ign.name()));
+        // Check `DataRecord(List<DataEntry)` loged.
+        File archive = U.resolveWorkDirectory(
+            U.defaultWorkDirectory(),
+            grid(1).configuration().getDataStorageConfiguration().getWalArchivePath(),
+            false
+        );
 
-            IgniteInternalFuture<?> fut = runAsync(cdc);
-
-            assertTrue(waitForCondition(
-                () -> F.eqNotOrdered(expPrimaryKeys, cnsmr.data(UPDATE, cacheId(TX_CACHE_NAME))) &&
-                    F.eqNotOrdered(expBackupKeys, cnsmr.backupData(UPDATE, cacheId(TX_CACHE_NAME))), getTestTimeout()));
-
-            checkMetrics(cdc, KEYS_CNT - i);
-
-            fut.cancel();
-
-            assertTrue(cnsmr.stopped());
-            assertTrue(expPrimaryKeys.remove(commitedKey.get()) || expBackupKeys.remove(commitedKey.get()));
-        }
-
-        checkMultipleDataEntryPerRecord(ign);
-    }
-
-    /** Checks that WAL contains multiple {@link DataEntry} per {@link DataRecord}. */
-    private void checkMultipleDataEntryPerRecord(Ignite ign) throws IgniteCheckedException {
-        IteratorParametersBuilder param = new IteratorParametersBuilder()
-            .filesOrDirs(U.resolveWorkDirectory(U.defaultWorkDirectory(),
-                ign.configuration().getDataStorageConfiguration().getCdcWalPath(), false))
+        IteratorParametersBuilder param = new IteratorParametersBuilder().filesOrDirs(archive)
             .filter((type, pointer) -> type == WALRecord.RecordType.DATA_RECORD_V2);
 
         try (WALIterator iter = new IgniteWalIteratorFactory(log).iterator(param)) {
+            boolean found = false;
+
             while (iter.hasNext()) {
                 DataRecord rec = (DataRecord)iter.next().get2();
 
-                if (rec.entryCount() > 1)
-                    return;
+                if (rec.entryCount() > 1) {
+                    found = true;
+
+                    break;
+                }
             }
+
+            assertTrue("DataRecord(List<DataEntry) should be loged", found);
         }
 
-        fail("There are no multiple DataEntry per DataRecord.");
+        for (int i = 0; i < 2; i++) {
+            IgniteEx grid = grid(i);
+
+            Set<Integer> data = new HashSet<>();
+
+            AtomicBoolean firstEvt = new AtomicBoolean(true);
+
+            CdcConsumer cnsmr = new CdcConsumer() {
+                @Override public boolean onEvents(Iterator<CdcEvent> evts) {
+                    if (!firstEvt.get())
+                        throw new RuntimeException("Expected fail");
+
+                    assertTrue(evts.hasNext());
+
+                    data.add((Integer)evts.next().key());
+
+                    firstEvt.set(false);
+
+                    if (data.size() == keysCnt)
+                        throw new RuntimeException("Expected fail");
+
+                    return true;
+                }
+
+                @Override public void stop() {
+                    // No-op.
+                }
+
+                @Override public void start(MetricRegistry mreg) {
+                    // No-op.
+                }
+            };
+
+            for (int j = 0; j < keysCnt; j++) {
+                CdcMain cdc = createCdc(cnsmr, getConfiguration(grid.name()));
+
+                IgniteInternalFuture<?> fut = runAsync(cdc);
+
+                // Restart CDC after read and commit single key.
+                assertTrue(waitForCondition(fut::isDone, getTestTimeout()));
+                assertEquals(j + 1, data.size());
+
+                firstEvt.set(true);
+            }
+
+            assertTrue(batch.keySet().containsAll(data));
+        }
     }
 
     /** */
@@ -548,17 +586,7 @@ public class CdcSelfTest extends AbstractCdcTest {
 
     /** */
     public static void addData(IgniteCache<Integer, User> cache, int from, int to) {
-        int cnt = to - from;
-
-        for (int i = from; i < from + cnt / 3; i++)
-            cache.put(i, createUser(i));
-
-        Map<Integer, User> vals = IntStream.range(from + cnt / 3, from + 2 * cnt / 3).boxed()
-            .collect(Collectors.toMap(key -> key, AbstractCdcTest::createUser));
-
-        cache.putAll(vals);
-
-        for (int i = from + 2 * cnt / 3; i < to; i++)
+        for (int i = from; i < to; i++)
             cache.put(i, createUser(i));
     }
 
