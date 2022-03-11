@@ -43,12 +43,6 @@ class ConsistencyTest(IgniteTest):
     """
     CACHE_NAME = "TEST"
 
-    PROPERTIES = """
-        <property name="includeEventTypes">
-            <util:constant static-field="org.apache.ignite.events.EventType.EVT_CONSISTENCY_VIOLATION"/>
-        </property>
-        """
-
     @cluster(num_nodes=2)
     @ignite_versions(str(DEV_BRANCH))
     def test_logging(self, ignite_version):
@@ -62,7 +56,8 @@ class ConsistencyTest(IgniteTest):
             IgniteConfiguration(
                 version=IgniteVersion(ignite_version),
                 cluster_state="INACTIVE",
-                properties=self.PROPERTIES,
+                include_event_types=
+                {"<util:constant static-field=\"org.apache.ignite.events.EventType.EVT_CONSISTENCY_VIOLATION\"/>"},
                 log4j_config=cfg_filename  # default AI config (will be generated below)
             ),
             java_class_name="org.apache.ignite.internal.ducktest.tests.control_utility.InconsistentNodeApplication",

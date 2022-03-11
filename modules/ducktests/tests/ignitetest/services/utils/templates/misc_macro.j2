@@ -44,3 +44,13 @@
         {% endfor %}
     {% endif %}
 {% endmacro %}
+
+{% macro event_types(config) %}
+    {% if config.include_event_types | length > 0 %}
+        <util:list id="eventTypes" value-type="java.lang.Integer">
+            {% for event_type in config.include_event_types %}
+                {{ event_type }}
+            {% endfor %}
+        </util:list>
+    {% endif %}
+{% endmacro %}
