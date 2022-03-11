@@ -28,6 +28,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import javax.management.DynamicMBean;
 import org.apache.ignite.IgniteCache;
@@ -37,7 +38,6 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.cdc.CdcConsumerState;
 import org.apache.ignite.internal.cdc.CdcMain;
-import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.CI3;
@@ -86,6 +86,15 @@ public abstract class AbstractCdcTest extends GridCommonAbstractTest {
         super.beforeTest();
     }
 
+    /** {@inheritDoc} */
+    @Override protected void afterTestsStopped() throws Exception {
+        super.afterTestsStopped();
+
+        stopAllGrids();
+
+        cleanPersistenceDir();
+    }
+
     /** */
     protected CdcMain createCdc(CdcConsumer cnsmr, IgniteConfiguration cfg) {
         return createCdc(cnsmr, cfg, null);
@@ -107,8 +116,8 @@ public abstract class AbstractCdcTest extends GridCommonAbstractTest {
         return new CdcMain(cfg, null, cdcCfg) {
             @Override protected CdcConsumerState createState(Path stateDir) {
                 return new CdcConsumerState(stateDir) {
-                    @Override public void save(WALPointer ptr) throws IOException {
-                        super.save(ptr);
+                    @Override public void save(CdcState pos) throws IOException {
+                        super.save(pos);
 
                         if (!F.isEmpty(conditions)) {
                             for (GridAbsPredicate p : conditions) {
@@ -337,6 +346,44 @@ public abstract class AbstractCdcTest extends GridCommonAbstractTest {
         /** {@inheritDoc} */
         @Override public Integer extract(CdcEvent evt) {
             return (Integer)evt.key();
+        }
+    }
+
+    /** Consumer to commit a few events. */
+    public static class BatchCommitConsumer extends UserCdcConsumer {
+        /** Count of events to commit. */
+        private final int commitCnt;
+
+        /** Commited keys. */
+        final List<Integer> commited = new ArrayList<>();
+
+        /** Event index. */
+        private final AtomicInteger evtIdx = new AtomicInteger();
+
+        /** @param commitCnt Count of events to commit. */
+        BatchCommitConsumer(int commitCnt) {
+            this.commitCnt = commitCnt;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean onEvents(Iterator<CdcEvent> evts) {
+            while (evts.hasNext()) {
+                CdcEvent evt = evts.next();
+
+                data.computeIfAbsent(
+                    F.t(evt.value() == null ? DELETE : UPDATE, evt.cacheId()),
+                    k -> new ArrayList<>()).add(extract(evt));
+
+                if (evtIdx.incrementAndGet() == commitCnt) {
+                    assertEquals(commitCnt, F.flatCollections(data.values()).size());
+
+                    data.values().forEach(commited::addAll);
+
+                    return true;
+                }
+            }
+
+            return false;
         }
     }
 

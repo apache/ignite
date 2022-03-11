@@ -19,11 +19,11 @@ package org.apache.ignite.internal.cdc;
 
 import java.util.EnumSet;
 import java.util.Iterator;
-import java.util.NoSuchElementException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cdc.CdcConsumer;
 import org.apache.ignite.cdc.CdcEvent;
+import org.apache.ignite.internal.cdc.CdcMain.DataEntryIterator;
 import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.UnwrappedDataEntry;
@@ -32,6 +32,7 @@ import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.CREATE;
@@ -79,6 +80,20 @@ public class WalRecordsConsumer<K, V> {
         return OPERATIONS_TYPES.contains(e.op());
     };
 
+    /** Event transformer. */
+    private static final IgniteClosure<DataEntry, CdcEvent> CDC_EVENT_TRANSFORMER = e -> {
+        UnwrappedDataEntry ue = (UnwrappedDataEntry)e;
+
+        return new CdcEventImpl(
+            ue.unwrappedKey(),
+            ue.unwrappedValue(),
+            (e.flags() & DataEntry.PRIMARY_FLAG) != 0,
+            e.partitionId(),
+            e.writeVersion(),
+            e.cacheId()
+        );
+    };
+
     /**
      * @param consumer User provided CDC consumer.
      * @param log Logger.
@@ -89,70 +104,29 @@ public class WalRecordsConsumer<K, V> {
     }
 
     /**
-     * Handles record from the WAL.
-     * If this method return {@code true} then current offset in WAL will be stored and WAL iteration will be
-     * started from it on CDC application fail/restart.
+     * Handles data entries.
+     * If this method return {@code true} then current offset in WAL and {@link DataEntry} index inside
+     * {@link DataRecord} will be stored and WAL iteration will be started from it on CDC application fail/restart.
      *
-     * @param recs WAL records iterator.
+     * @param entries Data entries iterator.
      * @return {@code True} if current offset in WAL should be commited.
      */
-    public boolean onRecords(Iterator<DataRecord> recs) {
-        Iterator<CdcEvent> evts = new Iterator<CdcEvent>() {
-            /** */
-            private Iterator<CdcEvent> entries;
-
+    public boolean onRecords(DataEntryIterator entries) {
+        Iterator<CdcEvent> evts = F.iterator(new Iterator<DataEntry>() {
             @Override public boolean hasNext() {
-                advance();
-
-                return hasCurrent();
+                return entries.hasNext();
             }
 
-            @Override public CdcEvent next() {
-                advance();
-
-                if (!hasCurrent())
-                    throw new NoSuchElementException();
+            @Override public DataEntry next() {
+                DataEntry next = entries.next();
 
                 evtsCnt.increment();
 
                 lastEvtTs.value(System.currentTimeMillis());
 
-                return entries.next();
+                return next;
             }
-
-            private void advance() {
-                if (hasCurrent())
-                    return;
-
-                while (recs.hasNext()) {
-                    entries =
-                        F.iterator(recs.next().writeEntries().iterator(), this::transform, true, OPERATIONS_FILTER);
-
-                    if (entries.hasNext())
-                        break;
-
-                    entries = null;
-                }
-            }
-
-            private boolean hasCurrent() {
-                return entries != null && entries.hasNext();
-            }
-
-            /** */
-            private CdcEvent transform(DataEntry e) {
-                UnwrappedDataEntry ue = (UnwrappedDataEntry)e;
-
-                return new CdcEventImpl(
-                    ue.unwrappedKey(),
-                    ue.unwrappedValue(),
-                    (e.flags() & DataEntry.PRIMARY_FLAG) != 0,
-                    e.partitionId(),
-                    e.writeVersion(),
-                    e.cacheId()
-                );
-            }
-        };
+        }, CDC_EVENT_TRANSFORMER, true, OPERATIONS_FILTER);
 
         return consumer.onEvents(evts);
     }

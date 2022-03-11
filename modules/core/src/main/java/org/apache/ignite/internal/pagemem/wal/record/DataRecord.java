@@ -70,6 +70,18 @@ public class DataRecord extends TimeStampRecord {
         A.notNull(writeEntries, "writeEntries");
 
         this.writeEntries = writeEntries;
+
+        if (entryCount() > 1) {
+            List<DataEntry> entries = (List<DataEntry>)writeEntries;
+
+            for (DataEntry e : entries) {
+                if ((e.flags() & DataEntry.PRIMARY_FLAG) != 0) {
+                    U.dumpStack("@@@ primary");
+
+                    System.exit(777);
+                }
+            }
+        }
     }
 
     /**
