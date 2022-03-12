@@ -42,6 +42,7 @@ import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.CI3;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.spi.metric.LongMetric;
 import org.apache.ignite.spi.metric.MetricExporterSpi;
@@ -87,6 +88,15 @@ public abstract class AbstractCdcTest extends GridCommonAbstractTest {
         super.beforeTest();
     }
 
+    /** {@inheritDoc} */
+    @Override protected void afterTestsStopped() throws Exception {
+        super.afterTestsStopped();
+
+        stopAllGrids();
+
+        cleanPersistenceDir();
+    }
+
     /** */
     protected CdcMain createCdc(CdcConsumer cnsmr, IgniteConfiguration cfg) {
         return createCdc(cnsmr, cfg, null);
@@ -108,8 +118,8 @@ public abstract class AbstractCdcTest extends GridCommonAbstractTest {
         return new CdcMain(cfg, null, cdcCfg) {
             @Override protected CdcConsumerState createState(Path stateDir) {
                 return new CdcConsumerState(stateDir) {
-                    @Override public void save(WALPointer ptr) throws IOException {
-                        super.save(ptr);
+                    @Override public void save(T2<WALPointer, Integer> state) throws IOException {
+                        super.save(state);
 
                         if (!F.isEmpty(conditions)) {
                             for (GridAbsPredicate p : conditions) {
