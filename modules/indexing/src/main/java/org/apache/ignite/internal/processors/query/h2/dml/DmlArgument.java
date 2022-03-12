@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.query.h2.dml;
 
+import org.apache.ignite.internal.processors.query.h2.sql.GridSqlType;
+
 /**
  * DML argument
  */
@@ -28,4 +30,9 @@ public interface DmlArgument {
      * @return value.
      */
     Object get(Object[] params);
+
+    /**
+     * Get expected H2 type of the extracted argument.
+     */
+    GridSqlType expectedType();
 }

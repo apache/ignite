@@ -1854,12 +1854,23 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
     }
 
     /**
+     * Assert that provided collection contain equal elements.
+     * @param exp
+     * @param act
+     */
+    protected void assertEqualsCollections(Collection<?> exp, Collection<?> act) {
+        assertEqualsCollections(null , exp, act);
+    }
+
+    /**
      * @param exp Expected.
      * @param act Actual.
      */
-    protected void assertEqualsCollections(Collection<?> exp, Collection<?> act) {
+    protected void assertEqualsCollections(String msg, Collection<?> exp, Collection<?> act) {
+        String prefix = F.isEmpty(msg) ? "" : msg + ": ";
+
         if (exp.size() != act.size())
-            fail("Collections are not equal:\nExpected:\t" + exp + "\nActual:\t" + act);
+            fail(prefix + "Collections are not equal:\nExpected:\t" + exp + "\nActual:\t" + act);
 
         Iterator<?> it1 = exp.iterator();
         Iterator<?> it2 = act.iterator();
@@ -1871,7 +1882,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
             Object item2 = it2.next();
 
             if (!F.eq(item1, item2))
-                fail("Collections are not equal (position " + idx + "):\nExpected: " + exp + "\nActual:   " + act);
+                fail(prefix + "Collections are not equal (position " + idx + "):\nExpected: " + exp + "\nActual:   " + act);
 
             idx++;
         }

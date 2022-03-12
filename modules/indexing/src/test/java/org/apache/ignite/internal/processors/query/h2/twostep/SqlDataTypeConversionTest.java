@@ -346,7 +346,7 @@ public class SqlDataTypeConversionTest extends GridCommonAbstractTest {
 
             if (PartitionDataTypeUtils.CONVERTATION_FAILURE == convertationRes) {
                 try {
-                    H2Utils.convert(arg, idx, IGNITE_PARAMETER_TYPE_TO_H2_PARAMETER_TYPE.get(targetType));
+                    H2Utils.convert(arg, idx.objectContext(), IGNITE_PARAMETER_TYPE_TO_H2_PARAMETER_TYPE.get(targetType));
 
                     fail("Data conversion failed in Ignite but not in H2.");
                 }
@@ -356,7 +356,7 @@ public class SqlDataTypeConversionTest extends GridCommonAbstractTest {
                 }
             }
             else {
-                Object convertationH2Res = H2Utils.convert(arg, idx,
+                Object convertationH2Res = H2Utils.convert(arg, idx.objectContext(),
                     IGNITE_PARAMETER_TYPE_TO_H2_PARAMETER_TYPE.get(targetType));
 
                 if (convertationRes == null)
