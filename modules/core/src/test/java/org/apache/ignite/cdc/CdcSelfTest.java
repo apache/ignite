@@ -17,19 +17,25 @@
 
 package org.apache.ignite.cdc;
 
+import java.io.File;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.TreeMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -38,8 +44,15 @@ import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cdc.CdcMain;
+import org.apache.ignite.internal.pagemem.wal.WALIterator;
+import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
+import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
+import org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory;
+import org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory.IteratorParametersBuilder;
+import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.metric.MetricExporterSpi;
 import org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
@@ -49,12 +62,15 @@ import org.junit.runners.Parameterized;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_DATA_STORAGE_FOLDER_BY_CONSISTENT_ID;
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cdc.AbstractCdcTest.ChangeEventType.DELETE;
 import static org.apache.ignite.cdc.AbstractCdcTest.ChangeEventType.UPDATE;
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
+import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_WAL_ARCHIVE_PATH;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.cacheId;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
+import static org.junit.Assume.assumeTrue;
 
 /** */
 @RunWith(Parameterized.class)
@@ -108,13 +124,16 @@ public class CdcSelfTest extends AbstractCdcTest {
             .setCdcEnabled(true)
             .setWalMode(walMode)
             .setWalForceArchiveTimeout(WAL_ARCHIVE_TIMEOUT)
-            .setDefaultDataRegionConfiguration(new DataRegionConfiguration().setPersistenceEnabled(true)));
+            .setDefaultDataRegionConfiguration(new DataRegionConfiguration().setPersistenceEnabled(true))
+            .setWalArchivePath(DFLT_WAL_ARCHIVE_PATH + "/" + U.maskForFileName(igniteInstanceName)));
 
         if (pageSz != 0)
             cfg.getDataStorageConfiguration().setPageSize(pageSz);
 
         cfg.setCacheConfiguration(
-            new CacheConfiguration<>(TX_CACHE_NAME).setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
+            new CacheConfiguration<>(TX_CACHE_NAME)
+                .setAtomicityMode(TRANSACTIONAL)
+                .setBackups(1)
         );
 
         return cfg;
@@ -184,6 +203,101 @@ public class CdcSelfTest extends AbstractCdcTest {
         stopAllGrids();
 
         cleanPersistenceDir();
+    }
+
+    /** */
+    @Test
+    public void testReadOneByOneForBackup() throws Exception {
+        assumeTrue("CDC with 2 local nodes can't determine correct PDS directory without specificConsistentId.",
+            specificConsistentId);
+
+        IgniteEx ign = startGrids(2);
+
+        ign.cluster().state(ACTIVE);
+
+        IgniteCache<Integer, Integer> txCache = ign.cache(TX_CACHE_NAME);
+
+        int keysCnt = 3;
+
+        Map<Integer, Integer> batch = primaryKeys(txCache, keysCnt).stream()
+            .collect(Collectors.toMap(key -> key, val -> val, (a, b) -> a, TreeMap::new));
+
+        // Put data in batch because it will be logged in form of `DataRecord(List<DataEntry)` on backup node.
+        txCache.putAll(batch);
+
+        // Check `DataRecord(List<DataEntry>)` logged.
+        File archive = U.resolveWorkDirectory(
+            U.defaultWorkDirectory(),
+            grid(1).configuration().getDataStorageConfiguration().getWalArchivePath(),
+            false
+        );
+
+        IteratorParametersBuilder param = new IteratorParametersBuilder().filesOrDirs(archive)
+            .filter((type, pointer) -> type == WALRecord.RecordType.DATA_RECORD_V2);
+
+        assertTrue("DataRecord(List<DataEntry>) should be logged.", waitForCondition(() -> {
+            try (WALIterator iter = new IgniteWalIteratorFactory(log).iterator(param)) {
+                while (iter.hasNext()) {
+                    DataRecord rec = (DataRecord)iter.next().get2();
+
+                    if (rec.entryCount() > 1)
+                        return true;
+                }
+            }
+            catch (IgniteCheckedException e) {
+                throw U.convertException(e);
+            }
+
+            return false;
+        }, getTestTimeout()));
+
+        for (int i = 0; i < 2; i++) {
+            IgniteEx grid = grid(i);
+
+            Set<Integer> data = new HashSet<>();
+
+            AtomicBoolean firstEvt = new AtomicBoolean(true);
+
+            CdcConsumer cnsmr = new CdcConsumer() {
+                @Override public boolean onEvents(Iterator<CdcEvent> evts) {
+                    if (!firstEvt.get())
+                        throw new RuntimeException("Expected fail.");
+
+                    assertTrue(evts.hasNext());
+
+                    data.add((Integer)evts.next().key());
+
+                    firstEvt.set(false);
+
+                    if (data.size() == keysCnt)
+                        throw new RuntimeException("Expected fail.");
+
+                    return true;
+                }
+
+                @Override public void stop() {
+                    // No-op.
+                }
+
+                @Override public void start(MetricRegistry mreg) {
+                    // No-op.
+                }
+            };
+
+            for (int j = 0; j < keysCnt; j++) {
+                CdcMain cdc = createCdc(cnsmr, getConfiguration(grid.name()));
+
+                IgniteInternalFuture<?> fut = runAsync(cdc);
+
+                // Restart CDC after read and commit single key.
+                assertTrue(waitForCondition(fut::isDone, getTestTimeout()));
+                assertEquals(j + 1, data.size());
+
+                firstEvt.set(true);
+            }
+
+            assertTrue(F.eqNotOrdered(batch.keySet(), data));
+        }
     }
 
     /** */
