@@ -108,6 +108,8 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
 
         eagerTtlEnabled = true;
 
+        cctx.shared().ttl().register(this);
+
         pendingEntries = (!cctx.isLocal() && cctx.config().getNearConfiguration() != null) ? new GridConcurrentSkipListSetEx() : null;
     }
 

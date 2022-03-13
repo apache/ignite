@@ -2562,9 +2562,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 if (changedAffinity())
                     cctx.walState().disableGroupDurabilityForPreloading(this);
             }
-
-            for (GridCacheContext ctx : cctx.cacheContexts())
-                cctx.ttl().register(ctx.ttl());
         }
         catch (Throwable t) {
             // In any case, this exchange future has to be completed. The original error should be preserved if exists.
