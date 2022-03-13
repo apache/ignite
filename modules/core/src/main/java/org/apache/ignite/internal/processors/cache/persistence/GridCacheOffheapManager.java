@@ -139,7 +139,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.tree.util.
  * Used when persistence enabled.
  */
 public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl implements CheckpointListener {
-    private static final Set<GridDhtLocalPartition> SKIP_PARTITION = new HashSet<>();
+    private static final Set<GridDhtLocalPartition> SKIP_PARTITION = Collections.synchronizedSet(new HashSet<>());
 
     /** @see #WAL_MARGIN_FOR_ATOMIC_CACHE_HISTORICAL_REBALANCE */
     public static final int DFLT_WAL_MARGIN_FOR_ATOMIC_CACHE_HISTORICAL_REBALANCE = 5;
