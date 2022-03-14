@@ -104,6 +104,9 @@ class ThinClient4857Test(IgniteTest):
         control_utility.activate()
         self.test_context.logger.warn(">>> activate")
 
+        # Wait till expiration
+        time.sleep(45)
+
         thin_clients.stop()
         ignite.stop()
 
