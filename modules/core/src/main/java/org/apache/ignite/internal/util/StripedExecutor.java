@@ -39,6 +39,8 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
+import org.apache.ignite.internal.processors.metric.impl.HistogramMetricImpl;
+import org.apache.ignite.internal.processors.metric.impl.MetricUtils;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -49,9 +51,11 @@ import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.thread.ExecutorServiceMetricsAware;
 import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import static java.util.stream.IntStream.range;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_DATA_STREAMING_EXECUTOR_SERVICE_TASKS_STEALING_THRESHOLD;
+import static org.apache.ignite.internal.processors.pool.PoolProcessor.THREAD_POOLS;
 
 /**
  * Striped executor.
@@ -70,27 +74,7 @@ public class StripedExecutor implements ExecutorService, ExecutorServiceMetricsA
     private final IgniteLogger log;
 
     /** Task execution time metric. */
-    private LongConsumer execTimeMetric;
-
-    /**
-     * @param cnt Count.
-     * @param igniteInstanceName Node name.
-     * @param poolName Pool name.
-     * @param log Logger.
-     * @param errHnd Critical failure handler.
-     * @param gridWorkerLsnr Listener to link with every stripe worker.
-     */
-    public StripedExecutor(
-        int cnt,
-        String igniteInstanceName,
-        String poolName,
-        final IgniteLogger log,
-        IgniteInClosure<Throwable> errHnd,
-        GridWorkerListener gridWorkerLsnr,
-        long failureDetectionTimeout
-    ) {
-        this(cnt, igniteInstanceName, poolName, log, errHnd, false, gridWorkerLsnr, failureDetectionTimeout);
-    }
+    private final HistogramMetricImpl execTimeMetric;
 
     /**
      * @param cnt Count.
@@ -100,6 +84,8 @@ public class StripedExecutor implements ExecutorService, ExecutorServiceMetricsA
      * @param errHnd Critical failure handler.
      * @param stealTasks {@code True} to steal tasks.
      * @param gridWorkerLsnr listener to link with every stripe worker.
+     * @param failureDetectionTimeout Failure detection timeout.
+     * @param metricsName Pool metrics group name.
      */
     public StripedExecutor(
         int cnt,
@@ -109,7 +95,8 @@ public class StripedExecutor implements ExecutorService, ExecutorServiceMetricsA
         IgniteInClosure<Throwable> errHnd,
         boolean stealTasks,
         GridWorkerListener gridWorkerLsnr,
-        long failureDetectionTimeout
+        long failureDetectionTimeout,
+        @Nullable String metricsName
     ) {
         A.ensure(cnt > 0, "cnt > 0");
 
@@ -121,11 +108,14 @@ public class StripedExecutor implements ExecutorService, ExecutorServiceMetricsA
 
         this.log = log;
 
+        execTimeMetric = metricsName != null ? new HistogramMetricImpl(MetricUtils.metricName(THREAD_POOLS, metricsName),
+            TASK_EXEC_TIME_DESC, TASK_EXEC_TIME_HISTOGRAM_BUCKETS) : null;
+
         try {
             for (int i = 0; i < cnt; i++) {
                 stripes[i] = stealTasks
-                    ? new StripeConcurrentQueue(nodeName, poolName, i, log, stripes, errHnd, gridWorkerLsnr, this::addExecTime)
-                    : new StripeConcurrentQueue(nodeName, poolName, i, log, errHnd, gridWorkerLsnr, this::addExecTime);
+                    ? new StripeConcurrentQueue(nodeName, poolName, i, log, stripes, errHnd, gridWorkerLsnr, execTimeMetric)
+                    : new StripeConcurrentQueue(nodeName, poolName, i, log, errHnd, gridWorkerLsnr, execTimeMetric);
             }
 
             for (int i = 0; i < cnt; i++)
@@ -514,15 +504,7 @@ public class StripedExecutor implements ExecutorService, ExecutorServiceMetricsA
             int[].class,
             "Size of queue per stripe.");
 
-        execTimeMetric = mreg.histogram(TASK_EXEC_TIME_NAME, TASK_EXEC_TIME_HISTOGRAM_BUCKETS, TASK_EXEC_TIME_DESC);
-    }
-
-    /**
-     * @param time Execution time of the task.
-     */
-    private void addExecTime(long time) {
-        if (execTimeMetric != null)
-            execTimeMetric.accept(time);
+        mreg.register(TASK_EXEC_TIME_NAME, execTimeMetric);
     }
 
     /** {@inheritDoc} */
@@ -632,7 +614,8 @@ public class StripedExecutor implements ExecutorService, ExecutorServiceMetricsA
                             active = false;
                             completedCnt++;
 
-                            execTimeConsumer.accept(U.currentTimeMillis() - lastStartedTs);
+                            if (execTimeConsumer != null)
+                                execTimeConsumer.accept(U.currentTimeMillis() - lastStartedTs);
                         }
                     }
 

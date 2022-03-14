@@ -23,6 +23,7 @@ import org.apache.ignite.internal.util.StripedExecutor;
 import org.apache.ignite.internal.util.worker.GridWorkerListener;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Extends {@link StripedExecutor} with the ability to execute tasks in security context that was actual when task was
@@ -42,9 +43,10 @@ public class SecurityAwareStripedExecutor extends StripedExecutor {
         IgniteInClosure<Throwable> errHnd,
         boolean stealTasks,
         GridWorkerListener gridWorkerLsnr,
-        long failureDetectionTimeout
+        long failureDetectionTimeout,
+        @Nullable String metricsName
     ) {
-        super(cnt, igniteInstanceName, poolName, log, errHnd, stealTasks, gridWorkerLsnr, failureDetectionTimeout);
+        super(cnt, igniteInstanceName, poolName, log, errHnd, stealTasks, gridWorkerLsnr, failureDetectionTimeout, metricsName);
 
         this.security = security;
     }

@@ -92,6 +92,12 @@ public class PoolProcessor extends GridProcessorAdapter {
     /** Group for a thread pools. */
     public static final String THREAD_POOLS = "threadPools";
 
+    /**  Data stream executor public name. */
+    private static final String DATA_STREAN_EXECUTOR_PUBLIC_NAME = "GridDataStreamExecutor";
+
+    /**  Striped executor public name. */
+    private static final String STRIPED_EXECUTOR_PUBLIC_NAME = "StripedExecutor";
+
     /** Executor service. */
     @GridToStringExclude
     private ThreadPoolExecutor execSvc;
@@ -289,7 +295,8 @@ public class PoolProcessor extends GridProcessorAdapter {
             },
             false,
             workerRegistry,
-            cfg.getFailureDetectionTimeout());
+            cfg.getFailureDetectionTimeout(),
+            STRIPED_EXECUTOR_PUBLIC_NAME);
 
         // Note that since we use 'LinkedBlockingQueue', number of
         // maximum threads has no effect.
@@ -339,7 +346,8 @@ public class PoolProcessor extends GridProcessorAdapter {
             },
             true,
             workerRegistry,
-            cfg.getFailureDetectionTimeout());
+            cfg.getFailureDetectionTimeout(),
+            DATA_STREAN_EXECUTOR_PUBLIC_NAME);
 
         // Note that we do not pre-start threads here as this pool may not be needed.
         validateThreadPoolSize(cfg.getAsyncCallbackPoolSize(), "async callback");
@@ -554,7 +562,7 @@ public class PoolProcessor extends GridProcessorAdapter {
         monitorExecutor("GridQueryExecutor", qryExecSvc);
         monitorExecutor("GridSchemaExecutor", schemaExecSvc);
         monitorExecutor("GridRebalanceExecutor", rebalanceExecSvc);
-        monitorExecutor("GridDataStreamExecutor", dataStreamerExecSvc);
+        monitorExecutor(DATA_STREAN_EXECUTOR_PUBLIC_NAME, dataStreamerExecSvc);
 
         if (idxExecSvc != null)
             monitorExecutor("GridIndexingExecutor", idxExecSvc);
@@ -564,7 +572,7 @@ public class PoolProcessor extends GridProcessorAdapter {
 
         if (stripedExecSvc != null) {
             // Striped executor uses a custom adapter.
-            monitorExecutor("StripedExecutor", stripedExecSvc);
+            monitorExecutor(STRIPED_EXECUTOR_PUBLIC_NAME, stripedExecSvc);
         }
 
         if (snpExecSvc != null)
@@ -1139,20 +1147,16 @@ public class PoolProcessor extends GridProcessorAdapter {
         IgniteInClosure<Throwable> errHnd,
         boolean stealTasks,
         GridWorkerListener gridWorkerLsnr,
-        long failureDetectionTimeout
+        long failureDetectionTimeout,
+        String metricsName
     ) {
-        return ctx.security().enabled()
-            ? new SecurityAwareStripedExecutor(
-                ctx.security(),
-                cnt,
-                igniteInstanceName,
-                poolName,
-                log,
-                errHnd,
-                stealTasks,
-                gridWorkerLsnr,
-                failureDetectionTimeout)
-            : new StripedExecutor(cnt, igniteInstanceName, poolName, log, errHnd, stealTasks, gridWorkerLsnr, failureDetectionTimeout);
+        if (ctx.security().enabled()) {
+            return new SecurityAwareStripedExecutor(ctx.security(), cnt, igniteInstanceName, poolName, log, errHnd,
+                stealTasks, gridWorkerLsnr, failureDetectionTimeout, metricsName);
+        }
+
+        return new StripedExecutor(cnt, igniteInstanceName, poolName, log, errHnd, stealTasks, gridWorkerLsnr,
+            failureDetectionTimeout, metricsName);
     }
 
     /** Creates instance {@link IgniteThreadPoolExecutor} with a notion of whether {@link IgniteSecurity} is enabled. */

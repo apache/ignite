@@ -194,6 +194,24 @@ public class MetricRegistry implements ReadOnlyMetricRegistry {
     }
 
     /**
+     * Register histogram metric.
+     *
+     * @param name Name
+     * @param histogramMetric Histogram metric.
+     * @return {@link HistogramMetricImpl}
+     */
+    public HistogramMetricImpl register(String name, HistogramMetricImpl histogramMetric) {
+        HistogramMetricImpl metric = addMetric(name, histogramMetric);
+
+        long[] cfgBounds = histogramCfgProvider.apply(histogramMetric.name());
+
+        if (cfgBounds != null)
+            metric.reset(cfgBounds);
+
+        return metric;
+    }
+
+    /**
      * Creates and register named metric.
      * Returned instance are thread safe.
      *
@@ -301,16 +319,7 @@ public class MetricRegistry implements ReadOnlyMetricRegistry {
      * @return {@link HistogramMetricImpl}
      */
     public HistogramMetricImpl histogram(String name, long[] bounds, @Nullable String desc) {
-        String fullName = metricName(regName, name);
-
-        HistogramMetricImpl metric = addMetric(name, new HistogramMetricImpl(fullName, desc, bounds));
-
-        long[] cfgBounds = histogramCfgProvider.apply(fullName);
-
-        if (cfgBounds != null)
-            metric.reset(cfgBounds);
-
-        return metric;
+        return register(name, new HistogramMetricImpl(metricName(regName, name), desc, bounds));
     }
 
     /**
