@@ -3187,6 +3187,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         else if (cacheCtx.isColocated()) {
             if (readRepairStrategy != null) {
                 return new GridNearReadRepairCheckOnlyFuture(
+                    topVer,
                     cacheCtx,
                     keys,
                     readRepairStrategy,

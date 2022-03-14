@@ -1398,6 +1398,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
         if (readRepairStrategy != null) {
             return new GridNearReadRepairCheckOnlyFuture(
+                topVer,
                 ctx,
                 Collections.singleton(ctx.toCacheKeyObject(key)),
                 readRepairStrategy,
@@ -1464,6 +1465,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
         if (readRepairStrategy != null) {
             return new GridNearReadRepairCheckOnlyFuture(
+                topVer,
                 ctx,
                 ctx.cacheKeysView(keys),
                 readRepairStrategy,
