@@ -29,20 +29,15 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
-import java.util.function.LongConsumer;
-import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.NotNull;
 
 /**
  * An {@link ExecutorService} that executes submitted tasks using pooled grid threads.
  */
-public class IgniteStripedThreadPoolExecutor implements ExecutorService, ExecutorServiceMetricsAware {
+public class IgniteStripedThreadPoolExecutor implements ExecutorService {
     /** */
     private final ExecutorService[] execs;
-
-    /** Task execution time metric. */
-    private LongConsumer execTimeMetric;
 
     /**
      * Create striped thread pool.
@@ -92,9 +87,7 @@ public class IgniteStripedThreadPoolExecutor implements ExecutorService, Executo
      * @throws NullPointerException If command is null
      */
     public void execute(Runnable task, int idx) {
-        Runnable task0 = execTimeMetric == null ? task : new ExecutionTimeAwareRunnable(task, execTimeMetric);
-
-        execs[threadId(idx)].execute(task0);
+        execs[threadId(idx)].execute(task);
     }
 
     /**
@@ -196,26 +189,6 @@ public class IgniteStripedThreadPoolExecutor implements ExecutorService, Executo
     /** {@inheritDoc} */
     @Override public void execute(Runnable cmd) {
         throw new UnsupportedOperationException();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void registerMetrics(MetricRegistry mreg) {
-        mreg.longMetric("ActiveCount", ACTIVE_COUNT_DESC).value(0);
-        mreg.longMetric("CompletedTaskCount", COMPLETED_TASK_DESC).value(0);
-        mreg.longMetric("CorePoolSize", CORE_SIZE_DESC).value(0);
-        mreg.longMetric("LargestPoolSize", LARGEST_SIZE_DESC).value(0);
-        mreg.longMetric("MaximumPoolSize", MAX_SIZE_DESC).value(0);
-        mreg.longMetric("PoolSize", POOL_SIZE_DESC).value(0);
-        mreg.longMetric("TaskCount", TASK_COUNT_DESC);
-        mreg.longMetric("QueueSize", QUEUE_SIZE_DESC).value(0);
-        mreg.longMetric("KeepAliveTime", KEEP_ALIVE_TIME_DESC).value(0);
-        mreg.register("Shutdown", this::isShutdown, IS_SHUTDOWN_DESC);
-        mreg.register("Terminated", this::isTerminated, IS_TERMINATED_DESC);
-        mreg.longMetric("Terminating", IS_TERMINATING_DESC);
-        mreg.objectMetric("RejectedExecutionHandlerClass", String.class, REJ_HND_DESC).value("");
-        mreg.objectMetric("ThreadFactoryClass", String.class, THRD_FACTORY_DESC).value("");
-
-        execTimeMetric = mreg.histogram(TASK_EXEC_TIME_NAME, TASK_EXEC_TIME_HISTOGRAM_BUCKETS, TASK_EXEC_TIME_DESC);
     }
 
     /** {@inheritDoc} */

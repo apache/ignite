@@ -22,7 +22,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
-import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
@@ -33,6 +32,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.processors.metric.impl.MetricUtils;
 import org.apache.ignite.internal.processors.pool.PoolProcessor;
 import org.apache.ignite.internal.util.StripedExecutor;
 import org.apache.ignite.internal.util.typedef.F;
@@ -164,13 +164,10 @@ public class ThreadPoolMetricsTest extends GridCommonAbstractTest {
             if (ExecutorService.class.isAssignableFrom(field.getType())) {
                 ExecutorService execSvc = U.field(poolProc, field.getName());
 
-                if (execSvc == null) {
-                    System.out.println(field.getName() + "=null");
-
+                if (execSvc == null || execSvc instanceof IgniteStripedThreadPoolExecutor)
                     continue;
-                }
 
-                if (execSvc instanceof StripedExecutor || execSvc instanceof IgniteStripedThreadPoolExecutor) {
+                if (execSvc instanceof StripedExecutor) {
                     for (int i = 0; i < taskCnt; i++) {
                         Callable<?> call = tasks.get(i);
                         Runnable r = () -> {
@@ -197,11 +194,12 @@ public class ThreadPoolMetricsTest extends GridCommonAbstractTest {
             }
         }
 
-        Set<ReadOnlyMetricRegistry> registries = StreamSupport.stream(ignite.context().metric().spliterator(), false)
-            .filter(metric -> metric.name().startsWith(THREAD_POOLS))
-            .collect(Collectors.toSet());
+        String metricPrefix = THREAD_POOLS + MetricUtils.SEPARATOR;
 
-        for (ReadOnlyMetricRegistry mreg : registries) {
+        for (ReadOnlyMetricRegistry mreg : ignite.context().metric()) {
+            if (!mreg.name().startsWith(metricPrefix))
+                continue;
+
             HistogramMetric histogram = mreg.findMetric(TASK_EXEC_TIME_NAME);
 
             String poolName = "pool=" + mreg.name();
