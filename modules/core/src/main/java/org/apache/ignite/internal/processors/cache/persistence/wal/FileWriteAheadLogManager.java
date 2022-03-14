@@ -31,7 +31,6 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.channels.ClosedByInterruptException;
 import java.nio.file.FileAlreadyExistsException;
-import java.nio.file.FileStore;
 import java.nio.file.Files;
 import java.sql.Time;
 import java.util.ArrayList;
@@ -157,6 +156,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.wal.serial
 import static org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordV1Serializer.readSegmentHeader;
 import static org.apache.ignite.internal.processors.compress.CompressionProcessor.checkCompressionLevelBounds;
 import static org.apache.ignite.internal.processors.compress.CompressionProcessor.getDefaultCompressionLevel;
+import static org.apache.ignite.internal.util.io.GridFileUtils.ensureHardLinkAvailable;
 
 /**
  * File WAL manager.
@@ -483,7 +483,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                     "change data capture directory"
                 );
 
-                checkHardLinkAvailable();
+                ensureHardLinkAvailable(walArchiveDir.toPath(), walCdcDir.toPath());
             }
 
             serializer = new RecordSerializerFactoryImpl(cctx).createSerializer(serializerVer);
@@ -675,23 +675,6 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                     "[walStorePath = " + dsCfg.getWalPath() +
                     ", walArchivePath = " + dsCfg.getWalArchivePath() + "]"
             );
-        }
-    }
-
-    /** @throws IgniteCheckedException If creating hard links is not available. */
-    private void checkHardLinkAvailable() throws IgniteCheckedException {
-        try {
-            FileStore walStore = Files.getFileStore(walArchiveDir.toPath());
-            FileStore cdcStore = Files.getFileStore(walCdcDir.toPath());
-
-            if (!F.eq(walStore.name(), cdcStore.name())) {
-                throw new IgniteCheckedException("WAL archive and CDC directories are not stored at the same " +
-                    "device or partition. Creating hard links is not available. " +
-                    "[walStoreName=" + walStore.name() + ", cdcStoreName=" + cdcStore.name() + ']');
-            }
-        }
-        catch (IOException e) {
-            throw new IgniteCheckedException("Unable to check WAL and CDC file stores.", e);
         }
     }
 
