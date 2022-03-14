@@ -3111,13 +3111,13 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                     if (!cctx.topology().initialized()) {
                         SKIP_PARTITION.add(part);
 
-                        log.error("TEST | skip partition: " + part);
+                        log.error("TEST | Skip partition: " + part.id());
 
                         return 0;
                     }
 
                     if (SKIP_PARTITION.remove(part))
-                        log.error("TEST | remove skiped partition: " + part + ". Left: " + SKIP_PARTITION.size());
+                        log.error("TEST | Removed skiped partition: " + part.id() + ". Left skipped: " + SKIP_PARTITION.size());
 
                     long now = U.currentTimeMillis();
 

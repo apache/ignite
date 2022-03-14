@@ -29,21 +29,20 @@ import org.junit.Test;
  */
 public class ThinClientExpirePolicyTest extends GridCommonAbstractTest {
     /** */
-    public static volatile boolean isReady;
+    private static final int TIMEOUT_SEC = 30;
+
+    /** */
+    public static volatile boolean isReady = true;
 
     /** */
     private final Consumer<IgniteClient> clientConsumer = client -> {
         ClientCache<UUID, UUID> cache = client.getOrCreateCache(DEFAULT_CACHE_NAME);
 
-        while (!Thread.currentThread().isInterrupted()) {
+        while (!Thread.currentThread().isInterrupted() && isReady) {
             try {
-                ClientTransaction tx = client.transactions().txStart();
-
                 UUID uuid = UUID.randomUUID();
 
                 cache.put(uuid, uuid);
-
-                tx.commit();
             }
             catch (ClientException e) {
                 // No-op.
@@ -69,7 +68,7 @@ public class ThinClientExpirePolicyTest extends GridCommonAbstractTest {
     /** {@inheritDoc}
      * @return*/
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        long time = TimeUnit.SECONDS.toMillis(5);
+        long time = TimeUnit.SECONDS.toMillis(TIMEOUT_SEC);
 
         PlatformExpiryPolicyFactory plc = new PlatformExpiryPolicyFactory(time, time, time);
 
@@ -106,11 +105,11 @@ public class ThinClientExpirePolicyTest extends GridCommonAbstractTest {
         System.err.println(">>>cache.size");
         System.err.println(cache.size());
 
-        isReady = true;
-
         igniteEx.cluster().state(ClusterState.INACTIVE);
 
-        TimeUnit.SECONDS.sleep(60);
+        TimeUnit.SECONDS.sleep(TIMEOUT_SEC);
+
+        isReady = false;
 
         igniteEx.cluster().state(ClusterState.ACTIVE);
 
@@ -123,6 +122,8 @@ public class ThinClientExpirePolicyTest extends GridCommonAbstractTest {
         assertEquals(2, igniteEx.context().discovery().aliveServerNodes().size());
         assertEquals(ClusterState.ACTIVE, G.allGrids().get(0).cluster().state());
         assertEquals(ClusterState.ACTIVE, G.allGrids().get(1).cluster().state());
+
+        assertEquals(0, cache.size());
     }
 
     /**
