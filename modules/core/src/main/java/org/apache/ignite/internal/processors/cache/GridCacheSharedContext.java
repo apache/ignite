@@ -202,7 +202,6 @@ public class GridCacheSharedContext<K, V> {
      * @param mvccMgr MVCC manager.
      * @param pageStoreMgr Page store manager. {@code Null} if persistence is not enabled.
      * @param walMgr WAL manager. {@code Null} if persistence is not enabled.
-     * @param walMgr CDC WAL manager. {@code Null} if persistence and CDC is not enabled.
      * @param walStateMgr WAL state manager.
      * @param depMgr Deployment manager.
      * @param dbMgr Database manager.
@@ -224,7 +223,6 @@ public class GridCacheSharedContext<K, V> {
         GridCacheMvccManager mvccMgr,
         @Nullable IgnitePageStoreManager pageStoreMgr,
         @Nullable IgniteWriteAheadLogManager walMgr,
-        @Nullable IgniteWriteAheadLogManager cdcWalMgr,
         WalStateManager walStateMgr,
         IgniteCacheDatabaseSharedManager dbMgr,
         IgniteSnapshotManager snapshotMgr,
@@ -250,8 +248,8 @@ public class GridCacheSharedContext<K, V> {
             verMgr,
             mvccMgr,
             pageStoreMgr,
+            CU.isPersistenceEnabled(kernalCtx.config()) ? walMgr : null,
             walMgr,
-            cdcWalMgr,
             walStateMgr,
             dbMgr,
             snapshotMgr,

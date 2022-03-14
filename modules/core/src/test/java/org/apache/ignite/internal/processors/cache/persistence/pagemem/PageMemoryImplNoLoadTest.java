@@ -30,7 +30,6 @@ import org.apache.ignite.internal.mem.file.MappedFileMemoryProvider;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.impl.PageMemoryNoLoadSelfTest;
-import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegionMetricsImpl;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
@@ -82,16 +81,13 @@ public class PageMemoryImplNoLoadTest extends PageMemoryNoLoadSelfTest {
         cctx.add(new GridMetricManager(cctx));
         cctx.add(new GridSystemViewManager(cctx));
 
-        IgniteWriteAheadLogManager walMgr = new NoOpWALManager();
-
         GridCacheSharedContext<Object, Object> sharedCtx = new GridCacheSharedContext<>(
             cctx,
             null,
             null,
             null,
             new NoOpPageStoreManager(),
-            walMgr,
-            walMgr,
+            new NoOpWALManager(),
             null,
             new IgniteCacheDatabaseSharedManager(cctx),
             null,
