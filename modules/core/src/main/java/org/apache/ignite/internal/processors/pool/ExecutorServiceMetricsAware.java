@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.thread;
+package org.apache.ignite.internal.processors.pool;
 
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
 

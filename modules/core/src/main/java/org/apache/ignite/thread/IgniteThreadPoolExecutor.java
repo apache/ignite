@@ -27,6 +27,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.LongConsumer;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
+import org.apache.ignite.internal.processors.pool.ExecutorServiceMetricsAware;
 import org.apache.ignite.internal.util.GridMutableLong;
 import org.apache.ignite.internal.util.typedef.internal.U;
 

@@ -63,7 +63,6 @@ import org.apache.ignite.mxbean.StripedExecutorMXBean;
 import org.apache.ignite.mxbean.ThreadPoolMXBean;
 import org.apache.ignite.plugin.extensions.communication.IoPool;
 import org.apache.ignite.spi.systemview.view.StripedExecutorTaskView;
-import org.apache.ignite.thread.ExecutorServiceMetricsAware;
 import org.apache.ignite.thread.IgniteStripedThreadPoolExecutor;
 import org.apache.ignite.thread.IgniteThreadPoolExecutor;
 import org.jetbrains.annotations.Nullable;
