@@ -156,6 +156,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.wal.serial
 import static org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordV1Serializer.readSegmentHeader;
 import static org.apache.ignite.internal.processors.compress.CompressionProcessor.checkCompressionLevelBounds;
 import static org.apache.ignite.internal.processors.compress.CompressionProcessor.getDefaultCompressionLevel;
+import static org.apache.ignite.internal.util.io.GridFileUtils.ensureHardLinkAvailable;
 
 /**
  * File WAL manager.
@@ -481,6 +482,8 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                     resolveFolders.folderName(),
                     "change data capture directory"
                 );
+
+                ensureHardLinkAvailable(walArchiveDir.toPath(), walCdcDir.toPath());
             }
 
             serializer = new RecordSerializerFactoryImpl(cctx).createSerializer(serializerVer);
@@ -688,13 +691,15 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         stopAutoRollover();
 
         try {
-            fileHandleManager.onDeactivate();
+            if (fileHandleManager != null)
+                fileHandleManager.onDeactivate();
         }
         catch (Exception e) {
             U.error(log, "Failed to gracefully close WAL segment: " + currHnd, e);
         }
 
-        segmentAware.interrupt();
+        if (segmentAware != null)
+            segmentAware.interrupt();
 
         try {
             if (archiver != null)
