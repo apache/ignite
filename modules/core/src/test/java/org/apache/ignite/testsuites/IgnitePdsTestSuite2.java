@@ -78,6 +78,7 @@ import org.apache.ignite.internal.processors.cache.persistence.freelist.FreeList
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.FilteredWalIteratorTest;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.StandaloneWalRecordsIteratorTest;
 import org.apache.ignite.internal.processors.cache.persistence.wal.scanner.WalScannerTest;
+import org.apache.ignite.internal.util.io.GridFileUtilsTest;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.DynamicSuite;
 import org.junit.runner.RunWith;
@@ -190,5 +191,7 @@ public class IgnitePdsTestSuite2 {
         GridTestUtils.addTestIfNeeded(suite, WriteAheadLogManagerSelfTest.class, ignoredTests);
 
         GridTestUtils.addTestIfNeeded(suite, HistoricalRebalanceTwoPartsInDifferentCheckpointsTest.class, ignoredTests);
+
+        GridTestUtils.addTestIfNeeded(suite, GridFileUtilsTest.class, ignoredTests);
     }
 }
