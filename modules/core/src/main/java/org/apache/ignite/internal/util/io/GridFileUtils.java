@@ -109,7 +109,7 @@ public class GridFileUtils {
             }
         }
         catch (IOException e) {
-            throw new IgniteCheckedException("Unable to check WAL and CDC file stores.", e);
+            throw new IgniteCheckedException("Unable to check file stores.", e);
         }
     }
 }
