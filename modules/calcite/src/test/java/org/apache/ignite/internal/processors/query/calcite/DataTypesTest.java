@@ -58,9 +58,6 @@ public class DataTypesTest extends AbstractBasicIntegrationTest {
 
             UUID max = uuid1.compareTo(uuid2) > 0 ? uuid1 : uuid2;
             UUID min = max == uuid1 ? uuid2 : uuid1;
-            UUID sum = new UUID(uuid1.getMostSignificantBits() + uuid2.getMostSignificantBits(),
-                uuid1.getLeastSignificantBits() + uuid2.getLeastSignificantBits());
-            UUID avg = new UUID(sum.getMostSignificantBits() / 2, sum.getLeastSignificantBits() / 2);
 
             executeSql("INSERT INTO t VALUES (1, 'fd10556e-fc27-4a99-b5e4-89b8344cb3ce', '" + uuid1 + "')");
             // Name == UUID
@@ -114,13 +111,11 @@ public class DataTypesTest extends AbstractBasicIntegrationTest {
                 .returns(min)
                 .check();
 
-            assertQuery("SELECT avg(uid) from t")
-                .returns(avg)
-                .check();
+            assertThrows("SELECT avg(uid) from t", UnsupportedOperationException.class,
+                "AVG() is not supported for UUID type.");
 
-            assertQuery("SELECT sum(uid) from t")
-                .returns(sum)
-                .check();
+            assertThrows("SELECT sum(uid) from t", UnsupportedOperationException.class,
+                "SUM() is not supported for UUID type.");
         }
         finally {
             executeSql("DROP TABLE if exists tbl");

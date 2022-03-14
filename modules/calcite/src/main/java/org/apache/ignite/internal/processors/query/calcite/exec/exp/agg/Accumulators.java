@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import java.util.function.Supplier;
+import org.apache.calcite.avatica.util.ByteString;
 import org.apache.calcite.rel.core.AggregateCall;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
@@ -89,7 +90,7 @@ public class Accumulators {
             case INTEGER:
             case ANY:
                 if (call.type instanceof UuidType)
-                    return UuidAvg.FACTORY;
+                    throw new UnsupportedOperationException("AVG() is not supported for UUID type.");
             default:
                 return DoubleAvg.FACTORY;
         }
@@ -109,7 +110,7 @@ public class Accumulators {
 
             case ANY:
                 if (call.type instanceof UuidType)
-                    return () -> new Sum(new UuidSumEmptyIsZero());
+                    throw new UnsupportedOperationException("SUM() is not supported for UUID type.");
 
             case TINYINT:
             case SMALLINT:
@@ -887,7 +888,7 @@ public class Accumulators {
     }
 
     /** */
-    private static class VarBinaryMinMax<T extends Comparable<T>> implements Accumulator {
+    private static class VarBinaryMinMax implements Accumulator {
         /** */
         public static final Supplier<Accumulator> MIN_FACTORY = () -> new VarBinaryMinMax(true);
 
@@ -898,8 +899,7 @@ public class Accumulators {
         private final boolean min;
 
         /** */
-//        private ByteString val;
-        private T val;
+        private ByteString val;
 
         /** */
         private boolean empty = true;
@@ -911,7 +911,7 @@ public class Accumulators {
 
         /** {@inheritDoc} */
         @Override public void add(Object... args) {
-            T in = (T)args[0];
+            ByteString in = (ByteString)args[0];
 
             if (in == null)
                 return;
@@ -925,7 +925,7 @@ public class Accumulators {
 
         /** {@inheritDoc} */
         @Override public void apply(Accumulator other) {
-            VarBinaryMinMax<T> other0 = (VarBinaryMinMax<T>)other;
+            VarBinaryMinMax other0 = (VarBinaryMinMax)other;
 
             if (other0.empty)
                 return;
@@ -1003,52 +1003,6 @@ public class Accumulators {
     }
 
     /** */
-    private static class UuidSumEmptyIsZero implements Accumulator {
-        /** */
-        public static final Supplier<Accumulator> FACTORY = UuidSumEmptyIsZero::new;
-
-        /** */
-        private UUID sum;
-
-        /** {@inheritDoc} */
-        @Override public void add(Object... args) {
-            UUID in = (UUID)args[0];
-
-            if (in == null)
-                return;
-
-            sum = sum == null ? in : new UUID(sum.getMostSignificantBits() + in.getMostSignificantBits(),
-                sum.getLeastSignificantBits() + in.getLeastSignificantBits());
-        }
-
-        /** {@inheritDoc} */
-        @Override public void apply(Accumulator other) {
-            UuidSumEmptyIsZero other0 = (UuidSumEmptyIsZero)other;
-
-            if (sum == null)
-                sum = other0.sum;
-            else
-                sum = new UUID(sum.getMostSignificantBits() + other0.sum.getMostSignificantBits(),
-                    sum.getLeastSignificantBits() + other0.sum.getLeastSignificantBits());
-        }
-
-        /** {@inheritDoc} */
-        @Override public Object end() {
-            return sum != null ? sum : new UUID(0, 0);
-        }
-
-        /** {@inheritDoc} */
-        @Override public List<RelDataType> argumentTypes(IgniteTypeFactory typeFactory) {
-            return F.asList(typeFactory.createTypeWithNullability(typeFactory.createUUIDType(), true));
-        }
-
-        /** {@inheritDoc} */
-        @Override public RelDataType returnType(IgniteTypeFactory typeFactory) {
-            return typeFactory.createTypeWithNullability(typeFactory.createUUIDType(), true);
-        }
-    }
-
-    /** */
     private static class UuidMinMax implements Accumulator {
         /** */
         public static final Supplier<Accumulator> MIN_FACTORY = () -> new UuidMinMax(true);
@@ -1101,61 +1055,6 @@ public class Accumulators {
         /** {@inheritDoc} */
         @Override public Object end() {
             return empty ? null : val;
-        }
-
-        /** {@inheritDoc} */
-        @Override public List<RelDataType> argumentTypes(IgniteTypeFactory typeFactory) {
-            return F.asList(typeFactory.createTypeWithNullability(typeFactory.createUUIDType(), true));
-        }
-
-        /** {@inheritDoc} */
-        @Override public RelDataType returnType(IgniteTypeFactory typeFactory) {
-            return typeFactory.createTypeWithNullability(typeFactory.createUUIDType(), true);
-        }
-    }
-
-    /** */
-    public static class UuidAvg implements Accumulator {
-        /** */
-        public static final Supplier<Accumulator> FACTORY = UuidAvg::new;
-
-        /** */
-        private UUID sum;
-
-        /** */
-        private long cnt;
-
-        /** {@inheritDoc} */
-        @Override public void add(Object... args) {
-            UUID in = (UUID)args[0];
-
-            if (in == null)
-                return;
-
-            if (sum == null)
-                sum = in;
-            else
-                sum = new UUID(sum.getMostSignificantBits() + in.getMostSignificantBits(),
-                    sum.getLeastSignificantBits() + in.getLeastSignificantBits());
-
-            cnt++;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void apply(Accumulator other) {
-            UuidAvg other0 = (UuidAvg)other;
-
-            if (other0.sum != null)
-                sum = new UUID(sum.getMostSignificantBits() + other0.sum.getMostSignificantBits(),
-                    sum.getLeastSignificantBits() + other0.sum.getLeastSignificantBits());
-
-            cnt += other0.cnt;
-        }
-
-        /** {@inheritDoc} */
-        @Override public Object end() {
-            return cnt > 0 ? new UUID(sum.getMostSignificantBits() / cnt,
-                sum.getLeastSignificantBits() / cnt) : null;
         }
 
         /** {@inheritDoc} */

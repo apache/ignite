@@ -306,13 +306,7 @@ public class CacheTableDescriptorImpl extends NullInitializerExpressionFactory
 
         DataContext dataCtx = new BaseDataContext(typeFactory);
 
-        Object dfltVal = TypeUtils.toInternal(dataCtx, desc.defaultValue());
-
-        if (dfltVal instanceof UUID)
-            return rexBuilder.makeCast(typeFactory.createUUIDType(),
-                rexBuilder.makeLiteral(dfltVal.toString(), desc.logicalType(typeFactory), false));
-
-        return rexBuilder.makeLiteral(dfltVal, desc.logicalType(typeFactory), true);
+        return TypeUtils.toRexLiteral(TypeUtils.toInternal(dataCtx, desc.defaultValue()), typeFactory, rexBuilder, desc);
     }
 
     /** {@inheritDoc} */

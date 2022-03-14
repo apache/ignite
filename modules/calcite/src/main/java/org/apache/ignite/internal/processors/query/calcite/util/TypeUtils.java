@@ -45,6 +45,8 @@ import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rel.type.RelDataTypeFactoryImpl;
 import org.apache.calcite.rel.type.RelDataTypeField;
+import org.apache.calcite.rex.RexBuilder;
+import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.runtime.SqlFunctions;
 import org.apache.calcite.sql.SqlCharStringLiteral;
 import org.apache.calcite.sql.SqlIntervalLiteral;
@@ -378,5 +380,17 @@ public class TypeUtils {
 
         // Taking into account DST, offset can be changed after converting from UTC to time-zone.
         return ts - tz.getOffset(ts - tz.getOffset(ts));
+    }
+
+    /**
+     * @return RexLiteral
+     */
+    public static RexNode toRexLiteral(Object dfltVal, IgniteTypeFactory typeFactory, RexBuilder rexBuilder,
+        ColumnDescriptor desc) {
+        if (dfltVal instanceof UUID)
+            return rexBuilder.makeCast(typeFactory.createUUIDType(),
+                rexBuilder.makeLiteral(dfltVal.toString(), desc.logicalType(typeFactory), false));
+
+        return rexBuilder.makeLiteral(dfltVal, desc.logicalType(typeFactory), true);
     }
 }

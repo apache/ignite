@@ -497,8 +497,6 @@ public class TableDmlIntegrationTest extends AbstractBasicIntegrationTest {
         checkWrongDefault("INTERVAL MONTHS", "INTERVAL '10' DAYS");
         checkWrongDefault("VARBINARY", "'10'");
         checkWrongDefault("VARBINARY", "10");
-        checkWrongDefault("VARBINARY", "10");
-        checkWrongDefault("VARBINARY", "10");
         checkWrongDefault("UUID", "FALSE");
     }
 
