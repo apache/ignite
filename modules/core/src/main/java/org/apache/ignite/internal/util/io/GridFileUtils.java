@@ -97,7 +97,7 @@ public class GridFileUtils {
      * @param path2 The second path.
      * @throws IgniteCheckedException If creating hard links is not available.
      */
-    public static void ensureHardLinkAvailable(Path path1,  Path path2) throws IgniteCheckedException {
+    public static void ensureHardLinkAvailable(Path path1, Path path2) throws IgniteCheckedException {
         try {
             FileStore fs1 = Files.getFileStore(path1);
             FileStore fs2 = Files.getFileStore(path2);
