@@ -74,8 +74,7 @@ public class ServiceDeploymentActions {
                     if (PlatformDotNetServiceImpl.class.getName().equals(svcClsName))
                         continue;
                 }
-
-                if (cfg instanceof ServiceConfiguration && cfg.getService() instanceof PlatformDotNetServiceImpl)
+                else if (cfg instanceof ServiceConfiguration && cfg.getService() instanceof PlatformDotNetServiceImpl)
                     continue;
             }
 
