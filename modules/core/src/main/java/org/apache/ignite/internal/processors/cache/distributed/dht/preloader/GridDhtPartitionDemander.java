@@ -1692,7 +1692,7 @@ public class GridDhtPartitionDemander {
          * @param own {@code True} to own partition if possible.
          */
         private synchronized void partitionDone(UUID nodeId, int p, boolean own) {
-            if (own && grp.localWalEnabled())
+            if (own && (grp.localWalEnabled() || (grp.cdcEnabled() && !grp.persistenceEnabled())))
                 grp.topology().own(grp.topology().localPartition(p));
 
             if (isDone())
@@ -1767,30 +1767,26 @@ public class GridDhtPartitionDemander {
                     return;
                 }
 
-                if ((grp.persistenceEnabled() || grp.cdcEnabled()) && !grp.localWalEnabled() && !cancelled) {
+                // Delay owning until checkpoint is finished.
+                if (grp.persistenceEnabled() && !grp.localWalEnabled() && !cancelled) {
                     if (log.isDebugEnabled()) {
                         log.debug("Delaying partition owning for a group [name=" +
                             grp.cacheOrGroupName() + ", ver=" + topVer + ']');
                     }
 
-                    // Delay owning until checkpoint is finished.
-                    if (grp.persistenceEnabled()) {
-                        // Force new checkpoint to make sure owning state is captured.
-                        CheckpointProgress cp = ctx.database().forceCheckpoint(WalStateManager.reason(grp.groupId(), topVer));
+                    // Force new checkpoint to make sure owning state is captured.
+                    CheckpointProgress cp = ctx.database().forceCheckpoint(WalStateManager.reason(grp.groupId(), topVer));
 
-                        cp.onStateChanged(PAGE_SNAPSHOT_TAKEN, () -> grp.localWalEnabled(true, false));
+                    cp.onStateChanged(PAGE_SNAPSHOT_TAKEN, () -> grp.localWalEnabled(true, false));
 
-                        cp.onStateChanged(FINISHED, () -> {
-                            ctx.exchange().finishPreloading(topVer, grp.groupId(), rebalanceId);
-                        });
-                    }
-                    else {
-                        grp.localWalEnabled(true, false);
-
+                    cp.onStateChanged(FINISHED, () -> {
                         ctx.exchange().finishPreloading(topVer, grp.groupId(), rebalanceId);
-                    }
+                    });
                 }
                 else {
+                    if (grp.cdcEnabled() && !grp.localWalEnabled() && !cancelled)
+                        grp.localWalEnabled(true, false);
+
                     onDone(!cancelled);
 
                     if (log.isDebugEnabled())
