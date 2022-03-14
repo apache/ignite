@@ -85,7 +85,7 @@ class IgniteTest(Test):
     def tearDown(self):
         # jfr requires graceful shutdown to save the recording.
         if not self.test_context.globals.get(JFR_ENABLED, False):
-            self.logger.debug("Killing all run services to speed-up the tearing down.")
+            self.logger.debug("Killing all runned services to speed-up the tearing down.")
 
             for service in self.test_context.services._services.values():
                 assert isinstance(service, DucktestsService)
@@ -97,7 +97,9 @@ class IgniteTest(Test):
 
                 assert service.stopped
 
-            self.logger.debug("All run services killed.")
+            self.logger.debug("All runned services killed.")
+
+        super().tearDown()
 
     def _global_param(self, param_name, default=None):
         """Reads global parameter passed to the test suite."""
