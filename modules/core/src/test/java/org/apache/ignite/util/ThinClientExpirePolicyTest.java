@@ -8,7 +8,6 @@ import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.client.ClientCache;
 import org.apache.ignite.client.ClientException;
-import org.apache.ignite.client.ClientTransaction;
 import org.apache.ignite.client.Config;
 import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.cluster.ClusterState;
