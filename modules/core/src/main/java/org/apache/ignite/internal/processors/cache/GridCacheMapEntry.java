@@ -1214,7 +1214,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             }
 
             if (cctx.group().logDataRecords()) {
-                logPtr = cctx.shared().wal(cctx.group().cdcEnabled()).log(new MvccDataRecord(new MvccDataEntry(
+                logPtr = cctx.group().wal().log(new MvccDataRecord(new MvccDataEntry(
                     cctx.cacheId(),
                     key,
                     val,
@@ -3466,7 +3466,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
                 if (walEnabled) {
                     if (cctx.mvccEnabled()) {
-                        cctx.shared().wal(cctx.group().cdcEnabled()).log(new MvccDataRecord(new MvccDataEntry(
+                        cctx.group().wal().log(new MvccDataRecord(new MvccDataEntry(
                             cctx.cacheId(),
                             key,
                             val,
@@ -3479,7 +3479,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                             mvccVer == null ? MvccUtils.INITIAL_VERSION : mvccVer
                         )));
                     } else {
-                        cctx.shared().wal(cctx.group().cdcEnabled()).log(new DataRecord(new DataEntry(
+                        cctx.group().wal().log(new DataRecord(new DataEntry(
                             cctx.cacheId(),
                             key,
                             val,
@@ -4331,7 +4331,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
         try {
             if (cctx.group().logDataRecords())
-                cctx.shared().wal(cctx.group().cdcEnabled()).log(new DataRecord(new DataEntry(
+                cctx.group().wal().log(new DataRecord(new DataEntry(
                     cctx.cacheId(),
                     key,
                     val,
@@ -4373,7 +4373,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             else
                 op = this.val == null ? GridCacheOperation.CREATE : UPDATE;
 
-            return cctx.shared().wal(cctx.group().cdcEnabled()).log(new DataRecord(new DataEntry(
+            return cctx.group().wal().log(new DataRecord(new DataEntry(
                 cctx.cacheId(),
                 key,
                 val,
@@ -4410,7 +4410,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             else
                 op = this.val == null ? GridCacheOperation.CREATE : UPDATE;
 
-            return cctx.shared().wal(cctx.group().cdcEnabled()).log(new MvccDataRecord(new MvccDataEntry(
+            return cctx.group().wal().log(new MvccDataRecord(new MvccDataEntry(
                 cctx.cacheId(),
                 key,
                 val,
@@ -5659,7 +5659,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 }
 
                 if (cctx.group().logDataRecords())
-                    logPtr = cctx.shared().wal(cctx.group().cdcEnabled()).log(new MvccDataRecord(new MvccDataEntry(
+                    logPtr = cctx.group().wal().log(new MvccDataRecord(new MvccDataEntry(
                         cctx.cacheId(),
                         entry.key(),
                         val,
@@ -6925,7 +6925,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             }
 
             if (logDataRecs)
-                logPtr = cctx.shared().wal(cctx.group().cdcEnabled()).log(new MvccDataRecord(walEntries));
+                logPtr = cctx.group().wal().log(new MvccDataRecord(walEntries));
         }
         finally {
             if (lockedByCurrentThread()) {
@@ -6982,7 +6982,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                         rec = new MvccDataRecord(dataEntries);
                     }
 
-                    logPtr = cctx.shared().wal(cctx.group().cdcEnabled()).log(rec);
+                    logPtr = cctx.group().wal().log(rec);
                 }
             }
         }
