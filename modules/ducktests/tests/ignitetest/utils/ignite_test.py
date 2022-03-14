@@ -38,25 +38,11 @@ class IgniteTestContext(TestContext):
     def available_cluster_size(self):
         return len(self.cluster)
 
-    def setup(self):
+    def before(self):
         pass
 
-    def teardown(self):
-        # jfr requires graceful shutdown to save the recording.
-        if not self.globals.get(JFR_ENABLED, False):
-            self.logger.debug("Killing all run services to speed-up the tearing down.")
-
-            for service in self.services._services.values():
-                assert isinstance(service, DucktestsService)
-
-                try:
-                    service.kill()
-                except RemoteCommandError:
-                    pass  # Process may be already self-killed on segmentation.
-
-                assert service.stopped
-
-            self.logger.debug("All run services killed.")
+    def after(self, test_result):
+        return test_result
 
     @staticmethod
     def resolve(test_context):
@@ -96,15 +82,22 @@ class IgniteTest(Test):
         """
         return monotonic()
 
-    def setUp(self):
-        super().setUp()
-        # noinspection PyUnresolvedReferences
-        self.test_context.setup()
-
     def tearDown(self):
-        # noinspection PyUnresolvedReferences
-        self.test_context.teardown()
-        super().tearDown()
+        # jfr requires graceful shutdown to save the recording.
+        if not self.test_context.globals.get(JFR_ENABLED, False):
+            self.logger.debug("Killing all run services to speed-up the tearing down.")
+
+            for service in self.test_context.services._services.values():
+                assert isinstance(service, DucktestsService)
+
+                try:
+                    service.kill()
+                except RemoteCommandError:
+                    pass  # Process may be already self-killed on segmentation.
+
+                assert service.stopped
+
+            self.logger.debug("All run services killed.")
 
     def _global_param(self, param_name, default=None):
         """Reads global parameter passed to the test suite."""
