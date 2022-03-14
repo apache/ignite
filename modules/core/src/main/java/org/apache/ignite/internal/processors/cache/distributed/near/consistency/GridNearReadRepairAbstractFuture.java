@@ -26,7 +26,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -35,7 +34,6 @@ import org.apache.ignite.cache.ReadRepairStrategy;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.CacheConsistencyViolationEvent;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException;
 import org.apache.ignite.internal.managers.eventstorage.GridEventStorageManager;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -61,15 +59,16 @@ public abstract class GridNearReadRepairAbstractFuture extends GridFutureAdapter
     /** Maximum number of attempts to remap key to the same primary node. */
     protected static final int MAX_REMAP_CNT = getInteger(IGNITE_NEAR_GET_MAX_REMAPS, DFLT_MAX_REMAP_CNT);
 
-    /** Remap count updater. */
-    protected static final AtomicIntegerFieldUpdater<GridNearReadRepairAbstractFuture> REMAP_CNT_UPD =
-        AtomicIntegerFieldUpdater.newUpdater(GridNearReadRepairAbstractFuture.class, "remapCnt");
+    /** Lsnr calls upd. */
+    private static final AtomicIntegerFieldUpdater<GridNearReadRepairAbstractFuture> LSNR_CALLS_UPD =
+        AtomicIntegerFieldUpdater.newUpdater(GridNearReadRepairAbstractFuture.class, "lsnrCalls");
 
-    /** Remap count. */
-    protected volatile int remapCnt;
+    /** Remap calls upd. */
+    private static final AtomicIntegerFieldUpdater<GridNearReadRepairAbstractFuture> REMAP_CALLS_UPD =
+        AtomicIntegerFieldUpdater.newUpdater(GridNearReadRepairAbstractFuture.class, "remapCalls");
 
     /** Affinity node's get futures. */
-    protected final Map<ClusterNode, GridPartitionedGetFuture<KeyCacheObject, EntryGetResult>> futs = new ConcurrentHashMap<>();
+    protected final Map<ClusterNode, GridPartitionedGetFuture<KeyCacheObject, EntryGetResult>> futs;
 
     /** Context. */
     protected final GridCacheContext<KeyCacheObject, EntryGetResult> ctx;
@@ -96,16 +95,22 @@ public abstract class GridNearReadRepairAbstractFuture extends GridFutureAdapter
     protected final IgniteInternalTx tx;
 
     /** Primaries per key. */
-    protected volatile Map<KeyCacheObject, ClusterNode> primaries;
+    protected final Map<KeyCacheObject, ClusterNode> primaries;
 
     /** Strategy. */
     protected final ReadRepairStrategy strategy;
 
-    /** Remap flag. */
-    private final boolean canRemap;
+    /** Remap count. */
+    protected final int remapCnt;
 
     /** Latest mapped topology version. */
-    private volatile AffinityTopologyVersion topVer;
+    private final AffinityTopologyVersion topVer;
+
+    /** Listener calls. */
+    private volatile int lsnrCalls;
+
+    /** Remap calls. */
+    private volatile int remapCalls;
 
     /**
      * Creates a new instance of GridNearReadRepairAbstractFuture.
@@ -120,6 +125,7 @@ public abstract class GridNearReadRepairAbstractFuture extends GridFutureAdapter
      * @param recovery Partition recovery flag.
      * @param expiryPlc Expiry policy.
      * @param tx Transaction. Can be {@code null} in case of atomic cache.
+     * @param remappedFut Remapped future.
      */
     protected GridNearReadRepairAbstractFuture(
         AffinityTopologyVersion topVer,
@@ -131,9 +137,10 @@ public abstract class GridNearReadRepairAbstractFuture extends GridFutureAdapter
         boolean deserializeBinary,
         boolean recovery,
         IgniteCacheExpiryPolicy expiryPlc,
-        IgniteInternalTx tx) {
+        IgniteInternalTx tx,
+        GridNearReadRepairAbstractFuture remappedFut) {
         this.ctx = ctx;
-        this.keys = keys;
+        this.keys = Collections.unmodifiableCollection(keys);
         this.readThrough = readThrough;
         this.taskName = taskName;
         this.deserializeBinary = deserializeBinary;
@@ -145,73 +152,66 @@ public abstract class GridNearReadRepairAbstractFuture extends GridFutureAdapter
 
         this.strategy = strategy;
 
-        canRemap = topVer == null;
+        remapCnt = remappedFut != null ? remappedFut.remapCnt + 1 : 0;
 
-        this.topVer = canRemap ? ctx.affinity().affinityTopologyVersion() : topVer;
-    }
+        this.topVer = topVer == null ? ctx.affinity().affinityTopologyVersion() : topVer;
 
-    /**
-     *
-     */
-    protected final void init() {
-        map();
-    }
+        Map<KeyCacheObject, ClusterNode> primaries = new HashMap<>();
 
-    /**
-     *
-     */
-    private synchronized void map() {
-        assert futs.isEmpty() : "Remapping started without the clean-up.";
+        Map<ClusterNode, Collection<KeyCacheObject>> mappings = new HashMap<>();
 
-        Map<KeyCacheObject, ClusterNode> primaryNodes = new HashMap<>();
+        for (KeyCacheObject key : keys) {
+            List<ClusterNode> nodes = ctx.affinity().nodesByKey(key, this.topVer);
+
+            primaries.put(key, nodes.get(0));
+
+            for (ClusterNode node : nodes)
+                mappings.computeIfAbsent(node, k -> new HashSet<>()).add(key);
+        }
+
+        if (mappings.isEmpty())
+            onDone(new ClusterTopologyServerNotFoundException("Failed to map keys for cache " +
+                "(all partition nodes left the grid) [topVer=" + this.topVer + ", cache=" + ctx.name() + ']'));
+
+        this.primaries = Collections.unmodifiableMap(primaries);
+
+        Map<ClusterNode, GridPartitionedGetFuture<KeyCacheObject, EntryGetResult>> futs = new HashMap<>();
+
+        for (Map.Entry<ClusterNode, Collection<KeyCacheObject>> mapping : mappings.entrySet()) {
+            ClusterNode node = mapping.getKey();
+
+            GridPartitionedGetFuture<KeyCacheObject, EntryGetResult> fut =
+                new GridPartitionedGetFuture<>(
+                    ctx,
+                    mapping.getValue(), // Keys.
+                    readThrough,
+                    false, // Local get required.
+                    taskName,
+                    deserializeBinary,
+                    recovery,
+                    expiryPlc,
+                    false,
+                    true,
+                    true,
+                    tx != null ? tx.label() : null,
+                    tx != null ? tx.mvccSnapshot() : null,
+                    node);
+
+            futs.put(mapping.getKey(), fut);
+
+            fut.listen(this::onResult);
+        }
+
+        this.futs = Collections.unmodifiableMap(futs);
 
         IgniteInternalTx prevTx = ctx.tm().tx(tx); // Within the original tx.
 
         try {
-            Map<ClusterNode, Collection<KeyCacheObject>> mappings = new HashMap<>();
+            for (GridPartitionedGetFuture<KeyCacheObject, EntryGetResult> fut : futs.values()) {
+                assert !fut.initialized();
 
-            for (KeyCacheObject key : keys) {
-                List<ClusterNode> nodes = ctx.affinity().nodesByKey(key, topVer);
-
-                primaryNodes.put(key, nodes.get(0));
-
-                for (ClusterNode node : nodes)
-                    mappings.computeIfAbsent(node, k -> new HashSet<>()).add(key);
-            }
-
-            primaries = primaryNodes;
-
-            for (Map.Entry<ClusterNode, Collection<KeyCacheObject>> mapping : mappings.entrySet()) {
-                ClusterNode node = mapping.getKey();
-
-                GridPartitionedGetFuture<KeyCacheObject, EntryGetResult> fut =
-                    new GridPartitionedGetFuture<>(
-                        ctx,
-                        mapping.getValue(), // Keys.
-                        readThrough,
-                        false, // Local get required.
-                        taskName,
-                        deserializeBinary,
-                        recovery,
-                        expiryPlc,
-                        false,
-                        true,
-                        true,
-                        tx != null ? tx.label() : null,
-                        tx != null ? tx.mvccSnapshot() : null,
-                        node);
-
-                fut.listen(this::onResult);
-
-                futs.put(mapping.getKey(), fut);
-            }
-
-            for (GridPartitionedGetFuture<KeyCacheObject, EntryGetResult> fut : futs.values())
                 fut.init(topVer);
-
-            if (futs.isEmpty())
-                onDone(new ClusterTopologyServerNotFoundException("Failed to map keys for cache " +
-                    "(all partition nodes left the grid) [topVer=" + topVer + ", cache=" + ctx.name() + ']'));
+            }
         }
         finally {
             ctx.tm().tx(prevTx);
@@ -221,56 +221,46 @@ public abstract class GridNearReadRepairAbstractFuture extends GridFutureAdapter
     /**
      * @param topVer Topology version.
      */
-    protected final void remap(AffinityTopologyVersion topVer) {
-        futs.clear();
+    protected void remap(AffinityTopologyVersion topVer) {
+        assert !isDone();
 
-        this.topVer = topVer;
+        if (REMAP_CALLS_UPD.compareAndSet(this, 0, 1)) {
+            GridNearReadRepairAbstractFuture fut = remapFuture(topVer);
 
-        map();
+            fut.listen(f -> {
+                assert !isDone();
+
+                onDone(f.result(), f.error());
+            });
+        }
     }
+
+    /**
+     * @param topVer Topology version.
+     */
+    protected abstract GridNearReadRepairAbstractFuture remapFuture(AffinityTopologyVersion topVer);
 
     /**
      * Collects results of each 'get' future and prepares an overall result of the operation.
      *
      * @param finished Future represents a result of GET operation.
      */
-    protected final synchronized void onResult(IgniteInternalFuture<Map<KeyCacheObject, EntryGetResult>> finished) {
-        if (isDone() // All subfutures (including currently processing) were successfully finished at previous future processing.
-            || (topVer == null) // Remapping, ignoring any updates until remapped.
-            || !futs.containsValue((GridPartitionedGetFuture<KeyCacheObject, EntryGetResult>)finished)) // Remapped.
-            return;
-
+    protected final void onResult(IgniteInternalFuture<Map<KeyCacheObject, EntryGetResult>> finished) {
         if (finished.error() != null) {
-            if (finished.error() instanceof ClusterTopologyServerNotFoundException) {
-                if (REMAP_CNT_UPD.incrementAndGet(this) > MAX_REMAP_CNT) {
-                    onDone(new ClusterTopologyCheckedException("Failed to remap keys to a new nodes after " +
-                        MAX_REMAP_CNT + " attempts (keys got remapped to the same node) ]"));
-                }
-                else if (!canRemap)
-                    remap(topVer);
-                else {
-                    long maxTopVer = Math.max(topVer.topologyVersion() + 1, ctx.discovery().topologyVersion());
-
-                    AffinityTopologyVersion awaitTopVer = new AffinityTopologyVersion(maxTopVer);
-
-                    topVer = null;
-
-                    ctx.shared().exchange().affinityReadyFuture(awaitTopVer)
-                        .listen((f) -> remap(awaitTopVer));
-                }
-            }
+            if (finished.error() instanceof ClusterTopologyServerNotFoundException)
+                onDone(new UnsupportedOperationException("Operation can not be performed on unstable topology.", finished.error()));
             else
                 onDone(finished.error());
-
-            return;
         }
+        else {
+            if (LSNR_CALLS_UPD.incrementAndGet(this) == futs.size()) {
+                assert remapCalls == 0 : remapCalls;
 
-        for (GridPartitionedGetFuture<KeyCacheObject, EntryGetResult> fut : futs.values()) {
-            if (!fut.isDone() || fut.error() != null)
-                return;
+                assert !isDone();
+
+                reduce();
+            }
         }
-
-        reduce();
     }
 
     /**

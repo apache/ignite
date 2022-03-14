@@ -17,6 +17,7 @@
 
 package org.apache.ignite.events;
 
+import java.util.Collections;
 import java.util.Map;
 import org.apache.ignite.cache.CacheEntryVersion;
 import org.apache.ignite.cache.ReadRepairStrategy;
@@ -98,8 +99,8 @@ public class CacheConsistencyViolationEvent extends EventAdapter {
         super(node, msg, EVT_CONSISTENCY_VIOLATION);
 
         this.cacheName = cacheName;
-        this.entries = entries;
-        this.fixed = fixed;
+        this.entries = Collections.unmodifiableMap(entries);
+        this.fixed = Collections.unmodifiableMap(fixed);
         this.strategy = strategy;
     }
 

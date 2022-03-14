@@ -357,7 +357,7 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
 
         if (affNode != null) {
             if (invalidNodeSet.contains(affNode) || !cctx.discovery().alive(affNode)) {
-                onDone(Collections.emptyMap());
+                onDone(serverNotFoundError(part, topVer));
 
                 return false;
             }
