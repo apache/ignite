@@ -31,6 +31,7 @@ import static org.mockito.Mockito.when;
 /**
  * {@link GridFileUtils} tests.
  */
+@SuppressWarnings("ThrowableNotThrown")
 public class GridFileUtilsTest {
     /** @throws Exception If failed. */
     @Test
@@ -45,6 +46,7 @@ public class GridFileUtilsTest {
 
         ensureHardLinkAvailable(path1, path1);
 
-        assertThrows(null, () -> ensureHardLinkAvailable(path1, path2), IgniteException.class, null);
+        assertThrows(null, () -> ensureHardLinkAvailable(path1, path2), IgniteException.class,
+            "Paths are not stored at the same device or partition.");
     }
 }
