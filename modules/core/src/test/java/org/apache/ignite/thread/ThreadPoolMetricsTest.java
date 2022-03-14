@@ -21,7 +21,9 @@ import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
@@ -67,12 +69,10 @@ public class ThreadPoolMetricsTest extends GridCommonAbstractTest {
         metricName(THREAD_POOLS, "GridClassLoadingExecutor"),
         metricName(THREAD_POOLS, "GridManagementExecutor"),
         metricName(THREAD_POOLS, "GridAffinityExecutor"),
-        metricName(THREAD_POOLS, "GridCallbackExecutor"),
         metricName(THREAD_POOLS, "GridQueryExecutor"),
         metricName(THREAD_POOLS, "GridSchemaExecutor"),
         metricName(THREAD_POOLS, "GridRebalanceExecutor"),
         metricName(THREAD_POOLS, "GridThinClientExecutor"),
-        metricName(THREAD_POOLS, "GridRebalanceStripedExecutor"),
         metricName(THREAD_POOLS, "GridDataStreamExecutor")
     );
 
@@ -81,6 +81,13 @@ public class ThreadPoolMetricsTest extends GridCommonAbstractTest {
         SYS_POOL_QUEUE_VIEW,
         STREAM_POOL_QUEUE_VIEW
     );
+
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        super.afterTest();
+
+        stopAllGrids();
+    }
 
     /**
      * Tests that thread pool metrics are available before the start of all Ignite components happened.
@@ -196,9 +203,13 @@ public class ThreadPoolMetricsTest extends GridCommonAbstractTest {
 
         String metricPrefix = THREAD_POOLS + MetricUtils.SEPARATOR;
 
+        Set<String> poolNames = new HashSet<>(THREAD_POOL_METRICS);
+
         for (ReadOnlyMetricRegistry mreg : ignite.context().metric()) {
             if (!mreg.name().startsWith(metricPrefix))
                 continue;
+
+            poolNames.remove(mreg.name());
 
             HistogramMetric histogram = mreg.findMetric(TASK_EXEC_TIME_NAME);
 
@@ -210,5 +221,7 @@ public class ThreadPoolMetricsTest extends GridCommonAbstractTest {
 
             assertTrue(poolName + ": exp=" + taskCnt + ", actual=" + res[0], res[0] >= taskCnt);
         }
+
+        assertTrue("Pools with disabled metrics: " + poolNames, poolNames.isEmpty());
     }
 }

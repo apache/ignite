@@ -27,6 +27,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.LongConsumer;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
+import org.apache.ignite.internal.util.GridMutableLong;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
@@ -34,7 +35,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
  */
 public class IgniteThreadPoolExecutor extends ThreadPoolExecutor implements ExecutorServiceMetricsAware {
     /** Thread local task start time. */
-    private final ThreadLocal<Long> taskStartTime = new ThreadLocal<>();
+    private final ThreadLocal<GridMutableLong> taskStartTime = new ThreadLocal<>();
 
     /** Task execution time metric. */
     private LongConsumer execTimeMetric;
@@ -142,19 +143,26 @@ public class IgniteThreadPoolExecutor extends ThreadPoolExecutor implements Exec
     @Override protected void beforeExecute(Thread t, Runnable r) {
         super.beforeExecute(t, r);
 
-        if (execTimeMetric != null)
-            taskStartTime.set(U.currentTimeMillis());
+        if (execTimeMetric != null) {
+            // Prevent autoboxing if possible.
+            GridMutableLong val = taskStartTime.get();
+
+            if (val == null) {
+                val = new GridMutableLong();
+
+                taskStartTime.set(val);
+            }
+
+            val.set(U.currentTimeMillis());
+        }
     }
 
     /** {@inheritDoc} */
     @Override protected void afterExecute(Runnable r, Throwable t) {
-        Long val = taskStartTime.get();
+        GridMutableLong val = taskStartTime.get();
 
-        if (val != null) {
-            taskStartTime.remove();
-
-            execTimeMetric.accept(U.currentTimeMillis() - val);
-        }
+        if (val != null)
+            execTimeMetric.accept(U.currentTimeMillis() - val.get());
 
         super.afterExecute(r, t);
     }
