@@ -228,16 +228,16 @@ def cluster(**kwargs):
       - ``cluster_spec`` provide hint about how many nodes of each type the test will consume
     """
     def cluster_use_metadata_adder(func):
-        def decorated_test(self, *args, **kwargs):
+        def extended_test(self, *args, **kwargs):
             self.test_context.before()
             test_result = func(self, *args, **kwargs)
             return self.test_context.after(test_result)
 
-        decorated_test.__dict__["marks"] = func.__dict__["marks"]
-        decorated_test.__dict__["mark_names"] = func.__dict__["mark_names"]
-        decorated_test.__name__ = func.__name__
+        extended_test.__dict__["marks"] = func.__dict__["marks"]
+        extended_test.__dict__["mark_names"] = func.__dict__["mark_names"]
+        extended_test.__name__ = func.__name__
 
-        Mark.mark(decorated_test, ParametrizableClusterMetadata(**kwargs))
-        return decorated_test
+        Mark.mark(extended_test, ParametrizableClusterMetadata(**kwargs))
+        return extended_test
 
     return cluster_use_metadata_adder
