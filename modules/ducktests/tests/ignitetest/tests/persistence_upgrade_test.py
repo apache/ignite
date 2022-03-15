@@ -16,7 +16,9 @@
 """
 Module contains snapshot test.
 """
+
 from ducktape.mark import parametrize
+from ducktape.errors import TimeoutError
 
 from ignitetest.services.ignite_app import IgniteApplicationService
 from ignitetest.services.utils.control_utility import ControlUtility
@@ -24,7 +26,7 @@ from ignitetest.services.utils.ignite_configuration import IgniteConfiguration, 
 from ignitetest.services.utils.ignite_configuration.data_storage import DataRegionConfiguration
 from ignitetest.utils import cluster
 from ignitetest.utils.ignite_test import IgniteTest
-from ignitetest.utils.version import IgniteVersion, LATEST, DEV_BRANCH, OLDEST
+from ignitetest.utils.version import IgniteVersion, LATEST, DEV_BRANCH
 
 
 class PersistenceUpgradeTest(IgniteTest):
@@ -33,7 +35,7 @@ class PersistenceUpgradeTest(IgniteTest):
     """
 
     @cluster(num_nodes=1)
-    @parametrize(versions=[str(OLDEST), str(LATEST), str(DEV_BRANCH)])
+    @parametrize(versions=[str(LATEST), str(DEV_BRANCH)])
     def upgrade_test(self, versions):
         """
         Basic upgrade test.
@@ -62,4 +64,29 @@ class PersistenceUpgradeTest(IgniteTest):
             control_utility = ControlUtility(service)
             control_utility.activate()
 
+            service.await_event("Checked" if service.params.get("check") else "Prepared", 60, True)
+
+            control_utility.idle_verify()
+            control_utility.validate_indexes()
+
+            control_utility.deactivate()
+
+            check_msg_not_exist(service, "Started indexes rebuilding")
+
             service.stop()
+
+
+def check_msg_not_exist(service, evt_message):
+    """
+    Check a message not exist in log on all nodes
+    :param service: Service.
+    :param evt_message: Event message.
+    """
+    for node in service.nodes:
+        try:
+            service.await_event_on_node(evt_message, node, 0.1, from_the_beginning=True)
+
+            raise RuntimeError(f"Message '{evt_message}' exist on node {node.name}.")
+
+        except TimeoutError:
+            pass
