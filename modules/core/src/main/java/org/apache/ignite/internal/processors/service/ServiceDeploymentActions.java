@@ -24,6 +24,7 @@ import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.platform.dotnet.PlatformDotNetServiceImpl;
+import org.apache.ignite.internal.processors.platform.utils.PlatformUtils;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.services.ServiceConfiguration;
 import org.jetbrains.annotations.NotNull;
@@ -67,7 +68,8 @@ public class ServiceDeploymentActions {
 
             ServiceConfiguration cfg = dsc.configuration();
 
-            if (!ctx.platform().hasContext()) {
+            if (!ctx.platform().hasContext() ||
+                !PlatformUtils.PLATFORM_DOTNET.equals(ctx.platform().context().platform())) {
                 if (cfg instanceof LazyServiceConfiguration) {
                     String svcClsName = ((LazyServiceConfiguration)cfg).serviceClassName();
 
