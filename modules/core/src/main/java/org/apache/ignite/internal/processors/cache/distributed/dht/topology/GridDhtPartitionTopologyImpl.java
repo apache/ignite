@@ -1442,13 +1442,6 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
             lock.writeLock().lock();
 
             try {
-                U.sleep(2000);
-            }
-            catch (IgniteInterruptedCheckedException e) {
-                // No-op
-            }
-
-            try {
                 if (log.isTraceEnabled() && exchangeVer != null) {
                     log.trace("Partition states before full update [grp=" + grp.cacheOrGroupName()
                         + ", exchVer=" + exchangeVer + ", states=" + dumpPartitionStates() + ']');

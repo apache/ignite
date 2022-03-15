@@ -139,9 +139,6 @@ import static org.apache.ignite.internal.processors.cache.persistence.tree.util.
  * Used when persistence enabled.
  */
 public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl implements CheckpointListener {
-    /** */
-    private static final Set<GridDhtLocalPartition> SKIP_PARTITION = Collections.synchronizedSet(new HashSet<>());
-
     /** @see #WAL_MARGIN_FOR_ATOMIC_CACHE_HISTORICAL_REBALANCE */
     public static final int DFLT_WAL_MARGIN_FOR_ATOMIC_CACHE_HISTORICAL_REBALANCE = 5;
 
@@ -3098,7 +3095,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                 part = cctx.topology().localPartition(partId, AffinityTopologyVersion.NONE, false, false);
 
                 // Skip non-owned partitions.
-                if (part == null || part.state() != OWNING)
+                if (part == null || !cctx.topology().initialized())
                     return 0;
             }
 
@@ -3109,16 +3106,8 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                     return 0;
 
                 try {
-                    if (!cctx.topology().initialized()) {
-                        SKIP_PARTITION.add(part);
-
-                        log.error("TEST | Skip partition: " + part.id());
-
+                    if (part == null || !cctx.topology().initialized())
                         return 0;
-                    }
-
-                    if (SKIP_PARTITION.remove(part))
-                        log.error("TEST | Removed skiped partition: " + part.id() + ". Left skipped: " + SKIP_PARTITION.size());
 
                     long now = U.currentTimeMillis();
 

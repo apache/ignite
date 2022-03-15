@@ -21,12 +21,14 @@ import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.client.ClientCache;
 import org.apache.ignite.client.ClientException;
 import org.apache.ignite.client.Config;
 import org.apache.ignite.client.IgniteClient;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.ClientConfiguration;
@@ -35,8 +37,16 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.managers.communication.GridIoMessage;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsFullMessage;
 import org.apache.ignite.internal.processors.platform.cache.expiry.PlatformExpiryPolicyFactory;
 import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteInClosure;
+import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.spi.IgniteSpiException;
+import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -45,7 +55,10 @@ import org.junit.Test;
  */
 public class ThinClientExpirePolicyTest extends GridCommonAbstractTest {
     /** */
-    private static final int TIMEOUT_SEC = 30;
+    private static final int TIMEOUT_SEC = 20;
+
+    /** */
+    private static final int TOPOLOGY_UPDATE_DELAY_MILLS = 2000;
 
     /** */
     public static volatile boolean isReady = true;
@@ -94,6 +107,22 @@ public class ThinClientExpirePolicyTest extends GridCommonAbstractTest {
         cacheCfg.setBackups(2);
 
         return super.getConfiguration(igniteInstanceName)
+            .setCommunicationSpi(new TcpCommunicationSpi() {
+                @Override public void sendMessage(ClusterNode node, Message msg,
+                    IgniteInClosure<IgniteException> ackC) throws IgniteSpiException {
+
+                    if (((GridIoMessage)msg).message() instanceof GridDhtPartitionsFullMessage) {
+                        try {
+                            U.sleep(TOPOLOGY_UPDATE_DELAY_MILLS);
+                        }
+                        catch (IgniteInterruptedCheckedException e) {
+                            // No-op.
+                        }
+                    }
+
+                    super.sendMessage(node, msg, ackC);
+                }
+            })
             .setCacheConfiguration(cacheCfg)
             .setConnectorConfiguration(new ConnectorConfiguration())
             .setDataStorageConfiguration(new DataStorageConfiguration()
@@ -116,28 +145,21 @@ public class ThinClientExpirePolicyTest extends GridCommonAbstractTest {
         startIgniteClientDaemonThread(clientConsumer);
         startIgniteClientDaemonThread(clientConsumer);
 
-        TimeUnit.SECONDS.sleep(30);
+        TimeUnit.SECONDS.sleep(TIMEOUT_SEC);
 
-        System.err.println(">>>cache.size");
-        System.err.println(cache.size());
+        isReady = false;
 
         igniteEx.cluster().state(ClusterState.INACTIVE);
 
         TimeUnit.SECONDS.sleep(TIMEOUT_SEC);
 
-        isReady = false;
-
         igniteEx.cluster().state(ClusterState.ACTIVE);
-
-        System.err.println("igniteEx.cluster().topologyVersion");
-        System.err.println(igniteEx.cluster().topologyVersion());
-        System.err.println(igniteEx.cache(DEFAULT_CACHE_NAME).size());
-
-        TimeUnit.SECONDS.sleep(20);
 
         assertEquals(2, igniteEx.context().discovery().aliveServerNodes().size());
         assertEquals(ClusterState.ACTIVE, G.allGrids().get(0).cluster().state());
         assertEquals(ClusterState.ACTIVE, G.allGrids().get(1).cluster().state());
+
+        U.sleep(TOPOLOGY_UPDATE_DELAY_MILLS * 2);
 
         assertEquals(0, cache.size());
     }
