@@ -20,8 +20,10 @@ namespace Apache.Ignite.Core.Tests.Services
 {
     using System;
     using System.Collections;
+    using System.Collections.Generic;
     using System.Linq;
     using Apache.Ignite.Core.Binary;
+    using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Resource;
     using Apache.Ignite.Core.Services;
     using NUnit.Framework;
@@ -42,10 +44,20 @@ namespace Apache.Ignite.Core.Tests.Services
 
         /** */
         private const string CheckThinTaskName = "org.apache.ignite.platform.PlatformServiceCallThinTask";
+        
+        /** */
+        private const string NODE_TYPE_ATTR = "TYPE";
+        
+        /** */
+        private const string DOTNET_SRV_NODE_TYPE = "dotnet-srv";
 
         /** */
         private const string CheckCollectionsThinTaskName =
             "org.apache.ignite.platform.PlatformServiceCallCollectionsThinTask";
+        
+        /** */
+        private const string PlatformServiceCallPureJavaTask = 
+            "org.apache.ignite.platform.PlatformServiceCallPureJavaTask";
 
         /** */
         protected IIgnite Grid1;
@@ -79,11 +91,15 @@ namespace Apache.Ignite.Core.Tests.Services
         /// in which real invocation of the service is made.
         /// <para/>
         /// <param name="local">If true call on local node.</param>
+        /// <param name="withNodeFilter">If true, deploy service with node filter.</param>
         /// <param name="taskName">Task to test.</param>
         /// </summary>
         [Test]
-        public void TestCallPlatformService([Values(true, false)] bool local,
-            [Values(CheckTaskName, CheckCollectionsTaskName, CheckThinTaskName, CheckCollectionsThinTaskName)]
+        public void TestCallPlatformService(
+            [Values(true, false)] bool local, 
+            [Values(true, false)] bool withNodeFilter,
+            [Values(CheckTaskName, CheckCollectionsTaskName, CheckThinTaskName, CheckCollectionsThinTaskName,
+                PlatformServiceCallPureJavaTask)]
             string taskName)
         {
             var cfg = new ServiceConfiguration
@@ -92,6 +108,9 @@ namespace Apache.Ignite.Core.Tests.Services
                 TotalCount = 1,
                 Service = new TestPlatformService()
             };
+
+            if (withNodeFilter)
+                cfg.NodeFilter = new NodeTypeFilter(DOTNET_SRV_NODE_TYPE);
 
             Grid1.GetServices().Deploy(cfg);
 
@@ -133,8 +152,39 @@ namespace Apache.Ignite.Core.Tests.Services
                     typeof(BinarizableTestValue))
                 {
                     NameMapper = BinaryBasicNameMapper.SimpleNameInstance
-                }
+                },
+                UserAttributes = new Dictionary<string, object> {{NODE_TYPE_ATTR, DOTNET_SRV_NODE_TYPE}}
             };
+        }
+        
+        /// <summary>
+        /// Filter node by TYPE attribute.
+        /// </summary>
+        public class NodeTypeFilter : IClusterNodeFilter
+        {
+            /** */
+            private readonly string _type;
+
+            /// <summary>
+            /// Initializes a new instance of <see cref="NodeTypeFilter"/> class.
+            /// </summary>
+            /// <param name="type">Value of TYPE attribute to compare with.</param>
+            public NodeTypeFilter(string type)
+            {
+                _type= type;
+            }
+            
+            /** <inheritdoc /> */
+            public bool Invoke(IClusterNode node)
+            {
+                if (node.TryGetAttribute<string>(NODE_TYPE_ATTR, out var attr) 
+                    && string.Compare(attr, _type, true) == 0)
+                {
+                    return true;
+                }
+                
+                return false;
+            }
         }
 
         /** */

@@ -63,10 +63,12 @@ import org.apache.ignite.internal.processors.platform.PlatformContext;
 import org.apache.ignite.internal.processors.platform.PlatformExtendedException;
 import org.apache.ignite.internal.processors.platform.PlatformNativeException;
 import org.apache.ignite.internal.processors.platform.PlatformProcessor;
+import org.apache.ignite.internal.processors.platform.dotnet.PlatformDotNetServiceImpl;
 import org.apache.ignite.internal.processors.platform.memory.PlatformInputStream;
 import org.apache.ignite.internal.processors.platform.memory.PlatformMemory;
 import org.apache.ignite.internal.processors.platform.memory.PlatformMemoryUtils;
 import org.apache.ignite.internal.processors.platform.memory.PlatformOutputStream;
+import org.apache.ignite.internal.processors.service.LazyServiceConfiguration;
 import org.apache.ignite.internal.util.MutableSingletonList;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
@@ -76,6 +78,7 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.logger.NullLogger;
+import org.apache.ignite.services.ServiceConfiguration;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_PREFIX;
@@ -1334,6 +1337,25 @@ public class PlatformUtils {
             strings.add(reader.readString());
 
         return strings;
+    }
+
+    /**
+     * Get service platform.
+     *
+     * @param svcCfg Service configuration.
+     * @return Service platform or empty string if this is a java service.
+     */
+    public static String servicePlatform(ServiceConfiguration svcCfg) {
+        if (svcCfg instanceof LazyServiceConfiguration) {
+            String svcClsName = ((LazyServiceConfiguration)svcCfg).serviceClassName();
+
+            if (PlatformDotNetServiceImpl.class.getName().equals(svcClsName))
+                return PLATFORM_DOTNET;
+        }
+        else if (svcCfg instanceof ServiceConfiguration && svcCfg.getService() instanceof PlatformDotNetServiceImpl)
+            return PLATFORM_DOTNET;
+
+        return "";
     }
 
     /**
