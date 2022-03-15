@@ -39,10 +39,10 @@ import org.jetbrains.annotations.NotNull;
  */
 public class IgniteStripedThreadPoolExecutor implements ExecutorService, MetricsAwareExecutorService {
     /** Number of threads to keep in each stripe-pool. */
-    private static final int CORE_SIZE_PER_POOL = 1;
+    private static final int CORE_THREADS_PER_POOL = 1;
 
     /** Maximum number of threads to allow in each stripe-pool. */
-    private static final int MAX_SIZE_PER_POOL = 1;
+    private static final int MAX_THREADS_PER_POOL = 1;
 
     /** Thread keep-alive time. */
     private final long keepAliveTime;
@@ -87,8 +87,8 @@ public class IgniteStripedThreadPoolExecutor implements ExecutorService, Metrics
 
         for (int i = 0; i < concurrentLvl; i++) {
             IgniteThreadPoolExecutor executor = new IgniteThreadPoolExecutor(
-                CORE_SIZE_PER_POOL,
-                MAX_SIZE_PER_POOL,
+                CORE_THREADS_PER_POOL,
+                MAX_THREADS_PER_POOL,
                 keepAliveTime,
                 new LinkedBlockingQueue<>(),
                 factory);
@@ -100,8 +100,8 @@ public class IgniteStripedThreadPoolExecutor implements ExecutorService, Metrics
 
         this.keepAliveTime = keepAliveTime;
 
-        corePoolSize = concurrentLvl * CORE_SIZE_PER_POOL;
-        maxPoolSize = concurrentLvl * MAX_SIZE_PER_POOL;
+        corePoolSize = concurrentLvl * CORE_THREADS_PER_POOL;
+        maxPoolSize = concurrentLvl * MAX_THREADS_PER_POOL;
         rejectedExecHndClsName = execs[0].getRejectedExecutionHandler().getClass().getName();
         threadFactoryClsName = factory.getClass().getName();
     }
@@ -325,6 +325,9 @@ public class IgniteStripedThreadPoolExecutor implements ExecutorService, Metrics
         mreg.register("Terminating", this::isTerminating, IS_TERMINATING_DESC);
         mreg.register("RejectedExecutionHandlerClass", () -> rejectedExecHndClsName, String.class, REJ_HND_DESC);
         mreg.register("ThreadFactoryClass", () -> threadFactoryClsName, String.class, THRD_FACTORY_DESC);
+
+        for (IgniteThreadPoolExecutor exec : execs)
+            exec.initializeExecTimeMetric(mreg);
     }
 
     /** {@inheritDoc} */

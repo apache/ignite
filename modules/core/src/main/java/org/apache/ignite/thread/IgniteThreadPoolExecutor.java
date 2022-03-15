@@ -195,6 +195,13 @@ public class IgniteThreadPoolExecutor extends ThreadPoolExecutor implements Metr
             return factory == null ? "" : factory.getClass().getName();
         }, String.class, THRD_FACTORY_DESC);
 
+        initializeExecTimeMetric(mreg);
+    }
+
+    /**
+     * @param mreg Metrics registry.
+     */
+    protected void initializeExecTimeMetric(MetricRegistry mreg) {
         execTimeMetric = mreg.histogram(TASK_EXEC_TIME_NAME, TASK_EXEC_TIME_HISTOGRAM_BUCKETS, TASK_EXEC_TIME_DESC);
     }
 }
