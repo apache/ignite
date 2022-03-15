@@ -29,6 +29,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.failure.NoOpFailureHandler;
@@ -587,7 +588,8 @@ public class PageMemoryImplTest extends GridCommonAbstractTest {
         DirectMemoryProvider provider = new UnsafeMemoryProvider(log);
 
         IgniteConfiguration igniteCfg = new IgniteConfiguration();
-        igniteCfg.setDataStorageConfiguration(new DataStorageConfiguration());
+        igniteCfg.setDataStorageConfiguration(new DataStorageConfiguration().setDefaultDataRegionConfiguration(
+            new DataRegionConfiguration().setPersistenceEnabled(true)));
         igniteCfg.setFailureHandler(new NoOpFailureHandler());
         igniteCfg.setEncryptionSpi(new NoopEncryptionSpi());
         igniteCfg.setMetricExporterSpi(new NoopMetricExporterSpi());

@@ -65,7 +65,8 @@ public class BPlusTreeReuseListPageMemoryImplTest extends BPlusTreeReuseSelfTest
         cfg.setEncryptionSpi(new NoopEncryptionSpi());
         cfg.setMetricExporterSpi(new NoopMetricExporterSpi());
         cfg.setSystemViewExporterSpi(new JmxSystemViewExporterSpi());
-        cfg.setDataStorageConfiguration(new DataStorageConfiguration());
+        cfg.setDataStorageConfiguration(new DataStorageConfiguration().setDefaultDataRegionConfiguration(
+            new DataRegionConfiguration().setPersistenceEnabled(true)));
 
         GridTestKernalContext cctx = new GridTestKernalContext(log, cfg);
 
