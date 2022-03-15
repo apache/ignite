@@ -47,6 +47,7 @@ import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.spi.metric.LongMetric;
 import org.apache.ignite.spi.metric.MetricExporterSpi;
 import org.apache.ignite.spi.metric.ObjectMetric;
+import org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -112,7 +113,7 @@ public abstract class AbstractCdcTest extends GridCommonAbstractTest {
 
         cdcCfg.setConsumer(cnsmr);
         cdcCfg.setKeepBinary(keepBinary());
-        cdcCfg.setMetricExporterSpi(metricExporters());
+        cdcCfg.setMetricExporterSpi(new JmxMetricExporterSpi());
 
         return new CdcMain(cfg, null, cdcCfg) {
             @Override protected CdcConsumerState createState(Path stateDir) {
@@ -217,22 +218,20 @@ public abstract class AbstractCdcTest extends GridCommonAbstractTest {
 
     /** */
     protected void checkMetrics(CdcMain cdc, int expCnt) throws Exception {
-        if (metricExporters() != null) {
-            IgniteConfiguration cfg = getFieldValue(cdc, "igniteCfg");
+        IgniteConfiguration cfg = getFieldValue(cdc, "igniteCfg");
 
-            DynamicMBean jmxCdcReg = metricRegistry(cdcInstanceName(cfg.getIgniteInstanceName()), null, "cdc");
+        DynamicMBean jmxCdcReg = metricRegistry(cdcInstanceName(cfg.getIgniteInstanceName()), null, "cdc");
 
-            Function<String, ?> jmxVal = m -> {
-                try {
-                    return jmxCdcReg.getAttribute(m);
-                }
-                catch (Exception e) {
-                    throw new IgniteException(e);
-                }
-            };
+        Function<String, ?> jmxVal = m -> {
+            try {
+                return jmxCdcReg.getAttribute(m);
+            }
+            catch (Exception e) {
+                throw new IgniteException(e);
+            }
+        };
 
-            checkMetrics(expCnt, (Function<String, Long>)jmxVal, (Function<String, String>)jmxVal);
-        }
+        checkMetrics(expCnt, (Function<String, Long>)jmxVal, (Function<String, String>)jmxVal);
 
         MetricRegistry mreg = getFieldValue(cdc, "mreg");
 

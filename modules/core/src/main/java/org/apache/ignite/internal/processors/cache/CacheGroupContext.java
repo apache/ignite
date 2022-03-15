@@ -27,6 +27,7 @@ import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReadWriteLock;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteCluster;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.affinity.AffinityFunction;
 import org.apache.ignite.cluster.ClusterNode;
@@ -40,6 +41,8 @@ import org.apache.ignite.internal.metric.IoStatisticsHolder;
 import org.apache.ignite.internal.metric.IoStatisticsHolderCache;
 import org.apache.ignite.internal.metric.IoStatisticsHolderIndex;
 import org.apache.ignite.internal.metric.IoStatisticsHolderNoOp;
+import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
+import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
 import org.apache.ignite.internal.processors.affinity.AffinityAssignment;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.affinity.GridAffinityAssignmentCache;
@@ -1096,6 +1099,19 @@ public class CacheGroupContext {
     }
 
     /**
+     * @return {@code True} if {@link DataRecord} should be loged in the WAL.
+     */
+    public boolean logDataRecords() {
+        return walEnabled() && (persistenceEnabled || cdcEnabled());
+    }
+
+    /** @return {@code True} if CDC enabled. */
+    public boolean cdcEnabled() {
+        // Data region is null for client and non affinity nodes.
+        return dataRegion != null && dataRegion.config().isCdcEnabled();
+    }
+
+    /**
      * @param nodeId Node ID.
      * @param req Request.
      */
@@ -1204,7 +1220,11 @@ public class CacheGroupContext {
     }
 
     /**
-     * WAL enabled flag.
+     * Value returned by this method can be changed runtime by the user or during rebalance.
+     *
+     * @return WAL enabled flag.
+     * @see IgniteCluster#disableWal(String)
+     * @see IgniteCluster#enableWal(String)
      */
     public boolean walEnabled() {
         return localWalEnabled && globalWalEnabled;
@@ -1319,6 +1339,13 @@ public class CacheGroupContext {
 
         if (statHolderIdx != IoStatisticsHolderNoOp.INSTANCE)
             ctx.kernalContext().metric().remove(statHolderIdx.metricRegistryName(), destroy);
+    }
+
+    /**
+     * @return Write ahead log manager.
+     */
+    public IgniteWriteAheadLogManager wal() {
+        return ctx.wal(cdcEnabled());
     }
 
     /**

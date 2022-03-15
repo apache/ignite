@@ -31,6 +31,7 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import org.apache.ignite.Ignite;
@@ -53,8 +54,6 @@ import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.spi.metric.MetricExporterSpi;
-import org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -91,24 +90,17 @@ public class CdcSelfTest extends AbstractCdcTest {
 
     /** */
     @Parameterized.Parameter(2)
-    public Supplier<MetricExporterSpi> metricExporter;
+    public boolean persistenceEnabled;
 
     /** */
-    @Parameterized.Parameter(3)
-    public int pageSz;
-
-    /** */
-    @Parameterized.Parameters(name = "specificConsistentId={0},walMode={1},metricExporter={2},pageSz={3}")
+    @Parameterized.Parameters(name = "consistentId={0}, wal={1}, persistence={2}")
     public static Collection<?> parameters() {
         List<Object[]> params = new ArrayList<>();
 
         for (WALMode mode : EnumSet.of(WALMode.FSYNC, WALMode.LOG_ONLY, WALMode.BACKGROUND))
-            for (boolean specificConsistentId : new boolean[] {false, true}) {
-                Supplier<MetricExporterSpi> jmx = JmxMetricExporterSpi::new;
-
-                params.add(new Object[] {specificConsistentId, mode, null, 0});
-                params.add(new Object[] {specificConsistentId, mode, jmx, 8192});
-            }
+            for (boolean specificConsistentId : new boolean[] {false, true})
+                for (boolean persistenceEnabled : new boolean[] {true, false})
+                    params.add(new Object[] {specificConsistentId, mode, persistenceEnabled});
 
         return params;
     }
@@ -121,14 +113,12 @@ public class CdcSelfTest extends AbstractCdcTest {
             cfg.setConsistentId(igniteInstanceName);
 
         cfg.setDataStorageConfiguration(new DataStorageConfiguration()
-            .setCdcEnabled(true)
             .setWalMode(walMode)
             .setWalForceArchiveTimeout(WAL_ARCHIVE_TIMEOUT)
-            .setDefaultDataRegionConfiguration(new DataRegionConfiguration().setPersistenceEnabled(true))
+            .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
+                .setPersistenceEnabled(persistenceEnabled)
+                .setCdcEnabled(true))
             .setWalArchivePath(DFLT_WAL_ARCHIVE_PATH + "/" + U.maskForFileName(igniteInstanceName)));
-
-        if (pageSz != 0)
-            cfg.getDataStorageConfiguration().setPageSize(pageSz);
 
         cfg.setCacheConfiguration(
             new CacheConfiguration<>(TX_CACHE_NAME)
@@ -141,10 +131,14 @@ public class CdcSelfTest extends AbstractCdcTest {
 
     /** Simplest CDC test. */
     @Test
-    public void testReadAllKeys() throws Exception {
+    public void testReadAllKeysCommitAll() throws Exception {
         // Read all records from iterator.
         readAll(new UserCdcConsumer(), true);
+    }
 
+    /** Simplest CDC test but read one event at a time to check correct iterator work. */
+    @Test
+    public void testReadAllKeysWithoutCommit() throws Exception {
         // Read one record per call.
         readAll(new UserCdcConsumer() {
             @Override public boolean onEvents(Iterator<CdcEvent> evts) {
@@ -153,7 +147,11 @@ public class CdcSelfTest extends AbstractCdcTest {
                 return false;
             }
         }, false);
+    }
 
+    /** Simplest CDC test but commit every event to check correct state restore. */
+    @Test
+    public void testReadAllKeysCommitEachEvent() throws Exception {
         // Read one record per call and commit.
         readAll(new UserCdcConsumer() {
             @Override public boolean onEvents(Iterator<CdcEvent> evts) {
@@ -216,6 +214,8 @@ public class CdcSelfTest extends AbstractCdcTest {
         ign.cluster().state(ACTIVE);
 
         IgniteCache<Integer, Integer> txCache = ign.cache(TX_CACHE_NAME);
+
+        awaitPartitionMapExchange();
 
         int keysCnt = 3;
 
@@ -297,6 +297,76 @@ public class CdcSelfTest extends AbstractCdcTest {
             }
 
             assertTrue(F.eqNotOrdered(batch.keySet(), data));
+        }
+    }
+
+    /** Test check that state restored correctly and next event read by CDC on each restart. */
+    @Test
+    public void testReadFromNextEntry() throws Exception {
+        IgniteConfiguration cfg = getConfiguration("ignite-0");
+
+        IgniteEx ign = startGrid(cfg);
+
+        ign.cluster().state(ACTIVE);
+
+        IgniteCache<Integer, User> cache = ign.getOrCreateCache(DEFAULT_CACHE_NAME);
+
+        int keysCnt = 10;
+
+        addData(cache, 0, keysCnt / 2);
+
+        long segIdx = ign.context().cache().context().wal(true).lastArchivedSegment();
+
+        waitForCondition(() -> ign.context().cache().context().wal(true).lastArchivedSegment() > segIdx, getTestTimeout());
+
+        addData(cache, keysCnt / 2, keysCnt);
+
+        AtomicInteger expKey = new AtomicInteger();
+        int lastKey = 0;
+
+        while (expKey.get() != keysCnt) {
+            String errMsg = "Expected fail";
+
+            IgniteInternalFuture<?> fut = runAsync(createCdc(new CdcConsumer() {
+                boolean oneConsumed;
+
+                @Override public boolean onEvents(Iterator<CdcEvent> evts) {
+                    // Fail application after one event read AND state committed.
+                    if (oneConsumed)
+                        throw new RuntimeException(errMsg);
+
+                    CdcEvent evt = evts.next();
+
+                    assertEquals(expKey.get(), evt.key());
+
+                    expKey.incrementAndGet();
+
+                    // Fail application if all expected data read e.g. next event doesn't exist.
+                    if (expKey.get() == keysCnt)
+                        throw new RuntimeException(errMsg);
+
+                    oneConsumed = true;
+
+                    return true;
+                }
+
+                @Override public void stop() {
+                    // No-op.
+                }
+
+                @Override public void start(MetricRegistry mreg) {
+                    // No-op.
+                }
+            }, cfg));
+
+            assertTrue(waitForCondition(fut::isDone, getTestTimeout()));
+
+            if (!errMsg.equals(fut.error().getMessage()))
+                throw new RuntimeException(fut.error());
+
+            assertEquals(1, expKey.get() - lastKey);
+
+            lastKey = expKey.get();
         }
     }
 
@@ -473,13 +543,32 @@ public class CdcSelfTest extends AbstractCdcTest {
     /** */
     @Test
     public void testReReadWhenStateWasNotStored() throws Exception {
-        IgniteEx ign = startGrid(getConfiguration("ignite-0"));
+        Supplier<IgniteEx> restart = () -> {
+            stopAllGrids(false);
 
-        ign.cluster().state(ACTIVE);
+            try {
+                IgniteEx ign = startGrid(getConfiguration("ignite-0"));
+
+                ign.cluster().state(ACTIVE);
+
+                return ign;
+            }
+            catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        };
+
+        IgniteEx ign = restart.get();
 
         IgniteCache<Integer, User> cache = ign.getOrCreateCache(DEFAULT_CACHE_NAME);
 
-        addData(cache, 0, KEYS_CNT);
+        addData(cache, 0, KEYS_CNT / 2);
+
+        ign = restart.get();
+
+        cache = ign.getOrCreateCache(DEFAULT_CACHE_NAME);
+
+        addData(cache, KEYS_CNT / 2, KEYS_CNT);
 
         for (int i = 0; i < 3; i++) {
             UserCdcConsumer cnsmr = new UserCdcConsumer() {
@@ -564,14 +653,6 @@ public class CdcSelfTest extends AbstractCdcTest {
         fut.cancel();
 
         assertTrue(cnsmr.stopped());
-    }
-
-    /** {@inheritDoc} */
-    @Override public MetricExporterSpi[] metricExporters() {
-        if (metricExporter == null)
-            return null;
-
-        return new MetricExporterSpi[] {metricExporter.get()};
     }
 
     /** */
