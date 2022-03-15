@@ -242,7 +242,7 @@ class ServiceDeploymentTask {
                     return;
                 }
 
-                depActions = new ServiceDeploymentActions();
+                depActions = new ServiceDeploymentActions(ctx);
 
                 depActions.servicesToDeploy(toDeploy);
             }
