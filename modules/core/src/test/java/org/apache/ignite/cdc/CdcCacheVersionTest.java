@@ -98,7 +98,10 @@ public class CdcCacheVersionTest extends AbstractCdcTest {
     public static final int KEY_TO_UPD = 42;
 
     /** */
-    public static final String NOT_CDC_CACHE = "not-cdc-cache";
+    public static final String NOT_CDC = "not-cdc";
+
+    /** */
+    public static final String CDC = "cdc";
 
     /** */
     @Parameterized.Parameter
@@ -152,11 +155,11 @@ public class CdcCacheVersionTest extends AbstractCdcTest {
                 .setPersistenceEnabled(persistenceEnabled))
             .setDataRegionConfigurations(
                 new DataRegionConfiguration()
-                    .setName("cdc")
+                    .setName(CDC)
                     .setPersistenceEnabled(persistenceEnabled)
                     .setCdcEnabled(true),
                 new DataRegionConfiguration()
-                    .setName("not-cdc")
+                    .setName(NOT_CDC)
                     .setPersistenceEnabled(false)
                     .setCdcEnabled(false)));
 
@@ -260,7 +263,7 @@ public class CdcCacheVersionTest extends AbstractCdcTest {
             new CacheConfiguration<Integer, User>(DEFAULT_CACHE_NAME)
                 .setCacheMode(cacheMode)
                 .setAtomicityMode(atomicityMode)
-                .setDataRegionName("cdc")
+                .setDataRegionName(CDC)
                 .setBackups(Integer.MAX_VALUE));
 
         if (atomicityMode == ATOMIC)
@@ -377,11 +380,11 @@ public class CdcCacheVersionTest extends AbstractCdcTest {
         IgniteCache<Integer, User> cache = ign.getOrCreateCache(
             new CacheConfiguration<Integer, User>(DEFAULT_CACHE_NAME)
                 .setAtomicityMode(atomicityMode)
-                .setDataRegionName("cdc")
+                .setDataRegionName(CDC)
                 .setCacheMode(cacheMode));
 
         IgniteCache<Integer, User> notCdcCache = ign.getOrCreateCache(
-                new CacheConfiguration<Integer, User>(NOT_CDC_CACHE).setDataRegionName("not-cdc"));
+                new CacheConfiguration<Integer, User>(NOT_CDC).setDataRegionName(NOT_CDC));
 
         walRecCheckedCntr.set(0);
 
