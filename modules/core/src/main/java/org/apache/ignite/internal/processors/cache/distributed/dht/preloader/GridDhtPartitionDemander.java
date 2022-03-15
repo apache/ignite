@@ -1692,11 +1692,14 @@ public class GridDhtPartitionDemander {
          * @param own {@code True} to own partition if possible.
          */
         private synchronized void partitionDone(UUID nodeId, int p, boolean own) {
-            // `localWalEnabled` always `true` (see `CacheGroupContext` constructor) for in-memory cache group.
-            // If CDC enabled for cache group then `localWalEnabled` is `false` during rebalance to avoid unnecessary DataRecord` logging.
-            // So we need additionally check if `cdcEnabled` enabled for in-memory (persistenceEnabled=false)
-            // to decide should we own partition right now.
-            if (own && (grp.localWalEnabled() || (grp.cdcEnabled() && !grp.persistenceEnabled())))
+            // Partitions own one by one for in-memory caches.
+            // For persistent caches all partitions owns in batch by the end of rebalance
+            // (see `ctx.exchange().finishPreloading(topVer, grp.groupId(), rebalanceId);`)
+            // `localWalEnabled` always `true` for in-memory cache group (see `CacheGroupContext` constructor).
+            // If CDC enabled for cache group then `localWalEnabled` is `false` during rebalance
+            // to avoid unnecessary `DataRecord` logging. So we need additionally check for in-memory
+            // (persistenceEnabled=false) to decide should we own partition right now.
+            if (own && (grp.localWalEnabled() || !grp.persistenceEnabled()))
                 grp.topology().own(grp.topology().localPartition(p));
 
             if (isDone())
