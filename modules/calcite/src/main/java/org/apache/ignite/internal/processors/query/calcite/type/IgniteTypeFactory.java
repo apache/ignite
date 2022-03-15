@@ -267,14 +267,14 @@ public class IgniteTypeFactory extends JavaTypeFactoryImpl {
             else if (clazz == Period.class)
                 return createTypeWithNullability(createSqlIntervalType(INTERVAL_QUALIFIER_YEAR_MONTH), true);
             else if (clazz == UUID.class)
-                return createTypeWithNullability(createUUIDType(), true);
+                return createTypeWithNullability(createUuidType(), true);
         }
 
         return super.toSql(type);
     }
 
     /** @return UUID SQL type. */
-    public RelDataType createUUIDType() {
+    public RelDataType createUuidType() {
         return canonize(new UuidType(true));
     }
 

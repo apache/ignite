@@ -383,14 +383,16 @@ public class TypeUtils {
     }
 
     /**
-     * @return RexLiteral
+     * @return RexNode
      */
-    public static RexNode toRexLiteral(Object dfltVal, IgniteTypeFactory typeFactory, RexBuilder rexBuilder,
-        ColumnDescriptor desc) {
-        if (dfltVal instanceof UUID)
-            return rexBuilder.makeCast(typeFactory.createUUIDType(),
-                rexBuilder.makeLiteral(dfltVal.toString(), desc.logicalType(typeFactory), false));
+    public static RexNode toRexLiteral(Object dfltVal, RelDataType type, DataContext ctx, RexBuilder rexBuilder) {
+        if (dfltVal instanceof UUID) {
+            // There is no internal UUID data type in Calcite, so convert UUID to VARCHAR literal and then cast to UUID.
+            dfltVal = dfltVal.toString();
+        }
+        else
+            dfltVal = toInternal(ctx, dfltVal);
 
-        return rexBuilder.makeLiteral(dfltVal, desc.logicalType(typeFactory), true);
+        return rexBuilder.makeLiteral(dfltVal, type, true);
     }
 }

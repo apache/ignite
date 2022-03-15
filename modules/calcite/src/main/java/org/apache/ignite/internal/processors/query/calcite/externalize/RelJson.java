@@ -390,7 +390,7 @@ class RelJson {
                     String name = (String)map.get("name");
 
                     if ("UUID".equals(name))
-                        type = ((IgniteTypeFactory)typeFactory).createUUIDType();
+                        type = ((IgniteTypeFactory)typeFactory).createUuidType();
                     else
                         throw new AssertionError();
                 }

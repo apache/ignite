@@ -62,10 +62,12 @@ public class DataTypesTest extends AbstractBasicIntegrationTest {
             executeSql("INSERT INTO t VALUES (1, 'fd10556e-fc27-4a99-b5e4-89b8344cb3ce', '" + uuid1 + "')");
             // Name == UUID
             executeSql("INSERT INTO t VALUES (2, '" + uuid2 + "', '" + uuid2 + "')");
+            executeSql("INSERT INTO t VALUES (3, NULL, NULL)");
 
             assertQuery("SELECT * FROM t")
                 .returns(1, "fd10556e-fc27-4a99-b5e4-89b8344cb3ce", uuid1)
                 .returns(2, uuid2.toString(), uuid2)
+                .returns(3, null, null)
                 .check();
 
             assertQuery("SELECT uid FROM t WHERE uid < '" + max + "'")
@@ -87,6 +89,7 @@ public class DataTypesTest extends AbstractBasicIntegrationTest {
             assertQuery("SELECT count(*), uid FROM t group by uid order by uid")
                 .returns(1L, min)
                 .returns(1L, max)
+                .returns(1L, null)
                 .check();
 
             assertQuery("SELECT count(*), uid FROM t group by uid having uid = " +
@@ -109,6 +112,15 @@ public class DataTypesTest extends AbstractBasicIntegrationTest {
 
             assertQuery("SELECT min(uid) from t")
                 .returns(min)
+                .check();
+
+            assertQuery("SELECT uid from t where uid is not NULL order by uid")
+                .returns(min)
+                .returns(max)
+                .check();
+
+            assertQuery("SELECT uid from t where uid is NULL order by uid")
+                .returns(new Object[] {null})
                 .check();
 
             assertThrows("SELECT avg(uid) from t", UnsupportedOperationException.class,

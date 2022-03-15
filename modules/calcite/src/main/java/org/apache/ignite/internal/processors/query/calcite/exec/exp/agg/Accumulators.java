@@ -24,6 +24,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
+import java.util.function.Function;
 import java.util.function.Supplier;
 import org.apache.calcite.avatica.util.ByteString;
 import org.apache.calcite.rel.core.AggregateCall;
@@ -81,6 +82,8 @@ public class Accumulators {
     /** */
     private static Supplier<Accumulator> avgFactory(AggregateCall call) {
         switch (call.type.getSqlTypeName()) {
+            case ANY:
+                throw new UnsupportedOperationException("AVG() is not supported for UUID type.");
             case BIGINT:
             case DECIMAL:
                 return DecimalAvg.FACTORY;
@@ -88,9 +91,7 @@ public class Accumulators {
             case REAL:
             case FLOAT:
             case INTEGER:
-            case ANY:
-                if (call.type instanceof UuidType)
-                    throw new UnsupportedOperationException("AVG() is not supported for UUID type.");
+
             default:
                 return DoubleAvg.FACTORY;
         }
@@ -109,8 +110,7 @@ public class Accumulators {
                 return () -> new Sum(new DoubleSumEmptyIsZero());
 
             case ANY:
-                if (call.type instanceof UuidType)
-                    throw new UnsupportedOperationException("SUM() is not supported for UUID type.");
+                throw new UnsupportedOperationException("SUM() is not supported for UUID type.");
 
             case TINYINT:
             case SMALLINT:
@@ -131,6 +131,9 @@ public class Accumulators {
             case REAL:
             case FLOAT:
                 return DoubleSumEmptyIsZero.FACTORY;
+
+            case ANY:
+                throw new UnsupportedOperationException("SUM() is not supported for UUID type.");
 
             case TINYINT:
             case SMALLINT:
@@ -156,10 +159,10 @@ public class Accumulators {
                 return VarCharMinMax.MIN_FACTORY;
             case BINARY:
             case VARBINARY:
-                return VarBinaryMinMax.MIN_FACTORY;
+                return ComparableMinMax.VARBINARY_MIN_FACTORY;
             case ANY:
                 if (call.type instanceof UuidType)
-                    return UuidMinMax.MIN_FACTORY;
+                    return ComparableMinMax.UUID_MIN_FACTORY;
             case BIGINT:
             default:
                 return LongMinMax.MIN_FACTORY;
@@ -182,10 +185,10 @@ public class Accumulators {
                 return VarCharMinMax.MAX_FACTORY;
             case BINARY:
             case VARBINARY:
-                return VarBinaryMinMax.MAX_FACTORY;
+                return ComparableMinMax.VARBINARY_MAX_FACTORY;
             case ANY:
                 if (call.type instanceof UuidType)
-                    return UuidMinMax.MAX_FACTORY;
+                    return ComparableMinMax.UUID_MAX_FACTORY;
             case BIGINT:
             default:
                 return LongMinMax.MAX_FACTORY;
@@ -888,30 +891,44 @@ public class Accumulators {
     }
 
     /** */
-    private static class VarBinaryMinMax implements Accumulator {
+    private static class ComparableMinMax<T extends Comparable<T>> implements Accumulator {
         /** */
-        public static final Supplier<Accumulator> MIN_FACTORY = () -> new VarBinaryMinMax(true);
+        public static final Supplier<Accumulator> VARBINARY_MIN_FACTORY = () -> new ComparableMinMax<ByteString>(true,
+            tf -> tf.createTypeWithNullability(tf.createSqlType(VARBINARY), true));
 
         /** */
-        public static final Supplier<Accumulator> MAX_FACTORY = () -> new VarBinaryMinMax(false);
+        public static final Supplier<Accumulator> VARBINARY_MAX_FACTORY = () -> new ComparableMinMax<ByteString>(false,
+            tf -> tf.createTypeWithNullability(tf.createSqlType(VARBINARY), true));
+
+        /** */
+        public static final Supplier<Accumulator> UUID_MIN_FACTORY = () -> new ComparableMinMax<UUID>(true,
+            tf -> tf.createTypeWithNullability(tf.createUuidType(), true));
+
+        /** */
+        public static final Supplier<Accumulator> UUID_MAX_FACTORY = () -> new ComparableMinMax<UUID>(false,
+            tf -> tf.createTypeWithNullability(tf.createUuidType(), true));
 
         /** */
         private final boolean min;
 
         /** */
-        private ByteString val;
+        private final Function<IgniteTypeFactory, RelDataType> typeSupplier;
+
+        /** */
+        private T val;
 
         /** */
         private boolean empty = true;
 
         /** */
-        private VarBinaryMinMax(boolean min) {
+        private ComparableMinMax(boolean min, Function<IgniteTypeFactory, RelDataType> typeSupplier) {
             this.min = min;
+            this.typeSupplier = typeSupplier;
         }
 
         /** {@inheritDoc} */
         @Override public void add(Object... args) {
-            ByteString in = (ByteString)args[0];
+            T in = (T)args[0];
 
             if (in == null)
                 return;
@@ -925,7 +942,7 @@ public class Accumulators {
 
         /** {@inheritDoc} */
         @Override public void apply(Accumulator other) {
-            VarBinaryMinMax other0 = (VarBinaryMinMax)other;
+            ComparableMinMax<T> other0 = (ComparableMinMax<T>)other;
 
             if (other0.empty)
                 return;
@@ -944,12 +961,12 @@ public class Accumulators {
 
         /** {@inheritDoc} */
         @Override public List<RelDataType> argumentTypes(IgniteTypeFactory typeFactory) {
-            return F.asList(typeFactory.createTypeWithNullability(typeFactory.createSqlType(VARBINARY), true));
+            return F.asList(typeSupplier.apply(typeFactory));
         }
 
         /** {@inheritDoc} */
         @Override public RelDataType returnType(IgniteTypeFactory typeFactory) {
-            return typeFactory.createTypeWithNullability(typeFactory.createSqlType(VARBINARY), true);
+            return typeSupplier.apply(typeFactory);
         }
     }
 
@@ -999,72 +1016,6 @@ public class Accumulators {
         /** {@inheritDoc} */
         @Override public RelDataType returnType(IgniteTypeFactory typeFactory) {
             return acc.returnType(typeFactory);
-        }
-    }
-
-    /** */
-    private static class UuidMinMax implements Accumulator {
-        /** */
-        public static final Supplier<Accumulator> MIN_FACTORY = () -> new UuidMinMax(true);
-
-        /** */
-        public static final Supplier<Accumulator> MAX_FACTORY = () -> new UuidMinMax(false);
-
-        /** */
-        private final boolean min;
-
-        /** */
-        private UUID val;
-
-        /** */
-        private boolean empty = true;
-
-        /** */
-        private UuidMinMax(boolean min) {
-            this.min = min;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void add(Object... args) {
-            UUID in = (UUID)args[0];
-
-            if (in == null)
-                return;
-
-            val = empty ? in : min ?
-                (val.compareTo(in) < 0 ? val : in) :
-                (val.compareTo(in) < 0 ? in : val);
-
-            empty = false;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void apply(Accumulator other) {
-            UuidMinMax other0 = (UuidMinMax)other;
-
-            if (other0.empty)
-                return;
-
-            val = empty ? other0.val : min ?
-                (val.compareTo(other0.val) < 0 ? val : other0.val) :
-                (val.compareTo(other0.val) < 0 ? other0.val : val);
-
-            empty = false;
-        }
-
-        /** {@inheritDoc} */
-        @Override public Object end() {
-            return empty ? null : val;
-        }
-
-        /** {@inheritDoc} */
-        @Override public List<RelDataType> argumentTypes(IgniteTypeFactory typeFactory) {
-            return F.asList(typeFactory.createTypeWithNullability(typeFactory.createUUIDType(), true));
-        }
-
-        /** {@inheritDoc} */
-        @Override public RelDataType returnType(IgniteTypeFactory typeFactory) {
-            return typeFactory.createTypeWithNullability(typeFactory.createUUIDType(), true);
         }
     }
 }

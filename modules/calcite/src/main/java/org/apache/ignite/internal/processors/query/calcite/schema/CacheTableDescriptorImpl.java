@@ -306,7 +306,7 @@ public class CacheTableDescriptorImpl extends NullInitializerExpressionFactory
 
         DataContext dataCtx = new BaseDataContext(typeFactory);
 
-        return TypeUtils.toRexLiteral(TypeUtils.toInternal(dataCtx, desc.defaultValue()), typeFactory, rexBuilder, desc);
+        return TypeUtils.toRexLiteral(desc.defaultValue(), desc.logicalType(typeFactory), dataCtx, rexBuilder);
     }
 
     /** {@inheritDoc} */
