@@ -23,7 +23,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.processors.platform.dotnet.PlatformDotNetServiceImpl;
 import org.apache.ignite.internal.processors.platform.utils.PlatformUtils;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.services.ServiceConfiguration;
@@ -48,14 +47,14 @@ public class ServiceDeploymentActions {
     /** Services deployment errors. */
     private Map<IgniteUuid, Collection<byte[]>> depErrors;
 
-    /** Kernal context. */
-    private final GridKernalContext ctx;
+    /** Current platform */
+    private final String platform;
 
     /**
      * @param ctx Kernal context.
      */
     public ServiceDeploymentActions(GridKernalContext ctx) {
-        this.ctx = ctx;
+        platform = ctx.platform().hasContext() ? ctx.platform().context().platform() : "";
     }
 
     /**
@@ -63,22 +62,16 @@ public class ServiceDeploymentActions {
      */
     public void servicesToDeploy(@NotNull Map<IgniteUuid, ServiceInfo> servicesToDeploy) {
         Map<IgniteUuid, ServiceInfo> res = new HashMap<>();
+
         for (Map.Entry<IgniteUuid, ServiceInfo> kv: servicesToDeploy.entrySet()) {
             ServiceInfo dsc = kv.getValue();
 
             ServiceConfiguration cfg = dsc.configuration();
 
-            if (!ctx.platform().hasContext() ||
-                !PlatformUtils.PLATFORM_DOTNET.equals(ctx.platform().context().platform())) {
-                if (cfg instanceof LazyServiceConfiguration) {
-                    String svcClsName = ((LazyServiceConfiguration)cfg).serviceClassName();
+            String svcPlatform = PlatformUtils.servicePlatform(cfg);
 
-                    if (PlatformDotNetServiceImpl.class.getName().equals(svcClsName))
-                        continue;
-                }
-                else if (cfg instanceof ServiceConfiguration && cfg.getService() instanceof PlatformDotNetServiceImpl)
-                    continue;
-            }
+            if (!svcPlatform.isEmpty() && !platform.equals(svcPlatform))
+                continue;
 
             res.put(kv.getKey(), dsc);
         }
