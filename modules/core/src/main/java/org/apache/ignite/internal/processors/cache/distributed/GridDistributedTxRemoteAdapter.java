@@ -802,22 +802,7 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
 
                         cctx.mvccCaching().onTxFinished(this, true);
 
-                        boolean logDataRecs = false;
-
-                        // Log only there are at least one persistent or cdc enabled group.
-                        if (!near() && !F.isEmpty(dataEntries)) {
-                            for (int i = 0; i < dataEntries.size(); i++) {
-                                CacheGroupContext grpCtx = dataEntries.get(i).get2().context().group();
-
-                                if (grpCtx.logDataRecords()) {
-                                    logDataRecs = true;
-
-                                    break;
-                                }
-                            }
-                        }
-
-                        if (logDataRecs) {
+                        if (!near() && !F.isEmpty(dataEntries) && cctx.wal(true) != null) {
                             // Set new update counters for data entries received from persisted tx entries.
                             List<DataEntry> entriesWithCounters = dataEntries.stream()
                                 .map(tuple -> tuple.get1().partitionCounter(tuple.get2().updateCounter()))
