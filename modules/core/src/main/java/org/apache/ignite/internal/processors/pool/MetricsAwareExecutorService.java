@@ -22,7 +22,7 @@ import org.apache.ignite.internal.processors.metric.MetricRegistry;
 /**
  * Executor service that supports self-registration of metrics.
  */
-public interface ExecutorServiceMetricsAware {
+public interface MetricsAwareExecutorService {
     /** Tas execution time metric name. */
     public String TASK_EXEC_TIME_NAME = "TaskExecTime";
 

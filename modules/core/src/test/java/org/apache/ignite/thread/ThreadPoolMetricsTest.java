@@ -54,7 +54,7 @@ import static org.apache.ignite.internal.processors.pool.PoolProcessor.SYS_POOL_
 import static org.apache.ignite.internal.processors.pool.PoolProcessor.THREAD_POOLS;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
-import static org.apache.ignite.internal.processors.pool.ExecutorServiceMetricsAware.TASK_EXEC_TIME_NAME;
+import static org.apache.ignite.internal.processors.pool.MetricsAwareExecutorService.TASK_EXEC_TIME_NAME;
 
 /**
  * Tests that thread pool metrics are available before the start of all Ignite components happened.

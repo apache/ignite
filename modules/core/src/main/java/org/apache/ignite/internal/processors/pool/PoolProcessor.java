@@ -887,9 +887,9 @@ public class PoolProcessor extends GridProcessorAdapter {
      * @param execSvc Executor to register a metric for.
      */
     private void monitorExecutor(String name, ExecutorService execSvc) {
-        assert execSvc instanceof ExecutorServiceMetricsAware : "Cannot register metrics for executor " + name;
+        assert execSvc instanceof MetricsAwareExecutorService : "Cannot register metrics for executor " + name;
 
-        ((ExecutorServiceMetricsAware)execSvc).registerMetrics(ctx.metric().registry(metricName(THREAD_POOLS, name)));
+        ((MetricsAwareExecutorService)execSvc).registerMetrics(ctx.metric().registry(metricName(THREAD_POOLS, name)));
     }
 
     /**
