@@ -91,7 +91,6 @@ public class Accumulators {
             case REAL:
             case FLOAT:
             case INTEGER:
-
             default:
                 return DoubleAvg.FACTORY;
         }
@@ -100,6 +99,9 @@ public class Accumulators {
     /** */
     private static Supplier<Accumulator> sumFactory(AggregateCall call) {
         switch (call.type.getSqlTypeName()) {
+            case ANY:
+                throw new UnsupportedOperationException("SUM() is not supported for UUID type.");
+
             case BIGINT:
             case DECIMAL:
                 return () -> new Sum(new DecimalSumEmptyIsZero());
@@ -108,9 +110,6 @@ public class Accumulators {
             case REAL:
             case FLOAT:
                 return () -> new Sum(new DoubleSumEmptyIsZero());
-
-            case ANY:
-                throw new UnsupportedOperationException("SUM() is not supported for UUID type.");
 
             case TINYINT:
             case SMALLINT:
@@ -123,6 +122,9 @@ public class Accumulators {
     /** */
     private static Supplier<Accumulator> sumEmptyIsZeroFactory(AggregateCall call) {
         switch (call.type.getSqlTypeName()) {
+            case ANY:
+                throw new UnsupportedOperationException("SUM() is not supported for UUID type.");
+
             case BIGINT:
             case DECIMAL:
                 return DecimalSumEmptyIsZero.FACTORY;
@@ -131,9 +133,6 @@ public class Accumulators {
             case REAL:
             case FLOAT:
                 return DoubleSumEmptyIsZero.FACTORY;
-
-            case ANY:
-                throw new UnsupportedOperationException("SUM() is not supported for UUID type.");
 
             case TINYINT:
             case SMALLINT:
