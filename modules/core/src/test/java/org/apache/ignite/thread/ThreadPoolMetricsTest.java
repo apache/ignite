@@ -49,12 +49,12 @@ import org.junit.Test;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.internal.IgnitionEx.gridx;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
+import static org.apache.ignite.internal.processors.pool.MetricsAwareExecutorService.TASK_EXEC_TIME_NAME;
 import static org.apache.ignite.internal.processors.pool.PoolProcessor.STREAM_POOL_QUEUE_VIEW;
 import static org.apache.ignite.internal.processors.pool.PoolProcessor.SYS_POOL_QUEUE_VIEW;
 import static org.apache.ignite.internal.processors.pool.PoolProcessor.THREAD_POOLS;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
-import static org.apache.ignite.internal.processors.pool.MetricsAwareExecutorService.TASK_EXEC_TIME_NAME;
 
 /**
  * Tests that thread pool metrics are available before the start of all Ignite components happened.
@@ -69,10 +69,12 @@ public class ThreadPoolMetricsTest extends GridCommonAbstractTest {
         metricName(THREAD_POOLS, "GridClassLoadingExecutor"),
         metricName(THREAD_POOLS, "GridManagementExecutor"),
         metricName(THREAD_POOLS, "GridAffinityExecutor"),
+        metricName(THREAD_POOLS, "GridCallbackExecutor"),
         metricName(THREAD_POOLS, "GridQueryExecutor"),
         metricName(THREAD_POOLS, "GridSchemaExecutor"),
         metricName(THREAD_POOLS, "GridRebalanceExecutor"),
         metricName(THREAD_POOLS, "GridThinClientExecutor"),
+        metricName(THREAD_POOLS, "GridRebalanceStripedExecutor"),
         metricName(THREAD_POOLS, "GridDataStreamExecutor")
     );
 
@@ -171,10 +173,10 @@ public class ThreadPoolMetricsTest extends GridCommonAbstractTest {
             if (ExecutorService.class.isAssignableFrom(field.getType())) {
                 ExecutorService execSvc = U.field(poolProc, field.getName());
 
-                if (execSvc == null || execSvc instanceof IgniteStripedThreadPoolExecutor)
+                if (execSvc == null)
                     continue;
 
-                if (execSvc instanceof StripedExecutor) {
+                if (execSvc instanceof StripedExecutor || execSvc instanceof IgniteStripedThreadPoolExecutor) {
                     for (int i = 0; i < taskCnt; i++) {
                         Callable<?> call = tasks.get(i);
                         Runnable r = () -> {
@@ -202,7 +204,6 @@ public class ThreadPoolMetricsTest extends GridCommonAbstractTest {
         }
 
         String metricPrefix = THREAD_POOLS + MetricUtils.SEPARATOR;
-
         Set<String> poolNames = new HashSet<>(THREAD_POOL_METRICS);
 
         for (ReadOnlyMetricRegistry mreg : ignite.context().metric()) {

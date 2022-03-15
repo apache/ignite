@@ -558,9 +558,11 @@ public class PoolProcessor extends GridProcessorAdapter {
         monitorExecutor("GridClassLoadingExecutor", p2pExecSvc);
         monitorExecutor("GridManagementExecutor", mgmtExecSvc);
         monitorExecutor("GridAffinityExecutor", affExecSvc);
+        monitorExecutor("GridCallbackExecutor", callbackExecSvc);
         monitorExecutor("GridQueryExecutor", qryExecSvc);
         monitorExecutor("GridSchemaExecutor", schemaExecSvc);
         monitorExecutor("GridRebalanceExecutor", rebalanceExecSvc);
+        monitorExecutor("GridRebalanceStripedExecutor", rebalanceStripedExecSvc);
         monitorExecutor(DATA_STREAN_EXECUTOR_PUBLIC_NAME, dataStreamerExecSvc);
 
         if (idxExecSvc != null)

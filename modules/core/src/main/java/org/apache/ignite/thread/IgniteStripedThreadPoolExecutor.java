@@ -29,15 +29,38 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
+import org.apache.ignite.internal.processors.metric.MetricRegistry;
+import org.apache.ignite.internal.processors.pool.MetricsAwareExecutorService;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.NotNull;
 
 /**
  * An {@link ExecutorService} that executes submitted tasks using pooled grid threads.
  */
-public class IgniteStripedThreadPoolExecutor implements ExecutorService {
-    /** */
-    private final ExecutorService[] execs;
+public class IgniteStripedThreadPoolExecutor implements ExecutorService, MetricsAwareExecutorService {
+    /** Number of threads to keep in each stripe-pool. */
+    private static final int CORE_SIZE_PER_POOL = 1;
+
+    /** Maximum number of threads to allow in each stripe-pool. */
+    private static final int MAX_SIZE_PER_POOL = 1;
+
+    /** Thread keep-alive time. */
+    private final long keepAliveTime;
+
+    /** Number of threads to keep in the pool. */
+    private final int corePoolSize;
+
+    /** Maximum number of threads to allow in the pool. */
+    private final int maxPoolSize;
+
+    /** Stripe pools. */
+    private final IgniteThreadPoolExecutor[] execs;
+
+    /** Handler name that is used when execution is blocked because the thread bounds and queue capacities are reached. */
+    private final String rejectedExecHndClsName;
+
+    /** Class name of the thread factory. */
+    private final String threadFactoryClsName;
 
     /**
      * Create striped thread pool.
@@ -58,14 +81,14 @@ public class IgniteStripedThreadPoolExecutor implements ExecutorService {
         UncaughtExceptionHandler eHnd,
         boolean allowCoreThreadTimeOut,
         long keepAliveTime) {
-        execs = new ExecutorService[concurrentLvl];
+        execs = new IgniteThreadPoolExecutor[concurrentLvl];
 
         ThreadFactory factory = new IgniteThreadFactory(igniteInstanceName, threadNamePrefix, eHnd);
 
         for (int i = 0; i < concurrentLvl; i++) {
             IgniteThreadPoolExecutor executor = new IgniteThreadPoolExecutor(
-                1,
-                1,
+                CORE_SIZE_PER_POOL,
+                MAX_SIZE_PER_POOL,
                 keepAliveTime,
                 new LinkedBlockingQueue<>(),
                 factory);
@@ -74,6 +97,13 @@ public class IgniteStripedThreadPoolExecutor implements ExecutorService {
 
             execs[i] = executor;
         }
+
+        this.keepAliveTime = keepAliveTime;
+
+        corePoolSize = concurrentLvl * CORE_SIZE_PER_POOL;
+        maxPoolSize = concurrentLvl * MAX_SIZE_PER_POOL;
+        rejectedExecHndClsName = execs[0].getRejectedExecutionHandler().getClass().getName();
+        threadFactoryClsName = factory.getClass().getName();
     }
 
     /**
@@ -189,6 +219,112 @@ public class IgniteStripedThreadPoolExecutor implements ExecutorService {
     /** {@inheritDoc} */
     @Override public void execute(Runnable cmd) {
         throw new UnsupportedOperationException();
+    }
+
+    /**
+     * @return Returns true if this executor is in the process of terminating after shutdown or shutdownNow but has not
+     * completely terminated.
+     */
+    private boolean isTerminating() {
+        for (IgniteThreadPoolExecutor exec : execs) {
+            if (!exec.isTerminating())
+                return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * @return Size of the task queue used by executor.
+     */
+    private int getQueueSize() {
+        int queueSize = 0;
+
+        for (IgniteThreadPoolExecutor exec : execs)
+            queueSize += exec.getQueue().size();
+
+        return queueSize;
+    }
+
+    /**
+     * @return Approximate total number of tasks that have ever been scheduled for execution. Because the states of
+     * tasks and threads may change dynamically during computation, the returned value is only an approximation.
+     */
+    private long getTaskCount() {
+        long taskCount = 0;
+
+        for (IgniteThreadPoolExecutor exec : execs)
+            taskCount += exec.getTaskCount();
+
+        return taskCount;
+    }
+
+    /**
+     * @return Approximate total number of tasks that have completed execution. Because the states of tasks and threads
+     * may change dynamically during computation, the returned value is only an approximation, but one that does not
+     * ever decrease across successive calls.
+     */
+    private long getCompletedTaskCount() {
+        long completedTaskCnt = 0;
+
+        for (IgniteThreadPoolExecutor exec : execs)
+            completedTaskCnt += exec.getCompletedTaskCount();
+
+        return completedTaskCnt;
+    }
+
+    /**
+     * @return Approximate number of threads that are actively executing tasks.
+     */
+    private int getActiveCount() {
+        int activeCnt = 0;
+
+        for (IgniteThreadPoolExecutor exec : execs)
+            activeCnt += exec.getActiveCount();
+
+        return activeCnt;
+    }
+
+    /**
+     * @return current number of threads in the pool.
+     */
+    private int getPoolSize() {
+        int poolSize = 0;
+
+        for (IgniteThreadPoolExecutor exec : execs)
+            poolSize += exec.getPoolSize();
+
+        return poolSize;
+    }
+
+    /**
+     * @return Largest number of threads that have ever simultaneously been in the pool.
+     */
+    private int getLargestPoolSize() {
+        int largestPoolSize = 0;
+
+        for (IgniteThreadPoolExecutor exec : execs)
+            largestPoolSize += exec.getLargestPoolSize();
+
+        return largestPoolSize;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void registerMetrics(MetricRegistry mreg) {
+        mreg.register("ActiveCount", this::getActiveCount, ACTIVE_COUNT_DESC);
+        mreg.register("CompletedTaskCount", this::getCompletedTaskCount, COMPLETED_TASK_DESC);
+        mreg.intMetric("CorePoolSize", CORE_SIZE_DESC).value(corePoolSize);
+        mreg.register("LargestPoolSize", this::getLargestPoolSize, LARGEST_SIZE_DESC);
+        mreg.intMetric("MaximumPoolSize", MAX_SIZE_DESC).value(maxPoolSize);
+        mreg.register("PoolSize", this::getPoolSize, POOL_SIZE_DESC);
+        mreg.register("TaskCount", this::getTaskCount, TASK_COUNT_DESC);
+        mreg.register("QueueSize", this::getQueueSize, QUEUE_SIZE_DESC);
+        mreg.longMetric("KeepAliveTime", KEEP_ALIVE_TIME_DESC).value(keepAliveTime);
+        mreg.register("Shutdown", this::isShutdown, IS_SHUTDOWN_DESC);
+        mreg.register("Terminated", this::isTerminated, IS_TERMINATED_DESC);
+        mreg.register("Terminating", this::isTerminating, IS_TERMINATING_DESC);
+        mreg.register("RejectedExecutionHandlerClass", () -> rejectedExecHndClsName, String.class, REJ_HND_DESC);
+        mreg.register("ThreadFactoryClass", () -> threadFactoryClsName, String.class, THRD_FACTORY_DESC);
     }
 
     /** {@inheritDoc} */
