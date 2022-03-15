@@ -35,6 +35,7 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cdc.CdcConfiguration;
 import org.apache.ignite.cdc.CdcConsumer;
 import org.apache.ignite.cdc.CdcEvent;
+import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.GridComponent;
@@ -74,7 +75,7 @@ import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metr
  *
  * Ignite node should be explicitly configured for using {@link CdcMain}.
  * <ol>
- *     <li>Set {@link DataStorageConfiguration#setCdcEnabled(boolean)} to true.</li>
+ *     <li>Set {@link DataRegionConfiguration#setCdcEnabled(boolean)} to true.</li>
  *     <li>Optional: Set {@link DataStorageConfiguration#setCdcWalPath(String)} to path to the directory
  *     to store WAL segments for CDC.</li>
  *     <li>Optional: Set {@link DataStorageConfiguration#setWalForceArchiveTimeout(long)} to configure timeout for
@@ -101,7 +102,7 @@ import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metr
  *     <li>Infinitely waits for new available segment and processes it.</li>
  * </ol>
  *
- * @see DataStorageConfiguration#setCdcEnabled(boolean)
+ * @see DataRegionConfiguration#setCdcEnabled(boolean)
  * @see DataStorageConfiguration#setCdcWalPath(String)
  * @see DataStorageConfiguration#setWalForceArchiveTimeout(long)
  * @see CdcCommandLineStartup
@@ -110,7 +111,7 @@ import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metr
  */
 public class CdcMain implements Runnable {
     /** */
-    public static final String ERR_MSG = "Persistence disabled. Capture Data Change can't run!";
+    public static final String ERR_MSG = "Persistence and CDC disabled. Capture Data Change can't run!";
 
     /** State dir. */
     public static final String STATE_DIR = "state";
@@ -239,7 +240,7 @@ public class CdcMain implements Runnable {
     public void runX() throws Exception {
         ackAsciiLogo();
 
-        if (!CU.isPersistenceEnabled(igniteCfg)) {
+        if (!CU.isCdcEnabled(igniteCfg)) {
             log.error(ERR_MSG);
 
             throw new IllegalArgumentException(ERR_MSG);
@@ -355,7 +356,7 @@ public class CdcMain implements Runnable {
             new PdsFolderResolver<>(igniteCfg, log, igniteCfg.getConsistentId(), this::tryLock).resolve();
 
         if (settings == null) {
-            throw new IgniteException("Can't find folder to read WAL segments from based on provided configuration! " +
+            throw new IgniteException("Can't find the folder to read WAL segments from! " +
                 "[workDir=" + igniteCfg.getWorkDirectory() + ", consistentId=" + igniteCfg.getConsistentId() + ']');
         }
 
@@ -524,12 +525,6 @@ public class CdcMain implements Runnable {
      * @return Lock or null if lock failed.
      */
     private CdcFileLockHolder tryLock(File dbStoreDirWithSubdirectory) {
-        if (!dbStoreDirWithSubdirectory.exists()) {
-            log.warning("DB store directory not exists [dir=" + dbStoreDirWithSubdirectory + ']');
-
-            return null;
-        }
-
         File cdcRoot = new File(igniteCfg.getDataStorageConfiguration().getCdcWalPath());
 
         if (!cdcRoot.isAbsolute()) {

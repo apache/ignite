@@ -20,6 +20,7 @@ import java.io.Serializable;
 import org.apache.ignite.DataRegionMetrics;
 import org.apache.ignite.internal.mem.IgniteOutOfMemoryException;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.lang.IgniteExperimental;
 import org.apache.ignite.mem.MemoryAllocator;
 import org.apache.ignite.mxbean.DataRegionMetricsMXBean;
 import org.apache.ignite.mxbean.MetricsMxBean;
@@ -155,6 +156,10 @@ public final class DataRegionConfiguration implements Serializable {
 
     /** Memory allocator. */
     @Nullable private MemoryAllocator memoryAllocator = null;
+
+    /** Change Data Capture enabled flag. */
+    @IgniteExperimental
+    private boolean cdcEnabled;
 
     /**
      * Gets data region name.
@@ -554,6 +559,30 @@ public final class DataRegionConfiguration implements Serializable {
      */
     @Nullable public WarmUpConfiguration getWarmUpConfiguration() {
         return warmUpCfg;
+    }
+
+    /**
+     * Sets flag indicating whether CDC enabled.
+     *
+     * @param cdcEnabled CDC enabled flag.
+     * @return {@code this} for chaining.
+     */
+    @IgniteExperimental
+    public DataRegionConfiguration setCdcEnabled(boolean cdcEnabled) {
+        this.cdcEnabled = cdcEnabled;
+
+        return this;
+    }
+
+    /**
+     * Gets flag indicating whether CDC is enabled.
+     * Default value is {@code false}.
+     *
+     * @return CDC enabled flag.
+     */
+    @IgniteExperimental
+    public boolean isCdcEnabled() {
+        return cdcEnabled;
     }
 
     /** {@inheritDoc} */

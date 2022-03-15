@@ -335,9 +335,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     /** Snapshot manager. */
     private IgniteCacheSnapshotManager snapshotMgr;
 
-    /** */
-    private final DataStorageMetricsImpl persStoreMetrics;
-
     /**
      * MetaStorage instance. Value {@code null} means storage not initialized yet.
      * Guarded by {@link GridCacheDatabaseSharedManager#checkpointReadLock()}
@@ -384,6 +381,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
      * @param ctx Kernal context.
      */
     public GridCacheDatabaseSharedManager(GridKernalContext ctx) {
+        super(ctx);
+
         this.ctx = ctx;
 
         IgniteConfiguration cfg = ctx.config();
@@ -393,13 +392,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         assert persistenceCfg != null;
 
         lockWaitTime = persistenceCfg.getLockWaitTime();
-
-        persStoreMetrics = new DataStorageMetricsImpl(
-            ctx.metric(),
-            persistenceCfg.isMetricsEnabled(),
-            persistenceCfg.getMetricsRateTimeInterval(),
-            persistenceCfg.getMetricsSubIntervalCount()
-        );
     }
 
     /**
@@ -493,7 +485,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         List<DataRegionMetrics> regionMetrics = dataRegionMap.values().stream()
             .map(DataRegion::metrics)
             .collect(Collectors.toList());
-        persStoreMetrics.regionMetrics(regionMetrics);
+        dsMetrics.regionMetrics(regionMetrics);
     }
 
     /**
@@ -584,7 +576,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 this::getPageMemoryForCacheGroup,
                 resolveThrottlingPolicy(),
                 snapshotMgr,
-                persistentStoreMetricsImpl(),
+                dataStorageMetricsImpl(),
                 kernalCtx.longJvmPauseDetector(),
                 kernalCtx.failure(),
                 kernalCtx.cache(),
@@ -600,7 +592,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
             cleanupTempCheckpointDirectory();
 
-            persStoreMetrics.wal(cctx.wal());
+            dsMetrics.wal(cctx.wal());
         }
     }
 
@@ -830,7 +822,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             this::getPageMemoryForCacheGroup,
             resolveThrottlingPolicy(),
             snapshotMgr,
-            persistentStoreMetricsImpl(),
+            dataStorageMetricsImpl(),
             kernalCtx.longJvmPauseDetector(),
             kernalCtx.failure(),
             kernalCtx.cache()
@@ -965,7 +957,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             cctx.kernalContext().config(),
             MBEAN_GROUP,
             MBEAN_NAME,
-            persStoreMetrics,
+            dsMetrics,
             DataStorageMetricsMXBean.class
         );
     }
@@ -3175,14 +3167,12 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
     /** {@inheritDoc} */
     @Override public DataStorageMetrics persistentStoreMetrics() {
-        return new DataStorageMetricsSnapshot(persStoreMetrics);
+        return new DataStorageMetricsSnapshot(dsMetrics);
     }
 
-    /**
-     *
-     */
-    public DataStorageMetricsImpl persistentStoreMetricsImpl() {
-        return persStoreMetrics;
+    /** {@inheritDoc} */
+    @Override public DataStorageMetricsImpl dataStorageMetricsImpl() {
+        return dsMetrics;
     }
 
     /** {@inheritDoc} */

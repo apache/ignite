@@ -98,6 +98,12 @@ public class CdcCacheVersionTest extends AbstractCdcTest {
     public static final int KEY_TO_UPD = 42;
 
     /** */
+    public static final String NOT_CDC = "not-cdc";
+
+    /** */
+    public static final String CDC = "cdc";
+
+    /** */
     @Parameterized.Parameter
     public CacheAtomicityMode atomicityMode;
 
@@ -108,6 +114,10 @@ public class CdcCacheVersionTest extends AbstractCdcTest {
     /** */
     @Parameterized.Parameter(2)
     public int gridCnt;
+
+    /** */
+    @Parameterized.Parameter(3)
+    public boolean persistenceEnabled;
 
     /** */
     private final AtomicLong walRecCheckedCntr = new AtomicLong();
@@ -122,14 +132,15 @@ public class CdcCacheVersionTest extends AbstractCdcTest {
     private volatile Supplier<CacheVersionConflictResolver> conflictResolutionMgrSupplier;
 
     /** */
-    @Parameterized.Parameters(name = "atomicity={0}, mode={1}, gridCnt={2}")
+    @Parameterized.Parameters(name = "atomicity={0}, mode={1}, gridCnt={2}, persistenceEnabled={3}")
     public static Collection<?> parameters() {
         List<Object[]> params = new ArrayList<>();
 
         for (CacheAtomicityMode atomicity : EnumSet.of(ATOMIC, TRANSACTIONAL))
             for (CacheMode mode : EnumSet.of(PARTITIONED, REPLICATED))
                 for (int gridCnt : new int[] {1, 3})
-                    params.add(new Object[] {atomicity, mode, gridCnt});
+                    for (boolean persistenceEnabled : new boolean[] {false, true})
+                        params.add(new Object[] {atomicity, mode, gridCnt, persistenceEnabled});
 
         return params;
     }
@@ -139,9 +150,18 @@ public class CdcCacheVersionTest extends AbstractCdcTest {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setDataStorageConfiguration(new DataStorageConfiguration()
-            .setCdcEnabled(true)
             .setWalForceArchiveTimeout(WAL_ARCHIVE_TIMEOUT)
-            .setDefaultDataRegionConfiguration(new DataRegionConfiguration().setPersistenceEnabled(true)));
+            .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
+                .setPersistenceEnabled(persistenceEnabled))
+            .setDataRegionConfigurations(
+                new DataRegionConfiguration()
+                    .setName(CDC)
+                    .setPersistenceEnabled(persistenceEnabled)
+                    .setCdcEnabled(true),
+                new DataRegionConfiguration()
+                    .setName(NOT_CDC)
+                    .setPersistenceEnabled(false)
+                    .setCdcEnabled(false)));
 
         cfg.setPluginProviders(new AbstractTestPluginProvider() {
             @Override public String name() {
@@ -243,6 +263,7 @@ public class CdcCacheVersionTest extends AbstractCdcTest {
             new CacheConfiguration<Integer, User>(DEFAULT_CACHE_NAME)
                 .setCacheMode(cacheMode)
                 .setAtomicityMode(atomicityMode)
+                .setDataRegionName(CDC)
                 .setBackups(Integer.MAX_VALUE));
 
         if (atomicityMode == ATOMIC)
@@ -359,14 +380,20 @@ public class CdcCacheVersionTest extends AbstractCdcTest {
         IgniteCache<Integer, User> cache = ign.getOrCreateCache(
             new CacheConfiguration<Integer, User>(DEFAULT_CACHE_NAME)
                 .setAtomicityMode(atomicityMode)
+                .setDataRegionName(CDC)
                 .setCacheMode(cacheMode));
+
+        IgniteCache<Integer, User> notCdcCache = ign.getOrCreateCache(
+                new CacheConfiguration<Integer, User>(NOT_CDC).setDataRegionName(NOT_CDC));
 
         walRecCheckedCntr.set(0);
 
         // Update the same key several time.
         // Expect {@link CacheEntryVersion#order()} will monotically increase.
-        for (int i = 0; i < KEYS_CNT; i++)
+        for (int i = 0; i < KEYS_CNT; i++) {
             cache.put(KEY_TO_UPD, createUser(i));
+            notCdcCache.put(KEY_TO_UPD, createUser(i));
+        }
 
         assertTrue(waitForCondition(() -> walRecCheckedCntr.get() == KEYS_CNT, getTestTimeout()));
     }
