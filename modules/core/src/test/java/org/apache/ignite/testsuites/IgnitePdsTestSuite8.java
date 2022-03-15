@@ -48,6 +48,7 @@ import org.apache.ignite.internal.processors.cache.warmup.LoadAllWarmUpStrategyS
 import org.apache.ignite.internal.processors.cache.warmup.WarmUpSelfTest;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.DynamicSuite;
+import org.apache.ignite.util.ThinClientExpirePolicyTest;
 import org.junit.runner.RunWith;
 
 /** */
@@ -82,6 +83,7 @@ public class IgnitePdsTestSuite8 {
         GridTestUtils.addTestIfNeeded(suite, PageLockTrackerResourcesTest.class, ignoredTests);
 
         GridTestUtils.addTestIfNeeded(suite, IgnitePdsCacheEntriesExpirationTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, ThinClientExpirePolicyTest.class, ignoredTests);
 
         GridTestUtils.addTestIfNeeded(suite, IgnitePdsConsistencyOnDelayedPartitionOwning.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, SupplyPartitionHistoricallyWithReorderedUpdates.class, ignoredTests);

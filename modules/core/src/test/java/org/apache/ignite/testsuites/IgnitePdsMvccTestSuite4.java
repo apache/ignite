@@ -37,6 +37,7 @@ import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelo
 import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.stack.OffHeapLockStackTest;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileDownloaderTest;
 import org.apache.ignite.testframework.junits.DynamicSuite;
+import org.apache.ignite.util.ThinClientExpirePolicyTest;
 import org.junit.runner.RunWith;
 
 /**
@@ -72,6 +73,7 @@ public class IgnitePdsMvccTestSuite4 {
         ignoredTests.add(OffHeapLockLogTest.class);
         ignoredTests.add(OffHeapLockStackTest.class);
         ignoredTests.add(IgnitePdsCacheEntriesExpirationTest.class);
+        ignoredTests.add(ThinClientExpirePolicyTest.class);
 
         // Defragmentation.
         ignoredTests.add(IgnitePdsDefragmentationTest.class);
