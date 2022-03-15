@@ -215,6 +215,8 @@ public class CdcSelfTest extends AbstractCdcTest {
 
         IgniteCache<Integer, Integer> txCache = ign.cache(TX_CACHE_NAME);
 
+        awaitPartitionMapExchange();
+
         int keysCnt = 3;
 
         Map<Integer, Integer> batch = primaryKeys(txCache, keysCnt).stream()
