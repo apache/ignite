@@ -76,7 +76,6 @@ public class IgniteTypeCoercion extends TypeCoercionImpl {
             }
             else
                 return false;
-
         }
 
         return super.coerceOperandType(scope, call, idx, targetType);
