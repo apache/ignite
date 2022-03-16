@@ -126,10 +126,10 @@ public class DataTypesTest extends AbstractBasicIntegrationTest {
                 .check();
 
             assertThrows("SELECT avg(uid) from t", UnsupportedOperationException.class,
-                "AVG() is not supported.");
+                "AVG() is not supported for type 'UUID'.");
 
             assertThrows("SELECT sum(uid) from t", UnsupportedOperationException.class,
-                "SUM() is not supported.");
+                "SUM() is not supported for type 'UUID'.");
         }
         finally {
             executeSql("DROP TABLE if exists tbl");

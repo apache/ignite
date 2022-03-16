@@ -83,7 +83,7 @@ public class Accumulators {
     private static Supplier<Accumulator> avgFactory(AggregateCall call) {
         switch (call.type.getSqlTypeName()) {
             case ANY:
-                throw new UnsupportedOperationException("AVG() is not supported.");
+                throw new UnsupportedOperationException("AVG() is not supported for type '" + call.type + "'.");
             case BIGINT:
             case DECIMAL:
                 return DecimalAvg.FACTORY;
@@ -100,7 +100,7 @@ public class Accumulators {
     private static Supplier<Accumulator> sumFactory(AggregateCall call) {
         switch (call.type.getSqlTypeName()) {
             case ANY:
-                throw new UnsupportedOperationException("SUM() is not supported.");
+                throw new UnsupportedOperationException("SUM() is not supported for type '" + call.type + "'.");
 
             case BIGINT:
             case DECIMAL:
@@ -123,7 +123,7 @@ public class Accumulators {
     private static Supplier<Accumulator> sumEmptyIsZeroFactory(AggregateCall call) {
         switch (call.type.getSqlTypeName()) {
             case ANY:
-                throw new UnsupportedOperationException("SUM() is not supported.");
+                throw new UnsupportedOperationException("SUM() is not supported for type '" + call.type + "'.");
 
             case BIGINT:
             case DECIMAL:
