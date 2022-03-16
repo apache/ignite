@@ -102,7 +102,8 @@ public class DataTypesTest extends AbstractBasicIntegrationTest {
                 .check();
 
             // TODO: https://issues.apache.org/jira/browse/IGNITE-16693 Incorrect processing nulls values in merge join.
-            assertQuery("SELECT /*+ DISABLE_RULE('MergeJoinConverter') */ t1.* from t t1, (select * from t) t2 where t1.uid = t2.uid")
+            assertQuery("SELECT /*+ DISABLE_RULE('MergeJoinConverter') */ t1.* from t t1, (select * from t) t2 " +
+                "where t1.uid = t2.uid")
                 .returns(1, "fd10556e-fc27-4a99-b5e4-89b8344cb3ce", uuid1)
                 .returns(2, uuid2.toString(), uuid2)
                 .check();
