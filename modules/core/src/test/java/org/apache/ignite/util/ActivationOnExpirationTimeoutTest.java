@@ -19,23 +19,17 @@ package org.apache.ignite.util;
 
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Consumer;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.CacheAtomicityMode;
-import org.apache.ignite.client.ClientCache;
-import org.apache.ignite.client.ClientException;
-import org.apache.ignite.client.Config;
-import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.failure.StopNodeFailureHandler;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
@@ -47,37 +41,22 @@ import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
 /**
- *
+ * Tests cluster activation with expired records.
  */
-public class ThinClientExpirePolicyTest extends GridCommonAbstractTest {
+public class ActivationOnExpirationTimeoutTest extends GridCommonAbstractTest {
     /** */
-    private static final int TIMEOUT_SEC = 20;
+    private static final int TIMEOUT_SEC = 5;
 
     /** */
     private static final int TOPOLOGY_UPDATE_DELAY_MILLS = 2000;
 
     /** */
-    public static volatile boolean isReady = true;
-
-    /** */
-    private final Consumer<IgniteClient> clientConsumer = client -> {
-        ClientCache<UUID, UUID> cache = client.getOrCreateCache(DEFAULT_CACHE_NAME);
-
-        while (!Thread.currentThread().isInterrupted() && isReady) {
-            try {
-                UUID uuid = UUID.randomUUID();
-
-                cache.put(uuid, uuid);
-            }
-            catch (ClientException e) {
-                // No-op.
-            }
-        }
-    };
+    public volatile boolean isDataLoading = true;
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
@@ -94,8 +73,7 @@ public class ThinClientExpirePolicyTest extends GridCommonAbstractTest {
         super.afterTest();
     }
 
-    /** {@inheritDoc}
-     * @return*/
+    /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         long time = TimeUnit.SECONDS.toMillis(TIMEOUT_SEC);
 
@@ -104,14 +82,14 @@ public class ThinClientExpirePolicyTest extends GridCommonAbstractTest {
         CacheConfiguration<UUID, UUID> cacheCfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
         cacheCfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
         cacheCfg.setExpiryPolicyFactory(plc);
-        cacheCfg.setBackups(2);
+        cacheCfg.setBackups(1);
 
         return super.getConfiguration(igniteInstanceName)
             .setCommunicationSpi(new TcpCommunicationSpi() {
                 @Override public void sendMessage(ClusterNode node, Message msg,
                     IgniteInClosure<IgniteException> ackC) throws IgniteSpiException {
 
-                    if (((GridIoMessage)msg).message() instanceof GridDhtPartitionsFullMessage) {
+                    if (!isDataLoading && ((GridIoMessage)msg).message() instanceof GridDhtPartitionsFullMessage) {
                         try {
                             U.sleep(TOPOLOGY_UPDATE_DELAY_MILLS);
                         }
@@ -123,15 +101,14 @@ public class ThinClientExpirePolicyTest extends GridCommonAbstractTest {
                     super.sendMessage(node, msg, ackC);
                 }
             })
+            .setFailureHandler(new StopNodeFailureHandler())
             .setCacheConfiguration(cacheCfg)
             .setConnectorConfiguration(new ConnectorConfiguration())
             .setDataStorageConfiguration(new DataStorageConfiguration()
                 .setDefaultDataRegionConfiguration(new DataRegionConfiguration().setPersistenceEnabled(true)));
     }
 
-    /**
-     * @throws Exception
-     */
+    /** Tests cluster activation with expired records. */
     @Test
     public void expirePolicyTest() throws Exception {
         IgniteEx igniteEx = startGrids(2);
@@ -140,17 +117,17 @@ public class ThinClientExpirePolicyTest extends GridCommonAbstractTest {
 
         IgniteCache<Object, Object> cache = igniteEx.getOrCreateCache(DEFAULT_CACHE_NAME);
 
-        startIgniteClientDaemonThread(clientConsumer);
-        startIgniteClientDaemonThread(clientConsumer);
-        startIgniteClientDaemonThread(clientConsumer);
-        startIgniteClientDaemonThread(clientConsumer);
+        for (int i = 0; i < 1_000; ++i) {
+            UUID uuid = UUID.randomUUID();
 
-        TimeUnit.SECONDS.sleep(TIMEOUT_SEC);
-
-        isReady = false;
+            cache.put(uuid, uuid);
+        }
 
         igniteEx.cluster().state(ClusterState.INACTIVE);
 
+        isDataLoading = false;
+
+        // Wait for the expiration.
         TimeUnit.SECONDS.sleep(TIMEOUT_SEC);
 
         igniteEx.cluster().state(ClusterState.ACTIVE);
@@ -159,26 +136,6 @@ public class ThinClientExpirePolicyTest extends GridCommonAbstractTest {
         assertEquals(ClusterState.ACTIVE, G.allGrids().get(0).cluster().state());
         assertEquals(ClusterState.ACTIVE, G.allGrids().get(1).cluster().state());
 
-        U.sleep(TOPOLOGY_UPDATE_DELAY_MILLS * 2);
-
-        assertEquals(0, cache.size());
-    }
-
-    /**
-     * @return Thin client for specified user.
-     */
-    private Thread startIgniteClientDaemonThread(Consumer<IgniteClient> consumer) {
-        Thread thread = new Thread(() -> {
-            try (IgniteClient igniteClient = Ignition.startClient(
-                new ClientConfiguration().setAddresses(Config.SERVER))) {
-                consumer.accept(igniteClient);
-            }
-        });
-
-        thread.setDaemon(true);
-
-        thread.start();
-
-        return thread;
+        GridTestUtils.waitForCondition(() -> cache.size() == 0, TIMEOUT_SEC);
     }
 }
