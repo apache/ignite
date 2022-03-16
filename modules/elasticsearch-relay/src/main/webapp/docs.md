@@ -14,34 +14,54 @@ Supports indices from Liferay,   Nuxeo,   Shindig and the Elasticsearch IMAP imp
 
 Ignite作为后端搜索引擎实现代替elasticsearch
 
-Ignite schema和elasticsearch的index对应。
-entity table和elasticsearch的type对应。
 
-/drupal/content_faq/_search?query="keyword"
+关键词查询
+=========
+/es-relay/content_faq/_search?query="keyword"
 
-意思是在drupal模式里面的content_faq表里搜索keyword。
+意思是在Ignite实例里面的content_faq表(或者缓存里)搜索keyword。
 
-/cache/content_faq/_search?q="keyword"
+/es-relay/content_faq/faq/_search?q="keyword"
 
-意思是在cacheName为cache的content_faq表里搜索keyword。
-
-path[0]为模式或者cacheName
-path[1]为TypeName
+意思是在cacheName为content_faq的faq表里搜索keyword。
 
 
+因为未来cache和table是一对一关系，可以直接使用schema/tableName搜索,如：
+/es-relay/public/faq/_search?q="keyword"
 
-/drupal/content_faq/_all?q=view2
+path[1]为cacheName或者schema
+path[2]为TypeName
 
-意思是在drupal模式里面的content_faq表里列出view2的结果，功能是为了在后端配置视图。
 
-因为未来cache和table是一对一关系，可以直接使用cacheName搜索
-/drupal/_search?q="keyword"
+查询视图
+========
+/es-relay/views/view2?q=view2
 
+意思是列出view2的结果，功能是为了在后端配置SQL视图。
+
+
+
+如： 使用视图hosp-cluster
+/es-relay/views/hosp-cluster/_all?key=value
+
+CMD
+=========
 
 支持以json的方式访问ignite rest api。
 如：
 /_cmd/put?cacheName=test&key=k1
+可以使用 JSON {key=k1,cacheName=test} post给服务端
 
-如： 使用视图hosp-cluster
-/HosQualityReportCache/HosQualityReport/_all?q=hosp-cluster
+创建与更新
+=========
+
+PUT /<index>/_doc/<_id>
+
+POST /<index>/_doc/
+
+PUT /<index>/_create/<_id>
+
+POST /<index>/_create/<_id>
+
+
 

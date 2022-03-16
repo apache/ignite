@@ -116,7 +116,7 @@ public class ESResponse {
 		shardsObj.put(ESConstants.R_SHARDS_SUC, fShards);
 		shardsObj.put(ESConstants.R_SHARDS_FAIL, 0);
 
-		result.put(ESConstants.R_SHARDS, shardsObj);
+		result.set(ESConstants.R_SHARDS, shardsObj);
 
 		// hits
 		ObjectNode hitsObj = new ObjectNode(ESRelay.jsonNodeFactory);
@@ -127,9 +127,32 @@ public class ESResponse {
 		for (ObjectNode hit : fHits) {
 			hits.add(hit);
 		}
-		hitsObj.put(ESConstants.R_HITS, hits);
+		hitsObj.set(ESConstants.R_HITS, hits);
 
-		result.put(ESConstants.R_HITS, hitsObj);
+		result.set(ESConstants.R_HITS, hitsObj);
+
+		return result;
+	}
+	
+	/**
+	 * @return reassembles an Dataset result body
+	 * @throws Exception
+	 *             if assembly fails
+	 */
+	public ObjectNode toDataset(String path) throws Exception {
+		ObjectNode result = new ObjectNode(ESRelay.jsonNodeFactory);
+
+		// hits		
+		result.put("shards",fShards);
+		result.put("total",fTotalResults);
+
+		// actual hit entries
+		ArrayNode hits = new ArrayNode(ESRelay.jsonNodeFactory,fHits.size());
+		for (ObjectNode hit : fHits) {
+			hits.add(hit);
+		}
+
+		result.set(path, hits);
 
 		return result;
 	}

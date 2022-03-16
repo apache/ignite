@@ -86,8 +86,15 @@ public abstract class AbstractMongoBackend implements MongoBackend {
             for (String databaseName : listDatabaseNames()) {
                 MongoDatabase db = this.resolveDatabase(databaseName);
                 Document dbObj = new Document("name", db.getDatabaseName());
-                dbObj.put("empty", Boolean.valueOf(db.isEmpty()));
+                if(!query.get("nameOnly").equals(Boolean.TRUE)) {
+	                dbObj.put("empty", Boolean.valueOf(db.isEmpty()));
+	                dbObj.put("sizeOnDisk", db.isEmpty()?0:1);
+                }
                 dbs.add(dbObj);
+            }
+            if(!query.get("nameOnly").equals(Boolean.TRUE)) {
+	            response.put("totalSize", dbs.size());
+	            response.put("totalSizeMb", 1024*dbs.size());
             }
             response.put("databases", dbs);
             Utils.markOkay(response);

@@ -116,23 +116,11 @@ public class PermissionCrawler implements IPermCrawler, Runnable {
 	public void run() {
 		fActive = true;
 
-		while (fActive) {			
+		if (fActive) {			
 			
 			if(fInterval<=0) { 
 				fActive = false;
-			}
-
-			try {
-				fLogger.log(Level.INFO, "waiting " + fInterval + "ms until next crawl");
-				synchronized (fTrigger) {
-					fTrigger.wait(fInterval);
-				}				
-				
-				
-			} catch (InterruptedException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
+			}			
 			
 			try {
 				fLogger.log(Level.INFO, "starting permission crawl");

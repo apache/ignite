@@ -13,9 +13,12 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
+
+import javax.swing.event.ListSelectionEvent;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -30,6 +33,7 @@ import de.bwaldvogel.mongo.exception.MongoServerError;
 import de.bwaldvogel.mongo.exception.MongoServerException;
 import de.bwaldvogel.mongo.exception.MongoSilentServerException;
 import de.bwaldvogel.mongo.exception.NoSuchCommandException;
+import de.bwaldvogel.mongo.model.RolePrivileges;
 import de.bwaldvogel.mongo.wire.message.MongoDelete;
 import de.bwaldvogel.mongo.wire.message.MongoInsert;
 import de.bwaldvogel.mongo.wire.message.MongoQuery;
@@ -109,6 +113,13 @@ public abstract class AbstractMongoDatabase<P> implements MongoDatabase {
         } else if (command.equalsIgnoreCase("reseterror")) {
             return commandResetError(channel);
         } 
+        else if (command.equalsIgnoreCase("getnonce")) {
+        	Document emptyStats = new Document()
+                    .append("nonce", UUID.randomUUID().toString());
+            Utils.markOkay(emptyStats);
+            return emptyStats;
+        } 
+
 
         clearLastStatus(channel);
 
@@ -167,24 +178,73 @@ public abstract class AbstractMongoDatabase<P> implements MongoDatabase {
             return listIndexes(collectionName);
          //add@byron
         }else if (command.equalsIgnoreCase("usersInfo")) {
-        	 Document selector = new Document("_id", query.get("usersInfo"));
+        	 Document response = new Document();
+        	 Document selector;
+        	 if(query.get("usersInfo") instanceof Document) {
+        		 selector = new Document("_id", ((Document)query.get("usersInfo")).get("user"));
+        	 }
+        	 else if(query.containsKey("filter")){
+        		 selector = query.getDocumnet("filter");
+        	 }
+        	 else {
+        		 selector = new Document(); // all users
+        	 }
         	 MongoCollection<P> collection = resolveOrCreateCollection("usersInfo");
-        	 for (Document document : collection.handleQuery(selector, 0, 1, null)) {
-                 return document;
-             }
-        	 Utils.markOkay(selector);
-             return selector;
+        	 Iterable<Document> users = collection.handleQuery(selector, 0, 10000, null);
+        	 if(Boolean.TRUE.equals(query.get("showPrivileges")) || Boolean.TRUE.equals(query.get("showAuthenticationRestrictions"))) {
+        		 for(Document user: users) {
+        			 user.append("inheritedRoles", user.get("roles"));
+        			 user.append("authenticationRestrictions", new ArrayList<Document>());
+        			 user.append("inheritedPrivileges",getUserPrivileges(user));
+        		 }
+        	 }
+        	 
+        	 response.put("users",users);
+        	 Utils.markOkay(response);
+             return response;
         }
         else if (command.equalsIgnoreCase("createUser")) {       
             Document response = new Document("_id", query.get("createUser"));   
             query.append("_id", query.get("createUser"));
             query.append("name", query.get("createUser"));
             query.remove("createUser");
+            if(!query.containsKey("roles")) {
+            	query.append("roles",new String[] {"user"});
+            }
             MongoCollection<P> collection = resolveOrCreateCollection("usersInfo");
             collection.addDocument(query);
             Utils.markOkay(response);
-            return response;
-       
+            return response;       
+        }
+        else if (command.equalsIgnoreCase("dropUser")) {        	
+            Document response = new Document("_id", query.get("dropUser"));            
+            MongoCollection<P> collection = resolveOrCreateCollection("usersInfo");
+            collection.removeDocument(response);
+            Utils.markOkay(response);
+            return response;       
+        } 
+        else if (command.equalsIgnoreCase("grantRolesToUser")) {        	
+            Document response = new Document("_id", query.get("grantRolesToUser"));            
+            MongoCollection<P> collection = resolveOrCreateCollection("usersInfo");
+            Iterable<Document> users = collection.handleQuery(response, 0, 1, null);
+            for(Document user: users) {
+            	user.append("roles", query.get("roles"));
+            }            
+            Utils.markOkay(response);
+            return response;       
+        } 
+        else if (command.equalsIgnoreCase("authenticate")) {       
+            Document response = new Document();   
+            response.append("_id", query.get("user"));
+            response.append("role", "admin");           
+            boolean rv = authenticate(query);
+            if(rv) {
+            	Utils.markOkay(response);
+            }
+            else {
+            	response.put("ok", 0.0);
+            }
+            return response;       
         } 
 		//end@
 		else {
@@ -1022,6 +1082,38 @@ public abstract class AbstractMongoDatabase<P> implements MongoDatabase {
             ArrayFilters.empty(), true, false);
 
         namespaces.insertDocuments(newDocuments);
+    }
+    
+    public List<Document> getUserPrivileges(Document user){
+    	 List<Document> userPrivileges = new ArrayList<>();
+    	 Document selector = new Document();
+    	 MongoCollection<P> collection = resolveOrCreateCollection("rolesPrivileges");
+    	 for(Object role: (Iterable)user.get("roles")) {
+    		 selector.append("name", role);
+    		 Iterable<Document> rolesPrivileges = collection.handleQuery(selector, 0, 10000, null);
+    		 for(Document priv:rolesPrivileges) {
+    			 userPrivileges.add(priv);
+    		 }
+    	 }
+    	 
+    	 // no user privileges set, use default?
+    	 if(userPrivileges.isEmpty()) {
+    		 for(MongoCollection<P> coll: this.collections()) {
+    			 Document resource = new Document();
+    			 resource.append("db", this.getDatabaseName());
+    			 resource.append("collection", coll.getCollectionName());
+    			 Document userPrivilege = new Document();
+    			 userPrivilege.append("resource",resource);
+    			 userPrivilege.append("actions", RolePrivileges.defaultActions);
+    			 userPrivileges.add(userPrivilege);
+    		 }
+    	 }
+    	 return userPrivileges;
+    	 
+    }
+    
+    public boolean authenticate(Document clientInfo) {
+    	return true;
     }
 
     public static boolean isSystemCollection(String collectionName) {

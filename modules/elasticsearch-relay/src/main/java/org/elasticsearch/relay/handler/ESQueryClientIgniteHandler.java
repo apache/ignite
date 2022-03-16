@@ -31,47 +31,67 @@ import org.elasticsearch.relay.util.HttpUtil;
 
 
 /**
- * Central query handler splitting up queries between multiple ES instances,
+ * Central query handler splitting up queries between multiple ignite instances,
  * handling query filtering, sending requests, post-processing and merging
  * results.
  */
 public class ESQueryClientIgniteHandler extends ESQueryKernelIgniteHandler{
 	
 	
-	IgniteClient igniteClient;
+	IgniteClient[] igniteClient;
 	
 	public ESQueryClientIgniteHandler(ESRelayConfig config) throws Exception{
-		super(config,null);
+		super(config,null);		
+		
+		igniteClient = new IgniteClient[2];
+		
 		//thin
-		String host = config.getElasticApiHost();		
+		String host = config.getElasticApiHost();	
+		int port =  config.getElasticApiPort();
 		if(host!=null && !host.isEmpty()){
 			
-			ClientConfiguration cfg = new ClientConfiguration().setAddresses(host+":"+config.getElasticApiPort());	
+			ClientConfiguration cfg = new ClientConfiguration().setAddresses(host+":"+port);	
 	        try {
 	        	IgniteClient igniteClient = Ignition.startClient(cfg);
 	        			
 	            System.out.println();
 	            System.out.println(">>> Thin client ignite started.");          
-	            this.igniteClient = igniteClient;
+	            this.igniteClient[0] = igniteClient;
 	        }
 	        catch (ClientException e) {
 	            System.err.println(e.getMessage());
+	            fLogger.log(Level.SEVERE, e.getMessage(), e);
 	        }
 	        catch (Exception e) {
 	            System.err.format("Unexpected failure: %s\n", e);
+	            fLogger.log(Level.SEVERE, e.getMessage(), e);
 	        }
 	        
 		}
-		else{
-	        //client node
-			 Ignition.setClientMode(true);			
-			 try{			 
-				 ignite = Ignition.start("config/example-ignite.xml");
-			 }
-			 catch(Exception e){
-				 fLogger.log(Level.SEVERE, e.getMessage(), e);
-			 }
+		
+		host = config.getEs2ElasticApiHost();	
+		port = config.getEs2ElasticApiPort();
+		if(host!=null && !host.isEmpty()){
+			
+			ClientConfiguration cfg = new ClientConfiguration().setAddresses(host+":"+port);	
+	        try {
+	        	IgniteClient igniteClient = Ignition.startClient(cfg);
+	        			
+	            System.out.println();
+	            System.out.println(">>> Thin client ignite started.");          
+	            this.igniteClient[1] = igniteClient;
+	        }
+	        catch (ClientException e) {
+	            System.err.println(e.getMessage());
+	            fLogger.log(Level.SEVERE, e.getMessage(), e);
+	        }
+	        catch (Exception e) {
+	            System.err.format("Unexpected failure: %s\n", e);
+	            fLogger.log(Level.SEVERE, e.getMessage(), e);
+	        }
+	        
 		}
+		
 	}
 	
 	/**
@@ -80,14 +100,11 @@ public class ESQueryClientIgniteHandler extends ESQueryKernelIgniteHandler{
 	public void destroy() {
 		super.destroy();
 		
-		if(ignite!=null){
-			ignite.close();
-			ignite = null;
-		}
-		
-		if(igniteClient!=null){
+		for(IgniteClient client: igniteClient){
 			try {
-				igniteClient.close();
+				if(client!=null) {
+					client.close();
+				}
 			} catch (Exception e) {
 				// TODO Auto-generated catch block
 				fLogger.log(Level.SEVERE, e.getMessage(), e);

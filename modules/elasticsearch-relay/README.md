@@ -23,6 +23,7 @@ License: Apache License,   Version 2.0 http://www.apache.org/licenses/LICENSE-2.
 
 Ignite作为后端搜索引擎实现代替elasticsearch
 
-Ignite schema和elasticsearch的index对应。
+Ignite cache和elasticsearch的index对应。
 entity table和elasticsearch的type对应。
+cache和table一对一的情况下，不用传入type参数
 

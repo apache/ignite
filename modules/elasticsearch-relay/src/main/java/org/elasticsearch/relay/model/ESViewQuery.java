@@ -3,6 +3,8 @@ package org.elasticsearch.relay.model;
 import java.util.List;
 import java.util.Map;
 
+import org.elasticsearch.relay.ResponseFormat;
+
 
 /**
  * 查询视图，可以包含多个sql，支持?参数
@@ -10,8 +12,11 @@ import java.util.Map;
  *
  */
 public class ESViewQuery {
-	
+	private ResponseFormat responseFormat = ResponseFormat.HITS; // json, dataset, tri-tuple
 	private String SQL;
+	private String schema;
+	
+
 	private Map<String,String> namedSQL;
 	
 	private String format = "json";
@@ -30,12 +35,26 @@ public class ESViewQuery {
 		this.SQL = sql;
 	}
 
+	public ESViewQuery(String schema, String sql) {
+		this.SQL = sql;
+		this.schema = schema;
+	}
+	
 	public String getSQL() {
 		return SQL;
 	}
 	public void setSQL(String sQL) {
 		SQL = sQL;
 	}
+	
+	public String getSchema() {
+		return schema;
+	}
+
+	public void setSchema(String searchPath) {
+		this.schema = searchPath;
+	}
+	
 	public Map<String, String> getNamedSQL() {
 		return namedSQL;
 	}
@@ -57,6 +76,10 @@ public class ESViewQuery {
 
 	public void setParams(Map<String, String> params) {
 		fParams = params;
+		String responseFormat = params.get("responseFormat");
+		if(responseFormat!=null) {
+			this.setResponseFormat(ResponseFormat.valueOf(responseFormat.toUpperCase()));
+		}
 	}
 
 	/**
@@ -79,6 +102,14 @@ public class ESViewQuery {
 
 	public void setFormat(String format) {
 		this.format = format;
+	}
+
+	public ResponseFormat getResponseFormat() {
+		return responseFormat;
+	}
+
+	public void setResponseFormat(ResponseFormat responseFormat) {
+		this.responseFormat = responseFormat;
 	}
 
 }

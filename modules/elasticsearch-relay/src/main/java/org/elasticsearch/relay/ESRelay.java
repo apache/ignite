@@ -73,11 +73,19 @@ public class ESRelay extends HttpServlet {
 			if(context==null)
 				context = new ClassPathXmlApplicationContext("realy-*.xml");
 			
-			allViews = ESRelay.context.getBeansOfType(ESViewQuery.class);
+			allViews = ESRelay.context.getBeansOfType(ESViewQuery.class);			
 			
-			
-			if("ignite".equalsIgnoreCase(fConfig.getClusterBackend())){
+			if("elasticsearch".equalsIgnoreCase(fConfig.getClusterBackend())){
 				
+				objectMapper = new GridJettyObjectMapper();
+				fHandler = new ESQueryHandler(fConfig);
+			}
+			else if("igniteClient".equalsIgnoreCase(fConfig.getClusterBackend())){
+				
+				fHandler = new ESQueryClientIgniteHandler(fConfig);				
+				objectMapper = new GridJettyObjectMapper();
+			}
+			else{				
 				GridKernalContext ctx = (GridKernalContext) this.getServletContext().getAttribute("gridKernalContext");
 				if(ctx==null){
 					fHandler = new ESQueryClientIgniteHandler(fConfig);
@@ -86,10 +94,6 @@ public class ESRelay extends HttpServlet {
 					fHandler = new ESQueryKernelIgniteHandler(fConfig,ctx);
 				}
 				objectMapper = new GridJettyObjectMapper(ctx);
-			}
-			else{
-				objectMapper = new GridJettyObjectMapper();
-				fHandler = new ESQueryHandler(fConfig);
 			}
 			fLogger.info("init hander:" + fHandler.getClass());
 			
@@ -114,24 +118,36 @@ public class ESRelay extends HttpServlet {
 		return parameters;
 	}
 
-	private String getBody(HttpServletRequest request) {
-		StringBuffer buffer = new StringBuffer();
+	private ObjectNode getJSONBody(String cmd, HttpServletRequest request) {
+		
+		ObjectNode jsonRequest = new ObjectNode(jsonNodeFactory);
 
 		try {
 			BufferedReader reader = new BufferedReader(new InputStreamReader(request.getInputStream(), "utf-8"));
 
-			String line = reader.readLine();
-			while (line != null) {
-				buffer.append(line);
-				buffer.append("\n");
-				line = reader.readLine();
-			}
-		} catch (Exception e) {
+			if(cmd.equals(ESConstants.BULK_FRAGMENT)){
+				ArrayNode list = new ArrayNode(jsonNodeFactory);
+				String line = reader.readLine();
+				while (line != null) {	
+					if(!line.isBlank() && line.length()>1) {
+						list.add(objectMapper.readTree(line));
+					}
+					line = reader.readLine();
+				}				
+				jsonRequest.set(ESConstants.BULK_FRAGMENT, list);
+			}			
+			
+			jsonRequest = (ObjectNode) objectMapper.readTree(reader);
+			
+		} catch (IOException e) {
+			return null;
+		}
+		catch (Exception e) {
 			// TODO: ?
 			fLogger.log(Level.SEVERE, "failed to read request body", e);
 		}
 
-		return buffer.toString();
+		return jsonRequest;
 	}
 
 	/**
@@ -184,7 +200,7 @@ public class ESRelay extends HttpServlet {
 
 	/**
 	 * query cmd and ignite rest api
-	 * index/type/_cmd
+	 * cache/type/_cmd
 	 */
 	@Override
 	public void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
@@ -197,52 +213,37 @@ public class ESRelay extends HttpServlet {
 		// TODO: properly extract query parameters
 		Map<String, String> parameters = getParams(request);
 
-		// read request body
-		String requestBody = getBody(request);
-			
+		
 		PrintWriter out = response.getWriter();
 		try {
 			
-			ObjectNode jsonRequest = new ObjectNode(jsonNodeFactory);
-			
-			if (!requestBody.isEmpty()) {
-				if(path[2].equals(ESConstants.BULK_FRAGMENT)){
-					String[] batchs = requestBody.split("\\n");
-					ArrayNode list = new ArrayNode(jsonNodeFactory);
-					for(String line: batchs){
-						list.add(objectMapper.readTree(line));
-					}
-					
-					jsonRequest.set(ESConstants.BULK_FRAGMENT, list);
-				}
-				
-				jsonRequest = (ObjectNode) objectMapper.readTree(requestBody);
-				//jsonRequest = ObjectNode.parseObject(requestBody);
-			}
 			
 			String result = null;
 
-			//use ignite rest backends  http://127.0.0.1:8080/_cmd/put?cacheName=test&key=k1
+			//use ignite rest backends  /_cmd/put?cacheName=test&key=k1
 			if("_cmd".equalsIgnoreCase(path[0])){
 				parameters.put("cmd", path[1]);				
 				path[2] = path[1];
 				path[1] = path[0];
 				path[0] = "ignite";
+				// read request body
+				ObjectNode jsonRequest = getJSONBody(path[0],request);
+					
 				ESUpdate query = new ESUpdate(path, parameters, jsonRequest);
 				
 				// process request, forward to ES instances
 				result = fHandler.handleRequest(query, user);	
 				
 			}
-			else if(request.getMethod().equalsIgnoreCase("GET") 
+			else if(request.getMethod().equals("GET") 
 					|| path[2].equalsIgnoreCase(ESConstants.SEARCH_FRAGMENT) 
 					|| path[2].equalsIgnoreCase(ESConstants.ALL_FRAGMENT)){ // ESConstants._SEARCH ESConstants._ALL
 				
-				if(path[2].equalsIgnoreCase(ESConstants.ALL_FRAGMENT)) { //sql
-					String viewName = parameters.get("q");
+				if(path[0].equalsIgnoreCase("views")) { // views query
+					String viewName = path[1];
 					ESViewQuery viewQuery = allViews.get(viewName);
-					if(viewQuery==null) { //q is SQL not viewName
-						viewQuery = new ESViewQuery(viewName);
+					if(viewQuery==null) { // path[1] is schema not viewName,  q is SQL 				
+						viewQuery = new ESViewQuery(viewName,parameters.get("q"));
 					}
 					viewQuery.setQueryPath(path);
 					viewQuery.setParams(parameters);
@@ -250,16 +251,24 @@ public class ESRelay extends HttpServlet {
 					result = fHandler.handleRequest(viewQuery, user);	
 					
 				}
-				else {
+				else if(!request.getMethod().equals("GET")){
+					ObjectNode jsonRequest = getJSONBody(path[2],request);
 					ESQuery query = new ESQuery(path, parameters, jsonRequest);
+					
+					// process request, forward to ES instances
+					result = fHandler.handleRequest(query, user);	
+				}
+				else {
+					
+					ESQuery query = new ESQuery(path, parameters);
 					
 					// process request, forward to ES instances
 					result = fHandler.handleRequest(query, user);	
 				}
 				
 			}
-			else if(request.getMethod().equalsIgnoreCase("POST")){
-				
+			else if(request.getMethod().equals("POST")){
+				ObjectNode jsonRequest = getJSONBody(path[2],request);
 				ESUpdate query = new ESUpdate(path, parameters, jsonRequest);
 				query.setOp(ESConstants.INSERT_FRAGMENT);
 				// process request, forward to ES instances
@@ -267,16 +276,16 @@ public class ESRelay extends HttpServlet {
 	
 			
 			}
-			else if(request.getMethod().equalsIgnoreCase("PUT")){
-				
+			else if(request.getMethod().equals("PUT")){
+				ObjectNode jsonRequest = getJSONBody(path[2],request);
 				ESUpdate query = new ESUpdate(path, parameters, jsonRequest);
 				query.setOp(ESConstants.UPDATE_FRAGMENT);
 				// process request, forward to ES instances
 				result = fHandler.handleRequest(query, user);	
 			
 			}
-			else if(request.getMethod().equalsIgnoreCase("DELETE")){
-				
+			else if(request.getMethod().equals("DELETE")){
+				ObjectNode jsonRequest = getJSONBody(path[2],request);
 				ESUpdate query = new ESUpdate(path, parameters, jsonRequest);
 				query.setOp(ESConstants.DELETE_FRAGMENT);
 				// process request, forward to ES instances
@@ -293,10 +302,9 @@ public class ESRelay extends HttpServlet {
 		} catch (Exception e) {
 			response.setStatus(500);
 			response.resetBuffer();
-			e.printStackTrace();
 
 			ObjectNode jsonError = new ObjectNode(jsonNodeFactory);
-			jsonError.put(ESConstants.R_ERROR, e.toString());
+			jsonError.put(ESConstants.R_ERROR, e.getMessage());
 			jsonError.put(ESConstants.R_STATUS, 500);
 			fLogger.log(Level.SEVERE, "Error during error JSON generation", e);
 			out.println(jsonError.toPrettyString());

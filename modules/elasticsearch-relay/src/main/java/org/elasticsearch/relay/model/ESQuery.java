@@ -1,10 +1,12 @@
 package org.elasticsearch.relay.model;
 
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
 
 import org.elasticsearch.relay.ESRelay;
+import org.elasticsearch.relay.ResponseFormat;
 
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -19,7 +21,9 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
  */
 public class ESQuery {
 	
-	private String format = "json";
+	private String format = "json"; // json , form
+	
+	private ResponseFormat responseFormat = ResponseFormat.HITS;
 	
 	private String[] fPath;
 
@@ -34,7 +38,7 @@ public class ESQuery {
 	/**
 	 * Creates an empty query.
 	 */
-	public ESQuery() {
+	private ESQuery() {
 		this(null);
 	}
 
@@ -53,7 +57,7 @@ public class ESQuery {
 	 *            query body
 	 */
 	public ESQuery(String[] path, ObjectNode body) {
-		this(path, null, body);
+		this(path, new HashMap<>(), body);
 	}
 
 	/**
@@ -76,10 +80,12 @@ public class ESQuery {
 	 */
 	public ESQuery(String[] path, Map<String, String> params, ObjectNode body) {
 		fPath = path;
-		fParams = params;
+		
 		fBody = body;
-
+		
 		fAuthFilterOrArr = new ArrayNode(ESRelay.jsonNodeFactory);
+		
+		this.setParams(params);
 	}
 
 	public String[] getQueryPath() {
@@ -95,6 +101,10 @@ public class ESQuery {
 	}
 
 	public void setParams(Map<String, String> params) {
+		String responseFormat = params.get("responseFormat");
+		if(responseFormat!=null) {
+			this.setResponseFormat(ResponseFormat.valueOf(responseFormat.toUpperCase()));
+		}
 		fParams = params;
 	}
 
@@ -170,5 +180,13 @@ public class ESQuery {
 
 	public void setFormat(String format) {
 		this.format = format;
+	}
+
+	public ResponseFormat getResponseFormat() {
+		return responseFormat;
+	}
+
+	public void setResponseFormat(ResponseFormat responseFormat) {
+		this.responseFormat = responseFormat;
 	}
 }

@@ -83,35 +83,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
 
     /** Maximum number of partitions. */
     public static final int MAX_PARTITIONS_COUNT = 65000;
-
-    /**
-     * Default size of rebalance thread pool.
-     * @deprecated Use {@link IgniteConfiguration#DFLT_REBALANCE_THREAD_POOL_SIZE} instead.
-     */
-    @Deprecated
-    public static final int DFLT_REBALANCE_THREAD_POOL_SIZE = IgniteConfiguration.DFLT_REBALANCE_THREAD_POOL_SIZE;
-
-    /**
-     * Default rebalance timeout (ms).
-     * @deprecated Use {@link IgniteConfiguration#DFLT_REBALANCE_TIMEOUT} instead.
-     */
-    @Deprecated
-    public static final long DFLT_REBALANCE_TIMEOUT = IgniteConfiguration.DFLT_REBALANCE_TIMEOUT;
-
-    /**
-     * Default rebalance batches prefetch count.
-     * @deprecated Use {@link IgniteConfiguration#DFLT_REBALANCE_BATCHES_PREFETCH_COUNT} instead.
-     */
-    @Deprecated
-    public static final long DFLT_REBALANCE_BATCHES_PREFETCH_COUNT = IgniteConfiguration.DFLT_REBALANCE_BATCHES_PREFETCH_COUNT;
-
-    /**
-     * Time in milliseconds to wait between rebalance messages to avoid overloading CPU.
-     * @deprecated Use {@link IgniteConfiguration#DFLT_REBALANCE_THROTTLE} instead.
-     */
-    @Deprecated
-    public static final long DFLT_REBALANCE_THROTTLE = IgniteConfiguration.DFLT_REBALANCE_THROTTLE;
-
+   
     /** Default number of backups. */
     public static final int DFLT_BACKUPS = 0;
 
@@ -142,14 +114,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
 
     /** Default rebalance mode for distributed cache. */
     public static final CacheRebalanceMode DFLT_REBALANCE_MODE = CacheRebalanceMode.ASYNC;
-
-    /**
-     * Default rebalance batch size in bytes.
-     * @deprecated Use {@link IgniteConfiguration#DFLT_REBALANCE_BATCH_SIZE} instead.
-     */
-    @Deprecated
-    public static final int DFLT_REBALANCE_BATCH_SIZE = IgniteConfiguration.DFLT_REBALANCE_BATCH_SIZE;
-
+   
     /** Default value for eager ttl flag. */
     public static final boolean DFLT_EAGER_TTL = true;
 
@@ -232,11 +197,11 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
 
     /** Rebalance thread pool size. */
     @Deprecated
-    private int rebalancePoolSize = DFLT_REBALANCE_THREAD_POOL_SIZE;
+    private int rebalancePoolSize = IgniteConfiguration.DFLT_REBALANCE_THREAD_POOL_SIZE;
 
     /** Rebalance timeout. */
     @Deprecated
-    private long rebalanceTimeout = DFLT_REBALANCE_TIMEOUT;
+    private long rebalanceTimeout = IgniteConfiguration.DFLT_REBALANCE_TIMEOUT;
 
     /** Cache eviction policy. */
     @Deprecated
@@ -314,11 +279,11 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
 
     /** Rebalance batch size. */
     @Deprecated
-    private int rebalanceBatchSize = DFLT_REBALANCE_BATCH_SIZE;
+    private int rebalanceBatchSize = IgniteConfiguration.DFLT_REBALANCE_BATCH_SIZE;
 
     /** Rebalance batches prefetch count. */
     @Deprecated
-    private long rebalanceBatchesPrefetchCnt = DFLT_REBALANCE_BATCHES_PREFETCH_COUNT;
+    private long rebalanceBatchesPrefetchCnt = IgniteConfiguration.DFLT_REBALANCE_BATCHES_PREFETCH_COUNT;
 
     /** Maximum number of concurrent asynchronous operations. */
     private int maxConcurrentAsyncOps = DFLT_MAX_CONCURRENT_ASYNC_OPS;
@@ -355,7 +320,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
 
     /** Time in milliseconds to wait between rebalance messages to avoid overloading CPU. */
     @Deprecated
-    private long rebalanceThrottle = DFLT_REBALANCE_THROTTLE;
+    private long rebalanceThrottle = IgniteConfiguration.DFLT_REBALANCE_THROTTLE;
 
     /** */
     @SerializeSeparately
@@ -2116,11 +2081,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * @return {@code this} for chaining.
      */
     public CacheConfiguration<K, V> setQueryEntity(QueryEntity qryEntity) {
-        if (this.qryEntities == null) {
-            this.qryEntities = Collections.singleton(qryEntity);
-
-            return this;
-        }
+    	this.qryEntities = Collections.singleton(qryEntity);
         return this;
     }
     /**

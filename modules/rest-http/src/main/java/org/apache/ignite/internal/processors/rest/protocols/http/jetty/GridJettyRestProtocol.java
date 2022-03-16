@@ -24,6 +24,9 @@ import java.net.InetAddress;
 import java.net.SocketException;
 import java.net.URL;
 import java.net.UnknownHostException;
+import java.util.ArrayList;
+import java.util.List;
+
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.GridKernalContext;
@@ -44,6 +47,7 @@ import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.NetworkConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
+import org.eclipse.jetty.server.handler.ErrorHandler;
 import org.eclipse.jetty.server.handler.HandlerList;
 import org.eclipse.jetty.util.MultiException;
 import org.eclipse.jetty.util.resource.Resource;
@@ -100,7 +104,6 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
         }
     }
 
-    /** Jetty handler. */
     private GridJettyRestHandler jettyHnd;
 
     /** HTTP server. */
@@ -115,7 +118,7 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
 
     /** {@inheritDoc} */
     @Override public String name() {
-        return "Jetty REST";
+        return "Jetty REST for Ignite Intstance "+ ctx.igniteInstanceName();
     }
 
     /** {@inheritDoc} */
@@ -138,19 +141,20 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
         }, ctx);    
         
         
-        
+        // first start instance
         if(httpSrv==null) {
         	configSingletonJetty();
         	jettyHnd.index = 0;
      	}
-        else {
-        	HandlerList handlers = (HandlerList)httpSrv.getHandler();    		
-    		if(handlers!=null) {
-    			jettyHnd.index = handlers.getHandlers().length;
-    			handlers.prependHandler(jettyHnd); 
-    		}
-        }
         
+        HandlerList handlers = (HandlerList)httpSrv.getHandler();    		
+		if(handlers!=null) {
+			jettyHnd.index = handlers.getHandlers().length;
+			handlers.prependHandler(jettyHnd); 
+		}
+		else {
+			httpSrv.setHandler(jettyHnd);
+		}
         
         override(getJettyConnector());
     }
@@ -366,34 +370,57 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
 
         assert httpSrv != null;
         
-        //add@byron support custom rest cmd handler
-        
-        String warFile = "webapp"; 
+        //add@byron support custom rest cmd handler        
+        String webAppDirs = "webapps"; 
 		if(ctx.config().getIgniteHome()!=null){
-			warFile = ctx.config().getIgniteHome()+File.separatorChar+"webapp"; 
+			webAppDirs = ctx.config().getIgniteHome()+File.separatorChar+webAppDirs; 
 		}
-		WebAppContext context = new	WebAppContext(warFile, "/");
-		context.setAttribute("gridKernalContext", ctx);
-		context.setServer(httpSrv);
 		
-		context.setResourceBase(warFile);
+		List<Handler> plugins = new ArrayList<>();
+		File webPlugins = new File(webAppDirs);
+	    for(File warFile: webPlugins.listFiles()) {
+		    String warPath = warFile.getPath();
+		    int pos = warFile.getName().indexOf('.');
+		    String contextPath =  pos>0? warFile.getName().substring(0,pos): warFile.getName();
+		    WebAppContext webApp = new WebAppContext();
+		    webApp.setContextPath("/"+contextPath);
+		    webApp.setConfigurationDiscovered(true);
+		    
+		    if (warFile.isDirectory()) {
+		        // Development mode, read from FS
+		    	webApp.setResourceBase(warFile.getPath());
+		        webApp.setDescriptor(warPath+"/WEB-INF/web.xml");
+		        webApp.setExtraClasspath(warPath+"/WEB-INF/classes/");		        
+		       
+	        } else if(warFile.getName().endsWith(".war")) {
+		        // use packaged WAR
+		        webApp.setWar(warFile.getAbsolutePath());
+		        webApp.setExtractWAR(false);
+		       
+		    }
+	        else {
+	        	continue;
+	        }
+		    
+		    //webApp.setClassLoader(Thread.currentThread().getContextClassLoader());  
+			webApp.setParentLoaderPriority(false);
+			webApp.setServer(httpSrv);
+			webApp.setErrorHandler(new ErrorHandler());
+			webApp.setAttribute("gridKernalContext", ctx);
+			
+			plugins.add(webApp);	
 		
-		File workDir = new File(ctx.config().getWorkDirectory(),"webapp");
-		context.setTempDirectory(workDir); 
-		//-context.setClassLoader(Thread.currentThread().getContextClassLoader());  
-		
-
-		 // Create a handler list to store our static and servlet context handlers.
-		
-		Handler hnd = httpSrv.getHandler();
+	    }
+	 // Create a handler list to store our static and servlet context handlers.
+	    Handler hnd = httpSrv.getHandler();
 		HandlerList handlers = new HandlerList();
 		if(hnd!=null) {
-			handlers.setHandlers(new Handler[] { jettyHnd, context, hnd });	
+			plugins.add(hnd);
+			handlers.setHandlers(plugins.toArray(new Handler[plugins.size()]));	
 		}
 		else {
-			handlers.setHandlers(new Handler[] { jettyHnd, context });	
+			handlers.setHandlers(plugins.toArray(new Handler[plugins.size()]));	
 		}
-
         //-httpSrv.setHandler(jettyHnd);
         httpSrv.setHandler(handlers);
         
@@ -461,19 +488,20 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
 
     /** {@inheritDoc} */
     @Override public void stop() {
-    	
-    	if(jettyHnd.index == 0) {
-	        stopJetty();	
-	        httpSrv = null;
-    	}
-    	else if(httpSrv!=null) {  
-    		HandlerList handlers = (HandlerList)httpSrv.getHandler(); 
+    	if(httpSrv!=null) {  
+    		HandlerList handlers = (HandlerList)httpSrv.getHandler();
     		handlers.removeHandler(jettyHnd);
-    	}
+    		
+    		if(jettyHnd.index == 0) {
+    	        stopJetty();	
+    	        httpSrv = null;
+        	}
+        	 
+        
+        	if (log.isInfoEnabled())
+                log.info(stopInfo());
+    	}  
     	
-    	jettyHnd = null;
-    	if (log.isInfoEnabled())
-            log.info(stopInfo());
     }
 
     /** {@inheritDoc} */

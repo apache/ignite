@@ -9,16 +9,32 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 import de.bwaldvogel.mongo.backend.Missing;
 
 public final class Document implements Map<String, Object>, Bson {
 
     private static final long serialVersionUID = 1L;
-
+    private static ObjectMapper mapper = new ObjectMapper();
+    
     private final LinkedHashMap<String, Object> documentAsMap;
 
     public Document() {
     	documentAsMap = new LinkedHashMap<>();
+    }
+    
+    public Document(Object object) {    
+    	LinkedHashMap<String, Object> map;
+    	try {
+    		map = mapper.readValue(mapper.writeValueAsString(object), LinkedHashMap.class);    		
+		} catch (JsonProcessingException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			map = new LinkedHashMap<>();
+		}
+    	documentAsMap = map;
     }
 
     public Document(String key, Object value) {
@@ -88,6 +104,12 @@ public final class Document implements Map<String, Object>, Bson {
     public Object get(Object key) {
         return documentAsMap.get(key);
     }
+    
+    // add@byron
+    public Document getDocumnet(Object key) {
+        return (Document)documentAsMap.get(key);
+    }
+
 
     public Object getOrMissing(Object key) {
         return getOrDefault(key, Missing.getInstance());
@@ -205,7 +227,7 @@ public final class Document implements Map<String, Object>, Bson {
         }
     }
 
-    public LinkedHashMap asMap() {
+    public LinkedHashMap<String,Object> asMap() {
     	return this.documentAsMap;
     }
 }

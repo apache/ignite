@@ -1,10 +1,17 @@
 package org.elasticsearch.relay.util;
 
+import java.math.BigDecimal;
+import java.math.BigInteger;
+import java.util.List;
+
+import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
 import org.elasticsearch.relay.ESRelay;
 import org.elasticsearch.relay.model.ESQuery;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.fasterxml.jackson.databind.node.POJONode;
 
 
 public class ESUtil {
@@ -65,5 +72,59 @@ public class ESUtil {
 			andArray = new ArrayNode(ESRelay.jsonNodeFactory);
 		}
 		filterObj.put(ESConstants.Q_AND, andArray);
+	}
+	
+	public static ObjectNode getObjectNode(List<?> row, List<GridQueryFieldMetadata> fieldsMeta) throws Exception {
+		// check if there is a query
+		ObjectNode jsonQuery = new ObjectNode(ESRelay.jsonNodeFactory);
+		int index=0;
+		for(GridQueryFieldMetadata meta: fieldsMeta) {
+			Object node = row.get(index);
+			if(node==null) {
+				continue;
+			}
+			else if(node.getClass()==String.class) {
+			  jsonQuery.put(meta.fieldName(), node.toString());
+			}
+			else if(node.getClass()==byte[].class) {
+			  jsonQuery.put(meta.fieldName(), (byte[])node);
+			}
+			else if(BigDecimal.class==node.getClass()) {
+			  jsonQuery.put(meta.fieldName(), (BigDecimal)node);
+			}
+			else if(BigInteger.class==node.getClass()) {
+			  jsonQuery.put(meta.fieldName(), (BigInteger)node);
+			}
+			else if(Long.class==node.getClass()) {
+			  jsonQuery.put(meta.fieldName(), (Long)node);
+			}
+			else if(Double.class==node.getClass()) {
+			  jsonQuery.put(meta.fieldName(), (Double)node);
+			}
+			else if(Float.class==node.getClass()) {
+			  jsonQuery.put(meta.fieldName(), (Float)node);
+			}
+			else if(Integer.class==node.getClass()) {
+			  jsonQuery.put(meta.fieldName(), (Integer)node);
+			}
+			else if(Short.class==node.getClass()) {
+			  jsonQuery.put(meta.fieldName(), (Short)node);
+			}			
+			else if(Byte.class==node.getClass()) {
+			  jsonQuery.put(meta.fieldName(), (Byte)node);
+			}
+			else if(Boolean.class==node.getClass()) {
+			  jsonQuery.put(meta.fieldName(), (Boolean)node);
+			}
+			else if(JsonNode.class.isAssignableFrom(node.getClass())) {
+			  jsonQuery.set(meta.fieldName(), (JsonNode)node);
+			}
+			else {
+			  POJONode pnode = new POJONode(node);
+			  jsonQuery.putPOJO(meta.fieldName(), pnode);
+			}
+			index++;
+		}
+		return jsonQuery;
 	}
 }

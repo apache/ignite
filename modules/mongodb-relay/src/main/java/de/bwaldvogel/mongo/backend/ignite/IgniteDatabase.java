@@ -17,6 +17,7 @@ import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.plugin.IgnitePlugin;
 import org.apache.ignite.stream.StreamVisitor;
 
 import de.bwaldvogel.mongo.MongoCollection;
@@ -239,6 +240,11 @@ public class IgniteDatabase extends AbstractMongoDatabase<Object> {
 	      }
        
         //throw new UnsupportedOperationException();
+    }
+    
+    public boolean authenticate(Document clientInfo) {
+    	IgnitePlugin plugin = mvStore.plugin("MongoSecurityProcessorProvider");
+    	return true;
     }
     
     public Ignite getIgnite() {
