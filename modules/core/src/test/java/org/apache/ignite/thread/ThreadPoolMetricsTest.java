@@ -19,13 +19,22 @@ package org.apache.ignite.thread;
 
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.configuration.ConnectorConfiguration;
+import org.apache.ignite.configuration.DataRegionConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
+import org.apache.ignite.configuration.ExecutorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.processors.pool.PoolProcessor;
 import org.apache.ignite.plugin.AbstractTestPluginProvider;
 import org.apache.ignite.spi.metric.ReadOnlyMetricRegistry;
 import org.apache.ignite.spi.systemview.view.SystemView;
@@ -44,23 +53,8 @@ import static org.apache.ignite.testframework.GridTestUtils.runAsync;
  * Tests that thread pool metrics are available before the start of all Ignite components happened.
  */
 public class ThreadPoolMetricsTest extends GridCommonAbstractTest {
-    /** Names of the general thread pool metrics. */
-    private static final Collection<String> THREAD_POOL_METRICS = Arrays.asList(
-        metricName(THREAD_POOLS, "GridUtilityCacheExecutor"),
-        metricName(THREAD_POOLS, "GridExecutionExecutor"),
-        metricName(THREAD_POOLS, "GridServicesExecutor"),
-        metricName(THREAD_POOLS, "GridSystemExecutor"),
-        metricName(THREAD_POOLS, "GridClassLoadingExecutor"),
-        metricName(THREAD_POOLS, "GridManagementExecutor"),
-        metricName(THREAD_POOLS, "GridAffinityExecutor"),
-        metricName(THREAD_POOLS, "GridCallbackExecutor"),
-        metricName(THREAD_POOLS, "GridQueryExecutor"),
-        metricName(THREAD_POOLS, "GridSchemaExecutor"),
-        metricName(THREAD_POOLS, "GridRebalanceExecutor"),
-        metricName(THREAD_POOLS, "GridThinClientExecutor"),
-        metricName(THREAD_POOLS, "GridRebalanceStripedExecutor"),
-        metricName(THREAD_POOLS, "GridDataStreamExecutor")
-    );
+    /**  Custom executor name. */
+    private static final String CUSTOM_EXEC_NAME = "user-pool";
 
     /** Names of the system views for the thread pools. */
     private static final Collection<String> THREAD_POOL_VIEWS = Arrays.asList(
@@ -68,22 +62,67 @@ public class ThreadPoolMetricsTest extends GridCommonAbstractTest {
         STREAM_POOL_QUEUE_VIEW
     );
 
-    /** Latch that indicates whether the start of Ignite components was launched. */
-    public final CountDownLatch startLaunchedLatch = new CountDownLatch(1);
-
-    /** Latch that indicates whether the start of Ignite components was unblocked. */
-    public final CountDownLatch startUnblockedLatch = new CountDownLatch(1);
+    /** Mapping of the metric group name to the thread pool instance. */
+    private static final Map<String, Function<PoolProcessor, ExecutorService>> THREAD_POOL_METRICS =
+        new HashMap<String, Function<PoolProcessor, ExecutorService>>() {{
+            put(metricName(THREAD_POOLS, "GridUtilityCacheExecutor"), PoolProcessor::utilityCachePool);
+            put(metricName(THREAD_POOLS, "GridExecutionExecutor"), PoolProcessor::getExecutorService);
+            put(metricName(THREAD_POOLS, "GridServicesExecutor"), PoolProcessor::getServiceExecutorService);
+            put(metricName(THREAD_POOLS, "GridSystemExecutor"), PoolProcessor::getSystemExecutorService);
+            put(metricName(THREAD_POOLS, "GridClassLoadingExecutor"), PoolProcessor::getPeerClassLoadingExecutorService);
+            put(metricName(THREAD_POOLS, "GridManagementExecutor"), PoolProcessor::getManagementExecutorService);
+            put(metricName(THREAD_POOLS, "GridAffinityExecutor"), PoolProcessor::getAffinityExecutorService);
+            put(metricName(THREAD_POOLS, "GridCallbackExecutor"), PoolProcessor::asyncCallbackPool);
+            put(metricName(THREAD_POOLS, "GridQueryExecutor"), PoolProcessor::getQueryExecutorService);
+            put(metricName(THREAD_POOLS, "GridSchemaExecutor"), PoolProcessor::getSchemaExecutorService);
+            put(metricName(THREAD_POOLS, "GridRebalanceExecutor"), PoolProcessor::getRebalanceExecutorService);
+            put(metricName(THREAD_POOLS, "GridRebalanceStripedExecutor"), PoolProcessor::getStripedRebalanceExecutorService);
+            put(metricName(THREAD_POOLS, "GridThinClientExecutor"), PoolProcessor::getThinClientExecutorService);
+            put(metricName(THREAD_POOLS, "GridDataStreamExecutor"), PoolProcessor::getDataStreamerExecutorService);
+            put(metricName(THREAD_POOLS, "StripedExecutor"), PoolProcessor::getStripedExecutorService);
+            put(metricName(THREAD_POOLS, "GridRestExecutor"), PoolProcessor::getRestExecutorService);
+            put(metricName(THREAD_POOLS, "GridSnapshotExecutor"), PoolProcessor::getSnapshotExecutorService);
+            put(metricName(THREAD_POOLS, "GridReencryptionExecutor"), PoolProcessor::getReencryptionExecutorService);
+            put(metricName(THREAD_POOLS, CUSTOM_EXEC_NAME), proc -> (ExecutorService)proc.customExecutor(CUSTOM_EXEC_NAME));
+        }};
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         return super.getConfiguration(igniteInstanceName)
-            .setPluginProviders(new AbstractTestPluginProvider() {
-                /** {@inheritDoc} */
+            .setDataStorageConfiguration(
+                new DataStorageConfiguration().setDefaultDataRegionConfiguration(
+                    new DataRegionConfiguration().setPersistenceEnabled(true))
+            )
+            .setConnectorConfiguration(new ConnectorConfiguration())
+            .setExecutorConfiguration(new ExecutorConfiguration().setName(CUSTOM_EXEC_NAME));
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        super.afterTest();
+
+        stopAllGrids();
+    }
+
+    /**
+     * Tests that thread pool metrics are available before the start of all Ignite components happened.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testThreadPoolMetricsRegistry() throws Exception {
+        // Latch that indicates whether the start of Ignite components was launched.
+        CountDownLatch startLaunchedLatch = new CountDownLatch(1);
+
+        // Latch that indicates whether the start of Ignite components was unblocked.
+        CountDownLatch startUnblockedLatch = new CountDownLatch(1);
+
+        IgniteInternalFuture<IgniteEx> startFut = runAsync(() -> startGrid(
+            getConfiguration(getTestIgniteInstanceName()).setPluginProviders(new AbstractTestPluginProvider() {
                 @Override public String name() {
                     return "test-stuck-plugin";
                 }
 
-                /** {@inheritDoc} */
                 @Override public void onIgniteStart() {
                     startLaunchedLatch.countDown();
 
@@ -94,18 +133,7 @@ public class ThreadPoolMetricsTest extends GridCommonAbstractTest {
                         throw new IgniteException(e);
                     }
                 }
-            });
-    }
-
-    /**
-     * Tests that thread pool metrics are available before the start of all Ignite components happened.
-     *
-     * @throws Exception If failed.
-     */
-    @Test
-    @SuppressWarnings("Convert2MethodRef")
-    public void testThreadPoolMetrics() throws Exception {
-        IgniteInternalFuture<IgniteEx> startFut = runAsync(() -> startGrid());
+            })));
 
         try {
             assertTrue(startLaunchedLatch.await(getTestTimeout(), MILLISECONDS));
@@ -115,7 +143,7 @@ public class ThreadPoolMetricsTest extends GridCommonAbstractTest {
             assertTrue(StreamSupport.stream(srv.context().metric().spliterator(), false)
                 .map(ReadOnlyMetricRegistry::name)
                 .collect(Collectors.toSet())
-                .containsAll(THREAD_POOL_METRICS));
+                .containsAll(THREAD_POOL_METRICS.keySet()));
 
             assertTrue(StreamSupport.stream(srv.context().systemView().spliterator(), false)
                 .map(SystemView::name)
