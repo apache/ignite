@@ -71,6 +71,7 @@ import static org.apache.ignite.configuration.IgniteConfiguration.DFLT_THREAD_KE
 import static org.apache.ignite.failure.FailureType.SYSTEM_WORKER_TERMINATION;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.SNAPSHOT_RUNNER_THREAD_PREFIX;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
+import static org.apache.ignite.internal.processors.pool.MetricsAwareExecutorService.THREAD_POOLS;
 
 /**
  * Processor which abstracts out thread pool management.
@@ -87,9 +88,6 @@ public class PoolProcessor extends GridProcessorAdapter {
 
     /** Description of the system view for a system {@link StripedExecutor} queue view. */
     public static final String SYS_POOL_QUEUE_VIEW_DESC = "Striped thread pool task queue";
-
-    /** Group for a thread pools. */
-    public static final String THREAD_POOLS = "threadPools";
 
     /** Executor service. */
     @GridToStringExclude

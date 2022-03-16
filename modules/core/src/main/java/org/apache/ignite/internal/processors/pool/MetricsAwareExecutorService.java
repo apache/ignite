@@ -23,6 +23,9 @@ import org.apache.ignite.internal.processors.metric.MetricRegistry;
  * Executor service that supports self-registration of metrics.
  */
 public interface MetricsAwareExecutorService {
+    /** Group for a thread pools. */
+    public String THREAD_POOLS = "threadPools";
+
     /** */
     public String ACTIVE_COUNT_DESC = "Approximate number of threads that are actively executing tasks.";
 
