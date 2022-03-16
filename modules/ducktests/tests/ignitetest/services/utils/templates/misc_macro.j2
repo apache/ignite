@@ -49,7 +49,7 @@
     {% if config.include_event_types | length > 0 %}
         <util:list id="eventTypes" value-type="java.lang.Integer">
             {% for event_type in config.include_event_types %}
-                {{ event_type }}
+            <value>{{ event_type }}</value>
             {% endfor %}
         </util:list>
     {% endif %}

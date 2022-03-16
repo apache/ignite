@@ -32,6 +32,7 @@ from ignitetest.services.ignite_app import IgniteApplicationService
 from ignitetest.services.ignite_execution_exception import IgniteExecutionException
 from ignitetest.services.utils.control_utility import ControlUtility
 from ignitetest.services.utils.ignite_configuration import IgniteConfiguration
+from ignitetest.services.utils.ignite_configuration.event_type import EventType
 from ignitetest.utils import cluster, ignite_versions
 from ignitetest.utils.ignite_test import IgniteTest
 from ignitetest.utils.version import DEV_BRANCH, IgniteVersion
@@ -56,8 +57,7 @@ class ConsistencyTest(IgniteTest):
             IgniteConfiguration(
                 version=IgniteVersion(ignite_version),
                 cluster_state="INACTIVE",
-                include_event_types={"<util:constant static-field="
-                                     "\"org.apache.ignite.events.EventType.EVT_CONSISTENCY_VIOLATION\"/>"},
+                include_event_types=[EventType.EVT_CONSISTENCY_VIOLATION],
                 log4j_config=cfg_filename  # default AI config (will be generated below)
             ),
             java_class_name="org.apache.ignite.internal.ducktest.tests.control_utility.InconsistentNodeApplication",
