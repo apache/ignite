@@ -20,7 +20,6 @@ package org.apache.ignite.thread;
 import java.lang.Thread.UncaughtExceptionHandler;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.RejectedExecutionHandler;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
@@ -145,17 +144,9 @@ public class IgniteThreadPoolExecutor extends ThreadPoolExecutor implements Metr
         mreg.register("Shutdown", this::isShutdown, IS_SHUTDOWN_DESC);
         mreg.register("Terminated", this::isTerminated, IS_TERMINATED_DESC);
         mreg.register("Terminating", this::isTerminating, IS_TERMINATING_DESC);
-
-        mreg.register("RejectedExecutionHandlerClass", () -> {
-            RejectedExecutionHandler hnd = getRejectedExecutionHandler();
-
-            return hnd == null ? "" : hnd.getClass().getName();
-        }, String.class, REJ_HND_DESC);
-
-        mreg.register("ThreadFactoryClass", () -> {
-            ThreadFactory factory = getThreadFactory();
-
-            return factory == null ? "" : factory.getClass().getName();
-        }, String.class, THRD_FACTORY_DESC);
+        mreg.register("RejectedExecutionHandlerClass",
+            () -> getRejectedExecutionHandler().getClass().getName(), String.class, REJ_HND_DESC);
+        mreg.register("ThreadFactoryClass",
+            () -> getThreadFactory().getClass().getName(), String.class, THRD_FACTORY_DESC);
     }
 }
