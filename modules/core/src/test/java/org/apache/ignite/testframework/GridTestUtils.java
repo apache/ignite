@@ -120,8 +120,6 @@ import org.apache.ignite.spi.discovery.DiscoverySpiListener;
 import org.apache.ignite.ssl.SslContextFactory;
 import org.apache.ignite.testframework.config.GridTestProperties;
 import org.apache.ignite.testframework.junits.GridAbstractTest;
-import org.hamcrest.CustomMatcher;
-import org.hamcrest.Matcher;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -2604,19 +2602,5 @@ public final class GridTestUtils {
      */
     public static void suppressException(RunnableX runnableX) {
         runnableX.run();
-    }
-
-    /**
-     * Matcher to verify size of the collection.
-     *
-     * @param size Required size.
-     * @return {@code true} in case collection is not null and has an exactly the same size.
-     */
-    public static <T extends Collection<?>> Matcher<T> hasSize(int size) {
-        return new CustomMatcher<T>("should be non empty with size=" + size) {
-            @Override public boolean matches(Object item) {
-                return item instanceof Collection && ((Collection<?>)item).size() == size;
-            }
-        };
     }
 }

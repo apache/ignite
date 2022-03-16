@@ -38,7 +38,7 @@ public abstract class IgniteIntersect extends Intersect implements IgniteSetOp {
         super(cluster, traits, inputs, all);
     }
 
-    /** {@inheritDoc} */
+    /** */
     protected IgniteIntersect(RelInput input) {
         super(TraitUtils.changeTraits(input, IgniteConvention.INSTANCE));
     }

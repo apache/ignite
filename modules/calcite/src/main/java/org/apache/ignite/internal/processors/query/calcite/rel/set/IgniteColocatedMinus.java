@@ -30,7 +30,7 @@ import org.apache.ignite.internal.processors.query.calcite.util.Commons;
  * Physical node for MINUS (EXCEPT) operator which inputs are colocated.
  */
 public class IgniteColocatedMinus extends IgniteMinus implements IgniteColocatedSetOp {
-    /** {@inheritDoc} */
+    /** */
     public IgniteColocatedMinus(
         RelOptCluster cluster,
         RelTraitSet traitSet,

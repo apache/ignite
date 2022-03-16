@@ -30,7 +30,7 @@ import org.apache.ignite.internal.processors.query.calcite.util.Commons;
  * Physical node for INTERSECT operator which inputs are colocated.
  */
 public class IgniteColocatedIntersect extends IgniteIntersect implements IgniteColocatedSetOp {
-    /** {@inheritDoc} */
+    /** */
     public IgniteColocatedIntersect(
         RelOptCluster cluster,
         RelTraitSet traitSet,
