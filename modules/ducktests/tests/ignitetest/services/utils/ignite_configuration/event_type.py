@@ -36,7 +36,7 @@ class EventType(Enum):
     EVT_NODE_FAILED = auto()
     EVT_NODE_VALIDATION_FAILED = auto()
     EVT_SQL_QUERY_EXECUTION = auto()
-    
+
     def __str__(self):
         return '#{{T(org.apache.ignite.events.EventType).{}}}'.format(self._name_)
 
