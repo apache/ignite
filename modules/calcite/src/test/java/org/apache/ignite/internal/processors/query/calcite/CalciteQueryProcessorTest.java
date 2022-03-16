@@ -158,6 +158,19 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
             .check();
     }
 
+
+    @Test
+    public void test() throws IgniteInterruptedCheckedException {
+        sql("CREATE TABLE t(i INT)", true);
+        sql("CREATE INDEX t_i ON t(i)", true);
+        sql("INSERT INTO t VALUES (0), (null), (null)", true);
+        assertQuery(client, "SELECT t1.i FROM t t1 RIGHT JOIN t t2 ON t1.i = t2.i")
+            .returns(0)
+            .returns(new Object[]{null})
+            .returns(new Object[]{null})
+            .check();
+    }
+
     /** Tests varchar min\max aggregates. */
     @Test
     public void testVarCharMinMax() throws IgniteInterruptedCheckedException {

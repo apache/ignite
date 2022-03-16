@@ -579,7 +579,8 @@ public class ExecutionTest extends AbstractExecutionTest {
                         }
 
                         return Integer.compare((Integer)o1, (Integer)o2);
-                    }
+                    },
+                    (r1, r2) -> r1[0] != null && r1[0].equals(r2[0])
                 );
 
                 join.register(Arrays.asList(left, right));

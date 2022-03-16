@@ -320,6 +320,104 @@ public class MergeJoinExecutionTest extends AbstractExecutionTest {
         });
     }
 
+    /** */
+    @Test
+    public void join() {
+        Object[][] left = {
+            {1, "Roman", 1},
+/*
+            {2, "Igor", 1},
+*/
+        };
+
+        Object[][] right = {
+            {1, "Core"},
+            {1, "OLD_Core"},
+            {1, "SQL"},
+/*
+            {2, "QA"}
+*/
+        };
+
+        verifyJoin(left, right, INNER, new Object[][] {
+            {1, "Roman", "Core"},
+            {1, "Roman", "OLD_Core"},
+            {1, "Roman", "SQL"},
+/*
+            {2, "Igor", "Core"},
+            {2, "Igor", "OLD_Core"},
+            {2, "Igor", "SQL"},
+*/
+        });
+
+        verifyJoin(left, right, LEFT, new Object[][] {
+            {1, "Roman", "Core"},
+            {1, "Roman", "OLD_Core"},
+            {1, "Roman", "SQL"},
+/*
+            {2, "Igor", "Core"},
+            {2, "Igor", "OLD_Core"},
+            {2, "Igor", "SQL"},
+*/
+        });
+    }
+
+    /** */
+    @Test
+    public void joinOnNullField() {
+        Object[][] left = {
+            {1, "Roman", null},
+            {2, "Igor", null},
+            {3, "Alexey", 1},
+            {4, "Ivan", 2}
+        };
+
+        Object[][] right = {
+            {null, "Core"},
+            {null, "OLD_Core"},
+            {1, "SQL"},
+            {2, "QA"}
+        };
+
+        verifyJoin(left, right, INNER, new Object[][] {
+            {3, "Alexey", "SQL"},
+            {4, "Ivan", "QA"},
+        });
+
+        verifyJoin(left, right, LEFT, new Object[][] {
+            {1, "Roman", null},
+            {2, "Igor", null},
+            {3, "Alexey", "SQL"},
+            {4, "Ivan", "QA"},
+        });
+
+        verifyJoin(left, right, RIGHT, new Object[][] {
+            {3, "Alexey", "SQL"},
+            {4, "Ivan", "QA"},
+            {null, null, "Core"},
+            {null, null, "OLD_Core"},
+        });
+
+        verifyJoin(left, right, FULL, new Object[][] {
+            {1, "Roman", null},
+            {2, "Igor", null},
+            {3, "Alexey", "SQL"},
+            {4, "Ivan", "QA"},
+            {null, null, "Core"},
+            {null, null, "OLD_Core"},
+        });
+
+        verifyJoin(left, right, SEMI, new Object[][] {
+            {3, "Alexey"},
+            {4, "Ivan"},
+        });
+
+        verifyJoin(left, right, ANTI, new Object[][] {
+            {1, "Roman"},
+            {2, "Igor"},
+        });
+    }
+
     /**
      * Creates execution tree and executes it. Then compares the result of the execution with the given one.
      *
@@ -344,20 +442,23 @@ public class MergeJoinExecutionTest extends AbstractExecutionTest {
             outType = TypeUtils.createRowType(ctx.getTypeFactory(), int.class, String.class, Integer.class, int.class, String.class);
 
         MergeJoinNode<Object[]> join = MergeJoinNode.create(ctx, outType, leftType, rightType, joinType, (r1, r2) -> {
-            Object o1 = r1[2];
-            Object o2 = r2[0];
+                Object o1 = r1[2];
+                Object o2 = r2[0];
 
-            if (o1 == null || o2 == null) {
-                if (o1 != null)
-                    return 1;
-                else if (o2 != null)
-                    return -1;
-                else
-                    return 0;
-            }
+                if (o1 == null || o2 == null) {
+                    if (o1 != null)
+                        return 1;
+                    else if (o2 != null)
+                        return -1;
+                    else
+                        return 0;
+                }
 
-            return Integer.compare((Integer)o1, (Integer)o2);
-        });
+                return Integer.compare((Integer)o1, (Integer)o2);
+            },
+            (r1, r2) -> r1[2] != null && r1[2].equals(r2[0])
+        );
+
         join.register(F.asList(leftNode, rightNode));
 
         RelDataType rowType;
