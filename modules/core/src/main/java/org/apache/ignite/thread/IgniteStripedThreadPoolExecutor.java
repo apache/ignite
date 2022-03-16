@@ -38,29 +38,8 @@ import org.jetbrains.annotations.NotNull;
  * An {@link ExecutorService} that executes submitted tasks using pooled grid threads.
  */
 public class IgniteStripedThreadPoolExecutor implements ExecutorService, MetricsAwareExecutorService {
-    /** Number of threads to keep in each stripe-pool. */
-    private static final int CORE_THREADS_PER_POOL = 1;
-
-    /** Maximum number of threads to allow in each stripe-pool. */
-    private static final int MAX_THREADS_PER_POOL = 1;
-
     /** Stripe pools. */
     private final IgniteThreadPoolExecutor[] execs;
-
-    /** Thread keep-alive time. */
-    private final long keepAliveTime;
-
-    /** Number of threads to keep in the pool. */
-    private final int corePoolSize;
-
-    /** Maximum number of threads to allow in the pool. */
-    private final int maxPoolSize;
-
-    /** Handler name that is used when execution is blocked because the thread bounds and queue capacities are reached. */
-    private final String rejectedExecHndClsName;
-
-    /** Class name of the thread factory. */
-    private final String threadFactoryClsName;
 
     /**
      * Create striped thread pool.
@@ -87,8 +66,8 @@ public class IgniteStripedThreadPoolExecutor implements ExecutorService, Metrics
 
         for (int i = 0; i < concurrentLvl; i++) {
             IgniteThreadPoolExecutor executor = new IgniteThreadPoolExecutor(
-                CORE_THREADS_PER_POOL,
-                MAX_THREADS_PER_POOL,
+                1,
+                1,
                 keepAliveTime,
                 new LinkedBlockingQueue<>(),
                 factory);
@@ -97,13 +76,6 @@ public class IgniteStripedThreadPoolExecutor implements ExecutorService, Metrics
 
             execs[i] = executor;
         }
-
-        this.keepAliveTime = keepAliveTime;
-
-        corePoolSize = concurrentLvl * CORE_THREADS_PER_POOL;
-        maxPoolSize = concurrentLvl * MAX_THREADS_PER_POOL;
-        rejectedExecHndClsName = execs[0].getRejectedExecutionHandler().getClass().getName();
-        threadFactoryClsName = factory.getClass().getName();
     }
 
     /**
@@ -313,18 +285,20 @@ public class IgniteStripedThreadPoolExecutor implements ExecutorService, Metrics
     @Override public void registerMetrics(MetricRegistry mreg) {
         mreg.register("ActiveCount", this::activeCount, ACTIVE_COUNT_DESC);
         mreg.register("CompletedTaskCount", this::completedTaskCount, COMPLETED_TASK_DESC);
-        mreg.intMetric("CorePoolSize", CORE_SIZE_DESC).value(corePoolSize);
+        mreg.intMetric("CorePoolSize", CORE_SIZE_DESC).value(execs.length);
         mreg.register("LargestPoolSize", this::largestPoolSize, LARGEST_SIZE_DESC);
-        mreg.intMetric("MaximumPoolSize", MAX_SIZE_DESC).value(maxPoolSize);
+        mreg.intMetric("MaximumPoolSize", MAX_SIZE_DESC).value(execs.length);
         mreg.register("PoolSize", this::poolSize, POOL_SIZE_DESC);
         mreg.register("TaskCount", this::taskCount, TASK_COUNT_DESC);
         mreg.register("QueueSize", this::queueSize, QUEUE_SIZE_DESC);
-        mreg.longMetric("KeepAliveTime", KEEP_ALIVE_TIME_DESC).value(keepAliveTime);
+        mreg.longMetric("KeepAliveTime", KEEP_ALIVE_TIME_DESC).value(execs[0].getKeepAliveTime(TimeUnit.MILLISECONDS));
         mreg.register("Shutdown", this::isShutdown, IS_SHUTDOWN_DESC);
         mreg.register("Terminated", this::isTerminated, IS_TERMINATED_DESC);
         mreg.register("Terminating", this::terminating, IS_TERMINATING_DESC);
-        mreg.register("RejectedExecutionHandlerClass", () -> rejectedExecHndClsName, String.class, REJ_HND_DESC);
-        mreg.register("ThreadFactoryClass", () -> threadFactoryClsName, String.class, THRD_FACTORY_DESC);
+        mreg.objectMetric("RejectedExecutionHandlerClass", String.class, REJ_HND_DESC)
+            .value(execs[0].getRejectedExecutionHandler().getClass().getName());
+        mreg.objectMetric("ThreadFactoryClass", String.class, THRD_FACTORY_DESC)
+            .value(execs[0].getThreadFactory().getClass().getName());
     }
 
     /** {@inheritDoc} */
