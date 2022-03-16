@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Properties;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -414,7 +415,7 @@ public class SystemViewCommandTest extends GridCommandHandlerClusterByClassAbstr
     /** */
     @Test
     public void testViews() {
-        Set<String> expViewNames = new HashSet<>(asList(
+        Set<String> expViewNames = new TreeSet<>(asList(
             "METRICS",
             "VIEWS",
             "SERVICES",
@@ -451,6 +452,7 @@ public class SystemViewCommandTest extends GridCommandHandlerClusterByClassAbstr
             "STATISTICS_CONFIGURATION",
             "STATISTICS_PARTITION_DATA",
             "STATISTICS_LOCAL_DATA",
+            "STATISTICS_GLOBAL_DATA",
             "DS_ATOMICLONGS",
             "DS_ATOMICREFERENCES",
             "DS_ATOMICSTAMPED",
@@ -462,7 +464,7 @@ public class SystemViewCommandTest extends GridCommandHandlerClusterByClassAbstr
             "DS_QUEUES"
         ));
 
-        Set<String> viewNames = new HashSet<>();
+        Set<String> viewNames = new TreeSet<>();
 
         List<List<String>> sqlViewsView = systemView(ignite0, SQL_VIEWS_VIEW);
 

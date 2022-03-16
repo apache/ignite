@@ -88,6 +88,16 @@ namespace ignite
 
             if (version >= ProtocolVersion::VERSION_2_7_0)
                 writer.WriteInt8(config.GetNestedTxMode());
+
+            if (version >= ProtocolVersion::VERSION_2_13_0)
+            {
+                EngineMode::Type mode = config.GetEngineMode();
+
+                if (mode == EngineMode::DEFAULT)
+                    writer.WriteString(NULL, 0);
+
+                writer.WriteString(EngineMode::ToString(mode));
+            }
         }
 
         QueryExecuteRequest::QueryExecuteRequest(const std::string& schema, const std::string& sql,

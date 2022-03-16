@@ -598,3 +598,23 @@ SqlNode SqlKillQuery():
         return IgniteSqlKill.createQueryKill(s.end(this), queryIdLiteral, id.getKey(), id.getValue(), isAsync);
     }
 }
+
+SqlNode SqlCommitTransaction():
+{
+    final Span s;
+}
+{
+    <COMMIT> { s = span(); } (<TRANSACTION>)? {
+        return new IgniteSqlCommit(s.end(this));
+    }
+}
+
+SqlNode SqlRollbackTransaction():
+{
+    final Span s;
+}
+{
+    <ROLLBACK> { s = span(); } (<TRANSACTION>)? {
+        return new IgniteSqlRollback(s.end(this));
+    }
+}
