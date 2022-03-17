@@ -70,4 +70,4 @@ if %java_version% GEQ 15 (
     %current_value%
 )
 
-set "%~3=%value%"
+set "%~3=!value!"
