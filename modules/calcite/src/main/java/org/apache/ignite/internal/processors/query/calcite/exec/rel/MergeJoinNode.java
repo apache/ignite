@@ -22,7 +22,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.Deque;
 import java.util.List;
-import java.util.function.BiPredicate;
+
 import org.apache.calcite.rel.core.JoinRelType;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
@@ -37,9 +37,6 @@ public abstract class MergeJoinNode<Row> extends AbstractNode<Row> {
 
     /** */
     protected final Comparator<Row> comp;
-
-    /** */
-    protected final BiPredicate<Row, Row> cond;
 
     /** */
     protected final RowHandler<Row> handler;
@@ -65,18 +62,11 @@ public abstract class MergeJoinNode<Row> extends AbstractNode<Row> {
     /**
      * @param ctx Execution context.
      * @param comp Join expression.
-     * @param cond Predicate.
      */
-    private MergeJoinNode(
-        ExecutionContext<Row> ctx,
-        RelDataType rowType,
-        Comparator<Row> comp,
-        BiPredicate<Row, Row> cond
-    ) {
+    private MergeJoinNode(ExecutionContext<Row> ctx, RelDataType rowType, Comparator<Row> comp) {
         super(ctx, rowType);
 
         this.comp = comp;
-        this.cond = cond;
         handler = ctx.rowHandler();
     }
 
@@ -216,43 +206,36 @@ public abstract class MergeJoinNode<Row> extends AbstractNode<Row> {
     protected abstract void join() throws Exception;
 
     /** */
-    @NotNull public static <Row> MergeJoinNode<Row> create(
-        ExecutionContext<Row> ctx,
-        RelDataType outputRowType,
-        RelDataType leftRowType,
-        RelDataType rightRowType,
-        JoinRelType joinType,
-        Comparator<Row> comp,
-        BiPredicate<Row, Row> cond
-    ) {
+    @NotNull public static <Row> MergeJoinNode<Row> create(ExecutionContext<Row> ctx, RelDataType outputRowType, RelDataType leftRowType,
+        RelDataType rightRowType, JoinRelType joinType, Comparator<Row> comp) {
         switch (joinType) {
             case INNER:
-                return new InnerJoin<>(ctx, outputRowType, comp, cond);
+                return new InnerJoin<>(ctx, outputRowType, comp);
 
             case LEFT: {
                 RowHandler.RowFactory<Row> rightRowFactory = ctx.rowHandler().factory(ctx.getTypeFactory(), rightRowType);
 
-                return new LeftJoin<>(ctx, outputRowType, comp, cond, rightRowFactory);
+                return new LeftJoin<>(ctx, outputRowType, comp, rightRowFactory);
             }
 
             case RIGHT: {
                 RowHandler.RowFactory<Row> leftRowFactory = ctx.rowHandler().factory(ctx.getTypeFactory(), leftRowType);
 
-                return new RightJoin<>(ctx, outputRowType, comp, cond, leftRowFactory);
+                return new RightJoin<>(ctx, outputRowType, comp, leftRowFactory);
             }
 
             case FULL: {
                 RowHandler.RowFactory<Row> leftRowFactory = ctx.rowHandler().factory(ctx.getTypeFactory(), leftRowType);
                 RowHandler.RowFactory<Row> rightRowFactory = ctx.rowHandler().factory(ctx.getTypeFactory(), rightRowType);
 
-                return new FullOuterJoin<>(ctx, outputRowType, comp, cond, leftRowFactory, rightRowFactory);
+                return new FullOuterJoin<>(ctx, outputRowType, comp, leftRowFactory, rightRowFactory);
             }
 
             case SEMI:
-                return new SemiJoin<>(ctx, outputRowType, comp, cond);
+                return new SemiJoin<>(ctx, outputRowType, comp);
 
             case ANTI:
-                return new AntiJoin<>(ctx, outputRowType, comp, cond);
+                return new AntiJoin<>(ctx, outputRowType, comp);
 
             default:
                 throw new IllegalStateException("Join type \"" + joinType + "\" is not supported yet");
@@ -280,15 +263,9 @@ public abstract class MergeJoinNode<Row> extends AbstractNode<Row> {
          * @param ctx Execution context.
          * @param rowType Row type.
          * @param comp Join expression comparator.
-         * @param cond Predicate.
          */
-        public InnerJoin(
-            ExecutionContext<Row> ctx,
-            RelDataType rowType,
-            Comparator<Row> comp,
-            BiPredicate<Row, Row> cond
-        ) {
-            super(ctx, rowType, comp, cond);
+        public InnerJoin(ExecutionContext<Row> ctx, RelDataType rowType, Comparator<Row> comp) {
+            super(ctx, rowType, comp);
         }
 
         /** {@inheritDoc} */
@@ -328,8 +305,7 @@ public abstract class MergeJoinNode<Row> extends AbstractNode<Row> {
                         continue;
                     }
 
-                    Row row = null;
-
+                    Row row;
                     if (!drainMaterialization) {
                         int cmp = comp.compare(left, right);
 
@@ -358,8 +334,7 @@ public abstract class MergeJoinNode<Row> extends AbstractNode<Row> {
                                 rightMaterialization = new ArrayList<>();
                         }
 
-                        if (cond.test(left, right))
-                            row = handler.concat(left, right);
+                        row = handler.concat(left, right);
 
                         if (rightMaterialization != null) {
                             rightMaterialization.add(right);
@@ -389,14 +364,11 @@ public abstract class MergeJoinNode<Row> extends AbstractNode<Row> {
                             continue;
                         }
 
-                        if (cond.test(left, right))
-                            row = handler.concat(left, right);
+                        row = handler.concat(left, right);
                     }
 
-                    if (row != null) {
-                        requested--;
-                        downstream().push(row);
-                    }
+                    requested--;
+                    downstream().push(row);
                 }
             }
             finally {
@@ -445,17 +417,10 @@ public abstract class MergeJoinNode<Row> extends AbstractNode<Row> {
          * @param ctx Execution context.
          * @param rowType Row type.
          * @param comp Join expression comparator.
-         * @param cond Predicate.
          * @param rightRowFactory Right row factory.
          */
-        public LeftJoin(
-            ExecutionContext<Row> ctx,
-            RelDataType rowType,
-            Comparator<Row> comp,
-            BiPredicate<Row, Row> cond,
-            RowHandler.RowFactory<Row> rightRowFactory
-        ) {
-            super(ctx, rowType, comp, cond);
+        public LeftJoin(ExecutionContext<Row> ctx, RelDataType rowType, Comparator<Row> comp, RowHandler.RowFactory<Row> rightRowFactory) {
+            super(ctx, rowType, comp);
 
             this.rightRowFactory = rightRowFactory;
         }
@@ -500,8 +465,7 @@ public abstract class MergeJoinNode<Row> extends AbstractNode<Row> {
                         continue;
                     }
 
-                    Row row = null;
-
+                    Row row;
                     if (!drainMaterialization) {
                         if (right == null) {
                             row = handler.concat(left, rightRowFactory.create());
@@ -540,6 +504,8 @@ public abstract class MergeJoinNode<Row> extends AbstractNode<Row> {
                             continue;
                         }
 
+                        matched = true;
+
                         if (rightMaterialization == null && (!rightInBuf.isEmpty() || waitingRight != NOT_WAITING)) {
                             if (rightInBuf.isEmpty())
                                 break;
@@ -548,32 +514,18 @@ public abstract class MergeJoinNode<Row> extends AbstractNode<Row> {
                                 rightMaterialization = new ArrayList<>();
                         }
 
-                        if (cond.test(left, right)) {
-                            matched = true;
-                            row = handler.concat(left, right);
-                        }
+                        row = handler.concat(left, right);
 
                         if (rightMaterialization != null) {
                             rightMaterialization.add(right);
 
                             right = null;
                         }
-                        else {
-                            if (!matched)
-                                row = handler.concat(left, rightRowFactory.create());
-
+                        else
                             left = null;
-                        }
                     }
                     else {
                         if (rightIdx >= rightMaterialization.size()) {
-                            if (!matched) {
-                                row = handler.concat(left, rightRowFactory.create());
-
-                                requested--;
-                                downstream().push(row);
-                            }
-
                             rightIdx = 0;
                             left = null;
 
@@ -592,16 +544,11 @@ public abstract class MergeJoinNode<Row> extends AbstractNode<Row> {
                             continue;
                         }
 
-                        if (cond.test(left, right)) {
-                            matched = true;
-                            row = handler.concat(left, right);
-                        }
+                        row = handler.concat(left, right);
                     }
 
-                    if (row != null) {
-                        requested--;
-                        downstream().push(row);
-                    }
+                    requested--;
+                    downstream().push(row);
                 }
             }
             finally {
@@ -648,17 +595,10 @@ public abstract class MergeJoinNode<Row> extends AbstractNode<Row> {
          * @param ctx Execution context.
          * @param rowType Row type.
          * @param comp Join expression comparator.
-         * @param cond Predicate.
          * @param leftRowFactory Left row factory.
          */
-        public RightJoin(
-            ExecutionContext<Row> ctx,
-            RelDataType rowType,
-            Comparator<Row> comp,
-            BiPredicate<Row, Row> cond,
-            RowHandler.RowFactory<Row> leftRowFactory
-        ) {
-            super(ctx, rowType, comp, cond);
+        public RightJoin(ExecutionContext<Row> ctx, RelDataType rowType, Comparator<Row> comp, RowHandler.RowFactory<Row> leftRowFactory) {
+            super(ctx, rowType, comp);
 
             this.leftRowFactory = leftRowFactory;
         }
@@ -703,8 +643,7 @@ public abstract class MergeJoinNode<Row> extends AbstractNode<Row> {
                         continue;
                     }
 
-                    Row row = null;
-
+                    Row row;
                     if (!drainMaterialization) {
                         if (left == null) {
                             if (!matched) {
@@ -753,16 +692,12 @@ public abstract class MergeJoinNode<Row> extends AbstractNode<Row> {
                                 rightMaterialization = new ArrayList<>();
                         }
 
-                        if (cond.test(left, right)) {
-                            matched = true;
-                            row = handler.concat(left, right);
-                        }
+                        matched = true;
+
+                        row = handler.concat(left, right);
 
                         if (rightMaterialization != null) {
                             rightMaterialization.add(right);
-
-                            if (!matched)
-                                row = handler.concat(leftRowFactory.create(), right);
 
                             right = null;
                         }
@@ -796,16 +731,11 @@ public abstract class MergeJoinNode<Row> extends AbstractNode<Row> {
                             continue;
                         }
 
-                        if (cond.test(left, right)) {
-                            matched = true;
-                            row = handler.concat(left, right);
-                        }
+                        row = handler.concat(left, right);
                     }
 
-                    if (row != null) {
-                        requested--;
-                        downstream().push(row);
-                    }
+                    requested--;
+                    downstream().push(row);
                 }
             }
             finally {
@@ -858,19 +788,12 @@ public abstract class MergeJoinNode<Row> extends AbstractNode<Row> {
          * @param ctx Execution context.
          * @param rowType Row type.
          * @param comp Join expression comparator.
-         * @param cond Predicate.
          * @param leftRowFactory Left row factory.
          * @param rightRowFactory Right row factory.
          */
-        public FullOuterJoin(
-            ExecutionContext<Row> ctx,
-            RelDataType rowType,
-            Comparator<Row> comp,
-            BiPredicate<Row, Row> cond,
-            RowHandler.RowFactory<Row> leftRowFactory,
-            RowHandler.RowFactory<Row> rightRowFactory
-        ) {
-            super(ctx, rowType, comp, cond);
+        public FullOuterJoin(ExecutionContext<Row> ctx, RelDataType rowType, Comparator<Row> comp,
+            RowHandler.RowFactory<Row> leftRowFactory, RowHandler.RowFactory<Row> rightRowFactory) {
+            super(ctx, rowType, comp);
 
             this.leftRowFactory = leftRowFactory;
             this.rightRowFactory = rightRowFactory;
@@ -1073,13 +996,8 @@ public abstract class MergeJoinNode<Row> extends AbstractNode<Row> {
          * @param rowType Row type.
          * @param comp Join expression comparator.
          */
-        public SemiJoin(
-            ExecutionContext<Row> ctx,
-            RelDataType rowType,
-            Comparator<Row> comp,
-            BiPredicate<Row, Row> cond
-        ) {
-            super(ctx, rowType, comp, cond);
+        public SemiJoin(ExecutionContext<Row> ctx, RelDataType rowType, Comparator<Row> comp) {
+            super(ctx, rowType, comp);
         }
 
         /** {@inheritDoc} */
@@ -1116,14 +1034,10 @@ public abstract class MergeJoinNode<Row> extends AbstractNode<Row> {
                         continue;
                     }
 
-                    if (cond.test(left, right)) {
-                        requested--;
-                        downstream().push(left);
+                    requested--;
+                    downstream().push(left);
 
-                        left = null;
-                    }
-                    else
-                        right = null;
+                    left = null;
                 }
             }
             finally {
@@ -1157,15 +1071,9 @@ public abstract class MergeJoinNode<Row> extends AbstractNode<Row> {
          * @param ctx Execution context.
          * @param rowType Row type.
          * @param comp Join expression comparator.
-         * @param cond Predicate.
          */
-        public AntiJoin(
-            ExecutionContext<Row> ctx,
-            RelDataType rowType,
-            Comparator<Row> comp,
-            BiPredicate<Row, Row> cond
-        ) {
-            super(ctx, rowType, comp, cond);
+        public AntiJoin(ExecutionContext<Row> ctx, RelDataType rowType, Comparator<Row> comp) {
+            super(ctx, rowType, comp);
         }
 
         /** {@inheritDoc} */
@@ -1194,10 +1102,7 @@ public abstract class MergeJoinNode<Row> extends AbstractNode<Row> {
                         int cmp = comp.compare(left, right);
 
                         if (cmp == 0) {
-                            if (cond.test(left, right))
-                                left = null;
-                            else
-                                right = null;
+                            left = null;
 
                             continue;
                         }

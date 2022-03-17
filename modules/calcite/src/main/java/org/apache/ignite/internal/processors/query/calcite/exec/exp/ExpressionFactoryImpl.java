@@ -30,7 +30,6 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Ordering;
 import com.google.common.primitives.Primitives;
 import org.apache.calcite.DataContext;
 import org.apache.calcite.adapter.enumerable.EnumUtils;
@@ -164,40 +163,48 @@ public class ExpressionFactoryImpl<Row> implements ExpressionFactory<Row> {
             throw new IllegalArgumentException("Both inputs should be non-empty and have the same size: left="
                 + (left != null ? left.size() : "null") + ", right=" + (right != null ? right.size() : "null"));
 
-        List<Comparator<Row>> comparators = new ArrayList<>();
+        // Check that collations is correct.
+        for (int i = 0; i < left.size(); i++) {
+            if (left.get(i).nullDirection.nullComparison != right.get(i).nullDirection.nullComparison)
+                throw new IllegalArgumentException("Can't be compared: left=" + left.get(i) + ", right=" + right.get(i));
 
-        for (int i = 0; i < left.size(); i++)
-            comparators.add(comparator(left.get(i), right.get(i)));
-
-        return Ordering.compound(comparators);
-    }
-
-    /** */
-    private Comparator<Row> comparator(RelFieldCollation left, RelFieldCollation right) {
-        final int nullComparison = left.nullDirection.nullComparison;
-
-        if (nullComparison != right.nullDirection.nullComparison)
-            throw new IllegalArgumentException("Can't be compared: left=" + left + ", right=" + right);
-
-        final int lIdx = left.getFieldIndex();
-        final int rIdx = right.getFieldIndex();
-        RowHandler<Row> handler = ctx.rowHandler();
-
-        if (left.direction != right.direction)
-            throw new IllegalArgumentException("Can't be compared: left=" + left + ", right=" + right);
-
-        if (left.direction == RelFieldCollation.Direction.ASCENDING) {
-            return (o1, o2) -> {
-                final Object c1 = handler.get(lIdx, o1);
-                final Object c2 = handler.get(rIdx, o2);
-                return compare(c1, c2, nullComparison);
-            };
+            if (left.get(i).direction != right.get(i).direction)
+                throw new IllegalArgumentException("Can't be compared: left=" + left.get(i) + ", right=" + right.get(i));
         }
 
-        return (o1, o2) -> {
-            final Object c1 = handler.get(lIdx, o1);
-            final Object c2 = handler.get(rIdx, o2);
-            return compare(c2, c1, -nullComparison);
+        return new Comparator<Row>() {
+            @Override public int compare(Row o1, Row o2) {
+                boolean hasNulls = false;
+                RowHandler<Row> hnd = ctx.rowHandler();
+
+                for (int i = 0; i < left.size(); i++) {
+                    RelFieldCollation leftField = left.get(i);
+                    RelFieldCollation rightField = right.get(i);
+
+                    int lIdx = leftField.getFieldIndex();
+                    int rIdx = rightField.getFieldIndex();
+
+                    Object c1 = hnd.get(lIdx, o1);
+                    Object c2 = hnd.get(rIdx, o2);
+
+                    if (c1 == null && c2 == null) {
+                        hasNulls = true;
+                        continue;
+                    }
+
+                    int nullComparison = leftField.nullDirection.nullComparison;
+
+                    int res = leftField.direction == RelFieldCollation.Direction.ASCENDING ?
+                        ExpressionFactoryImpl.compare(c1, c2, nullComparison) :
+                        ExpressionFactoryImpl.compare(c2, c1, -nullComparison);
+
+                    if (res != 0)
+                        return res;
+                }
+
+                // If compared rows contain NULLs, they shouldn't be treated as equals, since NULL <> NULL in SQL.
+                return hasNulls ? 1 : 0;
+            }
         };
     }
 
