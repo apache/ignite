@@ -64,7 +64,7 @@ import static org.apache.ignite.testframework.GridTestUtils.runAsync;
  * Tests that thread pool metrics are available before the start of all Ignite components happened.
  */
 public class ThreadPoolMetricsTest extends GridCommonAbstractTest {
-    /**  Custom executor name. */
+    /** Custom executor name. */
     private static final String CUSTOM_EXEC_NAME = "user-pool";
 
     /** Names of the system views for the thread pools. */

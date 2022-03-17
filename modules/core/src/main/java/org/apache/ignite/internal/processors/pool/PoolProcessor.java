@@ -922,7 +922,7 @@ public class PoolProcessor extends GridProcessorAdapter {
     private void monitorExecutor(String name, ExecutorService execSvc) {
         if (!(execSvc instanceof MetricsAwareExecutorService)) {
             throw new UnsupportedOperationException(
-                "Executor " + name + " does not implement " + MetricsAwareExecutorService.class.getSimpleName());
+                "Executor '" + name + "' does not implement '" + MetricsAwareExecutorService.class.getSimpleName() + "'.");
         }
 
         ((MetricsAwareExecutorService)execSvc).registerMetrics(ctx.metric().registry(metricName(THREAD_POOLS, name)));
