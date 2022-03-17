@@ -113,6 +113,8 @@ public class ActivationOnExpirationTimeoutTest extends GridCommonAbstractTest {
     public void expirePolicyTest() throws Exception {
         IgniteEx igniteEx = startGrids(2);
 
+        System.err.println("TEST | started");
+
         igniteEx.cluster().state(ClusterState.ACTIVE);
 
         IgniteCache<Object, Object> cache = igniteEx.getOrCreateCache(DEFAULT_CACHE_NAME);
@@ -123,12 +125,16 @@ public class ActivationOnExpirationTimeoutTest extends GridCommonAbstractTest {
             cache.put(uuid, uuid);
         }
 
+        System.err.println("TEST | deactivating");
+
         igniteEx.cluster().state(ClusterState.INACTIVE);
 
         isDataLoading = false;
 
         // Wait for the expiration.
         TimeUnit.SECONDS.sleep(TIMEOUT_SEC);
+
+        System.err.println("TEST | activating");
 
         igniteEx.cluster().state(ClusterState.ACTIVE);
 

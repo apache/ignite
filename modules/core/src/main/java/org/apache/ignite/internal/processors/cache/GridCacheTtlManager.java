@@ -17,12 +17,16 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.util.UUID;
 import java.util.concurrent.atomic.LongAdder;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.internal.GridTopic;
 import org.apache.ignite.internal.NodeStoppingException;
+import org.apache.ignite.internal.managers.communication.GridMessageListener;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsFullMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtInvalidPartitionException;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheEntry;
@@ -39,7 +43,7 @@ import org.jetbrains.annotations.Nullable;
  * Eagerly removes expired entries from cache when
  * {@link CacheConfiguration#isEagerTtl()} flag is set.
  */
-public class GridCacheTtlManager extends GridCacheManagerAdapter {
+public class GridCacheTtlManager extends GridCacheManagerAdapter implements GridMessageListener {
     /** @see IgniteSystemProperties#IGNITE_UNWIND_THROTTLING_TIMEOUT */
     public static final long DFLT_UNWIND_THROTTLING_TIMEOUT = 500L;
 
@@ -97,18 +101,7 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
     @Override protected void start0() throws IgniteCheckedException {
         dhtCtx = cctx.isNear() ? cctx.near().dht().context() : cctx;
 
-        boolean cleanupDisabled = cctx.kernalContext().isDaemon() ||
-            !cctx.config().isEagerTtl() ||
-            CU.isUtilityCache(cctx.name()) ||
-            cctx.dataStructuresCache() ||
-            (cctx.kernalContext().clientNode() && cctx.config().getNearConfiguration() == null);
-
-        if (cleanupDisabled)
-            return;
-
-        eagerTtlEnabled = true;
-
-        pendingEntries = (!cctx.isLocal() && cctx.config().getNearConfiguration() != null) ? new GridConcurrentSkipListSetEx() : null;
+        cctx.gridIO().addMessageListener(GridTopic.TOPIC_CACHE, this);
     }
 
     /**
@@ -318,6 +311,28 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
         }
 
         return res;
+    }
+
+    @Override public void onMessage(UUID nodeId, Object msg, byte plc) {
+        System.err.println("TEST | message on " + dhtCtx.kernalContext().localNodeId() + ": " + msg);
+
+        if (msg instanceof GridDhtPartitionsFullMessage) {
+
+            boolean cleanupDisabled = cctx.kernalContext().isDaemon() ||
+                !cctx.config().isEagerTtl() ||
+                CU.isUtilityCache(cctx.name()) ||
+                cctx.dataStructuresCache() ||
+                (cctx.kernalContext().clientNode() && cctx.config().getNearConfiguration() == null);
+
+            if (cleanupDisabled)
+                return;
+
+            eagerTtlEnabled = true;
+
+            cctx.shared().ttl().register(this);
+
+            pendingEntries = (!cctx.isLocal() && cctx.config().getNearConfiguration() != null) ? new GridConcurrentSkipListSetEx() : null;
+        }
     }
 
     /**

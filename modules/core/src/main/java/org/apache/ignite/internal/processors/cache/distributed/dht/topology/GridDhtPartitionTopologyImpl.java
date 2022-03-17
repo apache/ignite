@@ -2015,7 +2015,14 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
             assert !(topReadyFut instanceof GridDhtPartitionsExchangeFuture) ||
                 assignment.topologyVersion().equals(((GridDhtPartitionsExchangeFuture)topReadyFut).context().events().topologyVersion());
 
+            if(readyTopVer == AffinityTopologyVersion.NONE){
+                System.err.println("TEST | On exchange done on " + ctx.kernalContext().localNodeId());
+
+
+            }
+
             readyTopVer = lastTopChangeVer = assignment.topologyVersion();
+
 
             if (fut != null)
                 discoCache = fut.events().discoveryCache();
