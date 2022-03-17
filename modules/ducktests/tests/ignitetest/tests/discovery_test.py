@@ -175,7 +175,7 @@ class DiscoveryTest(IgniteTest):
     def _perform_node_fail_scenario(self, test_config):
         failure_detection_timeout = self._global_int(self.GLOBAL_DETECTION_TIMEOUT, self.DEFAULT_DETECTION_TIMEOUT)
 
-        cluster_size = len(self.test_context.cluster)
+        cluster_size = self.available_cluster_size
 
         # One node is required to detect the failure.
         assert cluster_size >= 1 + test_config.nodes_to_kill + (
