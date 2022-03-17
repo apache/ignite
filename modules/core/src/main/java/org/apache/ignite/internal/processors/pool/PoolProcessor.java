@@ -71,12 +71,54 @@ import static org.apache.ignite.configuration.IgniteConfiguration.DFLT_THREAD_KE
 import static org.apache.ignite.failure.FailureType.SYSTEM_WORKER_TERMINATION;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.SNAPSHOT_RUNNER_THREAD_PREFIX;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
-import static org.apache.ignite.internal.processors.pool.MetricsAwareExecutorService.THREAD_POOLS;
 
 /**
  * Processor which abstracts out thread pool management.
  */
 public class PoolProcessor extends GridProcessorAdapter {
+    /** */
+    public static final String ACTIVE_COUNT_DESC = "Approximate number of threads that are actively executing tasks.";
+
+    /** */
+    public static final String COMPLETED_TASK_DESC = "Approximate total number of tasks that have completed execution.";
+
+    /** */
+    public static final String CORE_SIZE_DESC = "The core number of threads.";
+
+    /** */
+    public static final String LARGEST_SIZE_DESC = "Largest number of threads that have ever simultaneously been in the pool.";
+
+    /** */
+    public static final String MAX_SIZE_DESC = "The maximum allowed number of threads.";
+
+    /** */
+    public static final String POOL_SIZE_DESC = "Current number of threads in the pool.";
+
+    /** */
+    public static final String TASK_COUNT_DESC = "Approximate total number of tasks that have been scheduled for execution.";
+
+    /** */
+    public static final String QUEUE_SIZE_DESC = "Current size of the execution queue.";
+
+    /** */
+    public static final String KEEP_ALIVE_TIME_DESC = "Thread keep-alive time, which is the amount of time which threads in excess of " +
+        "the core pool size may remain idle before being terminated.";
+
+    /** */
+    public static final String IS_SHUTDOWN_DESC = "True if this executor has been shut down.";
+
+    /** */
+    public static final String IS_TERMINATED_DESC = "True if all tasks have completed following shut down.";
+
+    /** */
+    public static final String IS_TERMINATING_DESC = "True if terminating but not yet terminated.";
+
+    /** */
+    public static final String REJ_HND_DESC = "Class name of current rejection handler.";
+
+    /** */
+    public static final String THRD_FACTORY_DESC = "Class name of thread factory used to create new threads.";
+
     /** Name of the system view for a data streamer {@link StripedExecutor} queue view. */
     public static final String STREAM_POOL_QUEUE_VIEW = metricName("datastream", "threadpool", "queue");
 
@@ -88,6 +130,9 @@ public class PoolProcessor extends GridProcessorAdapter {
 
     /** Description of the system view for a system {@link StripedExecutor} queue view. */
     public static final String SYS_POOL_QUEUE_VIEW_DESC = "Striped thread pool task queue";
+
+    /** Group for a thread pools. */
+    public static final String THREAD_POOLS = "threadPools";
 
     /** Executor service. */
     @GridToStringExclude

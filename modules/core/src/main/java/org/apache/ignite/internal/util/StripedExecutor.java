@@ -51,6 +51,8 @@ import org.jetbrains.annotations.NotNull;
 
 import static java.util.stream.IntStream.range;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_DATA_STREAMING_EXECUTOR_SERVICE_TASKS_STEALING_THRESHOLD;
+import static org.apache.ignite.internal.processors.pool.PoolProcessor.IS_SHUTDOWN_DESC;
+import static org.apache.ignite.internal.processors.pool.PoolProcessor.IS_TERMINATED_DESC;
 
 /**
  * Striped executor.

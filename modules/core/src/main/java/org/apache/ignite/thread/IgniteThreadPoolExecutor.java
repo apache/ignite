@@ -27,6 +27,21 @@ import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.pool.MetricsAwareExecutorService;
 
+import static org.apache.ignite.internal.processors.pool.PoolProcessor.ACTIVE_COUNT_DESC;
+import static org.apache.ignite.internal.processors.pool.PoolProcessor.COMPLETED_TASK_DESC;
+import static org.apache.ignite.internal.processors.pool.PoolProcessor.CORE_SIZE_DESC;
+import static org.apache.ignite.internal.processors.pool.PoolProcessor.IS_SHUTDOWN_DESC;
+import static org.apache.ignite.internal.processors.pool.PoolProcessor.IS_TERMINATED_DESC;
+import static org.apache.ignite.internal.processors.pool.PoolProcessor.IS_TERMINATING_DESC;
+import static org.apache.ignite.internal.processors.pool.PoolProcessor.KEEP_ALIVE_TIME_DESC;
+import static org.apache.ignite.internal.processors.pool.PoolProcessor.LARGEST_SIZE_DESC;
+import static org.apache.ignite.internal.processors.pool.PoolProcessor.MAX_SIZE_DESC;
+import static org.apache.ignite.internal.processors.pool.PoolProcessor.POOL_SIZE_DESC;
+import static org.apache.ignite.internal.processors.pool.PoolProcessor.QUEUE_SIZE_DESC;
+import static org.apache.ignite.internal.processors.pool.PoolProcessor.REJ_HND_DESC;
+import static org.apache.ignite.internal.processors.pool.PoolProcessor.TASK_COUNT_DESC;
+import static org.apache.ignite.internal.processors.pool.PoolProcessor.THRD_FACTORY_DESC;
+
 /**
  * An {@link ExecutorService} that executes submitted tasks using pooled grid threads.
  */
