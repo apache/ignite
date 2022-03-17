@@ -52,6 +52,7 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentInfo;
+import org.apache.ignite.internal.managers.deployment.P2PClassLoadingIssues;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheAffinityManager;
@@ -1037,6 +1038,9 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
             if (notify && getEventFilter() != null)
                 notify = getEventFilter().evaluate(evt);
         }
+        catch (NoClassDefFoundError e) {
+            P2PClassLoadingIssues.rethrowDisarmedP2PClassLoadingFailure(e);
+        }
         catch (Exception e) {
             U.error(log, "CacheEntryEventFilter failed: " + e);
         }
@@ -1623,6 +1627,9 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
 
         try {
             transVal = trans.apply(evt);
+        }
+        catch (NoClassDefFoundError e) {
+            P2PClassLoadingIssues.rethrowDisarmedP2PClassLoadingFailure(e);
         }
         catch (Exception e) {
             U.error(log, e);

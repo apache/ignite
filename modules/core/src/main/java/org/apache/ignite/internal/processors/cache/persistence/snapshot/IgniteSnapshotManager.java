@@ -89,8 +89,10 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteFeatures;
 import org.apache.ignite.internal.IgniteFutureCancelledCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
+import org.apache.ignite.internal.cluster.DistributedConfigurationUtils;
 import org.apache.ignite.internal.events.DiscoveryCustomEvent;
 import org.apache.ignite.internal.managers.communication.GridIoManager;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
@@ -98,6 +100,9 @@ import org.apache.ignite.internal.managers.communication.TransmissionCancelledEx
 import org.apache.ignite.internal.managers.communication.TransmissionHandler;
 import org.apache.ignite.internal.managers.communication.TransmissionMeta;
 import org.apache.ignite.internal.managers.communication.TransmissionPolicy;
+import org.apache.ignite.internal.managers.encryption.EncryptionCacheKeyProvider;
+import org.apache.ignite.internal.managers.encryption.GroupKey;
+import org.apache.ignite.internal.managers.encryption.GroupKeyEncrypted;
 import org.apache.ignite.internal.managers.eventstorage.DiscoveryEventListener;
 import org.apache.ignite.internal.managers.systemview.walker.SnapshotViewWalker;
 import org.apache.ignite.internal.pagemem.store.PageStore;
@@ -107,6 +112,7 @@ import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.CacheType;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
+import org.apache.ignite.internal.processors.cache.StoredCacheData;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.PartitionsExchangeAware;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
@@ -130,10 +136,14 @@ import org.apache.ignite.internal.processors.cache.tree.DataRow;
 import org.apache.ignite.internal.processors.cache.verify.IdleVerifyResultV2;
 import org.apache.ignite.internal.processors.cluster.DiscoveryDataClusterState;
 import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
+import org.apache.ignite.internal.processors.configuration.distributed.DistributedConfigurationLifecycleListener;
+import org.apache.ignite.internal.processors.configuration.distributed.DistributedLongProperty;
+import org.apache.ignite.internal.processors.configuration.distributed.DistributedPropertyDispatcher;
 import org.apache.ignite.internal.processors.marshaller.MappedName;
 import org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageImpl;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.task.GridInternal;
+import org.apache.ignite.internal.util.BasicRateLimiter;
 import org.apache.ignite.internal.util.GridBusyLock;
 import org.apache.ignite.internal.util.GridCloseableIteratorAdapter;
 import org.apache.ignite.internal.util.distributed.DistributedProcess;
@@ -160,6 +170,7 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.marshaller.MarshallerUtils;
 import org.apache.ignite.resources.IgniteInstanceResource;
+import org.apache.ignite.spi.encryption.EncryptionSpi;
 import org.apache.ignite.spi.systemview.view.SnapshotView;
 import org.jetbrains.annotations.Nullable;
 
@@ -202,6 +213,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.tree.io.Pa
 import static org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO.getPageIO;
 import static org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO.getType;
 import static org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO.getVersion;
+import static org.apache.ignite.internal.processors.configuration.distributed.DistributedLongProperty.detachedLongProperty;
 import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.TC_SKIP_AUTH;
 import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.TC_SUBGRID;
 import static org.apache.ignite.internal.util.GridUnsafe.bufferAddress;
@@ -257,6 +269,15 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
     /** Prefix for snapshot threads. */
     public static final String SNAPSHOT_RUNNER_THREAD_PREFIX = "snapshot-runner";
+
+    /** Snapshot transfer rate distributed configuration key */
+    public static final String SNAPSHOT_TRANSFER_RATE_DMS_KEY = "snapshotTransferRate";
+
+    /** Snapshot transfer rate is unlimited by default. */
+    public static final long DFLT_SNAPSHOT_TRANSFER_RATE_BYTES = 0L;
+
+    /** Maximum block size for limited snapshot transfer (64KB by default). */
+    public static final int SNAPSHOT_LIMITED_TRANSFER_BLOCK_SIZE_BYTES = 64 * 1024;
 
     /** Snapshot operation finish log message. */
     private static final String SNAPSHOT_FINISHED_MSG = "Cluster-wide snapshot operation finished successfully: ";
@@ -314,6 +335,9 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     /** Distributed process to restore cache group from the snapshot. */
     private final SnapshotRestoreProcess restoreCacheGrpProc;
 
+    /** Transfer rate limiter. */
+    private final BasicRateLimiter transferRateLimiter = new BasicRateLimiter(DFLT_SNAPSHOT_TRANSFER_RATE_BYTES);
+
     /** Resolved persistent data storage settings. */
     private volatile PdsFolderSettings pdsSettings;
 
@@ -361,6 +385,9 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
     /** Manager to receive responses of remote snapshot requests. */
     private final SequentialRemoteSnapshotManager snpRmtMgr;
+
+    /** Snapshot transfer rate limit in bytes/sec. */
+    private final DistributedLongProperty snapshotTransferRate = detachedLongProperty(SNAPSHOT_TRANSFER_RATE_DMS_KEY);
 
     /**
      * @param ctx Kernal context.
@@ -426,6 +453,37 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
         U.ensureDirectory(locSnpDir, "snapshot work directory", log);
         U.ensureDirectory(tmpWorkDir, "temp directory for snapshot creation", log);
+
+        ctx.internalSubscriptionProcessor().registerDistributedConfigurationListener(
+            new DistributedConfigurationLifecycleListener() {
+                @Override public void onReadyToRegister(DistributedPropertyDispatcher dispatcher) {
+                    snapshotTransferRate.addListener((name, oldVal, newVal) -> {
+                        if (!Objects.equals(oldVal, newVal)) {
+                            if (newVal < 0) {
+                                log.warning("The snapshot transfer rate cannot be negative, " +
+                                    "the value '" + newVal + "' is ignored.");
+
+                                return;
+                            }
+
+                            transferRateLimiter.setRate(newVal);
+
+                            if (log.isInfoEnabled()) {
+                                log.info("The snapshot transfer rate " + (newVal == 0 ? "is not limited." :
+                                    "has been changed from '" + oldVal + "' to '" + newVal + "' bytes/sec."));
+                            }
+                        }
+                    });
+
+                    dispatcher.registerProperty(snapshotTransferRate);
+                }
+
+                @Override public void onReadyToWrite() {
+                    DistributedConfigurationUtils.setDefaultValue(snapshotTransferRate,
+                        DFLT_SNAPSHOT_TRANSFER_RATE_BYTES, log);
+                }
+            }
+        );
 
         handlers.initialize(ctx, ctx.pools().getSnapshotExecutorService());
 
@@ -739,7 +797,9 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                     cctx.gridConfig().getDataStorageConfiguration().getPageSize(),
                     grpIds,
                     blts,
-                    (Set<GroupPartitionId>)fut.result());
+                    (Set<GroupPartitionId>)fut.result(),
+                    cctx.gridConfig().getEncryptionSpi().masterKeyDigest()
+                    );
 
                 try (OutputStream out = new BufferedOutputStream(new FileOutputStream(smf))) {
                     U.marshal(marsh, meta, out);
@@ -1141,9 +1201,33 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 Map<Integer, String> grpIds = grps == null ? Collections.emptyMap() :
                     grps.stream().collect(Collectors.toMap(CU::cacheId, v -> v));
 
+                byte[] masterKeyDigest = kctx0.config().getEncryptionSpi().masterKeyDigest();
+
                 for (List<SnapshotMetadata> nodeMetas : metas.values()) {
-                    for (SnapshotMetadata meta : nodeMetas)
+                    for (SnapshotMetadata meta : nodeMetas) {
+                        byte[] snpMasterKeyDigest = meta.masterKeyDigest();
+
+                        if (masterKeyDigest == null && snpMasterKeyDigest != null) {
+                            res.onDone(new SnapshotPartitionsVerifyTaskResult(metas, new IdleVerifyResultV2(
+                                Collections.singletonMap(cctx.localNode(), new IllegalArgumentException("Snapshot '" +
+                                    meta.snapshotName() + "' has encrypted caches while encryption is disabled. To " +
+                                    "restore this snapshot, start Ignite with configured encryption and the same " +
+                                    "master key.")))));
+
+                            return;
+                        }
+
+                        if (snpMasterKeyDigest != null && !Arrays.equals(snpMasterKeyDigest, masterKeyDigest)) {
+                            res.onDone(new SnapshotPartitionsVerifyTaskResult(metas, new IdleVerifyResultV2(
+                                Collections.singletonMap(cctx.localNode(), new IllegalArgumentException("Snapshot '" +
+                                    meta.snapshotName() + "' has different master key digest. To restore this " +
+                                    "snapshot, start Ignite with the same master key.")))));
+
+                            return;
+                        }
+
                         grpIds.keySet().removeAll(meta.partitions().keySet());
+                    }
                 }
 
                 if (!grpIds.isEmpty()) {
@@ -1600,14 +1684,15 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @param folderName The node folder name, usually it's the same as the U.maskForFileName(consistentId).
      * @param grpName Cache group name.
      * @param partId Partition id.
+     * @param encrKeyProvider Encryption keys provider to create encrypted IO. If {@code null}, no encrypted IO is used.
      * @return Iterator over partition.
      * @throws IgniteCheckedException If and error occurs.
      */
-    public GridCloseableIterator<CacheDataRow> partitionRowIterator(GridKernalContext ctx,
-        String snpName,
+    public GridCloseableIterator<CacheDataRow> partitionRowIterator(String snpName,
         String folderName,
         String grpName,
-        int partId
+        int partId,
+        @Nullable EncryptionCacheKeyProvider encrKeyProvider
     ) throws IgniteCheckedException {
         File snpDir = resolveSnapshotDir(snpName);
 
@@ -1636,10 +1721,13 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
         int grpId = CU.cacheId(grpName);
 
-        FilePageStore pageStore = (FilePageStore)storeMgr.getPageStoreFactory(grpId, cctx.cache().isEncrypted(grpId)).
-            createPageStore(getTypeByPartId(partId), snpPart::toPath, val -> {});
+        FilePageStore pageStore = (FilePageStore)storeMgr.getPageStoreFactory(grpId,
+            encrKeyProvider == null || encrKeyProvider.getActiveKey(grpId) == null ? null : encrKeyProvider).
+            createPageStore(getTypeByPartId(partId),
+                snpPart::toPath,
+                val -> {});
 
-        GridCloseableIterator<CacheDataRow> partIter = partitionRowIterator(ctx, grpName, partId, pageStore);
+        GridCloseableIterator<CacheDataRow> partIter = partitionRowIterator(cctx.kernalContext(), grpName, partId, pageStore);
 
         return new GridCloseableIteratorAdapter<CacheDataRow>() {
             /** {@inheritDoc} */
@@ -1683,7 +1771,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                     continue;
 
                 task.onDone(new IgniteCheckedException("Snapshot contains encrypted cache group " + grpId +
-                    " but doesn't include metastore. Metastore is required because it contains encryption keys " +
+                    " but doesn't include metastore. Metastore is required because it holds encryption keys " +
                     "required to start with encrypted caches contained in the snapshot."));
 
                 return task;
@@ -1857,19 +1945,50 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @param length Number of bytes to copy from beginning.
      */
     static void copy(FileIOFactory factory, File from, File to, long length) {
+        copy(factory, from, to, length, null);
+    }
+
+    /**
+     * @param factory Factory to produce FileIO access.
+     * @param from Copy from file.
+     * @param to Copy data to file.
+     * @param length Number of bytes to copy from beginning.
+     * @param rateLimiter Transfer rate limiter.
+     */
+    static void copy(FileIOFactory factory, File from, File to, long length, @Nullable BasicRateLimiter rateLimiter) {
         try (FileIO src = factory.create(from, READ);
              FileChannel dest = new FileOutputStream(to).getChannel()) {
             if (src.size() < length) {
-                throw new IgniteException("The source file to copy has to enough length " +
+                throw new IgniteException("The source file to copy is not long enough " +
                     "[expected=" + length + ", actual=" + src.size() + ']');
             }
 
-            src.position(0);
-
+            boolean unlimited = rateLimiter == null || rateLimiter.isUnlimited();
             long written = 0;
 
-            while (written < length)
-                written += src.transferTo(written, length - written, dest);
+            while (written < length) {
+                if (unlimited) {
+                    written += src.transferTo(written, length - written, dest);
+
+                    continue;
+                }
+
+                long blockLen = Math.min(length - written, SNAPSHOT_LIMITED_TRANSFER_BLOCK_SIZE_BYTES);
+
+                rateLimiter.acquire(blockLen);
+
+                long blockWritten = 0;
+
+                do {
+                    blockWritten += src.transferTo(written + blockWritten, blockLen - blockWritten, dest);
+                }
+                while (blockWritten < blockLen);
+
+                written += blockWritten;
+            }
+        }
+        catch (IgniteInterruptedCheckedException e) {
+            throw new IgniteInterruptedException((InterruptedException)e.getCause());
         }
         catch (IOException e) {
             throw new IgniteException(e);
@@ -2954,7 +3073,21 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             try {
                 File cacheDir = U.resolveWorkDirectory(dbDir.getAbsolutePath(), cacheDirName, false);
 
-                copy(ioFactory, ccfg, new File(cacheDir, ccfg.getName()), ccfg.length());
+                File targetCacheCfg = new File(cacheDir, ccfg.getName());
+
+                copy(ioFactory, ccfg, targetCacheCfg, ccfg.length());
+
+                StoredCacheData cacheData = storeMgr.readCacheData(targetCacheCfg);
+
+                if (cacheData.config().isEncryptionEnabled()) {
+                    EncryptionSpi encSpi = cctx.kernalContext().config().getEncryptionSpi();
+
+                    GroupKey gKey = cctx.kernalContext().encryption().getActiveKey(CU.cacheGroupId(cacheData.config()));
+
+                    cacheData.groupKeyEncrypted(new GroupKeyEncrypted(gKey.id(), encSpi.encryptKey(gKey.key())));
+
+                    storeMgr.writeCacheData(cacheData, targetCacheCfg);
+                }
             }
             catch (IgniteCheckedException e) {
                 throw new IgniteException(e);
@@ -2995,7 +3128,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 if (!snpPart.exists() || snpPart.delete())
                     snpPart.createNewFile();
 
-                copy(ioFactory, part, snpPart, len);
+                copy(ioFactory, part, snpPart, len, transferRateLimiter);
 
                 if (log.isDebugEnabled()) {
                     log.debug("Partition has been snapshot [snapshotDir=" + dbDir.getAbsolutePath() +
@@ -3050,6 +3183,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
                         pageBuf.rewind();
                     }
+
+                    transferRateLimiter.acquire(pageSize);
 
                     pageStore.write(PageIO.getPageId(pageBuf), pageBuf, 0, false);
 

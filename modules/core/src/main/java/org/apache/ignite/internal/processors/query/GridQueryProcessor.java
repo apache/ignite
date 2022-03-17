@@ -4176,4 +4176,11 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     public void completeRebuildIndexes(String cacheName) {
         idxBuildStatusStorage.onFinishRebuildIndexes(cacheName);
     }
+
+    /**
+     * @return Index build status storage.
+     */
+    public IndexBuildStatusStorage getIdxBuildStatusStorage() {
+        return idxBuildStatusStorage;
+    }
 }

@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.distributed.near.consistency;
 
 import java.util.Collection;
+import java.util.Collections;
 import org.apache.ignite.IgniteCheckedException;
 
 /**
@@ -43,8 +44,8 @@ public class IgniteIrreparableConsistencyViolationException extends IgniteChecke
 
         assert irreparableKeys != null && !irreparableKeys.isEmpty() : irreparableKeys;
 
-        this.repairableKeys = repairableKeys;
-        this.irreparableKeys = irreparableKeys;
+        this.repairableKeys = repairableKeys != null ? Collections.unmodifiableCollection(repairableKeys) : null;
+        this.irreparableKeys = Collections.unmodifiableCollection(irreparableKeys);
     }
 
     /**

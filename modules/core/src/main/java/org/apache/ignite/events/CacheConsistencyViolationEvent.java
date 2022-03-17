@@ -17,6 +17,7 @@
 
 package org.apache.ignite.events;
 
+import java.util.Collections;
 import java.util.Map;
 import org.apache.ignite.cache.CacheEntryVersion;
 import org.apache.ignite.cache.ReadRepairStrategy;
@@ -68,7 +69,7 @@ public class CacheConsistencyViolationEvent extends EventAdapter {
     private static final long serialVersionUID = 0L;
 
     /** Represents original values of entries.*/
-    private final Map<Object, Map<ClusterNode, EntryInfo>> entries;
+    private final Map<Object, EntriesInfo> entries;
 
     /** Fixed entries. */
     private final Map<Object, Object> fixed;
@@ -92,14 +93,14 @@ public class CacheConsistencyViolationEvent extends EventAdapter {
         String cacheName,
         ClusterNode node,
         String msg,
-        Map<Object, Map<ClusterNode, EntryInfo>> entries,
+        Map<Object, EntriesInfo> entries,
         Map<Object, Object> fixed,
         ReadRepairStrategy strategy) {
         super(node, msg, EVT_CONSISTENCY_VIOLATION);
 
         this.cacheName = cacheName;
-        this.entries = entries;
-        this.fixed = fixed;
+        this.entries = Collections.unmodifiableMap(entries);
+        this.fixed = Collections.unmodifiableMap(fixed);
         this.strategy = strategy;
     }
 
@@ -108,7 +109,7 @@ public class CacheConsistencyViolationEvent extends EventAdapter {
      *
      * @return Collection of original entries.
      */
-    public Map<Object, Map<ClusterNode, EntryInfo>> getEntries() {
+    public Map<Object, EntriesInfo> getEntries() {
         return entries;
     }
 
@@ -137,6 +138,21 @@ public class CacheConsistencyViolationEvent extends EventAdapter {
      */
     public ReadRepairStrategy getStrategy() {
         return strategy;
+    }
+
+    /**
+     * Inconsistent entries mapping.
+     */
+    public interface EntriesInfo {
+        /**
+         * @return Entry's mapping.
+         */
+        public Map<ClusterNode, EntryInfo> getMapping();
+
+        /**
+         * @return Entry's partition.
+         */
+        public int partition();
     }
 
     /**

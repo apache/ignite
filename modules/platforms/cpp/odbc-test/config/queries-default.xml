@@ -89,6 +89,8 @@
         <property name="cacheMode" value="PARTITIONED"/>
         <property name="atomicityMode" value="TRANSACTIONAL"/>
 
+        <property name="sqlFunctionClasses" value="org.apache.ignite.testframework.GridTestUtils.SqlTestFunctions"/>
+
         <!-- Configure type metadata to enable queries. -->
         <property name="queryEntities">
             <list>

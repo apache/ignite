@@ -847,9 +847,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                                 else if (op == READ) {
                                     CacheGroupContext grp = cacheCtx.group();
 
-                                    if (grp.persistenceEnabled() && grp.walEnabled() &&
-                                        cctx.snapshot().needTxReadLogging()) {
-                                        ptr = cctx.wal().log(new DataRecord(new DataEntry(
+                                    if (grp.logDataRecords() && cctx.snapshot().needTxReadLogging()) {
+                                        ptr = grp.wal().log(new DataRecord(new DataEntry(
                                             cacheCtx.cacheId(),
                                             txEntry.key(),
                                             val,
@@ -924,7 +923,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                 cctx.mvccCaching().onTxFinished(this, true);
 
                 if (ptr != null)
-                    cctx.wal().flush(ptr, false);
+                    cctx.wal(true).flush(ptr, false);
             }
             catch (Throwable ex) {
                 // We are about to initiate transaction rollback when tx has started to committing.
