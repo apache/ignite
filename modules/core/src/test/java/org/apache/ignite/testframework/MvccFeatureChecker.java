@@ -124,8 +124,8 @@ public class MvccFeatureChecker {
      * @return {@code True} if feature is supported, {@code False} otherwise.
      */
     public static boolean isSupported(TransactionConcurrency conc, TransactionIsolation iso) {
-            return conc == TransactionConcurrency.PESSIMISTIC &&
-                iso == TransactionIsolation.REPEATABLE_READ;
+        return conc == TransactionConcurrency.PESSIMISTIC &&
+            iso == TransactionIsolation.REPEATABLE_READ;
     }
 
     /**

@@ -179,10 +179,9 @@ public abstract class CacheStoreUsageMultinodeAbstractTest extends GridCommonAbs
      * @throws Exception If failed.
      */
     protected void testStoreUpdate(IgniteCache<Object, Object> cache,
-       Object key,
-       @Nullable TransactionConcurrency tc)
-        throws Exception
-    {
+        Object key,
+        @Nullable TransactionConcurrency tc
+    ) throws Exception {
         boolean storeOnPrimary = atomicityMode() == ATOMIC || locStore || writeBehind;
 
         assertTrue(writeMap.isEmpty());

@@ -1254,22 +1254,22 @@ public class PoolProcessor extends GridProcessorAdapter {
         boolean allowCoreThreadTimeOut,
         long keepAliveTime
     ) {
-         return ctx.security().enabled()
-             ? new SecurityAwareStripedThreadPoolExecutor(
-                 ctx.security(),
-                 concurrentLvl,
-                 igniteInstanceName,
-                 threadNamePrefix,
-                 eHnd,
-                 allowCoreThreadTimeOut,
-                 keepAliveTime)
-             : new IgniteStripedThreadPoolExecutor(
-                 concurrentLvl,
-                 igniteInstanceName,
-                 threadNamePrefix,
-                 eHnd,
-                 allowCoreThreadTimeOut,
-                 keepAliveTime);
+        return ctx.security().enabled()
+            ? new SecurityAwareStripedThreadPoolExecutor(
+                ctx.security(),
+                concurrentLvl,
+                igniteInstanceName,
+                threadNamePrefix,
+                eHnd,
+                allowCoreThreadTimeOut,
+                keepAliveTime)
+            : new IgniteStripedThreadPoolExecutor(
+                concurrentLvl,
+                igniteInstanceName,
+                threadNamePrefix,
+                eHnd,
+                allowCoreThreadTimeOut,
+                keepAliveTime);
     }
 
     /** Creates instance {@link StripedExecutor} with a notion of whether {@link IgniteSecurity} is enabled. */

@@ -298,7 +298,7 @@ public class CacheContinuousWithTransformerReplicatedSelfTest extends GridCommon
                 @Override public String apply(CacheEntryEvent<? extends Integer, ? extends Employee> evt) {
                     return null;
                 }
-        }));
+            }));
 
         qry.setRemoteFilterFactory(FactoryBuilder.factoryOf(new CacheEntryEventSerializableFilter<Integer, Employee>() {
             @Override public boolean evaluate(CacheEntryEvent<? extends Integer, ? extends Employee> evt) {

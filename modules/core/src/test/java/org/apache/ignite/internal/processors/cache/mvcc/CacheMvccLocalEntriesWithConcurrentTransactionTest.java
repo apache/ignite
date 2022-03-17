@@ -43,25 +43,25 @@ public class CacheMvccLocalEntriesWithConcurrentTransactionTest extends CacheMvc
     /** Test closure. */
     private final IgniteClosure2X<CountDownLatch, CountDownLatch, List<Person>> clo =
         new IgniteClosure2X<CountDownLatch, CountDownLatch, List<Person>>() {
-        @Override public List<Person> applyx(CountDownLatch startLatch, CountDownLatch endLatch2)
-            throws IgniteCheckedException {
-            Iterator<Cache.Entry<Integer, Person>> it = cache().localEntries(CachePeekMode.PRIMARY).iterator();
+            @Override public List<Person> applyx(CountDownLatch startLatch, CountDownLatch endLatch2)
+                throws IgniteCheckedException {
+                Iterator<Cache.Entry<Integer, Person>> it = cache().localEntries(CachePeekMode.PRIMARY).iterator();
 
-            List<Cache.Entry<Integer, Person>> pres = new ArrayList<>();
+                List<Cache.Entry<Integer, Person>> pres = new ArrayList<>();
 
-            for (int i = 0; i < 10; i++)
-                pres.add(it.next());
+                for (int i = 0; i < 10; i++)
+                    pres.add(it.next());
 
-            if (startLatch != null)
-                startLatch.countDown();
+                if (startLatch != null)
+                    startLatch.countDown();
 
-            while (it.hasNext())
-                pres.add(it.next());
+                while (it.hasNext())
+                    pres.add(it.next());
 
-            if (endLatch2 != null)
-                U.await(endLatch2);
+                if (endLatch2 != null)
+                    U.await(endLatch2);
 
-            return entriesToPersons(pres);
-        }
-    };
+                return entriesToPersons(pres);
+            }
+        };
 }

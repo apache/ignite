@@ -633,9 +633,9 @@ public class ValidateIndexesClosure implements IgniteCallable<VisorValidateIndex
         long current = 0;
         long processedNumber = 0;
 
-            while (it.hasNextX() && !validateCtx.isCancelled()) {
-                if (enoughIssues)
-                    break;
+        while (it.hasNextX() && !validateCtx.isCancelled()) {
+            if (enoughIssues)
+                break;
 
             CacheDataRow row = it.nextX();
 
@@ -703,24 +703,25 @@ public class ValidateIndexesClosure implements IgniteCallable<VisorValidateIndex
 
             ArrayList<Index> indexes = gridH2Tbl.getIndexes();
 
-                for (Index idx : indexes) {
-                    if (validateCtx.isCancelled())
-                        break;
+            for (Index idx : indexes) {
+                if (validateCtx.isCancelled())
+                    break;
 
-                    if (!(idx instanceof H2TreeIndexBase))
-                        continue;
+                if (!(idx instanceof H2TreeIndexBase))
+                    continue;
 
                 try {
                     Cursor cursor = idx.find(session, h2Row, h2Row);
 
                     if (cursor == null || !cursor.next())
                         throw new IgniteCheckedException("Key is present in CacheDataTree, but can't be found in SQL index.");
-                } catch (Throwable t) {
+                }
+                catch (Throwable t) {
                     Object o = CacheObjectUtils.unwrapBinaryIfNeeded(
-                            grpCtx.cacheObjectContext(), row.key(), true, true);
+                        grpCtx.cacheObjectContext(), row.key(), true, true);
 
                     IndexValidationIssue is = new IndexValidationIssue(
-                            o.toString(), cacheCtx.name(), idx.getName(), t);
+                        o.toString(), cacheCtx.name(), idx.getName(), t);
 
                     log.error("Failed to lookup key: " + is.toString(), t);
 

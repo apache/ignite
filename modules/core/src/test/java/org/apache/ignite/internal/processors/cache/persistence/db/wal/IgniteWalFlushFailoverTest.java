@@ -85,11 +85,11 @@ public class IgniteWalFlushFailoverTest extends GridCommonAbstractTest {
         cfg.setCacheConfiguration(cacheCfg);
 
         DataStorageConfiguration memCfg = new DataStorageConfiguration()
-                .setDefaultDataRegionConfiguration(
-                 new DataRegionConfiguration().setMaxSize(2048L * 1024 * 1024).setPersistenceEnabled(true))
-                .setWalMode(WALMode.BACKGROUND)
-                .setWalBufferSize(1024 * 1024)// Setting WAL Segment size to high values forces flushing by timeout.
-                .setWalSegmentSize(flushByTimeout ? 2 * 1024 * 1024 : 512 * 1024);
+            .setDefaultDataRegionConfiguration(
+                new DataRegionConfiguration().setMaxSize(2048L * 1024 * 1024).setPersistenceEnabled(true))
+            .setWalMode(WALMode.BACKGROUND)
+            .setWalBufferSize(1024 * 1024)// Setting WAL Segment size to high values forces flushing by timeout.
+            .setWalSegmentSize(flushByTimeout ? 2 * 1024 * 1024 : 512 * 1024);
 
         cfg.setDataStorageConfiguration(memCfg);
 

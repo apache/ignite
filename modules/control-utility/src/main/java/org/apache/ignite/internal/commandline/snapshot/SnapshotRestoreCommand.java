@@ -93,10 +93,10 @@ public class SnapshotRestoreCommand extends SnapshotSubcommand {
     /** {@inheritDoc} */
     @Override public void printUsage(Logger log) {
         Map<String, String> params = generalUsageOptions();
-        Map<String, String> startParams = new LinkedHashMap<String, String>(params) {{
-            put(GROUPS.optionName(), GROUPS.description());
-            put(SYNC.optionName(), SYNC.description());
-        }};
+        Map<String, String> startParams = new LinkedHashMap<>(params);
+
+        startParams.put(GROUPS.optionName(), GROUPS.description());
+        startParams.put(SYNC.optionName(), SYNC.description());
 
         usage(log, "Restore snapshot:", SNAPSHOT, startParams, RESTORE.toString(), SNAPSHOT_NAME_ARG, "--start",
             optional(GROUPS.argName(), GROUPS.optionName()), optional(SYNC.argName()));

@@ -142,11 +142,12 @@ public class IgniteSnapshotMXBeanTest extends AbstractSnapshotSelfTest {
 
         spi.waitForBlocked();
 
-       IgniteInternalFuture<Boolean> interruptFut = GridTestUtils.runAsync(() -> {
+        IgniteInternalFuture<Boolean> interruptFut = GridTestUtils.runAsync(() -> {
             try {
                 return GridTestUtils.waitForCondition(
                     () -> !"".equals(getMetric("error", mReg0)) && !"".equals(getMetric("error", mReg1)), TIMEOUT);
-            } finally {
+            }
+            finally {
                 spi.stopBlock();
             }
         });

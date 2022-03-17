@@ -1862,7 +1862,7 @@ public class HibernateL2CacheSelfTest extends GridCommonAbstractTest {
             if (entity1) {
                 for (Map.Entry<Integer, String> e : idToName.entrySet())
                     assertEquals(e.getValue(), ((Entity)ses.load(Entity.class, e.getKey())).getName());
-                }
+            }
             else {
                 for (Map.Entry<Integer, String> e : idToName.entrySet())
                     assertEquals(e.getValue(), ((Entity2)ses.load(Entity2.class, e.getKey())).getName());

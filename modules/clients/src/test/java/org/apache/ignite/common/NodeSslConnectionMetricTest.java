@@ -358,7 +358,7 @@ public class NodeSslConnectionMetricTest extends GridCommonAbstractTest {
         String cipherSuite,
         String protocol
     ) throws Exception {
-       return getConfiguration(getTestIgniteInstanceName(idx))
+        return getConfiguration(getTestIgniteInstanceName(idx))
             .setSslContextFactory(sslContextFactory(keyStore, trustStore, cipherSuite, protocol))
             .setClientMode(client);
     }
@@ -384,7 +384,7 @@ public class NodeSslConnectionMetricTest extends GridCommonAbstractTest {
         String cipherSuite,
         String protocol
     ) {
-       return new ClientConfiguration()
+        return new ClientConfiguration()
             .setAddresses("127.0.0.1:10800")
             .setSslMode(SslMode.REQUIRED)
             .setSslContextFactory(sslContextFactory(keyStore, trustStore, cipherSuite, protocol));

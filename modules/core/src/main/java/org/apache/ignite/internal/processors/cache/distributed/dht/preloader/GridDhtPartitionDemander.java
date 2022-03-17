@@ -1252,10 +1252,12 @@ public class GridDhtPartitionDemander {
 
                 partitionsLeft.addAndGet(v.partitions().size());
 
-                rebalancingParts.put(k.id(), new HashSet<Integer>(v.partitions().size()) {{
-                    addAll(v.partitions().historicalSet());
-                    addAll(v.partitions().fullSet());
-                }});
+                HashSet<Integer> parts = new HashSet<>(v.partitions().size());
+
+                parts.addAll(v.partitions().historicalSet());
+                parts.addAll(v.partitions().fullSet());
+
+                rebalancingParts.put(k.id(), parts);
 
                 historical.addAll(v.partitions().historicalSet());
 

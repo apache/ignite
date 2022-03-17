@@ -40,8 +40,8 @@ public class CatboostRegressionModel implements Model<NamedVector, Double> {
      * @param model Catboost Model
      */
     public CatboostRegressionModel(CatBoostModel model) {
-    this.model = model;
-  }
+        this.model = model;
+    }
 
     /** {@inheritDoc} */
     @Override public Double predict(NamedVector input) {
@@ -55,8 +55,9 @@ public class CatboostRegressionModel implements Model<NamedVector, Double> {
         try {
             return model.predict(floatInput, model.getFeatureNames())
                 .get(0, 0);
-        } catch (CatBoostError e) {
-          throw new RuntimeException(e.getMessage());
+        }
+        catch (CatBoostError e) {
+            throw new RuntimeException(e.getMessage());
         }
     }
 
@@ -64,7 +65,8 @@ public class CatboostRegressionModel implements Model<NamedVector, Double> {
     @Override public void close() {
         try {
             model.close();
-        } catch (CatBoostError e) {
+        }
+        catch (CatBoostError e) {
             logger.error(e.getMessage());
         }
     }

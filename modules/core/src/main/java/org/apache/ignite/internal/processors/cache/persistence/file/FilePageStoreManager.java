@@ -385,12 +385,11 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
             log.warning(errorMsg);
 
             try {
-                cctx.kernalContext().maintenanceRegistry()
-                    .registerMaintenanceTask(
-                        new MaintenanceTask(CORRUPTED_DATA_FILES_MNTC_TASK_NAME,
-                            "Corrupted cache groups found",
-                            groupsWithWalDisabled.stream().collect(Collectors.joining(File.separator)))
-                    );
+                cctx.kernalContext().maintenanceRegistry().registerMaintenanceTask(
+                    new MaintenanceTask(CORRUPTED_DATA_FILES_MNTC_TASK_NAME,
+                        "Corrupted cache groups found",
+                        groupsWithWalDisabled.stream().collect(Collectors.joining(File.separator)))
+                );
             } catch (IgniteCheckedException e) {
                 log.warning("Failed to register maintenance record for corrupted partition files.", e);
             }
@@ -783,7 +782,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
                         () -> getPartitionFilePath(cacheWorkDir, p),
                         pageMetrics.totalPages()::add);
 
-                    partStores[partId] = partStore;
+                partStores[partId] = partStore;
             }
 
             return new CacheStoreHolder(idxStore, partStores);
@@ -1148,8 +1147,8 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
             return marshaller.unmarshal(stream, U.resolveClassLoader(igniteCfg));
         }
         catch (IgniteCheckedException | IOException e) {
-                throw new IgniteCheckedException("An error occurred during cache configuration loading from file [file=" +
-                    conf.getAbsolutePath() + "]", e);
+            throw new IgniteCheckedException("An error occurred during cache configuration loading from file [file=" +
+                conf.getAbsolutePath() + "]", e);
         }
     }
 

@@ -24,55 +24,55 @@ import java.util.Map;
  * Counter for encode category.
  */
 public class TargetCounter {
-  /** */
-  private Double targetSum = 0d;
+    /** */
+    private Double targetSum = 0d;
 
-  /** */
-  private Long targetCount = 0L;
+    /** */
+    private Long targetCount = 0L;
 
-  /** */
-  private final Map<String, Long> categoryCounts = new HashMap<>();
+    /** */
+    private final Map<String, Long> categoryCounts = new HashMap<>();
 
-  /** */
-  private final Map<String, Double> categoryTargetSum = new HashMap<>();
+    /** */
+    private final Map<String, Double> categoryTargetSum = new HashMap<>();
 
-  /** */
-  public Double getTargetSum() {
-    return targetSum;
-  }
+    /** */
+    public Double getTargetSum() {
+        return targetSum;
+    }
 
-  /** */
-  public void setTargetSum(Double targetSum) {
-    this.targetSum = targetSum;
-  }
+    /** */
+    public void setTargetSum(Double targetSum) {
+        this.targetSum = targetSum;
+    }
 
-  /** */
-  public Long getTargetCount() {
-    return targetCount;
-  }
+    /** */
+    public Long getTargetCount() {
+        return targetCount;
+    }
 
-  /** */
-  public void setTargetCount(Long targetCount) {
-    this.targetCount = targetCount;
-  }
+    /** */
+    public void setTargetCount(Long targetCount) {
+        this.targetCount = targetCount;
+    }
 
-  /** */
-  public Map<String, Long> getCategoryCounts() {
-    return categoryCounts;
-  }
+    /** */
+    public Map<String, Long> getCategoryCounts() {
+        return categoryCounts;
+    }
 
-  /** */
-  public void setCategoryCounts(Map<String, Long> categoryCounts) {
-    this.categoryCounts.putAll(categoryCounts);
-  }
+    /** */
+    public void setCategoryCounts(Map<String, Long> categoryCounts) {
+        this.categoryCounts.putAll(categoryCounts);
+    }
 
-  /** */
-  public Map<String, Double> getCategoryTargetSum() {
-    return categoryTargetSum;
-  }
+    /** */
+    public Map<String, Double> getCategoryTargetSum() {
+        return categoryTargetSum;
+    }
 
-  /** */
-  public void setCategoryTargetSum(Map<String, Double> categoryTargetSum) {
-    this.categoryTargetSum.putAll(categoryTargetSum);
-  }
+    /** */
+    public void setCategoryTargetSum(Map<String, Double> categoryTargetSum) {
+        this.categoryTargetSum.putAll(categoryTargetSum);
+    }
 }
