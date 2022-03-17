@@ -208,6 +208,26 @@ public class IgniteStripedThreadPoolExecutor implements ExecutorService, Metrics
         throw new UnsupportedOperationException();
     }
 
+    /** {@inheritDoc} */
+    @Override public void registerMetrics(MetricRegistry mreg) {
+        mreg.register("ActiveCount", this::activeCount, ACTIVE_COUNT_DESC);
+        mreg.register("CompletedTaskCount", this::completedTaskCount, COMPLETED_TASK_DESC);
+        mreg.intMetric("CorePoolSize", CORE_SIZE_DESC).value(execs.length);
+        mreg.register("LargestPoolSize", this::largestPoolSize, LARGEST_SIZE_DESC);
+        mreg.intMetric("MaximumPoolSize", MAX_SIZE_DESC).value(execs.length);
+        mreg.register("PoolSize", this::poolSize, POOL_SIZE_DESC);
+        mreg.register("TaskCount", this::taskCount, TASK_COUNT_DESC);
+        mreg.register("QueueSize", this::queueSize, QUEUE_SIZE_DESC);
+        mreg.longMetric("KeepAliveTime", KEEP_ALIVE_TIME_DESC).value(execs[0].getKeepAliveTime(TimeUnit.MILLISECONDS));
+        mreg.register("Shutdown", this::isShutdown, IS_SHUTDOWN_DESC);
+        mreg.register("Terminated", this::isTerminated, IS_TERMINATED_DESC);
+        mreg.register("Terminating", this::terminating, IS_TERMINATING_DESC);
+        mreg.objectMetric("RejectedExecutionHandlerClass", String.class, REJ_HND_DESC)
+            .value(execs[0].getRejectedExecutionHandler().getClass().getName());
+        mreg.objectMetric("ThreadFactoryClass", String.class, THRD_FACTORY_DESC)
+            .value(execs[0].getThreadFactory().getClass().getName());
+    }
+
     /**
      * @return Returns true if this executor is in the process of terminating after shutdown or shutdownNow but has not
      * completely terminated.
@@ -294,26 +314,6 @@ public class IgniteStripedThreadPoolExecutor implements ExecutorService, Metrics
             largestPoolSize += exec.getLargestPoolSize();
 
         return largestPoolSize;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void registerMetrics(MetricRegistry mreg) {
-        mreg.register("ActiveCount", this::activeCount, ACTIVE_COUNT_DESC);
-        mreg.register("CompletedTaskCount", this::completedTaskCount, COMPLETED_TASK_DESC);
-        mreg.intMetric("CorePoolSize", CORE_SIZE_DESC).value(execs.length);
-        mreg.register("LargestPoolSize", this::largestPoolSize, LARGEST_SIZE_DESC);
-        mreg.intMetric("MaximumPoolSize", MAX_SIZE_DESC).value(execs.length);
-        mreg.register("PoolSize", this::poolSize, POOL_SIZE_DESC);
-        mreg.register("TaskCount", this::taskCount, TASK_COUNT_DESC);
-        mreg.register("QueueSize", this::queueSize, QUEUE_SIZE_DESC);
-        mreg.longMetric("KeepAliveTime", KEEP_ALIVE_TIME_DESC).value(execs[0].getKeepAliveTime(TimeUnit.MILLISECONDS));
-        mreg.register("Shutdown", this::isShutdown, IS_SHUTDOWN_DESC);
-        mreg.register("Terminated", this::isTerminated, IS_TERMINATED_DESC);
-        mreg.register("Terminating", this::terminating, IS_TERMINATING_DESC);
-        mreg.objectMetric("RejectedExecutionHandlerClass", String.class, REJ_HND_DESC)
-            .value(execs[0].getRejectedExecutionHandler().getClass().getName());
-        mreg.objectMetric("ThreadFactoryClass", String.class, THRD_FACTORY_DESC)
-            .value(execs[0].getThreadFactory().getClass().getName());
     }
 
     /** {@inheritDoc} */
