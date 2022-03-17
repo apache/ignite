@@ -400,24 +400,23 @@ public class MergeJoinExecutionTest extends AbstractExecutionTest {
             outType = TypeUtils.createRowType(ctx.getTypeFactory(), int.class, String.class, Integer.class, int.class, String.class);
 
         MergeJoinNode<Object[]> join = MergeJoinNode.create(ctx, outType, leftType, rightType, joinType, (r1, r2) -> {
-                Object o1 = r1[2];
-                Object o2 = r2[0];
+            Object o1 = r1[2];
+            Object o2 = r2[0];
 
-                if (o1 == null && o2 == null)
+            if (o1 == null && o2 == null)
+                return 1;
+
+            if (o1 == null || o2 == null) {
+                if (o1 != null)
                     return 1;
-
-                if (o1 == null || o2 == null) {
-                    if (o1 != null)
-                        return 1;
-                    else if (o2 != null)
-                        return -1;
-                    else
-                        return 0;
-                }
-
-                return Integer.compare((Integer)o1, (Integer)o2);
+                else if (o2 != null)
+                    return -1;
+                else
+                    return 0;
             }
-        );
+
+            return Integer.compare((Integer)o1, (Integer)o2);
+        });
 
         join.register(F.asList(leftNode, rightNode));
 
