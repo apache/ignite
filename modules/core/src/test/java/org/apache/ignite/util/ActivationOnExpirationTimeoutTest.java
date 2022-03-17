@@ -21,11 +21,9 @@ import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -56,7 +54,7 @@ public class ActivationOnExpirationTimeoutTest extends GridCommonAbstractTest {
     private static final int TOPOLOGY_UPDATE_DELAY_MILLS = 2000;
 
     /** */
-    public volatile boolean isDataLoading = true;
+    public volatile boolean delayTopologyUpdate;
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
@@ -80,7 +78,6 @@ public class ActivationOnExpirationTimeoutTest extends GridCommonAbstractTest {
         PlatformExpiryPolicyFactory plc = new PlatformExpiryPolicyFactory(time, time, time);
 
         CacheConfiguration<UUID, UUID> cacheCfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
-        cacheCfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
         cacheCfg.setExpiryPolicyFactory(plc);
         cacheCfg.setBackups(1);
 
@@ -89,7 +86,7 @@ public class ActivationOnExpirationTimeoutTest extends GridCommonAbstractTest {
                 @Override public void sendMessage(ClusterNode node, Message msg,
                     IgniteInClosure<IgniteException> ackC) throws IgniteSpiException {
 
-                    if (!isDataLoading && ((GridIoMessage)msg).message() instanceof GridDhtPartitionsFullMessage) {
+                    if (delayTopologyUpdate && ((GridIoMessage)msg).message() instanceof GridDhtPartitionsFullMessage) {
                         try {
                             U.sleep(TOPOLOGY_UPDATE_DELAY_MILLS);
                         }
@@ -103,7 +100,6 @@ public class ActivationOnExpirationTimeoutTest extends GridCommonAbstractTest {
             })
             .setFailureHandler(new StopNodeFailureHandler())
             .setCacheConfiguration(cacheCfg)
-            .setConnectorConfiguration(new ConnectorConfiguration())
             .setDataStorageConfiguration(new DataStorageConfiguration()
                 .setDefaultDataRegionConfiguration(new DataRegionConfiguration().setPersistenceEnabled(true)));
     }
@@ -125,7 +121,7 @@ public class ActivationOnExpirationTimeoutTest extends GridCommonAbstractTest {
 
         igniteEx.cluster().state(ClusterState.INACTIVE);
 
-        isDataLoading = false;
+        delayTopologyUpdate = true;
 
         // Wait for the expiration.
         TimeUnit.SECONDS.sleep(TIMEOUT_SEC);
