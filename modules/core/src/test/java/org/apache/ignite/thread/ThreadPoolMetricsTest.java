@@ -216,23 +216,26 @@ public class ThreadPoolMetricsTest extends GridCommonAbstractTest {
             }
 
             MetricRegistry mreg = ignite.context().metric().registry(metricsName);
-            String poolName = "pool=" + mreg.name();
+            String errMsg = "pool=" + mreg.name();
 
-            assertTrue(GridTestUtils.waitForCondition(() -> cntr.get() == 0, 5_000));
-            assertFalse(poolName, ((BooleanMetric)mreg.findMetric("Shutdown")).value());
-            assertFalse(poolName, ((BooleanMetric)mreg.findMetric("Terminated")).value());
-            assertTrue(poolName, ((IntMetric)mreg.findMetric("ActiveCount")).value() > 0);
+            assertTrue(GridTestUtils.waitForCondition(() -> cntr.get() == 0, getTestTimeout()));
+            assertFalse(errMsg, ((BooleanMetric)mreg.findMetric("Shutdown")).value());
+            assertFalse(errMsg, ((BooleanMetric)mreg.findMetric("Terminated")).value());
+            assertTrue(errMsg, ((IntMetric)mreg.findMetric("ActiveCount")).value() > 0);
 
-            LongMetric completed = mreg.findMetric(stripedExecutor ? "TotalCompletedTasksCount" : "CompletedTaskCount");
-            assertTrue(poolName, completed.value() >= taskCnt);
+            if (stripedExecutor) {
+                assertTrue(errMsg, ((IntMetric)mreg.findMetric("StripesCount")).value() > 0);
+                assertTrue(errMsg, ((LongMetric)mreg.findMetric("TotalCompletedTasksCount")).value() >= taskCnt);
 
-            if (!stripedExecutor) {
-                assertFalse(poolName, F.isEmpty(mreg.findMetric("ThreadFactoryClass").getAsString()));
-                assertFalse(poolName, F.isEmpty(mreg.findMetric("RejectedExecutionHandlerClass").getAsString()));
-                assertTrue(poolName, ((IntMetric)mreg.findMetric("CorePoolSize")).value() > 0);
-                assertTrue(poolName, ((IntMetric)mreg.findMetric("LargestPoolSize")).value() > 0);
-                assertTrue(poolName, ((IntMetric)mreg.findMetric("MaximumPoolSize")).value() > 0);
+                continue;
             }
+
+            assertTrue(errMsg, ((LongMetric)mreg.findMetric("CompletedTaskCount")).value() >= taskCnt);
+            assertFalse(errMsg, F.isEmpty(mreg.findMetric("ThreadFactoryClass").getAsString()));
+            assertFalse(errMsg, F.isEmpty(mreg.findMetric("RejectedExecutionHandlerClass").getAsString()));
+            assertTrue(errMsg, ((IntMetric)mreg.findMetric("CorePoolSize")).value() > 0);
+            assertTrue(errMsg, ((IntMetric)mreg.findMetric("LargestPoolSize")).value() > 0);
+            assertTrue(errMsg, ((IntMetric)mreg.findMetric("MaximumPoolSize")).value() > 0);
         }
 
         longTaskLatch.countDown();
