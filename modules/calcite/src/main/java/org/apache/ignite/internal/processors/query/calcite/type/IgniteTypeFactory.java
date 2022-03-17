@@ -29,6 +29,7 @@ import java.time.Period;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.UUID;
 import org.apache.calcite.avatica.util.ByteString;
 import org.apache.calcite.avatica.util.TimeUnit;
 import org.apache.calcite.jdbc.JavaTypeFactoryImpl;
@@ -138,6 +139,9 @@ public class IgniteTypeFactory extends JavaTypeFactoryImpl {
                     break;
             }
         }
+        else if (type instanceof UuidType)
+            return UUID.class;
+
         switch (type.getSqlTypeName()) {
             case ROW:
                 return Object[].class; // At now
@@ -221,6 +225,9 @@ public class IgniteTypeFactory extends JavaTypeFactoryImpl {
                     break;
             }
         }
+        else if (type instanceof UuidType)
+            return UUID.class;
+
         switch (type.getSqlTypeName()) {
             case ROW:
                 return Object[].class; // At now
@@ -259,9 +266,24 @@ public class IgniteTypeFactory extends JavaTypeFactoryImpl {
                 return createTypeWithNullability(createSqlIntervalType(INTERVAL_QUALIFIER_DAY_TIME), true);
             else if (clazz == Period.class)
                 return createTypeWithNullability(createSqlIntervalType(INTERVAL_QUALIFIER_YEAR_MONTH), true);
+            else if (clazz == UUID.class)
+                return createTypeWithNullability(createUuidType(), true);
         }
 
         return super.toSql(type);
+    }
+
+    /** @return UUID SQL type. */
+    public RelDataType createUuidType() {
+        return canonize(new UuidType(true));
+    }
+
+    /** {@inheritDoc} */
+    @Override public RelDataType createTypeWithNullability(RelDataType type, boolean nullable) {
+        if (type instanceof UuidType && type.isNullable() != nullable)
+            type = new UuidType(nullable);
+
+        return super.createTypeWithNullability(type, nullable);
     }
 
     /** {@inheritDoc} */

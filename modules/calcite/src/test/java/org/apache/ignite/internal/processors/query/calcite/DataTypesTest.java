@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.query.calcite;
 
 import java.util.List;
 import java.util.Objects;
+import java.util.UUID;
 import java.util.stream.Collectors;
 import com.google.common.collect.ImmutableSet;
 import org.apache.ignite.IgniteCache;
@@ -32,6 +33,109 @@ import org.junit.Test;
  * Test SQL data types.
  */
 public class DataTypesTest extends AbstractBasicIntegrationTest {
+    /** Tests UUID without index. */
+    @Test
+    public void testUuidWithoutIndex() {
+        testUuid(false);
+    }
+
+    /** Tests UUID with the index. */
+    @Test
+    public void testUuidWithIndex() {
+        testUuid(true);
+    }
+
+    /** Tests UUID type. */
+    private void testUuid(boolean indexed) {
+        try {
+            executeSql("CREATE TABLE t(id INT, name VARCHAR(255), uid UUID, primary key (id))");
+
+            if (indexed)
+                executeSql("CREATE INDEX uuid_idx ON t (uid);");
+
+            UUID uuid1 = UUID.randomUUID();
+            UUID uuid2 = UUID.randomUUID();
+
+            UUID max = uuid1.compareTo(uuid2) > 0 ? uuid1 : uuid2;
+            UUID min = max == uuid1 ? uuid2 : uuid1;
+
+            executeSql("INSERT INTO t VALUES (1, 'fd10556e-fc27-4a99-b5e4-89b8344cb3ce', '" + uuid1 + "')");
+            // Name == UUID
+            executeSql("INSERT INTO t VALUES (2, '" + uuid2 + "', '" + uuid2 + "')");
+            executeSql("INSERT INTO t VALUES (3, NULL, NULL)");
+
+            assertQuery("SELECT * FROM t")
+                .returns(1, "fd10556e-fc27-4a99-b5e4-89b8344cb3ce", uuid1)
+                .returns(2, uuid2.toString(), uuid2)
+                .returns(3, null, null)
+                .check();
+
+            assertQuery("SELECT uid FROM t WHERE uid < '" + max + "'")
+                .returns(min)
+                .check();
+
+            assertQuery("SELECT uid FROM t WHERE '" + max + "' > uid")
+                .returns(min)
+                .check();
+
+            assertQuery("SELECT * FROM t WHERE name = uid")
+                .returns(2, uuid2.toString(), uuid2)
+                .check();
+
+            assertQuery("SELECT * FROM t WHERE name != uid")
+                .returns(1, "fd10556e-fc27-4a99-b5e4-89b8344cb3ce", uuid1)
+                .check();
+
+            assertQuery("SELECT count(*), uid FROM t group by uid order by uid")
+                .returns(1L, min)
+                .returns(1L, max)
+                .returns(1L, null)
+                .check();
+
+            assertQuery("SELECT count(*), uid FROM t group by uid having uid = " +
+                "'" + uuid1 + "' order by uid")
+                .returns(1L, uuid1)
+                .check();
+
+            assertQuery("SELECT t1.* from t t1, (select * from t) t2 where t1.uid = t2.name")
+                .returns(2, uuid2.toString(), uuid2)
+                .check();
+
+            //TODO: https://issues.apache.org/jira/browse/IGNITE-16693 Incorrect processing nulls values in merge join.
+            assertQuery("SELECT /*+ DISABLE_RULE('MergeJoinConverter') */ t1.* from t t1, (select * from t) t2 " +
+                "where t1.uid = t2.uid")
+                .returns(1, "fd10556e-fc27-4a99-b5e4-89b8344cb3ce", uuid1)
+                .returns(2, uuid2.toString(), uuid2)
+                .check();
+
+            assertQuery("SELECT max(uid) from t")
+                .returns(max)
+                .check();
+
+            assertQuery("SELECT min(uid) from t")
+                .returns(min)
+                .check();
+
+            assertQuery("SELECT uid from t where uid is not NULL order by uid")
+                .returns(min)
+                .returns(max)
+                .check();
+
+            assertQuery("SELECT uid from t where uid is NULL order by uid")
+                .returns(new Object[] {null})
+                .check();
+
+            assertThrows("SELECT avg(uid) from t", UnsupportedOperationException.class,
+                "AVG() is not supported for type 'UUID'.");
+
+            assertThrows("SELECT sum(uid) from t", UnsupportedOperationException.class,
+                "SUM() is not supported for type 'UUID'.");
+        }
+        finally {
+            executeSql("DROP TABLE if exists tbl");
+        }
+    }
+
     /**
      * Tests numeric types mapping on Java types.
      */

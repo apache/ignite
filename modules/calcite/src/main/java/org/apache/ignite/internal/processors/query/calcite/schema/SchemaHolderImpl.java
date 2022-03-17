@@ -38,6 +38,7 @@ import org.apache.ignite.internal.processors.query.GridQueryIndexDescriptor;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.IgniteScalarFunction;
 import org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils;
+import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.util.AbstractService;
 import org.apache.ignite.internal.processors.query.schema.SchemaChangeListener;
 import org.apache.ignite.internal.processors.subscription.GridInternalSubscriptionProcessor;
@@ -315,6 +316,7 @@ public class SchemaHolderImpl extends AbstractService implements SchemaHolder, S
     /** */
     private void rebuild() {
         SchemaPlus newCalciteSchema = Frameworks.createRootSchema(false);
+        newCalciteSchema.add("UUID", typeFactory -> ((IgniteTypeFactory)typeFactory).createUuidType());
         newCalciteSchema.add("PUBLIC", new IgniteSchema("PUBLIC"));
         igniteSchemas.forEach(newCalciteSchema::add);
         calciteSchema = newCalciteSchema;

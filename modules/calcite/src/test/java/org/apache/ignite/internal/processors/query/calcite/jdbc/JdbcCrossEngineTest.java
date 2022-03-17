@@ -29,6 +29,7 @@ import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.UUID;
 import java.util.function.IntConsumer;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.calcite.CalciteQueryEngineConfiguration;
@@ -123,6 +124,9 @@ public class JdbcCrossEngineTest extends GridCommonAbstractTest {
         checkInsertDefaultValue("TIME", "TIME '01:01:01'", Time.valueOf("01:01:01"));
         checkInsertDefaultValue("TIMESTAMP", "TIMESTAMP '2021-01-01 01:01:01'", Timestamp.valueOf("2021-01-01 01:01:01"));
         checkInsertDefaultValue("BINARY(3)", "x'010203'", new byte[] {1, 2, 3});
+
+        UUID uuid = UUID.randomUUID();
+        checkInsertDefaultValue("UUID", '\'' + uuid.toString() + '\'', uuid);
     }
 
     /** */

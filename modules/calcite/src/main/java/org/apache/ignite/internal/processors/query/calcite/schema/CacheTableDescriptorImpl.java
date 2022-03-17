@@ -27,7 +27,6 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
-
 import org.apache.calcite.DataContext;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.rel.core.TableModify;
@@ -307,9 +306,7 @@ public class CacheTableDescriptorImpl extends NullInitializerExpressionFactory
 
         DataContext dataCtx = new BaseDataContext(typeFactory);
 
-        Object dfltVal = TypeUtils.toInternal(dataCtx, desc.defaultValue());
-
-        return rexBuilder.makeLiteral(dfltVal, desc.logicalType(typeFactory), false);
+        return TypeUtils.toRexLiteral(desc.defaultValue(), desc.logicalType(typeFactory), dataCtx, rexBuilder);
     }
 
     /** {@inheritDoc} */

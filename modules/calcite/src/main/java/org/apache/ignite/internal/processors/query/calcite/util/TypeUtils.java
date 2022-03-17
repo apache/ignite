@@ -28,6 +28,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.TimeZone;
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -44,7 +45,10 @@ import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rel.type.RelDataTypeFactoryImpl;
 import org.apache.calcite.rel.type.RelDataTypeField;
+import org.apache.calcite.rex.RexBuilder;
+import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.runtime.SqlFunctions;
+import org.apache.calcite.sql.SqlCharStringLiteral;
 import org.apache.calcite.sql.SqlIntervalLiteral;
 import org.apache.calcite.sql.SqlLiteral;
 import org.apache.calcite.sql.type.SqlTypeName;
@@ -111,9 +115,8 @@ public class TypeUtils {
         }
 
         // Do not make a cast when we don't know specific type (ANY) of the origin node.
-        if (toType.getSqlTypeName() == SqlTypeName.ANY
-            || fromType.getSqlTypeName() == SqlTypeName.ANY) {
-            return false;
+        if (toType.getSqlTypeName() == SqlTypeName.ANY || fromType.getSqlTypeName() == SqlTypeName.ANY) {
+            return toType.getClass() != fromType.getClass();
         }
 
         // No need to cast between char and varchar.
@@ -343,12 +346,19 @@ public class TypeUtils {
                 else
                     throw new IgniteException("Expected DAY-TIME interval literal");
             }
-            else if (Period.class.equals(storageType))
+            else if (Period.class.equals(storageType)) {
                 if (literal instanceof SqlIntervalLiteral &&
                     literal.getValueAs(SqlIntervalLiteral.IntervalValue.class).getIntervalQualifier().isYearMonth())
                     internalVal = literal.getValueAs(Long.class).intValue();
                 else
                     throw new IgniteException("Expected YEAR-MONTH interval literal");
+            }
+            else if (UUID.class.equals(storageType)) {
+                if (literal instanceof SqlCharStringLiteral)
+                    internalVal = UUID.fromString(literal.getValueAs(String.class));
+                else
+                    throw new IgniteException("Expected string literal");
+            }
             else {
                 if (storageType instanceof Class)
                     internalVal = literal.getValueAs((Class<?>)storageType);
@@ -370,5 +380,19 @@ public class TypeUtils {
 
         // Taking into account DST, offset can be changed after converting from UTC to time-zone.
         return ts - tz.getOffset(ts - tz.getOffset(ts));
+    }
+
+    /**
+     * @return RexNode
+     */
+    public static RexNode toRexLiteral(Object dfltVal, RelDataType type, DataContext ctx, RexBuilder rexBuilder) {
+        if (dfltVal instanceof UUID) {
+            // There is no internal UUID data type in Calcite, so convert UUID to VARCHAR literal and then cast to UUID.
+            dfltVal = dfltVal.toString();
+        }
+        else
+            dfltVal = toInternal(ctx, dfltVal);
+
+        return rexBuilder.makeLiteral(dfltVal, type, true);
     }
 }

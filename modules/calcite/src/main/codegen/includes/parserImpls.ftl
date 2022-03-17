@@ -97,6 +97,8 @@ SqlDataTypeSpec DataTypeEx() :
         dt = DataType()
     |
         dt = IntervalType()
+    |
+        dt = UuidType()
     )
     {
         return dt;
@@ -111,6 +113,17 @@ SqlDataTypeSpec IntervalType() :
 {
     <INTERVAL> { s = span(); } intervalQualifier = IntervalQualifier() {
         return new SqlDataTypeSpec(new IgniteSqlIntervalTypeNameSpec(intervalQualifier, s.end(this)), s.pos());
+    }
+}
+
+SqlDataTypeSpec UuidType() :
+{
+        final Span s;
+}
+{
+    <UUID> { s = span(); }
+    {
+        return new SqlDataTypeSpec(new SqlUserDefinedTypeNameSpec("UUID", s.end(this)), s.pos());
     }
 }
 
@@ -464,7 +477,7 @@ SqlCharStringLiteral UuidLiteral():
     <QUOTED_STRING> {
         String rawUuid = SqlParserUtil.parseString(token.image);
         try {
-            UUID.fromString(rawUuid);
+            java.util.UUID.fromString(rawUuid);
             return SqlLiteral.createCharString(rawUuid, getPos());
         }
         catch (Exception e) {
