@@ -133,6 +133,7 @@ public class MergeJoinExecutionTest extends AbstractExecutionTest {
         Object[][] right = {
             {1, "Core"},
             {1, "OLD_Core"},
+            {1, "NEW_Core"},
             {2, "SQL"},
             {3, "Arch"}
         };
@@ -140,17 +141,20 @@ public class MergeJoinExecutionTest extends AbstractExecutionTest {
         verifyJoin(left, right, INNER, new Object[][] {
             {2, "Igor", "Core"},
             {2, "Igor", "OLD_Core"},
+            {2, "Igor", "NEW_Core"},
             {3, "Alexey", "SQL"}
         });
         verifyJoin(left, right, LEFT, new Object[][] {
             {1, "Roman", null},
             {2, "Igor", "Core"},
             {2, "Igor", "OLD_Core"},
+            {2, "Igor", "NEW_Core"},
             {3, "Alexey", "SQL"}
         });
         verifyJoin(left, right, RIGHT, new Object[][] {
             {2, "Igor", "Core"},
             {2, "Igor", "OLD_Core"},
+            {2, "Igor", "NEW_Core"},
             {3, "Alexey", "SQL"},
             {null, null, "Arch"}
         });
@@ -158,6 +162,7 @@ public class MergeJoinExecutionTest extends AbstractExecutionTest {
             {1, "Roman", null},
             {2, "Igor", "Core"},
             {2, "Igor", "OLD_Core"},
+            {2, "Igor", "NEW_Core"},
             {3, "Alexey", "SQL"},
             {null, null, "Arch"}
         });
