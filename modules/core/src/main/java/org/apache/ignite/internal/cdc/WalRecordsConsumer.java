@@ -21,18 +21,25 @@ import java.util.EnumSet;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.cdc.CdcConsumer;
 import org.apache.ignite.cdc.CdcEvent;
+import org.apache.ignite.internal.pagemem.wal.WALIterator;
 import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.UnwrappedDataEntry;
+import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.GridCacheOperation;
+import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.CREATE;
@@ -80,6 +87,20 @@ public class WalRecordsConsumer<K, V> {
         return OPERATIONS_TYPES.contains(e.op());
     };
 
+    /** Event transformer. */
+    private static final IgniteClosure<DataEntry, CdcEvent> CDC_EVENT_TRANSFORMER = e -> {
+        UnwrappedDataEntry ue = (UnwrappedDataEntry)e;
+
+        return new CdcEventImpl(
+            ue.unwrappedKey(),
+            ue.unwrappedValue(),
+            (e.flags() & DataEntry.PRIMARY_FLAG) != 0,
+            e.partitionId(),
+            e.writeVersion(),
+            e.cacheId()
+        );
+    };
+
     /**
      * @param consumer User provided CDC consumer.
      * @param log Logger.
@@ -90,70 +111,29 @@ public class WalRecordsConsumer<K, V> {
     }
 
     /**
-     * Handles record from the WAL.
-     * If this method return {@code true} then current offset in WAL will be stored and WAL iteration will be
-     * started from it on CDC application fail/restart.
+     * Handles data entries.
+     * If this method return {@code true} then current offset in WAL and {@link DataEntry} index inside
+     * {@link DataRecord} will be stored and WAL iteration will be started from it on CDC application fail/restart.
      *
-     * @param recs WAL records iterator.
+     * @param entries Data entries iterator.
      * @return {@code True} if current offset in WAL should be commited.
      */
-    public boolean onRecords(Iterator<DataRecord> recs) {
-        Iterator<CdcEvent> evts = new Iterator<CdcEvent>() {
-            /** */
-            private Iterator<CdcEvent> entries;
-
+    public boolean onRecords(Iterator<DataEntry> entries) {
+        Iterator<CdcEvent> evts = F.iterator(new Iterator<DataEntry>() {
             @Override public boolean hasNext() {
-                advance();
-
-                return hasCurrent();
+                return entries.hasNext();
             }
 
-            @Override public CdcEvent next() {
-                advance();
-
-                if (!hasCurrent())
-                    throw new NoSuchElementException();
+            @Override public DataEntry next() {
+                DataEntry next = entries.next();
 
                 evtsCnt.increment();
 
                 lastEvtTs.value(System.currentTimeMillis());
 
-                return entries.next();
+                return next;
             }
-
-            private void advance() {
-                if (hasCurrent())
-                    return;
-
-                while (recs.hasNext()) {
-                    entries =
-                        F.iterator(recs.next().writeEntries().iterator(), this::transform, true, OPERATIONS_FILTER);
-
-                    if (entries.hasNext())
-                        break;
-
-                    entries = null;
-                }
-            }
-
-            private boolean hasCurrent() {
-                return entries != null && entries.hasNext();
-            }
-
-            /** */
-            private CdcEvent transform(DataEntry e) {
-                UnwrappedDataEntry ue = (UnwrappedDataEntry)e;
-
-                return new CdcEventImpl(
-                    ue.unwrappedKey(),
-                    ue.unwrappedValue(),
-                    (e.flags() & DataEntry.PRIMARY_FLAG) != 0,
-                    e.partitionId(),
-                    e.writeVersion(),
-                    e.cacheId()
-                );
-            }
-        };
+        }, CDC_EVENT_TRANSFORMER, true, OPERATIONS_FILTER);
 
         return consumer.onEvents(evts);
     }
@@ -202,5 +182,92 @@ public class WalRecordsConsumer<K, V> {
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(WalRecordsConsumer.class, this);
+    }
+
+    /** Iterator over {@link DataEntry}. */
+    public static class DataEntryIterator implements Iterator<DataEntry>, AutoCloseable {
+        /** WAL iterator. */
+        private final WALIterator walIter;
+
+        /** Current preloaded WAL record. */
+        private IgniteBiTuple<WALPointer, WALRecord> curRec;
+
+        /** */
+        private DataEntry next;
+
+        /** Index of {@link #next} inside WAL record. */
+        private int entryIdx;
+
+        /** @param walIter WAL iterator. */
+        DataEntryIterator(WALIterator walIter) {
+            this.walIter = walIter;
+
+            advance();
+        }
+
+        /** @return Current state. */
+        T2<WALPointer, Integer> state() {
+            return hasNext() ?
+                new T2<>(curRec.get1(), entryIdx) :
+                new T2<>(curRec.get1().next(), 0);
+        }
+
+        /** Initialize state. */
+        void init(int idx) {
+            for (int i = 0; i < idx; i++) {
+                if (!hasNext())
+                    throw new IgniteException("Failed to restore entry index [idx=" + idx + ", rec=" + curRec + ']');
+
+                next();
+            }
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean hasNext() {
+            return next != null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public DataEntry next() {
+            if (!hasNext())
+                throw new NoSuchElementException();
+
+            DataEntry e = next;
+
+            next = null;
+
+            advance();
+
+            return e;
+        }
+
+        /** */
+        private void advance() {
+            if (curRec != null) {
+                entryIdx++;
+
+                DataRecord rec = (DataRecord)curRec.get2();
+
+                if (entryIdx < rec.entryCount()) {
+                    next = rec.get(entryIdx);
+
+                    return;
+                }
+
+                entryIdx = 0;
+            }
+
+            if (!walIter.hasNext())
+                return;
+
+            curRec = walIter.next();
+
+            next = ((DataRecord)curRec.get2()).get(entryIdx);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void close() throws IgniteCheckedException {
+            walIter.close();
+        }
     }
 }

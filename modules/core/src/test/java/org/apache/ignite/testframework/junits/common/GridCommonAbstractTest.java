@@ -1854,10 +1854,12 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
     }
 
     /**
+     * Compares ordered collection.
+     *
      * @param exp Expected.
      * @param act Actual.
      */
-    protected void assertEqualsCollections(Collection<?> exp, Collection<?> act) {
+    protected static void assertEqualsCollections(Collection<?> exp, Collection<?> act) {
         if (exp.size() != act.size())
             fail("Collections are not equal:\nExpected:\t" + exp + "\nActual:\t" + act);
 
@@ -1878,14 +1880,29 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
     }
 
     /**
+     * Compares unordered collection.
+     *
      * @param exp Expected.
      * @param act Actual.
      */
-    protected static void assertEqualsMaps(Map<?, ?> exp, Map<?, ?> act) {
+    protected static <T> void assertEqualsCollectionsIgnoringOrder(Collection<T> exp, Collection<T> act) {
+        assertTrue("Collections are not equal:\nExpected:\t" + exp + "\nActual:\t" + act,
+            (exp.size() == act.size()));
+
+        for (T obj : exp)
+            assertEquals("Collections are not equal (element " + obj + " frequency is different):",
+                Collections.frequency(exp, obj), Collections.frequency(act, obj));
+    }
+
+    /**
+     * @param exp Expected.
+     * @param act Actual.
+     */
+    protected static <K, V> void assertEqualsMaps(Map<K, V> exp, Map<K, V> act) {
         if (exp.size() != act.size())
             fail("Maps are not equal:\nExpected:\t" + exp + "\nActual:\t" + act);
 
-        for (Map.Entry<?, ?> e : exp.entrySet()) {
+        for (Map.Entry<K, V> e : exp.entrySet()) {
             if (!act.containsKey(e.getKey()))
                 fail("Maps are not equal (missing key " + e.getKey() + "):\nExpected:\t" + exp + "\nActual:\t" + act);
             else if (!F.eq(e.getValue(), act.get(e.getKey())))

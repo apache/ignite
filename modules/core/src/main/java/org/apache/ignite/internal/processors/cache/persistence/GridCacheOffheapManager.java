@@ -232,7 +232,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
             ctx.diagnostic().pageLockTracker()
         );
 
-        persStoreMetrics = databaseSharedManager.persistentStoreMetricsImpl();
+        persStoreMetrics = databaseSharedManager.dataStorageMetricsImpl();
 
         databaseSharedManager.addCheckpointListener(this, grp.dataRegion());
     }
@@ -1041,7 +1041,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
         int tag = pageMemory.invalidate(grp.groupId(), partId);
 
-        if (grp.walEnabled())
+        if (grp.persistenceEnabled() && grp.walEnabled())
             ctx.wal().log(new PartitionDestroyRecord(grp.groupId(), partId));
 
         ctx.pageStore().truncate(grp.groupId(), partId, tag);

@@ -616,7 +616,7 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
 
                                     GridCacheVersion dhtVer = cached.isNear() ? writeVersion() : null;
 
-                                    if (!near() && cacheCtx.group().persistenceEnabled() && cacheCtx.group().walEnabled() &&
+                                    if (!near() && cacheCtx.group().logDataRecords() &&
                                         op != NOOP && op != RELOAD && (op != READ || cctx.snapshot().needTxReadLogging())) {
                                         if (dataEntries == null)
                                             dataEntries = new ArrayList<>(entries.size());
@@ -801,17 +801,17 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
 
                         cctx.mvccCaching().onTxFinished(this, true);
 
-                        if (!near() && !F.isEmpty(dataEntries) && cctx.wal() != null) {
+                        if (!near() && !F.isEmpty(dataEntries) && cctx.wal(true) != null) {
                             // Set new update counters for data entries received from persisted tx entries.
                             List<DataEntry> entriesWithCounters = dataEntries.stream()
                                 .map(tuple -> tuple.get1().partitionCounter(tuple.get2().updateCounter()))
                                 .collect(Collectors.toList());
 
-                            ptr = cctx.wal().log(new DataRecord(entriesWithCounters));
+                            ptr = cctx.wal(true).log(new DataRecord(entriesWithCounters));
                         }
 
                         if (ptr != null)
-                            cctx.wal().flush(ptr, false);
+                            cctx.wal(true).flush(ptr, false);
                     }
                     catch (Throwable ex) {
                         state(UNKNOWN);

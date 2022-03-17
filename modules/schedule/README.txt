@@ -44,4 +44,4 @@ Apache binary releases cannot include LGPL dependencies. If you would like inclu
 optional LGPL dependencies into your release, you should download the source release
 from Ignite website and do the build with the following maven command:
 
-mvn clean package -DskipTests -Prelease,lgpl
+./mvnw clean package -DskipTests -Prelease,lgpl

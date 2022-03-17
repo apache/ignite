@@ -32,6 +32,8 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.cdc.AbstractCdcTest.ChangeEventType.DELETE;
@@ -41,6 +43,7 @@ import static org.apache.ignite.internal.processors.cache.GridCacheUtils.cacheId
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 
 /** */
+@RunWith(Parameterized.class)
 public class SqlCdcTest extends AbstractCdcTest {
     /** */
     private static final String SARAH = "Sarah Connor";
@@ -57,14 +60,25 @@ public class SqlCdcTest extends AbstractCdcTest {
     /** */
     public static final String MSK = "Moscow";
 
+    /** */
+    @Parameterized.Parameter
+    public boolean persistenceEnabled;
+
+    /** */
+    @Parameterized.Parameters(name = "persistence={0}")
+    public static Object[] parameters() {
+        return new Object[] {false, true};
+    }
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setDataStorageConfiguration(new DataStorageConfiguration()
-            .setCdcEnabled(true)
             .setWalForceArchiveTimeout(WAL_ARCHIVE_TIMEOUT)
-            .setDefaultDataRegionConfiguration(new DataRegionConfiguration().setPersistenceEnabled(true)));
+            .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
+                .setPersistenceEnabled(persistenceEnabled)
+                .setCdcEnabled(true)));
 
         return cfg;
     }

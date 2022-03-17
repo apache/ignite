@@ -167,7 +167,7 @@ public class IgniteWalIteratorSwitchSegmentTest extends GridCommonAbstractTest {
                 null,
                 null,
                 null,
-                new IgniteCacheDatabaseSharedManager() {
+                new IgniteCacheDatabaseSharedManager(kctx) {
                     @Override public int pageSize() {
                         return DataStorageConfiguration.DFLT_PAGE_SIZE;
                     }
@@ -428,16 +428,19 @@ public class IgniteWalIteratorSwitchSegmentTest extends GridCommonAbstractTest {
             @Override protected IgniteConfiguration prepareIgniteConfiguration() {
                 IgniteConfiguration cfg = super.prepareIgniteConfiguration();
 
-                cfg.setDataStorageConfiguration(
-                    new DataStorageConfiguration()
-                        .setWalSegmentSize(SEGMENT_SIZE)
-                        .setWalRecordIteratorBufferSize(SEGMENT_SIZE / 2)
-                        .setWalMode(WALMode.FSYNC)
-                        .setWalPath(workDir + WORK_SUB_DIR)
-                        .setWalArchivePath(workDir + ARCHIVE_SUB_DIR)
-                        .setFileIOFactory(new RandomAccessFileIOFactory())
-                );
+                DataStorageConfiguration dsCfg = cfg.getDataStorageConfiguration();
 
+                if (dsCfg == null)
+                    dsCfg = new DataStorageConfiguration();
+
+                dsCfg.setWalSegmentSize(SEGMENT_SIZE)
+                    .setWalRecordIteratorBufferSize(SEGMENT_SIZE / 2)
+                    .setWalMode(WALMode.FSYNC)
+                    .setWalPath(workDir + WORK_SUB_DIR)
+                    .setWalArchivePath(workDir + ARCHIVE_SUB_DIR)
+                    .setFileIOFactory(new RandomAccessFileIOFactory());
+
+                cfg.setDataStorageConfiguration(dsCfg);
                 cfg.setEventStorageSpi(new NoopEventStorageSpi());
 
                 return cfg;

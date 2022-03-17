@@ -244,10 +244,6 @@ public class DataStorageConfiguration implements Serializable {
     @IgniteExperimental
     private String cdcWalPath = DFLT_WAL_CDC_PATH;
 
-    /** Change Data Capture enabled flag. */
-    @IgniteExperimental
-    private boolean cdcEnabled;
-
     /** Metrics enabled flag. */
     private boolean metricsEnabled = DFLT_METRICS_ENABLED;
 
@@ -798,30 +794,6 @@ public class DataStorageConfiguration implements Serializable {
         this.cdcWalPath = cdcWalPath;
 
         return this;
-    }
-
-    /**
-     * Sets flag indicating whether CDC enabled.
-     *
-     * @param cdcEnabled CDC enabled flag.
-     * @return {@code this} for chaining.
-     */
-    @IgniteExperimental
-    public DataStorageConfiguration setCdcEnabled(boolean cdcEnabled) {
-        this.cdcEnabled = cdcEnabled;
-
-        return this;
-    }
-
-    /**
-     * Gets flag indicating whether CDC is enabled.
-     * Default value is {@code false}.
-     *
-     * @return Metrics enabled flag.
-     */
-    @IgniteExperimental
-    public boolean isCdcEnabled() {
-        return cdcEnabled;
     }
 
     /**

@@ -23,6 +23,7 @@ import java.util.Set;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.ReadRepairStrategy;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.EntryGetResult;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.IgniteCacheExpiryPolicy;
@@ -49,6 +50,7 @@ public class GridNearReadRepairCheckOnlyFuture extends GridNearReadRepairAbstrac
     /**
      * Creates a new instance of GridNearReadRepairCheckOnlyFuture.
      *
+     * @param topVer Topology version.
      * @param ctx Cache context.
      * @param keys Keys.
      * @param strategy Read repair strategy.
@@ -63,6 +65,7 @@ public class GridNearReadRepairCheckOnlyFuture extends GridNearReadRepairAbstrac
      * @param tx Transaction. Can be {@code null} in case of atomic cache.
      */
     public GridNearReadRepairCheckOnlyFuture(
+        AffinityTopologyVersion topVer,
         GridCacheContext ctx,
         Collection<KeyCacheObject> keys,
         ReadRepairStrategy strategy,
@@ -75,7 +78,7 @@ public class GridNearReadRepairCheckOnlyFuture extends GridNearReadRepairAbstrac
         boolean needVer,
         boolean keepCacheObjects,
         IgniteInternalTx tx) {
-        super(null,
+        this(topVer,
             ctx,
             keys,
             strategy,
@@ -84,13 +87,78 @@ public class GridNearReadRepairCheckOnlyFuture extends GridNearReadRepairAbstrac
             deserializeBinary,
             recovery,
             expiryPlc,
-            tx);
+            skipVals,
+            needVer,
+            keepCacheObjects,
+            tx,
+            null);
+    }
+
+    /**
+     * @param topVer Topology version.
+     * @param ctx Cache context.
+     * @param keys Keys.
+     * @param strategy Read repair strategy.
+     * @param readThrough Read-through flag.
+     * @param taskName Task name.
+     * @param deserializeBinary Deserialize binary flag.
+     * @param recovery Partition recovery flag.
+     * @param expiryPlc Expiry policy.
+     * @param skipVals Skip values flag.
+     * @param needVer Need version flag.
+     * @param keepCacheObjects Keep cache objects flag.
+     * @param tx Transaction. Can be {@code null} in case of atomic cache.
+     * @param remappedFut Remapped future.
+     */
+    private GridNearReadRepairCheckOnlyFuture(
+        AffinityTopologyVersion topVer,
+        GridCacheContext ctx,
+        Collection<KeyCacheObject> keys,
+        ReadRepairStrategy strategy,
+        boolean readThrough,
+        String taskName,
+        boolean deserializeBinary,
+        boolean recovery,
+        IgniteCacheExpiryPolicy expiryPlc,
+        boolean skipVals,
+        boolean needVer,
+        boolean keepCacheObjects,
+        IgniteInternalTx tx,
+        GridNearReadRepairCheckOnlyFuture remappedFut) {
+        super(topVer,
+            ctx,
+            keys,
+            strategy,
+            readThrough,
+            taskName,
+            deserializeBinary,
+            recovery,
+            expiryPlc,
+            tx,
+            remappedFut);
 
         this.skipVals = skipVals;
         this.needVer = needVer;
         this.keepCacheObjects = keepCacheObjects;
+    }
 
-        init();
+    /** {@inheritDoc} */
+    @Override protected GridNearReadRepairAbstractFuture remapFuture(AffinityTopologyVersion topVer) {
+        return new GridNearReadRepairCheckOnlyFuture(
+            topVer,
+            ctx,
+            keys,
+            strategy,
+            readThrough,
+            taskName,
+            deserializeBinary,
+            recovery,
+            expiryPlc,
+            skipVals,
+            needVer,
+            keepCacheObjects,
+            tx,
+            this);
     }
 
     /** {@inheritDoc} */
@@ -101,7 +169,7 @@ public class GridNearReadRepairCheckOnlyFuture extends GridNearReadRepairAbstrac
         catch (IgniteConsistencyViolationException e) {
             Set<KeyCacheObject> inconsistentKeys = e.keys();
 
-            if (REMAP_CNT_UPD.incrementAndGet(this) > MAX_REMAP_CNT) {
+            if (remapCnt >= MAX_REMAP_CNT) {
                 if (ctx.atomic() || strategy == ReadRepairStrategy.CHECK_ONLY) { // Will not be fixed, should be recorded as is.
                     recordConsistencyViolation(inconsistentKeys, /*nothing fixed*/ null, ReadRepairStrategy.CHECK_ONLY);
 
