@@ -24,11 +24,28 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
+import org.apache.ignite.internal.processors.metric.MetricRegistry;
+import org.apache.ignite.internal.processors.pool.MetricsAwareExecutorService;
+
+import static org.apache.ignite.internal.processors.pool.PoolProcessor.ACTIVE_COUNT_DESC;
+import static org.apache.ignite.internal.processors.pool.PoolProcessor.COMPLETED_TASK_DESC;
+import static org.apache.ignite.internal.processors.pool.PoolProcessor.CORE_SIZE_DESC;
+import static org.apache.ignite.internal.processors.pool.PoolProcessor.IS_SHUTDOWN_DESC;
+import static org.apache.ignite.internal.processors.pool.PoolProcessor.IS_TERMINATED_DESC;
+import static org.apache.ignite.internal.processors.pool.PoolProcessor.IS_TERMINATING_DESC;
+import static org.apache.ignite.internal.processors.pool.PoolProcessor.KEEP_ALIVE_TIME_DESC;
+import static org.apache.ignite.internal.processors.pool.PoolProcessor.LARGEST_SIZE_DESC;
+import static org.apache.ignite.internal.processors.pool.PoolProcessor.MAX_SIZE_DESC;
+import static org.apache.ignite.internal.processors.pool.PoolProcessor.POOL_SIZE_DESC;
+import static org.apache.ignite.internal.processors.pool.PoolProcessor.QUEUE_SIZE_DESC;
+import static org.apache.ignite.internal.processors.pool.PoolProcessor.REJ_HND_DESC;
+import static org.apache.ignite.internal.processors.pool.PoolProcessor.TASK_COUNT_DESC;
+import static org.apache.ignite.internal.processors.pool.PoolProcessor.THRD_FACTORY_DESC;
 
 /**
  * An {@link ExecutorService} that executes submitted tasks using pooled grid threads.
  */
-public class IgniteThreadPoolExecutor extends ThreadPoolExecutor {
+public class IgniteThreadPoolExecutor extends ThreadPoolExecutor implements MetricsAwareExecutorService {
     /**
      * Creates a new service with the given initial parameters.
      *
@@ -126,5 +143,25 @@ public class IgniteThreadPoolExecutor extends ThreadPoolExecutor {
             threadFactory,
             new AbortPolicy()
         );
+    }
+
+    /** {@inheritDoc} */
+    @Override public void registerMetrics(MetricRegistry mreg) {
+        mreg.register("ActiveCount", this::getActiveCount, ACTIVE_COUNT_DESC);
+        mreg.register("CompletedTaskCount", this::getCompletedTaskCount, COMPLETED_TASK_DESC);
+        mreg.register("CorePoolSize", this::getCorePoolSize, CORE_SIZE_DESC);
+        mreg.register("LargestPoolSize", this::getLargestPoolSize, LARGEST_SIZE_DESC);
+        mreg.register("MaximumPoolSize", this::getMaximumPoolSize, MAX_SIZE_DESC);
+        mreg.register("PoolSize", this::getPoolSize, POOL_SIZE_DESC);
+        mreg.register("TaskCount", this::getTaskCount, TASK_COUNT_DESC);
+        mreg.register("QueueSize", () -> getQueue().size(), QUEUE_SIZE_DESC);
+        mreg.register("KeepAliveTime", () -> getKeepAliveTime(TimeUnit.MILLISECONDS), KEEP_ALIVE_TIME_DESC);
+        mreg.register("Shutdown", this::isShutdown, IS_SHUTDOWN_DESC);
+        mreg.register("Terminated", this::isTerminated, IS_TERMINATED_DESC);
+        mreg.register("Terminating", this::isTerminating, IS_TERMINATING_DESC);
+        mreg.register("RejectedExecutionHandlerClass",
+            () -> getRejectedExecutionHandler().getClass().getName(), String.class, REJ_HND_DESC);
+        mreg.register("ThreadFactoryClass",
+            () -> getThreadFactory().getClass().getName(), String.class, THRD_FACTORY_DESC);
     }
 }
