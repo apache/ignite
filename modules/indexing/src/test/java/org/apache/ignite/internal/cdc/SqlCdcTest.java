@@ -200,12 +200,10 @@ public class SqlCdcTest extends AbstractCdcTest {
 
         /** {@inheritDoc} */
         @Override public void onTypes(Iterator<BinaryType> types) {
-            System.out.println("BinaryCdcConsumer.onTypes");
-
             while (types.hasNext()) {
                 BinaryType type = types.next();
 
-                System.out.println(type);
+                assertNotNull(type);
             }
         }
     }

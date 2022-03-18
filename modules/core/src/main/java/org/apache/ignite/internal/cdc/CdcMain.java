@@ -32,6 +32,7 @@ import java.util.stream.Stream;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.cdc.CdcConfiguration;
 import org.apache.ignite.cdc.CdcConsumer;
 import org.apache.ignite.cdc.CdcEvent;
@@ -420,6 +421,8 @@ public class CdcMain implements Runnable {
         if (log.isInfoEnabled())
             log.info("Processing WAL segment [segment=" + segment + ']');
 
+        updateTypes();
+
         lastSegmentConsumptionTs.value(System.currentTimeMillis());
 
         IgniteWalIteratorFactory.IteratorParametersBuilder builder =
@@ -516,6 +519,13 @@ public class CdcMain implements Runnable {
         } catch (IgniteCheckedException | IOException e) {
             throw new IgniteException(e);
         }
+    }
+
+    /**
+     * Search for new or changed {@link BinaryType} and notifies the consumer.
+     */
+    private void updateTypes() {
+
     }
 
     /**
