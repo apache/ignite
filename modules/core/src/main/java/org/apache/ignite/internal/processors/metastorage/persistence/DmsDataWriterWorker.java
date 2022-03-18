@@ -27,6 +27,7 @@ import java.util.concurrent.FutureTask;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.RunnableFuture;
 import java.util.function.Consumer;
+import java.util.function.Predicate;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -36,6 +37,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.TestOnly;
 
 import static org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageUtil.COMMON_KEY_PREFIX;
 import static org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageUtil.cleanupGuardKey;
@@ -71,6 +73,10 @@ public class DmsDataWriterWorker extends GridWorker {
 
     /** */
     private volatile CountDownLatch latch = new CountDownLatch(0);
+
+    /** For tests purpose only. */
+    @TestOnly
+    private volatile Predicate<String> writeCondition;
 
     /**
      * This task is used to pause processing of the {@code updateQueue}. If this task completed it means that all the updates
@@ -129,6 +135,12 @@ public class DmsDataWriterWorker extends GridWorker {
 
     /** */
     public void update(DistributedMetaStorageHistoryItem histItem) {
+        if (writeCondition != null) {
+            for (int i = 0; i < histItem.keys().length; ++i)
+                if (writeCondition.test(histItem.keys()[i]))
+                    return;
+        }
+
         updateQueue.offer(newDmsTask(() -> {
             metastorage.write(historyItemKey(workerDmsVer.id() + 1), histItem);
 
@@ -200,6 +212,11 @@ public class DmsDataWriterWorker extends GridWorker {
         while (true) {
             try {
                 RunnableFuture<?> curTask = updateQueue.take();
+
+                // Condition possibly can store it`s inner state and check it regardless of passed params,
+                // thus empty predicate here is for such case coverage.
+                if (writeCondition != null && writeCondition.test(""))
+                    return;
 
                 curTask.run();
 
@@ -291,6 +308,9 @@ public class DmsDataWriterWorker extends GridWorker {
 
     /** */
     private void write(String key, byte[] valBytes) throws IgniteCheckedException {
+        if (writeCondition != null && writeCondition.test(key))
+            return;
+
         if (valBytes == null)
             metastorage.remove(localKey(key));
         else

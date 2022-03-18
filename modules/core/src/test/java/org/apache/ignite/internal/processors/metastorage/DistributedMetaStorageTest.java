@@ -17,16 +17,21 @@
 
 package org.apache.ignite.internal.processors.metastorage;
 
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.UUID;
 import java.util.concurrent.Callable;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -34,10 +39,14 @@ import org.apache.ignite.failure.FailureHandler;
 import org.apache.ignite.failure.StopNodeFailureHandler;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.NodeStoppingException;
+import org.apache.ignite.internal.processors.cache.persistence.metastorage.ReadWriteMetastorage;
 import org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageImpl;
+import org.apache.ignite.internal.processors.metastorage.persistence.DmsDataWriterWorker;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.discovery.DiscoverySpi;
@@ -50,6 +59,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_GLOBAL_METASTORAGE_HISTORY_MAX_BYTES;
+import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /**
  * Test for {@link DistributedMetaStorageImpl} with disabled persistence.
@@ -65,11 +75,16 @@ public class DistributedMetaStorageTest extends GridCommonAbstractTest {
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 
-        startGrid(0);
+        IgniteEx ign = startGrid(0);
 
         // We have to start the second node and wait when it is started
         // to be sure that all async metastorage updates of the node_0 are completed.
         startGrid(1);
+
+        //baselineAutoAdjustEnabled
+        //baselineAutoAdjustTimeout
+        //historical.rebalance.threshold
+        waitForCondition(() -> (int)metastorage(0).getUpdatesCount() == 3, 10_000);
 
         initialUpdatesCount = (int)metastorage(0).getUpdatesCount();
     }
@@ -169,7 +184,7 @@ public class DistributedMetaStorageTest extends GridCommonAbstractTest {
 
         GridTestUtils.runAsync(() -> startClientGrid(clientName));
 
-        boolean dmsStarted = GridTestUtils.waitForCondition(() -> {
+        boolean dmsStarted = waitForCondition(() -> {
             try {
                 IgniteKernal clientGrid = IgnitionEx.gridx(clientName);
 
@@ -406,19 +421,23 @@ public class DistributedMetaStorageTest extends GridCommonAbstractTest {
     public void testOptimizedWriteTwice() throws Exception {
         IgniteEx igniteEx = startGrid(0);
 
-        igniteEx.cluster().active(true);
+        igniteEx.cluster().state(ClusterState.ACTIVE);
 
         metastorage(0).write("key1", "value1");
 
-        assertEquals(1, metastorage(0).getUpdatesCount() - initialUpdatesCount);
+        int expUpdatesCnt = isPersistent() ? 2 : 1;
+
+        assertTrue("initialUpdatesCount=" + initialUpdatesCount + ", upd=" + metastorage(0).getUpdatesCount(),
+            waitForCondition(() ->
+            (expUpdatesCnt == metastorage(0).getUpdatesCount() - initialUpdatesCount), 10_000));
 
         metastorage(0).write("key2", "value2");
 
-        assertEquals(2, metastorage(0).getUpdatesCount() - initialUpdatesCount);
+        assertEquals(expUpdatesCnt + 1, metastorage(0).getUpdatesCount() - initialUpdatesCount);
 
         metastorage(0).write("key1", "value1");
 
-        assertEquals(2, metastorage(0).getUpdatesCount() - initialUpdatesCount);
+        assertEquals(expUpdatesCnt + 1, metastorage(0).getUpdatesCount() - initialUpdatesCount);
     }
 
     /** */
@@ -426,27 +445,120 @@ public class DistributedMetaStorageTest extends GridCommonAbstractTest {
     public void testClient() throws Exception {
         IgniteEx igniteEx = startGrid(0);
 
-        igniteEx.cluster().active(true);
+        igniteEx.cluster().state(ClusterState.ACTIVE);
 
-        metastorage(0).write("key0", "value0");
+        checkStored(metastorage(0), metastorage(0), "key0", "value0");
 
         startClientGrid(1);
 
         AtomicInteger clientLsnrUpdatesCnt = new AtomicInteger();
 
-        assertEquals(1, metastorage(1).getUpdatesCount() - initialUpdatesCount);
+        int expUpdatesCnt = isPersistent() ? 2 : 1;
+
+        assertEquals("initialUpdatesCount=" + initialUpdatesCount + ", upd=" + metastorage(1).getUpdatesCount(),
+            expUpdatesCnt, metastorage(1).getUpdatesCount() - initialUpdatesCount);
 
         assertEquals("value0", metastorage(1).read("key0"));
 
         metastorage(1).listen(key -> true, (key, oldVal, newVal) -> clientLsnrUpdatesCnt.incrementAndGet());
 
-        metastorage(1).write("key1", "value1");
+        checkStored(metastorage(1), metastorage(1), "key1", "value1");
+
+        checkStored(metastorage(1), metastorage(0), "key1", "value1");
 
         assertEquals(1, clientLsnrUpdatesCnt.get());
+    }
 
-        assertEquals("value1", metastorage(1).read("key1"));
+    /** */
+    protected void checkStoredWithPers(
+        DistributedMetaStorage msToStore,
+        IgniteEx instanceToCheck,
+        String key,
+        String value
+    ) throws IgniteCheckedException {
+        assertTrue(isPersistent());
 
-        assertEquals("value1", metastorage(0).read("key1"));
+        final CountDownLatch latch = new CountDownLatch(1);
+
+        final DistributedMetaStorageImpl distrMetaStore =
+            (DistributedMetaStorageImpl)instanceToCheck.context().distributedMetastorage();
+
+        DmsDataWriterWorker worker = GridTestUtils.getFieldValue(distrMetaStore, "worker");
+
+        ReadWriteMetastorage metastorage = GridTestUtils.getFieldValue(worker, "metastorage");
+
+        assertNotNull(metastorage);
+
+        IgniteInternalFuture f = GridTestUtils.runAsync(() -> {
+            try {
+                latch.await();
+
+                assertTrue(waitForCondition(() -> {
+                    try {
+                        AtomicReference<String> contains = new AtomicReference<>();
+
+                        metastorage.iterate("", (k, v) -> {
+                            if (k.contains(key))
+                                contains.set(k);
+                        }, false);
+
+                        return contains.get() != null && metastorage.readRaw(contains.get()) != null;
+                    }
+                    catch (IgniteCheckedException e) {
+                        throw new IgniteException(e);
+                    }
+                }, 15_000));
+            }
+            catch (IgniteInterruptedCheckedException | InterruptedException e) {
+                throw new IgniteException(e);
+            }
+        });
+
+        latch.countDown();
+
+        msToStore.write(key, value);
+
+        f.get();
+    }
+
+    /** */
+    protected void checkStored(
+        DistributedMetaStorage msToStore,
+        DistributedMetaStorage msToCheck,
+        String key,
+        String value
+    ) throws IgniteCheckedException {
+        final CountDownLatch latch = new CountDownLatch(1);
+
+        IgniteInternalFuture f = GridTestUtils.runAsync(() -> {
+            try {
+                latch.await();
+
+                assertTrue(waitForCondition(() -> {
+                    try {
+                        AtomicBoolean contains = new AtomicBoolean(false);
+                        msToCheck.iterate("", (k, v) -> {
+                            if (k.equals(key) && v.equals(value))
+                                contains.set(true);
+                        });
+
+                        return contains.get();
+                    }
+                    catch (IgniteCheckedException e) {
+                        throw new IgniteException(e);
+                    }
+                }, 15_000));
+            }
+            catch (IgniteInterruptedCheckedException | InterruptedException e) {
+                throw new IgniteException(e);
+            }
+        });
+
+        latch.countDown();
+
+        msToStore.write(key, value);
+
+        f.get();
     }
 
     /** */
@@ -454,11 +566,10 @@ public class DistributedMetaStorageTest extends GridCommonAbstractTest {
     public void testClientReconnect() throws Exception {
         IgniteEx igniteEx = startGrid(0);
 
-        igniteEx.cluster().active(true);
+        igniteEx.cluster().state(ClusterState.ACTIVE);
 
-        startClientGrid(1);
-
-        metastorage(0).write("key0", "value0");
+        if (isPersistent())
+            checkStoredWithPers(metastorage(0), igniteEx, "key0", "value0");
 
         startGrid(2);
 
@@ -466,24 +577,27 @@ public class DistributedMetaStorageTest extends GridCommonAbstractTest {
 
         stopGrid(2);
 
-        startGrid(2).cluster().active(true);
+        IgniteEx g2 = startGrid(2);
 
-        metastorage(2).write("key1", "value1");
+        g2.cluster().state(ClusterState.ACTIVE);
 
-        metastorage(2).write("key2", "value2");
+        IgniteEx client = startClientGrid(1);
 
-        int expUpdatesCnt = isPersistent() ? 3 : 2;
+        checkStored(metastorage(2), metastorage(2), "key1", "value1");
+
+        checkStored(metastorage(2), metastorage(2), "key2", "value2");
+
+        assertTrue(waitForCondition(() -> client.cluster().tag() != null, 10_000));
+
+        int expUpdatesCnt = isPersistent() ? 4 : 2;
 
         // Wait enough to cover failover timeout.
-        assertTrue(GridTestUtils.waitForCondition(
-            () -> metastorage(1).getUpdatesCount() - initialUpdatesCount == expUpdatesCnt, 15_000));
+        assertTrue("initialUpdatesCount=" + initialUpdatesCount + ", upd=" + metastorage(1).getUpdatesCount(),
+            waitForCondition(
+            () -> metastorage(1).getUpdatesCount() - initialUpdatesCount == expUpdatesCnt, 10_000));
 
         if (isPersistent())
             assertEquals("value0", metastorage(1).read("key0"));
-
-        assertEquals("value1", metastorage(1).read("key1"));
-
-        assertEquals("value2", metastorage(1).read("key2"));
     }
 
     /**
@@ -564,29 +678,42 @@ public class DistributedMetaStorageTest extends GridCommonAbstractTest {
 
         DistributedMetaStorage distributedMetastorage2 = ignite2.context().distributedMetastorage();
 
-        Object ver1 = U.field(distributedMetastorage1, "ver");
+        assertTrue(waitForCondition(() -> {
+            Object ver1 = U.field(distributedMetastorage1, "ver");
 
-        Object ver2 = U.field(distributedMetastorage2, "ver");
+            Object ver2 = U.field(distributedMetastorage2, "ver");
 
-        assertEquals(ver1, ver2);
+            return ver1.equals(ver2);
+        }, 10_000));
 
-        Object histCache1 = U.field(distributedMetastorage1, "histCache");
+        assertTrue(waitForCondition(() -> {
+            Object histCache1 = U.field(distributedMetastorage1, "histCache");
 
-        Object histCache2 = U.field(distributedMetastorage2, "histCache");
+            Object histCache2 = U.field(distributedMetastorage2, "histCache");
 
-        assertEquals(histCache1, histCache2);
+            return histCache1.equals(histCache2);
+        }, 10_000));
 
-        Method fullDataMtd = U.findNonPublicMethod(DistributedMetaStorageImpl.class, "localFullData");
+        assertTrue(waitForCondition(() -> {
+            Method fullDataMtd = U.findNonPublicMethod(DistributedMetaStorageImpl.class, "localFullData");
 
-        Object[] fullData1 = (Object[])fullDataMtd.invoke(distributedMetastorage1);
+            try {
+                Object[] fullData1 = (Object[])fullDataMtd.invoke(distributedMetastorage1);
 
-        Object[] fullData2 = (Object[])fullDataMtd.invoke(distributedMetastorage2);
+                Object[] fullData2 = (Object[])fullDataMtd.invoke(distributedMetastorage2);
 
-        assertEqualsCollections(Arrays.asList(fullData1), Arrays.asList(fullData2));
+                boolean pr1 = F.eqOrdered(Arrays.asList(fullData1), Arrays.asList(fullData2));
 
-        // Also check that arrays are sorted.
-        Arrays.sort(fullData1, Comparator.comparing(o -> U.field(o, "key")));
+                // Also check that arrays are sorted.
+                Arrays.sort(fullData1, Comparator.comparing(o -> U.field(o, "key")));
 
-        assertEqualsCollections(Arrays.asList(fullData1), Arrays.asList(fullData2));
+                boolean pr2 = F.eqOrdered(Arrays.asList(fullData1), Arrays.asList(fullData2));
+
+                return pr1 && pr2;
+            }
+            catch (IllegalAccessException | InvocationTargetException e) {
+                throw new IgniteException(e);
+            }
+        }, 10_000));
     }
 }

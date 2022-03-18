@@ -18,11 +18,14 @@
 package org.apache.ignite.internal.cluster;
 
 import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteCluster;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -30,11 +33,18 @@ import org.apache.ignite.events.ClusterTagUpdatedEvent;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.processors.cache.persistence.metastorage.ReadWriteMetastorage;
+import org.apache.ignite.internal.processors.metastorage.DistributedMetaStorage;
+import org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageImpl;
+import org.apache.ignite.internal.processors.metastorage.persistence.DmsDataWriterWorker;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
+import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /**
  * Tests for ID and tag features of IgniteCluster.
@@ -175,13 +185,17 @@ public class IgniteClusterIdTagTest extends GridCommonAbstractTest {
 
         ig0.cluster().active(true);
 
-        UUID id0 = ig0.cluster().id();
+        assertTrue(GridTestUtils.waitForCondition(() -> ig0.cluster().id() != null, 10_000));
+
+        final UUID id0 = ig0.cluster().id();
+
+        checkStoredWithPers(metastorage(0), ig0, "key", "value");
 
         stopAllGrids();
 
-        ig0 = startGrid(0);
+        final IgniteEx ig01 = startGrid(0);
 
-        assertEquals(id0, ig0.cluster().id());
+        assertTrue(GridTestUtils.waitForCondition(() -> id0.equals(ig01.cluster().id()), 10_000));
     }
 
     /**
@@ -293,7 +307,7 @@ public class IgniteClusterIdTagTest extends GridCommonAbstractTest {
     public void testPersistentClusterTag() throws Exception {
         isPersistenceEnabled = true;
 
-        IgniteEx ig0 = startGrid(0);
+        final IgniteEx ig0 = startGrid(0);
 
         try {
             ig0.cluster().tag(CUSTOM_TAG_0);
@@ -304,23 +318,27 @@ public class IgniteClusterIdTagTest extends GridCommonAbstractTest {
             assertTrue(e.getMessage().contains("Can not change cluster tag on inactive cluster."));
         }
 
-        IgniteEx ig1 = startGrid(1);
+        final IgniteEx ig1 = startGrid(1);
 
-        assertEquals(ig0.cluster().tag(), ig1.cluster().tag());
+        ig0.cluster().state(ClusterState.ACTIVE);
+
+        assertTrue(GridTestUtils.waitForCondition(() -> ig0.cluster().tag() != null, 10_000));
+
+        assertTrue(GridTestUtils.waitForCondition(() -> (ig0.cluster().tag().equals(ig1.cluster().tag())), 10_000));
 
         String tag1 = ig1.cluster().tag();
 
-        ig0.cluster().active(true);
+        checkStoredWithPers(metastorage(0), ig0, "key", "value");
 
         stopAllGrids();
 
-        ig0 = startGrid(0);
+        final IgniteEx ig01 = startGrid(0);
 
-        ig1 = startGrid(1);
+        IgniteEx ig11 = startGrid(1);
 
-        assertEquals(tag1, ig0.cluster().tag());
+        assertTrue(GridTestUtils.waitForCondition(() -> tag1.equals(ig01.cluster().tag()), 10_000));
 
-        ig1.cluster().active(true);
+        ig11.cluster().state(ClusterState.ACTIVE);
 
         IgniteEx cl0 = startGrid("client0");
 
@@ -330,9 +348,9 @@ public class IgniteClusterIdTagTest extends GridCommonAbstractTest {
 
         startGrid(0);
 
-        ig1 = startGrid(1);
+        final IgniteEx ig12 = startGrid(1);
 
-        assertEquals(CUSTOM_TAG_0, ig1.cluster().tag());
+        assertTrue(GridTestUtils.waitForCondition(() -> CUSTOM_TAG_0.equals(ig12.cluster().tag()), 10_000));
     }
 
     /**
@@ -352,6 +370,8 @@ public class IgniteClusterIdTagTest extends GridCommonAbstractTest {
         AtomicReference<String> newTagFromEvent = new AtomicReference<>(null);
 
         AtomicBoolean evtFired = new AtomicBoolean(false);
+
+        ig.cluster().state(ClusterState.ACTIVE);
 
         ig.events().localListen((evt) ->
             {
@@ -423,5 +443,64 @@ public class IgniteClusterIdTagTest extends GridCommonAbstractTest {
         assertEquals(clusterId, clusterIdFromEvent.get());
         assertEquals(generatedTag, oldTagFromEvent.get());
         assertEquals(CUSTOM_TAG_0, newTagFromEvent.get());
+    }
+
+    /**
+     * @return {@link DistributedMetaStorage} instance for i'th node.
+     */
+    protected DistributedMetaStorage metastorage(int i) {
+        return grid(i).context().distributedMetastorage();
+    }
+
+    /** Checks that appropriate key, value are stored into local metastore. */
+    protected void checkStoredWithPers(
+        DistributedMetaStorage msToStore,
+        IgniteEx instanceToCheck,
+        String key,
+        String value
+    ) throws IgniteCheckedException {
+        assertTrue(isPersistenceEnabled);
+
+        final CountDownLatch latch = new CountDownLatch(1);
+
+        final DistributedMetaStorageImpl distrMetaStore =
+            (DistributedMetaStorageImpl)instanceToCheck.context().distributedMetastorage();
+
+        DmsDataWriterWorker worker = GridTestUtils.getFieldValue(distrMetaStore, "worker");
+
+        ReadWriteMetastorage metastorage = GridTestUtils.getFieldValue(worker, "metastorage");
+
+        assertNotNull(metastorage);
+
+        IgniteInternalFuture f = GridTestUtils.runAsync(() -> {
+            try {
+                latch.await();
+
+                assertTrue(waitForCondition(() -> {
+                    try {
+                        AtomicReference<String> contains = new AtomicReference<>();
+
+                        metastorage.iterate("", (k, v) -> {
+                            if (k.contains(key))
+                                contains.set(k);
+                        }, false);
+
+                        return contains.get() != null && metastorage.readRaw(contains.get()) != null;
+                    }
+                    catch (IgniteCheckedException e) {
+                        throw new IgniteException(e);
+                    }
+                }, 15_000));
+            }
+            catch (IgniteInterruptedCheckedException | InterruptedException e) {
+                throw new IgniteException(e);
+            }
+        });
+
+        latch.countDown();
+
+        msToStore.write(key, value);
+
+        f.get(getTestTimeout());
     }
 }

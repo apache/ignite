@@ -18,8 +18,11 @@
 package org.apache.ignite.internal.processors.cluster;
 
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Timer;
 import java.util.UUID;
@@ -32,6 +35,7 @@ import javax.management.ObjectName;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.cluster.BaselineNode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.ClusterTagUpdatedEvent;
 import org.apache.ignite.events.DiscoveryEvent;
@@ -67,6 +71,7 @@ import org.apache.ignite.internal.util.lang.GridPlainRunnable;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -102,7 +107,7 @@ public class ClusterProcessor extends GridProcessorAdapter implements Distribute
     private static final String ATTR_UPDATE_NOTIFIER_STATUS = "UPDATE_NOTIFIER_STATUS";
 
     /** */
-    private static final String CLUSTER_ID_TAG_KEY =
+    public static final String CLUSTER_ID_TAG_KEY =
         DistributedMetaStorage.IGNITE_INTERNAL_KEY_PREFIX + "cluster.id.tag";
 
     /** */
@@ -254,6 +259,8 @@ public class ClusterProcessor extends GridProcessorAdapter implements Distribute
                 }
 
                 cluster.setTag(newVal != null ? newVal.tag() : null);
+
+                locClusterTag = cluster.tag();
             }
         );
     }
@@ -283,10 +290,15 @@ public class ClusterProcessor extends GridProcessorAdapter implements Distribute
                 try {
                     ClusterIdAndTag idAndTag = new ClusterIdAndTag(cluster.id(), cluster.tag());
 
-                    if (log.isInfoEnabled())
-                        log.info("Writing cluster ID and tag to metastorage on ready for write " + idAndTag);
+                    if (idAndTag.id() != null) {
+                        metastorage.writeAsync(CLUSTER_ID_TAG_KEY, idAndTag);
 
-                    metastorage.writeAsync(CLUSTER_ID_TAG_KEY, idAndTag);
+                        if (log.isInfoEnabled())
+                            log.info("Writing cluster ID and tag to metastorage on ready for write " + idAndTag);
+                    }
+                    else
+                        if (log.isDebugEnabled())
+                            log.debug("Skip writing empty clusterId and tag");
                 }
                 catch (IgniteCheckedException e) {
                     ctx.failure().process(new FailureContext(FailureType.CRITICAL_ERROR, e));
@@ -328,11 +340,67 @@ public class ClusterProcessor extends GridProcessorAdapter implements Distribute
      *     when it becomes ready for read.</li>
      * </ul>
      */
-    public void onLocalJoin() {
-        cluster.setId(locClusterId != null ? locClusterId : UUID.randomUUID());
+    public void onChangeState() {
+        Collection<ClusterNode> rmtNodes = cluster.forServers().nodes();
+        List<ClusterNode> rmtNodes0 = new ArrayList<>(rmtNodes);
 
-        cluster.setTag(locClusterTag != null ? locClusterTag :
-            ClusterTagGenerator.generateTag());
+        rmtNodes0.sort(Comparator.comparing(ClusterNode::id));
+
+        @Nullable Collection<BaselineNode> bltNodes = cluster.currentBaselineTopology();
+
+        if (F.isEmpty(bltNodes)) {
+            log.info("Baseline node collection is empty.");
+
+            return;
+        }
+
+        @Nullable UUID first = null;
+
+        Collection<Object> srvIds = F.nodeConsistentIds(bltNodes);
+
+        for (ClusterNode node : rmtNodes0) {
+            if (F.contains(srvIds, node.consistentId())) {
+                first = node.id();
+
+                break;
+            }
+        }
+
+        ClusterNode locNode = ctx.config().getDiscoverySpi().getLocalNode();
+
+        if (first == locNode.id() || locClusterTag != null) {
+            final UUID id = locClusterId != null ? locClusterId : UUID.randomUUID();
+
+            final String tag = locClusterTag != null ? locClusterTag : ClusterTagGenerator.generateTag();
+
+            ClusterIdAndTag idAndTag = new ClusterIdAndTag(id, tag);
+
+            if (log.isInfoEnabled() && locClusterTag == null)
+                log.info("Writing cluster ID and tag to metastorage on ready for write " + idAndTag);
+
+            try {
+                GridFutureAdapter<?> f = metastorage.writeAsync(CLUSTER_ID_TAG_KEY, idAndTag);
+
+                f.listen(o -> {
+                        cluster.setId(id);
+                        cluster.setTag(tag);
+                    });
+            }
+            catch (IgniteCheckedException e) {
+                ctx.failure().process(new FailureContext(FailureType.CRITICAL_ERROR, e));
+            }
+        }
+    }
+
+    /** For pure in mem cluster we still need to generate tag and id on first registered cluster node. */
+    public void onLocalJoin() {
+        boolean persistent = CU.isPersistenceEnabled(ctx.config());
+
+        if (!persistent) {
+            cluster.setId(locClusterId != null ? locClusterId : UUID.randomUUID());
+
+            cluster.setTag(locClusterTag != null ? locClusterTag : ClusterTagGenerator.generateTag());
+        }
     }
 
     /** {@inheritDoc} */
@@ -356,10 +424,8 @@ public class ClusterProcessor extends GridProcessorAdapter implements Distribute
         return null;
     }
 
-    /**
-     * @throws IgniteCheckedException If failed.
-     */
-    public void initDiagnosticListeners() throws IgniteCheckedException {
+    /** */
+    public void initDiagnosticListeners() {
         ctx.event().addLocalEventListener(new GridLocalEventListener() {
             @Override public void onEvent(Event evt) {
                 assert evt instanceof DiscoveryEvent;

@@ -44,6 +44,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.BiConsumer;
@@ -496,21 +497,32 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
 
         int grpId = MetaStorage.METASTORAGE_CACHE_ID;
 
-        if (!idxCacheStores.containsKey(grpId)) {
-            DataRegion dataRegion = cctx.database().dataRegion(GridCacheDatabaseSharedManager.METASTORE_DATA_REGION_NAME);
-            PageMetrics pageMetrics = dataRegion.metrics().cacheGrpPageMetrics(grpId);
+        DataRegion dataRegion = cctx.database().dataRegion(GridCacheDatabaseSharedManager.METASTORE_DATA_REGION_NAME);
 
-            CacheStoreHolder holder = initDir(
-                new File(storeWorkDir, MetaStorage.METASTORAGE_DIR_NAME),
-                grpId,
-                MetaStorage.METASTORAGE_PARTITIONS.size(),
-                pageMetrics,
-                false);
+        AtomicReference<IgniteCheckedException> initException = new AtomicReference<>();
 
-            CacheStoreHolder old = idxCacheStores.put(grpId, holder);
+        idxCacheStores.computeIfAbsent(grpId, k -> {
+                PageMetrics pageMetrics = dataRegion.metrics().cacheGrpPageMetrics(grpId);
 
-            assert old == null : "Non-null old store holder for metastorage";
-        }
+                CacheStoreHolder holder = null;
+                try {
+                    holder = initDir(
+                        new File(storeWorkDir, MetaStorage.METASTORAGE_DIR_NAME),
+                        grpId,
+                        MetaStorage.METASTORAGE_PARTITIONS.size(),
+                        pageMetrics,
+                        false);
+                }
+                catch (IgniteCheckedException e) {
+                    initException.set(e);
+                }
+
+                return holder;
+            }
+        );
+
+        if (initException.get() != null)
+            throw initException.get();
     }
 
     /** {@inheritDoc} */
