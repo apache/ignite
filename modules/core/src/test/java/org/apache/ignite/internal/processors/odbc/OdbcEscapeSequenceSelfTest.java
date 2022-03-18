@@ -81,93 +81,93 @@ public class OdbcEscapeSequenceSelfTest extends GridCommonAbstractTest {
     @Test
     public void testConvertFunction() throws Exception {
         check(
-         "CONVERT ( CURDATE(), CHAR )",
-         "{ fn CONVERT ( { fn CURDATE() }, SQL_CHAR ) }"
+            "CONVERT ( CURDATE(), CHAR )",
+            "{ fn CONVERT ( { fn CURDATE() }, SQL_CHAR ) }"
         );
 
         check(
-         "conVerT ( some_expression('one', 'two') , DECIMAL ( 5 , 2 ) )",
-         "{ fn conVerT ( some_expression('one', 'two') , SQL_DECIMAL ( 5 , 2 ) ) }"
+            "conVerT ( some_expression('one', 'two') , DECIMAL ( 5 , 2 ) )",
+            "{ fn conVerT ( some_expression('one', 'two') , SQL_DECIMAL ( 5 , 2 ) ) }"
         );
 
         check(
-         "convert(field,CHAR)",
-         "{fn convert(field,sql_char)}"
+            "convert(field,CHAR)",
+            "{fn convert(field,sql_char)}"
         );
 
         check(
-         "convert(field,BIGINT)",
-         "{fn convert(field,sql_bigint)}"
+            "convert(field,BIGINT)",
+            "{fn convert(field,sql_bigint)}"
         );
 
         check(
-         "convert(field,BINARY)",
-         "{fn convert(field,sql_binary)}" // also sql_varbinary,sql_longvarbinary
+            "convert(field,BINARY)",
+            "{fn convert(field,sql_binary)}" // also sql_varbinary,sql_longvarbinary
         );
 
         check(
-         "convert(field,BIT)",
-         "{fn convert(field,sql_bit)}"
+            "convert(field,BIT)",
+            "{fn convert(field,sql_bit)}"
         );
 
         check(
-         "convert(field,CHAR(100))",
-         "{fn convert(field,sql_char(100))}"
+            "convert(field,CHAR(100))",
+            "{fn convert(field,sql_char(100))}"
         );
 
         check(
-         "convert(field,DECIMAL(5,2))",
-         "{fn convert(field,sql_decimal(5,2))}" // also sql_numeric
+            "convert(field,DECIMAL(5,2))",
+            "{fn convert(field,sql_decimal(5,2))}" // also sql_numeric
         );
 
         check(
-         "convert(field,VARCHAR(100))",
-         "{fn convert(field,sql_varchar(100))}" // also sql_longvarchar,sql_wchar,sql_wlongvarchar,sql_wvarchar
+            "convert(field,VARCHAR(100))",
+            "{fn convert(field,sql_varchar(100))}" // also sql_longvarchar,sql_wchar,sql_wlongvarchar,sql_wvarchar
         );
 
         check(
-         "convert(field,DOUBLE)",
-         "{fn convert(field,sql_double)}" // also sql_float
+            "convert(field,DOUBLE)",
+            "{fn convert(field,sql_double)}" // also sql_float
         );
 
         check(
-         "convert(field,REAL)",
-         "{fn convert(field,sql_real)}"
+            "convert(field,REAL)",
+            "{fn convert(field,sql_real)}"
         );
 
         check(
-         "convert(field,UUID)",
-         "{fn convert(field,sql_guid)}"
+            "convert(field,UUID)",
+            "{fn convert(field,sql_guid)}"
         );
 
         check(
-         "convert(field,SMALLINT)",
-         "{fn convert(field,sql_smallint)}"
+            "convert(field,SMALLINT)",
+            "{fn convert(field,sql_smallint)}"
         );
 
         check(
-         "convert(field,INTEGER)",
-         "{fn convert(field,sql_integer)}"
+            "convert(field,INTEGER)",
+            "{fn convert(field,sql_integer)}"
         );
 
         check(
-         "convert(field,DATE)",
-         "{fn convert(field,sql_date)}"
+            "convert(field,DATE)",
+            "{fn convert(field,sql_date)}"
         );
 
         check(
-         "convert(field,TIME)",
-         "{fn convert(field,sql_time)}"
+            "convert(field,TIME)",
+            "{fn convert(field,sql_time)}"
         );
 
         check(
-         "convert(field,TIMESTAMP)",
-         "{fn convert(field,sql_timestamp)}"
+            "convert(field,TIMESTAMP)",
+            "{fn convert(field,sql_timestamp)}"
         );
 
         check(
-         "convert(field,TINYINT)",
-         "{fn convert(field,sql_tinyint)}"
+            "convert(field,TINYINT)",
+            "{fn convert(field,sql_tinyint)}"
         );
 
         //invalid odbc type

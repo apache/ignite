@@ -385,7 +385,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
         prepareService(proc.prepareService());
 
         init();
-     }
+    }
 
     /** {@inheritDoc} */
     @Override public void init() {

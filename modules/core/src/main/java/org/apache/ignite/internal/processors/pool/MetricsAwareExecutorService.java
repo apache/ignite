@@ -15,31 +15,18 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.tests.load;
+package org.apache.ignite.internal.processors.pool;
 
-import java.util.Date;
-import java.util.LinkedList;
-import java.util.List;
-import org.apache.ignite.tests.pojos.Person;
+import org.apache.ignite.internal.processors.metric.MetricRegistry;
 
 /**
- * Implementation of {@link Generator} generating {@link Person} instance.
+ * Executor service that supports self-registration of metrics.
  */
-public class PersonGenerator implements Generator {
-    /** */
-    private static final Date DATE = new Date();
-
-    /** */
-    private static final List<String> PHONES = new LinkedList<String>();
-
-    static {
-        PHONES.add("1234567");
-        PHONES.add("7654321");
-        PHONES.add("1289054");
-    }
-
-    /** {@inheritDoc} */
-    @Override public Object generate(long i) {
-        return new Person(i, Long.toString(i), Long.toString(i), (short)(i % 100), i % 2 == 0, i, i, DATE, PHONES);
-    }
+public interface MetricsAwareExecutorService {
+    /**
+     * Register thread pool metrics.
+     *
+     * @param mreg Metrics registry.
+     */
+    public void registerMetrics(MetricRegistry mreg);
 }

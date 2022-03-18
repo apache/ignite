@@ -1014,12 +1014,12 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
                 for (SchemaAbstractDiscoveryMessage msg: activeProposals.values()) {
                     if (msg.operation() instanceof SchemaAddQueryEntityOperation) {
-                       SchemaAddQueryEntityOperation op = (SchemaAddQueryEntityOperation)msg.operation();
+                        SchemaAddQueryEntityOperation op = (SchemaAddQueryEntityOperation)msg.operation();
 
-                       if (op.cacheName().equals(cacheInfo.name())) {
-                           proceed = true;
+                        if (op.cacheName().equals(cacheInfo.name())) {
+                            proceed = true;
 
-                           break;
+                            break;
                         }
                     }
                 }
@@ -1328,7 +1328,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             GridCacheContextInfo<?, ?> cacheInfo,
             Collection<QueryEntity> entities,
             boolean escape
-        ) throws IgniteCheckedException {
+    ) throws IgniteCheckedException {
         Collection<QueryTypeCandidate> cands = new ArrayList<>();
 
         List<Class<?>> mustDeserializeClss = new ArrayList<>();

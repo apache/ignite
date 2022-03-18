@@ -522,16 +522,16 @@ public class JdbcThinCacheToJdbcDataTypesCoverageTest extends GridCacheDataTypes
             try {
                 if (writeSyncMode == CacheWriteSynchronizationMode.FULL_ASYNC &&
                     !waitForCondition(new GridAbsPredicateX() {
-                                          @Override public boolean applyx() throws IgniteCheckedException {
-                                              try {
-                                                  return !stmt.executeQuery().next();
-                                              }
-                                              catch (SQLException e) {
-                                                  throw new IgniteCheckedException(e);
-                                              }
-                                          }
-                                      },
-                        TIMEOUT_FOR_KEY_RETRIEVAL_IN_FULL_ASYNC_MODE))
+                        @Override public boolean applyx() throws IgniteCheckedException {
+                            try {
+                                return !stmt.executeQuery().next();
+                            }
+                            catch (SQLException e) {
+                                throw new IgniteCheckedException(e);
+                            }
+                        }
+                    },
+                    TIMEOUT_FOR_KEY_RETRIEVAL_IN_FULL_ASYNC_MODE))
                     fail("Deleted data are still retrievable via SELECT.");
             }
             catch (GridClosureException e) {
@@ -565,16 +565,15 @@ public class JdbcThinCacheToJdbcDataTypesCoverageTest extends GridCacheDataTypes
         try {
             if (writeSyncMode == CacheWriteSynchronizationMode.FULL_ASYNC &&
                 !waitForCondition(new GridAbsPredicateX() {
-                                      @Override public boolean applyx() throws IgniteCheckedException {
-                                          try {
-                                              return stmt.executeQuery().next();
-                                          }
-                                          catch (SQLException e) {
-                                              throw new IgniteCheckedException(e);
-                                          }
-                                      }
-                                  },
-                    TIMEOUT_FOR_KEY_RETRIEVAL_IN_FULL_ASYNC_MODE))
+                    @Override public boolean applyx() throws IgniteCheckedException {
+                        try {
+                            return stmt.executeQuery().next();
+                        }
+                        catch (SQLException e) {
+                            throw new IgniteCheckedException(e);
+                        }
+                    }
+                }, TIMEOUT_FOR_KEY_RETRIEVAL_IN_FULL_ASYNC_MODE))
                 fail("Unable to retrieve data via SELECT.");
         }
         catch (GridClosureException e) {

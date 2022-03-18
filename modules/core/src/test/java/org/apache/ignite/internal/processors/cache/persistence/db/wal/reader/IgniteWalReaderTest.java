@@ -1693,7 +1693,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
                         }
                     }
 
-                    break;
+                        break;
 
                     case TX_RECORD:
                         // Fallthrough

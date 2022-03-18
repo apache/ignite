@@ -3229,10 +3229,10 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
             @Override public void run() throws Exception {
                 IgniteCache<String, Object> cache = ignite(0).cache(cacheName());
 
-                Map<String, Object> map = new HashMap<String, Object>() {{
-                    for (int i = 0; i < CNT; i++)
-                        put("key" + i, value(i));
-                }};
+                Map<String, Object> map = new HashMap<>();
+
+                for (int i = 0; i < CNT; i++)
+                    map.put("key" + i, value(i));
 
                 for (Map.Entry<String, Object> e : map.entrySet()) {
                     final String key = e.getKey();

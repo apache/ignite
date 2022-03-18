@@ -291,7 +291,7 @@ public class ClusterProperties {
      * @param mem Memory.
      */
     public void memoryPerNode(double mem) {
-         this.memPerNode = mem;
+        this.memPerNode = mem;
     }
 
     /**

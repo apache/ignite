@@ -586,7 +586,7 @@ public class CacheContinuousQueryRandomOperationsTest extends GridCommonAbstract
                             for (CacheEntryEvent<? extends QueryTestKey, ? extends QueryTestValue> e : events)
                                 evts.add(e);
                         }
-                });
+                    });
             }
             else if (qry instanceof ContinuousQueryWithTransformer)
                 initQueryWithTransformer(
@@ -725,7 +725,7 @@ public class CacheContinuousQueryRandomOperationsTest extends GridCommonAbstract
                             for (CacheEntryEvent<? extends QueryTestKey, ? extends QueryTestValue> e : events)
                                 evts.add(e);
                         }
-                });
+                    });
             }
             else if (qry instanceof ContinuousQueryWithTransformer)
                 initQueryWithTransformer(

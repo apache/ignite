@@ -54,7 +54,7 @@ public class VisorCachePartitions extends VisorDataTransferObject {
      * @param cnt Number of primary keys in partition.
      */
     public void addPrimary(int partId, long cnt) {
-       primary.put(partId, cnt);
+        primary.put(partId, cnt);
     }
 
     /**
@@ -64,7 +64,7 @@ public class VisorCachePartitions extends VisorDataTransferObject {
      * @param cnt Number of backup keys in partition.
      */
     public void addBackup(int partId, long cnt) {
-       backup.put(partId, cnt);
+        backup.put(partId, cnt);
     }
 
     /**

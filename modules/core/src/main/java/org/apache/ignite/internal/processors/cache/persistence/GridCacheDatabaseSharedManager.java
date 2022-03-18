@@ -881,19 +881,18 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                 notifyMetastorageReadyForRead();
 
-                cctx.kernalContext().maintenanceRegistry()
-                    .registerWorkflowCallbackIfTaskExists(
-                        DEFRAGMENTATION_MNTC_TASK_NAME,
-                        task -> {
-                            prepareCacheDefragmentation(fromStore(task).cacheNames());
+                cctx.kernalContext().maintenanceRegistry().registerWorkflowCallbackIfTaskExists(
+                    DEFRAGMENTATION_MNTC_TASK_NAME,
+                    task -> {
+                        prepareCacheDefragmentation(fromStore(task).cacheNames());
 
-                            return new DefragmentationWorkflowCallback(
-                                cctx.kernalContext()::log,
-                                defrgMgr,
-                                cctx.kernalContext().failure()
-                            );
-                        }
-                    );
+                        return new DefragmentationWorkflowCallback(
+                            cctx.kernalContext()::log,
+                            defrgMgr,
+                            cctx.kernalContext().failure()
+                        );
+                    }
+                );
             }
             finally {
                 if (metaStorage != null)
@@ -1454,7 +1453,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         }
 
         if (cctx.kernalContext().query().moduleEnabled())
-           cctx.kernalContext().query().beforeExchange(fut);
+            cctx.kernalContext().query().beforeExchange(fut);
     }
 
     /** {@inheritDoc} */
@@ -2258,7 +2257,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                         }, groupId, partId, exec, semaphore);
                     }
 
-                    break;
+                        break;
 
                     case PARTITION_DESTROY:
                         PartitionDestroyRecord destroyRecord = (PartitionDestroyRecord)rec;
@@ -2274,7 +2273,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                         }, groupId, partId, exec, semaphore);
 
                     }
-                    break;
+                        break;
 
                     default:
                         if (restoreBinaryState.needApplyBinaryUpdate() && rec instanceof PageDeltaRecord) {

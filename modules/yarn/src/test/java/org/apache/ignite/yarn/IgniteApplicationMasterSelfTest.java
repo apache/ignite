@@ -160,7 +160,7 @@ public class IgniteApplicationMasterSelfTest {
         interruptedThread(thread);
 
         assertEquals(0, contRequests.size());
-     }
+    }
 
     /**
      * @throws Exception If failed.
@@ -339,7 +339,7 @@ public class IgniteApplicationMasterSelfTest {
         List<AMRMClient.ContainerRequest> requests = rmMock.requests();
 
         while (requests.size() < expectedCnt
-           && (System.currentTimeMillis() - startTime) < timeOut)
+            && (System.currentTimeMillis() - startTime) < timeOut)
             requests = rmMock.requests();
 
         return requests;

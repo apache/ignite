@@ -476,7 +476,7 @@ public abstract class CacheDistributedGetFutureAdapter<K, V>
         /**
          * @param e Failure exception.
          */
-       public synchronized void onNodeLeft(ClusterTopologyCheckedException e) {
+        public synchronized void onNodeLeft(ClusterTopologyCheckedException e) {
             if (remapped)
                 return;
 
@@ -499,17 +499,16 @@ public abstract class CacheDistributedGetFutureAdapter<K, V>
                 cctx.shared().exchange()
                     .affinityReadyFuture(awaitTopVer)
                     .listen((f) -> {
-                            try {
-                                // Remap.
-                                map(keys.keySet(), F.t(node, keys), f.get());
+                        try {
+                            // Remap.
+                            map(keys.keySet(), F.t(node, keys), f.get());
 
-                                onDone(Collections.<K, V>emptyMap());
-                            }
-                            catch (IgniteCheckedException ex) {
-                                CacheDistributedGetFutureAdapter.this.onDone(ex);
-                            }
+                            onDone(Collections.<K, V>emptyMap());
                         }
-                    );
+                        catch (IgniteCheckedException ex) {
+                            CacheDistributedGetFutureAdapter.this.onDone(ex);
+                        }
+                    });
             }
         }
 

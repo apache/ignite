@@ -788,7 +788,7 @@ public class GridCacheSharedContext<K, V> {
      * @return WAL state manager.
      */
     public WalStateManager walState() {
-       return walStateMgr;
+        return walStateMgr;
     }
 
     /**

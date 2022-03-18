@@ -416,13 +416,12 @@ public class GridCommandHandlerMetadataTest extends GridCommandHandlerClusterByC
 
             // Executes any command to check disconnect.
             GridTestUtils.assertThrows(log, () -> {
-                    try (Statement stmt = conn.createStatement()) {
-                        stmt.execute("SELECT * FROM test");
-                    }
+                try (Statement stmt = conn.createStatement()) {
+                    stmt.execute("SELECT * FROM test");
+                }
 
-                    return null;
-                },
-                SQLException.class, "Failed to communicate with Ignite cluster");
+                return null;
+            }, SQLException.class, "Failed to communicate with Ignite cluster");
 
             HashMap<Integer, BinaryType> metas = GridTestUtils.getFieldValue(conn, "metaHnd", "cache", "metas");
 

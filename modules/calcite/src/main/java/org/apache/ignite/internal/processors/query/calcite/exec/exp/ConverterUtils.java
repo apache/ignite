@@ -57,21 +57,21 @@ public class ConverterUtils {
         Type fromType, Type targetType) {
         if (fromType == java.sql.Date.class) {
             if (targetType == int.class)
-              return Expressions.call(BuiltInMethod.DATE_TO_INT.method, operand);
+                return Expressions.call(BuiltInMethod.DATE_TO_INT.method, operand);
             else if (targetType == Integer.class)
-              return Expressions.call(BuiltInMethod.DATE_TO_INT_OPTIONAL.method, operand);
+                return Expressions.call(BuiltInMethod.DATE_TO_INT_OPTIONAL.method, operand);
         }
         else if (fromType == java.sql.Time.class) {
             if (targetType == int.class)
-              return Expressions.call(BuiltInMethod.TIME_TO_INT.method, operand);
+                return Expressions.call(BuiltInMethod.TIME_TO_INT.method, operand);
             else if (targetType == Integer.class)
-              return Expressions.call(BuiltInMethod.TIME_TO_INT_OPTIONAL.method, operand);
+                return Expressions.call(BuiltInMethod.TIME_TO_INT_OPTIONAL.method, operand);
         }
         else if (fromType == java.sql.Timestamp.class) {
             if (targetType == long.class)
-              return Expressions.call(BuiltInMethod.TIMESTAMP_TO_LONG.method, operand);
+                return Expressions.call(BuiltInMethod.TIMESTAMP_TO_LONG.method, operand);
             else if (targetType == Long.class)
-              return Expressions.call(BuiltInMethod.TIMESTAMP_TO_LONG_OPTIONAL.method, operand);
+                return Expressions.call(BuiltInMethod.TIMESTAMP_TO_LONG_OPTIONAL.method, operand);
         }
         return operand;
     }
@@ -87,28 +87,28 @@ public class ConverterUtils {
     private static Expression fromInternal(Expression operand,
         Type fromType, Type targetType) {
         if (operand == ConstantUntypedNull.INSTANCE)
-          return operand;
+            return operand;
         if (!(operand.getType() instanceof Class))
-          return operand;
+            return operand;
         if (Types.isAssignableFrom(targetType, fromType))
-          return operand;
+            return operand;
         if (targetType == java.sql.Date.class) {
             // E.g. from "int" or "Integer" to "java.sql.Date",
             // generate "SqlFunctions.internalToDate".
             if (isA(fromType, Primitive.INT))
-              return Expressions.call(BuiltInMethod.INTERNAL_TO_DATE.method, operand);
+                return Expressions.call(BuiltInMethod.INTERNAL_TO_DATE.method, operand);
         }
         else if (targetType == java.sql.Time.class) {
             // E.g. from "int" or "Integer" to "java.sql.Time",
             // generate "SqlFunctions.internalToTime".
             if (isA(fromType, Primitive.INT))
-              return Expressions.call(BuiltInMethod.INTERNAL_TO_TIME.method, operand);
+                return Expressions.call(BuiltInMethod.INTERNAL_TO_TIME.method, operand);
         }
         else if (targetType == java.sql.Timestamp.class) {
             // E.g. from "long" or "Long" to "java.sql.Timestamp",
             // generate "SqlFunctions.internalToTimestamp".
             if (isA(fromType, Primitive.LONG))
-              return Expressions.call(BuiltInMethod.INTERNAL_TO_TIMESTAMP.method, operand);
+                return Expressions.call(BuiltInMethod.INTERNAL_TO_TIMESTAMP.method, operand);
         }
         if (Primitive.is(operand.type)
             && Primitive.isBox(targetType)) {
@@ -204,7 +204,7 @@ public class ConverterUtils {
      */
     public static Expression convert(Expression operand, Type fromType, Type toType) {
         if (!Types.needTypeCast(fromType, toType))
-          return operand;
+            return operand;
 
         if (toType == Void.class)
             return RexImpTable.NULL_EXPR;
@@ -298,11 +298,11 @@ public class ConverterUtils {
                     && Primitive.of(una.getType()) == toBox) {
                     Primitive origin = Primitive.of(una.expression.type);
                     if (origin != null && toBox.assignableFrom(origin))
-                      return Expressions.box(una.expression, toBox);
+                        return Expressions.box(una.expression, toBox);
                 }
             }
             if (fromType == toBox.primitiveClass)
-              return Expressions.box(operand, toBox);
+                return Expressions.box(operand, toBox);
             // E.g., from "int" to "Byte".
             // Convert it first and generate "Byte.valueOf((byte)x)"
             // Because there is no method "Byte.valueOf(int)" in Byte
@@ -318,7 +318,7 @@ public class ConverterUtils {
             final Expression internalTypedOperand =
                 toInternal(operand, fromType, toType);
             if (operand != internalTypedOperand)
-              return internalTypedOperand;
+                return internalTypedOperand;
         }
         // Convert internal storage type to datetime types:
         // 1. int or Integer -> java.sql.Date
@@ -328,7 +328,7 @@ public class ConverterUtils {
             final Expression originTypedOperand =
                 fromInternal(operand, fromType, toType);
             if (operand != originTypedOperand)
-              return originTypedOperand;
+                return originTypedOperand;
         }
         else if (toType == String.class) {
             if (fromPrimitive != null) {
@@ -369,7 +369,7 @@ public class ConverterUtils {
                     if (operand instanceof ConstantExpression) {
                         ConstantExpression ce = (ConstantExpression)operand;
                         if (ce.value == null)
-                          return Expressions.convert_(operand, toType);
+                            return Expressions.convert_(operand, toType);
                     }
                     // Try to call "toString()" method
                     // E.g. from "Integer" to "String"

@@ -1059,7 +1059,7 @@ public class IgniteKernal implements IgniteEx, Externalizable {
         ackSpis();
 
         List<PluginProvider> plugins = cfg.getPluginProviders() != null && cfg.getPluginProviders().length > 0 ?
-           Arrays.asList(cfg.getPluginProviders()) : U.allPluginProviders();
+            Arrays.asList(cfg.getPluginProviders()) : U.allPluginProviders();
 
         // Spin out SPIs & managers.
         try {

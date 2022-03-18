@@ -1050,7 +1050,7 @@ public class RexToLixTranslator implements RexVisitor<RexToLixTranslator.Result>
         translator.currentStorageType = storageType;
         Result operandResult = operand.accept(translator);
         if (storageType != null)
-          operandResult = translator.toInnerStorageType(operandResult, storageType);
+            operandResult = translator.toInnerStorageType(operandResult, storageType);
         translator.currentStorageType = originalStorageType;
         return operandResult;
     }

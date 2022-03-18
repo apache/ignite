@@ -157,7 +157,7 @@ public class CacheClientsConcurrentStartTest extends GridCommonAbstractTest {
 
                         return false;
                     }
-            });
+                });
         }
 
         List<IgniteInternalFuture<?>> futs = new ArrayList<>();

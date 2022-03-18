@@ -38,12 +38,12 @@ public class BinaryClassificationMetricsTest {
      */
     @Test
     public void testCalculation() {
-        Map<Vector, Double> xorset = new HashMap<Vector, Double>() {{
-            put(VectorUtils.of(0., 0.), 0.);
-            put(VectorUtils.of(0., 1.), 1.);
-            put(VectorUtils.of(1., 0.), 1.);
-            put(VectorUtils.of(1., 1.), 0.);
-        }};
+        Map<Vector, Double> xorset = new HashMap<Vector, Double>();
+
+        xorset.put(VectorUtils.of(0., 0.), 0.);
+        xorset.put(VectorUtils.of(0., 1.), 1.);
+        xorset.put(VectorUtils.of(1., 0.), 1.);
+        xorset.put(VectorUtils.of(1., 1.), 0.);
 
         IgniteModel<Vector, Double> xorFunction = v -> {
             if (Math.abs(v.get(0) - v.get(1)) < 0.01)

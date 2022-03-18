@@ -107,14 +107,14 @@ public class DdlSqlToCommandConverter {
         new TableOptionProcessor<>(WRITE_SYNCHRONIZATION_MODE, validatorForEnumValue(CacheWriteSynchronizationMode.class),
             CreateTableCommand::writeSynchronizationMode),
         new TableOptionProcessor<>(BACKUPS, (opt, ctx) -> {
-                if (!(opt.value() instanceof SqlNumericLiteral)
-                    || !((SqlNumericLiteral)opt.value()).isInteger()
-                    || ((SqlLiteral)opt.value()).intValue(true) < 0
-                )
-                    throwOptionParsingException(opt, "a non-negative integer", ctx.query());
+            if (!(opt.value() instanceof SqlNumericLiteral)
+                || !((SqlNumericLiteral)opt.value()).isInteger()
+                || ((SqlLiteral)opt.value()).intValue(true) < 0
+            )
+                throwOptionParsingException(opt, "a non-negative integer", ctx.query());
 
-                return ((SqlLiteral)opt.value()).intValue(true);
-            }, CreateTableCommand::backups),
+            return ((SqlLiteral)opt.value()).intValue(true);
+        }, CreateTableCommand::backups),
         new TableOptionProcessor<>(ENCRYPTED, (opt, ctx) -> {
             if (!(opt.value() instanceof SqlLiteral) && ((SqlLiteral)opt.value()).getTypeName() != BOOLEAN)
                 throwOptionParsingException(opt, "a boolean", ctx.query());

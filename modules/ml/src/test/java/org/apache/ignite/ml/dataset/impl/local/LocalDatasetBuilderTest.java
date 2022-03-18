@@ -49,14 +49,14 @@ public class LocalDatasetBuilderTest {
         AtomicLong cnt = new AtomicLong();
 
         dataset.compute((partData, env) -> {
-           cnt.incrementAndGet();
+            cnt.incrementAndGet();
 
-           int[] arr = partData.data;
+            int[] arr = partData.data;
 
-           assertEquals(10, arr.length);
+            assertEquals(10, arr.length);
 
-           for (int i = 0; i < 10; i++)
-               assertEquals(env.partition() * 10 + i, arr[i]);
+            for (int i = 0; i < 10; i++)
+                assertEquals(env.partition() * 10 + i, arr[i]);
         });
 
         assertEquals(10, cnt.intValue());
@@ -94,16 +94,16 @@ public class LocalDatasetBuilderTest {
         LocalDatasetBuilder<Integer, Integer> builder) {
         PartitionContextBuilder<Integer, Integer, Serializable> partCtxBuilder = (env, upstream, upstreamSize) -> null;
 
-        PartitionDataBuilder<Integer, Integer, Serializable, TestPartitionData> partDataBuilder
-            = (env, upstream, upstreamSize, ctx) -> {
-            int[] arr = new int[Math.toIntExact(upstreamSize)];
+        PartitionDataBuilder<Integer, Integer, Serializable, TestPartitionData> partDataBuilder =
+            (env, upstream, upstreamSize, ctx) -> {
+                int[] arr = new int[Math.toIntExact(upstreamSize)];
 
-            int ptr = 0;
-            while (upstream.hasNext())
-                arr[ptr++] = upstream.next().getValue();
+                int ptr = 0;
+                while (upstream.hasNext())
+                    arr[ptr++] = upstream.next().getValue();
 
-            return new TestPartitionData(arr);
-        };
+                return new TestPartitionData(arr);
+            };
 
         return builder.build(
             TestUtils.testEnvBuilder(),

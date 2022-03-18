@@ -677,37 +677,37 @@ public class IgniteGlobalStatisticsManager implements GridMessageListener {
      * start to collect it again.
      */
     public void onConfigChanged(StatisticsObjectConfiguration cfg) {
-       StatisticsKey key = cfg.key();
+        StatisticsKey key = cfg.key();
 
-       curCollections.remove(key);
-       outGlobalStatisticsRequests.remove(key);
+        curCollections.remove(key);
+        outGlobalStatisticsRequests.remove(key);
 
-       inLocalRequests.computeIfPresent(key, (k, v) -> {
-           // Current config newer than income request - request should be invalidated.
-           v.removeIf(req -> StatisticsUtils.compareVersions(cfg, req.req().versions()) > 0);
+        inLocalRequests.computeIfPresent(key, (k, v) -> {
+            // Current config newer than income request - request should be invalidated.
+            v.removeIf(req -> StatisticsUtils.compareVersions(cfg, req.req().versions()) > 0);
 
-           return (v.isEmpty()) ? null : v;
-       });
+            return (v.isEmpty()) ? null : v;
+        });
 
-       inGloblaRequests.computeIfPresent(key, (k, v) -> {
-           v.removeIf(req -> StatisticsUtils.compareVersions(cfg, req.req().versions()) > 0);
+        inGloblaRequests.computeIfPresent(key, (k, v) -> {
+            v.removeIf(req -> StatisticsUtils.compareVersions(cfg, req.req().versions()) > 0);
 
-           return (v.isEmpty()) ? null : v;
-       });
+            return (v.isEmpty()) ? null : v;
+        });
 
-       if (cfg.columns().isEmpty())
-           globalStatistics.remove(key);
-       else {
-           globalStatistics.computeIfPresent(key, (k, v) -> {
-               if (v != null) {
-                   if (log.isDebugEnabled())
-                       log.debug("Scheduling global statistics recollection by key " + key);
+        if (cfg.columns().isEmpty())
+            globalStatistics.remove(key);
+        else {
+            globalStatistics.computeIfPresent(key, (k, v) -> {
+                if (v != null) {
+                    if (log.isDebugEnabled())
+                        log.debug("Scheduling global statistics recollection by key " + key);
 
-                   mgmtPool.submit(() -> collectGlobalStatistics(key));
-               }
-               return v;
-           });
-       }
+                    mgmtPool.submit(() -> collectGlobalStatistics(key));
+                }
+                return v;
+            });
+        }
     }
 
     /**

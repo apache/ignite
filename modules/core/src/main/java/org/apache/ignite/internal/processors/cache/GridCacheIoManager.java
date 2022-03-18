@@ -953,7 +953,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
                 processMessage(nodeId, msg, c); // Will be handled by Rebalance Demander.
             }
 
-            break;
+                break;
 
             case 116: {
                 GridNearSingleGetRequest req = (GridNearSingleGetRequest)msg;
