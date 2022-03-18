@@ -49,7 +49,7 @@ public class BusyExecutorTest extends GridCommonAbstractTest {
      */
     @Before
     public void createPool() {
-         pool = new IgniteThreadPoolExecutor("BusyExecutorPrefix",
+        pool = new IgniteThreadPoolExecutor("BusyExecutorPrefix",
             "BusyExecutorTest",
             0,
             2,

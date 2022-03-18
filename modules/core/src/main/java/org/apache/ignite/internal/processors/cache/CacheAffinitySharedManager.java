@@ -2920,7 +2920,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
             DataRegionConfiguration drCfg,
             int pageSize,
             int partsNum
-            ) {
+        ) {
             String res = "Cache group '%s'" +
                 " brings high overhead for its metainformation in data region '%s'." +
                 " Metainformation required for its partitions (%d partitions, %d bytes per partition, %d MBs total)" +

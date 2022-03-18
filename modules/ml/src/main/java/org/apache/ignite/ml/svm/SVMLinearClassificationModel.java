@@ -208,40 +208,42 @@ public final class SVMLinearClassificationModel implements IgniteModel<Vector, D
 
     /** Loads SVMLinearClassificationModel from JSON file. */
     public static SVMLinearClassificationModel fromJSON(Path path) {
-            ObjectMapper mapper = new ObjectMapper();
+        ObjectMapper mapper = new ObjectMapper();
 
-            SVMLinearClassificationJSONExportModel exportModel;
-            try {
-                exportModel = mapper
-                        .readValue(new File(path.toAbsolutePath().toString()), SVMLinearClassificationJSONExportModel.class);
+        SVMLinearClassificationJSONExportModel exportModel;
+        try {
+            exportModel = mapper
+                .readValue(new File(path.toAbsolutePath().toString()), SVMLinearClassificationJSONExportModel.class);
 
-                return exportModel.convert();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
+            return exportModel.convert();
+        }
+        catch (IOException e) {
+            e.printStackTrace();
+        }
 
         return null;
     }
 
     /** {@inheritDoc} */
     @Override public void toJSON(Path path) {
-            ObjectMapper mapper = new ObjectMapper();
+        ObjectMapper mapper = new ObjectMapper();
 
-            try {
-                SVMLinearClassificationJSONExportModel exportModel = new SVMLinearClassificationJSONExportModel(
-                    System.currentTimeMillis(),
-                    "svm_" + UUID.randomUUID().toString(),
-                    SVMLinearClassificationModel.class.getSimpleName());
-                exportModel.intercept = intercept;
-                exportModel.isKeepingRawLabels = isKeepingRawLabels;
-                exportModel.threshold = threshold;
-                exportModel.weights = weights.asArray();
+        try {
+            SVMLinearClassificationJSONExportModel exportModel = new SVMLinearClassificationJSONExportModel(
+                System.currentTimeMillis(),
+                "svm_" + UUID.randomUUID().toString(),
+                SVMLinearClassificationModel.class.getSimpleName());
+            exportModel.intercept = intercept;
+            exportModel.isKeepingRawLabels = isKeepingRawLabels;
+            exportModel.threshold = threshold;
+            exportModel.weights = weights.asArray();
 
-                File file = new File(path.toAbsolutePath().toString());
-                mapper.writeValue(file, exportModel);
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
+            File file = new File(path.toAbsolutePath().toString());
+            mapper.writeValue(file, exportModel);
+        }
+        catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     /** */

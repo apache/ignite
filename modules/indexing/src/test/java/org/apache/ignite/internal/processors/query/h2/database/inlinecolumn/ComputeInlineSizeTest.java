@@ -92,20 +92,20 @@ public class ComputeInlineSizeTest extends AbstractIndexingCommonTest {
     private void checkIdxsInlineSizes() {
         Collection<Index> idx = ignite.context().indexProcessor().indexes(context());
 
-        Map<String, Integer> expInlineSize = new HashMap<String, Integer>() {{
-            // 9 is inline for _KEY (LongIndexKeyType).
-            put("PERSON_STR_IDX",
-                9 + InlineIndexTree.IGNITE_VARIABLE_TYPE_DEFAULT_INLINE_SIZE);
-            put("PERSON_STRPRECBIG_IDX",
-                InlineIndexTree.IGNITE_MAX_INDEX_PAYLOAD_SIZE_DEFAULT);
-            // 3 is for storing info (type, length) of inlined key.
-            put("PERSON_STRPREC_IDX",
-                9 + InlineIndexTree.IGNITE_VARIABLE_TYPE_DEFAULT_INLINE_SIZE + 10 + 3);
-            put("PERSON_BYTES_IDX",
-                9 + InlineIndexTree.IGNITE_VARIABLE_TYPE_DEFAULT_INLINE_SIZE);
-            put("PERSON_BYTESPREC_IDX",
-                9 + InlineIndexTree.IGNITE_VARIABLE_TYPE_DEFAULT_INLINE_SIZE + 20 + 3);
-        }};
+        Map<String, Integer> expInlineSize = new HashMap<>();
+
+        // 9 is inline for _KEY (LongIndexKeyType).
+        expInlineSize.put("PERSON_STR_IDX",
+            9 + InlineIndexTree.IGNITE_VARIABLE_TYPE_DEFAULT_INLINE_SIZE);
+        expInlineSize.put("PERSON_STRPRECBIG_IDX",
+            InlineIndexTree.IGNITE_MAX_INDEX_PAYLOAD_SIZE_DEFAULT);
+        // 3 is for storing info (type, length) of inlined key.
+        expInlineSize.put("PERSON_STRPREC_IDX",
+            9 + InlineIndexTree.IGNITE_VARIABLE_TYPE_DEFAULT_INLINE_SIZE + 10 + 3);
+        expInlineSize.put("PERSON_BYTES_IDX",
+            9 + InlineIndexTree.IGNITE_VARIABLE_TYPE_DEFAULT_INLINE_SIZE);
+        expInlineSize.put("PERSON_BYTESPREC_IDX",
+            9 + InlineIndexTree.IGNITE_VARIABLE_TYPE_DEFAULT_INLINE_SIZE + 20 + 3);
 
         for (Index i: idx) {
             InlineIndexImpl impl = (InlineIndexImpl)i;

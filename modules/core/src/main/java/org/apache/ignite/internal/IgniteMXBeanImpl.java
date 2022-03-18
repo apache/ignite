@@ -118,7 +118,7 @@ public class IgniteMXBeanImpl implements IgniteMXBean {
 
     /** {@inheritDoc} */
     @Override public boolean isNodeInBaseline() {
-       return kernal.nodeInBaseline();
+        return kernal.nodeInBaseline();
     }
 
     /** {@inheritDoc} */

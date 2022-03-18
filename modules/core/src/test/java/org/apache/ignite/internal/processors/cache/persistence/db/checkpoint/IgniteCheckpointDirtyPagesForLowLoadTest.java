@@ -111,13 +111,14 @@ public class IgniteCheckpointDirtyPagesForLowLoadTest extends GridCommonAbstract
 
             for (int g = 0; g < GROUPS; g++) {
                 for (int c = 0; c < CACHES_IN_GRP; c++) {
-                    ignite.cache("dummyCache" + c + "." + g)
-                        .putAll(new TreeMap<Long, Long>() {{
-                            for (int j = 0; j < PARTS; j++) {
-                                // to fill each partition cache with at least 1 element
-                                put((long)j, (long)j);
-                            }
-                        }});
+                    TreeMap<Long, Long> data = new TreeMap<>();
+
+                    for (int j = 0; j < PARTS; j++) {
+                        // to fill each partition cache with at least 1 element
+                        data.put((long)j, (long)j);
+                    }
+
+                    ignite.cache("dummyCache" + c + "." + g).putAll(data);
                 }
             }
 

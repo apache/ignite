@@ -113,9 +113,11 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
 
         List<BinaryTypeConfiguration> binTypes = new ArrayList<>();
 
-        binTypes.add(new BinaryTypeConfiguration() {{
-            setTypeName("ArrayHashedKey");
-        }});
+        BinaryTypeConfiguration type = new BinaryTypeConfiguration();
+
+        type.setTypeName("ArrayHashedKey");
+
+        binTypes.add(type);
 
         BinaryConfiguration binCfg = new BinaryConfiguration();
         binCfg.setTypeConfigurations(binTypes);

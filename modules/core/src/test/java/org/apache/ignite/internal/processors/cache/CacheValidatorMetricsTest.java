@@ -61,10 +61,10 @@ public class CacheValidatorMetricsTest extends GridCommonAbstractTest implements
             .setCacheMode(CacheMode.REPLICATED)
             .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
             .setTopologyValidator(new TopologyValidator() {
-            @Override public boolean validate(Collection<ClusterNode> nodes) {
-                return nodes.size() == 2;
-            }
-        });
+                @Override public boolean validate(Collection<ClusterNode> nodes) {
+                    return nodes.size() == 2;
+                }
+            });
 
         cfg.setCacheConfiguration(cCfg1, cCfg2);
 

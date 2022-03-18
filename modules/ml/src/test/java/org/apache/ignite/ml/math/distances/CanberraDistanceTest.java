@@ -31,80 +31,80 @@ import static org.junit.Assert.assertEquals;
  */
 @RunWith(Parameterized.class)
 public class CanberraDistanceTest {
-  /** Precision. */
-  private static final double PRECISION = 0.01;
-
-  /** */
-  @Parameterized.Parameters(name = "{0}")
-  public static Collection<TestData> data() {
-    return Arrays.asList(
-        new TestData(
-            new double[] {0, 0, 0},
-            new double[] {2, 1, 0},
-            2.0
-        ),
-        new TestData(
-            new double[] {1, 2, 3},
-            new double[] {2, 1, 0},
-            1.66
-        ),
-        new TestData(
-            new double[] {1, 2, 3},
-            new double[] {2, 1, 50},
-            1.55
-        ),
-        new TestData(
-            new double[] {1, -100, 3},
-            new double[] {2, 1, -50},
-            2.33
-        )
-    );
-  }
-
-  /** */
-  private final TestData testData;
-
-  /** */
-  public CanberraDistanceTest(TestData testData) {
-    this.testData = testData;
-  }
-
-  /** */
-  @Test
-  public void testCanberraDistance() {
-    DistanceMeasure distanceMeasure = new CanberraDistance();
-
-    assertEquals(testData.expRes,
-        distanceMeasure.compute(testData.vectorA, testData.vectorB), PRECISION);
-    assertEquals(testData.expRes,
-        distanceMeasure.compute(testData.vectorA, testData.vectorB), PRECISION);
-  }
-
-  /** */
-  private static class TestData {
-    /** */
-    public final Vector vectorA;
+    /** Precision. */
+    private static final double PRECISION = 0.01;
 
     /** */
-    public final Vector vectorB;
-
-    /** */
-    public final double expRes;
-
-    /** */
-    private TestData(double[] vectorA, double[] vectorB, double expRes) {
-      this.vectorA = new DenseVector(vectorA);
-      this.vectorB = new DenseVector(vectorB);
-      this.expRes = expRes;
+    @Parameterized.Parameters(name = "{0}")
+    public static Collection<TestData> data() {
+        return Arrays.asList(
+            new TestData(
+                new double[] {0, 0, 0},
+                new double[] {2, 1, 0},
+                2.0
+            ),
+            new TestData(
+                new double[] {1, 2, 3},
+                new double[] {2, 1, 0},
+                1.66
+            ),
+            new TestData(
+                new double[] {1, 2, 3},
+                new double[] {2, 1, 50},
+                1.55
+            ),
+            new TestData(
+                new double[] {1, -100, 3},
+                new double[] {2, 1, -50},
+                2.33
+            )
+        );
     }
 
     /** */
-    @Override public String toString() {
-      return String.format("d(%s,%s) = %s",
-          Arrays.toString(vectorA.asArray()),
-          Arrays.toString(vectorB.asArray()),
-          expRes
-      );
+    private final TestData testData;
+
+    /** */
+    public CanberraDistanceTest(TestData testData) {
+        this.testData = testData;
     }
-  }
+
+    /** */
+    @Test
+    public void testCanberraDistance() {
+        DistanceMeasure distanceMeasure = new CanberraDistance();
+
+        assertEquals(testData.expRes,
+            distanceMeasure.compute(testData.vectorA, testData.vectorB), PRECISION);
+        assertEquals(testData.expRes,
+            distanceMeasure.compute(testData.vectorA, testData.vectorB), PRECISION);
+    }
+
+    /** */
+    private static class TestData {
+        /** */
+        public final Vector vectorA;
+
+        /** */
+        public final Vector vectorB;
+
+        /** */
+        public final double expRes;
+
+        /** */
+        private TestData(double[] vectorA, double[] vectorB, double expRes) {
+            this.vectorA = new DenseVector(vectorA);
+            this.vectorB = new DenseVector(vectorB);
+            this.expRes = expRes;
+        }
+
+        /** */
+        @Override public String toString() {
+            return String.format("d(%s,%s) = %s",
+                Arrays.toString(vectorA.asArray()),
+                Arrays.toString(vectorB.asArray()),
+                expRes
+            );
+        }
+    }
 }

@@ -102,70 +102,41 @@ public class GridCommonAbstractTestSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testMapsEqualityChecks() {
-        assertEqualsMaps(
-            new HashMap<Integer, Integer>() {{
-                put(1, 1);
-                put(2, 2);
-                put(3, 3);
-            }},
-            new HashMap<Integer, Integer>() {{
-                put(1, 1);
-                put(3, 3);
-                put(2, 2);
-            }});
+        HashMap<Integer, Integer> map1 = new HashMap<>();
 
-        assertFailed(() -> assertEqualsMaps(
-            new HashMap<Integer, Integer>() {{
-                put(1, 1);
-                put(2, 2);
-                put(3, 3);
-            }},
-            new HashMap<Integer, Integer>() {{
-                put(1, 1);
-                put(2, 2);
-                put(3, 3);
-                put(4, 4);
-            }}));
+        map1.put(1, 1);
+        map1.put(2, 2);
+        map1.put(3, 3);
 
-        assertFailed(() -> assertEqualsMaps(
-            new HashMap<Integer, Integer>() {{
-                put(1, 1);
-                put(2, 2);
-                put(3, 3);
-                put(null, null);
-            }},
-            new HashMap<Integer, Integer>() {{
-                put(1, 1);
-                put(2, 2);
-                put(3, 3);
-                put(4, 4);
-            }}));
+        HashMap<Integer, Integer> map2 = new HashMap<>();
 
-        assertFailed(() -> assertEqualsMaps(
-            new HashMap<Integer, Integer>() {{
-                put(1, 1);
-                put(2, 2);
-                put(3, 3);
-                put(null, null);
-            }},
-            new HashMap<Integer, Integer>() {{
-                put(1, 1);
-                put(2, 2);
-                put(3, 3);
-            }}));
+        map2.put(1, 1);
+        map2.put(3, 3);
+        map2.put(2, 2);
 
-        assertFailed(() -> assertEqualsMaps(
-            new HashMap<Integer, Integer>() {{
-                put(1, 1);
-                put(2, 2);
-                put(3, 3);
-            }},
-            new HashMap<Integer, Integer>() {{
-                put(1, 1);
-                put(2, 2);
-                put(3, 3);
-                put(null, null);
-            }}));
+        assertEqualsMaps(map1, map2);
+
+        HashMap<Integer, Integer> map3 = new HashMap<>();
+
+        map3.put(1, 1);
+        map3.put(2, 2);
+        map3.put(3, 3);
+        map3.put(4, 4);
+
+        assertFailed(() -> assertEqualsMaps(map1, map3));
+
+        HashMap<Integer, Integer> map4 = new HashMap<>();
+
+        map4.put(1, 1);
+        map4.put(2, 2);
+        map4.put(3, 3);
+        map4.put(null, null);
+
+        assertFailed(() -> assertEqualsMaps(map4, map3));
+
+        assertFailed(() -> assertEqualsMaps(map4, map1));
+
+        assertFailed(() -> assertEqualsMaps(map1, map4));
     }
 
     /**

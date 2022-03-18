@@ -78,9 +78,9 @@ public class GridCacheHashMapPutAllWarningsTest extends GridCommonAbstractTest {
         testLog = new ListeningTestLogger(false, log());
 
         testLog.registerListener((s) -> {
-                if (s.contains("deadlock"))
-                    messages.add(s);
-            });
+            if (s.contains("deadlock"))
+                messages.add(s);
+        });
 
         Ignite ignite = startGrid(0);
 

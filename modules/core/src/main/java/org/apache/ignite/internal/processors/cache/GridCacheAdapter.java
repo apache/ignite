@@ -738,20 +738,20 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             opCtx != null ? opCtx.readRepairStrategy() : null,
             /*skip values*/true,
             /*need ver*/false).chain(new CX1<IgniteInternalFuture<Map<K, V>>, Boolean>() {
-            @Override public Boolean applyx(IgniteInternalFuture<Map<K, V>> fut) throws IgniteCheckedException {
-                Map<K, V> kvMap = fut.get();
+                    @Override public Boolean applyx(IgniteInternalFuture<Map<K, V>> fut) throws IgniteCheckedException {
+                        Map<K, V> kvMap = fut.get();
 
-                if (keys.size() != kvMap.size())
-                    return false;
+                        if (keys.size() != kvMap.size())
+                            return false;
 
-                for (Map.Entry<K, V> entry : kvMap.entrySet()) {
-                    if (entry.getValue() == null)
-                        return false;
-                }
+                        for (Map.Entry<K, V> entry : kvMap.entrySet()) {
+                            if (entry.getValue() == null)
+                                return false;
+                        }
 
-                return true;
-            }
-        });
+                        return true;
+                    }
+            });
     }
 
     /** {@inheritDoc} */
@@ -1407,10 +1407,10 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             opCtx != null ? opCtx.readRepairStrategy() : null,
             /*skip vals*/false,
             /*can remap*/false).chain(new CX1<IgniteInternalFuture<Map<K, V>>, V>() {
-            @Override public V applyx(IgniteInternalFuture<Map<K, V>> e) throws IgniteCheckedException {
-                return e.get().get(key);
-            }
-        });
+                @Override public V applyx(IgniteInternalFuture<Map<K, V>> e) throws IgniteCheckedException {
+                    return e.get().get(key);
+                }
+            });
     }
 
     /** {@inheritDoc} */
@@ -1889,8 +1889,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             opCtx != null && opCtx.recovery(),
             opCtx != null ? opCtx.readRepairStrategy() : null,
             skipVals,
-            needVer).chain(
-            new CX1<IgniteInternalFuture<Map<K, V>>, V>() {
+            needVer).chain(new CX1<IgniteInternalFuture<Map<K, V>>, V>() {
                 @Override public V applyx(IgniteInternalFuture<Map<K, V>> e) throws IgniteCheckedException {
                     Map<K, V> map = e.get();
 
@@ -3906,12 +3905,12 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         if (nodes.isEmpty())
             return new GridFinishedFuture<>();
 
-            return ctx.closures().callAsyncNoFailover(BROADCAST,
-                new LoadKeysCallable<>(ctx.name(), keys, update, plc, keepBinary),
-                nodes,
-                true,
-                0,
-                false);
+        return ctx.closures().callAsyncNoFailover(BROADCAST,
+            new LoadKeysCallable<>(ctx.name(), keys, update, plc, keepBinary),
+            nodes,
+            true,
+            0,
+            false);
     }
 
     /**

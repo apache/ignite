@@ -51,14 +51,14 @@ public class SnapshotMetadataCollectorTask
 
         for (ClusterNode node : subgrid) {
             map.put(new ComputeJobAdapter(snpName) {
-                        @IgniteInstanceResource
-                        private transient IgniteEx ignite;
+                @IgniteInstanceResource
+                private transient IgniteEx ignite;
 
-                        @Override public List<SnapshotMetadata> execute() throws IgniteException {
-                            return ignite.context().cache().context().snapshotMgr()
-                                .readSnapshotMetadatas(snpName);
-                        }
-                    }, node);
+                @Override public List<SnapshotMetadata> execute() throws IgniteException {
+                    return ignite.context().cache().context().snapshotMgr()
+                        .readSnapshotMetadatas(snpName);
+                }
+            }, node);
         }
 
         return map;

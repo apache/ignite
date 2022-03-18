@@ -37,8 +37,9 @@ public class CatboostRegressionModelParser implements
     @Override public CatboostRegressionModel parse(byte[] mdl) {
         try (InputStream inputStream = new ByteArrayInputStream(mdl)) {
             return new CatboostRegressionModel(CatBoostModel.loadModel(inputStream));
-        } catch (IOException | CatBoostError e) {
+        }
+        catch (IOException | CatBoostError e) {
             throw new RuntimeException("Failed to parse model " + e.getMessage(), e);
         }
-  }
+    }
 }

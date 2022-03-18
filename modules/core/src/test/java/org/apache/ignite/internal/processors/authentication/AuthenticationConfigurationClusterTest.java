@@ -204,11 +204,11 @@ public class AuthenticationConfigurationClusterTest extends GridCommonAbstractTe
     @Test
     public void testBothAuthenticationAndSecurityPluginConfiguration() {
         GridTestUtils.assertThrowsAnyCause(log, () -> {
-                startGrid(configuration(0, true, false)
-                    .setPluginProviders(new TestSecurityPluginProvider("login", "", ALLOW_ALL, false)));
+            startGrid(configuration(0, true, false)
+                .setPluginProviders(new TestSecurityPluginProvider("login", "", ALLOW_ALL, false)));
 
-                return null;
-            },
+            return null;
+        },
             IgniteCheckedException.class,
             "Invalid security configuration: both authentication is enabled and external security plugin is provided.");
     }

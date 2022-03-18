@@ -433,7 +433,7 @@ public class SortedReducer extends AbstractReducer {
          * @param last Upper bound.
          * @param stream Stream of all the rows from remote nodes.
          */
-         FetchingCursor(SearchRow first, SearchRow last, Iterator<Row> stream) {
+        FetchingCursor(SearchRow first, SearchRow last, Iterator<Row> stream) {
             assert stream != null;
 
             // Initially we will use all the fetched rows, after we will switch to the last block.

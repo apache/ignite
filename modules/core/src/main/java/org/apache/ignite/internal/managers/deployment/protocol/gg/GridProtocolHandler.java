@@ -45,7 +45,7 @@ public class GridProtocolHandler extends URLStreamHandler {
      * Deregisters deployment manager.
      */
     public static void deregisterDeploymentManager() {
-         mgr = null;
+        mgr = null;
     }
 
     /** {@inheritDoc} */

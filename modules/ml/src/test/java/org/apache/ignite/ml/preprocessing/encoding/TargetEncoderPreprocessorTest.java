@@ -18,8 +18,10 @@
 package org.apache.ignite.ml.preprocessing.encoding;
 
 import java.io.Serializable;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
 import org.apache.ignite.ml.dataset.feature.extractor.impl.DummyVectorizer;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
@@ -42,32 +44,32 @@ public class TargetEncoderPreprocessorTest {
             new DenseVector(new Serializable[] {"3", "Moscow", "B"}),
         };
 
-      Vectorizer<Integer, Vector, Integer, Double> vectorizer = new DummyVectorizer<>(0, 1, 2);
+        Vectorizer<Integer, Vector, Integer, Double> vectorizer = new DummyVectorizer<>(0, 1, 2);
+
+        Map<String, Double> mean = new HashMap<>();
+
+        mean.put("1", 1.0); // category "1" avg mean = 1.0
+        mean.put("2", 0.0); // category "2" avg mean = 0.0
+
+        Map<String, Double> mean1 = new HashMap<>();
+
+        mean1.put("A", 1.0); // category "A" avg mean 1.0
+        mean1.put("B", 2.0); // category "B" avg mean 2.0
 
         TargetEncoderPreprocessor<Integer, Vector> preprocessor = new TargetEncoderPreprocessor<>(
             new TargetEncodingMeta[]{
                 // feature 0
                 new TargetEncodingMeta()
                     .withGlobalMean(0.5)
-                    .withCategoryMean(new HashMap<String, Double>() {
-                      {
-                        put("1", 1.0); // category "1" avg mean = 1.0
-                        put("2", 0.0); // category "2" avg mean = 0.0
-                      }
-                    }),
+                    .withCategoryMean(mean),
                 // feature 1
                 new TargetEncodingMeta()
                     .withGlobalMean(0.1)
-                    .withCategoryMean(new HashMap<String, Double>() {}),
+                    .withCategoryMean(Collections.emptyMap()),
                 // feature 2
                 new TargetEncodingMeta()
                     .withGlobalMean(0.1)
-                    .withCategoryMean(new HashMap<String, Double>() {
-                      {
-                        put("A", 1.0); // category "A" avg mean 1.0
-                        put("B", 2.0); // category "B" avg mean 2.0
-                      }
-                    })
+                    .withCategoryMean(mean1)
             },
             vectorizer,
             new HashSet<Integer>() {
@@ -78,23 +80,23 @@ public class TargetEncoderPreprocessorTest {
                 }
             });
 
-      double[][] postProcessedData = new double[][] {
-          {
-              1.0, // "1" contains in dict => use category mean 1.0
-              0.1, // "Moscow" not contains in dict => use global 0.1
-              1.0 // "A" contains in dict => use category mean 1.0
-          },
-          {
-              0.0, // "2" contains in dict => use category mean 0.0
-              0.1, // "Moscow" not contains in dict => use global 0.1
-              2.0 // "B" contains in dict => use category mean 2.0
-          },
-          {
-              0.5, // "3" not contains in dict => use global mean 0.5
-              0.1, // "Moscow" not contains in dict => use global 0.1
-              2.0 // "B" contains in dict => use category mean 2.0
-          },
-      };
+        double[][] postProcessedData = new double[][] {
+            {
+                1.0, // "1" contains in dict => use category mean 1.0
+                0.1, // "Moscow" not contains in dict => use global 0.1
+                1.0 // "A" contains in dict => use category mean 1.0
+            },
+            {
+                0.0, // "2" contains in dict => use category mean 0.0
+                0.1, // "Moscow" not contains in dict => use global 0.1
+                2.0 // "B" contains in dict => use category mean 2.0
+            },
+            {
+                0.5, // "3" not contains in dict => use global mean 0.5
+                0.1, // "Moscow" not contains in dict => use global 0.1
+                2.0 // "B" contains in dict => use category mean 2.0
+            },
+        };
 
         for (int i = 0; i < data.length; i++)
             assertArrayEquals(postProcessedData[i], preprocessor.apply(i, data[i]).features().asArray(), 1e-8);

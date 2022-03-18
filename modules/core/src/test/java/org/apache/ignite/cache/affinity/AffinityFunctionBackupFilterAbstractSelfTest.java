@@ -243,7 +243,7 @@ public abstract class AffinityFunctionBackupFilterAbstractSelfTest extends GridC
 
     /** Different affinityBackupFilters have different goals */
     protected int expectedNodesForEachPartition() {
-       return backups + 1;
+        return backups + 1;
     }
 
     /**
