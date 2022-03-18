@@ -29,86 +29,86 @@ import static org.junit.Assert.assertEquals;
 /** */
 @RunWith(Parameterized.class)
 public class VectorNormCasesTest {
-  /**
-   * Precision.
-   */
-  private static final double PRECISION = 0.01;
-
-  /** */
-  @Parameterized.Parameters(name = "{0}")
-  public static Collection<TestData> data() {
-    return Arrays.asList(
-        new TestData(
-            new double[] {1.0, -1.0, 0.0},
-            1,
-            2.0
-        ),
-        new TestData(
-            new double[] {1.0, -1.0, 0.0},
-            2,
-            1.41
-        ),
-        new TestData(
-            new double[] {1.0, -1.0, 0.0},
-            3,
-            1.25
-        ),
-        new TestData(
-            new double[] {1.0, -1.0, 0.0},
-            4,
-            1.18
-        ),
-        new TestData(
-            new double[] {1.0, -1.0, 0.0},
-            5,
-            1.14
-        )
-    );
-  }
-
-  /** */
-  private final TestData testData;
-
-  /** */
-  public VectorNormCasesTest(TestData testData) {
-    this.testData = testData;
-  }
-
-  /** */
-  @Test
-  public void test() {
-    assertEquals(
-        testData.vector.kNorm(testData.p),
-        testData.expRes,
-        PRECISION
-    );
-  }
-
-  /** */
-  private static class TestData {
-    /** */
-    public final Vector vector;
+    /**
+     * Precision.
+     */
+    private static final double PRECISION = 0.01;
 
     /** */
-    public final Double p;
-
-    /** */
-    public final Double expRes;
-
-    /** */
-    private TestData(double[] vector, double p, double expRes) {
-      this.vector = new DenseVector(vector);
-      this.p = p;
-      this.expRes = expRes;
+    @Parameterized.Parameters(name = "{0}")
+    public static Collection<TestData> data() {
+        return Arrays.asList(
+            new TestData(
+                new double[] {1.0, -1.0, 0.0},
+                1,
+                2.0
+            ),
+            new TestData(
+                new double[] {1.0, -1.0, 0.0},
+                2,
+                1.41
+            ),
+            new TestData(
+                new double[] {1.0, -1.0, 0.0},
+                3,
+                1.25
+            ),
+            new TestData(
+                new double[] {1.0, -1.0, 0.0},
+                4,
+                1.18
+            ),
+            new TestData(
+                new double[] {1.0, -1.0, 0.0},
+                5,
+                1.14
+            )
+        );
     }
 
-    /** {@inheritDoc} */
-    @Override public String toString() {
-      return String.format("norm(%s, %s) = %s",
-          Arrays.toString(vector.asArray()),
-          p,
-          expRes
-      );
+    /** */
+    private final TestData testData;
+
+    /** */
+    public VectorNormCasesTest(TestData testData) {
+        this.testData = testData;
     }
-  }
+
+    /** */
+    @Test
+    public void test() {
+        assertEquals(
+            testData.vector.kNorm(testData.p),
+            testData.expRes,
+            PRECISION
+        );
+    }
+
+    /** */
+    private static class TestData {
+        /** */
+        public final Vector vector;
+
+        /** */
+        public final Double p;
+
+        /** */
+        public final Double expRes;
+
+        /** */
+        private TestData(double[] vector, double p, double expRes) {
+            this.vector = new DenseVector(vector);
+            this.p = p;
+            this.expRes = expRes;
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return String.format("norm(%s, %s) = %s",
+                Arrays.toString(vector.asArray()),
+                p,
+                expRes
+            );
+        }
+    }
 }

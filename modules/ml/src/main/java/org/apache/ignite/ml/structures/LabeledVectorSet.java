@@ -89,7 +89,7 @@ public class LabeledVectorSet<Row extends LabeledVector> extends Dataset<Row> im
      * @param lbs Labels of observations.
      */
     public LabeledVectorSet(double[][] mtx, double[] lbs) {
-       this(mtx, lbs, null);
+        this(mtx, lbs, null);
     }
 
     /**
@@ -179,7 +179,7 @@ public class LabeledVectorSet<Row extends LabeledVector> extends Dataset<Row> im
 
     /** */
     public static Vector emptyVector(int size) {
-            return new DenseVector(size);
+        return new DenseVector(size);
     }
 
     /** Makes copy with new Label objects and old features and Metadata objects. */

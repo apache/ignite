@@ -455,7 +455,7 @@ public class JobStealingCollisionSpi extends IgniteSpiAdapter implements Collisi
      *
      * @return Node attributes to enable job stealing for.
      */
-     public Map<String, ? extends Serializable> getStealingAttributes() {
+    public Map<String, ? extends Serializable> getStealingAttributes() {
         return stealAttrs;
     }
 

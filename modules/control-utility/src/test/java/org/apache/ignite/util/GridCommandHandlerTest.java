@@ -995,8 +995,8 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         }
     }
 
-   /** */
-   private CountDownLatch getNewStateLatch(ClusterState oldState, ClusterState newState) {
+    /** */
+    private CountDownLatch getNewStateLatch(ClusterState oldState, ClusterState newState) {
         if (oldState != newState) {
             CountDownLatch latch = new CountDownLatch(G.allGrids().size());
 
@@ -1009,7 +1009,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         }
         else
             return new CountDownLatch(0);
-   }
+    }
 
     /**
      * Test baseline collect works via control.sh
@@ -1778,14 +1778,14 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         // Test kill by xid.
         validate(h, map -> {
-                assertEquals(1, map.size());
+            assertEquals(1, map.size());
 
-                Map.Entry<ClusterNode, VisorTxTaskResult> killedEntry = map.entrySet().iterator().next();
+            Map.Entry<ClusterNode, VisorTxTaskResult> killedEntry = map.entrySet().iterator().next();
 
-                VisorTxInfo info = killedEntry.getValue().getInfos().get(0);
+            VisorTxInfo info = killedEntry.getValue().getInfos().get(0);
 
-                assertEquals(toKill[0].getXid(), info.getXid());
-            }, "--tx", "--kill",
+            assertEquals(toKill[0].getXid(), info.getXid());
+        }, "--tx", "--kill",
             "--xid", toKill[0].getXid().toString(), // Use saved on first run value.
             "--nodes", grid(0).localNode().consistentId().toString());
 

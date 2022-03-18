@@ -79,7 +79,7 @@ public class IgniteMessagingImpl extends AsyncSupportAdapter<IgniteMessaging>
 
     /** {@inheritDoc} */
     @Override public void send(@Nullable Object topic, Object msg) {
-       send0(topic, msg, isAsync());
+        send0(topic, msg, isAsync());
     }
 
     /**

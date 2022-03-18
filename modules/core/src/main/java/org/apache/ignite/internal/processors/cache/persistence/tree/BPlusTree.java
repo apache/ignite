@@ -1265,7 +1265,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         checkDestroyed();
 
         try {
-           new TreeVisitor(lower, upper, c).visit();
+            new TreeVisitor(lower, upper, c).visit();
         }
         catch (IgniteCheckedException e) {
             throw new IgniteCheckedException("Runtime failure on bounds: [lower=" + lower + ", upper=" + upper + "]", e);

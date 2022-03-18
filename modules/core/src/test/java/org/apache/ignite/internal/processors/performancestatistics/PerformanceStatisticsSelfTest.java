@@ -71,20 +71,20 @@ public class PerformanceStatisticsSelfTest extends AbstractPerformanceStatistics
     /** Test entry processor. */
     private static final EntryProcessor<Object, Object, Object> ENTRY_PROC =
         new EntryProcessor<Object, Object, Object>() {
-        @Override public Object process(MutableEntry<Object, Object> entry, Object... arguments)
-            throws EntryProcessorException {
-            return null;
-        }
-    };
+            @Override public Object process(MutableEntry<Object, Object> entry, Object... arguments)
+                throws EntryProcessorException {
+                return null;
+            }
+        };
 
     /** Test cache entry processor. */
     private static final CacheEntryProcessor<Object, Object, Object> CACHE_ENTRY_PROC =
         new CacheEntryProcessor<Object, Object, Object>() {
-        @Override public Object process(MutableEntry<Object, Object> entry, Object... arguments)
-            throws EntryProcessorException {
-            return null;
-        }
-    };
+            @Override public Object process(MutableEntry<Object, Object> entry, Object... arguments)
+                throws EntryProcessorException {
+                return null;
+            }
+        };
 
     /** Client type to run operations from. */
     @Parameterized.Parameter

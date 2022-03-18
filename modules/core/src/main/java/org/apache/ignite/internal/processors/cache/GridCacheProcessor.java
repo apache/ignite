@@ -3553,32 +3553,32 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         GridPlainClosure2<Collection<byte[]>, byte[], IgniteInternalFuture<Boolean>> startCacheClsr =
             (grpKeys, masterKeyDigest) -> {
-            assert ccfg == null || !ccfg.isEncryptionEnabled() || !grpKeys.isEmpty();
+                assert ccfg == null || !ccfg.isEncryptionEnabled() || !grpKeys.isEmpty();
 
-            DynamicCacheChangeRequest req = prepareCacheChangeRequest(
-                ccfg,
-                cacheName,
-                nearCfg,
-                cacheType,
-                sql,
-                failIfExists,
-                failIfNotStarted,
-                null,
-                false,
-                null,
-                ccfg != null && ccfg.isEncryptionEnabled() ? grpKeys.iterator().next() : null,
-                null,
-                ccfg != null && ccfg.isEncryptionEnabled() ? masterKeyDigest : null);
+                DynamicCacheChangeRequest req = prepareCacheChangeRequest(
+                    ccfg,
+                    cacheName,
+                    nearCfg,
+                    cacheType,
+                    sql,
+                    failIfExists,
+                    failIfNotStarted,
+                    null,
+                    false,
+                    null,
+                    ccfg != null && ccfg.isEncryptionEnabled() ? grpKeys.iterator().next() : null,
+                    null,
+                    ccfg != null && ccfg.isEncryptionEnabled() ? masterKeyDigest : null);
 
-            if (req != null) {
-                if (req.clientStartOnly())
-                    return startClientCacheChange(F.asMap(req.cacheName(), req), null);
+                if (req != null) {
+                    if (req.clientStartOnly())
+                        return startClientCacheChange(F.asMap(req.cacheName(), req), null);
 
-                return F.first(initiateCacheChanges(F.asList(req)));
-            }
-            else
-                return new GridFinishedFuture<>();
-        };
+                    return F.first(initiateCacheChanges(F.asList(req)));
+                }
+                else
+                    return new GridFinishedFuture<>();
+            };
 
         try {
             if (ccfg != null && ccfg.isEncryptionEnabled()) {
@@ -3800,8 +3800,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             });
         }
 
-        GridPlainClosure2<Collection<byte[]>, byte[], IgniteInternalFuture<Boolean>> startCacheClsr =
-            (grpKeys, masterKeyDigest) -> {
+        GridPlainClosure2<Collection<byte[]>, byte[], IgniteInternalFuture<Boolean>> startCacheClsr = (grpKeys, masterKeyDigest) -> {
             List<DynamicCacheChangeRequest> srvReqs = null;
             Map<String, DynamicCacheChangeRequest> clientReqs = null;
 

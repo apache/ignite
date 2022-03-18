@@ -984,7 +984,7 @@ public class SnapshotRestoreProcess {
                         "[reqId=" + reqId +
                         ", snapshot=" + opCtx0.snpName +
                         ", map=" + snpAff.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey,
-                        e -> partitionsMapToCompactString(e.getValue()))) + ']');
+                            e -> partitionsMapToCompactString(e.getValue()))) + ']');
                 }
 
                 for (Map.Entry<UUID, Map<Integer, Set<Integer>>> m : snpAff.entrySet()) {
@@ -1327,21 +1327,21 @@ public class SnapshotRestoreProcess {
         Path partFile = Paths.get(targetDir.getAbsolutePath(), FilePageStoreManager.getPartitionFileName(partFut.partId));
 
         CompletableFuture.supplyAsync(() -> {
-                if (opCtx.stopChecker.getAsBoolean())
-                    throw new IgniteInterruptedException("The operation has been stopped on copy file: " + snpFile.getAbsolutePath());
+            if (opCtx.stopChecker.getAsBoolean())
+                throw new IgniteInterruptedException("The operation has been stopped on copy file: " + snpFile.getAbsolutePath());
 
-                if (Thread.interrupted())
-                    throw new IgniteInterruptedException("Thread has been interrupted: " + Thread.currentThread().getName());
+            if (Thread.interrupted())
+                throw new IgniteInterruptedException("Thread has been interrupted: " + Thread.currentThread().getName());
 
-                if (!snpFile.exists()) {
-                    throw new IgniteException("Partition snapshot file doesn't exist [snpName=" + opCtx.snpName +
-                        ", snpDir=" + snpFile.getAbsolutePath() + ", name=" + snpFile.getName() + ']');
-                }
+            if (!snpFile.exists()) {
+                throw new IgniteException("Partition snapshot file doesn't exist [snpName=" + opCtx.snpName +
+                    ", snpDir=" + snpFile.getAbsolutePath() + ", name=" + snpFile.getName() + ']');
+            }
 
-                IgniteSnapshotManager.copy(mgr.ioFactory(), snpFile, partFile.toFile(), snpFile.length());
+            IgniteSnapshotManager.copy(mgr.ioFactory(), snpFile, partFile.toFile(), snpFile.length());
 
-                return partFile;
-            }, mgr.snapshotExecutorService())
+            return partFile;
+        }, mgr.snapshotExecutorService())
             .whenComplete((r, t) -> opCtx.errHnd.accept(t))
             .whenComplete((r, t) -> {
                 if (t == null)

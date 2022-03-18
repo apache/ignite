@@ -38,12 +38,12 @@ public class RegressionMetricsTest {
      */
     @Test
     public void testCalculation() {
-        Map<Vector, Double> linearSet = new HashMap<Vector, Double>() {{
-            put(VectorUtils.of(0.), 0.);
-            put(VectorUtils.of(1.), 1.);
-            put(VectorUtils.of(2.), 2.);
-            put(VectorUtils.of(3.), 3.);
-        }};
+        Map<Vector, Double> linearSet = new HashMap<>();
+
+        linearSet.put(VectorUtils.of(0.), 0.);
+        linearSet.put(VectorUtils.of(1.), 1.);
+        linearSet.put(VectorUtils.of(2.), 2.);
+        linearSet.put(VectorUtils.of(3.), 3.);
 
         IgniteModel<Vector, Double> linearModel = v -> v.get(0);
         IgniteModel<Vector, Double> squareModel = v -> Math.pow(v.get(0), 2);

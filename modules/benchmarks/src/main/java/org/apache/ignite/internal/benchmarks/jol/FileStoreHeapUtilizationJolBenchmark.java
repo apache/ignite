@@ -137,10 +137,12 @@ public class FileStoreHeapUtilizationJolBenchmark {
 
         Ignition.stop(name, true);
 
-        return new HashMap<TestResultParameterInfo, Comparable>() {{
-            put(HEAP_USAGE_PARAM, layout.totalSize());
-            put(CACHE_WORK_TIME_PARAM, time);
-        }};
+        HashMap<TestResultParameterInfo, Comparable> res = new HashMap<>();
+
+        res.put(HEAP_USAGE_PARAM, layout.totalSize());
+        res.put(CACHE_WORK_TIME_PARAM, time);
+
+        return res;
     }
 
     /** */

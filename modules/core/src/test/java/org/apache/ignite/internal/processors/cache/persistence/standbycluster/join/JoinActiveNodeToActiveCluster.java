@@ -321,8 +321,7 @@ public class JoinActiveNodeToActiveCluster extends AbstractNodeJoinTemplate {
                             Assert.assertEquals(4, caches.size());
                         }
                     }
-                }).setEnd(new Runnable() {
-                @Override public void run() {
+                }).setEnd(() -> {
                     for (int i = 0; i < 3; i++) {
                         IgniteEx ig = grid(name(i));
 
@@ -343,8 +342,7 @@ public class JoinActiveNodeToActiveCluster extends AbstractNodeJoinTemplate {
 
                         Assert.assertEquals(4, caches.size());
                     }
-                }
-            });
+                });
     }
 
     /** {@inheritDoc} */

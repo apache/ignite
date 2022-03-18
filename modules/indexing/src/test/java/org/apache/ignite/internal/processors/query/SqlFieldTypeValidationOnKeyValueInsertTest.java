@@ -164,9 +164,8 @@ public class SqlFieldTypeValidationOnKeyValueInsertTest extends AbstractIndexing
         assertEquals(obj, cache.withKeepBinary().get(1));
 
         grid(0).context().query()
-                .querySqlFields(
-                new SqlFieldsQuery(SQL_TEXT).setSchema(DEFAULT_CACHE_NAME), true)
-                .getAll();
+            .querySqlFields(new SqlFieldsQuery(SQL_TEXT).setSchema(DEFAULT_CACHE_NAME), true)
+            .getAll();
     }
 
     /** */

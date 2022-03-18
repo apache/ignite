@@ -335,8 +335,8 @@ class OptimizedMarshallerUtils {
         OptimizedClassDescriptor desc = clsMap.get(cls);
 
         if (desc == null) {
-            OptimizedClassDescriptor old = clsMap.putIfAbsent(cls, desc =
-                new OptimizedClassDescriptor(cls, resolveTypeId(cls.getName(), mapper), clsMap, ctx, mapper));
+            OptimizedClassDescriptor old = clsMap.putIfAbsent(cls,
+                desc = new OptimizedClassDescriptor(cls, resolveTypeId(cls.getName(), mapper), clsMap, ctx, mapper));
 
             if (old != null)
                 desc = old;

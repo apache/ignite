@@ -318,7 +318,7 @@ public class IndexingSpiQuerySelfTest extends GridCommonAbstractTest {
     /**
      *
      */
-     static class PersonKey implements Serializable, Comparable<PersonKey> {
+    static class PersonKey implements Serializable, Comparable<PersonKey> {
         /** */
         private int id;
 

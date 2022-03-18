@@ -1272,8 +1272,8 @@ public class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObjec
             jobRes.resetResponse();
 
             if (!resCache) {
-                    // Store result back in map before sending.
-                    this.jobRes.put(res.getJobId(), jobRes);
+                // Store result back in map before sending.
+                this.jobRes.put(res.getJobId(), jobRes);
             }
         }
 

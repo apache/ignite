@@ -104,27 +104,27 @@ public class IgniteStatisticsConfigurationManager {
     /** Change statistics configuration listener to update particular object statistics. */
     private final DistributedMetastorageLifecycleListener distrMetaStoreLsnr =
         new DistributedMetastorageLifecycleListener() {
-        @Override public void onReadyForWrite(DistributedMetaStorage metastorage) {
-            distrMetaStorage = metastorage;
+            @Override public void onReadyForWrite(DistributedMetaStorage metastorage) {
+                distrMetaStorage = metastorage;
 
-            distrMetaStorage.listen(
-                (metaKey) -> metaKey.startsWith(STAT_OBJ_PREFIX),
-                (k, oldV, newV) -> {
-                    // Skip invoke on start node (see 'ReadableDistributedMetaStorage#listen' the second case)
-                    // The update statistics on start node is handled by 'scanAndCheckLocalStatistic' method
-                    // called on exchange done.
-                    if (topVer == null)
-                        return;
+                distrMetaStorage.listen(
+                    (metaKey) -> metaKey.startsWith(STAT_OBJ_PREFIX),
+                    (k, oldV, newV) -> {
+                        // Skip invoke on start node (see 'ReadableDistributedMetaStorage#listen' the second case)
+                        // The update statistics on start node is handled by 'scanAndCheckLocalStatistic' method
+                        // called on exchange done.
+                        if (topVer == null)
+                            return;
 
-                    mgmtBusyExecutor.execute(() -> {
-                        StatisticsObjectConfiguration newStatCfg = (StatisticsObjectConfiguration)newV;
+                        mgmtBusyExecutor.execute(() -> {
+                            StatisticsObjectConfiguration newStatCfg = (StatisticsObjectConfiguration)newV;
 
-                        updateLocalStatistics(newStatCfg);
-                    });
-                }
-            );
-        }
-    };
+                            updateLocalStatistics(newStatCfg);
+                        });
+                    }
+                );
+            }
+        };
 
     /**
      * Constructor.
@@ -207,7 +207,7 @@ public class IgniteStatisticsConfigurationManager {
          */
         @Override public void accept(GridH2Table tbl, List<String> cols) {
             assert !F.isEmpty(cols);
-                dropStatistics(Collections.singletonList(
+            dropStatistics(Collections.singletonList(
                     new StatisticsTarget(
                         tbl.identifier().schema(),
                         tbl.getName(),

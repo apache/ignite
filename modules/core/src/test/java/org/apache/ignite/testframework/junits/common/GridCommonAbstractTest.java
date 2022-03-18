@@ -2680,15 +2680,15 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
         }
     }
 
-     /**
-      * Getting WAL manager.
-      *
-      * @param n Node.
-      * @return WAL manger.
+    /**
+     * Getting WAL manager.
+     *
+     * @param n Node.
+     * @return WAL manger.
      */
-     protected static FileWriteAheadLogManager walMgr(IgniteEx n) {
-         return (FileWriteAheadLogManager)n.context().cache().context().wal();
-     }
+    protected static FileWriteAheadLogManager walMgr(IgniteEx n) {
+        return (FileWriteAheadLogManager)n.context().cache().context().wal();
+    }
 
     /**
      * Disable/enable VAL.

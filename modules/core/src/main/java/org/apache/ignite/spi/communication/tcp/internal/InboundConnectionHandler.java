@@ -377,8 +377,8 @@ public class InboundConnectionHandler extends GridNioServerListenerAdapter<Messa
                 GridNioMessageTracker tracker = ses.meta(TRACKER_META);
 
                 if (tracker == null) {
-                    GridNioMessageTracker old = ses.addMeta(TRACKER_META, tracker =
-                        new GridNioMessageTracker(ses, cfg.messageQueueLimit()));
+                    GridNioMessageTracker old = ses.addMeta(TRACKER_META,
+                        tracker = new GridNioMessageTracker(ses, cfg.messageQueueLimit()));
 
                     assert old == null;
                 }
