@@ -26,6 +26,7 @@ import java.nio.file.Paths;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Stream;
@@ -43,6 +44,7 @@ import org.apache.ignite.internal.GridComponent;
 import org.apache.ignite.internal.GridLoggerProxy;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.MarshallerContextImpl;
+import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.cdc.WalRecordsConsumer.DataEntryIterator;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
 import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderResolver;
@@ -57,6 +59,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.startup.cmdline.CdcCommandLineStartup;
 
 import static org.apache.ignite.internal.IgniteKernal.NL;
@@ -162,9 +165,6 @@ public class CdcMain implements Runnable {
     /** Change Data Capture configuration. */
     protected final CdcConfiguration cdcCfg;
 
-    /** WAL iterator factory. */
-    private final IgniteWalIteratorFactory factory;
-
     /** Events consumer. */
     private final WalRecordsConsumer<?, ?> consumer;
 
@@ -180,11 +180,17 @@ public class CdcMain implements Runnable {
     /** Marshaller directory. */
     private File marshaller;
 
+    /** Standalone kernal context. */
+    private StandaloneGridKernalContext kctx;
+
     /** Change Data Capture state. */
     private CdcConsumerState state;
 
     /** Save state to start from. */
-    private T2<WALPointer, Integer> initState;
+    private T2<WALPointer, Integer> walState;
+
+    /** Types state. */
+    private Map<Integer, Long> typesState;
 
     /** Stopped flag. */
     private volatile boolean stopped;
@@ -216,8 +222,6 @@ public class CdcMain implements Runnable {
         }
 
         consumer = new WalRecordsConsumer<>(cdcCfg.getConsumer(), log);
-
-        factory = new IgniteWalIteratorFactory(log);
     }
 
     /** Runs Change Data Capture. */
@@ -262,7 +266,7 @@ public class CdcMain implements Runnable {
                 log.info("Ignite node Marshaller [dir=" + marshaller + ']');
             }
 
-            StandaloneGridKernalContext kctx = startStandaloneKernal();
+            kctx = startStandaloneKernal();
 
             initMetrics();
 
@@ -271,14 +275,18 @@ public class CdcMain implements Runnable {
 
                 state = createState(cdcDir.resolve(STATE_DIR));
 
-                initState = state.load().get1();
+                IgniteBiTuple<T2<WALPointer, Integer>, Map<Integer, Long>> initState = state.load();
 
-                if (initState != null) {
-                    committedSegmentIdx.value(initState.get1().index());
-                    committedSegmentOffset.value(initState.get1().fileOffset());
+                walState = initState.get1();
+
+                typesState = initState.get2();
+
+                if (walState != null) {
+                    committedSegmentIdx.value(walState.get1().index());
+                    committedSegmentOffset.value(walState.get1().fileOffset());
 
                     if (log.isInfoEnabled())
-                        log.info("Initial state loaded [ptr=" + initState.get1() + ", idx=" + initState.get2() + ']');
+                        log.info("Initial state loaded [ptr=" + walState.get1() + ", idx=" + walState.get2() + ']');
                 }
 
                 consumer.start(mreg, kctx.metric().registry(metricName("cdc", "consumer")));
@@ -421,10 +429,6 @@ public class CdcMain implements Runnable {
         if (log.isInfoEnabled())
             log.info("Processing WAL segment [segment=" + segment + ']');
 
-        updateTypes();
-
-        lastSegmentConsumptionTs.value(System.currentTimeMillis());
-
         IgniteWalIteratorFactory.IteratorParametersBuilder builder =
             new IgniteWalIteratorFactory.IteratorParametersBuilder()
                 .log(log)
@@ -439,18 +443,20 @@ public class CdcMain implements Runnable {
 
         long segmentIdx = segmentIndex(segment);
 
+        lastSegmentConsumptionTs.value(System.currentTimeMillis());
+
         curSegmentIdx.value(segmentIdx);
 
-        if (initState != null) {
-            if (segmentIdx > initState.get1().index()) {
+        if (walState != null) {
+            if (segmentIdx > walState.get1().index()) {
                 throw new IgniteException("Found segment greater then saved state. Some events are missed. Exiting! " +
-                    "[state=" + initState + ", segment=" + segmentIdx + ']');
+                    "[state=" + walState + ", segment=" + segmentIdx + ']');
             }
 
-            if (segmentIdx < initState.get1().index()) {
+            if (segmentIdx < walState.get1().index()) {
                 if (log.isInfoEnabled()) {
                     log.info("Already processed segment found. Skipping and deleting the file [segment=" +
-                        segmentIdx + ", state=" + initState.get1().index() + ']');
+                        segmentIdx + ", state=" + walState.get1().index() + ']');
                 }
 
                 // WAL segment is a hard link to a segment file in the special Change Data Capture folder.
@@ -465,14 +471,14 @@ public class CdcMain implements Runnable {
                 }
             }
 
-            builder.from(initState.get1());
+            builder.from(walState.get1());
         }
 
-        try (DataEntryIterator iter = new DataEntryIterator(factory.iterator(builder))) {
-            if (initState != null) {
-                iter.init(initState.get2());
+        try (DataEntryIterator iter = new DataEntryIterator(new IgniteWalIteratorFactory(log).iterator(builder))) {
+            if (walState != null) {
+                iter.init(walState.get2());
 
-                initState = null;
+                walState = null;
             }
 
             boolean interrupted = Thread.interrupted();
@@ -525,7 +531,19 @@ public class CdcMain implements Runnable {
      * Search for new or changed {@link BinaryType} and notifies the consumer.
      */
     private void updateTypes() {
+        try {
+            state.save(typesState);
 
+            Iterator<BinaryType> changedTypes = Files.list(binaryMeta.toPath())
+                .filter(p -> p.endsWith(BinaryUtils.METADATA_FILE_SUFFIX))
+                .map(p -> {
+                    kctx.cacheObjects().metadata()
+                })
+                .iterator();
+        }
+        catch (IOException e) {
+            throw new IgniteException(e);
+        }
     }
 
     /**
