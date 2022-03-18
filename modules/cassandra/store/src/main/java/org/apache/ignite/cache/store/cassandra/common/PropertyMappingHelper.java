@@ -42,7 +42,9 @@ public class PropertyMappingHelper {
     private static final Class BYTES_ARRAY_CLASS = (new byte[] {}).getClass();
 
     /** Mapping from Java to Cassandra types. */
-    private static final Map<Class, DataType.Name> JAVA_TO_CASSANDRA_MAPPING = new HashMap<Class, DataType.Name>() {{
+    private static final Map<Class, DataType.Name> JAVA_TO_CASSANDRA_MAPPING = new HashMap<Class, DataType.Name>();
+
+    static {
         put(String.class, DataType.Name.TEXT);
         put(Integer.class, DataType.Name.INT);
         put(int.class, DataType.Name.INT);
@@ -63,7 +65,12 @@ public class PropertyMappingHelper {
         put(Date.class, DataType.Name.TIMESTAMP);
         put(UUID.class, DataType.Name.UUID);
         put(BigInteger.class, DataType.Name.VARINT);
-    }};
+    }
+
+    /** */
+    private static void put(Class cls, DataType.Name name) {
+        JAVA_TO_CASSANDRA_MAPPING.put(cls, name);
+    }
 
     /**
      * Maps Cassandra type to specified Java type.

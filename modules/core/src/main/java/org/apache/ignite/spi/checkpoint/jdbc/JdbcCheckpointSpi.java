@@ -571,7 +571,7 @@ public class JdbcCheckpointSpi extends IgniteSpiAdapter implements CheckpointSpi
 
                     if (log.isDebugEnabled()) {
                         log.debug("Failed to create checkpoint table as it may already exist (will try again): " +
-                          tblName);
+                            tblName);
                     }
                 }
             }

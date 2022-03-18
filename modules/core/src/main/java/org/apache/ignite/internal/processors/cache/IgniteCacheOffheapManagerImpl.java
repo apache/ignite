@@ -2061,7 +2061,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                 if (val != null)
                     val.valueBytes(coCtx);
 
-                 MvccUpdateDataRow updateRow = new MvccUpdateDataRow(
+                MvccUpdateDataRow updateRow = new MvccUpdateDataRow(
                     cctx,
                     key,
                     val,
@@ -2089,9 +2089,9 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                     || res == ResultType.VERSION_MISMATCH) // cannot update on write conflict
                     return updateRow;
                 else if (res == ResultType.VERSION_FOUND || // exceptional case
-                        res == ResultType.FILTERED || // Operation should be skipped.
-                        (res == ResultType.PREV_NULL && noCreate)  // No op.
-                    ) {
+                    res == ResultType.FILTERED || // Operation should be skipped.
+                    (res == ResultType.PREV_NULL && noCreate)  // No op.
+                ) {
                     // Do nothing, except cleaning up not needed versions
                     cleanup0(cctx, updateRow.cleanupRows());
 
@@ -2454,7 +2454,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
          */
         private int cleanup0(GridCacheContext cctx, @Nullable List<MvccLinkAwareSearchRow> cleanupRows)
              throws IgniteCheckedException {
-             if (F.isEmpty(cleanupRows))
+            if (F.isEmpty(cleanupRows))
                  return 0;
 
             int res = 0;

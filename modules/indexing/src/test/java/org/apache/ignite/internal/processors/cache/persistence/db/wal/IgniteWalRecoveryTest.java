@@ -115,6 +115,7 @@ import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteRunnable;
+import org.apache.ignite.lifecycle.LifecycleBean;
 import org.apache.ignite.lifecycle.LifecycleEventType;
 import org.apache.ignite.loadtests.colocation.GridTestLifecycleBean;
 import org.apache.ignite.plugin.extensions.communication.Message;
@@ -1506,9 +1507,9 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
 
             ignite0.context().cache().context().database().checkpointReadLock();
 
-                try {
-                    long page = pageMem.acquirePage(
-                        fullId.groupId(), fullId.pageId(), IoStatisticsHolderNoOp.INSTANCE, true);
+            try {
+                long page = pageMem.acquirePage(
+                    fullId.groupId(), fullId.pageId(), IoStatisticsHolderNoOp.INSTANCE, true);
 
                 try {
                     long bufPtr = pageMem.writeLock(fullId.groupId(), fullId.pageId(), page, true);
@@ -1887,29 +1888,31 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
         CountDownLatch l1,
         CountDownLatch l2
     ) throws Exception {
-        return getConfiguration(getTestIgniteInstanceName(idx)).setLifecycleBeans(new GridTestLifecycleBean() {
+        LifecycleBean bean = new GridTestLifecycleBean() {
             @Override public void onLifecycleEvent(LifecycleEventType type) {
                 if (type == LifecycleEventType.BEFORE_NODE_START) {
                     g.context().internalSubscriptionProcessor().registerDistributedMetastorageListener(
                         new DistributedMetastorageLifecycleListener() {
-                        @Override public void onReadyForRead(ReadableDistributedMetaStorage metastorage) {
-                            g.context().cache().context().exchange().registerExchangeAwareComponent(
-                                new PartitionsExchangeAware() {
-                                @Override public void onInitBeforeTopologyLock(GridDhtPartitionsExchangeFuture fut) {
-                                    l1.countDown();
+                            @Override public void onReadyForRead(ReadableDistributedMetaStorage metastorage) {
+                                g.context().cache().context().exchange().registerExchangeAwareComponent(
+                                    new PartitionsExchangeAware() {
+                                        @Override public void onInitBeforeTopologyLock(GridDhtPartitionsExchangeFuture fut) {
+                                            l1.countDown();
 
-                                    try {
-                                        assertTrue(U.await(l2, 10, TimeUnit.SECONDS));
-                                    } catch (IgniteInterruptedCheckedException e) {
-                                        fail(X.getFullStackTrace(e));
-                                    }
-                                }
-                            });
-                        }
-                    });
+                                            try {
+                                                assertTrue(U.await(l2, 10, TimeUnit.SECONDS));
+                                            } catch (IgniteInterruptedCheckedException e) {
+                                                fail(X.getFullStackTrace(e));
+                                            }
+                                        }
+                                    });
+                            }
+                        });
                 }
             }
-        });
+        };
+
+        return getConfiguration(getTestIgniteInstanceName(idx)).setLifecycleBeans(bean);
     }
 
     /**

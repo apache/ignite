@@ -88,7 +88,7 @@ public class ExternalizeTest {
 
             assertEquals(MathTestConstants.VAL_NOT_EQUALS, initObj, objRestored);
 
-           assertEquals(MathTestConstants.VAL_NOT_EQUALS, 0, Integer.compare(initObj.hashCode(), objRestored.hashCode()));
+            assertEquals(MathTestConstants.VAL_NOT_EQUALS, 0, Integer.compare(initObj.hashCode(), objRestored.hashCode()));
         }
         catch (ClassNotFoundException | IOException e) {
             fail(e + " [" + e.getMessage() + "]");

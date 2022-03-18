@@ -809,7 +809,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
         final int remaps,
         ClusterNode remapNode,
         AffinityTopologyVersion remapTopVer
-        ) {
+    ) {
         try {
             assert entries != null;
 

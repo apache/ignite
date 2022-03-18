@@ -64,7 +64,7 @@ public class QueryJoinWithDifferentNodeFiltersTest extends AbstractIndexingCommo
                 .setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC)
                 .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
                 .setIndexedTypes(Integer.class, Person.class)
-            );
+        );
 
         if (getTestIgniteInstanceName(0).equals(igniteInstanceName) || getTestIgniteInstanceName(1).equals(igniteInstanceName))
             cfg.setUserAttributes(F.asMap("DATA", "true"));

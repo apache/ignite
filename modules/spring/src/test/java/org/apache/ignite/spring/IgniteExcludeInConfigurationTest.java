@@ -41,7 +41,7 @@ public class IgniteExcludeInConfigurationTest extends GridCommonAbstractTest {
     /** Spring should exclude properties by list and ignore beans with class not existing in classpath. */
     @Test
     public void testExclude() throws Exception {
-         IgniteSpringHelper spring = SPRING.create(false);
+        IgniteSpringHelper spring = SPRING.create(false);
 
         Collection<IgniteConfiguration> cfgs = spring.loadConfigurations(cfgLocation, "queryEntities").get1();
 
@@ -75,7 +75,7 @@ public class IgniteExcludeInConfigurationTest extends GridCommonAbstractTest {
         IgniteSpringHelper spring = SPRING.create(false);
 
         try {
-             assertNotNull(spring.loadConfigurations(cfgLocation).get1());
+            assertNotNull(spring.loadConfigurations(cfgLocation).get1());
         } catch (Exception e) {
             assertTrue(X.hasCause(e, ClassNotFoundException.class));
         }

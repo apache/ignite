@@ -50,7 +50,7 @@ public class ImputerPreprocessorTest {
             {1.1, 10.1, 100.1},
         };
 
-       for (int i = 0; i < data.length; i++)
-           assertArrayEquals(postProcessedData[i], preprocessor.apply(i, data[i]).features().asArray(), 1e-8);
+        for (int i = 0; i < data.length; i++)
+            assertArrayEquals(postProcessedData[i], preprocessor.apply(i, data[i]).features().asArray(), 1e-8);
     }
 }

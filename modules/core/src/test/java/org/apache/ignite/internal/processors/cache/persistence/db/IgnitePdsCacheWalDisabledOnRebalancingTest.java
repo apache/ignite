@@ -179,7 +179,7 @@ public class IgnitePdsCacheWalDisabledOnRebalancingTest extends GridCommonAbstra
         ig0.active(true);
 
         for (int i = 1; i < 4; i++)
-          fillCache(ig0.dataStreamer("cache" + i), CACHE_SIZE, GENERATING_FUNC);
+            fillCache(ig0.dataStreamer("cache" + i), CACHE_SIZE, GENERATING_FUNC);
 
         String ig1Name = grid(1).name();
 

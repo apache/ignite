@@ -1839,7 +1839,7 @@ class ServerImpl extends TcpDiscoveryImpl {
         UUID destNodeId,
         @Nullable Collection<PendingMessage> msgs,
         @Nullable IgniteUuid discardCustomMsgId
-        ) {
+    ) {
         assert destNodeId != null;
 
         if (msg instanceof TcpDiscoveryNodeAddedMessage) {

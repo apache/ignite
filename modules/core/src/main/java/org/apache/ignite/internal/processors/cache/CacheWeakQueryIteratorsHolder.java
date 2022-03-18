@@ -278,7 +278,7 @@ public class CacheWeakQueryIteratorsHolder<V> {
             this.convert = convert;
 
             weakRef = new WeakReference(this, refQueue);
-       }
+        }
 
 
         /** {@inheritDoc} */

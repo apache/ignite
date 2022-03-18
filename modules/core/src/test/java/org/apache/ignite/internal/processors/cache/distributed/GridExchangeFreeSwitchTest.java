@@ -401,17 +401,18 @@ public class GridExchangeFreeSwitchTest extends GridCommonAbstractTest {
                 catch (Exception e) {
                     fail("Should not happen [exception=" + e + "]");
                 }
-                    for (int i = 0; i < nodes; i++) {
-                        if (i != nodeToStop0) {
-                            GridDhtPartitionsExchangeFuture lastFinishedFut =
-                                    grid(i).cachex(cacheName).context().shared().exchange().lastFinishedFuture();
 
-                            assertTrue(lastFinishedFut.rebalanced());
+                for (int i = 0; i < nodes; i++) {
+                    if (i != nodeToStop0) {
+                        GridDhtPartitionsExchangeFuture lastFinishedFut =
+                            grid(i).cachex(cacheName).context().shared().exchange().lastFinishedFuture();
 
-                            assertTrue(lastFinishedFut.topologyVersion()
-                                    .equals(new AffinityTopologyVersion(nodes + 1, 0)));
-                        }
+                        assertTrue(lastFinishedFut.rebalanced());
+
+                        assertTrue(lastFinishedFut.topologyVersion()
+                            .equals(new AffinityTopologyVersion(nodes + 1, 0)));
                     }
+                }
             });
 
             IgniteInternalFuture<?> nearThenNearFut = multithreadedAsync(() -> {

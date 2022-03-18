@@ -47,7 +47,7 @@ public class CatboostClassificationModel implements Model<NamedVector, Double> {
     @Override public Double predict(NamedVector input) {
         float[] floatInput = new float[input.size()];
         int index = 0;
-        for (String key: model.getFeatureNames()) {
+        for (String key : model.getFeatureNames()) {
             floatInput[index] = (float)input.get(key);
             index++;
         }
@@ -57,7 +57,8 @@ public class CatboostClassificationModel implements Model<NamedVector, Double> {
                 .get(0, 0);
             // use formula based on https://github.com/catboost/benchmarks/blob/61d62512f751325a14dd885bb71f8c2dabf7e24b/quality_benchmarks/catboost_experiment.py#L77
             return Math.pow(1 + Math.exp(-predict), -1);
-        } catch (CatBoostError e) {
+        }
+        catch (CatBoostError e) {
             throw new RuntimeException(e.getMessage());
         }
     }
@@ -65,9 +66,10 @@ public class CatboostClassificationModel implements Model<NamedVector, Double> {
     /** {@inheritDoc} */
     @Override public void close() {
         try {
-          model.close();
-        } catch (CatBoostError e) {
-          logger.error(e.getMessage());
+            model.close();
+        }
+        catch (CatBoostError e) {
+            logger.error(e.getMessage());
         }
     }
 }

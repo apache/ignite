@@ -204,7 +204,7 @@ public class IgniteBinaryObjectQueryArgumentsTest extends GridCommonAbstractTest
      */
     @Test
     public void testEnumObjectArgument() throws Exception {
-       testKeyValQuery(ENUM_CACHE, EnumKey.KEY1, EnumKey.KEY2);
+        testKeyValQuery(ENUM_CACHE, EnumKey.KEY1, EnumKey.KEY2);
     }
 
     /**

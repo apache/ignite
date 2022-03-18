@@ -157,8 +157,8 @@ public class GridFailoverCustomTopologySelfTest extends GridCommonAbstractTest {
 
             return Collections.singletonMap(new ComputeJobAdapter(locNodeId) {
                 /** */
-               @IgniteInstanceResource
-               private Ignite ignite;
+                @IgniteInstanceResource
+                private Ignite ignite;
 
                 /** {@inheritDoc} */
                 @SuppressWarnings("NakedNotify")

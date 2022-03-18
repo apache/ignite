@@ -226,24 +226,24 @@ public class BitSetIntSetTest extends GridCommonAbstractTest {
         intSet.add(11);
         intSet.add(1025);
 
-        assertTrue(intSet.containsAll(new ArrayList<Integer>() {{
-            add(1);
-            add(10);
-        }}));
+        assertTrue(intSet.containsAll(Arrays.asList(
+            1,
+            10
+        )));
 
-        assertFalse(intSet.containsAll(new ArrayList<Integer>() {{
-            add(1);
-            add(10);
-            add(11);
-            add(1025);
-            add(1026);
-        }}));
+        assertFalse(intSet.containsAll(Arrays.asList(
+            1,
+            10,
+            11,
+            1025,
+            1026
+        )));
 
-        assertFalse(intSet.containsAll(new ArrayList<Integer>() {{
-            add(1);
-            add(10);
-            add(12);
-        }}));
+        assertFalse(intSet.containsAll(Arrays.asList(
+            1,
+            10,
+            12
+        )));
     }
 
     /**
@@ -259,28 +259,28 @@ public class BitSetIntSetTest extends GridCommonAbstractTest {
         intSet.add(11);
         intSet.add(1025);
 
-        assertFalse(intSet.addAll(new ArrayList<Integer>() {{
-            add(1);
-            add(10);
-        }}));
+        assertFalse(intSet.addAll(Arrays.asList(
+            1,
+            10
+        )));
 
         assertEquals(4, intSet.size());
 
-        assertTrue(intSet.addAll(new ArrayList<Integer>() {{
-            add(1);
-            add(10);
-            add(11);
-            add(1025);
-            add(1026);
-        }}));
+        assertTrue(intSet.addAll(Arrays.asList(
+            1,
+            10,
+            11,
+            1025,
+            1026
+        )));
 
         assertEquals(5, intSet.size());
 
         try {
-            intSet.retainAll(new ArrayList<Integer>() {{
-                add(10);
-                add(1025);
-            }});
+            intSet.retainAll(Arrays.asList(
+                10,
+                1025
+            ));
 
             fail("retainAll is not supported");
         }
