@@ -37,6 +37,8 @@ import java.util.concurrent.locks.LockSupport;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
+import org.apache.ignite.internal.processors.metric.MetricRegistry;
+import org.apache.ignite.internal.processors.pool.MetricsAwareExecutorService;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -49,11 +51,13 @@ import org.jetbrains.annotations.NotNull;
 
 import static java.util.stream.IntStream.range;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_DATA_STREAMING_EXECUTOR_SERVICE_TASKS_STEALING_THRESHOLD;
+import static org.apache.ignite.internal.processors.pool.PoolProcessor.IS_SHUTDOWN_DESC;
+import static org.apache.ignite.internal.processors.pool.PoolProcessor.IS_TERMINATED_DESC;
 
 /**
  * Striped executor.
  */
-public class StripedExecutor implements ExecutorService {
+public class StripedExecutor implements ExecutorService, MetricsAwareExecutorService {
     /** @see IgniteSystemProperties#IGNITE_DATA_STREAMING_EXECUTOR_SERVICE_TASKS_STEALING_THRESHOLD */
     public static final int DFLT_DATA_STREAMING_EXECUTOR_SERVICE_TASKS_STEALING_THRESHOLD = 4;
 
@@ -469,6 +473,44 @@ public class StripedExecutor implements ExecutorService {
                     ", activeStatus=" + Arrays.toString(stripesActiveStatuses()));
             }
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void registerMetrics(MetricRegistry mreg) {
+        mreg.register("StripesCount", this::stripesCount, "Stripes count.");
+        mreg.register("Shutdown", this::isShutdown, IS_SHUTDOWN_DESC);
+        mreg.register("Terminated", this::isTerminated, IS_TERMINATED_DESC);
+
+        mreg.register("DetectStarvation",
+            this::detectStarvation,
+            "True if possible starvation in striped pool is detected.");
+
+        mreg.register("TotalQueueSize",
+            this::queueSize,
+            "Total queue size of all stripes.");
+
+        mreg.register("TotalCompletedTasksCount",
+            this::completedTasks,
+            "Completed tasks count of all stripes.");
+
+        mreg.register("StripesCompletedTasksCounts",
+            this::stripesCompletedTasks,
+            long[].class,
+            "Number of completed tasks per stripe.");
+
+        mreg.register("ActiveCount",
+            this::activeStripesCount,
+            "Number of active tasks of all stripes.");
+
+        mreg.register("StripesActiveStatuses",
+            this::stripesActiveStatuses,
+            boolean[].class,
+            "Number of active tasks per stripe.");
+
+        mreg.register("StripesQueueSizes",
+            this::stripesQueueSizes,
+            int[].class,
+            "Size of queue per stripe.");
     }
 
     /** {@inheritDoc} */
