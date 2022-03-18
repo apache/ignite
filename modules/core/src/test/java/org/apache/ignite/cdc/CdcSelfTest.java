@@ -37,6 +37,7 @@ import java.util.stream.Collectors;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -275,6 +276,10 @@ public class CdcSelfTest extends AbstractCdcTest {
                     return true;
                 }
 
+                @Override public void onTypes(Iterator<BinaryType> types) {
+                    types.forEachRemaining(t -> System.out.println("t = " + t));
+                }
+
                 @Override public void stop() {
                     // No-op.
                 }
@@ -348,6 +353,10 @@ public class CdcSelfTest extends AbstractCdcTest {
                     oneConsumed = true;
 
                     return true;
+                }
+
+                @Override public void onTypes(Iterator<BinaryType> types) {
+                    types.forEachRemaining(t -> System.out.println("t = " + t));
                 }
 
                 @Override public void stop() {

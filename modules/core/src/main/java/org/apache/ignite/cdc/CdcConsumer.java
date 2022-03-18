@@ -75,6 +75,10 @@ public interface CdcConsumer {
     /**
      * Handles new binary types. State of the types processing will be stored after this method invocation
      * and ongoing notifications after CDC application fail/restart will be started for newly created/updates types.
+     *
+     * Note, unlike {@link #onEvents(Iterator)} this method MUST process all types or CDC will fail.
+     * Because, on
+     *
      * @param types Binary types iterator.
      */
     public void onTypes(Iterator<BinaryType> types);

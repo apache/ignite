@@ -203,6 +203,8 @@ public class SqlCdcTest extends AbstractCdcTest {
             while (types.hasNext()) {
                 BinaryType type = types.next();
 
+                System.out.println("type = " + type);
+
                 assertNotNull(type);
             }
         }

@@ -2538,6 +2538,16 @@ public class BinaryUtils {
     }
 
     /**
+     * @param fileName File name.
+     * @return Type id
+     * @see #binaryMetaFileName(int)
+     * @see #METADATA_FILE_SUFFIX
+     */
+    public static int typeId(String fileName) {
+        return Integer.parseInt(fileName.replace(METADATA_FILE_SUFFIX, ""));
+    }
+
+    /**
      * Get predefined write-replacer associated with class.
      *
      * @param cls Class.

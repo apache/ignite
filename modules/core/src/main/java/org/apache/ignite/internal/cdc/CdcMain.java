@@ -27,6 +27,7 @@ import java.util.Comparator;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Stream;
@@ -67,6 +68,7 @@ import static org.apache.ignite.internal.IgniteKernal.SITE;
 import static org.apache.ignite.internal.IgniteVersionUtils.ACK_VER_STR;
 import static org.apache.ignite.internal.IgniteVersionUtils.COPYRIGHT;
 import static org.apache.ignite.internal.IgnitionEx.initializeDefaultMBeanServer;
+import static org.apache.ignite.internal.binary.BinaryUtils.METADATA_FILE_SUFFIX;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.DATA_RECORD_V2;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager.WAL_SEGMENT_FILE_FILTER;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
@@ -429,6 +431,8 @@ public class CdcMain implements Runnable {
         if (log.isInfoEnabled())
             log.info("Processing WAL segment [segment=" + segment + ']');
 
+        updateTypes();
+
         IgniteWalIteratorFactory.IteratorParametersBuilder builder =
             new IgniteWalIteratorFactory.IteratorParametersBuilder()
                 .log(log)
@@ -532,14 +536,34 @@ public class CdcMain implements Runnable {
      */
     private void updateTypes() {
         try {
-            state.save(typesState);
-
             Iterator<BinaryType> changedTypes = Files.list(binaryMeta.toPath())
-                .filter(p -> p.endsWith(BinaryUtils.METADATA_FILE_SUFFIX))
-                .map(p -> {
-                    kctx.cacheObjects().metadata()
+                .filter(p -> {
+                    System.out.println("p = " + p);
+                    return p.endsWith(METADATA_FILE_SUFFIX);
                 })
+                .map(p -> {
+                    int typeId = BinaryUtils.typeId(p.getFileName().toString());
+
+                    // Filter out files already in `typesState` with the same last modify date.
+                    return typesState.containsKey(typeId) && p.toFile().lastModified() == typesState.get(typeId)
+                        ? null
+                        : new T2<>(typeId, p.toFile().lastModified());
+
+                })
+                .filter(Objects::nonNull)
+                .peek(t -> typesState.put(t.get1(), t.get2())) // Adding peeked up types to the state set.
+                .map(t -> kctx.cacheObjects().metadata(t.get1()))
                 .iterator();
+
+            if (!changedTypes.hasNext())
+                return;
+
+            consumer.onTypes(changedTypes);
+
+            if (changedTypes.hasNext())
+                throw new IllegalStateException("Consumer should handle all changed types");
+
+            state.save(typesState);
         }
         catch (IOException e) {
             throw new IgniteException(e);
