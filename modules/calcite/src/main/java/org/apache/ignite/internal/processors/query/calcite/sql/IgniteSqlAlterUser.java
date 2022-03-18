@@ -44,7 +44,7 @@ public class IgniteSqlAlterUser extends SqlDdl {
         new SqlSpecialOperator("ALTER USER", SqlKind.OTHER_DDL);
 
     /** */
-    protected IgniteSqlAlterUser(SqlParserPos pos, SqlIdentifier user, SqlLiteral pwd) {
+    public IgniteSqlAlterUser(SqlParserPos pos, SqlIdentifier user, SqlLiteral pwd) {
         super(OPERATOR, pos);
         this.user = Objects.requireNonNull(user, "user");
         this.pwd = Objects.requireNonNull(pwd, "password");

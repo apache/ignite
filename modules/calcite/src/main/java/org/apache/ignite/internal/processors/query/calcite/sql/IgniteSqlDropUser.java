@@ -40,7 +40,7 @@ public class IgniteSqlDropUser extends SqlDrop {
         new SqlSpecialOperator("DROP USER", SqlKind.OTHER_DDL);
 
     /** */
-    protected IgniteSqlDropUser(SqlParserPos pos, SqlIdentifier user) {
+    public IgniteSqlDropUser(SqlParserPos pos, SqlIdentifier user) {
         super(OPERATOR, pos, false);
         this.user = Objects.requireNonNull(user, "user");
     }

@@ -21,7 +21,7 @@ data: {
   # FMPP will use the declaration from default_config.fmpp.
   parser: {
     # Generated parser implementation class package and name
-    package: "org.apache.ignite.internal.processors.query.calcite.sql",
+    package: "org.apache.ignite.internal.processors.query.calcite.sql.generated",
     class: "IgniteSqlParserImpl",
 
     # List of additional classes and packages to import.
@@ -35,6 +35,7 @@ data: {
       "org.apache.ignite.internal.processors.query.calcite.util.IgniteResource",
       "org.apache.ignite.lang.IgniteUuid",
       "org.apache.calcite.sql.ddl.SqlDdlNodes",
+      "org.apache.ignite.internal.processors.query.calcite.sql.*",
     ]
 
     # List of new keywords. Example: "DATABASES", "TABLES". If the keyword is

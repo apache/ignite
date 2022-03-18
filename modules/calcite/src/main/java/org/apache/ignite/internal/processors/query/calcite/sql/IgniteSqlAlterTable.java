@@ -31,7 +31,7 @@ public class IgniteSqlAlterTable extends IgniteAbstractSqlAlterTable {
     private final boolean logging;
 
     /** */
-    protected IgniteSqlAlterTable(SqlParserPos pos, boolean ifExists, SqlIdentifier tblName, boolean logging) {
+    public IgniteSqlAlterTable(SqlParserPos pos, boolean ifExists, SqlIdentifier tblName, boolean logging) {
         super(pos, ifExists, tblName);
         this.logging = logging;
     }
