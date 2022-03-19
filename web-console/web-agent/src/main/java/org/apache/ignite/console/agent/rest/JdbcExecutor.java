@@ -40,6 +40,8 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
+import cdjd.org.apache.commons.lang3.StringUtils;
+
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.console.agent.db.DbColumn;
 import org.apache.ignite.console.agent.db.DbMetadataReader;
@@ -115,31 +117,30 @@ public class JdbcExecutor implements AutoCloseable {
     public RestResult sendRequest(String clusterId, JsonObject args, JsonObject params) throws IOException {
     	 
     	DBInfo dbInfo = dbListener.getDBClusterInfo(clusterId);
-    	String jdbcDriverCls = dbInfo.driverCls;
-    	String jdbcUrl = dbInfo.jdbcUrl;
-    	Properties jdbcInfo = dbInfo.jdbcProp;
-        
-    	String nodeUrl = jdbcUrl;
-    	if(jdbcUrl==null) {
+    	if(dbInfo==null || dbInfo.jdbcUrl==null) {
     		return RestResult.fail(STATUS_FAILED, "Not configure any jdbc connection, Please click Import from Database on configuration/overview");
     	}
+    	if(StringUtils.isBlank(dbInfo.jndiName)) {
+    		return RestResult.fail(STATUS_FAILED, "Not configure jdbc jndi name, Please click Import from Database on configuration/overview");
+    	}
+    	
+    	String nodeUrl = dbInfo.jdbcUrl;
     	String cmd = (String)params.get("cmd");
     	String p2 = (String)params.get("p2");
     	
     	boolean importSamples = args.getBoolean("importSamples", false);
         	
-    	Connection conn = null;
+    	
     	int  urlsCnt = 1;
         for (int i = 0;  i < urlsCnt; i++) { 
+        	Connection  conn = null;
             try {            	
             	
-            	DataSource ds = dbListener.getDataSource(jdbcUrl);
-            	if(ds!=null) {
-            		conn = ds.getConnection();
+            	conn = dbListener.getConnection(dbInfo);
+            	if(conn==null) {
+            		conn = metadataReader.connect(dbInfo.driverJar, dbInfo);
             	}
-            	else {
-            		conn = metadataReader.connect(null, jdbcDriverCls, jdbcUrl, jdbcInfo);
-            	}
+            	
             	JSONObject res = new JSONObject();
             	if("org.apache.ignite.internal.visor.cache.VisorCacheNamesCollectorTask".equals(p2)) {
             		

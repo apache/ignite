@@ -8,6 +8,8 @@ import java.io.PrintWriter;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -45,6 +47,9 @@ import org.springframework.context.support.ClassPathXmlApplicationContext;
  */
 public class ESRelay extends HttpServlet {
 	private static final String CONTENT_TYPE = "application/json; charset=UTF-8";
+	
+	public static ScheduledExecutorService scheduleExecutorService = Executors.newSingleThreadScheduledExecutor();
+	   
 
 	private final ESRelayConfig fConfig;
 
@@ -62,7 +67,6 @@ public class ESRelay extends HttpServlet {
 
 	public ESRelay() {
 		fConfig = new ESRelayConfig();
-
 		fLogger = Logger.getLogger(this.getClass().getName());
 	}
 
@@ -75,13 +79,11 @@ public class ESRelay extends HttpServlet {
 			
 			allViews = ESRelay.context.getBeansOfType(ESViewQuery.class);			
 			
-			if("elasticsearch".equalsIgnoreCase(fConfig.getClusterBackend())){
-				
+			if("elasticsearch".equalsIgnoreCase(fConfig.getClusterBackend())){				
 				objectMapper = new GridJettyObjectMapper();
 				fHandler = new ESQueryHandler(fConfig);
 			}
-			else if("igniteClient".equalsIgnoreCase(fConfig.getClusterBackend())){
-				
+			else if("igniteClient".equalsIgnoreCase(fConfig.getClusterBackend())){				
 				fHandler = new ESQueryClientIgniteHandler(fConfig);				
 				objectMapper = new GridJettyObjectMapper();
 			}
@@ -90,7 +92,7 @@ public class ESRelay extends HttpServlet {
 				if(ctx==null){
 					fHandler = new ESQueryClientIgniteHandler(fConfig);
 				}
-				else{					
+				else{						
 					fHandler = new ESQueryKernelIgniteHandler(fConfig,ctx);
 				}
 				objectMapper = new GridJettyObjectMapper(ctx);
@@ -107,12 +109,17 @@ public class ESRelay extends HttpServlet {
 		Map<String, String> parameters = new HashMap<String, String>();
 
 		String key = null;
-		String value = null;
+		String[] value = null;
 		Enumeration<?> paramEnum = request.getParameterNames();
 		while (paramEnum.hasMoreElements()) {
 			key = paramEnum.nextElement().toString();
-			value = request.getParameter(key);
-			parameters.put(key, value);
+			value = request.getParameterValues(key);
+			if(value.length>1) {
+				parameters.put(key, String.join(",",value));
+			}
+			else {
+				parameters.put(key, value[0]);
+			}
 		}
 
 		return parameters;
@@ -211,8 +218,8 @@ public class ESRelay extends HttpServlet {
 		String[] path = getFixedPath(request);
 
 		// TODO: properly extract query parameters
-		Map<String, String> parameters = getParams(request);
-
+		
+		Map<String, String[]> params = request.getParameterMap();
 		
 		PrintWriter out = response.getWriter();
 		try {
@@ -222,6 +229,7 @@ public class ESRelay extends HttpServlet {
 
 			//use ignite rest backends  /_cmd/put?cacheName=test&key=k1
 			if("_cmd".equalsIgnoreCase(path[0])){
+				Map<String, String> parameters = getParams(request);
 				parameters.put("cmd", path[1]);				
 				path[2] = path[1];
 				path[1] = path[0];
@@ -243,24 +251,24 @@ public class ESRelay extends HttpServlet {
 					String viewName = path[1];
 					ESViewQuery viewQuery = allViews.get(viewName);
 					if(viewQuery==null) { // path[1] is schema not viewName,  q is SQL 				
-						viewQuery = new ESViewQuery(viewName,parameters.get("q"));
+						viewQuery = new ESViewQuery(viewName,request.getParameter("q"));
 					}
 					viewQuery.setQueryPath(path);
-					viewQuery.setParams(parameters);
+					viewQuery.setParams(params);
 					// process request, forward to ES instances
 					result = fHandler.handleRequest(viewQuery, user);	
 					
 				}
 				else if(!request.getMethod().equals("GET")){
 					ObjectNode jsonRequest = getJSONBody(path[2],request);
-					ESQuery query = new ESQuery(path, parameters, jsonRequest);
+					ESQuery query = new ESQuery(path, params, jsonRequest);
 					
 					// process request, forward to ES instances
 					result = fHandler.handleRequest(query, user);	
 				}
 				else {
 					
-					ESQuery query = new ESQuery(path, parameters);
+					ESQuery query = new ESQuery(path, params);
 					
 					// process request, forward to ES instances
 					result = fHandler.handleRequest(query, user);	
@@ -268,6 +276,7 @@ public class ESRelay extends HttpServlet {
 				
 			}
 			else if(request.getMethod().equals("POST")){
+				Map<String, String> parameters = getParams(request);
 				ObjectNode jsonRequest = getJSONBody(path[2],request);
 				ESUpdate query = new ESUpdate(path, parameters, jsonRequest);
 				query.setOp(ESConstants.INSERT_FRAGMENT);
@@ -277,6 +286,7 @@ public class ESRelay extends HttpServlet {
 			
 			}
 			else if(request.getMethod().equals("PUT")){
+				Map<String, String> parameters = getParams(request);
 				ObjectNode jsonRequest = getJSONBody(path[2],request);
 				ESUpdate query = new ESUpdate(path, parameters, jsonRequest);
 				query.setOp(ESConstants.UPDATE_FRAGMENT);
@@ -285,6 +295,7 @@ public class ESRelay extends HttpServlet {
 			
 			}
 			else if(request.getMethod().equals("DELETE")){
+				Map<String, String> parameters = getParams(request);
 				ObjectNode jsonRequest = getJSONBody(path[2],request);
 				ESUpdate query = new ESUpdate(path, parameters, jsonRequest);
 				query.setOp(ESConstants.DELETE_FRAGMENT);

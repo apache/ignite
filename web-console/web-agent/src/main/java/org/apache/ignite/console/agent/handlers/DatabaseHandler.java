@@ -45,6 +45,7 @@ import javax.net.ssl.SSLException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.console.agent.AgentConfiguration;
+import org.apache.ignite.console.agent.db.DataSourceManager;
 import org.apache.ignite.console.agent.db.DbMetadataReader;
 import org.apache.ignite.console.agent.db.DbSchema;
 import org.apache.ignite.console.agent.db.DbTable;
@@ -260,40 +261,22 @@ public class DatabaseHandler{
             return demoConn;
         }
         
-
-        String jdbcDriverJarPath = args.getString("jdbcDriverJar", "");
-
-        if (F.isEmpty(jdbcDriverJarPath))
-            throw new IllegalArgumentException("Path to JDBC driver not found in arguments");
-
-        String jdbcDriverCls = args.getString("jdbcDriverClass", "");
-
-        if (F.isEmpty(jdbcDriverCls))
-            throw new IllegalArgumentException("JDBC driver class not found in arguments");
-
-        if (F.isEmpty(jdbcUrl))
-            throw new IllegalArgumentException("JDBC URL not found in arguments");
-
-        if (!args.containsKey("info"))
-            throw new IllegalArgumentException("Connection parameters not found in arguments");
-
-        Properties jdbcInfo = new Properties();
-
-        jdbcInfo.putAll((Map)args.get("info"));
+        DBInfo dbInfo = new DBInfo();
+		dbInfo.buildWith(args);
         
         if (AgentMetadataDemo.isTestDriveUrl(jdbcUrl)) {
-        	String jndiName= String.format("java:jdbc/dsH2");     		
-        	databaseListener.dataSourceManager.bindDataSource(jndiName, jdbcUrl, jdbcInfo);
+        	String jndiName="dsH2";     		
+        	DataSourceManager.bindDataSource(jndiName, dbInfo);
             return AgentMetadataDemo.testDrive();
         }
-
-        if (!new File(jdbcDriverJarPath).isAbsolute() && driversFolder != null)
-            jdbcDriverJarPath = new File(driversFolder, jdbcDriverJarPath).getPath();
+        String jdbcDriverJarPath = dbInfo.getDriverJar();
+        if (!new File(dbInfo.getDriverJar()).isAbsolute() && driversFolder != null)
+            jdbcDriverJarPath = new File(driversFolder, dbInfo.getDriverJar()).getPath();
 
         log.info("Connecting to database[drvJar=" + jdbcDriverJarPath +
-            ", drvCls=" + jdbcDriverCls + ", jdbcUrl=" + jdbcUrl + "]");
+            ", drvCls=" + dbInfo.getDriverJar() + ", jdbcUrl=" + jdbcUrl + "]");
 
-        Connection conn = dbMetaReader.connect(jdbcDriverJarPath, jdbcDriverCls, jdbcUrl, jdbcInfo);
+        Connection conn = dbMetaReader.connect(jdbcDriverJarPath, dbInfo);
         
         this.databaseListener.addDB(args,conn);
         
@@ -304,7 +287,7 @@ public class DatabaseHandler{
 	public Collection<GridClientCacheBean> schemas(DBInfo info) {
 		if(info==null)
 			return Collections.EMPTY_LIST; 
-		try (Connection conn = dbMetaReader.connect(null,info.driverCls,info.jdbcUrl,info.jdbcProp)) {
+		try (Connection conn = dbMetaReader.connect(null,info)) {
             String catalog = conn.getCatalog();
 
             if (catalog == null) {

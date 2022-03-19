@@ -18,19 +18,13 @@ form(
     id='cache'
     novalidate
 )
-    include ./templates/general
-    include ./templates/memory
-    include ./templates/query
+    include ./templates/general    
     include ./templates/store
-
-    include ./templates/affinity
-    include ./templates/concurrency
+    include ./templates/affinity    
     include ./templates/key-cfg
-    include ./templates/misc
-    include ./templates/near-cache-client
-    include ./templates/near-cache-server
+    include ./templates/concurrency
     include ./templates/node-filter
-    include ./templates/rebalance
+    include ./templates/schedule
     include ./templates/statistics
 
 .pc-form-actions-panel

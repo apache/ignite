@@ -25,6 +25,7 @@ import org.apache.ignite.console.db.Table;
 import org.apache.ignite.console.dto.DBInfoDto;
 import org.apache.ignite.console.dto.Notebook;
 import org.apache.ignite.console.messages.WebConsoleMessageSource;
+import org.apache.ignite.console.messages.WebConsoleMessageSourceAccessor;
 import org.apache.ignite.console.tx.TransactionManager;
 import org.springframework.context.support.MessageSourceAccessor;
 import org.springframework.stereotype.Repository;
@@ -35,7 +36,11 @@ import org.springframework.stereotype.Repository;
 @Repository
 public class DBInfoRepository {
     /** */
-    private final TransactionManager txMgr;
+    private final TransactionManager txMgr;    
+
+    /** Messages accessor. */
+    private final WebConsoleMessageSourceAccessor messages = WebConsoleMessageSource.getAccessor();
+
 
     /** */
     private Table<DBInfoDto> datasourceTbl;
@@ -51,9 +56,11 @@ public class DBInfoRepository {
         this.txMgr = txMgr;
 
         txMgr.registerStarter(() -> {
-            MessageSourceAccessor messages = WebConsoleMessageSource.getAccessor();
-
             datasourceTbl = new Table<>(ignite, "wc_datasource");
+            datasourceTbl.addUniqueIndex(
+            		a -> a.getJndiName().trim().toLowerCase(),
+                    acc -> messages.getMessageWithArgs("err.account-with-jdniName-exists",acc.getJndiName()));
+            
             datasourcesIdx = new OneToManyIndex<>(ignite, "wc_datasource_idx");
         });
     }

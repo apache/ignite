@@ -26,8 +26,8 @@ export default class {
         this.showIgniteLogo = false;
 
         this.footerHtml = [
-            `<p>Apache Ignite Web Console (${Version.webConsole})</p>`,
-            '<p>© 2019 The Apache Software Foundation.</p>'            
+            `<p></p>`,
+            '<p></p>'            
         ].join('\n');
 
         this.termsState = null;

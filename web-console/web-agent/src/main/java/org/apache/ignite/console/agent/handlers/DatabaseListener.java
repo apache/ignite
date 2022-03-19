@@ -37,6 +37,7 @@ import org.apache.ignite.console.agent.db.DbSchema;
 import org.apache.ignite.console.db.DBInfo;
 import org.apache.ignite.console.websocket.TopologySnapshot;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.eclipse.jetty.util.StringUtil;
 
 
 /**
@@ -45,45 +46,32 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 
 public class DatabaseListener {
 
-	/** Index of alive node URI. */
+	/** Index of alive node URI. jndiName->DBInfo*/
 	final public Map<String, DBInfo> clusters = new ConcurrentHashMap<>();
-	final public DataSourceManager dataSourceManager = new DataSourceManager();
 	
-
 	public DBInfo addDB(Map<String, Object> args,Connection conn) throws IllegalArgumentException {
-		String driverPath = null;
+		DBInfo dbInfo = new DBInfo();
+		dbInfo.buildWith(args);
 
-		String url = args.get("jdbcUrl").toString();
+		String url = dbInfo.jdbcUrl;
 
-		for (DBInfo dbInfo : clusters.values()) {
-			if (dbInfo.jdbcUrl.equalsIgnoreCase(url)) {
+		for (DBInfo dbInfo0 : clusters.values()) {
+			if (dbInfo0.jdbcUrl.equalsIgnoreCase(url)) {
 				return dbInfo;
 			}
 		}
+
+		if(StringUtil.isBlank(dbInfo.jndiName)) {
+			String clusterId = UUID.randomUUID().toString();
+			clusters.put(clusterId, dbInfo);
+		}
+		else {
+			clusters.put(dbInfo.jndiName, dbInfo);
+			
+			DataSourceManager.bindDataSource(dbInfo.jndiName, dbInfo);
+		}
 		
-		if (args.containsKey("jdbcDriverJar"))
-			driverPath = args.get("jdbcDriverJar").toString();
-
-		if (!args.containsKey("jdbcDriverClass"))
-			throw new IllegalArgumentException("Missing driverClass in arguments: " + args);
-
-		String driverCls = args.get("jdbcDriverClass").toString();
-
-		if (!args.containsKey("jdbcUrl"))
-			throw new IllegalArgumentException("Missing url in arguments: " + args);
-
-		if (!args.containsKey("info"))
-			throw new IllegalArgumentException("Missing info in arguments: " + args);
-
-		Properties info = new Properties();
-
-		info.putAll((Map) args.get("info"));
-
-		String clusterId = UUID.randomUUID().toString();
-		DBInfo dbInfo = new DBInfo(clusterId, driverCls, url, info);
-		
-		clusters.put(clusterId, dbInfo);
-		if(conn!=null) {
+		if(conn!=null && StringUtil.isBlank(dbInfo.jndiName)) {
 			try {
 				String dbProductName = conn.getMetaData().getDatabaseProductName();
 				
@@ -113,53 +101,28 @@ public class DatabaseListener {
 					}
 				}
 				
-				dbInfo.jndiName= String.format("java:jdbc/ds%s_%s",dbProductName,catalog.replaceAll("_", "").replace('-','_'));
+				dbInfo.jndiName= String.format("ds%s_%s",dbProductName,catalog.replaceAll("_", "").replace('-','_'));					
+				DataSourceManager.bindDataSource(dbInfo.jndiName, dbInfo);
 				
-				dataSourceManager.bindDataSource(dbInfo.jndiName, dbInfo.jdbcUrl, info);
-				
-				
-				dbInfo.jndiName= String.format("java:jdbc/ds%s_%s","Generic",catalog.replaceAll("_", "").replace('-','_'));
-				
-				dataSourceManager.bindDataSource(dbInfo.jndiName, dbInfo.jdbcUrl, info);
+				// 保存datasource
+				DataSourceManager.createDataSource(args.get("tok").toString(), dbInfo);
 				
 			} catch (SQLException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
+			
+			
 		}
 		return dbInfo;
 	}
 
 	public DBInfo findDB(Map<String, Object> args) throws Exception {
-		String driverPath = null;
-
-		if (args.containsKey("jdbcDriverJar"))
-			driverPath = args.get("jdbcDriverJar").toString();
-
-		if (!args.containsKey("jdbcDriverClass"))
-			throw new IllegalArgumentException("Missing driverClass in arguments: " + args);
-
-		String driverCls = args.get("jdbcDriverClass").toString();
-
-		if (!args.containsKey("jdbcUrl"))
-			throw new IllegalArgumentException("Missing url in arguments: " + args);
-
-		String url = args.get("jdbcUrl").toString();
-
-		if (!args.containsKey("info"))
-			throw new IllegalArgumentException("Missing info in arguments: " + args);
-
-		
-		if (!args.containsKey("schemas"))
-			throw new IllegalArgumentException("Missing schemas in arguments: " + args);
-
-		//List<String> schemas = (List<String>) args.get("schemas");
-
-		if (!args.containsKey("tablesOnly"))
-			throw new IllegalArgumentException("Missing tablesOnly in arguments: " + args);
+		DBInfo dbInfoTarget = new DBInfo();
+		dbInfoTarget.buildWith(args);
 
 		for (DBInfo dbInfo : clusters.values()) {
-			if (dbInfo.jdbcUrl.equalsIgnoreCase(url)) {
+			if (dbInfo.jdbcUrl.equalsIgnoreCase(dbInfoTarget.jdbcUrl)) {
 				return dbInfo;
 			}
 		}
@@ -178,9 +141,14 @@ public class DatabaseListener {
 		clusters.clear();
 	}	
 	
-	public DataSource getDataSource(String jdbcUrl) {
+	public Connection getConnection(DBInfo dbInfo) {
 		try {
-			return dataSourceManager.getDataSource(jdbcUrl);
+			Connection conn = null;
+			DataSource ds = DataSourceManager.getDataSource(dbInfo.jndiName);
+        	if(ds!=null) {
+        		conn = ds.getConnection();
+        	}        	
+        	return conn;
 		} catch (SQLException e) {
 			return null;
 		}

@@ -279,10 +279,12 @@ body {
 
     web-console-header {
         grid-area: header;
+        /**
         position: -webkit-sticky;
         position: sticky;
+        */
         top: 0;
-        z-index: 10;
+        z-index: 0;
         transform: translateZ(1px);
     }
 
@@ -295,7 +297,7 @@ body {
         grid-area: content;
         padding-left: var(--page-side-padding);
         padding-right: var(--page-side-padding);
-        padding-bottom: var(--page-side-padding);
+        padding-bottom: 0px;
         display: flex;
         flex-direction: column;
 

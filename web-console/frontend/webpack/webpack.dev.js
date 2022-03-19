@@ -59,7 +59,7 @@ module.exports = merge(commonCfg, {
         compress: true,
         historyApiFallback: true,
         disableHostCheck: true,
-        contentBase: [path.resolve('build')],
+        contentBase: [path.resolve('build'),path.resolve('public')],
         inline: true,
         proxy: {
             '/browsers': {

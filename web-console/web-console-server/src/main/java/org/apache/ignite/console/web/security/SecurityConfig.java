@@ -143,6 +143,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
             .and()
             .addFilterAt(authenticationFilter(), UsernamePasswordAuthenticationFilter.class)
             .addFilterAfter(switchUserFilter(), FilterSecurityInterceptor.class)
+            .addFilterAt(authenticationTokenFilter(), UsernamePasswordAuthenticationFilter.class)
             .logout()
             .logoutUrl(LOGOUT_ROUTE)
             .deleteCookies("SESSION")
@@ -227,6 +228,16 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
         filter.setSwitchUserUrl(SWITCH_USER_URL);
         filter.setExitUserUrl(EXIT_USER_URL);
 
+        return filter;
+    }
+    
+
+    /**
+     * Switch User processing filter.
+     */
+    public AuthenticationTokenFilter authenticationTokenFilter() {
+    	AuthenticationTokenFilter filter = new AuthenticationTokenFilter();
+    	filter.setAccountsService(accountsSrv);
         return filter;
     }
     

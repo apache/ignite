@@ -119,17 +119,7 @@ panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
                     min: '1',
                     tip: 'Thread priority for all threads started by SPI'
                 })
-
-            //- Removed in ignite 2.0
-            .pc-form-grid-col-60(ng-if-start='$ctrl.available(["1.0.0", "2.0.0"])')
-                +form-field__number({
-                    label: 'Heartbeat frequency:',
-                    model: `${model}.heartbeatFrequency`,
-                    name: '"heartbeatFrequency"',
-                    placeholder: '2000',
-                    min: '1',
-                    tip: 'Heartbeat messages issuing frequency'
-                })
+           
             .pc-form-grid-col-30
                 +form-field__number({
                     label: 'Max heartbeats miss w/o init:',

@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.Scanner;
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.ParameterException;
+
 import org.apache.ignite.console.agent.handlers.WebSocketRouter;
 import org.apache.ignite.internal.util.typedef.F;
 import org.slf4j.Logger;
@@ -194,6 +195,7 @@ public class AgentLauncher {
             return;
 
         try (WebSocketRouter websocket = new WebSocketRouter(cfg)) {
+        	
             websocket.start();
 
             websocket.awaitClose();

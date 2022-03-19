@@ -64,16 +64,7 @@ panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
                     min: '0',
                     max: '9',
                     tip: 'Compression level of internal network messages'
-                })
-            .pc-form-grid-col-30(ng-if='$ctrl.available(["1.0.0", "2.3.0"])')
-                +form-field__number({
-                    label: 'Discovery startup delay:',
-                    model: `${model}.discoveryStartupDelay`,
-                    name: '"discoveryStartupDelay"',
-                    placeholder: '60000',
-                    min: '1',
-                    tip: 'This value is used to expire messages from waiting list whenever node discovery discrepancies happen'
-                })
+                })            
             .pc-form-grid-col-60(ng-if='$ctrl.available("2.5.0")')
                 +form-field__java-class({
                     label: 'Failure resolver:',

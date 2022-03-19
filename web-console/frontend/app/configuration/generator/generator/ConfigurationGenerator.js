@@ -99,22 +99,12 @@ export default class IgniteConfigurationGenerator {
         this.clusterLoadBalancing(cluster, cfg);
         this.clusterLogger(cluster.logger, cfg);
         this.clusterMarshaller(cluster, available, cfg);
-
-        // Since ignite 2.0 and deprecated in ignite 2.3
-        if (available(['2.0.0', '2.3.0']))
-            this.clusterMemory(cluster.memoryConfiguration, available, cfg);
+       
 
         this.clusterMisc(cluster, available, cfg);
         this.clusterMetrics(cluster, available, cfg);
         this.clusterMvcc(cluster, available, cfg);
         this.clusterODBC(cluster.odbc, available, cfg);
-
-        // Since ignite 2.1 deprecated in ignite 2.3
-        if (available(['2.1.0', '2.3.0']))
-            this.clusterPersistence(cluster.persistenceStoreConfiguration, available, cfg);
-
-        if (available(['2.1.0', '2.3.0']))
-            this.clusterQuery(cluster, available, cfg);
 
         this.clusterRebalance(cluster, available, cfg);
         this.clusterServiceConfiguration(cluster.serviceConfigurations, cluster.caches, cfg);
@@ -965,9 +955,6 @@ export default class IgniteConfigurationGenerator {
         if (available('2.5.0'))
             cfg.emptyBeanProperty('communicationFailureResolver');
 
-        if (available(['1.0.0', '2.3.0']))
-            cfg.longProperty('discoveryStartupDelay');
-
         return cfg;
     }
 
@@ -1077,13 +1064,6 @@ export default class IgniteConfigurationGenerator {
             .longProperty('networkTimeout')
             .longProperty('joinTimeout')
             .intProperty('threadPriority');
-
-        // Removed in ignite 2.0
-        if (available(['1.0.0', '2.0.0'])) {
-            discoSpi.intProperty('heartbeatFrequency')
-                .intProperty('maxMissedHeartbeats')
-                .intProperty('maxMissedClientHeartbeats');
-        }
 
         discoSpi.longProperty('topHistorySize')
             .emptyBeanProperty('listener')
@@ -1740,8 +1720,7 @@ export default class IgniteConfigurationGenerator {
         }
 
         if (available2_0) {
-            cfg
-                .stringProperty('consistentId')
+            cfg .stringProperty('consistentId')
                 .emptyBeanProperty('warmupClosure')
                 .boolProperty('activeOnStart')
                 .boolProperty('cacheSanityCheckEnabled');
@@ -1754,10 +1733,7 @@ export default class IgniteConfigurationGenerator {
             cfg.intProperty('sqlQueryHistorySize');
 
         if (available('2.4.0'))
-            cfg.boolProperty('autoActivationEnabled');
-
-        if (available(['1.0.0', '2.1.0']))
-            cfg.boolProperty('lateAffinityAssignment');
+            cfg.boolProperty('autoActivationEnabled');        
 
         return cfg;
     }
@@ -1774,42 +1750,8 @@ export default class IgniteConfigurationGenerator {
 
     // Generate marshaller group.
     static clusterMarshaller(cluster, available, cfg = this.igniteConfigurationBean(cluster)) {
-        if (available(['1.0.0', '2.1.0'])) {
-            const kind = _.get(cluster.marshaller, 'kind');
-            const settings = _.get(cluster.marshaller, kind);
-
-            let bean;
-
-            switch (kind) {
-                case 'OptimizedMarshaller':
-                    if (available(['1.0.0', '2.0.0'])) {
-                        bean = new Bean('org.apache.ignite.marshaller.optimized.OptimizedMarshaller', 'marshaller', settings)
-                            .intProperty('poolSize')
-                            .intProperty('requireSerializable');
-                    }
-
-                    break;
-
-                case 'JdkMarshaller':
-                    bean = new Bean('org.apache.ignite.marshaller.jdk.JdkMarshaller', 'marshaller', settings);
-
-                    break;
-
-                default:
-                // No-op.
-            }
-
-            if (bean)
-                cfg.beanProperty('marshaller', bean);
-        }
-
-        cfg.intProperty('marshalLocalJobs');
-
-        // Removed in ignite 2.0
-        if (available(['1.0.0', '2.0.0'])) {
-            cfg.intProperty('marshallerCacheKeepAliveTime')
-                .intProperty('marshallerCacheThreadPoolSize', 'marshallerCachePoolSize');
-        }
+        
+        cfg.intProperty('marshalLocalJobs');        
 
         return cfg;
     }
@@ -2003,11 +1945,7 @@ export default class IgniteConfigurationGenerator {
 
     // Generate time group.
     static clusterTime(cluster, available, cfg = this.igniteConfigurationBean(cluster)) {
-        if (available(['1.0.0', '2.0.0'])) {
-            cfg.intProperty('clockSyncSamples')
-                .intProperty('clockSyncFrequency');
-        }
-
+        
         cfg.intProperty('timeServerPortBase')
             .intProperty('timeServerPortRange');
 
@@ -2393,10 +2331,7 @@ export default class IgniteConfigurationGenerator {
 
     // Generate cache memory group.
     static cacheMemory(cache, available, ccfg = this.cacheConfigurationBean(cache)) {
-        // Since ignite 2.0
-        if (available(['2.0.0', '2.3.0']))
-            ccfg.stringProperty('memoryPolicyName');
-
+        
         if (available('2.3.0'))
             ccfg.stringProperty('dataRegionName');
 
@@ -2408,14 +2343,7 @@ export default class IgniteConfigurationGenerator {
             if (compression === 'ZSTD' || compression === 'LZ4')
                 ccfg.intProperty('diskPageCompressionLevel');
         }
-
-        // Removed in ignite 2.0
-        if (available(['1.0.0', '2.0.0'])) {
-            ccfg.enumProperty('memoryMode');
-
-            if (ccfg.valueOf('memoryMode') !== 'OFFHEAP_VALUES')
-                ccfg.longProperty('offHeapMaxMemory');
-        }
+        
 
         // Since ignite 2.0
         if (available('2.0.0')) {
@@ -2425,11 +2353,6 @@ export default class IgniteConfigurationGenerator {
 
         this._evictionPolicy(ccfg, available, false, cache.evictionPolicy, cacheDflts.evictionPolicy);
 
-        // Removed in ignite 2.0
-        if (available(['1.0.0', '2.0.0'])) {
-            ccfg.intProperty('startSize')
-                .boolProperty('swapEnabled');
-        }
 
         if (cache.cacheWriterFactory)
             ccfg.beanProperty('cacheWriterFactory', new EmptyBean(cache.cacheWriterFactory));
@@ -2454,18 +2377,10 @@ export default class IgniteConfigurationGenerator {
 
         ccfg.stringProperty('sqlSchema');
 
-        // Removed in ignite 2.0
-        if (available(['1.0.0', '2.0.0']))
-            ccfg.intProperty('sqlOnheapRowCacheSize');
-
         ccfg.longProperty('longQueryWarningTimeout')
             .arrayProperty('indexedTypes', 'indexedTypes', indexedTypes, 'java.lang.Class')
             .intProperty('queryDetailMetricsSize')
             .arrayProperty('sqlFunctionClasses', 'sqlFunctionClasses', cache.sqlFunctionClasses, 'java.lang.Class');
-
-        // Removed in ignite 2.0
-        if (available(['1.0.0', '2.0.0']))
-            ccfg.intProperty('snapshotableIndex');
 
         ccfg.intProperty('sqlEscapeAll');
 
@@ -2616,10 +2531,6 @@ export default class IgniteConfigurationGenerator {
     static cacheConcurrency(cache, available, ccfg = this.cacheConfigurationBean(cache)) {
         ccfg.intProperty('maxConcurrentAsyncOperations')
             .longProperty('defaultLockTimeout');
-
-        // Removed in ignite 2.0
-        if (available(['1.0.0', '2.0.0']))
-            ccfg.enumProperty('atomicWriteOrderMode');
 
         ccfg.enumProperty('writeSynchronizationMode');
 

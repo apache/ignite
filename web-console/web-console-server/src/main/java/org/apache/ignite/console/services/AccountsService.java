@@ -17,7 +17,10 @@
 package org.apache.ignite.console.services;
 
 import java.time.LocalDateTime;
+import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.console.config.ActivationConfiguration;
 import org.apache.ignite.console.config.SignUpConfiguration;
@@ -314,5 +317,15 @@ public class AccountsService implements UserDetailsService {
 
             evtPublisher.publish(new Event<>(PASSWORD_CHANGED, acc));
         });
+    }
+    
+    /**
+     * @param tokens Tokens to check.
+     * @return Valid tokens.
+     */
+    public Account getAccountByToken(String token) {
+        Collection<Account> all = accountsRepo.getAllByTokens(Set.of(token));
+        if(all.isEmpty()) return null;
+        return all.iterator().next();
     }
 }

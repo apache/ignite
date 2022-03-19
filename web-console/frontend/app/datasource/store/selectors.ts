@@ -62,7 +62,7 @@ const selectNames = (itemIDs, nameAt = 'name') => pipe(
     map((items) => itemIDs.map((id) => items.get(id)[nameAt]))
 );
 
-function getBlankCluster() {
+function getBlankDatasource() {
         return {
             name: '',
             id: uuidv4()
@@ -104,7 +104,7 @@ export default class DatasourceSelectors {
         distinctUntilChanged(),
         selectItemToEdit({
             items: state$.pipe(this.selectShortClustersValue()),
-            itemFactory: () => getBlankCluster,
+            itemFactory: () => getBlankDatasource(),
             defaultName,
             itemID: clusterID
         })

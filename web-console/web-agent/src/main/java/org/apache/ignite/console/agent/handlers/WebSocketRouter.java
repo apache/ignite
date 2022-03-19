@@ -55,6 +55,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.console.agent.AgentClusterLauncher;
 import org.apache.ignite.console.agent.AgentConfiguration;
 import org.apache.ignite.console.agent.AgentUtils;
+import org.apache.ignite.console.agent.db.DataSourceManager;
 import org.apache.ignite.console.agent.rest.RestResult;
 import org.apache.ignite.console.agent.service.ClusterAgentService;
 import org.apache.ignite.console.demo.AgentClusterDemo;
@@ -141,7 +142,7 @@ public class WebSocketRouter implements AutoCloseable {
     /** Websocket Client. */
     private WebSocketClient client;
 
-    /** Schema import handler. */
+	/** Schema import handler. */
     private final DatabaseHandler dbHnd;
 
     /** Cluster handler. */
@@ -260,7 +261,8 @@ public class WebSocketRouter implements AutoCloseable {
                 return;
 
             HttpClient httpClient = new HttpClient(createServerSslFactory(cfg));
-
+            httpClient.setMaxConnectionsPerDestination(4);
+            httpClient.setConnectBlocking(false);
             // TODO GG-18379 Investigate how to establish native websocket connection with proxy.
             configureProxy(httpClient, cfg.serverUri());
 
@@ -344,6 +346,9 @@ public class WebSocketRouter implements AutoCloseable {
                 log.warning("Valid tokens not found. Stopping agent...");
 
                 closeLatch.countDown();
+            }
+            else {
+            	DataSourceManager.init(getHttpClient(),cfg.serverUri(),validTokens);
             }
 
             log.info("Successfully completes handshake with server");
@@ -774,4 +779,8 @@ public class WebSocketRouter implements AutoCloseable {
     private static void send(Session ses, WebSocketResponse evt) throws Exception {
         AgentUtils.send(ses, evt, 60L, TimeUnit.SECONDS);
     }
+    
+    public HttpClient getHttpClient() {
+		return client.getHttpClient();
+	}
 }

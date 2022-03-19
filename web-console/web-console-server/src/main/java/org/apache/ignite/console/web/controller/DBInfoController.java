@@ -71,6 +71,9 @@ public class DBInfoController {
         	datasource.setId(UUID.randomUUID());
         	datasource.setAccId(acc.getId());
         }
+        if(datasource.getAccId()==null) {        	
+        	datasource.setAccId(acc.getId());
+        }
     	datasourcesSrv.save(acc.getId(), datasource);
 
         return ResponseEntity.ok().build();

@@ -73,7 +73,7 @@ export default class IgniteVersion {
                 ignite: '2.3.0'
             },
             {
-                label: 'Ignite 2.1',
+                label: 'Ignite 2.2',
                 ignite: '2.2.0'
             }
         ];

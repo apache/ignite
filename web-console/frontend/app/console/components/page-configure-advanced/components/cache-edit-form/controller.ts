@@ -47,40 +47,38 @@ export default class CacheEditFormController {
                 {value: 'Rendezvous', label: 'Rendezvous'},
                 {value: 'Custom', label: 'Custom'},
                 {value: null, label: 'Default'}
-            ];
-
-            if (this.available(['1.0.0', '2.0.0']))
-                this.$scope.affinityFunction.splice(1, 0, {value: 'Fair', label: 'Fair'});
-
-            if (!this.IgniteVersion.currentSbj.getValue().hiveVersion
-                && _.get(this.clonedCache, 'cacheStoreFactory.kind') === 'HiveCacheJdbcPojoStoreFactory')
-                this.clonedCache.cacheStoreFactory.kind = null;
+            ];            
         };
 
         rebuildDropdowns();
 
-        const filterModel = () => {
-            if (
-                this.clonedCache &&
-                this.available('2.0.0') &&
-                get(this.clonedCache, 'affinity.kind') === 'Fair'
-            )
-                this.clonedCache.affinity.kind = null;
-
-        };
-
         this.subscription = this.IgniteVersion.currentSbj.pipe(
-            tap(rebuildDropdowns),
-            tap(filterModel)
+            tap(rebuildDropdowns)            
         )
-        .subscribe();
+        .subscribe();        
+        
+        this.cachesColDefs = [
+            {name: 'Name:', cellClass: 'pc-form-grid-col-10'},
+            {name: 'Mode:', cellClass: 'pc-form-grid-col-10'},
+            {name: 'Atomicity:', cellClass: 'pc-form-grid-col-20', tip: `
+                Atomicity:
+                <ul>
+                    <li>ATOMIC - in this mode distributed transactions and distributed locking are not supported</li>
+                    <li>TRANSACTIONAL - in this mode specified fully ACID-compliant transactional cache behavior</li>
+                    <li>TRANSACTIONAL_SNAPSHOT - in this mode specified fully ACID-compliant transactional cache behavior for both key-value API and SQL transactions</li>
+                </ul>
+            `},
+            {name: 'Backups:', cellClass: 'pc-form-grid-col-10', tip: `
+                Number of nodes used to back up single partition for partitioned cache
+            `}
+        ]; 
 
         // TODO: Do we really need this?
         this.$scope.ui = this.IgniteFormUtils.formUI();
 
         this.formActions = [
             {text: 'Save', icon: 'checkmark', click: () => this.save()},
-            {text: 'Save and Download', icon: 'download', click: () => this.save(true)}
+            {text: 'Save and Start', icon: 'download', click: () => this.save(true)}
         ];
     }
 
@@ -106,10 +104,10 @@ export default class CacheEditFormController {
         return [this.cache, this.clonedCache].map(this.Caches.normalize);
     }
 
-    save(download) {
+    save(start) {
         if (this.$scope.ui.inputForm.$invalid)
             return this.IgniteFormUtils.triggerValidation(this.$scope.ui.inputForm, this.$scope);
-        this.onSave({$event: {cache: cloneDeep(this.clonedCache), download}});
+        this.onSave({$event: {cache: cloneDeep(this.clonedCache), start}});
     }
 
     reset = (forReal) => forReal ? this.clonedCache = cloneDeep(this.cache) : void 0;
@@ -121,5 +119,18 @@ export default class CacheEditFormController {
 
     clearImplementationVersion(storeFactory) {
         delete storeFactory.implementationVersion;
+    }
+    
+    
+    addCache() {
+        
+    }
+    
+    removeCache(cache) {
+        
+    }
+    
+    changeCache(cache) {
+        
     }
 }

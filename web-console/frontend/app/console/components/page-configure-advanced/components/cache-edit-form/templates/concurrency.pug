@@ -20,67 +20,70 @@ include /app/configuration/mixins
 -var model = '$ctrl.clonedCache'
 
 panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
-    panel-title Concurrency control
+    panel-title Data receivers
     panel-description
-        | Cache concurrent asynchronous operations settings.
+        | 设置数据接收者，可以选择多个.
     panel-content.pca-form-row(ng-if=`ui.isPanelLoaded('${form}')`)
-        .pca-form-column-6.pc-form-grid-row
-            .pc-form-grid-col-30
-                +form-field__number({
-                    label: 'Max async operations:',
-                    model: `${model}.maxConcurrentAsyncOperations`,
-                    name: '"maxConcurrentAsyncOperations"',
-                    placeholder: '500',
-                    min: '0',
-                    tip: 'Maximum number of allowed concurrent asynchronous operations<br/>\
-                         If <b>0</b> then number of concurrent asynchronous operations is unlimited'
-                })
-            .pc-form-grid-col-30
-                +form-field__number({
-                    label: 'Default lock timeout:',
-                    model: `${model}.defaultLockTimeout`,
-                    name: '"defaultLockTimeout"',
-                    placeholder: '0',
-                    min: '0',
-                    tip: 'Default lock acquisition timeout in milliseconds<br/>\
-                         If <b>0</b> then lock acquisition will never timeout'
-                })
+        .pca-form-column-12.pc-form-grid-row
+            .pc-form-grid-col-120
+                .ignite-form-field
+                    list-editable.pcb-caches-list(
+                        ng-model='$ctrl.caches'
+                        list-editable-one-way
+                        on-item-change='$ctrl.changeCache($event)'
+                        on-item-remove='$ctrl.removeCache($event)'
+                        list-editable-cols='::$ctrl.cachesColDefs'
+                        list-editable-cols-row-class='pc-form-grid-row pcb-row-no-margin'
+                    )
+                        list-editable-item-view
+                            div {{ $item.name }}
+                            div {{ $item.cacheMode }}
+                            div {{ $item.atomicityMode }}
+                            div {{ $ctrl.Caches.getCacheBackupsCount($item) }}
+                        list-editable-item-edit
+                            div
+                                +form-field__text({
+                                    label: 'Name',
+                                    model: '$item.name',
+                                    name: '"name"',
+                                    required: true
+                                })(
+                                    ignite-unique='$ctrl.shortCaches'
+                                    ignite-unique-property='name'
+                                    ignite-form-field-input-autofocus='true'
+                                )
+                                    +form-field__error({ error: 'igniteUnique', message: 'Cache name should be unqiue' })
+                            div
+                                +form-field__cache-modes({
+                                    label: 'Mode:',
+                                    model: '$item.cacheMode',
+                                    name: '"cacheMode"',
+                                    placeholder: 'PARTITIONED'
+                                })
+                            div
+                                +form-field__dropdown({
+                                    label: 'Atomicity:',
+                                    model: '$item.atomicityMode',
+                                    name: '"atomicityMode"',
+                                    placeholder: 'ATOMIC',
+                                    options: '::$ctrl.Caches.atomicityModes'
+                                })
+                            div(ng-show='$ctrl.Caches.shouldShowCacheBackupsCount($item)')
+                                +form-field__number({
+                                    label: 'Backups:',
+                                    model: '$item.backups',
+                                    name: '"backups"',
+                                    placeholder: '0',
+                                    min: 0
+                                })
+                        list-editable-no-items
+                            list-editable-add-item-button(
+                                add-item='$ctrl.addCache()'
+                                label-single='cache'
+                                label-multiple='caches'
+                            )
 
-            //- Removed in ignite 2.0
-            .pc-form-grid-col-60(ng-if='$ctrl.available(["1.0.0", "2.0.0"])' ng-hide=`${model}.atomicityMode === 'TRANSACTIONAL'`)
-                +form-field__dropdown({
-                    label: 'Entry versioning:',
-                    model: `${model}.atomicWriteOrderMode`,
-                    name: '"atomicWriteOrderMode"',
-                    placeholder: 'Choose versioning',
-                    options: '[\
-                                            {value: "CLOCK", label: "CLOCK"},\
-                                            {value: "PRIMARY", label: "PRIMARY"}\
-                                        ]',
-                    tip: 'Write ordering mode determines which node assigns the write version, sender or the primary node\
-                                        <ul>\
-                                            <li>CLOCK - in this mode write versions are assigned on a sender node which generally leads to better performance</li>\
-                                            <li>PRIMARY - in this mode version is assigned only on primary node. This means that sender will only send write request to primary node, which in turn will assign write version and forward it to backups</li>\
-                                        </ul>'
-                })
+            
 
-            .pc-form-grid-col-60
-                +form-field__dropdown({
-                    label: 'Write synchronization mode:',
-                    model: `${model}.writeSynchronizationMode`,
-                    name: '"writeSynchronizationMode"',
-                    placeholder: 'PRIMARY_SYNC',
-                    options: '[\
-                                            {value: "FULL_SYNC", label: "FULL_SYNC"},\
-                                            {value: "FULL_ASYNC", label: "FULL_ASYNC"},\
-                                            {value: "PRIMARY_SYNC", label: "PRIMARY_SYNC"}\
-                                        ]',
-                    tip: 'Write synchronization mode\
-                                        <ul>\
-                                            <li>FULL_SYNC - Ignite will wait for write or commit replies from all nodes</li>\
-                                            <li>FULL_ASYNC - Ignite will not wait for write or commit responses from participating nodes</li>\
-                                            <li>PRIMARY_SYNC - Makes sense for PARTITIONED mode. Ignite will wait for write or commit to complete on primary node</li>\
-                                        </ul>'
-                })
-        .pca-form-column-6
-            +preview-model(model, 'cacheConcurrency')
+            
+        

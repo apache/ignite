@@ -46,23 +46,7 @@ panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
                          If <b>0</b> then lock acquisition will never timeout'
                 })
 
-            //- Removed in ignite 2.0
-            .pc-form-grid-col-60(ng-if='$ctrl.available(["1.0.0", "2.0.0"])' ng-hide=`${model}.atomicityMode === 'TRANSACTIONAL'`)
-                +form-field__dropdown({
-                    label: 'Entry versioning:',
-                    model: `${model}.atomicWriteOrderMode`,
-                    name: '"atomicWriteOrderMode"',
-                    placeholder: 'Choose versioning',
-                    options: '[\
-                                            {value: "CLOCK", label: "CLOCK"},\
-                                            {value: "PRIMARY", label: "PRIMARY"}\
-                                        ]',
-                    tip: 'Write ordering mode determines which node assigns the write version, sender or the primary node\
-                                        <ul>\
-                                            <li>CLOCK - in this mode write versions are assigned on a sender node which generally leads to better performance</li>\
-                                            <li>PRIMARY - in this mode version is assigned only on primary node. This means that sender will only send write request to primary node, which in turn will assign write version and forward it to backups</li>\
-                                        </ul>'
-                })
+           
 
             .pc-form-grid-col-60
                 +form-field__dropdown({

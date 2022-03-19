@@ -37,7 +37,6 @@ const config = {
         app: path.join(basedir, 'index.js'),
         browserUpdate: path.join(app, 'browserUpdate', 'index.js')
     },
-
     // Output system.
     output: {
         path: path.resolve('build'),
@@ -51,6 +50,7 @@ const config = {
         alias: {
             app,
             images: path.join(basedir, 'public/images'),
+            libs: path.join(basedir, 'public/libs'),
             views: path.join(basedir, 'views')
         },
         extensions: ['.wasm', '.mjs', '.js', '.ts', '.json']

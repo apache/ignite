@@ -59,6 +59,9 @@ panel-collapsible(opened=`::true` ng-form=form)
                     tip: 'Cache group name.<br/>\
                           Caches with the same group name share single underlying "physical" cache (partition set), but are logically isolated.'
                 })
+            
+
+        .pca-form-column-6.pc-form-grid-row
             .pc-form-grid-col-30
                 +form-field__cache-modes({
                     label: 'Mode:',
@@ -66,7 +69,7 @@ panel-collapsible(opened=`::true` ng-form=form)
                     name: '"cacheMode"',
                     placeholder: 'PARTITIONED'
                 })
-
+            
             .pc-form-grid-col-30
                 +form-field__dropdown({
                     label: 'Atomicity:',
@@ -149,6 +152,3 @@ panel-collapsible(opened=`::true` ng-form=form)
                     tip: 'Invalidation flag for near cache entries in transaction<br/>\
                           If set then values will be invalidated (nullified) upon commit in near cache'
                 })
-
-        .pca-form-column-6
-            +preview-model(model, 'cacheGeneral')

@@ -16,7 +16,7 @@ import com.mongodb.client.MongoCollection;
 
 import de.bwaldvogel.mongo.MongoServer;
 import de.bwaldvogel.mongo.backend.ignite.IgniteBackend;
-import de.bwaldvogel.mongo.backend.memory.MemoryBackend;
+
 
 public class SimpleTest {
 
@@ -26,10 +26,10 @@ public class SimpleTest {
 
     @Before
     public void setUp() {
-        //server = new MongoServer(IgniteBackend.inMemory());
+        server = new MongoServer(IgniteBackend.inMemory());
 
         // bind on a random local port
-        //InetSocketAddress serverAddress = server.bind();
+        InetSocketAddress serverAddress = server.bind();
 
         client = new MongoClient("127.0.0.1:27018");
         

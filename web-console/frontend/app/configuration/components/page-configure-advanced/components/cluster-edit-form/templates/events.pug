@@ -29,20 +29,7 @@ panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
         | Grid events are used for notification about what happens within the grid.
         | #[a.link-success(href="https://apacheignite.readme.io/docs/events" target="_blank") More info]
     panel-content.pca-form-row(ng-if=`ui.isPanelLoaded('${form}')`)
-        .pca-form-column-6.pc-form-grid-row
-            .pc-form-grid-col-60(ng-if='$ctrl.available(["1.0.0", "2.0.0"])')
-                +form-field__dropdown({
-                    label: 'Event storage:',
-                    model: modelEventStorageKind,
-                    name: '"eventStorageKind"',
-                    placeholder: 'Disabled',
-                    options: '$ctrl.eventStorage',
-                    tip: 'Regulate how grid store events locally on node\
-                        <ul>\
-                            <li>Memory - All events are kept in the FIFO queue in-memory</li>\
-                            <li>Custom - Custom implementation of event storage SPI</li>\
-                        </ul>'
-                })
+        .pca-form-column-6.pc-form-grid-row            
             .pc-form-grid-col-60(ng-if='$ctrl.available("2.0.0")')
                 +form-field__dropdown({
                     label: 'Event storage:',

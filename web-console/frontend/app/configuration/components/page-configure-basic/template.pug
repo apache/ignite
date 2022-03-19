@@ -89,29 +89,7 @@ form(novalidate name=form)
 
     h2.pcb-section-header.pcb-inner-padding(style='margin-top:30px') Step 2. Caches Configuration
 
-    .pcb-form-grid-row.pc-form-grid-row
-        .pc-form-grid-col-60(
-            ng-if=`
-                $ctrl.defaultMemoryPolicy &&
-                $ctrl.IgniteVersion.available(['2.0.0', '2.3.0']) &&
-                $ctrl.memorySizeInputVisible$|async:this
-            `
-        )
-            form-field-size(
-                ng-model='$ctrl.defaultMemoryPolicy.maxSize'
-                ng-model-options='{allowInvalid: true}'
-                id='memory'
-                name='memory'
-                label='Total Off-heap Size:'
-                size-type='bytes'
-                size-scale-label='mb'
-                placeholder='{{ ::$ctrl.Clusters.memoryPolicy.maxSize.default }}'
-                min='{{ ::$ctrl.Clusters.memoryPolicy.maxSize.min($ctrl.defaultMemoryPolicy) }}'
-                tip='“default” cluster memory policy off-heap max memory size. Leave empty to use 80% of physical memory available on current machine. Should be at least 10Mb.'
-                on-scale-change='scale = $event'
-            )
-                +form-field__error({ error: 'min', message: 'Maximum size should be equal to or more than initial size ({{ $ctrl.Clusters.memoryPolicy.maxSize.min($ctrl.defaultMemoryPolicy) / scale.value}} {{scale.label}}).' })
-
+    .pcb-form-grid-row.pc-form-grid-row        
         .pc-form-grid-col-60(ng-if=`$ctrl.IgniteVersion.available('2.3.0')`)
             form-field-size(
                 ng-model=`${model}.dataStorageConfiguration.defaultDataRegionConfiguration.maxSize`
@@ -190,24 +168,5 @@ form(novalidate name=form)
         span.message {{ $ctrl.$scope.message }} 
         
         .pc-form-actions-panel__right-after        
-       
-        button.btn-ignite.btn-ignite--link-success(
-        type='button'
-           ng-click='$ctrl.confirmAndRestart()'
-           ng-show='$ctrl.$scope.status!="started"'
-        ) 
-           | Start Cluster
-  
-        button.btn-ignite.btn-ignite--link-success(
-            type='button'
-            ng-click='$ctrl.confirmAndStop()'
-            ng-show='$ctrl.$scope.status=="started"'
-        ) 
-           | Stop Cluster
 
-        button.btn-ignite.btn-ignite--link-success(
-            type='button'
-            ng-click='$ctrl.confirmAndReset()'
-        )
-            | Cancel
         pc-split-button(actions=`::$ctrl.formActionsMenu`)

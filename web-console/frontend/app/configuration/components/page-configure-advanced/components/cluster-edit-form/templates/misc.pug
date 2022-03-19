@@ -211,12 +211,6 @@ panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
                     name: '"autoActivationEnabled"',
                     tip: 'Cluster is enabled to activate automatically when all nodes from the BaselineTopology join the cluster'
                 })
-            .pc-form-grid-col-60(ng-if='$ctrl.available(["1.0.0", "2.1.0"])')
-                +form-field__checkbox({
-                    label: 'Late affinity assignment',
-                    model: model + '.lateAffinityAssignment',
-                    name: '"lateAffinityAssignment"',
-                    tip: 'With late affinity assignment mode if primary node was changed for some partition this nodes becomes primary only when rebalancing for all assigned primary partitions is finished'
-                })
+            
         .pca-form-column-6
             +preview-xml-java(model, 'clusterMisc', 'caches')

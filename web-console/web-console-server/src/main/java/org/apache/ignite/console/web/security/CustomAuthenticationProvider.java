@@ -135,4 +135,14 @@ public class CustomAuthenticationProvider extends DaoAuthenticationProvider {
 
         return super.authenticate(authentication);
     }
+    
+    /**
+     * 判断只有传入UserAuthenticationToken的时候才使用这个Provider
+     * supports会在AuthenticationManager层被调用
+     * @param authentication
+     * @return
+     */
+    public boolean supports(Class<?> authentication) {
+        return UsernamePasswordAuthenticationToken.class.isAssignableFrom(authentication);
+    }
 }

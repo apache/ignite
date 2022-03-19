@@ -14,7 +14,7 @@ public class DBInfoDto extends AbstractDto {
 	private UUID accId; // 用户ID	
 	private String driverCls;
 	private String jdbcUrl;	
-	private String dbName; // 数据库名称
+	private String jndiName; // 数据库唯一标识名称
 	private String schemaName; // 默认的模式名称
 	private String userName;
 	private String password;

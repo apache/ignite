@@ -421,7 +421,8 @@ panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
                                 itemName: 'property',
                                 itemsName: 'properties'
                             })
-
+            
+        .pca-form-column-6.pc-form-grid-row
             - form = 'store'
             .pc-form-grid-col-60
                 +form-field__number({
@@ -483,9 +484,9 @@ panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
                 ui-validate-watch-collection=`"[${storeFactoryKind}, ${model}.writeThrough, ${model}.readThrough]"`
                 )
                     +form-field__error({ error: 'storeEnabledReadOrWriteOn', message: 'Read or write through should be turned on when store kind is set' })
-
+            
             -var enabled = `${model}.writeBehindEnabled`
-
+            
             .pc-form-grid-col-60.pc-form-group__text-title
                 +form-field__checkbox({
                     label: 'Write-behind',
@@ -544,7 +545,7 @@ panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
                         min: '1',
                         tip: 'Number of threads that will perform cache flushing'
                     })
-
+            
                 //- Since ignite 2.0
                 .pc-form-grid-col-60(ng-if='$ctrl.available("2.0.0")')
                     +form-field__checkbox({
@@ -554,6 +555,4 @@ panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
                         disabled: `!${enabled}`,
                         tip: 'Write coalescing flag for write-behind cache store'
                     })
-
-        .pca-form-column-6
-            +preview-model(model, 'cacheStore', 'domains')
+            

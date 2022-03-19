@@ -24,17 +24,7 @@ panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
     panel-description Time settings for CLOCK write ordering mode.
     panel-content.pca-form-row(ng-if=`ui.isPanelLoaded('${form}')`)
         .pca-form-column-6.pc-form-grid-row
-            //- Removed in ignite 2.0
-            .pc-form-grid-col-30(ng-if-start='$ctrl.available(["1.0.0", "2.0.0"])')
-                +form-field__number({
-                    label: 'Samples size:',
-                    model: `${model}.clockSyncSamples`,
-                    name: '"clockSyncSamples"',
-                    placeholder: '8',
-                    min: '0',
-                    tip: 'Number of samples used to synchronize clocks between different nodes<br/>\
-                          Clock synchronization is used for cache version assignment in CLOCK order mode'
-                })
+            
             .pc-form-grid-col-30(ng-if-end)
                 +form-field__number({
                     label: 'Frequency:',

@@ -182,21 +182,35 @@ public class IgniteCollection extends AbstractMongoCollection<Object> {
 	}
     
     public static T2<String,String> typeNameAndKeyField(IgniteCache<?,?> dataMap,Document obj) {
-    	String typeName = (String)obj.get("_class");    	
+    	String typeName = (String)obj.get("_class");
+    	String shortName = typeName;
+    	if(!StringUtil.isNullOrEmpty(typeName)) {
+    		int pos = typeName.lastIndexOf('.');
+    		shortName = pos>0? typeName.substring(pos+1): typeName;
+    	}    	
+    	
     	String keyField = "id";
-    	CacheConfiguration cfg = dataMap.getConfiguration(CacheConfiguration.class);
+    	CacheConfiguration<?,?> cfg = dataMap.getConfiguration(CacheConfiguration.class);
     	if(!cfg.getQueryEntities().isEmpty()) {
     		Iterator<QueryEntity> qeit = cfg.getQueryEntities().iterator();
-    		QueryEntity entity = qeit.next();   		
-    		keyField = entity.getKeyFieldName();
-    		if(StringUtil.isNullOrEmpty(typeName)) {
-        		typeName = entity.getValueType();
-        	}	
+    		while(qeit.hasNext()) {
+	    		QueryEntity entity = qeit.next();   		
+	    		keyField = entity.getKeyFieldName();
+	    		if(StringUtil.isNullOrEmpty(typeName)) {
+	        		typeName = entity.getValueType();
+	        		break;
+	        	}
+	    		else if(typeName.equalsIgnoreCase(entity.getValueType()) || shortName.equalsIgnoreCase(entity.getTableName())){
+	    			break;
+	    		}
+	    		else {
+	    			typeName = entity.getValueType();
+	    		}
+    		}
     	}
     	if(StringUtil.isNullOrEmpty(typeName)) {
     		typeName = tableOfCache(dataMap.getName());
-    	}	
-    	
+    	}    	
     	return new T2(typeName,keyField);
     }
     

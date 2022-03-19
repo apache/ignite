@@ -24,10 +24,12 @@ import org.apache.ignite.IgniteIllegalStateException;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
+import org.apache.ignite.cache.CacheServerNotFoundException;
+import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.TextQuery;
-
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
@@ -47,6 +49,7 @@ import org.elasticsearch.relay.postprocess.IPostProcessor;
 import org.elasticsearch.relay.util.ESConstants;
 import org.elasticsearch.relay.util.ESUtil;
 import org.elasticsearch.relay.util.HttpUtil;
+import org.elasticsearch.relay.util.SqlTemplateParse;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
@@ -105,124 +108,67 @@ public class ESQueryKernelIgniteHandler extends ESQueryHandler {
 	protected String cacheName(Ignite ignite,String... path){		
 		String schema = path[0];
 		String table = path[1];		
-		if(table.length()==0){
+		if(table.length()==0){ // 只有一个路径片，则是cacheName
 			return schema;
 		}				
-		else if(ignite.cacheNames().contains(schema)){
-			return schema;
-		}
-		else if(ignite.cacheNames().contains(schema.toUpperCase())){
-			return schema.toUpperCase();
+		for(String name: ignite.cacheNames()) {
+			if(name.equalsIgnoreCase(schema)) {
+				return name;
+			}
 		}
 		String cacheName = "SQL_"+schema+"_"+table.toUpperCase();		
 		return cacheName;
 	}
 	
-	protected BinaryObject jsonToBinaryObject(Ignite ignite, String typeName,ObjectNode obj){	
-		BinaryObjectBuilder bb = ignite.binary().builder(typeName);
-		Iterator<Map.Entry<String,JsonNode>> ents = obj.fields();
-	    while(ents.hasNext()){	    
-	    	Map.Entry<String,JsonNode> ent = ents.next();
-	    	String $key =  ent.getKey();
-	    	JsonNode $value = ent.getValue();
-			try {
-			
-				if($value.isContainerNode()){
-					Object bValue = jsonToObject($value,0);
-					bValue = ignite.binary().toBinary(bValue);
-					bb.setField($key, bValue);
+	/**
+	 * 返回cache的typeName，如果不存在，返回defaultType
+	 * @param path
+	 * @return
+	 */
+	protected String typeName(IgniteCache<?,?> cache,String defaultType){		
+		CacheConfiguration<?,?> config = cache.getConfiguration(CacheConfiguration.class);
+		String table = defaultType;	
+		
+		if(config.getQueryEntities().size()==1){
+			return config.getQueryEntities().iterator().next().getValueType();
+		}				
+		if(config.getQueryEntities().size()==0){
+			return table;
+		}
+		else {			
+			for(QueryEntity ent: config.getQueryEntities()) {
+				if(ent.getTableName().equals(defaultType)) {
+					return ent.getValueType();
 				}
-				else if($value.isMissingNode() || $value.isNull()){
-					bb.setField($key, null);
-				}
-				else if($value.isPojo()){
-					Object bValue = ignite.binary().toBinary(((POJONode)$value).getPojo());
-					bb.setField($key, bValue);
-				}
-				else {					
-					Object bValue = jsonToObject($value,0);
-					bb.setField($key, bValue);
-				}
-				
-			} catch (Exception e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}	    	
-	    }
-	    return bb.build();
+			}
+		}		
+		return table;
 	}
 	
-	protected Object jsonToObject(JsonNode json,int depth){
-		Object ret = null;
-		depth++;
-		if(json.isObject()) {
-			Map<String,Object> obj = new HashMap<>(json.size());
-			Iterator<Map.Entry<String,JsonNode>> ents = json.fields();
-			
-		    while(ents.hasNext()){	    
-		    	Map.Entry<String,JsonNode> ent = ents.next();
-		    	String $key =  ent.getKey();
-		    	JsonNode $value = ent.getValue();
-		    	if(depth<=16) {
-		    		Object bValue = jsonToObject($value,depth);
-		    		obj.put($key, bValue); 	
-		    	}
-		    	else {
-		    		obj.put($key, $value);
-		    	}
-		    }
-		   
-		    ret = obj;
-		}
-		else if(json.isArray()) {
-			ArrayNode array = (ArrayNode) json;
-			List<Object> obj = new ArrayList<>(json.size());
-			for(int i=0;i<array.size();i++) {
-				obj.add(jsonToObject(array.get(i),depth));
-			}
-			ret = array;
-		}
-		else if(json.isPojo()) {
-			ret = ((POJONode)json).getPojo();
-		}
-		else if(json.isMissingNode() || json.isNull()) {
-			
-		}
-		else if(json.isNumber()) {
-			NumericNode number = (NumericNode) json;
-			ret = number.numberValue();
-		}
-		else if(json.isTextual()) {
-			ret = json.asText();
-		}
-		else if(json.isBinary()) {
-			ret = ((BinaryNode)json).binaryValue();
-		}
-		else if(json.isBoolean()) {
-			ret = json.asBoolean();
-		}
-		else {
-			ret = json;
-		}
-		depth--;		
-		return ret;
-	}
 	
 	@Override
 	protected Object sendEsRequest(ESUpdate query, int index) throws Exception {
 		Ignite ignite = ignite(index);
 		String[] path = query.getQueryPath();
 		String cacheName = cacheName(ignite,path);
+		IgniteCache<?,?> cache0 = ignite.cache(cacheName);
+		if(cache0==null) {
+			throw new CacheServerNotFoundException(cacheName);
+		}
+		
+		String typeName = typeName(cache0,path[1]);
 		String key = path[2];
+		
 		boolean rv = false;
 		
 		ObjectNode jsonResq = new ObjectNode(ESRelay.jsonNodeFactory);
 		
+		IgniteCache<String, BinaryObject> cache = cache0.withKeepBinary();	
+		
 		//将json转为binaryObject
-		if(query.getOp().equals(ESConstants.INSERT_FRAGMENT)){
+		if(query.getOp().equals(ESConstants.INSERT_FRAGMENT)){			
 			
-			IgniteCache<String, BinaryObject> cache = ignite.cache(cacheName).withKeepBinary();
-			BinaryObject bobj = jsonToBinaryObject(ignite,query.getQueryPath()[1],query.getQuery());
+			BinaryObject bobj = ESUtil.jsonToBinaryObject(ignite,typeName,query.getQuery());
 			
 			rv = cache.putIfAbsent(key, bobj);
 			if(rv){
@@ -237,8 +183,8 @@ public class ESQueryKernelIgniteHandler extends ESQueryHandler {
 			return jsonResq;
 		}
 		else if(query.getOp().equals(ESConstants.UPDATE_FRAGMENT)){
-			IgniteCache<String, BinaryObject> cache = ignite.cache(cacheName).withKeepBinary();
-			BinaryObject bobj = jsonToBinaryObject(ignite,query.getQueryPath()[1],query.getQuery());
+			
+			BinaryObject bobj = ESUtil.jsonToBinaryObject(ignite,typeName,query.getQuery());
 			
 			cache.put(key, bobj);
 			
@@ -249,8 +195,7 @@ public class ESQueryKernelIgniteHandler extends ESQueryHandler {
 			return jsonResq;
 			
 		}
-		else if(query.getOp().equals(ESConstants.DELETE_FRAGMENT)){
-			IgniteCache<String, BinaryObject> cache = ignite(index).cache(cacheName).withKeepBinary();	
+		else if(query.getOp().equals(ESConstants.DELETE_FRAGMENT)){			
 			
 			cache.remove(key);
 			
@@ -265,8 +210,10 @@ public class ESQueryKernelIgniteHandler extends ESQueryHandler {
 			ArrayNode list = query.getQuery().withArray(ESConstants.BULK_FRAGMENT);
 			
 			// TODO @byron
-			for(Object o: list) {
-				this.fLogger.fine(o.toString());
+			for(JsonNode o: list) {
+				BinaryObject bobj = ESUtil.jsonToBinaryObject(ignite,typeName,(ObjectNode)o);
+				String rowKey = o.get(key).asText();
+				cache.put(rowKey, bobj);
 			}
 			jsonResq.put("_index", path[0]);
 			jsonResq.put("_type", path[1]);			
@@ -284,11 +231,20 @@ public class ESQueryKernelIgniteHandler extends ESQueryHandler {
 	protected Object sendEsRequest(ESQuery query, int index) throws Exception {			
 		Ignite ignite = ignite(index);		
 		String[] path = query.getQueryPath();
-		String cacheName = cacheName(ignite,path);
-		IgniteCache<Object, BinaryObject> cache = ignite.cache(cacheName).withKeepBinary();	
+		String cacheName = cacheName(ignite,path);		
+		IgniteCache<?,?> cache0 = ignite.cache(cacheName);
+		if(cache0==null) {
+			throw new CacheServerNotFoundException(cacheName);
+		}
 		
-		String keyword = query.getParams().get("q");
-		if(keyword==null){
+		String typeName = typeName(cache0,path[1]);			
+		IgniteCache<?, BinaryObject> cache = cache0.withKeepBinary();	
+		
+		
+		
+		String[] keywords = query.getParams().get("q");
+		String keyword = "";
+		if(keywords==null){
 			ObjectNode queryObj = query.getQuery().with("query");
 			if(queryObj.has("multi_match")){
 				ObjectNode multi_match = queryObj.with("multi_match");
@@ -300,21 +256,23 @@ public class ESQueryKernelIgniteHandler extends ESQueryHandler {
 				}
 			}
 		}
-		TextQuery<Object, BinaryObject> qry = new TextQuery<>(path[1], keyword);
+		else {
+			keyword = String.join(" ", keywords);
+		}
+		TextQuery<Object, BinaryObject> qry = new TextQuery<>(typeName, keyword);
 		
-		String from = query.getParams().get("from");
-		String pageSize = query.getParams().get("size");
-		if(pageSize!=null){
-			qry.setPageSize(Integer.valueOf(pageSize)+Integer.valueOf(from));
+		for(Map.Entry<String, String[]> param: query.getParams().entrySet()) {
+			if(param.getKey().equals("pageSize")) {
+				String[] pageSize = query.getParams().get("pageSize");
+				if(pageSize!=null){
+					qry.setPageSize(Integer.valueOf(pageSize[0]));
+				}
+			}			
 		}
 		
         QueryCursor<Cache.Entry<Object, BinaryObject>> qryCur = cache.query(qry);
         
         List<Cache.Entry<Object, BinaryObject>> list = qryCur.getAll();
-
-        //for (Cache.Entry<String, BinaryObject> e : result)
-        //    System.out.println(">>>     " + e.getValue().deserialize());
-		
 		
 		CacheQueryResult res = new CacheQueryResult();
 		res.setItems(list);
@@ -330,58 +288,58 @@ public class ESQueryKernelIgniteHandler extends ESQueryHandler {
 	protected Object sendEsRequest(ESViewQuery query, int index) throws Exception {
 		Ignite ignite = ignite(index);	
 		String[] path = query.getQueryPath();
-		String cacheName = ignite.cacheNames().iterator().next();
-		IgniteCache<Object, BinaryObject> cache = ignite.cache(cacheName).withKeepBinary();	
 		
-		SqlFieldsQuery qry = new SqlFieldsQuery(query.getSQL());
-		String from = query.getParams().get("from");
-		String pageSize = query.getParams().get("size");
-		if(pageSize!=null){
-			qry.setPageSize(Integer.valueOf(pageSize));
-		}
-		qry.setSchema(qry.getSchema());
+		IgniteEx igniteEx = (IgniteEx) ignite;
+		
+		
+		SqlFieldsQuery qry = new SqlFieldsQuery(query.buildSQL());
+		qry.setSchema(query.getSchema());
+		qry.setPageSize(query.getPageSize());
 		qry.setCollocated(true);
 		
-		
-        QueryCursor<List<?>> qryCur = cache.query(qry);
+        QueryCursor<List<?>> qryCur = igniteEx.context().query().querySqlFields(qry,true);
 
-        List<List<?>>  list = qryCur.getAll();
+        List<List<?>>  list = qryCur.getAll();        
+        List<GridQueryFieldMetadata> fieldsMeta = ((QueryCursorImpl)qryCur).fieldsMeta();
         
-        CacheQueryResult res = new CacheQueryResult();
-		res.setItems(list);
-		
-		List<GridQueryFieldMetadata> fieldsMeta = ((QueryCursorImpl)qryCur).fieldsMeta();
-        res.setFieldsMetadata(fieldsMeta);
-        
-        if(query.getNamedSQL()!=null && !query.getNamedSQL().isEmpty()) {
-        	// 并行执行
-        	int colIndex = 0;
-        	List<SubQueryCallable> tasks = new LinkedList<>();
-        	for(GridQueryFieldMetadata meta: fieldsMeta) {
-        		String namedSql = query.getNamedSQL().get(meta.fieldName());
-        		if(namedSql!=null && namedSql.length()>1) {
-        			SqlFieldsQuery subQry = new SqlFieldsQuery(namedSql);
-        			for(List<?> row: list) {
-        				subQry.setArgs(row.get(colIndex));
-        				QueryCursor<List<?>> subQryCur = cache.query(subQry);        				
-        				SubQueryCallable  task = new SubQueryCallable(subQryCur,row,colIndex);
-        				tasks.add(task);        				
-        			}
-        		}
-        		colIndex++;
-        	}
-        	
-        	List<Future<ObjectNode>> results = ctx.pools().getExecutorService().invokeAll(tasks);
-        	for(Future<ObjectNode> f: results) {
-        		f.get();
-        	}        	
+        if(query.getResponseFormat()==ResponseFormat.FIELDSMETA) {
+        	CacheQueryResult res = new CacheQueryResult();        	
+            res.setFieldsMetadata(fieldsMeta);
+        	res.setItems(list);
+        	return res;
         }
+		
+        List<ObjectNode> dataset = new ArrayList<>(list.size());
+        
+        List<SubSqlQueryCallable> tasks = new LinkedList<>();
+        for(List<?> row: list) {
+        	ObjectNode node = ESUtil.getObjectNode(row, fieldsMeta);
+			dataset.add(node); 
+			
+	        if(query.getNamedSQL()!=null && !query.getNamedSQL().isEmpty()) {
+	        	// 并行执行	        	
+	        	for(String fieldName: query.getNamedSQL().keySet()) {
+	        		String namedSql = query.getNamedSQL().get(fieldName);
+	        		// 注释掉，则不返回
+	        		if(!namedSql.startsWith("#") && namedSql.length()>1) { 	
+	        			
+	        			SubSqlQueryCallable  task = new SubSqlQueryCallable(igniteEx.context(),namedSql,node,fieldName);
+	        			tasks.add(task); 
+	        		}	        		
+	        	} 	
+	        }
+        }
+        
+        List<Future<ArrayNode>> results = ctx.pools().getExecutorService().invokeAll(tasks);
+    	for(Future<ArrayNode> f: results) {
+    		f.get();
+    	}   
           
-        return res;
+        return dataset;
 	}
 	
 	
-	protected int _addQueryResultResponses(List<ObjectNode> hits,CacheQueryResult es1Response, int limit) throws Exception {
+	protected int _addQueryResultResponses(List<ObjectNode> hits,Object es1Response, int limit) throws Exception {
 		
 		if(es1Response instanceof CacheQueryResult) {
 			CacheQueryResult result = (CacheQueryResult) es1Response;			
@@ -389,8 +347,7 @@ public class ESQueryKernelIgniteHandler extends ESQueryHandler {
 			// mix results 50:50 as far as possible
 			Iterator<List<?>> es1Hits = (Iterator)result.getItems().iterator();
 			
-			List<GridQueryFieldMetadata> fieldsMeta = (List)result.getFieldsMetadata();
-			
+			List<GridQueryFieldMetadata> fieldsMeta = (List)result.getFieldsMetadata();			
 			
 			while (es1Hits.hasNext() && hits.size() < limit) {
 				ObjectNode node = ESUtil.getObjectNode(es1Hits.next(), fieldsMeta);
@@ -399,6 +356,20 @@ public class ESQueryKernelIgniteHandler extends ESQueryHandler {
 				}				
 			}
 			return result.getItems().size()>0? 1: 0;
+		}
+		if(es1Response instanceof List) {
+			List<ObjectNode> result = (List) es1Response;			
+
+			// mix results 50:50 as far as possible
+			Iterator<ObjectNode> es1Hits = result.iterator();
+			
+			while (es1Hits.hasNext() && hits.size() < limit) {
+				ObjectNode node = es1Hits.next();
+				if (node!=null) {					
+					addHit(hits, node);
+				}				
+			}
+			return result.size()>0? 1: 0;
 		}
 		return 0;
 		
@@ -410,35 +381,41 @@ public class ESQueryKernelIgniteHandler extends ESQueryHandler {
 		if(es1Response instanceof CacheQueryResult || es2Response instanceof CacheQueryResult) {
 			CacheQueryResult result = (CacheQueryResult) es1Response;
 			CacheQueryResult result2 = (CacheQueryResult) es2Response;			
-			if(format==ResponseFormat.FIELDSMETA) {
-				CacheQueryResult mergedResult = null;
-				if(result!=null) {
-					mergedResult = result;
-					mergedResult.setFieldsMetadata(convertMetadata((Collection)result.getFieldsMetadata()));
-				}
-				if(result2!=null) {
-					if(mergedResult==null) {
-						mergedResult = result2;
-					}
-					else {
-						mergedResult.setFieldsMetadata(convertMetadata((Collection)result.getFieldsMetadata()));
-						mergedResult.getItems().addAll((List)result2.getItems());
-					}
-				}
-				
-				GridRestResponse resultResponse = new GridRestResponse(mergedResult);   
-					
-				String esResponse = ESRelay.objectMapper.writeValueAsString(resultResponse);
-				return esResponse;
+			
+			CacheQueryResult mergedResult = null;
+			if(result!=null) {
+				mergedResult = result;
+				mergedResult.setFieldsMetadata(convertMetadata((Collection)result.getFieldsMetadata()));
 			}
+			if(result2!=null) {
+				if(mergedResult==null) {
+					mergedResult = result2;
+					mergedResult.setFieldsMetadata(convertMetadata((Collection)result2.getFieldsMetadata()));
+				}
+				else {					
+					mergedResult.getItems().addAll((Collection)result2.getItems());
+				}
+			}
+			
+			GridRestResponse resultResponse = new GridRestResponse(mergedResult);   
+				
+			String esResponse = ESRelay.objectMapper.writeValueAsString(resultResponse);
+			return esResponse;
+			
+					
+		}
+		else if(es1Response instanceof List || es2Response instanceof List) {
+			List<ObjectNode> result = (List) es1Response;
+			List<ObjectNode> result2 = (List) es2Response;			
+			
 			
 			List<ObjectNode> hits = new LinkedList<>();
 			int shard = _addQueryResultResponses(hits,result,limit);
 			shard+=_addQueryResultResponses(hits,result2,limit);
 			
 			int total = 0;
-			if(result!=null) total += result.getItems().size();
-			if(result2!=null) total += result2.getItems().size();
+			if(result!=null) total += result.size();
+			if(result2!=null) total += result2.size();
 			// add up data
 			ESResponse mergedResponse = new ESResponse(hits);
 			mergedResponse.setShards(shard);
@@ -451,7 +428,7 @@ public class ESQueryKernelIgniteHandler extends ESQueryHandler {
 				return mergedResponse.toJSON().toPrettyString();	
 			}
 					
-		}		
+		}
 		
 		if(es2Response==null && es1Response==null){
 			throw new Exception("ES 1.x error: " + "both null result");
@@ -475,26 +452,47 @@ public class ESQueryKernelIgniteHandler extends ESQueryHandler {
         return res;
     }
     
-    class SubQueryCallable implements Callable<ObjectNode>{
-    	final int column;
-    	final List<?> row;
-    	final QueryCursor<List<?>> subQryCur;
-    	public SubQueryCallable(QueryCursor<List<?>> subQryCur,List<?> row,int column) {
-    		this.subQryCur = subQryCur;
+   
+    
+    class SubSqlQueryCallable implements Callable<ArrayNode>{
+    	final String column;
+    	final ObjectNode row;
+    	final String sql;
+    	final GridKernalContext ctx;
+    	public SubSqlQueryCallable(GridKernalContext ctx,String sql,ObjectNode row,String column) {
+    		this.sql = sql;
     		this.row = row;
     		this.column = column;
+    		this.ctx = ctx;
     	}
     	
 		@Override
-		public ObjectNode call() throws Exception {
-			List<List<?>> subList = subQryCur.getAll();
-			if(subList.size()>0) {
-			  List<?> rowOne = subList.get(0);
-			  List<GridQueryFieldMetadata> fieldsMeta = ((QueryCursorImpl)subQryCur).fieldsMeta();
-			  ObjectNode node = ESUtil.getObjectNode(rowOne, fieldsMeta);
-			  ((List)row).set(column, node);
-			  return node;
+		public ArrayNode call() throws Exception {
+			SqlTemplateParse parser = new SqlTemplateParse(sql);
+			String sqlStr = sql;
+			try {
+				Object value = parser.getValue(row);
+				if(value!=null) {
+					sqlStr = value.toString();
+				}
+				SqlFieldsQuery subQry = new SqlFieldsQuery(sqlStr);
+				QueryCursor<List<?>> subQryCur = ctx.query().querySqlFields(subQry,true);  
+				
+				List<List<?>> subList = subQryCur.getAll();
+				ArrayNode list = null;
+				synchronized(row){
+					list = row.withArray(column);
+				}
+				for(List<?> rowOne: subList) {				 
+				  List<GridQueryFieldMetadata> fieldsMeta = ((QueryCursorImpl)subQryCur).fieldsMeta();
+				  ObjectNode node = ESUtil.getObjectNode(rowOne, fieldsMeta);
+				  list.add(node);
+				}				
+				return list;
 			}
+			catch(Exception e) {
+				fLogger.warning(e.getMessage());
+			}			
 			return null;
 		}
     	

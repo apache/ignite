@@ -27,8 +27,18 @@
         <property name="SQL" ><value>select * from sys.tables</value></property>   
         <property name="namedSQL" >     
             <map>
-                <entry key="TABLE_NAME" value="select * from sys.table_columns where TABLE_NAME=? " />
-                <entry key="CACHE_NAME" value="select * from sys.caches where CACHE_NAME=? " />
+                <entry key="TABLE_INFO" value="select * from sys.table_columns where TABLE_NAME=${TABLE_NAME} " />
+                <entry key="CACHE_INFO" value="select * from sys.caches where CACHE_NAME=${CACHE_NAME} " />
+            </map>
+        </property> 
+    </bean>
+    
+    <bean id="users" class="org.elasticsearch.relay.model.ESViewQuery">  
+        <property name="SQL" ><value>select * from usersInfo</value></property>   
+        <property name="namedSQL" >     
+            <map>
+                <entry key="roles" value="select * from roles where name in ${roles} " />
+                <entry key="rolePrivileges" value="select * from rolePrivileges where name in ${roles} " />
             </map>
         </property> 
     </bean>

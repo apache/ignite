@@ -61,7 +61,7 @@ public class MongoServerPluginProvider implements PluginProvider {
 	
     /** {@inheritDoc} */
     @Override public String name() {
-        return "AbstractSecurityPluginProvider";
+        return "MongoServerPluginProvider";
     }
 
     /** {@inheritDoc} */

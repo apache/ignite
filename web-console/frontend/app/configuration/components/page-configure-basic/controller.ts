@@ -150,8 +150,6 @@ export default class PageConfigureBasicController {
                 if (get(v, 'id') !== get(this.clonedCluster, 'id')) this.clonedCluster = cloneDeep(v);
                 this.defaultMemoryPolicy = this.Clusters.getDefaultClusterMemoryPolicy(this.clonedCluster);   
                 
-                this.callService('');
-                
                 this.clonedCluster.demo = this.AgentManager.isDemoMode();
                 
                 this.originalCluster.status =  this.clonedCluster.status;    
@@ -213,57 +211,6 @@ export default class PageConfigureBasicController {
     reset() {
         this.clonedCluster = cloneDeep(this.originalCluster);
         this.ConfigureState.dispatchAction({type: 'RESET_EDIT_CHANGES'});
-    }
-
-    restart() {
-        this.ConfigurationDownload.generateDownloadData(this.clonedCluster)
-        .then((data)=>{
-            var cfg = Object.assign({}, this.clonedCluster, {'blob': data});
-            this.AgentManager.startCluster(cfg).then((msg) => {  
-                if(!msg.message){
-                   this.$scope.status = msg.status;
-                   this.ConfigureState.dispatchAction({type: 'RESTART_CLUSTER'});
-                   this.clonedCluster.status = msg.status;
-                }            
-                this.$scope.message = msg.message;
- 
-            })
-        })
-       .catch((e) => {
-            this.$scope.message = ('Failed to generate project config file: '+e);           
-        });
-    }
-
-    stop() {
-        this.AgentManager.stopCluster(this.clonedCluster).then((msg) => {  
-    	    if(!msg.message){
-               this.$scope.status = msg.status;
-               this.ConfigureState.dispatchAction({type: 'RESTART_CLUSTER'});
-               this.clonedCluster.status = msg.status;
-            }            
-            this.$scope.message = msg.message;
-        });        
-    }
-    
-    callService(serviceName,args) {
-        this.AgentManager.callClusterService(this.clonedCluster,serviceName,args).then((data) => {  
-            this.$scope.status = data.status;               
-            this.clonedCluster.status = data.status;
-            if(data.result){
-                return data.result;
-            }    
-            else if(data.message){
-                this.$scope.message = data.message;
-            }  
-            return {}
-        })   
-       .catch((e) => {
-            this.$scope.message = ('Failed to callClusterService : '+serviceName+' Caused : '+e);           
-        });
-    }
-
-    isStoped() {
-        return this.$scope.status !== 'started';
     }
 
     confirmAndReset() {

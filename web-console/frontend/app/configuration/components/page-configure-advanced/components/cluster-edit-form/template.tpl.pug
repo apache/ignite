@@ -32,46 +32,29 @@ form(id='cluster' name='ui.inputForm' novalidate)
         include ./templates/connector
         include ./templates/deployment
 
-        //- Since ignite 2.3
+        // - Since ignite 2.3
         include ./templates/data-storage
 
         include ./templates/discovery
 
-        //- Since ignite 2.7
+        // - Since ignite 2.7
         include ./templates/encryption
 
         include ./templates/events
         include ./templates/failover
         include ./templates/load-balancing
         include ./templates/logger
-        include ./templates/marshaller
-
-        //- Since ignite 2.0, deprecated in ignite 2.3
-        include ./templates/memory
-
+        
         include ./templates/misc
         include ./templates/metrics
 
-        //- Since ignite 2.7
+        // - Since ignite 2.7
         include ./templates/mvcc
 
-        //- Deprecated in ignite 2.1
-        include ./templates/odbc
-
-        //- Since ignite 2.1, deprecated in ignite 2.3
-        include ./templates/persistence
-
-        //- Since ignite 2.5
+        // - Since ignite 2.5
         include ./templates/rebalance
-
-        //- Deprecated in ignite 2.3
-        include ./templates/sql-connector
-
         include ./templates/service
         include ./templates/ssl
-
-        //- Removed in ignite 2.0
-        include ./templates/swap
 
         include ./templates/thread
         include ./templates/time

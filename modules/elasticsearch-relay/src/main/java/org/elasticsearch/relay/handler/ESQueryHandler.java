@@ -61,8 +61,7 @@ public class ESQueryHandler {
 	
 	final PermissionCrawler fPermCrawler;	
 	
-	static public ScheduledExecutorService executorService = Executors.newSingleThreadScheduledExecutor();
-   
+	
 	protected final String[] fEsUrl;
 	protected final Set<String>[] fEsIndices;	
 
@@ -116,7 +115,7 @@ public class ESQueryHandler {
 		
 		if(config.getPermCrawlInterval()>= 0){
 			
-			executorService.scheduleAtFixedRate(fPermCrawler, config.getPermCrawlInterval(), config.getPermCrawlInterval(), TimeUnit.MILLISECONDS);    
+			ESRelay.scheduleExecutorService.scheduleWithFixedDelay(fPermCrawler, config.getPermCrawlInterval(), config.getPermCrawlInterval(), TimeUnit.MILLISECONDS);    
 		}
 
 		fIndexFilters = new HashMap<String, IFilter>();
@@ -343,7 +342,7 @@ public class ESQueryHandler {
 	
 
 	protected ESViewQuery getInstanceQuery(ESViewQuery query, Set<String> availIndices) throws Exception {
-		ESViewQuery esQuery = new ESViewQuery();
+		ESViewQuery esQuery = new ESViewQuery(query.getSchema(),query.getSQL());
 
 		String request = query.getSQL();
 		String[] path = query.getQueryPath();
@@ -473,7 +472,7 @@ public class ESQueryHandler {
 	
 	protected Object sendEsRequest(ESQuery query, int index) throws Exception {
 		
-		String esReqUrl = this.fEsUrl[index] + query.getQueryUrl();
+		String esReqUrl = this.fEsUrl[index] + query.buildQueryURL();
 
 		// replace spaces since they cause problems with proxies etc.
 		esReqUrl = esReqUrl.replaceAll(" ", "%20");
@@ -488,54 +487,53 @@ public class ESQueryHandler {
 			
 			es1Response = HttpUtil.sendForm(new URL(esReqUrl), "GET", requestString);
 		}
-		else if (query.getQuery() != null) { // json format
+		else if (query.getQuery() != null && query.getFormat().equals("json")) { // json format
 			String requestString = query.getQuery().toString();
 
 			if (fLogRequests) {
 				fLogger.log(Level.INFO, "sending JSON to " + esReqUrl + ": " + requestString);
 			}
 
-			es1Response = HttpUtil.sendJson(new URL(esReqUrl), "GET", requestString);
+			es1Response = HttpUtil.sendJson(new URL(esReqUrl), "POST", requestString);
 		} else {
-			es1Response = HttpUtil.getText(new URL(esReqUrl));
-
 			if (fLogRequests) {
 				fLogger.log(Level.INFO, "sending GET to " + esReqUrl);
 			}
+			
+			es1Response = HttpUtil.getText(new URL(esReqUrl));
 		}
 
 		return es1Response;
 	}
 	
 	protected Object sendEsRequest(ESViewQuery query, int index) throws Exception {
-		String esReqUrl = this.fEsUrl[index] + query.getSQL();
-
-		// replace spaces since they cause problems with proxies etc.
-		esReqUrl = esReqUrl.replaceAll(" ", "%20");
+		String esReqUrl = this.fEsUrl[index];
 
 		String es1Response = null;
-
-		if (query.getSQL() != null && !query.getFormat().equals("json")) {
-			String requestString = query.getSQL();
+		String requestString = query.buildQueryURL();
+		esReqUrl+=requestString;
+		
+		// replace spaces since they cause problems with proxies etc.
+		esReqUrl = esReqUrl.replaceAll(" ", "%20");
+		
+		if (!query.getFormat().equals("json")) {			
 			if (fLogRequests) {
-				fLogger.log(Level.INFO, "sending sql to " + esReqUrl);
+				fLogger.log(Level.INFO, "sending cmd to " + esReqUrl);
 			}
 			
 			es1Response = HttpUtil.sendForm(new URL(esReqUrl), "GET", null);
 		}
-		else if (query.getSQL() != null) {
-			String requestString = query.getSQL();
+		else if (query.getSQL() != null && query.getFormat().equals("json")) {			
 			if (fLogRequests) {
 				fLogger.log(Level.INFO, "sending sql to " + esReqUrl);
-			}
-
-			es1Response = HttpUtil.sendJson(new URL(esReqUrl), "GET", null);
-		} else {
-			es1Response = HttpUtil.getText(new URL(esReqUrl));
+			}			
+			es1Response = HttpUtil.sendJson(new URL(esReqUrl), "POST", query.getSQL());
+		} else {			
 
 			if (fLogRequests) {
 				fLogger.log(Level.INFO, "sending GET to " + esReqUrl);
 			}
+			es1Response = HttpUtil.getText(new URL(esReqUrl));
 		}
 
 		return es1Response;
@@ -867,9 +865,9 @@ public class ESQueryHandler {
 	protected int getLimit(ESQuery query) {
 		int limit = Integer.MAX_VALUE;
 
-		String limitParam = query.getParams().get(ESConstants.MAX_ELEM_PARAM);
+		String[] limitParam = query.getParams().get(ESConstants.MAX_ELEM_PARAM);
 		if (limitParam != null) {
-			limit = Integer.parseInt(limitParam);
+			limit = Integer.parseInt(limitParam[0]);
 		}
 
 		ObjectNode queryObj = query.getQuery();
@@ -893,9 +891,9 @@ public class ESQueryHandler {
 	protected int getLimit(ESViewQuery query) {
 		int limit = Integer.MAX_VALUE;
 
-		String limitParam = query.getParams().get(ESConstants.MAX_ELEM_PARAM);
+		String[] limitParam = query.getParams().get(ESConstants.MAX_ELEM_PARAM);
 		if (limitParam != null) {
-			limit = Integer.parseInt(limitParam);
+			limit = Integer.parseInt(limitParam[0]);
 		}
 
 		return limit;

@@ -57,7 +57,14 @@ export default class PageConfigureBasicController {
         private IgniteFormUtils: ReturnType<typeof FormUtils>,
         private AgentManager: AgentManager,      
         private $scope: ng.IScope
-    ) {}
+    ) {
+        this.formActionsMenu = []
+        this.formActionsMenu.push({
+            text: 'Ctl Cluster',
+            click: () => this.callService('serviceList'),
+            icon: 'checkmark'
+        })
+    }
 
     
     
@@ -122,23 +129,11 @@ export default class PageConfigureBasicController {
                 
                 this.clonedCluster.demo = this.AgentManager.isDemoMode();
                 
-                this.originalCluster.status =  this.clonedCluster.status;        
+                this.originalCluster.status =  this.clonedCluster.status;
+                
                 
             }))
-        ).subscribe();
-
-        this.formActionsMenu = [
-            {
-                text: 'Save',
-                click: () => this.save(),
-                icon: 'checkmark'
-            },
-            {
-                text: 'Save and Download',
-                click: () => this.save(true),
-                icon: 'download'
-            }
-        ];
+        ).subscribe();  
 
         this.cachesColDefs = [
             {name: 'Name:', cellClass: 'pc-form-grid-col-10'},
@@ -154,7 +149,8 @@ export default class PageConfigureBasicController {
             {name: 'Backups:', cellClass: 'pc-form-grid-col-10', tip: `
                 Number of nodes used to back up single partition for partitioned cache
             `}
-        ];           
+        ]; 
+        
     }
 
     addCache() {
@@ -182,7 +178,34 @@ export default class PageConfigureBasicController {
         this.clonedCluster = cloneDeep(this.originalCluster);
         this.ConfigureState.dispatchAction({type: 'RESET_EDIT_CHANGES'});
     }
-
+    
+    buildFormActionsMenu(){
+       let formActionsMenu = this.formActionsMenu;
+       this.formActionsMenu.length = 0;
+       
+       if(this.$scope.status && this.$scope.status!="started"){
+           formActionsMenu.push({
+               text: 'Start Cluster',
+               click: () => this.confirmAndRestart(),
+               icon: 'checkmark'
+           })
+       }        
+       else {
+           formActionsMenu.push({
+               text: 'Stop Cluster',
+               click: () => this.confirmAndStop(),
+               icon: 'download'
+           });
+           formActionsMenu.push({
+               text: 'Restart Cluster',
+               click: () => this.confirmAndRestart(),
+               icon: 'checkmark'
+           })
+       }
+       
+       return formActionsMenu;
+    }
+    
     restart() {
         this.AgentManager.startCluster(this.clonedCluster).then((msg) => {  
             if(!msg.message){
@@ -211,8 +234,9 @@ export default class PageConfigureBasicController {
     
     callService(serviceName,args) {
         this.AgentManager.callClusterService(this.clonedCluster,serviceName,args).then((data) => {  
-            this.$scope.status = data.status;               
-            this.clonedCluster.status = data.status;
+            this.$scope.status = data.status;
+            this.buildFormActionsMenu();
+            this.clonedCluster.status = data.status;            
             if(data.result){
                 return data.result;
             }    
@@ -222,7 +246,9 @@ export default class PageConfigureBasicController {
             return {}
         })   
        .catch((e) => {
-            this.$scope.message = ('Failed to callClusterService : '+serviceName+' Caused : '+e);           
+           this.$scope.status = 'stoped'
+           this.buildFormActionsMenu();
+           this.$scope.message = ('Failed to callClusterService : '+serviceName+' Caused : '+e);           
         });
     }
 

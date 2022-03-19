@@ -32,21 +32,7 @@ panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
         a.link-success(href="https://apacheignite.readme.io/docs/affinity-collocation" target="_blank") More info
     panel-content.pca-form-row(ng-if=`ui.isPanelLoaded('${form}')`)
         .pca-form-column-6.pc-form-grid-row
-            .pc-form-grid-col-60(ng-if='$ctrl.available(["1.0.0", "2.0.0"])')
-                +form-field__dropdown({
-                    label: 'Function:',
-                    model: `${affModel}.kind`,
-                    name: '"AffinityKind"',
-                    placeholder: 'Default',
-                    options: 'affinityFunction',
-                    tip: 'Key topology resolver to provide mapping from keys to nodes<br/>\
-                                        <ul>\
-                                            <li>Rendezvous - Based on Highest Random Weight algorithm</li>\
-                                            <li>Fair - Tries to ensure that all nodes get equal number of partitions with minimum amount of reassignments between existing nodes</li>\
-                                            <li>Custom - Custom implementation of key affinity fynction</li>\
-                                            <li>Default - By default rendezvous affinity function  with 1024 partitions is used</li>\
-                                        </ul>'
-                })
+            
             .pc-form-grid-col-60(ng-if='$ctrl.available("2.0.0")')
                 +form-field__dropdown({
                     label: 'Function:',

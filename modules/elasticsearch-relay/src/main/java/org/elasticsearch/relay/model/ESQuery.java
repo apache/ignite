@@ -27,7 +27,7 @@ public class ESQuery {
 	
 	private String[] fPath;
 
-	private Map<String, String> fParams;
+	private Map<String, String[]> fParams;
 
 	private ObjectNode fBody;
 
@@ -66,7 +66,7 @@ public class ESQuery {
 	 * @param params
 	 *            query parameters
 	 */
-	public ESQuery(String[] path, Map<String, String> params) {
+	public ESQuery(String[] path, Map<String, String[]> params) {
 		this(path, params, null);
 	}
 
@@ -78,7 +78,7 @@ public class ESQuery {
 	 * @param body
 	 *            query body
 	 */
-	public ESQuery(String[] path, Map<String, String> params, ObjectNode body) {
+	public ESQuery(String[] path, Map<String, String[]> params, ObjectNode body) {
 		fPath = path;
 		
 		fBody = body;
@@ -96,14 +96,14 @@ public class ESQuery {
 		fPath = path;
 	}
 
-	public Map<String, String> getParams() {
+	public Map<String, String[]> getParams() {
 		return fParams;
 	}
 
-	public void setParams(Map<String, String> params) {
-		String responseFormat = params.get("responseFormat");
+	public void setParams(Map<String, String[]> params) {
+		String[] responseFormat = params.get("responseFormat");
 		if(responseFormat!=null) {
-			this.setResponseFormat(ResponseFormat.valueOf(responseFormat.toUpperCase()));
+			this.setResponseFormat(ResponseFormat.valueOf(responseFormat[0].toUpperCase()));
 		}
 		fParams = params;
 	}
@@ -134,10 +134,29 @@ public class ESQuery {
 		fCancelled = true;
 	}
 
+
+	public String getFormat() {
+		return format;
+	}
+
+	public void setFormat(String format) {
+		this.format = format;
+	}
+
+	public ResponseFormat getResponseFormat() {
+		return responseFormat;
+	}
+
+	public void setResponseFormat(ResponseFormat responseFormat) {
+		this.responseFormat = responseFormat;
+	}
+	
+	
+
 	/**
 	 * @return reassembled query URL (without the server)
 	 */
-	public String getQueryUrl() {
+	public String buildQueryURL() {
 		StringBuffer urlBuff = new StringBuffer();
 
 		// reconstruct request path
@@ -154,39 +173,20 @@ public class ESQuery {
 		// add parameters
 		if (fParams != null && !fParams.isEmpty()) {
 			// construct URL with all parameters
-			Iterator<Entry<String, String>> paramIter = fParams.entrySet().iterator();
-			Entry<String, String> entry = paramIter.next();
-
+			Iterator<Entry<String, String[]>> paramIter = fParams.entrySet().iterator();
+			Entry<String, String[]> entry = null;
 			urlBuff.append("?");
-			urlBuff.append(entry.getKey());
-			urlBuff.append("=");
-			urlBuff.append(entry.getValue());
-
 			while (paramIter.hasNext()) {
-				entry = paramIter.next();
-				urlBuff.append("&");
-				urlBuff.append(entry.getKey());
-				urlBuff.append("=");
-				urlBuff.append(entry.getValue());
+				entry = paramIter.next();				
+				for(String v: entry.getValue()) {
+					urlBuff.append("&");
+					urlBuff.append(entry.getKey());
+					urlBuff.append("=");
+					urlBuff.append(v);
+				}
 			}
 		}
 
 		return urlBuff.toString();
-	}
-
-	public String getFormat() {
-		return format;
-	}
-
-	public void setFormat(String format) {
-		this.format = format;
-	}
-
-	public ResponseFormat getResponseFormat() {
-		return responseFormat;
-	}
-
-	public void setResponseFormat(ResponseFormat responseFormat) {
-		this.responseFormat = responseFormat;
 	}
 }

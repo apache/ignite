@@ -34,6 +34,7 @@ import org.apache.ignite.console.agent.db.dialect.DremioMetadataDialect;
 import org.apache.ignite.console.agent.db.dialect.JdbcMetadataDialect;
 import org.apache.ignite.console.agent.db.dialect.MySQLMetadataDialect;
 import org.apache.ignite.console.agent.db.dialect.OracleMetadataDialect;
+import org.apache.ignite.console.db.DBInfo;
 import org.apache.log4j.Logger;
 
 /**
@@ -131,9 +132,9 @@ public class DbMetadataReader {
      * @return Connection to database.
      * @throws SQLException if connection failed.
      */
-    public Connection connect(String jdbcDrvJarPath, String jdbcDrvCls, String jdbcUrl, Properties jdbcInfo)
+    public Connection connect(String jdbcDrvJarPath, DBInfo dbInfo)
         throws SQLException {
-        Driver drv = drivers.get(jdbcDrvCls);
+        Driver drv = drivers.get(dbInfo.getDriverCls());
 
         if (drv == null && jdbcDrvJarPath!=null) {
         	
@@ -150,9 +151,9 @@ public class DbMetadataReader {
 
                 URLClassLoader ucl = URLClassLoader.newInstance(new URL[] {u});
 
-                drv = (Driver)Class.forName(jdbcDrvCls, true, ucl).newInstance();
+                drv = (Driver)Class.forName(dbInfo.getDriverCls(), true, ucl).newInstance();
 
-                drivers.put(jdbcDrvCls, drv);
+                drivers.put(dbInfo.getDriverCls(), drv);
             }
             catch (Exception e) {
                 throw new IllegalStateException(e);
@@ -161,16 +162,16 @@ public class DbMetadataReader {
         else if (drv == null && jdbcDrvJarPath==null) {
            
             try {
-                drv = (Driver)Class.forName(jdbcDrvCls).newInstance();
+                drv = (Driver)Class.forName(dbInfo.getDriverCls()).newInstance();
 
-                drivers.put(jdbcDrvCls, drv);
+                drivers.put(dbInfo.getDriverCls(), drv);
             }
             catch (Exception e) {
                 throw new IllegalStateException(e);
             }
         }
 
-        Connection conn = drv.connect(jdbcUrl, jdbcInfo);
+        Connection conn = drv.connect(dbInfo.jdbcUrl, dbInfo.getJdbcProp());
 
         if (conn == null)
             throw new IllegalStateException("Connection was not established (JDBC driver returned null value).");

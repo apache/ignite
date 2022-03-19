@@ -34,54 +34,15 @@
     <version>2.9.0-SNAPSHOT</version>
     <url>http://ignite.apache.org</url>
 
-    <properties>
-    	<netty.version>4.1.27.Final</netty.version>
-        <node.version>v8.11.2</node.version>
-        <docker.registry.host>docker.io</docker.registry.host>
-        <docker.repository>apacheignite</docker.repository>
-        <docker.backend.image>web-console-backend</docker.backend.image>
-        <docker.frontend.image>web-console-frontend</docker.frontend.image>
-        <docker.standalone.image>web-console-standalone</docker.standalone.image>  
-        <java7.hikaricp.version>2.4.7</java7.hikaricp.version>      
-    </properties>
-
     <dependencies>
     
     	<dependency>
-            <groupId>io.netty</groupId>
-            <artifactId>netty-handler</artifactId>
-            <version>${netty.version}</version>
+           <groupId>de.bwaldvogel</groupId>
+		    <artifactId>mongodb-java-server</artifactId>
+		    <version>2.9.0-SNAPSHOT</version>
         </dependency>
 
-        <dependency>
-            <groupId>io.netty</groupId>
-            <artifactId>netty-buffer</artifactId>
-            <version>${netty.version}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>io.netty</groupId>
-            <artifactId>netty-common</artifactId>
-            <version>${netty.version}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>io.netty</groupId>
-            <artifactId>netty-transport</artifactId>
-            <version>${netty.version}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>io.netty</groupId>
-            <artifactId>netty-codec</artifactId>
-            <version>${netty.version}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>io.netty</groupId>
-            <artifactId>netty-resolver</artifactId>
-            <version>${netty.version}</version>
-        </dependency>
+      
         
         <!-- Ignite dependencies -->
         <dependency>
@@ -134,12 +95,7 @@
 	         <artifactId>jackson-datatype-jsr310</artifactId>
 	          <version>${jackson.version}</version> 
         </dependency>
-        
-        <dependency>
-            <groupId>com.zaxxer</groupId>
-            <artifactId>HikariCP</artifactId>
-            <version>${java7.hikaricp.version}</version>
-        </dependency>
+       
 
         <!-- Test dependencies -->
         
@@ -201,12 +157,23 @@
             </plugin>
 
             <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-deploy-plugin</artifactId>
-                <configuration>
-                    <skip>true</skip>
-                </configuration>
+                <artifactId>maven-dependency-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>copy-libs</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>copy-dependencies</goal>
+                        </goals>
+                        <configuration >
+                            <outputDirectory>target/libs</outputDirectory>
+                            <includeScope>runtime</includeScope>
+                            <excludeTransitive>false</excludeTransitive>
+                        </configuration>
+                    </execution>
+                </executions>
             </plugin>
+
         </plugins>
     </build>
     

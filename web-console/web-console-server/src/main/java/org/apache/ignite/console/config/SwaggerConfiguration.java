@@ -37,7 +37,7 @@ import static com.google.common.base.Predicates.not;
 @EnableSwagger2
 @Controller
 public class SwaggerConfiguration {
-    /** */
+    /** swagger-ui.html */
     @Bean
     public Docket api() {
         return new Docket(DocumentationType.SWAGGER_2)

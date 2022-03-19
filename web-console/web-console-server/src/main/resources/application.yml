@@ -6,7 +6,8 @@ logging.config: classpath:META-INF/log4j2.xml
 #migration.mongo.db.url: mongodb://localhost:27018/console
 
 # Uncomment for HTTPS:
-#server:
+server:
+  port: 3000
 #  port: 443
 #  ssl:
 #    key-store-type: JKS

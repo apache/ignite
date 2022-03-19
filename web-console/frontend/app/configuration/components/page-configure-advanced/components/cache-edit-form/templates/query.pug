@@ -35,41 +35,7 @@ panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
                     tip: 'Cache group name.<br/>\
                           Caches with the same group name share single underlying "physical" cache (partition set), but are logically isolated.'
                 })
-
-            //- Removed in ignite 2.0
-            .pc-form-grid-col-60(ng-if='$ctrl.available(["1.0.0", "2.0.0"])')
-                +form-field__number({
-                    label: 'On-heap cache for off-heap indexes:',
-                    model: `${model}.sqlOnheapRowCacheSize`,
-                    name: '"sqlOnheapRowCacheSize"',
-                    placeholder: '10240',
-                    min: '1',
-                    tip: 'Specify any custom name to be used as SQL schema for current cache. This name will correspond to SQL ANSI-99 standard.\
-                          Nonquoted identifiers are not case sensitive. Quoted identifiers are case sensitive.\
-                          When SQL schema is not specified, quoted cache name should used instead.<br/>\
-                          For example:\
-                          <ul>\
-                            <li>\
-                            Query without schema names (quoted cache names will be used):\
-                            SELECT * FROM "PersonsCache".Person p INNER JOIN "OrganizationsCache".Organization o on p.org = o.id\
-                            </li>\
-                            <li>\
-                                The same query using schema names "Persons" and "Organizations":\
-                                SELECT * FROM Persons.Person p INNER JOIN Organizations.Organization o on p.org = o.id\
-                            </li>\
-                          </ul>'
-                })
-
-            //- Deprecated in ignite 2.1
-            .pc-form-grid-col-60(ng-if='$ctrl.available(["1.0.0", "2.1.0"])')
-                +form-field__number({
-                    label: 'Long query timeout:',
-                    model: `${model}.longQueryWarningTimeout`,
-                    name: '"longQueryWarningTimeout"',
-                    placeholder: '3000',
-                    min: '0',
-                    tip: 'Timeout in milliseconds after which long query warning will be printed'
-                })
+           
             .pc-form-grid-col-60
                 +form-field__number({
                     label: 'History size:',
@@ -108,15 +74,7 @@ panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
                 +caches-query-list-sql-functions
                 - var form = 'query'
 
-            //- Removed in ignite 2.0
-            .pc-form-grid-col-60(ng-if='$ctrl.available(["1.0.0", "2.0.0"])')
-                +form-field__checkbox({
-                    label: 'Snapshotable index',
-                    model: `${model}.snapshotableIndex`,
-                    name: '"snapshotableIndex"',
-                    tip: 'Flag indicating whether SQL indexes should support snapshots'
-                })
-
+          
             //- Since ignite 2.0
             .pc-form-grid-col-30(ng-if-start='$ctrl.available("2.0.0")')
                 +form-field__number({

@@ -31,7 +31,7 @@
               {
                 "type": "input-text",
                 "name": "jdbcUrl",
-                "label": "jdbcUrl",
+                "label": "连接串",
                 "description": "jdbc:dbtype://[host]:[port]/[database]",
                 "validations": {
                    "minLength":10 
@@ -43,8 +43,10 @@
               },              
               {
                 "type": "input-text",
-                "name": "dbName",
-                "label": "数据库名"
+                "name": "jndiName",
+                "label": "JNDI名",
+                "description": "数据源JNDI名称，要求全局唯一",
+                "required": true
               },
               {
                 "type": "divider"
@@ -60,7 +62,7 @@
               {
                 "type": "input-text",
                 "name": "userName",
-                "label": "userName"
+                "label": "用户名"
               },              
               {
                 "type": "divider"
@@ -68,7 +70,7 @@
               {
                 "type": "input-password",
                 "name": "password",
-                "label": "password"
+                "label": "密码"
               }
             ]
           }
@@ -104,20 +106,15 @@
       
       "columns": [        
         {
-          "name": "id",
-          "label": "UUID",          
+          "name": "jndiName",
+          "label": "JNDI", 
           "sortable": true
         },
         {
           "name": "jdbcUrl",
           "label": "jdbcUrl",
           "sortable": true
-        },
-        {
-          "name": "dbName",
-          "label": "dbName",
-          "sortable": true
-        },
+        },        
         {
           "name": "schemaName",
           "label": "schemaName",
@@ -172,7 +169,7 @@
                             {
                               "type": "input-text",
                               "name": "jdbcUrl",
-                              "label": "jdbcUrl",
+                              "label": "连接串",
                               "description": "jdbc:dbtype://[host]:[port]/[database]",
                               "validations": {
                                  "minLength":10 
@@ -184,8 +181,9 @@
                             },              
                             {
                               "type": "input-text",
-                              "name": "dbName",
-                              "label": "数据库名"
+                              "name": "jndiName",
+                              "label": "JNDI名称",
+                              "required": true
                             },
                             {
                               "type": "divider"
@@ -201,7 +199,7 @@
                             {
                               "type": "input-text",
                               "name": "userName",
-                              "label": "userName"
+                              "label": "用户名"
                             },              
                             {
                               "type": "divider"
@@ -209,7 +207,7 @@
                             {
                               "type": "input-password",
                               "name": "password",
-                              "label": "password"
+                              "label": "密码"
                             }
                           ]
                         }                     

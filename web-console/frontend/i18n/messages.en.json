@@ -758,8 +758,8 @@
     },
     "appFooter": {
         "downloadAgentButtonLabel": "Download Agent",
-        "product": "Apache Ignite Web Console ({{version}})",
-        "copyright": "© {{year}} The Apache Software Foundation.",
+        "product": "",
+        "copyright": "© {{year}}.",
         "legal": ""
     },
     "demoModeButton": {

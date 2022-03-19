@@ -108,6 +108,8 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
 
     /** HTTP server. */
     private static Server httpSrv;
+    
+    private static int handlerCount = 0;
 
     /**
      * @param ctx Context.
@@ -146,10 +148,12 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
         	configSingletonJetty();
         	jettyHnd.index = 0;
      	}
+        else {
+        	jettyHnd.index = ++handlerCount;
+        }
         
         HandlerList handlers = (HandlerList)httpSrv.getHandler();    		
-		if(handlers!=null) {
-			jettyHnd.index = handlers.getHandlers().length;
+		if(handlers!=null) {			
 			handlers.prependHandler(jettyHnd); 
 		}
 		else {
