@@ -646,7 +646,6 @@ namespace Apache.Ignite.Core.Tests
             var procStart = new ProcessStartInfo
             {
                 FileName = typeof(TestUtils).Assembly.Location,
-                Arguments = fixtureName + " " + testName,
                 CreateNoWindow = true,
                 UseShellExecute = false,
                 RedirectStandardOutput = true,
