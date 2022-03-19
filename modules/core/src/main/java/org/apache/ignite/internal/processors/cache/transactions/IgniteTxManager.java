@@ -298,11 +298,12 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
         new ConcurrentHashMap<>();
 
     /** Timeout operations. */
-    private final Map<String, GridTimeoutProcessor.CancelableTask> timeoutOperations =
-        new HashMap<String, GridTimeoutProcessor.CancelableTask>() {{
-            put(IGNITE_LONG_OPERATIONS_DUMP_TIMEOUT, null);
-            put(IGNITE_DUMP_TX_COLLISIONS_INTERVAL, null);
-    }};
+    private final Map<String, GridTimeoutProcessor.CancelableTask> timeoutOperations = new HashMap<>();
+
+    {
+        timeoutOperations.put(IGNITE_LONG_OPERATIONS_DUMP_TIMEOUT, null);
+        timeoutOperations.put(IGNITE_DUMP_TX_COLLISIONS_INTERVAL, null);
+    }
 
     /** Key collisions info holder. */
     private volatile KeyCollisionsHolder keyCollisionsInfo;

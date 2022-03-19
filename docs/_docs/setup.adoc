@@ -190,7 +190,7 @@ For example, to install `ignite-hibernate` into your local repository, run this 
 
 [source, shell]
 ----
-mvn clean install -DskipTests -Plgpl -pl modules/hibernate -am
+./mvnw clean install -DskipTests -Plgpl -pl modules/hibernate -am
 ----
 
 

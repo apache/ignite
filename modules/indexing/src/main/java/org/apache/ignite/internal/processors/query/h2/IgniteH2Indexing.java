@@ -131,6 +131,7 @@ import org.apache.ignite.internal.processors.query.h2.index.client.ClientIndexFa
 import org.apache.ignite.internal.processors.query.h2.index.keys.DateIndexKey;
 import org.apache.ignite.internal.processors.query.h2.index.keys.TimeIndexKey;
 import org.apache.ignite.internal.processors.query.h2.index.keys.TimestampIndexKey;
+import org.apache.ignite.internal.processors.query.h2.maintenance.RebuildIndexWorkflowCallback;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2IndexBase;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.processors.query.h2.opt.QueryContext;
@@ -196,6 +197,8 @@ import static java.lang.Math.min;
 import static java.util.Collections.singletonList;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_MVCC_TX_SIZE_CACHING_THRESHOLD;
 import static org.apache.ignite.events.EventType.EVT_SQL_QUERY_EXECUTION;
+import static org.apache.ignite.internal.cache.query.index.sorted.maintenance.MaintenanceRebuildIndexUtils.INDEX_REBUILD_MNTC_TASK_NAME;
+import static org.apache.ignite.internal.cache.query.index.sorted.maintenance.MaintenanceRebuildIndexUtils.parseMaintenanceTaskParameters;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccCachingManager.TX_SIZE_THRESHOLD;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.checkActive;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.mvccEnabled;
@@ -1207,9 +1210,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                     }
                 }
                 catch (Throwable th) {
-                   qrySpan.addTag(ERROR, th::getMessage).end();
+                    qrySpan.addTag(ERROR, th::getMessage).end();
 
-                   throw th;
+                    throw th;
                 }
             }
 
@@ -2183,6 +2186,16 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         distrCfg = new DistributedSqlConfiguration(ctx, log);
 
         funcMgr = new FunctionsManager(distrCfg);
+
+        ctx.maintenanceRegistry()
+            .registerWorkflowCallbackIfTaskExists(
+                INDEX_REBUILD_MNTC_TASK_NAME,
+                task -> new RebuildIndexWorkflowCallback(
+                    parseMaintenanceTaskParameters(task.parameters()),
+                    this,
+                    log
+                )
+            );
     }
 
     /**

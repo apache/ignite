@@ -56,7 +56,7 @@ public class CacheClientReconnectDiscoveryData implements Serializable {
     /**
      * @return Information about caches started on re-joining client node.
      */
-   public Map<String, CacheInfo> clientCaches() {
+    public Map<String, CacheInfo> clientCaches() {
         return clientCaches;
     }
 

@@ -99,7 +99,7 @@ public class LazyOnDmlTest extends AbstractIndexingCommonTest {
         GridQueryProcessor.idxCls = CheckLazyIndexing.class;
 
         startGrids(3);
-   }
+    }
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {

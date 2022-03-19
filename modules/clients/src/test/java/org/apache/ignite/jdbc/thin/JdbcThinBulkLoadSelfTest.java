@@ -824,10 +824,10 @@ public class JdbcThinBulkLoadSelfTest extends JdbcThinAbstractDmlStatementSelfTe
             (csvCharsetName != null)
                 ? new WrongCharsetRecoder(csvCharsetName, stmtCharsetName)
                 : new IgniteClosure<String, String>() {
-                @Override public String apply(String input) {
-                    return input;
-                }
-            };
+                    @Override public String apply(String input) {
+                        return input;
+                    }
+                };
 
         int cnt = 0;
 

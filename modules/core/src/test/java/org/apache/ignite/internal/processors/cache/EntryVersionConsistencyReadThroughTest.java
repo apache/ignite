@@ -159,10 +159,10 @@ public class EntryVersionConsistencyReadThroughTest extends GridCommonAbstractTe
             for (int i = 0; i < NODES_CNT; i++) {
                 final int iter = i;
 
-                final Set<String> keys = new LinkedHashSet<String>() {{
-                    for (int i = 0; i < cnt; i++)
-                        add("key-" + iter + "-" + i);
-                }};
+                final Set<String> keys = new LinkedHashSet<>();
+
+                for (int j = 0; j < cnt; j++)
+                    keys.add("key-" + iter + "-" + j);
 
                 IgniteEx grid = grid(i);
 

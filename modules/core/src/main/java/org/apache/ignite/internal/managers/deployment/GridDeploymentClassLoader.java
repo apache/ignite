@@ -91,11 +91,11 @@ class GridDeploymentClassLoader extends ClassLoader implements GridDeploymentInf
 
     /** Registered nodes. */
     @GridToStringExclude
-    private LinkedList<UUID> nodeList;
+    private final LinkedList<UUID> nodeList;
 
     /** Node ID -> Loader ID. */
     @GridToStringInclude
-    private Map<UUID, IgniteUuid> nodeLdrMap;
+    private final Map<UUID, IgniteUuid> nodeLdrMap;
 
     /** */
     @GridToStringExclude
@@ -475,7 +475,7 @@ class GridDeploymentClassLoader extends ClassLoader implements GridDeploymentInf
             if (X.hasCause(e, TimeoutException.class))
                 throw e;
 
-            throw new ClassNotFoundException("Failed to load class due to unexpected error: " + name, e);
+            throw new P2PClassNotFoundException("Failed to load class due to unexpected error: " + name, e);
         }
 
         return cls;
@@ -602,7 +602,7 @@ class GridDeploymentClassLoader extends ClassLoader implements GridDeploymentInf
         synchronized (mux) {
             // Skip requests for the previously missed classes.
             if (missedRsrcs != null && missedRsrcs.contains(path)) {
-                throw new ClassNotFoundException("Failed to peer load class, previous request for the same class " +
+                throw new P2PClassNotFoundException("Failed to peer load class, previous request for the same class " +
                     "has failed [class=" + name + ", nodeClsLdrIds=" +
                     nodeLdrMap + ", clsLoadersHierarchy=" + clsLdrHierarchy + ']');
             }
@@ -704,7 +704,7 @@ class GridDeploymentClassLoader extends ClassLoader implements GridDeploymentInf
             throw exception;
         }
         else {
-            ClassNotFoundException cnfe = new ClassNotFoundException("Failed to peer load class [" +
+            ClassNotFoundException cnfe = new P2PClassNotFoundException("Failed to peer load class [" +
                 "class=" + name +
                 ", nodeClsLdrs=" + nodeLdrMapCp +
                 ", clsLoadersHierarchy=" + clsLdrHierarchy +

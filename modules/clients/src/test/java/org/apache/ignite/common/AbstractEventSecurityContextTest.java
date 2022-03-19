@@ -140,17 +140,16 @@ public abstract class AbstractEventSecurityContextTest extends AbstractSecurityT
         String expLogin
     ) throws Exception {
         assertTrue(waitForCondition(() -> {
-                Collection<Event> evts = LISTENED_EVTS.get(node);
+            Collection<Event> evts = LISTENED_EVTS.get(node);
 
-                if (evts == null)
-                    return false;
+            if (evts == null)
+                return false;
 
-                return evts.stream()
-                    .map(Event::type)
-                    .collect(Collectors.toList())
-                    .containsAll(expEvtTypes);
-                },
-            getTestTimeout()));
+            return evts.stream()
+                .map(Event::type)
+                .collect(Collectors.toList())
+                .containsAll(expEvtTypes);
+        }, getTestTimeout()));
 
         assertTrue(LISTENED_EVTS.get(node).stream()
             .map(evt -> {

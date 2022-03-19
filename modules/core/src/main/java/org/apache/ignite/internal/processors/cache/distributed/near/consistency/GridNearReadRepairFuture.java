@@ -70,6 +70,44 @@ public class GridNearReadRepairFuture extends GridNearReadRepairAbstractFuture {
         boolean recovery,
         IgniteCacheExpiryPolicy expiryPlc,
         IgniteInternalTx tx) {
+        this(topVer,
+            ctx,
+            keys,
+            strategy,
+            readThrough,
+            taskName,
+            deserializeBinary,
+            recovery,
+            expiryPlc,
+            tx,
+            null);
+    }
+
+    /**
+     * @param topVer Affinity topology version.
+     * @param ctx Cache context.
+     * @param keys Keys.
+     * @param strategy Read repair strategy.
+     * @param readThrough Read-through flag.
+     * @param taskName Task name.
+     * @param deserializeBinary Deserialize binary flag.
+     * @param recovery Partition recovery flag.
+     * @param expiryPlc Expiry policy.
+     * @param tx Transaction.
+     * @param remappedFut Remapped future.
+     */
+    private GridNearReadRepairFuture(
+        AffinityTopologyVersion topVer,
+        GridCacheContext ctx,
+        Collection<KeyCacheObject> keys,
+        ReadRepairStrategy strategy,
+        boolean readThrough,
+        String taskName,
+        boolean deserializeBinary,
+        boolean recovery,
+        IgniteCacheExpiryPolicy expiryPlc,
+        IgniteInternalTx tx,
+        GridNearReadRepairFuture remappedFut) {
         super(topVer,
             ctx,
             keys,
@@ -79,11 +117,15 @@ public class GridNearReadRepairFuture extends GridNearReadRepairAbstractFuture {
             deserializeBinary,
             recovery,
             expiryPlc,
-            tx);
+            tx,
+            remappedFut);
 
         assert ctx.transactional() : "Atomic cache should not be recovered using this future";
+    }
 
-        init();
+    /** {@inheritDoc} */
+    @Override protected GridNearReadRepairAbstractFuture remapFuture(AffinityTopologyVersion topVer) {
+        throw new UnsupportedOperationException("Method should never be called.");
     }
 
     /** {@inheritDoc} */
@@ -240,26 +282,6 @@ public class GridNearReadRepairFuture extends GridNearReadRepairAbstractFuture {
      */
     public Map<KeyCacheObject, EntryGetResult> fixWithMajority(Collection<KeyCacheObject> inconsistentKeys)
         throws IgniteCheckedException {
-        /** */
-        class ByteArrayWrapper {
-            final byte[] arr;
-
-            /** */
-            public ByteArrayWrapper(byte[] arr) {
-                this.arr = arr;
-            }
-
-            /** */
-            @Override public boolean equals(Object o) {
-                return Arrays.equals(arr, ((ByteArrayWrapper)o).arr);
-            }
-
-            /** */
-            @Override public int hashCode() {
-                return Arrays.hashCode(arr);
-            }
-        }
-
         Set<KeyCacheObject> irreparableSet = new HashSet<>(inconsistentKeys.size());
         Map<KeyCacheObject, EntryGetResult> fixedMap = new HashMap<>(inconsistentKeys.size());
 

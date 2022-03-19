@@ -52,6 +52,6 @@ public class ParameterSetGeneratorTest {
     /** */
     @Test(expected = java.lang.AssertionError.class)
     public void testNullHandling() {
-       new ParameterSetGenerator(null).generate();
+        new ParameterSetGenerator(null).generate();
     }
 }

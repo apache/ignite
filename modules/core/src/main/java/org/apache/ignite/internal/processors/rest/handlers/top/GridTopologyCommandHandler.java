@@ -308,10 +308,10 @@ public class GridTopologyCommandHandler extends GridRestCommandHandlerAdapter {
                 }
 
                 if (e.getValue() != null) {
-                  if (e.getValue().getClass().isEnum() || e.getValue() instanceof InetAddress)
-                      e.setValue(e.getValue().toString());
-                  else if (e.getValue().getClass().isArray() && !ATTR_IGNITE_FEATURES.equals(e.getKey()))
-                      i.remove();
+                    if (e.getValue().getClass().isEnum() || e.getValue() instanceof InetAddress)
+                        e.setValue(e.getValue().toString());
+                    else if (e.getValue().getClass().isArray() && !ATTR_IGNITE_FEATURES.equals(e.getKey()))
+                        i.remove();
                 }
             }
 

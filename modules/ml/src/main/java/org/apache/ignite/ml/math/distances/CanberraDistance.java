@@ -26,39 +26,39 @@ import org.apache.ignite.ml.math.util.MatrixUtil;
  * @see <a href="https://en.wikipedia.org/wiki/Canberra_distance">Canberra distance</a>
  */
 public class CanberraDistance implements DistanceMeasure {
-  /**
-   * Serializable version identifier.
-   */
-  private static final long serialVersionUID = 1771556549784040092L;
+    /**
+     * Serializable version identifier.
+     */
+    private static final long serialVersionUID = 1771556549784040092L;
 
-  /**
-   * {@inheritDoc}
-   */
-  @Override public double compute(Vector a, Vector b)
-      throws CardinalityException {
-    Vector top = MatrixUtil.localCopyOf(a).minus(b).map(Math::abs);
-    Vector down = MatrixUtil.localCopyOf(a).map(Math::abs)
-        .plus(MatrixUtil.localCopyOf(b).map(Math::abs))
-        .map(value -> value != 0 ? 1 / value : 0);
+    /**
+     * {@inheritDoc}
+     */
+    @Override public double compute(Vector a, Vector b)
+        throws CardinalityException {
+        Vector top = MatrixUtil.localCopyOf(a).minus(b).map(Math::abs);
+        Vector down = MatrixUtil.localCopyOf(a).map(Math::abs)
+            .plus(MatrixUtil.localCopyOf(b).map(Math::abs))
+            .map(value -> value != 0 ? 1 / value : 0);
 
-    return top.times(down).sum();
-  }
-
-  /**
-   * {@inheritDoc}
-   */
-  @Override public boolean equals(Object obj) {
-    if (this == obj) {
-      return true;
+        return top.times(down).sum();
     }
 
-    return obj != null && getClass() == obj.getClass();
-  }
+    /**
+     * {@inheritDoc}
+     */
+    @Override public boolean equals(Object obj) {
+        if (this == obj) {
+            return true;
+        }
 
-  /**
-   * {@inheritDoc}
-   */
-  @Override public int hashCode() {
-    return getClass().hashCode();
-  }
+        return obj != null && getClass() == obj.getClass();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override public int hashCode() {
+        return getClass().hashCode();
+    }
 }

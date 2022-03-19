@@ -134,8 +134,8 @@ public class GridDhtTxRemote extends GridDistributedTxRemoteAdapter {
 
         txState = single ? new IgniteTxRemoteSingleStateImpl() :
             new IgniteTxRemoteStateImpl(
-            Collections.<IgniteTxKey, IgniteTxEntry>emptyMap(),
-            new ConcurrentLinkedHashMap<IgniteTxKey, IgniteTxEntry>(U.capacity(txSize), 0.75f, 1));
+                Collections.<IgniteTxKey, IgniteTxEntry>emptyMap(),
+                new ConcurrentLinkedHashMap<IgniteTxKey, IgniteTxEntry>(U.capacity(txSize), 0.75f, 1));
 
         assert topVer != null && topVer.topologyVersion() > 0 : topVer;
 

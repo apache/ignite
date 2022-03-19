@@ -227,7 +227,7 @@ public class IgniteCacheSqlQueryErrorSelfTest extends GridCacheAbstractSelfTest 
      * @param sql SQL command.
      */
     private void execute(String sql) {
-       jcache().query(new SqlFieldsQuery(sql).setSchema("PUBLIC")).getAll();
+        jcache().query(new SqlFieldsQuery(sql).setSchema("PUBLIC")).getAll();
     }
 
 }

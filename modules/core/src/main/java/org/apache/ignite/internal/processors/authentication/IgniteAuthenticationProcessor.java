@@ -1209,9 +1209,9 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
         /**
          * @param nodeId ID of the node that processes authentication request.
          */
-       AuthenticateFuture(UUID nodeId) {
-           this.nodeId = nodeId;
-       }
+        AuthenticateFuture(UUID nodeId) {
+            this.nodeId = nodeId;
+        }
 
         /**
          * @return ID of the node that processes authentication request.

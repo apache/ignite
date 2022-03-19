@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -72,14 +73,16 @@ public class GridAffinityAssignmentV2Test {
     private ClusterNode clusterNode6 = node(metrics, ver, "6");
 
     /** */
-    private List<ClusterNode> clusterNodes = new ArrayList<ClusterNode>() {{
-        add(clusterNode1);
-        add(clusterNode2);
-        add(clusterNode3);
-        add(clusterNode4);
-        add(clusterNode5);
-        add(clusterNode6);
-    }};
+    private List<ClusterNode> clusterNodes = new ArrayList<>();
+
+    {
+        clusterNodes.add(clusterNode1);
+        clusterNodes.add(clusterNode2);
+        clusterNodes.add(clusterNode3);
+        clusterNodes.add(clusterNode4);
+        clusterNodes.add(clusterNode5);
+        clusterNodes.add(clusterNode6);
+    }
 
     /**
      * Test GridAffinityAssignment logic when backup threshold is not reached.
@@ -88,47 +91,21 @@ public class GridAffinityAssignmentV2Test {
     public void testPrimaryBackupPartitions() {
         GridAffinityAssignment gridAffinityAssignment = new GridAffinityAssignment(
             new AffinityTopologyVersion(1, 0),
-            new ArrayList<List<ClusterNode>>() {{
-                add(new ArrayList<ClusterNode>() {{
-                    add(clusterNode1);
-                    add(clusterNode2);
-                    add(clusterNode3);
-                    add(clusterNode4);
-                }});
-                add(new ArrayList<ClusterNode>() {{
-                    add(clusterNode1);
-                    add(clusterNode2);
-                    add(clusterNode3);
-                    add(clusterNode4);
-                }});
-                add(new ArrayList<ClusterNode>() {{
-                    add(clusterNode5);
-                    add(clusterNode6);
-                }});
-            }},
+            Arrays.asList(
+                Arrays.asList(clusterNode1, clusterNode2, clusterNode3, clusterNode4),
+                Arrays.asList(clusterNode1, clusterNode2, clusterNode3, clusterNode4),
+                Arrays.asList(clusterNode5, clusterNode6)
+            ),
             new ArrayList<>()
         );
 
         GridAffinityAssignmentV2 gridAffinityAssignment2 = new GridAffinityAssignmentV2(
             new AffinityTopologyVersion(1, 0),
-            new ArrayList<List<ClusterNode>>() {{
-                add(new ArrayList<ClusterNode>() {{
-                    add(clusterNode1);
-                    add(clusterNode2);
-                    add(clusterNode3);
-                    add(clusterNode4);
-                }});
-                add(new ArrayList<ClusterNode>() {{
-                    add(clusterNode1);
-                    add(clusterNode2);
-                    add(clusterNode3);
-                    add(clusterNode4);
-                }});
-                add(new ArrayList<ClusterNode>() {{
-                    add(clusterNode5);
-                    add(clusterNode6);
-                }});
-            }},
+            Arrays.asList(
+                Arrays.asList(clusterNode1, clusterNode2, clusterNode3, clusterNode4),
+                Arrays.asList(clusterNode1, clusterNode2, clusterNode3, clusterNode4),
+                Arrays.asList(clusterNode5, clusterNode6)
+            ),
             new ArrayList<>()
         );
 
@@ -172,10 +149,7 @@ public class GridAffinityAssignmentV2Test {
 
     /** */
     private void assertPartitions(AffinityAssignment gridAffinityAssignment) {
-        List<Integer> parts = new ArrayList<Integer>() {{
-            add(0);
-            add(1);
-        }};
+        List<Integer> parts = Arrays.asList(0, 1);
 
         assertTrue(gridAffinityAssignment.primaryPartitions(clusterNode1.id()).containsAll(parts));
         assertFalse(gridAffinityAssignment.primaryPartitions(clusterNode1.id()).contains(2));
@@ -216,9 +190,7 @@ public class GridAffinityAssignmentV2Test {
 
         GridAffinityAssignment gridAffinityAssignment = new GridAffinityAssignment(
             new AffinityTopologyVersion(1, 0),
-            new ArrayList<List<ClusterNode>>() {{
-                add(nodes);
-            }},
+            Collections.singletonList(nodes),
             new ArrayList<>()
         );
 
@@ -238,9 +210,7 @@ public class GridAffinityAssignmentV2Test {
 
         GridAffinityAssignmentV2 gridAffinityAssignment2 = new GridAffinityAssignmentV2(
             new AffinityTopologyVersion(1, 0),
-            new ArrayList<List<ClusterNode>>() {{
-                add(nodes);
-            }},
+            Collections.singletonList(nodes),
             new ArrayList<>()
         );
 

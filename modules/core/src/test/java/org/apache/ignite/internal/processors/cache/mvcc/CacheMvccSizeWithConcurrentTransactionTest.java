@@ -38,17 +38,17 @@ public class CacheMvccSizeWithConcurrentTransactionTest extends CacheMvccAbstrac
     /** Test closure. */
     private final IgniteClosure2X<CountDownLatch, CountDownLatch, Integer> clo =
         new IgniteClosure2X<CountDownLatch, CountDownLatch, Integer>() {
-        @Override public Integer applyx(CountDownLatch startLatch, CountDownLatch endLatch2)
-            throws IgniteCheckedException {
-            if (startLatch != null)
-                startLatch.countDown();
+            @Override public Integer applyx(CountDownLatch startLatch, CountDownLatch endLatch2)
+                throws IgniteCheckedException {
+                if (startLatch != null)
+                    startLatch.countDown();
 
-            int res = cache().size();
+                int res = cache().size();
 
-            if (endLatch2 != null)
-                U.await(endLatch2);
+                if (endLatch2 != null)
+                    U.await(endLatch2);
 
-            return res;
-        }
-    };
+                return res;
+            }
+        };
 }
