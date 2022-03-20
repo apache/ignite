@@ -21,18 +21,21 @@
     <Appenders>
         <!-- Console Appender -->
         <Console name="Console" target="SYSTEM_OUT" follow="true">
+            <ThresholdFilter level="debug"/>
+            <PatternLayout pattern="[%d{ISO8601}][%-5p][%t][%c{1}] %m%n"/>
+        </Console>
+        
+        <!-- Console Appender -->
+        <Console name="Console_err" target="SYSTEM_ERR" follow="true">
+            <ThresholdFilter level="ERROR"/>
             <PatternLayout pattern="[%d{ISO8601}][%-5p][%t][%c{1}] %m%n"/>
         </Console>
 
-        <!-- File Appenders on need basis -->
-        <RollingFile name="FILE" fileName="${IGNITE_HOME}/work/log/dotnet-logger-test.log"
-                     filePattern="${sys:IGNITE_HOME}/work/log/dotnet-logger-test-%i-%d{yyyy-MM-dd}.log.gz">>
+        <File name="FILE"  fileName="${IGNITE_HOME}/work/log/dotnet-logger-test.log" append="true">
+            <ThresholdFilter level="debug"/>
             <PatternLayout pattern="[%d{ISO8601}][%-5p][%t][%c{1}] %m%n"/>
-            <Policies>
-                <SizeBasedTriggeringPolicy size="10MB"/>
-            </Policies>
-            <DefaultRolloverStrategy max="10"/>
-        </RollingFile>
+        </File>
+
     </Appenders>
 
     <Loggers>
@@ -52,13 +55,14 @@
         <Logger name="com.amazonaws" level="WARN">
         </Logger>
 
-        <Logger name="org.apache.ignite" level="info">
+        <Logger name="org.apache.ignite" level="DEBUG">
         </Logger>
 
         <Logger name="org.apache.zookeeper" level="info">
         </Logger>
 
-        <Root level="info">
+        <Root level="DEBUG">
+            <AppenderRef ref="Console_err"/>
             <AppenderRef ref="Console"/>
             <AppenderRef ref="FILE"/>
         </Root>
