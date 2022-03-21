@@ -22,18 +22,18 @@
         <!-- Console Appender -->
         <Console name="Console" target="SYSTEM_OUT" follow="true">
             <ThresholdFilter level="debug"/>
-            <PatternLayout pattern="[%d{ISO8601}][%-5p][%t][%c{1}] %m%n"/>
+            <PatternLayout pattern="[%d{dd-MM-yyyy HH:mm:ss}][%-5p][%t][%c{1}] %m%n"/>
         </Console>
         
         <!-- Console Appender -->
         <Console name="Console_err" target="SYSTEM_ERR" follow="true">
             <ThresholdFilter level="ERROR"/>
-            <PatternLayout pattern="[%d{ISO8601}][%-5p][%t][%c{1}] %m%n"/>
+            <PatternLayout pattern="[%d{dd-MM-yyyy HH:mm:ss}][%-5p][%t][%c{1}] %m%n"/>
         </Console>
 
         <File name="FILE"  fileName="${IGNITE_HOME}/work/log/dotnet-logger-test.log" append="true">
             <ThresholdFilter level="debug"/>
-            <PatternLayout pattern="[%d{ISO8601}][%-5p][%t][%c{1}] %m%n"/>
+            <PatternLayout pattern="[%d{dd-MM-yyyy HH:mm:ss}][%-5p][%t][%c{1}] %m%n"/>
         </File>
 
     </Appenders>
