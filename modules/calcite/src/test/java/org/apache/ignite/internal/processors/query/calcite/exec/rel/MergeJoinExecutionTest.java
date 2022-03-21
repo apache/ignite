@@ -403,16 +403,13 @@ public class MergeJoinExecutionTest extends AbstractExecutionTest {
             Object o1 = r1[2];
             Object o2 = r2[0];
 
-            if (o1 == null && o2 == null)
-                return 1;
-
             if (o1 == null || o2 == null) {
                 if (o1 != null)
                     return 1;
                 else if (o2 != null)
                     return -1;
                 else
-                    return 0;
+                    return 1;
             }
 
             return Integer.compare((Integer)o1, (Integer)o2);
