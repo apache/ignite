@@ -363,6 +363,13 @@ public abstract class AbstractCdcTest extends GridCommonAbstractTest {
             types.forEachRemaining(t -> {
                 if (t.typeName().equals(User.class.getName())) {
                     userTypeFound = true;
+
+                    assertNotNull(t.field("name"));
+                    assertEquals(String.class.getSimpleName(), t.fieldTypeName("name"));
+                    assertNotNull(t.field("age"));
+                    assertEquals(int.class.getName(), t.fieldTypeName("age"));
+                    assertNotNull(t.field("payload"));
+                    assertEquals(byte[].class.getSimpleName(), t.fieldTypeName("payload"));
                 }
 
                 assertNotNull(t);

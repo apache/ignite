@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.cdc;
 
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
@@ -59,6 +60,15 @@ public class SqlCdcTest extends AbstractCdcTest {
 
     /** */
     public static final String MSK = "Moscow";
+
+    /** */
+    public static final String USER_KEY_TYPE = "TestUserKey";
+
+    /** */
+    public static final String USER_VAL_TYPE = "TestUser";
+
+    /** */
+    public static final String CITY_VAL_TYPE = "TestCity";
 
     /** */
     @Parameterized.Parameter
@@ -106,7 +116,7 @@ public class SqlCdcTest extends AbstractCdcTest {
         executeSql(
             ign,
             "CREATE TABLE USER(id int, city_id int, name varchar, PRIMARY KEY (id, city_id)) " +
-                "WITH \"CACHE_NAME=user,VALUE_TYPE=TestUser,KEY_TYPE=TestUserKey\""
+                "WITH \"CACHE_NAME=user,VALUE_TYPE=" + USER_VAL_TYPE + ",KEY_TYPE=" + USER_KEY_TYPE + "\""
         );
 
         executeSql(
@@ -161,8 +171,21 @@ public class SqlCdcTest extends AbstractCdcTest {
 
     /** */
     public static class BinaryCdcConsumer extends TestCdcConsumer<CdcEvent> {
+        /** */
+        private boolean userKeyType;
+
+        /** */
+        private boolean userValType;
+
+        /** */
+        private boolean cityValType;
+
         /** {@inheritDoc} */
         @Override public void checkEvent(CdcEvent evt) {
+            assertTrue(userKeyType);
+            assertTrue(userValType);
+            assertTrue(cityValType);
+
             if (evt.value() == null)
                 return;
 
@@ -202,10 +225,40 @@ public class SqlCdcTest extends AbstractCdcTest {
         @Override public void onTypes(Iterator<BinaryType> types) {
             while (types.hasNext()) {
                 BinaryType type = types.next();
-
-                System.out.println("type = " + type);
-
                 assertNotNull(type);
+
+                switch (type.typeName()) {
+                    case USER_KEY_TYPE:
+                        assertTrue(type.fieldNames().containsAll(Arrays.asList("ID", "CITY_ID")));
+                        assertEquals(2, type.fieldNames().size());
+                        assertEquals(int.class.getSimpleName(), type.fieldTypeName("ID"));
+                        assertEquals(int.class.getSimpleName(), type.fieldTypeName("CITY_ID"));
+
+                        userKeyType = true;
+
+                        break;
+
+                    case USER_VAL_TYPE:
+                        assertTrue(type.fieldNames().contains("NAME"));
+                        assertEquals(1, type.fieldNames().size());
+                        assertEquals(String.class.getSimpleName(), type.fieldTypeName("NAME"));
+
+                        userValType = true;
+
+                        break;
+
+                    case CITY_VAL_TYPE:
+                        assertTrue(type.fieldNames().containsAll(Arrays.asList("NAME", "ZIP_CODE")));
+                        assertEquals(2, type.fieldNames().size());
+                        assertEquals(String.class.getSimpleName(), type.fieldTypeName("NAME"));
+                        assertEquals(String.class.getSimpleName(), type.fieldTypeName("ZIP_CODE"));
+
+                        cityValType = true;
+
+                        break;
+                    default:
+                        fail("Unexpected type name " + type.typeName());
+                }
             }
         }
     }
