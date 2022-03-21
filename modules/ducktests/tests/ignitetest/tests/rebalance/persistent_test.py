@@ -19,13 +19,13 @@ Module contains persistent rebalance tests.
 from ducktape.mark import defaults
 
 from ignitetest.services.ignite import IgniteService
-from ignitetest.services.ignite_app import IgniteApplicationService
 from ignitetest.services.utils.control_utility import ControlUtility
 from ignitetest.services.utils.ignite_aware import IgniteAwareService
 from ignitetest.services.utils.ignite_configuration.discovery import from_ignite_cluster
 from ignitetest.tests.rebalance.util import NUM_NODES, start_ignite, TriggerEvent, \
-    preload_data, get_result, check_type_of_rebalancing, await_rebalance_start, RebalanceParams
+    get_result, check_type_of_rebalancing, await_rebalance_start, RebalanceParams
 from ignitetest.utils import cluster, ignite_versions
+from ignitetest.utils.data_loader.data_loader import DataLoader, DataLoadParams
 from ignitetest.utils.ignite_test import IgniteTest
 from ignitetest.utils.version import DEV_BRANCH, LATEST
 
@@ -44,21 +44,21 @@ class RebalancePersistentTest(IgniteTest):
         Tests rebalance on node join.
         """
 
-        reb_params = RebalanceParams(trigger_event=TriggerEvent.NODE_JOIN, backups=backups, cache_count=cache_count,
-                                     entry_count=entry_count, entry_size=entry_size, preloaders=preloaders,
+        reb_params = RebalanceParams(trigger_event=TriggerEvent.NODE_JOIN,
                                      thread_pool_size=thread_pool_size, batch_size=batch_size,
                                      batches_prefetch_count=batches_prefetch_count, throttle=throttle, persistent=True)
 
-        ignites = start_ignite(self.test_context, ignite_version, reb_params)
+        data_load_params = DataLoadParams(backups=backups, cache_count=cache_count,
+                                          entry_count=entry_count, entry_size=entry_size, preloaders=preloaders)
+        loader = DataLoader(self.test_context, data_load_params)
+
+        ignites = start_ignite(self.test_context, ignite_version, reb_params, data_load_params)
 
         control_utility = ControlUtility(ignites)
 
         control_utility.activate()
 
-        preload_time = preload_data(
-            self.test_context,
-            ignites.config._replace(client_mode=True, discovery_spi=from_ignite_cluster(ignites)),
-            rebalance_params=reb_params)
+        preload_time = loader.load_data(ignites)
 
         new_node = IgniteService(self.test_context, ignites.config._replace(discovery_spi=from_ignite_cluster(ignites)),
                                  num_nodes=1)
@@ -90,21 +90,21 @@ class RebalancePersistentTest(IgniteTest):
         Tests rebalance on node left.
         """
 
-        reb_params = RebalanceParams(trigger_event=TriggerEvent.NODE_LEFT, backups=backups, cache_count=cache_count,
-                                     entry_count=entry_count, entry_size=entry_size, preloaders=preloaders,
+        reb_params = RebalanceParams(trigger_event=TriggerEvent.NODE_LEFT,
                                      thread_pool_size=thread_pool_size, batch_size=batch_size,
                                      batches_prefetch_count=batches_prefetch_count, throttle=throttle, persistent=True)
 
-        ignites = start_ignite(self.test_context, ignite_version, reb_params)
+        data_load_params = DataLoadParams(backups=backups, cache_count=cache_count,
+                                          entry_count=entry_count, entry_size=entry_size, preloaders=preloaders)
+        loader = DataLoader(self.test_context, data_load_params)
+
+        ignites = start_ignite(self.test_context, ignite_version, reb_params, data_load_params)
 
         control_utility = ControlUtility(ignites)
 
         control_utility.activate()
 
-        preload_time = preload_data(
-            self.test_context,
-            ignites.config._replace(client_mode=True, discovery_spi=from_ignite_cluster(ignites)),
-            rebalance_params=reb_params)
+        preload_time = loader.load_data(ignites)
 
         self.logger.debug(f'DB size before rebalance: {get_database_size_mb(ignites.nodes, ignites.database_dir)}')
 
@@ -134,33 +134,25 @@ class RebalancePersistentTest(IgniteTest):
         """
         Test historycal rebalance.
         """
-
         preload_entries = 10_000
 
-        reb_params = RebalanceParams(trigger_event=TriggerEvent.NODE_JOIN, backups=backups, cache_count=cache_count,
-                                     entry_count=entry_count, entry_size=entry_size, preloaders=preloaders,
+        reb_params = RebalanceParams(trigger_event=TriggerEvent.NODE_JOIN,
                                      thread_pool_size=thread_pool_size, batch_size=batch_size,
                                      batches_prefetch_count=batches_prefetch_count, throttle=throttle, persistent=True,
                                      jvm_opts=['-DIGNITE_PDS_WAL_REBALANCE_THRESHOLD=0',
                                                '-DIGNITE_PREFER_WAL_REBALANCE=true']
                                      )
 
-        ignites = start_ignite(self.test_context, ignite_version, reb_params)
+        data_load_params = DataLoadParams(backups=backups, cache_count=cache_count,
+                                          entry_count=entry_count, entry_size=entry_size, preloaders=preloaders)
+        loader = DataLoader(self.test_context, data_load_params)
+
+        ignites = start_ignite(self.test_context, ignite_version, reb_params, data_load_params)
 
         control_utility = ControlUtility(ignites)
         control_utility.activate()
 
-        preloader_config = ignites.config._replace(client_mode=True, discovery_spi=from_ignite_cluster(ignites))
-
-        preloader = IgniteApplicationService(
-            self.test_context,
-            preloader_config,
-            java_class_name="org.apache.ignite.internal.ducktest.tests.rebalance.DataGenerationApplication",
-            params={"backups": 1, "cacheCount": 1, "entrySize": 1, "from": 0, "to": preload_entries}
-        )
-
-        preloader.run()
-        preloader.free()
+        loader.load_data(ignites, from_key=0, to_key=min(preload_entries, data_load_params.entry_count))
 
         control_utility.deactivate()
         control_utility.activate()
@@ -170,10 +162,7 @@ class RebalancePersistentTest(IgniteTest):
         ignites.stop_node(node)
         assert ignites.wait_node(node)
 
-        preload_time = preload_data(
-            self.test_context,
-            ignites.config._replace(client_mode=True, discovery_spi=from_ignite_cluster(ignites)),
-            rebalance_params=reb_params)
+        preload_time = loader.load_data(ignites)
 
         control_utility.deactivate()
         control_utility.activate()
