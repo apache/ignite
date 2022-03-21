@@ -201,16 +201,29 @@ class BinaryMetadataFileStore {
         if (!enabled)
             return;
 
-        for (File file : metadataDir.listFiles()) {
-            try (FileInputStream in = new FileInputStream(file)) {
-                BinaryMetadata meta = U.unmarshal(ctx.config().getMarshaller(), in, U.resolveClassLoader(ctx.config()));
+        for (File file : metadataDir.listFiles())
+            restoreMetadata(file);
+    }
 
-                metadataLocCache.put(meta.typeId(), new BinaryMetadataHolder(meta, 0, 0));
-            }
-            catch (Exception e) {
-                U.warn(log, "Failed to restore metadata from file: " + file.getName() +
-                    "; exception was thrown: " + e.getMessage());
-            }
+    /**
+     * Restores single type metadata.
+     *
+     * @param typeId Type identifier.
+     */
+    void restoreMetadata(int typeId) {
+        restoreMetadata(new File(metadataDir, BinaryUtils.binaryMetaFileName(typeId)));
+    }
+
+    /** */
+    private void restoreMetadata(File file) {
+        try (FileInputStream in = new FileInputStream(file)) {
+            BinaryMetadata meta = U.unmarshal(ctx.config().getMarshaller(), in, U.resolveClassLoader(ctx.config()));
+
+            metadataLocCache.put(meta.typeId(), new BinaryMetadataHolder(meta, 0, 0));
+        }
+        catch (Exception e) {
+            U.warn(log, "Failed to restore metadata from file: " + file.getName() +
+                "; exception was thrown: " + e.getMessage());
         }
     }
 

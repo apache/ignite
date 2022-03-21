@@ -336,8 +336,12 @@ public abstract class AbstractCdcTest extends GridCommonAbstractTest {
 
     /** */
     public static class UserCdcConsumer extends TestCdcConsumer<Integer> {
+        /** */
+        private boolean userTypeFound;
+
         /** {@inheritDoc} */
         @Override public void checkEvent(CdcEvent evt) {
+            assertTrue(userTypeFound);
             assertNull(evt.version().otherClusterVersion());
 
             if (evt.value() == null)
@@ -352,6 +356,17 @@ public abstract class AbstractCdcTest extends GridCommonAbstractTest {
         /** {@inheritDoc} */
         @Override public Integer extract(CdcEvent evt) {
             return (Integer)evt.key();
+        }
+
+        /** {@inheritDoc} */
+        @Override public void onTypes(Iterator<BinaryType> types) {
+            types.forEachRemaining(t -> {
+                if (t.typeName().equals(User.class.getName())) {
+                    userTypeFound = true;
+                }
+
+                assertNotNull(t);
+            });
         }
     }
 

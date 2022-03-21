@@ -24,6 +24,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
@@ -281,7 +282,7 @@ public class CdcMain implements Runnable {
 
                 walState = initState.get1();
 
-                typesState = initState.get2();
+                typesState = initState.get2() != null ? initState.get2() : new HashMap<>();
 
                 if (walState != null) {
                     committedSegmentIdx.value(walState.get1().index());
@@ -537,10 +538,7 @@ public class CdcMain implements Runnable {
     private void updateTypes() {
         try {
             Iterator<BinaryType> changedTypes = Files.list(binaryMeta.toPath())
-                .filter(p -> {
-                    System.out.println("p = " + p);
-                    return p.endsWith(METADATA_FILE_SUFFIX);
-                })
+                .filter(p -> p.toString().endsWith(METADATA_FILE_SUFFIX))
                 .map(p -> {
                     int typeId = BinaryUtils.typeId(p.getFileName().toString());
 
@@ -551,8 +549,17 @@ public class CdcMain implements Runnable {
 
                 })
                 .filter(Objects::nonNull)
-                .peek(t -> typesState.put(t.get1(), t.get2())) // Adding peeked up types to the state set.
-                .map(t -> kctx.cacheObjects().metadata(t.get1()))
+                .peek(t -> typesState.put(t.get1(), t.get2())) // Adding peeked up types to the state map.
+                .map(t -> {
+                    try {
+                        kctx.cacheObjects().updateMetadataLocally(binaryMeta, t.get1());
+                    }
+                    catch (IgniteCheckedException e) {
+                        throw new IgniteException(e);
+                    }
+
+                    return kctx.cacheObjects().metadata(t.get1());
+                })
                 .iterator();
 
             if (!changedTypes.hasNext())

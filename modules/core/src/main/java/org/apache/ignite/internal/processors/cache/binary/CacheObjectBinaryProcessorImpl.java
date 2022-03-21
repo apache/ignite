@@ -1062,6 +1062,19 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
     }
 
     /** {@inheritDoc} */
+    @Override public void updateMetadataLocally(File metadataDir, int typeId) throws IgniteCheckedException {
+        if (!metadataDir.exists())
+            return;
+
+        ConcurrentMap<Integer, BinaryMetadataHolder> metaCache = new ConcurrentHashMap<>();
+
+        new BinaryMetadataFileStore(metaCache, ctx, log, metadataDir)
+            .restoreMetadata(typeId);
+
+        addMetaLocally(typeId, metaCache.get(typeId).metadata().wrap(binaryContext()));
+    }
+
+    /** {@inheritDoc} */
     @Override public BinaryObject buildEnum(String typeName, int ord) throws BinaryObjectException {
         A.notNullOrEmpty(typeName, "enum type name");
 

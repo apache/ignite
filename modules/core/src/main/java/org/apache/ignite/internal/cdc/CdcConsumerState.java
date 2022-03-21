@@ -33,8 +33,8 @@ import org.apache.ignite.cdc.CdcEvent;
 import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
-import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.lang.IgniteBiTuple;
 
 import static java.nio.file.StandardCopyOption.ATOMIC_MOVE;
@@ -66,7 +66,6 @@ public class CdcConsumerState {
 
     /** Integer size in bytes. */
     private static final int INT_SZ = 4;
-
 
     /** WAL pointer state file. */
     private final Path walPtr;
@@ -162,7 +161,7 @@ public class CdcConsumerState {
 
             buf.flip();
 
-            int sz = buf.getInt();;
+            int sz = buf.getInt();
 
             buf = ByteBuffer.allocate(sz * (LONG_SZ + INT_SZ));
 
