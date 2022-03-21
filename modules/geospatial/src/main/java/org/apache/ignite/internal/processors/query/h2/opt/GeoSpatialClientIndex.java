@@ -19,42 +19,28 @@ package org.apache.ignite.internal.processors.query.h2.opt;
 
 import java.util.List;
 import java.util.UUID;
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.cache.query.index.AbstractIndex;
-import org.apache.ignite.internal.cache.query.index.Index;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexRow;
-import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
+import org.apache.ignite.internal.processors.query.h2.index.client.AbstractClientIndex;
 import org.apache.ignite.internal.util.lang.GridCursor;
 import org.h2.table.IndexColumn;
 import org.h2.table.TableFilter;
-import org.jetbrains.annotations.Nullable;
 import org.locationtech.jts.geom.Geometry;
-
-import static org.apache.ignite.internal.processors.query.h2.index.client.ClientInlineIndex.unsupported;
 
 /**
  * Mock for client nodes to support Geo-Spatial indexes.
  */
-public class GeoSpatialClientIndex extends AbstractIndex implements GeoSpatialIndex {
+public class GeoSpatialClientIndex extends AbstractClientIndex implements GeoSpatialIndex {
     /** Index unique ID. */
     private final UUID id = UUID.randomUUID();
 
     /** */
-    private final String name;
-
-    /** */
-    private final GridH2Table tbl;
-
-    /** */
-    private final List<IndexColumn> cols;
+    private final GeoSpatialClientIndexDefinition def;
 
     /**
      * @param def Index definition.
      */
     public GeoSpatialClientIndex(GeoSpatialClientIndexDefinition def) {
-        name = def.idxName().idxName();
-        tbl = def.tbl();
-        cols = def.cols();
+        this.def = def;
     }
 
     /** {@inheritDoc} */
@@ -64,55 +50,20 @@ public class GeoSpatialClientIndex extends AbstractIndex implements GeoSpatialIn
 
     /** {@inheritDoc} */
     @Override public String name() {
-        return name;
+        return def.idxName().idxName();
     }
 
     /** */
     public GridH2Table tbl() {
-        return tbl;
+        return def.tbl();
     }
 
     /** */
     public List<IndexColumn> cols() {
-        return cols;
+        return def.cols();
     }
 
     /** {@inheritDoc} */
-    @Override public boolean canHandle(CacheDataRow row) throws IgniteCheckedException {
-        throw unsupported();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void onUpdate(
-        @Nullable CacheDataRow oldRow,
-        @Nullable CacheDataRow newRow,
-        boolean prevRowAvailable
-    ) {
-        throw unsupported();
-    }
-
-    /** {@inheritDoc} */
-    @Override public <T extends Index> T unwrap(Class<T> clazz) {
-        if (clazz == null)
-            return null;
-
-        if (clazz.isAssignableFrom(getClass()))
-            return clazz.cast(this);
-
-        throw new IllegalArgumentException(
-            String.format("Cannot unwrap [%s] to [%s]", getClass().getName(), clazz.getName())
-        );
-    }
-
-    /** {@inheritDoc} */
-    @Override public void destroy(boolean softDelete) {
-        // No-op.
-    }
-
-    /**
-     * @param filter Table filter.
-     * @return Cursor.
-     */
     @Override public GridCursor<IndexRow> find(int seg, TableFilter filter) {
         throw unsupported();
     }

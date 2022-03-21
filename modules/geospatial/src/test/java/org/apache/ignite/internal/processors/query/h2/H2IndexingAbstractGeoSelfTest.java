@@ -80,26 +80,26 @@ public abstract class H2IndexingAbstractGeoSelfTest extends GridCommonAbstractTe
     /** Segmented index flag. */
     private final boolean segmented;
 
-    /** Node that creates a Geo-Spatial index. */
+    /** Node that creates a Geo-Spatial index. {@code true} for coordinator node, otherwise client node. */
     @Parameterized.Parameter
-    public String crtNode;
+    public boolean crtNode;
 
-    /** Node that stars a query over a Geo-Spatial index. */
+    /** Node that stars a query over a Geo-Spatial index. {@code true} for coordinator node, otherwise client node. */
     @Parameterized.Parameter(1)
-    public String qryNode;
+    public boolean qryNode;
 
     /** */
     private IgniteEx cln;
 
     /** */
+    private IgniteEx srv;
+
+    /** */
     @Parameterized.Parameters(name = "crtNode={0}, qryNode={1}")
-    public static List<Object[]> parameters() {
-        return F.asList(
-            new Object[] { "CRD", "CRD" },
-            new Object[] { "CRD", "CLN" },
-            new Object[] { "CLN", "CRD" },
-            new Object[] { "CLN", "CLN" }
-        );
+    public static Collection<Object[]> parameters() {
+        List<Boolean> nodes = F.asList(false, true);
+
+        return GridTestUtils.cartesianProduct(nodes, nodes);
     }
 
     /**
@@ -113,7 +113,7 @@ public abstract class H2IndexingAbstractGeoSelfTest extends GridCommonAbstractTe
 
     /** {@inheritDoc} */
     @Override public void beforeTest() throws Exception {
-        startGrids(3);
+        srv = startGrids(3);
 
         cln = startClientGrid();
     }
@@ -126,11 +126,6 @@ public abstract class H2IndexingAbstractGeoSelfTest extends GridCommonAbstractTe
     /** {@inheritDoc} */
     @Override protected long getTestTimeout() {
         return DUR * 3;
-    }
-
-    /** */
-    public IgniteEx node(String lbl) {
-        return "CRD".equals(lbl) ? grid(0) : cln;
     }
 
     /**
@@ -163,7 +158,7 @@ public abstract class H2IndexingAbstractGeoSelfTest extends GridCommonAbstractTe
         boolean dynamicIdx) throws Exception {
         CacheConfiguration<K, V> ccfg = cacheConfig(name, partitioned, keyCls, valCls);
 
-        IgniteEx crtIgn = node(crtNode);
+        IgniteEx crtIgn = crtNode ? srv : cln;
 
         if (dynamicIdx) {
             Collection<QueryEntity> entities = ccfg.getQueryEntities();
@@ -188,7 +183,7 @@ public abstract class H2IndexingAbstractGeoSelfTest extends GridCommonAbstractTe
         else
             crtIgn.getOrCreateCache(ccfg);
 
-        return node(qryNode).cache(name);
+        return (qryNode ? srv : cln).cache(name);
     }
 
     /**

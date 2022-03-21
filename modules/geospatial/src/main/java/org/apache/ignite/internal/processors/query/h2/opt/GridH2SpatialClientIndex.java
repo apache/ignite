@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.h2.opt;
 
+import org.apache.ignite.internal.processors.query.h2.index.client.AbstractClientIndex;
 import org.apache.ignite.spi.indexing.IndexingQueryCacheFilter;
 import org.h2.engine.Session;
 import org.h2.index.Cursor;
@@ -25,63 +26,66 @@ import org.h2.result.SearchRow;
 import org.h2.table.IndexColumn;
 import org.h2.table.TableFilter;
 
-import static org.apache.ignite.internal.processors.query.h2.index.client.ClientInlineIndex.unsupported;
-
 /** Mock for registering Geo-Spatial indexes on client nodes in the H2 engine. */
-public class GridH2SpatialClientIndex extends GriH2SpatialBaseIndex {
+public class GridH2SpatialClientIndex extends GridH2SpatialBaseIndex {
+    /** */
+    private final AbstractClientIndex delegate;
+
     /** */
     public GridH2SpatialClientIndex(GeoSpatialClientIndex delegate) {
         super(delegate.tbl(), delegate.name(), delegate.cols().toArray(new IndexColumn[0]),
             IndexType.createNonUnique(false, false, true));
+
+        this.delegate = delegate;
     }
 
     /** {@inheritDoc} */
     @Override public H2CacheRow put(H2CacheRow row) {
-        throw unsupported();
+        throw delegate.unsupported();
     }
 
     /** {@inheritDoc} */
     @Override public boolean putx(H2CacheRow row) {
-        throw unsupported();
+        throw delegate.unsupported();
     }
 
     /** {@inheritDoc} */
     @Override public boolean removex(SearchRow row) {
-        throw unsupported();
+        throw delegate.unsupported();
     }
 
     /** {@inheritDoc} */
     @Override public int segmentsCount() {
-        throw unsupported();
+        throw delegate.unsupported();
     }
 
     /** {@inheritDoc} */
     @Override public long totalRowCount(IndexingQueryCacheFilter partsFilter) {
-        throw unsupported();
+        throw delegate.unsupported();
     }
 
     /** {@inheritDoc} */
     @Override public Cursor find(Session ses, SearchRow first, SearchRow last) {
-        throw unsupported();
+        throw delegate.unsupported();
     }
 
     /** {@inheritDoc} */
     @Override public boolean canGetFirstOrLast() {
-        throw unsupported();
+        throw delegate.unsupported();
     }
 
     /** {@inheritDoc} */
     @Override public Cursor findFirstOrLast(Session ses, boolean first) {
-        throw unsupported();
+        throw delegate.unsupported();
     }
 
     /** {@inheritDoc} */
     @Override public long getRowCount(Session ses) {
-        throw unsupported();
+        throw delegate.unsupported();
     }
 
     /** {@inheritDoc} */
     @Override public Cursor findByGeometry(TableFilter filter, SearchRow first, SearchRow last, SearchRow intersection) {
-        throw unsupported();
+        throw delegate.unsupported();
     }
 }

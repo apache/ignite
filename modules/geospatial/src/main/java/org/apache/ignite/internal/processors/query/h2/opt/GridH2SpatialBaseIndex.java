@@ -29,7 +29,7 @@ import org.h2.table.IndexColumn;
 import org.h2.table.TableFilter;
 
 /** Base class for Geo-Spatial indexes to register in the H2 engine. */
-public abstract class GriH2SpatialBaseIndex extends GridH2IndexBase implements SpatialIndex {
+public abstract class GridH2SpatialBaseIndex extends GridH2IndexBase implements SpatialIndex {
     /**
      * Constructor.
      *
@@ -38,7 +38,7 @@ public abstract class GriH2SpatialBaseIndex extends GridH2IndexBase implements S
      * @param cols Indexed columns.
      * @param type Index type.
      */
-    protected GriH2SpatialBaseIndex(GridH2Table tbl, String name, IndexColumn[] cols, IndexType type) {
+    protected GridH2SpatialBaseIndex(GridH2Table tbl, String name, IndexColumn[] cols, IndexType type) {
         super(tbl, name, cols, type);
     }
 
@@ -60,6 +60,6 @@ public abstract class GriH2SpatialBaseIndex extends GridH2IndexBase implements S
     /** {@inheritDoc} */
     @Override public double getCost(Session ses, int[] masks, TableFilter[] filters, int filter,
         SortOrder sortOrder, HashSet<Column> cols) {
-        return SpatialTreeIndex.getCostRangeIndex(masks, columns) / 10;
+        return SpatialTreeIndex.getCostRangeIndex(masks, columns) / 10d;
     }
 }

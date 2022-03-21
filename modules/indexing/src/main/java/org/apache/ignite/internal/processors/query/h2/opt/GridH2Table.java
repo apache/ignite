@@ -185,7 +185,7 @@ public class GridH2Table extends TableBase {
     private final IndexProcessor idxProc;
 
     /** Table name. Use it to persist table name for destroy index after destroying table. */
-    private String tableName;
+    private final String tableName;
 
     /**
      * Creates table.
@@ -211,7 +211,7 @@ public class GridH2Table extends TableBase {
         this.cacheInfo = cacheInfo;
         this.idxProc = idxProc;
 
-        this.tableName = createTblData.tableName;
+        tableName = createTblData.tableName;
 
         affKeyCol = calculateAffinityKeyColumn();
         affKeyColIsKey = affKeyCol != null && desc.isKeyColumn(affKeyCol.column.getColumnId());

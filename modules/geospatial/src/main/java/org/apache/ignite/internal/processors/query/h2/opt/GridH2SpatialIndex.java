@@ -37,7 +37,7 @@ import org.locationtech.jts.geom.Geometry;
 /**
  * H2 wrapper for a Geo-Spatial index.
  */
-public class GridH2SpatialIndex extends GriH2SpatialBaseIndex {
+public class GridH2SpatialIndex extends GridH2SpatialBaseIndex {
     /** */
     private final GeoSpatialIndexImpl delegate;
 
