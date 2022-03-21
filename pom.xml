@@ -26,7 +26,7 @@
     <parent>
         <groupId>org.apache.ignite</groupId>
         <artifactId>ignite-parent</artifactId>
-        <version>1</version>
+        <version>${revision}</version>
         <relativePath>parent</relativePath>
     </parent>
 
@@ -34,14 +34,9 @@
     <version>${revision}</version>
     <packaging>pom</packaging>
 
-    <scm>
-        <url>https://gitbox.apache.org/repos/asf/ignite.git</url>
-        <connection>scm:git:https://gitbox.apache.org/repos/asf/ignite.git</connection>
-        <developerConnection>scm:git:https://gitbox.apache.org/repos/asf/ignite.git</developerConnection>
-        <tag>HEAD</tag>
-    </scm>
-
     <modules>
+        <module>modules/shared</module>
+        <module>parent</module>
         <module>modules/apache-license-gen</module>
         <module>modules/tools</module>
         <module>modules/core</module>
@@ -85,6 +80,7 @@
         <module>modules/ml/h2o-model-parser</module>
         <module>modules/opencensus</module>
         <module>modules/control-utility</module>
+        <module>modules/ignite-bom</module>
     </modules>
 
     <profiles>

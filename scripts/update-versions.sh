@@ -34,6 +34,10 @@ sed -i '' -e "s/<revision>.*<\/revision>/<revision>$1<\/revision>/" ./parent/pom
 #TODO remove after IGNITE-12064
 cd modules/apache-license-gen
 mvn versions:set -DnewVersion=$1 -Pall-java,all-scala,all-other -DgenerateBackupPoms=false -DgroupId=* -DartifactId=* -DoldVersion=* -DprocessDependencies=false
+
+cd ../shared
+mvn versions:set -DnewVersion=$1 -Pall-java,all-scala,all-other -DgenerateBackupPoms=false -DgroupId=* -DartifactId=* -DoldVersion=* -DprocessDependencies=false
+
 cd ../../
 
 echo Updating .NET, C++ and other resources versions to $1 with Maven...

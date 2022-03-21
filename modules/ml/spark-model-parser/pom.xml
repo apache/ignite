@@ -27,7 +27,7 @@
     <parent>
         <artifactId>ignite-parent</artifactId>
         <groupId>org.apache.ignite</groupId>
-        <version>1</version>
+        <version>${revision}</version>
         <relativePath>../../../parent</relativePath>
     </parent>
 
