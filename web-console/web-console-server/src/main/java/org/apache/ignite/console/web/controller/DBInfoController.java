@@ -66,7 +66,7 @@ public class DBInfoController {
      */
     @ApiOperation(value = "Save user's datasource.")
     @PutMapping(consumes = APPLICATION_JSON_VALUE)
-    public ResponseEntity<Void> save(@AuthenticationPrincipal Account acc, @RequestBody DBInfoDto datasource) {
+    public ResponseEntity<UUID> save(@AuthenticationPrincipal Account acc, @RequestBody DBInfoDto datasource) {
         if(datasource.getId()==null) {
         	datasource.setId(UUID.randomUUID());
         	datasource.setAccId(acc.getId());
@@ -76,7 +76,7 @@ public class DBInfoController {
         }
     	datasourcesSrv.save(acc.getId(), datasource);
 
-        return ResponseEntity.ok().build();
+        return ResponseEntity.ok().body(datasource.getId());
     }
 
     /**

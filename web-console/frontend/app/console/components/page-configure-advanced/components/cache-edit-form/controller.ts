@@ -29,13 +29,14 @@ export default class CacheEditFormController {
 
     onSave: ng.ICompiledExpression;
 
-    static $inject = ['IgniteConfirm', 'IgniteVersion', '$scope', 'Caches', 'IgniteFormUtils'];
+    static $inject = ['IgniteConfirm', 'IgniteVersion', '$scope', 'Caches', 'TaskFlows','IgniteFormUtils'];
 
     constructor(
         private IgniteConfirm: ReturnType<typeof LegacyConfirmFactory>,
         private IgniteVersion: Version,
         private $scope: ng.IScope,
         private Caches: Caches,
+        private TaskFlows: TaskFlows,
         private IgniteFormUtils: ReturnType<typeof FormUtilsFactory>
     ) {}
 

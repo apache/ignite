@@ -28,7 +28,7 @@ const uniqueNameValidator = (defaultName = '') => (a, items = []) => {
 };
 
 export default class Clusters {
-    static $inject = ['$http', 'JDBC_LINKS'];    
+    static $inject = ['$http'];    
 
     discoveries: Menu<DiscoveryKinds> = [
         {value: 'Vm', label: 'Static IPs'},
@@ -85,7 +85,7 @@ export default class Clusters {
     /**
      * Cluster-related configuration stuff
      */
-    constructor(private $http: ng.IHttpService, private JDBC_LINKS) {}
+    constructor(private $http: ng.IHttpService) {}
 
     getConfiguration(clusterID: string) {
         return this.$http.get(`/api/v1/configuration/${clusterID}`)
@@ -207,15 +207,7 @@ export default class Clusters {
             cachesCount: (cluster.caches || []).length,
             modelsCount: (cluster.models || []).length
         };
-    }
-
-    jdbcDriverURL(dataSrc) {
-        return this.JDBC_LINKS[get(dataSrc, 'dialect')];
-    }
-
-    requiresProprietaryDrivers(dataSrc) {
-        return !!this.jdbcDriverURL(dataSrc);
-    }
+    }    
 
     dataRegion = {
         name: {

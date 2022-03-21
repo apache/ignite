@@ -34,6 +34,7 @@ import Clusters from '../configuration/services/Clusters';
 import Caches from '../configuration/services/Caches';
 import Models from '../configuration/services/Models';
 import Services from './services/Services';
+import TaskFlows from './services/TaskFlows';
 
 import pageConsole from './components/page-configure';
 import pageConsoleBasic from './components/page-configure-basic';
@@ -168,4 +169,5 @@ export default angular
     .service('Caches', Caches) 
     .service('Models', Models) 
     .service('Services', Services)
+    .service('TaskFlows', TaskFlows)
     .constant('JDBC_LINKS', JDBC_LINKS);

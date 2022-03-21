@@ -20,8 +20,12 @@ public class DBInfoDto extends AbstractDto {
 	private String password;
 	private Properties jdbcProp;
 	
-	private DBInfoDto() {
+	public DBInfoDto() {
 		
+	}
+	
+	public DBInfoDto(String dbId) {
+		super(dbId);
 	}
 	
 	public DBInfoDto(String currentDriverCls, String currentJdbcUrl) {
@@ -29,15 +33,15 @@ public class DBInfoDto extends AbstractDto {
 		this.driverCls = currentDriverCls;
 		this.jdbcUrl = currentJdbcUrl;
 	}
-
-	public DBInfoDto(String dbId, String currentDriverCls, String currentJdbcUrl) {
-		super(dbId);		
+	
+	public DBInfoDto(String jndiName,String currentDriverCls, String currentJdbcUrl) {		
+		this.jndiName = jndiName;
 		this.driverCls = currentDriverCls;
 		this.jdbcUrl = currentJdbcUrl;
 	}
 
-	public DBInfoDto(String dbId, String currentDriverCls, String currentJdbcUrl, Properties currentJdbcInfo) {
-		super(dbId);	
+	public DBInfoDto(String jndiName,String currentDriverCls, String currentJdbcUrl, Properties currentJdbcInfo) {		
+		this.jndiName = jndiName;
 		this.driverCls = currentDriverCls;
 		this.jdbcUrl = currentJdbcUrl;
 		this.jdbcProp = currentJdbcInfo;

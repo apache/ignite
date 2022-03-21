@@ -13,8 +13,8 @@ import lombok.Data;
  */
 
 public class DBInfo {
-	public String clusterId; // db连接，部署的clusterID
-	private UUID id; // 用户ID	
+	
+	private UUID id; // db唯一ID	
 	private UUID accId; // 用户ID	
 	public String driverJar; // jar路径
 	public String driverCls;
@@ -26,6 +26,32 @@ public class DBInfo {
 	public Properties jdbcProp;
 	boolean tablesOnly = true;
 	
+	public transient TopologySnapshot top;
+
+	public DBInfo() {
+		
+	}
+	
+	public DBInfo(UUID id) {
+		this.id = id;
+	}
+
+	public DBInfo(String jndiName, String currentDriverCls, String currentJdbcUrl) {
+		super();
+		this.jndiName = jndiName;
+		this.driverCls = currentDriverCls;
+		this.jdbcUrl = currentJdbcUrl;
+	}
+
+	public DBInfo(String jndiName, String currentDriverCls, String currentJdbcUrl, Properties currentJdbcInfo) {
+		super();
+		this.jndiName = jndiName;
+		this.driverCls = currentDriverCls;
+		this.jdbcUrl = currentJdbcUrl;
+		this.jdbcProp = currentJdbcInfo;
+	}
+	
+	
 	public boolean isTablesOnly() {
 		return tablesOnly;
 	}
@@ -33,15 +59,7 @@ public class DBInfo {
 	public void setTablesOnly(boolean tablesOnly) {
 		this.tablesOnly = tablesOnly;
 	}
-
-	public String getClusterId() {
-		return clusterId;
-	}
-
-	public void setClusterId(String clusterId) {
-		this.clusterId = clusterId;
-	}
-
+	
 	public UUID getId() {
 		return id;
 	}
@@ -64,6 +82,14 @@ public class DBInfo {
 
 	public void setDriverCls(String driverCls) {
 		this.driverCls = driverCls;
+	}	
+
+	public String getDriverJar() {
+		return driverJar;
+	}
+
+	public void setDriverJar(String driverJar) {
+		this.driverJar = driverJar;
 	}
 
 	public String getJdbcUrl() {
@@ -113,27 +139,6 @@ public class DBInfo {
 	public void setJdbcProp(Properties jdbcProp) {
 		this.jdbcProp = jdbcProp;
 	}
-
-	public transient TopologySnapshot top;
-	
-	public DBInfo() {
-		
-	}
-
-	public DBInfo(String clusterId, String currentDriverCls, String currentJdbcUrl) {
-		super();
-		this.clusterId = clusterId;
-		this.driverCls = currentDriverCls;
-		this.jdbcUrl = currentJdbcUrl;
-	}
-
-	public DBInfo(String clusterId, String currentDriverCls, String currentJdbcUrl, Properties currentJdbcInfo) {
-		super();
-		this.clusterId = clusterId;
-		this.driverCls = currentDriverCls;
-		this.jdbcUrl = currentJdbcUrl;
-		this.jdbcProp = currentJdbcInfo;
-	}
 	
 
 	public DBInfo buildWith(Map<String, Object> args) throws IllegalArgumentException {
@@ -152,10 +157,19 @@ public class DBInfo {
 		
 		if (args.containsKey("jndiName"))	
 			jndiName = args.get("jndiName").toString();
+		
+		if (args.containsKey("id")) {
+			try {
+				id = UUID.fromString(args.get("id").toString());
+			}
+			catch(IllegalArgumentException e) {
+				
+			}
+		}
 
 		if (args.containsKey("info")) {
-			Properties info = new Properties();
-			info.putAll((Map) args.get("info"));
+			jdbcProp = new Properties();
+			jdbcProp.putAll((Map) args.get("info"));
 		}
 		
 		if (args.containsKey("schema"))	
@@ -171,14 +185,6 @@ public class DBInfo {
 			tablesOnly = Boolean.valueOf(args.get("tablesOnly").toString());		
 		
 		return this;
-	}
-
-	public String getDriverJar() {
-		return driverJar;
-	}
-
-	public void setDriverJar(String driverJar) {
-		this.driverJar = driverJar;
 	}
 
 }

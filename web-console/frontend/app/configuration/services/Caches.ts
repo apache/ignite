@@ -22,7 +22,7 @@ import {CacheModes, AtomicityModes, ShortCache} from '../types';
 import {Menu} from 'app/types';
 
 export default class Caches {
-    static $inject = ['$http', 'JDBC_LINKS'];
+    static $inject = ['$http'];
 
     cacheModes: Menu<CacheModes> = [
         {value: 'LOCAL', label: 'LOCAL'},
@@ -36,7 +36,7 @@ export default class Caches {
         {value: 'TRANSACTIONAL_SNAPSHOT', label: 'TRANSACTIONAL_SNAPSHOT'}
     ];
 
-    constructor(private $http: ng.IHttpService, private JDBC_LINKS) {}
+    constructor(private $http: ng.IHttpService) {}
 
     getCache(cacheID: string) {
         return this.$http.get(`/api/v1/configuration/caches/${cacheID}`);
@@ -225,6 +225,7 @@ export default class Caches {
     }
 
     jdbcDriverURL(storeFactory) {
+        this.JDBC_LINKS = {}
         return this.JDBC_LINKS[get(storeFactory, 'dialect')];
     }
 

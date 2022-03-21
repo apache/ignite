@@ -294,10 +294,8 @@ body {
     }
 
     &>.content {
-        grid-area: content;
-        padding-left: var(--page-side-padding);
-        padding-right: var(--page-side-padding);
-        padding-bottom: 0px;
+        grid-area: content;        
+        padding: 15px 15px 15px var(--page-side-padding);
         display: flex;
         flex-direction: column;
 
@@ -2079,7 +2077,7 @@ html, body {
 }
 
 header.header-with-selector {
-    margin: 30px 0 10px;
+    margin: 20px 0 10px;
 
     display: flex;
     flex-direction: row;

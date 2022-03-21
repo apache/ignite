@@ -416,7 +416,10 @@ public class WebSocketRouter implements AutoCloseable {
 				cfg.setNodeId(UUID.fromString(clusterId));
 				if(json.getBoolean("demo",false)) {
 					// 启动多个节点，并且在最后一个节点部署服务
-		        	AgentClusterDemo.tryStart(cfg).await();
+		        	boolean rv = AgentClusterDemo.tryStart(cfg).await(60,TimeUnit.SECONDS);
+		        	if(rv) {
+		        		stat.put("status", "started");
+		        	}
 		    	}
 		        else {
 		        	// 启动一个节点，最后再部署服务

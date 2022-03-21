@@ -93,6 +93,22 @@ export default class Controller {
     ];
 
     $onInit() {
+        const clusterID$ = this.$uiRouter.globals.params$.pipe(
+            pluck('clusterID'),
+            publishReplay(1),
+            refCount()
+        );
+        
+        this.originalCluster$ = clusterID$.pipe(
+            distinctUntilChanged(),
+            switchMap((id) => {
+                return this.ConfigureState.state$.pipe(this.ConfigSelectors.selectClusterToEdit(id));
+            }),
+            distinctUntilChanged(),
+            publishReplay(1),
+            refCount()
+        );
+        
         const cacheID$ = this.$uiRouter.globals.params$.pipe(
             pluck('cacheID'),
             publishReplay(1),
@@ -141,6 +157,8 @@ export default class Controller {
                 available: true
             }
         ]));
+        
+        
     }
 
     remove(itemIDs: Array<string>) {

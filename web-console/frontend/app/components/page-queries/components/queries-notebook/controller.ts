@@ -316,7 +316,7 @@ export class NotebookCtrl {
         this._stopTopologyRefresh = () => {
             if ($scope.notebook && $scope.notebook.paragraphs)
                 $scope.notebook.paragraphs.forEach((paragraph) => _tryStopRefresh(paragraph));
-        };
+        };       
 
         $scope.clusterIsActive = false;
 
@@ -986,10 +986,12 @@ export class NotebookCtrl {
                         return of(EMPTY);
 
                     return of(cluster).pipe(
-                        tap(() => Loading.start('sqlLoading')),
+                        // remove@byron
+                        // tap(() => Loading.start('sqlLoading')),
                         tap(() => {
                             _.forEach($scope.notebook.paragraphs, (paragraph) => {
-                                paragraph.reset($interval);
+                                // remove@byron
+                                // paragraph.reset($interval);
                             });
                         }),
                         switchMap(() => refreshCaches(60000))
@@ -1007,7 +1009,9 @@ export class NotebookCtrl {
         Notebook.find($state.params.noteId)
             .then((notebook) => {
                 $scope.notebook = _.cloneDeep(notebook);
-
+                // add@byron
+                localStorage.clusterId = notebook.clusterId;
+                // end@
                 $scope.notebook_name = $scope.notebook.name;
 
                 if (!$scope.notebook.expandedParagraphs)
@@ -1686,8 +1690,13 @@ export class NotebookCtrl {
             from(_chooseNode(paragraph.cacheName, local)).pipe(
                 switchMap((nid) => {
                     // If we are executing only selected part of query then Notebook shouldn't be saved.
-                    if (!paragraph.partialQuery)
+                    if (!paragraph.partialQuery){
+                        if(localStorage.clusterId){
+                            $scope.notebook.clusterId = localStorage.clusterId;
+                        }
                         Notebook.save($scope.notebook).catch(Messages.showError);
+                    }
+                        
 
                     paragraph.localQueryMode = local;
                     paragraph.prevQuery = paragraph.queryArgs ? paragraph.queryArgs.query : paragraph.query;

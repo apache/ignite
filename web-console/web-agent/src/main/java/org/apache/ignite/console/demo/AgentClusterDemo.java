@@ -20,6 +20,7 @@ import java.io.File;
 import java.nio.file.Paths;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -36,6 +37,7 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.console.agent.AgentClusterLauncher;
+import org.apache.ignite.console.agent.handlers.DemoClusterHandler;
 import org.apache.ignite.console.demo.service.DemoCachesLoadService;
 import org.apache.ignite.console.demo.service.DemoComputeLoadService;
 import org.apache.ignite.console.demo.service.DemoRandomCacheLoadService;
@@ -161,10 +163,12 @@ public class AgentClusterDemo {
         dataRegCfg.setMetricsEnabled(true);
         dataRegCfg.setMaxSize(DFLT_DATA_REGION_INITIAL_SIZE);
         dataRegCfg.setPersistenceEnabled(!true);
+        dataRegCfg.setLazyMemoryAllocation(true);
 
         DataStorageConfiguration dataStorageCfg = new DataStorageConfiguration();
         dataStorageCfg.setMetricsEnabled(true);
         
+        dataStorageCfg.setStoragePath("data");
         dataStorageCfg.setDefaultDataRegionConfiguration(dataRegCfg);
         dataStorageCfg.setSystemRegionMaxSize(DFLT_DATA_REGION_INITIAL_SIZE);
 
@@ -239,6 +243,7 @@ public class AgentClusterDemo {
                             cfg.getDataStorageConfiguration().getStoragePath(),
                             true
                         );
+                        cfg.setNodeId(UUID.fromString(DemoClusterHandler.DEMO_CLUSTER_ID));                        
                     }
                     else {
                     	cfg.setNodeId(null);
@@ -259,7 +264,7 @@ public class AgentClusterDemo {
                         demoUrl = AgentClusterLauncher.registerNodeUrl(ignite);
                         
                         initLatch.countDown();
-                    }
+                    }                    
                 }
                 catch (Throwable e) {
                     if (first) {

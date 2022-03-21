@@ -9,9 +9,11 @@ import javax.sql.DataSource;
 import org.apache.ignite.console.db.DBInfo;
 import org.apache.ignite.console.json.JsonArray;
 import org.apache.ignite.console.json.JsonObject;
+import org.apache.ignite.console.utils.Utils;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
+import org.eclipse.jetty.client.util.StringContentProvider;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.springframework.jndi.JndiObjectFactoryBean;
@@ -181,18 +183,25 @@ public class DataSourceManager {
 	}
 	
 
-	public static JsonObject createDataSource(String token, DBInfo dbInfo) {
+	public static JsonObject createDataSource(String id, DBInfo dbInfo) {
 		
-		try {			
-			Request req = serverClient.newRequest(datasourceCreateUrl);
-			req.header("TOKEN", token);
-			req.method(HttpMethod.PUT);
-			//req.content(content, contentType)
-			ContentResponse response = req.send();
-			byte[] body = response.getContent();
+		try {	
+			for(String token: serverTokens) {
+				Request req = serverClient.newRequest(datasourceCreateUrl);
+				req.header("TOKEN", token);
+				req.header("XSRF-TOKEN", "a9bd0b6d-eb01-4656-945e-10fa264e15a1");
+				req.method(HttpMethod.PUT);
+				String content = Utils.toJson(dbInfo);
+				req.content(new StringContentProvider(content, "UTF-8"),"application/json");
+				ContentResponse response = req.send();
+				String body = response.getContentAsString();
+				
+				JsonObject result = fromJson(body);
+				if(result.getString("error")==null) {
+					return result;
+				}
+			}
 			
-			JsonObject result = fromJson(body);
-			return result;
 			
 		} catch (InterruptedException e1) {
 			// TODO Auto-generated catch block

@@ -364,23 +364,29 @@ public class AgentClusterLauncher {
     public static Ignite trySingleStart(JsonObject json) throws IgniteCheckedException {
     	Ignite ignite = null;
     	String clusterId = json.getString("id");
+    	String clusterName = Utils.escapeFileName(json.getString("name"));
+    	// 单个节点： clusterID和nodeID相同
+    	UUID nodeID = UUID.fromString(clusterId);
     	try {
     		ignite = Ignition.ignite(UUID.fromString(clusterId));
-    		return null;
+    		return ignite;
+    	}
+    	catch(IgniteIllegalStateException e) {
+    		
+    	}
+    	// 基于Instance Name 查找ignite
+    	try {
+    		ignite = Ignition.ignite(clusterName);
+    		return ignite;
     	}
     	catch(IgniteIllegalStateException e) {
     		
     	}
     	
-        if (ignite==null) {
-        	
-        	
-        	String fileName = Utils.escapeFileName(json.getString("name"));
+        if (ignite==null) {        	
         	
         	String work = U.workDirectory(null, null)+ "/config/";			
-			
-			
-        	String cfgFile = String.format("%s%s/src/main/resources/META-INF/%s-server.xml", work, fileName,fileName);
+        	String cfgFile = String.format("%s%s/src/main/resources/META-INF/%s-server.xml", work, clusterName,clusterName);
 			URL springCfgUrl = U.resolveSpringUrl(cfgFile);
 			
 			IgniteBiTuple<Collection<IgniteConfiguration>, ? extends GridSpringResourceContext> cfgMap;
@@ -389,9 +395,9 @@ public class AgentClusterLauncher {
 			
 			//only on node per jvm.					
 			IgniteConfiguration cfg = cfgMap.get1().iterator().next();
-			cfg.setNodeId(UUID.fromString(clusterId));
+			cfg.setNodeId(nodeID);
 			cfg.setConsistentId(clusterId);
-			cfg.setIgniteInstanceName(fileName);
+			cfg.setIgniteInstanceName(clusterName);
 			
 			AgentClusterLauncher.singleIgniteConfiguration(cfg);
 			

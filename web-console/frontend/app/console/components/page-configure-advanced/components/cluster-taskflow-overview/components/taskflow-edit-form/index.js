@@ -14,48 +14,8 @@
  * limitations under the License.
  */
 
-@import "public/stylesheets/variables";
-
-.admin-page {
-  .docs-header {
-    display: flex;
-    flex-direction: row;
-    align-items: baseline;
-
-    margin: 20px 0 20px;
-
-    h1 {
-      font-size: 24px;
-      margin: 0 10px 0 0;
-    }
-  }
-
-  .panel-heading {
-    cursor: default;
-
-    i {
-      margin-top: 2px;
-      margin-right: 10px;
-    }
-
-    sub {
-      bottom: 0;
-    }
-  }
-
-  .ui-grid-header-cell input {
-    font-weight: normal;
-  }
-
-  .ui-grid-header-cell input {
-    font-weight: normal;
-  }
-
-  .ui-grid-filter-select {
-    width: calc(100% - 10px);
-  }
-
-  .ui-grid-cell-contents > i {
-    line-height: $line-height-base;
-  }
-}
+import angular from 'angular';
+import component from './component';
+export default angular
+    .module('console.task-flow-edit-form', [])
+    .component('taskFlowEditForm', component);

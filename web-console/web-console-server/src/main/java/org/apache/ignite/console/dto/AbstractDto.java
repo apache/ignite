@@ -21,7 +21,7 @@ import java.util.UUID;
 /**
  * Base class for DTO objects.
  */
-public abstract class AbstractDto {
+public abstract class AbstractDto implements java.io.Serializable{
     /** */
     protected UUID id;
 

@@ -64,6 +64,8 @@ export default class PageConfigureBasicController {
             click: () => this.callService('serviceList'),
             icon: 'checkmark'
         })
+        
+        this.$scope.formActionsMenu = this.formActionsMenu;
     }
 
     
@@ -180,8 +182,8 @@ export default class PageConfigureBasicController {
     }
     
     buildFormActionsMenu(){
-       let formActionsMenu = this.formActionsMenu;
-       this.formActionsMenu.length = 0;
+       let formActionsMenu = [];//this.$scope.formActionsMenu;
+       //this.$scope.formActionsMenu.length = 0;
        
        if(this.$scope.status && this.$scope.status!="started"){
            formActionsMenu.push({
@@ -202,7 +204,7 @@ export default class PageConfigureBasicController {
                icon: 'checkmark'
            })
        }
-       
+       this.$scope.formActionsMenu = formActionsMenu;
        return formActionsMenu;
     }
     

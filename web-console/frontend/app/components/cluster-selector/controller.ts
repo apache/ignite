@@ -24,7 +24,7 @@ export default class {
     clusters = [];
     isDemo = this.agentMgr.isDemoMode();
     _inProgressSubject = new BehaviorSubject(false);
-
+    clusterId = null;
     static $inject = ['AgentManager', 'IgniteConfirm', 'IgniteVersion', 'IgniteMessages', '$translate'];
 
     constructor(
@@ -46,7 +46,12 @@ export default class {
             tap(([sbj, inProgress]) => this.inProgress = inProgress),
             filter(([sbj, inProgress]) => !inProgress),
             tap(([{cluster, clusters}]) => {
-                this.cluster = cluster ? {...cluster} : null;
+                if(cluster && localStorage.clusterId && localStorage.clusterId===cluster.id){
+                    this.cluster = {...cluster} 
+                }
+                else if(!this.cluster){
+                    this.cluster = cluster ? {...cluster} : null;
+                }                
                 this.clusters = _.orderBy(clusters, ['name'], ['asc']);
             })
         )

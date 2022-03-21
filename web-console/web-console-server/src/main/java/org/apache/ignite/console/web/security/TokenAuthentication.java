@@ -24,7 +24,10 @@ public class TokenAuthentication implements Authentication{
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
     	ArrayList<GrantedAuthority> authors = new ArrayList<GrantedAuthority>(1);
-    	authors.add(new SimpleGrantedAuthority(isAdmin?"ROLE_ADMIN":"ROLE_USER"));
+    	authors.add(new SimpleGrantedAuthority(Account.ROLE_USER));
+    	if(isAdmin) {
+    		authors.add(new SimpleGrantedAuthority(Account.ROLE_ADMIN));
+    	}
     	return authors;
     }
  

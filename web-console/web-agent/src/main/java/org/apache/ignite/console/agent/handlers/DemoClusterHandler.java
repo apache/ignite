@@ -43,10 +43,10 @@ import static org.apache.ignite.internal.processors.rest.GridRestCommand.TOPOLOG
  */
 public class DemoClusterHandler extends AbstractClusterHandler{
     /** Demo cluster ID. */
-    static final String DEMO_CLUSTER_ID = UUID.randomUUID().toString();
+    public static final String DEMO_CLUSTER_ID = UUID.randomUUID().toString();
 
     /** Demo cluster name. */
-    private static final String DEMO_CLUSTER_NAME = "demo-cluster";
+    public static final String DEMO_CLUSTER_NAME = "demo-cluster";
 
     /**
      * @param cfg Config.
@@ -95,7 +95,7 @@ public class DemoClusterHandler extends AbstractClusterHandler{
             top.setClusterVersion(VER_STR);
         }
 
-        top.setId(DEMO_CLUSTER_ID);
+        top.setId(DEMO_CLUSTER_ID.toString());
         top.setName(DEMO_CLUSTER_NAME);
         top.setDemo(true);        
 

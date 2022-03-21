@@ -48,7 +48,24 @@ public class DatabaseListener {
 
 	/** Index of alive node URI. jndiName->DBInfo*/
 	final public Map<String, DBInfo> clusters = new ConcurrentHashMap<>();
+	final public Map<String,Integer> deactivedCluster = new ConcurrentHashMap<>();
 	
+	public boolean deactivedCluster(String id) {
+		Integer count = deactivedCluster.compute(id,(k,v)->{ return v==null? 1: ++v;});
+		if(count>10) {
+			clusters.remove(id);
+			return true;
+		}
+		return false;
+	}
+	
+	/**
+	 * 执行完以后，jndiName不为空
+	 * @param args
+	 * @param conn
+	 * @return
+	 * @throws IllegalArgumentException
+	 */
 	public DBInfo addDB(Map<String, Object> args,Connection conn) throws IllegalArgumentException {
 		DBInfo dbInfo = new DBInfo();
 		dbInfo.buildWith(args);
@@ -61,17 +78,17 @@ public class DatabaseListener {
 			}
 		}
 
-		if(StringUtil.isBlank(dbInfo.jndiName)) {
-			String clusterId = UUID.randomUUID().toString();
-			clusters.put(clusterId, dbInfo);
-		}
-		else {
-			clusters.put(dbInfo.jndiName, dbInfo);
-			
-			DataSourceManager.bindDataSource(dbInfo.jndiName, dbInfo);
+		if(dbInfo.getId()==null) {
+			dbInfo.setId(UUID.randomUUID());
 		}
 		
-		if(conn!=null && StringUtil.isBlank(dbInfo.jndiName)) {
+		if(!StringUtil.isBlank(dbInfo.jndiName)) {
+			
+			DataSourceManager.bindDataSource(dbInfo.jndiName, dbInfo);
+			
+			clusters.put(dbInfo.getId().toString(), dbInfo);
+		}
+		else {
 			try {
 				String dbProductName = conn.getMetaData().getDatabaseProductName();
 				
@@ -105,15 +122,16 @@ public class DatabaseListener {
 				DataSourceManager.bindDataSource(dbInfo.jndiName, dbInfo);
 				
 				// 保存datasource
-				DataSourceManager.createDataSource(args.get("tok").toString(), dbInfo);
+				DataSourceManager.createDataSource(dbInfo.getId().toString(), dbInfo);
+				
+				clusters.put(dbInfo.getId().toString(), dbInfo);
 				
 			} catch (SQLException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
-			}
-			
-			
+			}			
 		}
+		
 		return dbInfo;
 	}
 
@@ -122,7 +140,10 @@ public class DatabaseListener {
 		dbInfoTarget.buildWith(args);
 
 		for (DBInfo dbInfo : clusters.values()) {
-			if (dbInfo.jdbcUrl.equalsIgnoreCase(dbInfoTarget.jdbcUrl)) {
+			if (dbInfoTarget.jdbcUrl!=null && dbInfo.jdbcUrl.equalsIgnoreCase(dbInfoTarget.jdbcUrl)) {
+				return dbInfo;
+			}
+			if (dbInfoTarget.jndiName!=null && dbInfo.jndiName!=null && dbInfo.jndiName.equalsIgnoreCase(dbInfoTarget.jndiName)) {
 				return dbInfo;
 			}
 		}
@@ -134,6 +155,7 @@ public class DatabaseListener {
 	}
 	
 	public DBInfo getDBClusterInfo(String clusterId) {
+		deactivedCluster.remove(clusterId);
 		return clusters.get(clusterId);
 	}
 	

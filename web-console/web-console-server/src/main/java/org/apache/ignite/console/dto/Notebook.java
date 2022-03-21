@@ -34,8 +34,19 @@ public class Notebook extends AbstractDto {
 
     /** Expanded paragraphs. */
     private int[] expandedParagraphs;
+    
+    /** default clusterId */
+    private String clusterId;
 
-    /**
+    public String getClusterId() {
+		return clusterId;
+	}
+
+	public void setClusterId(String clusterId) {
+		this.clusterId = clusterId;
+	}
+
+	/**
      * @return Name.
      */
     public String getName() {

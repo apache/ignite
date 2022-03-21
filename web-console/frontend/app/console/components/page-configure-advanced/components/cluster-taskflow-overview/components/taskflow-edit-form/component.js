@@ -13,49 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import controller from './controller';
+import templateUrl from './template.tpl.pug';
+import './style.scss';
 
-@import "public/stylesheets/variables";
-
-.admin-page {
-  .docs-header {
-    display: flex;
-    flex-direction: row;
-    align-items: baseline;
-
-    margin: 20px 0 20px;
-
-    h1 {
-      font-size: 24px;
-      margin: 0 10px 0 0;
+export default {
+    controller,
+    templateUrl,
+    bindings: {
+        service: '<',   
+        onCall: '&'
     }
-  }
-
-  .panel-heading {
-    cursor: default;
-
-    i {
-      margin-top: 2px;
-      margin-right: 10px;
-    }
-
-    sub {
-      bottom: 0;
-    }
-  }
-
-  .ui-grid-header-cell input {
-    font-weight: normal;
-  }
-
-  .ui-grid-header-cell input {
-    font-weight: normal;
-  }
-
-  .ui-grid-filter-select {
-    width: calc(100% - 10px);
-  }
-
-  .ui-grid-cell-contents > i {
-    line-height: $line-height-base;
-  }
-}
+};

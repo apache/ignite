@@ -95,7 +95,7 @@ public class DatabaseHandler{
     
     private final JdbcExecutor jdbcExecutor;
     
-    DatabaseListener  databaseListener = new DatabaseListener();
+    private DatabaseListener  databaseListener = new DatabaseListener();
     
     /**
      * @param cfg Config.
@@ -328,15 +328,15 @@ public class DatabaseHandler{
      */
     List<TopologySnapshot> topologySnapshot() {        
         List<TopologySnapshot> tops = new LinkedList<>();        
-        String deactivedCluster = null;
+       
         for (Entry<String, DBInfo> ent: databaseListener.clusters.entrySet()) {
         	DBInfo info = ent.getValue();
         	try {
 	        	if(ent.getValue().top==null) {
-		        	List<GridClientNodeBean> nodes = new ArrayList<>();
+		        	List<GridClientNodeBean> nodes = new ArrayList<>(1);
 		        	GridClientNodeBean node = new GridClientNodeBean();
-		        	node.setNodeId(UUID.fromString(info.clusterId));
-		        	node.setConsistentId(info.clusterId);
+		        	node.setNodeId(info.getId());
+		        	node.setConsistentId(info.getJndiName());
 		        	node.setAttributes((Map)info.jdbcProp);
 		        	node.setTcpAddresses(Arrays.asList(info.jdbcUrl));
 		        	node.setTcpPort(0);
@@ -346,13 +346,13 @@ public class DatabaseHandler{
 		        	TopologySnapshot top = new TopologySnapshot(nodes);
 		            
 		            top.setClusterVersion(VER_STR);
-		            top.setId(info.clusterId);
-		            top.setName(info.jdbcUrl);
+		            top.setId(info.getId().toString());
+		            top.setName(info.getJndiName());
 		            top.setDemo(false); 
 		            top.setActive(true);
 		            if(schemas.isEmpty()) {
 		            	top.setActive(false);
-		            	deactivedCluster = info.clusterId;
+		            	databaseListener.deactivedCluster(info.getId().toString());
 		            }
 		           
 		            info.top = top;
@@ -361,7 +361,7 @@ public class DatabaseHandler{
 	        		Collection<GridClientCacheBean> schemas = schemas(info);
 	        		if(schemas.isEmpty()) {
 		            	info.top.setActive(false);
-		            	deactivedCluster = info.clusterId;
+		            	databaseListener.deactivedCluster(info.getId().toString());
 		            }
 	        	}
 	            
@@ -371,12 +371,7 @@ public class DatabaseHandler{
         	catch(Exception e) {
         		e.printStackTrace();
         	}
-
-        }       
-        
-        if(deactivedCluster!=null && databaseListener.clusters.size()>10) {
-        	databaseListener.clusters.remove(deactivedCluster);
-        }
+        } 
         
         return tops;
     }
