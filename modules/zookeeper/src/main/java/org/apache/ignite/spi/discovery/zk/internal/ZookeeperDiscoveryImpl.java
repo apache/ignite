@@ -1746,45 +1746,45 @@ public class ZookeeperDiscoveryImpl {
         TreeMap<Long, String> alives,
         final int MAX_NEW_EVTS) throws Exception
     {
-       ZkBulkJoinContext joinCtx = new ZkBulkJoinContext();
+        ZkBulkJoinContext joinCtx = new ZkBulkJoinContext();
 
-       for (Map.Entry<Long, String> e : alives.entrySet()) {
-           Long internalId = e.getKey();
+        for (Map.Entry<Long, String> e : alives.entrySet()) {
+            Long internalId = e.getKey();
 
-           if (!rtState.top.nodesByInternalId.containsKey(internalId)) {
-               UUID rslvFutId = rtState.evtsData.communicationErrorResolveFutureId();
+            if (!rtState.top.nodesByInternalId.containsKey(internalId)) {
+                UUID rslvFutId = rtState.evtsData.communicationErrorResolveFutureId();
 
-               if (rslvFutId != null) {
-                   if (log.isInfoEnabled()) {
-                       log.info("Delay alive nodes change process while communication error resolve " +
-                           "is in progress [reqId=" + rslvFutId + ']');
-                   }
+                if (rslvFutId != null) {
+                    if (log.isInfoEnabled()) {
+                        log.info("Delay alive nodes change process while communication error resolve " +
+                            "is in progress [reqId=" + rslvFutId + ']');
+                    }
 
-                   break;
-               }
+                    break;
+                }
 
-               processJoinOnCoordinator(joinCtx, curTop, internalId, e.getValue());
+                processJoinOnCoordinator(joinCtx, curTop, internalId, e.getValue());
 
-               if (joinCtx.nodes() == MAX_NEW_EVTS) {
-                   generateBulkJoinEvent(curTop, joinCtx);
+                if (joinCtx.nodes() == MAX_NEW_EVTS) {
+                    generateBulkJoinEvent(curTop, joinCtx);
 
-                   if (log.isInfoEnabled()) {
-                       log.info("Delay alive nodes change process, max event threshold reached [" +
-                           "newEvts=" + joinCtx.nodes() +
-                           ", totalEvts=" + rtState.evtsData.evts.size() + ']');
-                   }
+                    if (log.isInfoEnabled()) {
+                        log.info("Delay alive nodes change process, max event threshold reached [" +
+                            "newEvts=" + joinCtx.nodes() +
+                            ", totalEvts=" + rtState.evtsData.evts.size() + ']');
+                    }
 
-                   throttleNewEventsGeneration();
+                    throttleNewEventsGeneration();
 
-                   rtState.zkClient.getChildrenAsync(zkPaths.aliveNodesDir, rtState.watcher, rtState.watcher);
+                    rtState.zkClient.getChildrenAsync(zkPaths.aliveNodesDir, rtState.watcher, rtState.watcher);
 
-                   return;
-               }
-           }
-       }
+                    return;
+                }
+            }
+        }
 
-       if (joinCtx.nodes() > 0)
-           generateBulkJoinEvent(curTop, joinCtx);
+        if (joinCtx.nodes() > 0)
+            generateBulkJoinEvent(curTop, joinCtx);
     }
 
     /**

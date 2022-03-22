@@ -258,7 +258,7 @@ public class GridCacheColocatedDebugTest extends GridCommonAbstractTest {
      */
     @Test
     public void testPutsMultithreadedRemote() throws Exception {
-       checkPutsMultithreaded(false, true, MAX_ITER_CNT);
+        checkPutsMultithreaded(false, true, MAX_ITER_CNT);
     }
 
     /**

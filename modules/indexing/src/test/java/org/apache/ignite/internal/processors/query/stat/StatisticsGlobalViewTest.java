@@ -138,9 +138,9 @@ public abstract class StatisticsGlobalViewTest extends StatisticsAbstractTest {
 
         checkSqlResult("select * from SYS.STATISTICS_GLOBAL_DATA where NAME = 'SMALL' and VERSION >= " + minVer,
             null, act -> {
-            checkContains(partLines, act);
-            return true;
-        });
+                checkContains(partLines, act);
+                return true;
+            });
 
         stopGrid(2);
     }

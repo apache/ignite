@@ -132,11 +132,11 @@ public class CancelTest extends GridCommonAbstractTest {
         stopGrid(1);
 
         Throwable ex = GridTestUtils.assertThrows(log, () -> {
-                while (it.hasNext())
-                    it.next();
+            while (it.hasNext())
+                it.next();
 
-                return null;
-            }, IgniteSQLException.class, null);
+            return null;
+        }, IgniteSQLException.class, null);
 
         // Sometimes remote node during stopping can send error to originator node and this error processed before
         // node left event, in this case exception stack will looks like:

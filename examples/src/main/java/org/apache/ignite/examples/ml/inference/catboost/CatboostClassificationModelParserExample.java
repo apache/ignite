@@ -97,7 +97,7 @@ public class CatboostClassificationModelParserExample {
                     String[] values = testDataStr.split(",");
 
                     for (int i = 0; i < columns.length; i++) {
-                      testObj.put(columns[i], Double.valueOf(values[i]));
+                        testObj.put(columns[i], Double.valueOf(values[i]));
                     }
 
                     double prediction = mdl.predict(VectorUtils.of(testObj)).get();
@@ -110,5 +110,5 @@ public class CatboostClassificationModelParserExample {
         finally {
             System.out.flush();
         }
-  }
+    }
 }

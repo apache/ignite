@@ -40,7 +40,7 @@ public class IgniteSqlDropIndex extends SqlDrop {
         new SqlSpecialOperator("DROP INDEX", SqlKind.DROP_INDEX);
 
     /** */
-    protected IgniteSqlDropIndex(SqlParserPos pos, boolean ifExists, SqlIdentifier idxName) {
+    public IgniteSqlDropIndex(SqlParserPos pos, boolean ifExists, SqlIdentifier idxName) {
         super(OPERATOR, pos, ifExists);
         name = Objects.requireNonNull(idxName, "index name");
     }

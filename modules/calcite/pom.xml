@@ -297,7 +297,7 @@
                         </goals>
                         <configuration>
                             <sourceDirectory>${project.build.directory}/generated-sources/fmpp</sourceDirectory>
-                            <outputDirectory>${project.build.directory}/generated-sources/javacc</outputDirectory>
+                            <outputDirectory>${project.build.sourceDirectory}</outputDirectory>
                             <includes>
                                 <include>**/Parser.jj</include>
                             </includes>

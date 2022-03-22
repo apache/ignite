@@ -165,20 +165,21 @@ public final class LinearRegressionModel implements IgniteModel<Vector, Double>,
     /** {@inheritDoc} */
     @Override public void toJSON(Path path) {
         ObjectMapper mapper = new ObjectMapper();
-            try {
-                LinearRegressionModelJSONExportModel exportModel = new LinearRegressionModelJSONExportModel(
-                    System.currentTimeMillis(),
-                    "linreg_" + UUID.randomUUID().toString(),
-                    LinearRegressionModel.class.getSimpleName()
-                );
-                exportModel.intercept = intercept;
-                exportModel.weights = weights.asArray();
+        try {
+            LinearRegressionModelJSONExportModel exportModel = new LinearRegressionModelJSONExportModel(
+                System.currentTimeMillis(),
+                "linreg_" + UUID.randomUUID().toString(),
+                LinearRegressionModel.class.getSimpleName()
+            );
+            exportModel.intercept = intercept;
+            exportModel.weights = weights.asArray();
 
-                File file = new File(path.toAbsolutePath().toString());
-                mapper.writeValue(file, exportModel);
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
+            File file = new File(path.toAbsolutePath().toString());
+            mapper.writeValue(file, exportModel);
+        }
+        catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     /**  */

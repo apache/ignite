@@ -470,10 +470,10 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
 
         IdleVerifyResultV2 idleVerifyRes = ignite.compute().execute(new TestVisorBackupPartitionsTask(),
             new VisorIdleVerifyTaskArg(new HashSet<>(singletonList(ccfg.getName())),
-            new HashSet<>(),
-            false,
-            CacheFilterEnum.USER,
-            true));
+                new HashSet<>(),
+                false,
+                CacheFilterEnum.USER,
+                true));
 
         IdleVerifyResultV2 snpVerifyRes = ignite.compute().execute(new TestSnapshotPartitionsVerifyTask(),
             new SnapshotPartitionsVerifyTaskArg(new HashSet<>(), Collections.singletonMap(ignite.cluster().localNode(),

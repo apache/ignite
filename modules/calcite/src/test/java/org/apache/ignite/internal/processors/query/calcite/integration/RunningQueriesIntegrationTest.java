@@ -34,6 +34,8 @@ import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.rel.RelCollation;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
@@ -48,6 +50,8 @@ import org.apache.ignite.internal.processors.query.calcite.schema.CacheTableImpl
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteCacheTable;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.spi.systemview.view.SqlQueryView;
+import org.apache.ignite.spi.systemview.view.SystemView;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.jetbrains.annotations.NotNull;
@@ -57,6 +61,7 @@ import org.junit.Test;
 
 import static java.util.stream.Collectors.joining;
 import static org.apache.ignite.IgniteSystemProperties.getLong;
+import static org.apache.ignite.internal.processors.query.RunningQueryManager.SQL_QRY_VIEW;
 import static org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor.IGNITE_CALCITE_PLANNER_TIMEOUT;
 
 /**
@@ -280,6 +285,49 @@ public class RunningQueriesIntegrationTest extends AbstractBasicIntegrationTest 
         }
         catch (Exception e) {
             assertTrue("Unexpected exception: " + e, e instanceof RelOptPlanner.CannotPlanException);
+        }
+    }
+
+    /**
+     * Test propagation of query initiator ID.
+     */
+    @Test
+    public void testQueryInitiator() throws IgniteCheckedException {
+        CalciteQueryProcessor engine = queryProcessor(client);
+
+        sql("CREATE TABLE t(id int, val varchar) WITH cache_name=\"cache\"");
+
+        IgniteCacheTable tbl = (IgniteCacheTable)engine.schemaHolder().schema("PUBLIC").getTable("T");
+
+        CountDownLatch latch = new CountDownLatch(1);
+
+        tbl.addIndex(new DelegatingIgniteIndex(tbl.getIndex(QueryUtils.PRIMARY_KEY_INDEX)) {
+            @Override public RelCollation collation() {
+                try {
+                    latch.await(getTestTimeout(), TimeUnit.MILLISECONDS);
+                }
+                catch (InterruptedException e) {
+                    throw new IgniteException(e);
+                }
+
+                return delegate.collation();
+            }
+        });
+
+        String initiatorId = "initiator";
+
+        GridTestUtils.runAsync(() -> client.cache("cache").query(new SqlFieldsQuery("SELECT * FROM t")
+            .setQueryInitiatorId(initiatorId)));
+
+        try {
+            SystemView<SqlQueryView> view = client.context().systemView().view(SQL_QRY_VIEW);
+
+            assertTrue(GridTestUtils.waitForCondition(() -> !F.isEmpty(view), 1_000));
+
+            assertEquals(1, F.size(view.iterator(), v -> initiatorId.equals(v.initiatorId())));
+        }
+        finally {
+            latch.countDown();
         }
     }
 }

@@ -229,7 +229,7 @@ public class AuthenticationProcessorSelfTest extends GridCommonAbstractTest {
                         return null;
                     }
                 }, IgniteAccessControlException.class,
-                "User management operations initiated on behalf of the Ignite node are not expected.");
+                    "User management operations initiated on behalf of the Ignite node are not expected.");
             }
         }
     }
@@ -652,7 +652,7 @@ public class AuthenticationProcessorSelfTest extends GridCommonAbstractTest {
 
         return new AutoCloseable() {
             @Override public void close() throws Exception {
-               oldSecCtxs.forEach(OperationSecurityContext::close);
+                oldSecCtxs.forEach(OperationSecurityContext::close);
             }
         };
     }

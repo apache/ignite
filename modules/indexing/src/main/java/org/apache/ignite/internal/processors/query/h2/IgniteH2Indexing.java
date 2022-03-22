@@ -1210,9 +1210,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                     }
                 }
                 catch (Throwable th) {
-                   qrySpan.addTag(ERROR, th::getMessage).end();
+                    qrySpan.addTag(ERROR, th::getMessage).end();
 
-                   throw th;
+                    throw th;
                 }
             }
 

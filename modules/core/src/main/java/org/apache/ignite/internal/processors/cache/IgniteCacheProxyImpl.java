@@ -411,7 +411,7 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
         catch (IgniteCheckedException | IgniteException e) {
             throw cacheException(e);
         }
-   }
+    }
 
     /** {@inheritDoc} */
     @Override public void localLoadCache(@Nullable IgniteBiPredicate<K, V> p, @Nullable Object... args) {
@@ -2261,7 +2261,7 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
      * Throws {@code IgniteCacheRestartingException} if proxy is restarting.
      */
     public void checkRestart() {
-       checkRestart(false);
+        checkRestart(false);
     }
 
     /**

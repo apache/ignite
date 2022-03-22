@@ -91,10 +91,10 @@ public class IgniteCacheConfigVariationsQueryTest extends IgniteCacheConfigVaria
                 try {
                     IgniteCache<Object, Object> cache = jcache();
 
-                    Map<Object, Object> map = new HashMap<Object, Object>() {{
-                        for (int i = 0; i < CNT; i++)
-                            put(key(i), value(i));
-                    }};
+                    Map<Object, Object> map = new HashMap<>();
+
+                    for (int i = 0; i < CNT; i++)
+                        map.put(key(i), value(i));
 
                     registerEventListeners(map);
 

@@ -229,6 +229,22 @@ public class JoinIntegrationTest extends AbstractBasicIntegrationTest {
             .returns(4, 4, 4, 4, 4)
             .returns(null, 3, 3, 3, 3)
             .check();
+
+        assertQuery("" +
+            "select t1.c3 c13, t1.c2 c12, t1.c1 c11, t2.c1 c21, t2.c2 c22 " +
+            "  from t1 " +
+            "  join t2 " +
+            "    on t1.c2 = t2.c2 " +
+            " order by t1.c3 nulls last, t1.c2 nulls last, t1.c1 nulls last"
+        )
+            .ordered()
+            .returns(1, 1, 1, 1, 1)
+            .returns(2, 2, 2, 2, 2)
+            .returns(2, 2, 2, 2, 2)
+            .returns(3, 3, 3, 3, 3)
+            .returns(4, 4, 4, 4, 4)
+            .returns(null, 3, 3, 3, 3)
+            .check();
     }
 
     /**
@@ -419,6 +435,23 @@ public class JoinIntegrationTest extends AbstractBasicIntegrationTest {
             "  left join t2 " +
             "    on t1.c1 = t2.c1 " +
             "   and t1.c2 = t2.c2 " +
+            " order by t1.c3 nulls last, t1.c2 nulls last, t1.c1 nulls last"
+        )
+            .ordered()
+            .returns(1, 1, 1, 1, 1)
+            .returns(2, 2, 2, 2, 2)
+            .returns(2, 2, 2, 2, 2)
+            .returns(2, null, 2, null, null)
+            .returns(3, 3, 3, 3, 3)
+            .returns(4, 4, 4, 4, 4)
+            .returns(null, 3, 3, 3, 3)
+            .check();
+
+        assertQuery("" +
+            "select t1.c3 c13, t1.c2 c12, t1.c1 c11, t2.c1 c21, t2.c2 c22 " +
+            "  from t1 " +
+            "  left join t2 " +
+            "    on t1.c2 = t2.c2 " +
             " order by t1.c3 nulls last, t1.c2 nulls last, t1.c1 nulls last"
         )
             .ordered()
@@ -668,6 +701,50 @@ public class JoinIntegrationTest extends AbstractBasicIntegrationTest {
             .returns(null, null, null, 3, null, 3)
             .returns(4, 4, 4, 4, 4, 4)
             .returns(null, null, null, 2, 2, null)
+            .check();
+
+        assertQuery("" +
+            "select t1.c2 c12, t1.c1 c11, t2.c1 c21, t2.c2 c22, t2.c3 c23 " +
+            "  from t1 " +
+            " right join t2 " +
+            "    on t1.c2 = t2.c2 " +
+            " order by t2.c3 nulls last, t2.c2 nulls last, t2.c1 nulls last"
+        )
+            .ordered()
+            .returns(1, 1, 1, 1, 1)
+            .returns(2, 2, 2, 2, 2)
+            .returns(3, 3, 3, 3, 3)
+            .returns(3, 3, 3, 3, 3)
+            .returns(null, null, 3, null, 3)
+            .returns(4, 4, 4, 4, 4)
+            .returns(2, 2, 2, 2, null)
+            .check();
+    }
+
+    /**
+     * Test verifies result of full join.
+     */
+    @Test
+    public void testFullJoin() {
+        Assume.assumeTrue(joinType != JoinType.CORRELATED);
+
+        assertQuery("" +
+            "select t1.c1 c11, t1.c2 c12, t1.c3 c13, t2.c1 c21, t2.c2 c22, t2.c3 c23 " +
+            "  from t1 " +
+            " full join t2 " +
+            "    on t1.c2 = t2.c2 " +
+            " order by " +
+            "    t1.c1 nulls last, t1.c2 nulls last, t1.c3 nulls last, t2.c1 nulls last, t2.c2 nulls last, t2.c3 nulls last"
+        )
+            .ordered()
+            .returns(1, 1, 1, 1, 1, 1)
+            .returns(2, 2, 2, 2, 2, 2)
+            .returns(2, 2, 2, 2, 2, null)
+            .returns(2, null, 2, null, null, null)
+            .returns(3, 3, 3, 3, 3, 3)
+            .returns(3, 3, null, 3, 3, 3)
+            .returns(4, 4, 4, 4, 4, 4)
+            .returns(null, null, null, 3, null, 3)
             .check();
     }
 

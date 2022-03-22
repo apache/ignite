@@ -405,8 +405,11 @@ public abstract class IgniteSpiAdapter implements IgniteSpi {
      * @param <T> Type of the MBean
      * @throws IgniteSpiException If registration failed.
      */
-    protected final <T extends IgniteSpiManagementMBean> void registerMBean(String igniteInstanceName, T impl, Class<T> mbeanItf
-       ) throws IgniteSpiException {
+    protected final <T extends IgniteSpiManagementMBean> void registerMBean(
+        String igniteInstanceName,
+        T impl,
+        Class<T> mbeanItf
+    ) throws IgniteSpiException {
         if (ignite == null || U.IGNITE_MBEANS_DISABLED)
             return;
 

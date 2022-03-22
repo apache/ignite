@@ -164,15 +164,14 @@ public class IgniteClientReconnectLockTest extends IgniteClientReconnectAbstract
         startGrid(1);
 
         GridTestUtils.assertThrowsWithCause(() -> {
-                try {
-                    lock.lock();
-                }
-                catch (IgniteClientDisconnectedException e) {
-                    e.reconnectFuture().get();
+            try {
+                lock.lock();
+            }
+            catch (IgniteClientDisconnectedException e) {
+                e.reconnectFuture().get();
 
-                    lock.lock();
-                }
-            },
-            CacheStoppedException.class);
+                lock.lock();
+            }
+        }, CacheStoppedException.class);
     }
 }

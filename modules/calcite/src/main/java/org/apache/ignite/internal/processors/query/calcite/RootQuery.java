@@ -86,6 +86,9 @@ public class RootQuery<RowT> extends Query<RowT> {
     private final long plannerTimeout;
 
     /** */
+    private volatile long locQryId;
+
+    /** */
     public RootQuery(
         String sql,
         SchemaPlus schema,
@@ -315,6 +318,16 @@ public class RootQuery<RowT> extends Query<RowT> {
     /** */
     public Iterator<RowT> iterator() {
         return root;
+    }
+
+    /** */
+    public long localQueryId() {
+        return locQryId;
+    }
+
+    /** */
+    public void localQueryId(long locQryId) {
+        this.locQryId = locQryId;
     }
 
     /** */

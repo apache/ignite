@@ -62,9 +62,9 @@ public class IndexQueryWrongIndexTest extends GridCommonAbstractTest {
             IndexQuery<Integer, Person> wrongQry = new IndexQuery<Integer, Person>(Person.class, DESC_ID_IDX)
                 .setCriteria(lt("id", Integer.MAX_VALUE));
 
-                cache.query(wrongQry).getAll();
+            cache.query(wrongQry).getAll();
 
-                return null;
+            return null;
         }, CacheException.class, null);
 
         // Wrong fields in query.

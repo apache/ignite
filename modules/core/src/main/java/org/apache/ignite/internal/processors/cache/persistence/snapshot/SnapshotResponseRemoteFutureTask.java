@@ -91,27 +91,26 @@ public class SnapshotResponseRemoteFutureTask extends AbstractSnapshotFutureTask
                         .contains(gp.getPartitionId())
                     ) {
                         futs.add(CompletableFuture.runAsync(() -> {
-                                if (err.get() != null)
-                                    return;
+                            if (err.get() != null)
+                                return;
 
-                                File cacheDir = cacheDirectory(new File(snpDir, databaseRelativePath(meta.folderName())),
-                                    gp.getGroupId());
+                            File cacheDir = cacheDirectory(new File(snpDir, databaseRelativePath(meta.folderName())),
+                                gp.getGroupId());
 
-                                if (cacheDir == null) {
-                                    throw new IgniteException("Cache directory not found [snpName=" + snpName + ", meta=" + meta +
-                                        ", pair=" + gp + ']');
-                                }
+                            if (cacheDir == null) {
+                                throw new IgniteException("Cache directory not found [snpName=" + snpName + ", meta=" + meta +
+                                    ", pair=" + gp + ']');
+                            }
 
-                                File snpPart = getPartitionFile(cacheDir.getParentFile(), cacheDir.getName(), gp.getPartitionId());
+                            File snpPart = getPartitionFile(cacheDir.getParentFile(), cacheDir.getName(), gp.getPartitionId());
 
-                                if (!snpPart.exists()) {
-                                    throw new IgniteException("Snapshot partition file not found [cacheDir=" + cacheDir +
-                                        ", pair=" + gp + ']');
-                                }
+                            if (!snpPart.exists()) {
+                                throw new IgniteException("Snapshot partition file not found [cacheDir=" + cacheDir +
+                                    ", pair=" + gp + ']');
+                            }
 
-                                snpSndr.sendPart(snpPart, cacheDir.getName(), gp, snpPart.length());
-                            },
-                            snpSndr.executor())
+                            snpSndr.sendPart(snpPart, cacheDir.getName(), gp, snpPart.length());
+                        }, snpSndr.executor())
                             .whenComplete((r, t) -> err.compareAndSet(null, t)));
 
                         return true;

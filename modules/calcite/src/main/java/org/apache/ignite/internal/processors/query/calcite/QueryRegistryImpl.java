@@ -21,9 +21,8 @@ import java.util.Collection;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.stream.Collectors;
-import org.apache.calcite.util.Pair;
 import org.apache.ignite.cache.query.QueryCancelledException;
+import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
 import org.apache.ignite.internal.processors.query.GridQueryCancel;
@@ -37,7 +36,7 @@ import org.apache.ignite.internal.util.IgniteUtils;
  */
 public class QueryRegistryImpl extends AbstractService implements QueryRegistry {
     /** */
-    private final ConcurrentMap<UUID, Pair<Long, RunningQuery>> runningQrys = new ConcurrentHashMap<>();
+    private final ConcurrentMap<UUID, RunningQuery> runningQrys = new ConcurrentHashMap<>();
 
     /** */
     protected final GridKernalContext kctx;
@@ -53,40 +52,45 @@ public class QueryRegistryImpl extends AbstractService implements QueryRegistry 
     @Override public RunningQuery register(RunningQuery qry) {
         return runningQrys.computeIfAbsent(qry.id(), k -> {
             if (!(qry instanceof RootQuery))
-                return Pair.of(RunningQueryManager.UNDEFINED_QUERY_ID, qry);
+                return qry;
 
             RootQuery<?> rootQry = (RootQuery<?>)qry;
 
             RunningQueryManager qryMgr = kctx.query().runningQueryManager();
 
-            long locId = qryMgr.register(rootQry.sql(), GridCacheQueryType.SQL_FIELDS, rootQry.context().schemaName(),
-                false, createCancelToken(qry), kctx.localNodeId().toString());
+            SqlFieldsQuery fieldsQry = rootQry.context().unwrap(SqlFieldsQuery.class);
 
-            return Pair.of(locId, qry);
-        }).right;
+            String initiatorId = fieldsQry != null ? fieldsQry.getQueryInitiatorId() : null;
+
+            long locId = qryMgr.register(rootQry.sql(), GridCacheQueryType.SQL_FIELDS, rootQry.context().schemaName(),
+                false, createCancelToken(qry), initiatorId);
+
+            rootQry.localQueryId(locId);
+
+            return qry;
+        });
     }
 
     /** {@inheritDoc} */
     @Override public RunningQuery query(UUID id) {
-        Pair<Long, RunningQuery> value = runningQrys.get(id);
-        return value != null ? value.right : null;
+        return runningQrys.get(id);
     }
 
     /** {@inheritDoc} */
     @Override public void unregister(UUID id) {
-        Pair<Long, RunningQuery> value = runningQrys.remove(id);
-        if (value != null)
-            kctx.query().runningQueryManager().unregister(value.left, null);
+        RunningQuery val = runningQrys.remove(id);
+        if (val instanceof RootQuery<?>)
+            kctx.query().runningQueryManager().unregister(((RootQuery<?>)val).localQueryId(), null);
     }
 
     /** {@inheritDoc} */
     @Override public Collection<? extends RunningQuery> runningQueries() {
-        return runningQrys.values().stream().map(Pair::getValue).collect(Collectors.toList());
+        return runningQrys.values();
     }
 
     /** {@inheritDoc} */
     @Override public void tearDown() {
-        runningQrys.values().forEach(q -> IgniteUtils.close(q.right::cancel, log));
+        runningQrys.values().forEach(q -> IgniteUtils.close(q::cancel, log));
         runningQrys.clear();
     }
 

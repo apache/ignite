@@ -45,8 +45,7 @@ public class DelayedPageReplacementTracker {
     private final Stripe[] stripes;
 
     /** Byte buffer thread local. */
-    private final ThreadLocal<ByteBuffer> byteBufThreadLoc
-        = new ThreadLocal<ByteBuffer>() {
+    private final ThreadLocal<ByteBuffer> byteBufThreadLoc = new ThreadLocal<ByteBuffer>() {
         @Override protected ByteBuffer initialValue() {
             ByteBuffer buf = ByteBuffer.allocateDirect(pageSize);
 

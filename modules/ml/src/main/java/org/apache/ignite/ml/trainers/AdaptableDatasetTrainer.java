@@ -112,7 +112,7 @@ public class AdaptableDatasetTrainer<I, O, IW, OW, M extends IgniteModel<IW, OW>
     @Override protected <K, V> AdaptableDatasetModel<I, O, IW, OW, M> updateModel(
         AdaptableDatasetModel<I, O, IW, OW, M> mdl, DatasetBuilder<K, V> datasetBuilder,
         Preprocessor<K, V> extractor) {
-       M updated = wrapped.withEnvironmentBuilder(envBuilder)
+        M updated = wrapped.withEnvironmentBuilder(envBuilder)
             .updateModel(
                 mdl.innerModel(),
                 datasetBuilder.withUpstreamTransformer(upstreamTransformerBuilder),

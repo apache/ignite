@@ -88,7 +88,7 @@ public class GridCacheAtomicEntryProcessorDeploymentSelfTest extends GridCommonA
      * @return Entry Processor.
      */
     protected String getEntryProcessor() {
-       return GridTestProperties.getProperty(GridTestProperties.ENTRY_PROCESSOR_CLASS_NAME) != null ?
+        return GridTestProperties.getProperty(GridTestProperties.ENTRY_PROCESSOR_CLASS_NAME) != null ?
             GridTestProperties.getProperty(GridTestProperties.ENTRY_PROCESSOR_CLASS_NAME) :
             "org.apache.ignite.tests.p2p.CacheDeploymentEntryProcessor";
     }

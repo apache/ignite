@@ -390,7 +390,7 @@ final class ReliableChannel implements AutoCloseable {
 
                             fut.completeExceptionally(err);
                             return null;
-                }));
+                        }));
 
                 if (result != null)
                     return new IgniteClientFutureImpl<>(fut);

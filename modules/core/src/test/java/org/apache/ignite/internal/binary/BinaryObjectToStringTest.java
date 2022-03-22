@@ -164,11 +164,13 @@ public class BinaryObjectToStringTest extends AbstractBinaryArraysTest {
             "public void readExternal(java.io.ObjectInput in) throws java.io.IOException { x = in.readInt(); }",
             aClass));
 
-        ClassLoader extClsLdr = new ClassLoader() {{
-            byte[] bytecode = aClass.toBytecode();
+        ClassLoader extClsLdr = new ClassLoader() {
+            {
+                byte[] bytecode = aClass.toBytecode();
 
-            defineClass("ExternalTestClass1", bytecode, 0, bytecode.length);
-        }};
+                defineClass("ExternalTestClass1", bytecode, 0, bytecode.length);
+            }
+        };
 
         Class<?> extClass = extClsLdr.loadClass("ExternalTestClass1");
 
@@ -193,11 +195,13 @@ public class BinaryObjectToStringTest extends AbstractBinaryArraysTest {
             "private void readObject(java.io.ObjectInputStream in) throws java.io.IOException { x = in.readInt(); }",
             aClass));
 
-        ClassLoader extClsLdr = new ClassLoader() {{
-            byte[] bytecode = aClass.toBytecode();
+        ClassLoader extClsLdr = new ClassLoader() {
+            {
+                byte[] bytecode = aClass.toBytecode();
 
-            defineClass("ExternalTestClass2", bytecode, 0, bytecode.length);
-        }};
+                defineClass("ExternalTestClass2", bytecode, 0, bytecode.length);
+            }
+        };
 
         Class<?> extClass = extClsLdr.loadClass("ExternalTestClass2");
 

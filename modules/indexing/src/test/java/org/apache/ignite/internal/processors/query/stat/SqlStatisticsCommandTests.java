@@ -31,6 +31,8 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Ignore;
 import org.junit.Test;
 
+import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
+
 /**
  * Integration tests for statistics collection.
  */
@@ -259,8 +261,7 @@ public class SqlStatisticsCommandTests extends StatisticsAbstractTest {
      * @param isNull If {@code true} - test that statistics is null, if {@code false} - test that they are not null.
      */
     private void testStatistics(String schema, String obj, boolean isNull) throws IgniteInterruptedCheckedException {
-        assertTrue("Unable to wait statistics by " + schema + "." + obj + " if null=" + isNull,
-            GridTestUtils.waitForCondition(() -> {
+        assertTrue("Unable to wait statistics by " + schema + "." + obj + " if null=" + isNull, waitForCondition(() -> {
             for (Ignite node : G.allGrids()) {
                 IgniteH2Indexing indexing = (IgniteH2Indexing)((IgniteEx)node).context().query().getIndexing();
 
@@ -280,7 +281,7 @@ public class SqlStatisticsCommandTests extends StatisticsAbstractTest {
      * @param obj Object name.
      */
     private void testStatisticsVersion(String schema, String obj, Predicate<Long> verChecker) throws IgniteInterruptedCheckedException {
-        assertTrue(GridTestUtils.waitForCondition(() -> {
+        assertTrue(waitForCondition(() -> {
             for (Ignite node : G.allGrids()) {
                 IgniteH2Indexing indexing = (IgniteH2Indexing)((IgniteEx)node).context().query().getIndexing();
 

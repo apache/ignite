@@ -36,7 +36,7 @@ public class IgniteSqlAlterTableAddColumn extends IgniteAbstractSqlAlterTable {
     private final SqlNodeList columns;
 
     /** */
-    protected IgniteSqlAlterTableAddColumn(SqlParserPos pos, boolean ifExists, SqlIdentifier tblName,
+    public IgniteSqlAlterTableAddColumn(SqlParserPos pos, boolean ifExists, SqlIdentifier tblName,
         boolean ifNotExistsColumn, SqlNodeList columns) {
         super(pos, ifExists, tblName);
         this.ifNotExistsColumn = ifNotExistsColumn;

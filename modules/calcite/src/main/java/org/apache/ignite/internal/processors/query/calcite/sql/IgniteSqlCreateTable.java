@@ -51,7 +51,7 @@ public class IgniteSqlCreateTable extends SqlCreate {
         new SqlSpecialOperator("CREATE TABLE", SqlKind.CREATE_TABLE);
 
     /** Creates a SqlCreateTable. */
-    protected IgniteSqlCreateTable(SqlParserPos pos, boolean ifNotExists, SqlIdentifier name,
+    public IgniteSqlCreateTable(SqlParserPos pos, boolean ifNotExists, SqlIdentifier name,
         @Nullable SqlNodeList columnList, @Nullable SqlNode qry, @Nullable SqlNodeList createOptionList) {
         super(OPERATOR, pos, false, ifNotExists);
         this.name = Objects.requireNonNull(name, "name");

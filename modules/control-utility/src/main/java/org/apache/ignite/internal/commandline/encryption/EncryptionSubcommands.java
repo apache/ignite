@@ -83,7 +83,7 @@ public enum EncryptionSubcommands {
      * @param text Command text (case insensitive).
      * @return Command for the text. {@code Null} if there is no such command.
      */
-     @Nullable public static EncryptionSubcommands of(String text) {
+    @Nullable public static EncryptionSubcommands of(String text) {
         for (EncryptionSubcommands cmd : values()) {
             if (cmd.name.equalsIgnoreCase(text))
                 return cmd;
