@@ -317,6 +317,9 @@ public class SchemaHolderImpl extends AbstractService implements SchemaHolder, S
     private void rebuild() {
         SchemaPlus newCalciteSchema = Frameworks.createRootSchema(false);
         newCalciteSchema.add("UUID", typeFactory -> ((IgniteTypeFactory)typeFactory).createUuidType());
+        newCalciteSchema.add("OTHER", typeFactory -> ((IgniteTypeFactory)typeFactory).createOtherType());
+        newCalciteSchema.add("ANOTHER", typeFactory -> ((IgniteTypeFactory)typeFactory).createOtherType());
+        newCalciteSchema.add("Another", typeFactory -> ((IgniteTypeFactory)typeFactory).createOtherType());
         newCalciteSchema.add("PUBLIC", new IgniteSchema("PUBLIC"));
         igniteSchemas.forEach(newCalciteSchema::add);
         calciteSchema = newCalciteSchema;

@@ -30,7 +30,7 @@ import org.apache.calcite.sql.type.SqlTypeUtil;
 import org.apache.calcite.sql.validate.SqlValidator;
 import org.apache.calcite.sql.validate.SqlValidatorScope;
 import org.apache.calcite.sql.validate.implicit.TypeCoercionImpl;
-import org.apache.ignite.internal.processors.query.calcite.type.UuidType;
+import org.apache.ignite.internal.processors.query.calcite.type.OtherType;
 
 /**
  * Implementation of implicit type cast.
@@ -48,7 +48,7 @@ public class IgniteTypeCoercion extends TypeCoercionImpl {
         int idx,
         RelDataType targetType)
     {
-        if (targetType instanceof UuidType) {
+        if (targetType instanceof OtherType/* && ((OtherType)targetType).isUuid()*/) {
             SqlNode operand = call.getOperandList().get(idx);
 
             if (operand instanceof SqlDynamicParam)
@@ -59,13 +59,13 @@ public class IgniteTypeCoercion extends TypeCoercionImpl {
             if (fromType == null)
                 return false;
 
-            if (SqlTypeUtil.inCharFamily(fromType)) {
+            if (SqlTypeUtil.inCharFamily(fromType) || !((OtherType)targetType).isUuid()) {
                 targetType = factory.createTypeWithNullability(targetType, fromType.isNullable());
 
                 SqlNode desired = SqlStdOperatorTable.CAST.createCall(
                     SqlParserPos.ZERO,
                     operand,
-                    new SqlDataTypeSpec(new SqlUserDefinedTypeNameSpec("UUID", SqlParserPos.ZERO),
+                    new SqlDataTypeSpec(new SqlUserDefinedTypeNameSpec(targetType.toString(), SqlParserPos.ZERO),
                         SqlParserPos.ZERO).withNullable(targetType.isNullable())
                 );
 
@@ -86,10 +86,10 @@ public class IgniteTypeCoercion extends TypeCoercionImpl {
         if (type1 == null || type2 == null)
             return null;
 
-        if (type1 instanceof UuidType && SqlTypeUtil.isCharacter(type2))
+        if (type1 instanceof OtherType && SqlTypeUtil.isCharacter(type2))
             return type1;
 
-        if (type2 instanceof UuidType && SqlTypeUtil.isCharacter(type1))
+        if (type2 instanceof OtherType && SqlTypeUtil.isCharacter(type1))
             return type2;
 
         return super.commonTypeForBinaryComparison(type1, type2);
@@ -97,6 +97,10 @@ public class IgniteTypeCoercion extends TypeCoercionImpl {
 
     /** {@inheritDoc} */
     @Override protected boolean needToCast(SqlValidatorScope scope, SqlNode node, RelDataType toType) {
+//        if(toType instanceof OtherType && !((OtherType)toType).isUuid()){
+//            return false;
+//        }
+
         if (SqlTypeUtil.isInterval(toType)) {
             RelDataType fromType = validator.deriveType(scope, node);
 

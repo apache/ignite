@@ -33,6 +33,34 @@ import org.junit.Test;
  * Test SQL data types.
  */
 public class DataTypesTest extends AbstractBasicIntegrationTest {
+    @Test
+    /** Tests Other type. */
+    public void testOtherType(){
+        try {
+            executeSql("CREATE TABLE t(id INT, oth OTHER)");
+//            executeSql("CREATE TABLE t1(id INT, oth UUID)");
+
+            executeSql("INSERT INTO t VALUES (1, 'str')");
+            executeSql("INSERT INTO t VALUES (2, 22)");
+            executeSql("INSERT INTO t VALUES (3, CAST('33.5' AS FLOAT))");
+            executeSql("INSERT INTO t VALUES (4, CAST('fd10556e-fc27-4a99-b5e4-89b8344cb3ce' as UUID))");
+
+            assertQuery("SELECT oth FROM t order by id")
+                .ordered()
+                .returns("str")
+                .returns(22)
+                .returns(33.5f)
+                .returns(UUID.fromString("fd10556e-fc27-4a99-b5e4-89b8344cb3ce"))
+                .check();
+//            assertQuery("SELECT oth FROM t1 WHERE id=1")
+//                .returns(UUID.fromString("fd10556e-fc27-4a99-b5e4-89b8344cb3ce"))
+//                .check();
+        }
+        finally {
+            executeSql("DROP TABLE IF EXISTS t");
+        }
+    }
+
     /** Tests UUID without index. */
     @Test
     public void testUuidWithoutIndex() {

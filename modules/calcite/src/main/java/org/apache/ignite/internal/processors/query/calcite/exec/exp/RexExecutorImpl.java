@@ -44,7 +44,7 @@ import org.apache.calcite.sql.validate.SqlConformance;
 import org.apache.calcite.sql.validate.SqlConformanceEnum;
 import org.apache.calcite.util.BuiltInMethod;
 import org.apache.calcite.util.Util;
-import org.apache.ignite.internal.processors.query.calcite.type.UuidType;
+import org.apache.ignite.internal.processors.query.calcite.type.OtherType;
 
 /**
  * Evaluates a {@link RexNode} expression.
@@ -134,7 +134,8 @@ public class RexExecutorImpl implements RexExecutor {
       List<RexNode> reducedValues) {
     for (RexNode node : constExps) {
       // Do not simplify UUID types, since we can't convert it to literal of this type.
-      if (node.getType() instanceof UuidType) {
+//      if (node.getType() instanceof OtherType && ((OtherType)node.getType()).isUuid()) {
+      if (node.getType() instanceof OtherType) {
         reducedValues.addAll(constExps);
         return;
       }

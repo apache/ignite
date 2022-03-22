@@ -139,8 +139,8 @@ public class IgniteTypeFactory extends JavaTypeFactoryImpl {
                     break;
             }
         }
-        else if (type instanceof UuidType)
-            return UUID.class;
+        else if (type instanceof OtherType)
+            return ((OtherType)type).isUuid() ? UUID.class : Object.class;
 
         switch (type.getSqlTypeName()) {
             case ROW:
@@ -225,8 +225,8 @@ public class IgniteTypeFactory extends JavaTypeFactoryImpl {
                     break;
             }
         }
-        else if (type instanceof UuidType)
-            return UUID.class;
+        else if (type instanceof OtherType)
+            return ((OtherType)type).isUuid() ? UUID.class : Object.class;
 
         switch (type.getSqlTypeName()) {
             case ROW:
@@ -268,6 +268,8 @@ public class IgniteTypeFactory extends JavaTypeFactoryImpl {
                 return createTypeWithNullability(createSqlIntervalType(INTERVAL_QUALIFIER_YEAR_MONTH), true);
             else if (clazz == UUID.class)
                 return createTypeWithNullability(createUuidType(), true);
+            else if (clazz == Object.class)
+                return createTypeWithNullability(createOtherType(), true);
         }
 
         return super.toSql(type);
@@ -275,13 +277,18 @@ public class IgniteTypeFactory extends JavaTypeFactoryImpl {
 
     /** @return UUID SQL type. */
     public RelDataType createUuidType() {
-        return canonize(new UuidType(true));
+        return canonize(new OtherType(true, true));
+    }
+
+    /** @return OTHER SQL type. */
+    public RelDataType createOtherType() {
+        return canonize(new OtherType(false, true));
     }
 
     /** {@inheritDoc} */
     @Override public RelDataType createTypeWithNullability(RelDataType type, boolean nullable) {
-        if (type instanceof UuidType && type.isNullable() != nullable)
-            type = new UuidType(nullable);
+        if (type instanceof OtherType && type.isNullable() != nullable)
+            type = new OtherType(((OtherType)type).isUuid(), nullable);
 
         return super.createTypeWithNullability(type, nullable);
     }

@@ -30,7 +30,7 @@ import org.apache.calcite.avatica.util.ByteString;
 import org.apache.calcite.rel.core.AggregateCall;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
-import org.apache.ignite.internal.processors.query.calcite.type.UuidType;
+import org.apache.ignite.internal.processors.query.calcite.type.OtherType;
 import org.apache.ignite.internal.util.typedef.F;
 
 import static org.apache.calcite.sql.type.SqlTypeName.ANY;
@@ -160,7 +160,7 @@ public class Accumulators {
             case VARBINARY:
                 return ComparableMinMax.VARBINARY_MIN_FACTORY;
             case ANY:
-                if (call.type instanceof UuidType)
+                if (call.type instanceof OtherType && ((OtherType)call.type).isUuid())
                     return ComparableMinMax.UUID_MIN_FACTORY;
             case BIGINT:
             default:
@@ -186,7 +186,7 @@ public class Accumulators {
             case VARBINARY:
                 return ComparableMinMax.VARBINARY_MAX_FACTORY;
             case ANY:
-                if (call.type instanceof UuidType)
+                if (call.type instanceof OtherType && ((OtherType)call.type).isUuid())
                     return ComparableMinMax.UUID_MAX_FACTORY;
             case BIGINT:
             default:

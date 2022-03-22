@@ -99,6 +99,8 @@ SqlDataTypeSpec DataTypeEx() :
         dt = IntervalType()
     |
         dt = UuidType()
+    |
+        dt = OtherType()
     )
     {
         return dt;
@@ -124,6 +126,17 @@ SqlDataTypeSpec UuidType() :
     <UUID> { s = span(); }
     {
         return new SqlDataTypeSpec(new SqlUserDefinedTypeNameSpec("UUID", s.end(this)), s.pos());
+    }
+}
+
+SqlDataTypeSpec OtherType() :
+{
+        final Span s;
+}
+{
+    <OTHER> { s = span(); }
+    {
+        return new SqlDataTypeSpec(new SqlUserDefinedTypeNameSpec("Other", s.end(this)), s.pos());
     }
 }
 

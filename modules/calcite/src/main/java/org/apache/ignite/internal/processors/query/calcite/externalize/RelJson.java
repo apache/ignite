@@ -391,6 +391,8 @@ class RelJson {
 
                     if ("UUID".equals(name))
                         type = ((IgniteTypeFactory)typeFactory).createUuidType();
+                    else if ("ANOTHER".equals(name))
+                        type = ((IgniteTypeFactory)typeFactory).createOtherType();
                     else
                         throw new AssertionError();
                 }
