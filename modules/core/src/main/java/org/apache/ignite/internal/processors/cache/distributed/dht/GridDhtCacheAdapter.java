@@ -1080,13 +1080,8 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
     /**
      * @param srcNodeId The Id of a node that sends original ttl request.
      * @param incomingReq Original ttl request.
-     * @param readersMap Mapping of the node ID to entry readers.
      */
-    private void sendTtlUpdateRequest(
-        UUID srcNodeId,
-        GridCacheTtlUpdateRequest incomingReq,
-        Map<KeyCacheObject, Collection<UUID>> readersMap
-    ) {
+    private void sendTtlUpdateRequest(UUID srcNodeId, GridCacheTtlUpdateRequest incomingReq) {
         ctx.closures().runLocalSafe(new GridPlainRunnable() {
             @SuppressWarnings({"ForLoopReplaceableByForEach"})
             @Override public void run() {
@@ -1120,7 +1115,21 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
                         req.addEntry(key, incomingReq.version(i));
                     }
 
-                    Collection<UUID> readers = readersMap.get(key);
+                    Collection<UUID> readers;
+
+                    while (true) {
+                        GridDhtCacheEntry entry = ctx.dht().entryExx(key, incomingReq.topologyVersion());
+
+                        try {
+                            readers = entry.readers();
+
+                            break;
+                        }
+                        catch (GridCacheEntryRemovedException e) {
+                            if (log.isDebugEnabled())
+                                log.debug("Got removed entry while processing (will retry): " + key);
+                        }
+                    }
 
                     for (UUID reader : readers) {
                         // There's no need to send and update ttl request to the node that send us the initial
@@ -1165,10 +1174,8 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
      * @param req Request.
      */
     private void processTtlUpdateRequest(UUID srcNodeId, GridCacheTtlUpdateRequest req) {
-        Map<KeyCacheObject, Collection<UUID>> readersMap = null;
-
         if (req.keys() != null)
-            readersMap = updateTtl(this, req.keys(), req.versions(), req.ttl());
+            updateTtl(this, req.keys(), req.versions(), req.ttl());
 
         if (req.nearKeys() != null) {
             GridNearCacheAdapter<K, V> near = near();
@@ -1178,7 +1185,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
             updateTtl(near, req.nearKeys(), req.nearVersions(), req.ttl());
         }
 
-        sendTtlUpdateRequest(srcNodeId, req, readersMap);
+        sendTtlUpdateRequest(srcNodeId, req);
     }
 
     /**
@@ -1186,20 +1193,15 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
      * @param keys Entries keys.
      * @param vers Entries versions.
      * @param ttl TTL.
-     * @return Mapping of the node ID to entry readers, {@code null} for non-DHT cache.
      */
-    private @Nullable Map<KeyCacheObject, Collection<UUID>> updateTtl(
-        GridCacheAdapter<K, V> cache,
+    private void updateTtl(GridCacheAdapter<K, V> cache,
         List<KeyCacheObject> keys,
         List<GridCacheVersion> vers,
-        long ttl
-    ) {
+        long ttl) {
         assert !F.isEmpty(keys);
         assert keys.size() == vers.size();
 
         int size = keys.size();
-        Map<KeyCacheObject, Collection<UUID>> readers = null;
-        boolean dhtCache = cache.isDht() || cache.isDhtAtomic() || cache.isColocated();
 
         for (int i = 0; i < size; i++) {
             try {
@@ -1213,13 +1215,6 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
                             entry.unswap(false);
 
                             entry.updateTtl(vers.get(i), ttl);
-
-                            if (dhtCache) {
-                                if (readers == null)
-                                    readers = new HashMap<>();
-
-                                readers.put(keys.get(i), ((GridDhtCacheEntry)entry).readers());
-                            }
 
                             break;
                         }
@@ -1244,8 +1239,6 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
                 log.error("Failed to unswap entry.", e);
             }
         }
-
-        return readers;
     }
 
     /** {@inheritDoc} */
