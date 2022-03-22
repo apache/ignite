@@ -27,7 +27,7 @@ from ducktape.errors import TimeoutError
 from ignitetest.services.ignite import IgniteService
 from ignitetest.services.utils.ignite_configuration import IgniteConfiguration, DataStorageConfiguration
 from ignitetest.services.utils.ignite_configuration.data_storage import DataRegionConfiguration
-from ignitetest.utils.data_loader.data_loader import DataLoadParams
+from ignitetest.utils.data_loader.data_loader import DataLoadParams, data_region_size
 from ignitetest.utils.enum import constructible
 from ignitetest.utils.version import IgniteVersion
 
@@ -67,30 +67,31 @@ class RebalanceMetrics(NamedTuple):
     node: str = None
 
 
-def start_ignite(test_context, ignite_version: str, rebalance_params: RebalanceParams,
+def start_ignite(test, ignite_version: str, rebalance_params: RebalanceParams,
                  data_load_params: DataLoadParams) -> IgniteService:
     """
     Start IgniteService:
 
-    :param test_context: Test context.
+    :param test: Test.
     :param ignite_version: Ignite version.
     :param rebalance_params: Rebalance test parameters.
     :param data_load_params: Data loading parameters.
     :return: IgniteService.
     """
-    node_count = test_context.available_cluster_size - data_load_params.preloaders
+    node_count = test.available_cluster_size - data_load_params.preloaders
+    region_size = data_region_size(test, int(data_load_params.data_size / node_count))
 
     if rebalance_params.persistent:
         data_storage = DataStorageConfiguration(
-            max_wal_archive_size=2 * data_load_params.data_region_max_size,
+            max_wal_archive_size=2 * region_size,
             default=DataRegionConfiguration(
                 persistent=True,
-                max_size=data_load_params.data_region_max_size
+                max_size=region_size
             )
         )
     else:
         data_storage = DataStorageConfiguration(
-            default=DataRegionConfiguration(max_size=data_load_params.data_region_max_size)
+            default=DataRegionConfiguration(max_size=region_size)
         )
 
     node_config = IgniteConfiguration(
@@ -102,7 +103,7 @@ def start_ignite(test_context, ignite_version: str, rebalance_params: RebalanceP
         rebalance_batches_prefetch_count=rebalance_params.batches_prefetch_count,
         rebalance_throttle=rebalance_params.throttle)
 
-    ignites = IgniteService(test_context, config=node_config,
+    ignites = IgniteService(test.context, config=node_config,
                             num_nodes=node_count if rebalance_params.trigger_event == TriggerEvent.NODE_LEFT
                             else node_count - 1,
                             jvm_opts=rebalance_params.jvm_opts)

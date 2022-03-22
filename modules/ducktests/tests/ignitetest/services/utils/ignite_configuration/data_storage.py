@@ -19,6 +19,9 @@ This module contains classes and utilities for Ignite DataStorage configuration.
 
 from typing import NamedTuple
 
+DEFAULT_MIN_DATA_REGION_SIZE = 100 * 1024 * 1024
+DEFAULT_MAX_DATA_REGION_SIZE = 512 * 1024 * 1024
+
 
 class DataRegionConfiguration(NamedTuple):
     """
@@ -26,8 +29,8 @@ class DataRegionConfiguration(NamedTuple):
     """
     name: str = "default"
     persistent: bool = False
-    init_size: int = 100 * 1024 * 1024
-    max_size: int = 512 * 1024 * 1024
+    init_size: int = DEFAULT_MIN_DATA_REGION_SIZE
+    max_size: int = DEFAULT_MAX_DATA_REGION_SIZE
 
 
 class DataStorageConfiguration(NamedTuple):
@@ -35,5 +38,6 @@ class DataStorageConfiguration(NamedTuple):
     Ignite DataStorage configuration
     """
     default: DataRegionConfiguration = DataRegionConfiguration()
+    checkpoint_threads: int = None
     max_wal_archive_size: int = None
     regions: list = []

@@ -30,7 +30,7 @@ from ignitetest.services.utils.config_template import IgniteClientConfigTemplate
 from ignitetest.services.utils.jvm_utils import create_jvm_settings, merge_jvm_settings
 from ignitetest.services.utils.path import get_home_dir, get_module_path, IgnitePathAware
 from ignitetest.services.utils.ssl.ssl_params import is_ssl_enabled
-from ignitetest.utils.ignite_test import JFR_ENABLED
+from ignitetest.utils.ignite_test import JFR_ENABLED, JMX_ENABLED
 from ignitetest.utils.version import DEV_BRANCH
 
 SHARED_PREPARED_FILE = ".ignite_prepared"
@@ -109,6 +109,15 @@ class IgniteSpec(metaclass=ABCMeta):
                                                    "-XX:+FlightRecorder",
                                                    "-XX:StartFlightRecording=dumponexit=true," +
                                                    f"filename={self.service.jfr_dir}/recording.jfr"])
+
+        if self.service.context.globals.get(JMX_ENABLED, False):
+            default_jvm_opts = merge_jvm_settings(default_jvm_opts, [
+                "-Dcom.sun.management.jmxremote",
+                "-Dcom.sun.management.jmxremote.port=49100",
+                "-Dcom.sun.management.jmxremote.rmi.port=49100",
+                "-Dcom.sun.management.jmxremote.local.only=false",
+                "-Dcom.sun.management.jmxremote.authenticate=false",
+                "-Dcom.sun.management.jmxremote.ssl=false"])
 
         return default_jvm_opts
 

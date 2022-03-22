@@ -56,6 +56,10 @@
         <level value="INFO"/>
     </category>
 
+    <category name="org.apache.ignite.internal.ducktest">
+        <level value="{{ service.log_level }}"/>
+    </category>
+
     <root>
         <level value="INFO"/>
         <appender-ref ref="FILE"/>

@@ -65,6 +65,7 @@ class IgniteConfiguration(NamedTuple):
     include_event_types: list = []
     event_storage_spi: str = None
     log4j_config: str = IgnitePathAware.IGNITE_LOG_CONFIG_NAME
+    data_streamer_thread_pool_size: int = None
 
     def __prepare_ssl(self, test_globals, shared_root):
         """

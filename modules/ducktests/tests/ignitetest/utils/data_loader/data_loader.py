@@ -13,13 +13,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import uuid
+from statistics import mean, median
 from typing import NamedTuple
 
 from ignitetest.services.ignite import IgniteService
 from ignitetest.services.ignite_app import IgniteApplicationService
 from ignitetest.services.utils.ignite_configuration.discovery import from_ignite_cluster
+from ignitetest.services.utils.ignite_configuration.data_storage import DEFAULT_MIN_DATA_REGION_SIZE
 
-DEFAULT_DATA_REGION_SZ = 1 << 30
+MAX_DATA_REGION_SIZE_KEY = "max_data_region_size"
 
 
 class DataLoadParams(NamedTuple):
@@ -28,23 +31,26 @@ class DataLoadParams(NamedTuple):
     """
     backups: int = 1
     cache_count: int = 1
+    cache_name_template: str = None
+    cache_names: list = None
     entry_count: int = 15_000
     entry_size: int = 50_000
     preloaders: int = 1
+    threads: int = 1
     jvm_opts: list = None
 
     @property
-    def data_region_max_size(self):
+    def data_size(self):
         """
         Max size for DataRegionConfiguration.
         """
-        return max(self.cache_count * self.entry_count * self.entry_size * (self.backups + 1), DEFAULT_DATA_REGION_SZ)
+        return int(self.cache_count * self.entry_count * self.entry_size * (self.backups + 1) * 1.1)
 
 
 class DataLoader:
     def __init__(self, test_context, data_load_params: DataLoadParams):
         assert data_load_params.preloaders > 0
-        assert data_load_params.cache_count > 0
+        assert data_load_params.cache_count > 0 or len(data_load_params.cache_names) > 0
         assert data_load_params.entry_count > 0
         assert data_load_params.entry_size > 0
 
@@ -62,7 +68,10 @@ class DataLoader:
         :return: Time taken for data preloading.
         """
 
-        config = ignites.config._replace(client_mode=True, discovery_spi=from_ignite_cluster(ignites))
+        config = ignites.config._replace(
+            client_mode=True,
+            discovery_spi=from_ignite_cluster(ignites),
+            data_streamer_thread_pool_size=self.data_load_params.threads)
         if len(self.apps) == 0:
             self.__create_apps(config)
 
@@ -74,18 +83,42 @@ class DataLoader:
         count = int((to_key - from_key) / self.data_load_params.preloaders)
         end = from_key
 
+        token = str(uuid.uuid4())
         for _app in self.apps:
             start = end
             end += count
             if end > to_key:
                 end = to_key
-            self.__start_app(_app, start, end, timeout)
+            self.__start_app(_app, start, end, token, timeout)
 
         for _app in self.apps:
             _app.await_stopped()
 
         return (max(map(lambda _app: _app.get_finish_time(), self.apps)) -
                 min(map(lambda _app: _app.get_init_time(), self.apps))).total_seconds()
+
+    def get_summary_report(self):
+        assert len(self.apps) > 0
+        heap_values = list(map(lambda _app: int(_app.extract_result("PEAK_HEAP_MEMORY")), self.apps))
+        duration_values = list(map(lambda _app: (_app.get_finish_time() - _app.get_init_time()).total_seconds(),
+                                   self.apps))
+        return {
+            "duration": {
+                "max": max(duration_values),
+                "min": min(duration_values),
+                "total": (max(map(lambda _app: _app.get_finish_time(), self.apps)) -
+                          min(map(lambda _app: _app.get_init_time(), self.apps))).total_seconds(),
+                "mean": mean(duration_values),
+                "median": median(duration_values)
+
+            },
+            "heap": {
+                "max": sizeof_fmt(max(heap_values)),
+                "min": sizeof_fmt(min(heap_values)),
+                "mean": sizeof_fmt(mean(heap_values)),
+                "median": sizeof_fmt(median(heap_values))
+            }
+        }
 
     def __create_apps(self, config):
         for _ in range(self.data_load_params.preloaders):
@@ -95,13 +128,20 @@ class DataLoader:
                 java_class_name="org.apache.ignite.internal.ducktest.tests.data_generation.DataGenerationApplication",
                 jvm_opts=self.data_load_params.jvm_opts
             )
+            _app.log_level = "DEBUG"
             self.apps.append(_app)
 
-    def __start_app(self, _app, _from, _to, timeout):
+    def __start_app(self, _app, _from, _to, token, timeout):
         _app.params = {
             "backups": self.data_load_params.backups,
             "cacheCount": self.data_load_params.cache_count,
+            "cacheNameTemplate": self.data_load_params.cache_name_template,
+            "cacheNames": self.data_load_params.cache_names,
             "entrySize": self.data_load_params.entry_size,
+            "threads": self.data_load_params.threads,
+            "preloaders": self.data_load_params.preloaders,
+            "preloadersToken": token,
+            "timeoutSecs": timeout,
             "from": _from,
             "to": _to
         }
@@ -109,3 +149,19 @@ class DataLoader:
         _app.jvm_opts = self.data_load_params.jvm_opts
 
         _app.start_async()
+
+
+def sizeof_fmt(num, suffix="B"):
+    for unit in ["", "Ki", "Mi", "Gi", "Ti", "Pi", "Ei", "Zi"]:
+        if abs(num) < 1024.0:
+            return f"{num:3.1f}{unit}{suffix}"
+        num /= 1024.0
+    return f"{num:.1f}Yi{suffix}"
+
+
+def data_region_size(test, required_size):
+    return min(
+        max(required_size, DEFAULT_MIN_DATA_REGION_SIZE),
+        test._global_int(MAX_DATA_REGION_SIZE_KEY, 1 << 30)
+    )
+

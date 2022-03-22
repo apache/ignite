@@ -26,7 +26,7 @@ from ignitetest.utils import ignite_versions
 from ignitetest.utils.ignite_test import IgniteTest
 from ignitetest.utils.version import IgniteVersion, LATEST, DEV_BRANCH
 from ignitetest.utils import cluster
-from ignitetest.utils.data_loader.data_loader import DataLoader, DataLoadParams
+from ignitetest.utils.data_loader.data_loader import DataLoader, DataLoadParams, data_region_size
 
 
 class SnapshotTest(IgniteTest):
@@ -35,29 +35,36 @@ class SnapshotTest(IgniteTest):
     """
     SNAPSHOT_NAME = "test_snapshot"
 
+    CACHE_NAME = "TEST_CACHE"
+
     @cluster(num_nodes=4)
     @ignite_versions(str(DEV_BRANCH), str(LATEST))
-    @defaults(backups=[1], cache_count=[1], entry_count=[600_000], entry_size=[1024], preloaders=[1])
-    def snapshot_test(self, ignite_version, backups, cache_count, entry_count, entry_size, preloaders):
+    @defaults(backups=[1], entry_count=[600_000], entry_size=[1024], preloaders=[1], threads=[1])
+    def snapshot_test(self, ignite_version, backups, entry_count, entry_size, preloaders, threads):
         """
         Basic snapshot test.
         """
-        data_load_params = DataLoadParams(backups=backups, cache_count=cache_count,
-                                          entry_count=entry_count, entry_size=entry_size, preloaders=preloaders)
+        data_load_params = DataLoadParams(backups=backups, cache_name_template=self.CACHE_NAME,
+                                          entry_count=entry_count, entry_size=entry_size,
+                                          preloaders=preloaders, threads=threads)
         loader = DataLoader(self.test_context, data_load_params)
 
         version = IgniteVersion(ignite_version)
 
+        num_nodes = self.available_cluster_size - preloaders
+
+        region_size = data_region_size(self, int(data_load_params.data_size / num_nodes))
+
         ignite_config = IgniteConfiguration(
             version=version,
             data_storage=DataStorageConfiguration(
-                max_wal_archive_size=2 * data_load_params.data_region_max_size,
+                max_wal_archive_size=2 * region_size,
                 default=DataRegionConfiguration(persistent=True,
-                                                max_size=data_load_params.data_region_max_size)),
+                                                max_size=region_size)),
             metric_exporter='org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi'
         )
 
-        nodes = IgniteService(self.test_context, ignite_config, num_nodes=self.available_cluster_size - preloaders)
+        nodes = IgniteService(self.test_context, ignite_config, num_nodes=num_nodes)
         nodes.start()        
 
         control_utility = ControlUtility(nodes)
