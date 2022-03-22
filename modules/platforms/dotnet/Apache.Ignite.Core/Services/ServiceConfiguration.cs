@@ -98,7 +98,7 @@ namespace Apache.Ignite.Core.Services
         }
 
         /// <summary>
-        /// Provides extra intel about platform service to avoid on-demand creation of service statistics on any
+        /// Provides extra info about platform service to avoid on-demand creation of service statistics on any
         /// out-of-interface calls or things like 'ToString()'.
         /// </summary>
         private void WriteExtraDescription(IBinaryRawWriter writer)

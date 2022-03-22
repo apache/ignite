@@ -33,7 +33,7 @@ public class PlatformServiceConfiguration extends ServiceConfiguration {
      * Constr.
      */
     PlatformServiceConfiguration() {
-        setMtdNames(null);
+        mtdNames(null);
     }
 
     /**
@@ -46,7 +46,7 @@ public class PlatformServiceConfiguration extends ServiceConfiguration {
     /**
      * Sets known method names of platform service.
      */
-    void setMtdNames(String[] mtdNames) {
-        this.mtdNames = mtdNames == null ? new String[0] : mtdNames;
+    void mtdNames(String[] mtdNames) {
+        this.mtdNames = mtdNames;
     }
 }

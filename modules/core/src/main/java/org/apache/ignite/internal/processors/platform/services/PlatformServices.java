@@ -502,7 +502,7 @@ public class PlatformServices extends PlatformAbstractTarget {
         cfg.setStatisticsEnabled(reader.readBoolean());
 
         if (cfg.isStatisticsEnabled())
-            cfg.setMtdNames(reader.readStringArray());
+            cfg.mtdNames(reader.readStringArray());
 
         return cfg;
     }

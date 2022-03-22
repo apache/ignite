@@ -684,8 +684,7 @@ public class PlatformDeployServiceTask extends ComputeTaskAdapter<String, Object
         /**
          * Calculates number of registered values among the service statistics.
          *
-         * @return Number of registered values among the service statistics. Or {@code null} if no statistics found
-         * for this service.
+         * @return Number of registered values among the service statistics.
          */
         public int testNumberOfInvocations(String svcName, String histName) {
             return ignite.compute().execute(new CountServiceMetricsTask(), new IgnitePair<>(svcName, histName));
