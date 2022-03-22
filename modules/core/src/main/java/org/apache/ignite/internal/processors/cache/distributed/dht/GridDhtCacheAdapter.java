@@ -1115,20 +1115,18 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
                         req.addEntry(key, incomingReq.version(i));
                     }
 
-                    Collection<UUID> readers;
+                    Collection<UUID> readers = null;
 
-                    while (true) {
-                        GridDhtCacheEntry entry = ctx.dht().entryExx(key, incomingReq.topologyVersion());
+                    GridDhtCacheEntry entry = ctx.dht().entryExx(key, incomingReq.topologyVersion());
 
-                        try {
-                            readers = entry.readers();
+                    try {
+                        readers = entry.readers();
+                    }
+                    catch (GridCacheEntryRemovedException e) {
+                        if (log.isInfoEnabled())
+                            log.info("Got removed entry while processing (will skip): " + key);
 
-                            break;
-                        }
-                        catch (GridCacheEntryRemovedException e) {
-                            if (log.isDebugEnabled())
-                                log.debug("Got removed entry while processing (will retry): " + key);
-                        }
+                        continue;
                     }
 
                     for (UUID reader : readers) {

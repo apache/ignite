@@ -19,12 +19,14 @@ package org.apache.ignite.internal.processors.cache.expiry;
 
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeSet;
 import java.util.concurrent.TimeUnit;
 import javax.cache.Cache;
 import javax.cache.configuration.Factory;
@@ -39,10 +41,12 @@ import javax.cache.processor.MutableEntry;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CachePeekMode;
+import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
@@ -1112,6 +1116,61 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
     }
 
     /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testNearAccessWithConcurrentReads() throws Exception {
+        if (cacheMode() != PARTITIONED || cacheStoreFactory() != null)
+            return;
+
+        nearCache = true;
+
+        startGrids();
+
+        IgniteCache<Integer, Integer> cache0 = jcache(0);
+        IgniteCache<Object, Object> expireNowCache = jcache(2).withExpiryPolicy(new TestPolicy(1100L, 1200L, 1L));
+        List<TreeSet<Integer>> keySets = Arrays.asList(new TreeSet<>(), new TreeSet<>());
+        Affinity<Object> aff = grid(0).affinity(DEFAULT_CACHE_NAME);
+        List<Integer> keys = backupKeys(jcache(2), 10_000, 0);
+
+        for (Integer key : keys) {
+            cache0.put(key, key);
+
+            int primaryIdx = aff.isPrimary(grid(0).localNode(), key) ? 0 : 1;
+
+            TreeSet<Integer> keySet = keySets.get(primaryIdx);
+
+            keySet.add(key);
+
+            if (keySet.size() >= 2) {
+                // Add near reader for the last key from non-affinity node.
+                jcache(Math.abs(primaryIdx - 1)).get(key);
+
+                IgniteInternalFuture<?> fut = GridTestUtils.runAsync(() -> {
+                    // Force race between read and ttl update.
+                    for (int j = 0; j < 10; j++)
+                        jcache(primaryIdx).getAll(keySet);
+                });
+
+                // Update ttl.
+                expireNowCache.getAll(keySet);
+
+                fut.get(getTestTimeout());
+
+                keySet.clear();
+            }
+        }
+
+        // Remaining keys are not expected to be evicted.
+        keys.removeAll(keySets.get(0));
+        keys.removeAll(keySets.get(1));
+
+        // Make sure all keys have expired.
+        for (Integer key : keys)
+            waitExpired(key);
+    }
+
+    /**
      * Put entry to server node and check how its expires in client NearCache.
      *
      * @throws Exception If failed.
@@ -1245,7 +1304,7 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
                     }
                 }
 
-                return false;
+                return true;
             }
         }, 3000);
 
