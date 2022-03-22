@@ -102,7 +102,7 @@ public enum CacheSubcommands {
     /**
      * Enable / disable cache metrics collection or show metrics collection status.
      */
-    METRICS("metrics", CacheMetricsCommandArg.class, new CacheMetrics());
+    METRICS("metrics", CacheMetricsCommandArg.class, new CacheMetricsManage());
 
     /** Enumerated values. */
     private static final CacheSubcommands[] VALS = values();

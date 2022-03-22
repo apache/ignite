@@ -19,24 +19,21 @@ package org.apache.ignite.internal.commandline.cache;
 
 import java.util.Collection;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 import java.util.logging.Logger;
-import org.apache.ignite.IgniteCache;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.client.GridClientConfiguration;
 import org.apache.ignite.internal.commandline.AbstractCommand;
 import org.apache.ignite.internal.commandline.Command;
 import org.apache.ignite.internal.commandline.CommandArgIterator;
-import org.apache.ignite.internal.commandline.CommandLogger;
 import org.apache.ignite.internal.commandline.TaskExecutor;
 import org.apache.ignite.internal.commandline.argument.CommandArgUtils;
 import org.apache.ignite.internal.commandline.cache.argument.CacheMetricsCommandArg;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.internal.visor.cache.metrics.VisorCacheMetricsTask;
-import org.apache.ignite.internal.visor.cache.metrics.VisorCacheMetricsTaskArg;
-import org.apache.ignite.internal.visor.cache.metrics.VisorCacheMetricsTaskResult;
+import org.apache.ignite.internal.visor.cache.metrics.VisorCacheMetricsManageTask;
+import org.apache.ignite.internal.visor.cache.metrics.VisorCacheMetricsManageTaskArg;
+import org.apache.ignite.internal.visor.cache.metrics.VisorCacheMetricsManageTaskResult;
 
 import static org.apache.ignite.internal.commandline.CommandLogger.optional;
 import static org.apache.ignite.internal.commandline.CommandLogger.or;
@@ -49,9 +46,9 @@ import static org.apache.ignite.internal.commandline.cache.argument.CacheMetrics
 /**
  * Cache sub-command for a cache metrics collection management. It provides to enable, disable or show status.
  */
-public class CacheMetrics extends AbstractCommand<VisorCacheMetricsTaskArg> {
+public class CacheMetricsManage extends AbstractCommand<VisorCacheMetricsManageTaskArg> {
     /** Task argument. */
-    private VisorCacheMetricsTaskArg arg;
+    private VisorCacheMetricsManageTaskArg arg;
 
     /** Cache metrics sub-command argument. */
     private CacheMetricsCommandArg subCmdArg;
@@ -59,16 +56,10 @@ public class CacheMetrics extends AbstractCommand<VisorCacheMetricsTaskArg> {
     /** {@inheritDoc} */
     @Override public Object execute(GridClientConfiguration clientCfg, Logger log) throws Exception {
         try (GridClient client = Command.startClient(clientCfg)) {
-            VisorCacheMetricsTaskResult taskResult = TaskExecutor.executeTaskByNameOnNode(client,
-                VisorCacheMetricsTask.class.getName(), arg, null, clientCfg);
+            VisorCacheMetricsManageTaskResult taskResult = TaskExecutor.executeTaskByNameOnNode(client,
+                VisorCacheMetricsManageTask.class.getName(), arg, null, clientCfg);
 
             return processTaskResult(log, taskResult.result());
-        }
-        catch (Throwable e) {
-            log.severe("Failed to perform operation.");
-            log.severe(CommandLogger.errorMessage(e));
-
-            throw e;
         }
     }
 
@@ -125,7 +116,7 @@ public class CacheMetrics extends AbstractCommand<VisorCacheMetricsTaskArg> {
     }
 
     /** {@inheritDoc} */
-    @Override public VisorCacheMetricsTaskArg arg() {
+    @Override public VisorCacheMetricsManageTaskArg arg() {
         return arg;
     }
 
@@ -156,8 +147,8 @@ public class CacheMetrics extends AbstractCommand<VisorCacheMetricsTaskArg> {
                 throw new IllegalArgumentException("Expected " + cacheArgErrorMsg);
         }
 
-        arg = applyToAllCaches ? new VisorCacheMetricsTaskArg(subCmdArg.taskArgumentSubCommand()) :
-            new VisorCacheMetricsTaskArg(subCmdArg.taskArgumentSubCommand(), caches);
+        arg = applyToAllCaches ? new VisorCacheMetricsManageTaskArg(subCmdArg.taskArgumentSubCommand()) :
+            new VisorCacheMetricsManageTaskArg(subCmdArg.taskArgumentSubCommand(), caches);
     }
 
     /** {@inheritDoc} */

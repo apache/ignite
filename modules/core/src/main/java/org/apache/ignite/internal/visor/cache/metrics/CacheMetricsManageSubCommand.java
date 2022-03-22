@@ -18,9 +18,9 @@
 package org.apache.ignite.internal.visor.cache.metrics;
 
 /**
- * Sub-command enum.
+ * Sub-command enum for {@link VisorCacheMetricsManageTask}.
  */
-public enum CacheMetricsSubCommand {
+public enum CacheMetricsManageSubCommand {
     /** Enable sub-command. */
     ENABLE,
 

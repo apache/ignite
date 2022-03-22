@@ -20,38 +20,35 @@ package org.apache.ignite.internal.visor.cache.metrics;
 import java.util.Collection;
 import java.util.Map;
 import java.util.TreeMap;
-import java.util.TreeSet;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.internal.processors.cache.GridCacheUtils;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.processors.task.GridVisorManagementTask;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorOneNodeTask;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.internal.visor.cache.metrics.CacheMetricsSubCommand.ENABLE;
+import static org.apache.ignite.internal.visor.cache.metrics.CacheMetricsManageSubCommand.ENABLE;
 
 /**
  * Task for a cache metrics command.
  */
 @GridInternal
 @GridVisorManagementTask
-public class VisorCacheMetricsTask extends VisorOneNodeTask<VisorCacheMetricsTaskArg, VisorCacheMetricsTaskResult> {
+public class VisorCacheMetricsManageTask extends VisorOneNodeTask<VisorCacheMetricsManageTaskArg, VisorCacheMetricsManageTaskResult> {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Override protected VisorCacheMetricsJob job(VisorCacheMetricsTaskArg arg) {
-        return new VisorCacheMetricsJob(arg, false);
+    @Override protected VisorCacheMetricsManageJob job(VisorCacheMetricsManageTaskArg arg) {
+        return new VisorCacheMetricsManageJob(arg, false);
     }
 
     /**
      * Job result is a collection of processed cache names.
      */
-    private static class VisorCacheMetricsJob extends VisorJob<VisorCacheMetricsTaskArg,
-        VisorCacheMetricsTaskResult> {
+    private static class VisorCacheMetricsManageJob extends VisorJob<VisorCacheMetricsManageTaskArg,
+        VisorCacheMetricsManageTaskResult> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -61,12 +58,12 @@ public class VisorCacheMetricsTask extends VisorOneNodeTask<VisorCacheMetricsTas
          * @param arg   Job argument.
          * @param debug Flag indicating whether debug information should be printed into node log.
          */
-        protected VisorCacheMetricsJob(@Nullable VisorCacheMetricsTaskArg arg, boolean debug) {
+        protected VisorCacheMetricsManageJob(@Nullable VisorCacheMetricsManageTaskArg arg, boolean debug) {
             super(arg, debug);
         }
 
         /** {@inheritDoc} */
-        @Override protected VisorCacheMetricsTaskResult run(@Nullable VisorCacheMetricsTaskArg arg)
+        @Override protected VisorCacheMetricsManageTaskResult run(@Nullable VisorCacheMetricsManageTaskArg arg)
             throws IgniteException {
             if (arg != null) {
                 Collection<String> cacheNames = arg.applyToAllCaches() ? ignite.cacheNames() : arg.cacheNames();
@@ -77,12 +74,12 @@ public class VisorCacheMetricsTask extends VisorOneNodeTask<VisorCacheMetricsTas
                         case DISABLE:
                             ignite.cluster().enableStatistics(cacheNames, ENABLE == arg.subCommand());
 
-                            return new VisorCacheMetricsTaskResult();
+                            return new VisorCacheMetricsManageTaskResult();
                         case STATUS:
-                            return new VisorCacheMetricsTaskResult(cacheMetricsStatus(cacheNames));
+                            return new VisorCacheMetricsManageTaskResult(cacheMetricsStatus(cacheNames));
                     }
                 } catch (Exception e) {
-                    return new VisorCacheMetricsTaskResult(e);
+                    return new VisorCacheMetricsManageTaskResult(e);
                 }
             }
 
@@ -101,7 +98,7 @@ public class VisorCacheMetricsTask extends VisorOneNodeTask<VisorCacheMetricsTas
                 if (cachex != null)
                     cacheMetricsStatus.put(cacheName, cachex.clusterMetrics().isStatisticsEnabled());
                 else
-                    throw new IgniteException("Cache with name was not found: " + cacheName);
+                    throw new IgniteException("Cache does not exist: " + cacheName);
             }
 
             return cacheMetricsStatus;

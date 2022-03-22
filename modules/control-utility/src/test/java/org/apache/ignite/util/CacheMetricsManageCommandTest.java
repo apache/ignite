@@ -25,7 +25,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.cluster.IgniteClusterEx;
 import org.apache.ignite.internal.commandline.CommandList;
 import org.apache.ignite.internal.commandline.cache.CacheCommandList;
-import org.apache.ignite.internal.commandline.cache.CacheMetrics;
+import org.apache.ignite.internal.commandline.cache.CacheMetricsManage;
 import org.apache.ignite.internal.commandline.cache.argument.CacheMetricsCommandArg;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
@@ -36,12 +36,13 @@ import org.junit.Test;
 
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_INVALID_ARGUMENTS;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK;
+import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_UNEXPECTED_ERROR;
 import static org.apache.ignite.internal.util.lang.GridFunc.t;
 
 /**
- * Test for {@link CacheMetrics} command.
+ * Test for {@link CacheMetricsManage} command.
  */
-public class CacheMetricsCommandTest extends GridCommandHandlerAbstractTest {
+public class CacheMetricsManageCommandTest extends GridCommandHandlerAbstractTest {
     /** All caches flag. */
     private static final String ALL_CACHES = CacheMetricsCommandArg.ALL_CACHES.argName();
 
@@ -67,7 +68,7 @@ public class CacheMetricsCommandTest extends GridCommandHandlerAbstractTest {
     private static final String NON_METRIC_CACHE = "non-metric-cache";
 
     /** Not found cache. */
-    private static final String NOT_FOUND_CACHE = "not-found-cache";
+    private static final String NON_EXISTENT_CACHE = "non-existent-cache";
 
     /** Status disabled. */
     private static final String STATUS_DISABLED = "DISABLED";
@@ -78,8 +79,8 @@ public class CacheMetricsCommandTest extends GridCommandHandlerAbstractTest {
     /** Empty result message. */
     private static final String EMPTY_RESULT_MESSAGE = "Empty result: none of the specified caches were found.";
 
-    /** Not found caches message. */
-    private static final String NOT_FOUND_MESSAGE = "Not found caches:" + U.nl();
+    /** Success toggle. */
+    private static final String SUCCESS_TOGGLE = "Command performed successfully.";
 
     /** {@inheritDoc} */
     @Override public void beforeTest() throws Exception {
@@ -106,17 +107,17 @@ public class CacheMetricsCommandTest extends GridCommandHandlerAbstractTest {
     public void testEnableDisable() {
         createCachesWithMetricsModes(t(CACHE_ONE, false), t(CACHE_TWO, true), t(NON_METRIC_CACHE, false));
 
-        checkExecutionOk(successToggle(CACHE_ONE), COMMAND_ENABLE, CACHE_ONE);
-        checkExecutionOk(successToggle(CACHE_TWO), COMMAND_DISABLE, CACHE_TWO);
+        checkExecutionOk(SUCCESS_TOGGLE, COMMAND_ENABLE, CACHE_ONE);
+        checkExecutionOk(SUCCESS_TOGGLE, COMMAND_DISABLE, CACHE_TWO);
         checkClusterMetrics(t(CACHE_ONE, true), t(CACHE_TWO, false), t(NON_METRIC_CACHE, false));
 
-        checkExecutionOk(successToggle(CACHE_ONE, CACHE_TWO), COMMAND_DISABLE, CACHE_ONE + ',' + CACHE_TWO);
+        checkExecutionOk(SUCCESS_TOGGLE, COMMAND_DISABLE, CACHE_ONE + ',' + CACHE_TWO);
         checkClusterMetrics(t(CACHE_ONE, false), t(CACHE_TWO, false), t(NON_METRIC_CACHE, false));
 
         // Cache list with duplicates and shuffled order
         String cacheNames = String.join(",", CACHE_TWO, CACHE_TWO, CACHE_ONE, CACHE_ONE, CACHE_TWO);
 
-        checkExecutionOk(successToggle(CACHE_ONE, CACHE_TWO), COMMAND_ENABLE, cacheNames);
+        checkExecutionOk(SUCCESS_TOGGLE, COMMAND_ENABLE, cacheNames);
         checkClusterMetrics(t(CACHE_ONE, true), t(CACHE_TWO, true), t(NON_METRIC_CACHE, false));
     }
 
@@ -127,18 +128,18 @@ public class CacheMetricsCommandTest extends GridCommandHandlerAbstractTest {
     public void testEnableDisableAll() {
         createCachesWithMetricsModes(t(CACHE_ONE, false));
 
-        checkExecutionOk(successToggle(CACHE_ONE), COMMAND_ENABLE, ALL_CACHES);
+        checkExecutionOk(SUCCESS_TOGGLE, COMMAND_ENABLE, ALL_CACHES);
         checkClusterMetrics(t(CACHE_ONE, true));
 
-        checkExecutionOk(successToggle(CACHE_ONE), COMMAND_DISABLE, ALL_CACHES);
+        checkExecutionOk(SUCCESS_TOGGLE, COMMAND_DISABLE, ALL_CACHES);
         checkClusterMetrics(t(CACHE_ONE, false));
 
         createCachesWithMetricsModes(t(CACHE_TWO, true), t(CACHE_THREE, false));
 
-        checkExecutionOk(successToggle(CACHE_ONE, CACHE_TWO, CACHE_THREE), COMMAND_DISABLE, ALL_CACHES);
+        checkExecutionOk(SUCCESS_TOGGLE, COMMAND_DISABLE, ALL_CACHES);
         checkClusterMetrics(t(CACHE_ONE, false), t(CACHE_TWO, false), t(CACHE_THREE, false));
 
-        checkExecutionOk(successToggle(CACHE_ONE, CACHE_TWO, CACHE_THREE), COMMAND_ENABLE, ALL_CACHES);
+        checkExecutionOk(SUCCESS_TOGGLE, COMMAND_ENABLE, ALL_CACHES);
         checkClusterMetrics(t(CACHE_ONE, true), t(CACHE_TWO, true), t(CACHE_THREE, true));
     }
 
@@ -149,20 +150,13 @@ public class CacheMetricsCommandTest extends GridCommandHandlerAbstractTest {
     public void testNotFoundCacheEnableDisable() {
         createCachesWithMetricsModes(t(CACHE_ONE, false));
 
-        String cacheArg = String.join(",", CACHE_ONE, CACHE_TWO, NOT_FOUND_CACHE);
+        String cacheArg = String.join(",", CACHE_ONE, CACHE_TWO, NON_EXISTENT_CACHE);
 
-        String msgCacheTwoNotFoundCache = String.join(U.nl(), successToggle(CACHE_ONE),
-            notFound(CACHE_TWO, NOT_FOUND_CACHE));
-
-        checkExecutionOk(msgCacheTwoNotFoundCache, COMMAND_ENABLE, cacheArg);
-        checkClusterMetrics(t(CACHE_ONE, true));
+        checkExecutionError(descriptorsNotFound(CACHE_ONE, CACHE_TWO, NON_EXISTENT_CACHE), COMMAND_ENABLE, cacheArg);
 
         createCachesWithMetricsModes(t(CACHE_TWO, true));
 
-        String msgNotFoundCache = String.join(U.nl(), successToggle(CACHE_ONE, CACHE_TWO), notFound(NOT_FOUND_CACHE));
-
-        checkExecutionOk(msgNotFoundCache, COMMAND_DISABLE, cacheArg);
-        checkClusterMetrics(t(CACHE_ONE, false), t(CACHE_TWO, false));
+        checkExecutionError(descriptorsNotFound(CACHE_ONE, CACHE_TWO, NON_EXISTENT_CACHE), COMMAND_DISABLE, cacheArg);
     }
 
     /**
@@ -220,35 +214,23 @@ public class CacheMetricsCommandTest extends GridCommandHandlerAbstractTest {
     public void testNotFoundCacheStatus() {
         createCachesWithMetricsModes(t(CACHE_ONE, false));
 
-        String cacheArg = String.join(",", CACHE_ONE, CACHE_TWO, NOT_FOUND_CACHE);
+        String cacheArg = String.join(",", CACHE_ONE, CACHE_TWO, NON_EXISTENT_CACHE);
 
-        String msgCacheTwoNotFoundCache = String.join(U.nl(), successStatus(t(CACHE_ONE, STATUS_DISABLED)),
-            notFound(CACHE_TWO, NOT_FOUND_CACHE));
-
-        checkExecutionOk(msgCacheTwoNotFoundCache, COMMAND_STATUS, cacheArg);
+        checkExecutionError(doesNotExist(CACHE_TWO), COMMAND_STATUS, cacheArg);
 
         createCachesWithMetricsModes(t(CACHE_TWO, true));
 
-        String msgNotFoundCache = String.join(U.nl(), successStatus(t(CACHE_ONE, STATUS_DISABLED),
-                t(CACHE_TWO, STATUS_ENABLED)), notFound(NOT_FOUND_CACHE));
-
-        checkExecutionOk(msgNotFoundCache, COMMAND_STATUS, cacheArg);
+        checkExecutionError(doesNotExist(NON_EXISTENT_CACHE), COMMAND_STATUS, cacheArg);
     }
 
     /**
-     * Tests cases when none of requested caches were found in a cluster.
+     * Tests commands in case of empty cluster without any caches.
      */
     @Test
     public void testEmptyResult() {
-        checkExecutionOk(EMPTY_RESULT_MESSAGE, COMMAND_ENABLE, NOT_FOUND_CACHE);
-
-        checkExecutionOk(EMPTY_RESULT_MESSAGE, COMMAND_DISABLE, NOT_FOUND_CACHE);
-
         checkExecutionOk(EMPTY_RESULT_MESSAGE, COMMAND_ENABLE, ALL_CACHES);
 
         checkExecutionOk(EMPTY_RESULT_MESSAGE, COMMAND_DISABLE, ALL_CACHES);
-
-        checkExecutionOk(EMPTY_RESULT_MESSAGE, COMMAND_STATUS, NOT_FOUND_CACHE);
 
         checkExecutionOk(EMPTY_RESULT_MESSAGE, COMMAND_STATUS, ALL_CACHES);
     }
@@ -310,6 +292,13 @@ public class CacheMetricsCommandTest extends GridCommandHandlerAbstractTest {
     }
 
     /**
+     *
+     */
+    private void checkExecutionError(String expectedOutput, String... args) {
+        checkExecution(EXIT_CODE_UNEXPECTED_ERROR, expectedOutput, false, args);
+    }
+
+    /**
      * @param cacheMetricsModes Metrics modes.
      */
     private void createCachesWithMetricsModes(IgniteBiTuple<String, Boolean>... cacheMetricsModes) {
@@ -338,15 +327,6 @@ public class CacheMetricsCommandTest extends GridCommandHandlerAbstractTest {
     }
 
     /**
-     * Form expected <tt>--enable/disable</tt> command output with processed caches list.
-     *
-     * @param cacheNames Cache names.
-     */
-    private String successToggle(String... cacheNames) {
-        return "Command performed successfully for caches:" + U.nl() + Arrays.toString(cacheNames);
-    }
-
-    /**
      * Form expected <tt>--status</tt> command output with table of processed caches.
      *
      * @param expectedMetricsModes Expected metrics modes.
@@ -362,11 +342,20 @@ public class CacheMetricsCommandTest extends GridCommandHandlerAbstractTest {
     }
 
     /**
-     * Form expected command output with not found caches list.
+     * Forms expected output for <code>status</code> command when cache does not exist.
+     *
+     * @param cacheName Cache name.
+     */
+    private String doesNotExist(String cacheName) {
+        return "Cache does not exist: " + cacheName;
+    }
+
+    /**
+     * Forms expected output for <code>enable / disable</code> commands when caches do not exist.
      *
      * @param cacheNames Cache names.
      */
-    private String notFound(String... cacheNames) {
-        return NOT_FOUND_MESSAGE + Arrays.toString(cacheNames);
+    private String descriptorsNotFound(String... cacheNames) {
+        return "One or more cache descriptors not found [caches=" + Arrays.toString(cacheNames) + ']';
     }
 }

@@ -18,22 +18,22 @@
 package org.apache.ignite.internal.commandline.cache.argument;
 
 import org.apache.ignite.internal.commandline.argument.CommandArg;
-import org.apache.ignite.internal.commandline.cache.CacheMetrics;
-import org.apache.ignite.internal.visor.cache.metrics.CacheMetricsSubCommand;
-import org.apache.ignite.internal.visor.cache.metrics.VisorCacheMetricsTaskArg;
+import org.apache.ignite.internal.commandline.cache.CacheMetricsManage;
+import org.apache.ignite.internal.visor.cache.metrics.CacheMetricsManageSubCommand;
+import org.apache.ignite.internal.visor.cache.metrics.VisorCacheMetricsManageTaskArg;
 
 /**
- * Command arguments for {@link CacheMetrics} command.
+ * Command arguments for {@link CacheMetricsManage} command.
  */
 public enum CacheMetricsCommandArg implements CommandArg {
     /** Enable. */
-    ENABLE("--enable", CacheMetricsSubCommand.ENABLE),
+    ENABLE("--enable", CacheMetricsManageSubCommand.ENABLE),
 
     /** Disable. */
-    DISABLE("--disable", CacheMetricsSubCommand.DISABLE),
+    DISABLE("--disable", CacheMetricsManageSubCommand.DISABLE),
 
     /** Status. */
-    STATUS("--status", CacheMetricsSubCommand.STATUS),
+    STATUS("--status", CacheMetricsManageSubCommand.STATUS),
 
     /** Perform command for all caches instead of defined list. */
     ALL_CACHES("--all-caches", null);
@@ -41,14 +41,14 @@ public enum CacheMetricsCommandArg implements CommandArg {
     /** Enable statistics flag. */
     private final String name;
 
-    /** Sub-command value for {@link VisorCacheMetricsTaskArg}.*/
-    private final CacheMetricsSubCommand taskArgSubCmd;
+    /** Sub-command value for {@link VisorCacheMetricsManageTaskArg}.*/
+    private final CacheMetricsManageSubCommand taskArgSubCmd;
 
     /**
      * @param name Name.
-     * @param taskArgSubCmd Sub-command value for {@link VisorCacheMetricsTaskArg}.
+     * @param taskArgSubCmd Sub-command value for {@link VisorCacheMetricsManageTaskArg}.
      */
-    CacheMetricsCommandArg(String name, CacheMetricsSubCommand taskArgSubCmd) {
+    CacheMetricsCommandArg(String name, CacheMetricsManageSubCommand taskArgSubCmd) {
         this.name = name;
         this.taskArgSubCmd = taskArgSubCmd;
     }
@@ -59,9 +59,9 @@ public enum CacheMetricsCommandArg implements CommandArg {
     }
 
     /**
-     * @return /** Sub-command value for {@link VisorCacheMetricsTaskArg}.
+     * @return /** Sub-command value for {@link VisorCacheMetricsManageTaskArg}.
      */
-    public CacheMetricsSubCommand taskArgumentSubCommand() {
+    public CacheMetricsManageSubCommand taskArgumentSubCommand() {
         return taskArgSubCmd;
     }
 

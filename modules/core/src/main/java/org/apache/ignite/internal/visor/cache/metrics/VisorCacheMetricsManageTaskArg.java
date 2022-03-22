@@ -26,9 +26,9 @@ import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
- * Task argument for {@link VisorCacheMetricsTask}.
+ * Task argument for {@link VisorCacheMetricsManageTask}.
  */
-public class VisorCacheMetricsTaskArg extends IgniteDataTransferObject {
+public class VisorCacheMetricsManageTaskArg extends IgniteDataTransferObject {
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;
 
@@ -39,19 +39,19 @@ public class VisorCacheMetricsTaskArg extends IgniteDataTransferObject {
     private Set<String> cacheNames;
 
     /** Cache metrics sub-command. */
-    private CacheMetricsSubCommand subCmd;
+    private CacheMetricsManageSubCommand subCmd;
 
     /**
      * Default constructor.
      */
-    public VisorCacheMetricsTaskArg() {
+    public VisorCacheMetricsManageTaskArg() {
         // No-op.
     }
 
     /**
      * @param cacheNames Affected cache names.
      */
-    public VisorCacheMetricsTaskArg(CacheMetricsSubCommand subCmd, Set<String> cacheNames) {
+    public VisorCacheMetricsManageTaskArg(CacheMetricsManageSubCommand subCmd, Set<String> cacheNames) {
         this.subCmd = subCmd;
         this.cacheNames = Collections.unmodifiableSet(cacheNames);
 
@@ -63,7 +63,7 @@ public class VisorCacheMetricsTaskArg extends IgniteDataTransferObject {
      *
      * @param subCmd Operation type.
      */
-    public VisorCacheMetricsTaskArg(CacheMetricsSubCommand subCmd) {
+    public VisorCacheMetricsManageTaskArg(CacheMetricsManageSubCommand subCmd) {
         this.subCmd = subCmd;
 
         applyToAllCaches = true;
@@ -83,7 +83,7 @@ public class VisorCacheMetricsTaskArg extends IgniteDataTransferObject {
         ClassNotFoundException {
         applyToAllCaches = in.readBoolean();
         cacheNames = U.readSet(in);
-        subCmd = U.readEnum(in, CacheMetricsSubCommand.class);
+        subCmd = U.readEnum(in, CacheMetricsManageSubCommand.class);
     }
 
     /**
@@ -103,7 +103,7 @@ public class VisorCacheMetricsTaskArg extends IgniteDataTransferObject {
     /**
      * @return Cache metrics sub-command.
      */
-    public CacheMetricsSubCommand subCommand() {
+    public CacheMetricsManageSubCommand subCommand() {
         return subCmd;
     }
 }

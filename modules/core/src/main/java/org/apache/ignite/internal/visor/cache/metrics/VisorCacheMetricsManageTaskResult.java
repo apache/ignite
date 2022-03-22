@@ -20,17 +20,12 @@ package org.apache.ignite.internal.visor.cache.metrics;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Map;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
-import org.apache.ignite.internal.util.typedef.internal.U;
-import org.jetbrains.annotations.Nullable;
 
 /**
- * Task argument for {@link VisorCacheMetricsTask}.
+ * Task argument for {@link VisorCacheMetricsManageTask}.
  */
-public class VisorCacheMetricsTaskResult extends IgniteDataTransferObject {
+public class VisorCacheMetricsManageTaskResult extends IgniteDataTransferObject {
     /** Serial version uid.*/
     private static final long serialVersionUID = 0L;
 
@@ -43,21 +38,21 @@ public class VisorCacheMetricsTaskResult extends IgniteDataTransferObject {
     /**
      * Default constructor.
      */
-    public VisorCacheMetricsTaskResult() {
+    public VisorCacheMetricsManageTaskResult() {
         // No-op.
     }
 
     /**
      * @param result Result.
      */
-    public VisorCacheMetricsTaskResult(Object result) {
+    public VisorCacheMetricsManageTaskResult(Object result) {
         this.result = result;
     }
 
     /**
      * @param error Error.
      */
-    public VisorCacheMetricsTaskResult(Exception error) {
+    public VisorCacheMetricsManageTaskResult(Exception error) {
         this.error = error;
     }
 

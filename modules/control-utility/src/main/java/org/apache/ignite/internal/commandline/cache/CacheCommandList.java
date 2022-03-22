@@ -92,7 +92,7 @@ public enum CacheCommandList {
     /**
      * Enable, disable or show status for cache metrics.
      */
-    METRICS("metrics", new CacheMetrics());
+    METRICS("metrics", new CacheMetricsManage());
 
     /** Enumerated values. */
     private static final CacheCommandList[] VALS = values();
