@@ -25,6 +25,7 @@ import java.util.Collections;
 import java.util.Map;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Task argument for {@link VisorCacheMetricsTask}.
@@ -33,11 +34,11 @@ public class VisorCacheMetricsTaskResult extends IgniteDataTransferObject {
     /** Serial version uid.*/
     private static final long serialVersionUID = 0L;
 
-    /** Processed caches. Is empty for status sub-command.*/
-    private Collection<String> processedCaches;
+    /** Result. */
+    private Object result;
 
-    /** Cache metric modes. Is empty for enable and disable sub-commands.*/
-    private Map<String, Boolean> cacheMetricsModes;
+    /** Error. */
+    private Exception error;
 
     /**
      * Default constructor.
@@ -47,46 +48,38 @@ public class VisorCacheMetricsTaskResult extends IgniteDataTransferObject {
     }
 
     /**
-     * @param cacheMetricsModes Cache metrics modes.
+     * @param result Result.
      */
-    public VisorCacheMetricsTaskResult(Map<String, Boolean> cacheMetricsModes) {
-        this.cacheMetricsModes = Collections.unmodifiableMap(cacheMetricsModes);
-
-        processedCaches = Collections.emptySet();
+    public VisorCacheMetricsTaskResult(Object result) {
+        this.result = result;
     }
 
     /**
-     * @param processedCaches Processed caches collection.
+     * @param error Error.
      */
-    public VisorCacheMetricsTaskResult(Collection<String> processedCaches) {
-        this.processedCaches = Collections.unmodifiableCollection(processedCaches);
-
-        cacheMetricsModes = Collections.emptyMap();
+    public VisorCacheMetricsTaskResult(Exception error) {
+        this.error = error;
     }
 
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        U.writeCollection(out, processedCaches);
-        U.writeMap(out, cacheMetricsModes);
+        out.writeObject(result);
+        out.writeObject(error);
     }
 
     /** {@inheritDoc} */
     @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
-        processedCaches = U.readCollection(in);
-        cacheMetricsModes = U.readTreeMap(in);
+        result = in.readObject();
+        error = (Exception)in.readObject();
     }
 
     /**
-     * @return Processed caches. Is empty for status sub-command.
+     *
      */
-    public Collection<String> processedCaches() {
-        return Collections.unmodifiableCollection(processedCaches);
-    }
+    public Object result() throws Exception {
+        if (error != null)
+            throw error;
 
-    /**
-     * @return Cache metric modes. Is empty for enable and disable sub-commands.
-     */
-    public Map<String, Boolean> cacheMetricsModes() {
-        return Collections.unmodifiableMap(cacheMetricsModes);
+        return result;
     }
 }

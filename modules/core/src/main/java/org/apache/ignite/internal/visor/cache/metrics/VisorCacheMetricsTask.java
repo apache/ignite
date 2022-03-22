@@ -22,6 +22,7 @@ import java.util.Map;
 import java.util.TreeMap;
 import java.util.TreeSet;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.processors.cache.GridCacheUtils;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.processors.task.GridVisorManagementTask;
@@ -68,12 +69,20 @@ public class VisorCacheMetricsTask extends VisorOneNodeTask<VisorCacheMetricsTas
         @Override protected VisorCacheMetricsTaskResult run(@Nullable VisorCacheMetricsTaskArg arg)
             throws IgniteException {
             if (arg != null) {
-                switch (arg.subCommand()) {
-                    case ENABLE:
-                    case DISABLE:
-                        return new VisorCacheMetricsTaskResult(toggleCacheMetricsMode(arg));
-                    case STATUS:
-                        return new VisorCacheMetricsTaskResult(cacheMetricsStatus(arg));
+                Collection<String> cacheNames = arg.applyToAllCaches() ? ignite.cacheNames() : arg.cacheNames();
+
+                try {
+                    switch (arg.subCommand()) {
+                        case ENABLE:
+                        case DISABLE:
+                            ignite.cluster().enableStatistics(cacheNames, ENABLE == arg.subCommand());
+
+                            return new VisorCacheMetricsTaskResult();
+                        case STATUS:
+                            return new VisorCacheMetricsTaskResult(cacheMetricsStatus(cacheNames));
+                    }
+                } catch (Exception e) {
+                    return new VisorCacheMetricsTaskResult(e);
                 }
             }
 
@@ -81,35 +90,18 @@ public class VisorCacheMetricsTask extends VisorOneNodeTask<VisorCacheMetricsTas
         }
 
         /**
-         * @param arg Task argument.
+         * @param cacheNames Cache names.
          */
-        private TreeSet<String> toggleCacheMetricsMode(VisorCacheMetricsTaskArg arg) {
-            Collection<String> allCacheNames = ignite.cacheNames();
-            Collection<String> foundCachesFromArg = F.view(arg.cacheNames(), allCacheNames::contains);
-
-            Collection<String> cacheNames = arg.applyToAllCaches() ? allCacheNames : foundCachesFromArg;
-
-            ignite.cluster().enableStatistics(cacheNames, ENABLE == arg.subCommand());
-
-            return new TreeSet<>(cacheNames);
-        }
-
-        /**
-         * @param arg Task argument.
-         */
-        private Map<String, Boolean> cacheMetricsStatus(VisorCacheMetricsTaskArg arg) {
-            Collection<String> allCacheNames = ignite.cacheNames();
-            Collection<String> foundCachesFromArg = F.view(arg.cacheNames(), allCacheNames::contains);
-
-            Collection<String> cacheNames = arg.applyToAllCaches() ? allCacheNames : foundCachesFromArg;
-
+        private Map<String, Boolean> cacheMetricsStatus(Collection<String> cacheNames) {
             Map<String, Boolean> cacheMetricsStatus = new TreeMap<>();
 
             for (String cacheName : cacheNames) {
-                IgniteInternalCache<Object, Object> cacheEx = ignite.cachex(cacheName);
+                IgniteInternalCache<Object, Object> cachex = ignite.cachex(cacheName);
 
-                if (cacheEx != null)
-                    cacheMetricsStatus.put(cacheName, cacheEx.clusterMetrics().isStatisticsEnabled());
+                if (cachex != null)
+                    cacheMetricsStatus.put(cacheName, cachex.clusterMetrics().isStatisticsEnabled());
+                else
+                    throw new IgniteException("Cache with name was not found: " + cacheName);
             }
 
             return cacheMetricsStatus;

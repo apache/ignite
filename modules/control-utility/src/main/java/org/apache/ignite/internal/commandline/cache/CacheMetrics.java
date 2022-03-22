@@ -22,6 +22,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.logging.Logger;
+import org.apache.ignite.IgniteCache;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.client.GridClientConfiguration;
 import org.apache.ignite.internal.commandline.AbstractCommand;
@@ -52,13 +53,16 @@ public class CacheMetrics extends AbstractCommand<VisorCacheMetricsTaskArg> {
     /** Task argument. */
     private VisorCacheMetricsTaskArg arg;
 
+    /** Cache metrics sub-command argument. */
+    private CacheMetricsCommandArg subCmdArg;
+
     /** {@inheritDoc} */
     @Override public Object execute(GridClientConfiguration clientCfg, Logger log) throws Exception {
         try (GridClient client = Command.startClient(clientCfg)) {
             VisorCacheMetricsTaskResult taskResult = TaskExecutor.executeTaskByNameOnNode(client,
                 VisorCacheMetricsTask.class.getName(), arg, null, clientCfg);
 
-            return processTaskResult(log, Objects.requireNonNull(taskResult));
+            return processTaskResult(log, taskResult.result());
         }
         catch (Throwable e) {
             log.severe("Failed to perform operation.");
@@ -70,53 +74,43 @@ public class CacheMetrics extends AbstractCommand<VisorCacheMetricsTaskArg> {
 
     /**
      * @param log Logger.
-     * @param taskResult Task result.
+     * @param result Task result.
      */
-    private String processTaskResult(Logger log, VisorCacheMetricsTaskResult taskResult) {
+    private String processTaskResult(Logger log, Object result) {
         String resultMsg;
 
-        String emptyResultMsg = "Empty result: none of the specified caches were found.";
         String notFoundCachesMsg = "Not found caches:" + U.nl();
 
-        if (!taskResult.processedCaches().isEmpty()) {
-            Collection<String> toggleTaskResult = taskResult.processedCaches();
+        switch (subCmdArg) {
+            case ENABLE:
+            case DISABLE:
+                resultMsg = "Command performed successfully.";
 
-            String successMsg = "Command performed successfully for caches:";
+                log.info(resultMsg);
 
-            resultMsg = successMsg + U.nl() + toggleTaskResult;
+                break;
+            case STATUS:
+                Map<String, Boolean> statusTaskResult = (Map<String, Boolean>)result;
 
-            Collection<String> notFoundCaches = F.view(arg.cacheNames(),
-                name -> !toggleTaskResult.contains(name));
+                resultMsg = "[Cache Name -> Status]:" + U.nl();
 
-            if (!notFoundCaches.isEmpty())
-                resultMsg += U.nl() + notFoundCachesMsg + notFoundCaches;
+                Collection<String> rowsCollection = F.transform(statusTaskResult.entrySet(),
+                    e -> e.getKey() + " -> " + (e.getValue() ? "ENABLED" : "DISABLED"));
 
-            log.info(resultMsg);
-        }
-        else if (!taskResult.cacheMetricsModes().isEmpty()) {
-            Map<String, Boolean> statusTaskResult = taskResult.cacheMetricsModes();
+                String rowsStr = String.join(U.nl(), rowsCollection);
 
-            resultMsg = "[Cache Name -> Status]:" + U.nl();
+                resultMsg += rowsStr;
 
-            Collection<String> rowsCollection = F.transform(statusTaskResult.entrySet(),
-                e -> e.getKey() + " -> " + (e.getValue() ? "ENABLED" : "DISABLED"));
+                Collection<String> notFoundCaches = F.view(arg.cacheNames(),
+                    name -> !statusTaskResult.containsKey(name));
 
-            String rowsStr = String.join(U.nl(), rowsCollection);
+                if (!notFoundCaches.isEmpty())
+                    resultMsg += U.nl() + notFoundCachesMsg + notFoundCaches;
 
-            resultMsg += rowsStr;
-
-            Collection<String> notFoundCaches = F.view(arg.cacheNames(),
-                name -> !statusTaskResult.containsKey(name));
-
-            if (!notFoundCaches.isEmpty())
-                resultMsg += U.nl() + notFoundCachesMsg + notFoundCaches;
-
-            log.info(resultMsg);
-        }
-        else {
-            resultMsg = emptyResultMsg;
-
-            log.warning(resultMsg);
+                log.info(resultMsg);
+                break;
+            default:
+                throw new IllegalStateException("Unexpected value: " + subCmdArg);
         }
 
         return resultMsg;
@@ -141,7 +135,7 @@ public class CacheMetrics extends AbstractCommand<VisorCacheMetricsTaskArg> {
 
         String readSubCmd = argIter.nextArg(incorrectSubCmdMsg);
 
-        CacheMetricsCommandArg subCmdArg = CommandArgUtils.of(readSubCmd, CacheMetricsCommandArg.class);
+        subCmdArg = CommandArgUtils.of(readSubCmd, CacheMetricsCommandArg.class);
 
         if (subCmdArg == null)
             throw new IllegalArgumentException(incorrectSubCmdMsg);
