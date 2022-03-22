@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.visor.cache;
+package org.apache.ignite.internal.visor.cache.metrics;
 
 import java.util.Collection;
 import java.util.Map;
@@ -30,7 +30,7 @@ import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorOneNodeTask;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.internal.visor.cache.VisorCacheMetricsTaskArg.SubCommand.ENABLE;
+import static org.apache.ignite.internal.visor.cache.metrics.CacheMetricsSubCommand.ENABLE;
 
 /**
  * Task for a cache metrics command.

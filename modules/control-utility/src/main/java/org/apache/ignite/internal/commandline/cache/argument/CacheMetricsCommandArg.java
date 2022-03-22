@@ -19,21 +19,21 @@ package org.apache.ignite.internal.commandline.cache.argument;
 
 import org.apache.ignite.internal.commandline.argument.CommandArg;
 import org.apache.ignite.internal.commandline.cache.CacheMetrics;
-import org.apache.ignite.internal.visor.cache.VisorCacheMetricsTaskArg;
-import org.apache.ignite.internal.visor.cache.VisorCacheMetricsTaskArg.SubCommand;
+import org.apache.ignite.internal.visor.cache.metrics.CacheMetricsSubCommand;
+import org.apache.ignite.internal.visor.cache.metrics.VisorCacheMetricsTaskArg;
 
 /**
  * Command arguments for {@link CacheMetrics} command.
  */
 public enum CacheMetricsCommandArg implements CommandArg {
     /** Enable. */
-    ENABLE("--enable", SubCommand.ENABLE),
+    ENABLE("--enable", CacheMetricsSubCommand.ENABLE),
 
     /** Disable. */
-    DISABLE("--disable", SubCommand.DISABLE),
+    DISABLE("--disable", CacheMetricsSubCommand.DISABLE),
 
     /** Status. */
-    STATUS("--status", SubCommand.STATUS),
+    STATUS("--status", CacheMetricsSubCommand.STATUS),
 
     /** Perform command for all caches instead of defined list. */
     ALL_CACHES("--all-caches", null);
@@ -42,13 +42,13 @@ public enum CacheMetricsCommandArg implements CommandArg {
     private final String name;
 
     /** Sub-command value for {@link VisorCacheMetricsTaskArg}.*/
-    private final SubCommand taskArgSubCmd;
+    private final CacheMetricsSubCommand taskArgSubCmd;
 
     /**
      * @param name Name.
      * @param taskArgSubCmd Sub-command value for {@link VisorCacheMetricsTaskArg}.
      */
-    CacheMetricsCommandArg(String name, SubCommand taskArgSubCmd) {
+    CacheMetricsCommandArg(String name, CacheMetricsSubCommand taskArgSubCmd) {
         this.name = name;
         this.taskArgSubCmd = taskArgSubCmd;
     }
@@ -61,7 +61,7 @@ public enum CacheMetricsCommandArg implements CommandArg {
     /**
      * @return /** Sub-command value for {@link VisorCacheMetricsTaskArg}.
      */
-    public SubCommand taskArgumentSubCommand() {
+    public CacheMetricsSubCommand taskArgumentSubCommand() {
         return taskArgSubCmd;
     }
 

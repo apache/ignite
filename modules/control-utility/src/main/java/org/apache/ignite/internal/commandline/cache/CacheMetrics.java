@@ -33,9 +33,9 @@ import org.apache.ignite.internal.commandline.argument.CommandArgUtils;
 import org.apache.ignite.internal.commandline.cache.argument.CacheMetricsCommandArg;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.internal.visor.cache.VisorCacheMetricsTask;
-import org.apache.ignite.internal.visor.cache.VisorCacheMetricsTaskArg;
-import org.apache.ignite.internal.visor.cache.VisorCacheMetricsTaskResult;
+import org.apache.ignite.internal.visor.cache.metrics.VisorCacheMetricsTask;
+import org.apache.ignite.internal.visor.cache.metrics.VisorCacheMetricsTaskArg;
+import org.apache.ignite.internal.visor.cache.metrics.VisorCacheMetricsTaskResult;
 
 import static org.apache.ignite.internal.commandline.CommandLogger.optional;
 import static org.apache.ignite.internal.commandline.CommandLogger.or;

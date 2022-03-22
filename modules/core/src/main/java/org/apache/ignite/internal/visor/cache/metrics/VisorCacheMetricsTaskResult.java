@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.visor.cache;
+package org.apache.ignite.internal.visor.cache.metrics;
 
 import java.io.IOException;
 import java.io.ObjectInput;

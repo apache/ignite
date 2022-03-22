@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.visor.cache;
+package org.apache.ignite.internal.visor.cache.metrics;
 
 import java.io.IOException;
 import java.io.ObjectInput;
@@ -39,7 +39,7 @@ public class VisorCacheMetricsTaskArg extends IgniteDataTransferObject {
     private Set<String> cacheNames;
 
     /** Cache metrics sub-command. */
-    private SubCommand subCmd;
+    private CacheMetricsSubCommand subCmd;
 
     /**
      * Default constructor.
@@ -51,7 +51,7 @@ public class VisorCacheMetricsTaskArg extends IgniteDataTransferObject {
     /**
      * @param cacheNames Affected cache names.
      */
-    public VisorCacheMetricsTaskArg(SubCommand subCmd, Set<String> cacheNames) {
+    public VisorCacheMetricsTaskArg(CacheMetricsSubCommand subCmd, Set<String> cacheNames) {
         this.subCmd = subCmd;
         this.cacheNames = Collections.unmodifiableSet(cacheNames);
 
@@ -63,7 +63,7 @@ public class VisorCacheMetricsTaskArg extends IgniteDataTransferObject {
      *
      * @param subCmd Operation type.
      */
-    public VisorCacheMetricsTaskArg(SubCommand subCmd) {
+    public VisorCacheMetricsTaskArg(CacheMetricsSubCommand subCmd) {
         this.subCmd = subCmd;
 
         applyToAllCaches = true;
@@ -83,7 +83,7 @@ public class VisorCacheMetricsTaskArg extends IgniteDataTransferObject {
         ClassNotFoundException {
         applyToAllCaches = in.readBoolean();
         cacheNames = U.readSet(in);
-        subCmd = U.readEnum(in, SubCommand.class);
+        subCmd = U.readEnum(in, CacheMetricsSubCommand.class);
     }
 
     /**
@@ -103,22 +103,8 @@ public class VisorCacheMetricsTaskArg extends IgniteDataTransferObject {
     /**
      * @return Cache metrics sub-command.
      */
-    public SubCommand subCommand() {
+    public CacheMetricsSubCommand subCommand() {
         return subCmd;
     }
-
-    /**
-     * Sub-command enum.
-     */
-    @SuppressWarnings("PublicInnerClass")
-    public enum SubCommand {
-        /** Enable sub-command.*/
-        ENABLE,
-
-        /** Disable sub-command.*/
-        DISABLE,
-
-        /** Status sub-command.*/
-        STATUS
-    }
 }
+
