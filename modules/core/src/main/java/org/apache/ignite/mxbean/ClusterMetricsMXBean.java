@@ -318,18 +318,18 @@ public interface ClusterMetricsMXBean extends ClusterMetrics {
         @MXBeanParameter(name = "attrName", description = "Attribute name.") String attrName
     );
 
-     /**
-      * @param attrName Attribute name.
-      * @param attrVal Attribute value.
-      * @param includeSrvs Include server nodes.
-      * @param includeClients Include client nodes.
-      * @return Node IDs with the given attribute value.
-      */
-     @MXBeanDescription("Get node IDs with the given attribute value.")
-     public Set<UUID> nodeIdsForAttribute(
-         @MXBeanParameter(name = "attrName", description = "Attribute name.") String attrName,
-         @MXBeanParameter(name = "attrValue", description = "Attribute value.") String attrVal,
-         @MXBeanParameter(name = "includeSrvs", description = "Include server nodes.") boolean includeSrvs,
-         @MXBeanParameter(name = "includeClients", description = "Include client nodes.") boolean includeClients
-     );
+    /**
+     * @param attrName Attribute name.
+     * @param attrVal Attribute value.
+     * @param includeSrvs Include server nodes.
+     * @param includeClients Include client nodes.
+     * @return Node IDs with the given attribute value.
+     */
+    @MXBeanDescription("Get node IDs with the given attribute value.")
+    public Set<UUID> nodeIdsForAttribute(
+        @MXBeanParameter(name = "attrName", description = "Attribute name.") String attrName,
+        @MXBeanParameter(name = "attrValue", description = "Attribute value.") String attrVal,
+        @MXBeanParameter(name = "includeSrvs", description = "Include server nodes.") boolean includeSrvs,
+        @MXBeanParameter(name = "includeClients", description = "Include client nodes.") boolean includeClients
+    );
 }

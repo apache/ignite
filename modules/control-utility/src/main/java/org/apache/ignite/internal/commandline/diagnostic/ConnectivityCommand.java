@@ -133,8 +133,8 @@ public class ConnectivityCommand implements Command<Void> {
 
                 return null;
             })
-            .filter(Objects::nonNull)
-            .collect(Collectors.toList());
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList());
 
             table.addAll(row);
         }

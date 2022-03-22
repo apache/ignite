@@ -400,7 +400,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
         if (log.isDebugEnabled())
             log.debug("Ignore event, cluster is inactive: " + evt);
-   }
+    }
 
     /** {@inheritDoc} */
     @Override protected void start0() throws IgniteCheckedException {

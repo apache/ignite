@@ -155,7 +155,7 @@ public class PdsFolderResolver<L extends FileLockHolder> {
 
         final File pstStoreBasePath = resolvePersistentStoreBasePath(clientMode);
 
-        if (!CU.isPersistenceEnabled(cfg))
+        if (!CU.isPersistenceEnabled(cfg) && !CU.isCdcEnabled(cfg))
             return compatibleResolve(pstStoreBasePath, consistentId);
 
         if (clientMode)

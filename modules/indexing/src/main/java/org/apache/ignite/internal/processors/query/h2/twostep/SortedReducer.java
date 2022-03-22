@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.query.h2.twostep;
 
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Iterator;
@@ -125,21 +124,24 @@ public class SortedReducer extends AbstractReducer {
     }
 
     /** {@inheritDoc} */
-    @Override public void setSources(Collection<ClusterNode> nodes, int segmentsCnt) {
-        super.setSources(nodes, segmentsCnt);
+    @Override public void setSources(Map<ClusterNode, Integer> nodesToSegmentsCnt) {
+        super.setSources(nodesToSegmentsCnt);
 
-        streamsMap = U.newHashMap(nodes.size());
-        RowStream[] streams = new RowStream[nodes.size() * segmentsCnt];
+        streamsMap = U.newHashMap(nodesToSegmentsCnt.size());
+
+        int totalSegmentsCnt = nodesToSegmentsCnt.values().stream().mapToInt(i -> i).sum();
+
+        RowStream[] streams = new RowStream[totalSegmentsCnt];
 
         int i = 0;
 
-        for (ClusterNode node : nodes) {
-            RowStream[] segments = new RowStream[segmentsCnt];
+        for (Map.Entry<ClusterNode, Integer> e : nodesToSegmentsCnt.entrySet()) {
+            RowStream[] segments = new RowStream[e.getValue()];
 
-            for (int s = 0; s < segmentsCnt; s++)
+            for (int s = 0; s < e.getValue(); s++)
                 streams[i++] = segments[s] = new RowStream();
 
-            if (streamsMap.put(node.id(), segments) != null)
+            if (streamsMap.put(e.getKey().id(), segments) != null)
                 throw new IllegalStateException();
         }
 
@@ -431,7 +433,7 @@ public class SortedReducer extends AbstractReducer {
          * @param last Upper bound.
          * @param stream Stream of all the rows from remote nodes.
          */
-         FetchingCursor(SearchRow first, SearchRow last, Iterator<Row> stream) {
+        FetchingCursor(SearchRow first, SearchRow last, Iterator<Row> stream) {
             assert stream != null;
 
             // Initially we will use all the fetched rows, after we will switch to the last block.

@@ -66,6 +66,6 @@ public class IpcEndpointFactory {
      * @throws IgniteCheckedException If connection failed.
      */
     private static IpcEndpoint connectTcpEndpoint(String host, int port) throws IgniteCheckedException {
-       return new IpcClientTcpEndpoint(host, port);
+        return new IpcClientTcpEndpoint(host, port);
     }
 }

@@ -128,7 +128,7 @@ public class GridFutureAdapter<R> implements IgniteInternalFuture<R> {
         Object state0 = state;
 
         if (state0 == null ||                           // It is DONE state
-           (state0.getClass() != Node.class &&         // It is not INIT state
+            (state0.getClass() != Node.class &&         // It is not INIT state
             state0.getClass() != ErrorWrapper.class && // It is not FAILED
             state0 != CANCELLED))                      // It is not CANCELLED
             return (R)state0;

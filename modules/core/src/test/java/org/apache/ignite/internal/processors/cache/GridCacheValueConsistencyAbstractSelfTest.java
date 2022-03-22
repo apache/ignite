@@ -290,11 +290,11 @@ public abstract class GridCacheValueConsistencyAbstractSelfTest extends GridCach
     public void testPutRemoveConsistencyMultithreaded() throws Exception {
         Assume.assumeFalse("https://issues.apache.org/jira/browse/IGNITE-627", nearEnabled());
 
-       for (int i = 0; i < SF.applyLB(10, 2); i++) {
-           log.info("Iteration: " + i);
+        for (int i = 0; i < SF.applyLB(10, 2); i++) {
+            log.info("Iteration: " + i);
 
-           putRemoveConsistencyMultithreaded();
-       }
+            putRemoveConsistencyMultithreaded();
+        }
     }
 
     /**

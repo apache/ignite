@@ -353,19 +353,17 @@ public class IgniteClusterIdTagTest extends GridCommonAbstractTest {
 
         AtomicBoolean evtFired = new AtomicBoolean(false);
 
-        ig.events().localListen((evt) ->
-            {
-                evtFired.set(true);
+        ig.events().localListen((evt) -> {
+            evtFired.set(true);
 
-                ClusterTagUpdatedEvent tagUpdatedEvt = (ClusterTagUpdatedEvent)evt;
+            ClusterTagUpdatedEvent tagUpdatedEvt = (ClusterTagUpdatedEvent)evt;
 
-                clusterIdFromEvent.set(tagUpdatedEvt.clusterId());
-                oldTagFromEvent.set(tagUpdatedEvt.previousTag());
-                newTagFromEvent.set(tagUpdatedEvt.newTag());
+            clusterIdFromEvent.set(tagUpdatedEvt.clusterId());
+            oldTagFromEvent.set(tagUpdatedEvt.previousTag());
+            newTagFromEvent.set(tagUpdatedEvt.newTag());
 
-                return true;
-            },
-            EventType.EVT_CLUSTER_TAG_UPDATED);
+            return true;
+        }, EventType.EVT_CLUSTER_TAG_UPDATED);
 
         ig.cluster().tag(CUSTOM_TAG_0);
 

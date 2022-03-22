@@ -83,6 +83,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter
 import org.apache.ignite.internal.processors.cache.WalStateManager.WALDisableContext;
 import org.apache.ignite.internal.processors.cache.persistence.DataStorageMetricsImpl;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
+import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.StorageException;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
@@ -117,6 +118,7 @@ import org.apache.ignite.internal.util.typedef.CIX1;
 import org.apache.ignite.internal.util.typedef.CO;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.lang.IgniteBiPredicate;
@@ -156,6 +158,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.wal.serial
 import static org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordV1Serializer.readSegmentHeader;
 import static org.apache.ignite.internal.processors.compress.CompressionProcessor.checkCompressionLevelBounds;
 import static org.apache.ignite.internal.processors.compress.CompressionProcessor.getDefaultCompressionLevel;
+import static org.apache.ignite.internal.util.io.GridFileUtils.ensureHardLinkAvailable;
 
 /**
  * File WAL manager.
@@ -474,20 +477,22 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                 "write ahead log archive directory"
             );
 
-            if (dsCfg.isCdcEnabled()) {
+            if (CU.isCdcEnabled(igCfg)) {
                 walCdcDir = initDirectory(
                     dsCfg.getCdcWalPath(),
                     DataStorageConfiguration.DFLT_WAL_CDC_PATH,
                     resolveFolders.folderName(),
                     "change data capture directory"
                 );
+
+                ensureHardLinkAvailable(walArchiveDir.toPath(), walCdcDir.toPath());
             }
 
             serializer = new RecordSerializerFactoryImpl(cctx).createSerializer(serializerVer);
 
-            GridCacheDatabaseSharedManager dbMgr = (GridCacheDatabaseSharedManager)cctx.database();
+            IgniteCacheDatabaseSharedManager dbMgr = cctx.database();
 
-            metrics = dbMgr.persistentStoreMetricsImpl();
+            metrics = dbMgr.dataStorageMetricsImpl();
 
             if (metrics != null) {
                 metrics.setWalSizeProvider(new CO<Long>() {
@@ -688,13 +693,15 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         stopAutoRollover();
 
         try {
-            fileHandleManager.onDeactivate();
+            if (fileHandleManager != null)
+                fileHandleManager.onDeactivate();
         }
         catch (Exception e) {
             U.error(log, "Failed to gracefully close WAL segment: " + currHnd, e);
         }
 
-        segmentAware.interrupt();
+        if (segmentAware != null)
+            segmentAware.interrupt();
 
         try {
             if (archiver != null)
@@ -2071,7 +2078,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
                 Files.move(dstTmpFile.toPath(), dstFile.toPath());
 
-                if (dsCfg.isCdcEnabled())
+                if (walCdcDir != null)
                     Files.createLink(walCdcDir.toPath().resolve(dstFile.getName()), dstFile.toPath());
 
                 if (mode != WALMode.NONE) {

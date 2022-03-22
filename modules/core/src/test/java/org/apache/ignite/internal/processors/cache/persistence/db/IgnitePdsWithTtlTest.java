@@ -501,10 +501,12 @@ public class IgnitePdsWithTtlTest extends GridCommonAbstractTest {
      *
      */
     protected void fillCache(IgniteCache<Integer, byte[]> cache) {
-        cache.putAll(new TreeMap<Integer, byte[]>() {{
-            for (int i = 0; i < ENTRIES; i++)
-                put(i, new byte[1024]);
-        }});
+        TreeMap<Integer, byte[]> data = new TreeMap<>();
+
+        for (int i = 0; i < ENTRIES; i++)
+            data.put(i, new byte[1024]);
+
+        cache.putAll(data);
 
         //Touch entries.
         for (int i = 0; i < ENTRIES; i++)

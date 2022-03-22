@@ -160,7 +160,9 @@ import static org.apache.ignite.internal.encryption.AbstractEncryptionTest.MASTE
 import static org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager.IGNITE_PDS_SKIP_CHECKPOINT_ON_NODE_STOP;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.AbstractSnapshotSelfTest.doSnapshotCancellationTest;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.AbstractSnapshotSelfTest.snp;
+import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.SNAPSHOT_LIMITED_TRANSFER_BLOCK_SIZE_BYTES;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.SNAPSHOT_METRICS;
+import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.SNAPSHOT_TRANSFER_RATE_DMS_KEY;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.resolveSnapshotWorkDirectory;
 import static org.apache.ignite.internal.processors.cache.verify.IdleVerifyUtility.GRID_NOT_IDLE_MSG;
 import static org.apache.ignite.internal.processors.diagnostic.DiagnosticProcessor.DEFAULT_TARGET_FOLDER;
@@ -993,8 +995,8 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         }
     }
 
-   /** */
-   private CountDownLatch getNewStateLatch(ClusterState oldState, ClusterState newState) {
+    /** */
+    private CountDownLatch getNewStateLatch(ClusterState oldState, ClusterState newState) {
         if (oldState != newState) {
             CountDownLatch latch = new CountDownLatch(G.allGrids().size());
 
@@ -1007,7 +1009,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         }
         else
             return new CountDownLatch(0);
-   }
+    }
 
     /**
      * Test baseline collect works via control.sh
@@ -1776,14 +1778,14 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         // Test kill by xid.
         validate(h, map -> {
-                assertEquals(1, map.size());
+            assertEquals(1, map.size());
 
-                Map.Entry<ClusterNode, VisorTxTaskResult> killedEntry = map.entrySet().iterator().next();
+            Map.Entry<ClusterNode, VisorTxTaskResult> killedEntry = map.entrySet().iterator().next();
 
-                VisorTxInfo info = killedEntry.getValue().getInfos().get(0);
+            VisorTxInfo info = killedEntry.getValue().getInfos().get(0);
 
-                assertEquals(toKill[0].getXid(), info.getXid());
-            }, "--tx", "--kill",
+            assertEquals(toKill[0].getXid(), info.getXid());
+        }, "--tx", "--kill",
             "--xid", toKill[0].getXid().toString(), // Use saved on first run value.
             "--nodes", grid(0).localNode().consistentId().toString());
 
@@ -2992,6 +2994,45 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         assertEquals(EXIT_CODE_UNEXPECTED_ERROR, execute(h, "--encryption", "change_master_key", MASTER_KEY_NAME_2));
 
         assertContains(log, testOut.toString(), "Master key change was rejected. The cluster is inactive.");
+    }
+
+    /** @throws Exception If failed. */
+    @Test
+    public void testChangeSnapshotTransferRateInRuntime() throws Exception {
+        int keysCnt = 10_000;
+
+        IgniteConfiguration cfg = optimize(getConfiguration(getTestIgniteInstanceName(0)))
+            .setSnapshotThreadPoolSize(1);
+
+        IgniteEx ignite = startGrid(cfg);
+
+        ignite.cluster().state(ACTIVE);
+
+        createCacheAndPreload(ignite, keysCnt);
+
+        // Estimate snapshot creation time.
+        long start = System.currentTimeMillis();
+
+        ignite.snapshot().createSnapshot("snapshot1").get(getTestTimeout());
+
+        long maxOpTime = (System.currentTimeMillis() - start) * 2;
+
+        Function<Integer, Integer> propFunc =
+            (num) -> execute("--property", "set", "--name", SNAPSHOT_TRANSFER_RATE_DMS_KEY, "--val", String.valueOf(num));
+
+        // Limit the transfer rate.
+        assertEquals(EXIT_CODE_OK, (int)propFunc.apply(SNAPSHOT_LIMITED_TRANSFER_BLOCK_SIZE_BYTES));
+
+        IgniteFuture<Void> snpFut = ignite.snapshot().createSnapshot("snapshot2");
+
+        // Make sure that the operation has been slowed down.
+        U.sleep(maxOpTime);
+        assertFalse(snpFut.isDone());
+
+        // Set transfer rate to unlimited.
+        assertEquals(EXIT_CODE_OK, (int)propFunc.apply(0));
+
+        snpFut.get(maxOpTime);
     }
 
     /** @throws Exception If failed. */

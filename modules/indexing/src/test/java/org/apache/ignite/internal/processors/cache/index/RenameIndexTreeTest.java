@@ -30,10 +30,13 @@ import org.apache.ignite.client.Person;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.cache.query.index.sorted.DurableBackgroundCleanupIndexTreeTaskV2;
 import org.apache.ignite.internal.cache.query.index.sorted.SortedIndexDefinition;
+import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexImpl;
+import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexTree;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
 import org.apache.ignite.internal.pagemem.wal.record.IndexRenameRootPageRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
+import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.persistence.RootPage;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
@@ -51,6 +54,7 @@ import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType
 import static org.apache.ignite.internal.processors.cache.persistence.IndexStorageImpl.MAX_IDX_NAME_LEN;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 import static org.apache.ignite.testframework.GridTestUtils.cacheContext;
+import static org.apache.ignite.testframework.GridTestUtils.getFieldValue;
 
 /**
  * Class for testing index tree renaming.
@@ -273,6 +277,46 @@ public class RenameIndexTreeTest extends AbstractRebuildIndexTest {
             assertEquals(newTreeName, record.newTreeName());
             assertEquals(segments, record.segments());
         }
+    }
+
+    /**
+     * Tests that {@link DurableBackgroundCleanupIndexTreeTaskV2#renameIndexTrees(CacheGroupContext)}
+     * can be run before submitting the task.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testRenameBeforeRunningTask() throws Exception {
+        IgniteEx n = startGrid(0);
+
+        IgniteCache<Integer, Person> cache = n.cache(DEFAULT_CACHE_NAME);
+
+        populate(cache, 100);
+
+        String idxName = "IDX0";
+        createIdx(cache, idxName);
+
+        InlineIndexImpl idx = (InlineIndexImpl)index(n, cache, idxName);
+
+        GridCacheContext<Integer, Person> cctx = cacheContext(cache);
+
+        InlineIndexTree[] segments = getFieldValue(idx, "segments");
+
+        DurableBackgroundCleanupIndexTreeTaskV2 task = new DurableBackgroundCleanupIndexTreeTaskV2(
+            cctx.group().name(),
+            cctx.name(),
+            idxName,
+            idx.indexDefinition().treeName(),
+            UUID.randomUUID().toString(),
+            segments.length,
+            segments
+        );
+
+        assertTrue(task.needToRename());
+
+        task.renameIndexTrees(cctx.group());
+
+        assertFalse(task.needToRename());
     }
 
     /**

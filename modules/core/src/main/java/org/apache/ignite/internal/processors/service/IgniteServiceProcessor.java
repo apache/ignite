@@ -1644,9 +1644,9 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
         ServiceDeploymentActions depActions = null;
 
         if (!registeredServices.isEmpty()) {
-            depActions = new ServiceDeploymentActions();
+            depActions = new ServiceDeploymentActions(ctx);
 
-            depActions.servicesToDeploy(new HashMap<>(registeredServices));
+            depActions.servicesToDeploy(registeredServices);
         }
 
         depMgr.onLocalJoin(evt, discoCache, depActions);
@@ -1792,7 +1792,7 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
         }
 
         if (!toDeploy.isEmpty() || !toUndeploy.isEmpty()) {
-            ServiceDeploymentActions depActions = new ServiceDeploymentActions();
+            ServiceDeploymentActions depActions = new ServiceDeploymentActions(ctx);
 
             if (!toDeploy.isEmpty())
                 depActions.servicesToDeploy(toDeploy);
@@ -1820,10 +1820,10 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
         if (msg.activate() && registeredServices.isEmpty())
             return;
 
-        ServiceDeploymentActions depActions = new ServiceDeploymentActions();
+        ServiceDeploymentActions depActions = new ServiceDeploymentActions(ctx);
 
         if (msg.activate())
-            depActions.servicesToDeploy(new HashMap<>(registeredServices));
+            depActions.servicesToDeploy(registeredServices);
         else
             depActions.deactivate(true);
 
@@ -1853,7 +1853,7 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
         }
 
         if (!toUndeploy.isEmpty()) {
-            ServiceDeploymentActions depActions = new ServiceDeploymentActions();
+            ServiceDeploymentActions depActions = new ServiceDeploymentActions(ctx);
 
             depActions.servicesToUndeploy(toUndeploy);
 
@@ -1897,7 +1897,7 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
             servicesTopsUpdateMux.notifyAll();
         }
 
-        ServiceDeploymentActions depActions = new ServiceDeploymentActions();
+        ServiceDeploymentActions depActions = new ServiceDeploymentActions(ctx);
 
         depActions.deploymentTopologies(fullTops);
         depActions.deploymentErrors(fullErrors);

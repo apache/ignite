@@ -372,15 +372,15 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             ctx.cacheId(),
             GridDhtAtomicNearResponse.class,
             new CI2<UUID, GridDhtAtomicNearResponse>() {
-            @Override public void apply(UUID uuid, GridDhtAtomicNearResponse msg) {
-                processDhtAtomicNearResponse(uuid, msg);
-            }
+                @Override public void apply(UUID uuid, GridDhtAtomicNearResponse msg) {
+                    processDhtAtomicNearResponse(uuid, msg);
+                }
 
-            @Override public String toString() {
-                return "GridDhtAtomicNearResponse handler " +
-                    "[msgIdx=" + GridDhtAtomicNearResponse.CACHE_MSG_IDX + ']';
-            }
-        });
+                @Override public String toString() {
+                    return "GridDhtAtomicNearResponse handler " +
+                        "[msgIdx=" + GridDhtAtomicNearResponse.CACHE_MSG_IDX + ']';
+                }
+            });
 
         ctx.io().addCacheHandler(
             ctx.cacheId(),
@@ -1398,6 +1398,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
         if (readRepairStrategy != null) {
             return new GridNearReadRepairCheckOnlyFuture(
+                topVer,
                 ctx,
                 Collections.singleton(ctx.toCacheKeyObject(key)),
                 readRepairStrategy,
@@ -1464,6 +1465,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
         if (readRepairStrategy != null) {
             return new GridNearReadRepairCheckOnlyFuture(
+                topVer,
                 ctx,
                 ctx.cacheKeysView(keys),
                 readRepairStrategy,

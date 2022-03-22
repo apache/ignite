@@ -1663,8 +1663,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
             fut = resMap.get(qryInfo.requestId());
 
             if (fut == null) {
-                resMap.put(qryInfo.requestId(), fut =
-                    new GridFutureAdapter<>());
+                resMap.put(qryInfo.requestId(), fut = new GridFutureAdapter<>());
 
                 exec = true;
             }

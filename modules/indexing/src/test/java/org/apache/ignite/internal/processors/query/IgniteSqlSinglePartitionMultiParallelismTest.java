@@ -47,7 +47,7 @@ public class IgniteSqlSinglePartitionMultiParallelismTest extends AbstractIndexi
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        startGrids(1);
+        startGrids(3);
         ignite(0).createCache(cacheConfig());
         fillTable();
     }
@@ -90,7 +90,7 @@ public class IgniteSqlSinglePartitionMultiParallelismTest extends AbstractIndexi
      * Check case with every single partition. Partition segment must be calculated correctly.
      */
     @Test
-    public void testWhereCounteryPartitionQuery() throws Exception {
+    public void testWhereCountPartitionQuery() {
         for (int segment = 0; segment < CACHE_PARALLELISM; segment++) {
             Integer keyForSegment = segmenKey(segment);
 
@@ -107,7 +107,7 @@ public class IgniteSqlSinglePartitionMultiParallelismTest extends AbstractIndexi
      * Check case with 2 partitions. Multiple partitions should not be affected.
      */
     @Test
-    public void testWhereCountMultiPartitionsQuery() throws Exception {
+    public void testWhereCountMultiPartitionsQuery() {
         Integer keyFromFirstSegment = segmenKey(0);
         Integer keyFromLastSegment = segmenKey(CACHE_PARALLELISM - 1);
 
@@ -118,6 +118,26 @@ public class IgniteSqlSinglePartitionMultiParallelismTest extends AbstractIndexi
 
         assertEquals(1, results.size());
         assertEquals(Long.valueOf(2), res);
+    }
+
+    /**
+     * Test ensures that multi-partitioned query from reducer's point of view is awaiting a proper amount of replies from map nodes
+     * even in case for the mapper it is mono-partitioned query.
+     *
+     * <p>To verify this, we need to find a pair of keys such that each key belongs to a different node.
+     */
+    @Test
+    public void testMultiPartitionedRdcMonoPartitionedMap() {
+        Integer keyFromFirstSegment = segmenKey(0);
+
+        for (int i = 1; i < CACHE_PARALLELISM; i++) {
+            Integer keyFromAnotherSegment = segmenKey(i);
+
+            List<List<?>> results = runQuery("select * from " + CACHE_NAME + " where ID="
+                + keyFromFirstSegment + " or ID=" + keyFromAnotherSegment);
+
+            assertEquals(2, results.size());
+        }
     }
 
     /**

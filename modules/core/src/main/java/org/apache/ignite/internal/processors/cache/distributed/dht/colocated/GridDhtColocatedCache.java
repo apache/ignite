@@ -260,6 +260,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
 
         if (readRepairStrategy != null) {
             return new GridNearReadRepairCheckOnlyFuture(
+                topVer,
                 ctx,
                 Collections.singleton(ctx.toCacheKeyObject(key)),
                 readRepairStrategy,
@@ -378,6 +379,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
 
         if (readRepairStrategy != null) {
             return new GridNearReadRepairCheckOnlyFuture(
+                topVer,
                 ctx,
                 ctx.cacheKeysView(keys),
                 readRepairStrategy,

@@ -447,11 +447,11 @@ public class CacheNoAffinityExchangeTest extends GridCommonAbstractTest {
         Ignite client = startClientGrid(2);
 
         assertTrue(GridTestUtils.waitForCondition(() -> {
-                AffinityTopologyVersion topVer0 = grid(0).context().discovery().topologyVersionEx();
-                AffinityTopologyVersion topVer1 = grid(1).context().discovery().topologyVersionEx();
+            AffinityTopologyVersion topVer0 = grid(0).context().discovery().topologyVersionEx();
+            AffinityTopologyVersion topVer1 = grid(1).context().discovery().topologyVersionEx();
 
-                return topVer0.topologyVersion() == 3 && topVer1.topologyVersion() == 2;
-            }, 10_000));
+            return topVer0.topologyVersion() == 3 && topVer1.topologyVersion() == 2;
+        }, 10_000));
 
         final IgniteCache<Integer, Integer> txCache = client.cache(PARTITIONED_TX_CLIENT_CACHE_NAME);
 

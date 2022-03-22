@@ -219,39 +219,42 @@ public final class LogisticRegressionModel implements IgniteModel<Vector, Double
 
     /** Loads KMeansModel from JSON file. */
     public static LogisticRegressionModel fromJSON(Path path) {
-            ObjectMapper mapper = new ObjectMapper();
+        ObjectMapper mapper = new ObjectMapper();
 
-            LogisticRegressionJSONExportModel logisticRegressionJSONExportModel;
-            try {
-                logisticRegressionJSONExportModel = mapper
-                        .readValue(new File(path.toAbsolutePath().toString()), LogisticRegressionJSONExportModel.class);
+        LogisticRegressionJSONExportModel logisticRegressionJSONExportModel;
+        try {
+            logisticRegressionJSONExportModel = mapper
+                .readValue(new File(path.toAbsolutePath().toString()), LogisticRegressionJSONExportModel.class);
 
-                return logisticRegressionJSONExportModel.convert();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
+            return logisticRegressionJSONExportModel.convert();
+        }
+        catch (IOException e) {
+            e.printStackTrace();
+        }
+
         return null;
     }
 
     /** {@inheritDoc} */
     @Override public void toJSON(Path path) {
-            ObjectMapper mapper = new ObjectMapper();
+        ObjectMapper mapper = new ObjectMapper();
 
-            try {
-                LogisticRegressionJSONExportModel exportModel = new LogisticRegressionJSONExportModel(
-                    System.currentTimeMillis(),
-                    "logReg_" + UUID.randomUUID().toString(),
-                    LogisticRegressionModel.class.getSimpleName());
-                exportModel.intercept = intercept;
-                exportModel.isKeepingRawLabels = isKeepingRawLabels;
-                exportModel.threshold = threshold;
-                exportModel.weights = weights.asArray();
+        try {
+            LogisticRegressionJSONExportModel exportModel = new LogisticRegressionJSONExportModel(
+                System.currentTimeMillis(),
+                "logReg_" + UUID.randomUUID().toString(),
+                LogisticRegressionModel.class.getSimpleName());
+            exportModel.intercept = intercept;
+            exportModel.isKeepingRawLabels = isKeepingRawLabels;
+            exportModel.threshold = threshold;
+            exportModel.weights = weights.asArray();
 
-                File file = new File(path.toAbsolutePath().toString());
-                mapper.writeValue(file, exportModel);
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
+            File file = new File(path.toAbsolutePath().toString());
+            mapper.writeValue(file, exportModel);
+        }
+        catch (IOException e) {
+            e.printStackTrace();
+        }
 
     }
 

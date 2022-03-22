@@ -31,91 +31,91 @@ import static org.junit.Assert.assertEquals;
  */
 @RunWith(Parameterized.class)
 public class WeightedMinkowskiDistanceTest {
-  /** Precision. */
-  private static final double PRECISION = 0.01;
-
-  /** */
-  @Parameterized.Parameters(name = "{0}")
-  public static Collection<TestData> data() {
-    return Arrays.asList(
-        new TestData(
-            new double[] {1.0, 0.0, 0.0},
-            new double[] {0.0, 1.0, 0.0},
-            1,
-            new double[] {2.0, 3.0, 4.0},
-            5.0
-        ),
-        new TestData(
-            new double[] {1.0, 0.0, 0.0},
-            new double[] {0.0, 1.0, 0.0},
-            2,
-            new double[] {2.0, 3.0, 4.0},
-            3.60
-        ),
-        new TestData(
-            new double[] {1.0, 0.0, 0.0},
-            new double[] {0.0, 1.0, 0.0},
-            3,
-            new double[] {2.0, 3.0, 4.0},
-            3.27
-        )
-    );
-  }
-
-  /** */
-  private final TestData testData;
-
-  /** */
-  public WeightedMinkowskiDistanceTest(TestData testData) {
-    this.testData = testData;
-  }
-
-  /** */
-  @Test
-  public void testWeightedMinkowski() {
-    DistanceMeasure distanceMeasure = new WeightedMinkowskiDistance(testData.p, testData.weights);
-
-    assertEquals(testData.expRes,
-        distanceMeasure.compute(testData.vectorA, testData.vectorB), PRECISION);
-    assertEquals(testData.expRes,
-        distanceMeasure.compute(testData.vectorA, testData.vectorB), PRECISION);
-  }
-
-  /** */
-  private static class TestData {
-    /** */
-    public final Vector vectorA;
+    /** Precision. */
+    private static final double PRECISION = 0.01;
 
     /** */
-    public final Vector vectorB;
-
-    /** */
-    public final Integer p;
-
-    /** */
-    public final double[] weights;
-
-    /** */
-    public final Double expRes;
-
-    /** */
-    private TestData(double[] vectorA, double[] vectorB, Integer p, double[] weights, double expRes) {
-      this.vectorA = new DenseVector(vectorA);
-      this.vectorB = new DenseVector(vectorB);
-      this.p = p;
-      this.weights = weights;
-      this.expRes = expRes;
+    @Parameterized.Parameters(name = "{0}")
+    public static Collection<TestData> data() {
+        return Arrays.asList(
+            new TestData(
+                new double[] {1.0, 0.0, 0.0},
+                new double[] {0.0, 1.0, 0.0},
+                1,
+                new double[] {2.0, 3.0, 4.0},
+                5.0
+            ),
+            new TestData(
+                new double[] {1.0, 0.0, 0.0},
+                new double[] {0.0, 1.0, 0.0},
+                2,
+                new double[] {2.0, 3.0, 4.0},
+                3.60
+            ),
+            new TestData(
+                new double[] {1.0, 0.0, 0.0},
+                new double[] {0.0, 1.0, 0.0},
+                3,
+                new double[] {2.0, 3.0, 4.0},
+                3.27
+            )
+        );
     }
 
-    /** {@inheritDoc} */
-    @Override public String toString() {
-      return String.format("d(%s,%s;%s,%s) = %s",
-          Arrays.toString(vectorA.asArray()),
-          Arrays.toString(vectorB.asArray()),
-          p,
-          Arrays.toString(weights),
-          expRes
-      );
+    /** */
+    private final TestData testData;
+
+    /** */
+    public WeightedMinkowskiDistanceTest(TestData testData) {
+        this.testData = testData;
     }
-  }
+
+    /** */
+    @Test
+    public void testWeightedMinkowski() {
+        DistanceMeasure distanceMeasure = new WeightedMinkowskiDistance(testData.p, testData.weights);
+
+        assertEquals(testData.expRes,
+            distanceMeasure.compute(testData.vectorA, testData.vectorB), PRECISION);
+        assertEquals(testData.expRes,
+            distanceMeasure.compute(testData.vectorA, testData.vectorB), PRECISION);
+    }
+
+    /** */
+    private static class TestData {
+        /** */
+        public final Vector vectorA;
+
+        /** */
+        public final Vector vectorB;
+
+        /** */
+        public final Integer p;
+
+        /** */
+        public final double[] weights;
+
+        /** */
+        public final Double expRes;
+
+        /** */
+        private TestData(double[] vectorA, double[] vectorB, Integer p, double[] weights, double expRes) {
+            this.vectorA = new DenseVector(vectorA);
+            this.vectorB = new DenseVector(vectorB);
+            this.p = p;
+            this.weights = weights;
+            this.expRes = expRes;
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return String.format("d(%s,%s;%s,%s) = %s",
+                Arrays.toString(vectorA.asArray()),
+                Arrays.toString(vectorB.asArray()),
+                p,
+                Arrays.toString(weights),
+                expRes
+            );
+        }
+    }
 }

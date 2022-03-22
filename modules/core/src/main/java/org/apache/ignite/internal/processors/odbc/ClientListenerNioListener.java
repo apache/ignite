@@ -212,7 +212,7 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<Clie
                         ", resp=" + resp.status() + ']');
                 }
 
-                    GridNioFuture<?> fut = ses.send(parser.encode(resp));
+                GridNioFuture<?> fut = ses.send(parser.encode(resp));
 
                 fut.listen(f -> {
                     if (f.error() == null)

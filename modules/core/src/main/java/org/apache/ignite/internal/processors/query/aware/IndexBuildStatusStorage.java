@@ -291,7 +291,7 @@ public class IndexBuildStatusStorage implements MetastorageLifecycleListener, Ch
      * Callback on the start of the cache index building operation.
      * <p/>
      * Registers the start of an index build operation, for persistent cache
-     * writes a entry to the MetaStorage so that if a failure occurs,
+     * writes an entry to the MetaStorage so that if a failure occurs,
      * the indexes are automatically rebuilt.
      *
      * @param cacheCtx Cache context.

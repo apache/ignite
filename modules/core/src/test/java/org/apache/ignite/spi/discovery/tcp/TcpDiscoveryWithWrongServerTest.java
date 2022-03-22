@@ -81,7 +81,7 @@ public class TcpDiscoveryWithWrongServerTest extends GridCommonAbstractTest {
      * Starts tcp test thread
      * @param workerFactory one of WorkerFactory
      */
-     protected void startTcpThread(final WorkerFactory workerFactory, final int port) throws Exception {
+    protected void startTcpThread(final WorkerFactory workerFactory, final int port) throws Exception {
         final ServerSocket srvSock = new ServerSocket(port, 10, InetAddress.getByName("127.0.0.1"));
 
         srvSocks.add(srvSock);
@@ -270,7 +270,7 @@ public class TcpDiscoveryWithWrongServerTest extends GridCommonAbstractTest {
             return new SocketWorker(clientSock) {
                 @Override public void action(InputStream input, OutputStream output) throws IOException {
                     log.error("TEST: No response was sent to " + clientSock.getRemoteSocketAddress());
-               }
+                }
             };
         }
     }

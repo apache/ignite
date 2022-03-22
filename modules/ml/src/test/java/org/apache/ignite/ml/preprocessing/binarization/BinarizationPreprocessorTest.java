@@ -49,7 +49,7 @@ public class BinarizationPreprocessorTest {
             {0, 1, 1}
         };
 
-       for (int i = 0; i < data.length; i++)
-           assertArrayEquals(postProcessedData[i], preprocessor.apply(i, data[i]).features().asArray(), 1e-8);
+        for (int i = 0; i < data.length; i++)
+            assertArrayEquals(postProcessedData[i], preprocessor.apply(i, data[i]).features().asArray(), 1e-8);
     }
 }

@@ -77,7 +77,7 @@ public class GridListenActorSelfTest extends GridCommonAbstractTest {
 
         // Flood it.
         for (int i = 0; i < 100; i++)
-           grid().message().send(null, "TEST"); // This message should be lost...
+            grid().message().send(null, "TEST"); // This message should be lost...
 
         Thread.sleep(2000);
 

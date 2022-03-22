@@ -234,13 +234,13 @@ public class CacheScanQueryFailoverTest extends GridCommonAbstractTest {
 
     /** Failed filter. */
     private static IgniteBiPredicate<Integer, BinaryObject> filter = (key, value) -> {
-            throw new Error("Poison pill");
-        };
+        throw new Error("Poison pill");
+    };
 
     /** Failed entry transformer. */
     private static IgniteClosure<Cache.Entry<Integer, BinaryObject>, Cache.Entry<Integer, BinaryObject>> transformer =
-            integerBinaryObjectEntry -> {
-                throw new Error("Poison pill");
+        integerBinaryObjectEntry -> {
+            throw new Error("Poison pill");
         };
 
     /**

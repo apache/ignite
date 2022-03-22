@@ -15,8 +15,10 @@
  * limitations under the License.
  */
 
+package org.apache.ignite.tests.p2p.classloadproblem;
+
 /**
- * <!-- Package description. -->
- * Contains utils functionality for indices in kNN algorithms.
+ * Class used to trigger class-loading via P2P class-loader.
  */
-package org.apache.ignite.ml.knn.utils.indices;
+class SomeP2PClass {
+}

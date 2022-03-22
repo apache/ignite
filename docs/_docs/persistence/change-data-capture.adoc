@@ -18,9 +18,9 @@
 == Overview
 Change Data Capture (link:https://en.wikipedia.org/wiki/Change_data_capture[CDC]) is a data processing pattern used to asynchronously receive entries that have been changed on the local node so that action can be taken using the changed entry.
 
-WARNING: CDC is an experimental feature whose API or design architecture might be changed.
+WARNING: CDC is an experimental feature. API or design architecture might be changed.
 
-Below are some of the CDC use cases:
+Below are some CDC use cases:
 
  * Streaming changes in Warehouse;
  * Updating search index;
@@ -35,7 +35,7 @@ Below are the CDC application and the Ignite node integrated via WAL archive seg
 image:../../assets/images/integrations/CDC-design.svg[]
 
 When CDC is enabled, the Ignite server node creates a hard link to each WAL archive segment in the special `db/cdc/\{consistency_id\}` directory.
-The `ignite-cdc.sh` application runs on a different JVM and processes newly archived link:native-persistence.adoc#_write-ahead_log[WAL segments].
+The `ignite-cdc.sh` application runs on a different JVM and processes newly archived link:persistence/native-persistence#_write-ahead_log[WAL segments].
 When the segment is fully processed by `ignite-cdc.sh`, it is removed. The actual disk space is free when both links (archive and CDC) are removed.
 
 State of consumption is a pointer to the last processed event.
@@ -68,9 +68,9 @@ CDC is configured in the same way as the Ignite node - via the spring XML file:
 | `lockTimeout` | Timeout to wait for lock acquiring. CDC locks directory on a startup to ensure there is no concurrent `ignite-cdc.sh` processing the same directory.
 | 1000 milliseconds.
 | `checkFrequency` | Amount of time application sleeps between subsequent checks when no new files available. | 1000 milliseconds.
-| `keepBinary` | Flag to specify if key and value of changed entries should be provided in link:../key-value-api/binary-objects.adoc[binary format]. | `true`
+| `keepBinary` | Flag to specify if key and value of changed entries should be provided in link:key-value-api/binary-objects[binary format]. | `true`
 | `consumer` | Implementation of `org.apache.ignite.cdc.CdcConsumer` that consumes entries changes. | null
-| `metricExporterSpi` | Array of SPI's to export CDC metrics. See link:../monitoring-metrics/new-metrics-system.adoc#_metric_exporters[metrics] documentation, also. | null
+| `metricExporterSpi` | Array of SPI's to export CDC metrics. See link:monitoring-metrics/new-metrics-system#_metric_exporters[metrics] documentation, also. | null
 |===
 
 == API
@@ -84,7 +84,7 @@ Below is a single change of the data reflected by `CdcEvent`.
 |Name |Description
 | `key()` | Key for the changed entry.
 | `value()` | Value for the changed entry. This method will return `null` if the event reflects removal.
-| `cacheId()` | ID of the cache where the change happens. The value is equal to the `CACHE_ID` from link:../monitoring-metrics/system-views.adoc#_CACHES[`SYS.CACHES`].
+| `cacheId()` | ID of the cache where the change happens. The value is equal to the `CACHE_ID` from link:monitoring-metrics/system-views#_CACHES[`SYS.CACHES`].
 | `partition()` | Partition of the changed entry.
 | `primary()` | Flag to distinguish if operation happens on the primary or a backup node.
 | `version()` | `Comparable` version of the changed entry. Internally, Ignite maintains ordered versions of each entry so any changes of the same entry can be sorted.
@@ -130,3 +130,8 @@ IMPORTANT: `ignite-cdc.sh` implements the fail-fast approach. It just fails in c
  4. Start the consumer.
  5. Infinitely wait for the newly available segment and process it.
  6. Stop the consumer in case of a failure or a received stop signal.
+
+== cdc-ext
+
+Ignite extensions project has link:https://github.com/apache/ignite-extensions/tree/master/modules/cdc-ext[cdc-ext] module which provides two way to setup cross cluster replication based on CDC.
+Detailed documentation can be found on link:extensions-and-integrations/change-data-capture-extensions[page].
