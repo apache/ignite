@@ -28,4 +28,5 @@ public class CdcTypesTest {
     // Alter type.
     // Remove type.
     // Add classname mapping.
+    // Test type not repeatedly notified after restart.
 }

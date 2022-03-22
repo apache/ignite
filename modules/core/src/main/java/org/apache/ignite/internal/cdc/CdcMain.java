@@ -289,7 +289,16 @@ public class CdcMain implements Runnable {
                     committedSegmentOffset.value(walState.get1().fileOffset());
 
                     if (log.isInfoEnabled())
-                        log.info("Initial state loaded [ptr=" + walState.get1() + ", idx=" + walState.get2() + ']');
+                        log.info("Initial WAL state loaded [ptr=" + walState.get1() + ", idx=" + walState.get2() + ']');
+                }
+
+                if (typesState != null) {
+                    log.info("Initial types state loaded[typesCnt=" + typesState.size() + ']');
+
+                    if (log.isDebugEnabled()) {
+                        for (Map.Entry<Integer, Long> entry : typesState.entrySet())
+                            log.debug("Type[typeId=" + entry.getKey() + ", lastModified=" + entry.getValue() + ']');
+                    }
                 }
 
                 consumer.start(mreg, kctx.metric().registry(metricName("cdc", "consumer")));
@@ -552,7 +561,7 @@ public class CdcMain implements Runnable {
                 .peek(t -> typesState.put(t.get1(), t.get2())) // Adding peeked up types to the state map.
                 .map(t -> {
                     try {
-                        kctx.cacheObjects().updateMetadataLocally(binaryMeta, t.get1());
+                        kctx.cacheObjects().cacheMetadataLocally(binaryMeta, t.get1());
                     }
                     catch (IgniteCheckedException e) {
                         throw new IgniteException(e);

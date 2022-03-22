@@ -142,7 +142,7 @@ public class SqlCdcTest extends AbstractCdcTest {
         }
 
         // Wait while both predicte will become true and state saved on the disk.
-        assertTrue(latch.await(getTestTimeout(), MILLISECONDS));;
+        assertTrue(latch.await(getTestTimeout(), MILLISECONDS));
 
         checkMetrics(cdc, KEYS_CNT * 2);
 
@@ -163,6 +163,20 @@ public class SqlCdcTest extends AbstractCdcTest {
         waitForSize(KEYS_CNT, USER, DELETE, cnsmr);
 
         checkMetrics(cdc, KEYS_CNT);
+
+        executeSql(ign, "ALTER TABLE CITY ADD COLUMN region VARCHAR");
+
+        executeSql(
+            ign,
+            "INSERT INTO CITY VALUES(?, ?, ?, ?)",
+            KEYS_CNT + 1,
+            MSK,
+            Integer.toString(127000 + KEYS_CNT + 1),
+            "Moscow region");
+
+        waitForSize(KEYS_CNT + 1, CITY, UPDATE, cnsmr);
+
+        executeSql(ign, "DROP TABLE CITY");
 
         rmvFut.cancel();
 
@@ -227,6 +241,11 @@ public class SqlCdcTest extends AbstractCdcTest {
                 BinaryType type = types.next();
                 assertNotNull(type);
 
+                System.out.println("======");
+                for (String name : type.fieldNames()) {
+                    System.out.println("name = " + name);
+                }
+
                 switch (type.typeName()) {
                     case USER_KEY_TYPE:
                         assertTrue(type.fieldNames().containsAll(Arrays.asList("ID", "CITY_ID")));
@@ -248,10 +267,18 @@ public class SqlCdcTest extends AbstractCdcTest {
                         break;
 
                     case CITY_VAL_TYPE:
+                        System.out.println("type = " + type);
+
                         assertTrue(type.fieldNames().containsAll(Arrays.asList("NAME", "ZIP_CODE")));
-                        assertEquals(2, type.fieldNames().size());
+                        assertEquals(cityValType ? 3 : 2, type.fieldNames().size());
                         assertEquals(String.class.getSimpleName(), type.fieldTypeName("NAME"));
                         assertEquals(String.class.getSimpleName(), type.fieldTypeName("ZIP_CODE"));
+
+                        // Alter table happen.
+                        if (cityValType) {
+                            assertTrue(type.fieldNames().contains("REGION"));
+                            assertEquals(String.class.getSimpleName(), type.fieldTypeName("REGION"));
+                        }
 
                         cityValType = true;
 

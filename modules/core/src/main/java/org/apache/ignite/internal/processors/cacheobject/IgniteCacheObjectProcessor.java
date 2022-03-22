@@ -324,7 +324,7 @@ public interface IgniteCacheObjectProcessor extends GridProcessor {
      * @param typeId Type id to update.
      * @throws IgniteCheckedException If failed.
      */
-    public void updateMetadataLocally(File metadataDir, int typeId) throws IgniteCheckedException;
+    public void cacheMetadataLocally(File metadataDir, int typeId) throws IgniteCheckedException;
 
     /**
      * @param typeName Type name.

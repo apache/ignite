@@ -152,11 +152,11 @@ public class CdcConsumerState {
         });
 
         Map<Integer, Long> typesState = load(types, ch -> {
-            ByteBuffer buf = ByteBuffer.allocate(LONG_SZ);
+            ByteBuffer buf = ByteBuffer.allocate(INT_SZ);
 
             int read = ch.read(buf);
 
-            if (read != LONG_SZ)
+            if (read != INT_SZ)
                 return null;
 
             buf.flip();
@@ -169,6 +169,8 @@ public class CdcConsumerState {
 
             if (read != sz * (LONG_SZ + INT_SZ))
                 return null;
+
+            buf.flip();
 
             Map<Integer, Long> data = new HashMap<>();
 
