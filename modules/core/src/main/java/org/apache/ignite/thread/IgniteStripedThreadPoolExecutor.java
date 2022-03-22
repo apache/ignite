@@ -30,10 +30,13 @@ import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
+import org.apache.ignite.internal.processors.metric.impl.HistogramMetricImpl;
 import org.apache.ignite.internal.processors.pool.MetricsAwareExecutorService;
+import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.NotNull;
 
+import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 import static org.apache.ignite.internal.processors.pool.PoolProcessor.ACTIVE_COUNT_DESC;
 import static org.apache.ignite.internal.processors.pool.PoolProcessor.COMPLETED_TASK_DESC;
 import static org.apache.ignite.internal.processors.pool.PoolProcessor.CORE_SIZE_DESC;
@@ -47,6 +50,8 @@ import static org.apache.ignite.internal.processors.pool.PoolProcessor.POOL_SIZE
 import static org.apache.ignite.internal.processors.pool.PoolProcessor.QUEUE_SIZE_DESC;
 import static org.apache.ignite.internal.processors.pool.PoolProcessor.REJ_HND_DESC;
 import static org.apache.ignite.internal.processors.pool.PoolProcessor.TASK_COUNT_DESC;
+import static org.apache.ignite.internal.processors.pool.PoolProcessor.TASK_EXEC_TIME;
+import static org.apache.ignite.internal.processors.pool.PoolProcessor.TASK_EXEC_TIME_HISTOGRAM_BUCKETS;
 import static org.apache.ignite.internal.processors.pool.PoolProcessor.THRD_FACTORY_DESC;
 
 /**
@@ -55,6 +60,10 @@ import static org.apache.ignite.internal.processors.pool.PoolProcessor.THRD_FACT
 public class IgniteStripedThreadPoolExecutor implements ExecutorService, MetricsAwareExecutorService {
     /** Stripe pools. */
     private final IgniteThreadPoolExecutor[] execs;
+
+    /** Task execution time metric. */
+    @GridToStringExclude
+    private volatile HistogramMetricImpl execTime;
 
     /**
      * Create striped thread pool.
@@ -76,6 +85,7 @@ public class IgniteStripedThreadPoolExecutor implements ExecutorService, Metrics
         boolean allowCoreThreadTimeOut,
         long keepAliveTime) {
         execs = new IgniteThreadPoolExecutor[concurrentLvl];
+        execTime = new HistogramMetricImpl(TASK_EXEC_TIME, TASK_COUNT_DESC, TASK_EXEC_TIME_HISTOGRAM_BUCKETS);
 
         ThreadFactory factory = new IgniteThreadFactory(igniteInstanceName, threadNamePrefix, eHnd);
 
@@ -85,7 +95,8 @@ public class IgniteStripedThreadPoolExecutor implements ExecutorService, Metrics
                 1,
                 keepAliveTime,
                 new LinkedBlockingQueue<>(),
-                factory);
+                factory,
+                execTime);
 
             executor.allowCoreThreadTimeOut(allowCoreThreadTimeOut);
 
@@ -226,6 +237,15 @@ public class IgniteStripedThreadPoolExecutor implements ExecutorService, Metrics
             .value(execs[0].getRejectedExecutionHandler().getClass().getName());
         mreg.objectMetric("ThreadFactoryClass", String.class, THRD_FACTORY_DESC)
             .value(execs[0].getThreadFactory().getClass().getName());
+
+        HistogramMetricImpl execTime0 = execTime;
+
+        execTime = new HistogramMetricImpl(metricName(mreg.name(), TASK_EXEC_TIME), execTime0);
+
+        mreg.register(execTime);
+
+        for (IgniteThreadPoolExecutor exec : execs)
+            exec.execTimeMetric(execTime);
     }
 
     /**
