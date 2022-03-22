@@ -1,28 +1,34 @@
 
-pc-items-table(
-    table-title='::"Grid Commands"'
-    column-defs='$ctrl.commandColumnDefs'
-    row-identity-key='id'
-    items='$ctrl.serviceList$|async:this'
-    actions-menu='$ctrl.tableActions$|async:this'
-    selected-row-id='$ctrl.selectionManager.selectedItemIDs$|async:this'
-    one-way-selection='::true'
-    on-selection-change='$ctrl.selectedRows$.next($event)'
-    on-filter-changed='$ctrl.filterChanges$.next($event)'
-    on-visible-rows-change='$ctrl.visibleRows$.next($event)'
-)
+
+.pco-relative-root
+    pc-items-table(
+        table-title='::"Choose Target Clusters"'
+        column-defs='$ctrl.clustersColumnDefs'
+        items='$ctrl.shortClusters$|async:this'
+        on-action='$ctrl.onClustersAction($event)'
+        max-rows-to-show='10'
+        one-way-selection='::false'
+        selected-row-id='$ctrl.selectedRowsIDs$|async:this'
+        on-selection-change='$ctrl.selectedRows$.next($event)'
+        actions-menu='$ctrl.actions$|async:this'
+    )
+        footer-slot(ng-hide='($ctrl.shortClusters$|async:this).length' style='font-style: italic')
+            | You have no cluster configurations.
+            a.link-success(ui-sref='base.configuration.edit.basic({clusterID: "new"})') Create one?
     
 
-h2.pc-page-header.ng-animate-disabled(ng-if='!($ctrl.isBlocked$|async:this)')
-    | {{ ($ctrl.selectionManager.selectedItemIDs$|async:this).length ? 'Multiple' : 'No' }} services selected
-    span.pc-page-header-sub Select only one service to see settings and call it
+h2.pc-page-header.ng-animate-disabled(ng-if='!(($ctrl.selectedRowsIDs$|async:this).length==1)')
+    | {{ ($ctrl.selectedRowsIDs$|async:this).length>1 ? 'Multiple' : 'No' }} clusters selected
+    span.pc-page-header-sub Select only one cluster to see settings and save it
 
-h2.pc-page-header.ng-animate-disabled(ng-if='$ctrl.isBlocked$|async:this')
+h2.pc-page-header.ng-animate-disabled(ng-if='($ctrl.selectedRowsIDs$|async:this).length==1')
     | {{ $ctrl.itemEditTitle$|async:this }}
 
 task-flow-edit-form(
-    service='$ctrl.originalService$|async:this'    
-    on-call='$ctrl.onCall($event)'
-    ng-class='{"pca-form-blocked": !($ctrl.isBlocked$|async:this)}'
+    source-cluster='$ctrl.originalCluster$|async:this'   
+    target-cluster='$ctrl.selectedRowsIDs$|async:this'
+    source-caches='$ctrl.caches'
+    on-save='$ctrl.onSave($event)'
+    ng-class='{"pca-form-blocked": !(($ctrl.selectedRowsIDs$|async:this).length==1)}'
    
 )

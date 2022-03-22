@@ -67,8 +67,6 @@ export default class PageConfigureBasicController {
         
         this.$scope.formActionsMenu = this.formActionsMenu;
     }
-
-    
     
     $onDestroy() {
         this.subscription.unsubscribe();
@@ -173,7 +171,7 @@ export default class PageConfigureBasicController {
         if (this.form.$invalid)
             return this.IgniteFormUtils.triggerValidation(this.form, this.$scope);
 
-        this.ConfigureState.dispatchAction((download ? basicSaveAndDownload : basicSave)(cloneDeep(this.clonedCluster)));
+        // todo@byron
     }
 
     reset() {
@@ -212,7 +210,7 @@ export default class PageConfigureBasicController {
         this.AgentManager.startCluster(this.clonedCluster).then((msg) => {  
             if(!msg.message){
                this.$scope.status = msg.status;
-               this.ConfigureState.dispatchAction({type: 'RESTART_CLUSTER'});
+               this.ConfigureState.dispatchAction({type: 'START_CLUSTER'});
                this.clonedCluster.status = msg.status;
             }            
             this.$scope.message = msg.message;
@@ -227,7 +225,7 @@ export default class PageConfigureBasicController {
         this.AgentManager.stopCluster(this.clonedCluster).then((msg) => {  
     	    if(!msg.message){
                this.$scope.status = msg.status;
-               this.ConfigureState.dispatchAction({type: 'RESTART_CLUSTER'});
+               this.ConfigureState.dispatchAction({type: 'STOP_CLUSTER'});
                this.clonedCluster.status = msg.status;
             }            
             this.$scope.message = msg.message;

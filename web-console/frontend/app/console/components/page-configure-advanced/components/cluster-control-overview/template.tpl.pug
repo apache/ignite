@@ -8,8 +8,7 @@ pc-items-table(
     selected-row-id='$ctrl.selectionManager.selectedItemIDs$|async:this'
     one-way-selection='::true'
     on-selection-change='$ctrl.selectedRows$.next($event)'
-    on-filter-changed='$ctrl.filterChanges$.next($event)'
-    on-visible-rows-change='$ctrl.visibleRows$.next($event)'
+    on-filter-changed='$ctrl.filterChanges$.next($event)'   
 )
     
 

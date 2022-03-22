@@ -58,6 +58,8 @@ export default class ClusterControlController {
     visibleRows$ = new Subject();
     selectedRows$ = new Subject();
 
+    clusterId: string;
+
     commandColumnDefs = [
         {
             name: 'name',
@@ -119,7 +121,7 @@ export default class ClusterControlController {
         this.serviceMap = {};
         this.serviceList = [];
         
-        this.clusterID = await clusterID$.toPromise();
+        this.clusterID = this.clusterId? this.clusterId: await clusterID$.toPromise();
         this.serviceList$ = from(this.callCommandList());         
         
         this.originalService$ = serviceID$.pipe(

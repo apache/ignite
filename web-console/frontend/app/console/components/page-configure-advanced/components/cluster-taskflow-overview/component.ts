@@ -22,7 +22,7 @@ export default {
     templateUrl,
     controller,
     bindings: {
-        cluster: '<',       
+        clusterId: '<',       
         caches: '<'        
     }
 };

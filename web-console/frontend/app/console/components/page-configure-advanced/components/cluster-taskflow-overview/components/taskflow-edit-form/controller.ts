@@ -16,7 +16,9 @@
 
 import cloneDeep from 'lodash/cloneDeep';
 import get from 'lodash/get';
-import {tap} from 'rxjs/operators';
+
+import {Subject, Observable, combineLatest, from, of} from 'rxjs';
+import {tap,take,switchMap,catchError } from 'rxjs/operators';
 import {Menu} from 'app/types';
 
 import LegacyConfirmFactory from 'app/services/Confirm.service';
@@ -24,60 +26,66 @@ import Version from 'app/services/Version.service';
 import Caches from 'app/configuration/services/Caches';
 import FormUtilsFactory from 'app/services/FormUtils.service';
 import AgentManager from 'app/modules/agent/AgentManager.service';
+import TaskFlows from 'app/console/services/TaskFlows';
 
 export default class TaskFlowFormController {
-    modelsMenu: Menu<string>;
-
-    onCall: ng.ICompiledExpression;
     
-    clusterId: string;
 
-    static $inject = ['IgniteConfirm', 'IgniteVersion', '$scope', 'Caches', 'IgniteFormUtils', 'AgentManager'];
+    static $inject = ['IgniteConfirm', 'IgniteVersion', '$scope', 'Caches', 'TaskFlows', 'IgniteFormUtils', 'AgentManager'];
 
     constructor(
         private IgniteConfirm: ReturnType<typeof LegacyConfirmFactory>,
         private IgniteVersion: Version,
         private $scope: ng.IScope,
         private Caches: Caches,
+        private TaskFlows: TaskFlows,
         private IgniteFormUtils: ReturnType<typeof FormUtilsFactory>,
         private AgentManager: AgentManager
-    ) {}
+    ) {
+       this.taskFlow = this.TaskFlows.getBlankTaskFlow();
+    }
 
+    onSave: ng.ICompiledExpression;
+    
+    sourceCluster: object;
+    
+    sourceCaches: Array<string>;
+    
+    targetCluster: Array<string>;
+    
     $onInit() {
-        this.available = this.IgniteVersion.available.bind(this.IgniteVersion);
-
-        const rebuildDropdowns = () => {
-            this.$scope.affinityFunction = [
-                {value: 'Rendezvous', label: 'Rendezvous'},
-                {value: 'Custom', label: 'Custom'},
-                {value: null, label: 'Default'}
-            ];
-        };
-
-        rebuildDropdowns();
-
-        this.subscription = this.IgniteVersion.currentSbj.pipe(
-            tap(rebuildDropdowns)
-        )
-        .subscribe();
-
-        // TODO: Do we really need this?
+        
         this.$scope.ui = this.IgniteFormUtils.formUI();
 
         this.formActions = [
-            {text: 'Call Command', icon: 'checkmark', click: () => this.confirmAndCall()}                      
+            {text: 'Save TaskFlow', icon: 'checkmark', click: () => this.confirmAndSave()}                      
         ];
     }
 
     $onDestroy() {
-        this.subscription.unsubscribe();
+        
+    }
+    
+    buildTaskFlows(tplFlow){
+      
+       this.taskFlow.sourceCluster = this.sourceCluster.id;  
+       this.taskFlow.group = this.sourceCluster.name;
+       this.taskFlow.targetCluster = this.targetCluster[0];
+       let taskList = []
+       for(let cache of this.sourceCaches){
+           this.taskFlow = Object.assign(this.taskFlow,tplFlow);
+           this.taskFlow.sourceCache = cache.name;
+           this.taskFlow.name = 'Data from '+cache.name+' to '+this.targetCluster[0];
+           taskList.push(this.taskFlow);
+       }
+       return taskList;
     }
 
     $onChanges(changes) {
         if (
-            'service' in changes && get(this.clonedService, 'id') !== get(this.service, 'id')
+            'taskFlow' in changes && get(this.clonedTaskFlow, 'id') !== get(this.taskFlow, 'id')
         ) {
-            this.clonedService = cloneDeep(changes.service.currentValue);
+            this.clonedTaskFlow = cloneDeep(changes.taskFlow.currentValue);
             if (this.$scope.ui && this.$scope.ui.inputForm) {
                 this.$scope.ui.inputForm.$setPristine();
                 this.$scope.ui.inputForm.$setUntouched();
@@ -87,34 +95,53 @@ export default class TaskFlowFormController {
     }
 
     getValuesToCompare() {
-        return [this.service, this.clonedService];
+        return [this.taskFlow, this.clonedTaskFlow];
     }    
     
-    callCommandForGrid(serviceName:string,params) {
-        let args = this.onCall({$event:{name: serviceName,args: params}});
-        let clusterId = args['id'];        
-        this.AgentManager.callClusterCommand({id: clusterId},serviceName,params).then((data) => {  
-            this.$scope.status = data.status; 
-            if(data.result){
-                return data.result;
-            }    
-            else if(data.message){
-                this.$scope.message = data.message;
-            }  
-            return {}
-        })   
-       .catch((e) => {
-            this.$scope.message = ('Failed to callClusterService : '+serviceName+' Caused : '+e);           
-        });
+    saveTaskFlowForGrid(taskId:string,tplFlow) {
+        let args = this.onSave({$event:{id: taskId,args: tplFlow}});
+        
+        let tasks = this.buildTaskFlows(tplFlow);
+        let result = {};
+        for(let task of tasks){           
+            result[task.id] = from(this.TaskFlows.saveBasic(task)).pipe(
+                switchMap(({data}) => of(                   
+                    {type: 'EDIT_TASK_FLOW', taskFlow: data},
+                    {type: 'SAVE_AND_EDIT_TASK_FLOW_OK'}
+                )),
+                catchError((error) => of({
+                    type: 'SAVE_AND_EDIT_TASK_FLOW_ERR',
+                    error: {
+                        message: `Failed to save cluster task flow: ${error.data.message}.`
+                    }
+                }))
+            );            
+        }
+        if(!result){
+            this.AgentManager.callClusterCommand({id: clusterId},serviceName,params).then((data) => {
+                 this.$scope.status = data.status; 
+                 if(data.result){
+                     return data.result;
+                 }    
+                 else if(data.message){
+                     this.$scope.message = data.message;
+                 }  
+                 return {}
+             })   
+            .catch((e) => {
+                 this.$scope.message = ('Failed to callClusterService : '+serviceName+' Caused : '+e);           
+             });
+        }
+        
     }
 
-    reset = (forReal) => forReal ? this.clonedService = cloneDeep(this.service) : void 0;
+    reset = (forReal) => forReal ? this.clonedTaskFlow = cloneDeep(this.taskFlow) : void 0;
 
-    confirmAndCall() {
+    confirmAndSave() {
         if (this.$scope.ui.inputForm && this.$scope.ui.inputForm.$invalid)
             return this.IgniteFormUtils.triggerValidation(this.$scope.ui.inputForm, this.$scope);
-        return this.IgniteConfirm.confirm('Are you sure you want to call command ' + this.service.name + ' for current grid?')
-        .then(() => { this.callCommandForGrid(this.service.id,[this.clonedService.text]); } );
+        return this.IgniteConfirm.confirm('Are you sure you want to save task flow ' + this.taskFlow.name + ' for current grid?')
+        .then(() => { this.saveTaskFlowForGrid(this.taskFlow.id, this.clonedTaskFlow); } );
     }
 
     clearImplementationVersion(storeFactory) {

@@ -41,7 +41,10 @@ export default class TaskFlows {
     getBlankTaskFlow() {
         return {
             id: uuidv4(),
+            name: '',
+            sourceCluster: null,
             source: null,
+            targetCluster: null,
             target: null,
             group: null,
             cacheMode: 'PARTITIONED',
@@ -49,9 +52,8 @@ export default class TaskFlows {
             readFromBackup: true,
             copyOnRead: true,
             
-            writeBehindCoalescing: true,
-        
-            eagerTtl: true
+            writeBehindCoalescing: true        
+            
         };
     }
 
@@ -148,7 +150,7 @@ export default class TaskFlows {
     }
 
     saveBasic(changedItems) {
-        return this.$http.put('/api/v1/taskflow/basic', changedItems);
+        return this.$http.put('/api/v1/taskflow', changedItems);
     }
 
     saveAdvanced(changedItems) {

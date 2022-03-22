@@ -38,8 +38,8 @@ h2.pc-page-header.ng-animate-disabled(ng-if='!($ctrl.isBlocked$|async:this)')
     span.pc-page-header-sub Select only one cache to see settings and edit it
     
 cluster-task-flow-overview(ng-if='!($ctrl.isBlocked$|async:this)'
-    cluster='$ctrl.originalCluster$|async:this'
-    caches='$ctrl.shortCaches$|async:this'  
+    cluster-id='$ctrl.clusterID$|async:this'
+    caches='$ctrl.shortCaches$|async:this'
 )
 
 h2.pc-page-header.ng-animate-disabled(ng-if='$ctrl.isBlocked$|async:this')

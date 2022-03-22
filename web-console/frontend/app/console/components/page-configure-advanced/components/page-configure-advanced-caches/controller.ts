@@ -93,28 +93,15 @@ export default class Controller {
     ];
 
     $onInit() {
-        const clusterID$ = this.$uiRouter.globals.params$.pipe(
-            pluck('clusterID'),
-            publishReplay(1),
-            refCount()
-        );
-        
-        this.originalCluster$ = clusterID$.pipe(
-            distinctUntilChanged(),
-            switchMap((id) => {
-                return this.ConfigureState.state$.pipe(this.ConfigSelectors.selectClusterToEdit(id));
-            }),
-            distinctUntilChanged(),
-            publishReplay(1),
-            refCount()
+        this.clusterID$ = this.$uiRouter.globals.params$.pipe(
+            pluck('clusterID')            
         );
         
         const cacheID$ = this.$uiRouter.globals.params$.pipe(
             pluck('cacheID'),
             publishReplay(1),
             refCount()
-        );
-
+        );        
         this.shortCaches$ = this.ConfigureState.state$.pipe(this.ConfigSelectors.selectCurrentShortCaches);
         this.shortModels$ = this.ConfigureState.state$.pipe(this.ConfigSelectors.selectCurrentShortModels);
         this.originalCache$ = cacheID$.pipe(
@@ -134,13 +121,13 @@ export default class Controller {
             visibleRows$: this.visibleRows$,
             loadedItems$: this.shortCaches$
         });
-
+       
         this.subscription = merge(
             this.originalCache$,
             this.selectionManager.editGoes$.pipe(tap((id) => this.edit(id))),
             this.selectionManager.editLeaves$.pipe(tap((options) => this.$state.go('base.console.edit.advanced.caches', null, options)))
         ).subscribe();
-
+       
         this.isBlocked$ = cacheID$;
 
         this.tableActions$ = this.selectionManager.selectedItemIDs$.pipe(map((selectedItems) => [

@@ -21,7 +21,9 @@ export default {
     controller,
     templateUrl,
     bindings: {
-        service: '<',   
-        onCall: '&'
+        sourceCluster: '=',
+        sourceCaches: '=',
+        targetCluster: '=',
+        onSave: '&'
     }
 };

@@ -21,11 +21,11 @@ include /app/configuration/mixins
 - let form = '$ctrl.form'
 
 form(novalidate name=form)
-    h2.pcb-section-header.pcb-inner-padding Step 1. Cluster Metric
+    h2.pcb-section-header.pcb-inner-padding 1. Cluster Metric
 
     .pcb-section-notification.pcb-inner-padding(ng-if='!$ctrl.shortClusters')
         | You have no clusters.
-        | Let’s configure your first and associate it with caches.
+        | Let configure your first and associate it with caches.
     .pcb-section-notification.pcb-inner-padding(ng-if='$ctrl.shortClusters')
         | Configure cluster properties and associate your cluster with caches.
 
@@ -68,25 +68,10 @@ form(novalidate name=form)
             })
         .pc-form-grid__break
         
-    h2.pcb-section-header.pcb-inner-padding(style='margin-top:30px') Step 2. Caches Matric
+    h2.pcb-section-header.pcb-inner-padding(style='margin-top:30px') 2. Caches Matric
 
     .pcb-form-grid-row.pc-form-grid-row
         
-        .pc-form-grid-col-60(ng-if=`$ctrl.IgniteVersion.available('2.3.0')`)
-            form-field-size(
-                ng-model=`${model}.dataStorageConfiguration.defaultDataRegionConfiguration.maxSize`
-                ng-model-options='{allowInvalid: true}'
-                id='memory'
-                name='memory'
-                label='Total Off-heap Size:'
-                size-type='bytes'
-                size-scale-label='mb'
-                placeholder='{{ ::$ctrl.Clusters.dataRegion.maxSize.default }}'
-                min=`{{ ::$ctrl.Clusters.dataRegion.maxSize.min(${model}.dataStorageConfiguration.defaultDataRegionConfiguration) }}`
-                tip='Default data region off-heap max memory size. Leave empty to use 20% of physical memory available on current machine. Should be at least 10Mb.'
-                on-scale-change='scale = $event'
-            )
-                +form-field__error({ error: 'min', message: `Maximum size should be equal to or more than initial size ({{ $ctrl.Clusters.dataRegion.maxSize.min(${model}.dataStorageConfiguration.defaultDataRegionConfiguration) / scale.value}} {{scale.label}}).` })
         .pc-form-grid-col-120
             .ignite-form-field
                 list-editable.pcb-caches-list(
@@ -138,12 +123,7 @@ form(novalidate name=form)
                                 placeholder: '0',
                                 min: 0
                             })
-                    list-editable-no-items
-                        list-editable-add-item-button(
-                            add-item='$ctrl.addCache()'
-                            label-single='cache'
-                            label-multiple='caches'
-                        )
+                    
 
     .pc-form-actions-panel        
         span.message {{ $ctrl.$scope.message }}

@@ -31,9 +31,7 @@ const cellTemplate = (state) => `
 import {default as ConfigureState} from 'app/configuration/services/ConfigureState';
 import {default as ConfigSelectors} from 'app/configuration/store/selectors';
 import {default as Clusters} from 'app/configuration/services/Clusters';
-
-
-import {confirmClustersRemoval} from 'app/configuration/store/actionCreators';
+import {Confirm} from 'app/services/Confirm.service';
 
 import {UIRouter} from '@uirouter/angularjs';
 import {ShortCluster} from '../../types';
@@ -41,17 +39,20 @@ import {IColumnDefOf} from 'ui-grid';
 
 export default class PageConfigureOverviewController {
     static $inject = [
-        '$uiRouter',  
+        '$uiRouter',
+        'Confirm',
         'Clusters',
         'ConfigureState',
+        'AgentManager',
         'ConfigSelectors'        
     ];
 
     constructor(
         private $uiRouter: UIRouter,
-     
+        private Confirm: Confirm,
         private Clusters: Clusters,
         private ConfigureState: ConfigureState,
+        private AgentManager: AgentManager, 
         private ConfigSelectors: ConfigSelectors       
     ) {}
 
@@ -64,11 +65,35 @@ export default class PageConfigureOverviewController {
         this.selectedRows$.complete();
     }
 
-    removeClusters(clusters: Array<ShortCluster>) {
-        this.ConfigureState.dispatchAction(confirmClustersRemoval(clusters.map((c) => c.id)));
-
-        // TODO: Implement storing selected rows in store to share this data between other components.
-        this.selectedRows$.next([]);
+    stopClusters(clusters: Array<ShortCluster>) {
+        return this.Confirm.confirm(`
+            <p>Are you sure you want to stop these clusters?</p>
+            <ul>${clusters.map((cluster) => `<li>${cluster.name}</li>`).join('')}</ul>`)
+            .then(() => this.doStopClusters(clusters))
+            .catch(() => {});        
+    }
+    
+    doStopClusters(clusters: Array<ShortCluster>) {
+      for(let cluster of clusters){
+         this.AgentManager.stopCluster(cluster).then((msg) => {
+             if(msg.status){               
+                this.ConfigureState.dispatchAction({type: 'STOP_CLUSTER'});
+                cluster.status = msg.status;
+             }        
+             
+         });         
+      }
+    }
+    
+    pingClusters(clusters: Array<ShortCluster>) {
+      for(let cluster of clusters){
+         this.AgentManager.callClusterService(cluster,'serviceList').then((msg) => {
+             if(msg.status){
+                cluster.status = msg.status;
+             }        
+             
+         });         
+      }
     }
 
     editCluster(cluster: ShortCluster) {
@@ -125,7 +150,7 @@ export default class PageConfigureOverviewController {
                 field: 'status',
                 cellClass: 'ui-grid-number-cell',                
                 cellTemplate: `
-                    <div class="ui-grid-cell-contents">{{ row.entity.status }}</div>
+                    <div class="ui-grid-cell-contents status-{{ row.entity.status }} ">{{ row.entity.status }}</div>
                 `,
                 enableFiltering: false,
                 type: 'string',
@@ -139,16 +164,21 @@ export default class PageConfigureOverviewController {
 
         this.actions$ = this.selectedRows$.pipe(map((selectedClusters) => [
             {
-                action: 'Edit',
+                action: 'Ping',
+                click: () => this.pingClusters(selectedClusters),
+                available: true
+            },
+            {
+                action: 'Start',
                 click: () => this.editCluster(selectedClusters[0]),
                 available: selectedClusters.length === 1
-            },           
-          
+            },
             {
-                action: 'Delete',
-                click: () => this.removeClusters(selectedClusters),
+                action: 'Stop',
+                click: () => this.stopClusters(selectedClusters),
                 available: true
-            }
+            },            
+           
         ]));
     }
 }

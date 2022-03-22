@@ -227,7 +227,7 @@ function registerStates($stateProvider) {
         url: '/caches',
         permission: 'configuration',
         component: pageConsoleAdvancedCachesComponent.name,
-        resolve: {
+        resolve: {            
             _shortCachesAndModels: ['ConfigSelectors', 'ConfigureState', 'ConfigEffects', '$transition$', (ConfigSelectors, ConfigureState, {etp}, $transition$) => {
                 if ($transition$.params().clusterID === 'new')
                     return Promise.resolve();

@@ -17,18 +17,18 @@ include /app/helpers/jade/mixins
 include /app/configuration/mixins
 
 -var form = 'general'
--var model = '$ctrl.clonedService'
+-var model = '$ctrl.clonedTaskFlow'
 
 panel-collapsible(opened=`::true` ng-form=form)
     panel-title General
     panel-description
-        | Common service invoke configuration.
+        | Cluster Task flow configuration.
         a.link-success(href="https://apacheignite.readme.io/docs/data-grid" target="_blank") More info
     panel-content.pca-form-row
         .pca-form-column-6.pc-form-grid-row
             .pc-form-grid-col-60
                 +form-field__text({
-                    label: 'Command name:',
+                    label: 'Task name:',
                     model: `${model}.name`,
                     name: '"name"',                   
                     required: true
@@ -40,16 +40,16 @@ panel-collapsible(opened=`::true` ng-form=form)
                 
             .pc-form-grid-col-60
                 +form-field__text({
-                    label: 'Command text:',
-                    model: `${model}.text`,
-                    name: '"text"'
+                    label: 'Task group:',
+                    model: `${model}.group`,
+                    name: '"group"'
                 })
                     
             .pc-form-grid-col-60
                 +form-field__label({
-                    label: 'Command usage:',
-                    tip: `${model}.usage`,
-                    name: '"usage"'
+                    label: 'Task action:',
+                    tip: `${model}.action`,
+                    name: '"action"'
                 })
                 
                 .help(ng-bind-html='$ctrl.clonedService.usage')

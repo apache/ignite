@@ -34,8 +34,14 @@ public class TaskFlow extends AbstractDto {
     /** */
     private String act;
     
+    /** from cluster */
+    private String sourceCluster;
+    
     /** from cache */
     private String source;
+    
+    /** to cluster */
+    private String targetCluster;
     
     /** to cache */
     private String target;
@@ -174,5 +180,13 @@ public class TaskFlow extends AbstractDto {
 
 	public void setUpdated(long updated) {
 		this.updated = updated;
+	}
+
+	public String getSourceCluster() {
+		return sourceCluster;
+	}
+
+	public void setSourceCluster(String sourceCluster) {
+		this.sourceCluster = sourceCluster;
 	}
 }
