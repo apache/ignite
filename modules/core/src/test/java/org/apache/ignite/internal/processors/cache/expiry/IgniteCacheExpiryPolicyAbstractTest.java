@@ -1120,7 +1120,7 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
      */
     @Test
     public void testNearAccessWithConcurrentReads() throws Exception {
-        if (cacheMode() != PARTITIONED || cacheStoreFactory() != null)
+        if (cacheMode() != PARTITIONED)
             return;
 
         nearCache = true;
@@ -1128,7 +1128,7 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
         startGrids();
 
         IgniteCache<Integer, Integer> cache0 = jcache(0);
-        IgniteCache<Object, Object> expireNowCache = jcache(2).withExpiryPolicy(new TestPolicy(1100L, 1200L, 1L));
+        IgniteCache<Object, Object> expireNowCache = jcache(2).withExpiryPolicy(new TestPolicy(1100L, 1200L, 100L));
         List<TreeSet<Integer>> keySets = Arrays.asList(new TreeSet<>(), new TreeSet<>());
         Affinity<Object> aff = grid(0).affinity(DEFAULT_CACHE_NAME);
         List<Integer> keys = backupKeys(jcache(2), 10_000, 0);
