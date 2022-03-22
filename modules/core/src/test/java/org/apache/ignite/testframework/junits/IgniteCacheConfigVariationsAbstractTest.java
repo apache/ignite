@@ -378,7 +378,9 @@ public abstract class IgniteCacheConfigVariationsAbstractTest extends IgniteConf
      * @return Cache atomicity mode.
      */
     protected CacheAtomicityMode atomicityMode() {
-        return cacheConfiguration().getAtomicityMode();
+        CacheAtomicityMode mode = cacheConfiguration().getAtomicityMode();
+
+        return mode == null ? CacheConfiguration.DFLT_CACHE_ATOMICITY_MODE : mode;
     }
 
     /**

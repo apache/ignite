@@ -6014,7 +6014,6 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
     /**
      * @throws Exception If failed.
      */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-11850")
     @Test
     public void testGetOutTx() throws Exception {
         checkGetOutTx(false, false);
@@ -6023,7 +6022,6 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
     /**
      * @throws Exception If failed.
      */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-11850")
     @Test
     public void testGetOutTxAsyncOld() throws Exception {
         checkGetOutTx(true, true);
@@ -6032,7 +6030,6 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
     /**
      * @throws Exception If failed.
      */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-11850")
     @Test
     public void testGetOutTxAsync() throws Exception {
         checkGetOutTx(true, false);
