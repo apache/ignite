@@ -34,6 +34,7 @@ import org.apache.calcite.sql.ddl.SqlKeyConstraint;
 import org.apache.calcite.sql.parser.SqlParseException;
 import org.apache.calcite.sql.parser.SqlParser;
 import org.apache.calcite.sql.validate.SqlValidatorException;
+import org.apache.ignite.internal.processors.query.calcite.sql.generated.IgniteSqlParserImpl;
 import org.apache.ignite.internal.processors.query.calcite.sql.kill.IgniteSqlKillComputeTask;
 import org.apache.ignite.internal.processors.query.calcite.sql.kill.IgniteSqlKillContinuousQuery;
 import org.apache.ignite.internal.processors.query.calcite.sql.kill.IgniteSqlKillQuery;

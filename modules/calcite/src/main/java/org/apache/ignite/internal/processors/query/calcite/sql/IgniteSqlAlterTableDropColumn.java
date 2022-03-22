@@ -36,7 +36,7 @@ public class IgniteSqlAlterTableDropColumn extends IgniteAbstractSqlAlterTable {
     private final SqlNodeList columns;
 
     /** */
-    protected IgniteSqlAlterTableDropColumn(SqlParserPos pos, boolean ifExists, SqlIdentifier tblName,
+    public IgniteSqlAlterTableDropColumn(SqlParserPos pos, boolean ifExists, SqlIdentifier tblName,
         boolean ifExistsColumn, SqlNodeList columns) {
         super(pos, ifExists, tblName);
         this.ifExistsColumn = ifExistsColumn;

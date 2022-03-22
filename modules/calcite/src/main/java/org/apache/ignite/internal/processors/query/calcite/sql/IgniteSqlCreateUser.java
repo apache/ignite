@@ -44,7 +44,7 @@ public class IgniteSqlCreateUser extends SqlCreate {
         new SqlSpecialOperator("CREATE USER", SqlKind.OTHER_DDL);
 
     /** */
-    protected IgniteSqlCreateUser(SqlParserPos pos, SqlIdentifier user, SqlLiteral pwd) {
+    public IgniteSqlCreateUser(SqlParserPos pos, SqlIdentifier user, SqlLiteral pwd) {
         super(OPERATOR, pos, false, false);
         this.user = Objects.requireNonNull(user, "user");
         this.pwd = Objects.requireNonNull(pwd, "password");
