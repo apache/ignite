@@ -28,6 +28,7 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cache.eviction.fifo.FifoEvictionPolicy;
+import org.apache.ignite.cache.store.CacheStore;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.typedef.G;
@@ -36,7 +37,6 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.IgniteCacheConfigVariationsAbstractTest;
-import org.junit.Ignore;
 import org.junit.Test;
 
 /**
@@ -65,7 +65,6 @@ public class IgniteCacheReadThroughEvictionSelfTest extends IgniteCacheConfigVar
     /**
      * @throws Exception if failed.
      */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-11849")
     @Test
     public void testReadThroughWithExpirePolicy() throws Exception {
         MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.EXPIRATION);
@@ -109,7 +108,6 @@ public class IgniteCacheReadThroughEvictionSelfTest extends IgniteCacheConfigVar
     /**
      * @throws Exception if failed.
      */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-11849")
     @Test
     public void testReadThroughExpirePolicyConfigured() throws Exception {
         MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.EXPIRATION);
@@ -205,7 +203,6 @@ public class IgniteCacheReadThroughEvictionSelfTest extends IgniteCacheConfigVar
     /**
      * @throws Exception if failed.
      */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-11849")
     @Test
     public void testReadThroughSkipStore() throws Exception {
         Ignite ig = testedGrid();
@@ -235,11 +232,35 @@ public class IgniteCacheReadThroughEvictionSelfTest extends IgniteCacheConfigVar
      * @return Variation test configuration.
      */
     private CacheConfiguration<Object, Object> variationConfig(String suffix) {
-        CacheConfiguration ccfg = testsCfg.configurationFactory().cacheConfiguration(getTestIgniteInstanceName(testedNodeIdx));
+        CacheConfiguration cfg = testsCfg.configurationFactory().cacheConfiguration(getTestIgniteInstanceName(testedNodeIdx));
 
-        ccfg.setName(cacheName() + "_" + suffix);
+        initCacheConfig(cfg, storeStgy);
 
-        return ccfg;
+        cfg.setName(cacheName() + "_" + suffix);
+
+        return cfg;
+    }
+
+    /**
+     * Initialize cache configuration.
+     *
+     * @param cfg Config.
+     * @param stgy Strategy.
+     */
+    static void initCacheConfig(CacheConfiguration cfg, TestCacheStoreStrategy stgy) {
+        if (stgy != null) {
+            Factory<? extends CacheStore<Object, Object>> storeFactory = stgy.getStoreFactory();
+
+            CacheStore<?, ?> store = storeFactory.create();
+
+            if (store != null) {
+                cfg.setCacheStoreFactory(storeFactory);
+                cfg.setReadThrough(true);
+                cfg.setWriteThrough(true);
+                cfg.setLoadPreviousValue(true);
+                stgy.updateCacheConfiguration(cfg);
+            }
+        }
     }
 
     /**
