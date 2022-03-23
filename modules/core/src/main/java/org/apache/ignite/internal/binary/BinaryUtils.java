@@ -2583,27 +2583,38 @@ public class BinaryUtils {
     }
 
     /** @param file File. */
-    public static String readMapping(File file) {
+    public static String readMapping(File file, boolean withLock) {
         ThreadLocalRandom rnd = null;
 
         long time = 0;
 
         while (true) {
             try (FileInputStream in = new FileInputStream(file);
-                 BufferedReader reader = new BufferedReader(new InputStreamReader(in, StandardCharsets.UTF_8));
-                 FileLock ignored = fileLock(in.getChannel(), true)) {
-                if (file.length() > 0)
-                    return reader.readLine();
+                 BufferedReader reader = new BufferedReader(new InputStreamReader(in, StandardCharsets.UTF_8))) {
+                FileLock fileLock = null;
 
-                if (rnd == null)
-                    rnd = ThreadLocalRandom.current();
+                if (withLock)
+                    fileLock = fileLock(in.getChannel(), true);
 
-                if (time == 0)
-                    time = System.nanoTime();
-                else if (U.millisSinceNanos(time) >= FILE_LOCK_TIMEOUT_MS)
-                    return null;
+                try {
 
-                U.sleep(rnd.nextLong(50));
+                    if (file.length() > 0)
+                        return reader.readLine();
+
+                    if (rnd == null)
+                        rnd = ThreadLocalRandom.current();
+
+                    if (time == 0)
+                        time = System.nanoTime();
+                    else if (U.millisSinceNanos(time) >= FILE_LOCK_TIMEOUT_MS)
+                        return null;
+
+                    U.sleep(rnd.nextLong(50));
+                }
+                finally {
+                    if (fileLock != null)
+                        fileLock.close();
+                }
             }
             catch (IOException ignored) {
                 return null;

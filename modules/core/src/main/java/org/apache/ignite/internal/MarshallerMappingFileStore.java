@@ -125,7 +125,7 @@ final class MarshallerMappingFileStore {
         lock.lock();
 
         try {
-            return BinaryUtils.readMapping(new File(mappingDir, fileName));
+            return BinaryUtils.readMapping(new File(mappingDir, fileName), true);
         }
         finally {
             lock.unlock();

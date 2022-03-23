@@ -585,7 +585,7 @@ public class CdcMain implements Runnable {
                     }
 
                     @Override public String typeName() {
-                        return BinaryUtils.readMapping(((Path)t[1]).toFile());
+                        return BinaryUtils.readMapping(((Path)t[1]).toFile(), false);
                     }
 
                     @Override public PlatformType platform() {
