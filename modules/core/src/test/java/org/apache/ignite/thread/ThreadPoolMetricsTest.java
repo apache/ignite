@@ -212,7 +212,9 @@ public class ThreadPoolMetricsTest extends GridCommonAbstractTest {
             HistogramMetric execTimeMetric = mreg.findMetric("TaskExecutionTime");
             boolean stripedExecutor = execSvc instanceof StripedExecutor;
 
+            // Ensure that the execution time histogram can be reset.
             execTimeMetric.reset();
+
             cntr.set(taskCnt);
 
             for (int i = 0; i < tasks.size(); i++) {

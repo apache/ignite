@@ -245,7 +245,7 @@ public class IgniteStripedThreadPoolExecutor implements ExecutorService, Metrics
         mreg.register(execTime);
 
         for (IgniteThreadPoolExecutor exec : execs)
-            exec.execTimeMetric(execTime);
+            exec.executionTimeMetric(execTime);
     }
 
     /**

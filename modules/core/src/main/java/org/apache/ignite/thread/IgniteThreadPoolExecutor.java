@@ -240,9 +240,9 @@ public class IgniteThreadPoolExecutor extends ThreadPoolExecutor implements Metr
     }
 
     /**
-     * @param execTimeMetric Task execution time metric.
+     * @param execTime Task execution time metric.
      */
-    protected void execTimeMetric(HistogramMetricImpl execTimeMetric) {
-        execTime = execTimeMetric;
+    protected void executionTimeMetric(HistogramMetricImpl execTime) {
+        this.execTime = execTime;
     }
 }
