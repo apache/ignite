@@ -18,9 +18,11 @@ import cloneDeep from 'lodash/cloneDeep';
 import get from 'lodash/get';
 
 import {Subject, Observable, combineLatest, from, of} from 'rxjs';
-import {tap,take,switchMap,catchError } from 'rxjs/operators';
+import {catchError,tap, map, refCount, pluck, take, filter, publishReplay, switchMap, distinctUntilChanged} from 'rxjs/operators';
 import {Menu} from 'app/types';
 
+import {default as ConfigureState} from 'app/configuration/services/ConfigureState';
+import {default as ConfigSelectors} from 'app/configuration/store/selectors';
 import LegacyConfirmFactory from 'app/services/Confirm.service';
 import Version from 'app/services/Version.service';
 import Caches from 'app/configuration/services/Caches';
@@ -31,12 +33,14 @@ import TaskFlows from 'app/console/services/TaskFlows';
 export default class TaskFlowFormController {
     
 
-    static $inject = ['IgniteConfirm', 'IgniteVersion', '$scope', 'Caches', 'TaskFlows', 'IgniteFormUtils', 'AgentManager'];
+    static $inject = ['IgniteConfirm', 'IgniteVersion', '$scope','ConfigureState','ConfigSelectors','Caches', 'TaskFlows', 'IgniteFormUtils', 'AgentManager'];
 
     constructor(
         private IgniteConfirm: ReturnType<typeof LegacyConfirmFactory>,
         private IgniteVersion: Version,
         private $scope: ng.IScope,
+        private ConfigureState: ConfigureState,
+        private ConfigSelectors: ConfigSelectors,
         private Caches: Caches,
         private TaskFlows: TaskFlows,
         private IgniteFormUtils: ReturnType<typeof FormUtilsFactory>,
@@ -49,11 +53,29 @@ export default class TaskFlowFormController {
     
     sourceCluster: object;
     
-    sourceCaches: Array<string>;
+    targetCaches: Array<string>;
     
-    targetCluster: Array<string>;
+    targetClusterId: string;
     
     $onInit() {
+        
+        this.originalCluster$ = this.sourceCluster.pipe(
+            filter((v) => v.length==1),
+            switchMap((items) => {
+                this.sourceClusterId = items[0].id;                
+                return this.ConfigureState.state$.pipe(this.ConfigSelectors.selectCluster(this.sourceClusterId));
+            })            
+        );   
+             
+        this.originalCluster$.subscribe((c) =>{
+            if(c && c.id){
+                this.taskFlow.name = 'poll data from '+ c.name;
+                this.taskFlow.group = this.targetClusterId;
+                this.taskFlow.sourceCluster = c.id;
+                this.clonedTaskFlow = cloneDeep(this.taskFlow);
+            }
+            
+          } );
         
         this.$scope.ui = this.IgniteFormUtils.formUI();
 
@@ -66,16 +88,15 @@ export default class TaskFlowFormController {
         
     }
     
-    buildTaskFlows(tplFlow){
-      
-       this.taskFlow.sourceCluster = this.sourceCluster.id;  
-       this.taskFlow.group = this.sourceCluster.name;
-       this.taskFlow.targetCluster = this.targetCluster[0];
+    buildTaskFlows(tplFlow){      
+       this.taskFlow.group = this.targetClusterId;
+       this.taskFlow.targetCluster = this.targetClusterId;
        let taskList = []
-       for(let cache of this.sourceCaches){
+       for(let cache of this.targetCaches){
            this.taskFlow = Object.assign(this.taskFlow,tplFlow);
-           this.taskFlow.sourceCache = cache.name;
-           this.taskFlow.name = 'Data from '+cache.name+' to '+this.targetCluster[0];
+           this.taskFlow.target = cache.name;
+           this.taskFlow.source = cache.name;
+           this.taskFlow.name = 'Data from '+this.taskFlow.source+' to '+cache.name;
            taskList.push(this.taskFlow);
        }
        return taskList;
@@ -102,9 +123,10 @@ export default class TaskFlowFormController {
         let args = this.onSave({$event:{id: taskId,args: tplFlow}});
         
         let tasks = this.buildTaskFlows(tplFlow);
-        let result = {};
+        let result = [];
+        
         for(let task of tasks){           
-            result[task.id] = from(this.TaskFlows.saveBasic(task)).pipe(
+            let stat = from(this.TaskFlows.saveBasic(task)).pipe(
                 switchMap(({data}) => of(                   
                     {type: 'EDIT_TASK_FLOW', taskFlow: data},
                     {type: 'SAVE_AND_EDIT_TASK_FLOW_OK'}
@@ -115,7 +137,8 @@ export default class TaskFlowFormController {
                         message: `Failed to save cluster task flow: ${error.data.message}.`
                     }
                 }))
-            );            
+            );    
+            result.push(stat);
         }
         if(!result){
             this.AgentManager.callClusterCommand({id: clusterId},serviceName,params).then((data) => {

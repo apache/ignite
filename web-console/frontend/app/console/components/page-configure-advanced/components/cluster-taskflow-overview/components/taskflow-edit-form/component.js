@@ -22,8 +22,8 @@ export default {
     templateUrl,
     bindings: {
         sourceCluster: '=',
-        sourceCaches: '=',
-        targetCluster: '=',
+        targetCaches: '=',
+        targetClusterId: '=',
         onSave: '&'
     }
 };

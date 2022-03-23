@@ -83,7 +83,7 @@ export default class CacheServiceCallFormController {
             {text: 'Load Data', icon: 'checkmark', click: () => this.confirmAndLoad(false)},
             {text: 'Load Updated Data', icon: 'download', click: () => this.confirmAndLoad(true)},
             {text: 'Clear Data', icon: 'checkmark', click: () => this.confirmAndClear()},
-            {text: 'Writer Data', icon: 'checkmark', click: () => this.confirmAndWriter(true)}            
+            {text: 'Poll Remote Data', icon: 'checkmark', click: () => this.confirmAndCopy(true)}            
         ];
     }
 
@@ -114,8 +114,8 @@ export default class CacheServiceCallFormController {
         return this.callServiceForCache(serviceName,{updated});
     }
     
-    writerData(updated:boolean) {        
-        let serviceName = 'writerDataService';
+    copyData(updated:boolean) {        
+        let serviceName = 'copyDataService';
         return this.callServiceForCache(serviceName,{updated});
     }
     
@@ -157,11 +157,11 @@ export default class CacheServiceCallFormController {
         .then( () => { this.loadData(updated); } );
     }
     
-    confirmAndWriter(updated:boolean) {        
+    confirmAndCopy(updated:boolean) {        
         if (this.$scope.ui.inputForm && this.$scope.ui.inputForm.$invalid)
             return this.IgniteFormUtils.triggerValidation(this.$scope.ui.inputForm, this.$scope);
-        return this.IgniteConfirm.confirm('Are you sure you want to writer all data to dest cluster cache?')
-        .then( () => { this.writerData(updated); } );
+        return this.IgniteConfirm.confirm('Are you sure you want to poll data from remote cluster to this  cache?')
+        .then( () => { this.copyData(updated); } );
     }
 
     clearImplementationVersion(storeFactory) {

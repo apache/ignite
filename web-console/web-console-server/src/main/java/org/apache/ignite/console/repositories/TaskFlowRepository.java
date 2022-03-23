@@ -101,7 +101,7 @@ public class TaskFlowRepository {
      *
      * @return TaskFlow.
      */
-    public Collection<TaskFlow> taskFlowForGroup(UUID accId, String grp, String act,String source) {
+    public Collection<TaskFlow> taskFlowForGroup(UUID accId, String grp, String act,String target,String source) {
         return txMgr.doInTransaction(() -> {
             Set<UUID> ids = grpIdx.get(grp);
 
@@ -113,6 +113,14 @@ public class TaskFlowRepository {
                     .collect(Collectors.toList())
                    ;
             	activities  = activitie2;
+            }
+            if(target!=null) {
+            	Collection<TaskFlow> activitie2 = activities
+                    .stream()
+                    .filter(item -> item.getGroup().equals(grp) && item.getTarget().equals(target))
+                    .collect(Collectors.toList())
+                   ;
+            	activities = activitie2;
             }
             if(source!=null) {
             	Collection<TaskFlow> activitie2 = activities

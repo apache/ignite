@@ -35,12 +35,18 @@ export default class TaskFlows {
         {value: 'TRANSACTIONAL', label: 'TRANSACTIONAL'},
         {value: 'TRANSACTIONAL_SNAPSHOT', label: 'TRANSACTIONAL_SNAPSHOT'}
     ];
+    
+    updateModes: Menu<String> = [
+        {value: 'SKIP_EXISTING', label: 'Do not update existing nodes'},
+        {value: 'REPLACE_EXISTING', label: 'Replace existing nodes'},
+        {value: 'UPDATE_EXISTING', label: 'Update existing nodes'},
+        {value: 'MERGE_EXISTING', label: 'Only merge existing nodes'}
+    ];  
 
     constructor(private $http: ng.IHttpService) {}
 
     getBlankTaskFlow() {
-        return {
-            id: uuidv4(),
+        return {           
             name: '',
             sourceCluster: null,
             source: null,

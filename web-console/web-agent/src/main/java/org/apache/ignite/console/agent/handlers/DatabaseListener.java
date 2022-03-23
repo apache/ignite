@@ -31,7 +31,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import javax.naming.NamingException;
 import javax.sql.DataSource;
 
-import org.apache.commons.lang3.StringUtils;
 import org.apache.ignite.console.agent.db.DataSourceManager;
 import org.apache.ignite.console.agent.db.DbSchema;
 import org.apache.ignite.console.db.DBInfo;
@@ -95,11 +94,11 @@ public class DatabaseListener {
 				String catalog = conn.getCatalog();
 				
 				
-				if(StringUtils.isEmpty(catalog)) {
+				if(StringUtil.isEmpty(catalog)) {
 					catalog = conn.getSchema();
 				}
 				
-				if(StringUtils.isEmpty(catalog)) {
+				if(StringUtil.isEmpty(catalog)) {
 					ResultSet result = conn.getMetaData().getCatalogs();
 					if(result.next()){
 						catalog = result.getString(1);

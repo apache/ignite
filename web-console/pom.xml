@@ -31,7 +31,7 @@
     </parent>
 
     <artifactId>ignite-web-console</artifactId>
-    <version>8.8.0.t30</version>
+    <version>2.9.0-SNAPSHOT</version>
     <packaging>pom</packaging>
     <url>http://ignite.apache.org</url>
 

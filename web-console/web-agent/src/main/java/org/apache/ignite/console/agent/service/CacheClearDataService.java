@@ -13,8 +13,11 @@ import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.services.Service;
 import org.apache.ignite.services.ServiceContext;
 
+import io.swagger.annotations.ApiOperation;
 
-public class ClusterLoadDataService implements ClusterAgentService {
+
+@ApiOperation("clear cache data to cluster")
+public class CacheClearDataService implements CacheAgentService {
    
 	 /** Ignite instance. */
     @IgniteInstanceResource
@@ -23,28 +26,25 @@ public class ClusterLoadDataService implements ClusterAgentService {
 	@Override
 	public Map<String, ? extends Object> call(Map<String,Object> payload) {
 		Map<String,Object> result = new HashMap<>();
-		int count = 0;
+		int count = 0;		
 		JsonObject args = new JsonObject((Map)payload.get("args"));	
-		List<String> message = new ArrayList<>();
+		List<String> message = new ArrayList<>();	
 		List<String> caches = ClusterAgentServiceUtil.cacheSelectList(ignite,args);
 		for(String cache: caches) {
 			try {
 				IgniteCache<?,?> igcache = ignite.cache(cache);
 					
-				igcache.loadCache(null);
+				igcache.withSkipStore().clear();
 				count++;
 			}
 			catch(Exception e) {
 				message.add(e.getMessage());
 			}
 		}
-		result.put("errors", message);
+		result.put("message", message);
 		result.put("caches", ignite.cacheNames());
 		result.put("count", count);
 		return result;
 	}
 
-	public String toString() {
-		return "load data to cluster";
-	}
 }

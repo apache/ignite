@@ -58,8 +58,8 @@ public class TaskFlowController {
     @ApiOperation(value = "Get user's grouped taskFlows.")
     @GetMapping(path = "/group/{groupId}")
     public ResponseEntity<Collection<TaskFlow>> list(@AuthenticationPrincipal Account acc,
-    		@PathVariable("groupId") String groupId,String action, String source) {
-        return ResponseEntity.ok(taskFlowsSrv.taskFlowForGroup(acc.getId(),groupId,action, source));
+    		@PathVariable("groupId") String groupId,String action, String target, String source) {
+        return ResponseEntity.ok(taskFlowsSrv.taskFlowForGroup(acc.getId(),groupId,action, target, source));
     }
 
     /**
@@ -67,10 +67,44 @@ public class TaskFlowController {
      */
     @ApiOperation(value = "Save user's flow.")
     @PutMapping(consumes = APPLICATION_JSON_VALUE)
-    public ResponseEntity<UUID> save(@AuthenticationPrincipal Account acc, @RequestBody TaskFlow flow) {
+    public ResponseEntity<?> save(@AuthenticationPrincipal Account acc, @RequestBody TaskFlow flow) {
+    	if(flow.getTarget()==null || flow.getSource()==null) {
+    		return ResponseEntity.badRequest().body("TargetCache or SourceCache must not null!");
+    	}
+    	Collection<TaskFlow> exists = taskFlowsSrv.taskFlowForGroup(acc.getId(),flow.getGroup(),null, flow.getTarget(), flow.getSource());
         if(flow.getId()==null) {
-        	flow.setId(UUID.randomUUID());
+        	if(exists.size()>0) {
+        		flow.setId(exists.iterator().next().getId());
+        		flow.setAccountId(acc.getId());
+        	}
+        	else {
+        		flow.setAccountId(acc.getId());
+        		flow.setId(UUID.randomUUID());
+        	}
+        	
+        }
+        else if(!exists.isEmpty()) {
+        	UUID existId = exists.iterator().next().getId();
+        	if(!flow.getId().equals(existId)) {
+        		return ResponseEntity.badRequest().body("TaskFlow "+ existId+" already existing!");
+        	}
+        }
+        if(flow.getAccountId()==null) {        	
         	flow.setAccountId(acc.getId());
+        }
+    	taskFlowsSrv.save(acc.getId(), flow);
+
+        return ResponseEntity.ok().body(flow.getId());
+    }
+    
+    /**
+     * @param acc Account.
+     */
+    @ApiOperation(value = "Save user's flow. must have flow id")
+    @PutMapping(value="/advance", consumes = APPLICATION_JSON_VALUE)
+    public ResponseEntity<?> saveAdvance(@AuthenticationPrincipal Account acc, @RequestBody TaskFlow flow) {
+        if(flow.getId()==null) {
+        	return ResponseEntity.badRequest().body("TaskFlow.id must not null!");
         }
         if(flow.getAccountId()==null) {        	
         	flow.setAccountId(acc.getId());

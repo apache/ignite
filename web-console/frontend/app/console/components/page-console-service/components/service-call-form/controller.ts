@@ -46,35 +46,18 @@ export default class ServiceCallFormController {
     $onInit() {
         this.available = this.IgniteVersion.available.bind(this.IgniteVersion);
 
-        const rebuildDropdowns = () => {
-            this.$scope.affinityFunction = [
-                {value: 'Rendezvous', label: 'Rendezvous'},
-                {value: 'Custom', label: 'Custom'},
-                {value: null, label: 'Default'}
-            ];
-        };
-
-        rebuildDropdowns();
-
-        
-
-        this.subscription = this.IgniteVersion.currentSbj.pipe(
-            tap(rebuildDropdowns)
-        )
-        .subscribe();
 
         // TODO: Do we really need this?
         this.$scope.ui = this.IgniteFormUtils.formUI();
 
         this.formActions = [
             {text: 'Call Service', icon: 'checkmark', click: () => this.confirmAndCall()},
-            {text: 'Updated Data', icon: 'download', click: () => this.confirmAndLoad(true)},            
-            {text: 'Writer Data', icon: 'checkmark', click: () => this.confirmAndWriter(true)}            
+            {text: 'Redeploy Service', icon: 'download', click: () => this.confirmAndRedeploy(true)}            
         ];
     }
 
     $onDestroy() {
-        this.subscription.unsubscribe();
+        
     }
 
     $onChanges(changes) {
@@ -94,20 +77,11 @@ export default class ServiceCallFormController {
         return [this.service, this.clonedService];
     }
 
-    loadData(updated:boolean) {        
-        let serviceName = 'loadDataService';
-        return this.callServiceForCache(serviceName,{updated});
+    redeployService(force:boolean) {        
+        let serviceName = 'redeployService';
+        return this.callServiceForCache(serviceName,{force});
     }
-    
-    writerData(updated:boolean) {        
-        let serviceName = 'writerDataService';
-        return this.callServiceForCache(serviceName,{updated});
-    }
-    
-    clearData(){
-        let serviceName = 'clearDataService';
-        return this.callServiceForCache(serviceName,{});
-    }
+
     
     callServiceForGrid(serviceName:string,params) {
         let args = this.onCall({$event: {serviceName: this.clonedService}});
@@ -137,20 +111,13 @@ export default class ServiceCallFormController {
         .then(() => { this.callServiceForGrid(this.service.id,this.clonedService); } );
     }
     
-    confirmAndLoad(updated:boolean) {        
+    confirmAndRedeploy(force:boolean) {        
         if (this.$scope.ui.inputForm && this.$scope.ui.inputForm.$invalid)
             return this.IgniteFormUtils.triggerValidation(this.$scope.ui.inputForm, this.$scope);
-        return this.IgniteConfirm.confirm('Are you sure you want to load all data for current cache?')
-        .then( () => { this.loadData(updated); } );
+        return this.IgniteConfirm.confirm('Are you sure you want to redoploy current service?')
+        .then( () => { this.redeployService(force); } );
     }
     
-    confirmAndWriter(updated:boolean) {        
-        if (this.$scope.ui.inputForm && this.$scope.ui.inputForm.$invalid)
-            return this.IgniteFormUtils.triggerValidation(this.$scope.ui.inputForm, this.$scope);
-        return this.IgniteConfirm.confirm('Are you sure you want to writer all data to dest cluster cache?')
-        .then( () => { this.writerData(updated); } );
-    }
-
     clearImplementationVersion(storeFactory) {
         delete storeFactory.implementationVersion;
     }

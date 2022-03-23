@@ -57,6 +57,7 @@ import org.apache.ignite.console.agent.AgentConfiguration;
 import org.apache.ignite.console.agent.AgentUtils;
 import org.apache.ignite.console.agent.db.DataSourceManager;
 import org.apache.ignite.console.agent.rest.RestResult;
+import org.apache.ignite.console.agent.service.CacheAgentService;
 import org.apache.ignite.console.agent.service.ClusterAgentService;
 import org.apache.ignite.console.demo.AgentClusterDemo;
 import org.apache.ignite.console.json.JsonArray;
@@ -501,20 +502,29 @@ public class WebSocketRouter implements AutoCloseable {
     	}
         
         if(ignite!=null && !serviceName.isEmpty()) {
-        	ClusterAgentService agentSeervice = ignite.services().serviceProxy(serviceName,ClusterAgentService.class,false);
-        	if(agentSeervice!=null) {
-        		try {        			
+        	Service serviceObject = ignite.services().service(serviceName);
+        	if(serviceObject==null) {
+				stat.put("message", "service not found");
+				return stat;
+			}
+        	try {
+	        	if(serviceObject instanceof ClusterAgentService){
+		        	ClusterAgentService agentSeervice = (ClusterAgentService)(serviceObject);
 	        		Map<String,? extends Object> result = agentSeervice.call(json);
-	        		stat.put("result", result);
-        		}
-        		catch(Exception e) {
-        			stat.put("message", e.getMessage());
-        			stat.put("errorType", e.getClass().getSimpleName());
-        		}
-        	}
-        	else {
-        		stat.put("message", "service not found");
-        	}
+	        		stat.put("result", result);	        		
+		        	
+	        	}        
+	        	else if(serviceObject instanceof CacheAgentService){
+	        		CacheAgentService agentSeervice = (CacheAgentService)(serviceObject);
+	        		Map<String,? extends Object> result = agentSeervice.call(json);
+	        		stat.put("result", result);	        	
+		    	}
+	        }
+			catch(Exception e) {
+				stat.put("message", e.getMessage());
+				stat.put("errorType", e.getClass().getSimpleName());
+			}	
+			
         }
         return stat;
     }

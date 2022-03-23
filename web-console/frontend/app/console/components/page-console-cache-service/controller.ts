@@ -117,7 +117,7 @@ export default class CacheServiceController {
         
         clusterID$.subscribe((v)=>{ 
             this.clusterID = v; 
-            this.callService('serviceList').then((data) => {
+            this.callService('serviceList',{type:'CacheAgentService'}).then((data) => {
                 if(data.message){
                     this.message = data.message;
                     return;
@@ -162,9 +162,11 @@ export default class CacheServiceController {
         
         this.tableActions$ = this.selectionManager.selectedItemIDs$.pipe(map((selectedItems) => [
             {
-                action: 'Clone',
-                click: () => this.clone(selectedItems),
-                available: false
+                action: 'Flush Data', 
+                click: () => {
+                    this.call(selectedItems,'saveDataService');
+                },
+                available: true
             },
             {
                 action: 'Load Data',
@@ -181,9 +183,9 @@ export default class CacheServiceController {
                 available: true
             },
             {
-                action: 'Write Data to Other Cluster',
+                action: 'Poll Data from Other Cluster',
                 click: () => {
-                    this.call(selectedItems,'writeDataService');
+                    this.call(selectedItems,'copyDataService');
                 },
                 available: true
             }

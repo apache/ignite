@@ -37,10 +37,7 @@ export default class ClusterTaskFlowController {
         'ConfigureState',
         'AgentManager',
         'ConfigSelectors'        
-    ];
-    
-    
-    
+    ];    
 
     constructor(
         private $uiRouter: UIRouter,
@@ -151,16 +148,6 @@ export default class ClusterTaskFlowController {
         this.clusterID$ = this.$uiRouter.globals.params$.pipe(           
             pluck('clusterID')           
         );
-        
-        this.originalCluster$ = this.clusterID$.pipe(
-            distinctUntilChanged(),
-            switchMap((id) => {
-                return this.ConfigureState.state$.pipe(this.ConfigSelectors.selectCluster(id));
-            }),
-            distinctUntilChanged(),
-            publishReplay(1),
-            refCount()
-        );        
         
         this.shortClusters$ = this.ConfigureState.state$.pipe(this.ConfigSelectors.selectShortClustersValue());
         

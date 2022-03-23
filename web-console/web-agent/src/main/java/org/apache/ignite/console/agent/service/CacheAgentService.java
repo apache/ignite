@@ -15,7 +15,7 @@ import org.apache.ignite.services.ServiceContext;
 
 
 
-public interface ClusterAgentService extends Service {
+public interface CacheAgentService extends Service {
    
 	
 	public abstract Map<String, ? extends Object> call(Map<String,Object> payload);

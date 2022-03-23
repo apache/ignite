@@ -20,9 +20,9 @@ include /app/configuration/mixins
 -var model = '$ctrl.clonedCache'
 
 panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
-    panel-title Data receivers
+    panel-title Data Provider Caches
     panel-description
-        | 设置数据接收者，可以选择多个.
+        | 设置数据提供者，可以选择多个.
     panel-content.pca-form-row(ng-if=`ui.isPanelLoaded('${form}')`)
         .pca-form-column-12.pc-form-grid-row
             .pc-form-grid-col-120
@@ -35,12 +35,14 @@ panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
                         list-editable-cols='::$ctrl.cachesColDefs'
                         list-editable-cols-row-class='pc-form-grid-row pcb-row-no-margin'
                     )
-                        list-editable-item-view
+                        list-editable-item-view                            
                             div {{ $item.name }}
+                            div {{ $item.clusterName }}
                             div {{ $item.cacheMode }}
                             div {{ $item.atomicityMode }}
                             div {{ $ctrl.Caches.getCacheBackupsCount($item) }}
                         list-editable-item-edit
+                                                             
                             div
                                 +form-field__text({
                                     label: 'Name',
@@ -53,6 +55,14 @@ panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
                                     ignite-form-field-input-autofocus='true'
                                 )
                                     +form-field__error({ error: 'igniteUnique', message: 'Cache name should be unqiue' })
+                            div
+                                +form-field__text({
+                                    label: 'Cluster Name',
+                                    model: '$item.clusterName',
+                                    name: '"clusterName"',
+                                    required: true
+                                })   
+                            
                             div
                                 +form-field__cache-modes({
                                     label: 'Mode:',

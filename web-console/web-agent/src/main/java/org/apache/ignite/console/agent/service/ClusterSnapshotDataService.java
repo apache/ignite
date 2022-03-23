@@ -23,7 +23,10 @@ import org.apache.ignite.services.Service;
 import org.apache.ignite.services.ServiceContext;
 import org.apache.ignite.stream.StreamVisitor;
 
+import io.swagger.annotations.ApiOperation;
 
+
+@ApiOperation(value="Backup cluster data to snapshot",notes="这个操作是异步的")
 public class ClusterSnapshotDataService implements ClusterAgentService {
    
 	 /** Ignite instance. */
@@ -42,10 +45,5 @@ public class ClusterSnapshotDataService implements ClusterAgentService {
 		
 		result.put("result", "created");
 		return result;
-	}
-
-	public String toString() {
-		return "Backup cluster data to snapshot ";
-	}
-	
+	}	
 }

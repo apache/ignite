@@ -43,10 +43,11 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.console.agent.handlers.ClusterHandler;
-import org.apache.ignite.console.agent.service.ClusterLoadDataService;
-import org.apache.ignite.console.agent.service.ClusterWriteDataService;
+import org.apache.ignite.console.agent.service.CacheLoadDataService;
+import org.apache.ignite.console.agent.service.ComputeTaskLoadService;
+import org.apache.ignite.console.agent.service.CacheCopyDataService;
 import org.apache.ignite.console.agent.service.ClusterAgentServiceList;
-import org.apache.ignite.console.agent.service.ClusterClearDataService;
+import org.apache.ignite.console.agent.service.CacheClearDataService;
 
 import org.apache.ignite.console.json.JsonObject;
 import org.apache.ignite.console.utils.Utils;
@@ -228,9 +229,10 @@ public class AgentClusterLauncher {
     public static void deployServices(IgniteServices services) {
     	
         services.deployNodeSingleton("serviceList", new ClusterAgentServiceList());
-        services.deployNodeSingleton("loadDataService", new ClusterLoadDataService());
-        services.deployNodeSingleton("clearDataService", new ClusterClearDataService());
-        services.deployClusterSingleton("writeDataService", new ClusterWriteDataService());
+        services.deployNodeSingleton("loadDataService", new CacheLoadDataService());
+        services.deployNodeSingleton("clearDataService", new CacheClearDataService());
+        services.deployClusterSingleton("copyDataService", new CacheCopyDataService());        
+        services.deployNodeSingleton("computeTaskLoadService", new ComputeTaskLoadService());
         
         //String cacheName = "default";
         //services.deployKeyAffinitySingleton("loadDataKeyAffinityService",new ClusterLoadDataService(), cacheName, "id");

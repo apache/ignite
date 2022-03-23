@@ -16,14 +16,14 @@
 
 package org.apache.ignite.console.dto;
 
+import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * Task flow define info.
  */
-public class TaskFlow extends AbstractDto {
-    
+public class TaskFlow extends AbstractDto {    
 
 	/** */
     private UUID accId;
@@ -45,12 +45,30 @@ public class TaskFlow extends AbstractDto {
     
     /** to cache */
     private String target;
+    
+    /** targetField -> fromField */
+    private Map<String,String> fieldsMap;
+    
+    /** cron expr */
+    private String cronString;
+    
+    /** EXISTING更新策略: 
+     * SKIP_EXISTING,
+     * REPLACE_EXISTING,
+     * UPDATE_EXISTING,
+     * MERGE_EXISTING 
+     **/
+    private String existingMode;
 
-    /** */
+    
+
+	/** 采集数据量 */
     private int amount;
     
+    /** 任务创建时间 */
     private long created;
     
+    /** 采集更新时间 */
     private long updated;
 
     /**
@@ -188,5 +206,37 @@ public class TaskFlow extends AbstractDto {
 
 	public void setSourceCluster(String sourceCluster) {
 		this.sourceCluster = sourceCluster;
+	}
+	
+	public String getTargetCluster() {
+		return targetCluster;
+	}
+
+	public void setTargetCluster(String targetCluster) {
+		this.targetCluster = targetCluster;
+	}
+
+	public Map<String, String> getFieldsMap() {
+		return fieldsMap;
+	}
+
+	public void setFieldsMap(Map<String, String> fieldsMap) {
+		this.fieldsMap = fieldsMap;
+	}
+
+	public String getCronString() {
+		return cronString;
+	}
+
+	public void setCronString(String cronString) {
+		this.cronString = cronString;
+	}
+
+	public String getExistingMode() {
+		return existingMode;
+	}
+
+	public void setExistingMode(String existingMode) {
+		this.existingMode = existingMode;
 	}
 }

@@ -172,21 +172,27 @@ export default class ServiceController {
             {
                 action: 'Redeploy',
                 click: () => {
-                    this.call(selectedItems,'redeploy');
+                    this.call(selectedItems,'redeployService');
                 },
                 available: true
             },
             {
                 action: 'Undeploy',
                 click: () => {
-                    this.call(selectedItems,'undeploy');
+                    this.call(selectedItems,'undeployService');
                 },
                 available: true
             },
             {
                 action: 'Simple Call',
                 click: () => {
-                    this.call(selectedItems,'callService');
+                    for(let serviceName of selectedItems){
+                        this.callService(serviceName,{}).then((data) => {
+                             if(data.message){
+                                 this.message = data.message;
+                             }
+                        });  
+                    }                   
                 },
                 available: true
             }

@@ -60,6 +60,7 @@ export default class CacheEditFormController {
         
         this.cachesColDefs = [
             {name: 'Name:', cellClass: 'pc-form-grid-col-10'},
+            {name: 'ClusterName:', cellClass: 'pc-form-grid-col-10'},
             {name: 'Mode:', cellClass: 'pc-form-grid-col-10'},
             {name: 'Atomicity:', cellClass: 'pc-form-grid-col-20', tip: `
                 Atomicity:
