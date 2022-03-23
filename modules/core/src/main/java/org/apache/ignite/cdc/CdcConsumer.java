@@ -18,7 +18,9 @@
 package org.apache.ignite.cdc;
 
 import java.util.Iterator;
+import org.apache.ignite.IgniteBinary;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.binary.BinaryIdMapper;
 import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.cache.CacheEntryVersion;
 import org.apache.ignite.internal.cdc.CdcMain;
@@ -73,16 +75,33 @@ public interface CdcConsumer {
     public boolean onEvents(Iterator<CdcEvent> events);
 
     /**
-     * Handles new binary types. State of the types processing will be stored after this method invocation
-     * and ongoing notifications after CDC application fail/restart will be started for newly created/updates types.
+     * Handles new binary types. State of the types processing will be stored after method invocation
+     * and ongoing notifications after CDC application fail/restart will be continued for newly created/updates types.
      * Invoked before {@link #onEvents(Iterator)}.
      *
      * Note, unlike {@link #onEvents(Iterator)} this method MUST process all types or CDC will fail.
      * Because, in time of invocation {@link #onEvents(Iterator)} all changed types must be available on destionation.
      *
      * @param types Binary types iterator.
+     * @see IgniteBinary
+     * @see IgniteBinary#type(int)
+     * @see IgniteBinary#type(Class)
+     * @see IgniteBinary#type(String)
+     * @see IgniteBinary#types()
      */
     public void onTypes(Iterator<BinaryType> types);
+
+    /**
+     * Handles new mappings from type name to id. State of the types processing will be stored after method invocation
+     * and ongoing notifications after CDC application fail/restart will be continued for newly created/updates mappings.
+     * Invoked before both {@link #onEvents(Iterator)} and {@link #onTypes(Iterator)}.
+     *
+     * @param mappings Binary mapping iterator.
+     * @see IgniteBinary
+     * @see IgniteBinary#typeId(String)
+     * @see BinaryIdMapper
+     */
+    public void onMappings(Iterator<TypeMapping> mappings);
 
     /**
      * Stops the consumer.

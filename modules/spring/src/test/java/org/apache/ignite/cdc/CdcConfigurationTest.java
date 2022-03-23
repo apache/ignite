@@ -140,6 +140,11 @@ public class CdcConfigurationTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
+        @Override public void onMappings(Iterator<TypeMapping> mappings) {
+            // No-Op.
+        }
+
+        /** {@inheritDoc} */
         @Override public void stop() {
             // No-Op.
         }

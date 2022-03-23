@@ -277,7 +277,11 @@ public class CdcSelfTest extends AbstractCdcTest {
                 }
 
                 @Override public void onTypes(Iterator<BinaryType> types) {
-                    types.forEachRemaining(t -> System.out.println("t = " + t));
+                    types.forEachRemaining(t -> assertNotNull(t));
+                }
+
+                @Override public void onMappings(Iterator<TypeMapping> mappings) {
+                    mappings.forEachRemaining(m -> assertNotNull(m));
                 }
 
                 @Override public void stop() {
@@ -356,7 +360,11 @@ public class CdcSelfTest extends AbstractCdcTest {
                 }
 
                 @Override public void onTypes(Iterator<BinaryType> types) {
-                    types.forEachRemaining(t -> System.out.println("t = " + t));
+                    types.forEachRemaining(t -> assertNotNull(t));
+                }
+
+                @Override public void onMappings(Iterator<TypeMapping> mappings) {
+                    mappings.forEachRemaining(m -> assertNotNull(m));
                 }
 
                 @Override public void stop() {

@@ -17,8 +17,13 @@
 
 package org.apache.ignite.internal.binary;
 
+import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
 import java.io.Externalizable;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStreamReader;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.lang.reflect.Array;
@@ -28,6 +33,9 @@ import java.lang.reflect.Modifier;
 import java.lang.reflect.Proxy;
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.nio.channels.FileChannel;
+import java.nio.channels.FileLock;
+import java.nio.charset.StandardCharsets;
 import java.sql.Time;
 import java.sql.Timestamp;
 import java.util.ArrayList;
@@ -47,7 +55,9 @@ import java.util.TreeSet;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListSet;
+import java.util.concurrent.ThreadLocalRandom;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.binary.BinaryCollectionFactory;
 import org.apache.ignite.binary.BinaryInvalidTypeException;
@@ -58,6 +68,7 @@ import org.apache.ignite.binary.BinaryRawReader;
 import org.apache.ignite.binary.BinaryRawWriter;
 import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.binary.Binarylizable;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.binary.builder.BinaryLazyValue;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
 import org.apache.ignite.internal.processors.cache.CacheObjectByteArrayImpl;
@@ -71,6 +82,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.platform.PlatformType;
 import org.jetbrains.annotations.Nullable;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -82,6 +94,12 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_BINARY_MARSHALLER_
 public class BinaryUtils {
     /** Binary metadata file suffix. */
     public static final String METADATA_FILE_SUFFIX = ".bin";
+
+    /**
+     * Actual file name "{type_id}.classname{platform_id}".
+     * Where {@code type_id} is integer type id and {@code platform_id} is byte from {@link PlatformType}
+     */
+    public static final String MAPPING_FILE_EXTENSION = ".classname";
 
     /** */
     public static final Map<Class<?>, Byte> PLAIN_CLASS_TO_FLAG = new HashMap<>();
@@ -155,6 +173,9 @@ public class BinaryUtils {
 
     /** FNV1 hash prime. */
     private static final int FNV1_PRIME = 0x01000193;
+
+    /** File lock timeout in milliseconds. */
+    private static final int FILE_LOCK_TIMEOUT_MS = 5000;
 
     /*
      * Static class initializer.
@@ -2535,6 +2556,82 @@ public class BinaryUtils {
      */
     public static String binaryMetaFileName(int typeId) {
         return typeId + METADATA_FILE_SUFFIX;
+    }
+
+    /** @param fileName Name of file with marshaller mapping information. */
+    public static int mappedTypeId(String fileName) {
+        try {
+            return Integer.parseInt(fileName.substring(0, fileName.indexOf(MAPPING_FILE_EXTENSION)));
+        }
+        catch (NumberFormatException e) {
+            throw new IgniteException("Reading marshaller mapping from file "
+                + fileName
+                + " failed; type ID is expected to be numeric.", e);
+        }
+    }
+
+    /** @param fileName Name of file with marshaller mapping information. */
+    public static byte mappedFilePlatformId(String fileName) {
+        try {
+            return Byte.parseByte(fileName.substring(fileName.length() - 1));
+        }
+        catch (NumberFormatException e) {
+            throw new IgniteException("Reading marshaller mapping from file "
+                + fileName
+                + " failed; last symbol of file name is expected to be numeric.", e);
+        }
+    }
+
+    /** @param file File. */
+    public static String readMapping(File file) {
+        ThreadLocalRandom rnd = null;
+
+        long time = 0;
+
+        while (true) {
+            try (FileInputStream in = new FileInputStream(file);
+                 BufferedReader reader = new BufferedReader(new InputStreamReader(in, StandardCharsets.UTF_8));
+                 FileLock ignored = fileLock(in.getChannel(), true)) {
+                if (file.length() > 0)
+                    return reader.readLine();
+
+                if (rnd == null)
+                    rnd = ThreadLocalRandom.current();
+
+                if (time == 0)
+                    time = System.nanoTime();
+                else if (U.millisSinceNanos(time) >= FILE_LOCK_TIMEOUT_MS)
+                    return null;
+
+                U.sleep(rnd.nextLong(50));
+            }
+            catch (IOException ignored) {
+                return null;
+            }
+            catch (IgniteInterruptedCheckedException e) {
+                throw new IgniteException(e);
+            }
+        }
+    }
+
+    /**
+     * @param ch File channel.
+     * @param shared Shared.
+     */
+    public static FileLock fileLock(
+        FileChannel ch,
+        boolean shared
+    ) throws IOException, IgniteInterruptedCheckedException {
+        ThreadLocalRandom rnd = ThreadLocalRandom.current();
+
+        while (true) {
+            FileLock fileLock = ch.tryLock(0L, Long.MAX_VALUE, shared);
+
+            if (fileLock != null)
+                return fileLock;
+
+            U.sleep(rnd.nextLong(50));
+        }
     }
 
     /**

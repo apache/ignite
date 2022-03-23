@@ -26,6 +26,7 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.cdc.CdcConsumer;
 import org.apache.ignite.cdc.CdcEvent;
+import org.apache.ignite.cdc.TypeMapping;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
 import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
@@ -144,6 +145,14 @@ public class WalRecordsConsumer<K, V> {
      */
     public void onTypes(Iterator<BinaryType> types) {
         consumer.onTypes(types);
+    }
+
+    /**
+     * Handles new mappings.
+     * @param mappings Mappings iterator.
+     */
+    public void onMappings(Iterator<TypeMapping> mappings) {
+        consumer.onMappings(mappings);
     }
 
     /**

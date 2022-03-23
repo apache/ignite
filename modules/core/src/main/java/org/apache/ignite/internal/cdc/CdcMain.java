@@ -31,6 +31,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Function;
 import java.util.stream.Stream;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -39,6 +40,7 @@ import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.cdc.CdcConfiguration;
 import org.apache.ignite.cdc.CdcConsumer;
 import org.apache.ignite.cdc.CdcEvent;
+import org.apache.ignite.cdc.TypeMapping;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -57,11 +59,12 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.reader.Standa
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
 import org.apache.ignite.internal.processors.resource.GridSpringResourceContext;
+import org.apache.ignite.internal.util.lang.GridTuple3;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.platform.PlatformType;
 import org.apache.ignite.startup.cmdline.CdcCommandLineStartup;
 
 import static org.apache.ignite.internal.IgniteKernal.NL;
@@ -69,6 +72,7 @@ import static org.apache.ignite.internal.IgniteKernal.SITE;
 import static org.apache.ignite.internal.IgniteVersionUtils.ACK_VER_STR;
 import static org.apache.ignite.internal.IgniteVersionUtils.COPYRIGHT;
 import static org.apache.ignite.internal.IgnitionEx.initializeDefaultMBeanServer;
+import static org.apache.ignite.internal.binary.BinaryUtils.MAPPING_FILE_EXTENSION;
 import static org.apache.ignite.internal.binary.BinaryUtils.METADATA_FILE_SUFFIX;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.DATA_RECORD_V2;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager.WAL_SEGMENT_FILE_FILTER;
@@ -195,6 +199,9 @@ public class CdcMain implements Runnable {
     /** Types state. */
     private Map<Integer, Long> typesState;
 
+    /** Mappings state. */
+    private Set<T2<Integer, Byte>> mappingsState;
+
     /** Stopped flag. */
     private volatile boolean stopped;
 
@@ -278,11 +285,13 @@ public class CdcMain implements Runnable {
 
                 state = createState(cdcDir.resolve(STATE_DIR));
 
-                IgniteBiTuple<T2<WALPointer, Integer>, Map<Integer, Long>> initState = state.load();
+                GridTuple3<T2<WALPointer, Integer>, Map<Integer, Long>, Set<T2<Integer, Byte>>> initState = state.load();
 
                 walState = initState.get1();
 
                 typesState = initState.get2() != null ? initState.get2() : new HashMap<>();
+
+                mappingsState = initState.get3() != null ? initState.get3() : new HashSet<>();
 
                 if (walState != null) {
                     committedSegmentIdx.value(walState.get1().index());
@@ -293,11 +302,20 @@ public class CdcMain implements Runnable {
                 }
 
                 if (typesState != null) {
-                    log.info("Initial types state loaded[typesCnt=" + typesState.size() + ']');
+                    log.info("Initial types state loaded [typesCnt=" + typesState.size() + ']');
 
                     if (log.isDebugEnabled()) {
-                        for (Map.Entry<Integer, Long> entry : typesState.entrySet())
-                            log.debug("Type[typeId=" + entry.getKey() + ", lastModified=" + entry.getValue() + ']');
+                        for (Map.Entry<Integer, Long> e : typesState.entrySet())
+                            log.debug("Type [typeId=" + e.getKey() + ", lastModified=" + e.getValue() + ']');
+                    }
+                }
+
+                if (mappingsState != null) {
+                    log.info("Initial mappings state loaded [mappingsCnt=" + mappingsState.size() + ']');
+
+                    if (log.isDebugEnabled()) {
+                        for (T2<Integer, Byte> m : mappingsState)
+                            log.debug("Mapping [typeId=" + m.get1() + ", platform=" + m.get2() + ']');
                     }
                 }
 
@@ -441,6 +459,8 @@ public class CdcMain implements Runnable {
         if (log.isInfoEnabled())
             log.info("Processing WAL segment [segment=" + segment + ']');
 
+        updateMappings();
+
         updateTypes();
 
         IgniteWalIteratorFactory.IteratorParametersBuilder builder =
@@ -541,9 +561,55 @@ public class CdcMain implements Runnable {
         }
     }
 
-    /**
-     * Search for new or changed {@link BinaryType} and notifies the consumer.
-     */
+    /** Search for new or changed {@link TypeMapping} and notifies the consumer. */
+    private void updateMappings() {
+        try {
+            Iterator<TypeMapping> changedMappings = Files.list(marshaller.toPath())
+                .filter(p -> p.toString().contains(MAPPING_FILE_EXTENSION))
+                .map(p -> {
+                    String fileName = p.getFileName().toString();
+
+                    int typeId = BinaryUtils.mappedTypeId(fileName);
+                    byte platformId = BinaryUtils.mappedFilePlatformId(fileName);
+
+                    T2<Integer, Byte> data = new T2<>(typeId, platformId);
+
+                    // Filter out files already in `mappingsState`.
+                    return mappingsState.contains(data) ? null : new Object[] {data, p};
+                })
+                .filter(Objects::nonNull)
+                .peek(d -> mappingsState.add((T2<Integer, Byte>)d[0])) // Adding peeked up mappings to state.
+                .map((Function<Object[], TypeMapping>)(t -> new TypeMapping() {
+                    @Override public int typeId() {
+                        return ((T2<Integer, Byte>)t[0]).get1();
+                    }
+
+                    @Override public String typeName() {
+                        return BinaryUtils.readMapping(((Path)t[1]).toFile());
+                    }
+
+                    @Override public PlatformType platform() {
+                        return ((T2<Integer, Byte>)t[0]).get2() == 0 ? PlatformType.JAVA : PlatformType.DOTNET;
+                    }
+                }))
+                .iterator();
+
+            if (!changedMappings.hasNext())
+                return;
+
+            consumer.onMappings(changedMappings);
+
+            if (changedMappings.hasNext())
+                throw new IllegalStateException("Consumer should handle all changed mappings");
+
+            state.save(mappingsState);
+        }
+        catch (IOException e) {
+            throw new IgniteException(e);
+        }
+    }
+
+    /** Search for new or changed {@link BinaryType} and notifies the consumer. */
     private void updateTypes() {
         try {
             Iterator<BinaryType> changedTypes = Files.list(binaryMeta.toPath())

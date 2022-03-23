@@ -18,15 +18,31 @@
 package org.apache.ignite.cdc;
 
 import java.util.Iterator;
+import org.apache.ignite.IgniteBinary;
+import org.apache.ignite.binary.BinaryIdMapper;
+import org.apache.ignite.binary.BinaryObject;
+import org.apache.ignite.lang.IgniteExperimental;
+import org.apache.ignite.platform.PlatformType;
 
 /**
- * Test to check {@link CdcConsumer#onTypes(Iterator)}
+ * Ignite maps type name to some id.
+ * Mapping data required to perform deserialization of {@link BinaryObject}.
+ * Note, {@link #typeName()} can represent not only Java class names.
+ * For other supported platforms take a look at {@link PlatformType} values.
+ *
+ * @see BinaryObject
+ * @see IgniteBinary#typeId(String)
+ * @see BinaryIdMapper
+ * @see CdcConsumer#onMappings(Iterator) 
  */
-public class CdcTypesTest {
-    // Add type
-    // Add after initial data put.
-    // Alter type.
-    // Remove type.
-    // Add classname mapping.
-    // Test type not repeatedly notified after restart.
+@IgniteExperimental
+public interface TypeMapping {
+    /** @return Type id. */
+    public int typeId();
+
+    /** @return Type name. */
+    public String typeName();
+
+    /** @return Platform type. */
+    public PlatformType platform();
 }

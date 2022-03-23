@@ -32,6 +32,7 @@ import java.util.function.Function;
 import javax.management.DynamicMBean;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.binary.BinaryBasicIdMapper;
 import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -373,6 +374,20 @@ public abstract class AbstractCdcTest extends GridCommonAbstractTest {
                 }
 
                 assertNotNull(t);
+            });
+        }
+
+        /** {@inheritDoc} */
+        @Override public void onMappings(Iterator<TypeMapping> mappings) {
+            BinaryBasicIdMapper mapper = new BinaryBasicIdMapper();
+
+            mappings.forEachRemaining(m -> {
+                assertNotNull(m);
+
+                String typeName = m.typeName();
+
+                assertFalse(typeName.isEmpty());
+                assertEquals(mapper.typeId(typeName), m.typeId());
             });
         }
     }

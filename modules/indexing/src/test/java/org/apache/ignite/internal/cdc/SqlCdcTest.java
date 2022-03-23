@@ -21,11 +21,13 @@ import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
+import org.apache.ignite.binary.BinaryBasicIdMapper;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cdc.AbstractCdcTest;
 import org.apache.ignite.cdc.CdcEvent;
+import org.apache.ignite.cdc.TypeMapping;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -176,8 +178,6 @@ public class SqlCdcTest extends AbstractCdcTest {
 
         waitForSize(KEYS_CNT + 1, CITY, UPDATE, cnsmr);
 
-        executeSql(ign, "DROP TABLE CITY");
-
         rmvFut.cancel();
 
         assertTrue(cnsmr.stopped());
@@ -193,6 +193,9 @@ public class SqlCdcTest extends AbstractCdcTest {
 
         /** */
         private boolean cityValType;
+
+        /** */
+        private int mappingCnt;
 
         /** {@inheritDoc} */
         @Override public void checkEvent(CdcEvent evt) {
@@ -237,14 +240,12 @@ public class SqlCdcTest extends AbstractCdcTest {
 
         /** {@inheritDoc} */
         @Override public void onTypes(Iterator<BinaryType> types) {
+            assertEquals("onMappings must be executed first", 3, mappingCnt);
+
             while (types.hasNext()) {
                 BinaryType type = types.next();
-                assertNotNull(type);
 
-                System.out.println("======");
-                for (String name : type.fieldNames()) {
-                    System.out.println("name = " + name);
-                }
+                assertNotNull(type);
 
                 switch (type.typeName()) {
                     case USER_KEY_TYPE:
@@ -286,6 +287,31 @@ public class SqlCdcTest extends AbstractCdcTest {
                     default:
                         fail("Unexpected type name " + type.typeName());
                 }
+            }
+        }
+
+        /** {@inheritDoc} */
+        @Override public void onMappings(Iterator<TypeMapping> mappings) {
+            assertEquals(0, mappingCnt);
+            assertFalse("onMappings must be executed first", cityValType || userValType || userKeyType);
+
+            BinaryBasicIdMapper mapper = new BinaryBasicIdMapper();
+
+            while (mappings.hasNext()) {
+                mappingCnt++;
+
+                TypeMapping m = mappings.next();
+
+                System.out.println("id = " + m.typeId() +
+                    " , name = " + m.typeName() +
+                    ", platform = " + m.platform());
+
+                assertNotNull(m);
+
+                String typeName = m.typeName();
+
+                assertFalse(typeName.isEmpty());
+                assertEquals(mapper.typeId(typeName), m.typeId());
             }
         }
     }
