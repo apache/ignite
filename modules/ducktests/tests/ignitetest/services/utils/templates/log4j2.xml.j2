@@ -24,7 +24,6 @@
     </Properties>
 
     <Appenders>
-
         <!-- Console Appender -->
         <Console name="Console" target="SYSTEM_OUT" follow="true">
             <PatternLayout pattern="${LOG_PATTERN}"/>
@@ -39,37 +38,27 @@
             </Policies>
             <DefaultRolloverStrategy max="10"/>
         </RollingFile>
-
     </Appenders>
 
     <Loggers>
+        <Logger name="org.springframework" level="WARN"/>
 
-        <Logger name="org.springframework" level="WARN">
-        </Logger>
+        <Logger name="org.eclipse.jetty" level="WARN"/>
 
-        <Logger name="org.eclipse.jetty" level="WARN">
-        </Logger>
+        <Logger name="org.eclipse.jetty.util.log" level="ERROR"/>
 
-        <Logger name="org.eclipse.jetty.util.log" level="ERROR">
-        </Logger>
+        <Logger name="org.eclipse.jetty.util.component" level="ERROR"/>
 
-        <Logger name="org.eclipse.jetty.util.component" level="ERROR">
-        </Logger>
+        <Logger name="com.amazonaws" level="WARN"/>
 
-        <Logger name="com.amazonaws" level="WARN">
-        </Logger>
+        <Logger name="org.apache.ignite" level="info"/>
 
-        <Logger name="org.apache.ignite" level="info">
-        </Logger>
-
-        <Logger name="org.apache.zookeeper" level="info">
-        </Logger>
+        <Logger name="org.apache.zookeeper" level="info"/>
 
         <Root level="info">
             <AppenderRef ref="Console"/>
             <AppenderRef ref="FILE"/>
         </Root>
-
     </Loggers>
 
 </Configuration>
