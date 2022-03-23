@@ -71,10 +71,10 @@ public class CacheMetricsManageCommandTest extends GridCommandHandlerAbstractTes
     private static final String NON_EXISTENT_CACHE = "non-existent-cache";
 
     /** Status disabled. */
-    private static final String STATUS_DISABLED = "DISABLED";
+    private static final String STATUS_DISABLED = "disabled";
 
     /** Status enabled. */
-    private static final String STATUS_ENABLED = "ENABLED";
+    private static final String STATUS_ENABLED = "enabled";
 
     /** Success toggle. */
     private static final String SUCCESS_TOGGLE = "Command performed successfully.";
@@ -221,10 +221,10 @@ public class CacheMetricsManageCommandTest extends GridCommandHandlerAbstractTes
     }
 
     /**
-     * Tests commands in case of empty cluster without any caches.
+     * Tests commands on an empty cluster without caches.
      */
     @Test
-    public void testEmptyResult() {
+    public void testNoCachesAffected() {
         String noCachesAffected = "No caches affected. Are there any caches in cluster?";
 
         checkExecutionOk(noCachesAffected, COMMAND_ENABLE, ALL_CACHES);
@@ -331,7 +331,7 @@ public class CacheMetricsManageCommandTest extends GridCommandHandlerAbstractTes
      * @param expectedMetricsModes Expected metrics modes.
      */
     private String successStatus(IgniteBiTuple<String, String>... expectedMetricsModes) {
-        String tableHdr = "[Cache Name -> Status]:";
+        String tableHdr = "[Cache Name -> Metrics status]:";
 
         String tableRows = Arrays.stream(expectedMetricsModes)
             .map(t -> t.get1() + " -> " + t.get2())

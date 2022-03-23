@@ -95,7 +95,7 @@ public class VisorCacheMetricsManageTask extends VisorOneNodeTask<VisorCacheMetr
             Map<String, Boolean> cacheMetricsStatus = new TreeMap<>();
 
             for (String cacheName : cacheNames) {
-                IgniteInternalCache<Object, Object> cachex = ignite.cachex(cacheName);
+                IgniteInternalCache<?, ?> cachex = ignite.cachex(cacheName);
 
                 if (cachex != null)
                     cacheMetricsStatus.put(cacheName, cachex.clusterMetrics().isStatisticsEnabled());

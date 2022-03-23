@@ -88,20 +88,14 @@ public class CacheMetricsManage extends AbstractCommand<VisorCacheMetricsManageT
                 if (statusTaskResult.isEmpty())
                     resultMsg = noCachesAffectedMsg;
                 else {
-                    resultMsg = "[Cache Name -> Status]:" + U.nl();
+                    resultMsg = "[Cache Name -> Metrics status]:" + U.nl();
 
                     Collection<String> rowsCollection = F.transform(statusTaskResult.entrySet(),
-                        e -> e.getKey() + " -> " + (e.getValue() ? "ENABLED" : "DISABLED"));
+                        e -> e.getKey() + " -> " + (e.getValue() ? "enabled" : "disabled"));
 
                     String rowsStr = String.join(U.nl(), rowsCollection);
 
                     resultMsg += rowsStr;
-
-                    Collection<String> notFoundCaches = F.view(arg.cacheNames(),
-                        name -> !statusTaskResult.containsKey(name));
-
-                    if (!notFoundCaches.isEmpty())
-                        resultMsg += U.nl() + notFoundCachesMsg + notFoundCaches;
                 }
 
                 break;
