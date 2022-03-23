@@ -24,9 +24,9 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.TreeSet;
 import java.util.concurrent.TimeUnit;
 import javax.cache.Cache;
 import javax.cache.configuration.Factory;
@@ -1123,47 +1123,48 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
         if (cacheMode() != PARTITIONED)
             return;
 
+        assert gridCount() == 3 : "Test requires 3 nodes";
+
         nearCache = true;
 
         startGrids();
 
-        IgniteCache<Integer, Integer> cache0 = jcache(0);
-        IgniteCache<Object, Object> expireNowCache = jcache(2).withExpiryPolicy(new TestPolicy(1100L, 1200L, 100L));
-        List<TreeSet<Integer>> keySets = Arrays.asList(new TreeSet<>(), new TreeSet<>());
+        List<LinkedHashSet<Integer>> keySets = Arrays.asList(new LinkedHashSet<>(), new LinkedHashSet<>());
         Affinity<Object> aff = grid(0).affinity(DEFAULT_CACHE_NAME);
+        IgniteCache<Object, ?> expirePlcCache = jcache(2).withExpiryPolicy(new TestPolicy(1100L, 1200L, 100L));
         List<Integer> keys = backupKeys(jcache(2), 10_000, 0);
 
         for (Integer key : keys) {
-            cache0.put(key, key);
+            jcache(0).put(key, key);
 
             int primaryIdx = aff.isPrimary(grid(0).localNode(), key) ? 0 : 1;
 
-            TreeSet<Integer> keySet = keySets.get(primaryIdx);
+            LinkedHashSet<Integer> primaryKeySet = keySets.get(primaryIdx);
 
-            keySet.add(key);
+            primaryKeySet.add(key);
 
-            if (keySet.size() >= 2) {
-                // Add near reader for the last key from non-affinity node.
+            if (primaryKeySet.size() == 2) {
+                // Add a near reader for the last key from the non-affinity node.
                 jcache(Math.abs(primaryIdx - 1)).get(key);
 
                 IgniteInternalFuture<?> fut = GridTestUtils.runAsync(() -> {
-                    // Force race between read and ttl update.
+                    // Trying to cause a race between read and ttl update on the primary node.
                     for (int j = 0; j < 10; j++)
-                        jcache(primaryIdx).getAll(keySet);
+                        jcache(primaryIdx).getAll(primaryKeySet);
                 });
 
-                // Update ttl.
-                expireNowCache.getAll(keySet);
+                // Update ttl from the backup node.
+                expirePlcCache.getAll(primaryKeySet);
 
                 fut.get(getTestTimeout());
 
-                keySet.clear();
+                primaryKeySet.clear();
             }
         }
 
         // Remaining keys are not expected to be evicted.
+        keySets.get(0).addAll(keySets.get(1));
         keys.removeAll(keySets.get(0));
-        keys.removeAll(keySets.get(1));
 
         // Make sure all keys have expired.
         for (Integer key : keys)

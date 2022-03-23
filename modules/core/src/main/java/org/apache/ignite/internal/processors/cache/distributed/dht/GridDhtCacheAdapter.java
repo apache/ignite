@@ -1115,9 +1115,9 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
                         req.addEntry(key, incomingReq.version(i));
                     }
 
-                    Collection<UUID> readers;
-
                     GridDhtCacheEntry entry = ctx.dht().entryExx(key, incomingReq.topologyVersion());
+
+                    Collection<UUID> readers;
 
                     try {
                         readers = entry.readers();
