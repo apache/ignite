@@ -87,6 +87,18 @@ public class JdbcQueryTest extends GridCommonAbstractTest {
      * @throws SQLException If failed.
      */
     @Test
+    public void testTODO() throws Exception {
+        stmt.execute("CREATE TABLE Test(\"id\" INT, \"oth\" OTHER)");
+
+        conn.prepareStatement("")
+
+        stmt.close();
+    }
+
+    /**
+     * @throws SQLException If failed.
+     */
+    @Test
     public void testSimpleQuery() throws Exception {
         stmt.execute("CREATE TABLE Person(\"id\" INT, PRIMARY KEY(\"id\"), \"name\" VARCHAR)");
 

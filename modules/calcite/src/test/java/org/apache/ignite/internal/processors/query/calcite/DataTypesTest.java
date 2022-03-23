@@ -22,9 +22,11 @@ import java.util.Objects;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import com.google.common.collect.ImmutableSet;
+import org.apache.calcite.runtime.CalciteException;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.calcite.integration.AbstractBasicIntegrationTest;
 import org.apache.ignite.internal.util.typedef.F;
 import org.junit.Test;
@@ -38,23 +40,60 @@ public class DataTypesTest extends AbstractBasicIntegrationTest {
     public void testOtherType(){
         try {
             executeSql("CREATE TABLE t(id INT, oth OTHER)");
-//            executeSql("CREATE TABLE t1(id INT, oth UUID)");
+
+            assertThrows("CREATE TABLE t2(id INT, oth OTHER DEFAULT 'str')", IgniteSQLException.class,
+                "Type 'ANOTHER' doesn't support default value.");
 
             executeSql("INSERT INTO t VALUES (1, 'str')");
             executeSql("INSERT INTO t VALUES (2, 22)");
             executeSql("INSERT INTO t VALUES (3, CAST('33.5' AS FLOAT))");
-            executeSql("INSERT INTO t VALUES (4, CAST('fd10556e-fc27-4a99-b5e4-89b8344cb3ce' as UUID))");
+            executeSql("INSERT INTO t VALUES (4, CAST('44.5' AS DOUBLE))");
+            executeSql("INSERT INTO t VALUES (5, CAST('fd10556e-fc27-4a99-b5e4-89b8344cb3ce' as UUID))");
+            executeSql("INSERT INTO t VALUES (6, NULL)");
+            executeSql("INSERT INTO t VALUES (7, NULL)");
 
             assertQuery("SELECT oth FROM t order by id")
                 .ordered()
                 .returns("str")
                 .returns(22)
                 .returns(33.5f)
+                .returns(44.5d)
                 .returns(UUID.fromString("fd10556e-fc27-4a99-b5e4-89b8344cb3ce"))
+                .returns(new Object[] {null})
+                .returns(new Object[] {null})
                 .check();
-//            assertQuery("SELECT oth FROM t1 WHERE id=1")
-//                .returns(UUID.fromString("fd10556e-fc27-4a99-b5e4-89b8344cb3ce"))
-//                .check();
+
+            assertThrows("SELECT MIN(oth) FROM t", UnsupportedOperationException.class,
+                "MIN() is not supported for type 'ANOTHER'.");
+
+            assertThrows("SELECT MAX(oth) FROM t", UnsupportedOperationException.class,
+                "MAX() is not supported for type 'ANOTHER'.");
+
+            assertThrows("SELECT AVG(oth) from t", UnsupportedOperationException.class,
+                "AVG() is not supported for type 'ANOTHER'.");
+
+            assertThrows("SELECT oth from t WHERE oth > 0", CalciteException.class,
+                "Invalid types for comparison");
+
+            assertQuery("SELECT oth FROM t WHERE oth=22")
+                .returns(22)
+                .check();
+
+            assertQuery("SELECT oth FROM t WHERE oth is NULL")
+                .returns(new Object[] {null})
+                .returns(new Object[] {null})
+                .check();
+
+            executeSql("DELETE FROM t WHERE id IN (3, 4, 5)");
+
+            assertQuery("SELECT oth FROM t WHERE oth is not NULL")
+                .returns("str")
+                .returns(22)
+                .check();
+
+            assertQuery("SELECT oth FROM t WHERE oth!=22")
+                .returns("str")
+                .check();
         }
         finally {
             executeSql("DROP TABLE IF EXISTS t");
