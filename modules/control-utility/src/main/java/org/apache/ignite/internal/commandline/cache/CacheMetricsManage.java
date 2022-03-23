@@ -19,6 +19,7 @@ package org.apache.ignite.internal.commandline.cache;
 
 import java.util.Collection;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.logging.Logger;
 import org.apache.ignite.internal.client.GridClient;
@@ -68,41 +69,47 @@ public class CacheMetricsManage extends AbstractCommand<VisorCacheMetricsManageT
      * @param result Task result.
      */
     private String processTaskResult(Logger log, Object result) {
+        Objects.requireNonNull(result);
+
         String resultMsg;
 
         String notFoundCachesMsg = "Not found caches:" + U.nl();
+        String noCachesAffectedMsg = "No caches affected. Are there any caches in cluster?";
 
         switch (subCmdArg) {
             case ENABLE:
             case DISABLE:
-                resultMsg = "Command performed successfully.";
-
-                log.info(resultMsg);
+                resultMsg = ((Integer)result) > 0 ? "Command performed successfully." : noCachesAffectedMsg;
 
                 break;
             case STATUS:
                 Map<String, Boolean> statusTaskResult = (Map<String, Boolean>)result;
 
-                resultMsg = "[Cache Name -> Status]:" + U.nl();
+                if (statusTaskResult.isEmpty())
+                    resultMsg = noCachesAffectedMsg;
+                else {
+                    resultMsg = "[Cache Name -> Status]:" + U.nl();
 
-                Collection<String> rowsCollection = F.transform(statusTaskResult.entrySet(),
-                    e -> e.getKey() + " -> " + (e.getValue() ? "ENABLED" : "DISABLED"));
+                    Collection<String> rowsCollection = F.transform(statusTaskResult.entrySet(),
+                        e -> e.getKey() + " -> " + (e.getValue() ? "ENABLED" : "DISABLED"));
 
-                String rowsStr = String.join(U.nl(), rowsCollection);
+                    String rowsStr = String.join(U.nl(), rowsCollection);
 
-                resultMsg += rowsStr;
+                    resultMsg += rowsStr;
 
-                Collection<String> notFoundCaches = F.view(arg.cacheNames(),
-                    name -> !statusTaskResult.containsKey(name));
+                    Collection<String> notFoundCaches = F.view(arg.cacheNames(),
+                        name -> !statusTaskResult.containsKey(name));
 
-                if (!notFoundCaches.isEmpty())
-                    resultMsg += U.nl() + notFoundCachesMsg + notFoundCaches;
+                    if (!notFoundCaches.isEmpty())
+                        resultMsg += U.nl() + notFoundCachesMsg + notFoundCaches;
+                }
 
-                log.info(resultMsg);
                 break;
             default:
                 throw new IllegalStateException("Unexpected value: " + subCmdArg);
         }
+
+        log.info(resultMsg);
 
         return resultMsg;
     }

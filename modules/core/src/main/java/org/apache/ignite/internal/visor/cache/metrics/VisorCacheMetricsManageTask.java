@@ -74,9 +74,11 @@ public class VisorCacheMetricsManageTask extends VisorOneNodeTask<VisorCacheMetr
                         case DISABLE:
                             ignite.cluster().enableStatistics(cacheNames, ENABLE == arg.subCommand());
 
-                            return new VisorCacheMetricsManageTaskResult();
+                            return new VisorCacheMetricsManageTaskResult(cacheNames.size());
                         case STATUS:
                             return new VisorCacheMetricsManageTaskResult(cacheMetricsStatus(cacheNames));
+                        default:
+                            throw new IllegalStateException("Unexpected value: " + arg.subCommand());
                     }
                 } catch (Exception e) {
                     return new VisorCacheMetricsManageTaskResult(e);

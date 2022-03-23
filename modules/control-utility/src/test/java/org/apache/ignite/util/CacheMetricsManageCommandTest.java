@@ -76,9 +76,6 @@ public class CacheMetricsManageCommandTest extends GridCommandHandlerAbstractTes
     /** Status enabled. */
     private static final String STATUS_ENABLED = "ENABLED";
 
-    /** Empty result message. */
-    private static final String EMPTY_RESULT_MESSAGE = "Empty result: none of the specified caches were found.";
-
     /** Success toggle. */
     private static final String SUCCESS_TOGGLE = "Command performed successfully.";
 
@@ -228,11 +225,13 @@ public class CacheMetricsManageCommandTest extends GridCommandHandlerAbstractTes
      */
     @Test
     public void testEmptyResult() {
-        checkExecutionOk(EMPTY_RESULT_MESSAGE, COMMAND_ENABLE, ALL_CACHES);
+        String noCachesAffected = "No caches affected. Are there any caches in cluster?";
 
-        checkExecutionOk(EMPTY_RESULT_MESSAGE, COMMAND_DISABLE, ALL_CACHES);
+        checkExecutionOk(noCachesAffected, COMMAND_ENABLE, ALL_CACHES);
 
-        checkExecutionOk(EMPTY_RESULT_MESSAGE, COMMAND_STATUS, ALL_CACHES);
+        checkExecutionOk(noCachesAffected, COMMAND_DISABLE, ALL_CACHES);
+
+        checkExecutionOk(noCachesAffected, COMMAND_STATUS, ALL_CACHES);
     }
 
     /**
