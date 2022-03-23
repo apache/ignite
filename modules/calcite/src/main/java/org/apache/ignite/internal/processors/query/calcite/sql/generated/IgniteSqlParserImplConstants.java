@@ -716,72 +716,73 @@ public interface IgniteSqlParserImplConstants {
   int ASYNC = 710;
   int QUERY = 711;
   int UUID = 712;
-  int UNSIGNED_INTEGER_LITERAL = 713;
-  int APPROX_NUMERIC_LITERAL = 714;
-  int DECIMAL_NUMERIC_LITERAL = 715;
-  int EXPONENT = 716;
-  int HEXDIGIT = 717;
-  int WHITESPACE = 718;
-  int BINARY_STRING_LITERAL = 719;
-  int QUOTED_STRING = 720;
-  int PREFIXED_STRING_LITERAL = 721;
-  int UNICODE_STRING_LITERAL = 722;
-  int CHARSETNAME = 723;
-  int BIG_QUERY_DOUBLE_QUOTED_STRING = 724;
-  int BIG_QUERY_QUOTED_STRING = 725;
-  int UNICODE_QUOTED_ESCAPE_CHAR = 726;
-  int LPAREN = 727;
-  int RPAREN = 728;
-  int LBRACE_D = 729;
-  int LBRACE_T = 730;
-  int LBRACE_TS = 731;
-  int LBRACE_FN = 732;
-  int LBRACE = 733;
-  int RBRACE = 734;
-  int LBRACKET = 735;
-  int RBRACKET = 736;
-  int SEMICOLON = 737;
-  int DOT = 738;
-  int COMMA = 739;
-  int EQ = 740;
-  int GT = 741;
-  int LT = 742;
-  int HOOK = 743;
-  int COLON = 744;
-  int LE = 745;
-  int GE = 746;
-  int NE = 747;
-  int NE2 = 748;
-  int PLUS = 749;
-  int MINUS = 750;
-  int STAR = 751;
-  int SLASH = 752;
-  int PERCENT_REMAINDER = 753;
-  int CONCAT = 754;
-  int NAMED_ARGUMENT_ASSIGNMENT = 755;
-  int DOUBLE_PERIOD = 756;
-  int QUOTE = 757;
-  int DOUBLE_QUOTE = 758;
-  int VERTICAL_BAR = 759;
-  int CARET = 760;
-  int DOLLAR = 761;
-  int INFIX_CAST = 762;
-  int HINT_BEG = 768;
-  int COMMENT_END = 769;
-  int SINGLE_LINE_COMMENT = 772;
-  int FORMAL_COMMENT = 773;
-  int MULTI_LINE_COMMENT = 774;
-  int BRACKET_QUOTED_IDENTIFIER = 776;
-  int QUOTED_IDENTIFIER = 777;
-  int BACK_QUOTED_IDENTIFIER = 778;
-  int BIG_QUERY_BACK_QUOTED_IDENTIFIER = 779;
-  int HYPHENATED_IDENTIFIER = 780;
-  int IDENTIFIER = 781;
-  int COLLATION_ID = 782;
-  int UNICODE_QUOTED_IDENTIFIER = 783;
-  int LETTER = 784;
-  int DIGIT = 785;
-  int BEL = 786;
+  int OTHER = 713;
+  int UNSIGNED_INTEGER_LITERAL = 714;
+  int APPROX_NUMERIC_LITERAL = 715;
+  int DECIMAL_NUMERIC_LITERAL = 716;
+  int EXPONENT = 717;
+  int HEXDIGIT = 718;
+  int WHITESPACE = 719;
+  int BINARY_STRING_LITERAL = 720;
+  int QUOTED_STRING = 721;
+  int PREFIXED_STRING_LITERAL = 722;
+  int UNICODE_STRING_LITERAL = 723;
+  int CHARSETNAME = 724;
+  int BIG_QUERY_DOUBLE_QUOTED_STRING = 725;
+  int BIG_QUERY_QUOTED_STRING = 726;
+  int UNICODE_QUOTED_ESCAPE_CHAR = 727;
+  int LPAREN = 728;
+  int RPAREN = 729;
+  int LBRACE_D = 730;
+  int LBRACE_T = 731;
+  int LBRACE_TS = 732;
+  int LBRACE_FN = 733;
+  int LBRACE = 734;
+  int RBRACE = 735;
+  int LBRACKET = 736;
+  int RBRACKET = 737;
+  int SEMICOLON = 738;
+  int DOT = 739;
+  int COMMA = 740;
+  int EQ = 741;
+  int GT = 742;
+  int LT = 743;
+  int HOOK = 744;
+  int COLON = 745;
+  int LE = 746;
+  int GE = 747;
+  int NE = 748;
+  int NE2 = 749;
+  int PLUS = 750;
+  int MINUS = 751;
+  int STAR = 752;
+  int SLASH = 753;
+  int PERCENT_REMAINDER = 754;
+  int CONCAT = 755;
+  int NAMED_ARGUMENT_ASSIGNMENT = 756;
+  int DOUBLE_PERIOD = 757;
+  int QUOTE = 758;
+  int DOUBLE_QUOTE = 759;
+  int VERTICAL_BAR = 760;
+  int CARET = 761;
+  int DOLLAR = 762;
+  int INFIX_CAST = 763;
+  int HINT_BEG = 769;
+  int COMMENT_END = 770;
+  int SINGLE_LINE_COMMENT = 773;
+  int FORMAL_COMMENT = 774;
+  int MULTI_LINE_COMMENT = 775;
+  int BRACKET_QUOTED_IDENTIFIER = 777;
+  int QUOTED_IDENTIFIER = 778;
+  int BACK_QUOTED_IDENTIFIER = 779;
+  int BIG_QUERY_BACK_QUOTED_IDENTIFIER = 780;
+  int HYPHENATED_IDENTIFIER = 781;
+  int IDENTIFIER = 782;
+  int COLLATION_ID = 783;
+  int UNICODE_QUOTED_IDENTIFIER = 784;
+  int LETTER = 785;
+  int DIGIT = 786;
+  int BEL = 787;
 
   int DEFAULT = 0;
   int DQID = 1;
@@ -1505,6 +1506,7 @@ public interface IgniteSqlParserImplConstants {
     "\"ASYNC\"",
     "\"QUERY\"",
     "\"UUID\"",
+    "\"OTHER\"",
     "<UNSIGNED_INTEGER_LITERAL>",
     "<APPROX_NUMERIC_LITERAL>",
     "<DECIMAL_NUMERIC_LITERAL>",
@@ -1562,12 +1564,12 @@ public interface IgniteSqlParserImplConstants {
     "\"\\f\"",
     "\"/*+\"",
     "\"*/\"",
-    "<token of kind 770>",
+    "<token of kind 771>",
     "\"/*\"",
     "<SINGLE_LINE_COMMENT>",
     "<FORMAL_COMMENT>",
     "<MULTI_LINE_COMMENT>",
-    "<token of kind 775>",
+    "<token of kind 776>",
     "<BRACKET_QUOTED_IDENTIFIER>",
     "<QUOTED_IDENTIFIER>",
     "<BACK_QUOTED_IDENTIFIER>",

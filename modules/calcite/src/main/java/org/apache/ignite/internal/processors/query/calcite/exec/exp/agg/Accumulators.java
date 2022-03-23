@@ -162,6 +162,7 @@ public class Accumulators {
             case ANY:
                 if (call.type instanceof OtherType && ((OtherType)call.type).isUuid())
                     return ComparableMinMax.UUID_MIN_FACTORY;
+                throw new UnsupportedOperationException("MIN() is not supported for type '" + call.type + "'.");
             case BIGINT:
             default:
                 return LongMinMax.MIN_FACTORY;
@@ -188,6 +189,7 @@ public class Accumulators {
             case ANY:
                 if (call.type instanceof OtherType && ((OtherType)call.type).isUuid())
                     return ComparableMinMax.UUID_MAX_FACTORY;
+                throw new UnsupportedOperationException("MAX() is not supported for type '" + call.type + "'.");
             case BIGINT:
             default:
                 return LongMinMax.MAX_FACTORY;

@@ -17,13 +17,21 @@
 
 package org.apache.ignite.internal.processors.query.calcite.jdbc;
 
+import java.io.Serializable;
+import java.sql.Array;
 import java.sql.Connection;
 import java.sql.DriverManager;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.Types;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import org.apache.ignite.calcite.CalciteQueryEngineConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -31,6 +39,7 @@ import org.apache.ignite.configuration.SqlConfiguration;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
 
 /**
@@ -81,6 +90,82 @@ public class JdbcQueryTest extends GridCommonAbstractTest {
         assert conn.isClosed();
 
         stopAllGrids();
+    }
+
+    /**
+     * @throws SQLException If failed.
+     */
+    @Test
+    public void testOtherType() throws Exception {
+        stmt.execute("CREATE TABLE tbl(id INT, oth OTHER, primary key(id))");
+
+        try (PreparedStatement ps = conn.prepareStatement("insert into tbl values(?, ?)")) {
+            int idx = 1;
+
+            ps.setInt(1, idx++);
+            ps.setObject(2, "str");
+            assertEquals(1, ps.executeUpdate());
+
+            ps.setInt(1, idx++);
+            ps.setObject(2, 11);
+            assertEquals(1, ps.executeUpdate());
+
+            ps.setInt(1, idx++);
+            ps.setObject(2, 101.1);
+            assertEquals(1, ps.executeUpdate());
+
+            ps.setInt(1, idx++);
+            ps.setObject(2, 202.2f);
+            assertEquals(1, ps.executeUpdate());
+
+            ps.setInt(1, idx++);
+            ps.setObject(2, new ObjectToStore(1, "noname", 22.2));
+            assertEquals(1, ps.executeUpdate());
+
+            // Map
+            Map<String, String> strMap = new HashMap<>();
+            strMap.put("a", "bb");
+            strMap.put("vvv", "zzz");
+            strMap.put("111", "222");
+            ps.setInt(1, idx++);
+            ps.setObject(2, strMap);
+            assertEquals(1, ps.executeUpdate());
+
+            // List
+            List<Object> lst = new ArrayList<>();
+            lst.add(1);
+            lst.add(2.2f);
+            lst.add(3.3d);
+            lst.add("str");
+//            lst.add(new ObjectToStore(2, "test", -1));
+            lst.add(strMap);
+            ps.setInt(1, idx++);
+            ps.setObject(2, lst);
+            assertEquals(1, ps.executeUpdate());
+
+            try (ResultSet rs = stmt.executeQuery("select * from tbl order by id")) {
+                assertTrue(rs.next());
+                assertEquals("str", rs.getObject(2));
+
+                assertTrue(rs.next());
+                assertEquals(11, rs.getObject(2));
+
+                assertTrue(rs.next());
+                assertEquals(101.1, rs.getObject(2));
+
+                assertTrue(rs.next());
+                assertEquals(202.2f, rs.getObject(2));
+
+                assertTrue(rs.next());
+                assertEquals(new ObjectToStore(1, "noname", 22.2), rs.getObject(2));
+
+                assertTrue(rs.next());
+                assertEquals(strMap, rs.getObject(2));
+
+                assertTrue(rs.next());
+                assertEquals(lst, rs.getObject(2));
+            }
+        }
     }
 
     /**
@@ -194,5 +279,37 @@ public class JdbcQueryTest extends GridCommonAbstractTest {
         stmt.execute("DROP TABLE t1");
 
         stmt.close();
+    }
+
+    /** */
+    private static class ObjectToStore implements Serializable {
+        /** */
+        private int id;
+        /** */
+        private String name;
+        /** */
+        private double val;
+
+        /** */
+        public ObjectToStore(int id, String name, double val) {
+            this.id = id;
+            this.name = name;
+            this.val = val;
+        }
+
+        /** */
+        @Override public boolean equals(Object o) {
+            if (this == o)
+                return true;
+            if (o == null || getClass() != o.getClass())
+                return false;
+            ObjectToStore store = (ObjectToStore)o;
+            return id == store.id && Double.compare(store.val, val) == 0 && Objects.equals(name, store.name);
+        }
+
+        /** */
+        @Override public int hashCode() {
+            return Objects.hash(id, name, val);
+        }
     }
 }
