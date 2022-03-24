@@ -42,6 +42,4 @@ export default angular
             sref: 'base.datasource.overview'
         }));
     }])
-    .config(['DefaultStateProvider', (DefaultState) => {
-        DefaultState.setRedirectTo(() => 'base.datasource.overview');
-    }]);
+    ;

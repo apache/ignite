@@ -54,7 +54,7 @@ export default class ClusterEditFormController {
 
         this.formActions = [
             {text: 'Save', icon: 'checkmark', click: () => this.save()},
-            {text: 'Save and Download', icon: 'download', click: () => this.save(true)}
+            {text: 'Save and Update', icon: 'download', click: () => this.save(true)}
         ];
     }
 

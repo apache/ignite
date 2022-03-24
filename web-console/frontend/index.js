@@ -24,9 +24,13 @@ import {IgniteWebConsoleModule} from './app-angular';
 import {downgradeModuleFactory} from './app-angular/downgrade';
 
 angular.bootstrap(document, [
-	igniteConsole.name, 
-	configurationLazyModule.name, 
+	igniteConsole.name,
+    
+    datasourceLazyModule.name,
+    
+	configurationLazyModule.name,
+    
 	consoleLazyModule.name, 
-	datasourceLazyModule.name,
+	
 	downgradeModuleFactory(IgniteWebConsoleModule)
 ], {strictDi: true});

@@ -21,14 +21,10 @@ include /app/configuration/mixins
 - let form = '$ctrl.form'
 
 form(novalidate name=form)
-    h2.pcb-section-header.pcb-inner-padding Step 1. Cluster Metric
-
-    .pcb-section-notification.pcb-inner-padding(ng-if='!$ctrl.shortClusters')
-        | You have no clusters.
-        | Let configure your first and associate it with caches.
-    .pcb-section-notification.pcb-inner-padding(ng-if='$ctrl.shortClusters')
-        | Configure cluster properties and associate your cluster with caches.
-
+    h2.pcb-section-header.pcb-inner-padding 1. Basic Settings
+    
+    .panel-group        
+        include ./client-connector
 
     .pc-form-actions-panel        
         span.message {{ $ctrl.$scope.message }}

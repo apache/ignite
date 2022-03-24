@@ -63,7 +63,8 @@ export default class PageDatasourceBasicController {
 
     $onInit() {
         //this.onBeforeTransition = this.$uiRouter.transitionService.onBefore({}, (t) => this._uiCanExit(t));
-
+        this.available = (v) =>{ return true; }
+        
         const clusterID$ = this.$uiRouter.globals.params$.pipe(
             take(1),
             pluck('clusterID'),
@@ -99,8 +100,6 @@ export default class PageDatasourceBasicController {
        ];
        
     }
-
-   
 
     save(download = false) {
         if (this.form.$invalid)
@@ -140,22 +139,6 @@ export default class PageDatasourceBasicController {
         });        
     }
     
-    callService(serviceName,args) {
-        this.AgentManager.callClusterService(this.clonedCluster,serviceName,args).then((data) => {  
-            this.$scope.status = data.status;               
-            this.clonedCluster.status = data.status;
-            if(data.result){
-                return data.result;
-            }    
-            else if(data.message){
-                this.$scope.message = data.message;
-            }  
-            return {}
-        })   
-       .catch((e) => {
-            this.$scope.message = ('Failed to callClusterService : '+serviceName+' Caused : '+e);           
-        });
-    }
 
     isStoped() {
         return this.$scope.status !== 'started';

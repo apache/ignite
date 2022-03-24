@@ -117,7 +117,7 @@ export default class CacheServiceController {
         
         clusterID$.subscribe((v)=>{ 
             this.clusterID = v; 
-            this.callService('serviceList',{type:'CacheAgentService'}).then((data) => {
+            this.callService('serviceList',{}).then((data) => {
                 if(data.message){
                     this.message = data.message;
                     return;
@@ -131,7 +131,7 @@ export default class CacheServiceController {
         });
         
         this.shortCaches$ = this.ConfigureState.state$.pipe(this.ConfigSelectors.selectCurrentShortCaches);
-        this.shortModels$ = this.ConfigureState.state$.pipe(this.ConfigSelectors.selectCurrentShortModels);
+        
         this.originalCache$ = cacheID$.pipe(
             distinctUntilChanged(),
             switchMap((id) => {
@@ -212,7 +212,7 @@ export default class CacheServiceController {
     callService(serviceName: string, args) {
         let clusterID = this.clusterID;
         return new Promise((resolve,reject) => {
-           this.AgentManager.callClusterService({id:clusterID},serviceName,args).then((data) => {  
+           this.AgentManager.callClusterService({id:clusterID,type:'CacheAgentService'},serviceName,args).then((data) => {  
                 
                 if(data.result){
                     resolve(data);

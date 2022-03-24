@@ -52,7 +52,7 @@ export default class ServiceCallFormController {
 
         this.formActions = [
             {text: 'Call Service', icon: 'checkmark', click: () => this.confirmAndCall()},
-            {text: 'Redeploy Service', icon: 'download', click: () => this.confirmAndRedeploy(true)}            
+            {text: 'Redeploy Service', icon: 'plus', click: () => this.confirmAndRedeploy(true)}            
         ];
     }
 

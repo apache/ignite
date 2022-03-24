@@ -80,7 +80,7 @@ export default class ServiceController {
                 placeholder: 'Filter by description…'
             },
             sortingAlgorithm: naturalCompare,
-            width: 350
+            width: 300
         },
         {
             name: 'mode',
@@ -102,7 +102,21 @@ export default class ServiceController {
             field: 'affinityKey',
             enableFiltering: false,
             width: 150
-        }       
+        },
+        {
+           name: 'totalCount',
+           displayName: 'totalCount',
+           field: 'totalCount',
+           enableFiltering: false,
+           width: 80
+        },
+        {
+           name: 'maxPerNodeCount',
+           displayName: 'maxPerNodeCount',
+           field: 'maxPerNodeCount',
+           enableFiltering: false,
+           width: 80
+        }      
     ];
 
 
@@ -142,9 +156,6 @@ export default class ServiceController {
                     return of(this.serviceMap[id]);
                 }
                 return empty();
-                
-                //id = '485743be-e9f3-4c01-8e47-7947abaaac85';
-                //return this.ConfigureState.state$.pipe(this.ConfigSelectors.selectCacheToEdit(id));
             })
         );
 

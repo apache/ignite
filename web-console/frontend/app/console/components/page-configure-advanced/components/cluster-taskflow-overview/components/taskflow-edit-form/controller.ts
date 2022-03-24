@@ -26,6 +26,7 @@ import {default as ConfigSelectors} from 'app/configuration/store/selectors';
 import LegacyConfirmFactory from 'app/services/Confirm.service';
 import Version from 'app/services/Version.service';
 import Caches from 'app/configuration/services/Caches';
+import Clusters from 'app/configuration/services/Clusters';
 import FormUtilsFactory from 'app/services/FormUtils.service';
 import AgentManager from 'app/modules/agent/AgentManager.service';
 import TaskFlows from 'app/console/services/TaskFlows';
@@ -33,7 +34,7 @@ import TaskFlows from 'app/console/services/TaskFlows';
 export default class TaskFlowFormController {
     
 
-    static $inject = ['IgniteConfirm', 'IgniteVersion', '$scope','ConfigureState','ConfigSelectors','Caches', 'TaskFlows', 'IgniteFormUtils', 'AgentManager'];
+    static $inject = ['IgniteConfirm', 'IgniteVersion', '$scope','ConfigureState','ConfigSelectors','Caches','Clusters', 'TaskFlows', 'IgniteFormUtils', 'AgentManager'];
 
     constructor(
         private IgniteConfirm: ReturnType<typeof LegacyConfirmFactory>,
@@ -42,6 +43,7 @@ export default class TaskFlowFormController {
         private ConfigureState: ConfigureState,
         private ConfigSelectors: ConfigSelectors,
         private Caches: Caches,
+        private Clusters: Clusters,
         private TaskFlows: TaskFlows,
         private IgniteFormUtils: ReturnType<typeof FormUtilsFactory>,
         private AgentManager: AgentManager
@@ -61,21 +63,24 @@ export default class TaskFlowFormController {
         
         this.originalCluster$ = this.sourceCluster.pipe(
             filter((v) => v.length==1),
+            distinctUntilChanged(),
             switchMap((items) => {
-                this.sourceClusterId = items[0].id;                
-                return this.ConfigureState.state$.pipe(this.ConfigSelectors.selectCluster(this.sourceClusterId));
-            })            
+                this.sourceClusterId = items[0].id;    
+                return from(this.Clusters.getConfiguration(this.sourceClusterId));               
+            }),            
+            publishReplay(1),
+            refCount()
         );   
              
-        this.originalCluster$.subscribe((c) =>{
-            if(c && c.id){
-                this.taskFlow.name = 'poll data from '+ c.name;
+        this.subscrition = this.originalCluster$.subscribe((c) =>{
+            if(c && c.data.cluster){
+                let cluster = c.data.cluster;
+                this.taskFlow.name = 'receive data from '+ cluster.name;
                 this.taskFlow.group = this.targetClusterId;
-                this.taskFlow.sourceCluster = c.id;
+                this.taskFlow.sourceCluster = cluster.id;
                 this.clonedTaskFlow = cloneDeep(this.taskFlow);
-            }
-            
-          } );
+            }            
+        });
         
         this.$scope.ui = this.IgniteFormUtils.formUI();
 
@@ -85,7 +90,7 @@ export default class TaskFlowFormController {
     }
 
     $onDestroy() {
-        
+        this.subscrition.unsubscribe();
     }
     
     buildTaskFlows(tplFlow){      

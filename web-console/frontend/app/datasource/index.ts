@@ -81,9 +81,6 @@ export default angular
     .run(['ConfigureState', '$uiRouter', (ConfigureState, $uiRouter) => {
         $uiRouter.plugin(UIRouterRx);
 
-       
-
-
         const la = ConfigureState.actions$.pipe(scan((acc, action) => [...acc, action], []));
 
         ConfigureState.actions$.pipe(

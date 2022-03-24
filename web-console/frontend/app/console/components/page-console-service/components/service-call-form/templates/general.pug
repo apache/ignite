@@ -30,7 +30,8 @@ panel-collapsible(opened=`::true` ng-form=form)
                 +form-field__text({
                     label: 'Service Name:',
                     model: `${model}.name`,
-                    name: '"name"',                   
+                    name: '"name"',   
+                    tip: `${model}.notes`,
                     required: true
                 })(
                     

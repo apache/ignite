@@ -16,7 +16,8 @@
 
 import cloneDeep from 'lodash/cloneDeep';
 import get from 'lodash/get';
-import {tap} from 'rxjs/operators';
+import {Subject, BehaviorSubject, merge, combineLatest, from, of, empty} from 'rxjs';
+import {tap,map,filter} from 'rxjs/operators';
 import {Menu} from 'app/types';
 
 import LegacyConfirmFactory from 'app/services/Confirm.service';
@@ -46,49 +47,36 @@ export default class CacheServiceCallFormController {
     $onInit() {
         this.available = this.IgniteVersion.available.bind(this.IgniteVersion);
 
-        const rebuildDropdowns = () => {
-            this.$scope.affinityFunction = [
-                {value: 'Rendezvous', label: 'Rendezvous'},
-                {value: 'Custom', label: 'Custom'},
-                {value: null, label: 'Default'}
-            ];
-
-            if (!this.IgniteVersion.currentSbj.getValue().hiveVersion
-                && _.get(this.clonedCache, 'cacheStoreFactory.kind') === 'HiveCacheJdbcPojoStoreFactory')
-                this.clonedCache.cacheStoreFactory.kind = null;
-        };
-
-        rebuildDropdowns();
-
-        const filterModel = () => {
-            if (
-                this.clonedCache &&
-                this.available('2.0.0') &&
-                get(this.clonedCache, 'affinity.kind') === 'Fair'
-            )
-                this.clonedCache.affinity.kind = null;
-
-        };
-
-        this.subscription = this.IgniteVersion.currentSbj.pipe(
-            tap(rebuildDropdowns),
-            tap(filterModel)
-        )
-        .subscribe();
-
-        // TODO: Do we really need this?
         this.$scope.ui = this.IgniteFormUtils.formUI();
 
-        this.formActions = [
-            {text: 'Load Data', icon: 'checkmark', click: () => this.confirmAndLoad(false)},
-            {text: 'Load Updated Data', icon: 'download', click: () => this.confirmAndLoad(true)},
-            {text: 'Clear Data', icon: 'checkmark', click: () => this.confirmAndClear()},
-            {text: 'Poll Remote Data', icon: 'checkmark', click: () => this.confirmAndCopy(true)}            
+        this.$scope.formActions = [   
+            {text: 'Choose Service:', icon: 'plus', click: () => this.updateServices({})},
         ];
+        
+        this.formActions$ = this.services.pipe(
+            filter((v) => v.length>0),
+            map((services) => {
+                let formActions = [ {text: 'Choose Service:', icon: 'plus', click: () => this.updateServices({})}];
+                for(let service of services){
+                    let action = {
+                        text: service.description,
+                        icon: 'checkmark',
+                        click:  () => this.confirmAndCall(service)
+                    };            
+                    formActions.push(action);
+                }                
+                return formActions;
+            })
+        ); 
+         
+        this.formActions$.subscribe((formActions)=>{
+            this.$scope.formActions = formActions;
+        });
+        
     }
 
     $onDestroy() {
-        this.subscription.unsubscribe();
+       
     }
 
     $onChanges(changes) {
@@ -109,22 +97,9 @@ export default class CacheServiceCallFormController {
         return [this.cache, this.clonedCache].map(this.Caches.normalize);
     }
 
-    loadData(updated:boolean) {        
-        let serviceName = 'loadDataService';
-        return this.callServiceForCache(serviceName,{updated});
-    }
     
-    copyData(updated:boolean) {        
-        let serviceName = 'copyDataService';
-        return this.callServiceForCache(serviceName,{updated});
-    }
-    
-    clearData(){
-        let serviceName = 'clearDataService';
-        return this.callServiceForCache(serviceName,{});
-    }
-    
-    callServiceForCache(serviceName:string,params) {
+    callServiceForCache(serviceName:string) {
+        let params = this.clonedCache;
         let args = this.onCall({$event: {cache: this.clonedCache}});
         let clusterId = args['id'];
         params = Object.assign(args,params);
@@ -145,23 +120,15 @@ export default class CacheServiceCallFormController {
 
     reset = (forReal) => forReal ? this.clonedCache = cloneDeep(this.cache) : void 0;
 
-    confirmAndClear() {
-        return this.IgniteConfirm.confirm('Are you sure you want to clear all data for current cache?')
-        .then(() => { this.clearData(); } );
+    updateServices(){
+        
     }
     
-    confirmAndLoad(updated:boolean) {        
+    confirmAndCall(service) {        
         if (this.$scope.ui.inputForm && this.$scope.ui.inputForm.$invalid)
             return this.IgniteFormUtils.triggerValidation(this.$scope.ui.inputForm, this.$scope);
-        return this.IgniteConfirm.confirm('Are you sure you want to load all data for current cache?')
-        .then( () => { this.loadData(updated); } );
-    }
-    
-    confirmAndCopy(updated:boolean) {        
-        if (this.$scope.ui.inputForm && this.$scope.ui.inputForm.$invalid)
-            return this.IgniteFormUtils.triggerValidation(this.$scope.ui.inputForm, this.$scope);
-        return this.IgniteConfirm.confirm('Are you sure you want to poll data from remote cluster to this  cache?')
-        .then( () => { this.copyData(updated); } );
+        return this.IgniteConfirm.confirm('Are you sure you want to '+service.description+' for current selected caches?')
+        .then( () => { this.callServiceForCache(service.name); } );
     }
 
     clearImplementationVersion(storeFactory) {

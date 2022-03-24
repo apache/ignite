@@ -23,7 +23,7 @@ export default {
     bindings: {
         cache: '<',
         caches: '<',
-        models: '<',
+        services: '=',
         onCall: '&'
     }
 };
