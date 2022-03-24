@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.cache.expiry;
 
 import org.apache.ignite.Ignite;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
