@@ -24,10 +24,12 @@ import org.apache.ignite.internal.processors.query.h2.sys.view.SqlAbstractLocalS
 import org.apache.ignite.spi.metric.Metric;
 import org.apache.ignite.spi.metric.ReadOnlyMetricManager;
 import org.apache.ignite.spi.metric.ReadOnlyMetricRegistry;
+import org.apache.ignite.spi.systemview.view.SystemView;
 import org.h2.engine.Session;
 import org.h2.result.Row;
 import org.h2.result.SearchRow;
 import org.h2.value.Value;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Sql view for exporting metrics.
@@ -88,5 +90,10 @@ class MetricRegistryLocalSystemView extends SqlAbstractLocalSystemView {
                 return createRow(ses, m.name(), m.getAsString(), m.description());
             }
         };
+    }
+
+    /** {@inheritDoc} */
+    @Override public @Nullable SystemView<?> getSystemView() {
+        return null;
     }
 }

@@ -1,0 +1,106 @@
+# name: test/sql/function/string/test_trim.test
+# description: LTRIM/RTRIM/TRIM test
+# group: [string]
+
+# test ltrim on scalars
+query TTTTTTT
+select LTRIM(''), LTRIM('Neither'), LTRIM(' Leading'), LTRIM('Trailing   '), LTRIM(' Both '), LTRIM(NULL), LTRIM('     ')
+----
+(empty)	Neither	Leading	Trailing   	Both 	NULL	(empty)
+
+# test rtrim on scalars
+query TTTTTTT
+select RTRIM(''), RTRIM('Neither'), RTRIM(' Leading'), RTRIM('Trailing   '), RTRIM(' Both '), RTRIM(NULL), RTRIM('    ')
+----
+(empty)	Neither	 Leading	Trailing	 Both	NULL	(empty)
+
+# test trim on scalars
+query TTTTTTT
+select TRIM(''), TRIM('Neither'), TRIM(' Leading'), TRIM('Trailing   '), TRIM(' Both '), TRIM(NULL), TRIM('     ')
+----
+(empty)	Neither	Leading	Trailing	Both	NULL	(empty)
+
+# test trim with flags
+query TTTTTTT
+select trim(leading ' ' from '  Google.com  '), trim(trailing ' ' from '  Google.com  '), trim(both ' ' from '  Google.com  '), trim(' ' from '  Google.com  '), trim('   Google.com   '), trim(leading '0' from '000123'), trim(trailing '1' from 'Number1')
+----
+Google.com  	  Google.com	Google.com	Google.com	Google.com	123	Number
+
+# test on tables
+statement ok
+CREATE TABLE strings(id INTEGER, a VARCHAR, b VARCHAR)
+
+statement ok
+INSERT INTO strings VALUES (0, '', 'Neither'), (1, ' Leading', NULL), (2, ' Both ','Trailing   '), (3, '', NULL)
+
+query T
+select LTRIM(a) FROM strings ORDER BY id
+----
+(empty)
+Leading
+Both 
+(empty)
+
+query T
+select LTRIM(b) FROM strings ORDER BY id
+----
+Neither
+NULL
+Trailing   
+NULL
+
+query T
+select LTRIM(a) FROM strings WHERE b IS NOT NULL ORDER BY id
+----
+(empty)
+Both 
+
+# test rtrim on tables
+query T
+select RTRIM(a) FROM strings ORDER BY id
+----
+(empty)
+ Leading
+ Both
+(empty)
+
+query T
+select RTRIM(b) FROM strings ORDER BY id
+----
+Neither
+NULL
+Trailing
+NULL
+
+query T
+select RTRIM(a) FROM strings WHERE b IS NOT NULL ORDER BY id
+----
+(empty)
+ Both
+
+
+# test incorrect usage of ltrim/rtrim/trim
+statement error
+select LTRIM()
+
+statement error
+select LTRIM('hello', 'aaa')
+
+statement error
+select LTRIM('hello', 'world', 'aaa')
+
+statement error
+select RTRIM()
+
+statement error
+select RTRIM('hello', 'aaa')
+
+statement error
+select RTRIM('hello', 'world', 'aaa')
+
+statement error
+select TRIM()
+
+statement error
+select TRIM('hello', 'world', 'aaa')
+

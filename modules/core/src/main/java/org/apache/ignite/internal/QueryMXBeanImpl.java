@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal;
 
-import java.util.Collections;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -82,7 +81,7 @@ public class QueryMXBeanImpl implements QueryMXBean {
             cancelSQL(ids.get1(), ids.get2());
         }
         catch (IgniteException e) {
-            throw new RuntimeException(e);
+            throw new RuntimeException(e.getMessage());
         }
     }
 
@@ -105,8 +104,7 @@ public class QueryMXBeanImpl implements QueryMXBean {
      *
      */
     public void cancelSQL(UUID originNodeId, long qryId) {
-        ctx.grid().compute(ctx.grid().cluster().forNodeId(originNodeId))
-            .broadcast(new CancelSQLOnInitiator(), qryId);
+        ctx.query().cancelQuery(qryId, originNodeId, false);
     }
 
     /**
@@ -158,25 +156,6 @@ public class QueryMXBeanImpl implements QueryMXBean {
             }
 
             ctx.queries().removeQueryResult(arg.get1(), arg.get3());
-
-            return null;
-        }
-    }
-
-    /**
-     * Cancel SQL on initiator closure.
-     */
-    private static class CancelSQLOnInitiator implements IgniteClosure<Long, Void> {
-        /** */
-        private static final long serialVersionUID = 0L;
-
-        /** Auto-injected grid instance. */
-        @IgniteInstanceResource
-        private transient IgniteEx ignite;
-
-        /** {@inheritDoc} */
-        @Override public Void apply(Long qryId) {
-            ignite.context().query().cancelQueries(Collections.singleton(qryId));
 
             return null;
         }

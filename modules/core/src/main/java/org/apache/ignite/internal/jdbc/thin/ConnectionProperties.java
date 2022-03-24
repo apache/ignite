@@ -558,4 +558,16 @@ public interface ConnectionProperties {
      * @param keepBinary Whether to keep binary objects in binary form.
      */
     public void setKeepBinary(boolean keepBinary);
+
+    /**
+     * @return SQL query engine name to use by a connection.
+     */
+    public String getQueryEngine();
+
+    /**
+     * Sets SQL query engine for a connection.
+     *
+     * @param qryEngine SQL Query engine name.
+     */
+    public void setQueryEngine(String qryEngine);
 }

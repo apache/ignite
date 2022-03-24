@@ -66,6 +66,29 @@ namespace ignite
         }
 
         /**
+         * Replace all alphabetic symbols of the string with their uppercase
+         * versions.
+         * @param str String to be transformed.
+         */
+        inline void IntoUpper(std::string& str)
+        {
+            std::transform(str.begin(), str.end(), str.begin(), ::toupper);
+        }
+
+        /**
+         * Get uppercase version of the string.
+         *
+         * @param str Input string.
+         * @return Upper cased version of the string.
+         */
+        inline std::string ToUpper(const std::string& str)
+        {
+            std::string res(str);
+            IntoUpper(res);
+            return res;
+        }
+
+        /**
          * Strips leading and trailing whitespaces from string.
          *
          * @param str String to be transformed.

@@ -32,6 +32,7 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteInterruptedException;
@@ -783,8 +784,8 @@ public class GridH2Table extends TableBase {
      * @param idx Index in list.
      * @return Index.
      */
-    private GridH2IndexBase index(int idx) {
-        return (GridH2IndexBase)idxs.get(idx);
+    private <T extends Index> T index(int idx) {
+        return (T)idxs.get(idx);
     }
 
     /**
@@ -1296,7 +1297,7 @@ public class GridH2Table extends TableBase {
         }
 
         if (modified) {
-            String proxyName = target.getName() + "_proxy";
+            String proxyName = generateProxyIdxName(target.getName());
 
             if (target.getIndexType().isSpatial())
                 return new GridH2ProxySpatialIndex(this, proxyName, proxyCols, target);
@@ -1305,6 +1306,11 @@ public class GridH2Table extends TableBase {
         }
 
         return null;
+    }
+
+    /** */
+    public static String generateProxyIdxName(String idxName) {
+        return idxName + "_proxy";
     }
 
     /**

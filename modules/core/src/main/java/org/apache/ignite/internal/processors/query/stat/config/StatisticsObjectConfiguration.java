@@ -74,6 +74,15 @@ public class StatisticsObjectConfiguration implements Serializable, Comparable<S
     }
 
     /**
+     * Constructor.
+     *
+     * @param key Statistics key.
+     */
+    public StatisticsObjectConfiguration(StatisticsKey key) {
+        this(key, Collections.emptyList(), DEFAULT_OBSOLESCENCE_MAX_PERCENT);
+    }
+
+    /**
      * Merge configuration changes with existing configuration.
      *
      * @param oldCfg Previous configuration.
@@ -236,7 +245,7 @@ public class StatisticsObjectConfiguration implements Serializable, Comparable<S
     /**
      * Compare only configuration from the same branch. I.e. can't correctly compare
      * Cfg(A=v1,B=v3) vs Cfg(A=v2,B=v1)
-     * Cfg(A=v1,B=v3) vs Cfg(A=v1m C=v2)
+     * Cfg(A=v1,B=v3) vs Cfg(A=v1,C=v2)
      * because there is no changes chain to get one from another.
      *
      * @param o Other configuration to compare.

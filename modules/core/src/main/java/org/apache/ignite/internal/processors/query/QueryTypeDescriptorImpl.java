@@ -138,6 +138,9 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
     /** Primary key fields. */
     private Set<String> pkFields;
 
+    /** */
+    private boolean implicitPk;
+
     /** Whether absent PK parts should be filled with defaults or not. */
     private boolean fillAbsentPKsWithDefaults;
 
@@ -220,10 +223,8 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
         return res;
     }
 
-    /**
-     * @return Properties.
-     */
-    public Map<String, GridQueryProperty> properties() {
+    /** {@inheritDoc} */
+    @Override public Map<String, GridQueryProperty> properties() {
         return props;
     }
 
@@ -772,6 +773,16 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
     /** {@inheritDoc} */
     @Override public void primaryKeyFields(Set<String> keys) {
         pkFields = keys;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean implicitPk() {
+        return implicitPk;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void implicitPk(boolean implicitPk) {
+        this.implicitPk = implicitPk;
     }
 
     /** {@inheritDoc} */

@@ -1,0 +1,42 @@
+# name: test/sql/function/operator/test_comparison.test
+# description: Test basic comparison statements
+# group: [operator]
+
+query TTT
+SELECT 1 = 1, 1 = 0, 1 = NULL
+----
+true	false	NULL
+
+query TTT
+SELECT 1 <> 1, 1 <> 0, 1 <> NULL
+----
+false	true	NULL
+
+# Test auto casting of comparison statements
+# string <> number comparisons should result in the string being cast to a number
+statement error
+select ('abc' between 20 and True);
+
+statement error
+select 'abc' > 10
+
+statement error
+select 20.0 = 'abc'
+
+# 1000 > 20
+query T
+select '1000' > 20
+----
+true
+
+# ... but '1000' < '20'!
+query T
+select '1000' > '20'
+----
+false
+
+query T
+select ('abc' between '20' and 'true');
+----
+true
+
