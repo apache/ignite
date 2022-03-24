@@ -23,16 +23,16 @@ import java.io.ObjectOutput;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 
 /**
- * Task argument for {@link VisorCacheMetricsManageTask}.
+ * Result wrapper for {@link VisorCacheMetricsManageTask}.
  */
 public class VisorCacheMetricsManageTaskResult extends IgniteDataTransferObject {
     /** Serial version uid.*/
     private static final long serialVersionUID = 0L;
 
-    /** Result. */
+    /** Task result. */
     private Object result;
 
-    /** Error. */
+    /** Task execution error. */
     private Exception error;
 
     /**
@@ -69,7 +69,7 @@ public class VisorCacheMetricsManageTaskResult extends IgniteDataTransferObject 
     }
 
     /**
-     *
+     * Task execution error.
      */
     public Object result() throws Exception {
         if (error != null)

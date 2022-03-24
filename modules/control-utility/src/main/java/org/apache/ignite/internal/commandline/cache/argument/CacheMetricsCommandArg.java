@@ -26,19 +26,19 @@ import org.apache.ignite.internal.visor.cache.metrics.VisorCacheMetricsManageTas
  * Command arguments for {@link CacheMetricsManage} command.
  */
 public enum CacheMetricsCommandArg implements CommandArg {
-    /** Enable. */
+    /** Enable cache metrics. */
     ENABLE("--enable", CacheMetricsManageSubCommand.ENABLE),
 
-    /** Disable. */
+    /** Disable cache metrics. */
     DISABLE("--disable", CacheMetricsManageSubCommand.DISABLE),
 
-    /** Status. */
+    /** Status of cache metrics. */
     STATUS("--status", CacheMetricsManageSubCommand.STATUS),
 
     /** Perform command for all caches instead of defined list. */
     ALL_CACHES("--all-caches", null);
 
-    /** Enable statistics flag. */
+    /** Name of command. */
     private final String name;
 
     /** Sub-command value for {@link VisorCacheMetricsManageTaskArg}.*/

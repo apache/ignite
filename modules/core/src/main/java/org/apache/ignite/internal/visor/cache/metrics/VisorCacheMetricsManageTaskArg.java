@@ -49,6 +49,8 @@ public class VisorCacheMetricsManageTaskArg extends IgniteDataTransferObject {
     }
 
     /**
+     * Creates a task argument to process specified user caches.
+     *
      * @param cacheNames Affected cache names.
      */
     public VisorCacheMetricsManageTaskArg(CacheMetricsManageSubCommand subCmd, Set<String> cacheNames) {
@@ -59,7 +61,7 @@ public class VisorCacheMetricsManageTaskArg extends IgniteDataTransferObject {
     }
 
     /**
-     * Construct task argument for operations which affect all caches.
+     * Creates a task argument to process all user caches.
      *
      * @param subCmd Operation type.
      */

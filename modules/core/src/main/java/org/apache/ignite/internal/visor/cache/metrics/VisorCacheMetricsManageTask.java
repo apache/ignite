@@ -31,12 +31,12 @@ import org.jetbrains.annotations.Nullable;
 import static org.apache.ignite.internal.visor.cache.metrics.CacheMetricsManageSubCommand.ENABLE;
 
 /**
- * Task for a cache metrics command.
+ * Task for a cache metrics manage command.
  */
 @GridInternal
 @GridVisorManagementTask
 public class VisorCacheMetricsManageTask extends VisorOneNodeTask<VisorCacheMetricsManageTaskArg, VisorCacheMetricsManageTaskResult> {
-    /** */
+    /** Serial version uid. */
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
@@ -49,7 +49,7 @@ public class VisorCacheMetricsManageTask extends VisorOneNodeTask<VisorCacheMetr
      */
     private static class VisorCacheMetricsManageJob extends VisorJob<VisorCacheMetricsManageTaskArg,
         VisorCacheMetricsManageTaskResult> {
-        /** */
+        /** Serial version uid. */
         private static final long serialVersionUID = 0L;
 
         /**

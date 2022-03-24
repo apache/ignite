@@ -96,7 +96,7 @@ public class CacheMetricsManageCommandTest extends GridCommandHandlerAbstractTes
 
         stopAllGrids();
     }
-    
+
     /**
      * Tests metrics enabling/disabling for some (not all) caches in a cluster.
      */
@@ -170,7 +170,7 @@ public class CacheMetricsManageCommandTest extends GridCommandHandlerAbstractTes
         cluster.enableStatistics(Collections.singleton(CACHE_ONE), true);
         cluster.enableStatistics(Collections.singleton(CACHE_TWO), false);
 
-        checkExecutionOk(successStatus(t(CACHE_ONE, STATUS_ENABLED), t(CACHE_TWO, STATUS_DISABLED)), COMMAND_STATUS, 
+        checkExecutionOk(successStatus(t(CACHE_ONE, STATUS_ENABLED), t(CACHE_TWO, STATUS_DISABLED)), COMMAND_STATUS,
             CACHE_ONE + ',' + CACHE_TWO);
 
         cluster.enableStatistics(Arrays.asList(CACHE_ONE, CACHE_TWO), true);
@@ -193,7 +193,7 @@ public class CacheMetricsManageCommandTest extends GridCommandHandlerAbstractTes
 
         createCachesWithMetricsModes(t(CACHE_TWO, true), t(CACHE_THREE, false));
 
-        checkExecutionOk(successStatus(t(CACHE_ONE, STATUS_DISABLED), t(CACHE_TWO, STATUS_ENABLED), 
+        checkExecutionOk(successStatus(t(CACHE_ONE, STATUS_DISABLED), t(CACHE_TWO, STATUS_ENABLED),
             t(CACHE_THREE, STATUS_DISABLED)), COMMAND_STATUS, ALL_CACHES);
 
         IgniteClusterEx cluster = grid(0).cluster();
@@ -277,7 +277,7 @@ public class CacheMetricsManageCommandTest extends GridCommandHandlerAbstractTes
     }
 
     /**
-     * 
+     *
      */
     private void checkExecutionOk(String expectedOutput, String... args) {
         checkExecution(EXIT_CODE_OK, expectedOutput, true, args);
@@ -341,7 +341,7 @@ public class CacheMetricsManageCommandTest extends GridCommandHandlerAbstractTes
     }
 
     /**
-     * Forms expected output for <code>status</code> command when cache does not exist.
+     * Forms expected output for <tt>--status</tt> command when cache does not exist.
      *
      * @param cacheName Cache name.
      */
@@ -350,7 +350,7 @@ public class CacheMetricsManageCommandTest extends GridCommandHandlerAbstractTes
     }
 
     /**
-     * Forms expected output for <code>enable / disable</code> commands when caches do not exist.
+     * Forms expected output for <tt>--enable / --disable</tt> commands when caches do not exist.
      *
      * @param cacheNames Cache names.
      */

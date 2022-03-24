@@ -73,7 +73,6 @@ public class CacheMetricsManage extends AbstractCommand<VisorCacheMetricsManageT
 
         String resultMsg;
 
-        String notFoundCachesMsg = "Not found caches:" + U.nl();
         String noCachesAffectedMsg = "No caches affected. Are there any caches in cluster?";
 
         switch (subCmdArg) {
@@ -139,6 +138,7 @@ public class CacheMetricsManage extends AbstractCommand<VisorCacheMetricsManageT
         String allCachesStr;
         boolean applyToAllCaches = false;
 
+        // An empty string set if a command or option was passed.
         if (caches.isEmpty()) {
             allCachesStr = argIter.nextArg("Expected " + cacheArgErrorMsg);
 
