@@ -37,7 +37,7 @@ import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelo
 import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.stack.OffHeapLockStackTest;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileDownloaderTest;
 import org.apache.ignite.testframework.junits.DynamicSuite;
-import org.apache.ignite.util.ActivationOnExpirationTimeoutTest;
+import org.apache.ignite.cache.store.ActivationOnExpirationTimeoutTest;
 import org.junit.runner.RunWith;
 
 /**

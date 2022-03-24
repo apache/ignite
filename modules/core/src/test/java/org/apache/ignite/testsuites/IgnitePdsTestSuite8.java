@@ -49,7 +49,7 @@ import org.apache.ignite.internal.processors.cache.warmup.LoadAllWarmUpStrategyS
 import org.apache.ignite.internal.processors.cache.warmup.WarmUpSelfTest;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.DynamicSuite;
-import org.apache.ignite.util.ActivationOnExpirationTimeoutTest;
+import org.apache.ignite.cache.store.ActivationOnExpirationTimeoutTest;
 import org.junit.runner.RunWith;
 
 /** */
