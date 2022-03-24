@@ -80,7 +80,7 @@
         <jackson.version>2.12.4</jackson.version>
         <jaxb.api.version>2.1</jaxb.api.version>
         <jaxb.impl.version>2.1.14</jaxb.impl.version>
-        <javassist.version>3.20.0-GA</javassist.version>
+        <javassist.version>3.28.0-GA</javassist.version>
         <javax.cache.bundle.version>1.0.0_1</javax.cache.bundle.version>
         <javax.cache.tck.version>1.1.0</javax.cache.tck.version>
         <javax.cache.version>1.0.0</javax.cache.version>
@@ -501,6 +501,14 @@
                                 <title>Capture Data Change API</title>
                                 <packages>org.apache.ignite.cdc*</packages>
                             </group>
+                            <group>
+                                <title>Calcite-based SQL engine</title>
+                                <packages>org.apache.ignite.calcite</packages>
+                            </group>
+                            <group>
+                                <title>Ignite-indexing SQL engine</title>
+                                <packages>org.apache.ignite.indexing</packages>
+                            </group>
                         </groups>
                         <bottom>
                             <![CDATA[
@@ -905,6 +913,7 @@
                                         <exclude>src/main/java/org/apache/ignite/internal/util/offheap/unsafe/GridOffHeapSnapTreeMap.java</exclude><!--BSD license-->
                                         <exclude>src/main/java/org/apache/ignite/internal/util/nio/SelectedSelectionKeySet.java</exclude><!-- Apache 2.0 license -->
                                         <exclude>src/main/java/org/apache/ignite/internal/util/snaptree/*.java</exclude><!--BSD license-->
+                                        <exclude>src/main/java/org/apache/ignite/internal/processors/query/calcite/sql/generated/*.java</exclude><!--auto generated files-->
                                         <exclude>src/main/java/org/jsr166/*.java</exclude>
                                         <exclude>src/main/java/org/mindrot/*.java</exclude>
                                         <exclude>src/test/java/org/apache/ignite/p2p/p2p.properties</exclude><!--test depends on file content-->
@@ -969,6 +978,8 @@
                                         <exclude>modules/platforms/dotnet/Apache.Ignite.Core.Tests/Examples/ExpectedOutput/*.txt</exclude>
                                         <!--Packaging -->
                                         <exclude>packaging/**</exclude>
+                                        <!-- Calcite test scripts -->
+                                        <exclude>src/test/sql/**</exclude>
                                         <!-- Ignite Documentation-->
                                         <exclude>docs/_site/**</exclude>
                                         <exclude>docs/assets/images/**</exclude>

@@ -38,6 +38,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
+
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSystemProperties;
@@ -683,6 +684,9 @@ public class QueryUtils {
         if (!isKeyClsSqlType && qryEntity instanceof QueryEntityEx && ((QueryEntityEx)qryEntity).isPreserveKeysOrder())
             d.primaryKeyFields(keyFields);
 
+        if (qryEntity instanceof QueryEntityEx)
+            d.implicitPk(((QueryEntityEx)qryEntity).implicitPk());
+
         // Sql-typed key/value doesn't have field property, but they may have precision and scale constraints.
         // Also if fields are not set then _KEY and _VAL will be created as visible,
         // so we have to add binary properties for them
@@ -1276,7 +1280,7 @@ public class QueryUtils {
      */
     public static SchemaOperationException checkQueryEntityConflicts(CacheConfiguration<?, ?> ccfg,
         Collection<DynamicCacheDescriptor> descs) {
-        String schema = QueryUtils.normalizeSchemaName(ccfg.getName(), ccfg.getSqlSchema());
+        String schema = normalizeSchemaName(ccfg.getName(), ccfg.getSqlSchema());
 
         Set<String> idxNames = new HashSet<>();
 
@@ -1286,7 +1290,7 @@ public class QueryUtils {
             if (F.eq(ccfg.getName(), desc.cacheName()))
                 continue;
 
-            String descSchema = QueryUtils.normalizeSchemaName(desc.cacheName(),
+            String descSchema = normalizeSchemaName(desc.cacheName(),
                 desc.cacheConfiguration().getSqlSchema());
 
             if (!F.eq(schema, descSchema))
@@ -1635,6 +1639,66 @@ public class QueryUtils {
         }
 
         return alias;
+    }
+
+    /**
+     * @return {@link IgniteSQLException} with the message same as of {@code this}'s and
+     */
+    public static IgniteSQLException convert(SchemaOperationException e) {
+        int sqlCode;
+
+        switch (e.code()) {
+            case SchemaOperationException.CODE_CACHE_NOT_FOUND:
+                sqlCode = IgniteQueryErrorCode.CACHE_NOT_FOUND;
+
+                break;
+
+            case SchemaOperationException.CODE_TABLE_NOT_FOUND:
+                sqlCode = IgniteQueryErrorCode.TABLE_NOT_FOUND;
+
+                break;
+
+            case SchemaOperationException.CODE_TABLE_EXISTS:
+                sqlCode = IgniteQueryErrorCode.TABLE_ALREADY_EXISTS;
+
+                break;
+
+            case SchemaOperationException.CODE_COLUMN_NOT_FOUND:
+                sqlCode = IgniteQueryErrorCode.COLUMN_NOT_FOUND;
+
+                break;
+
+            case SchemaOperationException.CODE_COLUMN_EXISTS:
+                sqlCode = IgniteQueryErrorCode.COLUMN_ALREADY_EXISTS;
+
+                break;
+
+            case SchemaOperationException.CODE_INDEX_NOT_FOUND:
+                sqlCode = IgniteQueryErrorCode.INDEX_NOT_FOUND;
+
+                break;
+
+            case SchemaOperationException.CODE_INDEX_EXISTS:
+                sqlCode = IgniteQueryErrorCode.INDEX_ALREADY_EXISTS;
+
+                break;
+
+            default:
+                sqlCode = IgniteQueryErrorCode.UNKNOWN;
+        }
+
+        return new IgniteSQLException(e.getMessage(), sqlCode, e);
+    }
+
+    /**
+     * Check if schema supports DDL statement.
+     *
+     * @param schemaName Schema name.
+     */
+    public static void isDdlOnSchemaSupported(String schemaName) {
+        if (F.eq(SCHEMA_SYS, schemaName))
+            throw new IgniteSQLException("DDL statements are not supported on " + schemaName + " schema",
+                IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
     }
 
     /**

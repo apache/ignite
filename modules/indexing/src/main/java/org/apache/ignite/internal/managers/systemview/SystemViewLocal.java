@@ -238,4 +238,9 @@ class SystemViewLocal<R> extends SqlAbstractLocalSystemView {
     @Override public boolean canGetRowCount() {
         return true;
     }
+
+    /** {@inheritDoc} */
+    @Override public @Nullable SystemView<?> getSystemView() {
+        return sysView;
+    }
 }

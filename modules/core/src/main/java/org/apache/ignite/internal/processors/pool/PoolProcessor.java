@@ -65,6 +65,7 @@ import org.apache.ignite.plugin.extensions.communication.IoPool;
 import org.apache.ignite.spi.systemview.view.StripedExecutorTaskView;
 import org.apache.ignite.thread.IgniteStripedThreadPoolExecutor;
 import org.apache.ignite.thread.IgniteThreadPoolExecutor;
+import org.apache.ignite.thread.SameThreadExecutor;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.configuration.IgniteConfiguration.DFLT_THREAD_KEEP_ALIVE_TIME;
@@ -683,6 +684,9 @@ public class PoolProcessor extends GridProcessorAdapter {
                 assert getSchemaExecutorService() != null : "Query pool is not configured.";
 
                 return getSchemaExecutorService();
+
+            case GridIoPolicy.CALLER_THREAD:
+                return SameThreadExecutor.INSTANCE;
 
             default: {
                 if (plc < 0)

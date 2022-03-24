@@ -13,59 +13,46 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
  */
 
-package org.apache.ignite.internal.processors.query.h2;
+package org.apache.ignite.internal.processors.query.stat;
 
 import java.util.UUID;
-import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.internal.processors.query.stat.messages.StatisticsRequest;
 
 /**
- * Kill Query run context.
+ * Statistics request with target/sender node id.
  */
-class KillQueryRun {
-    /** Node id. */
+public class StatisticsAddressedRequest {
+    /** Statistics request */
+    private final StatisticsRequest req;
+
+    /** Target/sender node id. */
     private final UUID nodeId;
-
-    /** Node query id. */
-    private final long nodeQryId;
-
-    /** Cancellation query future. */
-    private final GridFutureAdapter<String> cancelFut;
 
     /**
      * Constructor.
      *
-     * @param nodeId Node id.
-     * @param cancelFut Cancellation query future.
+     * @param req Statistics request.
+     * @param nodeId Target/sender node id.
      */
-    public KillQueryRun(UUID nodeId, long nodeQryId, GridFutureAdapter<String> cancelFut) {
-        assert nodeId != null;
-
+    public StatisticsAddressedRequest(StatisticsRequest req, UUID nodeId) {
+        this.req = req;
         this.nodeId = nodeId;
-        this.nodeQryId = nodeQryId;
-        this.cancelFut = cancelFut;
     }
 
     /**
-     * @return Node id.
+     * @return Statistics request.
+     */
+    public StatisticsRequest req() {
+        return req;
+    }
+
+    /**
+     * @return Target/sender node id.
      */
     public UUID nodeId() {
         return nodeId;
     }
-
-    /**
-     * @return Node query id.
-     */
-    public long nodeQryId() {
-        return nodeQryId;
-    }
-
-    /**
-     * @return Cancellation query future.
-     */
-    public GridFutureAdapter<String> cancelFuture() {
-        return cancelFut;
-    }
 }
+
