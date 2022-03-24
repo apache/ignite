@@ -1,0 +1,6273 @@
+statement ok
+CREATE TABLE tab0(pk INTEGER PRIMARY KEY, col0 INTEGER, col1 FLOAT, col2 VARCHAR, col3 INTEGER, col4 FLOAT, col5 VARCHAR)
+
+statement ok
+INSERT INTO tab0 VALUES(0,544,473.59,'lupfg',846,31.38,'crmer')
+
+statement ok
+INSERT INTO tab0 VALUES(1,551,716.92,'sxtsd',562,145.36,'xxacr')
+
+statement ok
+INSERT INTO tab0 VALUES(2,481,975.35,'uxrjj',652,750.52,'rdgic')
+
+statement ok
+INSERT INTO tab0 VALUES(3,345,371.4,'nxyqi',51,199.34,'lekdd')
+
+statement ok
+INSERT INTO tab0 VALUES(4,908,772.92,'owifa',256,154.36,'xophl')
+
+statement ok
+INSERT INTO tab0 VALUES(5,309,912.32,'iganw',957,707.84,'tewpl')
+
+statement ok
+INSERT INTO tab0 VALUES(6,691,521.59,'fstmf',656,504.37,'ptkph')
+
+statement ok
+INSERT INTO tab0 VALUES(7,823,447.70,'rrwze',294,877.49,'fvoic')
+
+statement ok
+INSERT INTO tab0 VALUES(8,725,784.91,'iaoqu',878,963.31,'razqy')
+
+statement ok
+INSERT INTO tab0 VALUES(9,297,993.36,'eoujh',105,829.18,'kvyce')
+
+statement ok
+CREATE TABLE tab1(pk INTEGER PRIMARY KEY, col0 INTEGER, col1 FLOAT, col2 VARCHAR, col3 INTEGER, col4 FLOAT, col5 VARCHAR)
+
+statement ok
+CREATE INDEX idx_tab1_0 on tab1 (col0)
+
+statement ok
+CREATE INDEX idx_tab1_1 on tab1 (col1)
+
+statement ok
+CREATE INDEX idx_tab1_3 on tab1 (col3)
+
+statement ok
+CREATE INDEX idx_tab1_4 on tab1 (col4)
+
+statement ok
+INSERT INTO tab1 SELECT * FROM tab0
+
+statement ok
+CREATE TABLE tab2(pk INTEGER PRIMARY KEY, col0 INTEGER, col1 FLOAT, col2 VARCHAR, col3 INTEGER, col4 FLOAT, col5 VARCHAR)
+
+statement ok
+CREATE INDEX idx_tab2_0 ON tab2 (col0 DESC,col4 DESC)
+
+statement ok
+CREATE INDEX idx_tab2_1 ON tab2 (col3,col1)
+
+statement ok
+CREATE INDEX idx_tab2_3 ON tab2 (col0,col1 DESC)
+
+statement ok
+CREATE INDEX idx_tab2_5 ON tab2 (col4 DESC)
+
+statement ok
+INSERT INTO tab2 SELECT * FROM tab0
+
+statement ok
+CREATE TABLE tab3(pk INTEGER PRIMARY KEY, col0 INTEGER, col1 FLOAT, col2 VARCHAR, col3 INTEGER, col4 FLOAT, col5 VARCHAR)
+
+statement ok
+CREATE INDEX idx_tab3_0 ON tab3 (col4)
+
+statement ok
+CREATE INDEX idx_tab3_2 ON tab3 (col0 DESC,col3)
+
+statement ok
+CREATE INDEX idx_tab3_3 ON tab3 (col1 DESC)
+
+statement ok
+INSERT INTO tab3 SELECT * FROM tab0
+
+statement ok
+CREATE TABLE tab4(pk INTEGER PRIMARY KEY, col0 INTEGER, col1 FLOAT, col2 VARCHAR, col3 INTEGER, col4 FLOAT, col5 VARCHAR)
+
+statement ok
+CREATE INDEX idx_tab4_1 ON tab4 (col3)
+
+statement ok
+CREATE INDEX idx_tab4_2 ON tab4 (col4)
+
+statement ok
+CREATE INDEX idx_tab4_3 ON tab4 (col1,col0 DESC)
+
+statement ok
+INSERT INTO tab4 SELECT * FROM tab0
+
+query II valuesort label-4930
+SELECT pk, col0 FROM tab4 WHERE (col4 > 258.74) ORDER BY 2,1
+----
+12 values hashing to d42abc4104fda6f660bf427a150497e0
+
+query II valuesort label-4930
+SELECT pk, col0 FROM tab0 WHERE (col4 > 258.74) ORDER BY 1 DESC,2
+----
+12 values hashing to d42abc4104fda6f660bf427a150497e0
+
+query II valuesort label-4930
+SELECT pk, col0 FROM tab1 WHERE (col4 > 258.74) ORDER BY 1 DESC,2
+----
+12 values hashing to d42abc4104fda6f660bf427a150497e0
+
+query II valuesort label-4930
+SELECT pk, col0 FROM tab2 WHERE (col4 > 258.74) ORDER BY 1 DESC,2
+----
+12 values hashing to d42abc4104fda6f660bf427a150497e0
+
+query II valuesort label-4930
+SELECT pk, col0 FROM tab3 WHERE (col4 > 258.74) ORDER BY 1 DESC,2
+----
+12 values hashing to d42abc4104fda6f660bf427a150497e0
+
+query II valuesort label-4930
+SELECT pk, col0 FROM tab4 WHERE (col4 > 258.74) ORDER BY 1 DESC,2
+----
+12 values hashing to d42abc4104fda6f660bf427a150497e0
+
+query II valuesort label-4930
+SELECT pk, col0 FROM tab0 WHERE (col4 > 258.74) ORDER BY 1,2
+----
+12 values hashing to d42abc4104fda6f660bf427a150497e0
+
+query II valuesort label-4930
+SELECT pk, col0 FROM tab1 WHERE (col4 > 258.74) ORDER BY 1,2
+----
+12 values hashing to d42abc4104fda6f660bf427a150497e0
+
+query II valuesort label-4930
+SELECT pk, col0 FROM tab2 WHERE (col4 > 258.74) ORDER BY 1,2
+----
+12 values hashing to d42abc4104fda6f660bf427a150497e0
+
+query II valuesort label-4930
+SELECT pk, col0 FROM tab3 WHERE (col4 > 258.74) ORDER BY 1,2
+----
+12 values hashing to d42abc4104fda6f660bf427a150497e0
+
+query II valuesort label-4930
+SELECT pk, col0 FROM tab4 WHERE (col4 > 258.74) ORDER BY 1,2
+----
+12 values hashing to d42abc4104fda6f660bf427a150497e0
+
+query I valuesort label-4980
+SELECT pk FROM tab0 WHERE col4 < 28.48 ORDER BY 1 DESC
+----
+
+query I valuesort label-4980
+SELECT pk FROM tab1 WHERE col4 < 28.48 ORDER BY 1 DESC
+----
+
+query I valuesort label-4980
+SELECT pk FROM tab2 WHERE col4 < 28.48 ORDER BY 1 DESC
+----
+
+query I valuesort label-4980
+SELECT pk FROM tab3 WHERE col4 < 28.48 ORDER BY 1 DESC
+----
+
+query I valuesort label-4980
+SELECT pk FROM tab4 WHERE col4 < 28.48 ORDER BY 1 DESC
+----
+
+query I valuesort label-4980
+SELECT pk FROM tab0 WHERE col4 < 28.48 ORDER BY 1
+----
+
+query I valuesort label-4980
+SELECT pk FROM tab1 WHERE col4 < 28.48 ORDER BY 1
+----
+
+query I valuesort label-4980
+SELECT pk FROM tab2 WHERE col4 < 28.48 ORDER BY 1
+----
+
+query I valuesort label-4980
+SELECT pk FROM tab3 WHERE col4 < 28.48 ORDER BY 1
+----
+
+query I valuesort label-4980
+SELECT pk FROM tab4 WHERE col4 < 28.48 ORDER BY 1
+----
+
+query II valuesort label-4990
+SELECT pk, col0 FROM tab0 WHERE col4 < 28.48 ORDER BY 1 DESC
+----
+
+query II valuesort label-4990
+SELECT pk, col0 FROM tab1 WHERE col4 < 28.48 ORDER BY 1 DESC
+----
+
+query II valuesort label-4990
+SELECT pk, col0 FROM tab2 WHERE col4 < 28.48 ORDER BY 1 DESC
+----
+
+query II valuesort label-4990
+SELECT pk, col0 FROM tab3 WHERE col4 < 28.48 ORDER BY 1 DESC
+----
+
+query II valuesort label-4990
+SELECT pk, col0 FROM tab4 WHERE col4 < 28.48 ORDER BY 1 DESC
+----
+
+query II valuesort label-4990
+SELECT pk, col0 FROM tab0 WHERE col4 < 28.48 ORDER BY 2 DESC
+----
+
+query II valuesort label-4990
+SELECT pk, col0 FROM tab1 WHERE col4 < 28.48 ORDER BY 2 DESC
+----
+
+query II valuesort label-4990
+SELECT pk, col0 FROM tab2 WHERE col4 < 28.48 ORDER BY 2 DESC
+----
+
+query II valuesort label-4990
+SELECT pk, col0 FROM tab3 WHERE col4 < 28.48 ORDER BY 2 DESC
+----
+
+query II valuesort label-4990
+SELECT pk, col0 FROM tab4 WHERE col4 < 28.48 ORDER BY 2 DESC
+----
+
+query II valuesort label-4990
+SELECT pk, col0 FROM tab0 WHERE col4 < 28.48 ORDER BY 1
+----
+
+query II valuesort label-4990
+SELECT pk, col0 FROM tab1 WHERE col4 < 28.48 ORDER BY 1
+----
+
+query II valuesort label-4990
+SELECT pk, col0 FROM tab2 WHERE col4 < 28.48 ORDER BY 1
+----
+
+query II valuesort label-4990
+SELECT pk, col0 FROM tab3 WHERE col4 < 28.48 ORDER BY 1
+----
+
+query II valuesort label-4990
+SELECT pk, col0 FROM tab4 WHERE col4 < 28.48 ORDER BY 1
+----
+
+query II valuesort label-4990
+SELECT pk, col0 FROM tab0 WHERE col4 < 28.48 ORDER BY 2
+----
+
+query II valuesort label-4990
+SELECT pk, col0 FROM tab1 WHERE col4 < 28.48 ORDER BY 2
+----
+
+query II valuesort label-4990
+SELECT pk, col0 FROM tab2 WHERE col4 < 28.48 ORDER BY 2
+----
+
+query II valuesort label-4990
+SELECT pk, col0 FROM tab3 WHERE col4 < 28.48 ORDER BY 2
+----
+
+query II valuesort label-4990
+SELECT pk, col0 FROM tab4 WHERE col4 < 28.48 ORDER BY 2
+----
+
+query II valuesort label-4990
+SELECT pk, col0 FROM tab0 WHERE col4 < 28.48 ORDER BY 1 DESC,2 DESC
+----
+
+query II valuesort label-4990
+SELECT pk, col0 FROM tab1 WHERE col4 < 28.48 ORDER BY 1 DESC,2 DESC
+----
+
+query II valuesort label-4990
+SELECT pk, col0 FROM tab2 WHERE col4 < 28.48 ORDER BY 1 DESC,2 DESC
+----
+
+query II valuesort label-4990
+SELECT pk, col0 FROM tab3 WHERE col4 < 28.48 ORDER BY 1 DESC,2 DESC
+----
+
+query II valuesort label-4990
+SELECT pk, col0 FROM tab4 WHERE col4 < 28.48 ORDER BY 1 DESC,2 DESC
+----
+
+query II valuesort label-4990
+SELECT pk, col0 FROM tab0 WHERE col4 < 28.48 ORDER BY 1,2 DESC
+----
+
+query II valuesort label-4990
+SELECT pk, col0 FROM tab1 WHERE col4 < 28.48 ORDER BY 1,2 DESC
+----
+
+query II valuesort label-4990
+SELECT pk, col0 FROM tab2 WHERE col4 < 28.48 ORDER BY 1,2 DESC
+----
+
+query II valuesort label-4990
+SELECT pk, col0 FROM tab3 WHERE col4 < 28.48 ORDER BY 1,2 DESC
+----
+
+query II valuesort label-4990
+SELECT pk, col0 FROM tab4 WHERE col4 < 28.48 ORDER BY 1,2 DESC
+----
+
+query II valuesort label-4990
+SELECT pk, col0 FROM tab0 WHERE col4 < 28.48 ORDER BY 2 DESC,1
+----
+
+query II valuesort label-4990
+SELECT pk, col0 FROM tab1 WHERE col4 < 28.48 ORDER BY 2 DESC,1
+----
+
+query II valuesort label-4990
+SELECT pk, col0 FROM tab2 WHERE col4 < 28.48 ORDER BY 2 DESC,1
+----
+
+query II valuesort label-4990
+SELECT pk, col0 FROM tab3 WHERE col4 < 28.48 ORDER BY 2 DESC,1
+----
+
+query II valuesort label-4990
+SELECT pk, col0 FROM tab4 WHERE col4 < 28.48 ORDER BY 2 DESC,1
+----
+
+query II valuesort label-4990
+SELECT pk, col0 FROM tab0 WHERE col4 < 28.48 ORDER BY 2,1
+----
+
+query II valuesort label-4990
+SELECT pk, col0 FROM tab1 WHERE col4 < 28.48 ORDER BY 2,1
+----
+
+query II valuesort label-4990
+SELECT pk, col0 FROM tab2 WHERE col4 < 28.48 ORDER BY 2,1
+----
+
+query II valuesort label-4990
+SELECT pk, col0 FROM tab3 WHERE col4 < 28.48 ORDER BY 2,1
+----
+
+query II valuesort label-4990
+SELECT pk, col0 FROM tab4 WHERE col4 < 28.48 ORDER BY 2,1
+----
+
+query II valuesort label-4990
+SELECT pk, col0 FROM tab0 WHERE col4 < 28.48 ORDER BY 1 DESC,2
+----
+
+query II valuesort label-4990
+SELECT pk, col0 FROM tab1 WHERE col4 < 28.48 ORDER BY 1 DESC,2
+----
+
+query II valuesort label-4990
+SELECT pk, col0 FROM tab2 WHERE col4 < 28.48 ORDER BY 1 DESC,2
+----
+
+query II valuesort label-4990
+SELECT pk, col0 FROM tab3 WHERE col4 < 28.48 ORDER BY 1 DESC,2
+----
+
+query II valuesort label-4990
+SELECT pk, col0 FROM tab4 WHERE col4 < 28.48 ORDER BY 1 DESC,2
+----
+
+query II valuesort label-4990
+SELECT pk, col0 FROM tab0 WHERE col4 < 28.48 ORDER BY 1,2
+----
+
+query II valuesort label-4990
+SELECT pk, col0 FROM tab1 WHERE col4 < 28.48 ORDER BY 1,2
+----
+
+query II valuesort label-4990
+SELECT pk, col0 FROM tab2 WHERE col4 < 28.48 ORDER BY 1,2
+----
+
+query II valuesort label-4990
+SELECT pk, col0 FROM tab3 WHERE col4 < 28.48 ORDER BY 1,2
+----
+
+query II valuesort label-4990
+SELECT pk, col0 FROM tab4 WHERE col4 < 28.48 ORDER BY 1,2
+----
+
+query I valuesort label-5040
+SELECT pk FROM tab0 WHERE col3 < 152 ORDER BY 1 DESC
+----
+3
+9
+
+query I valuesort label-5040
+SELECT pk FROM tab1 WHERE col3 < 152 ORDER BY 1 DESC
+----
+3
+9
+
+query I valuesort label-5040
+SELECT pk FROM tab2 WHERE col3 < 152 ORDER BY 1 DESC
+----
+3
+9
+
+query I valuesort label-5040
+SELECT pk FROM tab3 WHERE col3 < 152 ORDER BY 1 DESC
+----
+3
+9
+
+query I valuesort label-5040
+SELECT pk FROM tab4 WHERE col3 < 152 ORDER BY 1 DESC
+----
+3
+9
+
+query I valuesort label-5040
+SELECT pk FROM tab0 WHERE col3 < 152 ORDER BY 1
+----
+3
+9
+
+query I valuesort label-5040
+SELECT pk FROM tab1 WHERE col3 < 152 ORDER BY 1
+----
+3
+9
+
+query I valuesort label-5040
+SELECT pk FROM tab2 WHERE col3 < 152 ORDER BY 1
+----
+3
+9
+
+query I valuesort label-5040
+SELECT pk FROM tab3 WHERE col3 < 152 ORDER BY 1
+----
+3
+9
+
+query I valuesort label-5040
+SELECT pk FROM tab4 WHERE col3 < 152 ORDER BY 1
+----
+3
+9
+
+query II valuesort label-5050
+SELECT pk, col0 FROM tab0 WHERE col3 < 152 ORDER BY 1 DESC
+----
+297
+3
+345
+9
+
+query II valuesort label-5050
+SELECT pk, col0 FROM tab1 WHERE col3 < 152 ORDER BY 1 DESC
+----
+297
+3
+345
+9
+
+query II valuesort label-5050
+SELECT pk, col0 FROM tab2 WHERE col3 < 152 ORDER BY 1 DESC
+----
+297
+3
+345
+9
+
+query II valuesort label-5050
+SELECT pk, col0 FROM tab3 WHERE col3 < 152 ORDER BY 1 DESC
+----
+297
+3
+345
+9
+
+query II valuesort label-5050
+SELECT pk, col0 FROM tab4 WHERE col3 < 152 ORDER BY 1 DESC
+----
+297
+3
+345
+9
+
+query II valuesort label-5050
+SELECT pk, col0 FROM tab0 WHERE col3 < 152 ORDER BY 2 DESC
+----
+297
+3
+345
+9
+
+query II valuesort label-5050
+SELECT pk, col0 FROM tab1 WHERE col3 < 152 ORDER BY 2 DESC
+----
+297
+3
+345
+9
+
+query II valuesort label-5050
+SELECT pk, col0 FROM tab2 WHERE col3 < 152 ORDER BY 2 DESC
+----
+297
+3
+345
+9
+
+query II valuesort label-5050
+SELECT pk, col0 FROM tab3 WHERE col3 < 152 ORDER BY 2 DESC
+----
+297
+3
+345
+9
+
+query II valuesort label-5050
+SELECT pk, col0 FROM tab4 WHERE col3 < 152 ORDER BY 2 DESC
+----
+297
+3
+345
+9
+
+query II valuesort label-5050
+SELECT pk, col0 FROM tab0 WHERE col3 < 152 ORDER BY 1
+----
+297
+3
+345
+9
+
+query II valuesort label-5050
+SELECT pk, col0 FROM tab1 WHERE col3 < 152 ORDER BY 1
+----
+297
+3
+345
+9
+
+query II valuesort label-5050
+SELECT pk, col0 FROM tab2 WHERE col3 < 152 ORDER BY 1
+----
+297
+3
+345
+9
+
+query II valuesort label-5050
+SELECT pk, col0 FROM tab3 WHERE col3 < 152 ORDER BY 1
+----
+297
+3
+345
+9
+
+query II valuesort label-5050
+SELECT pk, col0 FROM tab4 WHERE col3 < 152 ORDER BY 1
+----
+297
+3
+345
+9
+
+query II valuesort label-5050
+SELECT pk, col0 FROM tab0 WHERE col3 < 152 ORDER BY 2
+----
+297
+3
+345
+9
+
+query II valuesort label-5050
+SELECT pk, col0 FROM tab1 WHERE col3 < 152 ORDER BY 2
+----
+297
+3
+345
+9
+
+query II valuesort label-5050
+SELECT pk, col0 FROM tab2 WHERE col3 < 152 ORDER BY 2
+----
+297
+3
+345
+9
+
+query II valuesort label-5050
+SELECT pk, col0 FROM tab3 WHERE col3 < 152 ORDER BY 2
+----
+297
+3
+345
+9
+
+query II valuesort label-5050
+SELECT pk, col0 FROM tab4 WHERE col3 < 152 ORDER BY 2
+----
+297
+3
+345
+9
+
+query II valuesort label-5050
+SELECT pk, col0 FROM tab0 WHERE col3 < 152 ORDER BY 1 DESC,2 DESC
+----
+297
+3
+345
+9
+
+query II valuesort label-5050
+SELECT pk, col0 FROM tab1 WHERE col3 < 152 ORDER BY 1 DESC,2 DESC
+----
+297
+3
+345
+9
+
+query II valuesort label-5050
+SELECT pk, col0 FROM tab2 WHERE col3 < 152 ORDER BY 1 DESC,2 DESC
+----
+297
+3
+345
+9
+
+query II valuesort label-5050
+SELECT pk, col0 FROM tab3 WHERE col3 < 152 ORDER BY 1 DESC,2 DESC
+----
+297
+3
+345
+9
+
+query II valuesort label-5050
+SELECT pk, col0 FROM tab4 WHERE col3 < 152 ORDER BY 1 DESC,2 DESC
+----
+297
+3
+345
+9
+
+query II valuesort label-5050
+SELECT pk, col0 FROM tab0 WHERE col3 < 152 ORDER BY 1,2 DESC
+----
+297
+3
+345
+9
+
+query II valuesort label-5050
+SELECT pk, col0 FROM tab1 WHERE col3 < 152 ORDER BY 1,2 DESC
+----
+297
+3
+345
+9
+
+query II valuesort label-5050
+SELECT pk, col0 FROM tab2 WHERE col3 < 152 ORDER BY 1,2 DESC
+----
+297
+3
+345
+9
+
+query II valuesort label-5050
+SELECT pk, col0 FROM tab3 WHERE col3 < 152 ORDER BY 1,2 DESC
+----
+297
+3
+345
+9
+
+query II valuesort label-5050
+SELECT pk, col0 FROM tab4 WHERE col3 < 152 ORDER BY 1,2 DESC
+----
+297
+3
+345
+9
+
+query II valuesort label-5050
+SELECT pk, col0 FROM tab0 WHERE col3 < 152 ORDER BY 2 DESC,1
+----
+297
+3
+345
+9
+
+query II valuesort label-5050
+SELECT pk, col0 FROM tab1 WHERE col3 < 152 ORDER BY 2 DESC,1
+----
+297
+3
+345
+9
+
+query II valuesort label-5050
+SELECT pk, col0 FROM tab2 WHERE col3 < 152 ORDER BY 2 DESC,1
+----
+297
+3
+345
+9
+
+query II valuesort label-5050
+SELECT pk, col0 FROM tab3 WHERE col3 < 152 ORDER BY 2 DESC,1
+----
+297
+3
+345
+9
+
+query II valuesort label-5050
+SELECT pk, col0 FROM tab4 WHERE col3 < 152 ORDER BY 2 DESC,1
+----
+297
+3
+345
+9
+
+query II valuesort label-5050
+SELECT pk, col0 FROM tab0 WHERE col3 < 152 ORDER BY 2,1
+----
+297
+3
+345
+9
+
+query II valuesort label-5050
+SELECT pk, col0 FROM tab1 WHERE col3 < 152 ORDER BY 2,1
+----
+297
+3
+345
+9
+
+query II valuesort label-5050
+SELECT pk, col0 FROM tab2 WHERE col3 < 152 ORDER BY 2,1
+----
+297
+3
+345
+9
+
+query II valuesort label-5050
+SELECT pk, col0 FROM tab3 WHERE col3 < 152 ORDER BY 2,1
+----
+297
+3
+345
+9
+
+query II valuesort label-5050
+SELECT pk, col0 FROM tab4 WHERE col3 < 152 ORDER BY 2,1
+----
+297
+3
+345
+9
+
+query II valuesort label-5050
+SELECT pk, col0 FROM tab0 WHERE col3 < 152 ORDER BY 1 DESC,2
+----
+297
+3
+345
+9
+
+query II valuesort label-5050
+SELECT pk, col0 FROM tab1 WHERE col3 < 152 ORDER BY 1 DESC,2
+----
+297
+3
+345
+9
+
+query II valuesort label-5050
+SELECT pk, col0 FROM tab2 WHERE col3 < 152 ORDER BY 1 DESC,2
+----
+297
+3
+345
+9
+
+query II valuesort label-5050
+SELECT pk, col0 FROM tab3 WHERE col3 < 152 ORDER BY 1 DESC,2
+----
+297
+3
+345
+9
+
+query II valuesort label-5050
+SELECT pk, col0 FROM tab4 WHERE col3 < 152 ORDER BY 1 DESC,2
+----
+297
+3
+345
+9
+
+query II valuesort label-5050
+SELECT pk, col0 FROM tab0 WHERE col3 < 152 ORDER BY 1,2
+----
+297
+3
+345
+9
+
+query II valuesort label-5050
+SELECT pk, col0 FROM tab1 WHERE col3 < 152 ORDER BY 1,2
+----
+297
+3
+345
+9
+
+query II valuesort label-5050
+SELECT pk, col0 FROM tab2 WHERE col3 < 152 ORDER BY 1,2
+----
+297
+3
+345
+9
+
+query II valuesort label-5050
+SELECT pk, col0 FROM tab3 WHERE col3 < 152 ORDER BY 1,2
+----
+297
+3
+345
+9
+
+query II valuesort label-5050
+SELECT pk, col0 FROM tab4 WHERE col3 < 152 ORDER BY 1,2
+----
+297
+3
+345
+9
+
+query I valuesort label-5100
+SELECT pk FROM tab0 WHERE col1 >= 936.43 AND col4 >= 706.86 OR (((col4 > 689.58) AND col3 <= 105 AND col3 >= 274 OR col3 >= 384)) ORDER BY 1 DESC
+----
+0
+1
+2
+5
+6
+8
+9
+
+query I valuesort label-5100
+SELECT pk FROM tab1 WHERE col1 >= 936.43 AND col4 >= 706.86 OR (((col4 > 689.58) AND col3 <= 105 AND col3 >= 274 OR col3 >= 384)) ORDER BY 1 DESC
+----
+0
+1
+2
+5
+6
+8
+9
+
+query I valuesort label-5100
+SELECT pk FROM tab2 WHERE col1 >= 936.43 AND col4 >= 706.86 OR (((col4 > 689.58) AND col3 <= 105 AND col3 >= 274 OR col3 >= 384)) ORDER BY 1 DESC
+----
+0
+1
+2
+5
+6
+8
+9
+
+query I valuesort label-5100
+SELECT pk FROM tab3 WHERE col1 >= 936.43 AND col4 >= 706.86 OR (((col4 > 689.58) AND col3 <= 105 AND col3 >= 274 OR col3 >= 384)) ORDER BY 1 DESC
+----
+0
+1
+2
+5
+6
+8
+9
+
+query I valuesort label-5100
+SELECT pk FROM tab4 WHERE col1 >= 936.43 AND col4 >= 706.86 OR (((col4 > 689.58) AND col3 <= 105 AND col3 >= 274 OR col3 >= 384)) ORDER BY 1 DESC
+----
+0
+1
+2
+5
+6
+8
+9
+
+query I valuesort label-5100
+SELECT pk FROM tab0 WHERE col1 >= 936.43 AND col4 >= 706.86 OR (((col4 > 689.58) AND col3 <= 105 AND col3 >= 274 OR col3 >= 384)) ORDER BY 1
+----
+0
+1
+2
+5
+6
+8
+9
+
+query I valuesort label-5100
+SELECT pk FROM tab1 WHERE col1 >= 936.43 AND col4 >= 706.86 OR (((col4 > 689.58) AND col3 <= 105 AND col3 >= 274 OR col3 >= 384)) ORDER BY 1
+----
+0
+1
+2
+5
+6
+8
+9
+
+query I valuesort label-5100
+SELECT pk FROM tab2 WHERE col1 >= 936.43 AND col4 >= 706.86 OR (((col4 > 689.58) AND col3 <= 105 AND col3 >= 274 OR col3 >= 384)) ORDER BY 1
+----
+0
+1
+2
+5
+6
+8
+9
+
+query I valuesort label-5100
+SELECT pk FROM tab3 WHERE col1 >= 936.43 AND col4 >= 706.86 OR (((col4 > 689.58) AND col3 <= 105 AND col3 >= 274 OR col3 >= 384)) ORDER BY 1
+----
+0
+1
+2
+5
+6
+8
+9
+
+query I valuesort label-5100
+SELECT pk FROM tab4 WHERE col1 >= 936.43 AND col4 >= 706.86 OR (((col4 > 689.58) AND col3 <= 105 AND col3 >= 274 OR col3 >= 384)) ORDER BY 1
+----
+0
+1
+2
+5
+6
+8
+9
+
+query II valuesort label-5110
+SELECT pk, col0 FROM tab0 WHERE col1 >= 936.43 AND col4 >= 706.86 OR (((col4 > 689.58) AND col3 <= 105 AND col3 >= 274 OR col3 >= 384)) ORDER BY 1 DESC
+----
+14 values hashing to e13aba4528d4032916a93c158238ff5f
+
+query II valuesort label-5110
+SELECT pk, col0 FROM tab1 WHERE col1 >= 936.43 AND col4 >= 706.86 OR (((col4 > 689.58) AND col3 <= 105 AND col3 >= 274 OR col3 >= 384)) ORDER BY 1 DESC
+----
+14 values hashing to e13aba4528d4032916a93c158238ff5f
+
+query II valuesort label-5110
+SELECT pk, col0 FROM tab2 WHERE col1 >= 936.43 AND col4 >= 706.86 OR (((col4 > 689.58) AND col3 <= 105 AND col3 >= 274 OR col3 >= 384)) ORDER BY 1 DESC
+----
+14 values hashing to e13aba4528d4032916a93c158238ff5f
+
+query II valuesort label-5110
+SELECT pk, col0 FROM tab3 WHERE col1 >= 936.43 AND col4 >= 706.86 OR (((col4 > 689.58) AND col3 <= 105 AND col3 >= 274 OR col3 >= 384)) ORDER BY 1 DESC
+----
+14 values hashing to e13aba4528d4032916a93c158238ff5f
+
+query II valuesort label-5110
+SELECT pk, col0 FROM tab4 WHERE col1 >= 936.43 AND col4 >= 706.86 OR (((col4 > 689.58) AND col3 <= 105 AND col3 >= 274 OR col3 >= 384)) ORDER BY 1 DESC
+----
+14 values hashing to e13aba4528d4032916a93c158238ff5f
+
+query II valuesort label-5110
+SELECT pk, col0 FROM tab0 WHERE col1 >= 936.43 AND col4 >= 706.86 OR (((col4 > 689.58) AND col3 <= 105 AND col3 >= 274 OR col3 >= 384)) ORDER BY 2 DESC
+----
+14 values hashing to e13aba4528d4032916a93c158238ff5f
+
+query II valuesort label-5110
+SELECT pk, col0 FROM tab1 WHERE col1 >= 936.43 AND col4 >= 706.86 OR (((col4 > 689.58) AND col3 <= 105 AND col3 >= 274 OR col3 >= 384)) ORDER BY 2 DESC
+----
+14 values hashing to e13aba4528d4032916a93c158238ff5f
+
+query II valuesort label-5110
+SELECT pk, col0 FROM tab2 WHERE col1 >= 936.43 AND col4 >= 706.86 OR (((col4 > 689.58) AND col3 <= 105 AND col3 >= 274 OR col3 >= 384)) ORDER BY 2 DESC
+----
+14 values hashing to e13aba4528d4032916a93c158238ff5f
+
+query II valuesort label-5110
+SELECT pk, col0 FROM tab3 WHERE col1 >= 936.43 AND col4 >= 706.86 OR (((col4 > 689.58) AND col3 <= 105 AND col3 >= 274 OR col3 >= 384)) ORDER BY 2 DESC
+----
+14 values hashing to e13aba4528d4032916a93c158238ff5f
+
+query II valuesort label-5110
+SELECT pk, col0 FROM tab4 WHERE col1 >= 936.43 AND col4 >= 706.86 OR (((col4 > 689.58) AND col3 <= 105 AND col3 >= 274 OR col3 >= 384)) ORDER BY 2 DESC
+----
+14 values hashing to e13aba4528d4032916a93c158238ff5f
+
+query II valuesort label-5110
+SELECT pk, col0 FROM tab0 WHERE col1 >= 936.43 AND col4 >= 706.86 OR (((col4 > 689.58) AND col3 <= 105 AND col3 >= 274 OR col3 >= 384)) ORDER BY 1
+----
+14 values hashing to e13aba4528d4032916a93c158238ff5f
+
+query II valuesort label-5110
+SELECT pk, col0 FROM tab1 WHERE col1 >= 936.43 AND col4 >= 706.86 OR (((col4 > 689.58) AND col3 <= 105 AND col3 >= 274 OR col3 >= 384)) ORDER BY 1
+----
+14 values hashing to e13aba4528d4032916a93c158238ff5f
+
+query II valuesort label-5110
+SELECT pk, col0 FROM tab2 WHERE col1 >= 936.43 AND col4 >= 706.86 OR (((col4 > 689.58) AND col3 <= 105 AND col3 >= 274 OR col3 >= 384)) ORDER BY 1
+----
+14 values hashing to e13aba4528d4032916a93c158238ff5f
+
+query II valuesort label-5110
+SELECT pk, col0 FROM tab3 WHERE col1 >= 936.43 AND col4 >= 706.86 OR (((col4 > 689.58) AND col3 <= 105 AND col3 >= 274 OR col3 >= 384)) ORDER BY 1
+----
+14 values hashing to e13aba4528d4032916a93c158238ff5f
+
+query II valuesort label-5110
+SELECT pk, col0 FROM tab4 WHERE col1 >= 936.43 AND col4 >= 706.86 OR (((col4 > 689.58) AND col3 <= 105 AND col3 >= 274 OR col3 >= 384)) ORDER BY 1
+----
+14 values hashing to e13aba4528d4032916a93c158238ff5f
+
+query II valuesort label-5110
+SELECT pk, col0 FROM tab0 WHERE col1 >= 936.43 AND col4 >= 706.86 OR (((col4 > 689.58) AND col3 <= 105 AND col3 >= 274 OR col3 >= 384)) ORDER BY 2
+----
+14 values hashing to e13aba4528d4032916a93c158238ff5f
+
+query II valuesort label-5110
+SELECT pk, col0 FROM tab1 WHERE col1 >= 936.43 AND col4 >= 706.86 OR (((col4 > 689.58) AND col3 <= 105 AND col3 >= 274 OR col3 >= 384)) ORDER BY 2
+----
+14 values hashing to e13aba4528d4032916a93c158238ff5f
+
+query II valuesort label-5110
+SELECT pk, col0 FROM tab2 WHERE col1 >= 936.43 AND col4 >= 706.86 OR (((col4 > 689.58) AND col3 <= 105 AND col3 >= 274 OR col3 >= 384)) ORDER BY 2
+----
+14 values hashing to e13aba4528d4032916a93c158238ff5f
+
+query II valuesort label-5110
+SELECT pk, col0 FROM tab3 WHERE col1 >= 936.43 AND col4 >= 706.86 OR (((col4 > 689.58) AND col3 <= 105 AND col3 >= 274 OR col3 >= 384)) ORDER BY 2
+----
+14 values hashing to e13aba4528d4032916a93c158238ff5f
+
+query II valuesort label-5110
+SELECT pk, col0 FROM tab4 WHERE col1 >= 936.43 AND col4 >= 706.86 OR (((col4 > 689.58) AND col3 <= 105 AND col3 >= 274 OR col3 >= 384)) ORDER BY 2
+----
+14 values hashing to e13aba4528d4032916a93c158238ff5f
+
+query II valuesort label-5110
+SELECT pk, col0 FROM tab0 WHERE col1 >= 936.43 AND col4 >= 706.86 OR (((col4 > 689.58) AND col3 <= 105 AND col3 >= 274 OR col3 >= 384)) ORDER BY 1 DESC,2 DESC
+----
+14 values hashing to e13aba4528d4032916a93c158238ff5f
+
+query II valuesort label-5110
+SELECT pk, col0 FROM tab1 WHERE col1 >= 936.43 AND col4 >= 706.86 OR (((col4 > 689.58) AND col3 <= 105 AND col3 >= 274 OR col3 >= 384)) ORDER BY 1 DESC,2 DESC
+----
+14 values hashing to e13aba4528d4032916a93c158238ff5f
+
+query II valuesort label-5110
+SELECT pk, col0 FROM tab2 WHERE col1 >= 936.43 AND col4 >= 706.86 OR (((col4 > 689.58) AND col3 <= 105 AND col3 >= 274 OR col3 >= 384)) ORDER BY 1 DESC,2 DESC
+----
+14 values hashing to e13aba4528d4032916a93c158238ff5f
+
+query II valuesort label-5110
+SELECT pk, col0 FROM tab3 WHERE col1 >= 936.43 AND col4 >= 706.86 OR (((col4 > 689.58) AND col3 <= 105 AND col3 >= 274 OR col3 >= 384)) ORDER BY 1 DESC,2 DESC
+----
+14 values hashing to e13aba4528d4032916a93c158238ff5f
+
+query II valuesort label-5110
+SELECT pk, col0 FROM tab4 WHERE col1 >= 936.43 AND col4 >= 706.86 OR (((col4 > 689.58) AND col3 <= 105 AND col3 >= 274 OR col3 >= 384)) ORDER BY 1 DESC,2 DESC
+----
+14 values hashing to e13aba4528d4032916a93c158238ff5f
+
+query II valuesort label-5110
+SELECT pk, col0 FROM tab0 WHERE col1 >= 936.43 AND col4 >= 706.86 OR (((col4 > 689.58) AND col3 <= 105 AND col3 >= 274 OR col3 >= 384)) ORDER BY 1,2 DESC
+----
+14 values hashing to e13aba4528d4032916a93c158238ff5f
+
+query II valuesort label-5110
+SELECT pk, col0 FROM tab1 WHERE col1 >= 936.43 AND col4 >= 706.86 OR (((col4 > 689.58) AND col3 <= 105 AND col3 >= 274 OR col3 >= 384)) ORDER BY 1,2 DESC
+----
+14 values hashing to e13aba4528d4032916a93c158238ff5f
+
+query II valuesort label-5110
+SELECT pk, col0 FROM tab2 WHERE col1 >= 936.43 AND col4 >= 706.86 OR (((col4 > 689.58) AND col3 <= 105 AND col3 >= 274 OR col3 >= 384)) ORDER BY 1,2 DESC
+----
+14 values hashing to e13aba4528d4032916a93c158238ff5f
+
+query II valuesort label-5110
+SELECT pk, col0 FROM tab3 WHERE col1 >= 936.43 AND col4 >= 706.86 OR (((col4 > 689.58) AND col3 <= 105 AND col3 >= 274 OR col3 >= 384)) ORDER BY 1,2 DESC
+----
+14 values hashing to e13aba4528d4032916a93c158238ff5f
+
+query II valuesort label-5110
+SELECT pk, col0 FROM tab4 WHERE col1 >= 936.43 AND col4 >= 706.86 OR (((col4 > 689.58) AND col3 <= 105 AND col3 >= 274 OR col3 >= 384)) ORDER BY 1,2 DESC
+----
+14 values hashing to e13aba4528d4032916a93c158238ff5f
+
+query II valuesort label-5110
+SELECT pk, col0 FROM tab0 WHERE col1 >= 936.43 AND col4 >= 706.86 OR (((col4 > 689.58) AND col3 <= 105 AND col3 >= 274 OR col3 >= 384)) ORDER BY 2 DESC,1
+----
+14 values hashing to e13aba4528d4032916a93c158238ff5f
+
+query II valuesort label-5110
+SELECT pk, col0 FROM tab1 WHERE col1 >= 936.43 AND col4 >= 706.86 OR (((col4 > 689.58) AND col3 <= 105 AND col3 >= 274 OR col3 >= 384)) ORDER BY 2 DESC,1
+----
+14 values hashing to e13aba4528d4032916a93c158238ff5f
+
+query II valuesort label-5110
+SELECT pk, col0 FROM tab2 WHERE col1 >= 936.43 AND col4 >= 706.86 OR (((col4 > 689.58) AND col3 <= 105 AND col3 >= 274 OR col3 >= 384)) ORDER BY 2 DESC,1
+----
+14 values hashing to e13aba4528d4032916a93c158238ff5f
+
+query II valuesort label-5110
+SELECT pk, col0 FROM tab3 WHERE col1 >= 936.43 AND col4 >= 706.86 OR (((col4 > 689.58) AND col3 <= 105 AND col3 >= 274 OR col3 >= 384)) ORDER BY 2 DESC,1
+----
+14 values hashing to e13aba4528d4032916a93c158238ff5f
+
+query II valuesort label-5110
+SELECT pk, col0 FROM tab4 WHERE col1 >= 936.43 AND col4 >= 706.86 OR (((col4 > 689.58) AND col3 <= 105 AND col3 >= 274 OR col3 >= 384)) ORDER BY 2 DESC,1
+----
+14 values hashing to e13aba4528d4032916a93c158238ff5f
+
+query II valuesort label-5110
+SELECT pk, col0 FROM tab0 WHERE col1 >= 936.43 AND col4 >= 706.86 OR (((col4 > 689.58) AND col3 <= 105 AND col3 >= 274 OR col3 >= 384)) ORDER BY 2,1
+----
+14 values hashing to e13aba4528d4032916a93c158238ff5f
+
+query II valuesort label-5110
+SELECT pk, col0 FROM tab1 WHERE col1 >= 936.43 AND col4 >= 706.86 OR (((col4 > 689.58) AND col3 <= 105 AND col3 >= 274 OR col3 >= 384)) ORDER BY 2,1
+----
+14 values hashing to e13aba4528d4032916a93c158238ff5f
+
+query II valuesort label-5110
+SELECT pk, col0 FROM tab2 WHERE col1 >= 936.43 AND col4 >= 706.86 OR (((col4 > 689.58) AND col3 <= 105 AND col3 >= 274 OR col3 >= 384)) ORDER BY 2,1
+----
+14 values hashing to e13aba4528d4032916a93c158238ff5f
+
+query II valuesort label-5110
+SELECT pk, col0 FROM tab3 WHERE col1 >= 936.43 AND col4 >= 706.86 OR (((col4 > 689.58) AND col3 <= 105 AND col3 >= 274 OR col3 >= 384)) ORDER BY 2,1
+----
+14 values hashing to e13aba4528d4032916a93c158238ff5f
+
+query II valuesort label-5110
+SELECT pk, col0 FROM tab4 WHERE col1 >= 936.43 AND col4 >= 706.86 OR (((col4 > 689.58) AND col3 <= 105 AND col3 >= 274 OR col3 >= 384)) ORDER BY 2,1
+----
+14 values hashing to e13aba4528d4032916a93c158238ff5f
+
+query II valuesort label-5110
+SELECT pk, col0 FROM tab0 WHERE col1 >= 936.43 AND col4 >= 706.86 OR (((col4 > 689.58) AND col3 <= 105 AND col3 >= 274 OR col3 >= 384)) ORDER BY 1 DESC,2
+----
+14 values hashing to e13aba4528d4032916a93c158238ff5f
+
+query II valuesort label-5110
+SELECT pk, col0 FROM tab1 WHERE col1 >= 936.43 AND col4 >= 706.86 OR (((col4 > 689.58) AND col3 <= 105 AND col3 >= 274 OR col3 >= 384)) ORDER BY 1 DESC,2
+----
+14 values hashing to e13aba4528d4032916a93c158238ff5f
+
+query II valuesort label-5110
+SELECT pk, col0 FROM tab2 WHERE col1 >= 936.43 AND col4 >= 706.86 OR (((col4 > 689.58) AND col3 <= 105 AND col3 >= 274 OR col3 >= 384)) ORDER BY 1 DESC,2
+----
+14 values hashing to e13aba4528d4032916a93c158238ff5f
+
+query II valuesort label-5110
+SELECT pk, col0 FROM tab3 WHERE col1 >= 936.43 AND col4 >= 706.86 OR (((col4 > 689.58) AND col3 <= 105 AND col3 >= 274 OR col3 >= 384)) ORDER BY 1 DESC,2
+----
+14 values hashing to e13aba4528d4032916a93c158238ff5f
+
+query II valuesort label-5110
+SELECT pk, col0 FROM tab4 WHERE col1 >= 936.43 AND col4 >= 706.86 OR (((col4 > 689.58) AND col3 <= 105 AND col3 >= 274 OR col3 >= 384)) ORDER BY 1 DESC,2
+----
+14 values hashing to e13aba4528d4032916a93c158238ff5f
+
+query II valuesort label-5110
+SELECT pk, col0 FROM tab0 WHERE col1 >= 936.43 AND col4 >= 706.86 OR (((col4 > 689.58) AND col3 <= 105 AND col3 >= 274 OR col3 >= 384)) ORDER BY 1,2
+----
+14 values hashing to e13aba4528d4032916a93c158238ff5f
+
+query II valuesort label-5110
+SELECT pk, col0 FROM tab1 WHERE col1 >= 936.43 AND col4 >= 706.86 OR (((col4 > 689.58) AND col3 <= 105 AND col3 >= 274 OR col3 >= 384)) ORDER BY 1,2
+----
+14 values hashing to e13aba4528d4032916a93c158238ff5f
+
+query II valuesort label-5110
+SELECT pk, col0 FROM tab2 WHERE col1 >= 936.43 AND col4 >= 706.86 OR (((col4 > 689.58) AND col3 <= 105 AND col3 >= 274 OR col3 >= 384)) ORDER BY 1,2
+----
+14 values hashing to e13aba4528d4032916a93c158238ff5f
+
+query II valuesort label-5110
+SELECT pk, col0 FROM tab3 WHERE col1 >= 936.43 AND col4 >= 706.86 OR (((col4 > 689.58) AND col3 <= 105 AND col3 >= 274 OR col3 >= 384)) ORDER BY 1,2
+----
+14 values hashing to e13aba4528d4032916a93c158238ff5f
+
+query II valuesort label-5110
+SELECT pk, col0 FROM tab4 WHERE col1 >= 936.43 AND col4 >= 706.86 OR (((col4 > 689.58) AND col3 <= 105 AND col3 >= 274 OR col3 >= 384)) ORDER BY 1,2
+----
+14 values hashing to e13aba4528d4032916a93c158238ff5f
+
+query I valuesort label-5160
+SELECT pk FROM tab0 WHERE (col3 BETWEEN 891 AND 218 AND (col0 >= 536) AND (col1 <= 628.10 AND (col3 = 885)) AND ((col0 < 349 AND ((((col1 > 92.72)))))) OR col0 IS NULL) ORDER BY 1 DESC
+----
+
+query I valuesort label-5160
+SELECT pk FROM tab1 WHERE (col3 BETWEEN 891 AND 218 AND (col0 >= 536) AND (col1 <= 628.10 AND (col3 = 885)) AND ((col0 < 349 AND ((((col1 > 92.72)))))) OR col0 IS NULL) ORDER BY 1 DESC
+----
+
+query I valuesort label-5160
+SELECT pk FROM tab2 WHERE (col3 BETWEEN 891 AND 218 AND (col0 >= 536) AND (col1 <= 628.10 AND (col3 = 885)) AND ((col0 < 349 AND ((((col1 > 92.72)))))) OR col0 IS NULL) ORDER BY 1 DESC
+----
+
+query I valuesort label-5160
+SELECT pk FROM tab3 WHERE (col3 BETWEEN 891 AND 218 AND (col0 >= 536) AND (col1 <= 628.10 AND (col3 = 885)) AND ((col0 < 349 AND ((((col1 > 92.72)))))) OR col0 IS NULL) ORDER BY 1 DESC
+----
+
+query I valuesort label-5160
+SELECT pk FROM tab4 WHERE (col3 BETWEEN 891 AND 218 AND (col0 >= 536) AND (col1 <= 628.10 AND (col3 = 885)) AND ((col0 < 349 AND ((((col1 > 92.72)))))) OR col0 IS NULL) ORDER BY 1 DESC
+----
+
+query I valuesort label-5160
+SELECT pk FROM tab0 WHERE (col3 BETWEEN 891 AND 218 AND (col0 >= 536) AND (col1 <= 628.10 AND (col3 = 885)) AND ((col0 < 349 AND ((((col1 > 92.72)))))) OR col0 IS NULL) ORDER BY 1
+----
+
+query I valuesort label-5160
+SELECT pk FROM tab1 WHERE (col3 BETWEEN 891 AND 218 AND (col0 >= 536) AND (col1 <= 628.10 AND (col3 = 885)) AND ((col0 < 349 AND ((((col1 > 92.72)))))) OR col0 IS NULL) ORDER BY 1
+----
+
+query I valuesort label-5160
+SELECT pk FROM tab2 WHERE (col3 BETWEEN 891 AND 218 AND (col0 >= 536) AND (col1 <= 628.10 AND (col3 = 885)) AND ((col0 < 349 AND ((((col1 > 92.72)))))) OR col0 IS NULL) ORDER BY 1
+----
+
+query I valuesort label-5160
+SELECT pk FROM tab3 WHERE (col3 BETWEEN 891 AND 218 AND (col0 >= 536) AND (col1 <= 628.10 AND (col3 = 885)) AND ((col0 < 349 AND ((((col1 > 92.72)))))) OR col0 IS NULL) ORDER BY 1
+----
+
+query I valuesort label-5160
+SELECT pk FROM tab4 WHERE (col3 BETWEEN 891 AND 218 AND (col0 >= 536) AND (col1 <= 628.10 AND (col3 = 885)) AND ((col0 < 349 AND ((((col1 > 92.72)))))) OR col0 IS NULL) ORDER BY 1
+----
+
+query II valuesort label-5170
+SELECT pk, col0 FROM tab0 WHERE (col3 BETWEEN 891 AND 218 AND (col0 >= 536) AND (col1 <= 628.10 AND (col3 = 885)) AND ((col0 < 349 AND ((((col1 > 92.72)))))) OR col0 IS NULL) ORDER BY 1 DESC
+----
+
+query II valuesort label-5170
+SELECT pk, col0 FROM tab1 WHERE (col3 BETWEEN 891 AND 218 AND (col0 >= 536) AND (col1 <= 628.10 AND (col3 = 885)) AND ((col0 < 349 AND ((((col1 > 92.72)))))) OR col0 IS NULL) ORDER BY 1 DESC
+----
+
+query II valuesort label-5170
+SELECT pk, col0 FROM tab2 WHERE (col3 BETWEEN 891 AND 218 AND (col0 >= 536) AND (col1 <= 628.10 AND (col3 = 885)) AND ((col0 < 349 AND ((((col1 > 92.72)))))) OR col0 IS NULL) ORDER BY 1 DESC
+----
+
+query II valuesort label-5170
+SELECT pk, col0 FROM tab3 WHERE (col3 BETWEEN 891 AND 218 AND (col0 >= 536) AND (col1 <= 628.10 AND (col3 = 885)) AND ((col0 < 349 AND ((((col1 > 92.72)))))) OR col0 IS NULL) ORDER BY 1 DESC
+----
+
+query II valuesort label-5170
+SELECT pk, col0 FROM tab4 WHERE (col3 BETWEEN 891 AND 218 AND (col0 >= 536) AND (col1 <= 628.10 AND (col3 = 885)) AND ((col0 < 349 AND ((((col1 > 92.72)))))) OR col0 IS NULL) ORDER BY 1 DESC
+----
+
+query II valuesort label-5170
+SELECT pk, col0 FROM tab0 WHERE (col3 BETWEEN 891 AND 218 AND (col0 >= 536) AND (col1 <= 628.10 AND (col3 = 885)) AND ((col0 < 349 AND ((((col1 > 92.72)))))) OR col0 IS NULL) ORDER BY 2 DESC
+----
+
+query II valuesort label-5170
+SELECT pk, col0 FROM tab1 WHERE (col3 BETWEEN 891 AND 218 AND (col0 >= 536) AND (col1 <= 628.10 AND (col3 = 885)) AND ((col0 < 349 AND ((((col1 > 92.72)))))) OR col0 IS NULL) ORDER BY 2 DESC
+----
+
+query II valuesort label-5170
+SELECT pk, col0 FROM tab2 WHERE (col3 BETWEEN 891 AND 218 AND (col0 >= 536) AND (col1 <= 628.10 AND (col3 = 885)) AND ((col0 < 349 AND ((((col1 > 92.72)))))) OR col0 IS NULL) ORDER BY 2 DESC
+----
+
+query II valuesort label-5170
+SELECT pk, col0 FROM tab3 WHERE (col3 BETWEEN 891 AND 218 AND (col0 >= 536) AND (col1 <= 628.10 AND (col3 = 885)) AND ((col0 < 349 AND ((((col1 > 92.72)))))) OR col0 IS NULL) ORDER BY 2 DESC
+----
+
+query II valuesort label-5170
+SELECT pk, col0 FROM tab4 WHERE (col3 BETWEEN 891 AND 218 AND (col0 >= 536) AND (col1 <= 628.10 AND (col3 = 885)) AND ((col0 < 349 AND ((((col1 > 92.72)))))) OR col0 IS NULL) ORDER BY 2 DESC
+----
+
+query II valuesort label-5170
+SELECT pk, col0 FROM tab0 WHERE (col3 BETWEEN 891 AND 218 AND (col0 >= 536) AND (col1 <= 628.10 AND (col3 = 885)) AND ((col0 < 349 AND ((((col1 > 92.72)))))) OR col0 IS NULL) ORDER BY 1
+----
+
+query II valuesort label-5170
+SELECT pk, col0 FROM tab1 WHERE (col3 BETWEEN 891 AND 218 AND (col0 >= 536) AND (col1 <= 628.10 AND (col3 = 885)) AND ((col0 < 349 AND ((((col1 > 92.72)))))) OR col0 IS NULL) ORDER BY 1
+----
+
+query II valuesort label-5170
+SELECT pk, col0 FROM tab2 WHERE (col3 BETWEEN 891 AND 218 AND (col0 >= 536) AND (col1 <= 628.10 AND (col3 = 885)) AND ((col0 < 349 AND ((((col1 > 92.72)))))) OR col0 IS NULL) ORDER BY 1
+----
+
+query II valuesort label-5170
+SELECT pk, col0 FROM tab3 WHERE (col3 BETWEEN 891 AND 218 AND (col0 >= 536) AND (col1 <= 628.10 AND (col3 = 885)) AND ((col0 < 349 AND ((((col1 > 92.72)))))) OR col0 IS NULL) ORDER BY 1
+----
+
+query II valuesort label-5170
+SELECT pk, col0 FROM tab4 WHERE (col3 BETWEEN 891 AND 218 AND (col0 >= 536) AND (col1 <= 628.10 AND (col3 = 885)) AND ((col0 < 349 AND ((((col1 > 92.72)))))) OR col0 IS NULL) ORDER BY 1
+----
+
+query II valuesort label-5170
+SELECT pk, col0 FROM tab0 WHERE (col3 BETWEEN 891 AND 218 AND (col0 >= 536) AND (col1 <= 628.10 AND (col3 = 885)) AND ((col0 < 349 AND ((((col1 > 92.72)))))) OR col0 IS NULL) ORDER BY 2
+----
+
+query II valuesort label-5170
+SELECT pk, col0 FROM tab1 WHERE (col3 BETWEEN 891 AND 218 AND (col0 >= 536) AND (col1 <= 628.10 AND (col3 = 885)) AND ((col0 < 349 AND ((((col1 > 92.72)))))) OR col0 IS NULL) ORDER BY 2
+----
+
+query II valuesort label-5170
+SELECT pk, col0 FROM tab2 WHERE (col3 BETWEEN 891 AND 218 AND (col0 >= 536) AND (col1 <= 628.10 AND (col3 = 885)) AND ((col0 < 349 AND ((((col1 > 92.72)))))) OR col0 IS NULL) ORDER BY 2
+----
+
+query II valuesort label-5170
+SELECT pk, col0 FROM tab3 WHERE (col3 BETWEEN 891 AND 218 AND (col0 >= 536) AND (col1 <= 628.10 AND (col3 = 885)) AND ((col0 < 349 AND ((((col1 > 92.72)))))) OR col0 IS NULL) ORDER BY 2
+----
+
+query II valuesort label-5170
+SELECT pk, col0 FROM tab4 WHERE (col3 BETWEEN 891 AND 218 AND (col0 >= 536) AND (col1 <= 628.10 AND (col3 = 885)) AND ((col0 < 349 AND ((((col1 > 92.72)))))) OR col0 IS NULL) ORDER BY 2
+----
+
+query II valuesort label-5170
+SELECT pk, col0 FROM tab0 WHERE (col3 BETWEEN 891 AND 218 AND (col0 >= 536) AND (col1 <= 628.10 AND (col3 = 885)) AND ((col0 < 349 AND ((((col1 > 92.72)))))) OR col0 IS NULL) ORDER BY 1 DESC,2 DESC
+----
+
+query II valuesort label-5170
+SELECT pk, col0 FROM tab1 WHERE (col3 BETWEEN 891 AND 218 AND (col0 >= 536) AND (col1 <= 628.10 AND (col3 = 885)) AND ((col0 < 349 AND ((((col1 > 92.72)))))) OR col0 IS NULL) ORDER BY 1 DESC,2 DESC
+----
+
+query II valuesort label-5170
+SELECT pk, col0 FROM tab2 WHERE (col3 BETWEEN 891 AND 218 AND (col0 >= 536) AND (col1 <= 628.10 AND (col3 = 885)) AND ((col0 < 349 AND ((((col1 > 92.72)))))) OR col0 IS NULL) ORDER BY 1 DESC,2 DESC
+----
+
+query II valuesort label-5170
+SELECT pk, col0 FROM tab3 WHERE (col3 BETWEEN 891 AND 218 AND (col0 >= 536) AND (col1 <= 628.10 AND (col3 = 885)) AND ((col0 < 349 AND ((((col1 > 92.72)))))) OR col0 IS NULL) ORDER BY 1 DESC,2 DESC
+----
+
+query II valuesort label-5170
+SELECT pk, col0 FROM tab4 WHERE (col3 BETWEEN 891 AND 218 AND (col0 >= 536) AND (col1 <= 628.10 AND (col3 = 885)) AND ((col0 < 349 AND ((((col1 > 92.72)))))) OR col0 IS NULL) ORDER BY 1 DESC,2 DESC
+----
+
+query II valuesort label-5170
+SELECT pk, col0 FROM tab0 WHERE (col3 BETWEEN 891 AND 218 AND (col0 >= 536) AND (col1 <= 628.10 AND (col3 = 885)) AND ((col0 < 349 AND ((((col1 > 92.72)))))) OR col0 IS NULL) ORDER BY 1,2 DESC
+----
+
+query II valuesort label-5170
+SELECT pk, col0 FROM tab1 WHERE (col3 BETWEEN 891 AND 218 AND (col0 >= 536) AND (col1 <= 628.10 AND (col3 = 885)) AND ((col0 < 349 AND ((((col1 > 92.72)))))) OR col0 IS NULL) ORDER BY 1,2 DESC
+----
+
+query II valuesort label-5170
+SELECT pk, col0 FROM tab2 WHERE (col3 BETWEEN 891 AND 218 AND (col0 >= 536) AND (col1 <= 628.10 AND (col3 = 885)) AND ((col0 < 349 AND ((((col1 > 92.72)))))) OR col0 IS NULL) ORDER BY 1,2 DESC
+----
+
+query II valuesort label-5170
+SELECT pk, col0 FROM tab3 WHERE (col3 BETWEEN 891 AND 218 AND (col0 >= 536) AND (col1 <= 628.10 AND (col3 = 885)) AND ((col0 < 349 AND ((((col1 > 92.72)))))) OR col0 IS NULL) ORDER BY 1,2 DESC
+----
+
+query II valuesort label-5170
+SELECT pk, col0 FROM tab4 WHERE (col3 BETWEEN 891 AND 218 AND (col0 >= 536) AND (col1 <= 628.10 AND (col3 = 885)) AND ((col0 < 349 AND ((((col1 > 92.72)))))) OR col0 IS NULL) ORDER BY 1,2 DESC
+----
+
+query II valuesort label-5170
+SELECT pk, col0 FROM tab0 WHERE (col3 BETWEEN 891 AND 218 AND (col0 >= 536) AND (col1 <= 628.10 AND (col3 = 885)) AND ((col0 < 349 AND ((((col1 > 92.72)))))) OR col0 IS NULL) ORDER BY 2 DESC,1
+----
+
+query II valuesort label-5170
+SELECT pk, col0 FROM tab1 WHERE (col3 BETWEEN 891 AND 218 AND (col0 >= 536) AND (col1 <= 628.10 AND (col3 = 885)) AND ((col0 < 349 AND ((((col1 > 92.72)))))) OR col0 IS NULL) ORDER BY 2 DESC,1
+----
+
+query II valuesort label-5170
+SELECT pk, col0 FROM tab2 WHERE (col3 BETWEEN 891 AND 218 AND (col0 >= 536) AND (col1 <= 628.10 AND (col3 = 885)) AND ((col0 < 349 AND ((((col1 > 92.72)))))) OR col0 IS NULL) ORDER BY 2 DESC,1
+----
+
+query II valuesort label-5170
+SELECT pk, col0 FROM tab3 WHERE (col3 BETWEEN 891 AND 218 AND (col0 >= 536) AND (col1 <= 628.10 AND (col3 = 885)) AND ((col0 < 349 AND ((((col1 > 92.72)))))) OR col0 IS NULL) ORDER BY 2 DESC,1
+----
+
+query II valuesort label-5170
+SELECT pk, col0 FROM tab4 WHERE (col3 BETWEEN 891 AND 218 AND (col0 >= 536) AND (col1 <= 628.10 AND (col3 = 885)) AND ((col0 < 349 AND ((((col1 > 92.72)))))) OR col0 IS NULL) ORDER BY 2 DESC,1
+----
+
+query II valuesort label-5170
+SELECT pk, col0 FROM tab0 WHERE (col3 BETWEEN 891 AND 218 AND (col0 >= 536) AND (col1 <= 628.10 AND (col3 = 885)) AND ((col0 < 349 AND ((((col1 > 92.72)))))) OR col0 IS NULL) ORDER BY 2,1
+----
+
+query II valuesort label-5170
+SELECT pk, col0 FROM tab1 WHERE (col3 BETWEEN 891 AND 218 AND (col0 >= 536) AND (col1 <= 628.10 AND (col3 = 885)) AND ((col0 < 349 AND ((((col1 > 92.72)))))) OR col0 IS NULL) ORDER BY 2,1
+----
+
+query II valuesort label-5170
+SELECT pk, col0 FROM tab2 WHERE (col3 BETWEEN 891 AND 218 AND (col0 >= 536) AND (col1 <= 628.10 AND (col3 = 885)) AND ((col0 < 349 AND ((((col1 > 92.72)))))) OR col0 IS NULL) ORDER BY 2,1
+----
+
+query II valuesort label-5170
+SELECT pk, col0 FROM tab3 WHERE (col3 BETWEEN 891 AND 218 AND (col0 >= 536) AND (col1 <= 628.10 AND (col3 = 885)) AND ((col0 < 349 AND ((((col1 > 92.72)))))) OR col0 IS NULL) ORDER BY 2,1
+----
+
+query II valuesort label-5170
+SELECT pk, col0 FROM tab4 WHERE (col3 BETWEEN 891 AND 218 AND (col0 >= 536) AND (col1 <= 628.10 AND (col3 = 885)) AND ((col0 < 349 AND ((((col1 > 92.72)))))) OR col0 IS NULL) ORDER BY 2,1
+----
+
+query II valuesort label-5170
+SELECT pk, col0 FROM tab0 WHERE (col3 BETWEEN 891 AND 218 AND (col0 >= 536) AND (col1 <= 628.10 AND (col3 = 885)) AND ((col0 < 349 AND ((((col1 > 92.72)))))) OR col0 IS NULL) ORDER BY 1 DESC,2
+----
+
+query II valuesort label-5170
+SELECT pk, col0 FROM tab1 WHERE (col3 BETWEEN 891 AND 218 AND (col0 >= 536) AND (col1 <= 628.10 AND (col3 = 885)) AND ((col0 < 349 AND ((((col1 > 92.72)))))) OR col0 IS NULL) ORDER BY 1 DESC,2
+----
+
+query II valuesort label-5170
+SELECT pk, col0 FROM tab2 WHERE (col3 BETWEEN 891 AND 218 AND (col0 >= 536) AND (col1 <= 628.10 AND (col3 = 885)) AND ((col0 < 349 AND ((((col1 > 92.72)))))) OR col0 IS NULL) ORDER BY 1 DESC,2
+----
+
+query II valuesort label-5170
+SELECT pk, col0 FROM tab3 WHERE (col3 BETWEEN 891 AND 218 AND (col0 >= 536) AND (col1 <= 628.10 AND (col3 = 885)) AND ((col0 < 349 AND ((((col1 > 92.72)))))) OR col0 IS NULL) ORDER BY 1 DESC,2
+----
+
+query II valuesort label-5170
+SELECT pk, col0 FROM tab4 WHERE (col3 BETWEEN 891 AND 218 AND (col0 >= 536) AND (col1 <= 628.10 AND (col3 = 885)) AND ((col0 < 349 AND ((((col1 > 92.72)))))) OR col0 IS NULL) ORDER BY 1 DESC,2
+----
+
+query II valuesort label-5170
+SELECT pk, col0 FROM tab0 WHERE (col3 BETWEEN 891 AND 218 AND (col0 >= 536) AND (col1 <= 628.10 AND (col3 = 885)) AND ((col0 < 349 AND ((((col1 > 92.72)))))) OR col0 IS NULL) ORDER BY 1,2
+----
+
+query II valuesort label-5170
+SELECT pk, col0 FROM tab1 WHERE (col3 BETWEEN 891 AND 218 AND (col0 >= 536) AND (col1 <= 628.10 AND (col3 = 885)) AND ((col0 < 349 AND ((((col1 > 92.72)))))) OR col0 IS NULL) ORDER BY 1,2
+----
+
+query II valuesort label-5170
+SELECT pk, col0 FROM tab2 WHERE (col3 BETWEEN 891 AND 218 AND (col0 >= 536) AND (col1 <= 628.10 AND (col3 = 885)) AND ((col0 < 349 AND ((((col1 > 92.72)))))) OR col0 IS NULL) ORDER BY 1,2
+----
+
+query II valuesort label-5170
+SELECT pk, col0 FROM tab3 WHERE (col3 BETWEEN 891 AND 218 AND (col0 >= 536) AND (col1 <= 628.10 AND (col3 = 885)) AND ((col0 < 349 AND ((((col1 > 92.72)))))) OR col0 IS NULL) ORDER BY 1,2
+----
+
+query II valuesort label-5170
+SELECT pk, col0 FROM tab4 WHERE (col3 BETWEEN 891 AND 218 AND (col0 >= 536) AND (col1 <= 628.10 AND (col3 = 885)) AND ((col0 < 349 AND ((((col1 > 92.72)))))) OR col0 IS NULL) ORDER BY 1,2
+----
+
+query I valuesort label-5220
+SELECT pk FROM tab0 WHERE ((col1 > 6.75)) ORDER BY 1 DESC
+----
+10 values hashing to e20b902b49a98b1a05ed62804c757f94
+
+query I valuesort label-5220
+SELECT pk FROM tab1 WHERE ((col1 > 6.75)) ORDER BY 1 DESC
+----
+10 values hashing to e20b902b49a98b1a05ed62804c757f94
+
+query I valuesort label-5220
+SELECT pk FROM tab2 WHERE ((col1 > 6.75)) ORDER BY 1 DESC
+----
+10 values hashing to e20b902b49a98b1a05ed62804c757f94
+
+query I valuesort label-5220
+SELECT pk FROM tab3 WHERE ((col1 > 6.75)) ORDER BY 1 DESC
+----
+10 values hashing to e20b902b49a98b1a05ed62804c757f94
+
+query I valuesort label-5220
+SELECT pk FROM tab4 WHERE ((col1 > 6.75)) ORDER BY 1 DESC
+----
+10 values hashing to e20b902b49a98b1a05ed62804c757f94
+
+query I valuesort label-5220
+SELECT pk FROM tab0 WHERE ((col1 > 6.75)) ORDER BY 1
+----
+10 values hashing to e20b902b49a98b1a05ed62804c757f94
+
+query I valuesort label-5220
+SELECT pk FROM tab1 WHERE ((col1 > 6.75)) ORDER BY 1
+----
+10 values hashing to e20b902b49a98b1a05ed62804c757f94
+
+query I valuesort label-5220
+SELECT pk FROM tab2 WHERE ((col1 > 6.75)) ORDER BY 1
+----
+10 values hashing to e20b902b49a98b1a05ed62804c757f94
+
+query I valuesort label-5220
+SELECT pk FROM tab3 WHERE ((col1 > 6.75)) ORDER BY 1
+----
+10 values hashing to e20b902b49a98b1a05ed62804c757f94
+
+query I valuesort label-5220
+SELECT pk FROM tab4 WHERE ((col1 > 6.75)) ORDER BY 1
+----
+10 values hashing to e20b902b49a98b1a05ed62804c757f94
+
+query II valuesort label-5230
+SELECT pk, col0 FROM tab0 WHERE ((col1 > 6.75)) ORDER BY 1 DESC
+----
+20 values hashing to 7e7c5f3c08c3c1ac89f33c89a0e42d7c
+
+query II valuesort label-5230
+SELECT pk, col0 FROM tab1 WHERE ((col1 > 6.75)) ORDER BY 1 DESC
+----
+20 values hashing to 7e7c5f3c08c3c1ac89f33c89a0e42d7c
+
+query II valuesort label-5230
+SELECT pk, col0 FROM tab2 WHERE ((col1 > 6.75)) ORDER BY 1 DESC
+----
+20 values hashing to 7e7c5f3c08c3c1ac89f33c89a0e42d7c
+
+query II valuesort label-5230
+SELECT pk, col0 FROM tab3 WHERE ((col1 > 6.75)) ORDER BY 1 DESC
+----
+20 values hashing to 7e7c5f3c08c3c1ac89f33c89a0e42d7c
+
+query II valuesort label-5230
+SELECT pk, col0 FROM tab4 WHERE ((col1 > 6.75)) ORDER BY 1 DESC
+----
+20 values hashing to 7e7c5f3c08c3c1ac89f33c89a0e42d7c
+
+query II valuesort label-5230
+SELECT pk, col0 FROM tab0 WHERE ((col1 > 6.75)) ORDER BY 2 DESC
+----
+20 values hashing to 7e7c5f3c08c3c1ac89f33c89a0e42d7c
+
+query II valuesort label-5230
+SELECT pk, col0 FROM tab1 WHERE ((col1 > 6.75)) ORDER BY 2 DESC
+----
+20 values hashing to 7e7c5f3c08c3c1ac89f33c89a0e42d7c
+
+query II valuesort label-5230
+SELECT pk, col0 FROM tab2 WHERE ((col1 > 6.75)) ORDER BY 2 DESC
+----
+20 values hashing to 7e7c5f3c08c3c1ac89f33c89a0e42d7c
+
+query II valuesort label-5230
+SELECT pk, col0 FROM tab3 WHERE ((col1 > 6.75)) ORDER BY 2 DESC
+----
+20 values hashing to 7e7c5f3c08c3c1ac89f33c89a0e42d7c
+
+query II valuesort label-5230
+SELECT pk, col0 FROM tab4 WHERE ((col1 > 6.75)) ORDER BY 2 DESC
+----
+20 values hashing to 7e7c5f3c08c3c1ac89f33c89a0e42d7c
+
+query II valuesort label-5230
+SELECT pk, col0 FROM tab0 WHERE ((col1 > 6.75)) ORDER BY 1
+----
+20 values hashing to 7e7c5f3c08c3c1ac89f33c89a0e42d7c
+
+query II valuesort label-5230
+SELECT pk, col0 FROM tab1 WHERE ((col1 > 6.75)) ORDER BY 1
+----
+20 values hashing to 7e7c5f3c08c3c1ac89f33c89a0e42d7c
+
+query II valuesort label-5230
+SELECT pk, col0 FROM tab2 WHERE ((col1 > 6.75)) ORDER BY 1
+----
+20 values hashing to 7e7c5f3c08c3c1ac89f33c89a0e42d7c
+
+query II valuesort label-5230
+SELECT pk, col0 FROM tab3 WHERE ((col1 > 6.75)) ORDER BY 1
+----
+20 values hashing to 7e7c5f3c08c3c1ac89f33c89a0e42d7c
+
+query II valuesort label-5230
+SELECT pk, col0 FROM tab4 WHERE ((col1 > 6.75)) ORDER BY 1
+----
+20 values hashing to 7e7c5f3c08c3c1ac89f33c89a0e42d7c
+
+query II valuesort label-5230
+SELECT pk, col0 FROM tab0 WHERE ((col1 > 6.75)) ORDER BY 2
+----
+20 values hashing to 7e7c5f3c08c3c1ac89f33c89a0e42d7c
+
+query II valuesort label-5230
+SELECT pk, col0 FROM tab1 WHERE ((col1 > 6.75)) ORDER BY 2
+----
+20 values hashing to 7e7c5f3c08c3c1ac89f33c89a0e42d7c
+
+query II valuesort label-5230
+SELECT pk, col0 FROM tab2 WHERE ((col1 > 6.75)) ORDER BY 2
+----
+20 values hashing to 7e7c5f3c08c3c1ac89f33c89a0e42d7c
+
+query II valuesort label-5230
+SELECT pk, col0 FROM tab3 WHERE ((col1 > 6.75)) ORDER BY 2
+----
+20 values hashing to 7e7c5f3c08c3c1ac89f33c89a0e42d7c
+
+query II valuesort label-5230
+SELECT pk, col0 FROM tab4 WHERE ((col1 > 6.75)) ORDER BY 2
+----
+20 values hashing to 7e7c5f3c08c3c1ac89f33c89a0e42d7c
+
+query II valuesort label-5230
+SELECT pk, col0 FROM tab0 WHERE ((col1 > 6.75)) ORDER BY 1 DESC,2 DESC
+----
+20 values hashing to 7e7c5f3c08c3c1ac89f33c89a0e42d7c
+
+query II valuesort label-5230
+SELECT pk, col0 FROM tab1 WHERE ((col1 > 6.75)) ORDER BY 1 DESC,2 DESC
+----
+20 values hashing to 7e7c5f3c08c3c1ac89f33c89a0e42d7c
+
+query II valuesort label-5230
+SELECT pk, col0 FROM tab2 WHERE ((col1 > 6.75)) ORDER BY 1 DESC,2 DESC
+----
+20 values hashing to 7e7c5f3c08c3c1ac89f33c89a0e42d7c
+
+query II valuesort label-5230
+SELECT pk, col0 FROM tab3 WHERE ((col1 > 6.75)) ORDER BY 1 DESC,2 DESC
+----
+20 values hashing to 7e7c5f3c08c3c1ac89f33c89a0e42d7c
+
+query II valuesort label-5230
+SELECT pk, col0 FROM tab4 WHERE ((col1 > 6.75)) ORDER BY 1 DESC,2 DESC
+----
+20 values hashing to 7e7c5f3c08c3c1ac89f33c89a0e42d7c
+
+query II valuesort label-5230
+SELECT pk, col0 FROM tab0 WHERE ((col1 > 6.75)) ORDER BY 1,2 DESC
+----
+20 values hashing to 7e7c5f3c08c3c1ac89f33c89a0e42d7c
+
+query II valuesort label-5230
+SELECT pk, col0 FROM tab1 WHERE ((col1 > 6.75)) ORDER BY 1,2 DESC
+----
+20 values hashing to 7e7c5f3c08c3c1ac89f33c89a0e42d7c
+
+query II valuesort label-5230
+SELECT pk, col0 FROM tab2 WHERE ((col1 > 6.75)) ORDER BY 1,2 DESC
+----
+20 values hashing to 7e7c5f3c08c3c1ac89f33c89a0e42d7c
+
+query II valuesort label-5230
+SELECT pk, col0 FROM tab3 WHERE ((col1 > 6.75)) ORDER BY 1,2 DESC
+----
+20 values hashing to 7e7c5f3c08c3c1ac89f33c89a0e42d7c
+
+query II valuesort label-5230
+SELECT pk, col0 FROM tab4 WHERE ((col1 > 6.75)) ORDER BY 1,2 DESC
+----
+20 values hashing to 7e7c5f3c08c3c1ac89f33c89a0e42d7c
+
+query II valuesort label-5230
+SELECT pk, col0 FROM tab0 WHERE ((col1 > 6.75)) ORDER BY 2 DESC,1
+----
+20 values hashing to 7e7c5f3c08c3c1ac89f33c89a0e42d7c
+
+query II valuesort label-5230
+SELECT pk, col0 FROM tab1 WHERE ((col1 > 6.75)) ORDER BY 2 DESC,1
+----
+20 values hashing to 7e7c5f3c08c3c1ac89f33c89a0e42d7c
+
+query II valuesort label-5230
+SELECT pk, col0 FROM tab2 WHERE ((col1 > 6.75)) ORDER BY 2 DESC,1
+----
+20 values hashing to 7e7c5f3c08c3c1ac89f33c89a0e42d7c
+
+query II valuesort label-5230
+SELECT pk, col0 FROM tab3 WHERE ((col1 > 6.75)) ORDER BY 2 DESC,1
+----
+20 values hashing to 7e7c5f3c08c3c1ac89f33c89a0e42d7c
+
+query II valuesort label-5230
+SELECT pk, col0 FROM tab4 WHERE ((col1 > 6.75)) ORDER BY 2 DESC,1
+----
+20 values hashing to 7e7c5f3c08c3c1ac89f33c89a0e42d7c
+
+query II valuesort label-5230
+SELECT pk, col0 FROM tab0 WHERE ((col1 > 6.75)) ORDER BY 2,1
+----
+20 values hashing to 7e7c5f3c08c3c1ac89f33c89a0e42d7c
+
+query II valuesort label-5230
+SELECT pk, col0 FROM tab1 WHERE ((col1 > 6.75)) ORDER BY 2,1
+----
+20 values hashing to 7e7c5f3c08c3c1ac89f33c89a0e42d7c
+
+query II valuesort label-5230
+SELECT pk, col0 FROM tab2 WHERE ((col1 > 6.75)) ORDER BY 2,1
+----
+20 values hashing to 7e7c5f3c08c3c1ac89f33c89a0e42d7c
+
+query II valuesort label-5230
+SELECT pk, col0 FROM tab3 WHERE ((col1 > 6.75)) ORDER BY 2,1
+----
+20 values hashing to 7e7c5f3c08c3c1ac89f33c89a0e42d7c
+
+query II valuesort label-5230
+SELECT pk, col0 FROM tab4 WHERE ((col1 > 6.75)) ORDER BY 2,1
+----
+20 values hashing to 7e7c5f3c08c3c1ac89f33c89a0e42d7c
+
+query II valuesort label-5230
+SELECT pk, col0 FROM tab0 WHERE ((col1 > 6.75)) ORDER BY 1 DESC,2
+----
+20 values hashing to 7e7c5f3c08c3c1ac89f33c89a0e42d7c
+
+query II valuesort label-5230
+SELECT pk, col0 FROM tab1 WHERE ((col1 > 6.75)) ORDER BY 1 DESC,2
+----
+20 values hashing to 7e7c5f3c08c3c1ac89f33c89a0e42d7c
+
+query II valuesort label-5230
+SELECT pk, col0 FROM tab2 WHERE ((col1 > 6.75)) ORDER BY 1 DESC,2
+----
+20 values hashing to 7e7c5f3c08c3c1ac89f33c89a0e42d7c
+
+query II valuesort label-5230
+SELECT pk, col0 FROM tab3 WHERE ((col1 > 6.75)) ORDER BY 1 DESC,2
+----
+20 values hashing to 7e7c5f3c08c3c1ac89f33c89a0e42d7c
+
+query II valuesort label-5230
+SELECT pk, col0 FROM tab4 WHERE ((col1 > 6.75)) ORDER BY 1 DESC,2
+----
+20 values hashing to 7e7c5f3c08c3c1ac89f33c89a0e42d7c
+
+query II valuesort label-5230
+SELECT pk, col0 FROM tab0 WHERE ((col1 > 6.75)) ORDER BY 1,2
+----
+20 values hashing to 7e7c5f3c08c3c1ac89f33c89a0e42d7c
+
+query II valuesort label-5230
+SELECT pk, col0 FROM tab1 WHERE ((col1 > 6.75)) ORDER BY 1,2
+----
+20 values hashing to 7e7c5f3c08c3c1ac89f33c89a0e42d7c
+
+query II valuesort label-5230
+SELECT pk, col0 FROM tab2 WHERE ((col1 > 6.75)) ORDER BY 1,2
+----
+20 values hashing to 7e7c5f3c08c3c1ac89f33c89a0e42d7c
+
+query II valuesort label-5230
+SELECT pk, col0 FROM tab3 WHERE ((col1 > 6.75)) ORDER BY 1,2
+----
+20 values hashing to 7e7c5f3c08c3c1ac89f33c89a0e42d7c
+
+query II valuesort label-5230
+SELECT pk, col0 FROM tab4 WHERE ((col1 > 6.75)) ORDER BY 1,2
+----
+20 values hashing to 7e7c5f3c08c3c1ac89f33c89a0e42d7c
+
+query I valuesort label-5280
+SELECT pk FROM tab0 WHERE col0 IS NULL OR (((col0 = 415) AND col1 < 991.3 OR col0 >= 553 AND col1 >= 507.82 AND ((((col1 > 593.21)))) OR col3 <= 238 AND col3 <= 413)) ORDER BY 1 DESC
+----
+3
+4
+8
+9
+
+query I valuesort label-5280
+SELECT pk FROM tab1 WHERE col0 IS NULL OR (((col0 = 415) AND col1 < 991.3 OR col0 >= 553 AND col1 >= 507.82 AND ((((col1 > 593.21)))) OR col3 <= 238 AND col3 <= 413)) ORDER BY 1 DESC
+----
+3
+4
+8
+9
+
+query I valuesort label-5280
+SELECT pk FROM tab2 WHERE col0 IS NULL OR (((col0 = 415) AND col1 < 991.3 OR col0 >= 553 AND col1 >= 507.82 AND ((((col1 > 593.21)))) OR col3 <= 238 AND col3 <= 413)) ORDER BY 1 DESC
+----
+3
+4
+8
+9
+
+query I valuesort label-5280
+SELECT pk FROM tab3 WHERE col0 IS NULL OR (((col0 = 415) AND col1 < 991.3 OR col0 >= 553 AND col1 >= 507.82 AND ((((col1 > 593.21)))) OR col3 <= 238 AND col3 <= 413)) ORDER BY 1 DESC
+----
+3
+4
+8
+9
+
+query I valuesort label-5280
+SELECT pk FROM tab4 WHERE col0 IS NULL OR (((col0 = 415) AND col1 < 991.3 OR col0 >= 553 AND col1 >= 507.82 AND ((((col1 > 593.21)))) OR col3 <= 238 AND col3 <= 413)) ORDER BY 1 DESC
+----
+3
+4
+8
+9
+
+query I valuesort label-5280
+SELECT pk FROM tab0 WHERE col0 IS NULL OR (((col0 = 415) AND col1 < 991.3 OR col0 >= 553 AND col1 >= 507.82 AND ((((col1 > 593.21)))) OR col3 <= 238 AND col3 <= 413)) ORDER BY 1
+----
+3
+4
+8
+9
+
+query I valuesort label-5280
+SELECT pk FROM tab1 WHERE col0 IS NULL OR (((col0 = 415) AND col1 < 991.3 OR col0 >= 553 AND col1 >= 507.82 AND ((((col1 > 593.21)))) OR col3 <= 238 AND col3 <= 413)) ORDER BY 1
+----
+3
+4
+8
+9
+
+query I valuesort label-5280
+SELECT pk FROM tab2 WHERE col0 IS NULL OR (((col0 = 415) AND col1 < 991.3 OR col0 >= 553 AND col1 >= 507.82 AND ((((col1 > 593.21)))) OR col3 <= 238 AND col3 <= 413)) ORDER BY 1
+----
+3
+4
+8
+9
+
+query I valuesort label-5280
+SELECT pk FROM tab3 WHERE col0 IS NULL OR (((col0 = 415) AND col1 < 991.3 OR col0 >= 553 AND col1 >= 507.82 AND ((((col1 > 593.21)))) OR col3 <= 238 AND col3 <= 413)) ORDER BY 1
+----
+3
+4
+8
+9
+
+query I valuesort label-5280
+SELECT pk FROM tab4 WHERE col0 IS NULL OR (((col0 = 415) AND col1 < 991.3 OR col0 >= 553 AND col1 >= 507.82 AND ((((col1 > 593.21)))) OR col3 <= 238 AND col3 <= 413)) ORDER BY 1
+----
+3
+4
+8
+9
+
+query II valuesort label-5290
+SELECT pk, col0 FROM tab0 WHERE col0 IS NULL OR (((col0 = 415) AND col1 < 991.3 OR col0 >= 553 AND col1 >= 507.82 AND ((((col1 > 593.21)))) OR col3 <= 238 AND col3 <= 413)) ORDER BY 1 DESC
+----
+297
+3
+345
+4
+725
+8
+9
+908
+
+query II valuesort label-5290
+SELECT pk, col0 FROM tab1 WHERE col0 IS NULL OR (((col0 = 415) AND col1 < 991.3 OR col0 >= 553 AND col1 >= 507.82 AND ((((col1 > 593.21)))) OR col3 <= 238 AND col3 <= 413)) ORDER BY 1 DESC
+----
+297
+3
+345
+4
+725
+8
+9
+908
+
+query II valuesort label-5290
+SELECT pk, col0 FROM tab2 WHERE col0 IS NULL OR (((col0 = 415) AND col1 < 991.3 OR col0 >= 553 AND col1 >= 507.82 AND ((((col1 > 593.21)))) OR col3 <= 238 AND col3 <= 413)) ORDER BY 1 DESC
+----
+297
+3
+345
+4
+725
+8
+9
+908
+
+query II valuesort label-5290
+SELECT pk, col0 FROM tab3 WHERE col0 IS NULL OR (((col0 = 415) AND col1 < 991.3 OR col0 >= 553 AND col1 >= 507.82 AND ((((col1 > 593.21)))) OR col3 <= 238 AND col3 <= 413)) ORDER BY 1 DESC
+----
+297
+3
+345
+4
+725
+8
+9
+908
+
+query II valuesort label-5290
+SELECT pk, col0 FROM tab4 WHERE col0 IS NULL OR (((col0 = 415) AND col1 < 991.3 OR col0 >= 553 AND col1 >= 507.82 AND ((((col1 > 593.21)))) OR col3 <= 238 AND col3 <= 413)) ORDER BY 1 DESC
+----
+297
+3
+345
+4
+725
+8
+9
+908
+
+query II valuesort label-5290
+SELECT pk, col0 FROM tab0 WHERE col0 IS NULL OR (((col0 = 415) AND col1 < 991.3 OR col0 >= 553 AND col1 >= 507.82 AND ((((col1 > 593.21)))) OR col3 <= 238 AND col3 <= 413)) ORDER BY 2 DESC
+----
+297
+3
+345
+4
+725
+8
+9
+908
+
+query II valuesort label-5290
+SELECT pk, col0 FROM tab1 WHERE col0 IS NULL OR (((col0 = 415) AND col1 < 991.3 OR col0 >= 553 AND col1 >= 507.82 AND ((((col1 > 593.21)))) OR col3 <= 238 AND col3 <= 413)) ORDER BY 2 DESC
+----
+297
+3
+345
+4
+725
+8
+9
+908
+
+query II valuesort label-5290
+SELECT pk, col0 FROM tab2 WHERE col0 IS NULL OR (((col0 = 415) AND col1 < 991.3 OR col0 >= 553 AND col1 >= 507.82 AND ((((col1 > 593.21)))) OR col3 <= 238 AND col3 <= 413)) ORDER BY 2 DESC
+----
+297
+3
+345
+4
+725
+8
+9
+908
+
+query II valuesort label-5290
+SELECT pk, col0 FROM tab3 WHERE col0 IS NULL OR (((col0 = 415) AND col1 < 991.3 OR col0 >= 553 AND col1 >= 507.82 AND ((((col1 > 593.21)))) OR col3 <= 238 AND col3 <= 413)) ORDER BY 2 DESC
+----
+297
+3
+345
+4
+725
+8
+9
+908
+
+query II valuesort label-5290
+SELECT pk, col0 FROM tab4 WHERE col0 IS NULL OR (((col0 = 415) AND col1 < 991.3 OR col0 >= 553 AND col1 >= 507.82 AND ((((col1 > 593.21)))) OR col3 <= 238 AND col3 <= 413)) ORDER BY 2 DESC
+----
+297
+3
+345
+4
+725
+8
+9
+908
+
+query II valuesort label-5290
+SELECT pk, col0 FROM tab0 WHERE col0 IS NULL OR (((col0 = 415) AND col1 < 991.3 OR col0 >= 553 AND col1 >= 507.82 AND ((((col1 > 593.21)))) OR col3 <= 238 AND col3 <= 413)) ORDER BY 1
+----
+297
+3
+345
+4
+725
+8
+9
+908
+
+query II valuesort label-5290
+SELECT pk, col0 FROM tab1 WHERE col0 IS NULL OR (((col0 = 415) AND col1 < 991.3 OR col0 >= 553 AND col1 >= 507.82 AND ((((col1 > 593.21)))) OR col3 <= 238 AND col3 <= 413)) ORDER BY 1
+----
+297
+3
+345
+4
+725
+8
+9
+908
+
+query II valuesort label-5290
+SELECT pk, col0 FROM tab2 WHERE col0 IS NULL OR (((col0 = 415) AND col1 < 991.3 OR col0 >= 553 AND col1 >= 507.82 AND ((((col1 > 593.21)))) OR col3 <= 238 AND col3 <= 413)) ORDER BY 1
+----
+297
+3
+345
+4
+725
+8
+9
+908
+
+query II valuesort label-5290
+SELECT pk, col0 FROM tab3 WHERE col0 IS NULL OR (((col0 = 415) AND col1 < 991.3 OR col0 >= 553 AND col1 >= 507.82 AND ((((col1 > 593.21)))) OR col3 <= 238 AND col3 <= 413)) ORDER BY 1
+----
+297
+3
+345
+4
+725
+8
+9
+908
+
+query II valuesort label-5290
+SELECT pk, col0 FROM tab4 WHERE col0 IS NULL OR (((col0 = 415) AND col1 < 991.3 OR col0 >= 553 AND col1 >= 507.82 AND ((((col1 > 593.21)))) OR col3 <= 238 AND col3 <= 413)) ORDER BY 1
+----
+297
+3
+345
+4
+725
+8
+9
+908
+
+query II valuesort label-5290
+SELECT pk, col0 FROM tab0 WHERE col0 IS NULL OR (((col0 = 415) AND col1 < 991.3 OR col0 >= 553 AND col1 >= 507.82 AND ((((col1 > 593.21)))) OR col3 <= 238 AND col3 <= 413)) ORDER BY 2
+----
+297
+3
+345
+4
+725
+8
+9
+908
+
+query II valuesort label-5290
+SELECT pk, col0 FROM tab1 WHERE col0 IS NULL OR (((col0 = 415) AND col1 < 991.3 OR col0 >= 553 AND col1 >= 507.82 AND ((((col1 > 593.21)))) OR col3 <= 238 AND col3 <= 413)) ORDER BY 2
+----
+297
+3
+345
+4
+725
+8
+9
+908
+
+query II valuesort label-5290
+SELECT pk, col0 FROM tab2 WHERE col0 IS NULL OR (((col0 = 415) AND col1 < 991.3 OR col0 >= 553 AND col1 >= 507.82 AND ((((col1 > 593.21)))) OR col3 <= 238 AND col3 <= 413)) ORDER BY 2
+----
+297
+3
+345
+4
+725
+8
+9
+908
+
+query II valuesort label-5290
+SELECT pk, col0 FROM tab3 WHERE col0 IS NULL OR (((col0 = 415) AND col1 < 991.3 OR col0 >= 553 AND col1 >= 507.82 AND ((((col1 > 593.21)))) OR col3 <= 238 AND col3 <= 413)) ORDER BY 2
+----
+297
+3
+345
+4
+725
+8
+9
+908
+
+query II valuesort label-5290
+SELECT pk, col0 FROM tab4 WHERE col0 IS NULL OR (((col0 = 415) AND col1 < 991.3 OR col0 >= 553 AND col1 >= 507.82 AND ((((col1 > 593.21)))) OR col3 <= 238 AND col3 <= 413)) ORDER BY 2
+----
+297
+3
+345
+4
+725
+8
+9
+908
+
+query II valuesort label-5290
+SELECT pk, col0 FROM tab0 WHERE col0 IS NULL OR (((col0 = 415) AND col1 < 991.3 OR col0 >= 553 AND col1 >= 507.82 AND ((((col1 > 593.21)))) OR col3 <= 238 AND col3 <= 413)) ORDER BY 1 DESC,2 DESC
+----
+297
+3
+345
+4
+725
+8
+9
+908
+
+query II valuesort label-5290
+SELECT pk, col0 FROM tab1 WHERE col0 IS NULL OR (((col0 = 415) AND col1 < 991.3 OR col0 >= 553 AND col1 >= 507.82 AND ((((col1 > 593.21)))) OR col3 <= 238 AND col3 <= 413)) ORDER BY 1 DESC,2 DESC
+----
+297
+3
+345
+4
+725
+8
+9
+908
+
+query II valuesort label-5290
+SELECT pk, col0 FROM tab2 WHERE col0 IS NULL OR (((col0 = 415) AND col1 < 991.3 OR col0 >= 553 AND col1 >= 507.82 AND ((((col1 > 593.21)))) OR col3 <= 238 AND col3 <= 413)) ORDER BY 1 DESC,2 DESC
+----
+297
+3
+345
+4
+725
+8
+9
+908
+
+query II valuesort label-5290
+SELECT pk, col0 FROM tab3 WHERE col0 IS NULL OR (((col0 = 415) AND col1 < 991.3 OR col0 >= 553 AND col1 >= 507.82 AND ((((col1 > 593.21)))) OR col3 <= 238 AND col3 <= 413)) ORDER BY 1 DESC,2 DESC
+----
+297
+3
+345
+4
+725
+8
+9
+908
+
+query II valuesort label-5290
+SELECT pk, col0 FROM tab4 WHERE col0 IS NULL OR (((col0 = 415) AND col1 < 991.3 OR col0 >= 553 AND col1 >= 507.82 AND ((((col1 > 593.21)))) OR col3 <= 238 AND col3 <= 413)) ORDER BY 1 DESC,2 DESC
+----
+297
+3
+345
+4
+725
+8
+9
+908
+
+query II valuesort label-5290
+SELECT pk, col0 FROM tab0 WHERE col0 IS NULL OR (((col0 = 415) AND col1 < 991.3 OR col0 >= 553 AND col1 >= 507.82 AND ((((col1 > 593.21)))) OR col3 <= 238 AND col3 <= 413)) ORDER BY 1,2 DESC
+----
+297
+3
+345
+4
+725
+8
+9
+908
+
+query II valuesort label-5290
+SELECT pk, col0 FROM tab1 WHERE col0 IS NULL OR (((col0 = 415) AND col1 < 991.3 OR col0 >= 553 AND col1 >= 507.82 AND ((((col1 > 593.21)))) OR col3 <= 238 AND col3 <= 413)) ORDER BY 1,2 DESC
+----
+297
+3
+345
+4
+725
+8
+9
+908
+
+query II valuesort label-5290
+SELECT pk, col0 FROM tab2 WHERE col0 IS NULL OR (((col0 = 415) AND col1 < 991.3 OR col0 >= 553 AND col1 >= 507.82 AND ((((col1 > 593.21)))) OR col3 <= 238 AND col3 <= 413)) ORDER BY 1,2 DESC
+----
+297
+3
+345
+4
+725
+8
+9
+908
+
+query II valuesort label-5290
+SELECT pk, col0 FROM tab3 WHERE col0 IS NULL OR (((col0 = 415) AND col1 < 991.3 OR col0 >= 553 AND col1 >= 507.82 AND ((((col1 > 593.21)))) OR col3 <= 238 AND col3 <= 413)) ORDER BY 1,2 DESC
+----
+297
+3
+345
+4
+725
+8
+9
+908
+
+query II valuesort label-5290
+SELECT pk, col0 FROM tab4 WHERE col0 IS NULL OR (((col0 = 415) AND col1 < 991.3 OR col0 >= 553 AND col1 >= 507.82 AND ((((col1 > 593.21)))) OR col3 <= 238 AND col3 <= 413)) ORDER BY 1,2 DESC
+----
+297
+3
+345
+4
+725
+8
+9
+908
+
+query II valuesort label-5290
+SELECT pk, col0 FROM tab0 WHERE col0 IS NULL OR (((col0 = 415) AND col1 < 991.3 OR col0 >= 553 AND col1 >= 507.82 AND ((((col1 > 593.21)))) OR col3 <= 238 AND col3 <= 413)) ORDER BY 2 DESC,1
+----
+297
+3
+345
+4
+725
+8
+9
+908
+
+query II valuesort label-5290
+SELECT pk, col0 FROM tab1 WHERE col0 IS NULL OR (((col0 = 415) AND col1 < 991.3 OR col0 >= 553 AND col1 >= 507.82 AND ((((col1 > 593.21)))) OR col3 <= 238 AND col3 <= 413)) ORDER BY 2 DESC,1
+----
+297
+3
+345
+4
+725
+8
+9
+908
+
+query II valuesort label-5290
+SELECT pk, col0 FROM tab2 WHERE col0 IS NULL OR (((col0 = 415) AND col1 < 991.3 OR col0 >= 553 AND col1 >= 507.82 AND ((((col1 > 593.21)))) OR col3 <= 238 AND col3 <= 413)) ORDER BY 2 DESC,1
+----
+297
+3
+345
+4
+725
+8
+9
+908
+
+query II valuesort label-5290
+SELECT pk, col0 FROM tab3 WHERE col0 IS NULL OR (((col0 = 415) AND col1 < 991.3 OR col0 >= 553 AND col1 >= 507.82 AND ((((col1 > 593.21)))) OR col3 <= 238 AND col3 <= 413)) ORDER BY 2 DESC,1
+----
+297
+3
+345
+4
+725
+8
+9
+908
+
+query II valuesort label-5290
+SELECT pk, col0 FROM tab4 WHERE col0 IS NULL OR (((col0 = 415) AND col1 < 991.3 OR col0 >= 553 AND col1 >= 507.82 AND ((((col1 > 593.21)))) OR col3 <= 238 AND col3 <= 413)) ORDER BY 2 DESC,1
+----
+297
+3
+345
+4
+725
+8
+9
+908
+
+query II valuesort label-5290
+SELECT pk, col0 FROM tab0 WHERE col0 IS NULL OR (((col0 = 415) AND col1 < 991.3 OR col0 >= 553 AND col1 >= 507.82 AND ((((col1 > 593.21)))) OR col3 <= 238 AND col3 <= 413)) ORDER BY 2,1
+----
+297
+3
+345
+4
+725
+8
+9
+908
+
+query II valuesort label-5290
+SELECT pk, col0 FROM tab1 WHERE col0 IS NULL OR (((col0 = 415) AND col1 < 991.3 OR col0 >= 553 AND col1 >= 507.82 AND ((((col1 > 593.21)))) OR col3 <= 238 AND col3 <= 413)) ORDER BY 2,1
+----
+297
+3
+345
+4
+725
+8
+9
+908
+
+query II valuesort label-5290
+SELECT pk, col0 FROM tab2 WHERE col0 IS NULL OR (((col0 = 415) AND col1 < 991.3 OR col0 >= 553 AND col1 >= 507.82 AND ((((col1 > 593.21)))) OR col3 <= 238 AND col3 <= 413)) ORDER BY 2,1
+----
+297
+3
+345
+4
+725
+8
+9
+908
+
+query II valuesort label-5290
+SELECT pk, col0 FROM tab3 WHERE col0 IS NULL OR (((col0 = 415) AND col1 < 991.3 OR col0 >= 553 AND col1 >= 507.82 AND ((((col1 > 593.21)))) OR col3 <= 238 AND col3 <= 413)) ORDER BY 2,1
+----
+297
+3
+345
+4
+725
+8
+9
+908
+
+query II valuesort label-5290
+SELECT pk, col0 FROM tab4 WHERE col0 IS NULL OR (((col0 = 415) AND col1 < 991.3 OR col0 >= 553 AND col1 >= 507.82 AND ((((col1 > 593.21)))) OR col3 <= 238 AND col3 <= 413)) ORDER BY 2,1
+----
+297
+3
+345
+4
+725
+8
+9
+908
+
+query II valuesort label-5290
+SELECT pk, col0 FROM tab0 WHERE col0 IS NULL OR (((col0 = 415) AND col1 < 991.3 OR col0 >= 553 AND col1 >= 507.82 AND ((((col1 > 593.21)))) OR col3 <= 238 AND col3 <= 413)) ORDER BY 1 DESC,2
+----
+297
+3
+345
+4
+725
+8
+9
+908
+
+query II valuesort label-5290
+SELECT pk, col0 FROM tab1 WHERE col0 IS NULL OR (((col0 = 415) AND col1 < 991.3 OR col0 >= 553 AND col1 >= 507.82 AND ((((col1 > 593.21)))) OR col3 <= 238 AND col3 <= 413)) ORDER BY 1 DESC,2
+----
+297
+3
+345
+4
+725
+8
+9
+908
+
+query II valuesort label-5290
+SELECT pk, col0 FROM tab2 WHERE col0 IS NULL OR (((col0 = 415) AND col1 < 991.3 OR col0 >= 553 AND col1 >= 507.82 AND ((((col1 > 593.21)))) OR col3 <= 238 AND col3 <= 413)) ORDER BY 1 DESC,2
+----
+297
+3
+345
+4
+725
+8
+9
+908
+
+query II valuesort label-5290
+SELECT pk, col0 FROM tab3 WHERE col0 IS NULL OR (((col0 = 415) AND col1 < 991.3 OR col0 >= 553 AND col1 >= 507.82 AND ((((col1 > 593.21)))) OR col3 <= 238 AND col3 <= 413)) ORDER BY 1 DESC,2
+----
+297
+3
+345
+4
+725
+8
+9
+908
+
+query II valuesort label-5290
+SELECT pk, col0 FROM tab4 WHERE col0 IS NULL OR (((col0 = 415) AND col1 < 991.3 OR col0 >= 553 AND col1 >= 507.82 AND ((((col1 > 593.21)))) OR col3 <= 238 AND col3 <= 413)) ORDER BY 1 DESC,2
+----
+297
+3
+345
+4
+725
+8
+9
+908
+
+query II valuesort label-5290
+SELECT pk, col0 FROM tab0 WHERE col0 IS NULL OR (((col0 = 415) AND col1 < 991.3 OR col0 >= 553 AND col1 >= 507.82 AND ((((col1 > 593.21)))) OR col3 <= 238 AND col3 <= 413)) ORDER BY 1,2
+----
+297
+3
+345
+4
+725
+8
+9
+908
+
+query II valuesort label-5290
+SELECT pk, col0 FROM tab1 WHERE col0 IS NULL OR (((col0 = 415) AND col1 < 991.3 OR col0 >= 553 AND col1 >= 507.82 AND ((((col1 > 593.21)))) OR col3 <= 238 AND col3 <= 413)) ORDER BY 1,2
+----
+297
+3
+345
+4
+725
+8
+9
+908
+
+query II valuesort label-5290
+SELECT pk, col0 FROM tab2 WHERE col0 IS NULL OR (((col0 = 415) AND col1 < 991.3 OR col0 >= 553 AND col1 >= 507.82 AND ((((col1 > 593.21)))) OR col3 <= 238 AND col3 <= 413)) ORDER BY 1,2
+----
+297
+3
+345
+4
+725
+8
+9
+908
+
+query II valuesort label-5290
+SELECT pk, col0 FROM tab3 WHERE col0 IS NULL OR (((col0 = 415) AND col1 < 991.3 OR col0 >= 553 AND col1 >= 507.82 AND ((((col1 > 593.21)))) OR col3 <= 238 AND col3 <= 413)) ORDER BY 1,2
+----
+297
+3
+345
+4
+725
+8
+9
+908
+
+query II valuesort label-5290
+SELECT pk, col0 FROM tab4 WHERE col0 IS NULL OR (((col0 = 415) AND col1 < 991.3 OR col0 >= 553 AND col1 >= 507.82 AND ((((col1 > 593.21)))) OR col3 <= 238 AND col3 <= 413)) ORDER BY 1,2
+----
+297
+3
+345
+4
+725
+8
+9
+908
+
+query I valuesort label-5340
+SELECT pk FROM tab0 WHERE (col0 IN (SELECT col3 FROM tab0 WHERE ((col0 <= 833) AND (col0 >= 777) OR ((col3 < 968 OR col3 = 155)) OR ((col1 BETWEEN 167.85 AND 11.49) AND col1 > 739.32)) AND (((col0 >= 955))) OR col3 <= 363 AND col1 > 518.9)) ORDER BY 1 DESC
+----
+
+query I valuesort label-5340
+SELECT pk FROM tab1 WHERE (col0 IN (SELECT col3 FROM tab1 WHERE ((col0 <= 833) AND (col0 >= 777) OR ((col3 < 968 OR col3 = 155)) OR ((col1 BETWEEN 167.85 AND 11.49) AND col1 > 739.32)) AND (((col0 >= 955))) OR col3 <= 363 AND col1 > 518.9)) ORDER BY 1 DESC
+----
+
+query I valuesort label-5340
+SELECT pk FROM tab2 WHERE (col0 IN (SELECT col3 FROM tab2 WHERE ((col0 <= 833) AND (col0 >= 777) OR ((col3 < 968 OR col3 = 155)) OR ((col1 BETWEEN 167.85 AND 11.49) AND col1 > 739.32)) AND (((col0 >= 955))) OR col3 <= 363 AND col1 > 518.9)) ORDER BY 1 DESC
+----
+
+query I valuesort label-5340
+SELECT pk FROM tab3 WHERE (col0 IN (SELECT col3 FROM tab3 WHERE ((col0 <= 833) AND (col0 >= 777) OR ((col3 < 968 OR col3 = 155)) OR ((col1 BETWEEN 167.85 AND 11.49) AND col1 > 739.32)) AND (((col0 >= 955))) OR col3 <= 363 AND col1 > 518.9)) ORDER BY 1 DESC
+----
+
+query I valuesort label-5340
+SELECT pk FROM tab4 WHERE (col0 IN (SELECT col3 FROM tab4 WHERE ((col0 <= 833) AND (col0 >= 777) OR ((col3 < 968 OR col3 = 155)) OR ((col1 BETWEEN 167.85 AND 11.49) AND col1 > 739.32)) AND (((col0 >= 955))) OR col3 <= 363 AND col1 > 518.9)) ORDER BY 1 DESC
+----
+
+query I valuesort label-5340
+SELECT pk FROM tab0 WHERE (col0 IN (SELECT col3 FROM tab0 WHERE ((col0 <= 833) AND (col0 >= 777) OR ((col3 < 968 OR col3 = 155)) OR ((col1 BETWEEN 167.85 AND 11.49) AND col1 > 739.32)) AND (((col0 >= 955))) OR col3 <= 363 AND col1 > 518.9)) ORDER BY 1
+----
+
+query I valuesort label-5340
+SELECT pk FROM tab1 WHERE (col0 IN (SELECT col3 FROM tab1 WHERE ((col0 <= 833) AND (col0 >= 777) OR ((col3 < 968 OR col3 = 155)) OR ((col1 BETWEEN 167.85 AND 11.49) AND col1 > 739.32)) AND (((col0 >= 955))) OR col3 <= 363 AND col1 > 518.9)) ORDER BY 1
+----
+
+query I valuesort label-5340
+SELECT pk FROM tab2 WHERE (col0 IN (SELECT col3 FROM tab2 WHERE ((col0 <= 833) AND (col0 >= 777) OR ((col3 < 968 OR col3 = 155)) OR ((col1 BETWEEN 167.85 AND 11.49) AND col1 > 739.32)) AND (((col0 >= 955))) OR col3 <= 363 AND col1 > 518.9)) ORDER BY 1
+----
+
+query I valuesort label-5340
+SELECT pk FROM tab3 WHERE (col0 IN (SELECT col3 FROM tab3 WHERE ((col0 <= 833) AND (col0 >= 777) OR ((col3 < 968 OR col3 = 155)) OR ((col1 BETWEEN 167.85 AND 11.49) AND col1 > 739.32)) AND (((col0 >= 955))) OR col3 <= 363 AND col1 > 518.9)) ORDER BY 1
+----
+
+query I valuesort label-5340
+SELECT pk FROM tab4 WHERE (col0 IN (SELECT col3 FROM tab4 WHERE ((col0 <= 833) AND (col0 >= 777) OR ((col3 < 968 OR col3 = 155)) OR ((col1 BETWEEN 167.85 AND 11.49) AND col1 > 739.32)) AND (((col0 >= 955))) OR col3 <= 363 AND col1 > 518.9)) ORDER BY 1
+----
+
+query II valuesort label-5350
+SELECT pk, col0 FROM tab0 WHERE (col0 IN (SELECT col3 FROM tab0 WHERE ((col0 <= 833) AND (col0 >= 777) OR ((col3 < 968 OR col3 = 155)) OR ((col1 BETWEEN 167.85 AND 11.49) AND col1 > 739.32)) AND (((col0 >= 955))) OR col3 <= 363 AND col1 > 518.9)) ORDER BY 1 DESC
+----
+
+query II valuesort label-5350
+SELECT pk, col0 FROM tab1 WHERE (col0 IN (SELECT col3 FROM tab1 WHERE ((col0 <= 833) AND (col0 >= 777) OR ((col3 < 968 OR col3 = 155)) OR ((col1 BETWEEN 167.85 AND 11.49) AND col1 > 739.32)) AND (((col0 >= 955))) OR col3 <= 363 AND col1 > 518.9)) ORDER BY 1 DESC
+----
+
+query II valuesort label-5350
+SELECT pk, col0 FROM tab2 WHERE (col0 IN (SELECT col3 FROM tab2 WHERE ((col0 <= 833) AND (col0 >= 777) OR ((col3 < 968 OR col3 = 155)) OR ((col1 BETWEEN 167.85 AND 11.49) AND col1 > 739.32)) AND (((col0 >= 955))) OR col3 <= 363 AND col1 > 518.9)) ORDER BY 1 DESC
+----
+
+query II valuesort label-5350
+SELECT pk, col0 FROM tab3 WHERE (col0 IN (SELECT col3 FROM tab3 WHERE ((col0 <= 833) AND (col0 >= 777) OR ((col3 < 968 OR col3 = 155)) OR ((col1 BETWEEN 167.85 AND 11.49) AND col1 > 739.32)) AND (((col0 >= 955))) OR col3 <= 363 AND col1 > 518.9)) ORDER BY 1 DESC
+----
+
+query II valuesort label-5350
+SELECT pk, col0 FROM tab4 WHERE (col0 IN (SELECT col3 FROM tab4 WHERE ((col0 <= 833) AND (col0 >= 777) OR ((col3 < 968 OR col3 = 155)) OR ((col1 BETWEEN 167.85 AND 11.49) AND col1 > 739.32)) AND (((col0 >= 955))) OR col3 <= 363 AND col1 > 518.9)) ORDER BY 1 DESC
+----
+
+query II valuesort label-5350
+SELECT pk, col0 FROM tab0 WHERE (col0 IN (SELECT col3 FROM tab0 WHERE ((col0 <= 833) AND (col0 >= 777) OR ((col3 < 968 OR col3 = 155)) OR ((col1 BETWEEN 167.85 AND 11.49) AND col1 > 739.32)) AND (((col0 >= 955))) OR col3 <= 363 AND col1 > 518.9)) ORDER BY 2 DESC
+----
+
+query II valuesort label-5350
+SELECT pk, col0 FROM tab1 WHERE (col0 IN (SELECT col3 FROM tab1 WHERE ((col0 <= 833) AND (col0 >= 777) OR ((col3 < 968 OR col3 = 155)) OR ((col1 BETWEEN 167.85 AND 11.49) AND col1 > 739.32)) AND (((col0 >= 955))) OR col3 <= 363 AND col1 > 518.9)) ORDER BY 2 DESC
+----
+
+query II valuesort label-5350
+SELECT pk, col0 FROM tab2 WHERE (col0 IN (SELECT col3 FROM tab2 WHERE ((col0 <= 833) AND (col0 >= 777) OR ((col3 < 968 OR col3 = 155)) OR ((col1 BETWEEN 167.85 AND 11.49) AND col1 > 739.32)) AND (((col0 >= 955))) OR col3 <= 363 AND col1 > 518.9)) ORDER BY 2 DESC
+----
+
+query II valuesort label-5350
+SELECT pk, col0 FROM tab3 WHERE (col0 IN (SELECT col3 FROM tab3 WHERE ((col0 <= 833) AND (col0 >= 777) OR ((col3 < 968 OR col3 = 155)) OR ((col1 BETWEEN 167.85 AND 11.49) AND col1 > 739.32)) AND (((col0 >= 955))) OR col3 <= 363 AND col1 > 518.9)) ORDER BY 2 DESC
+----
+
+query II valuesort label-5350
+SELECT pk, col0 FROM tab4 WHERE (col0 IN (SELECT col3 FROM tab4 WHERE ((col0 <= 833) AND (col0 >= 777) OR ((col3 < 968 OR col3 = 155)) OR ((col1 BETWEEN 167.85 AND 11.49) AND col1 > 739.32)) AND (((col0 >= 955))) OR col3 <= 363 AND col1 > 518.9)) ORDER BY 2 DESC
+----
+
+query II valuesort label-5350
+SELECT pk, col0 FROM tab0 WHERE (col0 IN (SELECT col3 FROM tab0 WHERE ((col0 <= 833) AND (col0 >= 777) OR ((col3 < 968 OR col3 = 155)) OR ((col1 BETWEEN 167.85 AND 11.49) AND col1 > 739.32)) AND (((col0 >= 955))) OR col3 <= 363 AND col1 > 518.9)) ORDER BY 1
+----
+
+query II valuesort label-5350
+SELECT pk, col0 FROM tab1 WHERE (col0 IN (SELECT col3 FROM tab1 WHERE ((col0 <= 833) AND (col0 >= 777) OR ((col3 < 968 OR col3 = 155)) OR ((col1 BETWEEN 167.85 AND 11.49) AND col1 > 739.32)) AND (((col0 >= 955))) OR col3 <= 363 AND col1 > 518.9)) ORDER BY 1
+----
+
+query II valuesort label-5350
+SELECT pk, col0 FROM tab2 WHERE (col0 IN (SELECT col3 FROM tab2 WHERE ((col0 <= 833) AND (col0 >= 777) OR ((col3 < 968 OR col3 = 155)) OR ((col1 BETWEEN 167.85 AND 11.49) AND col1 > 739.32)) AND (((col0 >= 955))) OR col3 <= 363 AND col1 > 518.9)) ORDER BY 1
+----
+
+query II valuesort label-5350
+SELECT pk, col0 FROM tab3 WHERE (col0 IN (SELECT col3 FROM tab3 WHERE ((col0 <= 833) AND (col0 >= 777) OR ((col3 < 968 OR col3 = 155)) OR ((col1 BETWEEN 167.85 AND 11.49) AND col1 > 739.32)) AND (((col0 >= 955))) OR col3 <= 363 AND col1 > 518.9)) ORDER BY 1
+----
+
+query II valuesort label-5350
+SELECT pk, col0 FROM tab4 WHERE (col0 IN (SELECT col3 FROM tab4 WHERE ((col0 <= 833) AND (col0 >= 777) OR ((col3 < 968 OR col3 = 155)) OR ((col1 BETWEEN 167.85 AND 11.49) AND col1 > 739.32)) AND (((col0 >= 955))) OR col3 <= 363 AND col1 > 518.9)) ORDER BY 1
+----
+
+query II valuesort label-5350
+SELECT pk, col0 FROM tab0 WHERE (col0 IN (SELECT col3 FROM tab0 WHERE ((col0 <= 833) AND (col0 >= 777) OR ((col3 < 968 OR col3 = 155)) OR ((col1 BETWEEN 167.85 AND 11.49) AND col1 > 739.32)) AND (((col0 >= 955))) OR col3 <= 363 AND col1 > 518.9)) ORDER BY 2
+----
+
+query II valuesort label-5350
+SELECT pk, col0 FROM tab1 WHERE (col0 IN (SELECT col3 FROM tab1 WHERE ((col0 <= 833) AND (col0 >= 777) OR ((col3 < 968 OR col3 = 155)) OR ((col1 BETWEEN 167.85 AND 11.49) AND col1 > 739.32)) AND (((col0 >= 955))) OR col3 <= 363 AND col1 > 518.9)) ORDER BY 2
+----
+
+query II valuesort label-5350
+SELECT pk, col0 FROM tab2 WHERE (col0 IN (SELECT col3 FROM tab2 WHERE ((col0 <= 833) AND (col0 >= 777) OR ((col3 < 968 OR col3 = 155)) OR ((col1 BETWEEN 167.85 AND 11.49) AND col1 > 739.32)) AND (((col0 >= 955))) OR col3 <= 363 AND col1 > 518.9)) ORDER BY 2
+----
+
+query II valuesort label-5350
+SELECT pk, col0 FROM tab3 WHERE (col0 IN (SELECT col3 FROM tab3 WHERE ((col0 <= 833) AND (col0 >= 777) OR ((col3 < 968 OR col3 = 155)) OR ((col1 BETWEEN 167.85 AND 11.49) AND col1 > 739.32)) AND (((col0 >= 955))) OR col3 <= 363 AND col1 > 518.9)) ORDER BY 2
+----
+
+query II valuesort label-5350
+SELECT pk, col0 FROM tab4 WHERE (col0 IN (SELECT col3 FROM tab4 WHERE ((col0 <= 833) AND (col0 >= 777) OR ((col3 < 968 OR col3 = 155)) OR ((col1 BETWEEN 167.85 AND 11.49) AND col1 > 739.32)) AND (((col0 >= 955))) OR col3 <= 363 AND col1 > 518.9)) ORDER BY 2
+----
+
+query II valuesort label-5350
+SELECT pk, col0 FROM tab0 WHERE (col0 IN (SELECT col3 FROM tab0 WHERE ((col0 <= 833) AND (col0 >= 777) OR ((col3 < 968 OR col3 = 155)) OR ((col1 BETWEEN 167.85 AND 11.49) AND col1 > 739.32)) AND (((col0 >= 955))) OR col3 <= 363 AND col1 > 518.9)) ORDER BY 1 DESC,2 DESC
+----
+
+query II valuesort label-5350
+SELECT pk, col0 FROM tab1 WHERE (col0 IN (SELECT col3 FROM tab1 WHERE ((col0 <= 833) AND (col0 >= 777) OR ((col3 < 968 OR col3 = 155)) OR ((col1 BETWEEN 167.85 AND 11.49) AND col1 > 739.32)) AND (((col0 >= 955))) OR col3 <= 363 AND col1 > 518.9)) ORDER BY 1 DESC,2 DESC
+----
+
+query II valuesort label-5350
+SELECT pk, col0 FROM tab2 WHERE (col0 IN (SELECT col3 FROM tab2 WHERE ((col0 <= 833) AND (col0 >= 777) OR ((col3 < 968 OR col3 = 155)) OR ((col1 BETWEEN 167.85 AND 11.49) AND col1 > 739.32)) AND (((col0 >= 955))) OR col3 <= 363 AND col1 > 518.9)) ORDER BY 1 DESC,2 DESC
+----
+
+query II valuesort label-5350
+SELECT pk, col0 FROM tab3 WHERE (col0 IN (SELECT col3 FROM tab3 WHERE ((col0 <= 833) AND (col0 >= 777) OR ((col3 < 968 OR col3 = 155)) OR ((col1 BETWEEN 167.85 AND 11.49) AND col1 > 739.32)) AND (((col0 >= 955))) OR col3 <= 363 AND col1 > 518.9)) ORDER BY 1 DESC,2 DESC
+----
+
+query II valuesort label-5350
+SELECT pk, col0 FROM tab4 WHERE (col0 IN (SELECT col3 FROM tab4 WHERE ((col0 <= 833) AND (col0 >= 777) OR ((col3 < 968 OR col3 = 155)) OR ((col1 BETWEEN 167.85 AND 11.49) AND col1 > 739.32)) AND (((col0 >= 955))) OR col3 <= 363 AND col1 > 518.9)) ORDER BY 1 DESC,2 DESC
+----
+
+query II valuesort label-5350
+SELECT pk, col0 FROM tab0 WHERE (col0 IN (SELECT col3 FROM tab0 WHERE ((col0 <= 833) AND (col0 >= 777) OR ((col3 < 968 OR col3 = 155)) OR ((col1 BETWEEN 167.85 AND 11.49) AND col1 > 739.32)) AND (((col0 >= 955))) OR col3 <= 363 AND col1 > 518.9)) ORDER BY 1,2 DESC
+----
+
+query II valuesort label-5350
+SELECT pk, col0 FROM tab1 WHERE (col0 IN (SELECT col3 FROM tab1 WHERE ((col0 <= 833) AND (col0 >= 777) OR ((col3 < 968 OR col3 = 155)) OR ((col1 BETWEEN 167.85 AND 11.49) AND col1 > 739.32)) AND (((col0 >= 955))) OR col3 <= 363 AND col1 > 518.9)) ORDER BY 1,2 DESC
+----
+
+query II valuesort label-5350
+SELECT pk, col0 FROM tab2 WHERE (col0 IN (SELECT col3 FROM tab2 WHERE ((col0 <= 833) AND (col0 >= 777) OR ((col3 < 968 OR col3 = 155)) OR ((col1 BETWEEN 167.85 AND 11.49) AND col1 > 739.32)) AND (((col0 >= 955))) OR col3 <= 363 AND col1 > 518.9)) ORDER BY 1,2 DESC
+----
+
+query II valuesort label-5350
+SELECT pk, col0 FROM tab3 WHERE (col0 IN (SELECT col3 FROM tab3 WHERE ((col0 <= 833) AND (col0 >= 777) OR ((col3 < 968 OR col3 = 155)) OR ((col1 BETWEEN 167.85 AND 11.49) AND col1 > 739.32)) AND (((col0 >= 955))) OR col3 <= 363 AND col1 > 518.9)) ORDER BY 1,2 DESC
+----
+
+query II valuesort label-5350
+SELECT pk, col0 FROM tab4 WHERE (col0 IN (SELECT col3 FROM tab4 WHERE ((col0 <= 833) AND (col0 >= 777) OR ((col3 < 968 OR col3 = 155)) OR ((col1 BETWEEN 167.85 AND 11.49) AND col1 > 739.32)) AND (((col0 >= 955))) OR col3 <= 363 AND col1 > 518.9)) ORDER BY 1,2 DESC
+----
+
+query II valuesort label-5350
+SELECT pk, col0 FROM tab0 WHERE (col0 IN (SELECT col3 FROM tab0 WHERE ((col0 <= 833) AND (col0 >= 777) OR ((col3 < 968 OR col3 = 155)) OR ((col1 BETWEEN 167.85 AND 11.49) AND col1 > 739.32)) AND (((col0 >= 955))) OR col3 <= 363 AND col1 > 518.9)) ORDER BY 2 DESC,1
+----
+
+query II valuesort label-5350
+SELECT pk, col0 FROM tab1 WHERE (col0 IN (SELECT col3 FROM tab1 WHERE ((col0 <= 833) AND (col0 >= 777) OR ((col3 < 968 OR col3 = 155)) OR ((col1 BETWEEN 167.85 AND 11.49) AND col1 > 739.32)) AND (((col0 >= 955))) OR col3 <= 363 AND col1 > 518.9)) ORDER BY 2 DESC,1
+----
+
+query II valuesort label-5350
+SELECT pk, col0 FROM tab2 WHERE (col0 IN (SELECT col3 FROM tab2 WHERE ((col0 <= 833) AND (col0 >= 777) OR ((col3 < 968 OR col3 = 155)) OR ((col1 BETWEEN 167.85 AND 11.49) AND col1 > 739.32)) AND (((col0 >= 955))) OR col3 <= 363 AND col1 > 518.9)) ORDER BY 2 DESC,1
+----
+
+query II valuesort label-5350
+SELECT pk, col0 FROM tab3 WHERE (col0 IN (SELECT col3 FROM tab3 WHERE ((col0 <= 833) AND (col0 >= 777) OR ((col3 < 968 OR col3 = 155)) OR ((col1 BETWEEN 167.85 AND 11.49) AND col1 > 739.32)) AND (((col0 >= 955))) OR col3 <= 363 AND col1 > 518.9)) ORDER BY 2 DESC,1
+----
+
+query II valuesort label-5350
+SELECT pk, col0 FROM tab4 WHERE (col0 IN (SELECT col3 FROM tab4 WHERE ((col0 <= 833) AND (col0 >= 777) OR ((col3 < 968 OR col3 = 155)) OR ((col1 BETWEEN 167.85 AND 11.49) AND col1 > 739.32)) AND (((col0 >= 955))) OR col3 <= 363 AND col1 > 518.9)) ORDER BY 2 DESC,1
+----
+
+query II valuesort label-5350
+SELECT pk, col0 FROM tab0 WHERE (col0 IN (SELECT col3 FROM tab0 WHERE ((col0 <= 833) AND (col0 >= 777) OR ((col3 < 968 OR col3 = 155)) OR ((col1 BETWEEN 167.85 AND 11.49) AND col1 > 739.32)) AND (((col0 >= 955))) OR col3 <= 363 AND col1 > 518.9)) ORDER BY 2,1
+----
+
+query II valuesort label-5350
+SELECT pk, col0 FROM tab1 WHERE (col0 IN (SELECT col3 FROM tab1 WHERE ((col0 <= 833) AND (col0 >= 777) OR ((col3 < 968 OR col3 = 155)) OR ((col1 BETWEEN 167.85 AND 11.49) AND col1 > 739.32)) AND (((col0 >= 955))) OR col3 <= 363 AND col1 > 518.9)) ORDER BY 2,1
+----
+
+query II valuesort label-5350
+SELECT pk, col0 FROM tab2 WHERE (col0 IN (SELECT col3 FROM tab2 WHERE ((col0 <= 833) AND (col0 >= 777) OR ((col3 < 968 OR col3 = 155)) OR ((col1 BETWEEN 167.85 AND 11.49) AND col1 > 739.32)) AND (((col0 >= 955))) OR col3 <= 363 AND col1 > 518.9)) ORDER BY 2,1
+----
+
+query II valuesort label-5350
+SELECT pk, col0 FROM tab3 WHERE (col0 IN (SELECT col3 FROM tab3 WHERE ((col0 <= 833) AND (col0 >= 777) OR ((col3 < 968 OR col3 = 155)) OR ((col1 BETWEEN 167.85 AND 11.49) AND col1 > 739.32)) AND (((col0 >= 955))) OR col3 <= 363 AND col1 > 518.9)) ORDER BY 2,1
+----
+
+query II valuesort label-5350
+SELECT pk, col0 FROM tab4 WHERE (col0 IN (SELECT col3 FROM tab4 WHERE ((col0 <= 833) AND (col0 >= 777) OR ((col3 < 968 OR col3 = 155)) OR ((col1 BETWEEN 167.85 AND 11.49) AND col1 > 739.32)) AND (((col0 >= 955))) OR col3 <= 363 AND col1 > 518.9)) ORDER BY 2,1
+----
+
+query II valuesort label-5350
+SELECT pk, col0 FROM tab0 WHERE (col0 IN (SELECT col3 FROM tab0 WHERE ((col0 <= 833) AND (col0 >= 777) OR ((col3 < 968 OR col3 = 155)) OR ((col1 BETWEEN 167.85 AND 11.49) AND col1 > 739.32)) AND (((col0 >= 955))) OR col3 <= 363 AND col1 > 518.9)) ORDER BY 1 DESC,2
+----
+
+query II valuesort label-5350
+SELECT pk, col0 FROM tab1 WHERE (col0 IN (SELECT col3 FROM tab1 WHERE ((col0 <= 833) AND (col0 >= 777) OR ((col3 < 968 OR col3 = 155)) OR ((col1 BETWEEN 167.85 AND 11.49) AND col1 > 739.32)) AND (((col0 >= 955))) OR col3 <= 363 AND col1 > 518.9)) ORDER BY 1 DESC,2
+----
+
+query II valuesort label-5350
+SELECT pk, col0 FROM tab2 WHERE (col0 IN (SELECT col3 FROM tab2 WHERE ((col0 <= 833) AND (col0 >= 777) OR ((col3 < 968 OR col3 = 155)) OR ((col1 BETWEEN 167.85 AND 11.49) AND col1 > 739.32)) AND (((col0 >= 955))) OR col3 <= 363 AND col1 > 518.9)) ORDER BY 1 DESC,2
+----
+
+query II valuesort label-5350
+SELECT pk, col0 FROM tab3 WHERE (col0 IN (SELECT col3 FROM tab3 WHERE ((col0 <= 833) AND (col0 >= 777) OR ((col3 < 968 OR col3 = 155)) OR ((col1 BETWEEN 167.85 AND 11.49) AND col1 > 739.32)) AND (((col0 >= 955))) OR col3 <= 363 AND col1 > 518.9)) ORDER BY 1 DESC,2
+----
+
+query II valuesort label-5350
+SELECT pk, col0 FROM tab4 WHERE (col0 IN (SELECT col3 FROM tab4 WHERE ((col0 <= 833) AND (col0 >= 777) OR ((col3 < 968 OR col3 = 155)) OR ((col1 BETWEEN 167.85 AND 11.49) AND col1 > 739.32)) AND (((col0 >= 955))) OR col3 <= 363 AND col1 > 518.9)) ORDER BY 1 DESC,2
+----
+
+query II valuesort label-5350
+SELECT pk, col0 FROM tab0 WHERE (col0 IN (SELECT col3 FROM tab0 WHERE ((col0 <= 833) AND (col0 >= 777) OR ((col3 < 968 OR col3 = 155)) OR ((col1 BETWEEN 167.85 AND 11.49) AND col1 > 739.32)) AND (((col0 >= 955))) OR col3 <= 363 AND col1 > 518.9)) ORDER BY 1,2
+----
+
+query II valuesort label-5350
+SELECT pk, col0 FROM tab1 WHERE (col0 IN (SELECT col3 FROM tab1 WHERE ((col0 <= 833) AND (col0 >= 777) OR ((col3 < 968 OR col3 = 155)) OR ((col1 BETWEEN 167.85 AND 11.49) AND col1 > 739.32)) AND (((col0 >= 955))) OR col3 <= 363 AND col1 > 518.9)) ORDER BY 1,2
+----
+
+query II valuesort label-5350
+SELECT pk, col0 FROM tab2 WHERE (col0 IN (SELECT col3 FROM tab2 WHERE ((col0 <= 833) AND (col0 >= 777) OR ((col3 < 968 OR col3 = 155)) OR ((col1 BETWEEN 167.85 AND 11.49) AND col1 > 739.32)) AND (((col0 >= 955))) OR col3 <= 363 AND col1 > 518.9)) ORDER BY 1,2
+----
+
+query II valuesort label-5350
+SELECT pk, col0 FROM tab3 WHERE (col0 IN (SELECT col3 FROM tab3 WHERE ((col0 <= 833) AND (col0 >= 777) OR ((col3 < 968 OR col3 = 155)) OR ((col1 BETWEEN 167.85 AND 11.49) AND col1 > 739.32)) AND (((col0 >= 955))) OR col3 <= 363 AND col1 > 518.9)) ORDER BY 1,2
+----
+
+query II valuesort label-5350
+SELECT pk, col0 FROM tab4 WHERE (col0 IN (SELECT col3 FROM tab4 WHERE ((col0 <= 833) AND (col0 >= 777) OR ((col3 < 968 OR col3 = 155)) OR ((col1 BETWEEN 167.85 AND 11.49) AND col1 > 739.32)) AND (((col0 >= 955))) OR col3 <= 363 AND col1 > 518.9)) ORDER BY 1,2
+----
+
+query I valuesort label-5400
+SELECT pk FROM tab0 WHERE col4 < 700.60 ORDER BY 1 DESC
+----
+0
+1
+3
+4
+6
+
+query I valuesort label-5400
+SELECT pk FROM tab1 WHERE col4 < 700.60 ORDER BY 1 DESC
+----
+0
+1
+3
+4
+6
+
+query I valuesort label-5400
+SELECT pk FROM tab2 WHERE col4 < 700.60 ORDER BY 1 DESC
+----
+0
+1
+3
+4
+6
+
+query I valuesort label-5400
+SELECT pk FROM tab3 WHERE col4 < 700.60 ORDER BY 1 DESC
+----
+0
+1
+3
+4
+6
+
+query I valuesort label-5400
+SELECT pk FROM tab4 WHERE col4 < 700.60 ORDER BY 1 DESC
+----
+0
+1
+3
+4
+6
+
+query I valuesort label-5400
+SELECT pk FROM tab0 WHERE col4 < 700.60 ORDER BY 1
+----
+0
+1
+3
+4
+6
+
+query I valuesort label-5400
+SELECT pk FROM tab1 WHERE col4 < 700.60 ORDER BY 1
+----
+0
+1
+3
+4
+6
+
+query I valuesort label-5400
+SELECT pk FROM tab2 WHERE col4 < 700.60 ORDER BY 1
+----
+0
+1
+3
+4
+6
+
+query I valuesort label-5400
+SELECT pk FROM tab3 WHERE col4 < 700.60 ORDER BY 1
+----
+0
+1
+3
+4
+6
+
+query I valuesort label-5400
+SELECT pk FROM tab4 WHERE col4 < 700.60 ORDER BY 1
+----
+0
+1
+3
+4
+6
+
+query II valuesort label-5410
+SELECT pk, col0 FROM tab0 WHERE col4 < 700.60 ORDER BY 1 DESC
+----
+10 values hashing to b81e7e483d6da1b029a8af194845cde8
+
+query II valuesort label-5410
+SELECT pk, col0 FROM tab1 WHERE col4 < 700.60 ORDER BY 1 DESC
+----
+10 values hashing to b81e7e483d6da1b029a8af194845cde8
+
+query II valuesort label-5410
+SELECT pk, col0 FROM tab2 WHERE col4 < 700.60 ORDER BY 1 DESC
+----
+10 values hashing to b81e7e483d6da1b029a8af194845cde8
+
+query II valuesort label-5410
+SELECT pk, col0 FROM tab3 WHERE col4 < 700.60 ORDER BY 1 DESC
+----
+10 values hashing to b81e7e483d6da1b029a8af194845cde8
+
+query II valuesort label-5410
+SELECT pk, col0 FROM tab4 WHERE col4 < 700.60 ORDER BY 1 DESC
+----
+10 values hashing to b81e7e483d6da1b029a8af194845cde8
+
+query II valuesort label-5410
+SELECT pk, col0 FROM tab0 WHERE col4 < 700.60 ORDER BY 2 DESC
+----
+10 values hashing to b81e7e483d6da1b029a8af194845cde8
+
+query II valuesort label-5410
+SELECT pk, col0 FROM tab1 WHERE col4 < 700.60 ORDER BY 2 DESC
+----
+10 values hashing to b81e7e483d6da1b029a8af194845cde8
+
+query II valuesort label-5410
+SELECT pk, col0 FROM tab2 WHERE col4 < 700.60 ORDER BY 2 DESC
+----
+10 values hashing to b81e7e483d6da1b029a8af194845cde8
+
+query II valuesort label-5410
+SELECT pk, col0 FROM tab3 WHERE col4 < 700.60 ORDER BY 2 DESC
+----
+10 values hashing to b81e7e483d6da1b029a8af194845cde8
+
+query II valuesort label-5410
+SELECT pk, col0 FROM tab4 WHERE col4 < 700.60 ORDER BY 2 DESC
+----
+10 values hashing to b81e7e483d6da1b029a8af194845cde8
+
+query II valuesort label-5410
+SELECT pk, col0 FROM tab0 WHERE col4 < 700.60 ORDER BY 1
+----
+10 values hashing to b81e7e483d6da1b029a8af194845cde8
+
+query II valuesort label-5410
+SELECT pk, col0 FROM tab1 WHERE col4 < 700.60 ORDER BY 1
+----
+10 values hashing to b81e7e483d6da1b029a8af194845cde8
+
+query II valuesort label-5410
+SELECT pk, col0 FROM tab2 WHERE col4 < 700.60 ORDER BY 1
+----
+10 values hashing to b81e7e483d6da1b029a8af194845cde8
+
+query II valuesort label-5410
+SELECT pk, col0 FROM tab3 WHERE col4 < 700.60 ORDER BY 1
+----
+10 values hashing to b81e7e483d6da1b029a8af194845cde8
+
+query II valuesort label-5410
+SELECT pk, col0 FROM tab4 WHERE col4 < 700.60 ORDER BY 1
+----
+10 values hashing to b81e7e483d6da1b029a8af194845cde8
+
+query II valuesort label-5410
+SELECT pk, col0 FROM tab0 WHERE col4 < 700.60 ORDER BY 2
+----
+10 values hashing to b81e7e483d6da1b029a8af194845cde8
+
+query II valuesort label-5410
+SELECT pk, col0 FROM tab1 WHERE col4 < 700.60 ORDER BY 2
+----
+10 values hashing to b81e7e483d6da1b029a8af194845cde8
+
+query II valuesort label-5410
+SELECT pk, col0 FROM tab2 WHERE col4 < 700.60 ORDER BY 2
+----
+10 values hashing to b81e7e483d6da1b029a8af194845cde8
+
+query II valuesort label-5410
+SELECT pk, col0 FROM tab3 WHERE col4 < 700.60 ORDER BY 2
+----
+10 values hashing to b81e7e483d6da1b029a8af194845cde8
+
+query II valuesort label-5410
+SELECT pk, col0 FROM tab4 WHERE col4 < 700.60 ORDER BY 2
+----
+10 values hashing to b81e7e483d6da1b029a8af194845cde8
+
+query II valuesort label-5410
+SELECT pk, col0 FROM tab0 WHERE col4 < 700.60 ORDER BY 1 DESC,2 DESC
+----
+10 values hashing to b81e7e483d6da1b029a8af194845cde8
+
+query II valuesort label-5410
+SELECT pk, col0 FROM tab1 WHERE col4 < 700.60 ORDER BY 1 DESC,2 DESC
+----
+10 values hashing to b81e7e483d6da1b029a8af194845cde8
+
+query II valuesort label-5410
+SELECT pk, col0 FROM tab2 WHERE col4 < 700.60 ORDER BY 1 DESC,2 DESC
+----
+10 values hashing to b81e7e483d6da1b029a8af194845cde8
+
+query II valuesort label-5410
+SELECT pk, col0 FROM tab3 WHERE col4 < 700.60 ORDER BY 1 DESC,2 DESC
+----
+10 values hashing to b81e7e483d6da1b029a8af194845cde8
+
+query II valuesort label-5410
+SELECT pk, col0 FROM tab4 WHERE col4 < 700.60 ORDER BY 1 DESC,2 DESC
+----
+10 values hashing to b81e7e483d6da1b029a8af194845cde8
+
+query II valuesort label-5410
+SELECT pk, col0 FROM tab0 WHERE col4 < 700.60 ORDER BY 1,2 DESC
+----
+10 values hashing to b81e7e483d6da1b029a8af194845cde8
+
+query II valuesort label-5410
+SELECT pk, col0 FROM tab1 WHERE col4 < 700.60 ORDER BY 1,2 DESC
+----
+10 values hashing to b81e7e483d6da1b029a8af194845cde8
+
+query II valuesort label-5410
+SELECT pk, col0 FROM tab2 WHERE col4 < 700.60 ORDER BY 1,2 DESC
+----
+10 values hashing to b81e7e483d6da1b029a8af194845cde8
+
+query II valuesort label-5410
+SELECT pk, col0 FROM tab3 WHERE col4 < 700.60 ORDER BY 1,2 DESC
+----
+10 values hashing to b81e7e483d6da1b029a8af194845cde8
+
+query II valuesort label-5410
+SELECT pk, col0 FROM tab4 WHERE col4 < 700.60 ORDER BY 1,2 DESC
+----
+10 values hashing to b81e7e483d6da1b029a8af194845cde8
+
+query II valuesort label-5410
+SELECT pk, col0 FROM tab0 WHERE col4 < 700.60 ORDER BY 2 DESC,1
+----
+10 values hashing to b81e7e483d6da1b029a8af194845cde8
+
+query II valuesort label-5410
+SELECT pk, col0 FROM tab1 WHERE col4 < 700.60 ORDER BY 2 DESC,1
+----
+10 values hashing to b81e7e483d6da1b029a8af194845cde8
+
+query II valuesort label-5410
+SELECT pk, col0 FROM tab2 WHERE col4 < 700.60 ORDER BY 2 DESC,1
+----
+10 values hashing to b81e7e483d6da1b029a8af194845cde8
+
+query II valuesort label-5410
+SELECT pk, col0 FROM tab3 WHERE col4 < 700.60 ORDER BY 2 DESC,1
+----
+10 values hashing to b81e7e483d6da1b029a8af194845cde8
+
+query II valuesort label-5410
+SELECT pk, col0 FROM tab4 WHERE col4 < 700.60 ORDER BY 2 DESC,1
+----
+10 values hashing to b81e7e483d6da1b029a8af194845cde8
+
+query II valuesort label-5410
+SELECT pk, col0 FROM tab0 WHERE col4 < 700.60 ORDER BY 2,1
+----
+10 values hashing to b81e7e483d6da1b029a8af194845cde8
+
+query II valuesort label-5410
+SELECT pk, col0 FROM tab1 WHERE col4 < 700.60 ORDER BY 2,1
+----
+10 values hashing to b81e7e483d6da1b029a8af194845cde8
+
+query II valuesort label-5410
+SELECT pk, col0 FROM tab2 WHERE col4 < 700.60 ORDER BY 2,1
+----
+10 values hashing to b81e7e483d6da1b029a8af194845cde8
+
+query II valuesort label-5410
+SELECT pk, col0 FROM tab3 WHERE col4 < 700.60 ORDER BY 2,1
+----
+10 values hashing to b81e7e483d6da1b029a8af194845cde8
+
+query II valuesort label-5410
+SELECT pk, col0 FROM tab4 WHERE col4 < 700.60 ORDER BY 2,1
+----
+10 values hashing to b81e7e483d6da1b029a8af194845cde8
+
+query II valuesort label-5410
+SELECT pk, col0 FROM tab0 WHERE col4 < 700.60 ORDER BY 1 DESC,2
+----
+10 values hashing to b81e7e483d6da1b029a8af194845cde8
+
+query II valuesort label-5410
+SELECT pk, col0 FROM tab1 WHERE col4 < 700.60 ORDER BY 1 DESC,2
+----
+10 values hashing to b81e7e483d6da1b029a8af194845cde8
+
+query II valuesort label-5410
+SELECT pk, col0 FROM tab2 WHERE col4 < 700.60 ORDER BY 1 DESC,2
+----
+10 values hashing to b81e7e483d6da1b029a8af194845cde8
+
+query II valuesort label-5410
+SELECT pk, col0 FROM tab3 WHERE col4 < 700.60 ORDER BY 1 DESC,2
+----
+10 values hashing to b81e7e483d6da1b029a8af194845cde8
+
+query II valuesort label-5410
+SELECT pk, col0 FROM tab4 WHERE col4 < 700.60 ORDER BY 1 DESC,2
+----
+10 values hashing to b81e7e483d6da1b029a8af194845cde8
+
+query II valuesort label-5410
+SELECT pk, col0 FROM tab0 WHERE col4 < 700.60 ORDER BY 1,2
+----
+10 values hashing to b81e7e483d6da1b029a8af194845cde8
+
+query II valuesort label-5410
+SELECT pk, col0 FROM tab1 WHERE col4 < 700.60 ORDER BY 1,2
+----
+10 values hashing to b81e7e483d6da1b029a8af194845cde8
+
+query II valuesort label-5410
+SELECT pk, col0 FROM tab2 WHERE col4 < 700.60 ORDER BY 1,2
+----
+10 values hashing to b81e7e483d6da1b029a8af194845cde8
+
+query II valuesort label-5410
+SELECT pk, col0 FROM tab3 WHERE col4 < 700.60 ORDER BY 1,2
+----
+10 values hashing to b81e7e483d6da1b029a8af194845cde8
+
+query II valuesort label-5410
+SELECT pk, col0 FROM tab4 WHERE col4 < 700.60 ORDER BY 1,2
+----
+10 values hashing to b81e7e483d6da1b029a8af194845cde8
+
+query I valuesort label-5460
+SELECT pk FROM tab0 WHERE col0 > 258 AND (col0 > 258) ORDER BY 1 DESC
+----
+10 values hashing to e20b902b49a98b1a05ed62804c757f94
+
+query I valuesort label-5460
+SELECT pk FROM tab1 WHERE col0 > 258 AND (col0 > 258) ORDER BY 1 DESC
+----
+10 values hashing to e20b902b49a98b1a05ed62804c757f94
+
+query I valuesort label-5460
+SELECT pk FROM tab2 WHERE col0 > 258 AND (col0 > 258) ORDER BY 1 DESC
+----
+10 values hashing to e20b902b49a98b1a05ed62804c757f94
+
+query I valuesort label-5460
+SELECT pk FROM tab3 WHERE col0 > 258 AND (col0 > 258) ORDER BY 1 DESC
+----
+10 values hashing to e20b902b49a98b1a05ed62804c757f94
+
+query I valuesort label-5460
+SELECT pk FROM tab4 WHERE col0 > 258 AND (col0 > 258) ORDER BY 1 DESC
+----
+10 values hashing to e20b902b49a98b1a05ed62804c757f94
+
+query I valuesort label-5460
+SELECT pk FROM tab0 WHERE col0 > 258 AND (col0 > 258) ORDER BY 1
+----
+10 values hashing to e20b902b49a98b1a05ed62804c757f94
+
+query I valuesort label-5460
+SELECT pk FROM tab1 WHERE col0 > 258 AND (col0 > 258) ORDER BY 1
+----
+10 values hashing to e20b902b49a98b1a05ed62804c757f94
+
+query I valuesort label-5460
+SELECT pk FROM tab2 WHERE col0 > 258 AND (col0 > 258) ORDER BY 1
+----
+10 values hashing to e20b902b49a98b1a05ed62804c757f94
+
+query I valuesort label-5460
+SELECT pk FROM tab3 WHERE col0 > 258 AND (col0 > 258) ORDER BY 1
+----
+10 values hashing to e20b902b49a98b1a05ed62804c757f94
+
+query I valuesort label-5460
+SELECT pk FROM tab4 WHERE col0 > 258 AND (col0 > 258) ORDER BY 1
+----
+10 values hashing to e20b902b49a98b1a05ed62804c757f94
+
+query II valuesort label-5470
+SELECT pk, col0 FROM tab0 WHERE col0 > 258 AND (col0 > 258) ORDER BY 1 DESC
+----
+20 values hashing to 7e7c5f3c08c3c1ac89f33c89a0e42d7c
+
+query II valuesort label-5470
+SELECT pk, col0 FROM tab1 WHERE col0 > 258 AND (col0 > 258) ORDER BY 1 DESC
+----
+20 values hashing to 7e7c5f3c08c3c1ac89f33c89a0e42d7c
+
+query II valuesort label-5470
+SELECT pk, col0 FROM tab2 WHERE col0 > 258 AND (col0 > 258) ORDER BY 1 DESC
+----
+20 values hashing to 7e7c5f3c08c3c1ac89f33c89a0e42d7c
+
+query II valuesort label-5470
+SELECT pk, col0 FROM tab3 WHERE col0 > 258 AND (col0 > 258) ORDER BY 1 DESC
+----
+20 values hashing to 7e7c5f3c08c3c1ac89f33c89a0e42d7c
+
+query II valuesort label-5470
+SELECT pk, col0 FROM tab4 WHERE col0 > 258 AND (col0 > 258) ORDER BY 1 DESC
+----
+20 values hashing to 7e7c5f3c08c3c1ac89f33c89a0e42d7c
+
+query II valuesort label-5470
+SELECT pk, col0 FROM tab0 WHERE col0 > 258 AND (col0 > 258) ORDER BY 2 DESC
+----
+20 values hashing to 7e7c5f3c08c3c1ac89f33c89a0e42d7c
+
+query II valuesort label-5470
+SELECT pk, col0 FROM tab1 WHERE col0 > 258 AND (col0 > 258) ORDER BY 2 DESC
+----
+20 values hashing to 7e7c5f3c08c3c1ac89f33c89a0e42d7c
+
+query II valuesort label-5470
+SELECT pk, col0 FROM tab2 WHERE col0 > 258 AND (col0 > 258) ORDER BY 2 DESC
+----
+20 values hashing to 7e7c5f3c08c3c1ac89f33c89a0e42d7c
+
+query II valuesort label-5470
+SELECT pk, col0 FROM tab3 WHERE col0 > 258 AND (col0 > 258) ORDER BY 2 DESC
+----
+20 values hashing to 7e7c5f3c08c3c1ac89f33c89a0e42d7c
+
+query II valuesort label-5470
+SELECT pk, col0 FROM tab4 WHERE col0 > 258 AND (col0 > 258) ORDER BY 2 DESC
+----
+20 values hashing to 7e7c5f3c08c3c1ac89f33c89a0e42d7c
+
+query II valuesort label-5470
+SELECT pk, col0 FROM tab0 WHERE col0 > 258 AND (col0 > 258) ORDER BY 1
+----
+20 values hashing to 7e7c5f3c08c3c1ac89f33c89a0e42d7c
+
+query II valuesort label-5470
+SELECT pk, col0 FROM tab1 WHERE col0 > 258 AND (col0 > 258) ORDER BY 1
+----
+20 values hashing to 7e7c5f3c08c3c1ac89f33c89a0e42d7c
+
+query II valuesort label-5470
+SELECT pk, col0 FROM tab2 WHERE col0 > 258 AND (col0 > 258) ORDER BY 1
+----
+20 values hashing to 7e7c5f3c08c3c1ac89f33c89a0e42d7c
+
+query II valuesort label-5470
+SELECT pk, col0 FROM tab3 WHERE col0 > 258 AND (col0 > 258) ORDER BY 1
+----
+20 values hashing to 7e7c5f3c08c3c1ac89f33c89a0e42d7c
+
+query II valuesort label-5470
+SELECT pk, col0 FROM tab4 WHERE col0 > 258 AND (col0 > 258) ORDER BY 1
+----
+20 values hashing to 7e7c5f3c08c3c1ac89f33c89a0e42d7c
+
+query II valuesort label-5470
+SELECT pk, col0 FROM tab0 WHERE col0 > 258 AND (col0 > 258) ORDER BY 2
+----
+20 values hashing to 7e7c5f3c08c3c1ac89f33c89a0e42d7c
+
+query II valuesort label-5470
+SELECT pk, col0 FROM tab1 WHERE col0 > 258 AND (col0 > 258) ORDER BY 2
+----
+20 values hashing to 7e7c5f3c08c3c1ac89f33c89a0e42d7c
+
+query II valuesort label-5470
+SELECT pk, col0 FROM tab2 WHERE col0 > 258 AND (col0 > 258) ORDER BY 2
+----
+20 values hashing to 7e7c5f3c08c3c1ac89f33c89a0e42d7c
+
+query II valuesort label-5470
+SELECT pk, col0 FROM tab3 WHERE col0 > 258 AND (col0 > 258) ORDER BY 2
+----
+20 values hashing to 7e7c5f3c08c3c1ac89f33c89a0e42d7c
+
+query II valuesort label-5470
+SELECT pk, col0 FROM tab4 WHERE col0 > 258 AND (col0 > 258) ORDER BY 2
+----
+20 values hashing to 7e7c5f3c08c3c1ac89f33c89a0e42d7c
+
+query II valuesort label-5470
+SELECT pk, col0 FROM tab0 WHERE col0 > 258 AND (col0 > 258) ORDER BY 1 DESC,2 DESC
+----
+20 values hashing to 7e7c5f3c08c3c1ac89f33c89a0e42d7c
+
+query II valuesort label-5470
+SELECT pk, col0 FROM tab1 WHERE col0 > 258 AND (col0 > 258) ORDER BY 1 DESC,2 DESC
+----
+20 values hashing to 7e7c5f3c08c3c1ac89f33c89a0e42d7c
+
+query II valuesort label-5470
+SELECT pk, col0 FROM tab2 WHERE col0 > 258 AND (col0 > 258) ORDER BY 1 DESC,2 DESC
+----
+20 values hashing to 7e7c5f3c08c3c1ac89f33c89a0e42d7c
+
+query II valuesort label-5470
+SELECT pk, col0 FROM tab3 WHERE col0 > 258 AND (col0 > 258) ORDER BY 1 DESC,2 DESC
+----
+20 values hashing to 7e7c5f3c08c3c1ac89f33c89a0e42d7c
+
+query II valuesort label-5470
+SELECT pk, col0 FROM tab4 WHERE col0 > 258 AND (col0 > 258) ORDER BY 1 DESC,2 DESC
+----
+20 values hashing to 7e7c5f3c08c3c1ac89f33c89a0e42d7c
+
+query II valuesort label-5470
+SELECT pk, col0 FROM tab0 WHERE col0 > 258 AND (col0 > 258) ORDER BY 1,2 DESC
+----
+20 values hashing to 7e7c5f3c08c3c1ac89f33c89a0e42d7c
+
+query II valuesort label-5470
+SELECT pk, col0 FROM tab1 WHERE col0 > 258 AND (col0 > 258) ORDER BY 1,2 DESC
+----
+20 values hashing to 7e7c5f3c08c3c1ac89f33c89a0e42d7c
+
+query II valuesort label-5470
+SELECT pk, col0 FROM tab2 WHERE col0 > 258 AND (col0 > 258) ORDER BY 1,2 DESC
+----
+20 values hashing to 7e7c5f3c08c3c1ac89f33c89a0e42d7c
+
+query II valuesort label-5470
+SELECT pk, col0 FROM tab3 WHERE col0 > 258 AND (col0 > 258) ORDER BY 1,2 DESC
+----
+20 values hashing to 7e7c5f3c08c3c1ac89f33c89a0e42d7c
+
+query II valuesort label-5470
+SELECT pk, col0 FROM tab4 WHERE col0 > 258 AND (col0 > 258) ORDER BY 1,2 DESC
+----
+20 values hashing to 7e7c5f3c08c3c1ac89f33c89a0e42d7c
+
+query II valuesort label-5470
+SELECT pk, col0 FROM tab0 WHERE col0 > 258 AND (col0 > 258) ORDER BY 2 DESC,1
+----
+20 values hashing to 7e7c5f3c08c3c1ac89f33c89a0e42d7c
+
+query II valuesort label-5470
+SELECT pk, col0 FROM tab1 WHERE col0 > 258 AND (col0 > 258) ORDER BY 2 DESC,1
+----
+20 values hashing to 7e7c5f3c08c3c1ac89f33c89a0e42d7c
+
+query II valuesort label-5470
+SELECT pk, col0 FROM tab2 WHERE col0 > 258 AND (col0 > 258) ORDER BY 2 DESC,1
+----
+20 values hashing to 7e7c5f3c08c3c1ac89f33c89a0e42d7c
+
+query II valuesort label-5470
+SELECT pk, col0 FROM tab3 WHERE col0 > 258 AND (col0 > 258) ORDER BY 2 DESC,1
+----
+20 values hashing to 7e7c5f3c08c3c1ac89f33c89a0e42d7c
+
+query II valuesort label-5470
+SELECT pk, col0 FROM tab4 WHERE col0 > 258 AND (col0 > 258) ORDER BY 2 DESC,1
+----
+20 values hashing to 7e7c5f3c08c3c1ac89f33c89a0e42d7c
+
+query II valuesort label-5470
+SELECT pk, col0 FROM tab0 WHERE col0 > 258 AND (col0 > 258) ORDER BY 2,1
+----
+20 values hashing to 7e7c5f3c08c3c1ac89f33c89a0e42d7c
+
+query II valuesort label-5470
+SELECT pk, col0 FROM tab1 WHERE col0 > 258 AND (col0 > 258) ORDER BY 2,1
+----
+20 values hashing to 7e7c5f3c08c3c1ac89f33c89a0e42d7c
+
+query II valuesort label-5470
+SELECT pk, col0 FROM tab2 WHERE col0 > 258 AND (col0 > 258) ORDER BY 2,1
+----
+20 values hashing to 7e7c5f3c08c3c1ac89f33c89a0e42d7c
+
+query II valuesort label-5470
+SELECT pk, col0 FROM tab3 WHERE col0 > 258 AND (col0 > 258) ORDER BY 2,1
+----
+20 values hashing to 7e7c5f3c08c3c1ac89f33c89a0e42d7c
+
+query II valuesort label-5470
+SELECT pk, col0 FROM tab4 WHERE col0 > 258 AND (col0 > 258) ORDER BY 2,1
+----
+20 values hashing to 7e7c5f3c08c3c1ac89f33c89a0e42d7c
+
+query II valuesort label-5470
+SELECT pk, col0 FROM tab0 WHERE col0 > 258 AND (col0 > 258) ORDER BY 1 DESC,2
+----
+20 values hashing to 7e7c5f3c08c3c1ac89f33c89a0e42d7c
+
+query II valuesort label-5470
+SELECT pk, col0 FROM tab1 WHERE col0 > 258 AND (col0 > 258) ORDER BY 1 DESC,2
+----
+20 values hashing to 7e7c5f3c08c3c1ac89f33c89a0e42d7c
+
+query II valuesort label-5470
+SELECT pk, col0 FROM tab2 WHERE col0 > 258 AND (col0 > 258) ORDER BY 1 DESC,2
+----
+20 values hashing to 7e7c5f3c08c3c1ac89f33c89a0e42d7c
+
+query II valuesort label-5470
+SELECT pk, col0 FROM tab3 WHERE col0 > 258 AND (col0 > 258) ORDER BY 1 DESC,2
+----
+20 values hashing to 7e7c5f3c08c3c1ac89f33c89a0e42d7c
+
+query II valuesort label-5470
+SELECT pk, col0 FROM tab4 WHERE col0 > 258 AND (col0 > 258) ORDER BY 1 DESC,2
+----
+20 values hashing to 7e7c5f3c08c3c1ac89f33c89a0e42d7c
+
+query II valuesort label-5470
+SELECT pk, col0 FROM tab0 WHERE col0 > 258 AND (col0 > 258) ORDER BY 1,2
+----
+20 values hashing to 7e7c5f3c08c3c1ac89f33c89a0e42d7c
+
+query II valuesort label-5470
+SELECT pk, col0 FROM tab1 WHERE col0 > 258 AND (col0 > 258) ORDER BY 1,2
+----
+20 values hashing to 7e7c5f3c08c3c1ac89f33c89a0e42d7c
+
+query II valuesort label-5470
+SELECT pk, col0 FROM tab2 WHERE col0 > 258 AND (col0 > 258) ORDER BY 1,2
+----
+20 values hashing to 7e7c5f3c08c3c1ac89f33c89a0e42d7c
+
+query II valuesort label-5470
+SELECT pk, col0 FROM tab3 WHERE col0 > 258 AND (col0 > 258) ORDER BY 1,2
+----
+20 values hashing to 7e7c5f3c08c3c1ac89f33c89a0e42d7c
+
+query II valuesort label-5470
+SELECT pk, col0 FROM tab4 WHERE col0 > 258 AND (col0 > 258) ORDER BY 1,2
+----
+20 values hashing to 7e7c5f3c08c3c1ac89f33c89a0e42d7c
+
+query I valuesort label-5520
+SELECT pk FROM tab0 WHERE (((((col4 < 341.32))) AND col3 IN (SELECT col0 FROM tab0 WHERE ((col0 > 564) AND col0 >= 344 AND (col0 IN (574) AND col0 > 600 AND ((col1 >= 568.71) AND col3 = 114 AND (col3 < 869))))) OR col4 >= 811.8)) ORDER BY 1
+----
+7
+8
+9
+
+query I valuesort label-5520
+SELECT pk FROM tab1 WHERE (((((col4 < 341.32))) AND col3 IN (SELECT col0 FROM tab1 WHERE ((col0 > 564) AND col0 >= 344 AND (col0 IN (574) AND col0 > 600 AND ((col1 >= 568.71) AND col3 = 114 AND (col3 < 869))))) OR col4 >= 811.8)) ORDER BY 1
+----
+7
+8
+9
+
+query I valuesort label-5520
+SELECT pk FROM tab2 WHERE (((((col4 < 341.32))) AND col3 IN (SELECT col0 FROM tab2 WHERE ((col0 > 564) AND col0 >= 344 AND (col0 IN (574) AND col0 > 600 AND ((col1 >= 568.71) AND col3 = 114 AND (col3 < 869))))) OR col4 >= 811.8)) ORDER BY 1
+----
+7
+8
+9
+
+query I valuesort label-5520
+SELECT pk FROM tab3 WHERE (((((col4 < 341.32))) AND col3 IN (SELECT col0 FROM tab3 WHERE ((col0 > 564) AND col0 >= 344 AND (col0 IN (574) AND col0 > 600 AND ((col1 >= 568.71) AND col3 = 114 AND (col3 < 869))))) OR col4 >= 811.8)) ORDER BY 1
+----
+7
+8
+9
+
+query I valuesort label-5520
+SELECT pk FROM tab4 WHERE (((((col4 < 341.32))) AND col3 IN (SELECT col0 FROM tab4 WHERE ((col0 > 564) AND col0 >= 344 AND (col0 IN (574) AND col0 > 600 AND ((col1 >= 568.71) AND col3 = 114 AND (col3 < 869))))) OR col4 >= 811.8)) ORDER BY 1
+----
+7
+8
+9
+
+query II valuesort label-5530
+SELECT pk, col0 FROM tab0 WHERE (((((col4 < 341.32))) AND col3 IN (SELECT col0 FROM tab0 WHERE ((col0 > 564) AND col0 >= 344 AND (col0 IN (574) AND col0 > 600 AND ((col1 >= 568.71) AND col3 = 114 AND (col3 < 869))))) OR col4 >= 811.8)) ORDER BY 1 DESC
+----
+297
+7
+725
+8
+823
+9
+
+query II valuesort label-5530
+SELECT pk, col0 FROM tab1 WHERE (((((col4 < 341.32))) AND col3 IN (SELECT col0 FROM tab1 WHERE ((col0 > 564) AND col0 >= 344 AND (col0 IN (574) AND col0 > 600 AND ((col1 >= 568.71) AND col3 = 114 AND (col3 < 869))))) OR col4 >= 811.8)) ORDER BY 1 DESC
+----
+297
+7
+725
+8
+823
+9
+
+query II valuesort label-5530
+SELECT pk, col0 FROM tab2 WHERE (((((col4 < 341.32))) AND col3 IN (SELECT col0 FROM tab2 WHERE ((col0 > 564) AND col0 >= 344 AND (col0 IN (574) AND col0 > 600 AND ((col1 >= 568.71) AND col3 = 114 AND (col3 < 869))))) OR col4 >= 811.8)) ORDER BY 1 DESC
+----
+297
+7
+725
+8
+823
+9
+
+query II valuesort label-5530
+SELECT pk, col0 FROM tab3 WHERE (((((col4 < 341.32))) AND col3 IN (SELECT col0 FROM tab3 WHERE ((col0 > 564) AND col0 >= 344 AND (col0 IN (574) AND col0 > 600 AND ((col1 >= 568.71) AND col3 = 114 AND (col3 < 869))))) OR col4 >= 811.8)) ORDER BY 1 DESC
+----
+297
+7
+725
+8
+823
+9
+
+query II valuesort label-5530
+SELECT pk, col0 FROM tab4 WHERE (((((col4 < 341.32))) AND col3 IN (SELECT col0 FROM tab4 WHERE ((col0 > 564) AND col0 >= 344 AND (col0 IN (574) AND col0 > 600 AND ((col1 >= 568.71) AND col3 = 114 AND (col3 < 869))))) OR col4 >= 811.8)) ORDER BY 1 DESC
+----
+297
+7
+725
+8
+823
+9
+
+query II valuesort label-5530
+SELECT pk, col0 FROM tab0 WHERE (((((col4 < 341.32))) AND col3 IN (SELECT col0 FROM tab0 WHERE ((col0 > 564) AND col0 >= 344 AND (col0 IN (574) AND col0 > 600 AND ((col1 >= 568.71) AND col3 = 114 AND (col3 < 869))))) OR col4 >= 811.8)) ORDER BY 2 DESC
+----
+297
+7
+725
+8
+823
+9
+
+query II valuesort label-5530
+SELECT pk, col0 FROM tab1 WHERE (((((col4 < 341.32))) AND col3 IN (SELECT col0 FROM tab1 WHERE ((col0 > 564) AND col0 >= 344 AND (col0 IN (574) AND col0 > 600 AND ((col1 >= 568.71) AND col3 = 114 AND (col3 < 869))))) OR col4 >= 811.8)) ORDER BY 2 DESC
+----
+297
+7
+725
+8
+823
+9
+
+query II valuesort label-5530
+SELECT pk, col0 FROM tab2 WHERE (((((col4 < 341.32))) AND col3 IN (SELECT col0 FROM tab2 WHERE ((col0 > 564) AND col0 >= 344 AND (col0 IN (574) AND col0 > 600 AND ((col1 >= 568.71) AND col3 = 114 AND (col3 < 869))))) OR col4 >= 811.8)) ORDER BY 2 DESC
+----
+297
+7
+725
+8
+823
+9
+
+query II valuesort label-5530
+SELECT pk, col0 FROM tab3 WHERE (((((col4 < 341.32))) AND col3 IN (SELECT col0 FROM tab3 WHERE ((col0 > 564) AND col0 >= 344 AND (col0 IN (574) AND col0 > 600 AND ((col1 >= 568.71) AND col3 = 114 AND (col3 < 869))))) OR col4 >= 811.8)) ORDER BY 2 DESC
+----
+297
+7
+725
+8
+823
+9
+
+query II valuesort label-5530
+SELECT pk, col0 FROM tab4 WHERE (((((col4 < 341.32))) AND col3 IN (SELECT col0 FROM tab4 WHERE ((col0 > 564) AND col0 >= 344 AND (col0 IN (574) AND col0 > 600 AND ((col1 >= 568.71) AND col3 = 114 AND (col3 < 869))))) OR col4 >= 811.8)) ORDER BY 2 DESC
+----
+297
+7
+725
+8
+823
+9
+
+query II valuesort label-5530
+SELECT pk, col0 FROM tab0 WHERE (((((col4 < 341.32))) AND col3 IN (SELECT col0 FROM tab0 WHERE ((col0 > 564) AND col0 >= 344 AND (col0 IN (574) AND col0 > 600 AND ((col1 >= 568.71) AND col3 = 114 AND (col3 < 869))))) OR col4 >= 811.8)) ORDER BY 1
+----
+297
+7
+725
+8
+823
+9
+
+query II valuesort label-5530
+SELECT pk, col0 FROM tab1 WHERE (((((col4 < 341.32))) AND col3 IN (SELECT col0 FROM tab1 WHERE ((col0 > 564) AND col0 >= 344 AND (col0 IN (574) AND col0 > 600 AND ((col1 >= 568.71) AND col3 = 114 AND (col3 < 869))))) OR col4 >= 811.8)) ORDER BY 1
+----
+297
+7
+725
+8
+823
+9
+
+query II valuesort label-5530
+SELECT pk, col0 FROM tab2 WHERE (((((col4 < 341.32))) AND col3 IN (SELECT col0 FROM tab2 WHERE ((col0 > 564) AND col0 >= 344 AND (col0 IN (574) AND col0 > 600 AND ((col1 >= 568.71) AND col3 = 114 AND (col3 < 869))))) OR col4 >= 811.8)) ORDER BY 1
+----
+297
+7
+725
+8
+823
+9
+
+query II valuesort label-5530
+SELECT pk, col0 FROM tab3 WHERE (((((col4 < 341.32))) AND col3 IN (SELECT col0 FROM tab3 WHERE ((col0 > 564) AND col0 >= 344 AND (col0 IN (574) AND col0 > 600 AND ((col1 >= 568.71) AND col3 = 114 AND (col3 < 869))))) OR col4 >= 811.8)) ORDER BY 1
+----
+297
+7
+725
+8
+823
+9
+
+query II valuesort label-5530
+SELECT pk, col0 FROM tab4 WHERE (((((col4 < 341.32))) AND col3 IN (SELECT col0 FROM tab4 WHERE ((col0 > 564) AND col0 >= 344 AND (col0 IN (574) AND col0 > 600 AND ((col1 >= 568.71) AND col3 = 114 AND (col3 < 869))))) OR col4 >= 811.8)) ORDER BY 1
+----
+297
+7
+725
+8
+823
+9
+
+query II valuesort label-5530
+SELECT pk, col0 FROM tab0 WHERE (((((col4 < 341.32))) AND col3 IN (SELECT col0 FROM tab0 WHERE ((col0 > 564) AND col0 >= 344 AND (col0 IN (574) AND col0 > 600 AND ((col1 >= 568.71) AND col3 = 114 AND (col3 < 869))))) OR col4 >= 811.8)) ORDER BY 2
+----
+297
+7
+725
+8
+823
+9
+
+query II valuesort label-5530
+SELECT pk, col0 FROM tab1 WHERE (((((col4 < 341.32))) AND col3 IN (SELECT col0 FROM tab1 WHERE ((col0 > 564) AND col0 >= 344 AND (col0 IN (574) AND col0 > 600 AND ((col1 >= 568.71) AND col3 = 114 AND (col3 < 869))))) OR col4 >= 811.8)) ORDER BY 2
+----
+297
+7
+725
+8
+823
+9
+
+query II valuesort label-5530
+SELECT pk, col0 FROM tab2 WHERE (((((col4 < 341.32))) AND col3 IN (SELECT col0 FROM tab2 WHERE ((col0 > 564) AND col0 >= 344 AND (col0 IN (574) AND col0 > 600 AND ((col1 >= 568.71) AND col3 = 114 AND (col3 < 869))))) OR col4 >= 811.8)) ORDER BY 2
+----
+297
+7
+725
+8
+823
+9
+
+query II valuesort label-5530
+SELECT pk, col0 FROM tab3 WHERE (((((col4 < 341.32))) AND col3 IN (SELECT col0 FROM tab3 WHERE ((col0 > 564) AND col0 >= 344 AND (col0 IN (574) AND col0 > 600 AND ((col1 >= 568.71) AND col3 = 114 AND (col3 < 869))))) OR col4 >= 811.8)) ORDER BY 2
+----
+297
+7
+725
+8
+823
+9
+
+query II valuesort label-5530
+SELECT pk, col0 FROM tab4 WHERE (((((col4 < 341.32))) AND col3 IN (SELECT col0 FROM tab4 WHERE ((col0 > 564) AND col0 >= 344 AND (col0 IN (574) AND col0 > 600 AND ((col1 >= 568.71) AND col3 = 114 AND (col3 < 869))))) OR col4 >= 811.8)) ORDER BY 2
+----
+297
+7
+725
+8
+823
+9
+
+query II valuesort label-5530
+SELECT pk, col0 FROM tab0 WHERE (((((col4 < 341.32))) AND col3 IN (SELECT col0 FROM tab0 WHERE ((col0 > 564) AND col0 >= 344 AND (col0 IN (574) AND col0 > 600 AND ((col1 >= 568.71) AND col3 = 114 AND (col3 < 869))))) OR col4 >= 811.8)) ORDER BY 1 DESC,2 DESC
+----
+297
+7
+725
+8
+823
+9
+
+query II valuesort label-5530
+SELECT pk, col0 FROM tab1 WHERE (((((col4 < 341.32))) AND col3 IN (SELECT col0 FROM tab1 WHERE ((col0 > 564) AND col0 >= 344 AND (col0 IN (574) AND col0 > 600 AND ((col1 >= 568.71) AND col3 = 114 AND (col3 < 869))))) OR col4 >= 811.8)) ORDER BY 1 DESC,2 DESC
+----
+297
+7
+725
+8
+823
+9
+
+query II valuesort label-5530
+SELECT pk, col0 FROM tab2 WHERE (((((col4 < 341.32))) AND col3 IN (SELECT col0 FROM tab2 WHERE ((col0 > 564) AND col0 >= 344 AND (col0 IN (574) AND col0 > 600 AND ((col1 >= 568.71) AND col3 = 114 AND (col3 < 869))))) OR col4 >= 811.8)) ORDER BY 1 DESC,2 DESC
+----
+297
+7
+725
+8
+823
+9
+
+query II valuesort label-5530
+SELECT pk, col0 FROM tab3 WHERE (((((col4 < 341.32))) AND col3 IN (SELECT col0 FROM tab3 WHERE ((col0 > 564) AND col0 >= 344 AND (col0 IN (574) AND col0 > 600 AND ((col1 >= 568.71) AND col3 = 114 AND (col3 < 869))))) OR col4 >= 811.8)) ORDER BY 1 DESC,2 DESC
+----
+297
+7
+725
+8
+823
+9
+
+query II valuesort label-5530
+SELECT pk, col0 FROM tab4 WHERE (((((col4 < 341.32))) AND col3 IN (SELECT col0 FROM tab4 WHERE ((col0 > 564) AND col0 >= 344 AND (col0 IN (574) AND col0 > 600 AND ((col1 >= 568.71) AND col3 = 114 AND (col3 < 869))))) OR col4 >= 811.8)) ORDER BY 1 DESC,2 DESC
+----
+297
+7
+725
+8
+823
+9
+
+query II valuesort label-5530
+SELECT pk, col0 FROM tab0 WHERE (((((col4 < 341.32))) AND col3 IN (SELECT col0 FROM tab0 WHERE ((col0 > 564) AND col0 >= 344 AND (col0 IN (574) AND col0 > 600 AND ((col1 >= 568.71) AND col3 = 114 AND (col3 < 869))))) OR col4 >= 811.8)) ORDER BY 1,2 DESC
+----
+297
+7
+725
+8
+823
+9
+
+query II valuesort label-5530
+SELECT pk, col0 FROM tab1 WHERE (((((col4 < 341.32))) AND col3 IN (SELECT col0 FROM tab1 WHERE ((col0 > 564) AND col0 >= 344 AND (col0 IN (574) AND col0 > 600 AND ((col1 >= 568.71) AND col3 = 114 AND (col3 < 869))))) OR col4 >= 811.8)) ORDER BY 1,2 DESC
+----
+297
+7
+725
+8
+823
+9
+
+query II valuesort label-5530
+SELECT pk, col0 FROM tab2 WHERE (((((col4 < 341.32))) AND col3 IN (SELECT col0 FROM tab2 WHERE ((col0 > 564) AND col0 >= 344 AND (col0 IN (574) AND col0 > 600 AND ((col1 >= 568.71) AND col3 = 114 AND (col3 < 869))))) OR col4 >= 811.8)) ORDER BY 1,2 DESC
+----
+297
+7
+725
+8
+823
+9
+
+query II valuesort label-5530
+SELECT pk, col0 FROM tab3 WHERE (((((col4 < 341.32))) AND col3 IN (SELECT col0 FROM tab3 WHERE ((col0 > 564) AND col0 >= 344 AND (col0 IN (574) AND col0 > 600 AND ((col1 >= 568.71) AND col3 = 114 AND (col3 < 869))))) OR col4 >= 811.8)) ORDER BY 1,2 DESC
+----
+297
+7
+725
+8
+823
+9
+
+query II valuesort label-5530
+SELECT pk, col0 FROM tab4 WHERE (((((col4 < 341.32))) AND col3 IN (SELECT col0 FROM tab4 WHERE ((col0 > 564) AND col0 >= 344 AND (col0 IN (574) AND col0 > 600 AND ((col1 >= 568.71) AND col3 = 114 AND (col3 < 869))))) OR col4 >= 811.8)) ORDER BY 1 DESC,2
+----
+297
+7
+725
+8
+823
+9
+
+query II valuesort label-5530
+SELECT pk, col0 FROM tab0 WHERE (((((col4 < 341.32))) AND col3 IN (SELECT col0 FROM tab0 WHERE ((col0 > 564) AND col0 >= 344 AND (col0 IN (574) AND col0 > 600 AND ((col1 >= 568.71) AND col3 = 114 AND (col3 < 869))))) OR col4 >= 811.8)) ORDER BY 1,2
+----
+297
+7
+725
+8
+823
+9
+
+query II valuesort label-5530
+SELECT pk, col0 FROM tab1 WHERE (((((col4 < 341.32))) AND col3 IN (SELECT col0 FROM tab1 WHERE ((col0 > 564) AND col0 >= 344 AND (col0 IN (574) AND col0 > 600 AND ((col1 >= 568.71) AND col3 = 114 AND (col3 < 869))))) OR col4 >= 811.8)) ORDER BY 1,2
+----
+297
+7
+725
+8
+823
+9
+
+query II valuesort label-5530
+SELECT pk, col0 FROM tab2 WHERE (((((col4 < 341.32))) AND col3 IN (SELECT col0 FROM tab2 WHERE ((col0 > 564) AND col0 >= 344 AND (col0 IN (574) AND col0 > 600 AND ((col1 >= 568.71) AND col3 = 114 AND (col3 < 869))))) OR col4 >= 811.8)) ORDER BY 1,2
+----
+297
+7
+725
+8
+823
+9
+
+query II valuesort label-5530
+SELECT pk, col0 FROM tab3 WHERE (((((col4 < 341.32))) AND col3 IN (SELECT col0 FROM tab3 WHERE ((col0 > 564) AND col0 >= 344 AND (col0 IN (574) AND col0 > 600 AND ((col1 >= 568.71) AND col3 = 114 AND (col3 < 869))))) OR col4 >= 811.8)) ORDER BY 1,2
+----
+297
+7
+725
+8
+823
+9
+
+query II valuesort label-5530
+SELECT pk, col0 FROM tab4 WHERE (((((col4 < 341.32))) AND col3 IN (SELECT col0 FROM tab4 WHERE ((col0 > 564) AND col0 >= 344 AND (col0 IN (574) AND col0 > 600 AND ((col1 >= 568.71) AND col3 = 114 AND (col3 < 869))))) OR col4 >= 811.8)) ORDER BY 1,2
+----
+297
+7
+725
+8
+823
+9
+
+query I valuesort label-5580
+SELECT pk FROM tab0 WHERE (col4 BETWEEN 250.10 AND 239.45) AND col3 > 706 OR col1 < 294.75 AND col0 >= 761 AND col0 >= 496 ORDER BY 1 DESC
+----
+
+query I valuesort label-5580
+SELECT pk FROM tab1 WHERE (col4 BETWEEN 250.10 AND 239.45) AND col3 > 706 OR col1 < 294.75 AND col0 >= 761 AND col0 >= 496 ORDER BY 1 DESC
+----
+
+query I valuesort label-5580
+SELECT pk FROM tab2 WHERE (col4 BETWEEN 250.10 AND 239.45) AND col3 > 706 OR col1 < 294.75 AND col0 >= 761 AND col0 >= 496 ORDER BY 1 DESC
+----
+
+query I valuesort label-5580
+SELECT pk FROM tab3 WHERE (col4 BETWEEN 250.10 AND 239.45) AND col3 > 706 OR col1 < 294.75 AND col0 >= 761 AND col0 >= 496 ORDER BY 1 DESC
+----
+
+query I valuesort label-5580
+SELECT pk FROM tab4 WHERE (col4 BETWEEN 250.10 AND 239.45) AND col3 > 706 OR col1 < 294.75 AND col0 >= 761 AND col0 >= 496 ORDER BY 1 DESC
+----
+
+query I valuesort label-5580
+SELECT pk FROM tab0 WHERE (col4 BETWEEN 250.10 AND 239.45) AND col3 > 706 OR col1 < 294.75 AND col0 >= 761 AND col0 >= 496 ORDER BY 1
+----
+
+query I valuesort label-5580
+SELECT pk FROM tab1 WHERE (col4 BETWEEN 250.10 AND 239.45) AND col3 > 706 OR col1 < 294.75 AND col0 >= 761 AND col0 >= 496 ORDER BY 1
+----
+
+query I valuesort label-5580
+SELECT pk FROM tab2 WHERE (col4 BETWEEN 250.10 AND 239.45) AND col3 > 706 OR col1 < 294.75 AND col0 >= 761 AND col0 >= 496 ORDER BY 1
+----
+
+query I valuesort label-5580
+SELECT pk FROM tab3 WHERE (col4 BETWEEN 250.10 AND 239.45) AND col3 > 706 OR col1 < 294.75 AND col0 >= 761 AND col0 >= 496 ORDER BY 1
+----
+
+query I valuesort label-5580
+SELECT pk FROM tab4 WHERE (col4 BETWEEN 250.10 AND 239.45) AND col3 > 706 OR col1 < 294.75 AND col0 >= 761 AND col0 >= 496 ORDER BY 1
+----
+
+query II valuesort label-5590
+SELECT pk, col0 FROM tab0 WHERE (col4 BETWEEN 250.10 AND 239.45) AND col3 > 706 OR col1 < 294.75 AND col0 >= 761 AND col0 >= 496 ORDER BY 1 DESC
+----
+
+query II valuesort label-5590
+SELECT pk, col0 FROM tab1 WHERE (col4 BETWEEN 250.10 AND 239.45) AND col3 > 706 OR col1 < 294.75 AND col0 >= 761 AND col0 >= 496 ORDER BY 1 DESC
+----
+
+query II valuesort label-5590
+SELECT pk, col0 FROM tab2 WHERE (col4 BETWEEN 250.10 AND 239.45) AND col3 > 706 OR col1 < 294.75 AND col0 >= 761 AND col0 >= 496 ORDER BY 1 DESC
+----
+
+query II valuesort label-5590
+SELECT pk, col0 FROM tab3 WHERE (col4 BETWEEN 250.10 AND 239.45) AND col3 > 706 OR col1 < 294.75 AND col0 >= 761 AND col0 >= 496 ORDER BY 1 DESC
+----
+
+query II valuesort label-5590
+SELECT pk, col0 FROM tab4 WHERE (col4 BETWEEN 250.10 AND 239.45) AND col3 > 706 OR col1 < 294.75 AND col0 >= 761 AND col0 >= 496 ORDER BY 1 DESC
+----
+
+query II valuesort label-5590
+SELECT pk, col0 FROM tab0 WHERE (col4 BETWEEN 250.10 AND 239.45) AND col3 > 706 OR col1 < 294.75 AND col0 >= 761 AND col0 >= 496 ORDER BY 2 DESC
+----
+
+query II valuesort label-5590
+SELECT pk, col0 FROM tab1 WHERE (col4 BETWEEN 250.10 AND 239.45) AND col3 > 706 OR col1 < 294.75 AND col0 >= 761 AND col0 >= 496 ORDER BY 2 DESC
+----
+
+query II valuesort label-5590
+SELECT pk, col0 FROM tab2 WHERE (col4 BETWEEN 250.10 AND 239.45) AND col3 > 706 OR col1 < 294.75 AND col0 >= 761 AND col0 >= 496 ORDER BY 2 DESC
+----
+
+query II valuesort label-5590
+SELECT pk, col0 FROM tab3 WHERE (col4 BETWEEN 250.10 AND 239.45) AND col3 > 706 OR col1 < 294.75 AND col0 >= 761 AND col0 >= 496 ORDER BY 2 DESC
+----
+
+query II valuesort label-5590
+SELECT pk, col0 FROM tab4 WHERE (col4 BETWEEN 250.10 AND 239.45) AND col3 > 706 OR col1 < 294.75 AND col0 >= 761 AND col0 >= 496 ORDER BY 2 DESC
+----
+
+query II valuesort label-5590
+SELECT pk, col0 FROM tab0 WHERE (col4 BETWEEN 250.10 AND 239.45) AND col3 > 706 OR col1 < 294.75 AND col0 >= 761 AND col0 >= 496 ORDER BY 1
+----
+
+query II valuesort label-5590
+SELECT pk, col0 FROM tab1 WHERE (col4 BETWEEN 250.10 AND 239.45) AND col3 > 706 OR col1 < 294.75 AND col0 >= 761 AND col0 >= 496 ORDER BY 1
+----
+
+query II valuesort label-5590
+SELECT pk, col0 FROM tab2 WHERE (col4 BETWEEN 250.10 AND 239.45) AND col3 > 706 OR col1 < 294.75 AND col0 >= 761 AND col0 >= 496 ORDER BY 1
+----
+
+query II valuesort label-5590
+SELECT pk, col0 FROM tab3 WHERE (col4 BETWEEN 250.10 AND 239.45) AND col3 > 706 OR col1 < 294.75 AND col0 >= 761 AND col0 >= 496 ORDER BY 1
+----
+
+query II valuesort label-5590
+SELECT pk, col0 FROM tab4 WHERE (col4 BETWEEN 250.10 AND 239.45) AND col3 > 706 OR col1 < 294.75 AND col0 >= 761 AND col0 >= 496 ORDER BY 1
+----
+
+query II valuesort label-5590
+SELECT pk, col0 FROM tab0 WHERE (col4 BETWEEN 250.10 AND 239.45) AND col3 > 706 OR col1 < 294.75 AND col0 >= 761 AND col0 >= 496 ORDER BY 2
+----
+
+query II valuesort label-5590
+SELECT pk, col0 FROM tab1 WHERE (col4 BETWEEN 250.10 AND 239.45) AND col3 > 706 OR col1 < 294.75 AND col0 >= 761 AND col0 >= 496 ORDER BY 2
+----
+
+query II valuesort label-5590
+SELECT pk, col0 FROM tab2 WHERE (col4 BETWEEN 250.10 AND 239.45) AND col3 > 706 OR col1 < 294.75 AND col0 >= 761 AND col0 >= 496 ORDER BY 2
+----
+
+query II valuesort label-5590
+SELECT pk, col0 FROM tab3 WHERE (col4 BETWEEN 250.10 AND 239.45) AND col3 > 706 OR col1 < 294.75 AND col0 >= 761 AND col0 >= 496 ORDER BY 2
+----
+
+query II valuesort label-5590
+SELECT pk, col0 FROM tab4 WHERE (col4 BETWEEN 250.10 AND 239.45) AND col3 > 706 OR col1 < 294.75 AND col0 >= 761 AND col0 >= 496 ORDER BY 2
+----
+
+query II valuesort label-5590
+SELECT pk, col0 FROM tab0 WHERE (col4 BETWEEN 250.10 AND 239.45) AND col3 > 706 OR col1 < 294.75 AND col0 >= 761 AND col0 >= 496 ORDER BY 1 DESC,2 DESC
+----
+
+query II valuesort label-5590
+SELECT pk, col0 FROM tab1 WHERE (col4 BETWEEN 250.10 AND 239.45) AND col3 > 706 OR col1 < 294.75 AND col0 >= 761 AND col0 >= 496 ORDER BY 1 DESC,2 DESC
+----
+
+query II valuesort label-5590
+SELECT pk, col0 FROM tab2 WHERE (col4 BETWEEN 250.10 AND 239.45) AND col3 > 706 OR col1 < 294.75 AND col0 >= 761 AND col0 >= 496 ORDER BY 1 DESC,2 DESC
+----
+
+query II valuesort label-5590
+SELECT pk, col0 FROM tab3 WHERE (col4 BETWEEN 250.10 AND 239.45) AND col3 > 706 OR col1 < 294.75 AND col0 >= 761 AND col0 >= 496 ORDER BY 1 DESC,2 DESC
+----
+
+query II valuesort label-5590
+SELECT pk, col0 FROM tab4 WHERE (col4 BETWEEN 250.10 AND 239.45) AND col3 > 706 OR col1 < 294.75 AND col0 >= 761 AND col0 >= 496 ORDER BY 1 DESC,2 DESC
+----
+
+query II valuesort label-5590
+SELECT pk, col0 FROM tab0 WHERE (col4 BETWEEN 250.10 AND 239.45) AND col3 > 706 OR col1 < 294.75 AND col0 >= 761 AND col0 >= 496 ORDER BY 1,2 DESC
+----
+
+query II valuesort label-5590
+SELECT pk, col0 FROM tab1 WHERE (col4 BETWEEN 250.10 AND 239.45) AND col3 > 706 OR col1 < 294.75 AND col0 >= 761 AND col0 >= 496 ORDER BY 1,2 DESC
+----
+
+query II valuesort label-5590
+SELECT pk, col0 FROM tab2 WHERE (col4 BETWEEN 250.10 AND 239.45) AND col3 > 706 OR col1 < 294.75 AND col0 >= 761 AND col0 >= 496 ORDER BY 1,2 DESC
+----
+
+query II valuesort label-5590
+SELECT pk, col0 FROM tab3 WHERE (col4 BETWEEN 250.10 AND 239.45) AND col3 > 706 OR col1 < 294.75 AND col0 >= 761 AND col0 >= 496 ORDER BY 1,2 DESC
+----
+
+query II valuesort label-5590
+SELECT pk, col0 FROM tab4 WHERE (col4 BETWEEN 250.10 AND 239.45) AND col3 > 706 OR col1 < 294.75 AND col0 >= 761 AND col0 >= 496 ORDER BY 1,2 DESC
+----
+
+query II valuesort label-5590
+SELECT pk, col0 FROM tab0 WHERE (col4 BETWEEN 250.10 AND 239.45) AND col3 > 706 OR col1 < 294.75 AND col0 >= 761 AND col0 >= 496 ORDER BY 2 DESC,1
+----
+
+query II valuesort label-5590
+SELECT pk, col0 FROM tab1 WHERE (col4 BETWEEN 250.10 AND 239.45) AND col3 > 706 OR col1 < 294.75 AND col0 >= 761 AND col0 >= 496 ORDER BY 2 DESC,1
+----
+
+query II valuesort label-5590
+SELECT pk, col0 FROM tab2 WHERE (col4 BETWEEN 250.10 AND 239.45) AND col3 > 706 OR col1 < 294.75 AND col0 >= 761 AND col0 >= 496 ORDER BY 2 DESC,1
+----
+
+query II valuesort label-5590
+SELECT pk, col0 FROM tab3 WHERE (col4 BETWEEN 250.10 AND 239.45) AND col3 > 706 OR col1 < 294.75 AND col0 >= 761 AND col0 >= 496 ORDER BY 2 DESC,1
+----
+
+query II valuesort label-5590
+SELECT pk, col0 FROM tab4 WHERE (col4 BETWEEN 250.10 AND 239.45) AND col3 > 706 OR col1 < 294.75 AND col0 >= 761 AND col0 >= 496 ORDER BY 2 DESC,1
+----
+
+query II valuesort label-5590
+SELECT pk, col0 FROM tab0 WHERE (col4 BETWEEN 250.10 AND 239.45) AND col3 > 706 OR col1 < 294.75 AND col0 >= 761 AND col0 >= 496 ORDER BY 2,1
+----
+
+query II valuesort label-5590
+SELECT pk, col0 FROM tab1 WHERE (col4 BETWEEN 250.10 AND 239.45) AND col3 > 706 OR col1 < 294.75 AND col0 >= 761 AND col0 >= 496 ORDER BY 2,1
+----
+
+query II valuesort label-5590
+SELECT pk, col0 FROM tab2 WHERE (col4 BETWEEN 250.10 AND 239.45) AND col3 > 706 OR col1 < 294.75 AND col0 >= 761 AND col0 >= 496 ORDER BY 2,1
+----
+
+query II valuesort label-5590
+SELECT pk, col0 FROM tab3 WHERE (col4 BETWEEN 250.10 AND 239.45) AND col3 > 706 OR col1 < 294.75 AND col0 >= 761 AND col0 >= 496 ORDER BY 2,1
+----
+
+query II valuesort label-5590
+SELECT pk, col0 FROM tab4 WHERE (col4 BETWEEN 250.10 AND 239.45) AND col3 > 706 OR col1 < 294.75 AND col0 >= 761 AND col0 >= 496 ORDER BY 2,1
+----
+
+query II valuesort label-5590
+SELECT pk, col0 FROM tab0 WHERE (col4 BETWEEN 250.10 AND 239.45) AND col3 > 706 OR col1 < 294.75 AND col0 >= 761 AND col0 >= 496 ORDER BY 1 DESC,2
+----
+
+query II valuesort label-5590
+SELECT pk, col0 FROM tab1 WHERE (col4 BETWEEN 250.10 AND 239.45) AND col3 > 706 OR col1 < 294.75 AND col0 >= 761 AND col0 >= 496 ORDER BY 1 DESC,2
+----
+
+query II valuesort label-5590
+SELECT pk, col0 FROM tab2 WHERE (col4 BETWEEN 250.10 AND 239.45) AND col3 > 706 OR col1 < 294.75 AND col0 >= 761 AND col0 >= 496 ORDER BY 1 DESC,2
+----
+
+query II valuesort label-5590
+SELECT pk, col0 FROM tab3 WHERE (col4 BETWEEN 250.10 AND 239.45) AND col3 > 706 OR col1 < 294.75 AND col0 >= 761 AND col0 >= 496 ORDER BY 1 DESC,2
+----
+
+query II valuesort label-5590
+SELECT pk, col0 FROM tab4 WHERE (col4 BETWEEN 250.10 AND 239.45) AND col3 > 706 OR col1 < 294.75 AND col0 >= 761 AND col0 >= 496 ORDER BY 1 DESC,2
+----
+
+query II valuesort label-5590
+SELECT pk, col0 FROM tab0 WHERE (col4 BETWEEN 250.10 AND 239.45) AND col3 > 706 OR col1 < 294.75 AND col0 >= 761 AND col0 >= 496 ORDER BY 1,2
+----
+
+query II valuesort label-5590
+SELECT pk, col0 FROM tab1 WHERE (col4 BETWEEN 250.10 AND 239.45) AND col3 > 706 OR col1 < 294.75 AND col0 >= 761 AND col0 >= 496 ORDER BY 1,2
+----
+
+query II valuesort label-5590
+SELECT pk, col0 FROM tab2 WHERE (col4 BETWEEN 250.10 AND 239.45) AND col3 > 706 OR col1 < 294.75 AND col0 >= 761 AND col0 >= 496 ORDER BY 1,2
+----
+
+query II valuesort label-5590
+SELECT pk, col0 FROM tab3 WHERE (col4 BETWEEN 250.10 AND 239.45) AND col3 > 706 OR col1 < 294.75 AND col0 >= 761 AND col0 >= 496 ORDER BY 1,2
+----
+
+query II valuesort label-5590
+SELECT pk, col0 FROM tab4 WHERE (col4 BETWEEN 250.10 AND 239.45) AND col3 > 706 OR col1 < 294.75 AND col0 >= 761 AND col0 >= 496 ORDER BY 1,2
+----
+
+query I valuesort label-5640
+SELECT pk FROM tab0 WHERE col3 > 249 ORDER BY 1 DESC
+----
+0
+1
+2
+4
+5
+6
+7
+8
+
+query I valuesort label-5640
+SELECT pk FROM tab1 WHERE col3 > 249 ORDER BY 1 DESC
+----
+0
+1
+2
+4
+5
+6
+7
+8
+
+query I valuesort label-5640
+SELECT pk FROM tab2 WHERE col3 > 249 ORDER BY 1 DESC
+----
+0
+1
+2
+4
+5
+6
+7
+8
+
+query I valuesort label-5640
+SELECT pk FROM tab3 WHERE col3 > 249 ORDER BY 1 DESC
+----
+0
+1
+2
+4
+5
+6
+7
+8
+
+query I valuesort label-5640
+SELECT pk FROM tab4 WHERE col3 > 249 ORDER BY 1 DESC
+----
+0
+1
+2
+4
+5
+6
+7
+8
+
+query I valuesort label-5640
+SELECT pk FROM tab0 WHERE col3 > 249 ORDER BY 1
+----
+0
+1
+2
+4
+5
+6
+7
+8
+
+query I valuesort label-5640
+SELECT pk FROM tab1 WHERE col3 > 249 ORDER BY 1
+----
+0
+1
+2
+4
+5
+6
+7
+8
+
+query I valuesort label-5640
+SELECT pk FROM tab2 WHERE col3 > 249 ORDER BY 1
+----
+0
+1
+2
+4
+5
+6
+7
+8
+
+query I valuesort label-5640
+SELECT pk FROM tab3 WHERE col3 > 249 ORDER BY 1
+----
+0
+1
+2
+4
+5
+6
+7
+8
+
+query I valuesort label-5640
+SELECT pk FROM tab4 WHERE col3 > 249 ORDER BY 1
+----
+0
+1
+2
+4
+5
+6
+7
+8
+
+query II valuesort label-5650
+SELECT pk, col0 FROM tab0 WHERE col3 > 249 ORDER BY 1 DESC
+----
+16 values hashing to da029e77d2e5a55db19a749821a0008e
+
+query II valuesort label-5650
+SELECT pk, col0 FROM tab1 WHERE col3 > 249 ORDER BY 1 DESC
+----
+16 values hashing to da029e77d2e5a55db19a749821a0008e
+
+query II valuesort label-5650
+SELECT pk, col0 FROM tab2 WHERE col3 > 249 ORDER BY 1 DESC
+----
+16 values hashing to da029e77d2e5a55db19a749821a0008e
+
+query II valuesort label-5650
+SELECT pk, col0 FROM tab3 WHERE col3 > 249 ORDER BY 1 DESC
+----
+16 values hashing to da029e77d2e5a55db19a749821a0008e
+
+query II valuesort label-5650
+SELECT pk, col0 FROM tab4 WHERE col3 > 249 ORDER BY 1 DESC
+----
+16 values hashing to da029e77d2e5a55db19a749821a0008e
+
+query II valuesort label-5650
+SELECT pk, col0 FROM tab0 WHERE col3 > 249 ORDER BY 2 DESC
+----
+16 values hashing to da029e77d2e5a55db19a749821a0008e
+
+query II valuesort label-5650
+SELECT pk, col0 FROM tab1 WHERE col3 > 249 ORDER BY 2 DESC
+----
+16 values hashing to da029e77d2e5a55db19a749821a0008e
+
+query II valuesort label-5650
+SELECT pk, col0 FROM tab2 WHERE col3 > 249 ORDER BY 2 DESC
+----
+16 values hashing to da029e77d2e5a55db19a749821a0008e
+
+query II valuesort label-5650
+SELECT pk, col0 FROM tab3 WHERE col3 > 249 ORDER BY 2 DESC
+----
+16 values hashing to da029e77d2e5a55db19a749821a0008e
+
+query II valuesort label-5650
+SELECT pk, col0 FROM tab4 WHERE col3 > 249 ORDER BY 2 DESC
+----
+16 values hashing to da029e77d2e5a55db19a749821a0008e
+
+query II valuesort label-5650
+SELECT pk, col0 FROM tab0 WHERE col3 > 249 ORDER BY 1
+----
+16 values hashing to da029e77d2e5a55db19a749821a0008e
+
+query II valuesort label-5650
+SELECT pk, col0 FROM tab1 WHERE col3 > 249 ORDER BY 1
+----
+16 values hashing to da029e77d2e5a55db19a749821a0008e
+
+query II valuesort label-5650
+SELECT pk, col0 FROM tab2 WHERE col3 > 249 ORDER BY 1
+----
+16 values hashing to da029e77d2e5a55db19a749821a0008e
+
+query II valuesort label-5650
+SELECT pk, col0 FROM tab3 WHERE col3 > 249 ORDER BY 1
+----
+16 values hashing to da029e77d2e5a55db19a749821a0008e
+
+query II valuesort label-5650
+SELECT pk, col0 FROM tab4 WHERE col3 > 249 ORDER BY 1
+----
+16 values hashing to da029e77d2e5a55db19a749821a0008e
+
+query II valuesort label-5650
+SELECT pk, col0 FROM tab0 WHERE col3 > 249 ORDER BY 2
+----
+16 values hashing to da029e77d2e5a55db19a749821a0008e
+
+query II valuesort label-5650
+SELECT pk, col0 FROM tab1 WHERE col3 > 249 ORDER BY 2
+----
+16 values hashing to da029e77d2e5a55db19a749821a0008e
+
+query II valuesort label-5650
+SELECT pk, col0 FROM tab2 WHERE col3 > 249 ORDER BY 2
+----
+16 values hashing to da029e77d2e5a55db19a749821a0008e
+
+query II valuesort label-5650
+SELECT pk, col0 FROM tab3 WHERE col3 > 249 ORDER BY 2
+----
+16 values hashing to da029e77d2e5a55db19a749821a0008e
+
+query II valuesort label-5650
+SELECT pk, col0 FROM tab4 WHERE col3 > 249 ORDER BY 2
+----
+16 values hashing to da029e77d2e5a55db19a749821a0008e
+
+query II valuesort label-5650
+SELECT pk, col0 FROM tab0 WHERE col3 > 249 ORDER BY 1 DESC,2 DESC
+----
+16 values hashing to da029e77d2e5a55db19a749821a0008e
+
+query II valuesort label-5650
+SELECT pk, col0 FROM tab1 WHERE col3 > 249 ORDER BY 1 DESC,2 DESC
+----
+16 values hashing to da029e77d2e5a55db19a749821a0008e
+
+query II valuesort label-5650
+SELECT pk, col0 FROM tab2 WHERE col3 > 249 ORDER BY 1 DESC,2 DESC
+----
+16 values hashing to da029e77d2e5a55db19a749821a0008e
+
+query II valuesort label-5650
+SELECT pk, col0 FROM tab3 WHERE col3 > 249 ORDER BY 1 DESC,2 DESC
+----
+16 values hashing to da029e77d2e5a55db19a749821a0008e
+
+query II valuesort label-5650
+SELECT pk, col0 FROM tab4 WHERE col3 > 249 ORDER BY 1 DESC,2 DESC
+----
+16 values hashing to da029e77d2e5a55db19a749821a0008e
+
+query II valuesort label-5650
+SELECT pk, col0 FROM tab0 WHERE col3 > 249 ORDER BY 1,2 DESC
+----
+16 values hashing to da029e77d2e5a55db19a749821a0008e
+
+query II valuesort label-5650
+SELECT pk, col0 FROM tab1 WHERE col3 > 249 ORDER BY 1,2 DESC
+----
+16 values hashing to da029e77d2e5a55db19a749821a0008e
+
+query II valuesort label-5650
+SELECT pk, col0 FROM tab2 WHERE col3 > 249 ORDER BY 1,2 DESC
+----
+16 values hashing to da029e77d2e5a55db19a749821a0008e
+
+query II valuesort label-5650
+SELECT pk, col0 FROM tab3 WHERE col3 > 249 ORDER BY 1,2 DESC
+----
+16 values hashing to da029e77d2e5a55db19a749821a0008e
+
+query II valuesort label-5650
+SELECT pk, col0 FROM tab4 WHERE col3 > 249 ORDER BY 1,2 DESC
+----
+16 values hashing to da029e77d2e5a55db19a749821a0008e
+
+query II valuesort label-5650
+SELECT pk, col0 FROM tab0 WHERE col3 > 249 ORDER BY 2 DESC,1
+----
+16 values hashing to da029e77d2e5a55db19a749821a0008e
+
+query II valuesort label-5650
+SELECT pk, col0 FROM tab1 WHERE col3 > 249 ORDER BY 2 DESC,1
+----
+16 values hashing to da029e77d2e5a55db19a749821a0008e
+
+query II valuesort label-5650
+SELECT pk, col0 FROM tab2 WHERE col3 > 249 ORDER BY 2 DESC,1
+----
+16 values hashing to da029e77d2e5a55db19a749821a0008e
+
+query II valuesort label-5650
+SELECT pk, col0 FROM tab3 WHERE col3 > 249 ORDER BY 2 DESC,1
+----
+16 values hashing to da029e77d2e5a55db19a749821a0008e
+
+query II valuesort label-5650
+SELECT pk, col0 FROM tab4 WHERE col3 > 249 ORDER BY 2 DESC,1
+----
+16 values hashing to da029e77d2e5a55db19a749821a0008e
+
+query II valuesort label-5650
+SELECT pk, col0 FROM tab0 WHERE col3 > 249 ORDER BY 2,1
+----
+16 values hashing to da029e77d2e5a55db19a749821a0008e
+
+query II valuesort label-5650
+SELECT pk, col0 FROM tab1 WHERE col3 > 249 ORDER BY 2,1
+----
+16 values hashing to da029e77d2e5a55db19a749821a0008e
+
+query II valuesort label-5650
+SELECT pk, col0 FROM tab2 WHERE col3 > 249 ORDER BY 2,1
+----
+16 values hashing to da029e77d2e5a55db19a749821a0008e
+
+query II valuesort label-5650
+SELECT pk, col0 FROM tab3 WHERE col3 > 249 ORDER BY 2,1
+----
+16 values hashing to da029e77d2e5a55db19a749821a0008e
+
+query II valuesort label-5650
+SELECT pk, col0 FROM tab4 WHERE col3 > 249 ORDER BY 2,1
+----
+16 values hashing to da029e77d2e5a55db19a749821a0008e
+
+query II valuesort label-5650
+SELECT pk, col0 FROM tab0 WHERE col3 > 249 ORDER BY 1 DESC,2
+----
+16 values hashing to da029e77d2e5a55db19a749821a0008e
+
+query II valuesort label-5650
+SELECT pk, col0 FROM tab1 WHERE col3 > 249 ORDER BY 1 DESC,2
+----
+16 values hashing to da029e77d2e5a55db19a749821a0008e
+
+query II valuesort label-5650
+SELECT pk, col0 FROM tab2 WHERE col3 > 249 ORDER BY 1 DESC,2
+----
+16 values hashing to da029e77d2e5a55db19a749821a0008e
+
+query II valuesort label-5650
+SELECT pk, col0 FROM tab3 WHERE col3 > 249 ORDER BY 1 DESC,2
+----
+16 values hashing to da029e77d2e5a55db19a749821a0008e
+
+query II valuesort label-5650
+SELECT pk, col0 FROM tab4 WHERE col3 > 249 ORDER BY 1 DESC,2
+----
+16 values hashing to da029e77d2e5a55db19a749821a0008e
+
+query II valuesort label-5650
+SELECT pk, col0 FROM tab0 WHERE col3 > 249 ORDER BY 1,2
+----
+16 values hashing to da029e77d2e5a55db19a749821a0008e
+
+query II valuesort label-5650
+SELECT pk, col0 FROM tab1 WHERE col3 > 249 ORDER BY 1,2
+----
+16 values hashing to da029e77d2e5a55db19a749821a0008e
+
+query II valuesort label-5650
+SELECT pk, col0 FROM tab2 WHERE col3 > 249 ORDER BY 1,2
+----
+16 values hashing to da029e77d2e5a55db19a749821a0008e
+
+query II valuesort label-5650
+SELECT pk, col0 FROM tab3 WHERE col3 > 249 ORDER BY 1,2
+----
+16 values hashing to da029e77d2e5a55db19a749821a0008e
+
+query II valuesort label-5650
+SELECT pk, col0 FROM tab4 WHERE col3 > 249 ORDER BY 1,2
+----
+16 values hashing to da029e77d2e5a55db19a749821a0008e
+
+query I valuesort label-5700
+SELECT pk FROM tab0 WHERE col3 <= 235 ORDER BY 1 DESC
+----
+3
+9
+
+query I valuesort label-5700
+SELECT pk FROM tab1 WHERE col3 <= 235 ORDER BY 1 DESC
+----
+3
+9
+
+query I valuesort label-5700
+SELECT pk FROM tab2 WHERE col3 <= 235 ORDER BY 1 DESC
+----
+3
+9
+
+query I valuesort label-5700
+SELECT pk FROM tab3 WHERE col3 <= 235 ORDER BY 1 DESC
+----
+3
+9
+
+query I valuesort label-5700
+SELECT pk FROM tab4 WHERE col3 <= 235 ORDER BY 1 DESC
+----
+3
+9
+
+query I valuesort label-5700
+SELECT pk FROM tab0 WHERE col3 <= 235 ORDER BY 1
+----
+3
+9
+
+query I valuesort label-5700
+SELECT pk FROM tab1 WHERE col3 <= 235 ORDER BY 1
+----
+3
+9
+
+query I valuesort label-5700
+SELECT pk FROM tab2 WHERE col3 <= 235 ORDER BY 1
+----
+3
+9
+
+query I valuesort label-5700
+SELECT pk FROM tab3 WHERE col3 <= 235 ORDER BY 1
+----
+3
+9
+
+query I valuesort label-5700
+SELECT pk FROM tab4 WHERE col3 <= 235 ORDER BY 1
+----
+3
+9
+
+query II valuesort label-5710
+SELECT pk, col0 FROM tab0 WHERE col3 <= 235 ORDER BY 1 DESC
+----
+297
+3
+345
+9
+
+query II valuesort label-5710
+SELECT pk, col0 FROM tab1 WHERE col3 <= 235 ORDER BY 1 DESC
+----
+297
+3
+345
+9
+
+query II valuesort label-5710
+SELECT pk, col0 FROM tab2 WHERE col3 <= 235 ORDER BY 1 DESC
+----
+297
+3
+345
+9
+
+query II valuesort label-5710
+SELECT pk, col0 FROM tab3 WHERE col3 <= 235 ORDER BY 1 DESC
+----
+297
+3
+345
+9
+
+query II valuesort label-5710
+SELECT pk, col0 FROM tab4 WHERE col3 <= 235 ORDER BY 1 DESC
+----
+297
+3
+345
+9
+
+query II valuesort label-5710
+SELECT pk, col0 FROM tab0 WHERE col3 <= 235 ORDER BY 2 DESC
+----
+297
+3
+345
+9
+
+query II valuesort label-5710
+SELECT pk, col0 FROM tab1 WHERE col3 <= 235 ORDER BY 2 DESC
+----
+297
+3
+345
+9
+
+query II valuesort label-5710
+SELECT pk, col0 FROM tab2 WHERE col3 <= 235 ORDER BY 2 DESC
+----
+297
+3
+345
+9
+
+query II valuesort label-5710
+SELECT pk, col0 FROM tab3 WHERE col3 <= 235 ORDER BY 2 DESC
+----
+297
+3
+345
+9
+
+query II valuesort label-5710
+SELECT pk, col0 FROM tab4 WHERE col3 <= 235 ORDER BY 2 DESC
+----
+297
+3
+345
+9
+
+query II valuesort label-5710
+SELECT pk, col0 FROM tab0 WHERE col3 <= 235 ORDER BY 1
+----
+297
+3
+345
+9
+
+query II valuesort label-5710
+SELECT pk, col0 FROM tab1 WHERE col3 <= 235 ORDER BY 1
+----
+297
+3
+345
+9
+
+query II valuesort label-5710
+SELECT pk, col0 FROM tab2 WHERE col3 <= 235 ORDER BY 1
+----
+297
+3
+345
+9
+
+query II valuesort label-5710
+SELECT pk, col0 FROM tab3 WHERE col3 <= 235 ORDER BY 1
+----
+297
+3
+345
+9
+
+query II valuesort label-5710
+SELECT pk, col0 FROM tab4 WHERE col3 <= 235 ORDER BY 1
+----
+297
+3
+345
+9
+
+query II valuesort label-5710
+SELECT pk, col0 FROM tab0 WHERE col3 <= 235 ORDER BY 2
+----
+297
+3
+345
+9
+
+query II valuesort label-5710
+SELECT pk, col0 FROM tab1 WHERE col3 <= 235 ORDER BY 2
+----
+297
+3
+345
+9
+
+query II valuesort label-5710
+SELECT pk, col0 FROM tab2 WHERE col3 <= 235 ORDER BY 2
+----
+297
+3
+345
+9
+
+query II valuesort label-5710
+SELECT pk, col0 FROM tab3 WHERE col3 <= 235 ORDER BY 2
+----
+297
+3
+345
+9
+
+query II valuesort label-5710
+SELECT pk, col0 FROM tab4 WHERE col3 <= 235 ORDER BY 2
+----
+297
+3
+345
+9
+
+query II valuesort label-5710
+SELECT pk, col0 FROM tab0 WHERE col3 <= 235 ORDER BY 1 DESC,2 DESC
+----
+297
+3
+345
+9
+
+query II valuesort label-5710
+SELECT pk, col0 FROM tab1 WHERE col3 <= 235 ORDER BY 1 DESC,2 DESC
+----
+297
+3
+345
+9
+
+query II valuesort label-5710
+SELECT pk, col0 FROM tab2 WHERE col3 <= 235 ORDER BY 1 DESC,2 DESC
+----
+297
+3
+345
+9
+
+query II valuesort label-5710
+SELECT pk, col0 FROM tab3 WHERE col3 <= 235 ORDER BY 1 DESC,2 DESC
+----
+297
+3
+345
+9
+
+query II valuesort label-5710
+SELECT pk, col0 FROM tab4 WHERE col3 <= 235 ORDER BY 1 DESC,2 DESC
+----
+297
+3
+345
+9
+
+query II valuesort label-5710
+SELECT pk, col0 FROM tab0 WHERE col3 <= 235 ORDER BY 1,2 DESC
+----
+297
+3
+345
+9
+
+query II valuesort label-5710
+SELECT pk, col0 FROM tab1 WHERE col3 <= 235 ORDER BY 1,2 DESC
+----
+297
+3
+345
+9
+
+query II valuesort label-5710
+SELECT pk, col0 FROM tab2 WHERE col3 <= 235 ORDER BY 1,2 DESC
+----
+297
+3
+345
+9
+
+query II valuesort label-5710
+SELECT pk, col0 FROM tab3 WHERE col3 <= 235 ORDER BY 1,2 DESC
+----
+297
+3
+345
+9
+
+query II valuesort label-5710
+SELECT pk, col0 FROM tab4 WHERE col3 <= 235 ORDER BY 1,2 DESC
+----
+297
+3
+345
+9
+
+query II valuesort label-5710
+SELECT pk, col0 FROM tab0 WHERE col3 <= 235 ORDER BY 2 DESC,1
+----
+297
+3
+345
+9
+
+query II valuesort label-5710
+SELECT pk, col0 FROM tab1 WHERE col3 <= 235 ORDER BY 2 DESC,1
+----
+297
+3
+345
+9
+
+query II valuesort label-5710
+SELECT pk, col0 FROM tab2 WHERE col3 <= 235 ORDER BY 2 DESC,1
+----
+297
+3
+345
+9
+
+query II valuesort label-5710
+SELECT pk, col0 FROM tab3 WHERE col3 <= 235 ORDER BY 2 DESC,1
+----
+297
+3
+345
+9
+
+query II valuesort label-5710
+SELECT pk, col0 FROM tab4 WHERE col3 <= 235 ORDER BY 2 DESC,1
+----
+297
+3
+345
+9
+
+query II valuesort label-5710
+SELECT pk, col0 FROM tab0 WHERE col3 <= 235 ORDER BY 2,1
+----
+297
+3
+345
+9
+
+query II valuesort label-5710
+SELECT pk, col0 FROM tab1 WHERE col3 <= 235 ORDER BY 2,1
+----
+297
+3
+345
+9
+
+query II valuesort label-5710
+SELECT pk, col0 FROM tab2 WHERE col3 <= 235 ORDER BY 2,1
+----
+297
+3
+345
+9
+
+query II valuesort label-5710
+SELECT pk, col0 FROM tab3 WHERE col3 <= 235 ORDER BY 2,1
+----
+297
+3
+345
+9
+
+query II valuesort label-5710
+SELECT pk, col0 FROM tab4 WHERE col3 <= 235 ORDER BY 2,1
+----
+297
+3
+345
+9
+
+query II valuesort label-5710
+SELECT pk, col0 FROM tab0 WHERE col3 <= 235 ORDER BY 1 DESC,2
+----
+297
+3
+345
+9
+
+query II valuesort label-5710
+SELECT pk, col0 FROM tab1 WHERE col3 <= 235 ORDER BY 1 DESC,2
+----
+297
+3
+345
+9
+
+query II valuesort label-5710
+SELECT pk, col0 FROM tab2 WHERE col3 <= 235 ORDER BY 1 DESC,2
+----
+297
+3
+345
+9
+
+query II valuesort label-5710
+SELECT pk, col0 FROM tab3 WHERE col3 <= 235 ORDER BY 1 DESC,2
+----
+297
+3
+345
+9
+
+query II valuesort label-5710
+SELECT pk, col0 FROM tab4 WHERE col3 <= 235 ORDER BY 1 DESC,2
+----
+297
+3
+345
+9
+
+query II valuesort label-5710
+SELECT pk, col0 FROM tab0 WHERE col3 <= 235 ORDER BY 1,2
+----
+297
+3
+345
+9
+
+query II valuesort label-5710
+SELECT pk, col0 FROM tab1 WHERE col3 <= 235 ORDER BY 1,2
+----
+297
+3
+345
+9
+
+query II valuesort label-5710
+SELECT pk, col0 FROM tab2 WHERE col3 <= 235 ORDER BY 1,2
+----
+297
+3
+345
+9
+
+query II valuesort label-5710
+SELECT pk, col0 FROM tab3 WHERE col3 <= 235 ORDER BY 1,2
+----
+297
+3
+345
+9
+
+query II valuesort label-5710
+SELECT pk, col0 FROM tab4 WHERE col3 <= 235 ORDER BY 1,2
+----
+297
+3
+345
+9
+
+query I valuesort label-5760
+SELECT pk FROM tab0 WHERE col0 < 794 ORDER BY 1 DESC
+----
+0
+1
+2
+3
+5
+6
+8
+9
+
+query I valuesort label-5760
+SELECT pk FROM tab1 WHERE col0 < 794 ORDER BY 1 DESC
+----
+0
+1
+2
+3
+5
+6
+8
+9
+
+query I valuesort label-5760
+SELECT pk FROM tab2 WHERE col0 < 794 ORDER BY 1 DESC
+----
+0
+1
+2
+3
+5
+6
+8
+9
+
+query I valuesort label-5760
+SELECT pk FROM tab3 WHERE col0 < 794 ORDER BY 1 DESC
+----
+0
+1
+2
+3
+5
+6
+8
+9
+
+query I valuesort label-5760
+SELECT pk FROM tab4 WHERE col0 < 794 ORDER BY 1 DESC
+----
+0
+1
+2
+3
+5
+6
+8
+9
+
+query I valuesort label-5760
+SELECT pk FROM tab0 WHERE col0 < 794 ORDER BY 1
+----
+0
+1
+2
+3
+5
+6
+8
+9
+
+query I valuesort label-5760
+SELECT pk FROM tab1 WHERE col0 < 794 ORDER BY 1
+----
+0
+1
+2
+3
+5
+6
+8
+9
+
+query I valuesort label-5760
+SELECT pk FROM tab2 WHERE col0 < 794 ORDER BY 1
+----
+0
+1
+2
+3
+5
+6
+8
+9
+
+query I valuesort label-5760
+SELECT pk FROM tab3 WHERE col0 < 794 ORDER BY 1
+----
+0
+1
+2
+3
+5
+6
+8
+9
+
+query I valuesort label-5760
+SELECT pk FROM tab4 WHERE col0 < 794 ORDER BY 1
+----
+0
+1
+2
+3
+5
+6
+8
+9
+
+query II valuesort label-5770
+SELECT pk, col0 FROM tab0 WHERE col0 < 794 ORDER BY 1 DESC
+----
+16 values hashing to ece8a2ad15157abfacdc34d608a3c826
+
+query II valuesort label-5770
+SELECT pk, col0 FROM tab1 WHERE col0 < 794 ORDER BY 1 DESC
+----
+16 values hashing to ece8a2ad15157abfacdc34d608a3c826
+
+query II valuesort label-5770
+SELECT pk, col0 FROM tab2 WHERE col0 < 794 ORDER BY 1 DESC
+----
+16 values hashing to ece8a2ad15157abfacdc34d608a3c826
+
+query II valuesort label-5770
+SELECT pk, col0 FROM tab3 WHERE col0 < 794 ORDER BY 1 DESC
+----
+16 values hashing to ece8a2ad15157abfacdc34d608a3c826
+
+query II valuesort label-5770
+SELECT pk, col0 FROM tab4 WHERE col0 < 794 ORDER BY 1 DESC
+----
+16 values hashing to ece8a2ad15157abfacdc34d608a3c826
+
+query II valuesort label-5770
+SELECT pk, col0 FROM tab0 WHERE col0 < 794 ORDER BY 2 DESC
+----
+16 values hashing to ece8a2ad15157abfacdc34d608a3c826
+
+query II valuesort label-5770
+SELECT pk, col0 FROM tab1 WHERE col0 < 794 ORDER BY 2 DESC
+----
+16 values hashing to ece8a2ad15157abfacdc34d608a3c826
+
+query II valuesort label-5770
+SELECT pk, col0 FROM tab2 WHERE col0 < 794 ORDER BY 2 DESC
+----
+16 values hashing to ece8a2ad15157abfacdc34d608a3c826
+
+query II valuesort label-5770
+SELECT pk, col0 FROM tab3 WHERE col0 < 794 ORDER BY 2 DESC
+----
+16 values hashing to ece8a2ad15157abfacdc34d608a3c826
+
+query II valuesort label-5770
+SELECT pk, col0 FROM tab4 WHERE col0 < 794 ORDER BY 2 DESC
+----
+16 values hashing to ece8a2ad15157abfacdc34d608a3c826
+
+query II valuesort label-5770
+SELECT pk, col0 FROM tab0 WHERE col0 < 794 ORDER BY 1
+----
+16 values hashing to ece8a2ad15157abfacdc34d608a3c826
+
+query II valuesort label-5770
+SELECT pk, col0 FROM tab1 WHERE col0 < 794 ORDER BY 1
+----
+16 values hashing to ece8a2ad15157abfacdc34d608a3c826
+
+query II valuesort label-5770
+SELECT pk, col0 FROM tab2 WHERE col0 < 794 ORDER BY 1
+----
+16 values hashing to ece8a2ad15157abfacdc34d608a3c826
+
+query II valuesort label-5770
+SELECT pk, col0 FROM tab3 WHERE col0 < 794 ORDER BY 1
+----
+16 values hashing to ece8a2ad15157abfacdc34d608a3c826
+
+query II valuesort label-5770
+SELECT pk, col0 FROM tab4 WHERE col0 < 794 ORDER BY 1
+----
+16 values hashing to ece8a2ad15157abfacdc34d608a3c826
+
+query II valuesort label-5770
+SELECT pk, col0 FROM tab0 WHERE col0 < 794 ORDER BY 2
+----
+16 values hashing to ece8a2ad15157abfacdc34d608a3c826
+
+query II valuesort label-5770
+SELECT pk, col0 FROM tab1 WHERE col0 < 794 ORDER BY 2
+----
+16 values hashing to ece8a2ad15157abfacdc34d608a3c826
+
+query II valuesort label-5770
+SELECT pk, col0 FROM tab2 WHERE col0 < 794 ORDER BY 2
+----
+16 values hashing to ece8a2ad15157abfacdc34d608a3c826
+
+query II valuesort label-5770
+SELECT pk, col0 FROM tab3 WHERE col0 < 794 ORDER BY 2
+----
+16 values hashing to ece8a2ad15157abfacdc34d608a3c826
+
+query II valuesort label-5770
+SELECT pk, col0 FROM tab4 WHERE col0 < 794 ORDER BY 2
+----
+16 values hashing to ece8a2ad15157abfacdc34d608a3c826
+
+query II valuesort label-5770
+SELECT pk, col0 FROM tab0 WHERE col0 < 794 ORDER BY 1 DESC,2 DESC
+----
+16 values hashing to ece8a2ad15157abfacdc34d608a3c826
+
+query II valuesort label-5770
+SELECT pk, col0 FROM tab1 WHERE col0 < 794 ORDER BY 1 DESC,2 DESC
+----
+16 values hashing to ece8a2ad15157abfacdc34d608a3c826
+
+query II valuesort label-5770
+SELECT pk, col0 FROM tab2 WHERE col0 < 794 ORDER BY 1 DESC,2 DESC
+----
+16 values hashing to ece8a2ad15157abfacdc34d608a3c826
+
+query II valuesort label-5770
+SELECT pk, col0 FROM tab3 WHERE col0 < 794 ORDER BY 1 DESC,2 DESC
+----
+16 values hashing to ece8a2ad15157abfacdc34d608a3c826
+
+query II valuesort label-5770
+SELECT pk, col0 FROM tab4 WHERE col0 < 794 ORDER BY 1 DESC,2 DESC
+----
+16 values hashing to ece8a2ad15157abfacdc34d608a3c826
+
+query II valuesort label-5770
+SELECT pk, col0 FROM tab0 WHERE col0 < 794 ORDER BY 1,2 DESC
+----
+16 values hashing to ece8a2ad15157abfacdc34d608a3c826
+
+query II valuesort label-5770
+SELECT pk, col0 FROM tab1 WHERE col0 < 794 ORDER BY 1,2 DESC
+----
+16 values hashing to ece8a2ad15157abfacdc34d608a3c826
+
+query II valuesort label-5770
+SELECT pk, col0 FROM tab2 WHERE col0 < 794 ORDER BY 1,2 DESC
+----
+16 values hashing to ece8a2ad15157abfacdc34d608a3c826
+
+query II valuesort label-5770
+SELECT pk, col0 FROM tab3 WHERE col0 < 794 ORDER BY 1,2 DESC
+----
+16 values hashing to ece8a2ad15157abfacdc34d608a3c826
+
+query II valuesort label-5770
+SELECT pk, col0 FROM tab4 WHERE col0 < 794 ORDER BY 1,2 DESC
+----
+16 values hashing to ece8a2ad15157abfacdc34d608a3c826
+
+query II valuesort label-5770
+SELECT pk, col0 FROM tab0 WHERE col0 < 794 ORDER BY 2 DESC,1
+----
+16 values hashing to ece8a2ad15157abfacdc34d608a3c826
+
+query II valuesort label-5770
+SELECT pk, col0 FROM tab1 WHERE col0 < 794 ORDER BY 2 DESC,1
+----
+16 values hashing to ece8a2ad15157abfacdc34d608a3c826
+
+query II valuesort label-5770
+SELECT pk, col0 FROM tab2 WHERE col0 < 794 ORDER BY 2 DESC,1
+----
+16 values hashing to ece8a2ad15157abfacdc34d608a3c826
+
+query II valuesort label-5770
+SELECT pk, col0 FROM tab3 WHERE col0 < 794 ORDER BY 2 DESC,1
+----
+16 values hashing to ece8a2ad15157abfacdc34d608a3c826
+
+query II valuesort label-5770
+SELECT pk, col0 FROM tab4 WHERE col0 < 794 ORDER BY 2 DESC,1
+----
+16 values hashing to ece8a2ad15157abfacdc34d608a3c826
+
+query II valuesort label-5770
+SELECT pk, col0 FROM tab0 WHERE col0 < 794 ORDER BY 2,1
+----
+16 values hashing to ece8a2ad15157abfacdc34d608a3c826
+
+query II valuesort label-5770
+SELECT pk, col0 FROM tab1 WHERE col0 < 794 ORDER BY 2,1
+----
+16 values hashing to ece8a2ad15157abfacdc34d608a3c826
+
+query II valuesort label-5770
+SELECT pk, col0 FROM tab2 WHERE col0 < 794 ORDER BY 2,1
+----
+16 values hashing to ece8a2ad15157abfacdc34d608a3c826
+
+query II valuesort label-5770
+SELECT pk, col0 FROM tab3 WHERE col0 < 794 ORDER BY 2,1
+----
+16 values hashing to ece8a2ad15157abfacdc34d608a3c826
+
+query II valuesort label-5770
+SELECT pk, col0 FROM tab4 WHERE col0 < 794 ORDER BY 2,1
+----
+16 values hashing to ece8a2ad15157abfacdc34d608a3c826
+
+query II valuesort label-5770
+SELECT pk, col0 FROM tab0 WHERE col0 < 794 ORDER BY 1 DESC,2
+----
+16 values hashing to ece8a2ad15157abfacdc34d608a3c826
+
+query II valuesort label-5770
+SELECT pk, col0 FROM tab1 WHERE col0 < 794 ORDER BY 1 DESC,2
+----
+16 values hashing to ece8a2ad15157abfacdc34d608a3c826
+
+query II valuesort label-5770
+SELECT pk, col0 FROM tab2 WHERE col0 < 794 ORDER BY 1 DESC,2
+----
+16 values hashing to ece8a2ad15157abfacdc34d608a3c826
+
+query II valuesort label-5770
+SELECT pk, col0 FROM tab3 WHERE col0 < 794 ORDER BY 1 DESC,2
+----
+16 values hashing to ece8a2ad15157abfacdc34d608a3c826
+
+query II valuesort label-5770
+SELECT pk, col0 FROM tab4 WHERE col0 < 794 ORDER BY 1 DESC,2
+----
+16 values hashing to ece8a2ad15157abfacdc34d608a3c826
+
+query II valuesort label-5770
+SELECT pk, col0 FROM tab0 WHERE col0 < 794 ORDER BY 1,2
+----
+16 values hashing to ece8a2ad15157abfacdc34d608a3c826
+
+query II valuesort label-5770
+SELECT pk, col0 FROM tab1 WHERE col0 < 794 ORDER BY 1,2
+----
+16 values hashing to ece8a2ad15157abfacdc34d608a3c826
+
+query II valuesort label-5770
+SELECT pk, col0 FROM tab2 WHERE col0 < 794 ORDER BY 1,2
+----
+16 values hashing to ece8a2ad15157abfacdc34d608a3c826
+
+query II valuesort label-5770
+SELECT pk, col0 FROM tab3 WHERE col0 < 794 ORDER BY 1,2
+----
+16 values hashing to ece8a2ad15157abfacdc34d608a3c826
+
+query II valuesort label-5770
+SELECT pk, col0 FROM tab4 WHERE col0 < 794 ORDER BY 1,2
+----
+16 values hashing to ece8a2ad15157abfacdc34d608a3c826
+
+query I valuesort label-5820
+SELECT pk FROM tab0 WHERE col3 > 987 ORDER BY 1 DESC
+----
+
+query I valuesort label-5820
+SELECT pk FROM tab1 WHERE col3 > 987 ORDER BY 1 DESC
+----
+
+query I valuesort label-5820
+SELECT pk FROM tab2 WHERE col3 > 987 ORDER BY 1 DESC
+----
+
+query I valuesort label-5820
+SELECT pk FROM tab3 WHERE col3 > 987 ORDER BY 1 DESC
+----
+
+query I valuesort label-5820
+SELECT pk FROM tab4 WHERE col3 > 987 ORDER BY 1 DESC
+----
+
+query I valuesort label-5820
+SELECT pk FROM tab0 WHERE col3 > 987 ORDER BY 1
+----
+
+query I valuesort label-5820
+SELECT pk FROM tab1 WHERE col3 > 987 ORDER BY 1
+----
+
+query I valuesort label-5820
+SELECT pk FROM tab2 WHERE col3 > 987 ORDER BY 1
+----
+
+query I valuesort label-5820
+SELECT pk FROM tab3 WHERE col3 > 987 ORDER BY 1
+----
+
+query I valuesort label-5820
+SELECT pk FROM tab4 WHERE col3 > 987 ORDER BY 1
+----
+
+query II valuesort label-5830
+SELECT pk, col0 FROM tab0 WHERE col3 > 987 ORDER BY 1 DESC
+----
+
+query II valuesort label-5830
+SELECT pk, col0 FROM tab1 WHERE col3 > 987 ORDER BY 1 DESC
+----
+
+query II valuesort label-5830
+SELECT pk, col0 FROM tab2 WHERE col3 > 987 ORDER BY 1 DESC
+----
+
+query II valuesort label-5830
+SELECT pk, col0 FROM tab3 WHERE col3 > 987 ORDER BY 1 DESC
+----
+
+query II valuesort label-5830
+SELECT pk, col0 FROM tab4 WHERE col3 > 987 ORDER BY 1 DESC
+----
+
+query II valuesort label-5830
+SELECT pk, col0 FROM tab0 WHERE col3 > 987 ORDER BY 2 DESC
+----
+
+query II valuesort label-5830
+SELECT pk, col0 FROM tab1 WHERE col3 > 987 ORDER BY 2 DESC
+----
+
+query II valuesort label-5830
+SELECT pk, col0 FROM tab2 WHERE col3 > 987 ORDER BY 2 DESC
+----
+
+query II valuesort label-5830
+SELECT pk, col0 FROM tab3 WHERE col3 > 987 ORDER BY 2 DESC
+----
+
+query II valuesort label-5830
+SELECT pk, col0 FROM tab4 WHERE col3 > 987 ORDER BY 2 DESC
+----
+
+query II valuesort label-5830
+SELECT pk, col0 FROM tab0 WHERE col3 > 987 ORDER BY 1
+----
+
+query II valuesort label-5830
+SELECT pk, col0 FROM tab1 WHERE col3 > 987 ORDER BY 1
+----
+
+query II valuesort label-5830
+SELECT pk, col0 FROM tab2 WHERE col3 > 987 ORDER BY 1
+----
+
+query II valuesort label-5830
+SELECT pk, col0 FROM tab3 WHERE col3 > 987 ORDER BY 1
+----
+
+query II valuesort label-5830
+SELECT pk, col0 FROM tab4 WHERE col3 > 987 ORDER BY 1
+----
+
+query II valuesort label-5830
+SELECT pk, col0 FROM tab0 WHERE col3 > 987 ORDER BY 2
+----
+
+query II valuesort label-5830
+SELECT pk, col0 FROM tab1 WHERE col3 > 987 ORDER BY 2
+----
+
+query II valuesort label-5830
+SELECT pk, col0 FROM tab2 WHERE col3 > 987 ORDER BY 2
+----
+
+query II valuesort label-5830
+SELECT pk, col0 FROM tab3 WHERE col3 > 987 ORDER BY 2
+----
+
+query II valuesort label-5830
+SELECT pk, col0 FROM tab4 WHERE col3 > 987 ORDER BY 2
+----
+
+query II valuesort label-5830
+SELECT pk, col0 FROM tab0 WHERE col3 > 987 ORDER BY 1 DESC,2 DESC
+----
+
+query II valuesort label-5830
+SELECT pk, col0 FROM tab1 WHERE col3 > 987 ORDER BY 1 DESC,2 DESC
+----
+
+query II valuesort label-5830
+SELECT pk, col0 FROM tab2 WHERE col3 > 987 ORDER BY 1 DESC,2 DESC
+----
+
+query II valuesort label-5830
+SELECT pk, col0 FROM tab3 WHERE col3 > 987 ORDER BY 1 DESC,2 DESC
+----
+
+query II valuesort label-5830
+SELECT pk, col0 FROM tab4 WHERE col3 > 987 ORDER BY 1 DESC,2 DESC
+----
+
+query II valuesort label-5830
+SELECT pk, col0 FROM tab0 WHERE col3 > 987 ORDER BY 1,2 DESC
+----
+
+query II valuesort label-5830
+SELECT pk, col0 FROM tab1 WHERE col3 > 987 ORDER BY 1,2 DESC
+----
+
+query II valuesort label-5830
+SELECT pk, col0 FROM tab2 WHERE col3 > 987 ORDER BY 1,2 DESC
+----
+
+query II valuesort label-5830
+SELECT pk, col0 FROM tab3 WHERE col3 > 987 ORDER BY 1,2 DESC
+----
+
+query II valuesort label-5830
+SELECT pk, col0 FROM tab4 WHERE col3 > 987 ORDER BY 1,2 DESC
+----
+
+query II valuesort label-5830
+SELECT pk, col0 FROM tab0 WHERE col3 > 987 ORDER BY 2 DESC,1
+----
+
+query II valuesort label-5830
+SELECT pk, col0 FROM tab1 WHERE col3 > 987 ORDER BY 2 DESC,1
+----
+
+query II valuesort label-5830
+SELECT pk, col0 FROM tab2 WHERE col3 > 987 ORDER BY 2 DESC,1
+----
+
+query II valuesort label-5830
+SELECT pk, col0 FROM tab3 WHERE col3 > 987 ORDER BY 2 DESC,1
+----
+
+query II valuesort label-5830
+SELECT pk, col0 FROM tab4 WHERE col3 > 987 ORDER BY 2 DESC,1
+----
+
+query II valuesort label-5830
+SELECT pk, col0 FROM tab0 WHERE col3 > 987 ORDER BY 2,1
+----
+
+query II valuesort label-5830
+SELECT pk, col0 FROM tab1 WHERE col3 > 987 ORDER BY 2,1
+----
+
+query II valuesort label-5830
+SELECT pk, col0 FROM tab2 WHERE col3 > 987 ORDER BY 2,1
+----
+
+query II valuesort label-5830
+SELECT pk, col0 FROM tab3 WHERE col3 > 987 ORDER BY 2,1
+----
+
+query II valuesort label-5830
+SELECT pk, col0 FROM tab4 WHERE col3 > 987 ORDER BY 2,1
+----
+
+query II valuesort label-5830
+SELECT pk, col0 FROM tab0 WHERE col3 > 987 ORDER BY 1 DESC,2
+----
+
+query II valuesort label-5830
+SELECT pk, col0 FROM tab1 WHERE col3 > 987 ORDER BY 1 DESC,2
+----
+
+query II valuesort label-5830
+SELECT pk, col0 FROM tab2 WHERE col3 > 987 ORDER BY 1 DESC,2
+----
+
+query II valuesort label-5830
+SELECT pk, col0 FROM tab3 WHERE col3 > 987 ORDER BY 1 DESC,2
+----
+
+query II valuesort label-5830
+SELECT pk, col0 FROM tab4 WHERE col3 > 987 ORDER BY 1 DESC,2
+----
+
+query II valuesort label-5830
+SELECT pk, col0 FROM tab0 WHERE col3 > 987 ORDER BY 1,2
+----
+
+query II valuesort label-5830
+SELECT pk, col0 FROM tab1 WHERE col3 > 987 ORDER BY 1,2
+----
+
+query II valuesort label-5830
+SELECT pk, col0 FROM tab2 WHERE col3 > 987 ORDER BY 1,2
+----
+
+query II valuesort label-5830
+SELECT pk, col0 FROM tab3 WHERE col3 > 987 ORDER BY 1,2
+----
+
+query II valuesort label-5830
+SELECT pk, col0 FROM tab4 WHERE col3 > 987 ORDER BY 1,2
+----
+
+query I valuesort label-5880
+SELECT pk FROM tab0 WHERE col3 > 559 ORDER BY 1 DESC
+----
+0
+1
+2
+5
+6
+8
+
+query I valuesort label-5880
+SELECT pk FROM tab1 WHERE col3 > 559 ORDER BY 1 DESC
+----
+0
+1
+2
+5
+6
+8
+
+query I valuesort label-5880
+SELECT pk FROM tab2 WHERE col3 > 559 ORDER BY 1 DESC
+----
+0
+1
+2
+5
+6
+8
+
+query I valuesort label-5880
+SELECT pk FROM tab3 WHERE col3 > 559 ORDER BY 1 DESC
+----
+0
+1
+2
+5
+6
+8
+
+query I valuesort label-5880
+SELECT pk FROM tab4 WHERE col3 > 559 ORDER BY 1 DESC
+----
+0
+1
+2
+5
+6
+8
+
+query I valuesort label-5880
+SELECT pk FROM tab0 WHERE col3 > 559 ORDER BY 1
+----
+0
+1
+2
+5
+6
+8
+
+query I valuesort label-5880
+SELECT pk FROM tab1 WHERE col3 > 559 ORDER BY 1
+----
+0
+1
+2
+5
+6
+8
+
+query I valuesort label-5880
+SELECT pk FROM tab2 WHERE col3 > 559 ORDER BY 1
+----
+0
+1
+2
+5
+6
+8
+
+query I valuesort label-5880
+SELECT pk FROM tab3 WHERE col3 > 559 ORDER BY 1
+----
+0
+1
+2
+5
+6
+8
+
+query I valuesort label-5880
+SELECT pk FROM tab4 WHERE col3 > 559 ORDER BY 1
+----
+0
+1
+2
+5
+6
+8
+
+query II valuesort label-5890
+SELECT pk, col0 FROM tab0 WHERE col3 > 559 ORDER BY 1 DESC
+----
+12 values hashing to e1904b23987b49453ec77b7e779bed49
+
+query II valuesort label-5890
+SELECT pk, col0 FROM tab1 WHERE col3 > 559 ORDER BY 1 DESC
+----
+12 values hashing to e1904b23987b49453ec77b7e779bed49
+
+query II valuesort label-5890
+SELECT pk, col0 FROM tab2 WHERE col3 > 559 ORDER BY 1 DESC
+----
+12 values hashing to e1904b23987b49453ec77b7e779bed49
+
+query II valuesort label-5890
+SELECT pk, col0 FROM tab3 WHERE col3 > 559 ORDER BY 1 DESC
+----
+12 values hashing to e1904b23987b49453ec77b7e779bed49
+
+query II valuesort label-5890
+SELECT pk, col0 FROM tab4 WHERE col3 > 559 ORDER BY 1 DESC
+----
+12 values hashing to e1904b23987b49453ec77b7e779bed49
+
+query II valuesort label-5890
+SELECT pk, col0 FROM tab0 WHERE col3 > 559 ORDER BY 2 DESC
+----
+12 values hashing to e1904b23987b49453ec77b7e779bed49
+
+query II valuesort label-5890
+SELECT pk, col0 FROM tab1 WHERE col3 > 559 ORDER BY 2 DESC
+----
+12 values hashing to e1904b23987b49453ec77b7e779bed49
+
+query II valuesort label-5890
+SELECT pk, col0 FROM tab2 WHERE col3 > 559 ORDER BY 2 DESC
+----
+12 values hashing to e1904b23987b49453ec77b7e779bed49
+
+query II valuesort label-5890
+SELECT pk, col0 FROM tab3 WHERE col3 > 559 ORDER BY 2 DESC
+----
+12 values hashing to e1904b23987b49453ec77b7e779bed49
+
+query II valuesort label-5890
+SELECT pk, col0 FROM tab4 WHERE col3 > 559 ORDER BY 2 DESC
+----
+12 values hashing to e1904b23987b49453ec77b7e779bed49
+
+query II valuesort label-5890
+SELECT pk, col0 FROM tab0 WHERE col3 > 559 ORDER BY 1
+----
+12 values hashing to e1904b23987b49453ec77b7e779bed49
+
+query II valuesort label-5890
+SELECT pk, col0 FROM tab1 WHERE col3 > 559 ORDER BY 1
+----
+12 values hashing to e1904b23987b49453ec77b7e779bed49
+
+query II valuesort label-5890
+SELECT pk, col0 FROM tab2 WHERE col3 > 559 ORDER BY 1
+----
+12 values hashing to e1904b23987b49453ec77b7e779bed49
+
+query II valuesort label-5890
+SELECT pk, col0 FROM tab3 WHERE col3 > 559 ORDER BY 1
+----
+12 values hashing to e1904b23987b49453ec77b7e779bed49
+
+query II valuesort label-5890
+SELECT pk, col0 FROM tab4 WHERE col3 > 559 ORDER BY 1
+----
+12 values hashing to e1904b23987b49453ec77b7e779bed49
+
+query II valuesort label-5890
+SELECT pk, col0 FROM tab0 WHERE col3 > 559 ORDER BY 2
+----
+12 values hashing to e1904b23987b49453ec77b7e779bed49
+
+query II valuesort label-5890
+SELECT pk, col0 FROM tab1 WHERE col3 > 559 ORDER BY 2
+----
+12 values hashing to e1904b23987b49453ec77b7e779bed49
+
+query II valuesort label-5890
+SELECT pk, col0 FROM tab2 WHERE col3 > 559 ORDER BY 2
+----
+12 values hashing to e1904b23987b49453ec77b7e779bed49
+
+query II valuesort label-5890
+SELECT pk, col0 FROM tab3 WHERE col3 > 559 ORDER BY 2
+----
+12 values hashing to e1904b23987b49453ec77b7e779bed49
+
+query II valuesort label-5890
+SELECT pk, col0 FROM tab4 WHERE col3 > 559 ORDER BY 2
+----
+12 values hashing to e1904b23987b49453ec77b7e779bed49
+
+query II valuesort label-5890
+SELECT pk, col0 FROM tab0 WHERE col3 > 559 ORDER BY 1 DESC,2 DESC
+----
+12 values hashing to e1904b23987b49453ec77b7e779bed49
+
+query II valuesort label-5890
+SELECT pk, col0 FROM tab1 WHERE col3 > 559 ORDER BY 1 DESC,2 DESC
+----
+12 values hashing to e1904b23987b49453ec77b7e779bed49
+
+query II valuesort label-5890
+SELECT pk, col0 FROM tab2 WHERE col3 > 559 ORDER BY 1 DESC,2 DESC
+----
+12 values hashing to e1904b23987b49453ec77b7e779bed49
+
+query II valuesort label-5890
+SELECT pk, col0 FROM tab3 WHERE col3 > 559 ORDER BY 1 DESC,2 DESC
+----
+12 values hashing to e1904b23987b49453ec77b7e779bed49
+
+query II valuesort label-5890
+SELECT pk, col0 FROM tab4 WHERE col3 > 559 ORDER BY 1 DESC,2 DESC
+----
+12 values hashing to e1904b23987b49453ec77b7e779bed49
+
+query II valuesort label-5890
+SELECT pk, col0 FROM tab0 WHERE col3 > 559 ORDER BY 1,2 DESC
+----
+12 values hashing to e1904b23987b49453ec77b7e779bed49
+
+query II valuesort label-5890
+SELECT pk, col0 FROM tab1 WHERE col3 > 559 ORDER BY 1,2 DESC
+----
+12 values hashing to e1904b23987b49453ec77b7e779bed49
+
+query II valuesort label-5890
+SELECT pk, col0 FROM tab2 WHERE col3 > 559 ORDER BY 1,2 DESC
+----
+12 values hashing to e1904b23987b49453ec77b7e779bed49
+
+query II valuesort label-5890
+SELECT pk, col0 FROM tab3 WHERE col3 > 559 ORDER BY 1,2 DESC
+----
+12 values hashing to e1904b23987b49453ec77b7e779bed49
+
+query II valuesort label-5890
+SELECT pk, col0 FROM tab4 WHERE col3 > 559 ORDER BY 1,2 DESC
+----
+12 values hashing to e1904b23987b49453ec77b7e779bed49
+
+query II valuesort label-5890
+SELECT pk, col0 FROM tab0 WHERE col3 > 559 ORDER BY 2 DESC,1
+----
+12 values hashing to e1904b23987b49453ec77b7e779bed49
+
+query II valuesort label-5890
+SELECT pk, col0 FROM tab1 WHERE col3 > 559 ORDER BY 2 DESC,1
+----
+12 values hashing to e1904b23987b49453ec77b7e779bed49
+
+query II valuesort label-5890
+SELECT pk, col0 FROM tab2 WHERE col3 > 559 ORDER BY 2 DESC,1
+----
+12 values hashing to e1904b23987b49453ec77b7e779bed49
+
+query II valuesort label-5890
+SELECT pk, col0 FROM tab3 WHERE col3 > 559 ORDER BY 2 DESC,1
+----
+12 values hashing to e1904b23987b49453ec77b7e779bed49
+
+query II valuesort label-5890
+SELECT pk, col0 FROM tab4 WHERE col3 > 559 ORDER BY 2 DESC,1
+----
+12 values hashing to e1904b23987b49453ec77b7e779bed49
+
+query II valuesort label-5890
+SELECT pk, col0 FROM tab0 WHERE col3 > 559 ORDER BY 2,1
+----
+12 values hashing to e1904b23987b49453ec77b7e779bed49
+
+query II valuesort label-5890
+SELECT pk, col0 FROM tab1 WHERE col3 > 559 ORDER BY 2,1
+----
+12 values hashing to e1904b23987b49453ec77b7e779bed49
+
+query II valuesort label-5890
+SELECT pk, col0 FROM tab2 WHERE col3 > 559 ORDER BY 2,1
+----
+12 values hashing to e1904b23987b49453ec77b7e779bed49
+
+query II valuesort label-5890
+SELECT pk, col0 FROM tab3 WHERE col3 > 559 ORDER BY 2,1
+----
+12 values hashing to e1904b23987b49453ec77b7e779bed49
+
+query II valuesort label-5890
+SELECT pk, col0 FROM tab4 WHERE col3 > 559 ORDER BY 2,1
+----
+12 values hashing to e1904b23987b49453ec77b7e779bed49
+
+query II valuesort label-5890
+SELECT pk, col0 FROM tab0 WHERE col3 > 559 ORDER BY 1 DESC,2
+----
+12 values hashing to e1904b23987b49453ec77b7e779bed49
+
+query II valuesort label-5890
+SELECT pk, col0 FROM tab1 WHERE col3 > 559 ORDER BY 1 DESC,2
+----
+12 values hashing to e1904b23987b49453ec77b7e779bed49
+
+query II valuesort label-5890
+SELECT pk, col0 FROM tab2 WHERE col3 > 559 ORDER BY 1 DESC,2
+----
+12 values hashing to e1904b23987b49453ec77b7e779bed49
+
+query II valuesort label-5890
+SELECT pk, col0 FROM tab3 WHERE col3 > 559 ORDER BY 1 DESC,2
+----
+12 values hashing to e1904b23987b49453ec77b7e779bed49
+
+query II valuesort label-5890
+SELECT pk, col0 FROM tab4 WHERE col3 > 559 ORDER BY 1 DESC,2
+----
+12 values hashing to e1904b23987b49453ec77b7e779bed49
+
+query II valuesort label-5890
+SELECT pk, col0 FROM tab0 WHERE col3 > 559 ORDER BY 1,2
+----
+12 values hashing to e1904b23987b49453ec77b7e779bed49
+
+query II valuesort label-5890
+SELECT pk, col0 FROM tab1 WHERE col3 > 559 ORDER BY 1,2
+----
+12 values hashing to e1904b23987b49453ec77b7e779bed49
+
+query II valuesort label-5890
+SELECT pk, col0 FROM tab2 WHERE col3 > 559 ORDER BY 1,2
+----
+12 values hashing to e1904b23987b49453ec77b7e779bed49
+
+query II valuesort label-5890
+SELECT pk, col0 FROM tab3 WHERE col3 > 559 ORDER BY 1,2
+----
+12 values hashing to e1904b23987b49453ec77b7e779bed49
+
+query II valuesort label-5890
+SELECT pk, col0 FROM tab4 WHERE col3 > 559 ORDER BY 1,2
+----
+12 values hashing to e1904b23987b49453ec77b7e779bed49
+
+query I valuesort label-5940
+SELECT pk FROM tab0 WHERE (((col3 = 393 AND (col4 = 69.92 AND col3 IN (470,82,354,154)) AND (col4 > 3.16) AND col1 > 392.6))) ORDER BY 1 DESC
+----
+
+query I valuesort label-5940
+SELECT pk FROM tab1 WHERE (((col3 = 393 AND (col4 = 69.92 AND col3 IN (470,82,354,154)) AND (col4 > 3.16) AND col1 > 392.6))) ORDER BY 1 DESC
+----
+
+query I valuesort label-5940
+SELECT pk FROM tab2 WHERE (((col3 = 393 AND (col4 = 69.92 AND col3 IN (470,82,354,154)) AND (col4 > 3.16) AND col1 > 392.6))) ORDER BY 1 DESC
+----
+
+query I valuesort label-5940
+SELECT pk FROM tab3 WHERE (((col3 = 393 AND (col4 = 69.92 AND col3 IN (470,82,354,154)) AND (col4 > 3.16) AND col1 > 392.6))) ORDER BY 1 DESC
+----
+
+query I valuesort label-5940
+SELECT pk FROM tab4 WHERE (((col3 = 393 AND (col4 = 69.92 AND col3 IN (470,82,354,154)) AND (col4 > 3.16) AND col1 > 392.6))) ORDER BY 1 DESC
+----
+
+query I valuesort label-5940
+SELECT pk FROM tab0 WHERE (((col3 = 393 AND (col4 = 69.92 AND col3 IN (470,82,354,154)) AND (col4 > 3.16) AND col1 > 392.6))) ORDER BY 1
+----
+
+query I valuesort label-5940
+SELECT pk FROM tab1 WHERE (((col3 = 393 AND (col4 = 69.92 AND col3 IN (470,82,354,154)) AND (col4 > 3.16) AND col1 > 392.6))) ORDER BY 1
+----
+
+query I valuesort label-5940
+SELECT pk FROM tab2 WHERE (((col3 = 393 AND (col4 = 69.92 AND col3 IN (470,82,354,154)) AND (col4 > 3.16) AND col1 > 392.6))) ORDER BY 1
+----
+
+query I valuesort label-5940
+SELECT pk FROM tab3 WHERE (((col3 = 393 AND (col4 = 69.92 AND col3 IN (470,82,354,154)) AND (col4 > 3.16) AND col1 > 392.6))) ORDER BY 1
+----
+
+query I valuesort label-5940
+SELECT pk FROM tab4 WHERE (((col3 = 393 AND (col4 = 69.92 AND col3 IN (470,82,354,154)) AND (col4 > 3.16) AND col1 > 392.6))) ORDER BY 1
+----
+
+query II valuesort label-5950
+SELECT pk, col0 FROM tab0 WHERE (((col3 = 393 AND (col4 = 69.92 AND col3 IN (470,82,354,154)) AND (col4 > 3.16) AND col1 > 392.6))) ORDER BY 1 DESC
+----
+
+query II valuesort label-5950
+SELECT pk, col0 FROM tab1 WHERE (((col3 = 393 AND (col4 = 69.92 AND col3 IN (470,82,354,154)) AND (col4 > 3.16) AND col1 > 392.6))) ORDER BY 1 DESC
+----
+
+query II valuesort label-5950
+SELECT pk, col0 FROM tab2 WHERE (((col3 = 393 AND (col4 = 69.92 AND col3 IN (470,82,354,154)) AND (col4 > 3.16) AND col1 > 392.6))) ORDER BY 1 DESC
+----
+
+query II valuesort label-5950
+SELECT pk, col0 FROM tab3 WHERE (((col3 = 393 AND (col4 = 69.92 AND col3 IN (470,82,354,154)) AND (col4 > 3.16) AND col1 > 392.6))) ORDER BY 1 DESC
+----
+
+query II valuesort label-5950
+SELECT pk, col0 FROM tab4 WHERE (((col3 = 393 AND (col4 = 69.92 AND col3 IN (470,82,354,154)) AND (col4 > 3.16) AND col1 > 392.6))) ORDER BY 1 DESC
+----
+
+query II valuesort label-5950
+SELECT pk, col0 FROM tab0 WHERE (((col3 = 393 AND (col4 = 69.92 AND col3 IN (470,82,354,154)) AND (col4 > 3.16) AND col1 > 392.6))) ORDER BY 2 DESC
+----
+
+query II valuesort label-5950
+SELECT pk, col0 FROM tab1 WHERE (((col3 = 393 AND (col4 = 69.92 AND col3 IN (470,82,354,154)) AND (col4 > 3.16) AND col1 > 392.6))) ORDER BY 2 DESC
+----
+
+query II valuesort label-5950
+SELECT pk, col0 FROM tab2 WHERE (((col3 = 393 AND (col4 = 69.92 AND col3 IN (470,82,354,154)) AND (col4 > 3.16) AND col1 > 392.6))) ORDER BY 2 DESC
+----
+
+query II valuesort label-5950
+SELECT pk, col0 FROM tab3 WHERE (((col3 = 393 AND (col4 = 69.92 AND col3 IN (470,82,354,154)) AND (col4 > 3.16) AND col1 > 392.6))) ORDER BY 2 DESC
+----
+
+query II valuesort label-5950
+SELECT pk, col0 FROM tab4 WHERE (((col3 = 393 AND (col4 = 69.92 AND col3 IN (470,82,354,154)) AND (col4 > 3.16) AND col1 > 392.6))) ORDER BY 2 DESC
+----
+
+query II valuesort label-5950
+SELECT pk, col0 FROM tab0 WHERE (((col3 = 393 AND (col4 = 69.92 AND col3 IN (470,82,354,154)) AND (col4 > 3.16) AND col1 > 392.6))) ORDER BY 1
+----
+
+query II valuesort label-5950
+SELECT pk, col0 FROM tab1 WHERE (((col3 = 393 AND (col4 = 69.92 AND col3 IN (470,82,354,154)) AND (col4 > 3.16) AND col1 > 392.6))) ORDER BY 1
+----
+
+query II valuesort label-5950
+SELECT pk, col0 FROM tab2 WHERE (((col3 = 393 AND (col4 = 69.92 AND col3 IN (470,82,354,154)) AND (col4 > 3.16) AND col1 > 392.6))) ORDER BY 1
+----
+
+query II valuesort label-5950
+SELECT pk, col0 FROM tab3 WHERE (((col3 = 393 AND (col4 = 69.92 AND col3 IN (470,82,354,154)) AND (col4 > 3.16) AND col1 > 392.6))) ORDER BY 1
+----
+
+query II valuesort label-5950
+SELECT pk, col0 FROM tab4 WHERE (((col3 = 393 AND (col4 = 69.92 AND col3 IN (470,82,354,154)) AND (col4 > 3.16) AND col1 > 392.6))) ORDER BY 1
+----
+
+query II valuesort label-5950
+SELECT pk, col0 FROM tab0 WHERE (((col3 = 393 AND (col4 = 69.92 AND col3 IN (470,82,354,154)) AND (col4 > 3.16) AND col1 > 392.6))) ORDER BY 2
+----
+
+query II valuesort label-5950
+SELECT pk, col0 FROM tab1 WHERE (((col3 = 393 AND (col4 = 69.92 AND col3 IN (470,82,354,154)) AND (col4 > 3.16) AND col1 > 392.6))) ORDER BY 2
+----
+
+query II valuesort label-5950
+SELECT pk, col0 FROM tab2 WHERE (((col3 = 393 AND (col4 = 69.92 AND col3 IN (470,82,354,154)) AND (col4 > 3.16) AND col1 > 392.6))) ORDER BY 2
+----
+
+query II valuesort label-5950
+SELECT pk, col0 FROM tab3 WHERE (((col3 = 393 AND (col4 = 69.92 AND col3 IN (470,82,354,154)) AND (col4 > 3.16) AND col1 > 392.6))) ORDER BY 2
+----
+
+query II valuesort label-5950
+SELECT pk, col0 FROM tab4 WHERE (((col3 = 393 AND (col4 = 69.92 AND col3 IN (470,82,354,154)) AND (col4 > 3.16) AND col1 > 392.6))) ORDER BY 2
+----
+
+query II valuesort label-5950
+SELECT pk, col0 FROM tab0 WHERE (((col3 = 393 AND (col4 = 69.92 AND col3 IN (470,82,354,154)) AND (col4 > 3.16) AND col1 > 392.6))) ORDER BY 1 DESC,2 DESC
+----
+
+query II valuesort label-5950
+SELECT pk, col0 FROM tab1 WHERE (((col3 = 393 AND (col4 = 69.92 AND col3 IN (470,82,354,154)) AND (col4 > 3.16) AND col1 > 392.6))) ORDER BY 1 DESC,2 DESC
+----
+
+query II valuesort label-5950
+SELECT pk, col0 FROM tab2 WHERE (((col3 = 393 AND (col4 = 69.92 AND col3 IN (470,82,354,154)) AND (col4 > 3.16) AND col1 > 392.6))) ORDER BY 1 DESC,2 DESC
+----
+
+query II valuesort label-5950
+SELECT pk, col0 FROM tab3 WHERE (((col3 = 393 AND (col4 = 69.92 AND col3 IN (470,82,354,154)) AND (col4 > 3.16) AND col1 > 392.6))) ORDER BY 1 DESC,2 DESC
+----
+
+query II valuesort label-5950
+SELECT pk, col0 FROM tab4 WHERE (((col3 = 393 AND (col4 = 69.92 AND col3 IN (470,82,354,154)) AND (col4 > 3.16) AND col1 > 392.6))) ORDER BY 1 DESC,2 DESC
+----
+
+query II valuesort label-5950
+SELECT pk, col0 FROM tab0 WHERE (((col3 = 393 AND (col4 = 69.92 AND col3 IN (470,82,354,154)) AND (col4 > 3.16) AND col1 > 392.6))) ORDER BY 1,2 DESC
+----
+
+query II valuesort label-5950
+SELECT pk, col0 FROM tab1 WHERE (((col3 = 393 AND (col4 = 69.92 AND col3 IN (470,82,354,154)) AND (col4 > 3.16) AND col1 > 392.6))) ORDER BY 1,2 DESC
+----
+
+query II valuesort label-5950
+SELECT pk, col0 FROM tab2 WHERE (((col3 = 393 AND (col4 = 69.92 AND col3 IN (470,82,354,154)) AND (col4 > 3.16) AND col1 > 392.6))) ORDER BY 1,2 DESC
+----
+
+query II valuesort label-5950
+SELECT pk, col0 FROM tab3 WHERE (((col3 = 393 AND (col4 = 69.92 AND col3 IN (470,82,354,154)) AND (col4 > 3.16) AND col1 > 392.6))) ORDER BY 1,2 DESC
+----
+
+query II valuesort label-5950
+SELECT pk, col0 FROM tab4 WHERE (((col3 = 393 AND (col4 = 69.92 AND col3 IN (470,82,354,154)) AND (col4 > 3.16) AND col1 > 392.6))) ORDER BY 1,2 DESC
+----
+
+query II valuesort label-5950
+SELECT pk, col0 FROM tab0 WHERE (((col3 = 393 AND (col4 = 69.92 AND col3 IN (470,82,354,154)) AND (col4 > 3.16) AND col1 > 392.6))) ORDER BY 2 DESC,1
+----
+
+query II valuesort label-5950
+SELECT pk, col0 FROM tab1 WHERE (((col3 = 393 AND (col4 = 69.92 AND col3 IN (470,82,354,154)) AND (col4 > 3.16) AND col1 > 392.6))) ORDER BY 2 DESC,1
+----
+
+query II valuesort label-5950
+SELECT pk, col0 FROM tab2 WHERE (((col3 = 393 AND (col4 = 69.92 AND col3 IN (470,82,354,154)) AND (col4 > 3.16) AND col1 > 392.6))) ORDER BY 2 DESC,1
+----
+
+query II valuesort label-5950
+SELECT pk, col0 FROM tab3 WHERE (((col3 = 393 AND (col4 = 69.92 AND col3 IN (470,82,354,154)) AND (col4 > 3.16) AND col1 > 392.6))) ORDER BY 2 DESC,1
+----
+
+query II valuesort label-5950
+SELECT pk, col0 FROM tab4 WHERE (((col3 = 393 AND (col4 = 69.92 AND col3 IN (470,82,354,154)) AND (col4 > 3.16) AND col1 > 392.6))) ORDER BY 2 DESC,1
+----
+
+query II valuesort label-5950
+SELECT pk, col0 FROM tab0 WHERE (((col3 = 393 AND (col4 = 69.92 AND col3 IN (470,82,354,154)) AND (col4 > 3.16) AND col1 > 392.6))) ORDER BY 2,1
+----
+
+query II valuesort label-5950
+SELECT pk, col0 FROM tab1 WHERE (((col3 = 393 AND (col4 = 69.92 AND col3 IN (470,82,354,154)) AND (col4 > 3.16) AND col1 > 392.6))) ORDER BY 2,1
+----
+
+query II valuesort label-5950
+SELECT pk, col0 FROM tab2 WHERE (((col3 = 393 AND (col4 = 69.92 AND col3 IN (470,82,354,154)) AND (col4 > 3.16) AND col1 > 392.6))) ORDER BY 2,1
+----
+
+query II valuesort label-5950
+SELECT pk, col0 FROM tab3 WHERE (((col3 = 393 AND (col4 = 69.92 AND col3 IN (470,82,354,154)) AND (col4 > 3.16) AND col1 > 392.6))) ORDER BY 2,1
+----
+
+query II valuesort label-5950
+SELECT pk, col0 FROM tab4 WHERE (((col3 = 393 AND (col4 = 69.92 AND col3 IN (470,82,354,154)) AND (col4 > 3.16) AND col1 > 392.6))) ORDER BY 2,1
+----
+
+query II valuesort label-5950
+SELECT pk, col0 FROM tab0 WHERE (((col3 = 393 AND (col4 = 69.92 AND col3 IN (470,82,354,154)) AND (col4 > 3.16) AND col1 > 392.6))) ORDER BY 1 DESC,2
+----
+
+query II valuesort label-5950
+SELECT pk, col0 FROM tab1 WHERE (((col3 = 393 AND (col4 = 69.92 AND col3 IN (470,82,354,154)) AND (col4 > 3.16) AND col1 > 392.6))) ORDER BY 1 DESC,2
+----
+
+query II valuesort label-5950
+SELECT pk, col0 FROM tab2 WHERE (((col3 = 393 AND (col4 = 69.92 AND col3 IN (470,82,354,154)) AND (col4 > 3.16) AND col1 > 392.6))) ORDER BY 1 DESC,2
+----
+
+query II valuesort label-5950
+SELECT pk, col0 FROM tab3 WHERE (((col3 = 393 AND (col4 = 69.92 AND col3 IN (470,82,354,154)) AND (col4 > 3.16) AND col1 > 392.6))) ORDER BY 1 DESC,2
+----
+
+query II valuesort label-5950
+SELECT pk, col0 FROM tab4 WHERE (((col3 = 393 AND (col4 = 69.92 AND col3 IN (470,82,354,154)) AND (col4 > 3.16) AND col1 > 392.6))) ORDER BY 1 DESC,2
+----
+
+query II valuesort label-5950
+SELECT pk, col0 FROM tab0 WHERE (((col3 = 393 AND (col4 = 69.92 AND col3 IN (470,82,354,154)) AND (col4 > 3.16) AND col1 > 392.6))) ORDER BY 1,2
+----
+
+query II valuesort label-5950
+SELECT pk, col0 FROM tab1 WHERE (((col3 = 393 AND (col4 = 69.92 AND col3 IN (470,82,354,154)) AND (col4 > 3.16) AND col1 > 392.6))) ORDER BY 1,2
+----
+
+query II valuesort label-5950
+SELECT pk, col0 FROM tab2 WHERE (((col3 = 393 AND (col4 = 69.92 AND col3 IN (470,82,354,154)) AND (col4 > 3.16) AND col1 > 392.6))) ORDER BY 1,2
+----
+
+query II valuesort label-5950
+SELECT pk, col0 FROM tab3 WHERE (((col3 = 393 AND (col4 = 69.92 AND col3 IN (470,82,354,154)) AND (col4 > 3.16) AND col1 > 392.6))) ORDER BY 1,2
+----
+
+query II valuesort label-5950
+SELECT pk, col0 FROM tab4 WHERE (((col3 = 393 AND (col4 = 69.92 AND col3 IN (470,82,354,154)) AND (col4 > 3.16) AND col1 > 392.6))) ORDER BY 1,2
+----
+
+query I valuesort label-6000
+SELECT pk FROM tab0 WHERE col3 > 556 AND (col3 > 263) ORDER BY 1 DESC
+----
+0
+1
+2
+5
+6
+8
+
+query I valuesort label-6000
+SELECT pk FROM tab1 WHERE col3 > 556 AND (col3 > 263) ORDER BY 1 DESC
+----
+0
+1
+2
+5
+6
+8
+
+query I valuesort label-6000
+SELECT pk FROM tab2 WHERE col3 > 556 AND (col3 > 263) ORDER BY 1 DESC
+----
+0
+1
+2
+5
+6
+8
+
+query I valuesort label-6000
+SELECT pk FROM tab3 WHERE col3 > 556 AND (col3 > 263) ORDER BY 1 DESC
+----
+0
+1
+2
+5
+6
+8
+
+query I valuesort label-6000
+SELECT pk FROM tab4 WHERE col3 > 556 AND (col3 > 263) ORDER BY 1 DESC
+----
+0
+1
+2
+5
+6
+8
+
+query I valuesort label-6000
+SELECT pk FROM tab0 WHERE col3 > 556 AND (col3 > 263) ORDER BY 1
+----
+0
+1
+2
+5
+6
+8
+
+query I valuesort label-6000
+SELECT pk FROM tab1 WHERE col3 > 556 AND (col3 > 263) ORDER BY 1
+----
+0
+1
+2
+5
+6
+8
+
+query I valuesort label-6000
+SELECT pk FROM tab2 WHERE col3 > 556 AND (col3 > 263) ORDER BY 1
+----
+0
+1
+2
+5
+6
+8
+
+query I valuesort label-6000
+SELECT pk FROM tab3 WHERE col3 > 556 AND (col3 > 263) ORDER BY 1
+----
+0
+1
+2
+5
+6
+8
+
+query I valuesort label-6000
+SELECT pk FROM tab4 WHERE col3 > 556 AND (col3 > 263) ORDER BY 1
+----
+0
+1
+2
+5
+6
+8
+
+query II valuesort label-6010
+SELECT pk, col0 FROM tab0 WHERE col3 > 556 AND (col3 > 263) ORDER BY 1 DESC
+----
+12 values hashing to e1904b23987b49453ec77b7e779bed49
+
+query II valuesort label-6010
+SELECT pk, col0 FROM tab1 WHERE col3 > 556 AND (col3 > 263) ORDER BY 1 DESC
+----
+12 values hashing to e1904b23987b49453ec77b7e779bed49
+
+query II valuesort label-6010
+SELECT pk, col0 FROM tab2 WHERE col3 > 556 AND (col3 > 263) ORDER BY 1 DESC
+----
+12 values hashing to e1904b23987b49453ec77b7e779bed49
+
+query II valuesort label-6010
+SELECT pk, col0 FROM tab3 WHERE col3 > 556 AND (col3 > 263) ORDER BY 1 DESC
+----
+12 values hashing to e1904b23987b49453ec77b7e779bed49
+
+query II valuesort label-6010
+SELECT pk, col0 FROM tab4 WHERE col3 > 556 AND (col3 > 263) ORDER BY 1 DESC
+----
+12 values hashing to e1904b23987b49453ec77b7e779bed49
+
+query II valuesort label-6010
+SELECT pk, col0 FROM tab0 WHERE col3 > 556 AND (col3 > 263) ORDER BY 2 DESC
+----
+12 values hashing to e1904b23987b49453ec77b7e779bed49
+
+query II valuesort label-6010
+SELECT pk, col0 FROM tab1 WHERE col3 > 556 AND (col3 > 263) ORDER BY 2 DESC
+----
+12 values hashing to e1904b23987b49453ec77b7e779bed49
+
+query II valuesort label-6010
+SELECT pk, col0 FROM tab2 WHERE col3 > 556 AND (col3 > 263) ORDER BY 2 DESC
+----
+12 values hashing to e1904b23987b49453ec77b7e779bed49
+
+query II valuesort label-6010
+SELECT pk, col0 FROM tab3 WHERE col3 > 556 AND (col3 > 263) ORDER BY 2 DESC
+----
+12 values hashing to e1904b23987b49453ec77b7e779bed49
+
+query II valuesort label-6010
+SELECT pk, col0 FROM tab4 WHERE col3 > 556 AND (col3 > 263) ORDER BY 2 DESC
+----
+12 values hashing to e1904b23987b49453ec77b7e779bed49
+
+query II valuesort label-6010
+SELECT pk, col0 FROM tab0 WHERE col3 > 556 AND (col3 > 263) ORDER BY 1
+----
+12 values hashing to e1904b23987b49453ec77b7e779bed49
+
+query II valuesort label-6010
+SELECT pk, col0 FROM tab1 WHERE col3 > 556 AND (col3 > 263) ORDER BY 1
+----
+12 values hashing to e1904b23987b49453ec77b7e779bed49
+
+query II valuesort label-6010
+SELECT pk, col0 FROM tab2 WHERE col3 > 556 AND (col3 > 263) ORDER BY 1
+----
+12 values hashing to e1904b23987b49453ec77b7e779bed49
+
+query II valuesort label-6010
+SELECT pk, col0 FROM tab3 WHERE col3 > 556 AND (col3 > 263) ORDER BY 1
+----
+12 values hashing to e1904b23987b49453ec77b7e779bed49
+
+query II valuesort label-6010
+SELECT pk, col0 FROM tab4 WHERE col3 > 556 AND (col3 > 263) ORDER BY 1
+----
+12 values hashing to e1904b23987b49453ec77b7e779bed49
+
+query II valuesort label-6010
+SELECT pk, col0 FROM tab0 WHERE col3 > 556 AND (col3 > 263) ORDER BY 2
+----
+12 values hashing to e1904b23987b49453ec77b7e779bed49
+
+query II valuesort label-6010
+SELECT pk, col0 FROM tab1 WHERE col3 > 556 AND (col3 > 263) ORDER BY 2
+----
+12 values hashing to e1904b23987b49453ec77b7e779bed49
+
+query II valuesort label-6010
+SELECT pk, col0 FROM tab2 WHERE col3 > 556 AND (col3 > 263) ORDER BY 2
+----
+12 values hashing to e1904b23987b49453ec77b7e779bed49
+
+query II valuesort label-6010
+SELECT pk, col0 FROM tab3 WHERE col3 > 556 AND (col3 > 263) ORDER BY 2
+----
+12 values hashing to e1904b23987b49453ec77b7e779bed49
+
+query II valuesort label-6010
+SELECT pk, col0 FROM tab4 WHERE col3 > 556 AND (col3 > 263) ORDER BY 2
+----
+12 values hashing to e1904b23987b49453ec77b7e779bed49
+
+query II valuesort label-6010
+SELECT pk, col0 FROM tab0 WHERE col3 > 556 AND (col3 > 263) ORDER BY 1 DESC,2 DESC
+----
+12 values hashing to e1904b23987b49453ec77b7e779bed49
+
+query II valuesort label-6010
+SELECT pk, col0 FROM tab1 WHERE col3 > 556 AND (col3 > 263) ORDER BY 1 DESC,2 DESC
+----
+12 values hashing to e1904b23987b49453ec77b7e779bed49
+
+query II valuesort label-6010
+SELECT pk, col0 FROM tab2 WHERE col3 > 556 AND (col3 > 263) ORDER BY 1 DESC,2 DESC
+----
+12 values hashing to e1904b23987b49453ec77b7e779bed49
+
+query II valuesort label-6010
+SELECT pk, col0 FROM tab3 WHERE col3 > 556 AND (col3 > 263) ORDER BY 1 DESC,2 DESC
+----
+12 values hashing to e1904b23987b49453ec77b7e779bed49
+
+query II valuesort label-6010
+SELECT pk, col0 FROM tab4 WHERE col3 > 556 AND (col3 > 263) ORDER BY 1 DESC,2 DESC
+----
+12 values hashing to e1904b23987b49453ec77b7e779bed49
+
+query II valuesort label-6010
+SELECT pk, col0 FROM tab0 WHERE col3 > 556 AND (col3 > 263) ORDER BY 1,2 DESC
+----
+12 values hashing to e1904b23987b49453ec77b7e779bed49
+
+query II valuesort label-6010
+SELECT pk, col0 FROM tab1 WHERE col3 > 556 AND (col3 > 263) ORDER BY 1,2 DESC
+----
+12 values hashing to e1904b23987b49453ec77b7e779bed49
+
+query II valuesort label-6010
+SELECT pk, col0 FROM tab2 WHERE col3 > 556 AND (col3 > 263) ORDER BY 1,2 DESC
+----
+12 values hashing to e1904b23987b49453ec77b7e779bed49
+
+query II valuesort label-6010
+SELECT pk, col0 FROM tab3 WHERE col3 > 556 AND (col3 > 263) ORDER BY 1,2 DESC
+----
+12 values hashing to e1904b23987b49453ec77b7e779bed49
+
+query II valuesort label-6010
+SELECT pk, col0 FROM tab4 WHERE col3 > 556 AND (col3 > 263) ORDER BY 1,2 DESC
+----
+12 values hashing to e1904b23987b49453ec77b7e779bed49
+
+query II valuesort label-6010
+SELECT pk, col0 FROM tab0 WHERE col3 > 556 AND (col3 > 263) ORDER BY 2 DESC,1
+----
+12 values hashing to e1904b23987b49453ec77b7e779bed49
+
+query II valuesort label-6010
+SELECT pk, col0 FROM tab1 WHERE col3 > 556 AND (col3 > 263) ORDER BY 2 DESC,1
+----
+12 values hashing to e1904b23987b49453ec77b7e779bed49
+
+query II valuesort label-6010
+SELECT pk, col0 FROM tab2 WHERE col3 > 556 AND (col3 > 263) ORDER BY 2 DESC,1
+----
+12 values hashing to e1904b23987b49453ec77b7e779bed49
+
+query II valuesort label-6010
+SELECT pk, col0 FROM tab3 WHERE col3 > 556 AND (col3 > 263) ORDER BY 2 DESC,1
+----
+12 values hashing to e1904b23987b49453ec77b7e779bed49
+
+query II valuesort label-6010
+SELECT pk, col0 FROM tab4 WHERE col3 > 556 AND (col3 > 263) ORDER BY 2 DESC,1
+----
+12 values hashing to e1904b23987b49453ec77b7e779bed49
+
+query II valuesort label-6010
+SELECT pk, col0 FROM tab0 WHERE col3 > 556 AND (col3 > 263) ORDER BY 2,1
+----
+12 values hashing to e1904b23987b49453ec77b7e779bed49
+
+query II valuesort label-6010
+SELECT pk, col0 FROM tab1 WHERE col3 > 556 AND (col3 > 263) ORDER BY 2,1
+----
+12 values hashing to e1904b23987b49453ec77b7e779bed49
+
+query II valuesort label-6010
+SELECT pk, col0 FROM tab2 WHERE col3 > 556 AND (col3 > 263) ORDER BY 2,1
+----
+12 values hashing to e1904b23987b49453ec77b7e779bed49
+
+query II valuesort label-6010
+SELECT pk, col0 FROM tab3 WHERE col3 > 556 AND (col3 > 263) ORDER BY 2,1
+----
+12 values hashing to e1904b23987b49453ec77b7e779bed49
+
+query II valuesort label-6010
+SELECT pk, col0 FROM tab4 WHERE col3 > 556 AND (col3 > 263) ORDER BY 2,1
+----
+12 values hashing to e1904b23987b49453ec77b7e779bed49
+
+query II valuesort label-6010
+SELECT pk, col0 FROM tab0 WHERE col3 > 556 AND (col3 > 263) ORDER BY 1 DESC,2
+----
+12 values hashing to e1904b23987b49453ec77b7e779bed49

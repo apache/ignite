@@ -52,6 +52,9 @@ namespace ignite
             /** Version 2.8.0: added column nullability info. */
             static const ProtocolVersion VERSION_2_8_0;
 
+            /** Version 2.13.0: added ability to choose of query engine support. */
+            static const ProtocolVersion VERSION_2_13_0;
+
             typedef std::set<ProtocolVersion> VersionSet;
 
             /**

@@ -1,0 +1,44 @@
+# name: test/sql/function/numeric/test_truncate.test
+# description: Test TRUNCATE function
+# group: [numeric]
+
+
+query T
+SELECT TRUNCATE(-123.345)
+----
+-123
+
+query T
+SELECT TRUNCATE(123.345, 0)
+----
+123
+
+query T
+SELECT TRUNCATE(123.345, 1)
+----
+123.3
+
+query T
+SELECT TRUNCATE(123.345, 2)
+----
+123.34
+
+query T
+SELECT TRUNCATE(123.345, -1)
+----
+120
+
+query T
+SELECT TRUNCATE(123.345, -2)
+----
+100
+
+query T
+SELECT TRUNCATE(-123.345, 0)
+----
+-123
+
+query T
+SELECT TRUNCATE(null, 0)
+----
+NULL

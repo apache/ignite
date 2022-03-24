@@ -46,6 +46,24 @@ public class SqlKillScanQueryCommand implements SqlCommand {
     /** Query id. */
     private long qryId;
 
+    /**
+     * Default constructor.
+     */
+    public SqlKillScanQueryCommand() {
+        // No-op.
+    }
+
+    /**
+     * @param originNodeId Originated node.
+     * @param cacheName Cache name.
+     * @param qryId Query id.
+     */
+    public SqlKillScanQueryCommand(UUID originNodeId, String cacheName, long qryId) {
+        this.originNodeId = originNodeId;
+        this.cacheName = cacheName;
+        this.qryId = qryId;
+    }
+
     /** {@inheritDoc} */
     @Override public SqlCommand parse(SqlLexer lex) {
         if (lex.shift()) {
