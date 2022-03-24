@@ -185,7 +185,7 @@ class IgnitePathAware(PathAware, metaclass=ABCMeta):
 
     IGNITE_THIN_CLIENT_CONFIG_NAME = "ignite-thin-config.xml"
 
-    IGNITE_LOG_CONFIG_NAME = "ignite-ducktape-log4j.xml"
+    IGNITE_LOG_CONFIG_NAME = "ignite-ducktape-log4j2.xml"
 
     @property
     def config_file(self):

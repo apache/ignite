@@ -50,7 +50,7 @@ class ConsistencyTest(IgniteTest):
         """
         Tests logging goes to the correct file (consistency.log) when default AI config used.
         """
-        cfg_filename = "ignite-default-log4j.xml"
+        cfg_filename = "ignite-default-log4j2.xml"
 
         ignites = IgniteApplicationService(
             self.test_context,
@@ -75,9 +75,9 @@ class ConsistencyTest(IgniteTest):
 
             cfg_file = f"{ignites.config_dir}/{cfg_filename}"
 
-            ignites.exec_command(node, f"cp {ignites.home_dir}/config/ignite-log4j.xml {cfg_file}")
+            ignites.exec_command(node, f"cp {ignites.home_dir}/config/ignite-log4j2.xml {cfg_file}")
 
-            orig = "${IGNITE_HOME}/work/log".replace('/', '\\/')
+            orig = "${sys:IGNITE_HOME}/work/log".replace('/', '\\/')
             fixed = ignites.log_dir.replace('/', '\\/')
 
             ignites.exec_command(node, f"sed -i 's/{orig}/{fixed}/g' {cfg_file}")
