@@ -202,7 +202,7 @@ public abstract class AbstractReadRepairTest extends GridCommonAbstractTest {
             if (!evtDeq.isEmpty()) {
                 CacheConsistencyViolationEvent evt = evtDeq.remove();
 
-                assertEquals(atomicityMode() == TRANSACTIONAL ? data.strategy : ReadRepairStrategy.CHECK_ONLY, evt.getStrategy());
+                assertEquals(data.strategy, evt.getStrategy());
 
                 // Optimistic and read committed transactions produce per key fixes.
                 for (Map.Entry<Object, CacheConsistencyViolationEvent.EntriesInfo> entries : evt.getEntries().entrySet())
@@ -521,22 +521,26 @@ public abstract class AbstractReadRepairTest extends GridCommonAbstractTest {
         }
         else {
             consistent = false;
-            repairable = atomicityMode() != ATOMIC; // Currently, Atomic caches can not be repaired.
 
             switch (strategy) {
                 case LWW:
                     if (misses || rmvd || !incVer) {
-                        repairable = false;
-
                         fixed = Integer.MIN_VALUE; // Should never be returned.
+
+                        repairable = false;
                     }
-                    else
+                    else {
                         fixed = incVal;
+
+                        repairable = true;
+                    }
 
                     break;
 
                 case PRIMARY:
                     fixed = primVal;
+
+                    repairable = true;
 
                     break;
 
@@ -555,8 +559,7 @@ public abstract class AbstractReadRepairTest extends GridCommonAbstractTest {
 
                     int max = sorted[0];
 
-                    if (sorted.length > 1 && sorted[1] == max)
-                        repairable = false;
+                    repairable = !(sorted.length > 1 && sorted[1] == max);
 
                     if (repairable)
                         for (Map.Entry<T2<Integer, GridCacheVersion>, Integer> count : counts.entrySet())
@@ -571,12 +574,14 @@ public abstract class AbstractReadRepairTest extends GridCommonAbstractTest {
                 case REMOVE:
                     fixed = null;
 
+                    repairable = true;
+
                     break;
 
                 case CHECK_ONLY:
-                    repairable = false;
-
                     fixed = Integer.MIN_VALUE; // Should never be returned.
+
+                    repairable = false;
 
                     break;
 

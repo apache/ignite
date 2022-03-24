@@ -256,10 +256,21 @@ public abstract class AbstractFullSetReadRepairTest extends AbstractReadRepairTe
 
             assertTrue(data.repairable());
         }
-        catch (Exception e) {
+        catch (RuntimeException e) {
             Throwable cause = e.getCause();
 
-            assertTrue(cause instanceof IgniteIrreparableConsistencyViolationException);
+            if (cause == null) {
+                e.printStackTrace();
+
+                fail("Unexpected exception: " + e.getMessage());
+            }
+
+            if (!(cause instanceof IgniteIrreparableConsistencyViolationException)) {
+                cause.printStackTrace();
+
+                fail("Unexpected exception: " + cause.getMessage());
+            }
+
             assertFalse(data.repairable());
 
             check(data, (IgniteIrreparableConsistencyViolationException)cause, true);

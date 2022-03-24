@@ -66,7 +66,7 @@ public class GridNearReadRepairCheckOnlyFuture extends GridNearReadRepairAbstrac
      */
     public GridNearReadRepairCheckOnlyFuture(
         AffinityTopologyVersion topVer,
-        GridCacheContext ctx,
+        GridCacheContext<?, ?> ctx,
         Collection<KeyCacheObject> keys,
         ReadRepairStrategy strategy,
         boolean readThrough,
@@ -170,13 +170,32 @@ public class GridNearReadRepairCheckOnlyFuture extends GridNearReadRepairAbstrac
             Set<KeyCacheObject> inconsistentKeys = e.keys();
 
             if (remapCnt >= MAX_REMAP_CNT) {
-                if (ctx.atomic() || strategy == ReadRepairStrategy.CHECK_ONLY) { // Will not be fixed, should be recorded as is.
-                    recordConsistencyViolation(inconsistentKeys, /*nothing fixed*/ null, ReadRepairStrategy.CHECK_ONLY);
+                if (strategy == ReadRepairStrategy.CHECK_ONLY) { // Will not be fixed, should be recorded as is.
+                    recordConsistencyViolation(inconsistentKeys, /*nothing fixed*/ null);
 
                     onDone(new IgniteIrreparableConsistencyViolationException(null,
                         ctx.unwrapBinariesIfNeeded(inconsistentKeys, !deserializeBinary)));
                 }
-                else // Should be fixed by concurrent tx(s).
+                else if (ctx.atomic()) { // Should be fixed by concurrent op(s).
+                    try {
+                        Map<KeyCacheObject, EntryGetResult> fixedMap = fix(e.keys());
+
+                        assert !fixedMap.isEmpty(); // Check failed on the same data.
+
+                        onDone(new IgniteAtomicConsistencyViolationException(fixedMap,
+                            fixWithPrimary(e.keys()),
+                            (map) -> recordConsistencyViolation(map.keySet(), map)));
+                    }
+                    catch (IgniteIrreparableConsistencyViolationException ie) { // Unable to repair all entries.
+                        recordConsistencyViolation(e.keys(), /*nothing fixed*/ null);
+
+                        onDone(ie);
+                    }
+                    catch (IgniteCheckedException ce) {
+                        onDone(ce);
+                    }
+                }
+                else // Should be fixed by concurrent explicit tx(s).
                     onDone(e);
             }
             else

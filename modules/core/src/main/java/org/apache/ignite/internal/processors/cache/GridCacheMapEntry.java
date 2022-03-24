@@ -6158,7 +6158,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
             if (conflictCtx == null) {
                 // Perform version check only in case there was no explicit conflict resolution.
-                versionCheck(invokeRes);
+                //versionCheck(invokeRes);
 
                 if (updateRes != null) {
                     assert treeOp == IgniteTree.OperationType.NOOP : treeOp;
