@@ -177,42 +177,45 @@ public final class KMeansModel implements ClusterizationModel<Vector, Integer>, 
     public static KMeansModel fromJSON(Path path) {
         ObjectMapper mapper = new ObjectMapper().configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
 
-            KMeansJSONExportModel exportModel;
-            try {
-                exportModel = mapper
-                        .readValue(new File(path.toAbsolutePath().toString()), KMeansJSONExportModel.class);
+        KMeansJSONExportModel exportModel;
+        try {
+            exportModel = mapper
+                .readValue(new File(path.toAbsolutePath().toString()), KMeansJSONExportModel.class);
 
-                return exportModel.convert();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
+            return exportModel.convert();
+        }
+        catch (IOException e) {
+            e.printStackTrace();
+        }
+
         return null;
     }
 
     // TODO: https://github.com/apache/spark/blob/master/mllib/src/main/scala/org/apache/spark/mllib/pmml/export/KMeansPMMLModelExport.scala
     /** {@inheritDoc} */
     @Override public void toJSON(Path path) {
-            ObjectMapper mapper = new ObjectMapper();
+        ObjectMapper mapper = new ObjectMapper();
 
-            try {
-                KMeansJSONExportModel exportModel = new KMeansJSONExportModel(
-                    System.currentTimeMillis(),
-                    "ann_" + UUID.randomUUID().toString(),
-                    KMeansModel.class.getSimpleName()
-                );
-                List<double[]> listOfCenters = new ArrayList<>();
-                for (int i = 0; i < centers.length; i++) {
-                    listOfCenters.add(centers[i].asArray());
-                }
-
-                exportModel.mdlCenters = listOfCenters;
-                exportModel.distanceMeasure = distanceMeasure;
-
-                File file = new File(path.toAbsolutePath().toString());
-                mapper.writeValue(file, exportModel);
-            } catch (IOException e) {
-                e.printStackTrace();
+        try {
+            KMeansJSONExportModel exportModel = new KMeansJSONExportModel(
+                System.currentTimeMillis(),
+                "ann_" + UUID.randomUUID().toString(),
+                KMeansModel.class.getSimpleName()
+            );
+            List<double[]> listOfCenters = new ArrayList<>();
+            for (int i = 0; i < centers.length; i++) {
+                listOfCenters.add(centers[i].asArray());
             }
+
+            exportModel.mdlCenters = listOfCenters;
+            exportModel.distanceMeasure = distanceMeasure;
+
+            File file = new File(path.toAbsolutePath().toString());
+            mapper.writeValue(file, exportModel);
+        }
+        catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     /** */

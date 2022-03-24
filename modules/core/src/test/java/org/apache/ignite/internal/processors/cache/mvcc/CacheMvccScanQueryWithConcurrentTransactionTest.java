@@ -45,34 +45,34 @@ public class CacheMvccScanQueryWithConcurrentTransactionTest extends CacheMvccAb
     /** Test closure. */
     private final IgniteClosure2X<CountDownLatch, CountDownLatch, List<Person>> clo =
         new IgniteClosure2X<CountDownLatch, CountDownLatch, List<Person>>() {
-        @Override public List<Person> applyx(CountDownLatch startLatch, CountDownLatch endLatch2)
-            throws IgniteCheckedException {
-            IgniteBiPredicate<Integer, Person> f = new IgniteBiPredicate<Integer, Person>() {
-                @Override public boolean apply(Integer k, Person v) {
-                    return k % 2 == 0;
+            @Override public List<Person> applyx(CountDownLatch startLatch, CountDownLatch endLatch2)
+                throws IgniteCheckedException {
+                IgniteBiPredicate<Integer, Person> f = new IgniteBiPredicate<Integer, Person>() {
+                    @Override public boolean apply(Integer k, Person v) {
+                        return k % 2 == 0;
+                    }
+                };
+
+                try (QueryCursor<Cache.Entry<Integer, Person>> cur = cache().query(new ScanQuery<Integer, Person>()
+                    .setFilter(f))) {
+                    Iterator<Cache.Entry<Integer, Person>> it = cur.iterator();
+
+                    List<Cache.Entry<Integer, Person>> pres = new ArrayList<>();
+
+                    for (int i = 0; i < 50; i++)
+                        pres.add(it.next());
+
+                    if (startLatch != null)
+                        startLatch.countDown();
+
+                    while (it.hasNext())
+                        pres.add(it.next());
+
+                    if (endLatch2 != null)
+                        U.await(endLatch2);
+
+                    return entriesToPersons(pres);
                 }
-            };
-
-            try (QueryCursor<Cache.Entry<Integer, Person>> cur = cache().query(new ScanQuery<Integer, Person>()
-                .setFilter(f))) {
-                Iterator<Cache.Entry<Integer, Person>> it = cur.iterator();
-
-                List<Cache.Entry<Integer, Person>> pres = new ArrayList<>();
-
-                for (int i = 0; i < 50; i++)
-                    pres.add(it.next());
-
-                if (startLatch != null)
-                    startLatch.countDown();
-
-                while (it.hasNext())
-                    pres.add(it.next());
-
-                if (endLatch2 != null)
-                    U.await(endLatch2);
-
-                return entriesToPersons(pres);
             }
-        }
-    };
+        };
 }

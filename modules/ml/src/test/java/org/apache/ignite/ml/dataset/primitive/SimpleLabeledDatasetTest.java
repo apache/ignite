@@ -40,12 +40,12 @@ public class SimpleLabeledDatasetTest {
     /** Basic test for SimpleLabeledDataset features. */
     @Test
     public void basicTest() throws Exception {
-        Map<Integer, Vector> dataPoints = new HashMap<Integer, Vector>() {{
-            put(5, VectorUtils.of(42, 10000));
-            put(6, VectorUtils.of(32, 64000));
-            put(7, VectorUtils.of(53, 120000));
-            put(8, VectorUtils.of(24, 70000));
-        }};
+        Map<Integer, Vector> dataPoints = new HashMap<Integer, Vector>();
+
+        dataPoints.put(5, VectorUtils.of(42, 10000));
+        dataPoints.put(6, VectorUtils.of(32, 64000));
+        dataPoints.put(7, VectorUtils.of(53, 120000));
+        dataPoints.put(8, VectorUtils.of(24, 70000));
 
         double[][] actualFeatures = new double[2][];
         double[][] actualLabels = new double[2][];

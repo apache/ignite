@@ -138,15 +138,15 @@ public interface PageMemoryEx extends PageMemory {
      * @param tracker Checkpoint metrics tracker.
      * @throws IgniteCheckedException If failed to obtain page data.
      */
-     public void checkpointWritePage(
-         FullPageId pageId,
-         ByteBuffer buf,
-         PageStoreWriter pageWriter,
-         CheckpointMetricsTracker tracker
-     ) throws IgniteCheckedException;
+    public void checkpointWritePage(
+        FullPageId pageId,
+        ByteBuffer buf,
+        PageStoreWriter pageWriter,
+        CheckpointMetricsTracker tracker
+    ) throws IgniteCheckedException;
 
-     /** */
-     public PageReadWriteManager pageManager();
+    /** */
+    public PageReadWriteManager pageManager();
 
     /**
      * Marks partition as invalid / outdated.

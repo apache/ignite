@@ -191,7 +191,7 @@ public class IgniteCacheContinuousQueryImmutableEntryTest extends GridCommonAbst
      */
     private static class CacheEventFilter implements CacheEntryEventFilter<Object, Object>, Serializable {
         /** {@inheritDoc} */
-         @Override public boolean evaluate(CacheEntryEvent<?, ?> evt) {
+        @Override public boolean evaluate(CacheEntryEvent<?, ?> evt) {
             events.add(evt);
 
             return false;

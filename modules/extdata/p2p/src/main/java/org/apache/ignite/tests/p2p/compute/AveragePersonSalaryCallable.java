@@ -145,8 +145,8 @@ public class AveragePersonSalaryCallable implements IgniteCallable<Double> {
     private void addPersonWithAverageSalary(IgniteCache<Integer, Person> cache, double avgSalary) {
         Map<Integer, Person> persons = IntStream.range(from, to).boxed().map(id -> createAveragePerson(avgSalary, to + id))
             .collect(Collectors.toMap(Person::getId, Function.identity(), (u, v) -> {
-                    throw new IllegalStateException(String.format("Duplicate key %s", u));
-                }, TreeMap::new));
+                throw new IllegalStateException(String.format("Duplicate key %s", u));
+            }, TreeMap::new));
 
         cache.putAll(persons);
 

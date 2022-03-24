@@ -208,9 +208,9 @@ public class AuthenticationProcessorNodeRestartTest extends GridCommonAbstractTe
 
             try {
                 while (!restartFut.isDone()) {
-                   SecurityContext secCtx = authenticate(grid(CLI_NODE), user, "passwd_" + user);
+                    SecurityContext secCtx = authenticate(grid(CLI_NODE), user, "passwd_" + user);
 
-                   assertNotNull(secCtx);
+                    assertNotNull(secCtx);
                 }
             }
             catch (ClusterTopologyCheckedException ignored) {

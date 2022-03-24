@@ -24,6 +24,7 @@ from ducktape.cluster.cluster_spec import ClusterSpec
 from ducktape.mark._mark import Ignore, Mark, _inject
 
 from ignitetest.utils.version import IgniteVersion
+from ignitetest.utils.ignite_test import IgniteTestContext
 
 
 class IgnoreIf(Ignore):
@@ -161,7 +162,7 @@ class ParametrizableClusterMetadata(Mark):
             if not ctx.cluster_use_metadata:
                 ctx.cluster_use_metadata = self.metadata
 
-        return context_list
+        return list(map(lambda _ctx: IgniteTestContext.resolve(_ctx), context_list))
 
     @staticmethod
     def _extract_cluster_size(seed_context):
@@ -227,7 +228,15 @@ def cluster(**kwargs):
       - ``cluster_spec`` provide hint about how many nodes of each type the test will consume
     """
     def cluster_use_metadata_adder(func):
-        Mark.mark(func, ParametrizableClusterMetadata(**kwargs))
-        return func
+        def extended_test(self, *args, **kwargs):
+            self.test_context.before()
+            test_result = func(self, *args, **kwargs)
+            return self.test_context.after(test_result)
+
+        extended_test.__dict__.update(**func.__dict__)
+        extended_test.__name__ = func.__name__
+
+        Mark.mark(extended_test, ParametrizableClusterMetadata(**kwargs))
+        return extended_test
 
     return cluster_use_metadata_adder

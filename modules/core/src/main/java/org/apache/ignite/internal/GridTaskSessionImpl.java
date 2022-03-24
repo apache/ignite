@@ -825,7 +825,7 @@ public class GridTaskSessionImpl implements GridTaskSessionInternal {
     /** {@inheritDoc} */
     @Override public Collection<UUID> getTopology() {
         if (topPred != null)
-           return F.viewReadOnly(ctx.discovery().allNodes(), F.node2id(), topPred);
+            return F.viewReadOnly(ctx.discovery().allNodes(), F.node2id(), topPred);
 
         return top != null ? top : F.nodeIds(ctx.discovery().allNodes());
     }

@@ -160,12 +160,14 @@ public class IgniteComputeCustomExecutorSelfTest extends GridCommonAbstractTest 
             }
         }, Collections.singletonList(0));
 
-        comp.apply(new IgniteClosure<Integer, Object>() {
-                       @Override public Object apply(Integer o) {
-                           assertTrue(Thread.currentThread().getName().contains(EXEC_NAME0));
-                           return null;
-                       }
-                   }, Collections.singletonList(0),
+        IgniteClosure<Integer, Object> job = new IgniteClosure<Integer, Object>() {
+            @Override public Object apply(Integer o) {
+                assertTrue(Thread.currentThread().getName().contains(EXEC_NAME0));
+                return null;
+            }
+        };
+
+        comp.apply(job, Collections.singletonList(0),
             new IgniteReducer<Object, Object>() {
                 @Override public boolean collect(@Nullable Object o) {
                     return true;

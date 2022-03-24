@@ -66,7 +66,7 @@ public class IgniteNoParrallelClusterIsAllowedTest extends IgniteChangeGlobalSta
             fail();
         }
         catch (AssertionError er) {
-                throw er;
+            throw er;
         }
         catch (Throwable e) {
             while (true) {

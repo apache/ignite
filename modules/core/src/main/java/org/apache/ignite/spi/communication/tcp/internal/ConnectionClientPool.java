@@ -386,7 +386,7 @@ public class ConnectionClientPool {
                     ? cfg.failureDetectionTimeout()
                     : cfg.connectionTimeout();
 
-                    fut.get(failTimeout);
+                fut.get(failTimeout);
             }
             catch (Throwable triggerException) {
                 if (forcibleNodeKillEnabled

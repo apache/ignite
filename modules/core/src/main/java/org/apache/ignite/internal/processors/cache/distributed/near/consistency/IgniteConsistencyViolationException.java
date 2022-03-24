@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.near.consistency;
 
+import java.util.Collections;
 import java.util.Set;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
@@ -39,7 +40,7 @@ public class IgniteConsistencyViolationException extends IgniteCheckedException 
 
         assert keys != null && !keys.isEmpty();
 
-        this.keys = keys;
+        this.keys = Collections.unmodifiableSet(keys);
     }
 
     /**

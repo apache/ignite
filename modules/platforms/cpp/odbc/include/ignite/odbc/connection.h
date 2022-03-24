@@ -204,7 +204,7 @@ namespace ignite
              *
              * @param req Request message.
              * @param rsp Response message.
-             * @param timeout Timeout.
+             * @param timeout Timeout. 0 means disabled.
              * @return @c true on success, @c false on timeout.
              * @throw OdbcError on error.
              */

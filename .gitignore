@@ -29,9 +29,6 @@ git-patch-prop-local.sh
 **/dotnet/libs/
 *.classname*
 *.exe
-.mvn/
-mvnw
-mvnw.cmd
 
 #Ignore all Intellij IDEA files (except default inspections config)
 .idea/
@@ -97,3 +94,5 @@ modules/ducktests/tests/docker/build/**
 modules/ducktests/tests/.tox
 modules/ducktests/tests/certs/*
 modules/ducktests/tests/ignitetest.egg-info/**
+modules/ducktests/tests/build/**
+modules/ducktests/tests/dist/**

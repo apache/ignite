@@ -666,7 +666,7 @@ public abstract class TcpCommunicationConfigInitializer extends IgniteSpiAdapter
      */
     @IgniteSpiConfiguration(optional = true)
     public TcpCommunicationSpi setSocketSendBuffer(int sockSndBuf) {
-cfg.socketSendBuffer(sockSndBuf);
+        cfg.socketSendBuffer(sockSndBuf);
 
         return (TcpCommunicationSpi)this;
     }

@@ -18,8 +18,11 @@
 package org.apache.ignite.ml.preprocessing.encoding;
 
 import java.io.Serializable;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
 import org.apache.ignite.ml.dataset.feature.extractor.impl.DummyVectorizer;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
@@ -44,31 +47,20 @@ public class FrequencyEncoderPreprocessorTest {
 
         Vectorizer<Integer, Vector, Integer, Double> vectorizer = new DummyVectorizer<>(0, 1, 2);
 
+        HashMap map = new HashMap();
+
+        map.put("1", 0.33);
+        map.put("2", 0.66);
+
+        HashMap map1 = new HashMap();
+
+        map1.put("A", 0.33);
+        map1.put("B", 0.66);
+
         FrequencyEncoderPreprocessor<Integer, Vector> preprocessor = new FrequencyEncoderPreprocessor<Integer, Vector>(
-            new HashMap[] {
-                new HashMap() {
-                    {
-                        put("1", 0.33);
-                        put("2", 0.66);
-                    }
-                }, new HashMap() {
-                {
-                    put("Moscow", 1.0);
-                }
-            }, new HashMap() {
-                {
-                    put("A", 0.33);
-                    put("B", 0.66);
-                }
-            } },
+            new Map[] {map, Collections.singletonMap("Moscow", 1.0), map1},
             vectorizer,
-            new HashSet() {
-                {
-                    add(0);
-                    add(1);
-                    add(2);
-                }
-            });
+            new HashSet(Arrays.asList(0, 1, 2)));
 
         double[][] postProcessedData = new double[][] {
             {0.33, 1.0, 0.33},

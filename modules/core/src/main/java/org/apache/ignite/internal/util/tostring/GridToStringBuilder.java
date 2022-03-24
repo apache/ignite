@@ -1833,31 +1833,7 @@ public class GridToStringBuilder {
                 else if (!f.isAnnotationPresent(GridToStringExclude.class) &&
                     !type.isAnnotationPresent(GridToStringExclude.class)
                 ) {
-                    if (
-                        // Include only private non-static
-                        Modifier.isPrivate(f.getModifiers()) && !Modifier.isStatic(f.getModifiers()) &&
-
-                        // No direct objects & serializable.
-                        Object.class != type &&
-                        Serializable.class != type &&
-                        Externalizable.class != type &&
-
-                        // No arrays.
-                        !type.isArray() &&
-
-                        // Exclude collections, IO, etc.
-                        !EventListener.class.isAssignableFrom(type) &&
-                        !Map.class.isAssignableFrom(type) &&
-                        !Collection.class.isAssignableFrom(type) &&
-                        !InputStream.class.isAssignableFrom(type) &&
-                        !OutputStream.class.isAssignableFrom(type) &&
-                        !Thread.class.isAssignableFrom(type) &&
-                        !Runnable.class.isAssignableFrom(type) &&
-                        !Lock.class.isAssignableFrom(type) &&
-                        !ReadWriteLock.class.isAssignableFrom(type) &&
-                        !Condition.class.isAssignableFrom(type)
-                    )
-                        add = true;
+                    add = addField(f, type);
                 }
 
                 if (add) {
@@ -1878,6 +1854,31 @@ public class GridToStringBuilder {
         }
 
         return cd;
+    }
+
+    /** @return {@code True} if field should be added. */
+    private static boolean addField(Field f, Class<?> type) {
+        // Include only private non-static
+        return Modifier.isPrivate(f.getModifiers()) && !Modifier.isStatic(f.getModifiers()) &&
+            // No direct objects & serializable.
+            Object.class != type &&
+            Serializable.class != type &&
+            Externalizable.class != type &&
+
+            // No arrays.
+            !type.isArray() &&
+
+            // Exclude collections, IO, etc.
+            !EventListener.class.isAssignableFrom(type) &&
+            !Map.class.isAssignableFrom(type) &&
+            !Collection.class.isAssignableFrom(type) &&
+            !InputStream.class.isAssignableFrom(type) &&
+            !OutputStream.class.isAssignableFrom(type) &&
+            !Thread.class.isAssignableFrom(type) &&
+            !Runnable.class.isAssignableFrom(type) &&
+            !Lock.class.isAssignableFrom(type) &&
+            !ReadWriteLock.class.isAssignableFrom(type) &&
+            !Condition.class.isAssignableFrom(type);
     }
 
     /**

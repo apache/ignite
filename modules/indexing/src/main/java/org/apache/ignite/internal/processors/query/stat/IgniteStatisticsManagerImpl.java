@@ -443,7 +443,7 @@ public class IgniteStatisticsManagerImpl implements IgniteStatisticsManager {
         for (StatisticsKey key : keys) {
             StatisticsObjectConfiguration cfg = null;
             try {
-                 cfg = statCfgMgr.config(key);
+                cfg = statCfgMgr.config(key);
             }
             catch (IgniteCheckedException e) {
                 // No-op/

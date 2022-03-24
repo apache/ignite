@@ -1688,7 +1688,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
                     long maxBound = correctSize + putRmvThreadCnt;
 
                     if (DEBUG_PRINT || (iter & 0x3ff) == 0)
-                      X.println(order + ": size=" + treeSize + "; bounds=[" + minBound + ".." + maxBound
+                        X.println(order + ": size=" + treeSize + "; bounds=[" + minBound + ".." + maxBound
                             + "]; contents=" + treeContents);
 
                     if (treeSize < minBound || treeSize > maxBound) {
