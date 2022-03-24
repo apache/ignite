@@ -104,6 +104,14 @@
                         <property name="useIgniteSslContextFactory" value="{{ config.client_connector_configuration.use_ignite_ssl_context_factory }}"/>
                         <property name="sslClientAuth" value="{{ config.client_connector_configuration.ssl_client_auth }}"/>
                     {% endif %}
+                    {% if config.client_connector_configuration.thin_client_configuration %}
+                    <property name="thinClientConfiguration">
+                        <bean class="org.apache.ignite.configuration.ThinClientConfiguration">
+                            <property name="maxActiveComputeTasksPerConnection" value="{{ config.client_connector_configuration.thin_client_configuration.max_active_compute_tasks_per_connection }}" />
+                            <property name="maxActiveTxPerConnection" value="{{ config.client_connector_configuration.thin_client_configuration.max_active_tx_per_connection }}" />
+                        </bean>
+                    </property>
+                    {% endif %}
                 </bean>
             </property>
         {% endif %}
@@ -120,8 +128,8 @@
             <property name="localEventListeners" ref="{{ config.local_event_listeners }}"/>
         {% endif %}
 
-        {% if config.include_event_types %}
-            <property name="includeEventTypes" ref="{{ config.include_event_types }}"/>
+        {% if config.include_event_types | length > 0 %}
+            <property name="includeEventTypes" ref="eventTypes"/>
         {% endif %}
 
         {% if config.event_storage_spi %}
@@ -132,4 +140,8 @@
     </bean>
 
     {{ misc_utils.ext_beans(config) }}
+
+    {% if config.include_event_types | length > 0 %}
+        {{ misc_utils.event_types(config) }}
+    {% endif %}
 </beans>

@@ -48,6 +48,6 @@ public class ClusterNodeAttributeAffinityBackupFilterSelfTest extends AffinityFu
 
     /** {@inheritDoc} */
     @Override protected int expectedNodesForEachPartition() {
-       return 3;
+        return 3;
     }
 }

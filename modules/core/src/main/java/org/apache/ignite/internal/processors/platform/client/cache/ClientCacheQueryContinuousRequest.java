@@ -69,8 +69,8 @@ public class ClientCacheQueryContinuousRequest extends ClientCacheRequest {
         qry = new ContinuousQuery();
 
         qry.setPageSize(pageSize)
-           .setTimeInterval(timeInterval)
-           .setIncludeExpired(includeExpired);
+            .setTimeInterval(timeInterval)
+            .setIncludeExpired(includeExpired);
     }
 
     /** {@inheritDoc} */

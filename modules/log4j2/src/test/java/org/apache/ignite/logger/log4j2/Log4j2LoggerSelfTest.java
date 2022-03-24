@@ -201,9 +201,8 @@ public class Log4j2LoggerSelfTest {
         throws Exception {
         TcpDiscoverySpi disco = new TcpDiscoverySpi();
 
-        disco.setIpFinder(new TcpDiscoveryVmIpFinder(false) {{
-            setAddresses(Collections.singleton("127.0.0.1:47500..47509"));
-        }});
+        disco.setIpFinder(new TcpDiscoveryVmIpFinder(false)
+            .setAddresses(Collections.singleton("127.0.0.1:47500..47509")));
 
         return new IgniteConfiguration()
             .setIgniteInstanceName(igniteInstanceName)

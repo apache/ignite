@@ -146,22 +146,22 @@ public class CacheRentingStateRepairTest extends GridCommonAbstractTest {
             assertTrue("Failed to wait for partition eviction: reservedPart=" + part.id() + ", otherParts=" +
                 top.localPartitions().stream().map(p -> "[id=" + p.id() + ", state=" + p.state() + ']').collect(Collectors.toList()),
                 waitForCondition(() -> {
-                for (int i = 0; i < parts.size(); i++) {
-                    if (delayEvictPart == i)
-                        continue; // Skip reserved partition.
+                    for (int i = 0; i < parts.size(); i++) {
+                        if (delayEvictPart == i)
+                            continue; // Skip reserved partition.
 
-                    Integer p = parts.get(i);
+                        Integer p = parts.get(i);
 
-                    @Nullable GridDhtLocalPartition locPart = top.localPartition(p);
+                        @Nullable GridDhtLocalPartition locPart = top.localPartition(p);
 
-                    assertNotNull(locPart);
+                        assertNotNull(locPart);
 
-                    if (locPart.state() != GridDhtPartitionState.EVICTED)
-                        return false;
-                }
+                        if (locPart.state() != GridDhtPartitionState.EVICTED)
+                            return false;
+                    }
 
-                return true;
-            }, 5000));
+                    return true;
+                }, 5000));
 
             /**
              * Force renting state before node stop.

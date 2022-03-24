@@ -20,7 +20,6 @@ package org.apache.ignite.internal.visor.consistency;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
-import java.util.Objects;
 import org.apache.ignite.cache.ReadRepairStrategy;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -91,23 +90,5 @@ public class VisorConsistencyRepairTaskArg extends IgniteDataTransferObject {
      */
     public ReadRepairStrategy strategy() {
         return strategy;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean equals(Object o) {
-        if (this == o)
-            return true;
-
-        if (o == null || getClass() != o.getClass())
-            return false;
-
-        VisorConsistencyRepairTaskArg arg = (VisorConsistencyRepairTaskArg)o;
-
-        return part == arg.part && Objects.equals(cacheName, arg.cacheName);
-    }
-
-    /** {@inheritDoc} */
-    @Override public int hashCode() {
-        return Objects.hash(cacheName, part);
     }
 }

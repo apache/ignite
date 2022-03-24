@@ -93,7 +93,7 @@ public class CacheMvccClusterRestartTest extends GridCommonAbstractTest {
      */
     @Test
     public void testRestart1() throws Exception {
-       restart1(3, 3);
+        restart1(3, 3);
     }
 
     /**

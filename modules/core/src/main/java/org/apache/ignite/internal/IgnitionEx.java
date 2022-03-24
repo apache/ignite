@@ -724,7 +724,7 @@ public class IgnitionEx {
      *      been started or Spring XML configuration file is invalid.
      */
     public static IgniteBiTuple<Collection<IgniteConfiguration>, ? extends GridSpringResourceContext>
-    loadConfigurations(URL springCfgUrl) throws IgniteCheckedException {
+        loadConfigurations(URL springCfgUrl) throws IgniteCheckedException {
         IgniteSpringHelper spring = SPRING.create(false);
 
         return spring.loadConfigurations(springCfgUrl);
@@ -744,7 +744,7 @@ public class IgnitionEx {
      *      been started or Spring XML configuration file is invalid.
      */
     public static IgniteBiTuple<Collection<IgniteConfiguration>, ? extends GridSpringResourceContext>
-    loadConfigurations(InputStream springCfgStream) throws IgniteCheckedException {
+        loadConfigurations(InputStream springCfgStream) throws IgniteCheckedException {
         IgniteSpringHelper spring = SPRING.create(false);
 
         return spring.loadConfigurations(springCfgStream);
@@ -764,7 +764,7 @@ public class IgnitionEx {
      *      been started or Spring XML configuration file is invalid.
      */
     public static IgniteBiTuple<Collection<IgniteConfiguration>, ? extends GridSpringResourceContext>
-    loadConfigurations(String springCfgPath) throws IgniteCheckedException {
+        loadConfigurations(String springCfgPath) throws IgniteCheckedException {
         A.notNull(springCfgPath, "springCfgPath");
         return loadConfigurations(IgniteUtils.resolveSpringUrl(springCfgPath));
     }

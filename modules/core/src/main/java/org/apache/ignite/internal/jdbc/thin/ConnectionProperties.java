@@ -227,7 +227,7 @@ public interface ConnectionProperties {
      *
      * @param sslCipherSuites SSL cipher suites.
      */
-     public void setSslCipherSuites(String sslCipherSuites);
+    public void setSslCipherSuites(String sslCipherSuites);
 
     /**
      * Gets algorithm that will be used to create a key manager.

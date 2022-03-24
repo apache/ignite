@@ -130,6 +130,12 @@ public final class ClientConfiguration implements Serializable {
     /** Executor for async operations continuations. */
     private Executor asyncContinuationExecutor;
 
+    /** Whether heartbeats should be enabled. */
+    private boolean heartbeatEnabled;
+
+    /** Heartbeat interval, in milliseconds. */
+    private long heartbeatInterval = 30_000L;
+
     /**
      * @return Host addresses.
      */
@@ -675,6 +681,70 @@ public final class ClientConfiguration implements Serializable {
      */
     public ClientConfiguration setAsyncContinuationExecutor(Executor asyncContinuationExecutor) {
         this.asyncContinuationExecutor = asyncContinuationExecutor;
+
+        return this;
+    }
+
+    /**
+     * Gets a value indicating whether heartbeats are enabled.
+     * <p />
+     * When thin client connection is idle (no operations are performed), heartbeat messages are sent periodically
+     * to keep the connection alive and detect potential half-open state.
+     * <p />
+     * See also {@link ClientConfiguration#heartbeatInterval}.
+     *
+     * @return Whether heartbeats are enabled.
+     */
+    public boolean isHeartbeatEnabled() {
+        return heartbeatEnabled;
+    }
+
+    /**
+     * Sets a value indicating whether heartbeats are enabled.
+     * <p />
+     * When thin client connection is idle (no operations are performed), heartbeat messages are sent periodically
+     * to keep the connection alive and detect potential half-open state.
+     * <p />
+     * See also {@link ClientConfiguration#heartbeatInterval}.
+     *
+     * @param heartbeatEnabled Whether to enable heartbeats.
+     * @return {@code this} for chaining.
+     */
+    public ClientConfiguration setHeartbeatEnabled(boolean heartbeatEnabled) {
+        this.heartbeatEnabled = heartbeatEnabled;
+
+        return this;
+    }
+
+    /**
+     * Gets the heartbeat message interval, in milliseconds. Default is <code>30_000</code>.
+     * <p />
+     * When server-side {@link ClientConnectorConfiguration#getIdleTimeout()} is not zero, effective heartbeat
+     * interval is set to <code>min(heartbeatInterval, idleTimeout / 3)</code>.
+     * <p />
+     * When thin client connection is idle (no operations are performed), heartbeat messages are sent periodically
+     * to keep the connection alive and detect potential half-open state.     *
+     *
+     * @return Heartbeat interval.
+     */
+    public long getHeartbeatInterval() {
+        return heartbeatInterval;
+    }
+
+    /**
+     * Sets the heartbeat message interval, in milliseconds. Default is <code>30_000</code>.
+     * <p />
+     * When server-side {@link ClientConnectorConfiguration#getIdleTimeout()} is not zero, effective heartbeat
+     * interval is set to <code>min(heartbeatInterval, idleTimeout / 3)</code>.
+     * <p />
+     * When thin client connection is idle (no operations are performed), heartbeat messages are sent periodically
+     * to keep the connection alive and detect potential half-open state.     *
+     *
+     * @param heartbeatInterval Heartbeat interval, in milliseconds.
+     * @return {@code this} for chaining.
+     */
+    public ClientConfiguration setHeartbeatInterval(long heartbeatInterval) {
+        this.heartbeatInterval = heartbeatInterval;
 
         return this;
     }

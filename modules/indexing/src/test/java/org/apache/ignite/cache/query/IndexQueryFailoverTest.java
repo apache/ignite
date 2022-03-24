@@ -102,12 +102,11 @@ public class IndexQueryFailoverTest extends GridCommonAbstractTest {
     @Test
     public void testQueryWithWrongCriteria() {
         GridTestUtils.assertThrowsAnyCause(null, () -> {
-                IndexQuery<Long, Person> qryNullCriteria = new IndexQuery<Long, Person>(Person.class, qryIdx)
-                    .setCriteria(lt(null, 12));
+            IndexQuery<Long, Person> qryNullCriteria = new IndexQuery<Long, Person>(Person.class, qryIdx)
+                .setCriteria(lt(null, 12));
 
-                return cache.query(qryNullCriteria);
-            },
-            NullPointerException.class, "Ouch! Argument cannot be null: field");
+            return cache.query(qryNullCriteria);
+        }, NullPointerException.class, "Ouch! Argument cannot be null: field");
     }
 
     /** */
@@ -120,32 +119,29 @@ public class IndexQueryFailoverTest extends GridCommonAbstractTest {
             IllegalArgumentException.class, "Ouch! Argument is invalid: valType must not be empty");
 
         GridTestUtils.assertThrowsAnyCause(null, () -> {
-                IndexQuery<Long, Integer> qry = new IndexQuery<Long, Integer>(Integer.class, qryIdx)
-                    .setCriteria(lt("id", Integer.MAX_VALUE));
+            IndexQuery<Long, Integer> qry = new IndexQuery<Long, Integer>(Integer.class, qryIdx)
+                .setCriteria(lt("id", Integer.MAX_VALUE));
 
-                return cache.query(qry).getAll();
-            },
-            IgniteCheckedException.class, "No table found for type: " + Integer.class.getName());
+            return cache.query(qry).getAll();
+        }, IgniteCheckedException.class, "No table found for type: " + Integer.class.getName());
     }
 
     /** */
     @Test
     public void testQueryWrongIndexName() {
         GridTestUtils.assertThrowsAnyCause(null, () -> {
-                IndexQuery<Long, Person> qry = new IndexQuery<Long, Person>(Person.class, "")
-                    .setCriteria(lt("id", Integer.MAX_VALUE));
+            IndexQuery<Long, Person> qry = new IndexQuery<Long, Person>(Person.class, "")
+                .setCriteria(lt("id", Integer.MAX_VALUE));
 
-                return cache.query(qry).getAll();
-            },
-            IllegalArgumentException.class, "Ouch! Argument is invalid: idxName must not be empty.");
+            return cache.query(qry).getAll();
+        }, IllegalArgumentException.class, "Ouch! Argument is invalid: idxName must not be empty.");
 
         GridTestUtils.assertThrowsAnyCause(null, () -> {
-                IndexQuery<Long, Person> qry = new IndexQuery<Long, Person>(Person.class, "DUMMY")
-                    .setCriteria(lt("id", Integer.MAX_VALUE));
+            IndexQuery<Long, Person> qry = new IndexQuery<Long, Person>(Person.class, "DUMMY")
+                .setCriteria(lt("id", Integer.MAX_VALUE));
 
-                return cache.query(qry).getAll();
-            },
-            IgniteCheckedException.class, "No index found for name: DUMMY");
+            return cache.query(qry).getAll();
+        }, IgniteCheckedException.class, "No index found for name: DUMMY");
     }
 
     /** */
@@ -154,31 +150,27 @@ public class IndexQueryFailoverTest extends GridCommonAbstractTest {
         String errMsg = qryIdx != null ? "Index doesn't match criteria." : "No index found for criteria.";
 
         GridTestUtils.assertThrowsAnyCause(null, () -> {
-                IndexQuery<Long, Person> qry = new IndexQuery<Long, Person>(Person.class, qryIdx)
-                    .setCriteria(lt("dummy", Integer.MAX_VALUE));
+            IndexQuery<Long, Person> qry = new IndexQuery<Long, Person>(Person.class, qryIdx)
+                .setCriteria(lt("dummy", Integer.MAX_VALUE));
 
-                return cache.query(qry).getAll();
-            },
-            IgniteCheckedException.class, errMsg);
-
-        GridTestUtils.assertThrowsAnyCause(null, () -> {
-                IndexQuery<Long, Person> qry = new IndexQuery<Long, Person>(Person.class, qryIdx)
-                    .setCriteria(
-                        lt("id", Integer.MAX_VALUE),
-                        lt("nonExistedField", Integer.MAX_VALUE));
-
-                return cache.query(qry).getAll();
-            },
-            IgniteCheckedException.class, errMsg);
+            return cache.query(qry).getAll();
+        }, IgniteCheckedException.class, errMsg);
 
         GridTestUtils.assertThrowsAnyCause(null, () -> {
-                IndexQuery<Long, Person> qry = new IndexQuery<Long, Person>(Person.class, qryIdx)
-                    .setCriteria(between("id", 432, 40));
+            IndexQuery<Long, Person> qry = new IndexQuery<Long, Person>(Person.class, qryIdx)
+                .setCriteria(
+                    lt("id", Integer.MAX_VALUE),
+                    lt("nonExistedField", Integer.MAX_VALUE));
 
-                return cache.query(qry).getAll();
-            },
-            IgniteCheckedException.class, "Illegal criterion: lower boundary is greater than the upper boundary: " +
-                "ID[432; 40]");
+            return cache.query(qry).getAll();
+        }, IgniteCheckedException.class, errMsg);
+
+        GridTestUtils.assertThrowsAnyCause(null, () -> {
+            IndexQuery<Long, Person> qry = new IndexQuery<Long, Person>(Person.class, qryIdx)
+                .setCriteria(between("id", 432, 40));
+
+            return cache.query(qry).getAll();
+        }, IgniteCheckedException.class, "Illegal criterion: lower boundary is greater than the upper boundary: ID[432; 40]");
 
         Stream.of(
             Arrays.asList(lt("id", 100), gt("id", 101)),
@@ -190,12 +182,11 @@ public class IndexQueryFailoverTest extends GridCommonAbstractTest {
                 + " with previous criteria range " + crit.get(0).toString().replace("id", "ID");
 
             GridTestUtils.assertThrowsAnyCause(null, () -> {
-                    IndexQuery<Long, Person> qry = new IndexQuery<Long, Person>(Person.class, qryIdx)
-                        .setCriteria(crit);
+                IndexQuery<Long, Person> qry = new IndexQuery<Long, Person>(Person.class, qryIdx)
+                    .setCriteria(crit);
 
-                    return cache.query(qry).getAll();
-                },
-                IgniteCheckedException.class, msg);
+                return cache.query(qry).getAll();
+            }, IgniteCheckedException.class, msg);
         });
     }
 

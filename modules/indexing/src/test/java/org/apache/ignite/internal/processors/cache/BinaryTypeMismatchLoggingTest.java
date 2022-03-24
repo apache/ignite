@@ -329,9 +329,10 @@ public class BinaryTypeMismatchLoggingTest extends GridCommonAbstractTest {
 
         IgniteCache<Integer, Payload> binary = ignite.createCache(new CacheConfiguration<Integer, Payload>()
             .setName("binary").setQueryEntities(Arrays.asList(
-            new QueryEntity().setKeyType("Foo").setKeyFieldName("id")
-                .setValueType("Bar").setFields(fields).setTableName("regular"),
-            new QueryEntity().setKeyFieldName("id").setValueType("Payload").setFields(fields).setTableName("binary"))));
+                new QueryEntity().setKeyType("Foo").setKeyFieldName("id")
+                    .setValueType("Bar").setFields(fields).setTableName("regular"),
+                new QueryEntity().setKeyFieldName("id").setValueType("Payload").setFields(fields).setTableName("binary")
+            )));
 
         binary.put(1, new Payload("foo"));
         binary.put(2, new Payload("bar"));

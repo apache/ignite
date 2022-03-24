@@ -115,7 +115,7 @@ public class SqlClientContext implements AutoCloseable {
         boolean collocated, boolean replicatedOnly, boolean lazy, boolean skipReducerOnUpdate,
         @Nullable Boolean dataPageScanEnabled,
         @Nullable Integer updateBatchSize
-        ) {
+    ) {
         this.ctx = ctx;
         this.orderedBatchWorkerFactory = orderedBatchWorkerFactory;
         this.distributedJoins = distributedJoins;

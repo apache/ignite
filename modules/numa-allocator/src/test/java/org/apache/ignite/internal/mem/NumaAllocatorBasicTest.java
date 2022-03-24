@@ -148,7 +148,7 @@ public class NumaAllocatorBasicTest extends GridCommonAbstractTest {
 
     /** */
     private boolean hasFreeSpace() {
-       return serverGrids().allMatch(g -> {
+        return serverGrids().allMatch(g -> {
             DataRegion dr = getDefaultRegion(g);
 
             return dr.metrics().getTotalAllocatedSize() < 0.9 * MAX_SIZE;

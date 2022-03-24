@@ -27,6 +27,7 @@ import org.apache.ignite.util.GridCommandHandlerCheckIndexesInlineSizeTest;
 import org.apache.ignite.util.GridCommandHandlerClusterByClassTest;
 import org.apache.ignite.util.GridCommandHandlerClusterByClassWithSSLTest;
 import org.apache.ignite.util.GridCommandHandlerConsistencyBinaryTest;
+import org.apache.ignite.util.GridCommandHandlerConsistencySensitiveTest;
 import org.apache.ignite.util.GridCommandHandlerConsistencyTest;
 import org.apache.ignite.util.GridCommandHandlerDefragmentationTest;
 import org.apache.ignite.util.GridCommandHandlerIndexForceRebuildTest;
@@ -93,6 +94,7 @@ import org.junit.runners.Suite;
 
     GridCommandHandlerConsistencyTest.class,
     GridCommandHandlerConsistencyBinaryTest.class,
+    GridCommandHandlerConsistencySensitiveTest.class,
 
     SystemViewCommandTest.class,
     MetricCommandTest.class,

@@ -2148,8 +2148,8 @@ class ClientImpl extends TcpDiscoveryImpl {
                 final int joinCnt0 = joinCnt;
 
                 executorService.schedule(() -> {
-                        queue.add(new JoinTimeout(joinCnt0));
-                    }, spi.joinTimeout, MILLISECONDS);
+                    queue.add(new JoinTimeout(joinCnt0));
+                }, spi.joinTimeout, MILLISECONDS);
             }
 
             sockReader.setSocket(joinRes.get1(), locNode.clientRouterNodeId());

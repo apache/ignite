@@ -55,7 +55,7 @@ public class BinaryReaderHandles {
                 return null;
 
             case MODE_SINGLE:
-                 return pos == singlePos ? (T)data : null;
+                return pos == singlePos ? (T)data : null;
 
             default:
                 assert mode == MODE_MULTIPLE;

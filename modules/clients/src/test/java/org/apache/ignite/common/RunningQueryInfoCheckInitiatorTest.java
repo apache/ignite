@@ -255,21 +255,21 @@ public class RunningQueryInfoCheckInitiatorTest extends JdbcThinAbstractSelfTest
         final AtomicBoolean end = new AtomicBoolean();
 
         IgniteInternalFuture f = GridTestUtils.runAsync(() -> {
-                try (Connection conn = DriverManager.getConnection(
-                    "jdbc:ignite:thin://127.0.0.1:" + clientPort(grid(0)) + "/?user=ignite&password=ignite")) {
-                    try (Statement stmt = conn.createStatement()) {
-                        stmt.execute("CREATE TABLE T (ID INT PRIMARY KEY, VAL INT)");
+            try (Connection conn = DriverManager.getConnection(
+                "jdbc:ignite:thin://127.0.0.1:" + clientPort(grid(0)) + "/?user=ignite&password=ignite")) {
+                try (Statement stmt = conn.createStatement()) {
+                    stmt.execute("CREATE TABLE T (ID INT PRIMARY KEY, VAL INT)");
 
-                        stmt.execute("SET STREAMING ON");
+                    stmt.execute("SET STREAMING ON");
 
-                        for (int i = 0; !end.get(); ++i)
-                            stmt.execute("INSERT INTO T VALUES(" + i + " , 0)");
-                    }
+                    for (int i = 0; !end.get(); ++i)
+                        stmt.execute("INSERT INTO T VALUES(" + i + " , 0)");
                 }
-                catch (SQLException e) {
-                    log.error("Unexpected exception", e);
-                }
-            });
+            }
+            catch (SQLException e) {
+                log.error("Unexpected exception", e);
+            }
+        });
 
         Consumer<String> initiatorChecker = initiatorId -> {
             assertTrue("Invalid initiator ID: " + initiatorId,

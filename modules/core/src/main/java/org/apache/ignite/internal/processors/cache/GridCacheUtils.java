@@ -1936,6 +1936,27 @@ public class GridCacheUtils {
     }
 
     /**
+     * Finds data region by name.
+     *
+     * @param dsCfg Data storage configuration.
+     * @param drName Data region name.
+     *
+     * @return Found data region.
+     */
+    @Nullable public static DataRegionConfiguration findDataRegion(DataStorageConfiguration dsCfg, String drName) {
+        if (dsCfg.getDataRegionConfigurations() == null || drName == null)
+            return dsCfg.getDefaultDataRegionConfiguration();
+
+        if (dsCfg.getDefaultDataRegionConfiguration().getName().equals(drName))
+            return dsCfg.getDefaultDataRegionConfiguration();
+
+        return Arrays.stream(dsCfg.getDataRegionConfigurations())
+            .filter(drCfg -> drCfg.getName().equals(drName))
+            .findFirst()
+            .orElse(null);
+    }
+
+    /**
      * @param nodes Nodes to check.
      * @param marshaller JdkMarshaller
      * @param clsLdr Class loader.
@@ -2063,6 +2084,34 @@ public class GridCacheUtils {
 
         for (DataRegionConfiguration regCfg : regCfgs) {
             if (regCfg.isPersistenceEnabled())
+                return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * @param cfg Ignite configuration.
+     * @return {@code true} if CDC enabled.
+     */
+    public static boolean isCdcEnabled(IgniteConfiguration cfg) {
+        DataStorageConfiguration dsCfg = cfg.getDataStorageConfiguration();
+
+        if (dsCfg == null)
+            return false;
+
+        DataRegionConfiguration dfltReg = dsCfg.getDefaultDataRegionConfiguration();
+
+        if (dfltReg != null && dfltReg.isCdcEnabled())
+            return true;
+
+        DataRegionConfiguration[] regCfgs = dsCfg.getDataRegionConfigurations();
+
+        if (regCfgs == null)
+            return false;
+
+        for (DataRegionConfiguration regCfg : regCfgs) {
+            if (regCfg.isCdcEnabled())
                 return true;
         }
 

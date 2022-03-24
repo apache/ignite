@@ -66,6 +66,7 @@ import org.apache.ignite.messaging.GridMessagingSelfTest;
 import org.apache.ignite.messaging.IgniteMessagingSendAsyncTest;
 import org.apache.ignite.messaging.IgniteMessagingWithClientTest;
 import org.apache.ignite.spi.GridSpiLocalHostInjectionTest;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTestSelfTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
@@ -88,6 +89,7 @@ import org.junit.runners.Suite;
     IgnitePlatformsTestSuite.class,
 
     GridSelfTest.class,
+    GridCommonAbstractTestSelfTest.class,
     ClusterGroupHostsSelfTest.class,
     IgniteMessagingWithClientTest.class,
     IgniteMessagingSendAsyncTest.class,

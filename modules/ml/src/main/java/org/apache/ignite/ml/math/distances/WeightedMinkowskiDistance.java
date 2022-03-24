@@ -29,75 +29,75 @@ import org.apache.ignite.ml.math.util.MatrixUtil;
  * Calculates the Weighted Minkowski distance between two points.
  */
 public class WeightedMinkowskiDistance implements DistanceMeasure {
-  /**
-   * Serializable version identifier.
-   */
-  private static final long serialVersionUID = 1771556549784040096L;
+    /**
+     * Serializable version identifier.
+     */
+    private static final long serialVersionUID = 1771556549784040096L;
 
-  /** */
-  private int p = 1;
+    /** */
+    private int p = 1;
 
-  /** */
-  private final double[] weights;
+    /** */
+    private final double[] weights;
 
-  /** */
-  @JsonIgnore
-  private final Vector internalWeights;
+    /** */
+    @JsonIgnore
+    private final Vector internalWeights;
 
-  /** */
-  @JsonCreator
-  public WeightedMinkowskiDistance(@JsonProperty("p")int p, @JsonProperty("weights")double[] weights) {
-    this.p = p;
-    this.weights = weights.clone();
-    internalWeights = VectorUtils.of(weights).copy().map(x -> Math.pow(Math.abs(x), p));
-  }
-
-  /**
-   * {@inheritDoc}
-   */
-  @Override public double compute(Vector a, Vector b)
-      throws CardinalityException {
-
-    return Math.pow(
-        MatrixUtil.localCopyOf(a).minus(b)
-            .map(x -> Math.pow(Math.abs(x), p))
-            .times(internalWeights)
-            .sum(),
-        1 / (double)p
-    );
-  }
-
-  /** Returns p-norm. */
-  public int getP() {
-    return p;
-  }
-
-  /** Returns weights. */
-  public double[] getWeights() { return weights.clone(); }
-
-  /**
-   * {@inheritDoc}
-   */
-  @Override public boolean equals(Object obj) {
-    if (this == obj) {
-      return true;
+    /** */
+    @JsonCreator
+    public WeightedMinkowskiDistance(@JsonProperty("p")int p, @JsonProperty("weights")double[] weights) {
+        this.p = p;
+        this.weights = weights.clone();
+        internalWeights = VectorUtils.of(weights).copy().map(x -> Math.pow(Math.abs(x), p));
     }
 
-    return obj != null && getClass() == obj.getClass();
-  }
+    /**
+     * {@inheritDoc}
+     */
+    @Override public double compute(Vector a, Vector b)
+        throws CardinalityException {
 
-  /**
-   * {@inheritDoc}
-   */
-  @Override public int hashCode() {
-    return getClass().hashCode();
-  }
+        return Math.pow(
+            MatrixUtil.localCopyOf(a).minus(b)
+                .map(x -> Math.pow(Math.abs(x), p))
+                .times(internalWeights)
+                .sum(),
+            1 / (double)p
+        );
+    }
 
-  /** {@inheritDoc} */
-  @Override public String toString() {
-    return "WeightedMinkowskiDistance{" +
-        "p=" + p +
-        ", weights=" + Arrays.toString(weights) +
-        '}';
-  }
+    /** Returns p-norm. */
+    public int getP() {
+        return p;
+    }
+
+    /** Returns weights. */
+    public double[] getWeights() { return weights.clone(); }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override public boolean equals(Object obj) {
+        if (this == obj) {
+            return true;
+        }
+
+        return obj != null && getClass() == obj.getClass();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override public int hashCode() {
+        return getClass().hashCode();
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return "WeightedMinkowskiDistance{" +
+            "p=" + p +
+            ", weights=" + Arrays.toString(weights) +
+            '}';
+    }
 }

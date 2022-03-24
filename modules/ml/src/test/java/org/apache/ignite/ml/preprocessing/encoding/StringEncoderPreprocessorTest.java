@@ -18,8 +18,11 @@
 package org.apache.ignite.ml.preprocessing.encoding;
 
 import java.io.Serializable;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
 import org.apache.ignite.ml.dataset.feature.extractor.impl.DummyVectorizer;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
@@ -44,31 +47,20 @@ public class StringEncoderPreprocessorTest {
 
         Vectorizer<Integer, Vector, Integer, Double> vectorizer = new DummyVectorizer<>(0, 1, 2);
 
+        Map map1 = new HashMap();
+
+        map1.put("1", 1);
+        map1.put("2", 0);
+
+        Map map2 = new HashMap();
+
+        map2.put("A", 1);
+        map2.put("B", 0);
+
         StringEncoderPreprocessor<Integer, Vector> preprocessor = new StringEncoderPreprocessor<Integer, Vector>(
-            new HashMap[] {
-                new HashMap() {
-                    {
-                        put("1", 1);
-                        put("2", 0);
-                    }
-                }, new HashMap() {
-                {
-                    put("Moscow", 0);
-                }
-            }, new HashMap() {
-                {
-                    put("A", 1);
-                    put("B", 0);
-                }
-            } },
+            new Map[] {map1, Collections.singletonMap("Moscow", 0), map2},
             vectorizer,
-            new HashSet() {
-                {
-                    add(0);
-                    add(1);
-                    add(2);
-                }
-            });
+            new HashSet(Arrays.asList(0, 1, 2)));
 
         double[][] postProcessedData = new double[][] {
             {1.0, 0.0, 1.0},

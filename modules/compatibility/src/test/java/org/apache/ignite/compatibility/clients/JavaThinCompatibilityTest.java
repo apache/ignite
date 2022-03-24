@@ -117,6 +117,13 @@ public class JavaThinCompatibilityTest extends AbstractClientCompatibilityTest {
         super.testOldClientToCurrentServer();
     }
 
+    /** {@inheritDoc} */
+    @Override public void testCurrentClientToOldServer() throws Exception {
+        Assume.assumeTrue("Java thin client exists only from 2.5.0 release", ver.compareTo(VER_2_5_0) >= 0);
+
+        super.testOldClientToCurrentServer();
+    }
+
     /** */
     private void testCacheConfiguration(
         boolean checkFieldsPrecessionAndScale,

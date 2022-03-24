@@ -42,14 +42,17 @@ import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.processors.cache.GridCacheAbstractSelfTest;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.GridStringBuilder;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 import org.locationtech.jts.geom.Geometry;
 import org.locationtech.jts.io.ParseException;
 import org.locationtech.jts.io.WKTReader;
@@ -57,7 +60,8 @@ import org.locationtech.jts.io.WKTReader;
 /**
  * Geo-indexing test.
  */
-public abstract class H2IndexingAbstractGeoSelfTest extends GridCacheAbstractSelfTest {
+@RunWith(Parameterized.class)
+public abstract class H2IndexingAbstractGeoSelfTest extends GridCommonAbstractTest {
     /** */
     private static final int CNT = 100;
 
@@ -76,6 +80,28 @@ public abstract class H2IndexingAbstractGeoSelfTest extends GridCacheAbstractSel
     /** Segmented index flag. */
     private final boolean segmented;
 
+    /** Node that creates a Geo-Spatial index. {@code true} for coordinator node, otherwise client node. */
+    @Parameterized.Parameter
+    public boolean crtNode;
+
+    /** Node that stars a query over a Geo-Spatial index. {@code true} for coordinator node, otherwise client node. */
+    @Parameterized.Parameter(1)
+    public boolean qryNode;
+
+    /** */
+    private IgniteEx cln;
+
+    /** */
+    private IgniteEx srv;
+
+    /** */
+    @Parameterized.Parameters(name = "crtNode={0}, qryNode={1}")
+    public static Collection<Object[]> parameters() {
+        List<Boolean> nodes = F.asList(false, true);
+
+        return GridTestUtils.cartesianProduct(nodes, nodes);
+    }
+
     /**
      * Constructor.
      *
@@ -86,8 +112,15 @@ public abstract class H2IndexingAbstractGeoSelfTest extends GridCacheAbstractSel
     }
 
     /** {@inheritDoc} */
-    @Override protected int gridCount() {
-        return 3;
+    @Override public void beforeTest() throws Exception {
+        srv = startGrids(3);
+
+        cln = startClientGrid();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void afterTest() {
+        stopAllGrids();
     }
 
     /** {@inheritDoc} */
@@ -105,7 +138,6 @@ public abstract class H2IndexingAbstractGeoSelfTest extends GridCacheAbstractSel
      * @return Cache.
      * @throws Exception If failed.
      */
-    @SuppressWarnings("unchecked")
     protected <K, V> IgniteCache<K, V> createCache(String name, boolean partitioned, Class<?> keyCls, Class<?> valCls)
         throws Exception {
         return createCache(name, partitioned, keyCls, valCls, false);
@@ -122,10 +154,11 @@ public abstract class H2IndexingAbstractGeoSelfTest extends GridCacheAbstractSel
      * @return Cache.
      * @throws Exception If failed.
      */
-    @SuppressWarnings("unchecked")
     protected <K, V> IgniteCache<K, V> createCache(String name, boolean partitioned, Class<?> keyCls, Class<?> valCls,
         boolean dynamicIdx) throws Exception {
         CacheConfiguration<K, V> ccfg = cacheConfig(name, partitioned, keyCls, valCls);
+
+        IgniteEx crtIgn = crtNode ? srv : cln;
 
         if (dynamicIdx) {
             Collection<QueryEntity> entities = ccfg.getQueryEntities();
@@ -138,21 +171,19 @@ public abstract class H2IndexingAbstractGeoSelfTest extends GridCacheAbstractSel
 
             entity.setIndexes(null);
 
-            grid(0).context().cache().dynamicStartSqlCache(ccfg).get();
-
-            IgniteCache<K, V> cache = grid(0).cache(name);
+            crtIgn.context().cache().dynamicStartSqlCache(ccfg).get();
 
             // Process indexes dynamically.
             for (QueryIndex idx : idxs) {
                 QueryEntity normalEntity = QueryUtils.normalizeQueryEntity(grid(0).context(), entity, ccfg.isSqlEscapeAll());
 
-                createDynamicIndex(cache, normalEntity, idx);
+                createDynamicIndex(crtIgn.cache(name), normalEntity, idx);
             }
-
-            return cache;
         }
         else
-            return grid(0).getOrCreateCache(ccfg);
+            crtIgn.getOrCreateCache(ccfg);
+
+        return (qryNode ? srv : cln).cache(name);
     }
 
     /**
@@ -161,9 +192,8 @@ public abstract class H2IndexingAbstractGeoSelfTest extends GridCacheAbstractSel
      * @param cache Cache.
      * @param entity Entity.
      * @param idx Index.
-     * @throws Exception If failed.
      */
-    private void createDynamicIndex(IgniteCache cache, QueryEntity entity, QueryIndex idx) throws Exception {
+    private void createDynamicIndex(IgniteCache<?, ?> cache, QueryEntity entity, QueryIndex idx) {
         boolean spatial = idx.getIndexType() == QueryIndexType.GEOSPATIAL;
 
         GridStringBuilder sb = new SB("CREATE ")
@@ -203,7 +233,7 @@ public abstract class H2IndexingAbstractGeoSelfTest extends GridCacheAbstractSel
      * @return Cache configuration.
      */
     private <K, V> CacheConfiguration<K, V> cacheConfig(@NotNull String name, boolean partitioned, Class<?> keyCls,
-        Class<?> valCls) throws Exception {
+        Class<?> valCls) {
         CacheConfiguration<K, V> ccfg = new CacheConfiguration<K, V>(name)
             .setName(name)
             .setCacheMode(partitioned ? CacheMode.PARTITIONED : CacheMode.REPLICATED)
@@ -223,7 +253,7 @@ public abstract class H2IndexingAbstractGeoSelfTest extends GridCacheAbstractSel
      * @param grid Node.
      * @param dynamic Dynamic flag.
      */
-    private static void destroy(IgniteCache cache, IgniteEx grid, boolean dynamic) {
+    private static void destroy(IgniteCache<?, ?> cache, IgniteEx grid, boolean dynamic) {
         if (!dynamic)
             cache.destroy();
         else
@@ -244,7 +274,7 @@ public abstract class H2IndexingAbstractGeoSelfTest extends GridCacheAbstractSel
                 cache.put(i, r.read("POINT(" + i + " " + i + ")"));
 
             String plan = cache.query(new SqlFieldsQuery("explain select _key from Geometry where _val && ?")
-                .setArgs(r.read("POLYGON((5 70, 5 80, 30 80, 30 70, 5 70))")).setLocal(true))
+                .setArgs(r.read("POLYGON((5 70, 5 80, 30 80, 30 70, 5 70))")))
                 .getAll().get(0).get(0).toString().toLowerCase();
 
             assertTrue("__ explain: " + plan, plan.contains("_val_idx"));
@@ -373,7 +403,6 @@ public abstract class H2IndexingAbstractGeoSelfTest extends GridCacheAbstractSel
      * @param dynamic Whether index should be created dynamically.
      * @throws Exception If failed.
      */
-    @SuppressWarnings("unchecked")
     private void checkGeoMultithreaded(boolean dynamic) throws Exception {
         final IgniteCache<Integer, EnemyCamp> cache1 =
             createCache("camp", true, Integer.class, EnemyCamp.class, dynamic);
@@ -427,7 +456,7 @@ public abstract class H2IndexingAbstractGeoSelfTest extends GridCacheAbstractSel
             }, Runtime.getRuntime().availableProcessors(), "put-thread");
 
             IgniteInternalFuture<?> qryFut = GridTestUtils.runMultiThreadedAsync(new Callable<Void>() {
-                @Override public Void call() throws Exception {
+                @Override public Void call() {
                     WKTReader r = new WKTReader();
 
                     ThreadLocalRandom rnd = ThreadLocalRandom.current();
@@ -583,7 +612,7 @@ public abstract class H2IndexingAbstractGeoSelfTest extends GridCacheAbstractSel
         int expectedEnemies = 0;
 
         for (Cache.Entry<Integer, Enemy> e : c1) {
-            final Integer campID = e.getValue().campId;
+            final int campID = e.getValue().campId;
 
             if (30 <= campID && campID < ENEMYCAMP_SAMPLES_COUNT) {
                 final EnemyCamp camp = c2.get(campID);
@@ -593,10 +622,10 @@ public abstract class H2IndexingAbstractGeoSelfTest extends GridCacheAbstractSel
             }
         }
 
-        final SqlFieldsQuery query = new SqlFieldsQuery("select e._val, c._val from \"enemy\".Enemy e, " +
+        final SqlFieldsQuery qry = new SqlFieldsQuery("select e._val, c._val from \"enemy\".Enemy e, " +
             "\"camp\".EnemyCamp c where e.campId = c._key and c.coords && ?").setArgs(lethalArea);
 
-        List<List<?>> result = c1.query(query.setDistributedJoins(true)).getAll();
+        List<List<?>> result = c1.query(qry.setDistributedJoins(true)).getAll();
 
         assertEquals(expectedEnemies, result.size());
     }
@@ -629,11 +658,11 @@ public abstract class H2IndexingAbstractGeoSelfTest extends GridCacheAbstractSel
     protected static class EnemyCamp implements Serializable {
         /** */
         @QuerySqlField(index = true)
-        Geometry coords;
+        final Geometry coords;
 
         /** */
         @QuerySqlField
-        private String name;
+        private final String name;
 
         /**
          * @param coords Coordinates.

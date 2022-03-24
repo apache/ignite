@@ -23,6 +23,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.metastorage.persistence.ReadWriteMetaStorageMock;
 import org.apache.ignite.internal.processors.subscription.GridInternalSubscriptionProcessor;
+import org.apache.ignite.testframework.junits.GridTestKernalContext;
 import org.junit.Test;
 import org.mockito.Mockito;
 
@@ -60,7 +61,7 @@ public class StatisticsStorageRestartTest extends StatisticsAbstractTest {
         metastorage = new ReadWriteMetaStorageMock();
         statStore = new IgniteStatisticsPersistenceStoreImpl(
             subscriptionProcessor,
-            new IgniteCacheDatabaseSharedManager(){},
+            new IgniteCacheDatabaseSharedManager(new GridTestKernalContext(log)){},
             cls -> log);
     }
 
@@ -90,7 +91,7 @@ public class StatisticsStorageRestartTest extends StatisticsAbstractTest {
         assertEquals(stat2_3, statStore.getLocalPartitionStatistics(k2, 3));
 
         IgniteStatisticsPersistenceStoreImpl statStore2 = new IgniteStatisticsPersistenceStoreImpl(subscriptionProcessor,
-            new IgniteCacheDatabaseSharedManager(){}, cls -> log);
+            new IgniteCacheDatabaseSharedManager(new GridTestKernalContext(log)){}, cls -> log);
 
         statStore2.onReadyForReadWrite(metastorage);
 
@@ -128,7 +129,7 @@ public class StatisticsStorageRestartTest extends StatisticsAbstractTest {
         metastorage.write(outerStatKey, outerStatValue);
 
         IgniteStatisticsPersistenceStoreImpl statStore2 = new IgniteStatisticsPersistenceStoreImpl(subscriptionProcessor,
-            new IgniteCacheDatabaseSharedManager(){}, cls -> log);
+            new IgniteCacheDatabaseSharedManager(new GridTestKernalContext(log)){}, cls -> log);
 
         statStore2.onReadyForReadWrite(metastorage);
 
