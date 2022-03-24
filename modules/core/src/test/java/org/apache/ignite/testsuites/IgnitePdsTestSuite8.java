@@ -20,6 +20,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import org.apache.ignite.cache.CircledRebalanceTest;
+import org.apache.ignite.cache.store.ActivationOnExpirationTimeoutTest;
 import org.apache.ignite.internal.processors.cache.distributed.rebalancing.CacheRebalanceWithRemovedWalSegment;
 import org.apache.ignite.internal.processors.cache.distributed.rebalancing.SupplyPartitionHistoricallyWithReorderedUpdates;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsCacheEntriesExpirationTest;
@@ -49,7 +50,6 @@ import org.apache.ignite.internal.processors.cache.warmup.LoadAllWarmUpStrategyS
 import org.apache.ignite.internal.processors.cache.warmup.WarmUpSelfTest;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.DynamicSuite;
-import org.apache.ignite.cache.store.ActivationOnExpirationTimeoutTest;
 import org.junit.runner.RunWith;
 
 /** */
