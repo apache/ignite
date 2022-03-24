@@ -1,0 +1,163 @@
+# name: test/sql/types/interval/test_interval.test
+# description: Test basic interval usage
+# group: [interval]
+
+statement ok
+PRAGMA enable_verification
+
+# 2 years
+query T
+SELECT CAST('2' AS INTERVAL YEAR)
+----
+P2Y
+
+query T
+SELECT INTERVAL '2' YEARS::VARCHAR
+----
++2
+
+query T
+SELECT INTERVAL '90' DAY;
+----
+PT2160H
+
+query T
+SELECT INTERVAL '90' YEAR;
+----
+P90Y
+
+query T
+SELECT INTERVAL '90' MONTH;
+----
+P7Y6M
+
+query T
+SELECT INTERVAL '90' SECOND;
+----
+PT1M30S
+
+query T
+SELECT INTERVAL '90' MINUTE;
+----
+PT1H30M
+
+query T
+SELECT INTERVAL '90' HOUR;
+----
+PT90H
+
+# we can add together intervals
+query T
+SELECT INTERVAL '2' MONTH + INTERVAL '1' MONTH;
+----
+P3M
+
+# or subtract them
+query T
+SELECT INTERVAL '2' MONTH - INTERVAL '1'  MONTH;
+----
+P1M
+
+# but not multiply
+statement error
+SELECT INTERVAL '2' MONTH * INTERVAL '1' MONTH;
+
+# we can, however, multiply/divide intervals by integers
+query T
+SELECT INTERVAL '2-2' YEAR TO MONTH  * 2;
+----
+P4Y4M
+
+# multiplication can be done both ways
+query T
+SELECT 2 * INTERVAL '2-2' YEAR TO MONTH;
+----
+P4Y4M
+
+query T
+SELECT INTERVAL '2-2' YEAR TO MONTH / 2;
+----
+P1Y1M
+
+# division cannot!
+statement error
+SELECT 2 / INTERVAL '2-2' YEAR TO MONTH;
+
+# division by zero
+statement error
+SELECT INTERVAL '2-2' YEAR TO MONTH / 0;
+
+# invalid intervals
+# empty interval
+statement error
+SELECT INTERVAL '' DAYS;
+
+statement error
+SELECT INTERVAL '   	' DAYS;
+
+# no number
+statement error
+SELECT INTERVAL 'years' YEARS;
+
+statement error
+SELECT INTERVAL '-years' YEARS;
+
+# gibberish
+statement error
+SELECT INTERVAL 'aergjaerghiuaehrgiuhaerg' DAYS;
+
+# overflow in year
+statement error
+SELECT INTERVAL '100000000000000000' YEARS(18);
+
+# overflow in months
+statement error
+SELECT INTERVAL '100000000000000000' MONTHS(18);
+
+statement error
+SELECT INTERVAL '2147483648' MONTHS(10);
+
+query T
+SELECT INTERVAL '2147483647' MONTHS(10);
+----
+P178956970Y7M
+
+query T
+SELECT INTERVAL '2147483647' MONTHS(10) - INTERVAL '2147483647' MONTHS(10);
+----
+P0D
+
+# overflow in days
+statement error
+SELECT INTERVAL '100000000000000000' DAYS(18);
+
+statement error
+SELECT INTERVAL '100000000000000000' HOURS(18);
+
+query T
+SELECT INTERVAL '2147483647' HOURS(10);
+----
+PT2147483647H
+
+query T
+SELECT INTERVAL '-2147483647.999' SECONDS(10);
+----
+PT-596523H-14M-7.999S
+
+query T
+SELECT INTERVAL '2147483647.999' SECONDS(10);
+----
+PT596523H14M7.999S
+
+statement error
+SELECT INTERVAL '2147483648.999' SECONDS(10);
+
+statement error
+SELECT INTERVAL '-2147483648.999' SECONDS(10);
+
+# need a number here
+statement error
+SELECT INTERVAL 'aa' DAY;
+
+statement error
+SELECT INTERVAL '100 months' DAY;

@@ -145,6 +145,6 @@ class QueryHistoryTracker {
         if (histSz <= 0)
             return Collections.emptyMap();
 
-        return qryHist;
+        return Collections.unmodifiableMap(qryHist);
     }
 }

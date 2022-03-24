@@ -1,0 +1,92 @@
+# name: test/sql/function/timestamp/test_extract.test
+# description: Extract timestamp function
+# group: [timestamp]
+
+statement ok
+CREATE TABLE timestamps(id INTEGER, i TIMESTAMP)
+
+statement ok
+INSERT INTO timestamps VALUES (0, TIMESTAMP '1993-08-14 08:22:33'), (1, NULL)
+
+# extract various parts of the timestamp
+query I
+SELECT EXTRACT(year FROM i) FROM timestamps ORDER BY id
+----
+1993
+NULL
+
+query I
+SELECT EXTRACT(month FROM i) FROM timestamps ORDER BY id
+----
+8
+NULL
+
+query I
+SELECT EXTRACT(day FROM i) FROM timestamps ORDER BY id
+----
+14
+NULL
+
+query I
+SELECT EXTRACT(decade FROM i) FROM timestamps ORDER BY id
+----
+199
+NULL
+
+query I
+SELECT EXTRACT(century FROM i) FROM timestamps ORDER BY id
+----
+20
+NULL
+
+# day of the week (Sunday = 1, Saturday = 7)
+query I
+SELECT EXTRACT(DOW FROM i) FROM timestamps ORDER BY id
+----
+7
+NULL
+
+# day of the year (1 - 365/366)
+query I
+SELECT EXTRACT(DOY FROM i) FROM timestamps ORDER BY id
+----
+226
+NULL
+
+query I
+SELECT EXTRACT(epoch FROM i) FROM timestamps ORDER BY id
+----
+745316553
+NULL
+
+# isodow (Monday = 1, Sunday = 7)
+query I
+SELECT EXTRACT(ISODOW FROM i) FROM timestamps ORDER BY id
+----
+6
+NULL
+
+# millenium (change of millenium is January 1, X001)
+query I
+SELECT EXTRACT(millennium FROM i) FROM timestamps ORDER BY id
+----
+2
+NULL
+
+query I
+SELECT EXTRACT(second FROM i) FROM timestamps ORDER BY id
+----
+33
+NULL
+
+query I
+SELECT EXTRACT(minute FROM i) FROM timestamps ORDER BY id
+----
+22
+NULL
+
+query I
+SELECT EXTRACT(hour FROM i) FROM timestamps ORDER BY id
+----
+8
+NULL

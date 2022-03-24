@@ -265,6 +265,10 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
     private BooleanProperty keepBinary = new BooleanProperty("keepBinary",
         "Whether to keep binary objects in binary form.", false, false);
 
+    /** Use specified SQL query engine for a connection. */
+    private final StringProperty qryEngine = new StringProperty("queryEngine",
+        "Use specified SQL query engine for a connection.", null, null, false, null);
+
     /** Properties array. */
     private final ConnectionProperty[] propsArray = {
         distributedJoins, enforceJoinOrder, collocated, replicatedOnly, autoCloseServerCursor,
@@ -283,7 +287,8 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
         qryTimeout,
         connTimeout,
         disabledFeatures,
-        keepBinary
+        keepBinary,
+        qryEngine
     };
 
     /** {@inheritDoc} */
@@ -690,6 +695,16 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
     /** {@inheritDoc} */
     @Override public void setKeepBinary(boolean keepBinary) {
         this.keepBinary.setValue(keepBinary);
+    }
+
+    /** {@inheritDoc} */
+    @Override public String getQueryEngine() {
+        return qryEngine.value();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void setQueryEngine(String qryEngine) {
+        this.qryEngine.setValue(qryEngine);
     }
 
     /**

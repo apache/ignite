@@ -23,7 +23,7 @@ import java.util.Iterator;
 import java.util.List;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.query.QueryCursor;
-import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
+import org.apache.ignite.internal.processors.cache.query.QueryCursorEx;
 import org.apache.ignite.internal.processors.odbc.SqlListenerDataTypes;
 import org.apache.ignite.internal.processors.odbc.SqlListenerUtils;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
@@ -207,7 +207,7 @@ public class OdbcUtils {
      * @return Number of table rows affected, if the query is DML, and -1 otherwise.
      */
     public static long rowsAffected(QueryCursor<List<?>> qryCur) {
-        QueryCursorImpl<List<?>> qryCur0 = (QueryCursorImpl<List<?>>)qryCur;
+        QueryCursorEx<List<?>> qryCur0 = (QueryCursorEx<List<?>>)qryCur;
 
         if (qryCur0.isQuery())
             return -1;

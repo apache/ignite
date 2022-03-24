@@ -108,6 +108,7 @@ public final class CommandLineStartup {
         String h2TreeCls = "org.apache.ignite.internal.processors.query.h2.database.H2Tree";
         String zkDiscoImpl = "org.apache.ignite.spi.discovery.zk.internal.ZookeeperDiscoveryImpl";
         String zkTcpDiscoIpFinder = "org.apache.ignite.spi.discovery.tcp.ipfinder.zk.TcpDiscoveryZookeeperIpFinder";
+        String calciteQryProc = "org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor";
 
         try {
             if (U.inClassPath(h2TreeCls))
@@ -117,6 +118,9 @@ public final class CommandLineStartup {
                 PROPS_CLS.add(Class.forName(zkDiscoImpl));
                 PROPS_CLS.add(Class.forName(zkTcpDiscoIpFinder));
             }
+
+            if (U.inClassPath(calciteQryProc))
+                PROPS_CLS.add(Class.forName(calciteQryProc));
         }
         catch (ClassNotFoundException ignored) {
             // No-op.

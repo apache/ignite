@@ -1,0 +1,94 @@
+# name: test/sql/subquery/exists/test_correlated_exists.test
+# description: Test correlated exists
+# group: [exists]
+# Ignore https://issues.apache.org/jira/browse/IGNITE-15586
+# Ignore https://issues.apache.org/jira/browse/IGNITE-15587
+# Ignore https://issues.apache.org/jira/browse/IGNITE-15588
+# Ignore https://issues.apache.org/jira/browse/IGNITE-15589
+# Ignore https://issues.apache.org/jira/browse/IGNITE-15583
+
+statement ok
+PRAGMA enable_verification
+
+statement ok
+CREATE TABLE integers(i INTEGER)
+
+statement ok
+INSERT INTO integers VALUES (1), (2), (3), (NULL)
+
+# correlated EXISTS
+query IT
+SELECT i, EXISTS(SELECT i FROM integers WHERE i1.i>i OR i1.i IS NULL) FROM integers i1 ORDER BY i NULLS FIRST;
+----
+NULL	true
+1	false
+2	true
+3	true
+
+# correlated EXISTS with aggregations
+query T
+SELECT EXISTS(SELECT i FROM integers WHERE i>MIN(i1.i)) FROM integers i1;
+----
+true
+
+query IR
+SELECT i, SUM(i) FROM integers i1 GROUP BY i HAVING EXISTS(SELECT i FROM integers WHERE i>MIN(i1.i)) ORDER BY i;
+----
+1	1.000000
+2	2.000000
+
+query T
+SELECT EXISTS(SELECT i+MIN(i1.i) FROM integers WHERE i=3) FROM integers i1;
+----
+true
+
+query T
+SELECT EXISTS(SELECT i+MIN(i1.i) FROM integers WHERE i=5) FROM integers i1;
+----
+false
+
+# GROUP BY correlated exists
+query TI
+SELECT EXISTS(SELECT i FROM integers WHERE i=i1.i) AS g, COUNT(*) FROM integers i1 GROUP BY g ORDER BY g;
+----
+false	1
+true	3
+
+# SUM on exists
+query R
+SELECT (SELECT COVAR_POP(i2.i, i1.i) FROM integers i2) FROM integers i1 ORDER BY 1 NULLS FIRST
+----
+NULL
+0.000000
+0.000000
+0.000000
+
+# aggregates with multiple parameters
+query R
+SELECT (SELECT COVAR_POP(i1.i, i2.i) FROM integers i2) FROM integers i1 ORDER BY 1 NULLS FIRST
+----
+NULL
+0.000000
+0.000000
+0.000000
+
+query R
+SELECT (SELECT COVAR_POP(i1.i+i2.i, i1.i+i2.i) FROM integers i2) FROM integers i1 ORDER BY 1 NULLS FIRST
+----
+NULL
+0.666667
+0.666667
+0.666667
+
+query R
+SELECT (SELECT COVAR_POP(i2.i, i2.i) FROM integers i2) FROM integers i1 ORDER BY 1;
+----
+0.666667
+0.666667
+0.666667
+0.666667
+
+query R
+SELECT (SELECT COVAR_POP(i1.i, i1.i) FROM integers i2 LIMIT 1) FROM integers i1 ORDER BY 1;
+----
+0.666667

@@ -47,6 +47,26 @@ public class SqlKillQueryCommand implements SqlCommand {
     /** Async flag. */
     private boolean async;
 
+    /** */
+    public SqlKillQueryCommand() {
+        // No-op;
+    }
+
+    /**
+     * @param nodeId Node id.
+     * @param nodeQryId Local query id.
+     * @param async Async flag.
+     */
+    public SqlKillQueryCommand(
+        UUID nodeId,
+        long nodeQryId,
+        boolean async
+    ) {
+        this.nodeId = nodeId;
+        this.nodeQryId = nodeQryId;
+        this.async = async;
+    }
+
     /** {@inheritDoc} */
     @Override public SqlCommand parse(SqlLexer lex) {
         async = SqlParserUtils.skipIfMatchesOptionalKeyword(lex, ASYNC);

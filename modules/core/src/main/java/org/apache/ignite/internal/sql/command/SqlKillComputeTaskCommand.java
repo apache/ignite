@@ -36,6 +36,20 @@ public class SqlKillComputeTaskCommand implements SqlCommand {
     /** Session id. */
     private IgniteUuid sesId;
 
+    /**
+     * Default constructor.
+     */
+    public SqlKillComputeTaskCommand() {
+        // No-op.
+    }
+
+    /**
+     * @param sesId Session id.
+     */
+    public SqlKillComputeTaskCommand(IgniteUuid sesId) {
+        this.sesId = sesId;
+    }
+
     /** {@inheritDoc} */
     @Override public SqlCommand parse(SqlLexer lex) {
         if (lex.shift()) {

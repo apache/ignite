@@ -65,7 +65,7 @@ public class VisorQueryCancelTask extends VisorOneNodeTask<VisorQueryCancelTaskA
 
         /** {@inheritDoc} */
         @Override protected Void run(@Nullable VisorQueryCancelTaskArg arg) throws IgniteException {
-            ignite.context().query().cancelQueries(Collections.singleton(arg.getQueryId()));
+            ignite.context().query().cancelLocalQueries(Collections.singleton(arg.getQueryId()));
 
             return null;
         }

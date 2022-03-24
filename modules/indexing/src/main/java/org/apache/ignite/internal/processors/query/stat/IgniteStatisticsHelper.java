@@ -30,13 +30,18 @@ import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.h2.SchemaManager;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.processors.query.stat.config.StatisticsColumnConfiguration;
 import org.apache.ignite.internal.processors.query.stat.config.StatisticsObjectConfiguration;
 import org.apache.ignite.internal.processors.query.stat.messages.StatisticsKeyMessage;
+import org.apache.ignite.internal.processors.query.stat.messages.StatisticsRequest;
 import org.apache.ignite.internal.util.typedef.F;
 import org.h2.table.Column;
 import org.jetbrains.annotations.Nullable;
@@ -65,6 +70,61 @@ public class IgniteStatisticsHelper {
     ) {
         this.schemaMgr = schemaMgr;
         this.log = logSupplier.apply(IgniteStatisticsHelper.class);
+    }
+
+    /**
+     * Get cache group context by specified statistics key.
+     *
+     * @param key Statistics key to get context by.
+     * @return Cache group context for the given key.
+     * @throws IgniteCheckedException If unable to find table by specified key.
+     */
+    public CacheGroupContext groupContext(StatisticsKey key) throws IgniteCheckedException {
+        GridH2Table tbl = schemaMgr.dataTable(key.schema(), key.obj());
+
+        if (tbl == null)
+            throw new IgniteCheckedException(String.format("Can't find object %s.%s", key.schema(), key.obj()));
+
+        return tbl.cacheContext().group();
+    }
+
+    /**
+     * Generate local statistics requests.
+     *
+     * @param target Statistics target to request local statistics by.
+     * @param cfg Statistics configuration.
+     * @return Collection of statistics request.
+     */
+    public List<StatisticsAddressedRequest> generateGatheringRequests(
+        StatisticsTarget target,
+        StatisticsObjectConfiguration cfg
+    ) throws IgniteCheckedException {
+        List<String> cols = (target.columns() == null) ? null : Arrays.asList(target.columns());
+        StatisticsKeyMessage keyMsg = new StatisticsKeyMessage(target.schema(), target.obj(), cols);
+
+        Map<String, Long> versions = cfg.columns().entrySet().stream()
+            .collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().version()));
+        CacheGroupContext grpCtx = groupContext(target.key());
+        AffinityTopologyVersion topVer = grpCtx.affinity().lastVersion();
+
+        StatisticsRequest req = new StatisticsRequest(UUID.randomUUID(), keyMsg, StatisticsType.LOCAL, topVer, versions);
+
+        List<List<ClusterNode>> assignments = grpCtx.affinity().assignments(topVer);
+        Set<UUID> nodes = new HashSet<>();
+
+        for (List<ClusterNode> partNodes : assignments) {
+            if (F.isEmpty(partNodes))
+                continue;
+
+            nodes.add(partNodes.get(0).id());
+        }
+
+        List<StatisticsAddressedRequest> res = new ArrayList<>(nodes.size());
+
+        for (UUID nodeId : nodes)
+            res.add(new StatisticsAddressedRequest(req, nodeId));
+
+        return res;
     }
 
     /**
