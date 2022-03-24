@@ -97,6 +97,10 @@ class DataLoader:
         return (max(map(lambda _app: _app.get_finish_time(), self.apps)) -
                 min(map(lambda _app: _app.get_init_time(), self.apps))).total_seconds()
 
+    def free(self):
+        for _app in self.apps:
+            _app.free()
+
     def get_summary_report(self):
         assert len(self.apps) > 0
         heap_values = list(map(lambda _app: int(_app.extract_result("PEAK_HEAP_MEMORY")), self.apps))

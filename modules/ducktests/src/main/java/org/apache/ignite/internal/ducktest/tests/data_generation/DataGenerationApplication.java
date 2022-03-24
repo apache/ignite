@@ -41,8 +41,6 @@ import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
-import org.apache.ignite.configuration.DataStorageConfiguration;
-import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.ducktest.utils.IgniteAwareApplication;
 
 /**
@@ -84,7 +82,7 @@ public class DataGenerationApplication extends IgniteAwareApplication {
             throw new RuntimeException("preloadersToken should be passed if preloaders > 1");
 
         if (cacheCnt == null && cacheNames == null)
-            throw new RuntimeException("either cacheCount or cacheNames should be passed");;
+            throw new RuntimeException("either cacheCount or cacheNames should be passed");
 
         markInitialized();
 
