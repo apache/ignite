@@ -60,6 +60,7 @@ import org.apache.ignite.platform.model.User;
 import org.apache.ignite.platform.model.Value;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.services.Service;
+import org.apache.ignite.services.ServiceConfiguration;
 import org.apache.ignite.services.ServiceContext;
 import org.apache.ignite.spi.metric.HistogramMetric;
 import org.apache.ignite.spi.metric.Metric;
@@ -112,7 +113,14 @@ public class PlatformDeployServiceTask extends ComputeTaskAdapter<String, Object
 
         /** {@inheritDoc} */
         @Override public Object execute() throws IgniteException {
-            ignite.services().deployNodeSingleton(serviceName, new PlatformTestService());
+            ServiceConfiguration svcCfg = new ServiceConfiguration();
+
+            svcCfg.setStatisticsEnabled(true);
+            svcCfg.setName(serviceName);
+            svcCfg.setMaxPerNodeCount(1);
+            svcCfg.setService(new PlatformTestService());
+
+            ignite.services().deploy(svcCfg);
 
             return null;
         }
@@ -702,7 +710,7 @@ public class PlatformDeployServiceTask extends ComputeTaskAdapter<String, Object
         private static class CountServiceMetricsTask extends ComputeTaskSplitAdapter<IgnitePair<String>, Integer> {
             /** {@inheritDoc} */
             @Override public Integer reduce(List<ComputeJobResult> results) throws IgniteException {
-                long cnt = 0;
+                int cnt = 0;
 
                 for (ComputeJobResult res : results) {
                     if (res.isCancelled()) {
@@ -718,10 +726,10 @@ public class PlatformDeployServiceTask extends ComputeTaskAdapter<String, Object
                     if (res.getData() == null)
                         continue;
 
-                    cnt += (Long)res.getData();
+                    cnt += (int)res.getData();
                 }
 
-                return (int)cnt;
+                return cnt;
             }
 
             /** {@inheritDoc} */
