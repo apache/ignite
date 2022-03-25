@@ -448,12 +448,13 @@ public interface IgniteMXBean {
      *
      * @param host Host name or IP address of the node to ping.
      * @return Whether or not node is alive.
+     * @throws JMException When ping failed.
      */
     @MXBeanDescription("Pings node with given host name to see if it is alive. " +
         "Returns whether or not node is alive.")
     public boolean pingNodeByAddress(
         @MXBeanParameter(name = "host", description = "Host name or IP address of the node to ping.") String host
-    );
+    ) throws JMException;
 
     /**
      * Gets a formatted instance of configured discovery SPI implementation.

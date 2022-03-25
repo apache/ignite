@@ -273,7 +273,7 @@ public class IgniteMXBeanImpl implements IgniteMXBean {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean pingNodeByAddress(String host) {
+    @Override public boolean pingNodeByAddress(String host) throws JMException {
         ctx.gateway().readLock();
 
         try {
@@ -284,7 +284,7 @@ public class IgniteMXBeanImpl implements IgniteMXBean {
             return false;
         }
         catch (IgniteCheckedException e) {
-            throw U.convertException(e);
+            throw U.jmException(U.convertException(e));
         }
         finally {
             ctx.gateway().readUnlock();
