@@ -24,33 +24,33 @@ import java.util.Map;
  * Metadata for encode category.
  */
 public class TargetEncodingMeta {
-  /** */
-  private Double globalMean;
+    /** */
+    private Double globalMean;
 
-  /** */
-  private Map<String, Double> categoryMean;
+    /** */
+    private Map<String, Double> categoryMean;
 
-  /** */
-  public TargetEncodingMeta withGlobalMean(Double globalMean) {
-    this.globalMean = globalMean;
+    /** */
+    public TargetEncodingMeta withGlobalMean(Double globalMean) {
+        this.globalMean = globalMean;
 
-    return this;
-  }
+        return this;
+    }
 
-  /** */
-  public TargetEncodingMeta withCategoryMean(Map<String, Double> categoryMean) {
-    this.categoryMean = categoryMean;
+    /** */
+    public TargetEncodingMeta withCategoryMean(Map<String, Double> categoryMean) {
+        this.categoryMean = categoryMean;
 
-    return this;
-  }
+        return this;
+    }
 
-  /** */
-  public Double getGlobalMean() {
-    return globalMean;
-  }
+    /** */
+    public Double getGlobalMean() {
+        return globalMean;
+    }
 
-  /** */
-  public Map<String, Double> getCategoryMean() {
-    return Collections.unmodifiableMap(categoryMean);
-  }
+    /** */
+    public Map<String, Double> getCategoryMean() {
+        return Collections.unmodifiableMap(categoryMean);
+    }
 }

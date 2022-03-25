@@ -122,7 +122,7 @@ The latest Apache Ignite Machine Learning jar is always uploaded to the Maven re
 +
 [source, shell]
 ----
-mvn clean install -DskipTests -Dmaven.javadoc.skip=true
+./mvnw clean install -DskipTests -Dmaven.javadoc.skip=true
 ----
 
 4. Locate the Machine Learning jar in your local Maven repository under the path `{user_dir}/.m2/repository/org/apache/ignite/ignite-ml/{ignite-version}/ignite-ml-{ignite-version}.jar`.

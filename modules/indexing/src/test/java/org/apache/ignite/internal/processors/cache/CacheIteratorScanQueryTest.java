@@ -119,7 +119,7 @@ public class CacheIteratorScanQueryTest extends GridCommonAbstractTest {
             assertEquals(100_000, res.size());
 
             Collections.sort(res, (e1, e2) -> {
-                    return e1.getKey().compareTo(e2.getKey());
+                return e1.getKey().compareTo(e2.getKey());
             });
 
             int exp = 0;

@@ -38,6 +38,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
+
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSystemProperties;
@@ -265,15 +266,15 @@ public class QueryUtils {
      * @param cfg Cache config.
      * @return Normalized query entities.
      */
-    public static Collection<QueryEntity> normalizeQueryEntities(Collection<QueryEntity> entities,
-        CacheConfiguration<?, ?> cfg) {
+    public static Collection<QueryEntity> normalizeQueryEntities(GridKernalContext ctx,
+        Collection<QueryEntity> entities, CacheConfiguration<?, ?> cfg) {
         Collection<QueryEntity> normalEntities = new ArrayList<>(entities.size());
 
         for (QueryEntity entity : entities) {
             if (!F.isEmpty(entity.getNotNullFields()))
                 checkNotNullAllowed(cfg);
 
-            normalEntities.add(normalizeQueryEntity(entity, cfg.isSqlEscapeAll()));
+            normalEntities.add(normalizeQueryEntity(ctx, entity, cfg.isSqlEscapeAll()));
         }
 
         return normalEntities;
@@ -287,7 +288,7 @@ public class QueryUtils {
      * @param escape Escape flag taken form configuration.
      * @return Normalized query entity.
      */
-    public static QueryEntity normalizeQueryEntity(QueryEntity entity, boolean escape) {
+    public static QueryEntity normalizeQueryEntity(GridKernalContext ctx, QueryEntity entity, boolean escape) {
         if (escape) {
             String tblName = tableName(entity);
 
@@ -315,7 +316,7 @@ public class QueryUtils {
             return entity;
         }
 
-        QueryEntity normalEntity = entity instanceof QueryEntityEx ? new QueryEntityEx() : new QueryEntity();
+        QueryEntityEx normalEntity = new QueryEntityEx();
 
         // Propagate plain properties.
         normalEntity.setKeyType(entity.getKeyType());
@@ -328,6 +329,11 @@ public class QueryUtils {
         normalEntity.setDefaultFieldValues(entity.getDefaultFieldValues());
         normalEntity.setFieldsPrecision(entity.getFieldsPrecision());
         normalEntity.setFieldsScale(entity.getFieldsScale());
+
+        if (entity instanceof QueryEntityEx) {
+            normalEntity.setPrimaryKeyInlineSize(((QueryEntityEx)entity).getPrimaryKeyInlineSize());
+            normalEntity.setAffinityKeyInlineSize(((QueryEntityEx)entity).getAffinityKeyInlineSize());
+        }
 
         // Normalize table name.
         String normalTblName = entity.getTableName();
@@ -375,6 +381,11 @@ public class QueryUtils {
         normalEntity.setIndexes(normalIdxs);
 
         validateQueryEntity(normalEntity);
+
+        if (!ctx.recoveryMode())
+            normalEntity.fillAbsentPKsWithDefaults(true);
+        else if (entity instanceof QueryEntityEx)
+            normalEntity.fillAbsentPKsWithDefaults(((QueryEntityEx)entity).fillAbsentPKsWithDefaults());
 
         return normalEntity;
     }
@@ -472,6 +483,9 @@ public class QueryUtils {
         desc.schemaName(schemaName);
 
         desc.aliases(qryEntity.getAliases());
+
+        if (qryEntity instanceof QueryEntityEx)
+            desc.setFillAbsentPKsWithDefaults(((QueryEntityEx)qryEntity).fillAbsentPKsWithDefaults());
 
         // Key and value classes still can be available if they are primitive or JDK part.
         // We need that to set correct types for _key and _val columns.
@@ -598,6 +612,13 @@ public class QueryUtils {
 
         desc.typeId(valTypeId);
 
+        if (qryEntity instanceof QueryEntityEx) {
+            QueryEntityEx qe = (QueryEntityEx)qryEntity;
+
+            desc.primaryKeyInlineSize(qe.getPrimaryKeyInlineSize() != null ? qe.getPrimaryKeyInlineSize() : -1);
+            desc.affinityFieldInlineSize(qe.getAffinityKeyInlineSize() != null ? qe.getAffinityKeyInlineSize() : -1);
+        }
+
         return new QueryTypeCandidate(typeId, altTypeId, desc);
     }
 
@@ -662,6 +683,9 @@ public class QueryUtils {
 
         if (!isKeyClsSqlType && qryEntity instanceof QueryEntityEx && ((QueryEntityEx)qryEntity).isPreserveKeysOrder())
             d.primaryKeyFields(keyFields);
+
+        if (qryEntity instanceof QueryEntityEx)
+            d.implicitPk(((QueryEntityEx)qryEntity).implicitPk());
 
         // Sql-typed key/value doesn't have field property, but they may have precision and scale constraints.
         // Also if fields are not set then _KEY and _VAL will be created as visible,
@@ -1256,7 +1280,7 @@ public class QueryUtils {
      */
     public static SchemaOperationException checkQueryEntityConflicts(CacheConfiguration<?, ?> ccfg,
         Collection<DynamicCacheDescriptor> descs) {
-        String schema = QueryUtils.normalizeSchemaName(ccfg.getName(), ccfg.getSqlSchema());
+        String schema = normalizeSchemaName(ccfg.getName(), ccfg.getSqlSchema());
 
         Set<String> idxNames = new HashSet<>();
 
@@ -1266,7 +1290,7 @@ public class QueryUtils {
             if (F.eq(ccfg.getName(), desc.cacheName()))
                 continue;
 
-            String descSchema = QueryUtils.normalizeSchemaName(desc.cacheName(),
+            String descSchema = normalizeSchemaName(desc.cacheName(),
                 desc.cacheConfiguration().getSqlSchema());
 
             if (!F.eq(schema, descSchema))
@@ -1615,6 +1639,66 @@ public class QueryUtils {
         }
 
         return alias;
+    }
+
+    /**
+     * @return {@link IgniteSQLException} with the message same as of {@code this}'s and
+     */
+    public static IgniteSQLException convert(SchemaOperationException e) {
+        int sqlCode;
+
+        switch (e.code()) {
+            case SchemaOperationException.CODE_CACHE_NOT_FOUND:
+                sqlCode = IgniteQueryErrorCode.CACHE_NOT_FOUND;
+
+                break;
+
+            case SchemaOperationException.CODE_TABLE_NOT_FOUND:
+                sqlCode = IgniteQueryErrorCode.TABLE_NOT_FOUND;
+
+                break;
+
+            case SchemaOperationException.CODE_TABLE_EXISTS:
+                sqlCode = IgniteQueryErrorCode.TABLE_ALREADY_EXISTS;
+
+                break;
+
+            case SchemaOperationException.CODE_COLUMN_NOT_FOUND:
+                sqlCode = IgniteQueryErrorCode.COLUMN_NOT_FOUND;
+
+                break;
+
+            case SchemaOperationException.CODE_COLUMN_EXISTS:
+                sqlCode = IgniteQueryErrorCode.COLUMN_ALREADY_EXISTS;
+
+                break;
+
+            case SchemaOperationException.CODE_INDEX_NOT_FOUND:
+                sqlCode = IgniteQueryErrorCode.INDEX_NOT_FOUND;
+
+                break;
+
+            case SchemaOperationException.CODE_INDEX_EXISTS:
+                sqlCode = IgniteQueryErrorCode.INDEX_ALREADY_EXISTS;
+
+                break;
+
+            default:
+                sqlCode = IgniteQueryErrorCode.UNKNOWN;
+        }
+
+        return new IgniteSQLException(e.getMessage(), sqlCode, e);
+    }
+
+    /**
+     * Check if schema supports DDL statement.
+     *
+     * @param schemaName Schema name.
+     */
+    public static void isDdlOnSchemaSupported(String schemaName) {
+        if (F.eq(SCHEMA_SYS, schemaName))
+            throw new IgniteSQLException("DDL statements are not supported on " + schemaName + " schema",
+                IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
     }
 
     /**

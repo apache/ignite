@@ -27,6 +27,7 @@ import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReadWriteLock;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteCluster;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.affinity.AffinityFunction;
 import org.apache.ignite.cluster.ClusterNode;
@@ -40,6 +41,8 @@ import org.apache.ignite.internal.metric.IoStatisticsHolder;
 import org.apache.ignite.internal.metric.IoStatisticsHolderCache;
 import org.apache.ignite.internal.metric.IoStatisticsHolderIndex;
 import org.apache.ignite.internal.metric.IoStatisticsHolderNoOp;
+import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
+import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
 import org.apache.ignite.internal.processors.affinity.AffinityAssignment;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.affinity.GridAffinityAssignmentCache;
@@ -1096,6 +1099,19 @@ public class CacheGroupContext {
     }
 
     /**
+     * @return {@code True} if {@link DataRecord} should be loged in the WAL.
+     */
+    public boolean logDataRecords() {
+        return walEnabled() && (persistenceEnabled || cdcEnabled());
+    }
+
+    /** @return {@code True} if CDC enabled. */
+    public boolean cdcEnabled() {
+        // Data region is null for client and non affinity nodes.
+        return dataRegion != null && dataRegion.config().isCdcEnabled();
+    }
+
+    /**
      * @param nodeId Node ID.
      * @param req Request.
      */
@@ -1127,22 +1143,38 @@ public class CacheGroupContext {
             log.debug("Affinity is ready for topology version, will send response [topVer=" + topVer +
                 ", node=" + nodeId + ']');
 
-        AffinityAssignment assignment = aff.cachedAffinity(topVer);
+        AffinityAssignment assignment;
+        GridDhtAffinityAssignmentResponse res;
+        try {
+            assignment = aff.cachedAffinity(topVer);
 
-        GridDhtAffinityAssignmentResponse res = new GridDhtAffinityAssignmentResponse(
-            req.futureId(),
-            grpId,
-            topVer,
-            assignment.assignment());
+            res = new GridDhtAffinityAssignmentResponse(
+                req.futureId(),
+                grpId,
+                topVer,
+                assignment.assignment());
 
-        if (aff.centralizedAffinityFunction()) {
-            assert assignment.idealAssignment() != null;
+            if (aff.centralizedAffinityFunction()) {
+                assert assignment.idealAssignment() != null;
 
-            res.idealAffinityAssignment(assignment.idealAssignment());
+                res.idealAffinityAssignment(assignment.idealAssignment());
+            }
+
+            if (req.sendPartitionsState())
+                res.partitionMap(top.partitionMap(true));
         }
+        catch (IllegalStateException err) {
+            res = new GridDhtAffinityAssignmentResponse(
+                req.futureId(),
+                grpId,
+                topVer,
+                Collections.emptyList());
 
-        if (req.sendPartitionsState())
-            res.partitionMap(top.partitionMap(true));
+            res.affinityAssignmentsError(
+                new IgniteCheckedException("Failed to prepare the required affinity assignment " +
+                    "[nodeId=" + nodeId + ", topVer=" + topVer + ']',
+                    err));
+        }
 
         try {
             ctx.io().send(nodeId, res, AFFINITY_POOL);
@@ -1188,7 +1220,11 @@ public class CacheGroupContext {
     }
 
     /**
-     * WAL enabled flag.
+     * Value returned by this method can be changed runtime by the user or during rebalance.
+     *
+     * @return WAL enabled flag.
+     * @see IgniteCluster#disableWal(String)
+     * @see IgniteCluster#enableWal(String)
      */
     public boolean walEnabled() {
         return localWalEnabled && globalWalEnabled;
@@ -1251,7 +1287,7 @@ public class CacheGroupContext {
     }
 
     /**
-     * @param enabled Enabled flag..
+     * @param enabled Enabled flag.
      */
     private void persistGlobalWalState(boolean enabled) {
         shared().database().walEnabled(grpId, enabled, false);
@@ -1303,6 +1339,13 @@ public class CacheGroupContext {
 
         if (statHolderIdx != IoStatisticsHolderNoOp.INSTANCE)
             ctx.kernalContext().metric().remove(statHolderIdx.metricRegistryName(), destroy);
+    }
+
+    /**
+     * @return Write ahead log manager.
+     */
+    public IgniteWriteAheadLogManager wal() {
+        return ctx.wal(cdcEnabled());
     }
 
     /**

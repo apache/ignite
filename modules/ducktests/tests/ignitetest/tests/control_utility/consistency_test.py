@@ -32,6 +32,7 @@ from ignitetest.services.ignite_app import IgniteApplicationService
 from ignitetest.services.ignite_execution_exception import IgniteExecutionException
 from ignitetest.services.utils.control_utility import ControlUtility
 from ignitetest.services.utils.ignite_configuration import IgniteConfiguration
+from ignitetest.services.utils.ignite_configuration.event_type import EventType
 from ignitetest.utils import cluster, ignite_versions
 from ignitetest.utils.ignite_test import IgniteTest
 from ignitetest.utils.version import DEV_BRANCH, IgniteVersion
@@ -43,26 +44,20 @@ class ConsistencyTest(IgniteTest):
     """
     CACHE_NAME = "TEST"
 
-    PROPERTIES = """
-        <property name="includeEventTypes">
-            <util:constant static-field="org.apache.ignite.events.EventType.EVT_CONSISTENCY_VIOLATION"/>
-        </property>
-        """
-
     @cluster(num_nodes=2)
     @ignite_versions(str(DEV_BRANCH))
     def test_logging(self, ignite_version):
         """
         Tests logging goes to the correct file (consistency.log) when default AI config used.
         """
-        cfg_filename = "ignite-default-log4j.xml"
+        cfg_filename = "ignite-default-log4j2.xml"
 
         ignites = IgniteApplicationService(
             self.test_context,
             IgniteConfiguration(
                 version=IgniteVersion(ignite_version),
                 cluster_state="INACTIVE",
-                properties=self.PROPERTIES,
+                include_event_types=[EventType.EVT_CONSISTENCY_VIOLATION],
                 log4j_config=cfg_filename  # default AI config (will be generated below)
             ),
             java_class_name="org.apache.ignite.internal.ducktest.tests.control_utility.InconsistentNodeApplication",
@@ -73,16 +68,16 @@ class ConsistencyTest(IgniteTest):
                 "tx": False
             },
             startup_timeout_sec=180,
-            num_nodes=len(self.test_context.cluster))
+            num_nodes=self.available_cluster_size)
 
         for node in ignites.nodes:  # copying default AI config with log path replacement
             ignites.init_persistent(node)
 
             cfg_file = f"{ignites.config_dir}/{cfg_filename}"
 
-            ignites.exec_command(node, f"cp {ignites.home_dir}/config/ignite-log4j.xml {cfg_file}")
+            ignites.exec_command(node, f"cp {ignites.home_dir}/config/ignite-log4j2.xml {cfg_file}")
 
-            orig = "${IGNITE_HOME}/work/log".replace('/', '\\/')
+            orig = "${sys:IGNITE_HOME}/work/log".replace('/', '\\/')
             fixed = ignites.log_dir.replace('/', '\\/')
 
             ignites.exec_command(node, f"sed -i 's/{orig}/{fixed}/g' {cfg_file}")
@@ -101,7 +96,8 @@ class ConsistencyTest(IgniteTest):
         except AssertionError:
             pass
 
-        control_utility.check_consistency(f"repair --cache {self.CACHE_NAME} --partition 0 --strategy LWW")  # checking/repairing
+        # checking/repairing
+        control_utility.check_consistency(f"repair --cache {self.CACHE_NAME} --partition 0 --strategy LWW")
 
         message = "Cache consistency violations recorded."
 

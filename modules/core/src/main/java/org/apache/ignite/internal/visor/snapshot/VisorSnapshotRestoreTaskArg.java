@@ -21,7 +21,6 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.Collection;
-import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
@@ -29,12 +28,9 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Argument for the task to manage snapshot restore operation.
  */
-public class VisorSnapshotRestoreTaskArg extends IgniteDataTransferObject {
+public class VisorSnapshotRestoreTaskArg extends VisorSnapshotCreateTaskArg {
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;
-
-    /** Snapshot name. */
-    private String snpName;
 
     /** Cache group names. */
     private Collection<String> grpNames;
@@ -48,23 +44,21 @@ public class VisorSnapshotRestoreTaskArg extends IgniteDataTransferObject {
     }
 
     /**
-     * @param action Snapshot restore operation management action.
      * @param snpName Snapshot name.
+     * @param sync Synchronous execution flag.
+     * @param action Snapshot restore operation management action.
      * @param grpNames Cache group names.
      */
     public VisorSnapshotRestoreTaskArg(
-        VisorSnapshotRestoreTaskAction action,
         String snpName,
+        boolean sync,
+        VisorSnapshotRestoreTaskAction action,
         @Nullable Collection<String> grpNames
     ) {
-        this.snpName = snpName;
-        this.grpNames = grpNames;
-        this.action = action;
-    }
+        super(snpName, sync);
 
-    /** @return Snapshot name. */
-    public String snapshotName() {
-        return snpName;
+        this.action = action;
+        this.grpNames = grpNames;
     }
 
     /** @return Cache group names. */
@@ -77,17 +71,18 @@ public class VisorSnapshotRestoreTaskArg extends IgniteDataTransferObject {
         return action;
     }
 
+
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
+        super.writeExternalData(out);
         U.writeEnum(out, action);
-        U.writeString(out, snpName);
         U.writeCollection(out, grpNames);
     }
 
     /** {@inheritDoc} */
     @Override protected void readExternalData(byte ver, ObjectInput in) throws IOException, ClassNotFoundException {
+        super.readExternalData(ver, in);
         action = U.readEnum(in, VisorSnapshotRestoreTaskAction.class);
-        snpName = U.readString(in);
         grpNames = U.readCollection(in);
     }
 

@@ -24,7 +24,7 @@ IGNITE_TEMPLATE_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), 
 ZK_TEMPLATE_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "zk", "templates")
 DEFAULT_IGNITE_CONF = "ignite.xml.j2"
 DEFAULT_THIN_CLIENT_CONF = "thin_client_config.xml.j2"
-DEFAULT_LOG4J_CONF = "log4j.xml.j2"
+DEFAULT_LOG4J2_CONF = "log4j2.xml.j2"
 
 TEMPLATE_PATHES = [IGNITE_TEMPLATE_PATH, ZK_TEMPLATE_PATH]
 
@@ -79,4 +79,4 @@ class IgniteLoggerConfigTemplate(ConfigTemplate):
     Ignite logger configuration.
     """
     def __init__(self):
-        super().__init__(DEFAULT_LOG4J_CONF)
+        super().__init__(DEFAULT_LOG4J2_CONF)

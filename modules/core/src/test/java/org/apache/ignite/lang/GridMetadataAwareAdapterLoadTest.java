@@ -86,12 +86,12 @@ public class GridMetadataAwareAdapterLoadTest extends GridCommonAbstractTest {
                         case -1:
                             for (int j = 9; j >= 0; j--)
                                 //entry.addMeta(uuids[j], dic[i]);
-                            entry.addMeta(j, dic[i]);
+                                entry.addMeta(j, dic[i]);
                             break;
                         case 0:
                             for (int j = 2; j >= 0; j--)
                                 //entry.addMeta(uuids[j], dic[i]);
-                            entry.addMeta(j, dic[i]);
+                                entry.addMeta(j, dic[i]);
                             break;
                         case 1:
                             //entry.addMeta(uuids[0], dic[i]);

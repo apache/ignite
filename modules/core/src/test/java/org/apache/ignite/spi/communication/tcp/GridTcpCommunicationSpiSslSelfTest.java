@@ -26,8 +26,6 @@ import org.apache.ignite.testframework.junits.spi.GridSpiTest;
 public class GridTcpCommunicationSpiSslSelfTest extends GridTcpCommunicationSpiAbstractTest {
     /** */
     public GridTcpCommunicationSpiSslSelfTest() {
-        super(false);
-
         this.useSsl = true;
     }
 

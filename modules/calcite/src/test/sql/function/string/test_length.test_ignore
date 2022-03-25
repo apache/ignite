@@ -1,0 +1,27 @@
+# name: test/sql/function/string/test_length.test
+# description: Test length function
+# group: [string]
+# Ignored: https://issues.apache.org/jira/browse/IGNITE-14677
+
+statement ok
+CREATE TABLE strings(s VARCHAR)
+
+statement ok
+INSERT INTO strings VALUES ('hello'), ('world'), (NULL)
+
+# normal length
+query I
+SELECT length(s) FROM strings ORDER BY s
+----
+5
+5
+NULL
+
+# length after concat
+query I
+SELECT length(s || ' ' || '🦆') FROM strings ORDER BY s
+----
+7
+7
+NULL
+

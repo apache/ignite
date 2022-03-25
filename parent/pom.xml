@@ -53,7 +53,7 @@
         <asm.version>4.2</asm.version>
         <aspectj.bundle.version>1.8.13_1</aspectj.bundle.version>
         <aspectj.version>1.8.13</aspectj.version>
-        <netty.version>4.1.66.Final</netty.version>
+        <netty.version>4.1.75.Final</netty.version>
         <camel.version>2.22.0</camel.version>
         <bouncycastle.version>1.69</bouncycastle.version>
         <commons.beanutils.bundle.version>1.9.2_1</commons.beanutils.bundle.version>
@@ -64,7 +64,7 @@
         <commons.io.version>2.6</commons.io.version>
         <commons.dbcp.version>1.4</commons.dbcp.version>
         <cron4j.version>2.2.5</cron4j.version>
-        <curator.version>4.2.0</curator.version>
+        <curator.version>5.2.0</curator.version>
         <easymock.version>3.4</easymock.version>
         <ezmorph.bundle.version>1.0.6_1</ezmorph.bundle.version>
         <ezmorph.version>1.0.6</ezmorph.version>
@@ -80,7 +80,7 @@
         <jackson.version>2.12.4</jackson.version>
         <jaxb.api.version>2.1</jaxb.api.version>
         <jaxb.impl.version>2.1.14</jaxb.impl.version>
-        <javassist.version>3.20.0-GA</javassist.version>
+        <javassist.version>3.28.0-GA</javassist.version>
         <javax.cache.bundle.version>1.0.0_1</javax.cache.bundle.version>
         <javax.cache.tck.version>1.1.0</javax.cache.tck.version>
         <javax.cache.version>1.0.0</javax.cache.version>
@@ -90,7 +90,7 @@
         <jmh.version>1.13</jmh.version>
         <jms.spec.version>1.1.1</jms.spec.version>
         <jna.version>4.5.2</jna.version>
-        <jnr.posix.version>3.0.50</jnr.posix.version>
+        <jnr.posix.version>3.1.15</jnr.posix.version>
         <jotm.version>2.3.1-M1</jotm.version>
         <jsch.bundle.version>0.1.54_1</jsch.bundle.version>
         <jsch.version>0.1.54</jsch.version>
@@ -114,7 +114,7 @@
         <osgi.core.version>5.0.0</osgi.core.version>
         <osgi.enterprise.version>5.0.0</osgi.enterprise.version>
         <paho.version>1.0.2</paho.version>
-        <postgres.connector.version>42.2.23</postgres.connector.version>
+        <postgres.connector.version>42.3.3</postgres.connector.version>
         <scala210.jline.version>2.10.7</scala210.jline.version>
         <scala210.library.version>2.10.7</scala210.library.version>
         <scala.library.version>2.11.12</scala.library.version>
@@ -136,7 +136,7 @@
         <yammer.metrics.core.version>2.2.0</yammer.metrics.core.version>
         <yardstick.version>0.8.3</yardstick.version>
         <zkclient.version>0.5</zkclient.version>
-        <zookeeper.version>3.5.5</zookeeper.version>
+        <zookeeper.version>3.8.0</zookeeper.version>
         <zstd.version>1.3.7-2</zstd.version>
         <opencensus.version>0.22.0</opencensus.version>
         <commons.lang3.version>3.9</commons.lang3.version>
@@ -500,6 +500,14 @@
                             <group>
                                 <title>Capture Data Change API</title>
                                 <packages>org.apache.ignite.cdc*</packages>
+                            </group>
+                            <group>
+                                <title>Calcite-based SQL engine</title>
+                                <packages>org.apache.ignite.calcite</packages>
+                            </group>
+                            <group>
+                                <title>Ignite-indexing SQL engine</title>
+                                <packages>org.apache.ignite.indexing</packages>
                             </group>
                         </groups>
                         <bottom>
@@ -905,6 +913,7 @@
                                         <exclude>src/main/java/org/apache/ignite/internal/util/offheap/unsafe/GridOffHeapSnapTreeMap.java</exclude><!--BSD license-->
                                         <exclude>src/main/java/org/apache/ignite/internal/util/nio/SelectedSelectionKeySet.java</exclude><!-- Apache 2.0 license -->
                                         <exclude>src/main/java/org/apache/ignite/internal/util/snaptree/*.java</exclude><!--BSD license-->
+                                        <exclude>src/main/java/org/apache/ignite/internal/processors/query/calcite/sql/generated/*.java</exclude><!--auto generated files-->
                                         <exclude>src/main/java/org/jsr166/*.java</exclude>
                                         <exclude>src/main/java/org/mindrot/*.java</exclude>
                                         <exclude>src/test/java/org/apache/ignite/p2p/p2p.properties</exclude><!--test depends on file content-->
@@ -928,29 +937,7 @@
                                         <exclude>src/test/binaries/repo/org/apache/ignite/binary/test1/1.1/test1-1.1.pom</exclude>
                                         <exclude>src/test/binaries/repo/org/apache/ignite/binary/test1/maven-metadata-local.xml</exclude>
                                         <exclude>src/test/resources/org/apache/ignite/internal/managers/discovery/Wrapper.ser</exclude>
-                                        <!--shmem-->
-                                        <exclude>ipc/shmem/**/Makefile.in</exclude><!--auto generated files-->
-                                        <exclude>ipc/shmem/**/Makefile</exclude><!--auto generated files-->
-                                        <exclude>ipc/shmem/compile</exclude><!--generated by Autoconf and licensed under AL-->
-                                        <exclude>ipc/shmem/config.guess</exclude><!--generated by Autoconf and licensed under AL-->
-                                        <exclude>ipc/shmem/config.sub</exclude><!--generated by Autoconf and licensed under AL-->
-                                        <exclude>ipc/shmem/configure</exclude><!--free software-->
-                                        <exclude>ipc/shmem/config.h.in</exclude><!--auto generated-->
-                                        <exclude>ipc/shmem/configure.ac</exclude><!--cannot be changed-->
-                                        <exclude>ipc/shmem/ltmain.sh</exclude><!--generated by Autoconf and licensed under AL-->
-                                        <exclude>ipc/shmem/install-sh</exclude><!--free license-->
-                                        <exclude>ipc/shmem/depcomp</exclude><!--generated by Autoconf and licensed under AL-->
-                                        <exclude>ipc/shmem/config.status</exclude><!--auto generated-->
-                                        <exclude>ipc/shmem/libtool</exclude><!--auto generated-->
-                                        <exclude>ipc/shmem/missing</exclude><!--generated by Autoconf and licensed under AL-->
-                                        <exclude>ipc/shmem/stamp-h1</exclude><!--tmp timestamp-->
-                                        <exclude>ipc/shmem/ltmain.sh</exclude><!--tmp (not under VCS)-->
-                                        <exclude>ipc/shmem/include/org_apache_ignite_internal_util_ipc_shmem_IpcSharedMemoryUtils.h</exclude><!--auto generated files-->
-                                        <exclude>ipc/shmem/igniteshmem/.libs/*</exclude><!--tmp files-->
-                                        <exclude>ipc/shmem/igniteshmem/.deps/*</exclude><!--tmp files-->
-                                        <exclude>ipc/shmem/igniteshmem/libigniteshmem.la</exclude><!--tmp (not under VCS)-->
-                                        <exclude>ipc/shmem/igniteshmem/libigniteshmem_la-org_apache_ignite_internal_util_ipc_shmem_IpcSharedMemoryUtils.lo</exclude><!--tmp (not under VCS)-->
-                                        <!--platforms-->
+                                    <!--platforms-->
                                         <exclude>src/test/binaries/repo/org/apache/ignite/binary/test1/1.1/test1-1.1.jar</exclude>
                                         <exclude>src/test/binaries/repo/org/apache/ignite/binary/test2/1.1/test2-1.1.jar</exclude>
                                         <exclude>**/*.cmake</exclude>
@@ -991,6 +978,8 @@
                                         <exclude>modules/platforms/dotnet/Apache.Ignite.Core.Tests/Examples/ExpectedOutput/*.txt</exclude>
                                         <!--Packaging -->
                                         <exclude>packaging/**</exclude>
+                                        <!-- Calcite test scripts -->
+                                        <exclude>src/test/sql/**</exclude>
                                         <!-- Ignite Documentation-->
                                         <exclude>docs/_site/**</exclude>
                                         <exclude>docs/assets/images/**</exclude>
@@ -1032,7 +1021,7 @@
         <profile>
             <id>java-9+</id>
             <activation>
-                <jdk>[1.9,)</jdk>
+                <jdk>[1.9,15)</jdk>
             </activation>
             <properties>
                 <maven.compiler.source>1.8</maven.compiler.source>
@@ -1107,6 +1096,67 @@
                 </dependencies>
             </dependencyManagement>
 
+        </profile>
+
+        <profile>
+            <id>java-15+</id>
+            <activation>
+                <jdk>[15,)</jdk>
+            </activation>
+            <properties>
+                <maven.compiler.source>1.8</maven.compiler.source>
+                <maven.compiler.target>15</maven.compiler.target>
+                <scala.library.version>2.12.15</scala.library.version>
+            </properties>
+            <dependencies/>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-compiler-plugin</artifactId>
+                        <version>3.7.0</version>
+                        <configuration>
+                            <compilerArgs>
+                                <arg>--add-exports</arg>
+                                <arg>java.base/jdk.internal.misc=ALL-UNNAMED</arg>
+                                <arg>--add-exports</arg>
+                                <arg>java.base/sun.nio.ch=ALL-UNNAMED</arg>
+                                <arg>--add-exports</arg>
+                                <arg>java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED</arg>
+                                <arg>--add-exports</arg>
+                                <arg>jdk.internal.jvmstat/sun.jvmstat.monitor=ALL-UNNAMED</arg>
+                                <arg>--add-exports</arg>
+                                <arg>java.base/java.io=ALL-UNNAMED</arg>
+                                <arg>--add-exports</arg>
+                                <arg>java.base/java.nio=ALL-UNNAMED</arg>
+                                <arg>--add-exports</arg>
+                                <arg>java.base/java.util=ALL-UNNAMED</arg>
+                                <arg>--add-exports</arg>
+                                <arg>java.base/java.lang=ALL-UNNAMED</arg>
+                            </compilerArgs>
+                        </configuration>
+                    </plugin>
+
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-surefire-plugin</artifactId>
+                        <configuration>
+                            <argLine>
+                                --add-opens=java.base/jdk.internal.misc=ALL-UNNAMED
+                                --add-opens=java.base/sun.nio.ch=ALL-UNNAMED
+                                --add-opens=java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED
+                                --add-opens=jdk.internal.jvmstat/sun.jvmstat.monitor=ALL-UNNAMED
+                                --add-opens=java.base/sun.reflect.generics.reflectiveObjects=ALL-UNNAMED
+                                --add-opens=jdk.management/com.sun.management.internal=ALL-UNNAMED
+                                --add-opens=java.base/java.io=ALL-UNNAMED
+                                --add-opens=java.base/java.nio=ALL-UNNAMED
+                                --add-opens=java.base/java.util=ALL-UNNAMED
+                                --add-opens=java.base/java.lang=ALL-UNNAMED
+                            </argLine>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
         </profile>
 
         <profile>

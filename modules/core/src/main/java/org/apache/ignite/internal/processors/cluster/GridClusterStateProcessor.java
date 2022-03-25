@@ -40,6 +40,7 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.BaselineNode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.cluster.ClusterState;
+import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.BaselineConfigurationChangedEvent;
@@ -62,6 +63,7 @@ import org.apache.ignite.internal.managers.systemview.walker.BaselineNodeAttribu
 import org.apache.ignite.internal.managers.systemview.walker.BaselineNodeViewWalker;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.cache.ExchangeActions;
 import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
@@ -88,6 +90,7 @@ import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteProductVersion;
@@ -114,7 +117,6 @@ import static org.apache.ignite.internal.IgniteFeatures.SAFE_CLUSTER_DEACTIVATIO
 import static org.apache.ignite.internal.IgniteFeatures.allNodesSupports;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYSTEM_POOL;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.extractDataStorage;
-import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isPersistentCache;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 import static org.apache.ignite.internal.util.IgniteUtils.toStringSafe;
 
@@ -508,10 +510,10 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
         );
 
         distributedBaselineConfiguration.listenAutoAdjustEnabled((name, oldVal, newVal) -> {
-           if (newVal != null && newVal) {
-               long topVer = ctx.discovery().topologyVersion();
-               baselineTopologyUpdater.triggerBaselineUpdate(topVer);
-           }
+            if (newVal != null && newVal) {
+                long topVer = ctx.discovery().topologyVersion();
+                baselineTopologyUpdater.triggerBaselineUpdate(topVer);
+            }
         });
     }
 
@@ -709,103 +711,105 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
                 }
             }
         }
-        else {
-            if (isApplicable(msg, state)) {
-                if (msg.state() == INACTIVE && !msg.forceDeactivation() && hasInMemoryCache() &&
-                    allNodesSupports(ctx.discovery().serverNodes(topVer), SAFE_CLUSTER_DEACTIVATION)) {
+        else if (isApplicable(msg, state)) {
+            if (msg.state() == INACTIVE && !msg.forceDeactivation() &&
+                allNodesSupports(ctx.discovery().serverNodes(topVer), SAFE_CLUSTER_DEACTIVATION)) {
+                List<String> inMemCaches = listInMemoryUserCaches();
+
+                if (!inMemCaches.isEmpty()) {
                     GridChangeGlobalStateFuture stateFut = changeStateFuture(msg);
 
                     if (stateFut != null) {
                         stateFut.onDone(new IgniteException(DATA_LOST_ON_DEACTIVATION_WARNING
-                            + " To deactivate cluster pass flag 'force'."));
+                            + " In memory caches: " + inMemCaches + " .To deactivate cluster pass '--force' flag."));
                     }
 
                     return false;
                 }
+            }
 
-                ExchangeActions exchangeActions;
+            ExchangeActions exchangeActions;
 
-                try {
-                    exchangeActions = ctx.cache().onStateChangeRequest(msg, topVer, state);
-                }
-                catch (IgniteCheckedException e) {
-                    GridChangeGlobalStateFuture fut = changeStateFuture(msg);
-
-                    if (fut != null)
-                        fut.onDone(e);
-
-                    return false;
-                }
-
-                Set<UUID> nodeIds = U.newHashSet(discoCache.allNodes().size());
-
-                for (ClusterNode node : discoCache.allNodes())
-                    nodeIds.add(node.id());
-
+            try {
+                exchangeActions = ctx.cache().onStateChangeRequest(msg, topVer, state);
+            }
+            catch (IgniteCheckedException e) {
                 GridChangeGlobalStateFuture fut = changeStateFuture(msg);
 
                 if (fut != null)
-                    fut.setRemaining(nodeIds, topVer.nextMinorVersion());
+                    fut.onDone(e);
 
-                if (log.isInfoEnabled())
-                    log.info("Started state transition: " + prettyStr(msg.state()));
+                return false;
+            }
 
-                BaselineTopologyHistoryItem bltHistItem = BaselineTopologyHistoryItem.fromBaseline(
-                    state.baselineTopology());
+            Set<UUID> nodeIds = U.newHashSet(discoCache.allNodes().size());
 
-                transitionFuts.put(msg.requestId(), new GridFutureAdapter<Void>());
+            for (ClusterNode node : discoCache.allNodes())
+                nodeIds.add(node.id());
 
-                DiscoveryDataClusterState newState = globalState = DiscoveryDataClusterState.createTransitionState(
-                    msg.state(),
-                    state,
-                    activate(state.state(), msg.state()) || msg.forceChangeBaselineTopology()
-                        ? msg.baselineTopology()
-                        : state.baselineTopology(),
-                    msg.requestId(),
-                    topVer,
-                    nodeIds
-                );
+            GridChangeGlobalStateFuture fut = changeStateFuture(msg);
 
-                ctx.durableBackgroundTask().onStateChangeStarted(msg);
+            if (fut != null)
+                fut.setRemaining(nodeIds, topVer.nextMinorVersion());
 
-                if (msg.forceChangeBaselineTopology())
-                    newState.setTransitionResult(msg.requestId(), msg.state());
+            if (log.isInfoEnabled())
+                log.info("Started state transition: " + prettyStr(msg.state()));
 
-                AffinityTopologyVersion stateChangeTopVer = topVer.nextMinorVersion();
+            BaselineTopologyHistoryItem bltHistItem = BaselineTopologyHistoryItem.fromBaseline(
+                state.baselineTopology());
 
-                StateChangeRequest req = new StateChangeRequest(
-                    msg,
-                    bltHistItem,
-                    state.state(),
-                    stateChangeTopVer
-                );
+            transitionFuts.put(msg.requestId(), new GridFutureAdapter<Void>());
 
-                exchangeActions.stateChangeRequest(req);
+            DiscoveryDataClusterState newState = globalState = DiscoveryDataClusterState.createTransitionState(
+                msg.state(),
+                state,
+                activate(state.state(), msg.state()) || msg.forceChangeBaselineTopology()
+                    ? msg.baselineTopology()
+                    : state.baselineTopology(),
+                msg.requestId(),
+                topVer,
+                nodeIds
+            );
 
-                msg.exchangeActions(exchangeActions);
+            ctx.durableBackgroundTask().onStateChangeStarted(msg);
 
-                if (newState.state() != state.state()) {
-                    if (ctx.event().isRecordable(EventType.EVT_CLUSTER_STATE_CHANGE_STARTED)) {
-                        ctx.pools().getStripedExecutorService().execute(
-                            () -> ctx.event().record(new ClusterStateChangeStartedEvent(
-                                state.state(),
-                                newState.state(),
-                                ctx.discovery().localNode(),
-                                "Cluster state change started."
-                            ))
-                        );
-                    }
+            if (msg.forceChangeBaselineTopology())
+                newState.setTransitionResult(msg.requestId(), msg.state());
+
+            AffinityTopologyVersion stateChangeTopVer = topVer.nextMinorVersion();
+
+            StateChangeRequest req = new StateChangeRequest(
+                msg,
+                bltHistItem,
+                state.state(),
+                stateChangeTopVer
+            );
+
+            exchangeActions.stateChangeRequest(req);
+
+            msg.exchangeActions(exchangeActions);
+
+            if (newState.state() != state.state()) {
+                if (ctx.event().isRecordable(EventType.EVT_CLUSTER_STATE_CHANGE_STARTED)) {
+                    ctx.pools().getStripedExecutorService().execute(
+                        () -> ctx.event().record(new ClusterStateChangeStartedEvent(
+                            state.state(),
+                            newState.state(),
+                            ctx.discovery().localNode(),
+                            "Cluster state change started."
+                        ))
+                    );
                 }
-
-                return true;
             }
-            else {
-                // State already changed.
-                GridChangeGlobalStateFuture stateFut = changeStateFuture(msg);
 
-                if (stateFut != null)
-                    stateFut.onDone();
-            }
+            return true;
+        }
+        else {
+            // State already changed.
+            GridChangeGlobalStateFuture stateFut = changeStateFuture(msg);
+
+            if (stateFut != null)
+                stateFut.onDone();
         }
 
         return false;
@@ -1925,16 +1929,6 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
     }
 
     /**
-     * @return {@code True} if cluster has in-memory caches (without persistence) including the system caches.
-     * {@code False} otherwise.
-     */
-    private boolean hasInMemoryCache() {
-        return ctx.cache().cacheDescriptors().values().stream()
-            .anyMatch(desc -> !isPersistentCache(desc.cacheConfiguration(), ctx.config().getDataStorageConfiguration())
-                && (!desc.cacheConfiguration().isWriteBehindEnabled() || !desc.cacheConfiguration().isReadThrough()));
-    }
-
-    /**
      * Gets state of given two with minimal number of features.
      * <p/>
      * The order: {@link ClusterState#ACTIVE} > {@link ClusterState#ACTIVE_READ_ONLY} > {@link ClusterState#INACTIVE}.
@@ -1967,6 +1961,82 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(GridClusterStateProcessor.class, this);
+    }
+
+    /**
+     * @return Lists in-memory user defined caches.
+     */
+    private List<String> listInMemoryUserCaches() {
+        IgniteBiPredicate<DynamicCacheDescriptor, DataRegionConfiguration> inMemoryPred = (desc, dataRegionCfg) -> {
+            return !(dataRegionCfg != null && dataRegionCfg.isPersistenceEnabled())
+                && (!desc.cacheConfiguration().isWriteThrough() || !desc.cacheConfiguration().isReadThrough());
+        };
+
+        if (ctx.discovery().localNode().isClient()) {
+            // Need to check cache descriptors using server node storage configurations.
+            // The reason for this is that client node may not be configured with the required data region configuration.
+            List<ClusterNode> srvs = ctx.discovery().discoCache().serverNodes();
+
+            if (F.isEmpty(srvs))
+                return Collections.emptyList();
+
+            return ctx.cache().cacheDescriptors().values().stream()
+                // Filter out system caches
+                .filter(desc -> !CU.isSystemCache(desc.cacheName()))
+                .filter(desc -> {
+                    String dataRegionName = desc.cacheConfiguration().getDataRegionName();
+
+                    // We always should use server data storage configurations instead of client node config,
+                    // because it is not validated when the client node joins the cluster
+                    // and so it cannot be the source of truth.
+                    DataRegionConfiguration dataRegionCfg = null;
+
+                    // Need to find out the first server node that knows about this data region and its configuration.
+                    for (ClusterNode n : srvs) {
+                        dataRegionCfg = CU.findRemoteDataRegionConfiguration(
+                            n,
+                            ctx.marshallerContext().jdkMarshaller(),
+                            U.resolveClassLoader(ctx.config()),
+                            dataRegionName);
+
+                        if (dataRegionCfg != null)
+                            break;
+                    }
+
+                    return inMemoryPred.apply(desc, dataRegionCfg);
+                })
+                .map(DynamicCacheDescriptor::cacheName)
+                .collect(Collectors.toList());
+        }
+
+        return ctx.cache().cacheDescriptors().values().stream()
+            .filter(desc -> !CU.isSystemCache(desc.cacheName()))
+            .filter(desc -> {
+                String dataRegionName = desc.cacheConfiguration().getDataRegionName();
+
+                DataRegionConfiguration dataRegionCfg =
+                    CU.findDataRegionConfiguration(ctx.config().getDataStorageConfiguration(), dataRegionName);
+
+                if (dataRegionCfg == null) {
+                    List<ClusterNode> srvs = ctx.discovery().discoCache().serverNodes();
+
+                    // Need to find out the first server node that knows about this data region and its configuration.
+                    for (ClusterNode n : srvs) {
+                        dataRegionCfg = CU.findRemoteDataRegionConfiguration(
+                            n,
+                            ctx.marshallerContext().jdkMarshaller(),
+                            U.resolveClassLoader(ctx.config()),
+                            dataRegionName);
+
+                        if (dataRegionCfg != null)
+                            break;
+                    }
+                }
+
+                return inMemoryPred.apply(desc, dataRegionCfg);
+            })
+            .map(DynamicCacheDescriptor::cacheName)
+            .collect(Collectors.toList());
     }
 
     /**

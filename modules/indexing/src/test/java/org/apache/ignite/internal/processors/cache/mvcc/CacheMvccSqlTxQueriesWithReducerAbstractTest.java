@@ -808,7 +808,7 @@ public abstract class CacheMvccSqlTxQueriesWithReducerAbstractTest extends Cache
         SqlFieldsQuery qry = new SqlFieldsQuery("UPDATE Integer SET _val = 8 WHERE _key = ?").setArgs(1);
 
         try (FieldsQueryCursor<List<?>> cur = cache0.query(qry)) {
-             assertEquals(1L, cur.iterator().next().get(0));
+            assertEquals(1L, cur.iterator().next().get(0));
         }
 
         qry = new SqlFieldsQuery("UPDATE Integer SET _val = 9 WHERE _key = 2");

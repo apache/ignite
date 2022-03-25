@@ -244,10 +244,6 @@ public class DataStorageConfiguration implements Serializable {
     @IgniteExperimental
     private String cdcWalPath = DFLT_WAL_CDC_PATH;
 
-    /** Change Data Capture enabled flag. */
-    @IgniteExperimental
-    private boolean cdcEnabled;
-
     /** Metrics enabled flag. */
     private boolean metricsEnabled = DFLT_METRICS_ENABLED;
 
@@ -295,7 +291,7 @@ public class DataStorageConfiguration implements Serializable {
      */
     private long walAutoArchiveAfterInactivity = -1;
 
-    /** Time interval (in milliseconds) for force archiving of incompletely WAL segment. */
+    /** Time interval (in milliseconds) after last log of data change for force archiving of incompletely WAL segment. */
     @IgniteExperimental
     private long walForceArchiveTimeout = -1;
 
@@ -801,30 +797,6 @@ public class DataStorageConfiguration implements Serializable {
     }
 
     /**
-     * Sets flag indicating whether CDC enabled.
-     *
-     * @param cdcEnabled CDC enabled flag.
-     * @return {@code this} for chaining.
-     */
-    @IgniteExperimental
-    public DataStorageConfiguration setCdcEnabled(boolean cdcEnabled) {
-        this.cdcEnabled = cdcEnabled;
-
-        return this;
-    }
-
-    /**
-     * Gets flag indicating whether CDC is enabled.
-     * Default value is {@code false}.
-     *
-     * @return Metrics enabled flag.
-     */
-    @IgniteExperimental
-    public boolean isCdcEnabled() {
-        return cdcEnabled;
-    }
-
-    /**
      * Gets flag indicating whether persistence metrics collection is enabled.
      * Default value is {@link #DFLT_METRICS_ENABLED}.
      *
@@ -1130,10 +1102,10 @@ public class DataStorageConfiguration implements Serializable {
     }
 
     /**
-     * @param walForceArchiveTimeout time in millis to run auto archiving segment (even if incomplete) after last
-     * record logging.<br> Positive value enables incomplete segment archiving after timeout (inactivity).<br> Zero or
-     * negative  value disables auto archiving.
-     * @return current configuration instance for chaining
+     * @param walForceArchiveTimeout Time in millis after last data change logged to run segment auto archivation
+     * (even if incomplete).<br> Positive value enables incomplete segment archivation after timeout.<br>
+     * Zero or negative value disables forcefull auto archiving.
+     * @return current configuration instance for chaining.
      */
     @IgniteExperimental
     public DataStorageConfiguration setWalForceArchiveTimeout(long walForceArchiveTimeout) {
@@ -1143,7 +1115,8 @@ public class DataStorageConfiguration implements Serializable {
     }
 
     /**
-     * @return time in millis to run auto archiving WAL segment (even if incomplete) after last record log
+     * @return time interval (in milliseconds) after last log of data change
+     * for force archiving of incompletely WAL segment.
      */
     @IgniteExperimental
     public long getWalForceArchiveTimeout() {

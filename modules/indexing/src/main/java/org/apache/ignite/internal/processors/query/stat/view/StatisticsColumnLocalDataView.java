@@ -25,7 +25,7 @@ import org.apache.ignite.internal.processors.query.stat.ObjectStatisticsImpl;
 import org.apache.ignite.internal.processors.query.stat.StatisticsKey;
 
 /**
- * Statistics partition data view.
+ * Statistics local data view.
  */
 public class StatisticsColumnLocalDataView {
     /** Statistics key */

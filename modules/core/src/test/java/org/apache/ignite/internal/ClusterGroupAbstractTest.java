@@ -607,8 +607,10 @@ public abstract class ClusterGroupAbstractTest extends GridCommonAbstractTest im
 
         long threshold = System.currentTimeMillis() + WAIT_TIMEOUT;
 
-        do synchronized (mux) {
-            mux.wait(sleep);
+        do {
+            synchronized (mux) {
+                mux.wait(sleep);
+            }
         }
         while (fut != null && !fut.isDone() && !fut.isCancelled() && threshold > System.currentTimeMillis());
 

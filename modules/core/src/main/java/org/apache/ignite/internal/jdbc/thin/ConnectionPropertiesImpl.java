@@ -104,23 +104,26 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
 
     /** Nested transactions handling strategy. */
     private StringProperty nestedTxMode = new StringProperty(
-        "nestedTransactionsMode", "Way to handle nested transactions", NestedTxMode.ERROR.name(),
-        new String[] { NestedTxMode.COMMIT.name(), NestedTxMode.ERROR.name(), NestedTxMode.IGNORE.name() },
-        false, new PropertyValidator() {
-        private static final long serialVersionUID = 0L;
+        "nestedTransactionsMode",
+        "Way to handle nested transactions",
+        NestedTxMode.ERROR.name(),
+        new String[] {NestedTxMode.COMMIT.name(), NestedTxMode.ERROR.name(), NestedTxMode.IGNORE.name()},
+        false,
+        new PropertyValidator() {
+            private static final long serialVersionUID = 0L;
 
-        @Override public void validate(String mode) throws SQLException {
-            if (!F.isEmpty(mode)) {
-                try {
-                    NestedTxMode.valueOf(mode.toUpperCase());
-                }
-                catch (IllegalArgumentException e) {
-                    throw new SQLException("Invalid nested transactions handling mode, allowed values: " +
-                        Arrays.toString(nestedTxMode.choices), SqlStateCode.CLIENT_CONNECTION_FAILED);
+            @Override public void validate(String mode) throws SQLException {
+                if (!F.isEmpty(mode)) {
+                    try {
+                        NestedTxMode.valueOf(mode.toUpperCase());
+                    }
+                    catch (IllegalArgumentException e) {
+                        throw new SQLException("Invalid nested transactions handling mode, allowed values: " +
+                            Arrays.toString(nestedTxMode.choices), SqlStateCode.CLIENT_CONNECTION_FAILED);
+                    }
                 }
             }
-        }
-    });
+        });
 
     /** SSL: Use SSL connection to Ignite node. */
     private StringProperty sslMode = new StringProperty("sslMode",
@@ -236,27 +239,35 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
 
     /** Disabled features. */
     private StringProperty disabledFeatures = new StringProperty("disabledFeatures",
-        "Sets enumeration of features to force disable its.", null, null, false, new PropertyValidator() {
-        @Override public void validate(String val) throws SQLException {
-            if (val == null)
-                return;
+        "Sets enumeration of features to force disable its.",
+        null,
+        null,
+        false,
+        new PropertyValidator() {
+            @Override public void validate(String val) throws SQLException {
+                if (val == null)
+                    return;
 
-            String[] features = val.split("\\W+");
+                String[] features = val.split("\\W+");
 
-            for (String f : features) {
-                try {
-                    JdbcThinFeature.valueOf(f.toUpperCase());
-                }
-                catch (IllegalArgumentException e) {
-                    throw new SQLException("Unknown feature: " + f);
+                for (String f : features) {
+                    try {
+                        JdbcThinFeature.valueOf(f.toUpperCase());
+                    }
+                    catch (IllegalArgumentException e) {
+                        throw new SQLException("Unknown feature: " + f);
+                    }
                 }
             }
-        }
-    });
+        });
 
     /** Keep binary objects in binary form. */
     private BooleanProperty keepBinary = new BooleanProperty("keepBinary",
         "Whether to keep binary objects in binary form.", false, false);
+
+    /** Use specified SQL query engine for a connection. */
+    private final StringProperty qryEngine = new StringProperty("queryEngine",
+        "Use specified SQL query engine for a connection.", null, null, false, null);
 
     /** Properties array. */
     private final ConnectionProperty[] propsArray = {
@@ -269,14 +280,15 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
         userAttrsFactory,
         user, passwd,
         dataPageScanEnabled,
-            partitionAwareness,
+        partitionAwareness,
         updateBatchSize,
-            partitionAwarenessSQLCacheSize,
-            partitionAwarenessPartDistributionsCacheSize,
+        partitionAwarenessSQLCacheSize,
+        partitionAwarenessPartDistributionsCacheSize,
         qryTimeout,
         connTimeout,
         disabledFeatures,
-        keepBinary
+        keepBinary,
+        qryEngine
     };
 
     /** {@inheritDoc} */
@@ -683,6 +695,16 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
     /** {@inheritDoc} */
     @Override public void setKeepBinary(boolean keepBinary) {
         this.keepBinary.setValue(keepBinary);
+    }
+
+    /** {@inheritDoc} */
+    @Override public String getQueryEngine() {
+        return qryEngine.value();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void setQueryEngine(String qryEngine) {
+        this.qryEngine.setValue(qryEngine);
     }
 
     /**

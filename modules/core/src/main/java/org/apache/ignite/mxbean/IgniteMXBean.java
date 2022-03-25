@@ -193,12 +193,10 @@ public interface IgniteMXBean {
      *
      * @param rebalanceEnabled If {@code true} then set rebalance to enabled state.
      */
-    @MXBeanParametersDescriptions(
-        {
-            "Enable cache partitions rebalance on node.",
-            "Disable cache partitions rebalance on node."
-        }
-    )
+    @MXBeanParametersDescriptions({
+        "Enable cache partitions rebalance on node.",
+        "Disable cache partitions rebalance on node."
+    })
     public void rebalanceEnabled(boolean rebalanceEnabled);
 
     /**

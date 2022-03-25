@@ -165,7 +165,7 @@ public @interface GridifySetToValue {
      * @return Optional parameter that defines the minimal value below which the
      * execution will NOT be grid-enabled.
      */
-   int threshold() default 0;
+    int threshold() default 0;
 
     /**
      * @return Optional parameter that defines a split size. Split size in other words means how big will

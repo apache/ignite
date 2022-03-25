@@ -63,6 +63,7 @@ set(SOURCES src/app/application_data_buffer.cpp
         src/result_page.cpp
         src/row.cpp
         src/nested_tx_mode.cpp
+        src/engine_mode.cpp
         src/message.cpp
         src/column.cpp
         src/statement.cpp
@@ -99,7 +100,7 @@ if (WIN32)
                 
     set_target_properties(${TARGET} PROPERTIES OUTPUT_NAME "ignite.odbc")
 else()
-    target_link_libraries(${TARGET} ignite-common ignite-binary ignite-network)
+    target_link_libraries(${TARGET} ignite-common ignite-binary ignite-network odbcinst)
 endif()
 
 if (WIN32 AND ${WITH_ODBC_MSI})

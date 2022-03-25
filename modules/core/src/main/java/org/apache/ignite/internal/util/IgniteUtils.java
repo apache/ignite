@@ -235,7 +235,6 @@ import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.future.IgniteFinishedFutureImpl;
 import org.apache.ignite.internal.util.future.IgniteFutureImpl;
 import org.apache.ignite.internal.util.io.GridFilenameUtils;
-import org.apache.ignite.internal.util.ipc.shmem.IpcSharedMemoryNativeLoader;
 import org.apache.ignite.internal.util.lang.GridClosureException;
 import org.apache.ignite.internal.util.lang.GridPeerDeployAware;
 import org.apache.ignite.internal.util.lang.GridTuple;
@@ -586,9 +585,6 @@ public abstract class IgniteUtils {
     /** */
     private static final ConcurrentMap<ClassLoader, ConcurrentMap<String, Class>> classCache =
         new ConcurrentHashMap<>();
-
-    /** */
-    private static volatile Boolean hasShmem;
 
     /** Object.hashCode() */
     private static Method hashCodeMtd;
@@ -4089,12 +4085,23 @@ public abstract class IgniteUtils {
      * @return Hex string.
      */
     public static String byteArray2HexString(byte[] arr) {
+        return byteArray2HexString(arr, true);
+    }
+
+    /**
+     * Converts byte array to hex string.
+     *
+     * @param arr Array of bytes.
+     * @param toUpper If {@code true} returns upper cased result.
+     * @return Hex string.
+     */
+    public static String byteArray2HexString(byte[] arr, boolean toUpper) {
         StringBuilder sb = new StringBuilder(arr.length << 1);
 
         for (byte b : arr)
             addByteAsHex(sb, b);
 
-        return sb.toString().toUpperCase();
+        return toUpper ? sb.toString().toUpperCase() : sb.toString();
     }
 
     /**
@@ -4282,7 +4289,7 @@ public abstract class IgniteUtils {
                 rsrc.close();
             }
             catch (Exception suppressed) {
-               e.addSuppressed(suppressed);
+                e.addSuppressed(suppressed);
             }
     }
 
@@ -10513,28 +10520,6 @@ public abstract class IgniteUtils {
     public static void assertParameter(boolean cond, String condDesc) throws IgniteException {
         if (!cond)
             throw new IgniteException("Parameter failed condition check: " + condDesc);
-    }
-
-    /**
-     * @return Whether shared memory libraries exist.
-     */
-    public static boolean hasSharedMemory() {
-        if (hasShmem == null) {
-            if (isWindows())
-                hasShmem = false;
-            else {
-                try {
-                    IpcSharedMemoryNativeLoader.load(null);
-
-                    hasShmem = true;
-                }
-                catch (IgniteCheckedException ignore) {
-                    hasShmem = false;
-                }
-            }
-        }
-
-        return hasShmem;
     }
 
     /**

@@ -62,6 +62,7 @@ set(SOURCES
         src/test_utils.cpp
         src/cluster_node_test.cpp
         src/affinity_test.cpp
+        src/cache_query_schema_test.cpp
         src/cluster_group_test.cpp)
 
 add_executable(${TARGET} ${SOURCES})

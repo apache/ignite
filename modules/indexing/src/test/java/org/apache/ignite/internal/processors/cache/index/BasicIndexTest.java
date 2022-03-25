@@ -28,7 +28,6 @@ import java.util.Objects;
 import java.util.UUID;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
-
 import javax.cache.CacheException;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
@@ -51,6 +50,8 @@ import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.h2.H2TableDescriptor;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
+import org.apache.ignite.internal.processors.query.h2.database.H2TreeIndex;
+import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -112,9 +113,9 @@ public class BasicIndexTest extends AbstractIndexingCommonTest {
         igniteCfg.setConsistentId(igniteInstanceName);
 
         if (igniteInstanceName.startsWith(CLIENT_NAME) && clientLog != null)
-                igniteCfg.setGridLogger(clientLog);
+            igniteCfg.setGridLogger(clientLog);
         else if (srvLog != null)
-                igniteCfg.setGridLogger(srvLog);
+            igniteCfg.setGridLogger(srvLog);
 
         LinkedHashMap<String, String> fields = new LinkedHashMap<>();
         fields.put("keyStr", String.class.getName());
@@ -1521,7 +1522,7 @@ public class BasicIndexTest extends AbstractIndexingCommonTest {
 
         assertNull(GridTestUtils.getFieldValue(tblDesc1, "luceneIdx"));
     }
-    
+
     /**
      * Checks that part of the composite key assembled in BinaryObjectBuilder can pass the validation correctly
      * if you specify Object type when creating the index.
@@ -1531,9 +1532,9 @@ public class BasicIndexTest extends AbstractIndexingCommonTest {
     @Test
     public void testCacheSecondaryCompositeIndex() throws Exception {
         inlineSize = 70;
-        
+
         startGrid();
-        
+
         String cacheName = "TEST";
 
         List<QueryIndex> indexes = Collections.singletonList(
@@ -1554,15 +1555,15 @@ public class BasicIndexTest extends AbstractIndexingCommonTest {
                 .setIndexes(indexes)
             ))
         );
-        
+
         BinaryObjectBuilder bob = grid().binary().builder("TEST_VAL_SECONDARY_COMPOSITE");
         BinaryObjectBuilder bobInner = grid().binary().builder("inner");
-        
+
         bobInner.setField("inner_k", 0);
         bobInner.setField("inner_uuid", UUID.randomUUID());
-        
+
         bob.setField("val_obj", bobInner.build());
-        
+
         IgniteCache<Object, Object> cache = grid().cache(cacheName);
 
         cache.put(0, bob.build());
@@ -1585,6 +1586,31 @@ public class BasicIndexTest extends AbstractIndexingCommonTest {
             assertNotNull(row.get(0));
             assertNotNull("id = " + row.get(0), row.get(1));
         }
+    }
+
+    /** */
+    @Test
+    public void testCreateSystemIndexWithSpecifiedInlineSizeByDdl() throws Exception {
+        inlineSize = 10;
+
+        final int pkInlineSize = 22;
+        final int affInlineSize = 23;
+
+        IgniteEx ign = startGrid();
+
+        sql("CREATE TABLE TEST (ID VARCHAR, ID_AFF INT, VAL INT, "
+                + "PRIMARY KEY (ID, ID_AFF)) WITH"
+                + "\""
+                + "AFFINITY_KEY=ID_AFF,"
+                + "PK_INLINE_SIZE=" + pkInlineSize + ","
+                + "AFFINITY_INDEX_INLINE_SIZE=" + affInlineSize
+                + "\""
+        );
+
+        GridH2Table tbl = ((IgniteH2Indexing)ign.context().query().getIndexing()).schemaManager().dataTable("PUBLIC", "TEST");
+
+        assertEquals(pkInlineSize, ((H2TreeIndex)tbl.getIndex("_key_PK")).inlineSize());
+        assertEquals(affInlineSize, ((H2TreeIndex)tbl.getIndex("AFFINITY_KEY")).inlineSize());
     }
 
     /** */

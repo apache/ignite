@@ -709,7 +709,7 @@ public class PlatformCallbackGateway {
         try {
             return PlatformCallbackUtils.inLongOutLong(envPtr,
                 PlatformCallbackOp.MessagingFilterCreate, memPtr);
-       }
+        }
         finally {
             leave();
         }

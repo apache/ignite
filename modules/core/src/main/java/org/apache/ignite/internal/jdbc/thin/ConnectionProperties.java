@@ -227,7 +227,7 @@ public interface ConnectionProperties {
      *
      * @param sslCipherSuites SSL cipher suites.
      */
-     public void setSslCipherSuites(String sslCipherSuites);
+    public void setSslCipherSuites(String sslCipherSuites);
 
     /**
      * Gets algorithm that will be used to create a key manager.
@@ -558,4 +558,16 @@ public interface ConnectionProperties {
      * @param keepBinary Whether to keep binary objects in binary form.
      */
     public void setKeepBinary(boolean keepBinary);
+
+    /**
+     * @return SQL query engine name to use by a connection.
+     */
+    public String getQueryEngine();
+
+    /**
+     * Sets SQL query engine for a connection.
+     *
+     * @param qryEngine SQL Query engine name.
+     */
+    public void setQueryEngine(String qryEngine);
 }

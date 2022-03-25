@@ -1080,7 +1080,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                 if (entryProcessor != null)
                     transform = true;
 
-            GridCacheVersion drVer = dataCenterId != null ? cacheCtx.cache().nextVersion(dataCenterId) : null;
+                GridCacheVersion drVer = dataCenterId != null ? cacheCtx.cache().nextVersion(dataCenterId) : null;
 
                 boolean loadMissed = enlistWriteEntry(cacheCtx,
                     entryTopVer,
@@ -1253,20 +1253,20 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                     else if (drRmvMap != null) {
                         assert drRmvMap.get(key) != null;
 
-                    drVer = drRmvMap.get(key);
-                    drTtl = -1L;
-                    drExpireTime = -1L;
-                }
-                else if (dataCenterId != null) {
-                    drVer = cacheCtx.cache().nextVersion(dataCenterId);
-                    drTtl = -1L;
-                    drExpireTime = -1L;
-                }
-                else {
-                    drVer = null;
-                    drTtl = -1L;
-                    drExpireTime = -1L;
-                }
+                        drVer = drRmvMap.get(key);
+                        drTtl = -1L;
+                        drExpireTime = -1L;
+                    }
+                    else if (dataCenterId != null) {
+                        drVer = cacheCtx.cache().nextVersion(dataCenterId);
+                        drTtl = -1L;
+                        drExpireTime = -1L;
+                    }
+                    else {
+                        drVer = null;
+                        drTtl = -1L;
+                        drExpireTime = -1L;
+                    }
 
                     if (!rmv && val == null && entryProcessor == null) {
                         setRollbackOnly();
@@ -2500,7 +2500,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                                                         keepCacheObjects,
                                                         deserializeBinary,
                                                         false,
-                                                        getRes,
+                                                        null,
                                                         getRes.version(),
                                                         0,
                                                         0,
@@ -2811,9 +2811,9 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                             GridCacheVersion readVer = null;
                             EntryGetResult getRes = null;
 
-                        if ((!pessimistic() || (readCommitted() && !skipVals)) && readRepairStrategy == null) {
-                            IgniteCacheExpiryPolicy accessPlc =
-                                optimistic() ? accessPolicy(cacheCtx, txKey, expiryPlc) : null;
+                            if ((!pessimistic() || (readCommitted() && !skipVals)) && readRepairStrategy == null) {
+                                IgniteCacheExpiryPolicy accessPlc =
+                                    optimistic() ? accessPolicy(cacheCtx, txKey, expiryPlc) : null;
 
                                 if (needReadVer) {
                                     getRes = primaryLocal(entry) ?
@@ -3168,25 +3168,26 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                 expiryPlc0,
                 skipVals,
                 needVer).chain(new C1<IgniteInternalFuture<Map<Object, Object>>, Void>() {
-                @Override public Void apply(IgniteInternalFuture<Map<Object, Object>> f) {
-                    try {
-                        Map<Object, Object> map = f.get();
+                    @Override public Void apply(IgniteInternalFuture<Map<Object, Object>> f) {
+                        try {
+                            Map<Object, Object> map = f.get();
 
-                        processLoaded(map, keys, needVer, c);
+                            processLoaded(map, keys, needVer, c);
 
-                        return null;
+                            return null;
+                        }
+                        catch (Exception e) {
+                            setRollbackOnly();
+
+                            throw new GridClosureException(e);
+                        }
                     }
-                    catch (Exception e) {
-                        setRollbackOnly();
-
-                        throw new GridClosureException(e);
-                    }
-                }
-            });
+                });
         }
         else if (cacheCtx.isColocated()) {
             if (readRepairStrategy != null) {
                 return new GridNearReadRepairCheckOnlyFuture(
+                    topVer,
                     cacheCtx,
                     keys,
                     readRepairStrategy,

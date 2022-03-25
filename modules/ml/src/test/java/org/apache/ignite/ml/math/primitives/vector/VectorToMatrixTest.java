@@ -221,13 +221,15 @@ public class VectorToMatrixTest {
 
     /** */
     private static Map<Class<? extends Vector>, Class<? extends Matrix>> typesMap() {
-        return new LinkedHashMap<Class<? extends Vector>, Class<? extends Matrix>>() {{
-            put(DenseVector.class, DenseMatrix.class);
-            put(SparseVector.class, SparseMatrix.class);
-            put(VectorizedViewMatrix.class, DenseMatrix.class); // IMPL NOTE per fixture
-            put(DelegatingVector.class, DenseMatrix.class); // IMPL NOTE per fixture
-            // IMPL NOTE check for presence of all implementations here will be done in testHaveLikeMatrix via Fixture
-        }};
+        LinkedHashMap<Class<? extends Vector>, Class<? extends Matrix>> typesMap = new LinkedHashMap<>();
+
+        typesMap.put(DenseVector.class, DenseMatrix.class);
+        typesMap.put(SparseVector.class, SparseMatrix.class);
+        typesMap.put(VectorizedViewMatrix.class, DenseMatrix.class); // IMPL NOTE per fixture
+        typesMap.put(DelegatingVector.class, DenseMatrix.class); // IMPL NOTE per fixture
+        // IMPL NOTE check for presence of all implementations here will be done in testHaveLikeMatrix via Fixture
+
+        return typesMap;
     }
 
     /** */

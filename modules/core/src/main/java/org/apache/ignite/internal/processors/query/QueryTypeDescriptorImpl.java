@@ -138,6 +138,18 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
     /** Primary key fields. */
     private Set<String> pkFields;
 
+    /** */
+    private boolean implicitPk;
+
+    /** Whether absent PK parts should be filled with defaults or not. */
+    private boolean fillAbsentPKsWithDefaults;
+
+    /** */
+    private int pkInlineSize;
+
+    /** */
+    private int affFieldInlineSize;
+
     /** Logger. */
     private final IgniteLogger log;
 
@@ -211,10 +223,8 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
         return res;
     }
 
-    /**
-     * @return Properties.
-     */
-    public Map<String, GridQueryProperty> properties() {
+    /** {@inheritDoc} */
+    @Override public Map<String, GridQueryProperty> properties() {
         return props;
     }
 
@@ -763,5 +773,45 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
     /** {@inheritDoc} */
     @Override public void primaryKeyFields(Set<String> keys) {
         pkFields = keys;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean implicitPk() {
+        return implicitPk;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void implicitPk(boolean implicitPk) {
+        this.implicitPk = implicitPk;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean fillAbsentPKsWithDefaults() {
+        return fillAbsentPKsWithDefaults;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void setFillAbsentPKsWithDefaults(boolean fillAbsentPKsWithDefaults) {
+        this.fillAbsentPKsWithDefaults = fillAbsentPKsWithDefaults;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int primaryKeyInlineSize() {
+        return pkInlineSize;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void primaryKeyInlineSize(int pkInlineSize) {
+        this.pkInlineSize = pkInlineSize;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int affinityFieldInlineSize() {
+        return affFieldInlineSize;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void affinityFieldInlineSize(int affFieldInlineSize) {
+        this.affFieldInlineSize = affFieldInlineSize;
     }
 }

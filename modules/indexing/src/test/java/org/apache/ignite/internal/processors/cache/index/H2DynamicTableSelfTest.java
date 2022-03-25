@@ -1078,7 +1078,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
                 return null;
             }
         }, IgniteSQLException.class,
-        "Only cache created with CREATE TABLE may be removed with DROP TABLE [cacheName=cache_idx_2]");
+            "Only cache created with CREATE TABLE may be removed with DROP TABLE [cacheName=cache_idx_2]");
     }
 
     /**

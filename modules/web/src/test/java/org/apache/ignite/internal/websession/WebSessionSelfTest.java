@@ -608,7 +608,7 @@ public class WebSessionSelfTest extends GridCommonAbstractTest {
             }
         }
         finally {
-             stopServerWithLoginService(srv);
+            stopServerWithLoginService(srv);
         }
     }
 

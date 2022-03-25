@@ -250,6 +250,7 @@ import static org.apache.ignite.internal.GridKernalState.STARTING;
 import static org.apache.ignite.internal.GridKernalState.STOPPED;
 import static org.apache.ignite.internal.GridKernalState.STOPPING;
 import static org.apache.ignite.internal.IgniteComponentType.COMPRESSION;
+import static org.apache.ignite.internal.IgniteComponentType.QUERY_ENGINE;
 import static org.apache.ignite.internal.IgniteComponentType.SCHEDULE;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_BUILD_DATE;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_BUILD_VER;
@@ -1058,7 +1059,7 @@ public class IgniteKernal implements IgniteEx, Externalizable {
         ackSpis();
 
         List<PluginProvider> plugins = cfg.getPluginProviders() != null && cfg.getPluginProviders().length > 0 ?
-           Arrays.asList(cfg.getPluginProviders()) : U.allPluginProviders();
+            Arrays.asList(cfg.getPluginProviders()) : U.allPluginProviders();
 
         // Spin out SPIs & managers.
         try {
@@ -1223,6 +1224,10 @@ public class IgniteKernal implements IgniteEx, Externalizable {
                 }
 
                 startProcessor(new IndexProcessor(ctx));
+
+                if (QUERY_ENGINE.inClassPath())
+                    startProcessor(QUERY_ENGINE.create(ctx, false));
+
                 startProcessor(new GridQueryProcessor(ctx));
                 startProcessor(new ClientListenerProcessor(ctx));
                 startProcessor(new IgniteServiceProcessor(ctx));

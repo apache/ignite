@@ -28,7 +28,7 @@ find_package(Boost 1.53 REQUIRED COMPONENTS unit_test_framework chrono thread sy
 find_package(ODBC REQUIRED)
 
 include_directories(SYSTEM ${ODBC_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS} ${JNI_INCLUDE_DIRS})
-include_directories(include ../odbc/include ../network/include)
+include_directories(include ../odbc/include ../network/include ../network/src)
 
 set(SOURCES
         src/teamcity/teamcity_boost.cpp
@@ -68,7 +68,9 @@ set(SOURCES
         src/sql_parsing_test.cpp
         src/streaming_test.cpp
         src/cursor_binding_test.cpp
+        src/sql_schema_test.cpp
         src/test_server.cpp
+        src/cross_engine_test.cpp
         ../odbc/src/log.cpp
         ../odbc/src/cursor.cpp
         ../odbc/src/diagnostic/diagnostic_record.cpp
@@ -89,7 +91,8 @@ set(SOURCES
         ../odbc/src/common_types.cpp
         ../odbc/src/utility.cpp
         ../odbc/src/result_page.cpp
-        ../odbc/src/nested_tx_mode.cpp)
+        ../odbc/src/nested_tx_mode.cpp
+        ../odbc/src/engine_mode.cpp)
 
 add_executable(${TARGET} ${SOURCES})
 

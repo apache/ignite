@@ -119,7 +119,8 @@ public interface PageMemoryEx extends PageMemory {
      * @throws IgniteException If checkpoint has been already started and was not finished.
      * @param allowToReplace The sign which allows to replace pages from a checkpoint by page replacer.
      */
-    public GridMultiCollectionWrapper<FullPageId> beginCheckpoint(IgniteInternalFuture allowToReplace) throws IgniteException;
+    public GridMultiCollectionWrapper<FullPageId> beginCheckpoint(IgniteInternalFuture allowToReplace)
+            throws IgniteException;
 
     /**
      * Finishes checkpoint operation.
@@ -137,15 +138,15 @@ public interface PageMemoryEx extends PageMemory {
      * @param tracker Checkpoint metrics tracker.
      * @throws IgniteCheckedException If failed to obtain page data.
      */
-     public void checkpointWritePage(
-         FullPageId pageId,
-         ByteBuffer buf,
-         PageStoreWriter pageWriter,
-         CheckpointMetricsTracker tracker
-     ) throws IgniteCheckedException;
+    public void checkpointWritePage(
+        FullPageId pageId,
+        ByteBuffer buf,
+        PageStoreWriter pageWriter,
+        CheckpointMetricsTracker tracker
+    ) throws IgniteCheckedException;
 
-     /** */
-     public PageReadWriteManager pageManager();
+    /** */
+    public PageReadWriteManager pageManager();
 
     /**
      * Marks partition as invalid / outdated.
@@ -178,9 +179,12 @@ public interface PageMemoryEx extends PageMemory {
     public FullPageId pullPageFromCpBuffer();
 
     /**
-     * Calculates throttling condition.
+     * Checks if the Checkpoint Buffer is currently close to exhaustion.
+     *
+     * @return {@code true} if measures like throttling to protect Checkpoint Buffer should be applied,
+     * and {@code false} otherwise.
      */
-    public boolean shouldThrottle();
+    public boolean isCpBufferOverflowThresholdExceeded();
 
     /**
      * Total pages can be placed to memory.

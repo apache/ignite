@@ -219,5 +219,5 @@ public class GridTaskFutureImplStopGridSelfTest extends GridCommonAbstractTest {
 
             return !Thread.currentThread().isInterrupted() ? 0 : 1;
         }
-   }
+    }
 }

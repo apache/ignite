@@ -18,12 +18,15 @@
 package org.apache.ignite.internal.processors.cache;
 
 import java.util.Collections;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.Lock;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteInterruptedException;
 import org.apache.ignite.IgniteSystemProperties;
@@ -36,12 +39,17 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.failure.AbstractFailureHandler;
+import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtAffinityAssignmentRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionSupplyMessageV2;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsSingleMessage;
 import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
@@ -57,6 +65,10 @@ import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.junit.Test;
+
+import static org.apache.ignite.cluster.ClusterState.ACTIVE;
+import static org.apache.ignite.cluster.ClusterState.INACTIVE;
+import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 
 /**
  *
@@ -75,6 +87,12 @@ public class CacheNoAffinityExchangeTest extends GridCommonAbstractTest {
     private final TcpDiscoveryIpFinder CLIENT_IP_FINDER = new TcpDiscoveryVmIpFinder()
         .setAddresses(Collections.singleton("127.0.0.1:47500"));
 
+    /** Custom communication SPI that can be used by the client node. */
+    private volatile TestRecordingCommunicationSpi clientCommSpi;
+
+    /** Stores errors that triggered failure handler. */
+    private final Map<String, Throwable> errs = new ConcurrentHashMap<>();
+
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.ENTRY_LOCK);
@@ -90,12 +108,16 @@ public class CacheNoAffinityExchangeTest extends GridCommonAbstractTest {
 
         cfg.setDiscoverySpi(new TestDiscoverySpi().setIpFinder(IP_FINDER));
 
-        cfg.setActiveOnStart(false);
+        cfg.setClusterStateOnStart(INACTIVE);
 
         cfg.setDataStorageConfiguration(new DataStorageConfiguration().setDefaultDataRegionConfiguration(
             new DataRegionConfiguration().setMaxSize(200 * 1024 * 1024)));
 
         if (cfg.isClientMode()) {
+            TestRecordingCommunicationSpi customSpi = clientCommSpi;
+            if (customSpi != null)
+                cfg.setCommunicationSpi(customSpi);
+
             // It is necessary to ensure that client always connects to grid(0).
             ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(CLIENT_IP_FINDER);
 
@@ -110,6 +132,14 @@ public class CacheNoAffinityExchangeTest extends GridCommonAbstractTest {
                 cfg.setCacheConfiguration(txCfg);
             }
         }
+
+        cfg.setFailureHandler(new AbstractFailureHandler() {
+            /** {@inheritDoc} */
+            @Override protected boolean handle(Ignite ignite, FailureContext failureCtx) {
+                errs.put(ignite.configuration().getIgniteInstanceName(), failureCtx.error());
+                return false;
+            }
+        });
 
         return cfg;
     }
@@ -130,7 +160,7 @@ public class CacheNoAffinityExchangeTest extends GridCommonAbstractTest {
     public void testNoAffinityChangeOnClientJoin() throws Exception {
         Ignite ig = startGrids(4);
 
-        ig.cluster().active(true);
+        ig.cluster().state(ACTIVE);
 
         IgniteCache<Integer, Integer> atomicCache = ig.createCache(new CacheConfiguration<Integer, Integer>()
                 .setName("atomic").setAtomicityMode(CacheAtomicityMode.ATOMIC));
@@ -186,7 +216,7 @@ public class CacheNoAffinityExchangeTest extends GridCommonAbstractTest {
     public void testNoAffinityChangeOnClientLeft() throws Exception {
         Ignite ig = startGrids(4);
 
-        ig.cluster().active(true);
+        ig.cluster().state(ACTIVE);
 
         IgniteCache<Integer, Integer> atomicCache = ig.createCache(new CacheConfiguration<Integer, Integer>()
             .setName("atomic").setAtomicityMode(CacheAtomicityMode.ATOMIC));
@@ -247,7 +277,7 @@ public class CacheNoAffinityExchangeTest extends GridCommonAbstractTest {
         try {
             Ignite ig = startGridsMultiThreaded(4);
 
-            ig.cluster().active(true);
+            ig.cluster().state(ACTIVE);
 
             IgniteCache<Integer, Integer> atomicCache = ig.createCache(new CacheConfiguration<Integer, Integer>()
                 .setName("atomic").setAtomicityMode(CacheAtomicityMode.ATOMIC).setCacheMode(CacheMode.REPLICATED));
@@ -341,7 +371,7 @@ public class CacheNoAffinityExchangeTest extends GridCommonAbstractTest {
     public void doTestMulipleClientLeaveJoin() throws Exception {
         Ignite ig = startGrids(2);
 
-        ig.cluster().active(true);
+        ig.cluster().state(ACTIVE);
 
         IgniteEx stableClient = startClientGrid(2);
 
@@ -354,7 +384,7 @@ public class CacheNoAffinityExchangeTest extends GridCommonAbstractTest {
 
         awaitPartitionMapExchange();
 
-        IgniteInternalFuture fut = GridTestUtils.runAsync(new Runnable() {
+        IgniteInternalFuture<?> fut = GridTestUtils.runAsync(new Runnable() {
             @Override public void run() {
                 for (int i = 0; i < 10; i++) {
                     try {
@@ -371,7 +401,7 @@ public class CacheNoAffinityExchangeTest extends GridCommonAbstractTest {
 
         CountDownLatch clientTxLatch = new CountDownLatch(1);
 
-        IgniteInternalFuture loadFut = GridTestUtils.runAsync(new Runnable() {
+        IgniteInternalFuture<?> loadFut = GridTestUtils.runAsync(new Runnable() {
             @Override public void run() {
                 try (Transaction tx = stableClient.transactions().txStart()) {
                     ThreadLocalRandom r = ThreadLocalRandom.current();
@@ -404,7 +434,7 @@ public class CacheNoAffinityExchangeTest extends GridCommonAbstractTest {
     public void testAffinityChangeOnClientConnectWithStaticallyConfiguredCaches() throws Exception {
         Ignite ig = startGrids(2);
 
-        ig.cluster().active(true);
+        ig.cluster().state(ACTIVE);
 
         TestDiscoverySpi discoSpi = (TestDiscoverySpi)grid(1).context().discovery().getInjectedDiscoverySpi();
 
@@ -417,11 +447,11 @@ public class CacheNoAffinityExchangeTest extends GridCommonAbstractTest {
         Ignite client = startClientGrid(2);
 
         assertTrue(GridTestUtils.waitForCondition(() -> {
-                AffinityTopologyVersion topVer0 = grid(0).context().discovery().topologyVersionEx();
-                AffinityTopologyVersion topVer1 = grid(1).context().discovery().topologyVersionEx();
+            AffinityTopologyVersion topVer0 = grid(0).context().discovery().topologyVersionEx();
+            AffinityTopologyVersion topVer1 = grid(1).context().discovery().topologyVersionEx();
 
-                return topVer0.topologyVersion() == 3 && topVer1.topologyVersion() == 2;
-            }, 10_000));
+            return topVer0.topologyVersion() == 3 && topVer1.topologyVersion() == 2;
+        }, 10_000));
 
         final IgniteCache<Integer, Integer> txCache = client.cache(PARTITIONED_TX_CLIENT_CACHE_NAME);
 
@@ -445,6 +475,123 @@ public class CacheNoAffinityExchangeTest extends GridCommonAbstractTest {
 
         assertEquals("Expected major topology version is 3.",
             3, grid(1).context().discovery().topologyVersionEx().topologyVersion());
+    }
+
+    /**
+     * Tests the "long" joining of the client node to the cluster
+     * when the message from the client is handled after affinity assignments are wiped from the history.
+     *
+     * Expected result: client node should reconnect to the cluster, server nodes should not be affected in any way.
+     *
+     * @throws Exception If Failed.
+     */
+    @Test
+    @WithSystemProperty(key = IgniteSystemProperties.IGNITE_AFFINITY_HISTORY_SIZE, value = "2")
+    public void testNoAffinityOnJoiningClientNode() throws Exception {
+        Ignite ig = startGrids(1);
+
+        ig.cluster().state(ACTIVE);
+
+        clientCommSpi = new TestRecordingCommunicationSpi();
+
+        clientCommSpi.blockMessages(
+            GridDhtPartitionsSingleMessage.class,
+            ig.configuration().getIgniteInstanceName());
+
+        // Start client node and block initial PME in order to guarantee that single message will be processed
+        // when affinity history for the corresponding topology version is already cleaned.
+        IgniteInternalFuture<?> startClientFut = GridTestUtils.runAsync(() -> {
+            try {
+                startClientCaches = true;
+
+                startClientGrid(1);
+            }
+            catch (Exception e) {
+                throw new RuntimeException("Unexpected exception.", e);
+            }
+        });
+
+        // Wait for initial PME.
+        clientCommSpi.waitForBlocked();
+
+        startClientCaches = false;
+
+        // Start new server nodes in order to clean the history of affinity assignments.
+        for (int i = 2; i < 5; i++) {
+            startGrid(i);
+            stopGrid(i, true);
+        }
+
+        // Send single message from the client.
+        clientCommSpi.stopBlock();
+
+        // Make sure that client node successfully started.
+        startClientFut.get(getTestTimeout());
+
+        awaitPartitionMapExchange();
+
+        StringBuilder failures = new StringBuilder();
+        errs.forEach((k, v) -> failures.append("nodeId=").append(k).append(", err=").append(v).append(U.nl()));
+
+        assertTrue(
+            "Failure handler should not be triggered " + failures.toString(),
+            errs.isEmpty());
+    }
+
+    /**
+     * Tests getting a cache on the client node when the history of affinity assignments is not enough.
+     *
+     * Expected result: client request should be rejected with the cause, server nodes should not be affected in any way.
+     *
+     * @throws Exception If Failed.
+     */
+    @Test
+    @WithSystemProperty(key = IgniteSystemProperties.IGNITE_AFFINITY_HISTORY_SIZE, value = "2")
+    public void testNoAffinityOnClientCacheStart() throws Exception {
+        Ignite ig = startGrids(1);
+
+        ig.cluster().state(ACTIVE);
+
+        ig.getOrCreateCache("client-cache");
+
+        startClientCaches = false;
+
+        IgniteEx client = startClientGrid(1);
+        TestRecordingCommunicationSpi clientSpi = TestRecordingCommunicationSpi.spi(client);
+        clientSpi.blockMessages((node, msg) -> msg instanceof GridDhtAffinityAssignmentRequest);
+
+        // Block creating client cache in order to guarantee that GridDhtAffinityAssignmentRequest message
+        // will be processed when affinity history for the corresponding topology version is already cleaned.
+        IgniteInternalFuture<?> startClientCacheFut = GridTestUtils.runAsync(() -> {
+            client.cache("client-cache");
+        });
+
+        clientSpi.waitForBlocked();
+
+        startClientCaches = false;
+
+        // Start new server nodes in order to clean the history of affinity assignments.
+        for (int i = 2; i < 5; i++) {
+            startGrid(i);
+            stopGrid(i, true);
+        }
+
+        // Send GridDhtAffinityAssignmentRequest from the client.
+        clientSpi.stopBlock();
+
+        assertThrows(log, () -> startClientCacheFut.get(), IgniteCheckedException.class, null);
+
+        awaitPartitionMapExchange();
+
+        StringBuilder failures = new StringBuilder();
+        errs.forEach((k, v) -> failures.append("nodeId=").append(k).append(", err=").append(v).append(U.nl()));
+
+        assertTrue(
+            "Failure handler should not be triggered " + failures.toString(),
+            errs.isEmpty());
+
+        // Make sure that the next call is successful.
+        assertNotNull(client.cache("client-cache"));
     }
 
     /**

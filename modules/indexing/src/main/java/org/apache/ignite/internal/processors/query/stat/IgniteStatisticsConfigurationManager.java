@@ -23,7 +23,9 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -101,30 +103,34 @@ public class IgniteStatisticsConfigurationManager {
     /** Is server node flag. */
     private final boolean isServerNode;
 
+    /** Configuration change subscribers. */
+    private List<Consumer<StatisticsObjectConfiguration>> subscribers = new CopyOnWriteArrayList<>();
+
     /** Change statistics configuration listener to update particular object statistics. */
     private final DistributedMetastorageLifecycleListener distrMetaStoreLsnr =
         new DistributedMetastorageLifecycleListener() {
-        @Override public void onReadyForWrite(DistributedMetaStorage metastorage) {
-            distrMetaStorage = metastorage;
+            @Override public void onReadyForWrite(DistributedMetaStorage metastorage) {
+                distrMetaStorage = metastorage;
 
-            distrMetaStorage.listen(
-                (metaKey) -> metaKey.startsWith(STAT_OBJ_PREFIX),
-                (k, oldV, newV) -> {
-                    // Skip invoke on start node (see 'ReadableDistributedMetaStorage#listen' the second case)
-                    // The update statistics on start node is handled by 'scanAndCheckLocalStatistic' method
-                    // called on exchange done.
-                    if (topVer == null)
-                        return;
+                distrMetaStorage.listen(
+                    (metaKey) -> metaKey.startsWith(STAT_OBJ_PREFIX),
+                    (k, oldV, newV) -> {
+                        // Skip invoke on start node (see 'ReadableDistributedMetaStorage#listen' the second case)
+                        // The update statistics on start node is handled by 'scanAndCheckLocalStatistic' method
+                        // called on exchange done.
+                        if (topVer == null)
+                            return;
 
-                    mgmtBusyExecutor.execute(() -> {
                         StatisticsObjectConfiguration newStatCfg = (StatisticsObjectConfiguration)newV;
 
-                        updateLocalStatistics(newStatCfg);
-                    });
-                }
-            );
-        }
-    };
+                        for (Consumer<StatisticsObjectConfiguration> subscriber : subscribers)
+                            subscriber.accept(newStatCfg);
+
+                        mgmtBusyExecutor.execute(() -> updateLocalStatistics(newStatCfg));
+                    }
+                );
+            }
+        };
 
     /**
      * Constructor.
@@ -207,7 +213,7 @@ public class IgniteStatisticsConfigurationManager {
          */
         @Override public void accept(GridH2Table tbl, List<String> cols) {
             assert !F.isEmpty(cols);
-                dropStatistics(Collections.singletonList(
+            dropStatistics(Collections.singletonList(
                     new StatisticsTarget(
                         tbl.identifier().schema(),
                         tbl.getName(),
@@ -605,5 +611,14 @@ public class IgniteStatisticsConfigurationManager {
         sb.append(key.schema()).append('.').append(key.obj());
 
         return sb.toString();
+    }
+
+    /**
+     * Subscribe to statistics configuration changed.
+     *
+     * @param subscriber Subscriber.
+     */
+    public void subscribe(Consumer<StatisticsObjectConfiguration> subscriber) {
+        subscribers.add(subscriber);
     }
 }

@@ -45,6 +45,7 @@ import java.util.stream.IntStream;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.binary.BinaryType;
@@ -246,10 +247,10 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * @param ccfg Cache configuration.
+     * @param ccfg Ensures the cache is absent.
      * @throws IgniteCheckedException if failed.
      */
-    protected void ensureCacheAbsent(CacheConfiguration<?, ?> ccfg) throws IgniteCheckedException {
+    protected void ensureCacheAbsent(CacheConfiguration<?, ?> ccfg) throws IgniteCheckedException, InterruptedException {
         String cacheName = ccfg.getName();
 
         for (Ignite ignite : G.allGrids()) {
@@ -285,7 +286,8 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
         return ccfg.setCacheMode(CacheMode.PARTITIONED)
             .setBackups(2)
             .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
-            .setAffinity(new RendezvousAffinityFunction(false, CACHE_PARTITIONS_COUNT));
+            .setAffinity(new RendezvousAffinityFunction(false, CACHE_PARTITIONS_COUNT))
+            .setEncryptionEnabled(encryption);
     }
 
     /**
@@ -398,9 +400,11 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
         ig.cluster().baselineAutoAdjustEnabled(false);
         ig.cluster().state(ClusterState.ACTIVE);
 
-        for (int i = 0; i < keys; i++) {
-            for (CacheConfiguration<Integer, V> ccfg : ccfgs)
-                ig.getOrCreateCache(ccfg.getName()).put(i, factory.apply(i));
+        for (CacheConfiguration<Integer, V> ccfg : ccfgs) {
+            try (IgniteDataStreamer<Integer, V> ds = ig.dataStreamer(ccfg.getName())) {
+                for (int i = 0; i < keys; i++)
+                    ds.addData(i, factory.apply(i));
+            }
         }
 
         forceCheckpoint();

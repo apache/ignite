@@ -184,13 +184,11 @@ public class JdbcThinMissingLongArrayResultsTest extends JdbcThinAbstractSelfTes
     @SuppressWarnings("unused")
     public static class Key implements Serializable {
         /** */
-        @QuerySqlField(orderedGroups = {@QuerySqlField.Group(
-            name = "date_sec_idx", order = 0, descending = true)})
+        @QuerySqlField(orderedGroups = {@QuerySqlField.Group(name = "date_sec_idx", order = 0, descending = true)})
         private long date;
 
         /** */
-        @QuerySqlField(index = true, orderedGroups = {@QuerySqlField.Group(
-            name = "date_sec_idx", order = 3)})
+        @QuerySqlField(index = true, orderedGroups = {@QuerySqlField.Group(name = "date_sec_idx", order = 3)})
         private int securityId;
 
         /**
