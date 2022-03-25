@@ -27,6 +27,9 @@ import org.apache.ignite.internal.processors.cache.KeyCacheObject;
  *
  */
 public class IgniteAtomicConsistencyViolationException extends IgniteConsistencyViolationException {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Fixed map. */
     private final Map<KeyCacheObject, EntryGetResult> fixedMap;
 
