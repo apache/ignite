@@ -5103,7 +5103,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
      *
      * @param key Key.
      * @param opCtx Operation context.
-     * @param skipVals Skip values flag.IgniteAtomicConsistencyViolationException
+     * @param skipVals Skip values flag.
      * @return Recovery future.
      */
     private IgniteInternalFuture<Void> repairTxAsync(
