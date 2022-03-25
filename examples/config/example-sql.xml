@@ -26,18 +26,9 @@
         http://www.springframework.org/schema/util
         http://www.springframework.org/schema/util/spring-util.xsd">
 
+    <import resource="example-default.xml"/>
+
     <bean id="queries.cfg" class="org.apache.ignite.configuration.IgniteConfiguration">
-        <property name="localHost" value="127.0.0.1"/>
-        <property name="connectorConfiguration"><null/></property>
-
-        <property name="clientConnectorConfiguration">
-            <bean class="org.apache.ignite.configuration.ClientConnectorConfiguration">
-                <property name="host" value="127.0.0.1"/>
-                <property name="port" value="10800"/>
-                <property name="portRange" value="10"/>
-            </bean>
-        </property>
-
         <property name="sqlConfiguration">
             <bean class="org.apache.ignite.configuration.SqlConfiguration">
                 <property name="queryEnginesConfiguration">
@@ -52,28 +43,5 @@
                 </property>
             </bean>
         </property>
-
-        <!-- Explicitly configure TCP discovery SPI to provide list of initial nodes. -->
-        <property name="discoverySpi">
-            <bean class="org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi">
-                <property name="ipFinder">
-                    <!--
-                        Ignite provides several options for automatic discovery that can be used
-                        instead os static IP based discovery.
-                    -->
-                    <!-- Uncomment static IP finder to enable static-based discovery of initial nodes. -->
-                    <bean class="org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder">
-                        <property name="addresses">
-                            <list>
-                                <!-- In distributed environment, replace with actual host IP address. -->
-                                <value>127.0.0.1:47500</value>
-                            </list>
-                        </property>
-                    </bean>
-                </property>
-                <property name="socketTimeout" value="300" />
-            </bean>
-        </property>
     </bean>
-
 </beans>

@@ -42,8 +42,35 @@ When starting a standalone node, move 'optional/ignite-calcite' folder to 'libs'
 Note: At now some logic from ignite-indexing module is reused, this means ignite-indexing module also
 has to be present at classpath.
 
-Connection url via jdbc with calcite engine: jdbc:ignite:thin://127.0.0.1:10800?queryEngine=calcite
-and with default h2 engine: jdbc:ignite:thin://127.0.0.1:10800?queryEngine=h2
+If more than one engine configured throught "queryEnginesConfiguration" it`s possible to use exact engine:
+1. JDBC:
+  By passing "queryEngine" param.
+  Connection url via JDBC with Calcite engine: jdbc:ignite:thin://127.0.0.1:10800?queryEngine=calcite
+  and with H2 engine: jdbc:ignite:thin://127.0.0.1:10800?queryEngine=h2
+
+2. ODBC, connection String Samples:
+  [IGNITE_H2]
+  DRIVER=Apache Ignite
+  SERVER=127.0.0.1
+  PORT=11110
+  SCHEMA=PUBLIC
+  QUERY_ENGINE=H2
+
+  [IGNITE_CALCITE]
+  DRIVER=Apache Ignite
+  SERVER=127.0.0.1
+  PORT=11110
+  SCHEMA=PUBLIC
+  QUERY_ENGINE=CALCITE
+
+  More extended info can be found here https://ignite.apache.org/docs/latest//SQL/ODBC/connection-string-dsn
+
+
+3. From code or 3-rd party tools:
+  By using hints:
+    SELECT /*+ QUERY_ENGINE('h2') */ fld FROM table;
+    or
+    SELECT /*+ QUERY_ENGINE('calcite') */ fld FROM table;
 
 Importing Calcite Module In Maven Project
 ---------------------------------------
