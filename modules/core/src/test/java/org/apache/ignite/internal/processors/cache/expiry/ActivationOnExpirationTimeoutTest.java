@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.cache.store;
+package org.apache.ignite.internal.processors.cache.expiry;
 
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
