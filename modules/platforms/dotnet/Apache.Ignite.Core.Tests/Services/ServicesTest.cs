@@ -490,12 +490,20 @@ namespace Apache.Ignite.Core.Tests.Services
         }
         
         /// <summary>
-        /// Tests Java service statistics.
+        /// Tests statistics of pure Java service. Call the service itself.
         /// </summary>
         [Test]
         public void TestJavaServiceStatistics()
         {
+            // Java service itself.
+            var helperSvc = Grid1.GetServices().GetServiceProxy<IJavaOnlyService>(_javaSvcName, false);
             
+            // Check metrics of pure java service. There were no invocations yet.
+            Assert.AreEqual(0, helperSvc.testNumberOfInvocations(_javaSvcName));
+            // Now we did 1 invocation of pure Java service just before.
+            Assert.AreEqual(1, helperSvc.testNumberOfInvocations(_javaSvcName));
+            // In total we did 2 calls by now.
+            Assert.AreEqual(2, helperSvc.testNumberOfInvocations(_javaSvcName));
         }
 
         /// <summary>
@@ -1447,17 +1455,9 @@ namespace Apache.Ignite.Core.Tests.Services
             Assert.AreEqual(2, dyn ? svc.test(1) : ((IJavaService)svc).test(1));
             Assert.AreEqual(true, dyn ? svc.test(false) : ((IJavaService)svc).test(false));
             Assert.AreEqual(null, dyn ? svc.testNull(null) : ((IJavaService)svc).testNull(null));
-            
-            // Check metrics of pure java service. There were no invocations by now.
-            Assert.AreEqual(0, helperSvc.testNumberOfInvocations(_javaSvcName));
-            // Now we did 1 invocation of pure Java service just before.
-            Assert.AreEqual(1, helperSvc.testNumberOfInvocations(_javaSvcName));
 
             // Service stats. is not enabled.
             Assert.AreEqual(0, helperSvc.testNumberOfInvocations(cfg.Name));
-            
-            // In total, we did 3 invocation of pure Java service.
-            Assert.AreEqual(3, helperSvc.testNumberOfInvocations(_javaSvcName));
 
             producer.Cancel(cfg.Name);
 
