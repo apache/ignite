@@ -129,7 +129,7 @@ public class PlatformDeployServiceTask extends ComputeTaskAdapter<String, Object
     /**
      * Test service.
      */
-    public static class PlatformTestService implements Service {
+    public static class PlatformTestService implements Service, PlatformHelperService {
         /** */
         @IgniteInstanceResource
         private IgniteEx ignite;
@@ -689,12 +689,8 @@ public class PlatformDeployServiceTask extends ComputeTaskAdapter<String, Object
             }
         }
 
-        /**
-         * Calculates number of registered values among the service statistics.
-         *
-         * @return Number of registered values among the service statistics.
-         */
-        public int testNumberOfInvocations(String svcName, String histName) {
+        /** {@inheritDoc} */
+        @Override public int testNumberOfInvocations(String svcName, String histName) {
             return ignite.compute().execute(new CountServiceMetricsTask(), new IgnitePair<>(svcName, histName));
         }
 
@@ -762,17 +758,17 @@ public class PlatformDeployServiceTask extends ComputeTaskAdapter<String, Object
                 }
 
                 /** {@inheritDoc} */
-                @Override public Long execute() throws IgniteException {
+                @Override public Integer execute() throws IgniteException {
                     ReadOnlyMetricRegistry metrics = ignite.context().metric().registry(
                         serviceMetricRegistryName(svcName));
 
                     if (histName != null && !histName.isEmpty()) {
                         HistogramMetric hist = metrics.findMetric(histName);
 
-                        return hist == null ? 0 : sumHistogramEntries(hist);
+                        return hist == null ? 0 : (int)sumHistogramEntries(hist);
                     }
 
-                    long cnt = 0;
+                    int cnt = 0;
 
                     for (Metric metric : metrics) {
                         if (metric instanceof HistogramMetric)
@@ -807,5 +803,17 @@ public class PlatformDeployServiceTask extends ComputeTaskAdapter<String, Object
         public TestUnmappedException(String msg) {
             super(msg);
         }
+    }
+
+    /**
+     * Platform helper service.
+     */
+    private interface PlatformHelperService {
+        /**
+         * Calculates number of registered values among the service statistics.
+         *
+         * @return Number of registered values among the service statistics.
+         */
+        int testNumberOfInvocations(String svcName, String histName);
     }
 }

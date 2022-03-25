@@ -102,7 +102,7 @@ namespace Apache.Ignite.Core.Tests.Services
         /// Executes before each test.
         /// </summary>
         [SetUp]
-        public void SetUp()
+        public void hereSetUp()
         {
             StartGrids();
 
@@ -487,6 +487,15 @@ namespace Apache.Ignite.Core.Tests.Services
             // Make sure there is an instance on grid1.
             var svcInst = Grid1.GetServices().GetService<ITestIgniteService>(SvcName);
             Assert.IsNotNull(svcInst);
+        }
+        
+        /// <summary>
+        /// Tests Java service statistics.
+        /// </summary>
+        [Test]
+        public void TestJavaServiceStatistics()
+        {
+            
         }
 
         /// <summary>
@@ -1432,15 +1441,23 @@ namespace Apache.Ignite.Core.Tests.Services
 
             // Subject service, calculates invocations.
             var helperSvc = producer.GetServiceProxy<IJavaOnlyService>(_javaSvcName, false);
-
+            
             // Do 4 invocations.
             Assert.AreEqual(3, dyn ? svc.testOverload(1, 2) : ((IJavaService)svc).testOverload(1, 2));
             Assert.AreEqual(2, dyn ? svc.test(1) : ((IJavaService)svc).test(1));
             Assert.AreEqual(true, dyn ? svc.test(false) : ((IJavaService)svc).test(false));
             Assert.AreEqual(null, dyn ? svc.testNull(null) : ((IJavaService)svc).testNull(null));
-  
+            
+            // Check metrics of pure java service. There were no invocations by now.
+            Assert.AreEqual(0, helperSvc.testNumberOfInvocations(_javaSvcName));
+            // Now we did 1 invocation of pure Java service just before.
+            Assert.AreEqual(1, helperSvc.testNumberOfInvocations(_javaSvcName));
+
             // Service stats. is not enabled.
             Assert.AreEqual(0, helperSvc.testNumberOfInvocations(cfg.Name));
+            
+            // In total, we did 3 invocation of pure Java service.
+            Assert.AreEqual(3, helperSvc.testNumberOfInvocations(_javaSvcName));
 
             producer.Cancel(cfg.Name);
 
@@ -1457,7 +1474,7 @@ namespace Apache.Ignite.Core.Tests.Services
             
             // Service metrics exists but holds no values.
             Assert.AreEqual(0, helperSvc.testNumberOfInvocations(cfg.Name));
-            
+
             // One invocation.
             Assert.AreEqual(2, dyn ? svc.test(1) : ((IJavaService)svc).test(1));
             
@@ -1491,9 +1508,6 @@ namespace Apache.Ignite.Core.Tests.Services
             // Undeploy again.
             producer.Cancel(cfg.Name);
             AssertNoService(cfg.Name);
-
-            // All the metrics should be removed.
-            Assert.AreEqual(0, helperSvc.testNumberOfInvocations(cfg.Name));
         }
 
         /// <summary>
