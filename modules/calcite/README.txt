@@ -48,7 +48,7 @@ If more than one engine configured throught "queryEnginesConfiguration" it`s pos
   Connection url via JDBC with Calcite engine: jdbc:ignite:thin://127.0.0.1:10800?queryEngine=calcite
   and with H2 engine: jdbc:ignite:thin://127.0.0.1:10800?queryEngine=h2
 
-2. ODBC, connection String Samples:
+2. ODBC, connection string samples:
   [IGNITE_H2]
   DRIVER=Apache Ignite
   SERVER=127.0.0.1
@@ -64,7 +64,6 @@ If more than one engine configured throught "queryEnginesConfiguration" it`s pos
   QUERY_ENGINE=CALCITE
 
   More extended info can be found here https://ignite.apache.org/docs/latest//SQL/ODBC/connection-string-dsn
-
 
 3. From code or 3-rd party tools:
   By using hints:
