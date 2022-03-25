@@ -102,7 +102,7 @@ namespace Apache.Ignite.Core.Tests.Services
         /// Executes before each test.
         /// </summary>
         [SetUp]
-        public void hereSetUp()
+        public void SetUp()
         {
             StartGrids();
 
