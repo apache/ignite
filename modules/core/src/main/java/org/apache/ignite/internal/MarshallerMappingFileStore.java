@@ -90,7 +90,7 @@ final class MarshallerMappingFileStore {
     public void writeMapping(byte platformId, int typeId, String typeName) {
         String fileName = getFileName(platformId, typeId);
 
-        File tmpFile = new File(mappingDir, fileName + "." + ThreadLocalRandom.current().nextInt() + ".tmp");
+        File tmpFile = new File(mappingDir, fileName + ThreadLocalRandom.current().nextInt() + ".tmp");
         File file = new File(mappingDir, fileName);
 
         Lock lock = fileLock(fileName);
@@ -98,18 +98,19 @@ final class MarshallerMappingFileStore {
         lock.lock();
 
         try {
-            try (FileOutputStream out = new FileOutputStream(tmpFile);
-                 Writer writer = new OutputStreamWriter(out, StandardCharsets.UTF_8)) {
-                writer.write(typeName);
+            try (FileOutputStream out = new FileOutputStream(tmpFile)) {
+                try (Writer writer = new OutputStreamWriter(out, StandardCharsets.UTF_8)) {
+                    writer.write(typeName);
 
-                writer.flush();
+                    writer.flush();
+                }
             }
 
             Files.move(tmpFile.toPath(), file.toPath(), REPLACE_EXISTING, ATOMIC_MOVE);
         }
         catch (IOException e) {
             U.error(log, "Failed to write class name to file [platformId=" + platformId + "id=" + typeId +
-                ", clsName=" + typeName + ", file=" + tmpFile.getAbsolutePath() + ']', e);
+                ", clsName=" + typeName + ", file=" + file.getAbsolutePath() + ']', e);
         }
         finally {
             lock.unlock();
@@ -120,16 +121,14 @@ final class MarshallerMappingFileStore {
      * @param platformId Platform id.
      * @param typeId Type id.
      */
-    public String readMapping(byte platformId, int typeId) throws IgniteCheckedException {
+    public String readMapping(byte platformId, int typeId) {
         return readMapping(getFileName(platformId, typeId));
     }
 
     /**
      * @param fileName File name.
      */
-    private String readMapping(String fileName) throws IgniteCheckedException {
-        ThreadLocalRandom rnd = null;
-
+    private String readMapping(String fileName) {
         Lock lock = fileLock(fileName);
 
         lock.lock();
@@ -139,25 +138,17 @@ final class MarshallerMappingFileStore {
 
             long time = 0;
 
-            while (true) {
-                try (FileInputStream in = new FileInputStream(file);
-                     BufferedReader reader = new BufferedReader(new InputStreamReader(in, StandardCharsets.UTF_8))) {
-                    if (file.length() > 0)
-                        return reader.readLine();
-
-                    if (rnd == null)
-                        rnd = ThreadLocalRandom.current();
-
-                    if (time == 0)
-                        time = System.nanoTime();
-                    else if (U.millisSinceNanos(time) >= FILE_LOCK_TIMEOUT_MS)
+            try (FileInputStream in = new FileInputStream(file)) {
+                try (BufferedReader reader = new BufferedReader(new InputStreamReader(in, StandardCharsets.UTF_8))) {
+                    if (file.length() == 0)
                         return null;
 
-                    U.sleep(rnd.nextLong(50));
+                    return reader.readLine();
                 }
-                catch (IOException ignored) {
-                    return null;
-                }
+
+            }
+            catch (IOException ignored) {
+                return null;
             }
         }
         finally {

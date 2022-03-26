@@ -53,12 +53,13 @@ public class ConcurrentMappingFileReadWriteTest extends GridCommonAbstractTest {
         BinaryBasicIdMapper mapper = new BinaryBasicIdMapper();
 
         MarshallerMappingFileStore fs = new MarshallerMappingFileStore(
-                new StandaloneGridKernalContext(log, null, null),
-                workDir
+            new StandaloneGridKernalContext(log, null, null),
+            workDir
         );
 
         CountDownLatch latch = new CountDownLatch(1);
 
+        byte platformId = (byte) 0;
         int typeId = mapper.typeId(String.class.getName());
         String typeName = String.class.getName();
 
@@ -70,8 +71,13 @@ public class ConcurrentMappingFileReadWriteTest extends GridCommonAbstractTest {
                 throw new RuntimeException(e);
             }
 
-            for (int i = 0; i < 10; i++)
-                fs.writeMapping((byte) 0, typeId, typeName);
+            fs.writeMapping(platformId, typeId, typeName);
+
+            for (int i = 0; i < 10; i++) {
+                assertEquals(typeId, fs.readMapping(platformId, typeId));
+
+                fs.writeMapping(platformId, typeId, typeName);
+            }
         }, 3);
 
         latch.countDown();
