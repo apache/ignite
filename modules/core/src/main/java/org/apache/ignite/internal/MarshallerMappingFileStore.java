@@ -74,8 +74,7 @@ final class MarshallerMappingFileStore {
      * @param kctx Grid kernal context.
      * @param workDir custom marshaller work directory.
      */
-    MarshallerMappingFileStore(final GridKernalContext kctx,
-        final File workDir) throws IgniteCheckedException {
+    MarshallerMappingFileStore(final GridKernalContext kctx, final File workDir) throws IgniteCheckedException {
         this.ctx = kctx;
         this.mappingDir = workDir;
         log = kctx.log(MarshallerMappingFileStore.class);
@@ -88,7 +87,7 @@ final class MarshallerMappingFileStore {
      * @param typeId Type id.
      * @param typeName Type name.
      */
-    void writeMapping(byte platformId, int typeId, String typeName) {
+    public void writeMapping(byte platformId, int typeId, String typeName) {
         String fileName = getFileName(platformId, typeId);
 
         File tmpFile = new File(mappingDir, fileName + "." + ThreadLocalRandom.current().nextInt() + ".tmp");
@@ -115,6 +114,14 @@ final class MarshallerMappingFileStore {
         finally {
             lock.unlock();
         }
+    }
+
+    /**
+     * @param platformId Platform id.
+     * @param typeId Type id.
+     */
+    public String readMapping(byte platformId, int typeId) throws IgniteCheckedException {
+        return readMapping(getFileName(platformId, typeId));
     }
 
     /**
@@ -156,14 +163,6 @@ final class MarshallerMappingFileStore {
         finally {
             lock.unlock();
         }
-    }
-
-    /**
-     * @param platformId Platform id.
-     * @param typeId Type id.
-     */
-    String readMapping(byte platformId, int typeId) throws IgniteCheckedException {
-        return readMapping(getFileName(platformId, typeId));
     }
 
     /**
