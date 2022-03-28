@@ -51,9 +51,6 @@ final class MarshallerMappingFileStore {
     /** */
     private static final String FILE_EXTENSION = ".classname";
 
-    /** File lock timeout in milliseconds. */
-    private static final int FILE_LOCK_TIMEOUT_MS = 5000;
-
     /** */
     private static final GridStripedLock fileLock = new GridStripedLock(32);
 
@@ -135,8 +132,6 @@ final class MarshallerMappingFileStore {
 
         try {
             File file = new File(mappingDir, fileName);
-
-            long time = 0;
 
             try (FileInputStream in = new FileInputStream(file)) {
                 try (BufferedReader reader = new BufferedReader(new InputStreamReader(in, StandardCharsets.UTF_8))) {
