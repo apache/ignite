@@ -19,6 +19,7 @@ COPY libs ./libs
 # Run
 ENV LD_LIBRARY_PATH /usr/lib/jvm/default-jvm/jre/lib/amd64/server
 ENV IGNITE_HOME /app
+ENV COMPlus_EnableAlternateStackCheck 1
 
 ENTRYPOINT ["dotnet", "Apache.Ignite.Executable.dll"]
 
