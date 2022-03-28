@@ -28,6 +28,7 @@ import org.apache.ignite.Ignition;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.client.ClientCache;
+import org.apache.ignite.client.ClientCacheConfiguration;
 import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.internal.IgnitionEx;
@@ -42,6 +43,7 @@ import java.util.concurrent.*;
 public class ThinClientDataGenerationApplication extends IgniteAwareApplication {
     /** {@inheritDoc} */
     @Override protected void run(JsonNode jsonNode) throws Exception {
+        int backups = Optional.ofNullable(jsonNode.get("backups")).map(JsonNode::asInt).orElse(1);
         String cacheName = Optional.ofNullable(jsonNode.get("cacheName")).map(JsonNode::asText).orElse("TEST-CACHE");
         int entrySize = jsonNode.get("entrySize").asInt();
         int from = jsonNode.get("from").asInt();
@@ -63,7 +65,7 @@ public class ThinClientDataGenerationApplication extends IgniteAwareApplication 
             new DistributedDoubleBarrier(zk, "/" + preloadersToken, preloaders).enter(timeoutSecs, TimeUnit.SECONDS);
         }
 
-        ClientCache<Integer, BinaryObject> cache = client.getOrCreateCache(cacheName);
+        client.getOrCreateCache(new ClientCacheConfiguration().setName(cacheName).setBackups(backups));
 
         ExecutorService executorService = Executors.newFixedThreadPool(threads);
 
@@ -96,16 +98,29 @@ public class ThinClientDataGenerationApplication extends IgniteAwareApplication 
 
 //        client.destroyCache(cacheName);
 
-        markFinished();
+        if (errors > 0)
+            markBroken(new RuntimeException(String.format("%d jobs of total %d failed", errors, results.size())));
+        else
+            markFinished();
     }
 
     static class JobResult {
         int error;
         int ok;
+        String errorMessage;
 
-        public JobResult(int error, int ok) {
+        private JobResult(int error, int ok, String errorMessage) {
             this.error = error;
             this.ok = ok;
+            this.errorMessage = errorMessage;
+        }
+
+        public static JobResult error(String errorMessage) {
+            return new JobResult(1, 0, errorMessage);
+        }
+
+        public static JobResult ok() {
+            return new JobResult(0, 1, null);
         }
     }
 
@@ -158,10 +173,10 @@ public class ThinClientDataGenerationApplication extends IgniteAwareApplication 
 
             } catch (Throwable e) {
                 log.error(String.format("Job failed: [%s]", this.toString()), e);
-                return new JobResult(1, 0);
+                return JobResult.error(e.getMessage());
             }
 
-            return new JobResult(0, 1);
+            return JobResult.ok();
         }
 
         private IgniteClient getClient() throws IgniteCheckedException {
