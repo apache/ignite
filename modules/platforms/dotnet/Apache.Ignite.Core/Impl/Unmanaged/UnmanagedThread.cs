@@ -68,7 +68,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
                 int tlsIndex;
                 var res = NativeMethodsMacOs.pthread_key_create(new IntPtr(&tlsIndex), callbackPtr);
 
-                NativeMethodsLinuxLibpthread.CheckResult(res);
+                CheckResult(res);
 
                 return tlsIndex;
             }
@@ -94,7 +94,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
                     }
                 }
 
-                NativeMethodsLinuxLibpthread.CheckResult(res);
+                CheckResult(res);
 
                 return tlsIndex;
             }
@@ -121,7 +121,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             else if (Os.IsMacOs)
             {
                 var res = NativeMethodsMacOs.pthread_key_delete(callbackId);
-                NativeMethodsLinuxLibpthread.CheckResult(res);
+                CheckResult(res);
             }
             else if (Os.IsLinux)
             {
@@ -143,7 +143,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
                     }
                 }
 
-                NativeMethodsLinuxLibpthread.CheckResult(res);
+                CheckResult(res);
             }
             else
             {
@@ -171,7 +171,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             else if (Os.IsMacOs)
             {
                 var res = NativeMethodsMacOs.pthread_setspecific(callbackId, threadLocalValue);
-                NativeMethodsLinuxLibpthread.CheckResult(res);
+                CheckResult(res);
             }
             else if (Os.IsLinux)
             {
@@ -193,11 +193,22 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
                     }
                 }
 
-                NativeMethodsLinuxLibpthread.CheckResult(res);
+                CheckResult(res);
             }
             else
             {
                 throw new InvalidOperationException("Unsupported OS: " + Environment.OSVersion);
+            }
+        }
+
+        /// <summary>
+        /// Checks native call result.
+        /// </summary>
+        private static void CheckResult(int res)
+        {
+            if (res != 0)
+            {
+                throw new InvalidOperationException("Native call failed: " + res);
             }
         }
 
@@ -258,17 +269,6 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             [SuppressMessage("Microsoft.Design", "CA1060:MovePInvokesToNativeMethodsClass", Justification = "Reviewed.")]
             [DllImport("libpthread.so")]
             public static extern int pthread_setspecific(int key, IntPtr value);
-
-            /// <summary>
-            /// Checks native call result.
-            /// </summary>
-            public static void CheckResult(int res)
-            {
-                if (res != 0)
-                {
-                    throw new InvalidOperationException("Native call failed: " + res);
-                }
-            }
         }
 
         /// <summary>
