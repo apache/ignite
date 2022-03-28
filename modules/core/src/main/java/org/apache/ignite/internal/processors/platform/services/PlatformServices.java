@@ -484,8 +484,8 @@ public class PlatformServices extends PlatformAbstractTarget {
      * @param reader Binary reader,
      * @return Service configuration.
      */
-    @NotNull private ServiceConfiguration dotnetConfiguration(BinaryRawReaderEx reader) {
-        ServiceConfiguration cfg = new ServiceConfiguration();
+    @NotNull private PlatformServiceConfiguration dotnetConfiguration(BinaryRawReaderEx reader) {
+        PlatformServiceConfiguration cfg = new PlatformServiceConfiguration();
 
         cfg.setName(reader.readString());
         cfg.setService(new PlatformDotNetServiceImpl(reader.readObjectDetached(), platformCtx, srvKeepBinary));
@@ -498,6 +498,11 @@ public class PlatformServices extends PlatformAbstractTarget {
 
         if (filter != null)
             cfg.setNodeFilter(platformCtx.createClusterNodeFilter(filter));
+
+        cfg.setStatisticsEnabled(reader.readBoolean());
+
+        if (cfg.isStatisticsEnabled())
+            cfg.mtdNames(reader.readStringArray());
 
         return cfg;
     }
@@ -513,9 +518,8 @@ public class PlatformServices extends PlatformAbstractTarget {
 
         List<ServiceConfiguration> cfgs = new ArrayList<>(numServices);
 
-        for (int i = 0; i < numServices; i++) {
+        for (int i = 0; i < numServices; i++)
             cfgs.add(dotnetConfiguration(reader));
-        }
 
         return cfgs;
     }
@@ -822,5 +826,7 @@ public class PlatformServices extends PlatformAbstractTarget {
         if (svcCfg.getNodeFilter() instanceof PlatformClusterNodeFilterImpl)
             dotnetFilter = ((PlatformClusterNodeFilterImpl)svcCfg.getNodeFilter()).getInternalPredicate();
         w.writeObjectDetached(dotnetFilter);
+
+        w.writeBoolean(svcCfg.isStatisticsEnabled());
     }
 }
