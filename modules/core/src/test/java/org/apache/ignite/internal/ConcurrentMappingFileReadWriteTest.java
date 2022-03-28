@@ -37,7 +37,7 @@ import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_MARS
  */
 public class ConcurrentMappingFileReadWriteTest extends GridCommonAbstractTest {
     /** */
-    private static final byte PLATFORM_ID = (byte) 0;
+    private static final byte PLATFORM_ID = (byte)0;
 
     /** */
     private static final int TYPE_ID = new BinaryBasicIdMapper().typeId(String.class.getName());
