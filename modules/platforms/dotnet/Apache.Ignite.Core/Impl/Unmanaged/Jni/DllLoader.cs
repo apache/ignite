@@ -89,9 +89,9 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
                 // Depending on the Linux distro, dlopen is either present in libdl or in libcoreclr.
                 try
                 {
-                    var ptr = NativeMethodsCore.dlopen(dllPath, RtldGlobal | RtldLazy);
+                    var ptr = NativeMethodsLinuxCoreclr.dlopen(dllPath, RtldGlobal | RtldLazy);
                     return new KeyValuePair<IntPtr, string>(ptr, ptr == IntPtr.Zero
-                        ? GetErrorText(NativeMethodsCore.dlerror())
+                        ? GetErrorText(NativeMethodsLinuxCoreclr.dlerror())
                         : null);
                 }
                 catch (EntryPointNotFoundException)
@@ -184,7 +184,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
         /// <summary>
         /// libdl.so depends on libc6-dev on Linux, use libcoreclr instead.
         /// </summary>
-        private static class NativeMethodsCore
+        private static class NativeMethodsLinuxCoreclr
         {
             [SuppressMessage("Microsoft.Design", "CA1060:MovePInvokesToNativeMethodsClass")]
             [DllImport("libcoreclr.so", SetLastError = true, CharSet = CharSet.Ansi, BestFitMapping = false,
