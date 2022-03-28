@@ -1031,6 +1031,16 @@ public class RexToLixTranslator implements RexVisitor<RexToLixTranslator.Result>
         if (implementor == null)
             throw new RuntimeException("cannot translate call " + call);
 
+//        for (RexNode rex : call.operands) {
+//            if (call.getOperator().getKind() == SqlKind.IS_NULL || call.getOperator().getKind() == SqlKind.IS_NOT_NULL)
+//                continue;
+//
+//            if (rex.getType() instanceof OtherType && !((OtherType)rex.getType()).isUuid()) {
+//                throw new UnsupportedOperationException("Operator '" + call.getOperator().getName() +
+//                    "' is not supported for type '" + rex.getType().toString() + "'.");
+//            }
+//        }
+
         final List<RexNode> operandList = call.getOperands();
         final List<Type> storageTypes = ConverterUtils.internalTypes(operandList);
         final List<Result> operandResults = new ArrayList<>();

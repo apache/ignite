@@ -447,7 +447,14 @@ public abstract class QueryChecker {
                 Comparable c1 = (Comparable)item1;
                 Comparable c2 = (Comparable)item2;
 
-                int c = c1.compareTo(c2);
+                int c;
+
+                try {
+                    c = c1.compareTo(c2);
+                }
+                catch (ClassCastException e) {
+                    c = c1.getClass().getName().compareTo(c2.getClass().getName());
+                }
 
                 if (c != 0)
                     return c;
