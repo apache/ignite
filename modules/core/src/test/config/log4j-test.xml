@@ -133,10 +133,6 @@
     -->
 
     <!-- Disable all open source debugging. -->
-<!--    <category name="org.apache.calcite">-->
-<!--        <level value="DEBUG"/>-->
-<!--    </category>-->
-
     <category name="org">
         <level value="INFO"/>
     </category>
