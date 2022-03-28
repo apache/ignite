@@ -318,7 +318,7 @@ public class TypeUtils {
             return Duration.ofMillis((Long)val);
         else if (storageType == Period.class && val instanceof Integer)
             return Period.of((Integer)val / 12, (Integer)val % 12, 0);
-        else if (storageType == byte[].class && val instanceof ByteString)
+        else if (val instanceof ByteString)
             return ((ByteString)val).getBytes();
         else
             return val;

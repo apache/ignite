@@ -31,6 +31,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import org.apache.ignite.calcite.CalciteQueryEngineConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -95,76 +96,49 @@ public class JdbcQueryTest extends GridCommonAbstractTest {
      */
     @Test
     public void testOtherType() throws Exception {
+        List<Object> values = new ArrayList<>();
+
+//        values.add("str");
+//        values.add(11);
+//        values.add(101.1);
+//        values.add(202.2f);
+        values.add(new byte[] {1, 2, 3});
+//        values.add(UUID.randomUUID());
+//        values.add(new ObjectToStore(1, "noname", 22.2));
+
+//        Map<String, Object> map = new HashMap<>();
+//        map.put("a", "bb");
+//        map.put("vvv", "zzz");
+//        map.put("111", "222");
+//        values.add(map);
+//
+//        List<Object> lst = new ArrayList<>();
+//        lst.add(1);
+//        lst.add(2.2f);
+//        lst.add(3.3d);
+//        lst.add("str");
+//        lst.add(map);
+//        values.add(lst);
+
         stmt.execute("CREATE TABLE tbl(id INT, oth OTHER, primary key(id))");
 
         try (PreparedStatement ps = conn.prepareStatement("insert into tbl values(?, ?)")) {
             int idx = 1;
 
-            ps.setInt(1, idx++);
-            ps.setObject(2, "str");
-            assertEquals(1, ps.executeUpdate());
+            for (Object obj : values) {
+                ps.setInt(1, idx++);
 
-            ps.setInt(1, idx++);
-            ps.setObject(2, 11);
-            assertEquals(1, ps.executeUpdate());
+                ps.setObject(2, obj);
 
-            ps.setInt(1, idx++);
-            ps.setObject(2, 101.1);
-            assertEquals(1, ps.executeUpdate());
+                assertEquals(1, ps.executeUpdate());
+            }
+        }
 
-            ps.setInt(1, idx++);
-            ps.setObject(2, 202.2f);
-            assertEquals(1, ps.executeUpdate());
-
-            ObjectToStore obj = new ObjectToStore(1, "noname", 22.2);
-
-            ps.setInt(1, idx++);
-            ps.setObject(2, obj);
-            assertEquals(1, ps.executeUpdate());
-
-            // Map
-            Map<String, Object> map = new HashMap<>();
-            map.put("a", "bb");
-            map.put("vvv", "zzz");
-            map.put("111", "222");
-            ps.setInt(1, idx++);
-            ps.setObject(2, map);
-            assertEquals(1, ps.executeUpdate());
-
-            // List
-            List<Object> lst = new ArrayList<>();
-            lst.add(1);
-            lst.add(2.2f);
-            lst.add(3.3d);
-            lst.add("str");
-            lst.add(map);
-            ps.setInt(1, idx++);
-            ps.setObject(2, lst);
-            assertEquals(1, ps.executeUpdate());
-
-            try (ResultSet rs = stmt.executeQuery("select * from tbl order by id")) {
+        try (ResultSet rs = stmt.executeQuery("select * from tbl order by id")) {
+            for (Object obj : values) {
                 assertTrue(rs.next());
-                assertEquals("str", rs.getObject(2));
 
-                assertTrue(rs.next());
-                assertEquals(11, rs.getObject(2));
-
-                assertTrue(rs.next());
-                assertEquals(101.1, rs.getObject(2));
-
-                assertTrue(rs.next());
-                assertEquals(202.2f, rs.getObject(2));
-
-                assertTrue(rs.next());
                 assertEquals(obj, rs.getObject(2));
-
-                // Map
-                assertTrue(rs.next());
-                assertEquals(map, rs.getObject(2));
-
-                // List
-                assertTrue(rs.next());
-                assertEquals(lst, rs.getObject(2));
             }
         }
     }

@@ -25,6 +25,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import com.google.common.collect.ImmutableList;
 import org.apache.calcite.adapter.enumerable.PhysType;
 import org.apache.calcite.adapter.java.JavaTypeFactory;
@@ -70,6 +72,7 @@ import org.apache.calcite.sql.validate.SqlConformance;
 import org.apache.calcite.util.BuiltInMethod;
 import org.apache.calcite.util.ControlFlowException;
 import org.apache.calcite.util.Pair;
+import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.processors.query.calcite.util.IgniteMethod;
 
 import static org.apache.calcite.sql.fun.SqlStdOperatorTable.CASE;
@@ -1188,10 +1191,26 @@ public class RexToLixTranslator implements RexVisitor<RexToLixTranslator.Result>
 
         final Type storageType = currentStorageType != null
             ? currentStorageType : typeFactory.getJavaClass(dynamicParam.getType());
-        final Expression valueExpression = ConverterUtils.convert(
-            Expressions.call(root, BuiltInMethod.DATA_CONTEXT_GET.method,
-                Expressions.constant("?" + dynamicParam.getIndex())),
-            storageType);
+
+        final List<Expression> params = Stream.of(
+                Expressions.constant("?" + dynamicParam.getIndex()),
+                Expressions.constant(storageType))
+            .collect(Collectors.toList());
+
+//        final Expression valueExpression = ConverterUtils.convert(
+//            Expressions.call(root, BuiltInMethod.DATA_CONTEXT_GET.method, Expressions.constant("?" + dynamicParam.getIndex())),
+//            storageType);
+
+        Expression valueExpression = null;
+        try {
+            valueExpression = ConverterUtils.convert(
+                Expressions.call(root, ExecutionContext.class.getMethod("get", String.class, Type.class), params),
+                storageType);
+        }
+        catch (NoSuchMethodException e) {
+            e.printStackTrace();
+        }
+
         final ParameterExpression valueVariable =
             Expressions.parameter(valueExpression.getType(), list.newName("value_dynamic_param"));
         list.add(Expressions.declare(Modifier.FINAL, valueVariable, valueExpression));
