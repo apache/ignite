@@ -27,8 +27,13 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
     /// </summary>
     internal static class UnmanagedThread
     {
+        /** */
         private static readonly Func<IntPtr, int> SetThreadExitCallbackDelegate;
+
+        /** */
         private static readonly Action<int> RemoveThreadExitCallbackDelegate;
+
+        /** */
         private static readonly Action<int, IntPtr> EnableCurrentThreadExitEventDelegate;
 
         /// <summary>
@@ -130,6 +135,9 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             EnableCurrentThreadExitEventDelegate(callbackId, threadLocalValue);
         }
 
+        /// <summary>
+        /// Sets the thread exit callback.
+        /// </summary>
         private static unsafe int SetThreadExitCallbackMacOs(IntPtr callbackPtr)
         {
             int tlsIndex;
@@ -140,6 +148,9 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             return tlsIndex;
         }
 
+        /// <summary>
+        /// Sets the thread exit callback.
+        /// </summary>
         private static int SetThreadExitCallbackWindows(IntPtr callbackPtr)
         {
             var res = NativeMethodsWindows.FlsAlloc(callbackPtr);
@@ -152,6 +163,9 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             return res;
         }
 
+        /// <summary>
+        /// Sets the thread exit callback.
+        /// </summary>
         private static unsafe int SetThreadExitCallbackMono(IntPtr callbackPtr)
         {
             int tlsIndex;
@@ -161,6 +175,9 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             return tlsIndex;
         }
 
+        /// <summary>
+        /// Sets the thread exit callback.
+        /// </summary>
         private static unsafe int SetThreadExitCallbackLibcoreclr(IntPtr callbackPtr)
         {
             int tlsIndex;
@@ -170,6 +187,9 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             return tlsIndex;
         }
 
+        /// <summary>
+        /// Sets the thread exit callback.
+        /// </summary>
         private static unsafe int SetThreadExitCallbackLibpthread(IntPtr callbackPtr)
         {
             int tlsIndex;
@@ -179,26 +199,41 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             return tlsIndex;
         }
 
+        /// <summary>
+        /// Removes thread exit callback that has been set with <see cref="SetThreadExitCallback"/>.
+        /// </summary>
         private static void RemoveThreadExitCallbackLibpthread(int callbackId)
         {
             CheckResult(NativeMethodsLinuxLibpthread.pthread_key_delete(callbackId));
         }
 
+        /// <summary>
+        /// Removes thread exit callback that has been set with <see cref="SetThreadExitCallback"/>.
+        /// </summary>
         private static void RemoveThreadExitCallbackLibcoreclr(int callbackId)
         {
             CheckResult(NativeMethodsLinuxLibcoreclr.pthread_key_delete(callbackId));
         }
 
+        /// <summary>
+        /// Removes thread exit callback that has been set with <see cref="SetThreadExitCallback"/>.
+        /// </summary>
         private static void RemoveThreadExitCallbackMono(int callbackId)
         {
             CheckResult(NativeMethodsMono.pthread_key_delete(callbackId));
         }
 
+        /// <summary>
+        /// Removes thread exit callback that has been set with <see cref="SetThreadExitCallback"/>.
+        /// </summary>
         private static void RemoveThreadExitCallbackMacOs(int callbackId)
         {
             CheckResult(NativeMethodsMacOs.pthread_key_delete(callbackId));
         }
 
+        /// <summary>
+        /// Removes thread exit callback that has been set with <see cref="SetThreadExitCallback"/>.
+        /// </summary>
         private static void RemoveThreadExitCallbackWindows(int callbackId)
         {
             var res = NativeMethodsWindows.FlsFree(callbackId);
@@ -209,26 +244,41 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             }
         }
 
+        /// <summary>
+        /// Enables thread exit event for current thread.
+        /// </summary>
         private static void EnableCurrentThreadExitEventLibpthread(int callbackId, IntPtr threadLocalValue)
         {
             CheckResult(NativeMethodsLinuxLibpthread.pthread_setspecific(callbackId, threadLocalValue));
         }
 
+        /// <summary>
+        /// Enables thread exit event for current thread.
+        /// </summary>
         private static void EnableCurrentThreadExitEventLibcoreclr(int callbackId, IntPtr threadLocalValue)
         {
             CheckResult(NativeMethodsLinuxLibcoreclr.pthread_setspecific(callbackId, threadLocalValue));
         }
 
+        /// <summary>
+        /// Enables thread exit event for current thread.
+        /// </summary>
         private static void EnableCurrentThreadExitEventMono(int callbackId, IntPtr threadLocalValue)
         {
             CheckResult(NativeMethodsMono.pthread_setspecific(callbackId, threadLocalValue));
         }
 
+        /// <summary>
+        /// Enables thread exit event for current thread.
+        /// </summary>
         private static void EnableCurrentThreadExitEventMacOs(int callbackId, IntPtr threadLocalValue)
         {
             CheckResult(NativeMethodsMacOs.pthread_setspecific(callbackId, threadLocalValue));
         }
 
+        /// <summary>
+        /// Enables thread exit event for current thread.
+        /// </summary>
         private static void EnableCurrentThreadExitEventWindows(int callbackId, IntPtr threadLocalValue)
         {
             var res = NativeMethodsWindows.FlsSetValue(callbackId, threadLocalValue);
