@@ -1,0 +1,52 @@
+# name: test/sql/function/generic/test_coalesce.test
+# description: Test COALESCE function
+# group: [generic]
+
+# COALESCE
+
+query T
+SELECT COALESCE(null, DATE '2021-07-08', DATE '2020-01-01')
+----
+2021-07-08
+
+query T
+SELECT COALESCE(null, 12.4, 6)
+----
+12.4
+
+# COALESCE with subquery
+statement ok
+CREATE TABLE test (a VARCHAR);
+
+statement ok
+INSERT INTO test VALUES (null), ('bbb'), ('ccc')
+
+statement ok
+CREATE TABLE test2 (a VARCHAR, b VARCHAR);
+
+statement ok
+INSERT INTO test2 VALUES ('blabla', 'b'), ('blabla2', 'c'), ('blabla3', 'd')
+
+query T
+SELECT COALESCE(COALESCE((SELECT MIN(a) FROM test), a), b) FROM test2
+----
+bbb
+bbb
+bbb
+
+statement ok
+DROP TABLE test;
+
+# NULL IF with strings
+statement ok
+CREATE TABLE test3 (a INTEGER, b INTEGER);
+
+statement ok
+INSERT INTO test3 VALUES (null, 22), (12, null), (13, 22)
+
+query T
+SELECT COALESCE(CAST(a AS VARCHAR), 11) FROM test3 ORDER BY a;
+----
+11
+12
+13

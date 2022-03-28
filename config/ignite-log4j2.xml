@@ -28,6 +28,12 @@
             <PatternLayout pattern="[%d{ISO8601}][%-5p][%t][%c{1}]%notEmpty{[%markerSimpleName]} %m%n"/>
         </Console>
 
+        <File name="CONSISTENCY" fileName="${sys:IGNITE_HOME}/work/log/consistency.log">
+            <PatternLayout>
+                <Pattern>"[%d{ISO8601}][%-5p][%t][%c{1}] %m%n"</Pattern>
+            </PatternLayout>
+        </File>
+
         <Routing name="FILE">
             <Routes pattern="$${sys:nodeId}">
                 <Route>
@@ -59,6 +65,10 @@
 
         <Logger name="org.springframework" level="WARN"/>
         <Logger name="org.eclipse.jetty" level="WARN"/>
+
+        <Logger name="org.apache.ignite.internal.visor.consistency" additivity="false" level="INFO">
+            <AppenderRef ref="CONSISTENCY"/>
+        </Logger>
 
         <!--
         Avoid warnings about failed bind attempt when multiple nodes running on the same host.

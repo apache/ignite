@@ -378,13 +378,6 @@ namespace Apache.Ignite.Core.Impl.Services
             IgniteArgumentCheck.Ensure(typeof(T).IsInterface, "T", 
                 "Service proxy type should be an interface: " + typeof(T));
 
-            T locInst;
-
-            // In local scenario try to return service instance itself instead of a proxy
-            // Get as object because proxy interface may be different from real interface
-            if (callCtx == null && (locInst = GetService<object>(name) as T) != null)
-                return locInst;
-
             var javaProxy = DoOutOpObject(OpServiceProxy, w =>
             {
                 w.WriteString(name);
@@ -414,15 +407,6 @@ namespace Apache.Ignite.Core.Impl.Services
         public dynamic GetDynamicServiceProxy(string name, bool sticky, IServiceCallContext callCtx)
         {
             IgniteArgumentCheck.NotNullOrEmpty(name, "name");
-
-            // In local scenario try to return service instance itself instead of a proxy
-            if (callCtx == null)
-            {
-                var locInst = GetService<object>(name);
-
-                if (locInst != null)
-                    return locInst;
-            }
 
             var javaProxy = DoOutOpObject(OpServiceProxy, w =>
             {

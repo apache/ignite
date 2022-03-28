@@ -21,8 +21,10 @@ import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
+
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.configuration.QueryEngineConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -33,6 +35,7 @@ import org.apache.ignite.internal.processors.odbc.ClientListenerRequestHandler;
 import org.apache.ignite.internal.processors.odbc.ClientListenerResponse;
 import org.apache.ignite.internal.processors.odbc.ClientListenerResponseSender;
 import org.apache.ignite.internal.processors.query.NestedTxMode;
+import org.apache.ignite.internal.processors.query.QueryEngineConfigurationEx;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.nio.GridNioSession;
 import org.apache.ignite.internal.util.typedef.F;
@@ -68,8 +71,11 @@ public class JdbcConnectionContext extends ClientListenerAbstractConnectionConte
     /** Version 2.9.0: adds user attributes, adds features flags support. */
     static final ClientListenerProtocolVersion VER_2_9_0 = ClientListenerProtocolVersion.create(2, 9, 0);
 
+    /** Version 2.13.0: adds choose of query engine support. */
+    static final ClientListenerProtocolVersion VER_2_13_0 = ClientListenerProtocolVersion.create(2, 13, 0);
+
     /** Current version. */
-    public static final ClientListenerProtocolVersion CURRENT_VER = VER_2_9_0;
+    public static final ClientListenerProtocolVersion CURRENT_VER = VER_2_13_0;
 
     /** Supported versions. */
     private static final Set<ClientListenerProtocolVersion> SUPPORTED_VERS = new HashSet<>();
@@ -154,6 +160,7 @@ public class JdbcConnectionContext extends ClientListenerAbstractConnectionConte
 
         boolean lazyExec = false;
         boolean skipReducerOnUpdate = false;
+        String qryEngine = null;
 
         NestedTxMode nestedTxMode = NestedTxMode.DEFAULT;
 
@@ -194,6 +201,28 @@ public class JdbcConnectionContext extends ClientListenerAbstractConnectionConte
             features = JdbcThinFeature.enumSet(cliFeatures);
         }
 
+        if (ver.compareTo(VER_2_13_0) >= 0) {
+            qryEngine = reader.readString();
+
+            if (qryEngine != null) {
+                QueryEngineConfiguration[] cfgs = ctx.config().getSqlConfiguration().getQueryEnginesConfiguration();
+
+                boolean found = false;
+
+                if (cfgs != null) {
+                    for (int i = 0; i < cfgs.length; i++) {
+                        if (qryEngine.equalsIgnoreCase(((QueryEngineConfigurationEx)cfgs[i]).engineName())) {
+                            found = true;
+                            break;
+                        }
+                    }
+                }
+
+                if (!found)
+                    throw new IgniteCheckedException("Not found configuration for query engine: " + qryEngine);
+            }
+        }
+
         if (ver.compareTo(VER_2_5_0) >= 0) {
             String user = null;
             String passwd = null;
@@ -229,7 +258,7 @@ public class JdbcConnectionContext extends ClientListenerAbstractConnectionConte
         };
 
         handler = new JdbcRequestHandler(busyLock, sender, maxCursors, distributedJoins, enforceJoinOrder,
-            collocated, replicatedOnly, autoCloseCursors, lazyExec, skipReducerOnUpdate, nestedTxMode,
+            collocated, replicatedOnly, autoCloseCursors, lazyExec, skipReducerOnUpdate, qryEngine, nestedTxMode,
             dataPageScanEnabled, updateBatchSize, ver, this);
 
         handler.start();

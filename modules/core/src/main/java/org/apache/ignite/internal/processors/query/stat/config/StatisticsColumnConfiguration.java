@@ -128,7 +128,7 @@ public class StatisticsColumnConfiguration implements Serializable {
      *
      * @param oldCfg Previous configuration. May be {@code null} when new configuration is created.
      * @param newCfg New configuration.
-     * @return merged configuration.
+     * @return Merged configuration.
      */
     public static StatisticsColumnConfiguration merge(
         StatisticsColumnConfiguration oldCfg,
@@ -137,29 +137,7 @@ public class StatisticsColumnConfiguration implements Serializable {
         if (oldCfg == null)
             return newCfg;
 
-        if (oldCfg.collectionAwareEqual(newCfg))
-            return new StatisticsColumnConfiguration(newCfg, oldCfg.ver, oldCfg.tombstone, newCfg.overrides);
-
         return new StatisticsColumnConfiguration(newCfg, oldCfg.ver + 1, false, newCfg.overrides);
-    }
-
-    /**
-     * Compare only collection or gathering related fields of config.
-     *
-     * @param o StatisticsColumnConfiguration to compare with.
-     * @return {@code true} if configurations are equal from the gathering point of view, {@code false} - otherwise.
-     */
-    public boolean collectionAwareEqual(StatisticsColumnConfiguration o) {
-        if (this == o)
-            return true;
-
-        if (o == null || getClass() != o.getClass())
-            return false;
-
-        StatisticsColumnConfiguration that = (StatisticsColumnConfiguration)o;
-
-        return ver == that.ver && tombstone == that.tombstone
-            && Objects.equals(name, that.name);
     }
 
     /**
