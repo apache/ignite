@@ -135,8 +135,7 @@ public class RexExecutorImpl implements RexExecutor {
   @Override public void reduce(RexBuilder rexBuilder, List<RexNode> constExps,
       List<RexNode> reducedValues) {
     for (RexNode node : constExps) {
-      // Do not simplify UUID types, since we can't convert it to literal of this type.
-//      if (node.getType() instanceof OtherType && ((OtherType)node.getType()).isUuid()) {
+      // Do not simplify other types since we can't convert it to literal of this type.
       if (node.getType() instanceof OtherType) {
         reducedValues.addAll(constExps);
         return;

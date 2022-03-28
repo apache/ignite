@@ -482,7 +482,6 @@ public class TableDmlIntegrationTest extends AbstractBasicIntegrationTest {
         checkDefaultValue("TIMESTAMP", "TIMESTAMP '2021-01-01 01:01:01'", Timestamp.valueOf("2021-01-01 01:01:01"));
         checkDefaultValue("BINARY(3)", "x'010203'", new byte[] {1, 2, 3});
         checkDefaultValue("VARBINARY", "x'010203'", new byte[] {1, 2, 3});
-        checkDefaultValue("OTHER", "1", 1L);
 
         UUID uuid = UUID.randomUUID();
         checkDefaultValue("UUID", '\'' + uuid.toString() + '\'', uuid);

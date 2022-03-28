@@ -361,7 +361,7 @@ public class TypeUtils {
             }
             else {
                 if (storageType instanceof Class)
-                    internalVal = literal.getValue();
+                    internalVal = literal.getValueAs((Class<?>)storageType);
                 else
                     throw new IgniteException("Unexpected storage type: " + storageType);
             }

@@ -61,7 +61,6 @@ import org.apache.calcite.rex.RexVisitor;
 import org.apache.calcite.runtime.GeoFunctions;
 import org.apache.calcite.runtime.Geometries;
 import org.apache.calcite.sql.SqlIntervalQualifier;
-import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlOperator;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.sql.parser.SqlParserPos;
@@ -71,7 +70,6 @@ import org.apache.calcite.sql.validate.SqlConformance;
 import org.apache.calcite.util.BuiltInMethod;
 import org.apache.calcite.util.ControlFlowException;
 import org.apache.calcite.util.Pair;
-import org.apache.ignite.internal.processors.query.calcite.type.OtherType;
 import org.apache.ignite.internal.processors.query.calcite.util.IgniteMethod;
 
 import static org.apache.calcite.sql.fun.SqlStdOperatorTable.CASE;
@@ -1030,16 +1028,6 @@ public class RexToLixTranslator implements RexVisitor<RexToLixTranslator.Result>
             RexImpTable.INSTANCE.get(operator);
         if (implementor == null)
             throw new RuntimeException("cannot translate call " + call);
-
-//        for (RexNode rex : call.operands) {
-//            if (call.getOperator().getKind() == SqlKind.IS_NULL || call.getOperator().getKind() == SqlKind.IS_NOT_NULL)
-//                continue;
-//
-//            if (rex.getType() instanceof OtherType && !((OtherType)rex.getType()).isUuid()) {
-//                throw new UnsupportedOperationException("Operator '" + call.getOperator().getName() +
-//                    "' is not supported for type '" + rex.getType().toString() + "'.");
-//            }
-//        }
 
         final List<RexNode> operandList = call.getOperands();
         final List<Type> storageTypes = ConverterUtils.internalTypes(operandList);
