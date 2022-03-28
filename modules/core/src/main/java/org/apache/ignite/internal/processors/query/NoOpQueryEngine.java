@@ -42,6 +42,12 @@ public class NoOpQueryEngine extends GridProcessorAdapter implements QueryEngine
     }
 
     /** {@inheritDoc} */
+    @Override public List<FieldsQueryCursor<List<?>>> queryBatched(@Nullable QueryContext ctx, String schemaName,
+        String query, List<Object[]> batchedParams) throws IgniteSQLException {
+        return Collections.emptyList();
+    }
+
+    /** {@inheritDoc} */
     @Override public Collection<? extends RunningQuery> runningQueries() {
         return Collections.emptyList();
     }

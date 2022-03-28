@@ -40,6 +40,17 @@ public interface QueryEngine extends GridProcessor {
     List<FieldsQueryCursor<List<?>>> query(@Nullable QueryContext ctx, String schemaName, String qry, Object... params)
         throws IgniteSQLException;
 
+    /**
+     * @param ctx Query context, may be null.
+     * @param schemaName Schema name.
+     * @param qry Query.
+     * @param batchedParams Optional query parameters.
+     * @return Query cursor.
+     * @throws IgniteSQLException If failed.
+     */
+    List<FieldsQueryCursor<List<?>>> queryBatched(@Nullable QueryContext ctx, String schemaName, String qry,
+        List<Object[]> batchedParams) throws IgniteSQLException;
+
     /** */
     Collection<? extends RunningQuery> runningQueries();
 
