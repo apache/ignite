@@ -117,6 +117,12 @@ public enum ClientOperation {
     /** Cache clear keys. */
     CACHE_CLEAR_KEYS(1015),
 
+    /** Cache put all conflict. */
+    CACHE_PUT_ALL_CONFLICT(1022),
+
+    /** Cache remove all conflict. */
+    CACHE_REMOVE_ALL_CONFLICT(1023),
+
     /** Cache partitions. */
     CACHE_PARTITIONS(1101),
 
