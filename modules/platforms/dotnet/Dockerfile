@@ -9,7 +9,7 @@ RUN apk --no-cache add openjdk8 --repository=http://dl-cdn.alpinelinux.org/alpin
 # Copy binaries
 WORKDIR /app
 COPY netcoreapp3.1 .
-COPY libs .
+COPY libs ./libs
 
 # Run
 ENV LD_LIBRARY_PATH /usr/lib/jvm/default-jvm/jre/lib/amd64/server
