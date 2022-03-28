@@ -12,5 +12,7 @@ COPY netcoreapp3.1 .
 COPY libs .
 
 # Run
-ENTRYPOINT ["dotnet", "Apache.Ignite.Executable.dll"]
+ENV LD_LIBRARY_PATH /usr/lib/jvm/default-jvm/jre/lib/amd64/server
+
+ENTRYPOINT ["dotnet", "Apache.Ignite.Executable.dll", "-jvmDll=/usr/lib/jvm/default-jvm/jre/lib/amd64/server/libjvm.so"]
 
