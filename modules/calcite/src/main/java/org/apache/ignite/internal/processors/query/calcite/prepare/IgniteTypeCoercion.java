@@ -48,7 +48,7 @@ public class IgniteTypeCoercion extends TypeCoercionImpl {
         int idx,
         RelDataType targetType)
     {
-        if (targetType instanceof OtherType/* && ((OtherType)targetType).isUuid()*/) {
+        if (targetType instanceof OtherType) {
             SqlNode operand = call.getOperandList().get(idx);
 
             if (operand instanceof SqlDynamicParam)
@@ -59,7 +59,7 @@ public class IgniteTypeCoercion extends TypeCoercionImpl {
             if (fromType == null)
                 return false;
 
-            if (SqlTypeUtil.inCharFamily(fromType) || !((OtherType)targetType).isUuid()) {
+            if (SqlTypeUtil.inCharFamily(fromType) || targetType.getClass() == OtherType.class) {
                 targetType = factory.createTypeWithNullability(targetType, fromType.isNullable());
 
                 SqlNode desired = SqlStdOperatorTable.CAST.createCall(
@@ -97,10 +97,6 @@ public class IgniteTypeCoercion extends TypeCoercionImpl {
 
     /** {@inheritDoc} */
     @Override protected boolean needToCast(SqlValidatorScope scope, SqlNode node, RelDataType toType) {
-//        if(toType instanceof OtherType && !((OtherType)toType).isUuid()){
-//            return false;
-//        }
-
         if (SqlTypeUtil.isInterval(toType)) {
             RelDataType fromType = validator.deriveType(scope, node);
 

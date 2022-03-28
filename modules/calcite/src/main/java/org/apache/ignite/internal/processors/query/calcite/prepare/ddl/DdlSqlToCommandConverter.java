@@ -206,7 +206,7 @@ public class DdlSqlToCommandConverter {
 
                     DataContext dataCtx = new BaseDataContext(ctx.typeFactory());
 
-                    if (type instanceof OtherType && !((OtherType)type).isUuid())
+                    if (type.getClass() == OtherType.class)
                         throw new IgniteSQLException("Type '" + type + "' doesn't support default value.");
 
                     dflt = TypeUtils.fromLiteral(dataCtx, storageType, (SqlLiteral)col.expression);

@@ -27,21 +27,11 @@ public class OtherType extends RelDataTypeImpl {
     /** Nullable flag. */
     private final boolean nullable;
 
-    /** Nullable flag. */
-    private final boolean isUuid;
-
     /** Ctor. */
-    public OtherType(boolean isUuid, boolean nullable) {
+    public OtherType(boolean nullable) {
         this.nullable = nullable;
 
-        this.isUuid = isUuid;
-
         computeDigest();
-    }
-
-    /** @return {@code True} if type is UUID. {@code False} otherwise. */
-    public boolean isUuid() {
-        return isUuid;
     }
 
     /** {@inheritDoc} */
@@ -61,6 +51,6 @@ public class OtherType extends RelDataTypeImpl {
 
     /** {@inheritDoc} */
     @Override protected void generateTypeString(StringBuilder sb, boolean withDetail) {
-        sb.append(isUuid ? "UUID" : "ANOTHER");
+        sb.append("OTHER");
     }
 }

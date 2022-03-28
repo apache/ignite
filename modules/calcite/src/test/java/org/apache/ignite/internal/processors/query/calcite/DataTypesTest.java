@@ -42,7 +42,7 @@ public class DataTypesTest extends AbstractBasicIntegrationTest {
             executeSql("CREATE TABLE t(id INT, oth OTHER)");
 
             assertThrows("CREATE TABLE t2(id INT, oth OTHER DEFAULT 'str')", IgniteSQLException.class,
-                "Type 'ANOTHER' doesn't support default value.");
+                "Type 'OTHER' doesn't support default value.");
 
             executeSql("INSERT INTO t VALUES (1, 'str')");
             executeSql("INSERT INTO t VALUES (2, 22)");
@@ -64,13 +64,13 @@ public class DataTypesTest extends AbstractBasicIntegrationTest {
                 .check();
 
             assertThrows("SELECT MIN(oth) FROM t", UnsupportedOperationException.class,
-                "MIN() is not supported for type 'ANOTHER'.");
+                "MIN() is not supported for type 'OTHER'.");
 
             assertThrows("SELECT MAX(oth) FROM t", UnsupportedOperationException.class,
-                "MAX() is not supported for type 'ANOTHER'.");
+                "MAX() is not supported for type 'OTHER'.");
 
             assertThrows("SELECT AVG(oth) from t", UnsupportedOperationException.class,
-                "AVG() is not supported for type 'ANOTHER'.");
+                "AVG() is not supported for type 'OTHER'.");
 
             assertThrows("SELECT oth from t WHERE oth > 0", CalciteException.class,
                 "Invalid types for comparison");
@@ -84,11 +84,10 @@ public class DataTypesTest extends AbstractBasicIntegrationTest {
                 .returns(new Object[] {null})
                 .check();
 
-            executeSql("DELETE FROM t WHERE id IN (3, 4, 5)");
+            executeSql("DELETE FROM t WHERE id IN (2, 3, 4, 5)");
 
             assertQuery("SELECT oth FROM t WHERE oth is not NULL")
                 .returns("str")
-                .returns(22)
                 .check();
 
             assertQuery("SELECT oth FROM t WHERE oth!=22")

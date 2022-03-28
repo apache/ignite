@@ -140,7 +140,7 @@ public class IgniteTypeFactory extends JavaTypeFactoryImpl {
             }
         }
         else if (type instanceof OtherType)
-            return ((OtherType)type).isUuid() ? UUID.class : Object.class;
+            return type.getClass() == UuidType.class ? UUID.class : Object.class;
 
         switch (type.getSqlTypeName()) {
             case ROW:
@@ -226,7 +226,7 @@ public class IgniteTypeFactory extends JavaTypeFactoryImpl {
             }
         }
         else if (type instanceof OtherType)
-            return ((OtherType)type).isUuid() ? UUID.class : Object.class;
+            return type.getClass() == UuidType.class ? UUID.class : Object.class;
 
         switch (type.getSqlTypeName()) {
             case ROW:
@@ -277,18 +277,18 @@ public class IgniteTypeFactory extends JavaTypeFactoryImpl {
 
     /** @return UUID SQL type. */
     public RelDataType createUuidType() {
-        return canonize(new OtherType(true, true));
+        return canonize(new UuidType(true));
     }
 
     /** @return OTHER SQL type. */
     public RelDataType createOtherType() {
-        return canonize(new OtherType(false, true));
+        return canonize(new OtherType(true));
     }
 
     /** {@inheritDoc} */
     @Override public RelDataType createTypeWithNullability(RelDataType type, boolean nullable) {
         if (type instanceof OtherType && type.isNullable() != nullable)
-            type = new OtherType(((OtherType)type).isUuid(), nullable);
+            return type.getClass() == UuidType.class ? new UuidType(nullable) : new OtherType(nullable);
 
         return super.createTypeWithNullability(type, nullable);
     }

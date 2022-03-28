@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.query.calcite.jdbc;
 
 import java.io.Serializable;
-import java.sql.Array;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
@@ -39,7 +38,6 @@ import org.apache.ignite.configuration.SqlConfiguration;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
 
 /**
@@ -118,17 +116,19 @@ public class JdbcQueryTest extends GridCommonAbstractTest {
             ps.setObject(2, 202.2f);
             assertEquals(1, ps.executeUpdate());
 
+            ObjectToStore obj = new ObjectToStore(1, "noname", 22.2);
+
             ps.setInt(1, idx++);
-            ps.setObject(2, new ObjectToStore(1, "noname", 22.2));
+            ps.setObject(2, obj);
             assertEquals(1, ps.executeUpdate());
 
             // Map
-            Map<String, String> strMap = new HashMap<>();
-            strMap.put("a", "bb");
-            strMap.put("vvv", "zzz");
-            strMap.put("111", "222");
+            Map<String, Object> map = new HashMap<>();
+            map.put("a", "bb");
+            map.put("vvv", "zzz");
+            map.put("111", "222");
             ps.setInt(1, idx++);
-            ps.setObject(2, strMap);
+            ps.setObject(2, map);
             assertEquals(1, ps.executeUpdate());
 
             // List
@@ -137,8 +137,7 @@ public class JdbcQueryTest extends GridCommonAbstractTest {
             lst.add(2.2f);
             lst.add(3.3d);
             lst.add("str");
-//            lst.add(new ObjectToStore(2, "test", -1));
-            lst.add(strMap);
+            lst.add(map);
             ps.setInt(1, idx++);
             ps.setObject(2, lst);
             assertEquals(1, ps.executeUpdate());
@@ -157,11 +156,13 @@ public class JdbcQueryTest extends GridCommonAbstractTest {
                 assertEquals(202.2f, rs.getObject(2));
 
                 assertTrue(rs.next());
-                assertEquals(new ObjectToStore(1, "noname", 22.2), rs.getObject(2));
+                assertEquals(obj, rs.getObject(2));
 
+                // Map
                 assertTrue(rs.next());
-                assertEquals(strMap, rs.getObject(2));
+                assertEquals(map, rs.getObject(2));
 
+                // List
                 assertTrue(rs.next());
                 assertEquals(lst, rs.getObject(2));
             }
