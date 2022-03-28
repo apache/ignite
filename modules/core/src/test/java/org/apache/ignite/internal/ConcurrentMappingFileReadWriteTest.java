@@ -22,7 +22,9 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
-import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.BrokenBarrierException;
+import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.TimeoutException;
 import org.apache.ignite.binary.BinaryBasicIdMapper;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.StandaloneGridKernalContext;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -67,12 +69,15 @@ public class ConcurrentMappingFileReadWriteTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void testConcurrentMappingReadWrite() throws Exception {
-        CountDownLatch latch = new CountDownLatch(1);
+        int thCnt = 3;
+
+        CyclicBarrier barrier = new CyclicBarrier(thCnt);
 
         IgniteInternalFuture<?> fut = multithreadedAsync(() -> {
             try {
-                assertTrue(latch.await(getTestTimeout(), MILLISECONDS));
-            } catch (InterruptedException e) {
+                barrier.await(getTestTimeout(), MILLISECONDS);
+            }
+            catch (InterruptedException | BrokenBarrierException | TimeoutException e) {
                 throw new RuntimeException(e);
             }
 
@@ -83,9 +88,7 @@ public class ConcurrentMappingFileReadWriteTest extends GridCommonAbstractTest {
 
                 mappingFileStore.writeMapping(PLATFORM_ID, TYPE_ID, String.class.getName());
             }
-        }, 3);
-
-        latch.countDown();
+        }, thCnt);
 
         fut.get(getTestTimeout(), MILLISECONDS);
     }
