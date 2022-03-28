@@ -8,8 +8,8 @@ RUN apk --no-cache add openjdk8 --repository=http://dl-cdn.alpinelinux.org/alpin
 
 # Copy binaries
 WORKDIR /app
-COPY bin/netcoreapp3.1 .
-COPY bin/libs .
+COPY netcoreapp3.1 .
+COPY libs .
 
 # Run
 ENTRYPOINT ["dotnet", "Apache.Ignite.Executable.dll"]
