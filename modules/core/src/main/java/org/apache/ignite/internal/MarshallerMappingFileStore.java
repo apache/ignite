@@ -109,7 +109,7 @@ final class MarshallerMappingFileStore {
             Files.move(tmpFile.toPath(), file.toPath(), REPLACE_EXISTING, ATOMIC_MOVE);
         }
         catch (IOException e) {
-            U.error(log, "Failed to write class name to file [platformId=" + platformId + "id=" + typeId +
+            U.error(log, "Failed to write class name to file [platformId=" + platformId + ", id=" + typeId +
                 ", clsName=" + typeName + ", file=" + file.getAbsolutePath() + ']', e);
         }
         finally {
