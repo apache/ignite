@@ -68,7 +68,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
                 int tlsIndex;
                 var res = NativeMethodsMacOs.pthread_key_create(new IntPtr(&tlsIndex), callbackPtr);
 
-                NativeMethodsLinux.CheckResult(res);
+                NativeMethodsLinuxLibpthread.CheckResult(res);
 
                 return tlsIndex;
             }
@@ -86,15 +86,15 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
                 {
                     try
                     {
-                        res = NativeMethodsLinuxCoreclr.pthread_key_create(new IntPtr(&tlsIndex), callbackPtr);
+                        res = NativeMethodsLinuxLibcoreclr.pthread_key_create(new IntPtr(&tlsIndex), callbackPtr);
                     }
                     catch (EntryPointNotFoundException)
                     {
-                        res = NativeMethodsLinux.pthread_key_create(new IntPtr(&tlsIndex), callbackPtr);
+                        res = NativeMethodsLinuxLibpthread.pthread_key_create(new IntPtr(&tlsIndex), callbackPtr);
                     }
                 }
 
-                NativeMethodsLinux.CheckResult(res);
+                NativeMethodsLinuxLibpthread.CheckResult(res);
 
                 return tlsIndex;
             }
@@ -121,7 +121,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             else if (Os.IsMacOs)
             {
                 var res = NativeMethodsMacOs.pthread_key_delete(callbackId);
-                NativeMethodsLinux.CheckResult(res);
+                NativeMethodsLinuxLibpthread.CheckResult(res);
             }
             else if (Os.IsLinux)
             {
@@ -135,15 +135,15 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
                 {
                     try
                     {
-                        res = NativeMethodsLinuxCoreclr.pthread_key_delete(callbackId);
+                        res = NativeMethodsLinuxLibcoreclr.pthread_key_delete(callbackId);
                     }
                     catch (EntryPointNotFoundException)
                     {
-                        res = NativeMethodsLinux.pthread_key_delete(callbackId);
+                        res = NativeMethodsLinuxLibpthread.pthread_key_delete(callbackId);
                     }
                 }
 
-                NativeMethodsLinux.CheckResult(res);
+                NativeMethodsLinuxLibpthread.CheckResult(res);
             }
             else
             {
@@ -171,7 +171,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             else if (Os.IsMacOs)
             {
                 var res = NativeMethodsMacOs.pthread_setspecific(callbackId, threadLocalValue);
-                NativeMethodsLinux.CheckResult(res);
+                NativeMethodsLinuxLibpthread.CheckResult(res);
             }
             else if (Os.IsLinux)
             {
@@ -185,15 +185,15 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
                 {
                     try
                     {
-                        res = NativeMethodsLinuxCoreclr.pthread_setspecific(callbackId, threadLocalValue);
+                        res = NativeMethodsLinuxLibcoreclr.pthread_setspecific(callbackId, threadLocalValue);
                     }
                     catch (EntryPointNotFoundException)
                     {
-                        res = NativeMethodsLinux.pthread_setspecific(callbackId, threadLocalValue);
+                        res = NativeMethodsLinuxLibpthread.pthread_setspecific(callbackId, threadLocalValue);
                     }
                 }
 
-                NativeMethodsLinux.CheckResult(res);
+                NativeMethodsLinuxLibpthread.CheckResult(res);
             }
             else
             {
@@ -227,7 +227,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         /// <summary>
         /// Linux imports.
         /// </summary>
-        private static class NativeMethodsLinuxCoreclr
+        private static class NativeMethodsLinuxLibcoreclr
         {
             [SuppressMessage("Microsoft.Design", "CA1060:MovePInvokesToNativeMethodsClass", Justification = "Reviewed.")]
             [DllImport("libcoreclr.so")]
@@ -245,7 +245,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         /// <summary>
         /// Linux imports.
         /// </summary>
-        private static class NativeMethodsLinux
+        private static class NativeMethodsLinuxLibpthread
         {
             [SuppressMessage("Microsoft.Design", "CA1060:MovePInvokesToNativeMethodsClass", Justification = "Reviewed.")]
             [DllImport("libpthread.so")]
