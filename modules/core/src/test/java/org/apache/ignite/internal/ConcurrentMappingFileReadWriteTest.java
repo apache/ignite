@@ -33,7 +33,7 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_MARSHALLER_PATH;
 
 /**
- * Tests concurrent read/write operations for {@code org.apache.ignite.internal.MarshallerMappingFileStore}
+ * Tests concurrent read/write operations for {@code org.apache.ignite.internal.MarshallerMappingFileStore}.
  */
 public class ConcurrentMappingFileReadWriteTest extends GridCommonAbstractTest {
     /** */
