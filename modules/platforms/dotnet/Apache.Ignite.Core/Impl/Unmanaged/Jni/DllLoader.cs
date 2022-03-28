@@ -86,18 +86,21 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
                         : null);
                 }
 
-                if (Os.IsNetCore)
+                // Depending on the Linux distro, dlopen is either present in libdl or in libcoreclr.
+                try
                 {
                     var ptr = NativeMethodsCore.dlopen(dllPath, RtldGlobal | RtldLazy);
                     return new KeyValuePair<IntPtr, string>(ptr, ptr == IntPtr.Zero
                         ? GetErrorText(NativeMethodsCore.dlerror())
                         : null);
                 }
-
-                var lptr = NativeMethodsLinux.dlopen(dllPath, RtldGlobal | RtldLazy);
-                return new KeyValuePair<IntPtr, string>(lptr, lptr == IntPtr.Zero
-                    ? GetErrorText(NativeMethodsLinux.dlerror())
-                    : null);
+                catch (EntryPointNotFoundException)
+                {
+                    var ptr = NativeMethodsLinux.dlopen(dllPath, RtldGlobal | RtldLazy);
+                    return new KeyValuePair<IntPtr, string>(ptr, ptr == IntPtr.Zero
+                        ? GetErrorText(NativeMethodsLinux.dlerror())
+                        : null);
+                }
             }
 
             throw new InvalidOperationException("Unsupported OS: " + Environment.OSVersion);
