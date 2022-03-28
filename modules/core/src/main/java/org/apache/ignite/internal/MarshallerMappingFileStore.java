@@ -290,7 +290,7 @@ final class MarshallerMappingFileStore {
      * @param platformId Platform id.
      * @param typeId Type id.
      */
-    private String getFileName(byte platformId, int typeId) {
+    String getFileName(byte platformId, int typeId) {
         return typeId + FILE_EXTENSION + platformId;
     }
 

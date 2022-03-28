@@ -23,7 +23,11 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.util.concurrent.CountDownLatch;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -34,54 +38,73 @@ import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_MARS
  */
 public class ConcurrentMappingFileReadWriteTest extends GridCommonAbstractTest {
     /** */
-    private File workDir;
+    private static final byte PLATFORM_ID = (byte) 0;
+
+    /** */
+    private static final int TYPE_ID = new BinaryBasicIdMapper().typeId(String.class.getName());
+
+    /** */
+    private File mappingDir;
+
+    /** */
+    private MarshallerMappingFileStore mappingFileStore;
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        workDir = new File(U.workDirectory(null, null) + DFLT_MARSHALLER_PATH);
-        workDir.mkdirs();
+        mappingDir = new File(U.workDirectory(null, null) + DFLT_MARSHALLER_PATH);
+        mappingDir.mkdirs();
+
+        mappingFileStore = new MarshallerMappingFileStore(
+            new StandaloneGridKernalContext(log, null, null),
+            mappingDir
+        );
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        U.delete(workDir);
+        U.delete(mappingDir);
     }
 
     /** */
     @Test
     public void testConcurrentMappingReadWrite() throws Exception {
-        BinaryBasicIdMapper mapper = new BinaryBasicIdMapper();
-
-        MarshallerMappingFileStore fs = new MarshallerMappingFileStore(
-            new StandaloneGridKernalContext(log, null, null),
-            workDir
-        );
-
         CountDownLatch latch = new CountDownLatch(1);
-
-        byte platformId = (byte) 0;
-        int typeId = mapper.typeId(String.class.getName());
-        String typeName = String.class.getName();
 
         IgniteInternalFuture<?> fut = multithreadedAsync(() -> {
             try {
                 assertTrue(latch.await(getTestTimeout(), MILLISECONDS));
-            }
-            catch (InterruptedException e) {
+            } catch (InterruptedException e) {
                 throw new RuntimeException(e);
             }
 
-            fs.writeMapping(platformId, typeId, typeName);
+            mappingFileStore.writeMapping(PLATFORM_ID, TYPE_ID, String.class.getName());
 
             for (int i = 0; i < 10; i++) {
-                assertEquals(typeId, fs.readMapping(platformId, typeId));
+                assertEquals(String.class.getName(), mappingFileStore.readMapping(PLATFORM_ID, TYPE_ID));
 
-                fs.writeMapping(platformId, typeId, typeName);
+                mappingFileStore.writeMapping(PLATFORM_ID, TYPE_ID, String.class.getName());
             }
         }, 3);
 
         latch.countDown();
 
         fut.get(getTestTimeout(), MILLISECONDS);
+    }
+
+    /** */
+    @Test
+    public void testRewriteOpenedFile() throws Exception {
+        mappingFileStore.writeMapping(PLATFORM_ID, TYPE_ID, String.class.getName());
+
+        File mappingFile = new File(mappingDir, mappingFileStore.getFileName(PLATFORM_ID, TYPE_ID));
+
+        try (FileInputStream in = new FileInputStream(mappingFile)) {
+            try (BufferedReader reader = new BufferedReader(new InputStreamReader(in, StandardCharsets.UTF_8))) {
+                // Rewrite file while it open. This can happen if CDC application read newly created file.
+                mappingFileStore.writeMapping(PLATFORM_ID, TYPE_ID, String.class.getName());
+
+                assertEquals(String.class.getName(), reader.readLine());
+            }
+        }
     }
 }
