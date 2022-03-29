@@ -40,6 +40,7 @@ public class IgniteExtendedLogoTest extends GridCommonAbstractTest {
     @After
     public void afterLogo() {
         testLog.clearListeners();
+
         stopAllGrids();
     }
 
@@ -54,6 +55,6 @@ public class IgniteExtendedLogoTest extends GridCommonAbstractTest {
 
         startGrid();
 
-        assertTrue(waitForCondition(() -> waitLogoLsnr.check() && waitLogoLsnr.check(), 5_000L));
+        assertTrue(waitForCondition(waitLogoLsnr::check, 5_000L));
     }
 }
