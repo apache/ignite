@@ -806,7 +806,8 @@ BOOST_AUTO_TEST_CASE(TestSQLSetStmtAttrGetStmtAttr)
 
     // repeat test for different values
     SQLULEN valList[5] = {10, 52, 81, 103, 304};
-    for (SQLULEN val : valList) {
+    for (int i = 0; i < 5; i++) {
+        SQLULEN val = valList[i];
         SQLRETURN ret = SQLSetStmtAttr(stmt, SQL_ATTR_ROW_ARRAY_SIZE, reinterpret_cast<SQLPOINTER>(val), sizeof(val));
     
         ODBC_FAIL_ON_ERROR(ret, SQL_HANDLE_STMT, stmt);
