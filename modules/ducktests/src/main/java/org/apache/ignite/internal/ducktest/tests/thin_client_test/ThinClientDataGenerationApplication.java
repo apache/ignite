@@ -65,7 +65,7 @@ public class ThinClientDataGenerationApplication extends IgniteAwareApplication 
             new DistributedDoubleBarrier(zk, "/" + preloadersToken, preloaders).enter(timeoutSecs, TimeUnit.SECONDS);
         }
 
-        client.getOrCreateCache(new ClientCacheConfiguration().setName(cacheName).setBackups(backups));
+        client.getOrCreateCache(new ClientCacheConfiguration().setName(cacheName).setBackups(backups).setStatisticsEnabled(true));
 
         ExecutorService executorService = Executors.newFixedThreadPool(threads);
 

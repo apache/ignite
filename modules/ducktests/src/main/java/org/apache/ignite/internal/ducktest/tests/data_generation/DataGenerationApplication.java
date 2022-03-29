@@ -103,7 +103,7 @@ public class DataGenerationApplication extends IgniteAwareApplication {
             log.info("Create cache: " + cacheName);
             ignite.getOrCreateCache(
                     new CacheConfiguration<Integer, BinaryObject>(cacheName)
-                            .setBackups(backups));
+                            .setBackups(backups).setStatisticsEnabled(true));
 
             if (persistenceEnabled(ignite, cacheName)) {
                 log.info("Disable WAL for cache: " + cacheName);
