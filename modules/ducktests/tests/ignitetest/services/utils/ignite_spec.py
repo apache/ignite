@@ -32,6 +32,8 @@ from ignitetest.services.utils.path import get_home_dir, get_module_path, Ignite
 from ignitetest.services.utils.ssl.ssl_params import is_ssl_enabled
 from ignitetest.utils.ignite_test import JFR_ENABLED, JMX_ENABLED
 from ignitetest.utils.version import DEV_BRANCH
+from ignitetest.services.utils.ignite_configuration.prometheus_metrics import PrometheusMetrics,\
+    PROMETHEUS_METRICS_TEMPLATE_FILE, PROMETHEUS_METRICS_ENABLED
 
 SHARED_PREPARED_FILE = ".ignite_prepared"
 
@@ -143,6 +145,18 @@ class IgniteSpec(metaclass=ABCMeta):
         """
         Extend config with custom variables
         """
+        def any(predicate, list):
+            return next(filter(predicate, list), None)
+
+        if config.service_type == IgniteServiceType.NODE and \
+                self.service.context.globals.get(PROMETHEUS_METRICS_ENABLED, False):
+            if config.metrics_update_frequency is None:
+                config = config._replace(metrics_update_frequency=1000)
+            config.metric_exporters.add("org.apache.ignite.spi.metric.opencensus.OpenCensusMetricExporterSpi")
+
+            if not any(lambda bean: (bean[1].name and bean[1].name == "PrometheusMetrics"), config.ext_beans):
+                config.ext_beans.append((PROMETHEUS_METRICS_TEMPLATE_FILE, PrometheusMetrics()))
+
         return config
 
     def __home(self, product=None):

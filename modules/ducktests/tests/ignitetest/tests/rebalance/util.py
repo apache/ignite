@@ -97,7 +97,7 @@ def start_ignite(test, ignite_version: str, rebalance_params: RebalanceParams,
     node_config = IgniteConfiguration(
         version=IgniteVersion(ignite_version),
         data_storage=data_storage,
-        metric_exporter="org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi",
+        metric_exporters={"org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi"},
         rebalance_thread_pool_size=rebalance_params.thread_pool_size,
         rebalance_batch_size=rebalance_params.batch_size,
         rebalance_batches_prefetch_count=rebalance_params.batches_prefetch_count,

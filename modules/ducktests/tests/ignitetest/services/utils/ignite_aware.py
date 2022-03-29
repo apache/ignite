@@ -555,7 +555,7 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
         """
         Waiting for the rebalance to complete.
         For the method, you need to set the
-        metric_exporter='org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi'
+        metric_exporters={'org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi'}
         to the config.
 
         :param timeout_sec: Timeout to wait the rebalance to complete.

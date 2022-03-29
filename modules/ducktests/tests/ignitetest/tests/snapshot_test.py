@@ -61,11 +61,11 @@ class SnapshotTest(IgniteTest):
                 max_wal_archive_size=2 * region_size,
                 default=DataRegionConfiguration(persistent=True,
                                                 max_size=region_size)),
-            metric_exporter='org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi'
+            metric_exporters={'org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi'}
         )
 
         nodes = IgniteService(self.test_context, ignite_config, num_nodes=num_nodes)
-        nodes.start()        
+        nodes.start()
 
         control_utility = ControlUtility(nodes)
         control_utility.activate()

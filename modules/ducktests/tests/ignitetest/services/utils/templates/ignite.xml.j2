@@ -61,9 +61,21 @@
             <property name="dataStreamerThreadPoolSize" value="{{ config.data_streamer_thread_pool_size }}"/>
         {% endif %}
 
-        {% if config.metric_exporter %}
+        {% if config.metrics_log_frequency %}
+            <property name="metricsLogFrequency" value="{{ config.metrics_log_frequency }}"/>
+        {% endif %}
+
+        {% if config.metrics_update_frequency %}
+            <property name="metricsUpdateFrequency" value="{{ config.metrics_update_frequency }}"/>
+        {% endif %}
+
+        {% if config.metric_exporters | length > 0 %}
             <property name="metricExporterSpi">
-                <bean class="{{ config.metric_exporter }}"/>
+                <list>
+                {% for exporter in config.metric_exporters %}
+                    <bean class="{{ exporter }}"/>
+                {% endfor %}
+                </list>
             </property>
         {% endif %}
 
@@ -100,6 +112,9 @@
             <property name="clientConnectorConfiguration">
                 <bean class="org.apache.ignite.configuration.ClientConnectorConfiguration">
                     <property name="port" value="{{ config.client_connector_configuration.port }}"/>
+                    {% if config.client_connector_configuration.thread_pool_size %}
+                        <property name="threadPoolSize" value="{{ config.client_connector_configuration.thread_pool_size }}"/>
+                    {% endif %}
                     {% if config.client_connector_configuration.ssl_enabled %}
                         <property name="sslEnabled" value="true"/>
                         <property name="sslContextFactory">

@@ -181,4 +181,3 @@ def data_region_size(test, required_size):
         max(required_size, DEFAULT_MIN_DATA_REGION_SIZE),
         test._global_int(MAX_DATA_REGION_SIZE_KEY, 1 << 30)
     )
-

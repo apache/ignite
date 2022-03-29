@@ -13,33 +13,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License
 
-"""
-This module contains classes and utilities for Ignite DataStorage configuration.
-"""
-
 from typing import NamedTuple
 
-DEFAULT_MIN_DATA_REGION_SIZE = 100 * 1024 * 1024
-DEFAULT_MAX_DATA_REGION_SIZE = 512 * 1024 * 1024
+
+PROMETHEUS_METRICS_TEMPLATE_FILE = "prometheus_metrics_beans_macro.j2"
+PROMETHEUS_METRICS_ENABLED = "prometheus_metrics_enabled"
 
 
-class DataRegionConfiguration(NamedTuple):
-    """
-    Ignite DataRegion Configuration
-    """
-    name: str = "default"
-    persistent: bool = False
-    init_size: int = DEFAULT_MIN_DATA_REGION_SIZE
-    max_size: int = DEFAULT_MAX_DATA_REGION_SIZE
-    metrics_enabled: bool = True
-    metrics_rate_time_interval: int = None
-
-
-class DataStorageConfiguration(NamedTuple):
-    """
-    Ignite DataStorage configuration
-    """
-    default: DataRegionConfiguration = DataRegionConfiguration()
-    checkpoint_threads: int = None
-    max_wal_archive_size: int = None
-    regions: list = []
+class PrometheusMetrics(NamedTuple):
+    name: str = "PrometheusMetrics"
+    period: int = 1000
+    server_port: int = 9000

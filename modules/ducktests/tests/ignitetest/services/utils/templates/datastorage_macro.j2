@@ -48,5 +48,9 @@
         <property name="persistenceEnabled" value="{{ config.persistent }}"/>
         <property name="initialSize" value="{{ config.init_size }}"/>
         <property name="maxSize" value="{{ config.max_size }}"/>
+        <property name="metricsEnabled" value="{{ config.metrics_enabled }}"/>
+        {% if config.metrics_rate_time_interval %}
+        <property name="metricsRateTimeInterval" value="{{ config.metrics_rate_time_interval }}"/>
+        {% endif %}
     </bean>
 {% endmacro %}
