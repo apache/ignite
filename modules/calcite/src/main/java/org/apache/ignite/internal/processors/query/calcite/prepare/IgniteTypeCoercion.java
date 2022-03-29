@@ -31,6 +31,7 @@ import org.apache.calcite.sql.validate.SqlValidator;
 import org.apache.calcite.sql.validate.SqlValidatorScope;
 import org.apache.calcite.sql.validate.implicit.TypeCoercionImpl;
 import org.apache.ignite.internal.processors.query.calcite.type.OtherType;
+import org.apache.ignite.internal.processors.query.calcite.type.UuidType;
 
 /**
  * Implementation of implicit type cast.
@@ -48,7 +49,8 @@ public class IgniteTypeCoercion extends TypeCoercionImpl {
         int idx,
         RelDataType targetType)
     {
-        if (targetType instanceof OtherType) {
+//        if (targetType instanceof OtherType) {
+        if (targetType instanceof UuidType) {
             SqlNode operand = call.getOperandList().get(idx);
 
             if (operand instanceof SqlDynamicParam)
@@ -59,7 +61,7 @@ public class IgniteTypeCoercion extends TypeCoercionImpl {
             if (fromType == null)
                 return false;
 
-            if (SqlTypeUtil.inCharFamily(fromType) || targetType.getClass() == OtherType.class) {
+            if (SqlTypeUtil.inCharFamily(fromType)/* || targetType.getClass() == OtherType.class*/) {
                 targetType = factory.createTypeWithNullability(targetType, fromType.isNullable());
 
                 SqlNode desired = SqlStdOperatorTable.CAST.createCall(

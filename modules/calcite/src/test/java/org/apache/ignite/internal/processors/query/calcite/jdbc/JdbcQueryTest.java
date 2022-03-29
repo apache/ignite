@@ -33,6 +33,8 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.apache.ignite.calcite.CalciteQueryEngineConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.SqlConfiguration;
@@ -40,6 +42,8 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
+
+import static org.apache.ignite.internal.util.lang.GridFunc.compareArrays;
 
 /**
  *
@@ -98,27 +102,28 @@ public class JdbcQueryTest extends GridCommonAbstractTest {
     public void testOtherType() throws Exception {
         List<Object> values = new ArrayList<>();
 
-//        values.add("str");
-//        values.add(11);
-//        values.add(101.1);
-//        values.add(202.2f);
+        values.add("str");
+        values.add(11);
+        values.add(101.1);
+        values.add(202.2f);
         values.add(new byte[] {1, 2, 3});
-//        values.add(UUID.randomUUID());
-//        values.add(new ObjectToStore(1, "noname", 22.2));
+        values.add(UUID.randomUUID());
+        values.add(new ObjectToStore(1, "noname", 22.2));
 
-//        Map<String, Object> map = new HashMap<>();
-//        map.put("a", "bb");
-//        map.put("vvv", "zzz");
-//        map.put("111", "222");
-//        values.add(map);
-//
-//        List<Object> lst = new ArrayList<>();
-//        lst.add(1);
-//        lst.add(2.2f);
-//        lst.add(3.3d);
-//        lst.add("str");
-//        lst.add(map);
-//        values.add(lst);
+        Map<String, Object> map = new HashMap<>();
+        map.put("a", "bb");
+        map.put("vvv", "zzz");
+        map.put("111", "222");
+        map.put("lst", Stream.of("abc", 1, null, 20.f).collect(Collectors.toSet()));
+        values.add(map);
+
+        List<Object> lst = new ArrayList<>();
+        lst.add(1);
+        lst.add(2.2f);
+        lst.add(3.3d);
+        lst.add("str");
+        lst.add(map);
+        values.add(lst);
 
         stmt.execute("CREATE TABLE tbl(id INT, oth OTHER, primary key(id))");
 
@@ -138,7 +143,10 @@ public class JdbcQueryTest extends GridCommonAbstractTest {
             for (Object obj : values) {
                 assertTrue(rs.next());
 
-                assertEquals(obj, rs.getObject(2));
+                if (obj != null && obj.getClass().isArray())
+                    compareArrays(obj, rs.getObject(2));
+                else
+                    assertEquals(obj, rs.getObject(2));
             }
         }
     }

@@ -17,6 +17,9 @@
 
 package org.apache.ignite.internal.processors.query.calcite.type;
 
+import java.lang.reflect.Type;
+import java.util.UUID;
+
 /** UUID SQL type. */
 public class UuidType extends OtherType {
     /** Ctor. */
@@ -27,5 +30,10 @@ public class UuidType extends OtherType {
     /** {@inheritDoc} */
     @Override protected void generateTypeString(StringBuilder sb, boolean withDetail) {
         sb.append("UUID");
+    }
+
+    /** {@inheritDoc} */
+    @Override public Type storageType() {
+        return UUID.class;
     }
 }

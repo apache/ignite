@@ -72,6 +72,7 @@ import org.apache.calcite.sql.validate.SqlConformance;
 import org.apache.calcite.util.BuiltInMethod;
 import org.apache.calcite.util.ControlFlowException;
 import org.apache.calcite.util.Pair;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.processors.query.calcite.util.IgniteMethod;
 
@@ -135,6 +136,10 @@ public class RexToLixTranslator implements RexVisitor<RexToLixTranslator.Result>
     /** */
     private Type currentStorageType;
 
+
+    /** Get-value method of the execution context. */
+    private Method valueMtd;
+
     /** */
     private RexToLixTranslator(RexProgram program,
         JavaTypeFactory typeFactory,
@@ -152,6 +157,13 @@ public class RexToLixTranslator implements RexVisitor<RexToLixTranslator.Result>
         this.list = Objects.requireNonNull(list);
         this.builder = Objects.requireNonNull(builder);
         this.correlates = correlates; // may be null
+
+        try {
+            valueMtd = ExecutionContext.class.getMethod("get", String.class, Type.class);
+        }
+        catch (NoSuchMethodException e) {
+            throw new IgniteException("Unable to find get-value method of the execution context.", e);
+        }
     }
 
     /**
@@ -1192,24 +1204,15 @@ public class RexToLixTranslator implements RexVisitor<RexToLixTranslator.Result>
         final Type storageType = currentStorageType != null
             ? currentStorageType : typeFactory.getJavaClass(dynamicParam.getType());
 
+        // Get-value params.
         final List<Expression> params = Stream.of(
                 Expressions.constant("?" + dynamicParam.getIndex()),
                 Expressions.constant(storageType))
             .collect(Collectors.toList());
 
-//        final Expression valueExpression = ConverterUtils.convert(
-//            Expressions.call(root, BuiltInMethod.DATA_CONTEXT_GET.method, Expressions.constant("?" + dynamicParam.getIndex())),
-//            storageType);
-
-        Expression valueExpression = null;
-        try {
-            valueExpression = ConverterUtils.convert(
-                Expressions.call(root, ExecutionContext.class.getMethod("get", String.class, Type.class), params),
-                storageType);
-        }
-        catch (NoSuchMethodException e) {
-            e.printStackTrace();
-        }
+        // Get-value method to call.
+        final Expression valueExpression = ConverterUtils.convert(Expressions.call(root, valueMtd, params),
+            storageType);
 
         final ParameterExpression valueVariable =
             Expressions.parameter(valueExpression.getType(), list.newName("value_dynamic_param"));

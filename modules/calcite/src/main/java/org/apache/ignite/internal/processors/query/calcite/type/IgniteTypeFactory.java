@@ -140,7 +140,7 @@ public class IgniteTypeFactory extends JavaTypeFactoryImpl {
             }
         }
         else if (type instanceof OtherType)
-            return type.getClass() == UuidType.class ? UUID.class : Object.class;
+            return ((OtherType)type).storageType();
 
         switch (type.getSqlTypeName()) {
             case ROW:
@@ -226,7 +226,7 @@ public class IgniteTypeFactory extends JavaTypeFactoryImpl {
             }
         }
         else if (type instanceof OtherType)
-            return type.getClass() == UuidType.class ? UUID.class : Object.class;
+            return ((OtherType)type).storageType();
 
         switch (type.getSqlTypeName()) {
             case ROW:

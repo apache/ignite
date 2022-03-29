@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.calcite.type;
 
+import java.lang.reflect.Type;
 import org.apache.calcite.rel.type.RelDataTypeFamily;
 import org.apache.calcite.rel.type.RelDataTypeImpl;
 import org.apache.calcite.sql.type.SqlTypeFamily;
@@ -52,5 +53,12 @@ public class OtherType extends RelDataTypeImpl {
     /** {@inheritDoc} */
     @Override protected void generateTypeString(StringBuilder sb, boolean withDetail) {
         sb.append("OTHER");
+    }
+
+    /**
+     * @return Storage type.
+     */
+    public Type storageType() {
+        return Object.class;
     }
 }

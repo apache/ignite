@@ -282,7 +282,11 @@ public class TypeUtils {
     public static Object toInternal(DataContext ctx, Object val, Type storageType) {
         if (val == null)
             return null;
-        else if (storageType == java.sql.Date.class)
+
+        if (storageType == Object.class)
+            return val;
+
+        if (storageType == java.sql.Date.class)
             return (int)(SqlFunctions.toLong((java.util.Date)val, DataContext.Variable.TIME_ZONE.get(ctx)) / DateTimeUtils.MILLIS_PER_DAY);
         else if (storageType == java.sql.Time.class)
             return (int)(SqlFunctions.toLong((java.util.Date)val, DataContext.Variable.TIME_ZONE.get(ctx)) % DateTimeUtils.MILLIS_PER_DAY);
@@ -306,7 +310,11 @@ public class TypeUtils {
     public static Object fromInternal(DataContext ctx, Object val, Type storageType) {
         if (val == null)
             return null;
-        else if (storageType == java.sql.Date.class && val instanceof Integer)
+
+        if(storageType == Object.class)
+            return val;
+
+        if (storageType == java.sql.Date.class && val instanceof Integer)
             return new java.sql.Date(fromLocalTs(ctx, (Integer)val * DateTimeUtils.MILLIS_PER_DAY));
         else if (storageType == java.sql.Time.class && val instanceof Integer)
             return new java.sql.Time(fromLocalTs(ctx, (Integer)val));
