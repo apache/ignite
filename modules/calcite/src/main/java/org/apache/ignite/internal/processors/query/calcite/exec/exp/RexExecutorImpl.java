@@ -44,7 +44,7 @@ import org.apache.calcite.sql.validate.SqlConformance;
 import org.apache.calcite.sql.validate.SqlConformanceEnum;
 import org.apache.calcite.util.BuiltInMethod;
 import org.apache.calcite.util.Util;
-import org.apache.ignite.internal.processors.query.calcite.type.OtherType;
+import org.apache.ignite.internal.processors.query.calcite.type.UuidType;
 
 /**
  * Evaluates a {@link RexNode} expression.
@@ -129,22 +129,21 @@ public class RexExecutorImpl implements RexExecutor {
         return new RexExecutable(code, "generated Rex code");
     }
 
-  /**
-   * Do constant reduction using generated code.
-   */
-  @Override public void reduce(RexBuilder rexBuilder, List<RexNode> constExps,
-      List<RexNode> reducedValues) {
-    for (RexNode node : constExps) {
-      // Do not simplify other types since we can't convert it to literal of this type.
-      if (node.getType() instanceof OtherType) {
-        reducedValues.addAll(constExps);
-        return;
-      }
-    }
-    final String code = compile(rexBuilder, constExps,
-        (list, index, storageType) -> {
-          throw new UnsupportedOperationException();
-        });
+    /**
+     * Do constant reduction using generated code.
+     */
+    @Override public void reduce(RexBuilder rexBuilder, List<RexNode> constExps, List<RexNode> reducedValues) {
+        for (RexNode node : constExps) {
+            // Do not simplify UUID types, since we can't convert it to literal of this type.
+            if (node.getType() instanceof UuidType) {
+                reducedValues.addAll(constExps);
+                return;
+            }
+        }
+        final String code = compile(rexBuilder, constExps,
+            (list, index, storageType) -> {
+                throw new UnsupportedOperationException();
+            });
 
         final RexExecutable executable = new RexExecutable(code, constExps);
         executable.setDataContext(dataCtx);

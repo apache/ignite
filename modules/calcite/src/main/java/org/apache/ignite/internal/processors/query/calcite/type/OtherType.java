@@ -55,9 +55,7 @@ public class OtherType extends RelDataTypeImpl {
         sb.append("OTHER");
     }
 
-    /**
-     * @return Storage type.
-     */
+    /** @return Storage type */
     public Type storageType() {
         return Object.class;
     }

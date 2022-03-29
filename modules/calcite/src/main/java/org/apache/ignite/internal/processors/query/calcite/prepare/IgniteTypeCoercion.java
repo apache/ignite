@@ -49,8 +49,7 @@ public class IgniteTypeCoercion extends TypeCoercionImpl {
         int idx,
         RelDataType targetType)
     {
-//        if (targetType instanceof OtherType) {
-        if (targetType instanceof UuidType) {
+        if (targetType instanceof OtherType) {
             SqlNode operand = call.getOperandList().get(idx);
 
             if (operand instanceof SqlDynamicParam)
@@ -61,7 +60,7 @@ public class IgniteTypeCoercion extends TypeCoercionImpl {
             if (fromType == null)
                 return false;
 
-            if (SqlTypeUtil.inCharFamily(fromType)/* || targetType.getClass() == OtherType.class*/) {
+            if (SqlTypeUtil.inCharFamily(fromType)) {
                 targetType = factory.createTypeWithNullability(targetType, fromType.isNullable());
 
                 SqlNode desired = SqlStdOperatorTable.CAST.createCall(
@@ -88,10 +87,10 @@ public class IgniteTypeCoercion extends TypeCoercionImpl {
         if (type1 == null || type2 == null)
             return null;
 
-        if (type1 instanceof OtherType && SqlTypeUtil.isCharacter(type2))
+        if (type1 instanceof UuidType && SqlTypeUtil.isCharacter(type2))
             return type1;
 
-        if (type2 instanceof OtherType && SqlTypeUtil.isCharacter(type1))
+        if (type2 instanceof UuidType && SqlTypeUtil.isCharacter(type1))
             return type2;
 
         return super.commonTypeForBinaryComparison(type1, type2);

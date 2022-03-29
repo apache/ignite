@@ -159,7 +159,7 @@ public class RexToLixTranslator implements RexVisitor<RexToLixTranslator.Result>
         this.correlates = correlates; // may be null
 
         try {
-            valueMtd = ExecutionContext.class.getMethod("get", String.class, Type.class);
+            valueMtd = ExecutionContext.class.getMethod("typedValue", String.class, Type.class);
         }
         catch (NoSuchMethodException e) {
             throw new IgniteException("Unable to find get-value method of the execution context.", e);
@@ -1205,13 +1205,15 @@ public class RexToLixTranslator implements RexVisitor<RexToLixTranslator.Result>
             ? currentStorageType : typeFactory.getJavaClass(dynamicParam.getType());
 
         // Get-value params.
-        final List<Expression> params = Stream.of(
-                Expressions.constant("?" + dynamicParam.getIndex()),
-                Expressions.constant(storageType))
-            .collect(Collectors.toList());
+        final List<Expression> params = Stream.of(Expressions.constant("?" + dynamicParam.getIndex()),
+            Expressions.constant(storageType)).collect(Collectors.toList());
 
         // Get-value method to call.
-        final Expression valueExpression = ConverterUtils.convert(Expressions.call(root, valueMtd, params),
+//        final Expression valueExpression = ConverterUtils.convert(Expressions.call(root, valueMtd, params),
+//            storageType);
+        final Expression valueExpression = ConverterUtils.convert(
+            Expressions.call(root, BuiltInMethod.DATA_CONTEXT_GET.method,
+                Expressions.constant("?" + dynamicParam.getIndex())),
             storageType);
 
         final ParameterExpression valueVariable =

@@ -37,7 +37,6 @@ import org.apache.calcite.runtime.SqlFunctions;
 import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.util.BuiltInMethod;
 import org.apache.calcite.util.Util;
-import org.apache.ignite.internal.processors.query.calcite.type.OtherType;
 
 /** */
 public class ConverterUtils {
@@ -150,9 +149,6 @@ public class ConverterUtils {
 
     /** */
     static Type toInternal(RelDataType type, boolean forceNotNull) {
-        if(type instanceof OtherType)
-            return ((OtherType)type).storageType();
-
         switch (type.getSqlTypeName()) {
             case DATE:
             case TIME:
