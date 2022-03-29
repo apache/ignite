@@ -105,7 +105,7 @@ public interface CdcConsumer {
 
     /**
      * Stops the consumer.
-     * This methods can be invoked only after {@link #start(MetricRegistry)}.
+     * This method can be invoked only after {@link #start(MetricRegistry)}.
      */
     public void stop();
 }
