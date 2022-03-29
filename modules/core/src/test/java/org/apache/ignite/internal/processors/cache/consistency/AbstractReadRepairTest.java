@@ -24,6 +24,7 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.TreeMap;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.ThreadLocalRandom;
@@ -33,6 +34,7 @@ import java.util.stream.Collectors;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteEvents;
+import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.ReadRepairStrategy;
@@ -60,6 +62,7 @@ import org.apache.ignite.internal.processors.dr.GridDrType;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
@@ -152,8 +155,8 @@ public abstract class AbstractReadRepairTest extends GridCommonAbstractTest {
     /**
      *
      */
-    protected CacheConfiguration<Integer, Integer> cacheConfiguration() {
-        CacheConfiguration<Integer, Integer> cfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
+    protected CacheConfiguration<Integer, Object> cacheConfiguration() {
+        CacheConfiguration<Integer, Object> cfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
 
         cfg.setWriteSynchronizationMode(FULL_SYNC);
         cfg.setCacheMode(cacheMode());
@@ -212,10 +215,12 @@ public abstract class AbstractReadRepairTest extends GridCommonAbstractTest {
             }
         }
 
+        boolean binary = data.binary;
+
         for (Map.Entry<Integer, InconsistentMapping> mapping : inconsistent.entrySet()) {
             Integer key = mapping.getKey();
-            Integer fixed = mapping.getValue().fixed;
-            Integer primary = mapping.getValue().primary;
+            Object fixed = mapping.getValue().fixed;
+            Object primary = mapping.getValue().primary;
             boolean repairable = mapping.getValue().repairable;
 
             if (!repairable)
@@ -224,7 +229,8 @@ public abstract class AbstractReadRepairTest extends GridCommonAbstractTest {
             if (e == null) {
                 assertTrue(repairable);
                 assertTrue(evtFixed.containsKey(key));
-                assertEquals(fixed, evtFixed.get(key));
+
+                assertEquals(fixed, unwrapBinaryIfNeeded(binary, evtFixed.get(key)));
             }
             // Repairable but not repaired (because of irreparable entry at the same tx) entries.
             else if (e.irreparableKeys().contains(key) || (e.repairableKeys() != null && e.repairableKeys().contains(key)))
@@ -237,11 +243,13 @@ public abstract class AbstractReadRepairTest extends GridCommonAbstractTest {
                     ClusterNode node = evtEntryInfo.getKey();
                     CacheConsistencyViolationEvent.EntryInfo info = evtEntryInfo.getValue();
 
+                    Object val = unwrapBinaryIfNeeded(binary, info.getValue());
+
                     if (info.isCorrect())
-                        assertEquals(fixed, info.getValue());
+                        assertEquals(fixed, val);
 
                     if (info.isPrimary()) {
-                        assertEquals(primary, info.getValue());
+                        assertEquals(primary, val);
                         assertEquals(node, primaryNode(key, DEFAULT_CACHE_NAME).cluster().localNode());
                     }
                 }
@@ -256,6 +264,20 @@ public abstract class AbstractReadRepairTest extends GridCommonAbstractTest {
     }
 
     /**
+     * @param binary With keep binary.
+     * @param obj Object.
+     */
+    protected static Object unwrapBinaryIfNeeded(boolean binary, Object obj) {
+        if (binary && obj instanceof BinaryObject /*Integer is still Integer at withKeepBinary read*/) {
+            BinaryObject valObj = (BinaryObject)obj;
+
+            return valObj != null ? valObj.deserialize() : null;
+        }
+        else
+            return obj;
+    }
+
+    /**
      *
      */
     protected void prepareAndCheck(
@@ -265,9 +287,10 @@ public abstract class AbstractReadRepairTest extends GridCommonAbstractTest {
         boolean async,
         boolean misses,
         boolean nulls,
+        boolean binary,
         Consumer<ReadRepairData> c)
         throws Exception {
-        IgniteCache<Integer, Integer> cache = initiator.getOrCreateCache(DEFAULT_CACHE_NAME);
+        IgniteCache<Integer, Object> cache = initiator.getOrCreateCache(DEFAULT_CACHE_NAME);
 
         ThreadLocalRandom rnd = ThreadLocalRandom.current();
 
@@ -288,16 +311,16 @@ public abstract class AbstractReadRepairTest extends GridCommonAbstractTest {
                 }
 
                 for (Ignite node : G.allGrids()) { // Check that cache filled properly.
-                    Map<Integer, Integer> all =
-                        node.<Integer, Integer>getOrCreateCache(DEFAULT_CACHE_NAME).getAll(results.keySet());
+                    Map<Integer, Object> all =
+                        node.<Integer, Object>getOrCreateCache(DEFAULT_CACHE_NAME).getAll(results.keySet());
 
-                    for (Map.Entry<Integer, Integer> entry : all.entrySet()) {
+                    for (Map.Entry<Integer, Object> entry : all.entrySet()) {
                         Integer key = entry.getKey();
-                        Integer val = entry.getValue();
+                        Object val = entry.getValue();
 
-                        T2<Integer, GridCacheVersion> valVer = results.get(key).mapping.get(node);
+                        T2<Object, GridCacheVersion> valVer = results.get(key).mapping.get(node);
 
-                        Integer exp;
+                        Object exp;
 
                         if (valVer != null)
                             exp = valVer.get1(); // Should read from itself (backup or primary).
@@ -308,7 +331,7 @@ public abstract class AbstractReadRepairTest extends GridCommonAbstractTest {
                     }
                 }
 
-                c.accept(new ReadRepairData(cache, results, raw, async, strategy));
+                c.accept(new ReadRepairData(cache, results, raw, async, strategy, binary));
             }
             catch (Throwable th) {
                 StringBuilder sb = new StringBuilder();
@@ -331,7 +354,7 @@ public abstract class AbstractReadRepairTest extends GridCommonAbstractTest {
 
                     sb.append("  Distribution: \n");
 
-                    for (Map.Entry<Ignite, T2<Integer, GridCacheVersion>> dist : mapping.mapping.entrySet()) {
+                    for (Map.Entry<Ignite, T2<Object, GridCacheVersion>> dist : mapping.mapping.entrySet()) {
                         sb.append("   Node: ").append(dist.getKey().name()).append("\n");
                         sb.append("    Value: ").append(dist.getValue().get1()).append("\n");
                         sb.append("    Version: ").append(dist.getValue().get2()).append("\n");
@@ -351,11 +374,13 @@ public abstract class AbstractReadRepairTest extends GridCommonAbstractTest {
     private InconsistentMapping setDifferentValuesForSameKey(int key, boolean misses, boolean nulls,
         ReadRepairStrategy strategy) throws Exception {
         List<Ignite> nodes = new ArrayList<>();
-        Map<Ignite, T2<Integer, GridCacheVersion>> mapping = new HashMap<>();
+        Map<Ignite, T2<Object, GridCacheVersion>> mapping = new HashMap<>();
 
         Ignite primary = primaryNode(key, DEFAULT_CACHE_NAME);
 
         ThreadLocalRandom rnd = ThreadLocalRandom.current();
+
+        boolean wrap = rnd.nextBoolean();
 
         if (rnd.nextBoolean()) { // Reversed order.
             nodes.addAll(backupNodes(key, DEFAULT_CACHE_NAME));
@@ -369,13 +394,13 @@ public abstract class AbstractReadRepairTest extends GridCommonAbstractTest {
         if (rnd.nextBoolean()) // Random order.
             Collections.shuffle(nodes);
 
-        IgniteInternalCache<Integer, Integer> internalCache = (grid(1)).cachex(DEFAULT_CACHE_NAME);
+        IgniteInternalCache<Integer, Object> internalCache = (grid(1)).cachex(DEFAULT_CACHE_NAME);
 
         GridCacheVersionManager mgr = ((GridCacheAdapter)internalCache.cache()).context().shared().versions();
 
         int incVal = 0;
-        Integer primVal = null;
-        Collection<T2<Integer, GridCacheVersion>> vals = new ArrayList<>();
+        Object primVal = null;
+        Collection<T2<Object, GridCacheVersion>> vals = new ArrayList<>();
 
         if (misses) {
             List<Ignite> keeped = nodes.subList(0, rnd.nextInt(1, nodes.size()));
@@ -383,7 +408,7 @@ public abstract class AbstractReadRepairTest extends GridCommonAbstractTest {
             nodes.stream()
                 .filter(node -> !keeped.contains(node))
                 .forEach(node -> {
-                    T2<Integer, GridCacheVersion> nullT2 = new T2<>(null, null);
+                    T2<Object, GridCacheVersion> nullT2 = new T2<>(null, null);
 
                     vals.add(nullT2);
                     mapping.put(node, nullT2);
@@ -399,9 +424,9 @@ public abstract class AbstractReadRepairTest extends GridCommonAbstractTest {
         GridCacheVersion ver = null;
 
         for (Ignite node : nodes) {
-            IgniteInternalCache<Integer, Integer> cache = ((IgniteEx)node).cachex(DEFAULT_CACHE_NAME);
+            IgniteInternalCache<Integer, Object> cache = ((IgniteEx)node).cachex(DEFAULT_CACHE_NAME);
 
-            GridCacheAdapter<Integer, Integer> adapter = (GridCacheAdapter)cache.cache();
+            GridCacheAdapter<Integer, Object> adapter = (GridCacheAdapter)cache.cache();
 
             GridCacheEntryEx entry = adapter.entryEx(key);
 
@@ -410,9 +435,11 @@ public abstract class AbstractReadRepairTest extends GridCommonAbstractTest {
 
             boolean rmv = nulls && (!rmvd || rnd.nextBoolean());
 
-            Integer val = rmv ? null : rnd.nextBoolean()/*increment or same as previously*/ ? ++incVal : incVal;
+            Object val = rmv ?
+                null :
+                wrapTestValueIfNeeded(wrap, rnd.nextBoolean()/*increment or same as previously*/ ? ++incVal : incVal);
 
-            T2<Integer, GridCacheVersion> valVer = new T2<>(val, val != null ? ver : null);
+            T2<Object, GridCacheVersion> valVer = new T2<>(val, val != null ? ver : null);
 
             vals.add(valVer);
             mapping.put(node, valVer);
@@ -509,7 +536,7 @@ public abstract class AbstractReadRepairTest extends GridCommonAbstractTest {
         if (!misses && !nulls)
             assertTrue(primVal != null); // Primary value set.
 
-        Integer fixed;
+        Object fixed;
 
         boolean consistent;
         boolean repairable;
@@ -525,12 +552,12 @@ public abstract class AbstractReadRepairTest extends GridCommonAbstractTest {
             switch (strategy) {
                 case LWW:
                     if (misses || rmvd || !incVer) {
-                        fixed = Integer.MIN_VALUE; // Should never be returned.
+                        fixed = incomparableTestValue();
 
                         repairable = false;
                     }
                     else {
-                        fixed = incVal;
+                        fixed = wrapTestValueIfNeeded(wrap, incVal);
 
                         repairable = true;
                     }
@@ -545,11 +572,11 @@ public abstract class AbstractReadRepairTest extends GridCommonAbstractTest {
                     break;
 
                 case RELATIVE_MAJORITY:
-                    fixed = Integer.MIN_VALUE; // Should never be returned.
+                    fixed = incomparableTestValue();
 
-                    Map<T2<Integer, GridCacheVersion>, Integer> counts = new HashMap<>();
+                    Map<T2<Object, GridCacheVersion>, Integer> counts = new HashMap<>();
 
-                    for (T2<Integer, GridCacheVersion> val : vals) {
+                    for (T2<Object, GridCacheVersion> val : vals) {
                         counts.putIfAbsent(val, 0);
 
                         counts.compute(val, (k, v) -> v + 1);
@@ -562,7 +589,7 @@ public abstract class AbstractReadRepairTest extends GridCommonAbstractTest {
                     repairable = !(sorted.length > 1 && sorted[1] == max);
 
                     if (repairable)
-                        for (Map.Entry<T2<Integer, GridCacheVersion>, Integer> count : counts.entrySet())
+                        for (Map.Entry<T2<Object, GridCacheVersion>, Integer> count : counts.entrySet())
                             if (count.getValue().equals(max)) {
                                 fixed = count.getKey().getKey();
 
@@ -579,7 +606,7 @@ public abstract class AbstractReadRepairTest extends GridCommonAbstractTest {
                     break;
 
                 case CHECK_ONLY:
-                    fixed = Integer.MIN_VALUE; // Should never be returned.
+                    fixed = incomparableTestValue();
 
                     repairable = false;
 
@@ -596,9 +623,33 @@ public abstract class AbstractReadRepairTest extends GridCommonAbstractTest {
     /**
      *
      */
+    private Object incomparableTestValue() {
+        return new Object() {
+            @Override public boolean equals(Object obj) {
+                fail("Shound never be compared.");
+
+                return false;
+            }
+        };
+    }
+
+    /**
+     * @param wrap Wrap.
+     * @param val  Value.
+     */
+    private Object wrapTestValueIfNeeded(boolean wrap, Integer val) {
+        if (wrap)
+            return new ReadRepairTestValue(val);
+        else
+            return val;
+    }
+
+    /**
+     *
+     */
     protected static final class ReadRepairData {
         /** Initiator's cache. */
-        final IgniteCache<Integer, Integer> cache;
+        final IgniteCache<Integer, Object> cache;
 
         /** Generated data across topology per key mapping. */
         final Map<Integer, InconsistentMapping> data;
@@ -609,6 +660,9 @@ public abstract class AbstractReadRepairTest extends GridCommonAbstractTest {
         /** Async read flag. */
         final boolean async;
 
+        /** Read with keepBinary flag. */
+        final boolean binary;
+
         /** Strategy. */
         final ReadRepairStrategy strategy;
 
@@ -616,15 +670,17 @@ public abstract class AbstractReadRepairTest extends GridCommonAbstractTest {
          *
          */
         public ReadRepairData(
-            IgniteCache<Integer, Integer> cache,
+            IgniteCache<Integer, Object> cache,
             Map<Integer, InconsistentMapping> data,
             boolean raw,
             boolean async,
-            ReadRepairStrategy strategy) {
+            ReadRepairStrategy strategy,
+            boolean binary) {
             this.cache = cache;
             this.data = data;
             this.raw = raw;
             this.async = async;
+            this.binary = binary;
             this.strategy = strategy;
         }
 
@@ -641,13 +697,13 @@ public abstract class AbstractReadRepairTest extends GridCommonAbstractTest {
      */
     protected static final class InconsistentMapping {
         /** Value per node. */
-        final Map<Ignite, T2<Integer, GridCacheVersion>> mapping;
+        final Map<Ignite, T2<Object, GridCacheVersion>> mapping;
 
         /** Primary node's value. */
-        final Integer primary;
+        final Object primary;
 
         /** Expected fix result. */
-        final Integer fixed;
+        final Object fixed;
 
         /** Inconsistency can be repaired using the specified strategy. */
         final boolean repairable;
@@ -658,13 +714,55 @@ public abstract class AbstractReadRepairTest extends GridCommonAbstractTest {
         /**
          *
          */
-        public InconsistentMapping(Map<Ignite, T2<Integer, GridCacheVersion>> mapping, Integer primary, Integer fixed,
-            boolean repairable, boolean consistent) {
+        public InconsistentMapping(
+            Map<Ignite, T2<Object, GridCacheVersion>> mapping,
+            Object primary,
+            Object fixed,
+            boolean repairable,
+            boolean consistent) {
             this.mapping = new HashMap<>(mapping);
             this.primary = primary;
             this.fixed = fixed;
             this.repairable = repairable;
             this.consistent = consistent;
+        }
+    }
+
+    /**
+     *
+     */
+    protected static final class ReadRepairTestValue {
+        /** Value. */
+        final Integer val;
+
+        /**
+         * @param val Value.
+         */
+        public ReadRepairTestValue(Integer val) {
+            this.val = val;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean equals(Object o) {
+            if (this == o)
+                return true;
+
+            if (o == null || getClass() != o.getClass())
+                return false;
+
+            ReadRepairTestValue val = (ReadRepairTestValue)o;
+
+            return this.val.equals(val.val);
+        }
+
+        /** {@inheritDoc} */
+        @Override public int hashCode() {
+            return Objects.hash(val);
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(ReadRepairTestValue.class, this);
         }
     }
 }

@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.consistency;
 
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
@@ -41,31 +42,29 @@ public abstract class AbstractFullSetReadRepairTest extends AbstractReadRepairTe
      *
      */
     protected static final Consumer<ReadRepairData> GET_CHECK_AND_FIX = (data) -> {
-        IgniteCache<Integer, Integer> cache = data.cache;
+        IgniteCache<Integer, Object> cache = data.cache;
+
         Set<Integer> keys = data.data.keySet();
         boolean raw = data.raw;
         boolean async = data.async;
+        boolean binary = data.binary;
         ReadRepairStrategy strategy = data.strategy;
 
         assert keys.size() == 1;
 
         for (Map.Entry<Integer, InconsistentMapping> entry : data.data.entrySet()) { // Once.
             Integer key = entry.getKey();
-            Integer fixed = entry.getValue().fixed;
+            Object fixed = entry.getValue().fixed;
 
-            Integer res;
+            Object res;
 
-            if (raw) {
-                CacheEntry<Integer, Integer> rawEntry = async ?
-                    cache.withReadRepair(strategy).getEntryAsync(key).get() :
-                    cache.withReadRepair(strategy).getEntry(key);
+            if (binary) {
+                Object obj = get(cache.withKeepBinary(), key, raw, async, strategy);
 
-                res = rawEntry != null ? rawEntry.getValue() : null;
+                res = unwrapBinaryIfNeeded(binary, obj);
             }
             else
-                res = async ?
-                    cache.withReadRepair(strategy).getAsync(key).get() :
-                    cache.withReadRepair(strategy).get(key);
+                res = get(cache, key, raw, async, strategy);
 
             assertEquals(fixed, res);
         }
@@ -75,37 +74,36 @@ public abstract class AbstractFullSetReadRepairTest extends AbstractReadRepairTe
      *
      */
     protected static final Consumer<ReadRepairData> GETALL_CHECK_AND_FIX = (data) -> {
-        IgniteCache<Integer, Integer> cache = data.cache;
+        IgniteCache<Integer, Object> cache = data.cache;
+
         Set<Integer> keys = data.data.keySet();
         boolean raw = data.raw;
         boolean async = data.async;
+        boolean binary = data.binary;
         ReadRepairStrategy strategy = data.strategy;
 
         assert !keys.isEmpty();
 
-        if (raw) {
-            Collection<CacheEntry<Integer, Integer>> res =
-                async ?
-                    cache.withReadRepair(strategy).getEntriesAsync(keys).get() :
-                    cache.withReadRepair(strategy).getEntries(keys);
+        Map<Integer, Object> res;
 
-            for (CacheEntry<Integer, Integer> entry : res) {
-                Integer fixed = data.data.get(entry.getKey()).fixed;
+        if (binary) {
+            Map<Integer, Object> objs = getAll(cache.withKeepBinary(), keys, raw, async, strategy);
 
-                assertEquals(fixed, entry.getValue());
+            res = new HashMap<>();
+
+            for (Map.Entry<Integer, Object> entry : objs.entrySet()) {
+                Object obj = entry.getValue();
+
+                res.put(entry.getKey(), unwrapBinaryIfNeeded(binary, obj));
             }
         }
-        else {
-            Map<Integer, Integer> res =
-                async ?
-                    cache.withReadRepair(strategy).getAllAsync(keys).get() :
-                    cache.withReadRepair(strategy).getAll(keys);
+        else
+            res = getAll(cache, keys, raw, async, strategy);
 
-            for (Map.Entry<Integer, Integer> entry : res.entrySet()) {
-                Integer fixed = data.data.get(entry.getKey()).fixed;
+        for (Map.Entry<Integer, Object> entry : res.entrySet()) {
+            Object fixed = data.data.get(entry.getKey()).fixed;
 
-                assertEquals(fixed, entry.getValue());
-            }
+            assertEquals(fixed, entry.getValue());
         }
     };
 
@@ -113,7 +111,8 @@ public abstract class AbstractFullSetReadRepairTest extends AbstractReadRepairTe
      *
      */
     protected static final Consumer<ReadRepairData> GET_NULL = (data) -> {
-        IgniteCache<Integer, Integer> cache = data.cache;
+        IgniteCache<Integer, Object> cache = data.binary ? data.cache.withKeepBinary() : data.cache;
+
         Set<Integer> keys = data.data.keySet();
         boolean raw = data.raw;
         boolean async = data.async;
@@ -124,14 +123,7 @@ public abstract class AbstractFullSetReadRepairTest extends AbstractReadRepairTe
         for (Integer key : data.data.keySet()) { // Once.
             Integer missed = -key; // Negative to gain null.
 
-            Object res =
-                raw ?
-                    async ?
-                        cache.withReadRepair(strategy).getEntryAsync(missed).get() :
-                        cache.withReadRepair(strategy).getEntry(missed) :
-                    async ?
-                        cache.withReadRepair(strategy).getAsync(missed).get() :
-                        cache.withReadRepair(strategy).get(missed);
+            Object res = get(cache, missed, raw, async, strategy);
 
             assertEquals(null, res);
         }
@@ -141,7 +133,8 @@ public abstract class AbstractFullSetReadRepairTest extends AbstractReadRepairTe
      *
      */
     protected static final Consumer<ReadRepairData> GET_ALL_NULL = (data) -> {
-        IgniteCache<Integer, Integer> cache = data.cache;
+        IgniteCache<Integer, Object> cache = data.binary ? data.cache.withKeepBinary() : data.cache;
+
         Set<Integer> keys = data.data.keySet();
         boolean raw = data.raw;
         boolean async = data.async;
@@ -149,29 +142,17 @@ public abstract class AbstractFullSetReadRepairTest extends AbstractReadRepairTe
 
         Set<Integer> missed = keys.stream().map(key -> -key).collect(Collectors.toCollection(TreeSet::new)); // Negative to gain null.
 
-        if (raw) {
-            Collection<CacheEntry<Integer, Integer>> res =
-                async ?
-                    cache.withReadRepair(strategy).getEntriesAsync(missed).get() :
-                    cache.withReadRepair(strategy).getEntries(missed);
+        Map<Integer, Object> res = getAll(cache, missed, raw, async, strategy);
 
-            assertTrue(res.isEmpty());
-        }
-        else {
-            Map<Integer, Integer> res =
-                async ?
-                    cache.withReadRepair(strategy).getAllAsync(missed).get() :
-                    cache.withReadRepair(strategy).getAll(missed);
-
-            assertTrue(res.isEmpty());
-        }
+        assertTrue(res.isEmpty());
     };
 
     /**
      *
      */
     protected static final Consumer<ReadRepairData> CONTAINS_CHECK_AND_FIX = (data) -> {
-        IgniteCache<Integer, Integer> cache = data.cache;
+        IgniteCache<Integer, Object> cache = data.binary ? data.cache.withKeepBinary() : data.cache;
+
         Set<Integer> keys = data.data.keySet();
         boolean async = data.async;
         ReadRepairStrategy strategy = data.strategy;
@@ -180,7 +161,7 @@ public abstract class AbstractFullSetReadRepairTest extends AbstractReadRepairTe
 
         for (Map.Entry<Integer, InconsistentMapping> entry : data.data.entrySet()) { // Once.
             Integer key = entry.getKey();
-            Integer fixed = entry.getValue().fixed;
+            Object fixed = entry.getValue().fixed;
 
             boolean res = async ?
                 cache.withReadRepair(strategy).containsKeyAsync(key).get() :
@@ -194,7 +175,8 @@ public abstract class AbstractFullSetReadRepairTest extends AbstractReadRepairTe
      *
      */
     protected static final Consumer<ReadRepairData> CONTAINS_ALL_CHECK_AND_FIX = (data) -> {
-        IgniteCache<Integer, Integer> cache = data.cache;
+        IgniteCache<Integer, Object> cache = data.binary ? data.cache.withKeepBinary() : data.cache;
+
         Set<Integer> keys = data.data.keySet();
         boolean async = data.async;
         ReadRepairStrategy strategy = data.strategy;
@@ -206,7 +188,7 @@ public abstract class AbstractFullSetReadRepairTest extends AbstractReadRepairTe
         boolean allFixed = true;
 
         for (Integer key : keys) {
-            Integer fixed = data.data.get(key).fixed;
+            Object fixed = data.data.get(key).fixed;
 
             if (fixed == null)
                 allFixed = false;
@@ -218,9 +200,58 @@ public abstract class AbstractFullSetReadRepairTest extends AbstractReadRepairTe
     /**
      *
      */
+    private static Object get(IgniteCache<Integer, Object> cache, Integer key, boolean raw, boolean async,
+        ReadRepairStrategy strategy) {
+        Object res;
+
+        if (raw) {
+            CacheEntry<Integer, Object> rawEntry = async ?
+                cache.withReadRepair(strategy).getEntryAsync(key).get() :
+                cache.withReadRepair(strategy).getEntry(key);
+
+            res = rawEntry != null ? rawEntry.getValue() : null;
+        }
+        else
+            res = async ?
+                cache.withReadRepair(strategy).getAsync(key).get() :
+                cache.withReadRepair(strategy).get(key);
+
+        return res;
+    }
+
+    /**
+     *
+     */
+    private static Map<Integer, Object> getAll(IgniteCache<Integer, Object> cache, Set<Integer> keys, boolean raw,
+        boolean async, ReadRepairStrategy strategy) {
+        Map<Integer, Object> res;
+
+        if (raw) {
+            Collection<CacheEntry<Integer, Object>> entryRes =
+                async ?
+                    cache.withReadRepair(strategy).getEntriesAsync(keys).get() :
+                    cache.withReadRepair(strategy).getEntries(keys);
+
+            res = new HashMap<>();
+
+            for (CacheEntry<Integer, Object> entry : entryRes)
+                res.put(entry.getKey(), entry.getValue());
+        }
+        else {
+            res = async ?
+                cache.withReadRepair(strategy).getAllAsync(keys).get() :
+                cache.withReadRepair(strategy).getAll(keys);
+        }
+
+        return res;
+    }
+
+    /**
+     *
+     */
     protected static final BiConsumer<ReadRepairData, IgniteIrreparableConsistencyViolationException> CHECK_FIXED =
         (data, e) -> {
-            IgniteCache<Integer, Integer> cache = data.cache;
+            IgniteCache<Integer, Object> cache = data.cache;
             boolean raw = data.raw;
 
             for (Map.Entry<Integer, InconsistentMapping> entry : data.data.entrySet()) {
@@ -231,12 +262,12 @@ public abstract class AbstractFullSetReadRepairTest extends AbstractReadRepairTe
                     (e.repairableKeys() != null && e.repairableKeys().contains(key))))
                     continue;
 
-                Integer fixed = entry.getValue().fixed;
+                Object fixed = entry.getValue().fixed;
 
-                Integer res;
+                Object res;
 
                 if (raw) {
-                    CacheEntry<Integer, Integer> rawEntry = cache.getEntry(key);
+                    CacheEntry<Integer, Object> rawEntry = cache.getEntry(key);
 
                     res = rawEntry != null ? rawEntry.getValue() : null;
                 }

@@ -32,7 +32,7 @@ import org.junit.runners.Parameterized;
 @RunWith(Parameterized.class)
 public class ImplicitTransactionalReadRepairTest extends AbstractFullSetReadRepairTest {
     /** Test parameters. */
-    @Parameterized.Parameters(name = "getEntry={0}, async={1}, misses={2}, nulls={3}")
+    @Parameterized.Parameters(name = "getEntry={0}, async={1}, misses={2}, nulls={3}, binary={4}")
     public static Collection parameters() {
         List<Object[]> res = new ArrayList<>();
 
@@ -40,7 +40,8 @@ public class ImplicitTransactionalReadRepairTest extends AbstractFullSetReadRepa
             for (boolean async : new boolean[] {false, true})
                 for (boolean misses : new boolean[] {false, true})
                     for (boolean nulls : new boolean[] {false, true})
-                        res.add(new Object[] {raw, async, misses, nulls});
+                        for (boolean binary : new boolean[] {false, true})
+                            res.add(new Object[] {raw, async, misses, nulls, binary});
         }
 
         return res;
@@ -62,6 +63,10 @@ public class ImplicitTransactionalReadRepairTest extends AbstractFullSetReadRepa
     @Parameterized.Parameter(3)
     public boolean nulls;
 
+    /** With binary. */
+    @Parameterized.Parameter(4)
+    public boolean binary;
+
     /** {@inheritDoc} */
     @Override protected void testGet(Ignite initiator, Integer cnt, boolean all) throws Exception {
         prepareAndCheck(
@@ -71,6 +76,7 @@ public class ImplicitTransactionalReadRepairTest extends AbstractFullSetReadRepa
             async,
             misses,
             nulls,
+            binary,
             (ReadRepairData data) -> repairIfRepairable.accept(data,
                 () -> testReadRepair(data, all ? GETALL_CHECK_AND_FIX : GET_CHECK_AND_FIX, true)));
     }
@@ -84,6 +90,7 @@ public class ImplicitTransactionalReadRepairTest extends AbstractFullSetReadRepa
             async,
             misses,
             nulls,
+            binary,
             (ReadRepairData data) -> repairIfRepairable.accept(data,
                 () -> testReadRepair(data, all ? CONTAINS_ALL_CHECK_AND_FIX : CONTAINS_CHECK_AND_FIX, true)));
     }
@@ -97,6 +104,7 @@ public class ImplicitTransactionalReadRepairTest extends AbstractFullSetReadRepa
             async,
             misses,
             nulls,
+            binary,
             (ReadRepairData data) -> testReadRepair(data, all ? GET_ALL_NULL : GET_NULL, false));
     }
 

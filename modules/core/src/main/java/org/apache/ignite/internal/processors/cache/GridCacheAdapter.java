@@ -700,7 +700,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             /*force primary*/ !ctx.config().isReadFromBackup(),
             /*skip tx*/false,
             /*task name*/null,
-            /*deserialize binary*/false,
+            !ctx.keepBinary(),
             /*skip values*/true,
             false);
 
@@ -736,7 +736,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             /*force primary*/ !ctx.config().isReadFromBackup(),
             /*skip tx*/false,
             /*task name*/null,
-            /*deserialize binary*/false,
+            !ctx.keepBinary(),
             opCtx != null && opCtx.recovery(),
             opCtx != null ? opCtx.readRepairStrategy() : null,
             /*skip values*/true,
@@ -5126,7 +5126,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                 ctx.operationContextPerCall(opCtx);
 
                 try (Transaction tx = ctx.grid().transactions().txStart(PESSIMISTIC, SERIALIZABLE)) {
-                    get((K)key, null, false, false); // Repair.
+                    get((K)key, null, !opCtx.isKeepBinary(), false); // Repair.
 
                     final GridNearTxLocal tx0 = checkCurrentTx();
 
@@ -5172,7 +5172,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             @Override public Boolean call() throws IgniteCheckedException {
                 CacheOperationContext prevOpCtx = ctx.operationContextPerCall();
 
-                ctx.operationContextPerCall();
+                ctx.operationContextPerCall(opCtx);
 
                 try {
                     return invoke((K)key, new CacheEntryProcessor<K, V, Boolean>() {

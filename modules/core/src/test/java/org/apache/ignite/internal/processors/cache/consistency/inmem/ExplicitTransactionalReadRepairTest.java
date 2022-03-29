@@ -36,7 +36,7 @@ import org.junit.runners.Parameterized;
 @RunWith(Parameterized.class)
 public class ExplicitTransactionalReadRepairTest extends AbstractFullSetReadRepairTest {
     /** Test parameters. */
-    @Parameterized.Parameters(name = "concurrency={0}, isolation={1}, getEntry={2}, async={3}, misses={4}, nulls={5}")
+    @Parameterized.Parameters(name = "concurrency={0}, isolation={1}, getEntry={2}, async={3}, misses={4}, nulls={5}, binary={6}")
     public static Collection parameters() {
         List<Object[]> res = new ArrayList<>();
 
@@ -46,7 +46,8 @@ public class ExplicitTransactionalReadRepairTest extends AbstractFullSetReadRepa
                     for (boolean async : new boolean[] {false, true})
                         for (boolean misses : new boolean[] {false, true})
                             for (boolean nulls : new boolean[] {false, true})
-                                res.add(new Object[] {concurrency, isolation, raw, async, misses, nulls});
+                                for (boolean binary : new boolean[] {false, true})
+                                    res.add(new Object[] {concurrency, isolation, raw, async, misses, nulls, binary});
                 }
             }
         }
@@ -78,6 +79,10 @@ public class ExplicitTransactionalReadRepairTest extends AbstractFullSetReadRepa
     @Parameterized.Parameter(5)
     public boolean nulls;
 
+    /** With binary. */
+    @Parameterized.Parameter(6)
+    public boolean binary;
+
     /** {@inheritDoc} */
     @Override protected void testGet(Ignite initiator, Integer cnt, boolean all) throws Exception {
         prepareAndCheck(
@@ -87,6 +92,7 @@ public class ExplicitTransactionalReadRepairTest extends AbstractFullSetReadRepa
             async,
             misses,
             nulls,
+            binary,
             (ReadRepairData data) -> repairIfRepairable.accept(data, () -> {
                 boolean fixByOtherTx = concurrency == TransactionConcurrency.OPTIMISTIC ||
                     isolation == TransactionIsolation.READ_COMMITTED;
@@ -104,6 +110,7 @@ public class ExplicitTransactionalReadRepairTest extends AbstractFullSetReadRepa
             async,
             misses,
             nulls,
+            binary,
             (ReadRepairData data) -> repairIfRepairable.accept(data, () -> {
                 // "Contains" works like optimistic() || readCommitted() and always fixed by other tx.
                 testReadRepair(initiator, data, all ? CONTAINS_ALL_CHECK_AND_FIX : CONTAINS_CHECK_AND_FIX, true, true);
@@ -119,6 +126,7 @@ public class ExplicitTransactionalReadRepairTest extends AbstractFullSetReadRepa
             async,
             misses,
             nulls,
+            binary,
             (ReadRepairData data) -> testReadRepair(initiator, data, all ? GET_ALL_NULL : GET_NULL, false, false));
     }
 
