@@ -20,6 +20,7 @@ package org.apache.ignite.internal.cdc;
 import org.apache.ignite.cdc.TypeMapping;
 import org.apache.ignite.platform.PlatformType;
 
+/** */
 public class TypeMappingImpl implements TypeMapping {
     /** */
     private final int typeId;
@@ -30,6 +31,11 @@ public class TypeMappingImpl implements TypeMapping {
     /** */
     private final PlatformType platform;
 
+    /**
+     * @param typeId Type id.
+     * @param typeName Type name.
+     * @param platform Platform.
+     */
     public TypeMappingImpl(int typeId, String typeName, PlatformType platform) {
         this.typeId = typeId;
         this.typeName = typeName;

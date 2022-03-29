@@ -535,6 +535,7 @@ public interface EventType {
      * @see CacheEvent
      */
     public static final int EVT_CACHE_OBJECT_EXPIRED = 70;
+
     /**
      * Built-in event type: cache rebalance started.
      * <p>
