@@ -53,4 +53,11 @@ public interface InfoProvider {
      * @param ignite Ignite instance.
      */
     public void ackStarted(IgniteLogger log, Ignite ignite);
+
+    /**
+     * @param log Ignite logger.
+     * @param ignite Ignite instance.
+     * @param err {@code true} if error occurred during the Ignite instance stop process.
+     */
+    public void ackStopped(IgniteLogger log, Ignite ignite, boolean err);
 }

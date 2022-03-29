@@ -29,8 +29,6 @@ import java.lang.management.RuntimeMXBean;
 import java.lang.reflect.Constructor;
 import java.nio.charset.Charset;
 import java.text.DateFormat;
-import java.text.DecimalFormat;
-import java.text.DecimalFormatSymbols;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -269,7 +267,6 @@ import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_TX_CONFIG;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_USER_NAME;
 import static org.apache.ignite.internal.IgniteVersionUtils.BUILD_TSTAMP_STR;
 import static org.apache.ignite.internal.IgniteVersionUtils.COPYRIGHT;
-import static org.apache.ignite.internal.IgniteVersionUtils.REV_HASH_STR;
 import static org.apache.ignite.internal.IgniteVersionUtils.VER;
 import static org.apache.ignite.internal.IgniteVersionUtils.VER_STR;
 import static org.apache.ignite.internal.util.IgniteUtils.onOff;
@@ -1375,11 +1372,6 @@ public class IgniteKernal implements IgniteEx, Externalizable {
         startTimer.finishGlobalStage("Await exchange");
     }
 
-    /** */
-    private static DecimalFormat doubleFormat() {
-        return new DecimalFormat("#.##", DecimalFormatSymbols.getInstance(Locale.US));
-    }
-
     /**
      * @return Ignite security processor. See {@link IgniteSecurity} for details.
      */
@@ -1974,52 +1966,7 @@ public class IgniteKernal implements IgniteEx, Externalizable {
                 gw.writeUnlock();
             }
 
-            // Ack stop.
-            if (log.isQuiet()) {
-                String nodeName = igniteInstanceName == null ? "" : "name=" + igniteInstanceName + ", ";
-
-                if (!errOnStop)
-                    U.quiet(false, "Ignite node stopped OK [" + nodeName + "uptime=" +
-                        X.timeSpan2DHMSM(U.currentTimeMillis() - startTime) + ']');
-                else
-                    U.quiet(true, "Ignite node stopped wih ERRORS [" + nodeName + "uptime=" +
-                        X.timeSpan2DHMSM(U.currentTimeMillis() - startTime) + ']');
-            }
-
-            if (log.isInfoEnabled())
-                if (!errOnStop) {
-                    String ack = "Ignite ver. " + VER_STR + '#' + BUILD_TSTAMP_STR + "-sha1:" + REV_HASH_STR +
-                        " stopped OK";
-
-                    String dash = U.dash(ack.length());
-
-                    log.info(NL + NL +
-                        ">>> " + dash + NL +
-                        ">>> " + ack + NL +
-                        ">>> " + dash + NL +
-                        (igniteInstanceName == null ? "" : ">>> Ignite instance name: " + igniteInstanceName + NL) +
-                        ">>> Grid uptime: " + X.timeSpan2DHMSM(U.currentTimeMillis() - startTime) +
-                        NL +
-                        NL);
-                }
-                else {
-                    String ack = "Ignite ver. " + VER_STR + '#' + BUILD_TSTAMP_STR + "-sha1:" + REV_HASH_STR +
-                        " stopped with ERRORS";
-
-                    String dash = U.dash(ack.length());
-
-                    log.info(NL + NL +
-                        ">>> " + ack + NL +
-                        ">>> " + dash + NL +
-                        (igniteInstanceName == null ? "" : ">>> Ignite instance name: " + igniteInstanceName + NL) +
-                        ">>> Grid uptime: " + X.timeSpan2DHMSM(U.currentTimeMillis() - startTime) +
-                        NL +
-                        ">>> See log above for detailed error message." + NL +
-                        ">>> Note that some errors during stop can prevent grid from" + NL +
-                        ">>> maintaining correct topology since this node may have" + NL +
-                        ">>> not exited grid properly." + NL +
-                        NL);
-                }
+            info.ackStopped(log, this, errOnStop);
 
             try {
                 U.onGridStop();

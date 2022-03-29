@@ -135,6 +135,11 @@ public class IgniteInfoProvider implements InfoProvider {
         ackNodeInfo(log, igEx);
     }
 
+    /** {@inheritDoc} */
+    @Override public void ackStopped(IgniteLogger log, Ignite ignite, boolean err) {
+        ackNodeStopped(log, (IgniteEx)ignite, err);
+    }
+
     /**
      * Acks ASCII-logo. Thanks to http://patorjk.com/software/taag
      */
@@ -655,7 +660,8 @@ public class IgniteInfoProvider implements InfoProvider {
                     ", order=" + locNode.order() + ", clientMode=" + ctx.clientNode() +
                     "]" + NL +
                     ">>> Local node addresses: " + U.addressesAsString(locNode) + NL +
-                    ">>> Local ports: " + sb + NL;
+                    ">>> Local ports: " + sb + NL +
+                    ">>> " + dash + NL;
 
             log.info(str);
         }
@@ -808,6 +814,8 @@ public class IgniteInfoProvider implements InfoProvider {
 
         SB dataRegionsInfo = new SB();
 
+        dataRegionsInfo.nl();
+
         long loadedPages = 0;
         long offHeapUsedSummary = 0;
         long offHeapMaxSummary = 0;
@@ -908,5 +916,59 @@ public class IgniteInfoProvider implements InfoProvider {
             U.quietMultipleLines(false, sb.toString());
         else if (log.isInfoEnabled())
             log.info(sb.toString());
+    }
+
+    /** */
+    void ackNodeStopped(IgniteLogger log, IgniteEx ignite, boolean err) {
+        String igniteInstanceName = ignite.name();
+
+        // Ack stop.
+        if (log.isQuiet()) {
+            String nodeName = igniteInstanceName == null ? "" : "name=" + igniteInstanceName + ", ";
+
+            if (!err)
+                U.quiet(false, "Ignite node stopped OK [" + nodeName + "uptime=" +
+                    ((IgniteKernal)ignite).upTimeFormatted() + ']');
+            else
+                U.quiet(true, "Ignite node stopped wih ERRORS [" + nodeName + "uptime=" +
+                    ((IgniteKernal)ignite).upTimeFormatted() + ']');
+        }
+
+        if (!log.isInfoEnabled())
+            return;
+
+        if (!err) {
+            String ack = "Ignite ver. " + VER_STR + '#' + BUILD_TSTAMP_STR + "-sha1:" + REV_HASH_STR +
+                " stopped OK";
+
+            String dash = U.dash(ack.length());
+
+            log.info(NL + NL +
+                ">>> " + dash + NL +
+                ">>> " + ack + NL +
+                ">>> " + dash + NL +
+                (igniteInstanceName == null ? "" : ">>> Ignite instance name: " + igniteInstanceName + NL) +
+                ">>> Grid uptime: " + ((IgniteKernal)ignite).upTimeFormatted() +
+                NL +
+                NL);
+        }
+        else {
+            String ack = "Ignite ver. " + VER_STR + '#' + BUILD_TSTAMP_STR + "-sha1:" + REV_HASH_STR +
+                " stopped with ERRORS";
+
+            String dash = U.dash(ack.length());
+
+            log.info(NL + NL +
+                ">>> " + ack + NL +
+                ">>> " + dash + NL +
+                (igniteInstanceName == null ? "" : ">>> Ignite instance name: " + igniteInstanceName + NL) +
+                ">>> Grid uptime: " + ((IgniteKernal)ignite).upTimeFormatted() +
+                NL +
+                ">>> See log above for detailed error message." + NL +
+                ">>> Note that some errors during stop can prevent grid from" + NL +
+                ">>> maintaining correct topology since this node may have" + NL +
+                ">>> not exited grid properly." + NL +
+                NL);
+        }
     }
 }
