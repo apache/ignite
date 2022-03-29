@@ -27,6 +27,7 @@ from ignitetest.utils.ignite_test import IgniteTest
 from ignitetest.utils.version import IgniteVersion, LATEST, DEV_BRANCH
 from ignitetest.utils import cluster
 from ignitetest.utils.data_loader.data_loader import DataLoader, DataLoadParams, data_region_size
+from ignitetest.services.utils.ignite_configuration.bean import Bean
 
 
 class SnapshotTest(IgniteTest):
@@ -61,7 +62,7 @@ class SnapshotTest(IgniteTest):
                 max_wal_archive_size=2 * region_size,
                 default=DataRegionConfiguration(persistent=True,
                                                 max_size=region_size)),
-            metric_exporters={'org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi'}
+            metric_exporters={Bean("org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi")}
         )
 
         nodes = IgniteService(self.test_context, ignite_config, num_nodes=num_nodes)

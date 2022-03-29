@@ -34,6 +34,7 @@ from ignitetest.utils.ignite_test import JFR_ENABLED, JMX_ENABLED
 from ignitetest.utils.version import DEV_BRANCH
 from ignitetest.services.utils.ignite_configuration.prometheus_metrics import PrometheusMetrics,\
     PROMETHEUS_METRICS_TEMPLATE_FILE, PROMETHEUS_METRICS_ENABLED
+from ignitetest.services.utils.ignite_configuration.bean import Bean
 
 SHARED_PREPARED_FILE = ".ignite_prepared"
 
@@ -152,7 +153,8 @@ class IgniteSpec(metaclass=ABCMeta):
                 self.service.context.globals.get(PROMETHEUS_METRICS_ENABLED, False):
             if config.metrics_update_frequency is None:
                 config = config._replace(metrics_update_frequency=1000)
-            config.metric_exporters.add("org.apache.ignite.spi.metric.opencensus.OpenCensusMetricExporterSpi")
+            config.metric_exporters.add(Bean("org.apache.ignite.spi.metric.opencensus.OpenCensusMetricExporterSpi",
+                                             period=1000))
 
             if not any(lambda bean: (bean[1].name and bean[1].name == "PrometheusMetrics"), config.ext_beans):
                 config.ext_beans.append((PROMETHEUS_METRICS_TEMPLATE_FILE, PrometheusMetrics()))

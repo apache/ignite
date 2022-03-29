@@ -73,7 +73,7 @@
             <property name="metricExporterSpi">
                 <list>
                 {% for exporter in config.metric_exporters %}
-                    <bean class="{{ exporter }}"/>
+                    {{ misc_utils.bean(exporter) }}
                 {% endfor %}
                 </list>
             </property>

@@ -35,6 +35,7 @@ from ignitetest.utils import cluster, ignite_versions
 from ignitetest.utils.ignite_test import IgniteTest
 from ignitetest.utils.version import DEV_BRANCH, LATEST, IgniteVersion
 from ignitetest.utils.data_loader.data_loader import DataLoadParams, DataLoader, data_region_size
+from ignitetest.services.utils.ignite_configuration.bean import Bean
 
 SERVER_NODES = 4
 PRELOAD_NODES = 16
@@ -76,7 +77,7 @@ class ManyThinClientTest(IgniteTest):
                 max_wal_archive_size=2 * region_size,
                 default=DataRegionConfiguration(persistent=True,
                                                 max_size=region_size)),
-            metric_exporters={"org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi"}
+            metric_exporters={Bean("org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi")}
         )
 
         ignite = IgniteService(self.test_context, ignite_config, num_nodes=num_nodes, jvm_opts=['-Xmx3G'])

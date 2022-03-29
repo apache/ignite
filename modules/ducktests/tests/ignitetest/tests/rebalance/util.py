@@ -30,6 +30,7 @@ from ignitetest.services.utils.ignite_configuration.data_storage import DataRegi
 from ignitetest.utils.data_loader.data_loader import DataLoadParams, data_region_size
 from ignitetest.utils.enum import constructible
 from ignitetest.utils.version import IgniteVersion
+from ignitetest.services.utils.ignite_configuration.bean import Bean
 
 NUM_NODES = 4
 
@@ -97,7 +98,7 @@ def start_ignite(test, ignite_version: str, rebalance_params: RebalanceParams,
     node_config = IgniteConfiguration(
         version=IgniteVersion(ignite_version),
         data_storage=data_storage,
-        metric_exporters={"org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi"},
+        metric_exporters={Bean("org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi")},
         rebalance_thread_pool_size=rebalance_params.thread_pool_size,
         rebalance_batch_size=rebalance_params.batch_size,
         rebalance_batches_prefetch_count=rebalance_params.batches_prefetch_count,
