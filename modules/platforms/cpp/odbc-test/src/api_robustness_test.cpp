@@ -795,6 +795,31 @@ BOOST_AUTO_TEST_CASE(TestSQLSetStmtAttr)
     SQLSetStmtAttr(stmt, SQL_ATTR_ROW_ARRAY_SIZE, 0, 0);
 }
 
+BOOST_AUTO_TEST_CASE(TestSQLSetStmtAttrGetStmtAttr)
+{
+    // check that statement array size is set correctly 
+
+    Connect("DRIVER={Apache Ignite};address=127.0.0.1:11110;schema=cache");
+
+    SQLCHAR buffer[ODBC_BUFFER_SIZE];
+    SQLINTEGER resLen = 0;
+
+    // repeat test for different values
+    SQLULEN valList[5] = {10, 52, 81, 103, 304};
+    for (SQLULEN val : valList) {
+        SQLRETURN ret = SQLSetStmtAttr(stmt, SQL_ATTR_ROW_ARRAY_SIZE, reinterpret_cast<SQLPOINTER>(val), sizeof(val));
+    
+        ODBC_FAIL_ON_ERROR(ret, SQL_HANDLE_STMT, stmt);
+
+        ret = SQLGetStmtAttr(stmt, SQL_ATTR_ROW_ARRAY_SIZE, buffer, sizeof(buffer), &resLen);
+
+        ODBC_FAIL_ON_ERROR(ret, SQL_HANDLE_STMT, stmt);
+
+        SQLINTEGER* bufferVal = reinterpret_cast<SQLINTEGER*>(buffer);
+        BOOST_CHECK_EQUAL(*bufferVal, val);
+    }
+}
+
 BOOST_AUTO_TEST_CASE(TestSQLPrimaryKeys)
 {
     // There are no checks because we do not really care what is the result of these
