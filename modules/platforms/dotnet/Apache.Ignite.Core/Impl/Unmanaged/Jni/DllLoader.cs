@@ -86,18 +86,21 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
                         : null);
                 }
 
-                if (Os.IsNetCore)
+                // Depending on the Linux distro, dlopen is either present in libdl or in libcoreclr.
+                try
                 {
-                    var ptr = NativeMethodsCore.dlopen(dllPath, RtldGlobal | RtldLazy);
+                    var ptr = NativeMethodsLinuxLibcoreclr.dlopen(dllPath, RtldGlobal | RtldLazy);
                     return new KeyValuePair<IntPtr, string>(ptr, ptr == IntPtr.Zero
-                        ? GetErrorText(NativeMethodsCore.dlerror())
+                        ? GetErrorText(NativeMethodsLinuxLibcoreclr.dlerror())
                         : null);
                 }
-
-                var lptr = NativeMethodsLinux.dlopen(dllPath, RtldGlobal | RtldLazy);
-                return new KeyValuePair<IntPtr, string>(lptr, lptr == IntPtr.Zero
-                    ? GetErrorText(NativeMethodsLinux.dlerror())
-                    : null);
+                catch (EntryPointNotFoundException)
+                {
+                    var ptr = NativeMethodsLinuxLibdl.dlopen(dllPath, RtldGlobal | RtldLazy);
+                    return new KeyValuePair<IntPtr, string>(ptr, ptr == IntPtr.Zero
+                        ? GetErrorText(NativeMethodsLinuxLibdl.dlerror())
+                        : null);
+                }
             }
 
             throw new InvalidOperationException("Unsupported OS: " + Environment.OSVersion);
@@ -149,7 +152,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
         /// <summary>
         /// Linux.
         /// </summary>
-        private static class NativeMethodsLinux
+        private static class NativeMethodsLinuxLibdl
         {
             [SuppressMessage("Microsoft.Design", "CA1060:MovePInvokesToNativeMethodsClass")]
             [DllImport("libdl.so", SetLastError = true, CharSet = CharSet.Ansi, BestFitMapping = false,
@@ -181,7 +184,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
         /// <summary>
         /// libdl.so depends on libc6-dev on Linux, use libcoreclr instead.
         /// </summary>
-        private static class NativeMethodsCore
+        private static class NativeMethodsLinuxLibcoreclr
         {
             [SuppressMessage("Microsoft.Design", "CA1060:MovePInvokesToNativeMethodsClass")]
             [DllImport("libcoreclr.so", SetLastError = true, CharSet = CharSet.Ansi, BestFitMapping = false,
