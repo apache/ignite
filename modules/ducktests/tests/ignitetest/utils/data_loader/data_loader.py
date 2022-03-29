@@ -12,7 +12,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
+import threading
 import uuid
 from statistics import mean, median
 from typing import NamedTuple
@@ -44,7 +44,7 @@ class DataLoadParams(NamedTuple):
         """
         Max size for DataRegionConfiguration.
         """
-        return int(self.cache_count * self.entry_count * self.entry_size * (self.backups + 1) * 1.1)
+        return int(self.cache_count * self.entry_count * self.entry_size * (self.backups + 1) * 1.5)
 
 
 class DataLoader:
@@ -84,12 +84,25 @@ class DataLoader:
         end = from_key
 
         token = str(uuid.uuid4())
+        workers = []
         for _app in self.apps:
             start = end
             end += count
             if end > to_key:
                 end = to_key
-            self.__start_app(_app, start, end, token, timeout)
+            # self.__start_app(_app, start, end, token, timeout)
+            worker = threading.Thread(
+                name="preloader-starter-worker-" + str(start),
+                target=self.__start_app,
+                args=(_app, start, end, token, timeout)
+            )
+            worker.daemon = True
+            worker.start()
+
+            workers.append(worker)
+
+        for worker in workers:
+            worker.join()
 
         for _app in self.apps:
             _app.await_stopped()
