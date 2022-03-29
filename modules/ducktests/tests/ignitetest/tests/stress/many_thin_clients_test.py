@@ -16,6 +16,7 @@
 """
 This module contains client tests.
 """
+import threading
 import uuid
 
 from ducktape.mark import defaults, parametrize
@@ -82,7 +83,6 @@ class ManyThinClientTest(IgniteTest):
         control_utility.activate()
 
         loader.load_data(ignite)
-        summary_report = loader.get_summary_report()
         loader.free()
 
         zk = start_zookeeper(self.test_context, 1, 1000)
@@ -106,6 +106,8 @@ class ManyThinClientTest(IgniteTest):
         end = from_key
 
         token = str(uuid.uuid4())
+
+        workers = []
         for _app in apps:
             start = end
             end += count
@@ -128,30 +130,23 @@ class ManyThinClientTest(IgniteTest):
             _app.shutdown_timeout_sec = 3600
             # _app.jvm_opts = self.data_load_params.jvm_opts
 
-            _app.start_async()
+            worker = threading.Thread(
+                name="thin-starter-worker-" + str(start),
+                target=_app.start_async
+            )
+            worker.daemon = True
+            worker.start()
+
+            workers.append(worker)
+            # _app.start_async()
+
+        for worker in workers:
+            worker.join()
 
         for _app in apps:
             _app.await_stopped()
 
-        return summary_report
-
-        # server_config = IgniteConfiguration(version=IgniteVersion(server_version),
-        #                                     client_connector_configuration=ClientConnectorConfiguration())
-        #
-        # ignite = IgniteService(self.test_context, server_config, 1)
-        #
-        # addresses = ignite.ignite[0].account.hostname + ":" + str(server_config.client_connector_configuration.port)
-        #
-        # thin_clients = IgniteApplicationService(self.test_context,
-        #                                         IgniteThinClientConfiguration(addresses=addresses,
-        #                                                                       version=IgniteVersion(
-        #                                                                           thin_client_version)),
-        #                                         java_class_name=self.JAVA_CLIENT_CLASS_NAME,
-        #                                         num_nodes=1)
-        #
-        # ignite.start()
-        # thin_clients.run()
-        # ignite.stop()
+        return {}
 
 
 def start_zookeeper(test_context, num_nodes, failure_detection_timeout):
