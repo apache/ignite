@@ -218,6 +218,7 @@ Register name: `threadPools.{thread_pool_name}`
 |RejectedExecutionHandlerClass|   string | Class name of current rejection handler.
 |Shutdown  |  boolean| True if this executor has been shut down.
 |TaskCount |  long |   Approximate total number of tasks that have been scheduled for execution.
+|TaskExecutionTime | histogram | Task execution time, in milliseconds.
 |Terminated  |boolean| True if all tasks have completed following shut down.
 |Terminating |long|    True if terminating but not yet terminated.
 |ThreadFactoryClass|  string|  Class name of thread factory used to create new threads.

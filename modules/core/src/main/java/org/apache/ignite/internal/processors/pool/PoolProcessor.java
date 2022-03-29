@@ -120,6 +120,12 @@ public class PoolProcessor extends GridProcessorAdapter {
     /** */
     public static final String THRD_FACTORY_DESC = "Class name of thread factory used to create new threads.";
 
+    /** Task execution time metric name. */
+    public static final String TASK_EXEC_TIME = "TaskExecutionTime";
+
+    /** Task execution time metric description. */
+    public static final String TASK_EXEC_TIME_DESC = "Tasks execution times as histogram (milliseconds).";
+
     /** Name of the system view for a data streamer {@link StripedExecutor} queue view. */
     public static final String STREAM_POOL_QUEUE_VIEW = metricName("datastream", "threadpool", "queue");
 
@@ -134,6 +140,9 @@ public class PoolProcessor extends GridProcessorAdapter {
 
     /** Group for a thread pools. */
     public static final String THREAD_POOLS = "threadPools";
+
+    /** Histogram buckets for the task execution time metric (in milliseconds). */
+    public static final long[] TASK_EXEC_TIME_HISTOGRAM_BUCKETS = new long[] {100, 1000, 10000, 30000, 60000};
 
     /** Executor service. */
     @GridToStringExclude
