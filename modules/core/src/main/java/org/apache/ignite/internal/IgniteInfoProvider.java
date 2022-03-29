@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.plugin;
+package org.apache.ignite.internal;
 
 import java.io.File;
 import java.io.IOException;
@@ -47,10 +47,6 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.GridLoggerProxy;
-import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
@@ -61,6 +57,7 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.plugin.InfoProvider;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
 
@@ -91,7 +88,7 @@ public class IgniteInfoProvider implements InfoProvider {
     @Override public void ackInited(IgniteLogger log, IgniteConfiguration cfg, RuntimeMXBean rtBean) {
         assert log != null;
 
-        ackAsciiLogo(log);
+        ackAsciiLogo(log, cfg, rtBean);
         ackConfigUrl(log);
         ackConfiguration(log, cfg);
         ackDaemon(log, cfg);
@@ -141,8 +138,8 @@ public class IgniteInfoProvider implements InfoProvider {
     /**
      * Acks ASCII-logo. Thanks to http://patorjk.com/software/taag
      */
-    void ackAsciiLogo(IgniteLogger log) {
-        if (System.getProperty(IGNITE_NO_ASCII) == null)
+    void ackAsciiLogo(IgniteLogger log, IgniteConfiguration cfg, RuntimeMXBean rtBean) {
+        if (System.getProperty(IGNITE_NO_ASCII) != null)
             return;
 
         String ver = "ver. " + ACK_VER_STR;
@@ -495,14 +492,15 @@ public class IgniteInfoProvider implements InfoProvider {
             log.debug("+-------------+");
             log.debug("START SPI LIST:");
             log.debug("+-------------+");
-            log.debug("Grid checkpoint SPI     : " + Arrays.toString(cfg.getCheckpointSpi()));
-            log.debug("Grid collision SPI      : " + cfg.getCollisionSpi());
-            log.debug("Grid communication SPI  : " + cfg.getCommunicationSpi());
-            log.debug("Grid deployment SPI     : " + cfg.getDeploymentSpi());
-            log.debug("Grid discovery SPI      : " + cfg.getDiscoverySpi());
-            log.debug("Grid event storage SPI  : " + cfg.getEventStorageSpi());
-            log.debug("Grid failover SPI       : " + Arrays.toString(cfg.getFailoverSpi()));
-            log.debug("Grid load balancing SPI : " + Arrays.toString(cfg.getLoadBalancingSpi()));
+            log.debug("Grid checkpoint SPI       : " + Arrays.toString(cfg.getCheckpointSpi()));
+            log.debug("Grid collision SPI        : " + cfg.getCollisionSpi());
+            log.debug("Grid communication SPI    : " + cfg.getCommunicationSpi());
+            log.debug("Grid deployment SPI       : " + cfg.getDeploymentSpi());
+            log.debug("Grid discovery SPI        : " + cfg.getDiscoverySpi());
+            log.debug("Grid event storage SPI    : " + cfg.getEventStorageSpi());
+            log.debug("Grid failover SPI         : " + Arrays.toString(cfg.getFailoverSpi()));
+            log.debug("Grid load balancing SPI   : " + Arrays.toString(cfg.getLoadBalancingSpi()));
+            log.debug("Grid Metrics Exporter SPI : " + Arrays.toString(cfg.getMetricExporterSpi()));
         }
     }
 
@@ -567,7 +565,7 @@ public class IgniteInfoProvider implements InfoProvider {
 
         final int asteriskIdx = clsPathEntry.indexOf('*');
 
-        //just to log possibly incorrent entries to err
+        // Just to log possibly incorrect entries to err.
         if (asteriskIdx >= 0 && asteriskIdx < lastSeparatorIdx)
             throw new RuntimeException("Could not parse classpath entry");
 
@@ -890,7 +888,8 @@ public class IgniteInfoProvider implements InfoProvider {
             double freeOffHeapPct = offHeapMaxSummary > 0 ?
                 ((double)((offHeapMaxSummary - offHeapUsedSummary) * 100)) / offHeapMaxSummary : -1;
 
-            sb.a("Data storage metrics for local node").nl()
+            sb.nl()
+                .a("Data storage metrics for local node (to disable set 'metricsLogFrequency' to 0)").nl()
                 .a("    ^-- Off-heap memory [used=").a(dblFmt.format(offHeapUsedInMBytes))
                 .a("MB, free=").a(dblFmt.format(freeOffHeapPct))
                 .a("%, allocated=").a(dblFmt.format(offHeapCommInMBytes)).a("MB]").nl()

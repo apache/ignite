@@ -206,7 +206,6 @@ import org.apache.ignite.lifecycle.LifecycleEventType;
 import org.apache.ignite.marshaller.MarshallerExclusions;
 import org.apache.ignite.marshaller.MarshallerUtils;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
-import org.apache.ignite.plugin.IgniteInfoProvider;
 import org.apache.ignite.plugin.IgnitePlugin;
 import org.apache.ignite.plugin.InfoProvider;
 import org.apache.ignite.plugin.PluginNotFoundException;
