@@ -17,12 +17,9 @@
 
 package org.apache.ignite.internal;
 
-import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.io.Writer;
 import java.nio.charset.StandardCharsets;
@@ -31,6 +28,7 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.locks.Lock;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.util.GridStripedLock;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -38,6 +36,7 @@ import org.apache.ignite.marshaller.MarshallerContext;
 
 import static java.nio.file.StandardCopyOption.ATOMIC_MOVE;
 import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
+import static org.apache.ignite.internal.binary.BinaryUtils.MAPPING_FILE_EXTENSION;
 
 /**
  * File-based persistence provider for {@link MarshallerContextImpl}.
@@ -48,9 +47,6 @@ import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
  * when a classname is requested but is not presented in local cache of {@link MarshallerContextImpl}.
  */
 final class MarshallerMappingFileStore {
-    /** */
-    private static final String MAPPING_FILE_EXTENSION = ".classname";
-
     /** */
     private static final GridStripedLock fileLock = new GridStripedLock(32);
 
@@ -85,7 +81,7 @@ final class MarshallerMappingFileStore {
      * @param typeName Type name.
      */
     public void writeMapping(byte platformId, int typeId, String typeName) {
-        String fileName = getFileName(platformId, typeId);
+        String fileName = BinaryUtils.mappingFileName(platformId, typeId);
 
         File tmpFile = new File(mappingDir, fileName + ThreadLocalRandom.current().nextInt() + ".tmp");
         File file = new File(mappingDir, fileName);
@@ -119,7 +115,7 @@ final class MarshallerMappingFileStore {
      * @param typeId Type id.
      */
     public String readMapping(byte platformId, int typeId) {
-        return readMapping(getFileName(platformId, typeId));
+        return readMapping(BinaryUtils.mappingFileName(platformId, typeId));
     }
 
     /**
@@ -131,20 +127,7 @@ final class MarshallerMappingFileStore {
         lock.lock();
 
         try {
-            File file = new File(mappingDir, fileName);
-
-            try (FileInputStream in = new FileInputStream(file)) {
-                try (BufferedReader reader = new BufferedReader(new InputStreamReader(in, StandardCharsets.UTF_8))) {
-                    if (file.length() == 0)
-                        return null;
-
-                    return reader.readLine();
-                }
-
-            }
-            catch (IOException ignored) {
-                return null;
-            }
+            return BinaryUtils.readMapping(new File(mappingDir, fileName));
         }
         finally {
             lock.unlock();
@@ -213,7 +196,7 @@ final class MarshallerMappingFileStore {
             "marshaller"
         );
 
-        File legacyTmpDir = new File(legacyDir.toString() + ".tmp");
+        File legacyTmpDir = new File(legacyDir + ".tmp");
 
         if (legacyTmpDir.exists() && !IgniteUtils.delete(legacyTmpDir))
             throw new IgniteCheckedException("Failed to delete legacy marshaller mappings dir: "
@@ -270,7 +253,7 @@ final class MarshallerMappingFileStore {
         int typeId;
 
         try {
-            typeId = Integer.parseInt(fileName.substring(0, fileName.indexOf(FILE_EXTENSION)));
+            typeId = Integer.parseInt(fileName.substring(0, fileName.indexOf(MAPPING_FILE_EXTENSION)));
         }
         catch (NumberFormatException e) {
             throw new IgniteCheckedException("Reading marshaller mapping from file "
@@ -279,14 +262,6 @@ final class MarshallerMappingFileStore {
         }
 
         return typeId;
-    }
-
-    /**
-     * @param platformId Platform id.
-     * @param typeId Type id.
-     */
-    private String getFileName(byte platformId, int typeId) {
-        return typeId + MAPPING_FILE_EXTENSION + platformId;
     }
 
     /**

@@ -587,13 +587,13 @@ public class CdcSelfTest extends AbstractCdcTest {
 
         addData(cache, KEYS_CNT / 2, KEYS_CNT);
 
-        for (int i = 0; i < 3; i++) {
-            UserCdcConsumer cnsmr = new UserCdcConsumer() {
-                @Override protected boolean commit() {
-                    return false;
-                }
-            };
+        UserCdcConsumer cnsmr = new UserCdcConsumer() {
+            @Override protected boolean commit() {
+                return false;
+            }
+        };
 
+        for (int i = 0; i < 3; i++) {
             CdcMain cdc = createCdc(cnsmr, getConfiguration(ign.name()));
 
             IgniteInternalFuture<?> fut = runAsync(cdc);
@@ -605,6 +605,8 @@ public class CdcSelfTest extends AbstractCdcTest {
             fut.cancel();
 
             assertTrue(cnsmr.stopped());
+
+            cnsmr.data.clear();
         }
 
         AtomicBoolean consumeHalf = new AtomicBoolean(true);
@@ -612,7 +614,7 @@ public class CdcSelfTest extends AbstractCdcTest {
 
         int half = KEYS_CNT / 2;
 
-        UserCdcConsumer cnsmr = new UserCdcConsumer() {
+        cnsmr = new UserCdcConsumer() {
             @Override public boolean onEvents(Iterator<CdcEvent> evts) {
                 if (consumeHalf.get() && F.size(data(UPDATE, cacheId(DEFAULT_CACHE_NAME))) == half) {
                     // This means that state committed as a result of the previous call.

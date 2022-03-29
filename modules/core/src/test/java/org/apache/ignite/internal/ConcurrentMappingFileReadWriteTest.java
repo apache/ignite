@@ -26,6 +26,7 @@ import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.TimeoutException;
 import org.apache.ignite.binary.BinaryBasicIdMapper;
+import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.StandaloneGridKernalContext;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -98,7 +99,7 @@ public class ConcurrentMappingFileReadWriteTest extends GridCommonAbstractTest {
     public void testRewriteOpenedFile() throws Exception {
         mappingFileStore.writeMapping(PLATFORM_ID, TYPE_ID, String.class.getName());
 
-        File mappingFile = new File(mappingDir, mappingFileStore.getFileName(PLATFORM_ID, TYPE_ID));
+        File mappingFile = new File(mappingDir, BinaryUtils.mappingFileName(PLATFORM_ID, TYPE_ID));
 
         try (FileInputStream in = new FileInputStream(mappingFile)) {
             try (BufferedReader reader = new BufferedReader(new InputStreamReader(in, StandardCharsets.UTF_8))) {

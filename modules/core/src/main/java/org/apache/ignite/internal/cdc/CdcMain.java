@@ -565,7 +565,12 @@ public class CdcMain implements Runnable {
     private void updateMappings() {
         try {
             Iterator<TypeMapping> changedMappings = Files.list(marshaller.toPath())
-                .filter(p -> p.toString().contains(MAPPING_FILE_EXTENSION))
+                .filter(p -> {
+                    String fileName = p.toString();
+
+                    return fileName.indexOf(MAPPING_FILE_EXTENSION) ==
+                        (fileName.length() - 1 /* platform id */ - MAPPING_FILE_EXTENSION.length());
+                })
                 .map(p -> {
                     String fileName = p.getFileName().toString();
 
@@ -585,7 +590,7 @@ public class CdcMain implements Runnable {
                     }
 
                     @Override public String typeName() {
-                        return BinaryUtils.readMapping(((Path)t[1]).toFile(), false);
+                        return BinaryUtils.readMapping(((Path)t[1]).toFile());
                     }
 
                     @Override public PlatformType platform() {

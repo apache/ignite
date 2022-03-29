@@ -338,7 +338,7 @@ public abstract class AbstractCdcTest extends GridCommonAbstractTest {
     /** */
     public static class UserCdcConsumer extends TestCdcConsumer<Integer> {
         /** */
-        private boolean userTypeFound;
+        protected boolean userTypeFound;
 
         /** {@inheritDoc} */
         @Override public void checkEvent(CdcEvent evt) {

@@ -33,8 +33,6 @@ import java.lang.reflect.Modifier;
 import java.lang.reflect.Proxy;
 import java.math.BigDecimal;
 import java.math.BigInteger;
-import java.nio.channels.FileChannel;
-import java.nio.channels.FileLock;
 import java.nio.charset.StandardCharsets;
 import java.sql.Time;
 import java.sql.Timestamp;
@@ -55,7 +53,6 @@ import java.util.TreeSet;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListSet;
-import java.util.concurrent.ThreadLocalRandom;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSystemProperties;
@@ -68,7 +65,6 @@ import org.apache.ignite.binary.BinaryRawReader;
 import org.apache.ignite.binary.BinaryRawWriter;
 import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.binary.Binarylizable;
-import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.binary.builder.BinaryLazyValue;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
 import org.apache.ignite.internal.processors.cache.CacheObjectByteArrayImpl;
@@ -2583,66 +2579,27 @@ public class BinaryUtils {
     }
 
     /** @param file File. */
-    public static String readMapping(File file, boolean withLock) {
-        ThreadLocalRandom rnd = null;
+    public static String readMapping(File file) {
+        try (FileInputStream in = new FileInputStream(file)) {
+            try (BufferedReader reader = new BufferedReader(new InputStreamReader(in, StandardCharsets.UTF_8))) {
+                if (file.length() == 0)
+                    return null;
 
-        long time = 0;
-
-        while (true) {
-            try (FileInputStream in = new FileInputStream(file);
-                 BufferedReader reader = new BufferedReader(new InputStreamReader(in, StandardCharsets.UTF_8))) {
-                FileLock fileLock = null;
-
-                if (withLock)
-                    fileLock = fileLock(in.getChannel(), true);
-
-                try {
-
-                    if (file.length() > 0)
-                        return reader.readLine();
-
-                    if (rnd == null)
-                        rnd = ThreadLocalRandom.current();
-
-                    if (time == 0)
-                        time = System.nanoTime();
-                    else if (U.millisSinceNanos(time) >= FILE_LOCK_TIMEOUT_MS)
-                        return null;
-
-                    U.sleep(rnd.nextLong(50));
-                }
-                finally {
-                    if (fileLock != null)
-                        fileLock.close();
-                }
+                return reader.readLine();
             }
-            catch (IOException ignored) {
-                return null;
-            }
-            catch (IgniteInterruptedCheckedException e) {
-                throw new IgniteException(e);
-            }
+
+        }
+        catch (IOException ignored) {
+            return null;
         }
     }
 
     /**
-     * @param ch File channel.
-     * @param shared Shared.
+     * @param platformId Platform id.
+     * @param typeId Type id.
      */
-    public static FileLock fileLock(
-        FileChannel ch,
-        boolean shared
-    ) throws IOException, IgniteInterruptedCheckedException {
-        ThreadLocalRandom rnd = ThreadLocalRandom.current();
-
-        while (true) {
-            FileLock fileLock = ch.tryLock(0L, Long.MAX_VALUE, shared);
-
-            if (fileLock != null)
-                return fileLock;
-
-            U.sleep(rnd.nextLong(50));
-        }
+    public static String mappingFileName(byte platformId, int typeId) {
+        return typeId + MAPPING_FILE_EXTENSION + platformId;
     }
 
     /**
