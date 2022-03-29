@@ -120,7 +120,9 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.Properties;
 import java.util.Random;
+import java.util.ServiceConfigurationError;
 import java.util.ServiceLoader;
 import java.util.Set;
 import java.util.StringTokenizer;
@@ -265,6 +267,7 @@ import org.apache.ignite.logger.LoggerNodeIdAndApplicationAware;
 import org.apache.ignite.logger.LoggerNodeIdAware;
 import org.apache.ignite.logger.java.JavaLogger;
 import org.apache.ignite.marshaller.Marshaller;
+import org.apache.ignite.plugin.InfoProvider;
 import org.apache.ignite.plugin.PluginProvider;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
@@ -293,8 +296,10 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_LOCAL_HOST;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_MBEAN_APPEND_CLASS_LOADER_ID;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_MBEAN_APPEND_JVM_ID;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_NO_DISCO_ORDER;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_REST_START_ON_CLIENT;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_SSH_HOST;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_SSH_USER_NAME;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_SUCCESS_FILE;
 import static org.apache.ignite.IgniteSystemProperties.getBoolean;
 import static org.apache.ignite.events.EventType.EVTS_ALL;
 import static org.apache.ignite.events.EventType.EVTS_ALL_MINUS_METRIC_UPDATE;
@@ -1056,6 +1061,28 @@ public abstract class IgniteUtils {
                 return providers;
             }
         });
+    }
+
+    /**
+     * @return Loaded Ignite information provider or {@code null} the otherwise. This method may throw
+     * {@link ServiceConfigurationError} or {@link SecurityException} in case of service loader is not configured properly.
+     */
+    public static InfoProvider loadInfoProvider() {
+        try {
+            return AccessController.doPrivileged(new PrivilegedAction<InfoProvider>() {
+                @Override public InfoProvider run() {
+                    for (InfoProvider info : ServiceLoader.load(InfoProvider.class))
+                        return info;
+
+                    return null;
+                }
+            });
+        }
+        catch (Throwable t) {
+            U.error(null, t.getMessage());
+        }
+
+        return null;
     }
 
     /**
@@ -12309,5 +12336,86 @@ public abstract class IgniteUtils {
                     throw e;
             }
         }
+    }
+
+    /**
+     * Gets "on" or "off" string for given boolean value.
+     *
+     * @param b Boolean value to convert.
+     * @return Result string.
+     */
+    public static String onOff(boolean b) {
+        return b ? "on" : "off";
+    }
+
+    /**
+     * @return Language runtime.
+     */
+    public static String getLanguage(ClassLoader ldr) {
+        boolean scala = false;
+        boolean groovy = false;
+        boolean clojure = false;
+
+        for (StackTraceElement elem : Thread.currentThread().getStackTrace()) {
+            String s = elem.getClassName().toLowerCase();
+
+            if (s.contains("scala")) {
+                scala = true;
+
+                break;
+            }
+            else if (s.contains("groovy")) {
+                groovy = true;
+
+                break;
+            }
+            else if (s.contains("clojure")) {
+                clojure = true;
+
+                break;
+            }
+        }
+
+        if (scala) {
+            try (InputStream in = ldr.getResourceAsStream("/library.properties")) {
+                Properties props = new Properties();
+
+                if (in != null)
+                    props.load(in);
+
+                return "Scala ver. " + props.getProperty("version.number", "<unknown>");
+            }
+            catch (Exception ignore) {
+                return "Scala ver. <unknown>";
+            }
+        }
+
+        // How to get Groovy and Clojure version at runtime?!?
+        return groovy ? "Groovy" : clojure ? "Clojure" : U.jdkName() + " ver. " + U.jdkVersion();
+    }
+
+    /**
+     * @return {@code True} if remote JMX management is enabled - {@code false} otherwise.
+     */
+    public static boolean isJmxRemoteEnabled() {
+        return System.getProperty("com.sun.management.jmxremote") != null;
+    }
+
+    /**
+     * @return {@code true} if the REST processor is enabled, {@code false} the otherwise.
+     */
+    public static boolean isRestEnabled(IgniteConfiguration cfg) {
+        boolean isClientNode = cfg.isClientMode() || cfg.isDaemon();
+
+        // By default, rest processor doesn't start on client nodes.
+        return cfg.getConnectorConfiguration() != null &&
+            (!isClientNode || (isClientNode && IgniteSystemProperties.getBoolean(IGNITE_REST_START_ON_CLIENT)));
+    }
+
+    /**
+     * @return {@code True} if restart mode is enabled, {@code false} otherwise.
+     */
+    public static boolean isRestartEnabled() {
+        return System.getProperty(IGNITE_SUCCESS_FILE) != null;
     }
 }

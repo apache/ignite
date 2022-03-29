@@ -1551,16 +1551,9 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
 
         dataRegionsStarted = true;
 
-        if (log.isQuiet()) {
-            U.quiet(false, "Data Regions Started: " + dataRegionMap.size());
+        U.quietAndInfo(log, "Data Regions Started: " + dataRegionMap.size());
 
-            U.quietMultipleLines(false, IgniteKernal.dataStorageReport(this, false));
-        }
-        else if (log.isInfoEnabled()) {
-            log.info("Data Regions Started: " + dataRegionMap.size());
-
-            log.info(IgniteKernal.dataStorageReport(this, false));
-        }
+        ((IgniteKernal)cctx.kernalContext().grid()).dataStorageReport(false);
     }
 
     /** {@inheritDoc} */
