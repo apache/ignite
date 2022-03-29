@@ -209,7 +209,7 @@ public class ThreadPoolMetricsTest extends GridCommonAbstractTest {
             String metricsName = entry.getKey();
             ExecutorService execSvc = entry.getValue().apply(poolProc);
             MetricRegistry mreg = ignite.context().metric().registry(metricsName);
-            HistogramMetric execTimeMetric = mreg.findMetric("TaskExecutionTime");
+            HistogramMetric execTimeMetric = mreg.findMetric(PoolProcessor.TASK_EXEC_TIME);
             boolean stripedExecutor = execSvc instanceof StripedExecutor;
 
             // Ensure that the execution time histogram can be reset.
