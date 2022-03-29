@@ -64,6 +64,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.platform.PlatformType;
 import org.apache.ignite.startup.cmdline.CdcCommandLineStartup;
 
@@ -584,19 +585,11 @@ public class CdcMain implements Runnable {
                 })
                 .filter(Objects::nonNull)
                 .peek(d -> mappingsState.add((T2<Integer, Byte>)d[0])) // Adding peeked up mappings to state.
-                .map((Function<Object[], TypeMapping>)(t -> new TypeMapping() {
-                    @Override public int typeId() {
-                        return ((T2<Integer, Byte>)t[0]).get1();
-                    }
-
-                    @Override public String typeName() {
-                        return BinaryUtils.readMapping(((Path)t[1]).toFile());
-                    }
-
-                    @Override public PlatformType platform() {
-                        return ((T2<Integer, Byte>)t[0]).get2() == 0 ? PlatformType.JAVA : PlatformType.DOTNET;
-                    }
-                }))
+                .map((Function<Object[], TypeMapping>)(t -> new TypeMappingImpl(
+                    ((IgniteBiTuple<Integer, Byte>)t[0]).get1(),
+                    BinaryUtils.readMapping(((Path)t[1]).toFile()),
+                    ((IgniteBiTuple<Integer, Byte>)t[0]).get2() == 0 ? PlatformType.JAVA : PlatformType.DOTNET)
+                ))
                 .iterator();
 
             if (!changedMappings.hasNext())

@@ -17,11 +17,13 @@
 
 package org.apache.ignite.cdc;
 
+import java.io.Serializable;
 import java.util.Iterator;
 import org.apache.ignite.IgniteBinary;
 import org.apache.ignite.binary.BinaryIdMapper;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.lang.IgniteExperimental;
+import org.apache.ignite.marshaller.MarshallerContext;
 import org.apache.ignite.platform.PlatformType;
 
 /**
@@ -34,9 +36,10 @@ import org.apache.ignite.platform.PlatformType;
  * @see IgniteBinary#typeId(String)
  * @see BinaryIdMapper
  * @see CdcConsumer#onMappings(Iterator) 
+ * @see MarshallerContext#registerClassName(byte, int, String, boolean) 
  */
 @IgniteExperimental
-public interface TypeMapping {
+public interface TypeMapping extends Serializable {
     /** @return Type id. */
     public int typeId();
 
