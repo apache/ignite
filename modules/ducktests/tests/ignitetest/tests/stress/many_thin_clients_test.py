@@ -43,7 +43,8 @@ DATA_REGION_SIZE = 10 * 1024 * 1024 * 1024
 
 class ManyThinClientTest(IgniteTest):
 
-    JAVA_CLIENT_CLASS_NAME = "org.apache.ignite.internal.ducktest.tests.thin_client_test.ThinClientDataGenerationApplication"
+    JAVA_CLIENT_CLASS_NAME = \
+        "org.apache.ignite.internal.ducktest.tests.thin_client_test.ThinClientDataGenerationApplication"
 
     @cluster(num_nodes=SERVER_NODES + PRELOAD_NODES + 1)
     # @ignite_versions(str(DEV_BRANCH), str(LATEST))
@@ -68,7 +69,9 @@ class ManyThinClientTest(IgniteTest):
         self.logger.info(f"region size: {region_size}")
         ignite_config = IgniteConfiguration(
             version=version,
-            client_connector_configuration=ClientConnectorConfiguration(),
+            client_connector_configuration=ClientConnectorConfiguration(
+                thread_pool_size=16
+            ),
             data_storage=DataStorageConfiguration(
                 max_wal_archive_size=2 * region_size,
                 default=DataRegionConfiguration(persistent=True,
@@ -138,7 +141,6 @@ class ManyThinClientTest(IgniteTest):
             worker.start()
 
             workers.append(worker)
-            # _app.start_async()
 
         for worker in workers:
             worker.join()
