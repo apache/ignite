@@ -65,6 +65,7 @@ import org.apache.ignite.plugin.extensions.communication.IoPool;
 import org.apache.ignite.spi.systemview.view.StripedExecutorTaskView;
 import org.apache.ignite.thread.IgniteStripedThreadPoolExecutor;
 import org.apache.ignite.thread.IgniteThreadPoolExecutor;
+import org.apache.ignite.thread.SameThreadExecutor;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.configuration.IgniteConfiguration.DFLT_THREAD_KEEP_ALIVE_TIME;
@@ -119,6 +120,12 @@ public class PoolProcessor extends GridProcessorAdapter {
     /** */
     public static final String THRD_FACTORY_DESC = "Class name of thread factory used to create new threads.";
 
+    /** Task execution time metric name. */
+    public static final String TASK_EXEC_TIME = "TaskExecutionTime";
+
+    /** Task execution time metric description. */
+    public static final String TASK_EXEC_TIME_DESC = "Tasks execution times as histogram (milliseconds).";
+
     /** Name of the system view for a data streamer {@link StripedExecutor} queue view. */
     public static final String STREAM_POOL_QUEUE_VIEW = metricName("datastream", "threadpool", "queue");
 
@@ -133,6 +140,9 @@ public class PoolProcessor extends GridProcessorAdapter {
 
     /** Group for a thread pools. */
     public static final String THREAD_POOLS = "threadPools";
+
+    /** Histogram buckets for the task execution time metric (in milliseconds). */
+    public static final long[] TASK_EXEC_TIME_HISTOGRAM_BUCKETS = new long[] {100, 1000, 10000, 30000, 60000};
 
     /** Executor service. */
     @GridToStringExclude
@@ -683,6 +693,9 @@ public class PoolProcessor extends GridProcessorAdapter {
                 assert getSchemaExecutorService() != null : "Query pool is not configured.";
 
                 return getSchemaExecutorService();
+
+            case GridIoPolicy.CALLER_THREAD:
+                return SameThreadExecutor.INSTANCE;
 
             default: {
                 if (plc < 0)

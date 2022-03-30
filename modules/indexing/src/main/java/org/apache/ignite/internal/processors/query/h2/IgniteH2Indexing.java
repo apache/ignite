@@ -2076,21 +2076,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
     /** {@inheritDoc} */
     @Override public void markAsRebuildNeeded(GridCacheContext cctx, boolean val) {
-        markIndexRebuild(cctx.name(), val);
-    }
-
-    /**
-     * Mark tables for index rebuild, so that their indexes are not used.
-     *
-     * @param cacheName Cache name.
-     * @param val Value.
-     */
-    private void markIndexRebuild(String cacheName, boolean val) {
-        for (H2TableDescriptor tblDesc : schemaMgr.tablesForCache(cacheName)) {
-            assert tblDesc.table() != null;
-
-            tblDesc.table().markRebuildFromHashInProgress(val);
-        }
+        schemaMgr.markIndexRebuild(cctx.name(), val);
     }
 
     /**
@@ -2114,12 +2100,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         return rdcQryExec;
     }
 
-    /**
-     * Return Running query manager.
-     *
-     * @return Running query manager.
-     */
-    public RunningQueryManager runningQueryManager() {
+    /** {@inheritDoc} */
+    @Override public RunningQueryManager runningQueryManager() {
         return runningQryMgr;
     }
 
@@ -2145,7 +2127,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         longRunningQryMgr = new LongRunningQueryManager(ctx);
 
-        parser = new QueryParser(this, connMgr);
+        parser = new QueryParser(this, connMgr, cmd -> cmdProc.isCommandSupported(cmd));
 
         schemaMgr = new SchemaManager(ctx, connMgr);
         schemaMgr.start(ctx.config().getSqlConfiguration().getSqlSchemas());
@@ -2173,10 +2155,11 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         ctx.io().addMessageListener(GridTopic.TOPIC_QUERY, qryLsnr);
 
         runningQryMgr = new RunningQueryManager(ctx);
+        runningQryMgr.start(busyLock);
+
         partExtractor = new PartitionExtractor(new H2PartitionResolver(this), ctx);
 
         cmdProc = new CommandProcessor(ctx, schemaMgr, this);
-        cmdProc.start();
 
         if (JdbcUtils.serializer != null)
             U.warn(log, "Custom H2 serialization is already configured, will override.");
@@ -2385,8 +2368,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         longRunningQryMgr.stop();
         connMgr.stop();
 
-        cmdProc.stop();
-
         statsMgr.stop();
 
         if (log.isDebugEnabled())
@@ -2508,7 +2489,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     @Override public void onDisconnected(IgniteFuture<?> reconnectFut) {
         rdcQryExec.onDisconnected(reconnectFut);
 
-        cmdProc.onDisconnected();
+        runningQryMgr.onDisconnected();
     }
 
     /**
@@ -2526,10 +2507,15 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     }
 
     /** {@inheritDoc} */
-    @Override public void cancelQueries(Collection<Long> queries) {
+    @Override public void cancelQuery(long queryId, @Nullable UUID nodeId, boolean async) {
+        runningQryMgr.cancelQuery(queryId, nodeId, async);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void cancelLocalQueries(Collection<Long> queries) {
         if (!F.isEmpty(queries)) {
             for (Long qryId : queries)
-                runningQryMgr.cancel(qryId);
+                runningQryMgr.cancelLocalQuery(qryId);
         }
     }
 

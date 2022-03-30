@@ -81,6 +81,7 @@
         <module>modules/opencensus</module>
         <module>modules/control-utility</module>
         <module>modules/ignite-bom</module>
+        <module>modules/calcite</module>
     </modules>
 
     <profiles>

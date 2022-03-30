@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.query.h2.opt;
 
 import java.util.List;
+import org.apache.ignite.internal.cache.query.index.Index;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.query.QueryUtils;
@@ -256,5 +257,19 @@ public abstract class GridH2IndexBase extends H2IndexCostedBase {
         IndexColumn.mapColumns(cols, tbl);
 
         return cols;
+    }
+
+    /**
+     * Finds an instance of an interface implemented by this object,
+     * or returns null if this object does not support that interface.
+     */
+    public <T extends Index> T unwrap(Class<T> clazz) {
+        if (clazz == null)
+            return null;
+
+        if (clazz.isAssignableFrom(getClass()))
+            return clazz.cast(this);
+
+        return null;
     }
 }

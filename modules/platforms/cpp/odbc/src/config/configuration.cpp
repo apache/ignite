@@ -58,6 +58,8 @@ namespace ignite
 
             const NestedTxMode::Type Configuration::DefaultValue::nestedTxMode = NestedTxMode::AI_ERROR;
 
+            const EngineMode::Type Configuration::DefaultValue::engineMode = EngineMode::DEFAULT;
+
             Configuration::Configuration() :
                 dsn(DefaultValue::dsn),
                 driver(DefaultValue::driver),
@@ -79,7 +81,8 @@ namespace ignite
                 sslCaFile(DefaultValue::sslCaFile),
                 user(DefaultValue::user),
                 password(DefaultValue::password),
-                nestedTxMode(DefaultValue::nestedTxMode)
+                nestedTxMode(DefaultValue::nestedTxMode),
+                engineMode(DefaultValue::engineMode)
             {
                 // No-op.
             }
@@ -422,6 +425,18 @@ namespace ignite
                 return nestedTxMode.IsSet();
             }
 
+            EngineMode::Type Configuration::GetEngineMode() const {
+                return engineMode.GetValue();
+            }
+
+            void Configuration::SetEngineMode(EngineMode::Type mode) {
+                engineMode.SetValue(mode);
+            }
+
+            bool Configuration::IsEngineModeSet() const {
+                return engineMode.IsSet();
+            }
+
             int32_t Configuration::GetPageSize() const
             {
                 return pageSize.GetValue();
@@ -450,6 +465,7 @@ namespace ignite
                 AddToMap(res, ConnectionStringParser::Key::user, user);
                 AddToMap(res, ConnectionStringParser::Key::password, password);
                 AddToMap(res, ConnectionStringParser::Key::nestedTxMode, nestedTxMode);
+                AddToMap(res, ConnectionStringParser::Key::engineMode, engineMode);
             }
 
             template<>
@@ -512,6 +528,14 @@ namespace ignite
             {
                 if (value.IsSet())
                     map[key] = NestedTxMode::ToString(value.GetValue());
+            }
+
+            template<>
+            void Configuration::AddToMap(ArgumentMap& map, const std::string& key,
+                const SettableValue<EngineMode::Type>& value)
+            {
+                if (value.IsSet())
+                    map[key] = EngineMode::ToString(value.GetValue());
             }
         }
     }

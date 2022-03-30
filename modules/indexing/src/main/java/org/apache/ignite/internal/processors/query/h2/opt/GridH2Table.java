@@ -32,6 +32,7 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteInterruptedException;
@@ -182,10 +183,10 @@ public class GridH2Table extends TableBase {
 
     /** Index manager. */
     @GridToStringExclude
-    private IndexProcessor idxMgr;
+    private final IndexProcessor idxProc;
 
     /** Table name. Use it to persist table name for destroy index after destroying table. */
-    private String tableName;
+    private final String tableName;
 
     /**
      * Creates table.
@@ -201,7 +202,7 @@ public class GridH2Table extends TableBase {
         GridH2RowDescriptor desc,
         H2TableDescriptor tblDesc,
         GridCacheContextInfo cacheInfo,
-        IndexProcessor idxMgr
+        IndexProcessor idxProc
     ) {
         super(createTblData);
 
@@ -209,9 +210,9 @@ public class GridH2Table extends TableBase {
 
         this.desc = desc;
         this.cacheInfo = cacheInfo;
-        this.idxMgr = idxMgr;
+        this.idxProc = idxProc;
 
-        this.tableName = createTblData.tableName;
+        tableName = createTblData.tableName;
 
         affKeyCol = calculateAffinityKeyColumn();
         affKeyColIsKey = affKeyCol != null && desc.isKeyColumn(affKeyCol.column.getColumnId());
@@ -754,11 +755,18 @@ public class GridH2Table extends TableBase {
                 }
             };
 
-            idxMgr.removeIndex(cacheContext(), deleteDef.idxName(), !rmIndex);
+            idxProc.removeIndex(cacheContext(), deleteDef.idxName(), !rmIndex);
 
             // Call it too, if H2 index stores some state.
             h2idx.destroy(rmIndex);
         }
+    }
+
+    /**
+     * @return Index Processor.
+     */
+    public IndexProcessor idxProc() {
+        return idxProc;
     }
 
     /**
@@ -776,8 +784,8 @@ public class GridH2Table extends TableBase {
      * @param idx Index in list.
      * @return Index.
      */
-    private GridH2IndexBase index(int idx) {
-        return (GridH2IndexBase)idxs.get(idx);
+    private <T extends Index> T index(int idx) {
+        return (T)idxs.get(idx);
     }
 
     /**
@@ -1289,7 +1297,7 @@ public class GridH2Table extends TableBase {
         }
 
         if (modified) {
-            String proxyName = target.getName() + "_proxy";
+            String proxyName = generateProxyIdxName(target.getName());
 
             if (target.getIndexType().isSpatial())
                 return new GridH2ProxySpatialIndex(this, proxyName, proxyCols, target);
@@ -1298,6 +1306,11 @@ public class GridH2Table extends TableBase {
         }
 
         return null;
+    }
+
+    /** */
+    public static String generateProxyIdxName(String idxName) {
+        return idxName + "_proxy";
     }
 
     /**

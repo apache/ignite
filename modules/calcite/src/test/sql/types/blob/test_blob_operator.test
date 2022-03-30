@@ -1,0 +1,92 @@
+# name: test/sql/types/blob/test_blob_operator.test
+# description: Test BLOBs with various SQL operators
+# group: [blob]
+# Ignore https://issues.apache.org/jira/browse/IGNITE-15123
+
+statement ok
+PRAGMA enable_verification
+
+statement ok
+CREATE TABLE blobs (b varbinary, g INTEGER);
+
+# strings: hello -> \x68656C6C6F, r -> \x72
+statement ok
+INSERT INTO blobs VALUES ('hello', 0)
+
+statement ok
+INSERT INTO blobs VALUES (x'00' || 'whatisgoingon'::varbinary, 1)
+
+statement ok
+INSERT INTO blobs VALUES (NULL, 0)
+
+statement ok
+INSERT INTO blobs VALUES (x'FFFEFB', 1)
+
+# simple aggregates only
+query IITT
+SELECT COUNT(*), COUNT(b), MIN(b), MAX(b) FROM blobs
+----
+4	3	00776861746973676f696e676f6e	fffefb
+
+# ORDER BY
+query TI
+SELECT * FROM blobs ORDER BY b
+----
+NULL	0
+00776861746973676f696e676f6e	1
+68656c6c6f	0
+fffefb	1
+
+# GROUP BY
+statement ok
+INSERT INTO blobs VALUES ('hello', 3)
+
+statement ok
+INSERT INTO blobs VALUES (x'00' || 'whatisgoingon'::varbinary, 9)
+
+statement ok
+INSERT INTO blobs VALUES (NULL, 0)
+
+statement ok
+INSERT INTO blobs VALUES (x'FFFEFB', 19)
+
+query II
+SELECT b, SUM(g) FROM blobs GROUP BY b ORDER BY b
+----
+NULL	0
+00776861746973676f696e676f6e	10
+68656c6c6f	3
+fffefb	20
+
+# JOIN
+statement ok
+CREATE TABLE blobs2 (b VARBINARY, g INTEGER);
+
+statement ok
+INSERT INTO blobs2 VALUES ('hello', 0)
+
+statement ok
+INSERT INTO blobs2 VALUES (x'00' || 'whatisgoingon'::varbinary, 100)
+
+statement ok
+INSERT INTO blobs2 VALUES (NULL, 0)
+
+statement ok
+INSERT INTO blobs2 VALUES (x'FFFEFB', 200)
+
+# group by blobs.b, explicit JOIN
+query TR
+SELECT L.b, SUM(L.g) FROM blobs as L JOIN blobs2 AS R ON L.b=R.b GROUP BY L.b ORDER BY L.b
+----
+00776861746973676f696e676f6e	10.000000
+68656c6c6f	3.000000
+fffefb	20.000000
+
+# group by blobs2.b, implicit JOIN
+query TR
+SELECT R.b, SUM(R.g) FROM blobs as L, blobs2 AS R WHERE L.b=R.b GROUP BY R.b ORDER BY R.b
+----
+00776861746973676f696e676f6e	200.000000
+68656c6c6f	0.000000
+fffefb	400.000000
+

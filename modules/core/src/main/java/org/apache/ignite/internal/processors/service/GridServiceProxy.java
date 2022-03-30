@@ -209,7 +209,7 @@ public class GridServiceProxy<T> implements Serializable {
 
                             if (svc != null) {
                                 HistogramMetricImpl hist = svcCtx.isStatisticsEnabled() ?
-                                    svcCtx.metrics().findMetric(mtd.getName()) : null;
+                                    invocationHistogramm(svcCtx, mtd.getName(), args) : null;
 
                                 return hist == null ? callServiceLocally(svc, mtd, args, callAttrs) :
                                     measureCall(hist, () -> callServiceLocally(svc, mtd, args, callAttrs));
@@ -564,7 +564,7 @@ public class GridServiceProxy<T> implements Serializable {
 
             Method mtd = ctx.method(key);
 
-            HistogramMetricImpl hist = ctx.isStatisticsEnabled() ? ctx.metrics().findMetric(mtd.getName()) : null;
+            HistogramMetricImpl hist = ctx.isStatisticsEnabled() ? invocationHistogramm(ctx, mtdName, args) : null;
 
             Object res = hist == null ? callService(ctx, mtd) : measureCall(hist, () -> callService(ctx, mtd));
 
@@ -627,6 +627,20 @@ public class GridServiceProxy<T> implements Serializable {
         @Override public String toString() {
             return S.toString(ServiceProxyCallable.class, this);
         }
+    }
+
+    /**
+     * @return Invocation histogramm for the method.
+     */
+    private static HistogramMetricImpl invocationHistogramm(ServiceContextImpl ctx, String mtdName, Object[] args) {
+        if (ctx.service() instanceof PlatformService) {
+            assert args.length > 0 && args[0] instanceof String;
+            assert ctx.metrics() != null;
+
+            return ctx.metrics().findMetric((String)args[0]);
+        }
+        else
+            return ctx.metrics().findMetric(mtdName);
     }
 
     /**
