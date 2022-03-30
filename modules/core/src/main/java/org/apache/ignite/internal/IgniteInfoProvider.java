@@ -110,6 +110,7 @@ public class IgniteInfoProvider implements InfoProvider {
         ackIPv4StackFlagIsSet(log);
         ackWaitForBackupsOnShutdownPropertyIsUsed(log);
         ack3rdPartyLicenses(log, cfg);
+        logNodeUserAttributes(log, cfg);
         ackSpis(log, cfg);
     }
 
