@@ -1081,6 +1081,12 @@ public interface GridCacheEntryEx {
     public void updateTtl(@Nullable GridCacheVersion ver, long ttl) throws GridCacheEntryRemovedException;
 
     /**
+     * @param expiryPlc Expiry policy.
+     * @throws GridCacheEntryRemovedException If entry was removed.
+     */
+    public void updateTtl(IgniteCacheExpiryPolicy expiryPlc) throws GridCacheEntryRemovedException;
+
+    /**
      * @return Value.
      * @throws IgniteCheckedException If failed to read from swap storage.
      * @throws GridCacheEntryRemovedException If entry was removed.
