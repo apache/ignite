@@ -1444,17 +1444,16 @@ namespace Apache.Ignite.Core.Tests.Services
             producer.Deploy(cfg);
 
             var dynSvc = dyn ? consumer.GetDynamicServiceProxy(cfg.Name, false, callCtx) : null;
-            var svc = dynSvc == null ? consumer.GetServiceProxy<IJavaService>(cfg.Name, false, callCtx) 
-                : null;
+            var svc = dyn ? null : consumer.GetServiceProxy<IJavaService>(cfg.Name, false, callCtx);
 
             // Subject service, calculates invocations.
             var helperSvc = producer.GetServiceProxy<IJavaOnlyService>(_javaSvcName, false);
             
             // Do 4 invocations.
-            Assert.AreEqual(3, svc == null ? dynSvc.testOverload(1, 2) : svc.testOverload(1, 2));
-            Assert.AreEqual(2, svc == null ? dynSvc.test(1) : svc.test(1));
-            Assert.AreEqual(true, svc == null ? dynSvc.test(false) : svc.test(false));
-            Assert.AreEqual(null, svc == null ? dynSvc.testNull(null) : svc.testNull(null));
+            Assert.AreEqual(3, dyn ? dynSvc.testOverload(1, 2) : svc.testOverload(1, 2));
+            Assert.AreEqual(2, dyn ? dynSvc.test(1) : svc.test(1));
+            Assert.AreEqual(true, dyn ? dynSvc.test(false) : svc.test(false));
+            Assert.AreEqual(null, dyn ? dynSvc.testNull(null) : svc.testNull(null));
 
             // Service stats. is not enabled.
             Assert.AreEqual(0, helperSvc.testNumberOfInvocations(cfg.Name));
@@ -1468,24 +1467,24 @@ namespace Apache.Ignite.Core.Tests.Services
             cfg.Service = new PlatformTestService();
             producer.Deploy(cfg);
             
-            dynSvc = svc == null ? consumer.GetDynamicServiceProxy(cfg.Name, false, callCtx) : null;
-            svc = dynSvc == null ? consumer.GetServiceProxy<IJavaService>(cfg.Name, false, callCtx) : null;
+            dynSvc = dyn ? consumer.GetDynamicServiceProxy(cfg.Name, false, callCtx) : null;
+            svc = dyn ? null : consumer.GetServiceProxy<IJavaService>(cfg.Name, false, callCtx);
             
             // Service metrics exists but holds no values.
             Assert.AreEqual(0, helperSvc.testNumberOfInvocations(cfg.Name));
 
             // One invocation.
-            Assert.AreEqual(2, svc == null ? dynSvc.test(1) : svc.test(1));
+            Assert.AreEqual(2, dyn ? dynSvc.test(1) : svc.test(1));
             
             // There should be just one certain and one total invocation.
             Assert.AreEqual(1, helperSvc.testNumberOfInvocations(cfg.Name, "test"));
             Assert.AreEqual(1, helperSvc.testNumberOfInvocations(cfg.Name));
             
             // Do 4 more invocations.
-            Assert.AreEqual(3, svc == null ? dynSvc.testOverload(1, 2) : svc.testOverload(1, 2));
-            Assert.AreEqual(2, svc == null ? dynSvc.test(1) : svc.test(1));
-            Assert.AreEqual(true, svc == null ? dynSvc.test(false) : svc.test(false));
-            Assert.AreEqual(null, svc == null ? dynSvc.testNull(null) : svc.testNull(null));
+            Assert.AreEqual(3, dyn ? dynSvc.testOverload(1, 2) : svc.testOverload(1, 2));
+            Assert.AreEqual(2, dyn ? dynSvc.test(1) : svc.test(1));
+            Assert.AreEqual(true, dyn ? dynSvc.test(false) : svc.test(false));
+            Assert.AreEqual(null, dyn ? dynSvc.testNull(null) : svc.testNull(null));
             
             // We did 3 invocations of method named 'test(...)' in total.
             Assert.AreEqual(3, helperSvc.testNumberOfInvocations(cfg.Name, "test"));
@@ -1500,7 +1499,7 @@ namespace Apache.Ignite.Core.Tests.Services
             
             // Check side methods are not measured. We still have only 5 invocations.
             Assert.AreEqual("Apache.Ignite.Core.Tests.Services.PlatformTestService", 
-                svc == null ? dynSvc.ToString(): svc.ToString());
+                dyn ? dynSvc.ToString(): svc.ToString());
             Assert.AreEqual(5, helperSvc.testNumberOfInvocations(cfg.Name));
             // 'ToString' must not be measured. Like Java service metrics, it's not declared as a service interface.
             Assert.AreEqual(0, helperSvc.testNumberOfInvocations(cfg.Name, "ToString"));
