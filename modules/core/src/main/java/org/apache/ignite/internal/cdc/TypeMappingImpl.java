@@ -22,6 +22,9 @@ import org.apache.ignite.platform.PlatformType;
 
 /** */
 public class TypeMappingImpl implements TypeMapping {
+    /** Serial version uid. */
+    private static final long serialVersionUID = 0L;
+
     /** */
     private final int typeId;
 
