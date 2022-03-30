@@ -998,8 +998,8 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
 
     /**
      * @param expiryPlc Expiry policy.
-     * @param srcNodeId The ID of a node that sends original ttl request.
      * @param topVer TOpology version.
+     * @param srcNodeId The ID of a node that sends original ttl request.
      */
     private void sendTtlUpdateRequest(
         IgniteCacheExpiryPolicy expiryPlc,
