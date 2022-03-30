@@ -264,12 +264,14 @@ public class JdbcQueryTest extends GridCommonAbstractTest {
         stmt.close();
     }
 
-    /** */
+    /** Some object to store. */
     private static class ObjectToStore implements Serializable {
         /** */
         private int id;
+
         /** */
         private String name;
+
         /** */
         private double val;
 

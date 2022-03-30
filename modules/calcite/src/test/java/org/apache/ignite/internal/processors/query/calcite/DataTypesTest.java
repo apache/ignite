@@ -35,9 +35,9 @@ import org.junit.Test;
  * Test SQL data types.
  */
 public class DataTypesTest extends AbstractBasicIntegrationTest {
-    @Test
     /** Tests Other type. */
-    public void testOtherType(){
+    @Test
+    public void testOtherType() {
         try {
             executeSql("CREATE TABLE t(id INT, oth OTHER)");
 
@@ -62,9 +62,6 @@ public class DataTypesTest extends AbstractBasicIntegrationTest {
                 .returns(new Object[] {null})
                 .returns(new Object[] {null})
                 .check();
-
-            if(true)
-                return;
 
             assertThrows("SELECT MIN(oth) FROM t", UnsupportedOperationException.class,
                 "MIN() is not supported for type 'OTHER'.");

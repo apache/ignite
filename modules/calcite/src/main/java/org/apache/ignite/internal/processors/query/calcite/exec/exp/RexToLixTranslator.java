@@ -137,7 +137,6 @@ public class RexToLixTranslator implements RexVisitor<RexToLixTranslator.Result>
     /** */
     private Type currentStorageType;
 
-
     /** Get-value method of the execution context. */
     private Method valueMtd;
 
