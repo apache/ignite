@@ -30,6 +30,7 @@
         <groupId>org.apache</groupId>
         <artifactId>apache</artifactId>
         <version>23</version>
+        <relativePath/>
     </parent>
 
     <properties>
@@ -261,8 +262,9 @@
                         <failsOnError>true</failsOnError>
                         <failOnViolation>true</failOnViolation>
                         <outputFile>${project.build.directory}/checkstyle-result.xml</outputFile>
-                        <configLocation>../checkstyle/checkstyle.xml</configLocation>
-                        <suppressionsLocation>../checkstyle/checkstyle-suppressions.xml</suppressionsLocation>
+                        <!-- This configuration checkstyle files will be obtained from the 'ignite-checkstyle' module. -->
+                        <configLocation>checkstyle/checkstyle.xml</configLocation>
+                        <suppressionsLocation>checkstyle/checkstyle-suppressions.xml</suppressionsLocation>
                         <includeTestSourceDirectory>true</includeTestSourceDirectory>
                         <excludes>**/generated/**/*</excludes>
                     </configuration>
@@ -274,7 +276,7 @@
                         </dependency>
                         <dependency>
                             <groupId>${project.groupId}</groupId>
-                            <artifactId>ignite-shared</artifactId>
+                            <artifactId>ignite-checkstyle</artifactId>
                             <version>${project.version}</version>
                         </dependency>
                     </dependencies>

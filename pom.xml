@@ -35,7 +35,7 @@
     <packaging>pom</packaging>
 
     <modules>
-        <module>modules/shared</module>
+        <module>modules/checkstyle</module>
         <module>parent</module>
         <module>modules/apache-license-gen</module>
         <module>modules/tools</module>
