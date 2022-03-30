@@ -60,7 +60,7 @@ public class IgniteTypeCoercion extends TypeCoercionImpl {
             if (fromType == null)
                 return false;
 
-            if (SqlTypeUtil.inCharFamily(fromType)) {
+            if (SqlTypeUtil.inCharFamily(fromType) || targetType.getClass() == OtherType.class) {
                 targetType = factory.createTypeWithNullability(targetType, fromType.isNullable());
 
                 SqlNode desired = SqlStdOperatorTable.CAST.createCall(

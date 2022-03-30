@@ -23,7 +23,7 @@ import org.apache.calcite.rel.type.RelDataTypeImpl;
 import org.apache.calcite.sql.type.SqlTypeFamily;
 import org.apache.calcite.sql.type.SqlTypeName;
 
-/** OTHER SQL type. */
+/** OTHER SQL type for any value. */
 public class OtherType extends RelDataTypeImpl {
     /** Nullable flag. */
     private final boolean nullable;

@@ -282,11 +282,7 @@ public class TypeUtils {
     public static Object toInternal(DataContext ctx, Object val, Type storageType) {
         if (val == null)
             return null;
-
-        if (storageType == Object.class)
-            return val;
-
-        if (storageType == java.sql.Date.class)
+        else if (storageType == java.sql.Date.class)
             return (int)(SqlFunctions.toLong((java.util.Date)val, DataContext.Variable.TIME_ZONE.get(ctx)) / DateTimeUtils.MILLIS_PER_DAY);
         else if (storageType == java.sql.Time.class)
             return (int)(SqlFunctions.toLong((java.util.Date)val, DataContext.Variable.TIME_ZONE.get(ctx)) % DateTimeUtils.MILLIS_PER_DAY);
@@ -310,11 +306,7 @@ public class TypeUtils {
     public static Object fromInternal(DataContext ctx, Object val, Type storageType) {
         if (val == null)
             return null;
-
-        if(storageType == Object.class)
-            return val;
-
-        if (storageType == java.sql.Date.class && val instanceof Integer)
+        else if (storageType == java.sql.Date.class && val instanceof Integer)
             return new java.sql.Date(fromLocalTs(ctx, (Integer)val * DateTimeUtils.MILLIS_PER_DAY));
         else if (storageType == java.sql.Time.class && val instanceof Integer)
             return new java.sql.Time(fromLocalTs(ctx, (Integer)val));
@@ -326,7 +318,7 @@ public class TypeUtils {
             return Duration.ofMillis((Long)val);
         else if (storageType == Period.class && val instanceof Integer)
             return Period.of((Integer)val / 12, (Integer)val % 12, 0);
-        else if (val instanceof ByteString)
+        else if (storageType == byte[].class && val instanceof ByteString)
             return ((ByteString)val).getBytes();
         else
             return val;

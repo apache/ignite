@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.query.calcite.exec;
 
-import java.lang.reflect.Type;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;

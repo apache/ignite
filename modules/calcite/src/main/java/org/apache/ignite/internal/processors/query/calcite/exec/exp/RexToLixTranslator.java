@@ -1205,7 +1205,7 @@ public class RexToLixTranslator implements RexVisitor<RexToLixTranslator.Result>
         final Type storageType = currentStorageType != null
             ? currentStorageType : typeFactory.getJavaClass(dynamicParam.getType());
 
-        // Get-value params.
+        // Params for the get-value method.
         final List<Expression> params = Stream.of(Expressions.constant("?" + dynamicParam.getIndex()),
             Expressions.constant(dynamicParam.getType().getClass() == OtherType.class ? true : false))
             .collect(Collectors.toList());
