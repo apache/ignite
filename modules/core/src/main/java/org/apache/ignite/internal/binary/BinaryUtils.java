@@ -2603,6 +2603,17 @@ public class BinaryUtils {
     }
 
     /**
+     * @param f File.
+     * @return {@code True} if file is marshaller mapping.
+     */
+    public static boolean isMappingFile(File f) {
+        String fileName = f.getName();
+
+        return fileName.indexOf(MAPPING_FILE_EXTENSION) ==
+            (fileName.length() - 1 /* platform id */ - MAPPING_FILE_EXTENSION.length());
+    }
+
+    /**
      * @param fileName File name.
      * @return Type id
      * @see #binaryMetaFileName(int)

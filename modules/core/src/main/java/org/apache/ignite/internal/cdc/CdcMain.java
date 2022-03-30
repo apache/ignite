@@ -23,6 +23,7 @@ import java.io.Serializable;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -73,7 +74,6 @@ import static org.apache.ignite.internal.IgniteKernal.SITE;
 import static org.apache.ignite.internal.IgniteVersionUtils.ACK_VER_STR;
 import static org.apache.ignite.internal.IgniteVersionUtils.COPYRIGHT;
 import static org.apache.ignite.internal.IgnitionEx.initializeDefaultMBeanServer;
-import static org.apache.ignite.internal.binary.BinaryUtils.MAPPING_FILE_EXTENSION;
 import static org.apache.ignite.internal.binary.BinaryUtils.METADATA_FILE_SUFFIX;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.DATA_RECORD_V2;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager.WAL_SEGMENT_FILE_FILTER;
@@ -565,15 +565,9 @@ public class CdcMain implements Runnable {
     /** Search for new or changed {@link TypeMapping} and notifies the consumer. */
     private void updateMappings() {
         try {
-            Iterator<TypeMapping> changedMappings = Files.list(marshaller.toPath())
-                .filter(p -> {
-                    String fileName = p.toString();
-
-                    return fileName.indexOf(MAPPING_FILE_EXTENSION) ==
-                        (fileName.length() - 1 /* platform id */ - MAPPING_FILE_EXTENSION.length());
-                })
-                .map(p -> {
-                    String fileName = p.getFileName().toString();
+            Iterator<TypeMapping> changedMappings = Arrays.stream(marshaller.listFiles(BinaryUtils::isMappingFile))
+                .map(f -> {
+                    String fileName = f.getName();
 
                     int typeId = BinaryUtils.mappedTypeId(fileName);
                     byte platformId = BinaryUtils.mappedFilePlatformId(fileName);
@@ -581,13 +575,13 @@ public class CdcMain implements Runnable {
                     T2<Integer, Byte> data = new T2<>(typeId, platformId);
 
                     // Filter out files already in `mappingsState`.
-                    return mappingsState.contains(data) ? null : new Object[] {data, p};
+                    return mappingsState.contains(data) ? null : new Object[] {data, f};
                 })
                 .filter(Objects::nonNull)
                 .peek(d -> mappingsState.add((T2<Integer, Byte>)d[0])) // Adding peeked up mappings to state.
                 .map((Function<Object[], TypeMapping>)(t -> new TypeMappingImpl(
                     ((IgniteBiTuple<Integer, Byte>)t[0]).get1(),
-                    BinaryUtils.readMapping(((Path)t[1]).toFile()),
+                    BinaryUtils.readMapping((File)t[1]),
                     ((IgniteBiTuple<Integer, Byte>)t[0]).get2() == 0 ? PlatformType.JAVA : PlatformType.DOTNET)
                 ))
                 .iterator();
