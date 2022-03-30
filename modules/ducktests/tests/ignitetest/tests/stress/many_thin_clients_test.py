@@ -17,10 +17,8 @@
 This module contains client tests.
 """
 import threading
-import uuid
 
 from ducktape.mark import defaults, parametrize
-from ignitetest.services.zk.zookeeper import ZookeeperSettings, ZookeeperService
 
 from ignitetest.services.utils.control_utility import ControlUtility
 
@@ -34,12 +32,11 @@ from ignitetest.services.utils.ssl.client_connector_configuration import ClientC
 from ignitetest.utils import cluster, ignite_versions
 from ignitetest.utils.ignite_test import IgniteTest
 from ignitetest.utils.version import DEV_BRANCH, LATEST, IgniteVersion
-from ignitetest.utils.data_loader.data_loader import DataLoadParams, DataLoader, data_region_size
+from ignitetest.utils.data_loader.data_loader import data_region_size
 from ignitetest.services.utils.ignite_configuration.bean import Bean
 
 SERVER_NODES = 4
-PRELOAD_NODES = 16
-DATA_REGION_SIZE = 10 * 1024 * 1024 * 1024
+CLIENT_NODES = 8
 
 
 class ManyThinClientTest(IgniteTest):
@@ -47,31 +44,26 @@ class ManyThinClientTest(IgniteTest):
     JAVA_CLIENT_CLASS_NAME = \
         "org.apache.ignite.internal.ducktest.tests.thin_client_test.ThinClientDataGenerationApplication"
 
-    @cluster(num_nodes=SERVER_NODES + PRELOAD_NODES + 1)
+    @cluster(num_nodes=SERVER_NODES + CLIENT_NODES)
     # @ignite_versions(str(DEV_BRANCH), str(LATEST))
     @ignite_versions(str(DEV_BRANCH))
-    @defaults(preloaders=[8], preloader_threads=[2], jvm_opts=[['-Xmx1G']])
-    @parametrize(clients=20, client_threads=8, entry_count=60_000_000, entry_size=300, batch_size=50_000, job_size=3)
+    @parametrize(clients=8, client_threads=4, entry_count=15_000_000, entry_size=300, batch_size=100_000, job_size=1,
+                 backups=1, thread_pool_size=None, jvm_opts=['-Xmx3G'])
     def test_many_thin_clients(self, ignite_version, clients, client_threads, entry_count, entry_size,
-                               preloaders, preloader_threads, jvm_opts, batch_size, job_size):
+                               batch_size, job_size, backups, thread_pool_size, jvm_opts):
         """
         Many thin writing clients connections test.
         """
 
-        data_load_params = DataLoadParams(cache_names=["TEST-CACHE"],
-                                          entry_count=entry_count, entry_size=entry_size,
-                                          preloaders=preloaders, threads=preloader_threads, jvm_opts=jvm_opts)
-        loader = DataLoader(self.test_context, data_load_params)
-
         version = IgniteVersion(ignite_version)
 
         num_nodes = 4
-        region_size = data_region_size(self, int(data_load_params.data_size / num_nodes))
+        region_size = data_region_size(self, int(entry_count * entry_size * (backups + 1) * 1.5 / num_nodes))
         self.logger.info(f"region size: {region_size}")
         ignite_config = IgniteConfiguration(
             version=version,
             client_connector_configuration=ClientConnectorConfiguration(
-                thread_pool_size=16
+                thread_pool_size=thread_pool_size
             ),
             data_storage=DataStorageConfiguration(
                 max_wal_archive_size=2 * region_size,
@@ -80,16 +72,11 @@ class ManyThinClientTest(IgniteTest):
             metric_exporters={Bean("org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi")}
         )
 
-        ignite = IgniteService(self.test_context, ignite_config, num_nodes=num_nodes, jvm_opts=['-Xmx3G'])
+        ignite = IgniteService(self.test_context, ignite_config, num_nodes=num_nodes, jvm_opts=jvm_opts)
         ignite.start()
 
         control_utility = ControlUtility(ignite)
         control_utility.activate()
-
-        loader.load_data(ignite)
-        loader.free()
-
-        zk = start_zookeeper(self.test_context, 1, 1000)
 
         addresses = ignite.nodes[0].account.hostname + ":" + str(ignite_config.client_connector_configuration.port)
 
@@ -98,7 +85,8 @@ class ManyThinClientTest(IgniteTest):
             _app = IgniteApplicationService(
                 self.test_context,
                 config=IgniteThinClientConfiguration(addresses=addresses),
-                java_class_name=self.JAVA_CLIENT_CLASS_NAME
+                java_class_name=self.JAVA_CLIENT_CLASS_NAME,
+                jvm_opts=jvm_opts
             )
             _app.log_level = "DEBUG"
             apps.append(_app)
@@ -108,8 +96,6 @@ class ManyThinClientTest(IgniteTest):
 
         count = int((to_key - from_key) / clients)
         end = from_key
-
-        token = str(uuid.uuid4())
 
         workers = []
         for _app in apps:
@@ -122,17 +108,13 @@ class ManyThinClientTest(IgniteTest):
                 "cacheName": "TEST-CACHE",
                 "entrySize": entry_size,
                 "threads": client_threads,
-                "preloaders": clients,
-                "preloadersToken": token,
                 "timeoutSecs": 3600,
                 "from": start,
                 "to": end,
                 "batchSize": batch_size,
-                "jobSize": job_size,
-                "zookeeperConnectionString": zk.connection_string()
+                "jobSize": job_size
             }
             _app.shutdown_timeout_sec = 3600
-            # _app.jvm_opts = self.data_load_params.jvm_opts
 
             worker = threading.Thread(
                 name="thin-starter-worker-" + str(start),
@@ -150,14 +132,3 @@ class ManyThinClientTest(IgniteTest):
             _app.await_stopped()
 
         return {}
-
-
-def start_zookeeper(test_context, num_nodes, failure_detection_timeout):
-    """
-    Start zookeeper cluster.
-    """
-    zk_settings = ZookeeperSettings(min_session_timeout=failure_detection_timeout)
-
-    zk_quorum = ZookeeperService(test_context, num_nodes, settings=zk_settings)
-    zk_quorum.start_async()
-    return zk_quorum
