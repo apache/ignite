@@ -801,7 +801,7 @@ BOOST_AUTO_TEST_CASE(TestSQLSetStmtAttrGetStmtAttr)
 
     Connect("DRIVER={Apache Ignite};address=127.0.0.1:11110;schema=cache");
 
-    SQLCHAR buffer[ODBC_BUFFER_SIZE];
+    SQLINTEGER buffer[ODBC_BUFFER_SIZE];
     SQLINTEGER resLen = 0;
 
     // repeat test for different values
@@ -816,8 +816,7 @@ BOOST_AUTO_TEST_CASE(TestSQLSetStmtAttrGetStmtAttr)
 
         ODBC_FAIL_ON_ERROR(ret, SQL_HANDLE_STMT, stmt);
 
-        SQLINTEGER* bufferVal = reinterpret_cast<SQLINTEGER*>(buffer);
-        BOOST_CHECK_EQUAL(*bufferVal, val);
+        BOOST_CHECK_EQUAL(*buffer, val);
     }
 }
 
