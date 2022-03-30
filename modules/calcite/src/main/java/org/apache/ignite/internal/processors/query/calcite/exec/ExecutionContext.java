@@ -229,20 +229,20 @@ public class ExecutionContext<Row> extends AbstractQueryContext implements DataC
 
     /** {@inheritDoc} */
     @Override public Object get(String name) {
-        return typedValue(name, null);
+        return param(name, false);
     }
 
     /**
      * @return Param value with proper type.
      */
-    public Object typedValue(String name, Type type) {
+    public Object param(String name, boolean ignoreStorageType) {
         if (Variable.CANCEL_FLAG.camelName.equals(name))
             return cancelFlag;
 
         if (name.startsWith("?")) {
             Object val = params.get(name);
 
-            return TypeUtils.toInternal(this, val, type == null ? val.getClass() : type);
+            return TypeUtils.toInternal(this, val, ignoreStorageType ? Object.class : val.getClass());
         }
 
         return baseDataContext.get(name);
