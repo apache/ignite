@@ -262,7 +262,7 @@
                         <failsOnError>true</failsOnError>
                         <failOnViolation>true</failOnViolation>
                         <outputFile>${project.build.directory}/checkstyle-result.xml</outputFile>
-                        <!-- This configuration checkstyle files will be obtained from the 'ignite-checkstyle' module. -->
+                        <!-- This configuration checkstyle files will be obtained from the 'ignite-checkstyle' resources. -->
                         <configLocation>checkstyle/checkstyle.xml</configLocation>
                         <suppressionsLocation>checkstyle/checkstyle-suppressions.xml</suppressionsLocation>
                         <includeTestSourceDirectory>true</includeTestSourceDirectory>
