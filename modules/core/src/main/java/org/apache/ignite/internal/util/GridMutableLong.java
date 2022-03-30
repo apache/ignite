@@ -57,6 +57,15 @@ public class GridMutableLong {
         return v;
     }
 
+    /**
+     * Sets the new value.
+     *
+     * @param v New value.
+     */
+    public void set(long v) {
+        this.v = v;
+    }
+
     /** {@inheritDoc} */
     @Override public String toString() {
         return Long.toString(v);
