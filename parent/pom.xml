@@ -108,6 +108,7 @@
         <lz4.version>1.5.0</lz4.version>
         <maven.bundle.plugin.version>3.5.0</maven.bundle.plugin.version>
         <maven.checkstyle.plugin.version>3.1.1</maven.checkstyle.plugin.version>
+        <maven.flatten.plugin.version>1.2.7</maven.flatten.plugin.version>
         <maven.model.version>3.8.4</maven.model.version>
         <checkstyle.puppycrawl.version>8.45</checkstyle.puppycrawl.version>
         <mockito.version>3.4.6</mockito.version>
@@ -637,7 +638,7 @@
                 <plugin>
                     <groupId>org.codehaus.mojo</groupId>
                     <artifactId>flatten-maven-plugin</artifactId>
-                    <version>1.2.7</version>
+                    <version>${maven.flatten.plugin.version}</version>
 
                     <executions>
                         <execution>
@@ -714,6 +715,7 @@
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>flatten-maven-plugin</artifactId>
+
                 <executions>
                     <!-- disable flattering for parent pom. -->
                     <execution>
@@ -1307,7 +1309,6 @@
                                             <pluginExecutionFilter>
                                                 <groupId>org.codehaus.mojo</groupId>
                                                 <artifactId>flatten-maven-plugin</artifactId>
-                                                <versionRange>1.0.1</versionRange>
                                                 <goals>
                                                     <goal>flatten</goal>
                                                 </goals>
