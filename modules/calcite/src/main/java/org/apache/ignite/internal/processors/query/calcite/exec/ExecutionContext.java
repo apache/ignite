@@ -242,8 +242,7 @@ public class ExecutionContext<Row> extends AbstractQueryContext implements DataC
         if (name.startsWith("?")) {
             Object val = params.get(name);
 
-            return TypeUtils.toInternal(this, val, type != null && SqlTypeName.ANY == type ? Object.class
-                : val.getClass());
+            return TypeUtils.toInternal(this, val, SqlTypeName.ANY == type ? Object.class : val.getClass());
         }
 
         return baseDataContext.get(name);
