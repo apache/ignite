@@ -114,14 +114,10 @@
                 <executions>
                     <execution>
                         <id>flatten</id>
+
                         <configuration>
                             <flattenMode>bom</flattenMode>
-                            <flattenedPomFilename>pom-installed.xml</flattenedPomFilename>
                         </configuration>
-                        <phase>process-resources</phase>
-                        <goals>
-                            <goal>flatten</goal>
-                        </goals>
                     </execution>
                 </executions>
             </plugin>
