@@ -74,6 +74,7 @@ import org.apache.ignite.internal.processors.rest.RestProcessorMultiStartSelfTes
 import org.apache.ignite.internal.processors.rest.RestProcessorStartSelfTest;
 import org.apache.ignite.internal.processors.rest.TaskCommandHandlerSelfTest;
 import org.apache.ignite.internal.processors.rest.TcpRestUnmarshalVulnerabilityTest;
+import org.apache.ignite.internal.processors.rest.protocols.tcp.TcpRedisParserSelfTest;
 import org.apache.ignite.internal.processors.rest.protocols.tcp.TcpRestParserSelfTest;
 import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.RedisProtocolConnectSelfTest;
 import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.RedisProtocolGetAllAsArrayTest;
@@ -92,6 +93,7 @@ import org.junit.runners.Suite;
 
     // Parser standalone test.
     TcpRestParserSelfTest.class,
+    TcpRedisParserSelfTest.class,
 
     // Test memcache protocol with custom test client.
     RestMemcacheProtocolSelfTest.class,
