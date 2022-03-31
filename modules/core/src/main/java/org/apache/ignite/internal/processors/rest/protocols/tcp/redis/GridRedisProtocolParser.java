@@ -351,4 +351,28 @@ public class GridRedisProtocolParser {
 
         return buf;
     }
+
+    /** @return {@code True} if first byte is {@link #ARRAY}. */
+    public static boolean firstPacket(ByteBuffer buf) {
+        boolean result = buf.get() == ARRAY;
+
+        buf.position(buf.position() - 1);
+
+        return result;
+    }
+
+    /** @return {@code True} if last two bytes is {@link #CR} {@link #LF}. */
+    public static boolean lastPacket(ByteBuffer buf) {
+        int initPos = buf.position();
+        int limit = buf.limit();
+
+        if (limit <= 2)
+            return false;
+
+        boolean result = buf.get(limit - 2) == CR && buf.get(limit - 1) == LF;
+
+        buf.position(initPos);
+
+        return result;
+    }
 }
