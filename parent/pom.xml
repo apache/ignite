@@ -280,7 +280,7 @@
                         <dependency>
                             <groupId>${project.groupId}</groupId>
                             <artifactId>ignite-checkstyle</artifactId>
-                            <version>${ignite.version}</version>
+                            <version>${project.version}</version>
                         </dependency>
                     </dependencies>
                 </plugin>
@@ -333,12 +333,12 @@
                                 <tagletArtifact>
                                     <groupId>${project.groupId}</groupId>
                                     <artifactId>ignite-tools</artifactId>
-                                    <version>${ignite.version}</version>
+                                    <version>${project.version}</version>
                                 </tagletArtifact>
                             </taglet>
                         </taglets>
-                        <doctitle>Ignite ${ignite.version}</doctitle>
-                        <windowtitle>Ignite ${ignite.version}</windowtitle>
+                        <doctitle>Ignite ${project.version}</doctitle>
+                        <windowtitle>Ignite ${project.version}</windowtitle>
                         <breakiterator>true</breakiterator>
                         <verbose>true</verbose>
                         <show>protected</show>
@@ -568,7 +568,7 @@
                                                             <b>Ignite Database and Caching Platform</b>
                                                         </td>
                                                         <td>:&nbsp;&nbsp;
-                                                            ver. <strong>${ignite.version}</strong>
+                                                            ver. <strong>${project.version}</strong>
                                                         </td>
                                                     </tr>
                                                     <tr style="padding: 0; margin: 0">
@@ -604,7 +604,7 @@
                         </supportedProjectTypes>
                         <instructions>
                             <Bundle-SymbolicName>${project.groupId}.${project.artifactId}</Bundle-SymbolicName>
-                            <Bundle-Version>${ignite.version}</Bundle-Version>
+                            <Bundle-Version>${project.version}</Bundle-Version>
                             <Bundle-Vendor>${project.organization.name}</Bundle-Vendor>
                             <Bundle-Description>${project.description}</Bundle-Description>
                             <Bundle-DocURL>${project.url}</Bundle-DocURL>
@@ -689,7 +689,7 @@
                     <dependency>
                         <groupId>${project.groupId}</groupId>
                         <artifactId>ignite-tools</artifactId>
-                        <version>${ignite.version}</version>
+                        <version>${project.version}</version>
                     </dependency>
                 </dependencies>
             </plugin>
@@ -730,6 +730,12 @@
                         <configuration>
                             <flattenMode>resolveCiFriendliesOnly</flattenMode>
                             <flattenedPomFilename>pom-installed.xml</flattenedPomFilename>
+                            <pomElements>
+                                <build>resolve</build>
+                                <profiles>resolve</profiles>
+                                <pluginManagement>resolve</pluginManagement>
+                                <!-- add more sections to resolve -->
+                            </pomElements>
                         </configuration>
                         <phase>process-resources</phase>
                         <goals>
@@ -1200,7 +1206,7 @@
                 <dependency>
                     <groupId>${project.groupId}</groupId>
                     <artifactId>ignite-apache-license-gen</artifactId>
-                    <version>${ignite.version}</version>
+                    <version>${project.version}</version>
                     <scope>test</scope><!-- hack to have ignite-apache-license-gen at first place at mvn reactor -->
                 </dependency>
             </dependencies>
@@ -1218,7 +1224,7 @@
                                 </goals>
                                 <configuration>
                                     <resourceBundles>
-                                        <resourceBundle>${project.groupId}:ignite-apache-license-gen:${ignite.version}
+                                        <resourceBundle>${project.groupId}:ignite-apache-license-gen:${project.version}
                                         </resourceBundle>
                                     </resourceBundles>
                                     <excludeTransitive>true</excludeTransitive>
