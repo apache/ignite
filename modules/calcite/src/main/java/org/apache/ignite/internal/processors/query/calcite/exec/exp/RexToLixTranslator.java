@@ -74,7 +74,6 @@ import org.apache.calcite.util.ControlFlowException;
 import org.apache.calcite.util.Pair;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
-import org.apache.ignite.internal.processors.query.calcite.type.OtherType;
 import org.apache.ignite.internal.processors.query.calcite.util.IgniteMethod;
 
 import static org.apache.calcite.sql.fun.SqlStdOperatorTable.CASE;
@@ -159,7 +158,7 @@ public class RexToLixTranslator implements RexVisitor<RexToLixTranslator.Result>
         this.correlates = correlates; // may be null
 
         try {
-            valueMtd = ExecutionContext.class.getMethod("param", String.class, boolean.class);
+            valueMtd = ExecutionContext.class.getMethod("param", String.class, SqlTypeName.class);
         }
         catch (NoSuchMethodException e) {
             throw new IgniteException("Unable to find get-value method of the execution context.", e);
@@ -1206,7 +1205,7 @@ public class RexToLixTranslator implements RexVisitor<RexToLixTranslator.Result>
 
         // Params for the get-value method.
         final List<Expression> params = Stream.of(Expressions.constant("?" + dynamicParam.getIndex()),
-            Expressions.constant(dynamicParam.getType().getClass() == OtherType.class ? true : false))
+            Expressions.constant(dynamicParam.getType().getSqlTypeName()))
             .collect(Collectors.toList());
 
         // Get-value method to call.
