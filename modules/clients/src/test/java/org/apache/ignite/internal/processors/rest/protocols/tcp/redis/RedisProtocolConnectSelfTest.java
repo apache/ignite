@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.rest.protocols.tcp.redis;
 
+import org.apache.commons.lang.RandomStringUtils;
 import org.junit.Assert;
 import org.junit.Test;
 import redis.clients.jedis.Jedis;
@@ -72,6 +73,27 @@ public class RedisProtocolConnectSelfTest extends RedisCommonAbstractTest {
 
             jedis.select(0);
             Assert.assertEquals("v0", jedis.get("k0"));
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testSetBigObject() throws Exception {
+        String randomStr1 = RandomStringUtils.random(8 << 10, true, true); //8192
+        String randomStr2 = RandomStringUtils.random(10 << 10, true, true); //10240
+        String randomStr3 = RandomStringUtils.random(8 << 11, true, true); //16384
+
+        try (Jedis jedis = pool.getResource()) {
+            jedis.set("b1".getBytes(), randomStr1.getBytes());
+            Assert.assertEquals(randomStr1, jedis.get("b1"));
+
+            jedis.set("b2".getBytes(), randomStr2.getBytes());
+            Assert.assertEquals(randomStr2, jedis.get("b2"));
+
+            jedis.set("b3".getBytes(), randomStr3.getBytes());
+            Assert.assertEquals(randomStr3, jedis.get("b3"));
         }
     }
 }

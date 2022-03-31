@@ -156,7 +156,7 @@ public class GridTcpRestParser implements GridNioParser {
                 break;
 
             case REDIS:
-                res = GridRedisProtocolParser.readArray(buf);
+                res = parseRedisPacket(ses, buf, state);
 
                 break;
 
@@ -244,6 +244,25 @@ public class GridTcpRestParser implements GridNioParser {
 
             return res;
         }
+    }
+
+    /**
+     * Parses redis protocol message.
+     *
+     * @param ses Session.
+     * @param buf Buffer containing not parsed bytes.
+     * @param state Current parser state.
+     *
+     * @return Parsed packet.s
+     *
+     * @throws IOException If packet cannot be parsed.
+     * @throws IgniteCheckedException If deserialization error occurred.
+     */
+    private GridClientMessage parseRedisPacket(GridNioSession ses, ByteBuffer buf, ParserState state)
+            throws IOException, IgniteCheckedException {
+        assert state.packetType() == GridClientPacketType.REDIS;
+
+        return GridRedisProtocolParser.readPacket(buf, state.buffer());
     }
 
     /**

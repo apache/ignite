@@ -17,12 +17,15 @@
 
 package org.apache.ignite.internal.processors.rest.protocols.tcp.redis;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.processors.rest.client.message.GridClientMessage;
 
 /**
  * Parser to decode/encode Redis protocol (RESP) requests.
@@ -112,6 +115,94 @@ public class GridRedisProtocolParser {
             throw new IgniteCheckedException("Invalid request syntax!");
 
         return new String(bulkStr);
+    }
+
+    /**
+     * Reads the packet.
+     *
+     * @param buf Buffer containing not parsed bytes.
+     * @param tmp Temporary data buffer.
+     */
+    public static GridClientMessage readPacket(ByteBuffer buf, ByteArrayOutputStream tmp) throws IgniteCheckedException, IOException {
+        if (isCompletePacket(buf)) {
+            //single parsable packet
+            return readArray(buf);
+        } else if (validatePacketFooter(buf)) { //Scenario 2
+            int fullLength = tmp.size() + buf.limit();
+
+            ByteBuffer fullPacket = ByteBuffer.allocate(fullLength);
+
+            fullPacket.put(tmp.toByteArray());
+            fullPacket = fullPacket.put(buf);
+            fullPacket.flip();
+
+            tmp.reset();
+
+            return readArray(fullPacket);
+        } else { //Scenario 1 or 3
+
+            byte[] data = new byte[buf.limit()];
+            buf.get(data);
+            tmp.write(data);
+
+            return null;
+        }
+    }
+
+    /**
+     * A validation method to check packet completeness.
+     * return true if and only if
+     * 1. First byte is ARRAY (43)
+     * 2. Last two bytes are CR(13) LF(10)
+     *
+     * Otherwise, return false representing this is an incomplete packet with three possible scenarios:
+     * 1. A beginning packet with leading ARRAY byte
+     * 2. A continual packet with ending CRLF bytes.
+     * 3. A continual packet with neither conditions above.
+     */
+    public static boolean isCompletePacket(ByteBuffer buf) {
+        return validatePacketHeader(buf) && validatePacketFooter(buf);
+    }
+
+    /**
+     * @param buf Buffer containing not parsed bytes.
+     */
+    public static boolean validatePacketHeader(ByteBuffer buf) {
+        boolean result = true;
+
+        //mark at initial position
+        buf.mark();
+
+        if (buf.get() != ARRAY)
+            result = false;
+
+        //reset to initial position
+        buf.reset();
+
+        return result;
+    }
+
+    /**
+     * @param buf Buffer containing not parsed bytes.
+     */
+    public static boolean validatePacketFooter(ByteBuffer buf) {
+        boolean result = true;
+
+        //mark at initial position
+        buf.mark();
+
+        int limit = buf.limit();
+
+        assert limit > 2;
+
+        //check the final CR(last -2 ) and LF(last -1) byte
+        if (buf.get(limit - 2) != CR || buf.get(limit - 1) != LF)
+            result = false;
+
+        //reset to initial position
+        buf.reset();
+
+        return result;
     }
 
     /**
