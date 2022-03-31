@@ -34,7 +34,7 @@
     </parent>
 
     <artifactId>ignite-ml</artifactId>
-    <version>${revision}</version>
+
     <url>http://ignite.apache.org</url>
 
     <build>

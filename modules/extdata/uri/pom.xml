@@ -32,7 +32,6 @@
     </parent>
 
     <artifactId>ignite-extdata-uri</artifactId>
-    <version>${revision}</version>
 
     <dependencies>
         <dependency>

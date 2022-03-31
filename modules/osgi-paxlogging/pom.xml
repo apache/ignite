@@ -31,7 +31,7 @@
     </parent>
 
     <artifactId>ignite-osgi-paxlogging</artifactId>
-    <version>${revision}</version>
+
     <packaging>jar</packaging>
 
     <dependencies>

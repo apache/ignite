@@ -32,7 +32,7 @@
     </parent>
 
     <artifactId>ignite-ml-spark-model-parser</artifactId>
-    <version>${revision}</version>
+
     <url>http://ignite.apache.org</url>
 
     <build>

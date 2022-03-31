@@ -27,7 +27,6 @@
     </parent>
 
     <artifactId>ignite-examples</artifactId>
-    <version>${revision}</version>
 
     <dependencies>
         <dependency>

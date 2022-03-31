@@ -31,7 +31,7 @@
     </parent>
 
     <artifactId>apache-ignite</artifactId>
-    <version>${revision}</version>
+
     <packaging>pom</packaging>
 
     <modules>

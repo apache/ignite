@@ -33,7 +33,7 @@
     </parent>
 
     <artifactId>ignite-compatibility</artifactId>
-    <version>${revision}</version>
+
     <url>http://ignite.apache.org</url>
 
     <dependencies>

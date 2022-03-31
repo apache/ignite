@@ -32,7 +32,7 @@
     </parent>
 
     <artifactId>ignite-extdata-platform</artifactId>
-    <version>${revision}</version>
+
     <url>http://ignite.apache.org</url>
 
     <dependencies>

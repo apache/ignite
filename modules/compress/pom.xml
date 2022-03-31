@@ -32,7 +32,7 @@
     </parent>
 
     <artifactId>ignite-compress</artifactId>
-    <version>${revision}</version>
+
     <url>http://ignite.apache.org</url>
 
     <dependencies>

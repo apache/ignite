@@ -30,7 +30,7 @@
 
     <artifactId>ignite-appserver-test</artifactId>
     <packaging>jar</packaging>
-    <version>${revision}</version>
+
     <url>http://ignite.apache.org</url>
 
     <dependencies>

@@ -30,7 +30,7 @@
 
     <artifactId>ignite-websphere-test</artifactId>
     <packaging>war</packaging>
-    <version>${revision}</version>
+
     <url>http://ignite.apache.org</url>
 
     <dependencies>

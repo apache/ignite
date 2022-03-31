@@ -27,11 +27,11 @@
         <groupId>org.apache.ignite</groupId>
         <artifactId>ignite-cassandra</artifactId>
         <version>${revision}</version>
-        <relativePath>..</relativePath>
+        <relativePath>../pom.xml</relativePath>
     </parent>
 
     <artifactId>ignite-cassandra-store</artifactId>
-    <version>${revision}</version>
+
     <url>http://ignite.apache.org</url>
 
     <properties>

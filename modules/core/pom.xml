@@ -31,7 +31,6 @@
     </parent>
 
     <artifactId>ignite-core</artifactId>
-    <version>${revision}</version>
 
     <properties>
         <ignite.update.notifier.product>apache-ignite</ignite.update.notifier.product>

@@ -30,7 +30,6 @@
     </parent>
 
     <artifactId>ignite-bom</artifactId>
-    <version>${revision}</version>
     <packaging>pom</packaging>
 
     <properties>
