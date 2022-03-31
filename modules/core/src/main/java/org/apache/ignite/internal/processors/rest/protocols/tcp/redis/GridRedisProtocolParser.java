@@ -68,26 +68,28 @@ public class GridRedisProtocolParser {
     private static final byte[] OK = "OK".getBytes();
 
     /**
-     * Reads an array into {@link GridRedisMessage}.
-     *
-     * @param buf Buffer.
-     * @return {@link GridRedisMessage}.
-     * @throws IgniteCheckedException
+     * Error while reading int.
+     * {@code -1} used to mark null array.
+     * @see #NIL
      */
-    public static GridRedisMessage readArray(ByteBuffer buf) throws IgniteCheckedException {
+    public static final int ERROR_INT = -2;
+
+    /**
+     * Checks first byte is {@link #ARRAY}.
+     * @param buf Buffer.
+     * @return {@code False} if no data available in buffer.
+     * @throws IgniteCheckedException If failed.
+     */
+    public static boolean ensureArrayStart(ByteBuffer buf) throws IgniteCheckedException {
+        if (!buf.hasRemaining())
+            return false;
+
         byte b = buf.get();
 
         if (b != ARRAY)
             throw new IgniteCheckedException("Invalid request byte! " + b);
 
-        int arrLen = elCnt(buf);
-
-        GridRedisMessage msg = new GridRedisMessage(arrLen);
-
-        for (int i = 0; i < arrLen; i++)
-            msg.append(readBulkStr(buf));
-
-        return msg;
+        return true;
     }
 
     /**
@@ -95,24 +97,48 @@ public class GridRedisProtocolParser {
      *
      * @param buf Buffer.
      * @return Bulk string.
-     * @throws IgniteCheckedException
+     * @throws IgniteCheckedException If failed.
      */
     public static String readBulkStr(ByteBuffer buf) throws IgniteCheckedException {
+        if (!buf.hasRemaining())
+            return null;
+
+        int pos = buf.position();
+
         byte b = buf.get();
 
         if (b != BULK_STRING)
             throw new IgniteCheckedException("Invalid bulk string prefix! " + b);
 
-        int len = elCnt(buf);
-        byte[] bulkStr = new byte[len];
+        if (!buf.hasRemaining()) {
+            buf.position(pos);
 
-        if (len > buf.limit())
-            System.out.println("len = " + len + ", buf = " + buf.limit() + ", rem = " + buf.remaining());
+            return null;
+        }
+
+        int len = readInt(buf);
+
+        if (len == ERROR_INT || buf.remaining() < len) {
+            buf.position(pos);
+
+            return null;
+        }
+
+        byte[] bulkStr = new byte[len];
 
         buf.get(bulkStr, 0, len);
 
-        if (buf.get() != CR || buf.get() != LF)
-            throw new IgniteCheckedException("Invalid request syntax!");
+        if (buf.remaining() < 2) {
+            buf.position(pos);
+
+            return null;
+        }
+
+        byte b0 = buf.get();
+        byte b1 = buf.get();
+
+        if (b0 != CR || b1 != LF)
+            throw new IgniteCheckedException("Invalid request syntax[len=" + len + ']');
 
         return new String(bulkStr);
     }
@@ -123,14 +149,32 @@ public class GridRedisProtocolParser {
      * @param buf Buffer.
      * @return Count of elements.
      */
-    private static int elCnt(ByteBuffer buf) throws IgniteCheckedException {
+    public static int readInt(ByteBuffer buf) throws IgniteCheckedException {
+        if (!buf.hasRemaining())
+            return ERROR_INT;
+
+        int pos = buf.position();
+
         byte[] arrLen = new byte[9];
 
         int idx = 0;
         byte b = buf.get();
+
         while (b != CR) {
+            if (!buf.hasRemaining()) {
+                buf.position(pos);
+
+                return ERROR_INT;
+            }
+
             arrLen[idx++] = b;
             b = buf.get();
+        }
+
+        if (!buf.hasRemaining()) {
+            buf.position(pos);
+
+            return ERROR_INT;
         }
 
         if (buf.get() != LF)
@@ -353,29 +397,5 @@ public class GridRedisProtocolParser {
         buf.flip();
 
         return buf;
-    }
-
-    /** @return {@code True} if first byte is {@link #ARRAY}. */
-    public static boolean firstPacket(ByteBuffer buf) {
-        boolean result = buf.get() == ARRAY;
-
-        buf.position(buf.position() - 1);
-
-        return result;
-    }
-
-    /** @return {@code True} if last two bytes is {@link #CR} {@link #LF}. */
-    public static boolean lastPacket(ByteBuffer buf) {
-        int initPos = buf.position();
-        int limit = buf.limit();
-
-        if (limit <= 2)
-            return false;
-
-        boolean result = buf.get(limit - 2) == CR && buf.get(limit - 1) == LF;
-
-        buf.position(initPos);
-
-        return result;
     }
 }

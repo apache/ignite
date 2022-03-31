@@ -84,7 +84,7 @@ public class RedisProtocolConnectSelfTest extends RedisCommonAbstractTest {
         try (Jedis jedis = pool.getResource()) {
             for (int len : new int[] {8, 16, 32}) {
                 String key = "b" + len;
-                String val = RandomStringUtils.random((int)(len * KB), true, true);
+                String val = RandomStringUtils.randomAscii((int)(len * KB));
 
                 jedis.set(key.getBytes(), val.getBytes());
                 Assert.assertArrayEquals(val.getBytes(), jedis.get(key.getBytes()));
