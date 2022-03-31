@@ -248,7 +248,7 @@ public class GridTcpRestParser implements GridNioParser {
      *
      * @param buf Buffer containing not parsed bytes.
      * @param state Current parser state.
-     * @return Parsed packet.s
+     * @return Parsed packet(s)
      * @throws IOException If packet cannot be parsed.
      * @throws IgniteCheckedException If deserialization error occurred.
      */
