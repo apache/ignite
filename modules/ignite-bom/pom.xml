@@ -30,6 +30,7 @@
     </parent>
 
     <artifactId>ignite-bom</artifactId>
+    <version>${revision}</version>
     <packaging>pom</packaging>
 
     <properties>
@@ -42,58 +43,89 @@
             <dependency>
                 <groupId>org.apache.ignite</groupId>
                 <artifactId>ignite-core</artifactId>
-                <version>${project.version}</version>
+                <version>${ignite.version}</version>
             </dependency>
             <dependency>
                 <groupId>${project.groupId}</groupId>
                 <artifactId>ignite-indexing</artifactId>
-                <version>${project.version}</version>
+                <version>${ignite.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.apache.ignite</groupId>
                 <artifactId>ignite-compress</artifactId>
-                <version>${project.version}</version>
+                <version>${ignite.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.apache.ignite</groupId>
                 <artifactId>ignite-dev-utils</artifactId>
-                <version>${project.version}</version>
+                <version>${ignite.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.apache.ignite</groupId>
                 <artifactId>ignite-rest-http</artifactId>
-                <version>${project.version}</version>
+                <version>${ignite.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.apache.ignite</groupId>
                 <artifactId>ignite-jta</artifactId>
-                <version>${project.version}</version>
+                <version>${ignite.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.apache.ignite</groupId>
                 <artifactId>ignite-slf4j</artifactId>
-                <version>${project.version}</version>
+                <version>${ignite.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.apache.ignite</groupId>
                 <artifactId>ignite-log4j</artifactId>
-                <version>${project.version}</version>
+                <version>${ignite.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.apache.ignite</groupId>
                 <artifactId>ignite-log4j2</artifactId>
-                <version>${project.version}</version>
+                <version>${ignite.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.apache.ignite</groupId>
                 <artifactId>ignite-sqlline</artifactId>
-                <version>${project.version}</version>
+                <version>${ignite.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.apache.ignite</groupId>
                 <artifactId>ignite-control-utility</artifactId>
-                <version>${project.version}</version>
+                <version>${ignite.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.ignite</groupId>
+                <artifactId>ignite-core</artifactId>
+                <version>${ignite.version}</version>
+                <type>test-jar</type>
+                <scope>test</scope>
             </dependency>
         </dependencies>
     </dependencyManagement>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>flatten-maven-plugin</artifactId>
+                <version>1.2.7</version>
+
+                <executions>
+                    <execution>
+                        <id>flatten</id>
+                        <configuration>
+                            <flattenMode>bom</flattenMode>
+                            <flattenedPomFilename>pom-installed.xml</flattenedPomFilename>
+                        </configuration>
+                        <phase>process-resources</phase>
+                        <goals>
+                            <goal>flatten</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
 </project>
