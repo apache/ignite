@@ -30,6 +30,7 @@ import static org.junit.Assert.assertNull;
 
 /**
  * Test Redis request parser.
+ * @see <a href="https://redis.io/docs/reference/protocol-spec/">Redis protocol specification.</a>
  */
 public class TcpRedisParserSelfTest {
     /** Test check parser works with the message splitted to several network packets. */
