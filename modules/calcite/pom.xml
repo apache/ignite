@@ -46,7 +46,7 @@
     </parent>
 
     <artifactId>ignite-calcite</artifactId>
-    <version>${revision}</version>
+
     <url>https://ignite.apache.org</url>
 
     <dependencies>
