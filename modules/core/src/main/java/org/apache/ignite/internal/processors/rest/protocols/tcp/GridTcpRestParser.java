@@ -290,7 +290,6 @@ public class GridTcpRestParser implements GridNioParser {
             state.buffer().write(data);
         }
 
-
         return null;
     }
 
