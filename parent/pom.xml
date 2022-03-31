@@ -663,6 +663,20 @@
                         </execution>
                     </executions>
                 </plugin>
+
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-surefire-plugin</artifactId>
+                    <version>${surefire.version}</version>
+
+                    <dependencies>
+                        <dependency>
+                            <groupId>${project.groupId}</groupId>
+                            <artifactId>ignite-tools</artifactId>
+                            <version>${project.version}</version>
+                        </dependency>
+                    </dependencies>
+                </plugin>
             </plugins>
         </pluginManagement>
 
@@ -670,7 +684,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
-                <version>${surefire.version}</version>
+
                 <configuration>
                     <forkCount>0</forkCount>
                     <statelessTestsetInfoReporter implementation="org.apache.ignite.tools.surefire.TestSuiteAwareTestsetReporter"/>
@@ -685,13 +699,6 @@
                         <include>**/*.java</include>
                     </includes>
                 </configuration>
-                <dependencies>
-                    <dependency>
-                        <groupId>${project.groupId}</groupId>
-                        <artifactId>ignite-tools</artifactId>
-                        <version>${project.version}</version>
-                    </dependency>
-                </dependencies>
             </plugin>
 
             <plugin>
@@ -731,7 +738,6 @@
                             <flattenMode>resolveCiFriendliesOnly</flattenMode>
                             <flattenedPomFilename>pom-installed.xml</flattenedPomFilename>
                             <pomElements>
-                                <build>resolve</build>
                                 <profiles>resolve</profiles>
                                 <pluginManagement>resolve</pluginManagement>
                                 <!-- add more sections to resolve -->
