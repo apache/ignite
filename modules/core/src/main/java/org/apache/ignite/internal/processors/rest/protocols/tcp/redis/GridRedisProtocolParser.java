@@ -106,6 +106,9 @@ public class GridRedisProtocolParser {
         int len = elCnt(buf);
         byte[] bulkStr = new byte[len];
 
+        if (len > buf.limit())
+            System.out.println("len = " + len + ", buf = " + buf.limit() + ", rem = " + buf.remaining());
+
         buf.get(bulkStr, 0, len);
 
         if (buf.get() != CR || buf.get() != LF)
