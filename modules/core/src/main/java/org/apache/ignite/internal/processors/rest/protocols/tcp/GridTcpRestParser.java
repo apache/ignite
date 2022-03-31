@@ -270,8 +270,8 @@ public class GridTcpRestParser implements GridNioParser {
         }
 
         int i;
-        int arrLen = 0;
-        GridRedisMessage msg = null;
+        int arrLen;
+        GridRedisMessage msg;
 
         if (state.packet() == null) {
             i = 0;
