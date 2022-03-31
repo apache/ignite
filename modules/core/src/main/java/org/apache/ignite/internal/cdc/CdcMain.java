@@ -562,45 +562,6 @@ public class CdcMain implements Runnable {
         }
     }
 
-    /** Search for new or changed {@link TypeMapping} and notifies the consumer. */
-    private void updateMappings() {
-        try {
-            Iterator<TypeMapping> changedMappings = Arrays.stream(marshaller.listFiles(BinaryUtils::isMappingFile))
-                .map(f -> {
-                    String fileName = f.getName();
-
-                    int typeId = BinaryUtils.mappedTypeId(fileName);
-                    byte platformId = BinaryUtils.mappedFilePlatformId(fileName);
-
-                    T2<Integer, Byte> data = new T2<>(typeId, platformId);
-
-                    // Filter out files already in `mappingsState`.
-                    return mappingsState.contains(data) ? null : new Object[] {data, f};
-                })
-                .filter(Objects::nonNull)
-                .peek(d -> mappingsState.add((T2<Integer, Byte>)d[0])) // Adding peeked up mappings to state.
-                .map((Function<Object[], TypeMapping>)(t -> new TypeMappingImpl(
-                    ((IgniteBiTuple<Integer, Byte>)t[0]).get1(),
-                    BinaryUtils.readMapping((File)t[1]),
-                    ((IgniteBiTuple<Integer, Byte>)t[0]).get2() == 0 ? PlatformType.JAVA : PlatformType.DOTNET)
-                ))
-                .iterator();
-
-            if (!changedMappings.hasNext())
-                return;
-
-            consumer.onMappings(changedMappings);
-
-            if (changedMappings.hasNext())
-                throw new IllegalStateException("Consumer should handle all changed mappings");
-
-            state.save(mappingsState);
-        }
-        catch (IOException e) {
-            throw new IgniteException(e);
-        }
-    }
-
     /** Search for new or changed {@link BinaryType} and notifies the consumer. */
     private void updateTypes() {
         try {
@@ -638,6 +599,45 @@ public class CdcMain implements Runnable {
                 throw new IllegalStateException("Consumer should handle all changed types");
 
             state.save(typesState);
+        }
+        catch (IOException e) {
+            throw new IgniteException(e);
+        }
+    }
+
+    /** Search for new or changed {@link TypeMapping} and notifies the consumer. */
+    private void updateMappings() {
+        try {
+            Iterator<TypeMapping> changedMappings = Arrays.stream(marshaller.listFiles(BinaryUtils::isMappingFile))
+                .map(f -> {
+                    String fileName = f.getName();
+
+                    int typeId = BinaryUtils.mappedTypeId(fileName);
+                    byte platformId = BinaryUtils.mappedFilePlatformId(fileName);
+
+                    T2<Integer, Byte> data = new T2<>(typeId, platformId);
+
+                    // Filter out files already in `mappingsState`.
+                    return mappingsState.contains(data) ? null : new Object[] {data, f};
+                })
+                .filter(Objects::nonNull)
+                .peek(d -> mappingsState.add((T2<Integer, Byte>)d[0])) // Adding peeked up mappings to state.
+                .map((Function<Object[], TypeMapping>)(t -> new TypeMappingImpl(
+                    ((IgniteBiTuple<Integer, Byte>)t[0]).get1(),
+                    BinaryUtils.readMapping((File)t[1]),
+                    ((IgniteBiTuple<Integer, Byte>)t[0]).get2() == 0 ? PlatformType.JAVA : PlatformType.DOTNET)
+                ))
+                .iterator();
+
+            if (!changedMappings.hasNext())
+                return;
+
+            consumer.onMappings(changedMappings);
+
+            if (changedMappings.hasNext())
+                throw new IllegalStateException("Consumer should handle all changed mappings");
+
+            state.save(mappingsState);
         }
         catch (IOException e) {
             throw new IgniteException(e);
