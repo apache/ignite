@@ -28,8 +28,8 @@ Using Ignite BOM In Maven Project
         <groupId>org.apache.ignite</groupId>
         <artifactId>ignite-core</artifactId>
     </dependency>
-        <dependency>
-            <groupId>org.apache.ignite</groupId>
-            <artifactId>ignite-indexing</artifactId>
-        </dependency>
+    <dependency>
+        <groupId>org.apache.ignite</groupId>
+        <artifactId>ignite-indexing</artifactId>
+    </dependency>
 </dependencies>
