@@ -262,11 +262,10 @@ public class GridTcpRestParser implements GridNioParser {
         if (state.buffer().size() > 0) {
             byte[] tail = state.buffer().toByteArray();
 
-            ByteBuffer data = ByteBuffer.allocate(tail.length + buf.remaining())
+            buf = ByteBuffer.allocate(tail.length + buf.remaining())
                 .put(tail)
                 .put(buf);
 
-            buf = data;
             buf.rewind();
         }
 
