@@ -156,7 +156,7 @@ public class GridTcpRestParser implements GridNioParser {
                 break;
 
             case REDIS:
-                res = GridRedisProtocolParser.readArray(buf);
+                res = parseRedisPacket(ses, buf, state);
 
                 break;
 
@@ -243,6 +243,45 @@ public class GridTcpRestParser implements GridNioParser {
             slice.put(U.uuidToBytes(msg.destinationId()));
 
             return res;
+        }
+    }
+
+    /**
+     * Parses redis protocol message.
+     *
+     * @param ses Session.
+     * @param buf Buffer containing not parsed bytes.
+     * @param state Current parser state.
+     * @return Parsed packet.s
+     * @throws IOException If packet cannot be parsed.
+     * @throws IgniteCheckedException If deserialization error occurred.
+     */
+    private GridClientMessage parseRedisPacket(GridNioSession ses, ByteBuffer buf, ParserState state)
+            throws IOException, IgniteCheckedException {
+        assert state.packetType() == GridClientPacketType.REDIS;
+
+        ByteArrayOutputStream tmp = state.buffer();
+
+        if(GridRedisProtocolParser.validatePacket(buf)) {
+            //single parsable packet
+            return GridRedisProtocolParser.readArray(buf);
+        } else if(GridRedisProtocolParser.validatePacketFooter(buf)) { //Scenario 2
+
+            int fullLength = tmp.size() + buf.limit();
+            ByteBuffer fullPacket = ByteBuffer.allocate(fullLength);
+            fullPacket.put(tmp.toByteArray());
+            fullPacket = fullPacket.put(buf);
+            fullPacket.flip();
+
+            tmp.reset();
+            return GridRedisProtocolParser.readArray(fullPacket);
+        } else { //Scenario 1 or 3
+
+            byte[] data = new byte[buf.limit()];
+            buf.get(data);
+            tmp.write(data);
+
+            return null;
         }
     }
 
