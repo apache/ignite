@@ -25,8 +25,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import com.google.common.collect.ImmutableList;
 import org.apache.calcite.adapter.enumerable.PhysType;
 import org.apache.calcite.adapter.java.JavaTypeFactory;
@@ -72,8 +70,7 @@ import org.apache.calcite.sql.validate.SqlConformance;
 import org.apache.calcite.util.BuiltInMethod;
 import org.apache.calcite.util.ControlFlowException;
 import org.apache.calcite.util.Pair;
-import org.apache.ignite.IgniteException;
-import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
+import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.util.IgniteMethod;
 
 import static org.apache.calcite.sql.fun.SqlStdOperatorTable.CASE;
@@ -136,9 +133,6 @@ public class RexToLixTranslator implements RexVisitor<RexToLixTranslator.Result>
     /** */
     private Type currentStorageType;
 
-    /** Get-value method of the execution context. */
-    private Method valueMtd;
-
     /** */
     private RexToLixTranslator(RexProgram program,
         JavaTypeFactory typeFactory,
@@ -156,13 +150,6 @@ public class RexToLixTranslator implements RexVisitor<RexToLixTranslator.Result>
         this.list = Objects.requireNonNull(list);
         this.builder = Objects.requireNonNull(builder);
         this.correlates = correlates; // may be null
-
-        try {
-            valueMtd = ExecutionContext.class.getMethod("param", String.class, SqlTypeName.class);
-        }
-        catch (NoSuchMethodException e) {
-            throw new IgniteException("Unable to find get-value method of the execution context.", e);
-        }
     }
 
     /**
@@ -1203,14 +1190,12 @@ public class RexToLixTranslator implements RexVisitor<RexToLixTranslator.Result>
         final Type storageType = currentStorageType != null
             ? currentStorageType : typeFactory.getJavaClass(dynamicParam.getType());
 
-        // Params for the get-value method.
-        final List<Expression> params = Stream.of(Expressions.constant("?" + dynamicParam.getIndex()),
-            Expressions.constant(dynamicParam.getType().getSqlTypeName()))
-            .collect(Collectors.toList());
+        final Type paramType = ((IgniteTypeFactory)typeFactory).getResultClass(dynamicParam.getType());
 
-        // Get-value method to call.
-        final Expression valueExpression = ConverterUtils.convert(Expressions.call(root, valueMtd, params),
-            storageType);
+        final Expression ctxGet = Expressions.call(root, IgniteMethod.CONTEXT_GET_PARAMETER_VALUE.method(),
+            Expressions.constant("?" + dynamicParam.getIndex()), Expressions.constant(paramType));
+
+        final Expression valueExpression = ConverterUtils.convert(ctxGet, storageType);
 
         final ParameterExpression valueVariable =
             Expressions.parameter(valueExpression.getType(), list.newName("value_dynamic_param"));

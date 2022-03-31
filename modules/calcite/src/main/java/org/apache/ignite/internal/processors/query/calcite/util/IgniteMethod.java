@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.query.calcite.util;
 
 import java.lang.reflect.Method;
+import java.lang.reflect.Type;
 import org.apache.calcite.avatica.util.ByteString;
 import org.apache.calcite.linq4j.tree.Types;
 import org.apache.calcite.sql.SqlIntervalQualifier;
@@ -58,6 +59,9 @@ public enum IgniteMethod {
 
     /** See {@link BiScalar#execute(ExecutionContext, Object, Object, Object)} */
     BI_SCALAR_EXECUTE(BiScalar.class, "execute", ExecutionContext.class, Object.class, Object.class, Object.class),
+
+    /** See {@link ExecutionContext#param(String, Type)} */
+    CONTEXT_GET_PARAMETER_VALUE(ExecutionContext.class, "param", String.class, Type.class),
 
     /** See {@link FragmentMappingMetadata#fragmentMapping(MappingQueryContext)} */
     FRAGMENT_MAPPING(FragmentMappingMetadata.class, "fragmentMapping", MappingQueryContext.class),

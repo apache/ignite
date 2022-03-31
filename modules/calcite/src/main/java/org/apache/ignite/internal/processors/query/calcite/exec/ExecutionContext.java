@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.calcite.exec;
 
+import java.lang.reflect.Type;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -26,7 +27,6 @@ import java.util.function.Consumer;
 import org.apache.calcite.DataContext;
 import org.apache.calcite.linq4j.QueryProvider;
 import org.apache.calcite.schema.SchemaPlus;
-import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -235,14 +235,14 @@ public class ExecutionContext<Row> extends AbstractQueryContext implements DataC
     /**
      * @return Param value with proper type.
      */
-    public Object param(String name, SqlTypeName type) {
+    public Object param(String name, Type type) {
         if (Variable.CANCEL_FLAG.camelName.equals(name))
             return cancelFlag;
 
         if (name.startsWith("?")) {
             Object val = params.get(name);
 
-            return TypeUtils.toInternal(this, val, SqlTypeName.ANY == type ? Object.class : val.getClass());
+            return TypeUtils.toInternal(this, val, type == null ? val.getClass() : type);
         }
 
         return baseDataContext.get(name);
