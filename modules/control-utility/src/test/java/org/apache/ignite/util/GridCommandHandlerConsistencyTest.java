@@ -188,7 +188,7 @@ public class GridCommandHandlerConsistencyTest extends GridCommandHandlerCluster
         if (fixesPerEntry != null && fixesPerEntry > 0)
             assertEquals(PARTITIONS, brokenParts.get()); // Half fixed.
 
-        readRepair(brokenParts, atomicCacheName, fixesPerEntry != null ? 0 : null);
+        readRepair(brokenParts, atomicCacheName, fixesPerEntry);
 
         if (S.includeSensitive()) {
             for (LogListener listener : listeners)
@@ -196,7 +196,7 @@ public class GridCommandHandlerConsistencyTest extends GridCommandHandlerCluster
         }
 
         if (fixesPerEntry != null && fixesPerEntry > 0)
-            assertEquals(PARTITIONS, brokenParts.get()); // Atomics still broken.
+            assertEquals(0, brokenParts.get()); // Another half fixed.
 
         assertEquals(S.includeSensitive(), lsnrUnmaskedKey.check());
         assertEquals(S.includeSensitive(), !lsnrMaskedKey.check());
