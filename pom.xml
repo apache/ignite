@@ -31,10 +31,10 @@
     </parent>
 
     <artifactId>apache-ignite</artifactId>
-
     <packaging>pom</packaging>
 
     <modules>
+        <module>parent-bom</module>
         <module>modules/checkstyle</module>
         <module>parent</module>
         <module>modules/apache-license-gen</module>
@@ -80,7 +80,6 @@
         <module>modules/ml/h2o-model-parser</module>
         <module>modules/opencensus</module>
         <module>modules/control-utility</module>
-        <module>modules/ignite-bom</module>
         <module>modules/calcite</module>
     </modules>
 

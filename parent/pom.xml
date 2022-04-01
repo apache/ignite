@@ -27,19 +27,21 @@
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
-        <groupId>org.apache</groupId>
-        <artifactId>apache</artifactId>
-        <version>23</version>
-        <relativePath/>
+        <groupId>org.apache.ignite</groupId>
+        <artifactId>ignite-bom</artifactId>
+        <version>${revision}</version>
+        <relativePath>../parent-bom/pom.xml</relativePath>
     </parent>
+
+    <artifactId>ignite-parent</artifactId>
+    <packaging>pom</packaging>
+
+    <url>https://ignite.apache.org</url>
 
     <properties>
         <maven.compiler.source>1.8</maven.compiler.source>
         <maven.compiler.target>1.8</maven.compiler.target>
 
-        <revision>2.13.0-SNAPSHOT</revision>
-        <!-- Ignite version will be substituted with the flatten-maven-plugin and used for as version dependency for extensions. -->
-        <ignite.version>${revision}</ignite.version>
         <ignite.edition>apache-ignite</ignite.edition>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.build.timestamp.format>MMMM d yyyy</maven.build.timestamp.format>
@@ -161,56 +163,6 @@
         <flattenMode>clean</flattenMode>
     </properties>
 
-    <groupId>org.apache.ignite</groupId>
-    <artifactId>ignite-parent</artifactId>
-    <version>${revision}</version>
-    <packaging>pom</packaging>
-
-    <url>https://ignite.apache.org</url>
-
-    <description>Apache Ignite® is a Distributed Database For High-Performance Computing With In-Memory Speed.</description>
-
-    <scm>
-        <url>https://gitbox.apache.org/repos/asf/ignite.git</url>
-        <connection>scm:git:https://gitbox.apache.org/repos/asf/ignite.git</connection>
-        <developerConnection>scm:git:https://gitbox.apache.org/repos/asf/ignite.git</developerConnection>
-        <tag>HEAD</tag>
-    </scm>
-
-    <licenses>
-        <license>
-            <name>The Apache Software License, Version 2.0</name>
-            <url>https://www.apache.org/licenses/LICENSE-2.0.txt</url>
-        </license>
-    </licenses>
-
-    <mailingLists>
-        <mailingList>
-            <name>Ignite Dev List</name>
-            <subscribe>dev-subscribe@ignite.apache.org</subscribe>
-            <unsubscribe>dev-unsubscribe@ignite.apache.org</unsubscribe>
-            <post>dev@ignite.apache.org</post>
-            <archive>https://mail-archives.apache.org/mod_mbox/ignite-dev</archive>
-        </mailingList>
-        <mailingList>
-            <name>Ignite User List</name>
-            <subscribe>user-subscribe@ignite.apache.org</subscribe>
-            <unsubscribe>user-unsubscribe@ignite.apache.org</unsubscribe>
-            <post>user@ignites.apache.org</post>
-            <archive>https://mail-archives.apache.org/mod_mbox/ignite-user/</archive>
-        </mailingList>
-    </mailingLists>
-
-    <issueManagement>
-        <system>jira</system>
-        <url>https://issues.apache.org/jira/browse/IGNITE</url>
-    </issueManagement>
-
-    <ciManagement>
-        <system>teamcity</system>
-        <url>https://ci.ignite.apache.org/</url>
-    </ciManagement>
-
     <dependencyManagement>
         <dependencies>
             <dependency>
@@ -280,7 +232,7 @@
                         <dependency>
                             <groupId>${project.groupId}</groupId>
                             <artifactId>ignite-checkstyle</artifactId>
-                            <version>${project.version}</version>
+                            <version>${ignite.version}</version>
                         </dependency>
                     </dependencies>
                 </plugin>
@@ -333,12 +285,12 @@
                                 <tagletArtifact>
                                     <groupId>${project.groupId}</groupId>
                                     <artifactId>ignite-tools</artifactId>
-                                    <version>${project.version}</version>
+                                    <version>${ignite.version}</version>
                                 </tagletArtifact>
                             </taglet>
                         </taglets>
-                        <doctitle>Ignite ${project.version}</doctitle>
-                        <windowtitle>Ignite ${project.version}</windowtitle>
+                        <doctitle>Ignite ${ignite.version}</doctitle>
+                        <windowtitle>Ignite ${ignite.version}</windowtitle>
                         <breakiterator>true</breakiterator>
                         <verbose>true</verbose>
                         <show>protected</show>
@@ -634,48 +586,22 @@
                         </execution>
                     </executions>
                 </plugin>
-
-                <plugin>
-                    <groupId>org.codehaus.mojo</groupId>
-                    <artifactId>flatten-maven-plugin</artifactId>
-                    <version>${maven.flatten.plugin.version}</version>
-
-                    <executions>
-                        <execution>
-                            <id>flatten</id>
-                            <configuration>
-                                <flattenMode>oss</flattenMode>
-                                <flattenedPomFilename>pom-installed.xml</flattenedPomFilename>
-                            </configuration>
-                            <phase>process-resources</phase>
-                            <goals>
-                                <goal>flatten</goal>
-                            </goals>
-                        </execution>
-
-                        <!-- ensure proper cleanup before start -->
-                        <execution>
-                            <id>flatten.clean.before</id>
-                            <phase>clean</phase>
-                            <goals>
-                                <goal>clean</goal>
-                            </goals>
-                        </execution>
-                    </executions>
-                </plugin>
-
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-surefire-plugin</artifactId>
                     <version>${surefire.version}</version>
-
                     <dependencies>
                         <dependency>
                             <groupId>${project.groupId}</groupId>
                             <artifactId>ignite-tools</artifactId>
-                            <version>${project.version}</version>
+                            <version>${ignite.version}</version>
                         </dependency>
                     </dependencies>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-antrun-plugin</artifactId>
+                    <version>1.7</version>
                 </plugin>
             </plugins>
         </pluginManagement>
@@ -735,12 +661,11 @@
                         <id>flatten-parent</id>
                         <inherited>false</inherited>
                         <configuration>
+                            <updatePomFile>true</updatePomFile>
                             <flattenMode>resolveCiFriendliesOnly</flattenMode>
                             <flattenedPomFilename>pom-installed.xml</flattenedPomFilename>
                             <pomElements>
-                                <profiles>resolve</profiles>
-                                <pluginManagement>resolve</pluginManagement>
-                                <!-- add more sections to resolve -->
+                                <properties>resolve</properties>
                             </pomElements>
                         </configuration>
                         <phase>process-resources</phase>
@@ -1242,7 +1167,7 @@
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-antrun-plugin</artifactId>
-                        <version>1.7</version>
+
                         <executions>
                             <execution>
                                 <id>licenses-file-rename</id>

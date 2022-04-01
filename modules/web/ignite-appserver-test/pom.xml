@@ -37,25 +37,21 @@
         <dependency>
             <groupId>${project.groupId}</groupId>
             <artifactId>ignite-core</artifactId>
-            <version>${project.version}</version>
         </dependency>
 
         <dependency>
             <groupId>${project.groupId}</groupId>
             <artifactId>ignite-web</artifactId>
-            <version>${project.version}</version>
         </dependency>
 
         <dependency>
             <groupId>${project.groupId}</groupId>
             <artifactId>ignite-log4j</artifactId>
-            <version>${project.version}</version>
         </dependency>
 
         <dependency>
             <groupId>${project.groupId}</groupId>
             <artifactId>ignite-spring</artifactId>
-            <version>${project.version}</version>
         </dependency>
     </dependencies>
 

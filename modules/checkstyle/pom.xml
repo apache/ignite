@@ -5,67 +5,18 @@
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
-        <groupId>org.apache</groupId>
-        <artifactId>apache</artifactId>
-        <version>23</version>
-        <relativePath/>
+        <groupId>org.apache.ignite</groupId>
+        <artifactId>ignite-bom</artifactId>
+        <version>${revision}</version>
+        <relativePath>../../parent-bom/pom.xml</relativePath>
     </parent>
 
-    <groupId>org.apache.ignite</groupId>
     <artifactId>ignite-checkstyle</artifactId>
-    <version>2.13.0-SNAPSHOT</version>
 
     <url>https://ignite.apache.org</url>
 
-    <description>Apache Ignite® is a Distributed Database For High-Performance Computing With In-Memory Speed.</description>
-
-    <scm>
-        <url>https://gitbox.apache.org/repos/asf/ignite.git</url>
-        <connection>scm:git:https://gitbox.apache.org/repos/asf/ignite.git</connection>
-        <developerConnection>scm:git:https://gitbox.apache.org/repos/asf/ignite.git</developerConnection>
-        <tag>HEAD</tag>
-    </scm>
-
-    <mailingLists>
-        <mailingList>
-            <name>Ignite Dev List</name>
-            <subscribe>dev-subscribe@ignite.apache.org</subscribe>
-            <unsubscribe>dev-unsubscribe@ignite.apache.org</unsubscribe>
-            <post>dev@ignite.apache.org</post>
-            <archive>https://mail-archives.apache.org/mod_mbox/ignite-dev</archive>
-        </mailingList>
-    </mailingLists>
-
     <build>
         <plugins>
-            <plugin>
-                <groupId>org.codehaus.mojo</groupId>
-                <artifactId>flatten-maven-plugin</artifactId>
-                <version>1.2.7</version>
-
-                <executions>
-                    <execution>
-                        <id>flatten</id>
-                        <configuration>
-                            <flattenMode>ossrh</flattenMode>
-                            <flattenedPomFilename>pom-installed.xml</flattenedPomFilename>
-                        </configuration>
-                        <phase>process-resources</phase>
-                        <goals>
-                            <goal>flatten</goal>
-                        </goals>
-                    </execution>
-
-                    <execution>
-                        <id>flatten-clean</id>
-                        <phase>clean</phase>
-                        <goals>
-                            <goal>clean</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
-
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-resources-plugin</artifactId>

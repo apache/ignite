@@ -38,8 +38,8 @@
     <dependencyManagement>
         <dependencies>
             <dependency>
-                <artifactId>ignite-cassandra-store</artifactId>
                 <groupId>${project.groupId}</groupId>
+                <artifactId>ignite-cassandra-store</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
