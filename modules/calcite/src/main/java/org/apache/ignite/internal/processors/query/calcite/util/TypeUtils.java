@@ -170,12 +170,12 @@ public class TypeUtils {
     }
 
     /** */
-    public static RelDataType sqlType(IgniteTypeFactory typeFactory, Class<?> cls, int precesion, int scale) {
+    public static RelDataType sqlType(IgniteTypeFactory typeFactory, Class<?> cls, int precision, int scale) {
         RelDataType javaType = typeFactory.createJavaType(cls);
 
         if (javaType.getSqlTypeName().allowsPrecScale(true, true) &&
-            (precesion != RelDataType.PRECISION_NOT_SPECIFIED || scale != RelDataType.SCALE_NOT_SPECIFIED))
-            return typeFactory.createSqlType(javaType.getSqlTypeName(), precesion, scale);
+            (precision != RelDataType.PRECISION_NOT_SPECIFIED || scale != RelDataType.SCALE_NOT_SPECIFIED))
+            return typeFactory.createSqlType(javaType.getSqlTypeName(), precision, scale);
 
         return sqlType(typeFactory, javaType);
     }
@@ -287,8 +287,8 @@ public class TypeUtils {
     }
 
     /** */
-    public static boolean hasPrecesion(RelDataType type) {
-        // Special case for DECIMAL type without precesion and scale specified.
+    public static boolean hasPrecision(RelDataType type) {
+        // Special case for DECIMAL type without precision and scale specified.
         if (type.getSqlTypeName() == SqlTypeName.DECIMAL &&
             type.getPrecision() == IgniteTypeSystem.INSTANCE.getDefaultPrecision(SqlTypeName.DECIMAL))
             return false;
@@ -297,8 +297,8 @@ public class TypeUtils {
     }
 
     /** */
-    public static boolean hasSale(RelDataType type) {
-        // Special case for DECIMAL type without precesion and scale specified.
+    public static boolean hasScale(RelDataType type) {
+        // Special case for DECIMAL type without precision and scale specified.
         if (type.getSqlTypeName() == SqlTypeName.DECIMAL &&
             type.getPrecision() == IgniteTypeSystem.INSTANCE.getDefaultPrecision(SqlTypeName.DECIMAL))
             return false;

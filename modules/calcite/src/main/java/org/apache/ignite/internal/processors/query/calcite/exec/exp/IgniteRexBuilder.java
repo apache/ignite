@@ -36,7 +36,7 @@ public class IgniteRexBuilder extends RexBuilder {
 
     /** {@inheritDoc} */
     @Override protected RexLiteral makeLiteral(@Nullable Comparable o, RelDataType type, SqlTypeName typeName) {
-        if (o != null && typeName == SqlTypeName.DECIMAL && TypeUtils.hasSale(type))
+        if (o != null && typeName == SqlTypeName.DECIMAL && TypeUtils.hasScale(type))
             return super.makeLiteral(((BigDecimal)o).setScale(type.getScale(), RoundingMode.HALF_UP), type, typeName);
 
         return super.makeLiteral(o, type, typeName);

@@ -72,13 +72,13 @@ public class ColumnDefinition {
      * @return Column's precision.
      */
     public Integer precision() {
-        return TypeUtils.hasPrecesion(type) ? type.getPrecision() : null;
+        return TypeUtils.hasPrecision(type) ? type.getPrecision() : null;
     }
 
     /**
      * @return Column's scale.
      */
     public Integer scale() {
-        return TypeUtils.hasSale(type) ? type.getScale() : null;
+        return TypeUtils.hasScale(type) ? type.getScale() : null;
     }
 }
