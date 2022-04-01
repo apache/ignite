@@ -131,8 +131,6 @@ public class MarshallerContextLockingSelfTest extends GridCommonAbstractTest {
         assertTrue(InternalExecutor.counter.get() == 0);
 
         assertTrue(!innerLog.contains("Exception"));
-
-        assertTrue(innerLog.contains("File already locked"));
     }
 
     /**

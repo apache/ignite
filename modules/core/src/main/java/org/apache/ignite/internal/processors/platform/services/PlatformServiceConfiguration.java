@@ -15,59 +15,38 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.util;
+package org.apache.ignite.internal.processors.platform.services;
+
+import org.apache.ignite.services.ServiceConfiguration;
 
 /**
- * A mutable long for use in collections.
+ * Extended service configuration. Keeps known method names of service to build proper service statistics.
  */
-public class GridMutableLong {
-    /** Long value. */
-    private long v;
+public class PlatformServiceConfiguration extends ServiceConfiguration {
+    /** */
+    private static final long serialVersionUID = 1L;
+
+    /** Known method names of platform service. */
+    private String[] mtdNames;
 
     /**
-     * Constructor.
-     *
-     * @param v Long value.
+     * Constr.
      */
-    public GridMutableLong(long v) {
-        this.v = v;
+    PlatformServiceConfiguration() {
+        mtdNames(null);
     }
 
     /**
-     * Default constructor.
+     * @return Known method names of platform service.
      */
-    public GridMutableLong() {
+    public String[] mtdNames() {
+        return mtdNames;
     }
 
     /**
-     * Increments by one the current value.
-     *
-     * @return Updated value.
+     * Sets known method names of platform service.
      */
-    public final long incrementAndGet() {
-        return ++v;
-    }
-
-    /**
-     * Gets the current value.
-     *
-     * @return Current value.
-     */
-    public long get() {
-        return v;
-    }
-
-    /**
-     * Sets the new value.
-     *
-     * @param v New value.
-     */
-    public void set(long v) {
-        this.v = v;
-    }
-
-    /** {@inheritDoc} */
-    @Override public String toString() {
-        return Long.toString(v);
+    void mtdNames(String[] mtdNames) {
+        this.mtdNames = mtdNames;
     }
 }

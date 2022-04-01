@@ -299,7 +299,7 @@ public class GridServiceMetricsTest extends GridCommonAbstractTest {
      * @param histogram Histogram to traverse.
      * @return Sum of all entries of {@code histogram} buckets.
      */
-    private static long sumHistogramEntries(HistogramMetric histogram) {
+    public static long sumHistogramEntries(HistogramMetric histogram) {
         if (histogram == null)
             return 0;
 
