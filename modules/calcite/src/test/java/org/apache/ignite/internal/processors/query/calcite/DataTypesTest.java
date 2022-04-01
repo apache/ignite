@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.calcite;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
@@ -344,5 +345,61 @@ public class DataTypesTest extends AbstractBasicIntegrationTest {
         finally {
             executeSql("DROP TABLE IF EXISTS tbl");
         }
+    }
+
+    /** */
+    @Test
+    public void testDecimalScale() {
+        sql("CREATE TABLE t (id INT PRIMARY KEY, val1 DECIMAL(5, 3), val2 DECIMAL(3), val3 DECIMAL)");
+
+        // Check literals scale.
+        sql("INSERT INTO t values (0, 0, 0, 0)");
+        sql("INSERT INTO t values (1.1, 1.1, 1.1, 1.1)");
+        sql("INSERT INTO t values (2.123, 2.123, 2.123, 2.123)");
+        sql("INSERT INTO t values (3.123456, 3.123456, 3.123456, 3.123456)");
+
+        // Check dynamic parameters scale.
+        List<Number> params = F.asList(4, 5L, 6f, 7.25f, 8d, 9.03125d, new BigDecimal("10"),
+            new BigDecimal("11.1"), new BigDecimal("12.123456"));
+
+        for (Object val : params)
+            sql("INSERT INTO t values (?, ?, ?, ?)", val, val, val, val);
+
+        assertQuery("SELECT * FROM t")
+            .returns(0, new BigDecimal("0.000"), new BigDecimal("0"), new BigDecimal("0"))
+            .returns(1, new BigDecimal("1.100"), new BigDecimal("1"), new BigDecimal("1.1"))
+            .returns(2, new BigDecimal("2.123"), new BigDecimal("2"), new BigDecimal("2.123"))
+            .returns(3, new BigDecimal("3.123"), new BigDecimal("3"), new BigDecimal("3.123456"))
+            .returns(4, new BigDecimal("4.000"), new BigDecimal("4"), new BigDecimal("4"))
+            .returns(5, new BigDecimal("5.000"), new BigDecimal("5"), new BigDecimal("5"))
+            .returns(6, new BigDecimal("6.000"), new BigDecimal("6"), new BigDecimal("6"))
+            .returns(7, new BigDecimal("7.250"), new BigDecimal("7"), new BigDecimal("7.25"))
+            .returns(8, new BigDecimal("8.000"), new BigDecimal("8"), new BigDecimal("8"))
+            .returns(9, new BigDecimal("9.031"), new BigDecimal("9"), new BigDecimal("9.03125"))
+            .returns(10, new BigDecimal("10.000"), new BigDecimal("10"), new BigDecimal("10"))
+            .returns(11, new BigDecimal("11.100"), new BigDecimal("11"), new BigDecimal("11.1"))
+            .returns(12, new BigDecimal("12.123"), new BigDecimal("12"), new BigDecimal("12.123456"))
+            .check();
+    }
+
+    /** */
+    @Test
+    public void testNumericConversion() {
+        sql("CREATE TABLE t (v1 TINYINT, v2 SMALLINT, v3 INT, v4 BIGINT, v5 DECIMAL, v6 FLOAT, v7 DOUBLE)");
+
+        List<Number> params = F.asList((byte)1, (short)2, 3, 4L, BigDecimal.valueOf(5), 6f, 7d);
+
+        for (Object val : params)
+            sql("INSERT INTO t values (?, ?, ?, ?, ?, ?, ?)", val, val, val, val, val, val, val);
+
+        assertQuery("SELECT * FROM t")
+            .returns((byte)1, (short)1, 1, 1L, BigDecimal.valueOf(1), 1f, 1d)
+            .returns((byte)2, (short)2, 2, 2L, BigDecimal.valueOf(2), 2f, 2d)
+            .returns((byte)3, (short)3, 3, 3L, BigDecimal.valueOf(3), 3f, 3d)
+            .returns((byte)4, (short)4, 4, 4L, BigDecimal.valueOf(4), 4f, 4d)
+            .returns((byte)5, (short)5, 5, 5L, BigDecimal.valueOf(5), 5f, 5d)
+            .returns((byte)6, (short)6, 6, 6L, BigDecimal.valueOf(6), 6f, 6d)
+            .returns((byte)7, (short)7, 7, 7L, BigDecimal.valueOf(7), 7f, 7d)
+            .check();
     }
 }

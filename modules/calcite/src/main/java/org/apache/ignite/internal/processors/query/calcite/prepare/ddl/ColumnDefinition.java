@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.query.calcite.prepare.ddl;
 import java.util.Objects;
 
 import org.apache.calcite.rel.type.RelDataType;
+import org.apache.ignite.internal.processors.query.calcite.util.TypeUtils;
 import org.jetbrains.annotations.Nullable;
 
 /** Definies a particular column within table. */
@@ -71,13 +72,13 @@ public class ColumnDefinition {
      * @return Column's precision.
      */
     public Integer precision() {
-        return type.getPrecision() != RelDataType.PRECISION_NOT_SPECIFIED ? type.getPrecision() : null;
+        return TypeUtils.hasPrecesion(type) ? type.getPrecision() : null;
     }
 
     /**
      * @return Column's scale.
      */
     public Integer scale() {
-        return type.getScale() != RelDataType.SCALE_NOT_SPECIFIED ? type.getScale() : null;
+        return TypeUtils.hasSale(type) ? type.getScale() : null;
     }
 }
