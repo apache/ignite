@@ -329,8 +329,11 @@ public class GridTcpRestParser implements GridNioParser {
         if (!buf.hasRemaining())
             return;
 
-        if (buf.hasArray())
+        if (buf.hasArray()) {
             os.write(buf.array(), buf.position(), buf.remaining());
+
+            buf.position(buf.position() + buf.remaining());
+        }
         else {
             byte[] data = new byte[buf.remaining()];
 
