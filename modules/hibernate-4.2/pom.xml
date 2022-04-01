@@ -32,7 +32,7 @@
 
     <artifactId>ignite-hibernate_4.2</artifactId>
     <version>${revision}</version>
-    <url>http://ignite.apache.org</url>
+    <url>${url}</url>
 
     <dependencies>
         <dependency>

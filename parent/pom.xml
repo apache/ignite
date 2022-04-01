@@ -37,6 +37,7 @@
         <maven.compiler.target>1.8</maven.compiler.target>
 
         <revision>2.13.0-SNAPSHOT</revision>
+        <url>https://ignite.apache.org</url>
         <ignite.edition>apache-ignite</ignite.edition>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.build.timestamp.format>MMMM d yyyy</maven.build.timestamp.format>
@@ -161,7 +162,7 @@
     <version>1</version>
     <packaging>pom</packaging>
 
-    <url>http://ignite.apache.org</url>
+    <url>https://ignite.apache.org</url>
 
     <description>Java-based middleware for in-memory processing of big data in a distributed environment.</description>
 

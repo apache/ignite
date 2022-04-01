@@ -32,7 +32,7 @@
 
     <artifactId>ignite-spark-2.4</artifactId>
     <version>${revision}</version>
-    <url>http://ignite.apache.org</url>
+    <url>${url}</url>
 
     <dependencies>
         <dependency>

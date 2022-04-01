@@ -34,7 +34,7 @@
 
     <artifactId>ignite-compatibility</artifactId>
     <version>${revision}</version>
-    <url>http://ignite.apache.org</url>
+    <url>${url}</url>
 
     <dependencies>
         <!-- Note: when adding new Ignite module dependency please register it in

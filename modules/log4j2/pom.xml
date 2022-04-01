@@ -32,7 +32,7 @@
 
     <artifactId>ignite-log4j2</artifactId>
     <version>${revision}</version>
-    <url>http://ignite.apache.org</url>
+    <url>${url}</url>
 
     <dependencies>
         <dependency>

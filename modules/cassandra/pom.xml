@@ -33,7 +33,7 @@
     <artifactId>ignite-cassandra</artifactId>
     <packaging>pom</packaging>
     <version>${revision}</version>
-    <url>http://ignite.apache.org</url>
+    <url>${url}</url>
 
     <dependencyManagement>
         <dependencies>

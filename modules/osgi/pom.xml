@@ -32,7 +32,7 @@
 
     <artifactId>ignite-osgi</artifactId>
     <version>${revision}</version>
-    <url>http://ignite.apache.org</url>
+    <url>${url}</url>
 
     <dependencies>
         <dependency>

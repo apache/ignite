@@ -32,7 +32,7 @@
 
     <artifactId>ignite-cassandra-store</artifactId>
     <version>${revision}</version>
-    <url>http://ignite.apache.org</url>
+    <url>${url}</url>
 
     <properties>
         <commons-beanutils.version>1.9.4</commons-beanutils.version>

@@ -32,7 +32,7 @@
 
     <artifactId>ignite-yarn</artifactId>
     <version>${revision}</version>
-    <url>http://ignite.apache.org</url>
+    <url>${url}</url>
 
     <properties>
         <hadoop-yarn.version>3.3.1</hadoop-yarn.version>

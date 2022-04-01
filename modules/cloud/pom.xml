@@ -30,7 +30,7 @@
 
     <artifactId>ignite-cloud</artifactId>
     <version>${revision}</version>
-    <url>http://ignite.apache.org</url>
+    <url>${url}</url>
 
     <properties>
         <jcloud.version>2.0.0</jcloud.version>
