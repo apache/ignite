@@ -68,7 +68,6 @@
             <outputDirectory>benchmarks/libs</outputDirectory>
             <excludes>
                 <exclude>junit-*.jar</exclude>
-                <exclude>ignite-apache-license-gen-*.jar</exclude>
                 <exclude>hamcrest-core-*.jar</exclude>
                 <exclude>tools-*.jar</exclude>
             </excludes>
