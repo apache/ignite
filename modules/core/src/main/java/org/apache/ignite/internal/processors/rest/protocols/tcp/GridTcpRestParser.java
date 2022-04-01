@@ -304,9 +304,13 @@ public class GridTcpRestParser implements GridNioParser {
         }
 
         for (; i < arrLen; i++) {
+            int pos = buf.position();
+
             String str = GridRedisProtocolParser.readBulkStr(buf);
 
             if (str == null) {
+                buf.position(pos);
+
                 saveTail(state.buffer(), buf);
 
                 return null;

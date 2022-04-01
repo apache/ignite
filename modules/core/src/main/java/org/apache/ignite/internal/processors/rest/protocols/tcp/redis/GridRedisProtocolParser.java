@@ -103,36 +103,25 @@ public class GridRedisProtocolParser {
         if (!buf.hasRemaining())
             return null;
 
-        int pos = buf.position();
-
         byte b = buf.get();
 
         if (b != BULK_STRING)
             throw new IgniteCheckedException("Invalid bulk string prefix! " + b);
 
-        if (!buf.hasRemaining()) {
-            buf.position(pos);
-
+        if (!buf.hasRemaining())
             return null;
-        }
 
         int len = readInt(buf);
 
-        if (len == ERROR_INT || buf.remaining() < len) {
-            buf.position(pos);
-
+        if (len == ERROR_INT || buf.remaining() < len)
             return null;
-        }
 
         byte[] bulkStr = new byte[len];
 
         buf.get(bulkStr, 0, len);
 
-        if (buf.remaining() < 2) {
-            buf.position(pos);
-
+        if (buf.remaining() < 2)
             return null;
-        }
 
         byte b0 = buf.get();
         byte b1 = buf.get();
@@ -153,29 +142,21 @@ public class GridRedisProtocolParser {
         if (!buf.hasRemaining())
             return ERROR_INT;
 
-        int pos = buf.position();
-
         byte[] arrLen = new byte[9];
 
         int idx = 0;
         byte b = buf.get();
 
         while (b != CR) {
-            if (!buf.hasRemaining()) {
-                buf.position(pos);
-
+            if (!buf.hasRemaining())
                 return ERROR_INT;
-            }
 
             arrLen[idx++] = b;
             b = buf.get();
         }
 
-        if (!buf.hasRemaining()) {
-            buf.position(pos);
-
+        if (!buf.hasRemaining())
             return ERROR_INT;
-        }
 
         if (buf.get() != LF)
             throw new IgniteCheckedException("Invalid request syntax!");
