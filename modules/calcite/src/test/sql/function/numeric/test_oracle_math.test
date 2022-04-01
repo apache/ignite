@@ -1,0 +1,20 @@
+# name: test/sql/function/numeric/test_oracle_math.test
+# description: Function test cases from Oracle
+# group: [numeric]
+
+
+query R
+select COSH(2.3)
+----
+5.037220649268761
+
+query R
+select SINH(2.3)
+----
+4.936961805545957
+
+query R
+select TANH(2.3)
+----
+0.9800963962661914
+

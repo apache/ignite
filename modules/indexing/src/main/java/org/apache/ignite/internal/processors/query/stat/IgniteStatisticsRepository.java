@@ -23,12 +23,15 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.function.Consumer;
 import java.util.function.Function;
 
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.managers.systemview.GridSystemViewManager;
 import org.apache.ignite.internal.managers.systemview.walker.StatisticsColumnLocalDataViewWalker;
 import org.apache.ignite.internal.managers.systemview.walker.StatisticsColumnPartitionDataViewWalker;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.query.stat.config.StatisticsObjectConfiguration;
 import org.apache.ignite.internal.processors.query.stat.view.ColumnLocalDataViewSupplier;
 import org.apache.ignite.internal.processors.query.stat.view.ColumnPartitionDataViewSupplier;
@@ -60,13 +63,16 @@ public class IgniteStatisticsRepository {
     private final IgniteStatisticsStore store;
 
     /** Local (for current node) object statistics. */
-    private final Map<StatisticsKey, ObjectStatisticsImpl> locStats = new ConcurrentHashMap<>();
+    private final Map<StatisticsKey, VersionedStatistics> locStats = new ConcurrentHashMap<>();
 
     /** Obsolescence for each partition. */
     private final Map<StatisticsKey, IntMap<ObjectPartitionStatisticsObsolescence>> statObs = new ConcurrentHashMap<>();
 
     /** Statistics helper (msg converter). */
     private final IgniteStatisticsHelper helper;
+
+    /** Local statistics subscribers. */
+    private final List<Consumer<ObjectStatisticsEvent>> subscribers = new CopyOnWriteArrayList<>();
 
     /**
      * Constructor.
@@ -178,9 +184,19 @@ public class IgniteStatisticsRepository {
      *
      * @param key Object key.
      * @param statistics Statistics to save.
+     * @param topVer Topology version.
      */
-    public void saveLocalStatistics(StatisticsKey key, ObjectStatisticsImpl statistics) {
-        locStats.put(key, statistics);
+    public void saveLocalStatistics(
+        StatisticsKey key,
+        ObjectStatisticsImpl statistics,
+        AffinityTopologyVersion topVer
+    ) {
+        locStats.put(key, new VersionedStatistics(topVer, statistics));
+
+        ObjectStatisticsEvent newLocalStat = new ObjectStatisticsEvent(key, statistics, topVer);
+
+        for (Consumer<ObjectStatisticsEvent> subscriber : subscribers)
+            subscriber.accept(newLocalStat);
     }
 
     /**
@@ -213,10 +229,16 @@ public class IgniteStatisticsRepository {
      * Get local statistics.
      *
      * @param key Object key to load statistics by.
+     * @param topVer Required topology version.
      * @return Object local statistics or {@code null} if there are no statistics collected for such object.
      */
-    public ObjectStatisticsImpl getLocalStatistics(StatisticsKey key) {
-        return locStats.get(key);
+    public ObjectStatisticsImpl getLocalStatistics(StatisticsKey key, AffinityTopologyVersion topVer) {
+        VersionedStatistics stat = locStats.get(key);
+
+        if (stat == null)
+            return null;
+
+        return (topVer != null && !stat.topologyVersion().equals(topVer)) ? null : stat.statistics();
     }
 
     /**
@@ -224,7 +246,7 @@ public class IgniteStatisticsRepository {
      *
      * @return Local (for current node) object statistics.
      */
-    public Map<StatisticsKey, ObjectStatisticsImpl> localStatisticsMap() {
+    public Map<StatisticsKey, VersionedStatistics> localStatisticsMap() {
         return locStats;
     }
 
@@ -240,11 +262,13 @@ public class IgniteStatisticsRepository {
      *
      * @param stats Partitions statistics to aggregate.
      * @param cfg Statistic configuration to specify statistic object to aggregate.
+     * @param topVer Topology version to which specified partition set actual for.
      * @return aggregated local statistic.
      */
     public ObjectStatisticsImpl aggregatedLocalStatistics(
         Collection<ObjectPartitionStatisticsImpl> stats,
-        StatisticsObjectConfiguration cfg
+        StatisticsObjectConfiguration cfg,
+        AffinityTopologyVersion topVer
     ) {
         if (log.isDebugEnabled()) {
             log.debug("Refresh local aggregated statistic [cfg=" + cfg +
@@ -254,7 +278,7 @@ public class IgniteStatisticsRepository {
         ObjectStatisticsImpl locStat = helper.aggregateLocalStatistics(cfg, stats);
 
         if (locStat != null)
-            saveLocalStatistics(cfg.key(), locStat);
+            saveLocalStatistics(cfg.key(), locStat, topVer);
 
         return locStat;
     }
@@ -319,5 +343,51 @@ public class IgniteStatisticsRepository {
                 v.dirty(false);
             }
         });
+    }
+
+    /**
+     * Subscribe to all local statistics changes.
+     *
+     * @param subscriber Local statitics subscriber.
+     */
+    public void subscribeToLocalStatistics(Consumer<ObjectStatisticsEvent> subscriber
+    ) {
+        subscribers.add(subscriber);
+    }
+
+    /**
+     * Object statistics with topology version to which it is actual for.
+     */
+    public static class VersionedStatistics {
+        /** Topology version. */
+        private final AffinityTopologyVersion topVer;
+
+        /** Statistics. */
+        private final ObjectStatisticsImpl statistics;
+
+        /**
+         * Constructor.
+         *
+         * @param topVer Topology version.
+         * @param statistics Statistics.
+         */
+        public VersionedStatistics(AffinityTopologyVersion topVer, ObjectStatisticsImpl statistics) {
+            this.topVer = topVer;
+            this.statistics = statistics;
+        }
+
+        /**
+         * @return Topology version.
+         */
+        public AffinityTopologyVersion topologyVersion() {
+            return topVer;
+        }
+
+        /**
+         * @return Statistics.
+         */
+        public ObjectStatisticsImpl statistics() {
+            return statistics;
+        }
     }
 }

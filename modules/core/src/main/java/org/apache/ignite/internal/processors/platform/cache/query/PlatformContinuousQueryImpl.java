@@ -262,6 +262,10 @@ public class PlatformContinuousQueryImpl implements PlatformContinuousQuery {
                 @Override public List<GridQueryFieldMetadata> fieldsMeta() {
                     return ((QueryCursorEx)cursor).fieldsMeta();
                 }
+
+                @Override public boolean isQuery() {
+                    return false;
+                }
             }, batchSize);
 
         return new PlatformQueryCursor(platformCtx, new QueryCursorEx<Cache.Entry>() {
@@ -284,6 +288,10 @@ public class PlatformContinuousQueryImpl implements PlatformContinuousQuery {
 
             @Override public List<GridQueryFieldMetadata> fieldsMeta() {
                 return null;
+            }
+
+            @Override public boolean isQuery() {
+                return false;
             }
         }, batchSize);
     }

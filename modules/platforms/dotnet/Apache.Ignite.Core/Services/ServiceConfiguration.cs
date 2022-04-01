@@ -20,6 +20,8 @@ namespace Apache.Ignite.Core.Services
     using System;
     using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
+    using System.Linq;
+    using System.Reflection;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cluster;
 
@@ -63,6 +65,12 @@ namespace Apache.Ignite.Core.Services
         /// Gets or sets node filter used to filter nodes on which the service will be deployed.
         /// </summary>
         public IClusterNodeFilter NodeFilter { get; set; }
+        
+        /// <summary>
+        /// Enables or disables service statistics.
+        /// NOTE: Service statistics work only via service proxies. <see cref="IServices.GetServiceProxy{T}(string)"/>
+        /// </summary>
+        public bool StatisticsEnabled { get; set; }
 
         /// <summary>
         /// Serializes the Service configuration using IBinaryRawWriter
@@ -83,6 +91,29 @@ namespace Apache.Ignite.Core.Services
                 w.WriteObject(NodeFilter);
             else
                 w.WriteObject<object>(null);
+
+            w.WriteBoolean(StatisticsEnabled);
+
+            WriteExtraDescription(w);
+        }
+
+        /// <summary>
+        /// Provides extra info about platform service to avoid on-demand creation of service statistics on any
+        /// out-of-interface calls or things like 'ToString()'.
+        /// </summary>
+        private void WriteExtraDescription(IBinaryRawWriter writer)
+        {
+            if (StatisticsEnabled)
+            {
+                // Methods names of user interfaces of the service.
+                var mtdNames = Service.GetType().GetInterfaces()
+                    // No need to measure methods of these interface.
+                    .Where(t => t != typeof(IService))
+                    .SelectMany(t => t.GetMethods(BindingFlags.Instance | BindingFlags.DeclaredOnly |
+                                                  BindingFlags.Public ).Select(mtd => mtd.Name)).Distinct();
+
+                writer.WriteStringArray(mtdNames.ToArray());
+            }
         }
 
         /// <summary>
@@ -125,6 +156,8 @@ namespace Apache.Ignite.Core.Services
             {
                 // Ignore exceptions in user deserealization code.
             }
+
+            StatisticsEnabled = r.ReadBoolean();
         }
     }
 }

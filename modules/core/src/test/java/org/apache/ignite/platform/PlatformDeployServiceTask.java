@@ -30,6 +30,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
@@ -39,7 +41,10 @@ import org.apache.ignite.compute.ComputeJob;
 import org.apache.ignite.compute.ComputeJobAdapter;
 import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.compute.ComputeTaskAdapter;
+import org.apache.ignite.compute.ComputeTaskSplitAdapter;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.binary.BinaryArray;
+import org.apache.ignite.internal.util.lang.IgnitePair;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.platform.model.ACL;
@@ -55,11 +60,17 @@ import org.apache.ignite.platform.model.User;
 import org.apache.ignite.platform.model.Value;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.services.Service;
+import org.apache.ignite.services.ServiceConfiguration;
 import org.apache.ignite.services.ServiceContext;
+import org.apache.ignite.spi.metric.HistogramMetric;
+import org.apache.ignite.spi.metric.Metric;
+import org.apache.ignite.spi.metric.ReadOnlyMetricRegistry;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import static java.util.Calendar.JANUARY;
+import static org.apache.ignite.internal.processors.service.GridServiceMetricsTest.sumHistogramEntries;
+import static org.apache.ignite.internal.processors.service.IgniteServiceProcessor.serviceMetricRegistryName;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
@@ -102,7 +113,14 @@ public class PlatformDeployServiceTask extends ComputeTaskAdapter<String, Object
 
         /** {@inheritDoc} */
         @Override public Object execute() throws IgniteException {
-            ignite.services().deployNodeSingleton(serviceName, new PlatformTestService());
+            ServiceConfiguration svcCfg = new ServiceConfiguration();
+
+            svcCfg.setStatisticsEnabled(true);
+            svcCfg.setName(serviceName);
+            svcCfg.setMaxPerNodeCount(1);
+            svcCfg.setService(new PlatformTestService());
+
+            ignite.services().deploy(svcCfg);
 
             return null;
         }
@@ -111,10 +129,10 @@ public class PlatformDeployServiceTask extends ComputeTaskAdapter<String, Object
     /**
      * Test service.
      */
-    public static class PlatformTestService implements Service {
+    public static class PlatformTestService implements Service, PlatformHelperService {
         /** */
         @IgniteInstanceResource
-        private Ignite ignite;
+        private IgniteEx ignite;
 
         /** */
         private boolean isCancelled;
@@ -671,9 +689,95 @@ public class PlatformDeployServiceTask extends ComputeTaskAdapter<String, Object
             }
         }
 
+        /** {@inheritDoc} */
+        @Override public int testNumberOfInvocations(String svcName, String histName) {
+            return ignite.compute().execute(new CountServiceMetricsTask(), new IgnitePair<>(svcName, histName));
+        }
+
         /** */
         public Object contextAttribute(String name) {
             return svcCtx.currentCallContext().attribute(name);
+        }
+
+        /**
+         * Calculates number of registered values among the service statistics. Can process all service metrics or
+         * certain named one.
+         */
+        private static class CountServiceMetricsTask extends ComputeTaskSplitAdapter<IgnitePair<String>, Integer> {
+            /** {@inheritDoc} */
+            @Override public Integer reduce(List<ComputeJobResult> results) throws IgniteException {
+                int cnt = 0;
+
+                for (ComputeJobResult res : results) {
+                    if (res.isCancelled()) {
+                        throw new IgniteException("Unable to count invocations in service metrics. Job was canceled " +
+                            "on node [" + res.getNode() + "].");
+                    }
+
+                    if (res.getException() != null) {
+                        throw new IgniteException("Unable to count invocations in service metrics. Job failed on " +
+                            "node [" + res.getNode() + "]: " + res.getException().getMessage(), res.getException());
+                    }
+
+                    if (res.getData() == null)
+                        continue;
+
+                    cnt += (int)res.getData();
+                }
+
+                return cnt;
+            }
+
+            /** {@inheritDoc} */
+            @Override protected Collection<? extends ComputeJob> split(int gridSize,
+                IgnitePair<String> arg) throws IgniteException {
+                return Stream.generate(() -> new CountServiceMetricsLocallyJob(arg.get1(), arg.get2())).limit(gridSize).
+                    collect(Collectors.toList());
+            }
+
+            /** Summs invocation of service methods by service statistics on certain node. */
+            private static class CountServiceMetricsLocallyJob extends ComputeJobAdapter {
+                /** Service name. */
+                private final String svcName;
+
+                /** Name of the histogramm. If {@code null}, every histogram in the service metric is processed. */
+                @Nullable private final String histName;
+
+                /** */
+                @IgniteInstanceResource
+                private IgniteEx ignite;
+
+                /**
+                 * @param svcName  Service name.
+                 * @param histName Name of the histogramm. If {@code null}, every histogram in the service metric is
+                 *                 processed.
+                 */
+                private CountServiceMetricsLocallyJob(String svcName, @Nullable String histName) {
+                    this.svcName = svcName;
+                    this.histName = histName;
+                }
+
+                /** {@inheritDoc} */
+                @Override public Integer execute() throws IgniteException {
+                    ReadOnlyMetricRegistry metrics = ignite.context().metric().registry(
+                        serviceMetricRegistryName(svcName));
+
+                    if (histName != null && !histName.isEmpty()) {
+                        HistogramMetric hist = metrics.findMetric(histName);
+
+                        return hist == null ? 0 : (int)sumHistogramEntries(hist);
+                    }
+
+                    int cnt = 0;
+
+                    for (Metric metric : metrics) {
+                        if (metric instanceof HistogramMetric)
+                            cnt += sumHistogramEntries((HistogramMetric)metric);
+                    }
+
+                    return cnt;
+                }
+            }
         }
     }
 
@@ -699,5 +803,17 @@ public class PlatformDeployServiceTask extends ComputeTaskAdapter<String, Object
         public TestUnmappedException(String msg) {
             super(msg);
         }
+    }
+
+    /**
+     * Platform helper service.
+     */
+    private interface PlatformHelperService {
+        /**
+         * Calculates number of registered values among the service statistics.
+         *
+         * @return Number of registered values among the service statistics.
+         */
+        int testNumberOfInvocations(String svcName, String histName);
     }
 }

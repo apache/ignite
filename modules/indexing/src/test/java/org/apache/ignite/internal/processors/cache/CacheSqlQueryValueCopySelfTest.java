@@ -316,7 +316,7 @@ public class CacheSqlQueryValueCopySelfTest extends GridCommonAbstractTest {
         final Collection<GridRunningQueryInfo> finalQueries = queries;
 
         for (GridRunningQueryInfo query : finalQueries)
-            qryProc.cancelQueries(Collections.singleton(query.id()));
+            qryProc.cancelLocalQueries(Collections.singleton(query.id()));
 
         int n = 100;
 

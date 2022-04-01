@@ -19,7 +19,7 @@ package org.apache.ignite.internal.processors.odbc.odbc;
 
 import java.util.List;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
-import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
+import org.apache.ignite.internal.processors.cache.query.QueryCursorEx;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
 
 /**
@@ -74,7 +74,7 @@ public class OdbcQueryResults {
             return true;
 
         for (FieldsQueryCursor<List<?>> cursor0 : cursors) {
-            QueryCursorImpl<List<?>> cursor = (QueryCursorImpl<List<?>>)cursor0;
+            QueryCursorEx<List<?>> cursor = (QueryCursorEx<List<?>>)cursor0;
 
             if (cursor.isQuery())
                 return true;
