@@ -110,7 +110,6 @@
         <lz4.version>1.5.0</lz4.version>
         <maven.bundle.plugin.version>3.5.0</maven.bundle.plugin.version>
         <maven.checkstyle.plugin.version>3.1.1</maven.checkstyle.plugin.version>
-        <maven.flatten.plugin.version>1.2.7</maven.flatten.plugin.version>
         <maven.model.version>3.8.4</maven.model.version>
         <checkstyle.puppycrawl.version>8.45</checkstyle.puppycrawl.version>
         <mockito.version>3.4.6</mockito.version>
@@ -135,7 +134,6 @@
         <spring-5.2.version>5.2.3.RELEASE</spring-5.2.version>
         <spring41.osgi.feature.version>4.1.7.RELEASE_1</spring41.osgi.feature.version>
         <storm.version>1.1.1</storm.version>
-        <surefire.version>3.0.0-M4</surefire.version>
         <tomcat.version>9.0.10</tomcat.version>
         <twitter.hbc.version>2.2.0</twitter.hbc.version>
         <yammer.metrics.annotation.version>2.2.0</yammer.metrics.annotation.version>
@@ -586,6 +584,19 @@
                         </execution>
                     </executions>
                 </plugin>
+
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-resources-plugin</artifactId>
+                    <version>3.2.0</version>
+                </plugin>
+
+                <plugin>
+                    <groupId>org.codehaus.mojo</groupId>
+                    <artifactId>build-helper-maven-plugin</artifactId>
+                    <version>3.0.0</version>
+                </plugin>
+
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-surefire-plugin</artifactId>
@@ -597,6 +608,54 @@
                             <version>${ignite.version}</version>
                         </dependency>
                     </dependencies>
+                </plugin>
+
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-antrun-plugin</artifactId>
+                    <version>1.8</version>
+                </plugin>
+
+                <plugin>
+                    <groupId>org.codehaus.mojo</groupId>
+                    <artifactId>exec-maven-plugin</artifactId>
+                    <version>1.3.2</version>
+                    <dependencies>
+                        <dependency>
+                            <groupId>${project.groupId}</groupId>
+                            <artifactId>ignite-tools</artifactId>
+                            <version>${ignite.version}</version>
+                        </dependency>
+                    </dependencies>
+                </plugin>
+
+                <plugin>
+                    <groupId>org.codehaus.mojo</groupId>
+                    <artifactId>flatten-maven-plugin</artifactId>
+                    <version>${maven.flatten.plugin.version}</version>
+
+                    <executions>
+                        <execution>
+                            <id>flatten</id>
+                            <configuration>
+                                <flattenMode>oss</flattenMode>
+                                <flattenedPomFilename>pom-installed.xml</flattenedPomFilename>
+                            </configuration>
+                            <phase>process-resources</phase>
+                            <goals>
+                                <goal>flatten</goal>
+                            </goals>
+                        </execution>
+
+                        <!-- ensure proper cleanup before start -->
+                        <execution>
+                            <id>flatten.clean.before</id>
+                            <phase>clean</phase>
+                            <goals>
+                                <goal>clean</goal>
+                            </goals>
+                        </execution>
+                    </executions>
                 </plugin>
             </plugins>
         </pluginManagement>
@@ -1160,7 +1219,6 @@
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-antrun-plugin</artifactId>
-
                         <executions>
                             <execution>
                                 <id>licenses-file-rename</id>

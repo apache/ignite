@@ -180,11 +180,5 @@
             <artifactId>common-junit48</artifactId>
             <version>${surefire.version}</version>
         </dependency>
-
-        <dependency>
-            <groupId>com.puppycrawl.tools</groupId>
-            <artifactId>checkstyle</artifactId>
-            <version>${checkstyle.puppycrawl.version}</version>
-        </dependency>
     </dependencies>
 </project>
