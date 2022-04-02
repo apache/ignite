@@ -38,13 +38,11 @@
         <dependency>
             <groupId>${project.groupId}</groupId>
             <artifactId>ignite-core</artifactId>
-            <version>${project.version}</version>
         </dependency>
 
         <dependency>
             <groupId>${project.groupId}</groupId>
             <artifactId>ignite-spring</artifactId>
-            <version>${project.version}</version>
             <!--Remove exclusion while upgrading ignite-spring version to 5.0-->
             <exclusions>
                 <exclusion>
@@ -74,19 +72,16 @@
         <dependency>
             <groupId>${project.groupId}</groupId>
             <artifactId>ignite-log4j</artifactId>
-            <version>${project.version}</version>
         </dependency>
 
         <dependency>
             <groupId>${project.groupId}</groupId>
             <artifactId>ignite-indexing</artifactId>
-            <version>${project.version}</version>
         </dependency>
 
         <dependency>
             <groupId>${project.groupId}</groupId>
             <artifactId>ignite-opencensus</artifactId>
-            <version>${project.version}</version>
         </dependency>
 
         <dependency>
@@ -104,7 +99,6 @@
         <dependency>
             <groupId>${project.groupId}</groupId>
             <artifactId>ignite-ml</artifactId>
-            <version>${project.version}</version>
             <exclusions>
                 <exclusion>
                     <groupId>com.fasterxml.jackson.core</groupId>
@@ -140,7 +134,6 @@
         <dependency>
             <groupId>${project.groupId}</groupId>
             <artifactId>ignite-kubernetes</artifactId>
-            <version>${project.version}</version>
         </dependency>
 
         <dependency>
@@ -158,7 +151,6 @@
         <dependency>
             <groupId>${project.groupId}</groupId>
             <artifactId>ignite-core</artifactId>
-            <version>${project.version}</version>
             <type>test-jar</type>
             <scope>test</scope>
         </dependency>
@@ -166,7 +158,6 @@
         <dependency>
             <groupId>${project.groupId}</groupId>
             <artifactId>ignite-tools</artifactId>
-            <version>${project.version}</version>
             <scope>test</scope>
             <exclusions>
                 <exclusion>
@@ -229,7 +220,6 @@
                 <dependency>
                     <groupId>${project.groupId}</groupId>
                     <artifactId>ignite-scalar</artifactId>
-                    <version>${project.version}</version>
                 </dependency>
 
                 <dependency>
@@ -248,7 +238,6 @@
                 <dependency>
                     <groupId>${project.groupId}</groupId>
                     <artifactId>ignite-spark</artifactId>
-                    <version>${project.version}</version>
                 </dependency>
             </dependencies>
 
@@ -290,13 +279,11 @@
                 <dependency>
                     <groupId>${project.groupId}</groupId>
                     <artifactId>ignite-schedule</artifactId>
-                    <version>${project.version}</version>
                 </dependency>
 
                 <dependency>
                     <groupId>${project.groupId}</groupId>
                     <artifactId>ignite-geospatial</artifactId>
-                    <version>${project.version}</version>
                 </dependency>
             </dependencies>
 
