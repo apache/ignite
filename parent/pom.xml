@@ -142,7 +142,7 @@
         <yammer.metrics.core.version>2.2.0</yammer.metrics.core.version>
         <yardstick.version>0.8.3</yardstick.version>
         <zkclient.version>0.5</zkclient.version>
-        <zookeeper.version>3.8.0</zookeeper.version>
+        <zookeeper.version>3.6.3</zookeeper.version>
         <zstd.version>1.3.7-2</zstd.version>
         <opencensus.version>0.22.0</opencensus.version>
         <commons.lang3.version>3.9</commons.lang3.version>
@@ -1130,10 +1130,9 @@
 
             <dependencies>
                 <dependency>
-                    <groupId>${project.groupId}</groupId>
+                    <groupId>org.apache.ignite</groupId>
                     <artifactId>ignite-apache-license-gen</artifactId>
-                    <version>${project.version}</version>
-                    <scope>test</scope><!-- hack to have ignite-apache-license-gen at first place at mvn reactor -->
+                    <version>1.4.0</version>
                 </dependency>
             </dependencies>
 
@@ -1150,8 +1149,7 @@
                                 </goals>
                                 <configuration>
                                     <resourceBundles>
-                                        <resourceBundle>${project.groupId}:ignite-apache-license-gen:${project.version}
-                                        </resourceBundle>
+                                        <resourceBundle>org.apache.ignite:ignite-apache-license-gen:1.4.0</resourceBundle>
                                     </resourceBundles>
                                     <excludeTransitive>true</excludeTransitive>
                                 </configuration>
