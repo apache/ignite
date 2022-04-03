@@ -115,7 +115,7 @@ export default class CacheServiceController {
         this.serviceMap = {'status':{ id: 'status', name:'status', description:'get cluster last status', mode: 'NodeSinger'}};
         this.serviceList = [];        
         
-        clusterID$.subscribe((v)=>{ 
+        clusterID$.subscribe((v)=>{
             this.clusterID = v; 
             this.callService('serviceList',{}).then((data) => {
                 if(data.message){
@@ -125,7 +125,7 @@ export default class CacheServiceController {
                 this.serviceMap = Object.assign(data.result);
                 Object.keys(this.serviceMap).forEach((key) => {
                    this.serviceList.push(this.serviceMap[key]);
-                });
+                });                
             });  
             
         });
@@ -150,15 +150,18 @@ export default class CacheServiceController {
             loadedItems$: this.shortCaches$
         });
 
+        
+
+        this.isBlocked$ = cacheID$;        
+        // 根据caches选择可以执行的services
+        this.serviceList$ = this.selectionManager.selectedItemIDs$.pipe(map((selectedItems) => { return this.serviceList; }));
+        
         this.subscription = merge(
             this.originalCache$,
+            this.serviceList$,
             this.selectionManager.editGoes$.pipe(tap((id) => this.edit(id))),
             this.selectionManager.editLeaves$.pipe(tap((options) => this.$state.go('base.console.edit.cache-service.select', null, options)))
         ).subscribe();
-
-        this.isBlocked$ = cacheID$;        
-
-        this.serviceList$ = this.selectionManager.selectedItemIDs$.pipe(map((selectedItems) => { return this.serviceList; }));
         
         this.tableActions$ = this.selectionManager.selectedItemIDs$.pipe(map((selectedItems) => [
             {
