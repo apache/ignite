@@ -379,6 +379,28 @@ public class GridFutureAdapter<R> implements IgniteInternalFuture<R> {
         return fut;
     }
 
+    /** {@inheritDoc} */
+    @Override public <T> IgniteInternalFuture<T> chainCompose(
+        IgniteClosure<? super IgniteInternalFuture<R>, IgniteInternalFuture<T>> doneCb
+    ) {
+        GridFutureAdapter<T> res = new GridFutureAdapter<>();
+
+        listen(fut -> {
+            IgniteInternalFuture<T> doneCbFut = doneCb.apply(fut);
+
+            doneCbFut.listen(f -> {
+                try {
+                    res.onDone(f.get(), null);
+                }
+                catch (IgniteCheckedException e) {
+                    res.onDone(e);
+                }
+            });
+        });
+
+        return res;
+    }
+
     /**
      * @return Logger instance.
      */

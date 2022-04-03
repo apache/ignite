@@ -161,6 +161,11 @@ public class GridFinishedFuture<T> implements IgniteInternalFuture<T> {
     }
 
     /** {@inheritDoc} */
+    @Override public IgniteInternalFuture chainCompose(IgniteClosure doneCb) {
+        throw new UnsupportedOperationException("Chain operation is not supported.");
+    }
+
+    /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(GridFinishedFuture.class, this);
     }
