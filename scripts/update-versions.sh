@@ -29,7 +29,7 @@ if [ $# -eq 0 ]
 fi
 
 echo Updating Java versions to $1 with Maven...
-sed -i '' -e "s/<revision>.*<\/revision>/<revision>$1<\/revision>/" ./parent/pom.xml;
+sed -i '' -e "s/<revision>.*<\/revision>/<revision>$1<\/revision>/" ./parent-bom/pom.xml;
 
 echo Updating .NET, C++ and other resources versions to $1 with Maven...
 mvn validate -P update-versions -D new.ignite.version=$1
