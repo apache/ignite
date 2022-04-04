@@ -99,6 +99,27 @@
                 </plugins>
             </build>
         </profile>
+
+        <profile>
+            <id>checkstyle</id>
+
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-checkstyle-plugin</artifactId>
+                        <version>${maven.checkstyle.plugin.version}</version>
+                        <configuration>
+                            <sourceDirectories>
+                                <sourceDirectory>src/main/java8</sourceDirectory>
+                                <sourceDirectory>src/main/java11</sourceDirectory>
+                                <sourceDirectory>src/main/java15</sourceDirectory>
+                            </sourceDirectories>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
     </profiles>
 
     <build>
