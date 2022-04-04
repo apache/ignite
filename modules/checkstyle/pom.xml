@@ -63,6 +63,33 @@
                     </execution>
                 </executions>
             </plugin>
+
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>flatten-maven-plugin</artifactId>
+                <version>${maven.flatten.plugin.version}</version>
+
+                <executions>
+                    <execution>
+                        <id>flatten-check</id>
+                        <configuration>
+                            <flattenMode>oss</flattenMode>
+                            <flattenedPomFilename>pom-installed.xml</flattenedPomFilename>
+                        </configuration>
+                        <phase>process-resources</phase>
+                        <goals>
+                            <goal>flatten</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>flatten-check-clean</id>
+                        <phase>clean</phase>
+                        <goals>
+                            <goal>clean</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
         </plugins>
     </build>
 </project>
