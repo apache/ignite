@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.calcite.exec;
 
+import java.lang.reflect.Type;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -234,6 +235,13 @@ public class ExecutionContext<Row> extends AbstractQueryContext implements DataC
             return TypeUtils.toInternal(this, params.get(name));
 
         return baseDataContext.get(name);
+    }
+
+    /** */
+    public Object getParameter(String name, Type storageType) {
+        assert name.startsWith("?") : name;
+
+        return TypeUtils.toInternal(this, params.get(name), storageType);
     }
 
     /**
