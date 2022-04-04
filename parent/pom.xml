@@ -206,6 +206,8 @@
                     <version>${maven.checkstyle.plugin.version}</version>
                     <configuration>
                         <skip>true</skip>
+                        <!-- The source directories tag below is used to dynamically add the sources in case
+                            additional build profiles are activated (combine.children="append" is used). -->
                         <sourceDirectories>
                             <sourceDirectory>${project.build.sourceDirectory}</sourceDirectory>
                             <sourceDirectory>${project.build.testSourceDirectory}</sourceDirectory>
@@ -785,20 +787,6 @@
                     </execution>
                 </executions>
             </plugin>
-
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-checkstyle-plugin</artifactId>
-                <executions>
-                    <execution>
-                        <id>style</id>
-                        <goals>
-                            <goal>check</goal>
-                        </goals>
-                        <phase>validate</phase>
-                    </execution>
-                </executions>
-            </plugin>
         </plugins>
     </build>
 
@@ -813,6 +801,15 @@
                         <configuration>
                             <skip>false</skip>
                         </configuration>
+                        <executions>
+                            <execution>
+                                <id>style</id>
+                                <goals>
+                                    <goal>check</goal>
+                                </goals>
+                                <phase>validate</phase>
+                            </execution>
+                        </executions>
                     </plugin>
                 </plugins>
             </build>
