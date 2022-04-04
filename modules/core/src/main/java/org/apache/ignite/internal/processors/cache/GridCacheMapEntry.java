@@ -3004,8 +3004,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
     /**
      * Update TTL is it is changed.
      *
-     * @param expiryPlc Expiry policy.
      * @param ver Version.
+     * @param expiryPlc Expiry policy.
      * @throws GridCacheEntryRemovedException If failed.
      */
     private void updateTtlUnlocked(

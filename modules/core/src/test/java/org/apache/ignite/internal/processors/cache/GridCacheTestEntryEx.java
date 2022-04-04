@@ -877,12 +877,12 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
     }
 
     /** @inheritDoc */
-    @Override public void updateTtl(GridCacheVersion ver, long ttl) {
+    @Override public void updateTtl(GridCacheVersion ver, IgniteCacheExpiryPolicy expiryPlc) {
         throw new UnsupportedOperationException();
     }
 
     /** @inheritDoc */
-    @Override public void updateTtl(GridCacheVersion ver, IgniteCacheExpiryPolicy expiryPlc) {
+    @Override public void updateTtl(GridCacheVersion ver, long ttl) {
         throw new UnsupportedOperationException();
     }
 
