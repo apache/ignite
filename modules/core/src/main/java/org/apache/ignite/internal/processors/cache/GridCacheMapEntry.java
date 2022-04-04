@@ -2990,6 +2990,18 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
     }
 
     /**
+     * Update TTL if it is changed.
+     *
+     * @param expiryPlc Expiry policy.
+     */
+    private void updateTtl(ExpiryPolicy expiryPlc) throws IgniteCheckedException, GridCacheEntryRemovedException {
+        long ttl = CU.toTtl(expiryPlc.getExpiryForAccess());
+
+        if (ttl != CU.TTL_NOT_CHANGED)
+            updateTtl(ttl);
+    }
+
+    /**
      * Update TTL is it is changed.
      *
      * @param expiryPlc Expiry policy.
@@ -3004,18 +3016,6 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
             expiryPlc.ttlUpdated(key(), version(), hasReaders() ? ((GridDhtCacheEntry)this).readers() : null);
         }
-    }
-
-    /**
-     * Update TTL if it is changed.
-     *
-     * @param expiryPlc Expiry policy.
-     */
-    private void updateTtl(ExpiryPolicy expiryPlc) throws IgniteCheckedException, GridCacheEntryRemovedException {
-        long ttl = CU.toTtl(expiryPlc.getExpiryForAccess());
-
-        if (ttl != CU.TTL_NOT_CHANGED)
-            updateTtl(ttl);
     }
 
     /**
