@@ -720,6 +720,7 @@
                         <configuration>
                             <updatePomFile>true</updatePomFile>
                             <flattenMode>resolveCiFriendliesOnly</flattenMode>
+                            <flattenedPomFilename>${maven.flatten.file.name}</flattenedPomFilename>
                             <pomElements>
                                 <properties>resolve</properties>
                             </pomElements>
