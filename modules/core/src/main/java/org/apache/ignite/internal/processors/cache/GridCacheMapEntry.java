@@ -831,7 +831,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             }
 
             if (ret != null && expiryPlc != null)
-                updateTtlUnlocked(expiryPlc);
+                updateTtlUnlocked(version(), expiryPlc);
 
             if (retVer && resVer == null) {
                 resVer = (isNear() && cctx.transactional()) ? ((GridNearCacheEntry)this).dhtVersion() : this.ver;
@@ -3005,10 +3005,13 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
      * Update TTL is it is changed.
      *
      * @param expiryPlc Expiry policy.
+     * @param ver Version.
      * @throws GridCacheEntryRemovedException If failed.
      */
-    private void updateTtlUnlocked(IgniteCacheExpiryPolicy expiryPlc) throws GridCacheEntryRemovedException,
-        IgniteCheckedException {
+    private void updateTtlUnlocked(
+        GridCacheVersion ver,
+        IgniteCacheExpiryPolicy expiryPlc
+    ) throws GridCacheEntryRemovedException, IgniteCheckedException {
         assert lock.isHeldByCurrentThread();
 
         long ttl = expiryPlc.forAccess();
@@ -3016,7 +3019,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         if (ttl != CU.TTL_NOT_CHANGED) {
             updateTtl(ttl);
 
-            expiryPlc.ttlUpdated(key(), version(), hasReaders() ? ((GridDhtCacheEntry)this).readers() : null);
+            expiryPlc.ttlUpdated(key(), ver, hasReaders() ? ((GridDhtCacheEntry)this).readers() : null);
         }
     }
 
@@ -3178,7 +3181,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                     CacheObject val = this.val;
 
                     if (val != null && expiryPlc != null)
-                        updateTtlUnlocked(expiryPlc);
+                        updateTtlUnlocked(version(), expiryPlc);
 
                     return val;
                 }
@@ -4205,7 +4208,10 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
     }
 
     /** {@inheritDoc} */
-    @Override public void updateTtl(IgniteCacheExpiryPolicy expiryPlc) throws GridCacheEntryRemovedException {
+    @Override public void updateTtl(
+        GridCacheVersion ver,
+        IgniteCacheExpiryPolicy expiryPlc
+    ) throws GridCacheEntryRemovedException {
         lockEntry();
 
         try {
@@ -4213,7 +4219,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
             if (hasValueUnlocked()) {
                 try {
-                    updateTtlUnlocked(expiryPlc);
+                    updateTtlUnlocked(ver, expiryPlc);
                 }
                 catch (IgniteCheckedException e) {
                     U.error(log, "Failed to update TTL: " + e, e);

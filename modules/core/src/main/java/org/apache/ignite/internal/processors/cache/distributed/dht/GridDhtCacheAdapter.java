@@ -1106,14 +1106,14 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
         final CacheExpiryPolicy expiryPlc = CacheExpiryPolicy.fromRemote(CU.TTL_NOT_CHANGED, req.ttl());
 
         if (req.keys() != null)
-            updateTtl(this, req.keys(), expiryPlc);
+            updateTtl(this, req.keys(), req.versions(), expiryPlc);
 
         if (req.nearKeys() != null) {
             GridNearCacheAdapter<K, V> near = near();
 
             assert near != null;
 
-            updateTtl(near, req.nearKeys(), expiryPlc);
+            updateTtl(near, req.nearKeys(), req.nearVersions(), expiryPlc);
         }
 
         sendTtlUpdateRequest(expiryPlc, req.topologyVersion(), srcNodeId);
@@ -1122,10 +1122,17 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
     /**
      * @param cache Cache.
      * @param keys Entries keys.
+     * @param vers Entries versions.
      * @param expiryPlc Expiry policy.
      */
-    private void updateTtl(GridCacheAdapter<K, V> cache, List<KeyCacheObject> keys, IgniteCacheExpiryPolicy expiryPlc) {
+    private void updateTtl(
+        GridCacheAdapter<K, V> cache,
+        List<KeyCacheObject> keys,
+        List<GridCacheVersion> vers,
+        IgniteCacheExpiryPolicy expiryPlc
+    ) {
         assert !F.isEmpty(keys);
+        assert keys.size() == vers.size();
 
         int size = keys.size();
 
@@ -1140,7 +1147,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
 
                             entry.unswap(false);
 
-                            entry.updateTtl(expiryPlc);
+                            entry.updateTtl(vers.get(i), expiryPlc);
 
                             break;
                         }
