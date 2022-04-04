@@ -639,7 +639,7 @@
                             <id>flatten</id>
                             <configuration>
                                 <flattenMode>oss</flattenMode>
-                                <flattenedPomFilename>pom-installed.xml</flattenedPomFilename>
+                                <flattenedPomFilename>${maven.flatten.file.name}</flattenedPomFilename>
                             </configuration>
                             <phase>process-resources</phase>
                             <goals>
@@ -650,6 +650,9 @@
                         <!-- ensure proper cleanup before start -->
                         <execution>
                             <id>flatten.clean.before</id>
+                            <configuration>
+                                <flattenedPomFilename>${maven.flatten.file.name}</flattenedPomFilename>
+                            </configuration>
                             <phase>clean</phase>
                             <goals>
                                 <goal>clean</goal>
@@ -717,7 +720,6 @@
                         <configuration>
                             <updatePomFile>true</updatePomFile>
                             <flattenMode>resolveCiFriendliesOnly</flattenMode>
-                            <flattenedPomFilename>pom-installed.xml</flattenedPomFilename>
                             <pomElements>
                                 <properties>resolve</properties>
                             </pomElements>
@@ -879,7 +881,7 @@
                                         <exclude>**/*.iml</exclude><!--IDEA files-->
                                         <exclude>**/*.csv</exclude><!--CSV files-->
                                         <exclude>**/*.jks</exclude><!--bin-files-->
-                                        <exclude>**/pom-installed.xml</exclude><!--tmp-files-->
+<!--                                        <exclude>**/pom-installed.xml</exclude>&lt;!&ndash;tmp-files&ndash;&gt;-->
                                         <exclude>**/keystore</exclude><!--bin-files-->
                                         <exclude>**/keystore/*.jks</exclude><!--bin-files-->
                                         <exclude>**/keystore/*.pem</exclude><!--auto generated files-->

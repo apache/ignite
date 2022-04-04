@@ -74,7 +74,7 @@
                         <id>flatten-check</id>
                         <configuration>
                             <flattenMode>oss</flattenMode>
-                            <flattenedPomFilename>pom-installed.xml</flattenedPomFilename>
+                            <flattenedPomFilename>${maven.flatten.file.name}</flattenedPomFilename>
                         </configuration>
                         <phase>process-resources</phase>
                         <goals>
@@ -83,6 +83,9 @@
                     </execution>
                     <execution>
                         <id>flatten-check-clean</id>
+                        <configuration>
+                            <flattenedPomFilename>${maven.flatten.file.name}</flattenedPomFilename>
+                        </configuration>
                         <phase>clean</phase>
                         <goals>
                             <goal>clean</goal>

@@ -87,6 +87,7 @@
         <!-- Ignite version will be substituted with the flatten-maven-plugin and used for as version dependency for extensions. -->
         <ignite.version>${revision}</ignite.version>
         <maven.flatten.plugin.version>1.2.7</maven.flatten.plugin.version>
+        <maven.flatten.file.name>pom-installed.xml</maven.flatten.file.name>
     </properties>
 
     <dependencyManagement>
@@ -288,7 +289,7 @@
                         <inherited>false</inherited>
                         <configuration>
                             <flattenMode>bom</flattenMode>
-                            <flattenedPomFilename>pom-installed.xml</flattenedPomFilename>
+                            <flattenedPomFilename>${maven.flatten.file.name}</flattenedPomFilename>
                             <pomElements>
                                 <dependencyManagement>resolve</dependencyManagement>
                             </pomElements>
