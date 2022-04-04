@@ -23,7 +23,6 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.internal.cache.query.index.AbstractIndex;
-import org.apache.ignite.internal.cache.query.index.Index;
 import org.apache.ignite.internal.cache.query.index.SingleCursor;
 import org.apache.ignite.internal.cache.query.index.sorted.DurableBackgroundCleanupIndexTreeTaskV2;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypeSettings;
@@ -311,19 +310,6 @@ public class InlineIndexImpl extends AbstractIndex implements InlineIndex {
         finally {
             ThreadLocalRowHandlerHolder.clearRowHandler();
         }
-    }
-
-    /** {@inheritDoc} */
-    @Override public <T extends Index> T unwrap(Class<T> clazz) {
-        if (clazz == null)
-            return null;
-
-        if (clazz.isAssignableFrom(getClass()))
-            return clazz.cast(this);
-
-        throw new IllegalArgumentException(
-            String.format("Cannot unwrap [%s] to [%s]", getClass().getName(), clazz.getName())
-        );
     }
 
     /** {@inheritDoc} */

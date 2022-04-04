@@ -44,6 +44,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.AbstractTestPluginProvider;
 import org.apache.ignite.spi.metric.BooleanMetric;
+import org.apache.ignite.spi.metric.HistogramMetric;
 import org.apache.ignite.spi.metric.IntMetric;
 import org.apache.ignite.spi.metric.LongMetric;
 import org.apache.ignite.spi.metric.ReadOnlyMetricRegistry;
@@ -52,6 +53,7 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
+import static java.util.Arrays.stream;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.internal.IgnitionEx.gridx;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
@@ -206,7 +208,12 @@ public class ThreadPoolMetricsTest extends GridCommonAbstractTest {
         for (Map.Entry<String, Function<PoolProcessor, ExecutorService>> entry : THREAD_POOL_METRICS.entrySet()) {
             String metricsName = entry.getKey();
             ExecutorService execSvc = entry.getValue().apply(poolProc);
+            MetricRegistry mreg = ignite.context().metric().registry(metricsName);
+            HistogramMetric execTimeMetric = mreg.findMetric(PoolProcessor.TASK_EXEC_TIME);
             boolean stripedExecutor = execSvc instanceof StripedExecutor;
+
+            // Ensure that the execution time histogram can be reset.
+            execTimeMetric.reset();
 
             cntr.set(taskCnt);
 
@@ -219,13 +226,13 @@ public class ThreadPoolMetricsTest extends GridCommonAbstractTest {
                     execSvc.execute(task);
             }
 
-            MetricRegistry mreg = ignite.context().metric().registry(metricsName);
             String errMsg = "pool=" + mreg.name();
 
             assertTrue(GridTestUtils.waitForCondition(() -> cntr.get() == 0, getTestTimeout()));
             assertFalse(errMsg, ((BooleanMetric)mreg.findMetric("Shutdown")).value());
             assertFalse(errMsg, ((BooleanMetric)mreg.findMetric("Terminated")).value());
             assertTrue(errMsg, ((IntMetric)mreg.findMetric("ActiveCount")).value() > 0);
+            assertTrue(errMsg, stream(execTimeMetric.value()).sum() >= taskCnt);
 
             if (stripedExecutor) {
                 assertTrue(errMsg, ((IntMetric)mreg.findMetric("StripesCount")).value() > 0);

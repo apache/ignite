@@ -20,6 +20,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.internal.processors.cache.expiry.ActivationOnExpirationTimeoutTest;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsCacheEntriesExpirationTest;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsContinuousRestartTestWithSharedGroupAndIndexes;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsDefragmentationEncryptionTest;
@@ -72,6 +73,7 @@ public class IgnitePdsMvccTestSuite4 {
         ignoredTests.add(OffHeapLockLogTest.class);
         ignoredTests.add(OffHeapLockStackTest.class);
         ignoredTests.add(IgnitePdsCacheEntriesExpirationTest.class);
+        ignoredTests.add(ActivationOnExpirationTimeoutTest.class);
 
         // Defragmentation.
         ignoredTests.add(IgnitePdsDefragmentationTest.class);

@@ -42,7 +42,6 @@
     </scm>
 
     <modules>
-        <module>modules/apache-license-gen</module>
         <module>modules/tools</module>
         <module>modules/core</module>
         <module>modules/compress</module>

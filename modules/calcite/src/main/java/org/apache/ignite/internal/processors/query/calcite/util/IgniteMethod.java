@@ -54,14 +54,14 @@ public enum IgniteMethod {
     /** See {@link ExecutionContext#getCorrelated(int)} */
     CONTEXT_GET_CORRELATED_VALUE(ExecutionContext.class, "getCorrelated", int.class),
 
+    /** See {@link ExecutionContext#getParameter(String, Type)} */
+    CONTEXT_GET_PARAMETER_VALUE(ExecutionContext.class, "getParameter", String.class, Type.class),
+
     /** See {@link SingleScalar#execute(ExecutionContext, Object, Object)} */
     SCALAR_EXECUTE(SingleScalar.class, "execute", ExecutionContext.class, Object.class, Object.class),
 
     /** See {@link BiScalar#execute(ExecutionContext, Object, Object, Object)} */
     BI_SCALAR_EXECUTE(BiScalar.class, "execute", ExecutionContext.class, Object.class, Object.class, Object.class),
-
-    /** See {@link ExecutionContext#param(String, Type)} */
-    CONTEXT_GET_PARAMETER_VALUE(ExecutionContext.class, "param", String.class, Type.class),
 
     /** See {@link FragmentMappingMetadata#fragmentMapping(MappingQueryContext)} */
     FRAGMENT_MAPPING(FragmentMappingMetadata.class, "fragmentMapping", MappingQueryContext.class),

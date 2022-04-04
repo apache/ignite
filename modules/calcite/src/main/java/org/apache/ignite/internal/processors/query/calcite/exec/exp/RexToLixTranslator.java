@@ -177,7 +177,7 @@ public class RexToLixTranslator implements RexVisitor<RexToLixTranslator.Result>
                 storageTypes.add(outputPhysType.getJavaFieldType(i));
         }
         return new RexToLixTranslator(program, typeFactory, root, inputGetter,
-            list, new RexBuilder(typeFactory), conformance, null)
+            list, new IgniteRexBuilder(typeFactory), conformance, null)
             .setCorrelates(correlates)
             .translateList(program.getProjectList(), storageTypes);
     }
@@ -1195,7 +1195,8 @@ public class RexToLixTranslator implements RexVisitor<RexToLixTranslator.Result>
         final Expression ctxGet = Expressions.call(root, IgniteMethod.CONTEXT_GET_PARAMETER_VALUE.method(),
             Expressions.constant("?" + dynamicParam.getIndex()), Expressions.constant(paramType));
 
-        final Expression valueExpression = ConverterUtils.convert(ctxGet, storageType);
+        final Expression valueExpression = SqlTypeUtil.isDecimal(dynamicParam.getType()) ?
+            ConverterUtils.convertToDecimal(ctxGet, dynamicParam.getType()) : ConverterUtils.convert(ctxGet, storageType);
 
         final ParameterExpression valueVariable =
             Expressions.parameter(valueExpression.getType(), list.newName("value_dynamic_param"));

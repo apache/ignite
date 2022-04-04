@@ -286,7 +286,7 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
 
         match = re.match("^\\[[^\\[]+\\]", stdout)
 
-        return datetime.strptime(match.group(), "[%Y-%m-%d %H:%M:%S,%f]") if match else None
+        return datetime.strptime(match.group(), "[%Y-%m-%dT%H:%M:%S,%f]") if match else None
 
     def get_event_time_on_node(self, node, log_pattern, from_the_beginning=True, timeout=15):
         """
