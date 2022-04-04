@@ -147,6 +147,14 @@ public class JdbcQueryTest extends GridCommonAbstractTest {
                 "Multiline statements are not supported in batched query");
         }
 
+        try (PreparedStatement stmt0 = conn.prepareStatement("SELECT * FROM Person WHERE id = ?")) {
+            stmt0.setInt(1, 0);
+            stmt0.addBatch();
+
+            GridTestUtils.assertThrows(log, stmt0::executeBatch, BatchUpdateException.class,
+                "Unexpected operation kind for batched query [kind=SELECT]");
+        }
+
         int[] ret;
         try (PreparedStatement stmt0 = conn.prepareStatement("INSERT INTO Person VALUES (?, ?), (?, ?)")) {
             for (int i = 0; i < 1000; i += 2) {

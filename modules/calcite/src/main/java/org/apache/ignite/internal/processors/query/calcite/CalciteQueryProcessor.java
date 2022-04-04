@@ -372,8 +372,11 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
 
         SqlNode qryNode = qryNodeList.get(0);
 
-        assert qryNode.getKind() == SqlKind.INSERT || qryNode.getKind() == SqlKind.UPDATE
-                || qryNode.getKind() == SqlKind.MERGE || qryNode.getKind() == SqlKind.DELETE;
+        if (qryNode.getKind() != SqlKind.INSERT && qryNode.getKind() != SqlKind.UPDATE
+            && qryNode.getKind() != SqlKind.MERGE && qryNode.getKind() != SqlKind.DELETE) {
+            throw new IgniteSQLException("Unexpected operation kind for batched query [kind=" + qryNode.getKind() + "]",
+                IgniteQueryErrorCode.UNEXPECTED_OPERATION);
+        }
 
         List<FieldsQueryCursor<List<?>>> cursors = new ArrayList<>(batchedParams.size());
 
@@ -402,7 +405,7 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
     /** */
     private FieldsQueryCursor<List<?>> executeQuery(
         @Nullable QueryContext qryCtx,
-        @Nullable Function<RootQuery<Object[]>, QueryPlan> plan,
+        Function<RootQuery<Object[]>, QueryPlan> plan,
         String schema,
         String sql,
         @Nullable List<RootQuery<Object[]>> qrys,
