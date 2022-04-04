@@ -386,14 +386,8 @@ class RelJson {
                 }
                 else if (sqlTypeName == SqlTypeName.ARRAY)
                     type = typeFactory.createArrayType(toType(typeFactory, map.get("elementType")), -1);
-                else if (sqlTypeName == SqlTypeName.ANY) {
-                    String name = (String)map.get("name");
-
-                    if ("UUID".equals(name))
-                        type = ((IgniteTypeFactory)typeFactory).createUuidType();
-                    else if ("OTHER".equals(name))
-                        type = ((IgniteTypeFactory)typeFactory).createOtherType();
-                }
+                else if (sqlTypeName == SqlTypeName.ANY)
+                    type = ((IgniteTypeFactory)typeFactory).createCustomType((String)map.get("name"));
                 else if (precision == null)
                     type = typeFactory.createSqlType(sqlTypeName);
                 else if (scale == null)

@@ -269,7 +269,7 @@ public class Accumulators {
     public static class DecimalAvg implements Accumulator {
         /** */
         public static final Supplier<Accumulator> FACTORY = DecimalAvg::new;
-        
+
         /** */
         private BigDecimal sum = BigDecimal.ZERO;
 
@@ -903,11 +903,11 @@ public class Accumulators {
 
         /** */
         public static final Supplier<Accumulator> UUID_MIN_FACTORY = () -> new ComparableMinMax<UUID>(true,
-            tf -> tf.createTypeWithNullability(tf.createUuidType(), true));
+            tf -> tf.createTypeWithNullability(tf.createCustomType("UUID"), true));
 
         /** */
         public static final Supplier<Accumulator> UUID_MAX_FACTORY = () -> new ComparableMinMax<UUID>(false,
-            tf -> tf.createTypeWithNullability(tf.createUuidType(), true));
+            tf -> tf.createTypeWithNullability(tf.createCustomType("UUID"), true));
 
         /** */
         private final boolean min;

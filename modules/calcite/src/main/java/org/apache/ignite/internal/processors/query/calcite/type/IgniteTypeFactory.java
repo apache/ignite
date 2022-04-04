@@ -139,8 +139,8 @@ public class IgniteTypeFactory extends JavaTypeFactoryImpl {
                     break;
             }
         }
-        else if (type instanceof OtherType)
-            return ((OtherType)type).storageType();
+        else if (type instanceof IgniteSqlCalciteType)
+            return ((IgniteSqlCalciteType)type).storageType();
 
         switch (type.getSqlTypeName()) {
             case ROW:
@@ -225,8 +225,8 @@ public class IgniteTypeFactory extends JavaTypeFactoryImpl {
                     break;
             }
         }
-        else if (type instanceof OtherType)
-            return ((OtherType)type).storageType();
+        else if (type instanceof IgniteSqlCalciteType)
+            return ((IgniteSqlCalciteType)type).storageType();
 
         switch (type.getSqlTypeName()) {
             case ROW:
@@ -266,29 +266,36 @@ public class IgniteTypeFactory extends JavaTypeFactoryImpl {
                 return createTypeWithNullability(createSqlIntervalType(INTERVAL_QUALIFIER_DAY_TIME), true);
             else if (clazz == Period.class)
                 return createTypeWithNullability(createSqlIntervalType(INTERVAL_QUALIFIER_YEAR_MONTH), true);
-            else if (clazz == UUID.class)
-                return createTypeWithNullability(createUuidType(), true);
-            else if (clazz == Object.class)
-                return createTypeWithNullability(createOtherType(), true);
+            else {
+                RelDataType relType = createCustomType(clazz.getName());
+
+                if (relType != null)
+                    return relType;
+            }
         }
 
         return super.toSql(type);
     }
 
-    /** @return UUID SQL type. */
-    public RelDataType createUuidType() {
-        return canonize(new UuidType(true));
+    /** @return Custom type by name or storeable class name. {@code Null} if type not found. */
+    public RelDataType createCustomType(String typeName) {
+        return createCustomType(typeName, true);
     }
 
-    /** @return OTHER SQL type. */
-    public RelDataType createOtherType() {
-        return canonize(new OtherType(true));
+    /** @return Nullable custom type by name or storeable class name. {@code Null} if type not found. */
+    public RelDataType createCustomType(String typeName, boolean nullable) {
+        if ("UUID".equals(typeName) || UUID.class.getName().equals(typeName))
+            return new UuidType(nullable);
+        else if ("OTHER".equals(typeName) || Object.class.getName().equals(typeName))
+            return new OtherType(nullable);
+
+        return null;
     }
 
     /** {@inheritDoc} */
     @Override public RelDataType createTypeWithNullability(RelDataType type, boolean nullable) {
-        if (type instanceof OtherType && type.isNullable() != nullable)
-            return type.getClass() == UuidType.class ? new UuidType(nullable) : new OtherType(nullable);
+        if (type instanceof IgniteSqlCalciteType && type.isNullable() != nullable)
+            return createCustomType(type.toString(), nullable);
 
         return super.createTypeWithNullability(type, nullable);
     }

@@ -44,7 +44,7 @@ import org.apache.calcite.sql.validate.SqlConformance;
 import org.apache.calcite.sql.validate.SqlConformanceEnum;
 import org.apache.calcite.util.BuiltInMethod;
 import org.apache.calcite.util.Util;
-import org.apache.ignite.internal.processors.query.calcite.type.OtherType;
+import org.apache.ignite.internal.processors.query.calcite.type.IgniteSqlCalciteType;
 
 /**
  * Evaluates a {@link RexNode} expression.
@@ -134,8 +134,8 @@ public class RexExecutorImpl implements RexExecutor {
      */
     @Override public void reduce(RexBuilder rexBuilder, List<RexNode> constExps, List<RexNode> reducedValues) {
         for (RexNode node : constExps) {
-            // Do not simplify OTHER types, since we can't convert it to literal of this type.
-            if (node.getType() instanceof OtherType) {
+            // Do not simplify custom types, since we can't convert it to literal of this type.
+            if (node.getType() instanceof IgniteSqlCalciteType) {
                 reducedValues.addAll(constExps);
                 return;
             }

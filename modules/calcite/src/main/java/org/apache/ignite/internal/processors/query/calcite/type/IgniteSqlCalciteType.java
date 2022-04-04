@@ -18,21 +18,38 @@
 package org.apache.ignite.internal.processors.query.calcite.type;
 
 import java.lang.reflect.Type;
+import org.apache.calcite.rel.type.RelDataTypeFamily;
+import org.apache.calcite.rel.type.RelDataTypeImpl;
+import org.apache.calcite.sql.type.SqlTypeFamily;
+import org.apache.calcite.sql.type.SqlTypeName;
 
-/** OTHER SQL type for any value. */
-public class OtherType extends IgniteSqlCalciteType {
+/** Custom type base. */
+public abstract class IgniteSqlCalciteType extends RelDataTypeImpl {
+    /** Nullable flag. */
+    private final boolean nullable;
+
     /** Ctor. */
-    public OtherType(boolean nullable) {
-        super(nullable);
-    }
+    protected IgniteSqlCalciteType(boolean nullable) {
+        this.nullable = nullable;
 
-    /** {@inheritDoc} */
-    @Override protected void generateTypeString(StringBuilder sb, boolean withDetail) {
-        sb.append("OTHER");
+        computeDigest();
     }
 
     /** @return Storage type */
-    @Override public Type storageType() {
-        return Object.class;
+    public abstract Type storageType();
+
+    /** {@inheritDoc} */
+    @Override public boolean isNullable() {
+        return nullable;
+    }
+
+    /** {@inheritDoc} */
+    @Override public RelDataTypeFamily getFamily() {
+        return SqlTypeFamily.ANY;
+    }
+
+    /** {@inheritDoc} */
+    @Override public SqlTypeName getSqlTypeName() {
+        return SqlTypeName.ANY;
     }
 }
