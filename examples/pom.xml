@@ -314,7 +314,6 @@
                 <dependency>
                     <groupId>${project.groupId}</groupId>
                     <artifactId>ignite-scalar</artifactId>
-                    <version>${project.version}</version>
                 </dependency>
 
                 <dependency>
