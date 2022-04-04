@@ -663,6 +663,13 @@ public abstract class IgniteAbstractDynamicCacheStartFailTest extends GridCacheA
         stopFut.get(getTestTimeout());
     }
 
+    /**
+     * Initiates creating new caches from the given {@code initiatorId} node and
+     * it is expected that creating caches results in error.
+     *
+     * @param cfgs Cache configurations.
+     * @param initiatorId Node index that to be used to initiate cache start.
+     */
     protected void testDynamicCacheStart(final Collection<CacheConfiguration> cfgs, final int initiatorId) {
         assert initiatorId < gridCount();
 
