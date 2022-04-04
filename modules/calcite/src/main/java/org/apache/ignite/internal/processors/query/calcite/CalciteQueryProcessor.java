@@ -22,6 +22,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
+import java.util.function.Function;
 import org.apache.calcite.DataContexts;
 import org.apache.calcite.config.Lex;
 import org.apache.calcite.config.NullCollation;
@@ -358,13 +359,16 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
     /** {@inheritDoc} */
     @Override public List<FieldsQueryCursor<List<?>>> queryBatched(
         @Nullable QueryContext qryCtx,
-        @Nullable String schemaName,
+        String schemaName,
         String sql,
         List<Object[]> batchedParams
     ) throws IgniteSQLException {
         SqlNodeList qryNodeList = Commons.parse(sql, FRAMEWORK_CONFIG.getParserConfig());
 
-        assert qryNodeList.size() == 1;
+        if (qryNodeList.size() != 1) {
+            throw new IgniteSQLException("Multiline statements are not supported in batched query",
+                IgniteQueryErrorCode.PARSING);
+        }
 
         SqlNode qryNode = qryNodeList.get(0);
 
@@ -375,19 +379,22 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
 
         List<RootQuery<Object[]>> qrys = new ArrayList<>(batchedParams.size());
 
-        PlanSupplier<Object[]> planSupplier = new PlanSupplier<Object[]>() {
+        Function<RootQuery<Object[]>, QueryPlan> planSupplier = new Function<RootQuery<Object[]>, QueryPlan>() {
             private QueryPlan plan;
 
-            @Override public QueryPlan get(RootQuery<Object[]> qry) {
-                if (plan == null)
-                    plan = prepareSvc.prepareSingle(qryNode, qry.planningContext());
+            @Override public QueryPlan apply(RootQuery<Object[]> qry) {
+                if (plan == null) {
+                    plan = queryPlanCache().queryPlan(new CacheKey(schemaName, sql), () ->
+                        prepareSvc.prepareSingle(qryNode, qry.planningContext())
+                    );
+                }
 
                 return plan;
             }
         };
 
         for (final Object[] batch: batchedParams)
-            cursors.add(executeQuery(qryCtx, planSupplier, schemaName, qryNode.toString(), qrys, batch));
+            cursors.add(executeQuery(qryCtx, planSupplier, schemaName, sql, qrys, batch));
 
         return cursors;
     }
@@ -395,7 +402,7 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
     /** */
     private FieldsQueryCursor<List<?>> executeQuery(
         @Nullable QueryContext qryCtx,
-        @Nullable PlanSupplier<Object[]> plan,
+        @Nullable Function<RootQuery<Object[]>, QueryPlan> plan,
         String schema,
         String sql,
         @Nullable List<RootQuery<Object[]>> qrys,
@@ -418,7 +425,7 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
         qryReg.register(qry);
 
         try {
-            return executionSvc.executePlan(qry, plan.get(qry));
+            return executionSvc.executePlan(qry, plan.apply(qry));
         }
         catch (Exception e) {
             boolean isCanceled = qry.isCancelled();
@@ -429,7 +436,7 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
             qryReg.unregister(qry.id());
 
             if (isCanceled)
-                throw new IgniteSQLException("The query was cancelled while executing", IgniteQueryErrorCode.QUERY_CANCELED, e);
+                throw new IgniteSQLException("The query was cancelled while planning", IgniteQueryErrorCode.QUERY_CANCELED, e);
             else
                 throw e;
         }
@@ -464,11 +471,5 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
     /** */
     public QueryRegistry queryRegistry() {
         return qryReg;
-    }
-
-    /** */
-    private interface PlanSupplier<RowT> {
-        /** */
-        QueryPlan get(RootQuery<RowT> rootQuery);
     }
 }

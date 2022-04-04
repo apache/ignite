@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.calcite.jdbc;
 
+import java.sql.BatchUpdateException;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
@@ -31,6 +32,7 @@ import org.apache.ignite.calcite.CalciteQueryEngineConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.SqlConfiguration;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
@@ -115,9 +117,6 @@ public class JdbcQueryTest extends GridCommonAbstractTest {
     public void testBatch() throws Exception {
         stmt.execute("CREATE TABLE Person(\"id\" INT, PRIMARY KEY(\"id\"), \"name\" VARCHAR)");
 
-        grid(0).context().cache().context().exchange().affinityReadyFuture(
-            new AffinityTopologyVersion(3, 2)).get(10_000, TimeUnit.MILLISECONDS);
-
         for (int i = 0; i < 10; ++i)
             stmt.addBatch(String.format("INSERT INTO Person VALUES (%d, 'Name')", i));
 
@@ -128,12 +127,7 @@ public class JdbcQueryTest extends GridCommonAbstractTest {
                 assertEquals(i, rs.getInt(1));
                 assertEquals("Name", rs.getString(2));
             }
-
         }
-
-        stmt.execute("drop table Person");
-
-        stmt.close();
     }
 
     /** Test batched execution of prepared statement. */
@@ -141,20 +135,30 @@ public class JdbcQueryTest extends GridCommonAbstractTest {
     public void testBatchPrepared() throws Exception {
         stmt.execute("CREATE TABLE Person(\"id\" INT, PRIMARY KEY(\"id\"), \"name\" VARCHAR)");
 
-        grid(0).context().cache().context().exchange().affinityReadyFuture(
-            new AffinityTopologyVersion(3, 2)).get(10_000, TimeUnit.MILLISECONDS);
-
-        PreparedStatement stmt0 = conn.prepareStatement("INSERT INTO Person VALUES (?, ?), (?, ?)");
-        for (int i = 0; i < 1000; i += 2) {
-            stmt0.setInt(1, i);
+        try (PreparedStatement stmt0 = conn.prepareStatement("INSERT INTO Person VALUES (?, ?);" +
+            "INSERT INTO Person VALUES (?, ?)")) {
+            stmt0.setInt(1, 0);
             stmt0.setString(2, "Name");
-            stmt0.setInt(3, i + 1);
+            stmt0.setInt(2, 1);
             stmt0.setString(4, "Name");
             stmt0.addBatch();
+
+            GridTestUtils.assertThrows(log, stmt0::executeBatch, BatchUpdateException.class,
+                "Multiline statements are not supported in batched query");
         }
 
-        int[] ret = stmt0.executeBatch();
-        stmt0.close();
+        int[] ret;
+        try (PreparedStatement stmt0 = conn.prepareStatement("INSERT INTO Person VALUES (?, ?), (?, ?)")) {
+            for (int i = 0; i < 1000; i += 2) {
+                stmt0.setInt(1, i);
+                stmt0.setString(2, "Name");
+                stmt0.setInt(3, i + 1);
+                stmt0.setString(4, "Name");
+                stmt0.addBatch();
+            }
+
+            ret = stmt0.executeBatch();
+        }
 
         try (ResultSet rs = stmt.executeQuery("select * from Person p order by \"id\" asc")) {
             int i = 0;
@@ -165,10 +169,6 @@ public class JdbcQueryTest extends GridCommonAbstractTest {
             assertEquals(ret.length * 2, i);
             assertTrue(Arrays.stream(ret).anyMatch(k -> k == 2));
         }
-
-        stmt.execute("drop table Person");
-
-        stmt.close();
     }
 
     /**
