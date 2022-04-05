@@ -63,10 +63,7 @@ struct CrossEngineTestSuiteFixture : public odbc::OdbcTestSuite
                                                                       : EngineMode::ToString(EngineMode::H2));
 
         InsertTestStrings(10, false);
-
-        // Batching is not supported for CALCITE
-        if (EType != EngineMode::CALCITE)
-            InsertTestBatch(11, 2000, 1989);
+        InsertTestBatch(11, 2000, 1989);
     }
 
     template<EngineMode::Type EType>
