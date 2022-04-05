@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.query.calcite.util;
 
 import java.lang.reflect.Type;
+import java.math.BigDecimal;
 import java.sql.Date;
 import java.sql.Time;
 import java.sql.Timestamp;
@@ -64,6 +65,7 @@ import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler;
 import org.apache.ignite.internal.processors.query.calcite.schema.ColumnDescriptor;
 import org.apache.ignite.internal.processors.query.calcite.schema.TableDescriptor;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
+import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeSystem;
 import org.apache.ignite.internal.util.typedef.F;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -168,7 +170,18 @@ public class TypeUtils {
     }
 
     /** */
-    public static RelDataType sqlType(IgniteTypeFactory typeFactory, RelDataType rowType) {
+    public static RelDataType sqlType(IgniteTypeFactory typeFactory, Class<?> cls, int precision, int scale) {
+        RelDataType javaType = typeFactory.createJavaType(cls);
+
+        if (javaType.getSqlTypeName().allowsPrecScale(true, true) &&
+            (precision != RelDataType.PRECISION_NOT_SPECIFIED || scale != RelDataType.SCALE_NOT_SPECIFIED))
+            return typeFactory.createSqlType(javaType.getSqlTypeName(), precision, scale);
+
+        return sqlType(typeFactory, javaType);
+    }
+
+    /** */
+    private static RelDataType sqlType(IgniteTypeFactory typeFactory, RelDataType rowType) {
         if (!rowType.isStruct())
             return typeFactory.toSql(rowType);
 
@@ -274,6 +287,26 @@ public class TypeUtils {
     }
 
     /** */
+    public static boolean hasPrecision(RelDataType type) {
+        // Special case for DECIMAL type without precision and scale specified.
+        if (type.getSqlTypeName() == SqlTypeName.DECIMAL &&
+            type.getPrecision() == IgniteTypeSystem.INSTANCE.getDefaultPrecision(SqlTypeName.DECIMAL))
+            return false;
+
+        return type.getPrecision() != RelDataType.PRECISION_NOT_SPECIFIED;
+    }
+
+    /** */
+    public static boolean hasScale(RelDataType type) {
+        // Special case for DECIMAL type without precision and scale specified.
+        if (type.getSqlTypeName() == SqlTypeName.DECIMAL &&
+            type.getPrecision() == IgniteTypeSystem.INSTANCE.getDefaultPrecision(SqlTypeName.DECIMAL))
+            return false;
+
+        return type.getScale() != RelDataType.SCALE_NOT_SPECIFIED;
+    }
+
+    /** */
     public static Object toInternal(DataContext ctx, Object val) {
         return val == null ? null : toInternal(ctx, val, val.getClass());
     }
@@ -298,6 +331,19 @@ public class TypeUtils {
             return (int)((Period)val).toTotalMonths();
         else if (storageType == byte[].class)
             return new ByteString((byte[])val);
+        else if (val instanceof Number && storageType != val.getClass()) {
+            // For dynamic parameters we don't know exact parameter type in compile time. To avoid casting errors in
+            // runtime we should convert parameter value to expected type.
+            Number num = (Number)val;
+
+            return Byte.class.equals(storageType) || byte.class.equals(storageType) ? SqlFunctions.toByte(num) :
+                Short.class.equals(storageType) || short.class.equals(storageType) ? SqlFunctions.toShort(num) :
+                Integer.class.equals(storageType) || int.class.equals(storageType) ? SqlFunctions.toInt(num) :
+                Long.class.equals(storageType) || long.class.equals(storageType) ? SqlFunctions.toLong(num) :
+                Float.class.equals(storageType) || float.class.equals(storageType) ? SqlFunctions.toFloat(num) :
+                Double.class.equals(storageType) || double.class.equals(storageType) ? SqlFunctions.toDouble(num) :
+                BigDecimal.class.equals(storageType) ? SqlFunctions.toBigDecimal(num) : num;
+        }
         else
             return val;
     }

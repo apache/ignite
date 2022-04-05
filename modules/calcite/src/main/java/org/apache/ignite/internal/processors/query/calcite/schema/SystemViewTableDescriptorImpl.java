@@ -42,6 +42,8 @@ import org.apache.ignite.spi.systemview.view.SystemView;
 import org.apache.ignite.spi.systemview.view.SystemViewRowAttributeWalker;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.calcite.rel.type.RelDataType.PRECISION_NOT_SPECIFIED;
+import static org.apache.calcite.rel.type.RelDataType.SCALE_NOT_SPECIFIED;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.toSqlName;
 
 /**
@@ -259,7 +261,7 @@ public class SystemViewTableDescriptorImpl<ViewRow> extends NullInitializerExpre
         /** {@inheritDoc} */
         @Override public RelDataType logicalType(IgniteTypeFactory f) {
             if (logicalType == null)
-                logicalType = TypeUtils.sqlType(f, f.createJavaType(type));
+                logicalType = TypeUtils.sqlType(f, type, PRECISION_NOT_SPECIFIED, SCALE_NOT_SPECIFIED);
 
             return logicalType;
         }

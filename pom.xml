@@ -37,7 +37,7 @@
     <modules>
         <module>modules/checkstyle</module>
         <module>parent</module>
-        <module>modules/apache-license-gen</module>
+        <module>modules/ignite-bom</module>
         <module>modules/tools</module>
         <module>modules/core</module>
         <module>modules/compress</module>
@@ -80,7 +80,6 @@
         <module>modules/ml/h2o-model-parser</module>
         <module>modules/opencensus</module>
         <module>modules/control-utility</module>
-        <module>modules/ignite-bom</module>
         <module>modules/calcite</module>
     </modules>
 
@@ -595,13 +594,6 @@
                 <module>modules/scalar-2.10</module>
                 <module>modules/visor-console-2.10</module>
                 <module>modules/visor-plugins</module>
-            </modules>
-        </profile>
-
-        <profile>
-            <id>ignored-tests</id>
-            <modules>
-                <module>modules/ignored-tests</module>
             </modules>
         </profile>
 

@@ -75,6 +75,12 @@ if (${WITH_SANITIZERS} AND (CMAKE_CXX_COMPILER_ID MATCHES "Clang" OR CMAKE_CXX_C
     message("Built with sanitizers. Sanitizers options for ctest: ${SANITIZERS_ENV}")
 endif()
 
+if (CMAKE_BUILD_TYPE STREQUAL "Debug")
+    if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fstandalone-debug")
+    endif()
+endif()
+
 if (${WITH_CORE} OR ${WITH_TESTS})
     find_package(Java 1.8 REQUIRED)
     find_package(JNI REQUIRED)
