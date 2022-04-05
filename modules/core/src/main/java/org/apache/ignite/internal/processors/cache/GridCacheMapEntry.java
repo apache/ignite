@@ -3012,8 +3012,6 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         GridCacheVersion ver,
         IgniteCacheExpiryPolicy expiryPlc
     ) throws GridCacheEntryRemovedException, IgniteCheckedException {
-        assert lock.isHeldByCurrentThread();
-
         long ttl = expiryPlc.forAccess();
 
         if (ttl != CU.TTL_NOT_CHANGED) {
