@@ -22,6 +22,7 @@ import java.util.Collection;
 import java.util.List;
 import org.apache.ignite.cdc.CdcCacheVersionTest;
 import org.apache.ignite.cdc.CdcSelfTest;
+import org.apache.ignite.cdc.MetadataUpdateTest;
 import org.apache.ignite.cdc.RestartWithWalForceArchiveTimeoutTest;
 import org.apache.ignite.cdc.WalForCdcTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.HistoricalRebalanceHeuristicsTest;
@@ -149,6 +150,7 @@ public class IgnitePdsTestSuite2 {
 
         // CDC tests.
         GridTestUtils.addTestIfNeeded(suite, CdcSelfTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, MetadataUpdateTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, CdcCacheVersionTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, RestartWithWalForceArchiveTimeoutTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, WalForCdcTest.class, ignoredTests);
