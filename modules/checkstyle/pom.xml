@@ -123,4 +123,40 @@
             </plugin>
         </plugins>
     </build>
+
+
+    <profiles>
+        <profile>
+            <id>update-versions</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-antrun-plugin</artifactId>
+                        <version>1.8</version>
+                        <executions>
+                            <execution>
+                                <id>change-version</id>
+                                <phase>validate</phase>
+                                <configuration>
+                                    <target>
+                                        <echo>Updating version for the ignite-checkstyle: ${basedir}</echo>
+                                        <exec executable="mvn">
+                                            <arg value="versions:set"/>
+                                            <arg value="-DgenerateBackupPoms=false"/>
+                                            <arg value="-DprocessDependencies=false"/>
+                                            <arg value="-DnewVersion=${new.ignite.version}"/>
+                                        </exec>
+                                    </target>
+                                </configuration>
+                                <goals>
+                                    <goal>run</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
 </project>
