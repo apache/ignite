@@ -40,6 +40,17 @@ public class LimitOffsetPlannerTest extends AbstractPlannerTest {
     /** Row count in table. */
     private static final double ROW_CNT = 100d;
 
+    /** */
+    @Test
+    public void testTest() throws Exception {
+        IgniteSchema publicSchema = createSchemaWithTable(IgniteDistributions.broadcast());
+
+        String sql = "SELECT * FROM TEST ORDER BY ID";
+
+        assertPlan(sql, publicSchema, nodeOrAnyChild(isInstanceOf(IgniteLimit.class)
+            .and(hasChildThat(isInstanceOf(IgniteSort.class)))));
+    }
+
     /**
      * @throws Exception If failed.
      */
