@@ -26,12 +26,12 @@
     <parent>
         <groupId>org.apache.ignite</groupId>
         <artifactId>ignite-parent</artifactId>
-        <version>1</version>
+        <version>${revision}</version>
         <relativePath>../../parent</relativePath>
     </parent>
 
     <artifactId>ignite-osgi-paxlogging</artifactId>
-    <version>${revision}</version>
+
     <packaging>jar</packaging>
 
     <dependencies>

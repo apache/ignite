@@ -26,20 +26,20 @@
     <parent>
         <groupId>org.apache.ignite</groupId>
         <artifactId>ignite-parent</artifactId>
-        <version>1</version>
+        <version>${revision}</version>
         <relativePath>../../parent</relativePath>
     </parent>
 
     <artifactId>ignite-cassandra</artifactId>
     <packaging>pom</packaging>
-    <version>${revision}</version>
+
     <url>http://ignite.apache.org</url>
 
     <dependencyManagement>
         <dependencies>
             <dependency>
-                <artifactId>ignite-cassandra-store</artifactId>
                 <groupId>${project.groupId}</groupId>
+                <artifactId>ignite-cassandra-store</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
