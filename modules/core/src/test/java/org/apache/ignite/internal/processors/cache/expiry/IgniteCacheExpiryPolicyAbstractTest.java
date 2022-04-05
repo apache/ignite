@@ -39,12 +39,10 @@ import javax.cache.processor.MutableEntry;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CachePeekMode;
-import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
-import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
@@ -1114,58 +1112,6 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
     }
 
     /**
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testNearAccessWithConcurrentReads() throws Exception {
-        if (cacheMode() != PARTITIONED)
-            return;
-
-        assert gridCount() == 3 : "Test requires 3 nodes";
-
-        nearCache = true;
-
-        startGrids();
-
-        Affinity<Object> aff = grid(0).affinity(DEFAULT_CACHE_NAME);
-        IgniteCache<Object, ?> expirePlcCache = jcache(2).withExpiryPolicy(new TestPolicy(1100L, 1200L, 100L));
-        List<Integer> keys = new ArrayList<>();
-
-        // Generate keys so that for each key node 0 is primary, node 1 is non-affinity and node 2 is backup.
-        for (int i = 0; keys.size() < 10_000; i++) {
-            if (aff.isBackup(grid(2).localNode(), i) && !aff.isPrimaryOrBackup(grid(1).localNode(), i))
-                keys.add(i);
-        }
-
-        for (int i = 0; i < keys.size(); i += 2) {
-            Integer key1 = keys.get(i);
-            Integer key2 = keys.get(i + 1);
-
-            Map<Integer, Integer> keyBatch = F.asMap(key1, key1, key2, key2);
-
-            jcache(0).putAll(keyBatch);
-
-            // Add a near reader for the second key from the non-affinity node.
-            jcache(1).get(key2);
-
-            IgniteInternalFuture<?> fut = GridTestUtils.runAsync(() -> {
-                // Trying to cause a race between read and ttl update on the primary node.
-                for (int j = 0; j < 10; j++)
-                    jcache(0).getAll(keyBatch.keySet());
-            });
-
-            // Update ttl from the backup node.
-            expirePlcCache.getAll(keyBatch.keySet());
-
-            fut.get(getTestTimeout());
-        }
-
-        // Make sure all keys have expired.
-        for (Integer key : keys)
-            waitExpired(key);
-    }
-
-    /**
      * Put entry to server node and check how its expires in client NearCache.
      *
      * @throws Exception If failed.
@@ -1299,7 +1245,7 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
                     }
                 }
 
-                return true;
+                return false;
             }
         }, 3000);
 
