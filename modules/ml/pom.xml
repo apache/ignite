@@ -27,7 +27,7 @@
     </properties>
 
     <parent>
-        <artifactId>ignite-parent-int</artifactId>
+        <artifactId>ignite-parent-internal</artifactId>
         <groupId>org.apache.ignite</groupId>
         <version>${revision}</version>
         <relativePath>../../parent-internal</relativePath>

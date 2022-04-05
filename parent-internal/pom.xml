@@ -33,7 +33,7 @@
     <!-- NOTE: This parent-internal module is used as a parent maven project for the current Ignite sources only.
         It will never be released and should be used for all internal maven submodules. -->
 
-    <artifactId>ignite-parent-int</artifactId>
+    <artifactId>ignite-parent-internal</artifactId>
     <packaging>pom</packaging>
 
     <dependencyManagement>
