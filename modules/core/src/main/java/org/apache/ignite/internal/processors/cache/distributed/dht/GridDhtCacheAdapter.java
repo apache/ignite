@@ -1025,8 +1025,8 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
                             for (Iterator<ClusterNode> nodesIter = nodes.iterator(); nodesIter.hasNext(); ) {
                                 ClusterNode node = nodesIter.next();
 
-                                // There's no need to send and update ttl request to the node
-                                // that send us the initial ttl update request.
+                                // There's no need to re-send ttl update request to the node
+                                // that sent the initial ttl update request.
                                 if (srcNodeId != null && srcNodeId.equals(node.id()))
                                     continue;
 
