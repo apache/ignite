@@ -249,11 +249,11 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
     }
 
     /**
-     * Test several changes os cluster state without autoactivation option (--yes)
+     * Test several changes os cluster state without auto confirmation option (--yes)
      *  @throws Exception If failed.
      */
     @Test
-    public void testActivateNoAutoActivation() throws Exception {
+    public void testActivateNoAutoConfirmation() throws Exception {
         Ignite ignite = startGrids(1);
 
         autoConfirmation = false;
