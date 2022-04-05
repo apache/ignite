@@ -31,6 +31,12 @@ import org.jetbrains.annotations.Nullable;
  * Utility to run regular Ignite tests with {@link org.apache.ignite.spi.discovery.zk.ZookeeperDiscoverySpi}.
  */
 public class ZookeeperDiscoverySpiTestUtil {
+    /** Property name for Zookeeper's election port bind retry attempts count. */
+    public static final String ZK_ELECTION_PORT_BIND_RETRY = "electionPortBindRetry";
+
+    /** Property name for Zookeeper's 'enable admin server' flag. */
+    public static final String ZK_ENABLE_ADMIN_SERVER = "admin.enableServer";
+
     /**
      * @param instances Number of instances in cluster.
      * @return Test cluster.
@@ -62,15 +68,23 @@ public class ZookeeperDiscoverySpiTestUtil {
                     throw new IgniteException("Failed to create directory for test Zookeeper server: " + file.getAbsolutePath());
             }
 
-            Map<String, Object> props = customProps != null && customProps[i] != null ? customProps[i] : new HashMap<>();
-
-            props.put("electionPortBindRetry", "0");
-            props.put("admin.enableServer", "false");
-
-            specs.add(new InstanceSpec(file, -1, -1, -1, true, -1, -1, 500, props));
+            specs.add(new InstanceSpec(file, -1, -1, -1, true, -1, -1, 500,
+                optimizeProperties(customProps, i)));
         }
 
         return new TestingCluster(specs);
+    }
+
+    /**
+     *
+     */
+    private static Map<String, Object> optimizeProperties(Map<String, Object>[] customProps, int idx) {
+        Map<String, Object> props = customProps != null && customProps[idx] != null ? customProps[idx] : new HashMap<>();
+
+        props.putIfAbsent(ZK_ELECTION_PORT_BIND_RETRY, "0");
+        props.putIfAbsent(ZK_ENABLE_ADMIN_SERVER, "false");
+
+        return props;
     }
 
     /**
