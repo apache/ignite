@@ -97,10 +97,6 @@ SqlDataTypeSpec DataTypeEx() :
         dt = DataType()
     |
         dt = IntervalType()
-    |
-        dt = UuidType()
-    |
-        dt = OtherType()
     )
     {
         return dt;
@@ -115,28 +111,6 @@ SqlDataTypeSpec IntervalType() :
 {
     <INTERVAL> { s = span(); } intervalQualifier = IntervalQualifier() {
         return new SqlDataTypeSpec(new IgniteSqlIntervalTypeNameSpec(intervalQualifier, s.end(this)), s.pos());
-    }
-}
-
-SqlDataTypeSpec UuidType() :
-{
-        final Span s;
-}
-{
-    <UUID> { s = span(); }
-    {
-        return new SqlDataTypeSpec(new SqlUserDefinedTypeNameSpec("UUID", s.end(this)), s.pos());
-    }
-}
-
-SqlDataTypeSpec OtherType() :
-{
-        final Span s;
-}
-{
-    <OTHER> { s = span(); }
-    {
-        return new SqlDataTypeSpec(new SqlUserDefinedTypeNameSpec("Other", s.end(this)), s.pos());
     }
 }
 

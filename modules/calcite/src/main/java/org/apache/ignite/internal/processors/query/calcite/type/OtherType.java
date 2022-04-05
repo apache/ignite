@@ -20,7 +20,7 @@ package org.apache.ignite.internal.processors.query.calcite.type;
 import java.lang.reflect.Type;
 
 /** OTHER SQL type for any value. */
-public class OtherType extends IgniteSqlCalciteType {
+public class OtherType extends IgniteCustomType {
     /** Ctor. */
     public OtherType(boolean nullable) {
         super(nullable);

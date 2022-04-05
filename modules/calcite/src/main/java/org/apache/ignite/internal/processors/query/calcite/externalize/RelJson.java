@@ -105,6 +105,7 @@ import org.apache.ignite.internal.processors.query.calcite.trait.DistributionFun
 import org.apache.ignite.internal.processors.query.calcite.trait.DistributionTrait;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
+import org.apache.ignite.internal.processors.query.calcite.type.IgniteCustomType;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.util.typedef.F;
@@ -386,8 +387,12 @@ class RelJson {
                 }
                 else if (sqlTypeName == SqlTypeName.ARRAY)
                     type = typeFactory.createArrayType(toType(typeFactory, map.get("elementType")), -1);
-                else if (sqlTypeName == SqlTypeName.ANY)
-                    type = ((IgniteTypeFactory)typeFactory).createCustomType((String)map.get("name"));
+                else if (sqlTypeName == SqlTypeName.ANY) {
+                    String customType = (String)map.get("customType");
+
+                    if (customType != null)
+                        type = ((IgniteTypeFactory)typeFactory).createCustomType(classForName(customType, false));
+                }
                 else if (precision == null)
                     type = typeFactory.createSqlType(sqlTypeName);
                 else if (scale == null)
@@ -717,8 +722,8 @@ class RelJson {
         else {
             Map<String, Object> map = map();
             map.put("type", toJson(node.getSqlTypeName()));
-            if (node.getSqlTypeName() == SqlTypeName.ANY)
-                map.put("name", node.toString());
+            if (node.getSqlTypeName() == SqlTypeName.ANY && node instanceof IgniteCustomType)
+                map.put("customType", ((IgniteCustomType)node).storageType().getTypeName());
             if (node.isNullable())
                 map.put("nullable", true);
             if (node.getSqlTypeName().allowsPrec())

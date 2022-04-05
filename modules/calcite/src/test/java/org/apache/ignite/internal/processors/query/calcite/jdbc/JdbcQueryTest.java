@@ -41,12 +41,11 @@ import org.apache.ignite.calcite.CalciteQueryEngineConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.SqlConfiguration;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-
-import static org.apache.ignite.internal.util.lang.GridFunc.compareArrays;
 
 /**
  *
@@ -107,8 +106,11 @@ public class JdbcQueryTest extends GridCommonAbstractTest {
 
         values.add("str");
         values.add(11);
+        values.add(2);
+        values.add(5);
+        values.add(7);
         values.add(101.1);
-        values.add(202.2f);
+        values.add(202.2d);
         values.add(new byte[] {1, 2, 3});
         values.add(UUID.randomUUID());
         values.add(new ObjectToStore(1, "noname", 22.2));
@@ -146,8 +148,8 @@ public class JdbcQueryTest extends GridCommonAbstractTest {
             for (Object obj : values) {
                 assertTrue(rs.next());
 
-                if (obj != null && obj.getClass().isArray())
-                    compareArrays(obj, rs.getObject(2));
+                if (F.isArray(obj))
+                    F.compareArrays(obj, rs.getObject(2));
                 else
                     assertEquals(obj, rs.getObject(2));
             }
@@ -293,6 +295,9 @@ public class JdbcQueryTest extends GridCommonAbstractTest {
             "date_col DATE, " +
             "interval_ym_col INTERVAL YEAR TO MONTH, " +
             "interval_dt_col INTERVAL DAY TO SECONDS, " +
+            "uuid_col UUID, " +
+            "other_col OTHER, " +
+            "binary_col BINARY, " +
             "PRIMARY KEY (id));");
 
         grid(0).context().cache().context().exchange().affinityReadyFuture(
@@ -300,8 +305,9 @@ public class JdbcQueryTest extends GridCommonAbstractTest {
 
         stmt.executeUpdate("INSERT INTO t1 (id, bool_col, tinyint_col, smallint_col, int_col, bigint_col, " +
             "varchar_col, char_col, float_col, double_col, time_col, timestamp_col_14, timestamp_col_10, " +
-            "timestamp_col_def, date_col, interval_ym_col, interval_dt_col) " +
-            "VALUES (1, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null);");
+            "timestamp_col_def, date_col, interval_ym_col, interval_dt_col, uuid_col, other_col, binary_col) " +
+            "VALUES (1, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, " +
+            "null, null, null, null);");
 
         try (ResultSet rs = stmt.executeQuery("SELECT * FROM t1;")) {
             assertTrue(rs.next());
@@ -327,6 +333,12 @@ public class JdbcQueryTest extends GridCommonAbstractTest {
             // Custom java types Period and Duration for intervals.
             assertEquals(Types.OTHER, md.getColumnType(16));
             assertEquals(Types.OTHER, md.getColumnType(17));
+
+            assertEquals(Types.OTHER, md.getColumnType(18));
+            assertEquals(UUID.class.getName(), md.getColumnClassName(18));
+
+            assertEquals(Types.OTHER, md.getColumnType(19));
+            assertEquals(Object.class.getName(), md.getColumnClassName(19));
         }
 
         stmt.execute("DROP TABLE t1");
@@ -356,10 +368,13 @@ public class JdbcQueryTest extends GridCommonAbstractTest {
         @Override public boolean equals(Object o) {
             if (this == o)
                 return true;
+
             if (o == null || getClass() != o.getClass())
                 return false;
+
             ObjectToStore store = (ObjectToStore)o;
-            return id == store.id && Double.compare(store.val, val) == 0 && Objects.equals(name, store.name);
+
+            return id == store.id && val == store.val && Objects.equals(name, store.name);
         }
 
         /** */

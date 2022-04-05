@@ -24,12 +24,12 @@ import org.apache.calcite.sql.type.SqlTypeFamily;
 import org.apache.calcite.sql.type.SqlTypeName;
 
 /** Custom type base. */
-public abstract class IgniteSqlCalciteType extends RelDataTypeImpl {
+public abstract class IgniteCustomType extends RelDataTypeImpl {
     /** Nullable flag. */
     private final boolean nullable;
 
     /** Ctor. */
-    protected IgniteSqlCalciteType(boolean nullable) {
+    protected IgniteCustomType(boolean nullable) {
         this.nullable = nullable;
 
         computeDigest();

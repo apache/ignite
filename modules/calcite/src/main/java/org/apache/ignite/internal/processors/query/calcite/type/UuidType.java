@@ -21,7 +21,7 @@ import java.lang.reflect.Type;
 import java.util.UUID;
 
 /** UUID SQL type. */
-public class UuidType extends IgniteSqlCalciteType {
+public class UuidType extends IgniteCustomType {
     /** Ctor. */
     public UuidType(boolean nullable) {
         super(nullable);

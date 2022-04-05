@@ -903,11 +903,11 @@ public class Accumulators {
 
         /** */
         public static final Supplier<Accumulator> UUID_MIN_FACTORY = () -> new ComparableMinMax<UUID>(true,
-            tf -> tf.createTypeWithNullability(tf.createCustomType("UUID"), true));
+            tf -> tf.createTypeWithNullability(tf.createCustomType(UUID.class), true));
 
         /** */
         public static final Supplier<Accumulator> UUID_MAX_FACTORY = () -> new ComparableMinMax<UUID>(false,
-            tf -> tf.createTypeWithNullability(tf.createCustomType("UUID"), true));
+            tf -> tf.createTypeWithNullability(tf.createCustomType(UUID.class), true));
 
         /** */
         private final boolean min;
