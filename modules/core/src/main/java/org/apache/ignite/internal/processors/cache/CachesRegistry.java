@@ -183,11 +183,8 @@ public class CachesRegistry {
      * @return Future that will be completed when all unregistered cache configurations will be persisted.
      */
     public IgniteInternalFuture<?> update(ExchangeActions exchActions) {
-        for (ExchangeActions.CacheGroupActionData stopAction : exchActions.cacheGroupsToStop()) {
-            CacheGroupDescriptor rmvd = unregisterGroup(stopAction.descriptor().groupId());
-
-            assert rmvd != null : stopAction.descriptor().cacheOrGroupName();
-        }
+        for (ExchangeActions.CacheGroupActionData stopAction : exchActions.cacheGroupsToStop())
+            unregisterGroup(stopAction.descriptor().groupId());
 
         for (ExchangeActions.CacheActionData req : exchActions.cacheStopRequests())
             unregisterCache(req.descriptor().cacheId());

@@ -91,6 +91,7 @@ import org.apache.ignite.internal.processors.cache.query.CacheQueryFuture;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.cache.query.IndexQueryDesc;
+import org.apache.ignite.internal.processors.cache.query.SqlFieldsQueryEx;
 import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
 import org.apache.ignite.internal.processors.platform.PlatformProcessor;
@@ -2994,12 +2995,22 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                         QueryEngine qryEngine = engineForQuery(cliCtx, qry);
 
                         if (qryEngine != null) {
-                            res = qryEngine.query(
-                                QueryContext.of(qry, cliCtx, cancel),
-                                schemaName,
-                                qry.getSql(),
-                                qry.getArgs() != null ? qry.getArgs() : X.EMPTY_OBJECT_ARRAY
-                            );
+                            if (qry instanceof SqlFieldsQueryEx && ((SqlFieldsQueryEx)qry).isBatched()) {
+                                res = qryEngine.queryBatched(
+                                    QueryContext.of(qry, cliCtx, cancel),
+                                    schemaName,
+                                    qry.getSql(),
+                                    ((SqlFieldsQueryEx)qry).batchedArguments()
+                                );
+                            }
+                            else {
+                                res = qryEngine.query(
+                                    QueryContext.of(qry, cliCtx, cancel),
+                                    schemaName,
+                                    qry.getSql(),
+                                    qry.getArgs() != null ? qry.getArgs() : X.EMPTY_OBJECT_ARRAY
+                                );
+                            }
                         }
                         else {
                             res = idx.querySqlFields(
