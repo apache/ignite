@@ -1996,7 +1996,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
                 if (!pass) {
                     if (expiryPlc != null && !readFromStore && !cctx.putIfAbsentFilter(filter) && hasValueUnlocked())
-                        updateTtl(expiryPlc);
+                        updateTtlUnlocked(expiryPlc);
 
                     Object val = retval ?
                         cctx.cacheObjectContext().unwrapBinaryIfNeeded(CU.value(old, cctx, false), keepBinary, false, null)
@@ -2055,7 +2055,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
                 if (!entry.modified()) {
                     if (expiryPlc != null && !readFromStore && hasValueUnlocked())
-                        updateTtl(expiryPlc);
+                        updateTtlUnlocked(expiryPlc);
 
                     updateMetrics(READ, metrics, transformOp, old != null);
 
@@ -2994,11 +2994,11 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
      *
      * @param expiryPlc Expiry policy.
      */
-    private void updateTtl(ExpiryPolicy expiryPlc) throws IgniteCheckedException, GridCacheEntryRemovedException {
+    private void updateTtlUnlocked(ExpiryPolicy expiryPlc) throws IgniteCheckedException {
         long ttl = CU.toTtl(expiryPlc.getExpiryForAccess());
 
         if (ttl != CU.TTL_NOT_CHANGED)
-            updateTtl(ttl);
+            updateTtlUnlocked(ttl);
     }
 
     /**
@@ -3017,7 +3017,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         long ttl = expiryPlc.forAccess();
 
         if (ttl != CU.TTL_NOT_CHANGED) {
-            updateTtl(ttl);
+            updateTtlUnlocked(ttl);
 
             expiryPlc.ttlUpdated(key(), ver, hasReaders() ? ((GridDhtCacheEntry)this).readers() : null);
         }
@@ -3026,7 +3026,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
     /**
      * @param ttl Time to live.
      */
-    private void updateTtl(long ttl) throws IgniteCheckedException, GridCacheEntryRemovedException {
+    private void updateTtlUnlocked(long ttl) throws IgniteCheckedException {
         assert ttl >= 0 || ttl == CU.TTL_ZERO : ttl;
         assert lock.isHeldByCurrentThread();
 
@@ -4240,7 +4240,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
             if (hasValueUnlocked()) {
                 try {
-                    updateTtl(ttl);
+                    updateTtlUnlocked(ttl);
                 }
                 catch (IgniteCheckedException e) {
                     U.error(log, "Failed to update TTL: " + e, e);
