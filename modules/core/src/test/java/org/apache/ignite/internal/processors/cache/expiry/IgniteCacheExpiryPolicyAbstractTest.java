@@ -19,12 +19,10 @@ package org.apache.ignite.internal.processors.cache.expiry;
 
 import java.io.Serializable;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -1129,42 +1127,38 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
 
         startGrids();
 
-        List<LinkedHashSet<Integer>> keySets = Arrays.asList(new LinkedHashSet<>(), new LinkedHashSet<>());
         Affinity<Object> aff = grid(0).affinity(DEFAULT_CACHE_NAME);
         IgniteCache<Object, ?> expirePlcCache = jcache(2).withExpiryPolicy(new TestPolicy(1100L, 1200L, 100L));
-        List<Integer> keys = backupKeys(jcache(2), 10_000, 0);
+        List<Integer> keys = new ArrayList<>();
 
-        for (Integer key : keys) {
-            jcache(0).put(key, key);
-
-            int primaryIdx = aff.isPrimary(grid(0).localNode(), key) ? 0 : 1;
-
-            LinkedHashSet<Integer> primaryKeySet = keySets.get(primaryIdx);
-
-            primaryKeySet.add(key);
-
-            if (primaryKeySet.size() == 2) {
-                // Add a near reader for the last key from the non-affinity node.
-                jcache(Math.abs(primaryIdx - 1)).get(key);
-
-                IgniteInternalFuture<?> fut = GridTestUtils.runAsync(() -> {
-                    // Trying to cause a race between read and ttl update on the primary node.
-                    for (int j = 0; j < 10; j++)
-                        jcache(primaryIdx).getAll(primaryKeySet);
-                });
-
-                // Update ttl from the backup node.
-                expirePlcCache.getAll(primaryKeySet);
-
-                fut.get(getTestTimeout());
-
-                primaryKeySet.clear();
-            }
+        // Generate keys so that for each key node 0 is primary, node 1 is non-affinity and node 2 is backup.
+        for (int i = 0; keys.size() < 10_000; i++) {
+            if (aff.isBackup(grid(2).localNode(), i) && !aff.isPrimaryOrBackup(grid(1).localNode(), i))
+                keys.add(i);
         }
 
-        // Remaining keys are not expected to be evicted.
-        keySets.get(0).addAll(keySets.get(1));
-        keys.removeAll(keySets.get(0));
+        for (int i = 0; i < keys.size(); i += 2) {
+            Integer key1 = keys.get(i);
+            Integer key2 = keys.get(i + 1);
+
+            Map<Integer, Integer> keyBatch = F.asMap(key1, key1, key2, key2);
+
+            jcache(0).putAll(keyBatch);
+
+            // Add a near reader for the second key from the non-affinity node.
+            jcache(1).get(key2);
+
+            IgniteInternalFuture<?> fut = GridTestUtils.runAsync(() -> {
+                // Trying to cause a race between read and ttl update on the primary node.
+                for (int j = 0; j < 10; j++)
+                    jcache(0).getAll(keyBatch.keySet());
+            });
+
+            // Update ttl from the backup node.
+            expirePlcCache.getAll(keyBatch.keySet());
+
+            fut.get(getTestTimeout());
+        }
 
         // Make sure all keys have expired.
         for (Integer key : keys)
