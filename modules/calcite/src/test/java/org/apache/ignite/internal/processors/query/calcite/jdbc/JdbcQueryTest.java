@@ -17,15 +17,15 @@
 
 package org.apache.ignite.internal.processors.query.calcite.jdbc;
 
-import java.io.Serializable;
+import java.sql.BatchUpdateException;
 import java.sql.Connection;
 import java.sql.DriverManager;
-import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.Types;
+import java.util.Arrays;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -39,6 +39,7 @@ import org.apache.ignite.calcite.CalciteQueryEngineConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.SqlConfiguration;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
@@ -174,6 +175,73 @@ public class JdbcQueryTest extends GridCommonAbstractTest {
         stmt.execute("drop table Person");
 
         stmt.close();
+    }
+
+    /** Test batched execution of statement. */
+    @Test
+    public void testBatch() throws Exception {
+        stmt.execute("CREATE TABLE Person(\"id\" INT, PRIMARY KEY(\"id\"), \"name\" VARCHAR)");
+
+        for (int i = 0; i < 10; ++i)
+            stmt.addBatch(String.format("INSERT INTO Person VALUES (%d, 'Name')", i));
+
+        stmt.executeBatch();
+
+        try (ResultSet rs = stmt.executeQuery("select * from Person p order by \"id\" asc")) {
+            for (int i = 0; rs.next(); ++i) {
+                assertEquals(i, rs.getInt(1));
+                assertEquals("Name", rs.getString(2));
+            }
+        }
+    }
+
+    /** Test batched execution of prepared statement. */
+    @Test
+    public void testBatchPrepared() throws Exception {
+        stmt.execute("CREATE TABLE Person(\"id\" INT, PRIMARY KEY(\"id\"), \"name\" VARCHAR)");
+
+        try (PreparedStatement stmt0 = conn.prepareStatement("INSERT INTO Person VALUES (?, ?);" +
+            "INSERT INTO Person VALUES (?, ?)")) {
+            stmt0.setInt(1, 0);
+            stmt0.setString(2, "Name");
+            stmt0.setInt(2, 1);
+            stmt0.setString(4, "Name");
+            stmt0.addBatch();
+
+            GridTestUtils.assertThrows(log, stmt0::executeBatch, BatchUpdateException.class,
+                "Multiline statements are not supported in batched query");
+        }
+
+        try (PreparedStatement stmt0 = conn.prepareStatement("SELECT * FROM Person WHERE id = ?")) {
+            stmt0.setInt(1, 0);
+            stmt0.addBatch();
+
+            GridTestUtils.assertThrows(log, stmt0::executeBatch, BatchUpdateException.class,
+                "Unexpected operation kind for batched query [kind=SELECT]");
+        }
+
+        int[] ret;
+        try (PreparedStatement stmt0 = conn.prepareStatement("INSERT INTO Person VALUES (?, ?), (?, ?)")) {
+            for (int i = 0; i < 1000; i += 2) {
+                stmt0.setInt(1, i);
+                stmt0.setString(2, "Name");
+                stmt0.setInt(3, i + 1);
+                stmt0.setString(4, "Name");
+                stmt0.addBatch();
+            }
+
+            ret = stmt0.executeBatch();
+        }
+
+        try (ResultSet rs = stmt.executeQuery("select * from Person p order by \"id\" asc")) {
+            int i = 0;
+            for (; rs.next(); ++i) {
+                assertEquals(i, rs.getInt(1));
+                assertEquals("Name", rs.getString(2));
+            }
+            assertEquals(ret.length * 2, i);
+            assertTrue(Arrays.stream(ret).anyMatch(k -> k == 2));
+        }
     }
 
     /**
