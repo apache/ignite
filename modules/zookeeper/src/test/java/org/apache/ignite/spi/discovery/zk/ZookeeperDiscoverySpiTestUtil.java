@@ -19,6 +19,7 @@ package org.apache.ignite.spi.discovery.zk;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.apache.curator.test.InstanceSpec;
@@ -61,7 +62,10 @@ public class ZookeeperDiscoverySpiTestUtil {
                     throw new IgniteException("Failed to create directory for test Zookeeper server: " + file.getAbsolutePath());
             }
 
-            Map<String, Object> props = customProps != null ? customProps[i] : null;
+            Map<String, Object> props = customProps != null ? customProps[i] : new HashMap<>();
+
+            props.put("electionPortBindRetry", "0");
+            props.put("admin.enableServer", "false");
 
             specs.add(new InstanceSpec(file, -1, -1, -1, true, -1, -1, 500, props));
         }
