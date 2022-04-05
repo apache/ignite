@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.calcite.jdbc;
 
+import java.io.Serializable;
 import java.sql.BatchUpdateException;
 import java.sql.Connection;
 import java.sql.DriverManager;
