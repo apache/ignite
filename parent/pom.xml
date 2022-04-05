@@ -27,21 +27,16 @@
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
-        <groupId>org.apache.ignite</groupId>
-        <artifactId>ignite-bom</artifactId>
-        <version>${revision}</version>
-        <relativePath>../parent-bom/pom.xml</relativePath>
+        <groupId>org.apache</groupId>
+        <artifactId>apache</artifactId>
+        <version>23</version>
     </parent>
-
-    <artifactId>ignite-parent</artifactId>
-    <packaging>pom</packaging>
-
-    <url>https://ignite.apache.org</url>
 
     <properties>
         <maven.compiler.source>1.8</maven.compiler.source>
         <maven.compiler.target>1.8</maven.compiler.target>
 
+        <revision>2.13.0-SNAPSHOT</revision>
         <ignite.edition>apache-ignite</ignite.edition>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.build.timestamp.format>MMMM d yyyy</maven.build.timestamp.format>
@@ -161,6 +156,37 @@
 
     </properties>
 
+    <groupId>org.apache.ignite</groupId>
+    <artifactId>ignite-parent</artifactId>
+    <version>1</version>
+    <packaging>pom</packaging>
+
+    <url>http://ignite.apache.org</url>
+
+    <description>Java-based middleware for in-memory processing of big data in a distributed environment.</description>
+
+    <licenses>
+        <license>
+            <name>The Apache Software License, Version 2.0</name>
+            <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+        </license>
+    </licenses>
+
+    <mailingLists>
+        <mailingList>
+            <name>Ignite Dev List</name>
+            <subscribe>dev-subscribe@ignite.apache.org</subscribe>
+            <unsubscribe>dev-unsubscribe@ignite.apache.org</unsubscribe>
+            <post>dev@ignite.apache.org</post>
+            <archive>http://mail-archives.apache.org/mod_mbox/ignite-dev</archive>
+        </mailingList>
+    </mailingLists>
+
+    <issueManagement>
+        <system>jira</system>
+        <url>http://issues.apache.org/jira/browse/IGNITE</url>
+    </issueManagement>
+
     <dependencyManagement>
         <dependencies>
             <dependency>
@@ -206,8 +232,6 @@
                     <version>${maven.checkstyle.plugin.version}</version>
                     <configuration>
                         <skip>true</skip>
-                        <!-- The source directories tag below is used to dynamically add the sources in case
-                            additional build profiles are activated (combine.children="append" is used). -->
                         <sourceDirectories>
                             <sourceDirectory>${project.build.sourceDirectory}</sourceDirectory>
                             <sourceDirectory>${project.build.testSourceDirectory}</sourceDirectory>
@@ -217,9 +241,8 @@
                         <failsOnError>true</failsOnError>
                         <failOnViolation>true</failOnViolation>
                         <outputFile>${project.build.directory}/checkstyle-result.xml</outputFile>
-                        <!-- This configuration checkstyle files will be obtained from the 'ignite-checkstyle' resources. -->
-                        <configLocation>checkstyle/checkstyle.xml</configLocation>
-                        <suppressionsLocation>checkstyle/checkstyle-suppressions.xml</suppressionsLocation>
+                        <configLocation>../checkstyle/checkstyle.xml</configLocation>
+                        <suppressionsLocation>../checkstyle/checkstyle-suppressions.xml</suppressionsLocation>
                         <includeTestSourceDirectory>true</includeTestSourceDirectory>
                         <excludes>**/generated/**/*</excludes>
                     </configuration>
@@ -228,11 +251,6 @@
                             <groupId>com.puppycrawl.tools</groupId>
                             <artifactId>checkstyle</artifactId>
                             <version>${checkstyle.puppycrawl.version}</version>
-                        </dependency>
-                        <dependency>
-                            <groupId>${project.groupId}</groupId>
-                            <artifactId>ignite-checkstyle</artifactId>
-                            <version>${ignite.version}</version>
                         </dependency>
                     </dependencies>
                 </plugin>
@@ -285,12 +303,12 @@
                                 <tagletArtifact>
                                     <groupId>${project.groupId}</groupId>
                                     <artifactId>ignite-tools</artifactId>
-                                    <version>${ignite.version}</version>
+                                    <version>${project.version}</version>
                                 </tagletArtifact>
                             </taglet>
                         </taglets>
-                        <doctitle>Ignite ${ignite.version}</doctitle>
-                        <windowtitle>Ignite ${ignite.version}</windowtitle>
+                        <doctitle>Ignite ${project.version}</doctitle>
+                        <windowtitle>Ignite ${project.version}</windowtitle>
                         <breakiterator>true</breakiterator>
                         <verbose>true</verbose>
                         <show>protected</show>
@@ -586,82 +604,6 @@
                         </execution>
                     </executions>
                 </plugin>
-
-                <plugin>
-                    <groupId>org.apache.maven.plugins</groupId>
-                    <artifactId>maven-resources-plugin</artifactId>
-                    <version>3.2.0</version>
-                </plugin>
-
-                <plugin>
-                    <groupId>org.codehaus.mojo</groupId>
-                    <artifactId>build-helper-maven-plugin</artifactId>
-                    <version>3.0.0</version>
-                </plugin>
-
-                <plugin>
-                    <groupId>org.apache.maven.plugins</groupId>
-                    <artifactId>maven-surefire-plugin</artifactId>
-                    <version>${surefire.version}</version>
-                    <dependencies>
-                        <dependency>
-                            <groupId>${project.groupId}</groupId>
-                            <artifactId>ignite-tools</artifactId>
-                            <version>${ignite.version}</version>
-                        </dependency>
-                    </dependencies>
-                </plugin>
-
-                <plugin>
-                    <groupId>org.apache.maven.plugins</groupId>
-                    <artifactId>maven-antrun-plugin</artifactId>
-                    <version>1.8</version>
-                </plugin>
-
-                <plugin>
-                    <groupId>org.codehaus.mojo</groupId>
-                    <artifactId>exec-maven-plugin</artifactId>
-                    <version>1.3.2</version>
-                    <dependencies>
-                        <dependency>
-                            <groupId>${project.groupId}</groupId>
-                            <artifactId>ignite-tools</artifactId>
-                            <version>${ignite.version}</version>
-                        </dependency>
-                    </dependencies>
-                </plugin>
-
-                <plugin>
-                    <groupId>org.codehaus.mojo</groupId>
-                    <artifactId>flatten-maven-plugin</artifactId>
-                    <version>${maven.flatten.plugin.version}</version>
-
-                    <executions>
-                        <execution>
-                            <id>flatten</id>
-                            <configuration>
-                                <flattenMode>oss</flattenMode>
-                                <flattenedPomFilename>${maven.flatten.file.name}</flattenedPomFilename>
-                            </configuration>
-                            <phase>process-resources</phase>
-                            <goals>
-                                <goal>flatten</goal>
-                            </goals>
-                        </execution>
-
-                        <!-- ensure proper cleanup before start -->
-                        <execution>
-                            <id>flatten.clean.before</id>
-                            <configuration>
-                                <flattenedPomFilename>${maven.flatten.file.name}</flattenedPomFilename>
-                            </configuration>
-                            <phase>clean</phase>
-                            <goals>
-                                <goal>clean</goal>
-                            </goals>
-                        </execution>
-                    </executions>
-                </plugin>
             </plugins>
         </pluginManagement>
 
@@ -669,7 +611,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
-
+                <version>${surefire.version}</version>
                 <configuration>
                     <forkCount>0</forkCount>
                     <statelessTestsetInfoReporter implementation="org.apache.ignite.tools.surefire.TestSuiteAwareTestsetReporter"/>
@@ -684,6 +626,13 @@
                         <include>**/*.java</include>
                     </includes>
                 </configuration>
+                <dependencies>
+                    <dependency>
+                        <groupId>${project.groupId}</groupId>
+                        <artifactId>ignite-tools</artifactId>
+                        <version>${project.version}</version>
+                    </dependency>
+                </dependencies>
             </plugin>
 
             <plugin>
@@ -707,32 +656,78 @@
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>flatten-maven-plugin</artifactId>
+                <version>1.0.1</version>
+
+                <configuration>
+                    <flattenMode>minimum</flattenMode>
+                    <flattenedPomFilename>pom-installed.xml</flattenedPomFilename>
+                </configuration>
 
                 <executions>
-                    <!-- disable flattering for parent pom. -->
+                    <!-- enable flattening -->
                     <execution>
                         <id>flatten</id>
-                        <inherited>false</inherited>
-                        <phase/>
-                    </execution>
-
-                    <execution>
-                        <id>flatten-parent</id>
-                        <inherited>false</inherited>
-                        <configuration>
-                            <updatePomFile>true</updatePomFile>
-                            <flattenMode>resolveCiFriendliesOnly</flattenMode>
-                            <flattenedPomFilename>${maven.flatten.file.name}</flattenedPomFilename>
-                            <pomElements>
-                                <properties>resolve</properties>
-                            </pomElements>
-                        </configuration>
                         <phase>process-resources</phase>
                         <goals>
                             <goal>flatten</goal>
                         </goals>
                     </execution>
+
+                    <!-- ensure proper cleanup before start -->
+                    <execution>
+                        <id>flatten.clean.before</id>
+                        <phase>clean</phase>
+                        <goals>
+                            <goal>clean</goal>
+                        </goals>
+                    </execution>
                 </executions>
+            </plugin>
+
+            <!-- ensure proper cleanup after install -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-clean-plugin</artifactId>
+                <inherited>false</inherited>
+                <executions>
+                    <execution>
+                        <id>flatten.clean.after</id>
+                        <phase>install</phase>
+                        <goals>
+                            <goal>clean</goal>
+                        </goals>
+                        <configuration>
+                            <excludeDefaultDirectories>true</excludeDefaultDirectories>
+                            <filesets>
+                                <fileset>
+                                    <directory>${project.basedir}</directory>
+                                    <includes>
+                                        <include>**/pom-installed.xml</include>
+                                    </includes>
+                                </fileset>
+                            </filesets>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-install-plugin</artifactId>
+                <version>2.5.2</version>
+                <inherited>false</inherited>
+                <configuration>
+                    <skip>true</skip>
+                </configuration>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-deploy-plugin</artifactId>
+                <version>2.8.2</version>
+                <configuration>
+                    <skip>true</skip>
+                </configuration>
             </plugin>
 
             <plugin>
@@ -741,6 +736,17 @@
                 <version>3.0.0-M2</version>
                 <configuration>
                     <rules>
+                        <requireJavaVersion>
+                            <!--Detected JDK Version: 1.8.0 is not in the allowed range [1.7,1.8),[1.8.0-40,).-->
+                            <message>
+[INFO] ------------------------------------------------------------------------
+[ERROR] You are trying to compile Apache Ignite with inappropriate JDK version!
+[ERROR] Detected JDK Version: ${java.runtime.version}
+[ERROR] JDK version should be 1.7.0-* or >= 1.8.0-u40.
+                            </message>
+                            <version>[1.7,1.8),[1.8.0-40,)</version>
+                        </requireJavaVersion>
+
                         <requireMavenVersion>
                             <version>[3.5.0,)</version>
                         </requireMavenVersion>
@@ -787,6 +793,20 @@
                     </execution>
                 </executions>
             </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-checkstyle-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>style</id>
+                        <goals>
+                            <goal>check</goal>
+                        </goals>
+                        <phase>validate</phase>
+                    </execution>
+                </executions>
+            </plugin>
         </plugins>
     </build>
 
@@ -801,15 +821,6 @@
                         <configuration>
                             <skip>false</skip>
                         </configuration>
-                        <executions>
-                            <execution>
-                                <id>style</id>
-                                <goals>
-                                    <goal>check</goal>
-                                </goals>
-                                <phase>validate</phase>
-                            </execution>
-                        </executions>
                     </plugin>
                 </plugins>
             </build>
@@ -855,7 +866,6 @@
                         </configuration>
                         <executions>
                             <execution>
-                                <id>check-licenses</id>
                                 <phase>validate</phase>
                                 <goals>
                                     <goal>check</goal>
@@ -880,7 +890,7 @@
                                         <exclude>**/*.iml</exclude><!--IDEA files-->
                                         <exclude>**/*.csv</exclude><!--CSV files-->
                                         <exclude>**/*.jks</exclude><!--bin-files-->
-<!--                                        <exclude>**/pom-installed.xml</exclude>&lt;!&ndash;tmp-files&ndash;&gt;-->
+                                        <exclude>**/pom-installed.xml</exclude><!--tmp-files-->
                                         <exclude>**/keystore</exclude><!--bin-files-->
                                         <exclude>**/keystore/*.jks</exclude><!--bin-files-->
                                         <exclude>**/keystore/*.pem</exclude><!--auto generated files-->
@@ -1220,13 +1230,14 @@
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-antrun-plugin</artifactId>
+                        <version>1.7</version>
                         <executions>
                             <execution>
                                 <id>licenses-file-rename</id>
                                 <goals>
                                     <goal>run</goal>
                                 </goals>
-                                <phase>generate-resources</phase>
+                                <phase>compile</phase>
                                 <configuration>
                                     <target>
                                         <!-- moving licenses generated by "ignite-dependencies" -->
@@ -1298,6 +1309,7 @@
                                             <pluginExecutionFilter>
                                                 <groupId>org.codehaus.mojo</groupId>
                                                 <artifactId>flatten-maven-plugin</artifactId>
+                                                <versionRange>1.0.1</versionRange>
                                                 <goals>
                                                     <goal>flatten</goal>
                                                 </goals>
