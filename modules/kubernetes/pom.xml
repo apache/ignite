@@ -26,18 +26,19 @@
     <parent>
         <groupId>org.apache.ignite</groupId>
         <artifactId>ignite-parent</artifactId>
-        <version>${revision}</version>
+        <version>1</version>
         <relativePath>../../parent</relativePath>
     </parent>
 
     <artifactId>ignite-kubernetes</artifactId>
-
+    <version>${revision}</version>
     <url>http://ignite.apache.org</url>
 
     <dependencies>
         <dependency>
             <groupId>${project.groupId}</groupId>
             <artifactId>ignite-core</artifactId>
+            <version>${project.version}</version>
         </dependency>
 
         <dependency>
@@ -61,6 +62,7 @@
         <dependency>
             <groupId>${project.groupId}</groupId>
             <artifactId>ignite-core</artifactId>
+            <version>${project.version}</version>
             <type>test-jar</type>
             <scope>test</scope>
         </dependency>
@@ -68,6 +70,7 @@
         <dependency>
             <groupId>${project.groupId}</groupId>
             <artifactId>ignite-tools</artifactId>
+            <version>${project.version}</version>
             <scope>test</scope>
         </dependency>
 

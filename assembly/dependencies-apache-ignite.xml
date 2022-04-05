@@ -113,7 +113,6 @@
         <moduleSet>
             <includeSubModules>true</includeSubModules>
             <excludes>
-                <exclude>${project.groupId}:ignite-bom</exclude>
                 <exclude>${project.groupId}:ignite-core</exclude>
                 <exclude>${project.groupId}:ignite-clients</exclude>
                 <exclude>${project.groupId}:ignite-spring</exclude>
