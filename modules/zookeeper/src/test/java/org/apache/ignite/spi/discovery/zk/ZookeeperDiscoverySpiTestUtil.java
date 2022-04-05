@@ -62,7 +62,7 @@ public class ZookeeperDiscoverySpiTestUtil {
                     throw new IgniteException("Failed to create directory for test Zookeeper server: " + file.getAbsolutePath());
             }
 
-            Map<String, Object> props = customProps != null && customProps[i] != null  ? customProps[i] : new HashMap<>();
+            Map<String, Object> props = customProps != null && customProps[i] != null ? customProps[i] : new HashMap<>();
 
             props.put("electionPortBindRetry", "0");
             props.put("admin.enableServer", "false");
