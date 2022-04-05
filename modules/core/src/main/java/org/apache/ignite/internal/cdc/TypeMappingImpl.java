@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.cdc;
 
 import org.apache.ignite.cdc.TypeMapping;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.platform.PlatformType;
 
 /** */
@@ -58,5 +59,10 @@ public class TypeMappingImpl implements TypeMapping {
     /** {@inheritDoc} */
     @Override public PlatformType platform() {
         return platform;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(TypeMappingImpl.class, this);
     }
 }

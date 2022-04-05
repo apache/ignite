@@ -530,7 +530,6 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
                     pArr
                 );
             }
-
         }
 
         if (obj instanceof IgniteBiTuple) {
