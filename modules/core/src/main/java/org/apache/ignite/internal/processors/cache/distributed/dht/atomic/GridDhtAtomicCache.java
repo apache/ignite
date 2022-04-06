@@ -2537,7 +2537,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
                 Object writeVal = op == TRANSFORM ? req.entryProcessor(i) : req.writeValue(i);
 
-                boolean readRepairRecovery = req.entryProcessor(i) instanceof AtomicReadRepairEntryProcessor;
+                boolean readRepairRecovery = op == TRANSFORM && req.entryProcessor(i) instanceof AtomicReadRepairEntryProcessor;
 
                 // Get readers before innerUpdate (reader cleared after remove).
                 GridDhtCacheEntry.ReaderId[] readers = entry.readersLocked();
@@ -2825,7 +2825,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                     EntryProcessor<Object, Object, Object> entryProcessor =
                         entryProcessorMap == null ? null : entryProcessorMap.get(entry.key());
 
-                    boolean readRepairRecovery = entryProcessor instanceof AtomicReadRepairEntryProcessor;
+                    boolean readRepairRecovery = op == TRANSFORM && req.entryProcessor(i) instanceof AtomicReadRepairEntryProcessor;
 
                     GridCacheUpdateAtomicResult updRes = entry.innerUpdate(
                         ver,
