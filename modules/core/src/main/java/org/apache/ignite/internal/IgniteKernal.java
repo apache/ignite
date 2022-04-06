@@ -25,7 +25,6 @@ import java.io.ObjectOutput;
 import java.io.ObjectStreamException;
 import java.io.Serializable;
 import java.lang.management.ManagementFactory;
-import java.lang.management.RuntimeMXBean;
 import java.lang.reflect.Constructor;
 import java.nio.charset.Charset;
 import java.text.DateFormat;
@@ -114,6 +113,8 @@ import org.apache.ignite.internal.managers.loadbalancer.GridLoadBalancerManager;
 import org.apache.ignite.internal.managers.systemview.GridSystemViewManager;
 import org.apache.ignite.internal.managers.tracing.GridTracingManager;
 import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller;
+import org.apache.ignite.internal.plugin.IgniteInfoProvider;
+import org.apache.ignite.internal.plugin.InfoProvider;
 import org.apache.ignite.internal.processors.GridProcessor;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.affinity.GridAffinityProcessor;
@@ -205,7 +206,6 @@ import org.apache.ignite.marshaller.MarshallerExclusions;
 import org.apache.ignite.marshaller.MarshallerUtils;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.plugin.IgnitePlugin;
-import org.apache.ignite.plugin.InfoProvider;
 import org.apache.ignite.plugin.PluginNotFoundException;
 import org.apache.ignite.plugin.PluginProvider;
 import org.apache.ignite.spi.IgniteSpi;
@@ -850,8 +850,7 @@ public class IgniteKernal implements IgniteEx, Externalizable {
         WorkersRegistry workerRegistry,
         Thread.UncaughtExceptionHandler hnd,
         TimeBag startTimer
-    )
-        throws IgniteCheckedException {
+    ) throws IgniteCheckedException {
         gw.compareAndSet(null, new GridKernalGatewayImpl(cfg.getIgniteInstanceName()));
 
         GridKernalGateway gw = this.gw.get();
@@ -903,14 +902,12 @@ public class IgniteKernal implements IgniteEx, Externalizable {
 
         longJVMPauseDetector.start();
 
-        RuntimeMXBean rtBean = ManagementFactory.getRuntimeMXBean();
-
         InfoProvider info0 = U.loadInfoProvider();
 
         if (info0 != null)
             info = info0;
 
-        info.ackInited(log, cfg, rtBean);
+        info.ackKernalInited(log, cfg);
 
         // Check that user attributes are not conflicting
         // with internally reserved names.
@@ -1358,17 +1355,20 @@ public class IgniteKernal implements IgniteEx, Externalizable {
         Ignite g = this;
         long metricsLogFreq = cfg.getMetricsLogFrequency();
 
-        if (metricsLogFreq > 0)
+        if (metricsLogFreq > 0) {
             metricsLogTask = ctx.timeout().schedule(() -> {
                 try {
                     info.ackNodeBasicMetrics(log, g);
-                    info.ackNodeDataStorageMetrics(log, g, true);
-                } catch (IgniteClientDisconnectedException ignore) {
+                    info.ackNodeDataStorageMetrics(log, g);
+                    info.ackNodeMemoryStatisticsMetrics(log, g);
+                }
+                catch (IgniteClientDisconnectedException ignore) {
                     // No-op.
                 }
             }, metricsLogFreq, metricsLogFreq);
+        }
 
-        info.ackStarted(log, this);
+        info.ackKernalStarted(log, this);
 
         if (!isDaemon())
             ctx.discovery().ackTopology(ctx.discovery().localJoin().joinTopologyVersion().topologyVersion(),
@@ -1799,8 +1799,8 @@ public class IgniteKernal implements IgniteEx, Externalizable {
     }
 
     /** */
-    public void dataStorageReport(boolean includeMemoryStatistics) {
-        info.ackNodeDataStorageMetrics(log, this, includeMemoryStatistics);
+    public void dataStorageReport() {
+        info.ackNodeDataStorageMetrics(log, this);
     }
 
     /**
@@ -1971,7 +1971,7 @@ public class IgniteKernal implements IgniteEx, Externalizable {
                 gw.writeUnlock();
             }
 
-            info.ackStopped(log, this, errOnStop);
+            info.ackKernalStopped(log, this, errOnStop);
 
             try {
                 U.onGridStop();

@@ -267,7 +267,7 @@ import org.apache.ignite.logger.LoggerNodeIdAndApplicationAware;
 import org.apache.ignite.logger.LoggerNodeIdAware;
 import org.apache.ignite.logger.java.JavaLogger;
 import org.apache.ignite.marshaller.Marshaller;
-import org.apache.ignite.plugin.InfoProvider;
+import org.apache.ignite.internal.plugin.InfoProvider;
 import org.apache.ignite.plugin.PluginProvider;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;

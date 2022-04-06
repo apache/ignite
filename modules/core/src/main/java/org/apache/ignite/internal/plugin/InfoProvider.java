@@ -15,9 +15,8 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.plugin;
+package org.apache.ignite.internal.plugin;
 
-import java.lang.management.RuntimeMXBean;
 import java.util.ServiceLoader;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteLogger;
@@ -31,9 +30,8 @@ public interface InfoProvider {
     /**
      * @param log Ignite logger.
      * @param cfg Ignite configuration.
-     * @param rtBean Runtime MXBean.
      */
-    public void ackInited(IgniteLogger log, IgniteConfiguration cfg, RuntimeMXBean rtBean);
+    public void ackKernalInited(IgniteLogger log, IgniteConfiguration cfg);
 
     /**
      * @param log Ignite Logger.
@@ -44,20 +42,25 @@ public interface InfoProvider {
     /**
      * @param log Ignite Logger.
      * @param ignite Ignite instance.
-     * @param includeMemoryStatistics Memory statistics.
      */
-    public void ackNodeDataStorageMetrics(IgniteLogger log, Ignite ignite, boolean includeMemoryStatistics);
+    public void ackNodeDataStorageMetrics(IgniteLogger log, Ignite ignite);
+
+    /**
+     * @param log Ignite Logger.
+     * @param ignite Ignite instance.
+     */
+    public void ackNodeMemoryStatisticsMetrics(IgniteLogger log, Ignite ignite);
 
     /**
      * @param log Ignite logger.
      * @param ignite Ignite instance.
      */
-    public void ackStarted(IgniteLogger log, Ignite ignite);
+    public void ackKernalStarted(IgniteLogger log, Ignite ignite);
 
     /**
      * @param log Ignite logger.
      * @param ignite Ignite instance.
      * @param err {@code true} if error occurred during the Ignite instance stop process.
      */
-    public void ackStopped(IgniteLogger log, Ignite ignite, boolean err);
+    public void ackKernalStopped(IgniteLogger log, Ignite ignite, boolean err);
 }

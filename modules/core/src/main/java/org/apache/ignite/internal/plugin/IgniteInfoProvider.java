@@ -15,11 +15,12 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal;
+package org.apache.ignite.internal.plugin;
 
 import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.lang.management.ManagementFactory;
 import java.lang.management.RuntimeMXBean;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
@@ -47,6 +48,10 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.GridLoggerProxy;
+import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
@@ -57,7 +62,6 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.plugin.InfoProvider;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
 
@@ -85,8 +89,10 @@ public class IgniteInfoProvider implements InfoProvider {
     private final DecimalFormat decimalFormat = new DecimalFormat("#.##", DecimalFormatSymbols.getInstance(Locale.US));
 
     /** {@inheritDoc} */
-    @Override public void ackInited(IgniteLogger log, IgniteConfiguration cfg, RuntimeMXBean rtBean) {
+    @Override public void ackKernalInited(IgniteLogger log, IgniteConfiguration cfg) {
         assert log != null;
+
+        RuntimeMXBean rtBean = ManagementFactory.getRuntimeMXBean();
 
         ackAsciiLogo(log, cfg, rtBean);
         ackConfigUrl(log);
@@ -120,14 +126,21 @@ public class IgniteInfoProvider implements InfoProvider {
     }
 
     /** {@inheritDoc} */
-    @Override public void ackNodeDataStorageMetrics(IgniteLogger log, Ignite ignite, boolean includeMemoryStatistics) {
+    @Override public void ackNodeDataStorageMetrics(IgniteLogger log, Ignite ignite) {
         GridKernalContext ctx = ((IgniteEx)ignite).context();
 
-        dataStorageReport(log, ctx.cache().context().database(), decimalFormat, includeMemoryStatistics);
+        dataStorageReport(log, ctx.cache().context().database(), decimalFormat);
     }
 
     /** {@inheritDoc} */
-    @Override public void ackStarted(IgniteLogger log, Ignite ignite) {
+    @Override public void ackNodeMemoryStatisticsMetrics(IgniteLogger log, Ignite ignite) {
+        GridKernalContext ctx = ((IgniteEx)ignite).context();
+
+        memoryStatisticsReport(log, ctx.cache().context().database(), decimalFormat);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void ackKernalStarted(IgniteLogger log, Ignite ignite) {
         IgniteEx igEx = (IgniteEx)ignite;
 
         ackPerformanceSuggestions(log, igEx);
@@ -137,7 +150,7 @@ public class IgniteInfoProvider implements InfoProvider {
     }
 
     /** {@inheritDoc} */
-    @Override public void ackStopped(IgniteLogger log, Ignite ignite, boolean err) {
+    @Override public void ackKernalStopped(IgniteLogger log, Ignite ignite, boolean err) {
         ackNodeStopped(log, (IgniteEx)ignite, err);
     }
 
@@ -804,114 +817,121 @@ public class IgniteInfoProvider implements InfoProvider {
     /**
      * Print data storage statistics.
      */
-    void dataStorageReport(
-        IgniteLogger log,
-        IgniteCacheDatabaseSharedManager db,
-        DecimalFormat dblFmt,
-        boolean includeMemoryStatistics
-    ) {
-        // Off-heap params.
-        Collection<DataRegion> regions = db.dataRegions();
+    void dataStorageReport(IgniteLogger log, IgniteCacheDatabaseSharedManager db, DecimalFormat dblFmt) {
+        if (F.isEmpty(db.dataRegions()))
+            return;
 
         SB dataRegionsInfo = new SB();
-
         dataRegionsInfo.nl();
+
+        for (DataRegion region : db.dataRegions()) {
+            DataRegionConfiguration regCfg = region.config();
+
+            long pagesCnt = region.pageMemory().loadedPages();
+
+            long offHeapUsed = region.pageMemory().systemPageSize() * pagesCnt;
+            long offHeapInit = regCfg.getInitialSize();
+            long offHeapMax = regCfg.getMaxSize();
+            long offHeapComm = region.metrics().getOffHeapSize();
+
+            long offHeapUsedInMBytes = offHeapUsed / MEGABYTE;
+            long offHeapMaxInMBytes = offHeapMax / MEGABYTE;
+            long offHeapCommInMBytes = offHeapComm / MEGABYTE;
+            long offHeapInitInMBytes = offHeapInit / MEGABYTE;
+
+            double freeOffHeapPct = offHeapMax > 0 ?
+                ((double)((offHeapMax - offHeapUsed) * 100)) / offHeapMax : -1;
+
+            String type = "user";
+
+            try {
+                if (region == db.dataRegion(null))
+                    type = "default";
+                else if (INTERNAL_DATA_REGION_NAMES.contains(regCfg.getName()))
+                    type = "internal";
+            }
+            catch (IgniteCheckedException ice) {
+                // Should never happen
+                ice.printStackTrace();
+            }
+
+            dataRegionsInfo.a("    ^--   ")
+                .a(regCfg.getName()).a(" region [type=").a(type)
+                .a(", persistence=").a(regCfg.isPersistenceEnabled())
+                .a(", lazyAlloc=").a(regCfg.isLazyMemoryAllocation()).a(',').nl()
+                .a("      ...  ")
+                .a("initCfg=").a(dblFmt.format(offHeapInitInMBytes))
+                .a("MB, maxCfg=").a(dblFmt.format(offHeapMaxInMBytes))
+                .a("MB, usedRam=").a(dblFmt.format(offHeapUsedInMBytes))
+                .a("MB, freeRam=").a(dblFmt.format(freeOffHeapPct))
+                .a("%, allocRam=").a(dblFmt.format(offHeapCommInMBytes)).a("MB");
+
+            if (regCfg.isPersistenceEnabled()) {
+                dataRegionsInfo.a(", allocTotal=")
+                    .a(dblFmt.format(region.metrics().getTotalAllocatedSize() / MEGABYTE)).a("MB");
+            }
+
+            dataRegionsInfo.a(']').nl();
+        }
+
+        if (log.isQuiet())
+            U.quietMultipleLines(false, dataRegionsInfo.toString());
+        else if (log.isInfoEnabled())
+            log.info(dataRegionsInfo.toString());
+    }
+
+    /**
+     * @param log Ignite Logger.
+     * @param db Database Shared Manager.
+     * @param dblFmt Double format.
+     */
+    void memoryStatisticsReport(IgniteLogger log, IgniteCacheDatabaseSharedManager db, DecimalFormat dblFmt) {
+        if (F.isEmpty(db.dataRegions()))
+            return;
+
+        SB sb = new SB();
+        sb.nl();
 
         long loadedPages = 0;
         long offHeapUsedSummary = 0;
         long offHeapMaxSummary = 0;
         long offHeapCommSummary = 0;
         long pdsUsedSummary = 0;
-
         boolean persistenceEnabled = false;
 
-        if (!F.isEmpty(regions)) {
-            for (DataRegion region : regions) {
-                DataRegionConfiguration regCfg = region.config();
+        for (DataRegion region : db.dataRegions()) {
+            DataRegionConfiguration regCfg = region.config();
 
-                long pagesCnt = region.pageMemory().loadedPages();
+            long pagesCnt = region.pageMemory().loadedPages();
 
-                long offHeapUsed = region.pageMemory().systemPageSize() * pagesCnt;
-                long offHeapInit = regCfg.getInitialSize();
-                long offHeapMax = regCfg.getMaxSize();
-                long offHeapComm = region.metrics().getOffHeapSize();
+            long offHeapUsed = region.pageMemory().systemPageSize() * pagesCnt;
+            long offHeapMax = regCfg.getMaxSize();
+            long offHeapComm = region.metrics().getOffHeapSize();
 
-                long offHeapUsedInMBytes = offHeapUsed / MEGABYTE;
-                long offHeapMaxInMBytes = offHeapMax / MEGABYTE;
-                long offHeapCommInMBytes = offHeapComm / MEGABYTE;
-                long offHeapInitInMBytes = offHeapInit / MEGABYTE;
+            offHeapUsedSummary += offHeapUsed;
+            offHeapMaxSummary += offHeapMax;
+            offHeapCommSummary += offHeapComm;
+            loadedPages += pagesCnt;
 
-                double freeOffHeapPct = offHeapMax > 0 ?
-                    ((double)((offHeapMax - offHeapUsed) * 100)) / offHeapMax : -1;
+            if (regCfg.isPersistenceEnabled()) {
+                pdsUsedSummary += region.metrics().getTotalAllocatedSize();
 
-                offHeapUsedSummary += offHeapUsed;
-                offHeapMaxSummary += offHeapMax;
-                offHeapCommSummary += offHeapComm;
-                loadedPages += pagesCnt;
-
-                String type = "user";
-
-                try {
-                    if (region == db.dataRegion(null))
-                        type = "default";
-                    else if (INTERNAL_DATA_REGION_NAMES.contains(regCfg.getName()))
-                        type = "internal";
-                }
-                catch (IgniteCheckedException ice) {
-                    // Should never happen
-                    ice.printStackTrace();
-                }
-
-                dataRegionsInfo.a("    ^--   ")
-                    .a(regCfg.getName()).a(" region [type=").a(type)
-                    .a(", persistence=").a(regCfg.isPersistenceEnabled())
-                    .a(", lazyAlloc=").a(regCfg.isLazyMemoryAllocation()).a(',').nl()
-                    .a("      ...  ")
-                    .a("initCfg=").a(dblFmt.format(offHeapInitInMBytes))
-                    .a("MB, maxCfg=").a(dblFmt.format(offHeapMaxInMBytes))
-                    .a("MB, usedRam=").a(dblFmt.format(offHeapUsedInMBytes))
-                    .a("MB, freeRam=").a(dblFmt.format(freeOffHeapPct))
-                    .a("%, allocRam=").a(dblFmt.format(offHeapCommInMBytes)).a("MB");
-
-                if (regCfg.isPersistenceEnabled()) {
-                    long pdsUsed = region.metrics().getTotalAllocatedSize();
-                    long pdsUsedInMBytes = pdsUsed / MEGABYTE;
-
-                    pdsUsedSummary += pdsUsed;
-
-                    dataRegionsInfo.a(", allocTotal=").a(dblFmt.format(pdsUsedInMBytes)).a("MB");
-
-                    persistenceEnabled = true;
-                }
-
-                dataRegionsInfo.a(']').nl();
+                persistenceEnabled = true;
             }
         }
 
-        SB sb = new SB();
+        double freeOffHeapPct = offHeapMaxSummary > 0 ?
+            ((double)((offHeapMaxSummary - offHeapUsedSummary) * 100)) / offHeapMaxSummary : -1;
 
-        if (includeMemoryStatistics) {
-            long offHeapUsedInMBytes = offHeapUsedSummary / MEGABYTE;
-            long offHeapCommInMBytes = offHeapCommSummary / MEGABYTE;
+        sb.nl()
+            .a("Data storage metrics for local node (to disable set 'metricsLogFrequency' to 0)").nl()
+            .a("    ^-- Off-heap memory [used=").a(dblFmt.format(offHeapUsedSummary / MEGABYTE))
+            .a("MB, free=").a(dblFmt.format(freeOffHeapPct))
+            .a("%, allocated=").a(dblFmt.format(offHeapCommSummary / MEGABYTE)).a("MB]").nl()
+            .a("    ^-- Page memory [pages=").a(loadedPages).a("]").nl();
 
-            double freeOffHeapPct = offHeapMaxSummary > 0 ?
-                ((double)((offHeapMaxSummary - offHeapUsedSummary) * 100)) / offHeapMaxSummary : -1;
-
-            sb.nl()
-                .a("Data storage metrics for local node (to disable set 'metricsLogFrequency' to 0)").nl()
-                .a("    ^-- Off-heap memory [used=").a(dblFmt.format(offHeapUsedInMBytes))
-                .a("MB, free=").a(dblFmt.format(freeOffHeapPct))
-                .a("%, allocated=").a(dblFmt.format(offHeapCommInMBytes)).a("MB]").nl()
-                .a("    ^-- Page memory [pages=").a(loadedPages).a("]").nl();
-        }
-
-        sb.a(dataRegionsInfo);
-
-        if (persistenceEnabled) {
-            long pdsUsedMBytes = pdsUsedSummary / MEGABYTE;
-
-            sb.a("    ^-- Ignite persistence [used=").a(dblFmt.format(pdsUsedMBytes)).a("MB]").nl();
-        }
+        if (persistenceEnabled)
+            sb.a("    ^-- Ignite persistence [used=").a(dblFmt.format(pdsUsedSummary / MEGABYTE)).a("MB]").nl();
 
         if (log.isQuiet())
             U.quietMultipleLines(false, sb.toString());

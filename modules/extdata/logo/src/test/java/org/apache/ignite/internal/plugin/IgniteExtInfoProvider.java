@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal;
+package org.apache.ignite.internal.plugin;
 
 import java.lang.management.RuntimeMXBean;
 import org.apache.ignite.IgniteLogger;
