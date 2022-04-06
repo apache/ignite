@@ -276,8 +276,11 @@ public abstract class AbstractCdcTest extends GridCommonAbstractTest {
 
     /** */
     public abstract static class TestCdcConsumer<T> implements CdcConsumer {
-        /** Keys */
+        /** Keys. */
         final ConcurrentMap<IgniteBiTuple<ChangeEventType, Integer>, List<T>> data = new ConcurrentHashMap<>();
+
+        /** Cache events. */
+        protected final ConcurrentMap<Integer, CdcCacheEvent> caches = new ConcurrentHashMap<>();
 
         /** */
         private volatile boolean stopped;
@@ -302,6 +305,8 @@ public abstract class AbstractCdcTest extends GridCommonAbstractTest {
                     F.t(evt.value() == null ? DELETE : UPDATE, evt.cacheId()),
                     k -> new ArrayList<>()).add(extract(evt));
 
+                //TODO: uncomment after in-memory support. assertTrue(caches.containsKey(evt.cacheId()));
+
                 checkEvent(evt);
             });
 
@@ -311,6 +316,20 @@ public abstract class AbstractCdcTest extends GridCommonAbstractTest {
         /** {@inheritDoc} */
         @Override public void onTypes(Iterator<BinaryType> types) {
             types.forEachRemaining(t -> assertNotNull(t));
+        }
+
+        /** {@inheritDoc} */
+        @Override public void onCacheChange(Iterator<CdcCacheEvent> cacheEvts) {
+            cacheEvts.forEachRemaining(evt -> {
+                assertFalse(caches.containsKey(evt.cacheId()));
+
+                caches.put(evt.cacheId(), evt);
+            });
+        }
+
+        /** {@inheritDoc} */
+        @Override public void onCacheDestroy(Iterator<Integer> caches) {
+            caches.forEachRemaining(cacheId -> assertNotNull(this.caches.remove(cacheId)));
         }
 
         /** */
@@ -389,16 +408,6 @@ public abstract class AbstractCdcTest extends GridCommonAbstractTest {
                 assertFalse(typeName.isEmpty());
                 assertEquals(mapper.typeId(typeName), m.typeId());
             });
-        }
-
-        /** {@inheritDoc} */
-        @Override public void onCacheChange(Iterator<CdcCacheEvent> cacheEvents) {
-            cacheEvents.forEachRemaining(ce -> assertNotNull(ce));
-        }
-
-        /** {@inheritDoc} */
-        @Override public void onCacheDestroy(Iterator<Integer> caches) {
-            caches.forEachRemaining(ce -> assertNotNull(ce));
         }
     }
 

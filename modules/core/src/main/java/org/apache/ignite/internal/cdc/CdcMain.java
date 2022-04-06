@@ -574,7 +574,7 @@ public class CdcMain implements Runnable {
             .map(p -> p.resolve(CACHE_DATA_FILENAME))
             .filter(Files::exists)
             .filter(p -> {
-                String cacheNameFromDir = p.getName(p.getNameCount() - 1).toString().replace(CACHE_DIR_PREFIX, "");
+                String cacheNameFromDir = p.getName(p.getNameCount() - 2).toString().replace(CACHE_DIR_PREFIX, "");
 
                 int cacheId = CU.cacheId(cacheNameFromDir);
 
@@ -583,7 +583,7 @@ public class CdcMain implements Runnable {
                 return !(cachesState.containsKey(cacheId) && p.toFile().lastModified() == cachesState.get(cacheId));
             })
             .peek(p -> cachesState.put(
-                CU.cacheId(p.getName(p.getNameCount() - 1).toString().replace(CACHE_DIR_PREFIX, "")),
+                CU.cacheId(p.getName(p.getNameCount() - 2).toString().replace(CACHE_DIR_PREFIX, "")),
                 p.toFile().lastModified()
             ))
             .map(p -> {
@@ -613,6 +613,8 @@ public class CdcMain implements Runnable {
             if (destroyedIter.hasNext())
                 throw new IllegalStateException("Consumer should handle all cache destroy events");
         }
+
+        state.saveCaches(cachesState);
     }
 
     /** Search for new or changed {@link BinaryType} and notifies the consumer. */
@@ -695,6 +697,7 @@ public class CdcMain implements Runnable {
      */
     private CdcFileLockHolder tryLock(File dbStoreDirWithSubdirectory) {
 /*
+TODO: uncommend when in-memory support.
         if (!dbStoreDirWithSubdirectory.exists()) {
             log.warning("DB store directory not exists. Should be created by Ignite Node " +
                 " [dir=" + dbStoreDirWithSubdirectory + ']');
