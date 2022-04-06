@@ -48,7 +48,7 @@ class SnapshotTest(IgniteTest):
         ignite_config = IgniteConfiguration(
             version=version,
             data_storage=DataStorageConfiguration(default=DataRegionConfiguration(persistent=True)),
-            metric_exporter='org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi'
+            metric_exporters={'org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi'}
         )
 
         nodes = IgniteService(self.test_context, ignite_config, num_nodes=self.available_cluster_size - 1)

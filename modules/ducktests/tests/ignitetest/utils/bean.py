@@ -13,30 +13,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License
 
-"""
-This module contains classes and utilities for Ignite DataStorage configuration.
-"""
+class Bean:
+    def __init__(self, class_name, **kwargs):
+        self.class_name = class_name
+        self.properties = kwargs
 
-from typing import NamedTuple
+    def __eq__(self, other):
+        return self.class_name == other.class_name
 
+    def __hash__(self):
+        return self.class_name.__hash__()
 
-class DataRegionConfiguration(NamedTuple):
-    """
-    Ignite DataRegion Configuration
-    """
-    name: str = "default"
-    persistent: bool = False
-    init_size: int = 100 * 1024 * 1024
-    max_size: int = 512 * 1024 * 1024
-    metrics_enabled: bool = True
-    metrics_rate_time_interval: int = None
+    def __repr__(self):
+        return self.class_name
 
-
-class DataStorageConfiguration(NamedTuple):
-    """
-    Ignite DataStorage configuration
-    """
-    default: DataRegionConfiguration = DataRegionConfiguration()
-    max_wal_archive_size: int = None
-    metrics_enabled: bool = True
-    regions: list = []
+    class_name: str
+    properties: {}
