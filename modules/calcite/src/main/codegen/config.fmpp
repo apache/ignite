@@ -68,7 +68,6 @@ data: {
       "ASYNC"
       "QUERY"
       "UUID"
-      "OTHER"
     ]
 
     # List of non-reserved keywords to add;
@@ -99,7 +98,6 @@ data: {
       "ASYNC"
       "QUERY"
       "UUID"
-      "OTHER"
 
       # The following keywords are reserved in core Calcite,
       # are reserved in some version of SQL,

@@ -285,9 +285,9 @@ public class IgniteTypeFactory extends JavaTypeFactoryImpl {
     /** @return Nullable custom type by storage type. {@code Null} if custom type not found. */
     public RelDataType createCustomType(Type type, boolean nullable) {
         if (UUID.class == type)
-            return new UuidType(nullable);
+            return canonize(new UuidType(nullable));
         else if (Object.class == type)
-            return new OtherType(nullable);
+            return canonize(new OtherType(nullable));
 
         return null;
     }
