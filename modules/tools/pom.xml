@@ -140,6 +140,18 @@
                     <skip>false</skip>
                 </configuration>
             </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-checkstyle-plugin</artifactId>
+                <configuration>
+                    <sourceDirectories combine.children="append">
+                        <sourceDirectory>src/main/java8</sourceDirectory>
+                        <sourceDirectory>src/main/java11</sourceDirectory>
+                        <sourceDirectory>src/main/java15</sourceDirectory>
+                    </sourceDirectories>
+                </configuration>
+            </plugin>
         </plugins>
     </build>
 
