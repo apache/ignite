@@ -81,7 +81,11 @@ public class ZookeeperDiscoverySpiTestUtil {
     private static Map<String, Object> optimizeProperties(Map<String, Object>[] customProps, int idx) {
         Map<String, Object> props = customProps != null && customProps[idx] != null ? customProps[idx] : new HashMap<>();
 
+        // In container environment, especially in Kubernetes, this value should be increased or set to 0
+        // (infinite retry) to overcome issues related to DNS name resolving.
         props.putIfAbsent(ZK_ELECTION_PORT_BIND_RETRY, "0");
+
+        // Disable the AdminServer
         props.putIfAbsent(ZK_ENABLE_ADMIN_SERVER, "false");
 
         return props;
