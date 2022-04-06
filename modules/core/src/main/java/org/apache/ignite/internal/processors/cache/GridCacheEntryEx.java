@@ -1076,6 +1076,13 @@ public interface GridCacheEntryEx {
 
     /**
      * @param ver Version.
+     * @param expiryPlc Expiry policy.
+     * @throws GridCacheEntryRemovedException If entry was removed.
+     */
+    public void updateTtl(GridCacheVersion ver, IgniteCacheExpiryPolicy expiryPlc) throws GridCacheEntryRemovedException;
+
+    /**
+     * @param ver Version.
      * @param ttl Time to live.
      */
     public void updateTtl(@Nullable GridCacheVersion ver, long ttl) throws GridCacheEntryRemovedException;
