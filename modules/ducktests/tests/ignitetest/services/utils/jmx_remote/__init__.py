@@ -13,18 +13,3 @@
 # See the License for the specific language governing permissions and
 # limitations under the License
 
-"""
-This module contains classes and utilities for Ignite Cache configuration.
-"""
-from typing import NamedTuple
-
-
-class CacheConfiguration(NamedTuple):
-    """
-    Ignite Cache configuration.
-    """
-    name: str
-    cache_mode: str = 'PARTITIONED'
-    atomicity_mode: str = 'ATOMIC'
-    backups: int = 0
-    statistics_enabled: bool = True

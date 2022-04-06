@@ -54,3 +54,15 @@
         </util:list>
     {% endif %}
 {% endmacro %}
+
+{% macro bean(bean) %}
+    {% if bean.properties | length > 0 %}
+        <bean class="{{ bean }}">
+            {% for name, value in bean.properties.items() %}
+            <property name="{{ name }}" value="{{ value }}"/>
+            {% endfor %}
+        </bean>
+    {% else %}
+        <bean class="{{ bean }}"/>
+    {% endif %}
+{% endmacro %}

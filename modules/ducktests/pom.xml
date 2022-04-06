@@ -30,6 +30,10 @@
         <relativePath>../../parent</relativePath>
     </parent>
 
+    <properties>
+        <prometheus.version>0.3.0</prometheus.version>
+    </properties>
+
     <artifactId>ignite-ducktests</artifactId>
     <version>${revision}</version>
     <url>http://ignite.apache.org</url>
@@ -201,6 +205,24 @@
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-api</artifactId>
             <version>${slf4j.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>ignite-opencensus</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>io.opencensus</groupId>
+            <artifactId>opencensus-exporter-stats-prometheus</artifactId>
+            <version>${opencensus.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>io.prometheus</groupId>
+            <artifactId>simpleclient_httpserver</artifactId>
+            <version>${prometheus.version}</version>
         </dependency>
     </dependencies>
 
