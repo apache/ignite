@@ -75,6 +75,8 @@ import static org.apache.ignite.internal.processors.query.calcite.trait.IgniteDi
 public class TraitUtils {
     /** */
     @Nullable public static RelNode enforce(RelNode rel, RelTraitSet toTraits) {
+        System.err.println("TEST | enforce " + rel.explain() + " to " + toTraits);
+
         RelOptPlanner planner = rel.getCluster().getPlanner();
         RelTraitSet fromTraits = rel.getTraitSet();
         int size = Math.min(fromTraits.size(), toTraits.size());
