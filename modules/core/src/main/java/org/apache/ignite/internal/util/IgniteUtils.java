@@ -4112,12 +4112,23 @@ public abstract class IgniteUtils {
      * @return Hex string.
      */
     public static String byteArray2HexString(byte[] arr) {
+        return byteArray2HexString(arr, true);
+    }
+
+    /**
+     * Converts byte array to hex string.
+     *
+     * @param arr Array of bytes.
+     * @param toUpper If {@code true} returns upper cased result.
+     * @return Hex string.
+     */
+    public static String byteArray2HexString(byte[] arr, boolean toUpper) {
         StringBuilder sb = new StringBuilder(arr.length << 1);
 
         for (byte b : arr)
             addByteAsHex(sb, b);
 
-        return sb.toString().toUpperCase();
+        return toUpper ? sb.toString().toUpperCase() : sb.toString();
     }
 
     /**
@@ -7805,17 +7816,14 @@ public abstract class IgniteUtils {
     }
 
     /**
-     * Utility method creating {@link JMException} with given cause.
+     * Utility method creating {@link JMException} with given cause. Keeps only the error message to avoid
+     * deserialization failure on remote side due to the other class path.
      *
      * @param e Cause exception.
      * @return Newly created {@link JMException}.
      */
     public static JMException jmException(Throwable e) {
-        JMException x = new JMException();
-
-        x.initCause(e);
-
-        return x;
+        return new JMException(e.getMessage());
     }
 
     /**

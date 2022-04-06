@@ -23,6 +23,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
@@ -336,11 +337,25 @@ public interface GridQueryIndexing {
     public Collection<GridRunningQueryInfo> runningQueries(long duration);
 
     /**
+     * Cancel query running on remote or local Node.
+     *
+     * @param queryId Query id.
+     * @param nodeId Node id, if {@code null}, cancel local query.
+     * @param async If {@code true}, execute asynchronously.
+     */
+    public void cancelQuery(long queryId, @Nullable UUID nodeId, boolean async);
+
+    /**
      * Cancel specified queries.
      *
      * @param queries Queries ID's to cancel.
      */
-    public void cancelQueries(Collection<Long> queries);
+    public void cancelLocalQueries(Collection<Long> queries);
+
+    /**
+     * @return Running query manager.
+     */
+    public RunningQueryManager runningQueryManager();
 
     /**
      * Cancels all executing queries.

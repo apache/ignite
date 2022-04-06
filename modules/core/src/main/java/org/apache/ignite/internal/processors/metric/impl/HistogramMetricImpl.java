@@ -43,6 +43,16 @@ public class HistogramMetricImpl extends AbstractMetric implements HistogramMetr
     }
 
     /**
+     * @param name Name.
+     * @param toCopy Histogram metric to copy.
+     */
+    public HistogramMetricImpl(String name, HistogramMetricImpl toCopy) {
+        super(name, toCopy.description());
+
+        holder = toCopy.holder;
+    }
+
+    /**
      * Sets value.
      *
      * @param x Value.

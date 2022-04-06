@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.query.h2.database;
 
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.cache.query.index.Index;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndex;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
@@ -103,5 +104,13 @@ public class H2TreeClientIndex extends H2TreeIndexBase {
      */
     private static IgniteException unsupported() {
         return new IgniteSQLException("Shouldn't be invoked on non-affinity node.");
+    }
+
+    /** {@inheritDoc} */
+    @Override public <T extends Index> T unwrap(Class<T> clazz) {
+        if (clazz.isInstance(clientIdx))
+            return clazz.cast(clientIdx);
+
+        return super.unwrap(clazz);
     }
 }

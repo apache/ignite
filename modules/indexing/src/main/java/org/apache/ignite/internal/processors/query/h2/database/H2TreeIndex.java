@@ -29,6 +29,7 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.GridTopic;
+import org.apache.ignite.internal.cache.query.index.Index;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexRow;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexRowImpl;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexSearchRowImpl;
@@ -104,7 +105,7 @@ import static org.h2.result.Row.MEMORY_CALCULATE;
 /**
  * H2 Index over {@link BPlusTree}.
  */
-@SuppressWarnings({"TypeMayBeWeakened", "unchecked"})
+@SuppressWarnings({"unchecked"})
 public class H2TreeIndex extends H2TreeIndexBase {
     /** Underlying Ignite index. */
     private InlineIndexImpl queryIndex;
@@ -704,5 +705,13 @@ public class H2TreeIndex extends H2TreeIndexBase {
      */
     public InlineIndexImpl index() {
         return queryIndex;
+    }
+
+    /** {@inheritDoc} */
+    @Override public <T extends Index> T unwrap(Class<T> clazz) {
+        if (clazz.isInstance(queryIndex))
+            return clazz.cast(queryIndex);
+
+        return super.unwrap(clazz);
     }
 }

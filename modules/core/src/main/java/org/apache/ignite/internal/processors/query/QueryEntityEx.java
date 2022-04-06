@@ -38,6 +38,9 @@ public class QueryEntityEx extends QueryEntity {
     /** Whether to preserve order specified by {@link #getKeyFields()} or not. */
     private boolean preserveKeysOrder;
 
+    /** Whether a primary key should be autocreated or not. */
+    private boolean implicitPk;
+
     /** Whether absent PK parts should be filled with defaults or not. */
     private boolean fillAbsentPKsWithDefaults;
 
@@ -68,6 +71,8 @@ public class QueryEntityEx extends QueryEntity {
             notNullFields = other0.notNullFields != null ? new HashSet<>(other0.notNullFields) : null;
 
             preserveKeysOrder = other0.preserveKeysOrder;
+
+            implicitPk = other0.implicitPk;
 
             fillAbsentPKsWithDefaults = other0.fillAbsentPKsWithDefaults;
             pkInlineSize = other0.pkInlineSize != null ? other0.pkInlineSize : -1;
@@ -100,6 +105,18 @@ public class QueryEntityEx extends QueryEntity {
      */
     public QueryEntity setPreserveKeysOrder(boolean preserveKeysOrder) {
         this.preserveKeysOrder = preserveKeysOrder;
+
+        return this;
+    }
+
+    /** */
+    public boolean implicitPk() {
+        return implicitPk;
+    }
+
+    /** */
+    public QueryEntity implicitPk(boolean implicitPk) {
+        this.implicitPk = implicitPk;
 
         return this;
     }
@@ -185,6 +202,7 @@ public class QueryEntityEx extends QueryEntity {
 
         return super.equals(entity) && F.eq(notNullFields, entity.notNullFields)
             && preserveKeysOrder == entity.preserveKeysOrder
+            && implicitPk == entity.implicitPk
             && F.eq(pkInlineSize, entity.pkInlineSize)
             && F.eq(affKeyInlineSize, entity.affKeyInlineSize);
     }
@@ -195,6 +213,7 @@ public class QueryEntityEx extends QueryEntity {
 
         res = 31 * res + (notNullFields != null ? notNullFields.hashCode() : 0);
         res = 31 * res + (preserveKeysOrder ? 1 : 0);
+        res = 31 * res + (implicitPk ? 1 : 0);
         res = 31 * res + (pkInlineSize != null ? pkInlineSize.hashCode() : 0);
         res = 31 * res + (affKeyInlineSize != null ? affKeyInlineSize.hashCode() : 0);
         return res;

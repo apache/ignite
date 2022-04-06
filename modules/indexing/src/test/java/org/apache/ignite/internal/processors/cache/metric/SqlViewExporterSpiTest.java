@@ -26,6 +26,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Properties;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.UUID;
 import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.CountDownLatch;
@@ -399,7 +400,7 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
     /** */
     @Test
     public void testViews() throws Exception {
-        Set<String> expViews = new HashSet<>(asList(
+        Set<String> expViews = new TreeSet<>(asList(
             "METRICS",
             "SERVICES",
             "CACHE_GROUPS",
@@ -436,6 +437,7 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
             "STATISTICS_CONFIGURATION",
             "STATISTICS_PARTITION_DATA",
             "STATISTICS_LOCAL_DATA",
+            "STATISTICS_GLOBAL_DATA",
             "DS_ATOMICLONGS",
             "DS_ATOMICREFERENCES",
             "DS_ATOMICSTAMPED",
@@ -447,7 +449,7 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
             "DS_QUEUES"
         ));
 
-        Set<String> actViews = new HashSet<>();
+        Set<String> actViews = new TreeSet<>();
 
         List<List<?>> res = execute(ignite0, "SELECT * FROM SYS.VIEWS");
 
