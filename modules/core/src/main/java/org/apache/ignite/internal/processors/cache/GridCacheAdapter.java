@@ -5193,6 +5193,9 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
      *
      */
     protected static final class AtomicReadRepairEntryProcessor<K,V> implements CacheEntryProcessor<K, V, Boolean> {
+        /** */
+        private static final long serialVersionUID = 0L;
+
         /** Fixed value. */
         private final V fixedVal;
 
