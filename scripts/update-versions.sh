@@ -36,5 +36,8 @@ cd modules/apache-license-gen
 mvn versions:set -DnewVersion=$1 -Pall-java,all-scala,all-other -DgenerateBackupPoms=false -DgroupId=* -DartifactId=* -DoldVersion=* -DprocessDependencies=false
 cd ../../
 
+echo Updating checkstyle resources versions to $1 with Maven...
+mvn -pl modules/checkstyle versions:set -DnewVersion=$1 -DgenerateBackupPoms=false -DoldVersion=* -DprocessDependencies=false
+
 echo Updating .NET, C++ and other resources versions to $1 with Maven...
 mvn validate -P update-versions -D new.ignite.version=$1

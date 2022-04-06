@@ -26,12 +26,12 @@
     <parent>
         <groupId>org.apache.ignite</groupId>
         <artifactId>ignite-parent</artifactId>
-        <version>1</version>
-        <relativePath>../../parent</relativePath>
+        <version>${revision}</version>
+        <relativePath>../../parent/pom.xml</relativePath>
     </parent>
 
     <artifactId>ignite-tools</artifactId>
-    <version>${revision}</version>
+
     <url>http://ignite.apache.org</url>
 
     <profiles>
@@ -179,12 +179,6 @@
             <groupId>org.apache.maven.surefire</groupId>
             <artifactId>common-junit48</artifactId>
             <version>${surefire.version}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>com.puppycrawl.tools</groupId>
-            <artifactId>checkstyle</artifactId>
-            <version>${checkstyle.puppycrawl.version}</version>
         </dependency>
     </dependencies>
 </project>
