@@ -480,6 +480,7 @@ public abstract class AbstractReadRepairTest extends GridCommonAbstractTest {
                             false,
                             false,
                             false,
+                            false,
                             AffinityTopologyVersion.NONE,
                             null,
                             GridDrType.DR_NONE,

@@ -5175,25 +5175,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                 ctx.operationContextPerCall(opCtx);
 
                 try {
-                    return invoke((K)key, new CacheEntryProcessor<K, V, Boolean>() {
-                        @Override public Boolean process(MutableEntry<K, V> entry,
-                            Object... arguments) throws EntryProcessorException {
-                            V entryVal = entry.getValue();
-
-                            if ((primVal == null && entryVal == null) ||
-                                (primVal != null && primVal.equals(entryVal))) {
-
-                                if (fixedVal != null)
-                                    entry.setValue(fixedVal);
-                                else
-                                    entry.remove();
-
-                                return true;
-                            }
-                            else
-                                return false;
-                        }
-                    }).get();
+                    return invoke((K)key, new AtomicReadRepairEntryProcessor<>(fixedVal, primVal)).get();
                 }
                 finally {
                     ctx.operationContextPerCall(prevOpCtx);
@@ -5205,6 +5187,44 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
             return null;
         });
+    }
+
+    /**
+     *
+     */
+    protected static final class AtomicReadRepairEntryProcessor<K,V> implements CacheEntryProcessor<K, V, Boolean> {
+        /** Fixed value. */
+        private final V fixedVal;
+
+        /** Primary value.*/
+        private final V primVal;
+
+        /**
+         * @param fixedVal Fixed value.
+         * @param primVal Primary value.
+         */
+        public AtomicReadRepairEntryProcessor(V fixedVal, V primVal) {
+            this.fixedVal = fixedVal;
+            this.primVal = primVal;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Boolean process(MutableEntry<K, V> entry, Object... arguments) throws EntryProcessorException {
+            V entryVal = entry.getValue();
+
+            if ((primVal == null && entryVal == null) ||
+                (primVal != null && primVal.equals(entryVal))) {
+
+                if (fixedVal != null)
+                    entry.setValue(fixedVal);
+                else
+                    entry.remove();
+
+                return true;
+            }
+            else
+                return false;
+        }
     }
 
     /**

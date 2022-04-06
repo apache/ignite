@@ -162,7 +162,8 @@ public class GridDhtAtomicUpdateRequest extends GridDhtAtomicAbstractUpdateReque
         boolean addDepInfo,
         boolean keepBinary,
         boolean skipStore,
-        boolean forceTransformBackups
+        boolean forceTransformBackups,
+        boolean readRepairRecovery
     ) {
         super(cacheId,
             nodeId,
@@ -173,7 +174,8 @@ public class GridDhtAtomicUpdateRequest extends GridDhtAtomicAbstractUpdateReque
             taskNameHash,
             addDepInfo,
             keepBinary,
-            skipStore);
+            skipStore,
+            readRepairRecovery);
 
         assert invokeArgs == null || forceTransformBackups;
 
