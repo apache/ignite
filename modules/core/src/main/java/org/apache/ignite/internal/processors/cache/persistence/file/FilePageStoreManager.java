@@ -1154,10 +1154,10 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
     public static StoredCacheData readCacheData(
         File conf,
         Marshaller marshaller,
-        IgniteConfiguration cfg
+        IgniteConfiguration igniteCfg
     ) throws IgniteCheckedException {
         try (InputStream stream = new BufferedInputStream(new FileInputStream(conf))) {
-            return marshaller.unmarshal(stream, U.resolveClassLoader(cfg));
+            return marshaller.unmarshal(stream, U.resolveClassLoader(igniteCfg));
         }
         catch (IgniteCheckedException | IOException e) {
             throw new IgniteCheckedException("An error occurred during cache configuration loading from file [file=" +

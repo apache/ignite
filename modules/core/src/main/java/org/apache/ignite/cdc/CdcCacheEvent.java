@@ -21,15 +21,26 @@ import java.util.Collection;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.lang.IgniteExperimental;
+import org.apache.ignite.spi.systemview.view.CacheView;
 
 /**
- *
+ * ???
  */
 @IgniteExperimental
 public interface CdcCacheEvent {
+    /**
+     * @return Cache ID
+     * @see CacheView#cacheId()
+     */
     public int cacheId();
 
+    /**
+     * @return Cache configuration.
+     */
     public CacheConfiguration<?, ?> configuration();
 
+    /**
+     * @return Query entyties for cache.
+     */
     public Collection<QueryEntity> queryEntyties();
 }

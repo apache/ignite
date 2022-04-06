@@ -165,7 +165,11 @@ public class WalRecordsConsumer<K, V> {
         consumer.onCacheChange(cacheEvts);
     }
 
-
+    /**
+     * Handles destroy cache events.
+     *
+     * @param caches Destroyed cache iterator.
+     */
     public void onCacheDestroyEvents(Iterator<Integer> caches) {
         consumer.onCacheDestroy(caches);
     }
