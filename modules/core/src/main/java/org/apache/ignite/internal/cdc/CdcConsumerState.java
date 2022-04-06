@@ -30,13 +30,12 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Supplier;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cdc.CdcConsumer;
 import org.apache.ignite.cdc.CdcEvent;
 import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
-import org.apache.ignite.internal.util.lang.GridTuple3;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
 
 import static java.nio.file.StandardCopyOption.ATOMIC_MOVE;
@@ -66,11 +65,17 @@ public class CdcConsumerState {
     /** */
     public static final String MAPPINGS_STATE_FILE_NAME = "cdc-mappings-state" + FILE_SUFFIX;
 
+    /** */
+    public static final String CACHES_STATE_FILE_NAME = "cdc-caches-state" + FILE_SUFFIX;
+
     /** Long size in bytes. */
     private static final int LONG_SZ = 8;
 
     /** Integer size in bytes. */
     private static final int INT_SZ = 4;
+
+    /** Log. */
+    private final IgniteLogger log;
 
     /** WAL pointer state file. */
     private final Path walPtr;
@@ -90,16 +95,25 @@ public class CdcConsumerState {
     /** Mappings types state file. */
     private final Path tmpMappings;
 
+    /** Cache state file. */
+    private final Path caches;
+
+    /** Mappings types state file. */
+    private final Path tmpCaches;
+
     /**
      * @param stateDir State directory.
      */
-    public CdcConsumerState(Path stateDir) {
+    public CdcConsumerState(IgniteLogger log, Path stateDir) {
+        this.log = log.getLogger(CdcConsumerState.class);
         walPtr = stateDir.resolve(WAL_STATE_FILE_NAME);
         tmpWalPtr = stateDir.resolve(WAL_STATE_FILE_NAME + TMP_SUFFIX);
         types = stateDir.resolve(TYPES_STATE_FILE_NAME);
         tmpTypes = stateDir.resolve(TYPES_STATE_FILE_NAME + TMP_SUFFIX);
         mappings = stateDir.resolve(MAPPINGS_STATE_FILE_NAME);
         tmpMappings = stateDir.resolve(MAPPINGS_STATE_FILE_NAME + TMP_SUFFIX);
+        caches = stateDir.resolve(CACHES_STATE_FILE_NAME);
+        tmpCaches = stateDir.resolve(CACHES_STATE_FILE_NAME + TMP_SUFFIX);
     }
 
     /**
@@ -124,21 +138,16 @@ public class CdcConsumerState {
      * Saves types state to file.
      * @param typesState State of types.
      */
-    public void save(Map<Integer, Long> typesState) throws IOException {
-        save(() -> {
-            ByteBuffer buf = ByteBuffer.allocate(INT_SZ + (LONG_SZ + INT_SZ) * typesState.size());
+    public void saveTypes(Map<Integer, Long> typesState) throws IOException {
+        save0(typesState, tmpTypes, types);
+    }
 
-            buf.putInt(typesState.size());
-
-            for (Map.Entry<Integer, Long> entry : typesState.entrySet()) {
-                buf.putInt(entry.getKey());
-                buf.putLong(entry.getValue());
-            }
-
-            buf.flip();
-
-            return buf;
-        }, tmpTypes, types);
+    /**
+     * Saves caches state to file.
+     * @param cachesState State of caches.
+     */
+    public void saveCaches(Map<Integer, Long> cachesState) throws IOException {
+        save0(cachesState, tmpCaches, caches);
     }
 
     /**
@@ -163,12 +172,98 @@ public class CdcConsumerState {
     }
 
     /**
-     * Loads CDC state from file.
+     * Loads CDC mappings state from file.
      *
      * @return Saved state.
      */
-    public GridTuple3<T2<WALPointer, Integer>, Map<Integer, Long>, Set<T2<Integer, Byte>>> load() {
-        T2<WALPointer, Integer> walState = load(walPtr, ch -> {
+    public Set<T2<Integer, Byte>> loadMappings() {
+        Set<T2<Integer, Byte>> state = load(mappings, ch -> {
+            ByteBuffer buf = ByteBuffer.allocate(INT_SZ);
+
+            int read = ch.read(buf);
+
+            if (read != INT_SZ)
+                return null;
+
+            buf.flip();
+
+            int sz = buf.getInt();
+            int dataAmount = sz * (INT_SZ + 1 /* byte */);
+
+            buf = ByteBuffer.allocate(dataAmount);
+
+            read = ch.read(buf);
+
+            if (read != dataAmount)
+                return null;
+
+            buf.flip();
+
+            Set<T2<Integer, Byte>> data = new HashSet<>();
+
+            for (int i = 0; i < sz; i++) {
+                int typeId = buf.getInt();
+                byte platform = buf.get();
+
+                data.add(new T2<>(typeId, platform));
+            }
+
+            return data;
+        });
+
+        log.info("Initial mappings state loaded [mappingsCnt=" + (state != null ? state.size() : 0) + ']');
+
+        if (state != null && log.isDebugEnabled()) {
+            for (T2<Integer, Byte> m : state)
+                log.debug("Mapping [typeId=" + m.get1() + ", platform=" + m.get2() + ']');
+        }
+
+        return state != null ? state : new HashSet<>();
+    }
+
+    /**
+     * Loads CDC types state from file.
+     *
+     * @return Saved state.
+     */
+    public Map<Integer, Long> loadTypes() {
+        Map<Integer, Long> state = load0(types);
+
+        log.info("Initial types state loaded [typesCnt=" + state.size() + ']');
+
+        if (log.isDebugEnabled()) {
+            for (Map.Entry<Integer, Long> e : state.entrySet())
+                log.debug("Type [typeId=" + e.getKey() + ", lastModified=" + e.getValue() + ']');
+        }
+
+        return state;
+    }
+
+    /**
+     * Loads CDC caches state from file.
+     *
+     * @return Saved state.
+     */
+    public Map<Integer, Long> loadCaches() {
+        Map<Integer, Long> state = load0(caches);
+
+        log.info("Initial caches state loaded [cachesCnt=" + state.size() + ']');
+
+        if (log.isDebugEnabled()) {
+            for (Map.Entry<Integer, Long> entry : state.entrySet())
+                log.debug("Cache [cacheId=" + entry.getKey() + ", lastModified=" + entry.getValue() + ']');
+        }
+
+        return state;
+    }
+
+    /**
+     * Loads CDC consumer state from file.
+     *
+     * @return Saved state.
+     */
+    public T2<WALPointer, Integer> loadWal() {
+        T2<WALPointer, Integer> state = load(walPtr, ch -> {
             ByteBuffer buf = ByteBuffer.allocate(POINTER_SIZE);
 
             int read = ch.read(buf);
@@ -185,7 +280,33 @@ public class CdcConsumerState {
             return new T2<>(new WALPointer(idx, offset, 0), entryIdx);
         });
 
-        Map<Integer, Long> typesState = load(types, ch -> {
+        if (state != null && log.isInfoEnabled())
+            log.info("Initial WAL state loaded [ptr=" + state.get1() + ", idx=" + state.get2() + ']');
+
+        return state;
+    }
+
+    /** Saves state to file. */
+    private void save0(Map<Integer, Long> state, Path tmpFile, Path file) throws IOException {
+        save(() -> {
+            ByteBuffer buf = ByteBuffer.allocate(INT_SZ + (LONG_SZ + INT_SZ) * state.size());
+
+            buf.putInt(state.size());
+
+            for (Map.Entry<Integer, Long> entry : state.entrySet()) {
+                buf.putInt(entry.getKey());
+                buf.putLong(entry.getValue());
+            }
+
+            buf.flip();
+
+            return buf;
+        }, tmpFile, file);
+    }
+
+    /** Loads state from file. */
+    private Map<Integer, Long> load0(Path file) {
+        Map<Integer, Long> state = load(file, ch -> {
             ByteBuffer buf = ByteBuffer.allocate(INT_SZ);
 
             int read = ch.read(buf);
@@ -220,41 +341,7 @@ public class CdcConsumerState {
             return data;
         });
 
-        Set<T2<Integer, Byte>> mappingsState = load(mappings, ch -> {
-            ByteBuffer buf = ByteBuffer.allocate(INT_SZ);
-
-            int read = ch.read(buf);
-
-            if (read != INT_SZ)
-                return null;
-
-            buf.flip();
-
-            int sz = buf.getInt();
-            int dataAmount = sz * (INT_SZ + 1 /* byte */);
-
-            buf = ByteBuffer.allocate(dataAmount);
-
-            read = ch.read(buf);
-
-            if (read != dataAmount)
-                return null;
-
-            buf.flip();
-
-            Set<T2<Integer, Byte>> data = new HashSet<>();
-
-            for (int i = 0; i < sz; i++) {
-                int typeId = buf.getInt();
-                byte platform = buf.get();
-
-                data.add(new T2<>(typeId, platform));
-            }
-
-            return data;
-        });
-
-        return F.t(walState, typesState, mappingsState);
+        return state != null ? state : new HashMap<>();
     }
 
     /**

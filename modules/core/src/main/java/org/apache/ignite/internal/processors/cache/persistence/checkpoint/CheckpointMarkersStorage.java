@@ -62,6 +62,9 @@ import static org.apache.ignite.internal.processors.cache.persistence.file.FileP
  * Abstraction responsible for managing checkpoint markers storage.
  */
 public class CheckpointMarkersStorage {
+    /** Checkpoint markers directory. */
+    public static final String CHECKPOINT_MARKERS_DIR = "cp";
+
     /** Checkpoint file name pattern. */
     public static final Pattern CP_FILE_NAME_PATTERN = Pattern.compile("(\\d+)-(.*)-(START|END)\\.bin");
 
@@ -131,7 +134,7 @@ public class CheckpointMarkersStorage {
         ioFactory = factory;
         this.lock = lock;
 
-        cpDir = Paths.get(absoluteWorkDir, "cp").toFile();
+        cpDir = Paths.get(absoluteWorkDir, CHECKPOINT_MARKERS_DIR).toFile();
 
         if (!U.mkdirs(cpDir))
             throw new IgniteCheckedException("Could not create directory for checkpoint metadata: " + cpDir);

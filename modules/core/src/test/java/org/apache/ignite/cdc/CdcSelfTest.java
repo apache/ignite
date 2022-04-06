@@ -284,6 +284,15 @@ public class CdcSelfTest extends AbstractCdcTest {
                     mappings.forEachRemaining(m -> assertNotNull(m));
                 }
 
+                @Override public void onCacheChange(Iterator<CdcCacheEvent> cacheEvents) {
+                    cacheEvents.forEachRemaining(ce -> assertNotNull(ce));
+                }
+
+                /** {@inheritDoc} */
+                @Override public void onCacheDestroy(Iterator<Integer> caches) {
+                    caches.forEachRemaining(ce -> assertNotNull(ce));
+                }
+
                 @Override public void stop() {
                     // No-op.
                 }
@@ -365,6 +374,14 @@ public class CdcSelfTest extends AbstractCdcTest {
 
                 @Override public void onMappings(Iterator<TypeMapping> mappings) {
                     mappings.forEachRemaining(m -> assertNotNull(m));
+                }
+
+                @Override public void onCacheChange(Iterator<CdcCacheEvent> cacheEvents) {
+                    cacheEvents.forEachRemaining(ce -> assertNotNull(ce));
+                }
+
+                @Override public void onCacheDestroy(Iterator<Integer> caches) {
+                    caches.forEachRemaining(ce -> assertNotNull(ce));
                 }
 
                 @Override public void stop() {

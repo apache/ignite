@@ -18,6 +18,7 @@
 package org.apache.ignite.cdc;
 
 import java.util.Iterator;
+import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteBinary;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.binary.BinaryIdMapper;
@@ -27,6 +28,7 @@ import org.apache.ignite.internal.cdc.CdcMain;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.lang.IgniteExperimental;
 import org.apache.ignite.resources.LoggerResource;
+import org.apache.ignite.spi.systemview.view.CacheView;
 
 /**
  * Consumer of WAL data change events.
@@ -102,6 +104,28 @@ public interface CdcConsumer {
      * @see BinaryIdMapper
      */
     public void onMappings(Iterator<TypeMapping> mappings);
+
+    /**
+     * Handles cache change(create, edit) events. State of cache processing will be stored after method invocation
+     * and ongoing notifications after CDC application fail/restart will be continued for newly changed caches.
+     * Invoked before all other notifications.
+     *
+     * @see Ignite#createCache(String) 
+     * @see Ignite#getOrCreateCache(String)
+     * @see CdcCacheEvent
+     */
+    public void onCacheChange(Iterator<CdcCacheEvent> cacheEvents);
+
+    /**
+     * Handles cache destroy events. State of cache processing will be stored after method invocation
+     * and ongoing notifications after CDC application fail/restart will be continued for newly changed caches.
+     * Invoked before all other notifications except {@link #onCacheChange(Iterator)}.
+     *
+     * @see Ignite#destroyCache(String)
+     * @see CdcCacheEvent
+     * @see CacheView#cacheId()
+     */
+    public void onCacheDestroy(Iterator<Integer> caches);
 
     /**
      * Stops the consumer.

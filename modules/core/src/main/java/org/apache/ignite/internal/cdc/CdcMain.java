@@ -25,7 +25,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
@@ -40,6 +39,7 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.cdc.CdcConfiguration;
 import org.apache.ignite.cdc.CdcConsumer;
+import org.apache.ignite.cdc.CdcCacheEvent;
 import org.apache.ignite.cdc.CdcEvent;
 import org.apache.ignite.cdc.TypeMapping;
 import org.apache.ignite.configuration.DataRegionConfiguration;
@@ -52,6 +52,7 @@ import org.apache.ignite.internal.MarshallerContextImpl;
 import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.cdc.WalRecordsConsumer.DataEntryIterator;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
+import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderResolver;
 import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderSettings;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
@@ -60,12 +61,12 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.reader.Standa
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
 import org.apache.ignite.internal.processors.resource.GridSpringResourceContext;
-import org.apache.ignite.internal.util.lang.GridTuple3;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.marshaller.MarshallerUtils;
 import org.apache.ignite.platform.PlatformType;
 import org.apache.ignite.startup.cmdline.CdcCommandLineStartup;
 
@@ -76,6 +77,11 @@ import static org.apache.ignite.internal.IgniteVersionUtils.COPYRIGHT;
 import static org.apache.ignite.internal.IgnitionEx.initializeDefaultMBeanServer;
 import static org.apache.ignite.internal.binary.BinaryUtils.METADATA_FILE_SUFFIX;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.DATA_RECORD_V2;
+import static org.apache.ignite.internal.processors.cache.GridCacheUtils.UTILITY_CACHE_NAME;
+import static org.apache.ignite.internal.processors.cache.mvcc.txlog.TxLog.TX_LOG_CACHE_NAME;
+import static org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointMarkersStorage.CHECKPOINT_MARKERS_DIR;
+import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.CACHE_DATA_FILENAME;
+import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.CACHE_DIR_PREFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager.WAL_SEGMENT_FILE_FILTER;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 
@@ -182,6 +188,9 @@ public class CdcMain implements Runnable {
     /** Change Data Capture directory. */
     private Path cdcDir;
 
+    /** Database directory. */
+    private Path dbDir;
+
     /** Binary meta directory. */
     private File binaryMeta;
 
@@ -202,6 +211,9 @@ public class CdcMain implements Runnable {
 
     /** Mappings state. */
     private Set<T2<Integer, Byte>> mappingsState;
+
+    /** Caches state. */
+    private Map<Integer, Long> cachesState;
 
     /** Stopped flag. */
     private volatile boolean stopped;
@@ -286,38 +298,14 @@ public class CdcMain implements Runnable {
 
                 state = createState(cdcDir.resolve(STATE_DIR));
 
-                GridTuple3<T2<WALPointer, Integer>, Map<Integer, Long>, Set<T2<Integer, Byte>>> initState = state.load();
-
-                walState = initState.get1();
-
-                typesState = initState.get2() != null ? initState.get2() : new HashMap<>();
-
-                mappingsState = initState.get3() != null ? initState.get3() : new HashSet<>();
+                walState = state.loadWal();
+                typesState = state.loadTypes();
+                mappingsState = state.loadMappings();
+                cachesState = state.loadCaches();
 
                 if (walState != null) {
                     committedSegmentIdx.value(walState.get1().index());
                     committedSegmentOffset.value(walState.get1().fileOffset());
-
-                    if (log.isInfoEnabled())
-                        log.info("Initial WAL state loaded [ptr=" + walState.get1() + ", idx=" + walState.get2() + ']');
-                }
-
-                if (typesState != null) {
-                    log.info("Initial types state loaded [typesCnt=" + typesState.size() + ']');
-
-                    if (log.isDebugEnabled()) {
-                        for (Map.Entry<Integer, Long> e : typesState.entrySet())
-                            log.debug("Type [typeId=" + e.getKey() + ", lastModified=" + e.getValue() + ']');
-                    }
-                }
-
-                if (mappingsState != null) {
-                    log.info("Initial mappings state loaded [mappingsCnt=" + mappingsState.size() + ']');
-
-                    if (log.isDebugEnabled()) {
-                        for (T2<Integer, Byte> m : mappingsState)
-                            log.debug("Mapping [typeId=" + m.get1() + ", platform=" + m.get2() + ']');
-                    }
                 }
 
                 consumer.start(mreg, kctx.metric().registry(metricName("cdc", "consumer")));
@@ -341,7 +329,7 @@ public class CdcMain implements Runnable {
 
     /** Creates consumer state. */
     protected CdcConsumerState createState(Path stateDir) {
-        return new CdcConsumerState(stateDir);
+        return new CdcConsumerState(log, stateDir);
     }
 
     /**
@@ -460,9 +448,16 @@ public class CdcMain implements Runnable {
         if (log.isInfoEnabled())
             log.info("Processing WAL segment [segment=" + segment + ']');
 
-        updateMappings();
+        try {
+            updateCaches();
 
-        updateTypes();
+            updateMappings();
+
+            updateTypes();
+        }
+        catch (IOException e) {
+            throw new IgniteException(e);
+        }
 
         IgniteWalIteratorFactory.IteratorParametersBuilder builder =
             new IgniteWalIteratorFactory.IteratorParametersBuilder()
@@ -557,91 +552,139 @@ public class CdcMain implements Runnable {
                 throw new IgniteException("Change Data Capture Application interrupted");
 
             processedSegments.add(segment);
-        } catch (IgniteCheckedException | IOException e) {
+        }
+        catch (IgniteCheckedException | IOException e) {
             throw new IgniteException(e);
+        }
+    }
+
+    /** Search for new or changed {@link CdcCacheEvent} and notifies the consumer. */
+    private void updateCaches() throws IOException {
+        //TODO: fix for in-memory CDC mode.
+        if (!Files.exists(dbDir))
+            return;
+
+        Set<Integer> destroyed = new HashSet<>(cachesState.keySet());
+
+        Iterator<CdcCacheEvent> cacheEvts = Files.list(dbDir)
+            .filter(p -> Files.isDirectory(p) &&
+                !p.getFileName().toString().equals(TX_LOG_CACHE_NAME) &&
+                !p.getFileName().toString().equals(CACHE_DIR_PREFIX + UTILITY_CACHE_NAME) &&
+                !p.getFileName().toString().equals(CHECKPOINT_MARKERS_DIR))
+            .map(p -> p.resolve(CACHE_DATA_FILENAME))
+            .filter(Files::exists)
+            .filter(p -> {
+                String cacheNameFromDir = p.getName(p.getNameCount() - 1).toString().replace(CACHE_DIR_PREFIX, "");
+
+                int cacheId = CU.cacheId(cacheNameFromDir);
+
+                destroyed.remove(cacheId);
+
+                return !(cachesState.containsKey(cacheId) && p.toFile().lastModified() == cachesState.get(cacheId));
+            })
+            .peek(p -> cachesState.put(
+                CU.cacheId(p.getName(p.getNameCount() - 1).toString().replace(CACHE_DIR_PREFIX, "")),
+                p.toFile().lastModified()
+            ))
+            .map(p -> {
+                try {
+                    return (CdcCacheEvent)FilePageStoreManager.readCacheData(
+                        p.toFile(),
+                        MarshallerUtils.jdkMarshaller(kctx.igniteInstanceName()),
+                        igniteCfg
+                    );
+                }
+                catch (IgniteCheckedException e) {
+                    throw new IgniteException(e);
+                }
+            })
+            .iterator();
+
+        consumer.onCacheEvents(cacheEvts);
+
+        if (cacheEvts.hasNext())
+            throw new IllegalStateException("Consumer should handle all cache change events");
+
+        if (!destroyed.isEmpty()) {
+            Iterator<Integer> destroyedIter = destroyed.iterator();
+
+            consumer.onCacheDestroyEvents(destroyedIter);
+
+            if (destroyedIter.hasNext())
+                throw new IllegalStateException("Consumer should handle all cache destroy events");
         }
     }
 
     /** Search for new or changed {@link BinaryType} and notifies the consumer. */
-    private void updateTypes() {
-        try {
-            Iterator<BinaryType> changedTypes = Files.list(binaryMeta.toPath())
-                .filter(p -> p.toString().endsWith(METADATA_FILE_SUFFIX))
-                .map(p -> {
-                    int typeId = BinaryUtils.typeId(p.getFileName().toString());
+    private void updateTypes() throws IOException {
+        Iterator<BinaryType> changedTypes = Files.list(binaryMeta.toPath())
+            .filter(p -> p.toString().endsWith(METADATA_FILE_SUFFIX))
+            .map(p -> {
+                int typeId = BinaryUtils.typeId(p.getFileName().toString());
 
-                    // Filter out files already in `typesState` with the same last modify date.
-                    return typesState.containsKey(typeId) && p.toFile().lastModified() == typesState.get(typeId)
-                        ? null
-                        : new T2<>(typeId, p.toFile().lastModified());
+                // Filter out files already in `typesState` with the same last modify date.
+                return typesState.containsKey(typeId) && p.toFile().lastModified() == typesState.get(typeId)
+                    ? null
+                    : new T2<>(typeId, p.toFile().lastModified());
 
-                })
-                .filter(Objects::nonNull)
-                .peek(t -> typesState.put(t.get1(), t.get2())) // Adding peeked up types to the state map.
-                .map(t -> {
-                    try {
-                        kctx.cacheObjects().cacheMetadataLocally(binaryMeta, t.get1());
-                    }
-                    catch (IgniteCheckedException e) {
-                        throw new IgniteException(e);
-                    }
+            })
+            .filter(Objects::nonNull)
+            .peek(t -> typesState.put(t.get1(), t.get2())) // Adding peeked up types to the state map.
+            .map(t -> {
+                try {
+                    kctx.cacheObjects().cacheMetadataLocally(binaryMeta, t.get1());
+                }
+                catch (IgniteCheckedException e) {
+                    throw new IgniteException(e);
+                }
 
-                    return kctx.cacheObjects().metadata(t.get1());
-                })
-                .iterator();
+                return kctx.cacheObjects().metadata(t.get1());
+            })
+            .iterator();
 
-            if (!changedTypes.hasNext())
-                return;
+        if (!changedTypes.hasNext())
+            return;
 
-            consumer.onTypes(changedTypes);
+        consumer.onTypes(changedTypes);
 
-            if (changedTypes.hasNext())
-                throw new IllegalStateException("Consumer should handle all changed types");
+        if (changedTypes.hasNext())
+            throw new IllegalStateException("Consumer should handle all changed types");
 
-            state.save(typesState);
-        }
-        catch (IOException e) {
-            throw new IgniteException(e);
-        }
+        state.saveTypes(typesState);
     }
 
     /** Search for new or changed {@link TypeMapping} and notifies the consumer. */
-    private void updateMappings() {
-        try {
-            Iterator<TypeMapping> changedMappings = Arrays.stream(marshaller.listFiles(BinaryUtils::isMappingFile))
-                .map(f -> {
-                    String fileName = f.getName();
+    private void updateMappings() throws IOException {
+        Iterator<TypeMapping> changedMappings = Arrays.stream(marshaller.listFiles(BinaryUtils::isMappingFile))
+            .map(f -> {
+                String fileName = f.getName();
 
-                    int typeId = BinaryUtils.mappedTypeId(fileName);
-                    byte platformId = BinaryUtils.mappedFilePlatformId(fileName);
+                int typeId = BinaryUtils.mappedTypeId(fileName);
+                byte platformId = BinaryUtils.mappedFilePlatformId(fileName);
 
-                    T2<Integer, Byte> data = new T2<>(typeId, platformId);
+                T2<Integer, Byte> data = new T2<>(typeId, platformId);
 
-                    // Filter out files already in `mappingsState`.
-                    return mappingsState.contains(data) ? null : new Object[] {data, f};
-                })
-                .filter(Objects::nonNull)
-                .peek(d -> mappingsState.add((T2<Integer, Byte>)d[0])) // Adding peeked up mappings to state.
-                .map((Function<Object[], TypeMapping>)(t -> new TypeMappingImpl(
-                    ((IgniteBiTuple<Integer, Byte>)t[0]).get1(),
-                    BinaryUtils.readMapping((File)t[1]),
-                    ((IgniteBiTuple<Integer, Byte>)t[0]).get2() == 0 ? PlatformType.JAVA : PlatformType.DOTNET)
-                ))
-                .iterator();
+                // Filter out files already in `mappingsState`.
+                return mappingsState.contains(data) ? null : new Object[] {data, f};
+            })
+            .filter(Objects::nonNull)
+            .peek(d -> mappingsState.add((T2<Integer, Byte>)d[0])) // Adding peeked up mappings to state.
+            .map((Function<Object[], TypeMapping>)(t -> new TypeMappingImpl(
+                ((IgniteBiTuple<Integer, Byte>)t[0]).get1(),
+                BinaryUtils.readMapping((File)t[1]),
+                ((IgniteBiTuple<Integer, Byte>)t[0]).get2() == 0 ? PlatformType.JAVA : PlatformType.DOTNET)
+            ))
+            .iterator();
 
-            if (!changedMappings.hasNext())
-                return;
+        if (!changedMappings.hasNext())
+            return;
 
-            consumer.onMappings(changedMappings);
+        consumer.onMappings(changedMappings);
 
-            if (changedMappings.hasNext())
-                throw new IllegalStateException("Consumer should handle all changed mappings");
+        if (changedMappings.hasNext())
+            throw new IllegalStateException("Consumer should handle all changed mappings");
 
-            state.save(mappingsState);
-        }
-        catch (IOException e) {
-            throw new IgniteException(e);
-        }
+        state.save(mappingsState);
     }
 
     /**
@@ -651,6 +694,15 @@ public class CdcMain implements Runnable {
      * @return Lock or null if lock failed.
      */
     private CdcFileLockHolder tryLock(File dbStoreDirWithSubdirectory) {
+/*
+        if (!dbStoreDirWithSubdirectory.exists()) {
+            log.warning("DB store directory not exists. Should be created by Ignite Node " +
+                " [dir=" + dbStoreDirWithSubdirectory + ']');
+
+            return null;
+        }
+*/
+
         File cdcRoot = new File(igniteCfg.getDataStorageConfiguration().getCdcWalPath());
 
         if (!cdcRoot.isAbsolute()) {
@@ -677,6 +729,7 @@ public class CdcMain implements Runnable {
         }
 
         this.cdcDir = cdcDir;
+        this.dbDir = dbStoreDirWithSubdirectory.toPath();
 
         CdcFileLockHolder lock = new CdcFileLockHolder(cdcDir.toString(), "cdc.lock", log);
 

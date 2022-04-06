@@ -119,7 +119,7 @@ public abstract class AbstractCdcTest extends GridCommonAbstractTest {
 
         return new CdcMain(cfg, null, cdcCfg) {
             @Override protected CdcConsumerState createState(Path stateDir) {
-                return new CdcConsumerState(stateDir) {
+                return new CdcConsumerState(log, stateDir) {
                     @Override public void save(T2<WALPointer, Integer> state) throws IOException {
                         super.save(state);
 
@@ -389,6 +389,16 @@ public abstract class AbstractCdcTest extends GridCommonAbstractTest {
                 assertFalse(typeName.isEmpty());
                 assertEquals(mapper.typeId(typeName), m.typeId());
             });
+        }
+
+        /** {@inheritDoc} */
+        @Override public void onCacheChange(Iterator<CdcCacheEvent> cacheEvents) {
+            cacheEvents.forEachRemaining(ce -> assertNotNull(ce));
+        }
+
+        /** {@inheritDoc} */
+        @Override public void onCacheDestroy(Iterator<Integer> caches) {
+            caches.forEachRemaining(ce -> assertNotNull(ce));
         }
     }
 
