@@ -1299,4 +1299,14 @@ public class PlannerTest extends AbstractPlannerTest {
             checkSplitAndSerialization(phys, publicSchema);
         }
     }
+
+    /** */
+    @Test
+    public void testMinusDateSerialization() throws Exception {
+        IgniteSchema publicSchema = new IgniteSchema("PUBLIC");
+
+        IgniteRel phys = physicalPlan("SELECT (DATE '2021-03-01' - DATE '2021-01-01') MONTHS", publicSchema);
+
+        checkSplitAndSerialization(phys, publicSchema);
+    }
 }

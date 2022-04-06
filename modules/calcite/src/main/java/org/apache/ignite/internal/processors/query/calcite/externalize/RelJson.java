@@ -91,6 +91,7 @@ import org.apache.calcite.sql.SqlOperator;
 import org.apache.calcite.sql.SqlSelectKeyword;
 import org.apache.calcite.sql.SqlSyntax;
 import org.apache.calcite.sql.SqlWindow;
+import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.sql.fun.SqlTrimFunction;
 import org.apache.calcite.sql.parser.SqlParserPos;
 import org.apache.calcite.sql.type.SqlTypeFamily;
@@ -813,7 +814,9 @@ class RelJson {
 
                     map.put("operands", list);
 
-                    if (node.getKind() == SqlKind.CAST)
+                    // The MINUS_DATE operator converted from AST to REX without third parameter, but to derive the type,
+                    // third parameter is required. Store the type explicitly to don't derive it on deserialization.
+                    if (node.getKind() == SqlKind.CAST || call.getOperator() == SqlStdOperatorTable.MINUS_DATE)
                         map.put("type", toJson(node.getType()));
 
                     if (call.getOperator() instanceof SqlFunction)
