@@ -75,6 +75,8 @@ import org.jetbrains.annotations.Nullable;
 
 import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
+import static org.apache.calcite.rel.type.RelDataType.PRECISION_NOT_SPECIFIED;
+import static org.apache.calcite.rel.type.RelDataType.SCALE_NOT_SPECIFIED;
 
 /**
  *
@@ -685,7 +687,7 @@ public class CacheTableDescriptorImpl extends NullInitializerExpressionFactory
         /** {@inheritDoc} */
         @Override public RelDataType logicalType(IgniteTypeFactory f) {
             if (logicalType == null)
-                logicalType = TypeUtils.sqlType(f, f.createJavaType(storageType));
+                logicalType = TypeUtils.sqlType(f, storageType, PRECISION_NOT_SPECIFIED, SCALE_NOT_SPECIFIED);
 
             return logicalType;
         }
@@ -764,8 +766,11 @@ public class CacheTableDescriptorImpl extends NullInitializerExpressionFactory
 
         /** {@inheritDoc} */
         @Override public RelDataType logicalType(IgniteTypeFactory f) {
-            if (logicalType == null)
-                logicalType = TypeUtils.sqlType(f, f.createJavaType(storageType));
+            if (logicalType == null) {
+                logicalType = TypeUtils.sqlType(f, storageType,
+                    desc.precision() == -1 ? PRECISION_NOT_SPECIFIED : desc.precision(),
+                    desc.scale() == -1 ? SCALE_NOT_SPECIFIED : desc.scale());
+            }
 
             return logicalType;
         }

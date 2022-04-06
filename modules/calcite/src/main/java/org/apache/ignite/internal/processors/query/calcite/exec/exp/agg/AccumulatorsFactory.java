@@ -49,6 +49,7 @@ import org.apache.calcite.util.Pair;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler;
+import org.apache.ignite.internal.processors.query.calcite.exec.exp.IgniteRexBuilder;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.util.typedef.F;
@@ -118,7 +119,7 @@ public class AccumulatorsFactory<Row> implements Supplier<List<AccumulatorWrappe
                         PhysTypeImpl.of(typeFactory, rowType,
                             JavaRowFormat.SCALAR, false))));
 
-        RexBuilder builder = new RexBuilder(typeFactory);
+        RexBuilder builder = new IgniteRexBuilder(typeFactory);
         RexProgramBuilder programBuilder = new RexProgramBuilder(rowType, builder);
         RexNode cast = builder.makeCast(to, builder.makeInputRef(from, 0));
         programBuilder.addProject(cast, null);
