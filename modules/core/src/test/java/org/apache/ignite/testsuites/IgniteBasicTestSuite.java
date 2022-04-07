@@ -20,6 +20,7 @@ package org.apache.ignite.testsuites;
 import org.apache.ignite.ClassPathContentLoggingTest;
 import org.apache.ignite.GridSuppressedExceptionSelfTest;
 import org.apache.ignite.cache.RemoveAllDeadlockTest;
+import org.apache.ignite.configuration.CacheConfigurationToStringTest;
 import org.apache.ignite.events.ClusterActivationStartedEventTest;
 import org.apache.ignite.failure.ExchangeWorkerWaitingForTaskTest;
 import org.apache.ignite.failure.FailureHandlerTriggeredTest;
@@ -322,7 +323,8 @@ import org.junit.runners.Suite;
 
     // Other tests
     CacheLockCandidatesThreadTest.class,
-    RemoveAllDeadlockTest.class
+    RemoveAllDeadlockTest.class,
+    CacheConfigurationToStringTest.class,
 })
 public class IgniteBasicTestSuite {
 }
