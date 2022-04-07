@@ -511,35 +511,28 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @throws IgniteCheckedException If failed to inject.
      */
     private void prepare(CacheConfiguration cfg, Collection<Object> objs) throws IgniteCheckedException {
-        prepare(cfg, cfg.getAffinity());
-        prepare(cfg, cfg.getAffinityMapper());
-        prepare(cfg, cfg.getEvictionFilter());
-        prepare(cfg, cfg.getInterceptor());
-        prepare(cfg, cfg.getEvictionFilter());
-        prepare(cfg, cfg.getEvictionPolicyFactory());
-        prepare(cfg, cfg.getEvictionPolicy());
-
-        if (cfg.getNearConfiguration() != null) {
-            prepare(cfg, cfg.getNearConfiguration().getNearEvictionPolicyFactory());
-            prepare(cfg, cfg.getNearConfiguration().getNearEvictionPolicy());
-        }
+        prepare(cfg, cfg.getAffinity(), false);
+        prepare(cfg, cfg.getAffinityMapper(), false);
+        prepare(cfg, cfg.getEvictionFilter(), false);
+        prepare(cfg, cfg.getInterceptor(), false);
 
         for (Object obj : objs)
-            prepare(cfg, obj);
+            prepare(cfg, obj, false);
     }
 
     /**
      * @param cfg Cache configuration.
      * @param rsrc Resource.
+     * @param near Near flag.
      * @throws IgniteCheckedException If failed.
      */
-    private void prepare(CacheConfiguration cfg, @Nullable Object rsrc) throws IgniteCheckedException {
+    private void prepare(CacheConfiguration cfg, @Nullable Object rsrc, boolean near) throws IgniteCheckedException {
         if (rsrc != null) {
             ctx.resource().injectGeneric(rsrc);
 
             ctx.resource().injectCacheName(rsrc, cfg.getName());
 
-            registerMbean(rsrc, cfg.getName());
+            registerMbean(rsrc, cfg.getName(), near);
         }
     }
 
@@ -549,15 +542,15 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     private void cleanup(GridCacheContext cctx) {
         CacheConfiguration cfg = cctx.config();
 
-        cleanup(cfg, cfg.getAffinity());
-        cleanup(cfg, cfg.getAffinityMapper());
-        cleanup(cfg, cfg.getEvictionFilter());
-        cleanup(cfg, cfg.getInterceptor());
-        cleanup(cfg, cctx.store().configuredStore());
+        cleanup(cfg, cfg.getAffinity(), false);
+        cleanup(cfg, cfg.getAffinityMapper(), false);
+        cleanup(cfg, cfg.getEvictionFilter(), false);
+        cleanup(cfg, cfg.getInterceptor(), false);
+        cleanup(cfg, cctx.store().configuredStore(), false);
 
         if (!CU.isUtilityCache(cfg.getName()) && !CU.isSystemCache(cfg.getName())) {
-            unregisterMbean(cctx.cache().localMxBean(), cfg.getName());
-            unregisterMbean(cctx.cache().clusterMxBean(), cfg.getName());
+            unregisterMbean(cctx.cache().localMxBean(), cfg.getName(), false);
+            unregisterMbean(cctx.cache().clusterMxBean(), cfg.getName(), false);
         }
 
         cctx.cleanup();
@@ -571,7 +564,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         CacheConfiguration cfg = grp.config();
 
         for (Object obj : grp.configuredUserObjects())
-            cleanup(cfg, obj);
+            cleanup(cfg, obj, false);
 
         if (!grp.systemCache() && !U.IGNITE_MBEANS_DISABLED) {
             try {
@@ -593,10 +586,11 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     /**
      * @param cfg Cache configuration.
      * @param rsrc Resource.
+     * @param near Near flag.
      */
-    private void cleanup(CacheConfiguration cfg, @Nullable Object rsrc) {
+    private void cleanup(CacheConfiguration cfg, @Nullable Object rsrc, boolean near) {
         if (rsrc != null) {
-            unregisterMbean(rsrc, cfg.getName());
+            unregisterMbean(rsrc, cfg.getName(), near);
 
             try {
                 ctx.resource().cleanupGeneric(rsrc);
@@ -1248,11 +1242,11 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         if (cfg.getCacheStoreFactory() instanceof GridCacheLoaderWriterStoreFactory) {
             GridCacheLoaderWriterStoreFactory factory = (GridCacheLoaderWriterStoreFactory)cfg.getCacheStoreFactory();
 
-            prepare(cfg, factory.loaderFactory());
-            prepare(cfg, factory.writerFactory());
+            prepare(cfg, factory.loaderFactory(), false);
+            prepare(cfg, factory.writerFactory(), false);
         }
         else
-            prepare(cfg, cfg.getCacheStoreFactory());
+            prepare(cfg, cfg.getCacheStoreFactory(), false);
 
         CacheStore cfgStore = cfg.getCacheStoreFactory() != null ? cfg.getCacheStoreFactory().create() : null;
 
@@ -1542,8 +1536,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         }
 
         if (!CU.isUtilityCache(cache.name()) && !CU.isSystemCache(cache.name())) {
-            registerMbean(cache.localMxBean(), cache.name());
-            registerMbean(cache.clusterMxBean(), cache.name());
+            registerMbean(cache.localMxBean(), cache.name(), false);
+            registerMbean(cache.clusterMxBean(), cache.name(), false);
         }
 
         return ret;
@@ -2559,7 +2553,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         );
 
         for (Object obj : grp.configuredUserObjects())
-            prepare(cfg, obj);
+            prepare(cfg, obj, false);
 
         U.startLifecycleAware(grp.configuredUserObjects());
 
@@ -4929,9 +4923,10 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      *
      * @param obj Cache component.
      * @param cacheName Cache name.
+     * @param near Near flag.
      * @throws IgniteCheckedException If registration failed.
      */
-    private void registerMbean(Object obj, @Nullable String cacheName)
+    private void registerMbean(Object obj, @Nullable String cacheName, boolean near)
         throws IgniteCheckedException {
         if (U.IGNITE_MBEANS_DISABLED)
             return;
@@ -4943,6 +4938,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         assert srvr != null;
 
         cacheName = U.maskName(cacheName);
+
+        cacheName = near ? cacheName + "-near" : cacheName;
 
         final Object mbeanImpl = (obj instanceof IgniteMBeanAware) ? ((IgniteMBeanAware)obj).getMBean() : obj;
 
@@ -4966,8 +4963,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      *
      * @param o Cache component.
      * @param cacheName Cache name.
+     * @param near Near flag.
      */
-    private void unregisterMbean(Object o, @Nullable String cacheName) {
+    private void unregisterMbean(Object o, @Nullable String cacheName, boolean near) {
         if (U.IGNITE_MBEANS_DISABLED)
             return;
 
@@ -4978,6 +4976,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         assert srvr != null;
 
         cacheName = U.maskName(cacheName);
+
+        cacheName = near ? cacheName + "-near" : cacheName;
 
         boolean needToUnregister = o instanceof IgniteMBeanAware;
 
