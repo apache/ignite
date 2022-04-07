@@ -26,6 +26,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteInClosure;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Future that is completed at creation time.
@@ -161,8 +162,41 @@ public class GridFinishedFuture<T> implements IgniteInternalFuture<T> {
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteInternalFuture chainCompose(IgniteClosure doneCb) {
-        throw new UnsupportedOperationException("Chain operation is not supported.");
+    @Override public <R> IgniteInternalFuture<R> chainCompose(
+        IgniteClosure<? super IgniteInternalFuture<T>, IgniteInternalFuture<R>> doneCb
+    ) {
+        return doneCb.apply(this);
+    }
+
+    /** {@inheritDoc} */
+    @Override public <R> IgniteInternalFuture<R> chainCompose(
+        IgniteClosure<? super IgniteInternalFuture<T>, IgniteInternalFuture<R>> doneCb,
+        @Nullable Executor exec
+    ) {
+        final GridFutureAdapter<R> res = new GridFutureAdapter<>();
+
+        exec.execute(() -> {
+            IgniteInternalFuture<R> doneCbFut;
+
+            try {
+                doneCbFut = doneCb.apply(this);
+            } catch (GridClosureException e) {
+                doneCbFut = new GridFinishedFuture<>(e.unwrap());
+            } catch (RuntimeException e) {
+                doneCbFut = new GridFinishedFuture<>(e);
+            }
+
+            doneCbFut.listen(f -> {
+                try {
+                    res.onDone(f.get(), null);
+                }
+                catch (Exception e) {
+                    res.onDone(e);
+                }
+            });
+        });
+
+        return res;
     }
 
     /** {@inheritDoc} */

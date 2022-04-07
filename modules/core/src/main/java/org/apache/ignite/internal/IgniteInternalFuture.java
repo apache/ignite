@@ -24,6 +24,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.jetbrains.annotations.Async;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Extension for standard {@link Future} interface. It adds simplified exception handling,
@@ -140,8 +141,23 @@ public interface IgniteInternalFuture<R> {
      * @param <T> Type parameter.
      * @return Chained future.
      */
+    @Async.Schedule
     public <T> IgniteInternalFuture<T> chainCompose(
         IgniteClosure<? super IgniteInternalFuture<R>, IgniteInternalFuture<T>> doneCb
+    );
+
+    /**
+     * Make a chained future that is completed when {@code doneCb} is executed. Callback is called with this future
+     * as the argument, when this future completes. It is guaranteed that done callback will be called only ONCE.
+     *
+     * @param doneCb Done callback.
+     * @param exec Executor to run callback.
+     * @param <T> Type parameter.
+     * @return Chained future.
+     */
+    @Async.Schedule
+    public <T> IgniteInternalFuture<T> chainCompose(
+        IgniteClosure<? super IgniteInternalFuture<R>, IgniteInternalFuture<T>> doneCb, @Nullable Executor exec
     );
 
     /**

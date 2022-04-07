@@ -28,6 +28,7 @@ import org.apache.ignite.internal.IgniteFutureCancelledCheckedException;
 import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.util.lang.GridClosureException;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -383,22 +384,59 @@ public class GridFutureAdapter<R> implements IgniteInternalFuture<R> {
     @Override public <T> IgniteInternalFuture<T> chainCompose(
         IgniteClosure<? super IgniteInternalFuture<R>, IgniteInternalFuture<T>> doneCb
     ) {
+        return chainCompose(doneCb, null);
+    }
+
+    /** {@inheritDoc} */
+    @Override public <T> IgniteInternalFuture<T> chainCompose(
+        IgniteClosure<? super IgniteInternalFuture<R>, IgniteInternalFuture<T>> doneCb,
+        @Nullable Executor exec
+    ) {
         GridFutureAdapter<T> res = new GridFutureAdapter<>();
 
         listen(fut -> {
-            IgniteInternalFuture<T> doneCbFut = doneCb.apply(fut);
-
-            doneCbFut.listen(f -> {
-                try {
-                    res.onDone(f.get(), null);
-                }
-                catch (IgniteCheckedException e) {
-                    res.onDone(e);
-                }
-            });
+            if (exec == null)
+                applyChainComposeCallback(doneCb, fut, res);
+            else {
+                exec.execute(() -> applyChainComposeCallback(doneCb, fut, res));
+            }
         });
 
         return res;
+    }
+
+    /**
+     * Apply done callback given for {@link #chainCompose(IgniteClosure)} and
+     * {@link #chainCompose(IgniteClosure, Executor)} methods.
+     *
+     * @param doneCb Callback.
+     * @param fut Future that should be passed to the callback as the argument.
+     * @param chainFuture Chained future.
+     * @param <T> Type parameter.
+     */
+    private <T> void applyChainComposeCallback(
+        IgniteClosure<? super IgniteInternalFuture<R>, IgniteInternalFuture<T>> doneCb,
+        IgniteInternalFuture<R> fut,
+        GridFutureAdapter<T> chainFuture
+    ) {
+        IgniteInternalFuture<T> doneCbFut;
+
+        try {
+            doneCbFut = doneCb.apply(fut);
+        } catch (GridClosureException e) {
+            doneCbFut = new GridFinishedFuture<>(e.unwrap());
+        } catch (RuntimeException e) {
+            doneCbFut = new GridFinishedFuture<>(e);
+        }
+
+        doneCbFut.listen(f -> {
+            try {
+                chainFuture.onDone(f.get(), null);
+            }
+            catch (Exception e) {
+                chainFuture.onDone(e);
+            }
+        });
     }
 
     /**

@@ -19,6 +19,7 @@ package org.apache.ignite.internal.util.future;
 
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -33,6 +34,7 @@ import org.apache.ignite.internal.processors.pool.PoolProcessor;
 import org.apache.ignite.internal.processors.security.NoOpIgniteSecurityProcessor;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.CX1;
+import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.testframework.junits.GridTestKernalContext;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.thread.IgniteThreadFactory;
@@ -349,41 +351,73 @@ public class GridFutureAdapterSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testChainCompose() throws IgniteCheckedException {
-        checkCompose(true, false);
-        checkCompose(false, false);
-        checkCompose(true, true);
-        checkCompose(false, true);
+        Executor[] executors = new Executor[] { null, Executors.newSingleThreadExecutor() };
+
+        for (Executor exec : executors) {
+            checkCompose(true,  false, false, exec);
+            checkCompose(false, false, false, exec);
+            checkCompose(true,  true,  false, exec);
+            checkCompose(false, true,  false, exec);
+
+            checkCompose(true,  false, true, exec);
+            checkCompose(false, false, true, exec);
+            checkCompose(true,  true,  true, exec);
+            checkCompose(false, true,  true, exec);
+        }
 
         checkComposeCancel();
     }
 
     /**
+     * @param directOrder Whether to complete the futures in direct order. Direct order is: 1st is completed the future
+     *                    on which {@link IgniteInternalFuture#chainCompose(IgniteClosure)} is called, 2nd is the future
+     *                    returned by {@code doneCb} passed to  {@link IgniteInternalFuture#chainCompose(IgniteClosure)}.
+     * @param withException Whether the futures are completed with exceptions.
+     * @param cbException Whether the callback throws an exception instead of returning a future.
+     * @param exec Executor.
      * @throws IgniteCheckedException If failed.
      */
-    public void checkCompose(boolean directOrder, boolean withException) throws IgniteCheckedException {
+    public void checkCompose(
+        boolean directOrder,
+        boolean withException,
+        boolean cbException,
+        Executor exec
+    ) throws IgniteCheckedException {
         GridFutureAdapter<Object> fut0 = new GridFutureAdapter<>();
-        GridFutureAdapter<Object> fut1 = new GridFutureAdapter<>();
+        GridFutureAdapter<Object> cbFut = new GridFutureAdapter<>();
 
-        IgniteInternalFuture<Object> fut2 = fut0.chainCompose(f -> fut1);
+        IgniteInternalFuture<Object> chainedFut = fut0.chainCompose(
+            f -> {
+                if (cbException)
+                    throw new RuntimeException("cbException");
+                else
+                    return cbFut;
+            },
+            exec
+        );
 
-        assertFalse(fut2.isDone());
+        assertFalse(chainedFut.isDone());
 
         Object res0 = withException ? new Exception("test0") : new Object();
-        Object res1 = withException ? new Exception("test1") : new Object();
+        Object resCb = withException ? new Exception("testCb") : new Object();
 
         if (directOrder) {
             futureOnDone(fut0, res0);
 
             assertTrue(fut0.isDone());
-            assertFalse(fut2.isDone());
 
-            futureOnDone(fut1, res1);
+            if (exec == null)
+                assertEquals(cbException, chainedFut.isDone());
+
+            futureOnDone(cbFut, resCb);
         }
         else {
-            futureOnDone(fut1, res1);
+            futureOnDone(cbFut, resCb);
 
-            assertTrue(fut1.isDone());
-            assertFalse(fut2.isDone());
+            assertTrue(cbFut.isDone());
+
+            if (exec == null)
+                assertFalse(chainedFut.isDone());
 
             futureOnDone(fut0, res0);
         }
@@ -391,20 +425,22 @@ public class GridFutureAdapterSelfTest extends GridCommonAbstractTest {
         boolean exceptionThrown = false;
 
         try {
-            fut2.get(1000);
+            chainedFut.get(1000);
         }
         catch (Exception e) {
             exceptionThrown = true;
 
-            if (withException)
-                assertEquals("test1", e.getMessage());
+            if (cbException)
+                assertEquals("cbException", e.getMessage());
+            else if (withException)
+                assertEquals("testCb", e.getMessage());
             else
                 throw e;
         }
 
-        assertEquals(withException, exceptionThrown);
+        assertEquals(withException || cbException, exceptionThrown);
 
-        assertTrue(fut2.isDone());
+        assertTrue(chainedFut.isDone());
     }
 
     /**
