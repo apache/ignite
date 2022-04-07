@@ -354,9 +354,6 @@ public class IgniteKernal implements IgniteEx, Externalizable {
     /** System line separator. */
     public static final String NL = U.nl();
 
-    /** System megabyte. */
-    public static final int MEGABYTE = 1024 * 1024;
-
     /**
      * Default interval of checking thread pool state for the starvation. Will be used only if the
      * {@link IgniteSystemProperties#IGNITE_STARVATION_CHECK_INTERVAL} system property is not set.

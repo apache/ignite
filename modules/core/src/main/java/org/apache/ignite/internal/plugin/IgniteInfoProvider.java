@@ -70,7 +70,6 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_DAEMON;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_LOG_CLASSPATH_CONTENT_ON_STARTUP;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_NO_ASCII;
 import static org.apache.ignite.internal.IgniteKernal.DFLT_LOG_CLASSPATH_CONTENT_ON_STARTUP;
-import static org.apache.ignite.internal.IgniteKernal.MEGABYTE;
 import static org.apache.ignite.internal.IgniteKernal.NL;
 import static org.apache.ignite.internal.IgniteKernal.SITE;
 import static org.apache.ignite.internal.IgniteVersionUtils.ACK_VER_STR;
@@ -79,6 +78,7 @@ import static org.apache.ignite.internal.IgniteVersionUtils.COPYRIGHT;
 import static org.apache.ignite.internal.IgniteVersionUtils.REV_HASH_STR;
 import static org.apache.ignite.internal.IgniteVersionUtils.VER_STR;
 import static org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager.INTERNAL_DATA_REGION_NAMES;
+import static org.apache.ignite.internal.util.IgniteUtils.MB;
 
 /**
  * Default implementation of Ignite information.
@@ -712,8 +712,8 @@ public class IgniteInfoProvider implements InfoProvider {
         long heapUsed = m.getHeapMemoryUsed();
         long heapMax = m.getHeapMemoryMaximum();
 
-        long heapUsedInMBytes = heapUsed / MEGABYTE;
-        long heapCommInMBytes = m.getHeapMemoryCommitted() / MEGABYTE;
+        long heapUsedInMBytes = heapUsed / MB;
+        long heapCommInMBytes = m.getHeapMemoryCommitted() / MB;
 
         double freeHeapPct = heapMax > 0 ? ((double)((heapMax - heapUsed) * 100)) / heapMax : -1;
 
@@ -834,10 +834,10 @@ public class IgniteInfoProvider implements InfoProvider {
             long offHeapMax = regCfg.getMaxSize();
             long offHeapComm = region.metrics().getOffHeapSize();
 
-            long offHeapUsedInMBytes = offHeapUsed / MEGABYTE;
-            long offHeapMaxInMBytes = offHeapMax / MEGABYTE;
-            long offHeapCommInMBytes = offHeapComm / MEGABYTE;
-            long offHeapInitInMBytes = offHeapInit / MEGABYTE;
+            long offHeapUsedInMBytes = offHeapUsed / MB;
+            long offHeapMaxInMBytes = offHeapMax / MB;
+            long offHeapCommInMBytes = offHeapComm / MB;
+            long offHeapInitInMBytes = offHeapInit / MB;
 
             double freeOffHeapPct = offHeapMax > 0 ?
                 ((double)((offHeapMax - offHeapUsed) * 100)) / offHeapMax : -1;
@@ -868,7 +868,7 @@ public class IgniteInfoProvider implements InfoProvider {
 
             if (regCfg.isPersistenceEnabled()) {
                 dataRegionsInfo.a(", allocTotal=")
-                    .a(dblFmt.format(region.metrics().getTotalAllocatedSize() / MEGABYTE)).a("MB");
+                    .a(dblFmt.format(region.metrics().getTotalAllocatedSize() / MB)).a("MB");
             }
 
             dataRegionsInfo.a(']').nl();
@@ -925,13 +925,13 @@ public class IgniteInfoProvider implements InfoProvider {
 
         sb.nl()
             .a("Data storage metrics for local node (to disable set 'metricsLogFrequency' to 0)").nl()
-            .a("    ^-- Off-heap memory [used=").a(dblFmt.format(offHeapUsedSummary / MEGABYTE))
+            .a("    ^-- Off-heap memory [used=").a(dblFmt.format(offHeapUsedSummary / MB))
             .a("MB, free=").a(dblFmt.format(freeOffHeapPct))
-            .a("%, allocated=").a(dblFmt.format(offHeapCommSummary / MEGABYTE)).a("MB]").nl()
+            .a("%, allocated=").a(dblFmt.format(offHeapCommSummary / MB)).a("MB]").nl()
             .a("    ^-- Page memory [pages=").a(loadedPages).a("]").nl();
 
         if (persistenceEnabled)
-            sb.a("    ^-- Ignite persistence [used=").a(dblFmt.format(pdsUsedSummary / MEGABYTE)).a("MB]").nl();
+            sb.a("    ^-- Ignite persistence [used=").a(dblFmt.format(pdsUsedSummary / MB)).a("MB]").nl();
 
         if (log.isQuiet())
             U.quietMultipleLines(false, sb.toString());
