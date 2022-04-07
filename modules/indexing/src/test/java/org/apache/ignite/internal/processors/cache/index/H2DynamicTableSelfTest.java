@@ -32,6 +32,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Random;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.function.Consumer;
@@ -65,6 +66,7 @@ import org.apache.ignite.internal.processors.query.h2.H2TableDescriptor;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.processors.query.schema.SchemaOperationException;
+import org.apache.ignite.internal.sql.SqlKeyword;
 import org.apache.ignite.internal.util.GridStringBuilder;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
@@ -617,6 +619,29 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
         execute("CREATE TABLE QP_OVERWRITE_TEMPLATE (id INT PRIMARY KEY, val INT) " +
             "WITH \"parallelism = 42, template = " + CACHE_NAME_PARALLELISM_7 + " \"");
         assertQueryParallelism("QP_OVERWRITE_TEMPLATE", 42);
+    }
+
+    /**
+     * Test keywords in table name.
+     * Try to create table with all keywords.
+     */
+    @Test
+    public void testCreateTableWithKeywordName() {
+        int i = 0;
+
+        Set<String> keywords = SqlKeyword.getKeywords();
+
+        for (String entry : keywords
+        ) {
+            try {
+                doTestCreateTable(entry, null, null, null);
+            } catch (Exception e) {
+                i++;
+            }
+        }
+
+        //assert if size of keywords not equal esception counter
+        assertEquals(keywords.size(), i);
     }
 
     /**
