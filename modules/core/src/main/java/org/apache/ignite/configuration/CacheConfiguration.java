@@ -53,6 +53,7 @@ import org.apache.ignite.cache.store.CacheStoreSessionListener;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.processors.query.QueryUtils;
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -362,6 +363,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     private CacheInterceptor<K, V> interceptor;
 
     /** */
+    @GridToStringInclude
     private Class<?>[] sqlFuncCls;
 
     /** */
@@ -393,6 +395,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     private boolean cpOnRead = DFLT_COPY_ON_READ;
 
     /** Cache plugin configurations. */
+    @GridToStringInclude
     private CachePluginConfiguration[] pluginCfgs;
 
     /** Cache topology validator. */
@@ -403,6 +406,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     private Factory<? extends CacheStoreSessionListener>[] storeSesLsnrs;
 
     /** Query entities. */
+    @GridToStringInclude
     private Collection<QueryEntity> qryEntities;
 
     /** Partition loss policy. */
@@ -412,6 +416,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     private int qryParallelism = DFLT_QUERY_PARALLELISM;
 
     /** Cache key configuration. */
+    @GridToStringInclude
     private CacheKeyConfiguration[] keyCfg;
 
     /** Events disabled. */
