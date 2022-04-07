@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -32,14 +31,11 @@ import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.affinity.AffinityFunction;
 import org.apache.ignite.cache.affinity.AffinityFunctionContext;
 import org.apache.ignite.cache.affinity.AffinityKeyMapper;
-import org.apache.ignite.cache.eviction.EvictableEntry;
 import org.apache.ignite.cache.eviction.EvictionFilter;
-import org.apache.ignite.cache.eviction.EvictionPolicy;
 import org.apache.ignite.cache.store.CacheStore;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.configuration.TopologyValidator;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteBiTuple;
@@ -172,28 +168,6 @@ public class GridCacheLifecycleAwareSelfTest extends GridAbstractLifecycleAwareS
         /** {@inheritDoc} */
         @Override public void removeNode(UUID nodeId) {
             // No-op.
-        }
-    }
-
-    /**
-     */
-    public static class TestEvictionPolicy extends TestLifecycleAware implements EvictionPolicy, Serializable {
-        /**
-         */
-        public TestEvictionPolicy() {
-            super(CACHE_NAME);
-        }
-
-        /** {@inheritDoc} */
-        @Override public void onEntryAccessed(boolean rmv, EvictableEntry entry) {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
-        @Override public void start() {
-            startCnt.incrementAndGet();
-
-            assertEquals("Unexpected cache name for " + this, CACHE_NAME, cacheName);
         }
     }
 
@@ -338,25 +312,6 @@ public class GridCacheLifecycleAwareSelfTest extends GridAbstractLifecycleAwareS
         ccfg.setAffinity(affinity);
 
         lifecycleAwares.add(affinity);
-
-        TestEvictionPolicy evictionPlc = new TestEvictionPolicy();
-
-        ccfg.setEvictionPolicy(evictionPlc);
-        ccfg.setOnheapCacheEnabled(true);
-
-        lifecycleAwares.add(evictionPlc);
-
-        if (near) {
-            TestEvictionPolicy nearEvictionPlc = new TestEvictionPolicy();
-
-            NearCacheConfiguration nearCfg = new NearCacheConfiguration();
-
-            nearCfg.setNearEvictionPolicy(nearEvictionPlc);
-
-            ccfg.setNearConfiguration(nearCfg);
-
-            lifecycleAwares.add(nearEvictionPlc);
-        }
 
         TestEvictionFilter evictionFilter = new TestEvictionFilter();
 
