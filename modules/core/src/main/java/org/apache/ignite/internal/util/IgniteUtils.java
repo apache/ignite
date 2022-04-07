@@ -220,6 +220,7 @@ import org.apache.ignite.internal.managers.deployment.GridDeployment;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentInfo;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.mxbean.IgniteStandardMXBean;
+import org.apache.ignite.internal.plugin.InfoProvider;
 import org.apache.ignite.internal.processors.cache.CacheClassLoaderMarker;
 import org.apache.ignite.internal.processors.cache.GridCacheAttributes;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -267,7 +268,6 @@ import org.apache.ignite.logger.LoggerNodeIdAndApplicationAware;
 import org.apache.ignite.logger.LoggerNodeIdAware;
 import org.apache.ignite.logger.java.JavaLogger;
 import org.apache.ignite.marshaller.Marshaller;
-import org.apache.ignite.internal.plugin.InfoProvider;
 import org.apache.ignite.plugin.PluginProvider;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
@@ -648,6 +648,19 @@ public abstract class IgniteUtils {
 
     /** Byte count prefixes. */
     private static final String BYTE_CNT_PREFIXES = " KMGTPE";
+
+    /**
+     * Success file name property. This file is used with auto-restarting functionality when Ignite
+     * is started by supplied ignite.{bat|sh} scripts.
+     */
+    public static final String IGNITE_SUCCESS_FILE_PROPERTY = System.getProperty(IGNITE_SUCCESS_FILE);
+
+    /**
+     * JMX remote system property. Setting this property registered the Java VM platform's MBeans and published
+     * the Remote Method Invocation (RMI) connector via a private interface to allow JMX client applications
+     * to monitor a local Java platform, that is, a Java VM running on the same machine as the JMX client.
+     */
+    public static final String IGNITE_JMX_REMOTE_PROPERTY = System.getProperty("com.sun.management.jmxremote");
 
     /*
      * Initializes enterprise check.
@@ -12347,19 +12360,9 @@ public abstract class IgniteUtils {
     }
 
     /**
-     * Gets "on" or "off" string for given boolean value.
-     *
-     * @param b Boolean value to convert.
-     * @return Result string.
-     */
-    public static String onOff(boolean b) {
-        return b ? "on" : "off";
-    }
-
-    /**
      * @return Language runtime.
      */
-    public static String getLanguage(ClassLoader ldr) {
+    public static String language(ClassLoader ldr) {
         boolean scala = false;
         boolean groovy = false;
         boolean clojure = false;
@@ -12406,7 +12409,7 @@ public abstract class IgniteUtils {
      * @return {@code True} if remote JMX management is enabled - {@code false} otherwise.
      */
     public static boolean isJmxRemoteEnabled() {
-        return System.getProperty("com.sun.management.jmxremote") != null;
+        return IGNITE_JMX_REMOTE_PROPERTY != null;
     }
 
     /**
@@ -12424,6 +12427,6 @@ public abstract class IgniteUtils {
      * @return {@code True} if restart mode is enabled, {@code false} otherwise.
      */
     public static boolean isRestartEnabled() {
-        return System.getProperty(IGNITE_SUCCESS_FILE) != null;
+        return IGNITE_SUCCESS_FILE_PROPERTY != null;
     }
 }

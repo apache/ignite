@@ -79,7 +79,6 @@ import static org.apache.ignite.internal.IgniteVersionUtils.COPYRIGHT;
 import static org.apache.ignite.internal.IgniteVersionUtils.REV_HASH_STR;
 import static org.apache.ignite.internal.IgniteVersionUtils.VER_STR;
 import static org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager.INTERNAL_DATA_REGION_NAMES;
-import static org.apache.ignite.internal.util.IgniteUtils.onOff;
 
 /**
  * Default implementation of Ignite information.
@@ -143,6 +142,7 @@ public class IgniteInfoProvider implements InfoProvider {
     @Override public void ackKernalStarted(IgniteLogger log, Ignite ignite) {
         IgniteEx igEx = (IgniteEx)ignite;
 
+        ackSecurity(log, ignite);
         ackPerformanceSuggestions(log, igEx);
         ackVisorConsole(log);
         ackClassPathContent(log);
@@ -233,7 +233,7 @@ public class IgniteInfoProvider implements InfoProvider {
     /**
      * Logs out OS information.
      */
-    private void ackOsInfo(IgniteLogger log) {
+    void ackOsInfo(IgniteLogger log) {
         if (log.isQuiet())
             U.quiet(false, "OS: " + U.osString());
 
@@ -250,12 +250,12 @@ public class IgniteInfoProvider implements InfoProvider {
     /**
      * Logs out language runtime.
      */
-    private void ackLanguageRuntime(IgniteLogger log, IgniteConfiguration cfg) {
+    void ackLanguageRuntime(IgniteLogger log, IgniteConfiguration cfg) {
         if (log.isQuiet())
             U.quiet(false, "VM information: " + U.jdkString());
 
         if (log.isInfoEnabled()) {
-            log.info("Language runtime: " + U.getLanguage(U.resolveClassLoader(cfg)));
+            log.info("Language runtime: " + U.language(U.resolveClassLoader(cfg)));
             log.info("VM information: " + U.jdkString());
             log.info("VM total memory: " + U.heapSize(2) + "GB");
         }
@@ -264,7 +264,7 @@ public class IgniteInfoProvider implements InfoProvider {
     /**
      * Acks remote management.
      */
-    private void ackRemoteManagement(IgniteLogger log, IgniteConfiguration cfg) {
+    void ackRemoteManagement(IgniteLogger log, IgniteConfiguration cfg) {
         if (!log.isInfoEnabled())
             return;
 
@@ -579,7 +579,7 @@ public class IgniteInfoProvider implements InfoProvider {
      * @param clsPathEntry Classpath string to process.
      * @param clsPathContent StringBuilder to attach path to.
      */
-    private void ackClassPathWildCard(String clsPathEntry, SB clsPathContent) {
+    void ackClassPathWildCard(String clsPathEntry, SB clsPathContent) {
         final int lastSeparatorIdx = clsPathEntry.lastIndexOf(File.separator);
 
         final int asteriskIdx = clsPathEntry.indexOf('*');
@@ -620,7 +620,7 @@ public class IgniteInfoProvider implements InfoProvider {
      * @param clsPathEntry Classpath string to process.
      * @param clsPathContent StringBuilder to attach path to.
      */
-    private void ackClassPathEntry(String clsPathEntry, SB clsPathContent) {
+    void ackClassPathEntry(String clsPathEntry, SB clsPathContent) {
         File clsPathElementFile = new File(clsPathEntry);
 
         if (clsPathElementFile.isDirectory())
@@ -789,7 +789,7 @@ public class IgniteInfoProvider implements InfoProvider {
      * @param execSvcName Name of the service.
      * @param execSvc Service to create a description for.
      */
-    private String createExecutorDescription(String execSvcName, ExecutorService execSvc) {
+    String createExecutorDescription(String execSvcName, ExecutorService execSvc) {
         int poolSize = 0;
         int poolActiveThreads = 0;
         int poolQSize = 0;
@@ -991,5 +991,28 @@ public class IgniteInfoProvider implements InfoProvider {
                 ">>> not exited grid properly." + NL +
                 NL);
         }
+    }
+
+    /**
+     * Prints security status.
+     */
+    void ackSecurity(IgniteLogger log, Ignite ignite) {
+        assert log != null;
+
+        GridKernalContext ctx = ((IgniteEx)ignite).context();
+
+        U.quietAndInfo(log, "Security status [authentication=" + onOff(ctx.security().enabled())
+            + ", sandbox=" + onOff(ctx.security().sandbox().enabled())
+            + ", tls/ssl=" + onOff(ctx.config().getSslContextFactory() != null) + ']');
+    }
+
+    /**
+     * Gets "on" or "off" string for given boolean value.
+     *
+     * @param b Boolean value to convert.
+     * @return Result string.
+     */
+    public static String onOff(boolean b) {
+        return b ? "on" : "off";
     }
 }

@@ -34,24 +34,6 @@ public interface InfoProvider {
     public void ackKernalInited(IgniteLogger log, IgniteConfiguration cfg);
 
     /**
-     * @param log Ignite Logger.
-     * @param ignite Ignite instance.
-     */
-    public void ackNodeBasicMetrics(IgniteLogger log, Ignite ignite);
-
-    /**
-     * @param log Ignite Logger.
-     * @param ignite Ignite instance.
-     */
-    public void ackNodeDataStorageMetrics(IgniteLogger log, Ignite ignite);
-
-    /**
-     * @param log Ignite Logger.
-     * @param ignite Ignite instance.
-     */
-    public void ackNodeMemoryStatisticsMetrics(IgniteLogger log, Ignite ignite);
-
-    /**
      * @param log Ignite logger.
      * @param ignite Ignite instance.
      */
@@ -60,7 +42,25 @@ public interface InfoProvider {
     /**
      * @param log Ignite logger.
      * @param ignite Ignite instance.
-     * @param err {@code true} if error occurred during the Ignite instance stop process.
+     * @param err {@code True} if error occurred during the Ignite instance stop process.
      */
     public void ackKernalStopped(IgniteLogger log, Ignite ignite, boolean err);
+
+    /**
+     * @param log Ignite logger.
+     * @param ignite Ignite instance.
+     */
+    public void ackNodeBasicMetrics(IgniteLogger log, Ignite ignite);
+
+    /**
+     * @param log Ignite logger.
+     * @param ignite Ignite instance.
+     */
+    public void ackNodeDataStorageMetrics(IgniteLogger log, Ignite ignite);
+
+    /**
+     * @param log Ignite logger.
+     * @param ignite Ignite instance.
+     */
+    public void ackNodeMemoryStatisticsMetrics(IgniteLogger log, Ignite ignite);
 }

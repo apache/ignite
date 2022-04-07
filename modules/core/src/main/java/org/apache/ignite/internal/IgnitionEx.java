@@ -475,7 +475,7 @@ public class IgnitionEx {
      * @see Ignition#RESTART_EXIT_CODE
      */
     public static void restart(boolean cancel) {
-        String file = System.getProperty(IGNITE_SUCCESS_FILE);
+        String file = U.IGNITE_SUCCESS_FILE_PROPERTY;
 
         if (file == null)
             U.warn(null, "Cannot restart node when restart not enabled.");

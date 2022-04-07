@@ -270,7 +270,6 @@ import static org.apache.ignite.internal.IgniteVersionUtils.BUILD_TSTAMP_STR;
 import static org.apache.ignite.internal.IgniteVersionUtils.COPYRIGHT;
 import static org.apache.ignite.internal.IgniteVersionUtils.VER;
 import static org.apache.ignite.internal.IgniteVersionUtils.VER_STR;
-import static org.apache.ignite.internal.util.IgniteUtils.onOff;
 import static org.apache.ignite.lifecycle.LifecycleEventType.AFTER_NODE_START;
 import static org.apache.ignite.lifecycle.LifecycleEventType.BEFORE_NODE_START;
 import static org.apache.ignite.mxbean.IgniteMXBean.ACTIVE_DESC;
@@ -1014,8 +1013,6 @@ public class IgniteKernal implements IgniteEx, Externalizable {
             startManager(new GridCollisionManager(ctx));
             startManager(new GridIndexingManager(ctx));
 
-            ackSecurity();
-
             // Assign discovery manager to context before other processors start so they
             // are able to register custom event listener.
             GridDiscoveryManager discoMgr = new GridDiscoveryManager(ctx);
@@ -1643,7 +1640,7 @@ public class IgniteKernal implements IgniteEx, Externalizable {
         add(ATTR_SHUTDOWN_POLICY, cfg.getShutdownPolicy().index());
 
         add(ATTR_DEPLOYMENT_MODE, cfg.getDeploymentMode());
-        add(ATTR_LANG_RUNTIME, U.getLanguage(U.resolveClassLoader(cfg)));
+        add(ATTR_LANG_RUNTIME, U.language(U.resolveClassLoader(cfg)));
 
         add(ATTR_JVM_PID, U.jvmPid());
 
@@ -2046,17 +2043,6 @@ public class IgniteKernal implements IgniteEx, Externalizable {
      */
     @Override public boolean isRestartEnabled() {
         return U.isRestartEnabled();
-    }
-
-    /**
-     * Prints security status.
-     */
-    private void ackSecurity() {
-        assert log != null;
-
-        U.quietAndInfo(log, "Security status [authentication=" + onOff(ctx.security().enabled())
-            + ", sandbox=" + onOff(ctx.security().sandbox().enabled())
-            + ", tls/ssl=" + onOff(ctx.config().getSslContextFactory() != null) + ']');
     }
 
     /**
