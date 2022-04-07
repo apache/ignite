@@ -381,7 +381,7 @@ public class IgniteKernal implements IgniteEx, Externalizable {
     public static final boolean DFLT_LOG_CLASSPATH_CONTENT_ON_STARTUP = true;
 
     /** Ignite node information provider. */
-    private final InfoProvider info = ofNullable(U.loadInfoProvider()).orElse(new IgniteInfoProvider());
+    private final InfoProvider info = loadInfoProvider();
 
     /** Currently used instance of JVM pause detector thread. See {@link LongJVMPauseDetector} for details. */
     private LongJVMPauseDetector longJVMPauseDetector;
@@ -3368,6 +3368,20 @@ public class IgniteKernal implements IgniteEx, Externalizable {
             throw new IgniteCheckedException("Failed to create component [component=" + cls.getName() +
                 ", implementation=" + implCls.getName() + ']', e);
         }
+    }
+
+    /**
+     * @return Loaded info provider.
+     */
+    private static InfoProvider loadInfoProvider() {
+        try {
+            return ofNullable(F.first(U.loadService(InfoProvider.class))).orElse(new IgniteInfoProvider());
+        }
+        catch (Throwable t) {
+            U.error(null, t.getMessage());
+        }
+
+        return null;
     }
 
     /**

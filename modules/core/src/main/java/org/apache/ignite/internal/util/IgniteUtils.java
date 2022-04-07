@@ -122,7 +122,6 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Properties;
 import java.util.Random;
-import java.util.ServiceConfigurationError;
 import java.util.ServiceLoader;
 import java.util.Set;
 import java.util.StringTokenizer;
@@ -220,7 +219,6 @@ import org.apache.ignite.internal.managers.deployment.GridDeployment;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentInfo;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.mxbean.IgniteStandardMXBean;
-import org.apache.ignite.internal.plugin.InfoProvider;
 import org.apache.ignite.internal.processors.cache.CacheClassLoaderMarker;
 import org.apache.ignite.internal.processors.cache.GridCacheAttributes;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -1070,21 +1068,6 @@ public abstract class IgniteUtils {
             providers.add(provider);
 
         return providers;
-    }
-
-    /**
-     * @return Loaded Ignite information provider or {@code null} the otherwise. This method may throw
-     * {@link ServiceConfigurationError} or {@link SecurityException} in case of service loader is not configured properly.
-     */
-    public static InfoProvider loadInfoProvider() {
-        try {
-            return F.first(loadService(InfoProvider.class));
-        }
-        catch (Throwable t) {
-            U.error(null, t.getMessage());
-        }
-
-        return null;
     }
 
     /**
