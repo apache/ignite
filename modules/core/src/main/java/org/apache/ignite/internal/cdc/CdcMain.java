@@ -25,7 +25,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
@@ -60,7 +59,6 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.reader.Standa
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
 import org.apache.ignite.internal.processors.resource.GridSpringResourceContext;
-import org.apache.ignite.internal.util.lang.GridTuple3;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -286,38 +284,13 @@ public class CdcMain implements Runnable {
 
                 state = createState(cdcDir.resolve(STATE_DIR));
 
-                GridTuple3<T2<WALPointer, Integer>, Map<Integer, Long>, Set<T2<Integer, Byte>>> initState = state.load();
-
-                walState = initState.get1();
-
-                typesState = initState.get2() != null ? initState.get2() : new HashMap<>();
-
-                mappingsState = initState.get3() != null ? initState.get3() : new HashSet<>();
+                walState = state.loadWal();
+                typesState = state.loadTypes();
+                mappingsState = state.loadMappings();
 
                 if (walState != null) {
                     committedSegmentIdx.value(walState.get1().index());
                     committedSegmentOffset.value(walState.get1().fileOffset());
-
-                    if (log.isInfoEnabled())
-                        log.info("Initial WAL state loaded [ptr=" + walState.get1() + ", idx=" + walState.get2() + ']');
-                }
-
-                if (typesState != null) {
-                    log.info("Initial types state loaded [typesCnt=" + typesState.size() + ']');
-
-                    if (log.isDebugEnabled()) {
-                        for (Map.Entry<Integer, Long> e : typesState.entrySet())
-                            log.debug("Type [typeId=" + e.getKey() + ", lastModified=" + e.getValue() + ']');
-                    }
-                }
-
-                if (mappingsState != null) {
-                    log.info("Initial mappings state loaded [mappingsCnt=" + mappingsState.size() + ']');
-
-                    if (log.isDebugEnabled()) {
-                        for (T2<Integer, Byte> m : mappingsState)
-                            log.debug("Mapping [typeId=" + m.get1() + ", platform=" + m.get2() + ']');
-                    }
                 }
 
                 consumer.start(mreg, kctx.metric().registry(metricName("cdc", "consumer")));
@@ -341,7 +314,7 @@ public class CdcMain implements Runnable {
 
     /** Creates consumer state. */
     protected CdcConsumerState createState(Path stateDir) {
-        return new CdcConsumerState(stateDir);
+        return new CdcConsumerState(log, stateDir);
     }
 
     /**
@@ -598,7 +571,7 @@ public class CdcMain implements Runnable {
             if (changedTypes.hasNext())
                 throw new IllegalStateException("Consumer should handle all changed types");
 
-            state.save(typesState);
+            state.saveTypes(typesState);
         }
         catch (IOException e) {
             throw new IgniteException(e);

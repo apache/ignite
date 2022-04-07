@@ -119,7 +119,7 @@ public abstract class AbstractCdcTest extends GridCommonAbstractTest {
 
         return new CdcMain(cfg, null, cdcCfg) {
             @Override protected CdcConsumerState createState(Path stateDir) {
-                return new CdcConsumerState(stateDir) {
+                return new CdcConsumerState(log, stateDir) {
                     @Override public void save(T2<WALPointer, Integer> state) throws IOException {
                         super.save(state);
 
