@@ -285,7 +285,7 @@ public class SqlCdcTest extends AbstractCdcTest {
                         break;
 
                     case CITY_VAL_TYPE:
-                        assertTrue(type.fieldNames().containsAll(Arrays.asList(NAME, ZIP_CODE)));
+                        assertTrue(type.fieldNames().containsAll(Arrays.asList("NAME", "ZIP_CODE")));
                         assertEquals(cityValType ? 3 : 2, type.fieldNames().size());
                         assertEquals(String.class.getSimpleName(), type.fieldTypeName(NAME));
                         assertEquals(String.class.getSimpleName(), type.fieldTypeName(ZIP_CODE));
