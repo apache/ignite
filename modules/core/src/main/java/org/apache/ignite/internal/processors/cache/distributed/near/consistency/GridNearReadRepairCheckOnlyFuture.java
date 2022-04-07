@@ -176,7 +176,7 @@ public class GridNearReadRepairCheckOnlyFuture extends GridNearReadRepairAbstrac
                     onDone(new IgniteIrreparableConsistencyViolationException(null,
                         ctx.unwrapBinariesIfNeeded(inconsistentKeys, !deserializeBinary)));
                 }
-                else if (ctx.atomic()) { // Should be fixed by concurrent op(s).
+                else if (ctx.atomic()) { // Should be fixed by concurrent atomic op(s).
                     try {
                         Map<KeyCacheObject, EntryGetResult> fixedMap = fix(e.keys());
 
