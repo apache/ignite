@@ -81,9 +81,7 @@
                             <outputDirectory>${project.build.directory}/classes/checkstyle</outputDirectory>
                             <resources>
                                 <resource>
-                                    <!-- This is working due to the .mvn directory placed in
-                                        the multi-module project root directory -->
-                                    <directory>${maven.multiModuleProjectDirectory}/checkstyle</directory>
+                                    <directory>${project.basedir}/../../checkstyle</directory>
                                     <filtering>false</filtering>
                                 </resource>
                             </resources>
