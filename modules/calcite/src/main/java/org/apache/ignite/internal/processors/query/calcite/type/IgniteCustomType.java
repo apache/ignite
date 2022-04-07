@@ -18,22 +18,38 @@
 package org.apache.ignite.internal.processors.query.calcite.type;
 
 import java.lang.reflect.Type;
-import java.util.UUID;
+import org.apache.calcite.rel.type.RelDataTypeFamily;
+import org.apache.calcite.rel.type.RelDataTypeImpl;
+import org.apache.calcite.sql.type.SqlTypeFamily;
+import org.apache.calcite.sql.type.SqlTypeName;
 
-/** UUID SQL type. */
-public class UuidType extends IgniteCustomType {
+/** Custom type base. */
+public abstract class IgniteCustomType extends RelDataTypeImpl {
+    /** Nullable flag. */
+    private final boolean nullable;
+
     /** Ctor. */
-    public UuidType(boolean nullable) {
-        super(nullable);
+    protected IgniteCustomType(boolean nullable) {
+        this.nullable = nullable;
+
+        computeDigest();
+    }
+
+    /** @return Storage type */
+    public abstract Type storageType();
+
+    /** {@inheritDoc} */
+    @Override public boolean isNullable() {
+        return nullable;
     }
 
     /** {@inheritDoc} */
-    @Override protected void generateTypeString(StringBuilder sb, boolean withDetail) {
-        sb.append("UUID");
+    @Override public RelDataTypeFamily getFamily() {
+        return SqlTypeFamily.ANY;
     }
 
     /** {@inheritDoc} */
-    @Override public Type storageType() {
-        return UUID.class;
+    @Override public SqlTypeName getSqlTypeName() {
+        return SqlTypeName.ANY;
     }
 }
