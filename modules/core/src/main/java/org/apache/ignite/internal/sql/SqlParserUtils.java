@@ -152,7 +152,7 @@ public class SqlParserUtils {
      * @return Name.
      */
     public static String parseIdentifier(SqlLexer lex, String... additionalExpTokens) {
-        if (lex.shift() && isValidIdentifier(lex))
+        if (lex.shift() && isValidIdentifier(lex, true))
             return lex.token();
 
         throw errorUnexpectedToken(lex, "[identifier]", additionalExpTokens);
@@ -166,7 +166,7 @@ public class SqlParserUtils {
      * @return Name.
      */
     public static String parseUsername(SqlLexer lex, String... additionalExpTokens) {
-        if (lex.shift() && isValidIdentifier(lex))
+        if (lex.shift() && isValidIdentifier(lex, true))
             return lex.token();
 
         throw errorUnexpectedToken(lex, "[username identifier]", additionalExpTokens);
@@ -194,7 +194,19 @@ public class SqlParserUtils {
      * @return Qualified name.
      */
     public static SqlQualifiedName parseQualifiedIdentifier(SqlLexer lex, String... additionalExpTokens) {
-        if (lex.shift() && isValidIdentifier(lex)) {
+        return parseQualifiedIdentifier(lex, true, additionalExpTokens);
+    }
+
+    /**
+     * Process qualified name.
+     *
+     * @param lex Lexer.
+     * @param isKeywordCheck use {@link SqlKeyword#isKeyword(String)} in validate identifier
+     * @param additionalExpTokens Additional expected tokens in case of error.
+     * @return Qualified name.
+     */
+    public static SqlQualifiedName parseQualifiedIdentifier(SqlLexer lex, boolean isKeywordCheck, String... additionalExpTokens) {
+        if (lex.shift() && isValidIdentifier(lex, isKeywordCheck)) {
             SqlQualifiedName res = new SqlQualifiedName();
 
             String first = lex.token();
@@ -219,14 +231,15 @@ public class SqlParserUtils {
      * Check if token is identifier.
      *
      * @param token Token.
+     * @param isKeywordCheck use {@link SqlKeyword#isKeyword(String)} in validate identifier
      * @return {@code True} if we are standing on possible identifier.
      */
-    public static boolean isValidIdentifier(SqlLexerToken token) {
+    public static boolean isValidIdentifier(SqlLexerToken token, boolean isKeywordCheck) {
         switch (token.tokenType()) {
             case DEFAULT:
                 char c = token.tokenFirstChar();
 
-                return ((c >= 'A' && c <= 'Z') || c == '_') && !SqlKeyword.isKeyword(token.token());
+                return ((c >= 'A' && c <= 'Z') || c == '_') && !(SqlKeyword.isKeyword(token.token()) && isKeywordCheck);
 
             case QUOTED:
                 return true;

@@ -196,7 +196,7 @@ public class SqlCreateIndexCommand implements SqlCommand {
 
         skipIfMatchesKeyword(lex, ON);
 
-        SqlQualifiedName tblQName = parseQualifiedIdentifier(lex);
+        SqlQualifiedName tblQName = parseQualifiedIdentifier(lex, false);
 
         schemaName = tblQName.schemaName();
         tblName = tblQName.name();
