@@ -58,6 +58,7 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.reader.Ignite
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.StandaloneGridKernalContext;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
+import org.apache.ignite.internal.processors.metric.impl.HistogramMetricImpl;
 import org.apache.ignite.internal.processors.resource.GridSpringResourceContext;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
@@ -138,6 +139,9 @@ public class CdcMain implements Runnable {
     /** Last segment consumption time. */
     public static final String LAST_SEG_CONSUMPTION_TIME = "LastSegmentConsumptionTime";
 
+    /** Metadata update time. */
+    public static final String META_UPDATE = "MetadataUpdateTime";
+
     /** Binary metadata metric name. */
     public static final String BINARY_META_DIR = "BinaryMetaDir";
 
@@ -167,6 +171,9 @@ public class CdcMain implements Runnable {
 
     /** Time of last segment consumption. */
     private AtomicLongMetric lastSegmentConsumptionTs;
+
+    /** Metadata update time. */
+    private HistogramMetricImpl metaUpdate;
 
     /** Change Data Capture configuration. */
     protected final CdcConfiguration cdcCfg;
@@ -358,6 +365,7 @@ public class CdcMain implements Runnable {
         committedSegmentOffset = mreg.longMetric(COMMITTED_SEG_OFFSET, "Committed segment offset");
         lastSegmentConsumptionTs =
             mreg.longMetric(LAST_SEG_CONSUMPTION_TIME, "Last time of consumption of WAL segment");
+        metaUpdate = mreg.histogram(META_UPDATE, new long[] {100, 500, 1000}, "Metadata update time");
     }
 
     /**
@@ -433,9 +441,7 @@ public class CdcMain implements Runnable {
         if (log.isInfoEnabled())
             log.info("Processing WAL segment [segment=" + segment + ']');
 
-        updateMappings();
-
-        updateTypes();
+        updateMetadata();
 
         IgniteWalIteratorFactory.IteratorParametersBuilder builder =
             new IgniteWalIteratorFactory.IteratorParametersBuilder()
@@ -533,6 +539,17 @@ public class CdcMain implements Runnable {
         } catch (IgniteCheckedException | IOException e) {
             throw new IgniteException(e);
         }
+    }
+
+    /** Metadata update. */
+    private void updateMetadata() {
+        long start = System.currentTimeMillis();
+
+        updateMappings();
+
+        updateTypes();
+
+        metaUpdate.value(System.currentTimeMillis() - start);
     }
 
     /** Search for new or changed {@link BinaryType} and notifies the consumer. */
