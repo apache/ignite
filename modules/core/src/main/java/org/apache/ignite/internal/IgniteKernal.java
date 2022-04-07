@@ -216,6 +216,7 @@ import org.apache.ignite.spi.tracing.TracingConfigurationManager;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import static java.util.Optional.ofNullable;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_BINARY_MARSHALLER_USE_STRING_SERIALIZATION_VER_2;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_DAEMON;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_OPTIMIZED_MARSHALLER_USE_DEFAULT_SUID;
@@ -379,15 +380,15 @@ public class IgniteKernal implements IgniteEx, Externalizable {
     /** @see IgniteSystemProperties#IGNITE_LOG_CLASSPATH_CONTENT_ON_STARTUP */
     public static final boolean DFLT_LOG_CLASSPATH_CONTENT_ON_STARTUP = true;
 
+    /** Ignite node information provider. */
+    private final InfoProvider info = ofNullable(U.loadInfoProvider()).orElse(new IgniteInfoProvider());
+
     /** Currently used instance of JVM pause detector thread. See {@link LongJVMPauseDetector} for details. */
     private LongJVMPauseDetector longJVMPauseDetector;
 
     /** The main kernal context which holds all the {@link GridComponent}s. */
     @GridToStringExclude
     private GridKernalContextImpl ctx;
-
-    /** Ignite node information provider. */
-    private volatile InfoProvider info = new IgniteInfoProvider();
 
     /** Helper which registers and unregisters MBeans. */
     @GridToStringExclude
@@ -897,11 +898,6 @@ public class IgniteKernal implements IgniteEx, Externalizable {
         longJVMPauseDetector = new LongJVMPauseDetector(log);
 
         longJVMPauseDetector.start();
-
-        InfoProvider info0 = U.loadInfoProvider();
-
-        if (info0 != null)
-            info = info0;
 
         info.ackKernalInited(log, cfg);
 
