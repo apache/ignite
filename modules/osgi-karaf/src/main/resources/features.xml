@@ -202,22 +202,6 @@
         <bundle start="true">mvn:org.apache.ignite/ignite-rest-http/${project.version}</bundle>
     </feature>
 
-    <feature name="ignite-scalar-2.10" version="${project.version}" description="Apache Ignite :: Scala 2.10">
-        <details>
-            <![CDATA[The Apache Ignite Scala 2.11 integration module + dependencies. This module installs the Scala 2.10 library bundle.]]>
-        </details>
-        <bundle start="true" dependency="true">mvn:org.scala-lang/scala-library/${scala210.library.version}</bundle>
-        <bundle start="true">mvn:org.apache.ignite/ignite-scalar_2.10/${project.version}</bundle>
-    </feature>
-
-    <feature name="ignite-scalar-2.11" version="${project.version}" description="Apache Ignite :: Scala 2.11">
-        <details>
-            <![CDATA[The Apache Ignite Scala 2.11 integration module + dependencies. This module installs the Scala 2.11 library bundle.]]>
-        </details>
-        <bundle start="true" dependency="true">mvn:org.scala-lang/scala-library/${scala.library.version}</bundle>
-        <bundle start="true">mvn:org.apache.ignite/ignite-scalar/${project.version}</bundle>
-    </feature>
-
     <feature name="ignite-schedule" version="${project.version}" description="Apache Ignite :: Schedule">
         <details>
             <![CDATA[The Apache Ignite Schedule module + dependencies. This module is a fragment of ignite-core.]]>
