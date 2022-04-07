@@ -354,15 +354,15 @@ public class GridFutureAdapterSelfTest extends GridCommonAbstractTest {
         Executor[] executors = new Executor[] { null, Executors.newSingleThreadExecutor() };
 
         for (Executor exec : executors) {
-            checkCompose(true,  false, false, exec);
+            checkCompose(true, false, false, exec);
             checkCompose(false, false, false, exec);
-            checkCompose(true,  true,  false, exec);
-            checkCompose(false, true,  false, exec);
+            checkCompose(true, true, false, exec);
+            checkCompose(false, true, false, exec);
 
-            checkCompose(true,  false, true, exec);
+            checkCompose(true, false, true, exec);
             checkCompose(false, false, true, exec);
-            checkCompose(true,  true,  true, exec);
-            checkCompose(false, true,  true, exec);
+            checkCompose(true, true, true, exec);
+            checkCompose(false, true, true, exec);
         }
 
         checkComposeCancel();
