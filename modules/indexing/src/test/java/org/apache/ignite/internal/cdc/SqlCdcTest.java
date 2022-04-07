@@ -268,8 +268,6 @@ public class SqlCdcTest extends AbstractCdcTest {
                         break;
 
                     case CITY_VAL_TYPE:
-                        System.out.println("type = " + type);
-
                         assertTrue(type.fieldNames().containsAll(Arrays.asList("NAME", "ZIP_CODE")));
                         assertEquals(cityValType ? 3 : 2, type.fieldNames().size());
                         assertEquals(String.class.getSimpleName(), type.fieldTypeName("NAME"));
@@ -301,10 +299,6 @@ public class SqlCdcTest extends AbstractCdcTest {
                 mappingCnt++;
 
                 TypeMapping m = mappings.next();
-
-                System.out.println("id = " + m.typeId() +
-                    " , name = " + m.typeName() +
-                    ", platform = " + m.platform());
 
                 assertNotNull(m);
 
