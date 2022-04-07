@@ -1062,18 +1062,12 @@ public abstract class IgniteUtils {
      * @return Plugins.
      */
     public static List<PluginProvider> allPluginProviders() {
-        return AccessController.doPrivileged(new PrivilegedAction<List<PluginProvider>>() {
-            @Override public List<PluginProvider> run() {
-                List<PluginProvider> providers = new ArrayList<>();
+        List<PluginProvider> providers = new ArrayList<>();
 
-                ServiceLoader<PluginProvider> ldr = ServiceLoader.load(PluginProvider.class);
+        for (PluginProvider provider : loadService(PluginProvider.class))
+            providers.add(provider);
 
-                for (PluginProvider provider : ldr)
-                    providers.add(provider);
-
-                return providers;
-            }
-        });
+        return providers;
     }
 
     /**
@@ -1082,20 +1076,26 @@ public abstract class IgniteUtils {
      */
     public static InfoProvider loadInfoProvider() {
         try {
-            return AccessController.doPrivileged(new PrivilegedAction<InfoProvider>() {
-                @Override public InfoProvider run() {
-                    for (InfoProvider info : ServiceLoader.load(InfoProvider.class))
-                        return info;
-
-                    return null;
-                }
-            });
+            return F.first(loadService(InfoProvider.class));
         }
         catch (Throwable t) {
             U.error(null, t.getMessage());
         }
 
         return null;
+    }
+
+    /**
+     * @param svcCls Service class to load.
+     * @param <S> Type of loaded interfaces.
+     * @return Lazy iterable structure over loaded class implementations.
+     */
+    public static <S> Iterable<S> loadService(Class<S> svcCls) {
+        return AccessController.doPrivileged(new PrivilegedAction<Iterable<S>>() {
+            @Override public Iterable<S> run() {
+                return ServiceLoader.load(svcCls);
+            }
+        });
     }
 
     /**
