@@ -29,7 +29,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -387,41 +386,5 @@ public class BinaryMetadata implements Externalizable {
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(BinaryMetadata.class, this);
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean equals(Object o) {
-        if (this == o)
-            return true;
-
-        if (o == null || getClass() != o.getClass())
-            return false;
-
-        BinaryMetadata metadata = (BinaryMetadata)o;
-
-        return typeId == metadata.typeId
-            && isEnum == metadata.isEnum
-            && Objects.equals(typeName, metadata.typeName)
-            && Objects.equals(fields, metadata.fields)
-            && Objects.equals(affKeyFieldName, metadata.affKeyFieldName)
-            && Objects.equals(schemas, metadata.schemas)
-            && Objects.equals(schemaIds, metadata.schemaIds)
-            && Objects.equals(nameToOrdinal, metadata.nameToOrdinal)
-            && Objects.equals(ordinalToName, metadata.ordinalToName);
-    }
-
-    /** {@inheritDoc} */
-    @Override public int hashCode() {
-        return Objects.hash(
-            typeId,
-            typeName,
-            fields,
-            affKeyFieldName,
-            schemas,
-            schemaIds,
-            isEnum,
-            nameToOrdinal,
-            ordinalToName
-        );
     }
 }
