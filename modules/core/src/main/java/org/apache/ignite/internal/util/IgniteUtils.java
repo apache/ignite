@@ -1064,7 +1064,9 @@ public abstract class IgniteUtils {
     public static List<PluginProvider> allPluginProviders() {
         List<PluginProvider> providers = new ArrayList<>();
 
-        for (PluginProvider provider : loadService(PluginProvider.class))
+        Iterable<PluginProvider> it = loadService(PluginProvider.class);
+
+        for (PluginProvider provider : it)
             providers.add(provider);
 
         return providers;
