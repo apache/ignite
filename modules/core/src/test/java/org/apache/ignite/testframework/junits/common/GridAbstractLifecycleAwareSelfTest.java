@@ -37,14 +37,14 @@ public abstract class GridAbstractLifecycleAwareSelfTest extends GridCommonAbstr
     @SuppressWarnings("PublicInnerClass")
     public static class TestLifecycleAware implements LifecycleAware {
         /** */
-        private AtomicInteger startCnt = new AtomicInteger();
+        protected AtomicInteger startCnt = new AtomicInteger();
 
         /** */
         private AtomicInteger stopCnt = new AtomicInteger();
 
         /** */
         @CacheNameResource
-        private String cacheName;
+        protected String cacheName;
 
         /** */
         private final String expCacheName;

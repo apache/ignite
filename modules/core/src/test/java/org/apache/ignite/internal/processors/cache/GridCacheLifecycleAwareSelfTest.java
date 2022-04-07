@@ -188,6 +188,13 @@ public class GridCacheLifecycleAwareSelfTest extends GridAbstractLifecycleAwareS
         @Override public void onEntryAccessed(boolean rmv, EvictableEntry entry) {
             // No-op.
         }
+
+        /** {@inheritDoc} */
+        @Override public void start() {
+            startCnt.incrementAndGet();
+
+            assertEquals("Unexpected cache name for " + this, CACHE_NAME, cacheName);
+        }
     }
 
     /**
@@ -202,6 +209,13 @@ public class GridCacheLifecycleAwareSelfTest extends GridAbstractLifecycleAwareS
         /** {@inheritDoc} */
         @Override public boolean evictAllowed(Cache.Entry entry) {
             return false;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void start() {
+            startCnt.incrementAndGet();
+
+            assertEquals("Unexpected cache name for " + this, CACHE_NAME, cacheName);
         }
     }
 
@@ -232,6 +246,13 @@ public class GridCacheLifecycleAwareSelfTest extends GridAbstractLifecycleAwareS
          */
         private TestInterceptor() {
             super(CACHE_NAME);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void start() {
+            startCnt.incrementAndGet();
+
+            assertEquals("Unexpected cache name for " + this, CACHE_NAME, cacheName);
         }
 
         /** {@inheritDoc} */
@@ -341,8 +362,6 @@ public class GridCacheLifecycleAwareSelfTest extends GridAbstractLifecycleAwareS
 
         ccfg.setEvictionFilter(evictionFilter);
 
-        lifecycleAwares.add(evictionFilter);
-
         TestAffinityKeyMapper mapper = new TestAffinityKeyMapper();
 
         ccfg.setAffinityMapper(mapper);
@@ -350,8 +369,6 @@ public class GridCacheLifecycleAwareSelfTest extends GridAbstractLifecycleAwareS
         lifecycleAwares.add(mapper);
 
         TestInterceptor interceptor = new TestInterceptor();
-
-        lifecycleAwares.add(interceptor);
 
         ccfg.setInterceptor(interceptor);
 
