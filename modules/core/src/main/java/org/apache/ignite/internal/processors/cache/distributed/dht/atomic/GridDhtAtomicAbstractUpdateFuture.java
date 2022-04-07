@@ -264,8 +264,7 @@ public abstract class GridDhtAtomicAbstractUpdateFuture extends GridCacheFutureA
         EntryProcessor<Object, Object, Object> entryProcessor,
         long ttl,
         long expireTime,
-        boolean readRepairRecovery
-    ) {
+        boolean readRepairRecovery) {
         assert readers != null;
 
         CacheWriteSynchronizationMode syncMode = updateReq.writeSynchronizationMode();
