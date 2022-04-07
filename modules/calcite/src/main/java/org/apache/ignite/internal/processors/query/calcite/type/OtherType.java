@@ -18,22 +18,21 @@
 package org.apache.ignite.internal.processors.query.calcite.type;
 
 import java.lang.reflect.Type;
-import java.util.UUID;
 
-/** UUID SQL type. */
-public class UuidType extends IgniteCustomType {
+/** OTHER SQL type for any value. */
+public class OtherType extends IgniteCustomType {
     /** Ctor. */
-    public UuidType(boolean nullable) {
+    public OtherType(boolean nullable) {
         super(nullable);
     }
 
     /** {@inheritDoc} */
     @Override protected void generateTypeString(StringBuilder sb, boolean withDetail) {
-        sb.append("UUID");
+        sb.append("OTHER");
     }
 
-    /** {@inheritDoc} */
+    /** @return Storage type */
     @Override public Type storageType() {
-        return UUID.class;
+        return Object.class;
     }
 }
