@@ -387,6 +387,11 @@ class RelJson {
                 }
                 else if (sqlTypeName == SqlTypeName.ARRAY)
                     type = typeFactory.createArrayType(toType(typeFactory, map.get("elementType")), -1);
+                else if (sqlTypeName == SqlTypeName.MAP)
+                    type = typeFactory.createMapType(
+                        toType(typeFactory, map.get("keyType")),
+                        toType(typeFactory, map.get("valueType"))
+                    );
                 else if (sqlTypeName == SqlTypeName.ANY) {
                     String customType = (String)map.get("customType");
 
@@ -719,6 +724,13 @@ class RelJson {
             map.put("elementType", toJson(node.getComponentType()));
             return map;
         }
+        else if (node.getSqlTypeName() == SqlTypeName.MAP) {
+            Map<String, Object> map = map();
+            map.put("type", toJson(node.getSqlTypeName()));
+            map.put("keyType", toJson(node.getKeyType()));
+            map.put("valueType", toJson(node.getValueType()));
+            return map;
+        }
         else {
             Map<String, Object> map = map();
             map.put("type", toJson(node.getSqlTypeName()));
@@ -812,15 +824,12 @@ class RelJson {
                         list.add(toJson(operand));
 
                     map.put("operands", list);
-
-                    if (node.getKind() == SqlKind.CAST)
-                        map.put("type", toJson(node.getType()));
+                    map.put("type", toJson(node.getType()));
 
                     if (call.getOperator() instanceof SqlFunction)
                         if (((SqlFunction)call.getOperator()).getFunctionType().isUserDefined()) {
                             SqlOperator op = call.getOperator();
                             map.put("class", op.getClass().getName());
-                            map.put("type", toJson(node.getType()));
                             map.put("deterministic", op.isDeterministic());
                             map.put("dynamic", op.isDynamicFunction());
                         }
@@ -828,7 +837,6 @@ class RelJson {
                     if (call instanceof RexOver) {
                         RexOver over = (RexOver)call;
                         map.put("distinct", over.isDistinct());
-                        map.put("type", toJson(node.getType()));
                         map.put("window", toJson(over.getWindow()));
                     }
 
