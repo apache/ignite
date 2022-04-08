@@ -141,7 +141,6 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_LOCAL_HOST;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_NO_SHUTDOWN_HOOK;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_OVERRIDE_CONSISTENT_ID;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_RESTART_CODE;
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_SUCCESS_FILE;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_SYSTEM_WORKER_BLOCKED_TIMEOUT;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
