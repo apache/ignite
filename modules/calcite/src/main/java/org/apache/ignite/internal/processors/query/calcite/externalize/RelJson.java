@@ -387,6 +387,11 @@ class RelJson {
                 }
                 else if (sqlTypeName == SqlTypeName.ARRAY)
                     type = typeFactory.createArrayType(toType(typeFactory, map.get("elementType")), -1);
+                else if (sqlTypeName == SqlTypeName.MAP)
+                    type = typeFactory.createMapType(
+                        toType(typeFactory, map.get("keyType")),
+                        toType(typeFactory, map.get("valueType"))
+                    );
                 else if (sqlTypeName == SqlTypeName.ANY) {
                     String customType = (String)map.get("customType");
 
@@ -717,6 +722,13 @@ class RelJson {
             Map<String, Object> map = map();
             map.put("type", toJson(node.getSqlTypeName()));
             map.put("elementType", toJson(node.getComponentType()));
+            return map;
+        }
+        else if (node.getSqlTypeName() == SqlTypeName.MAP) {
+            Map<String, Object> map = map();
+            map.put("type", toJson(node.getSqlTypeName()));
+            map.put("keyType", toJson(node.getKeyType()));
+            map.put("valueType", toJson(node.getValueType()));
             return map;
         }
         else {

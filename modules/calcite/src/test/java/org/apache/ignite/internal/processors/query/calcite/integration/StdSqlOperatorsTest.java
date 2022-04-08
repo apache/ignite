@@ -24,7 +24,6 @@ import java.time.Period;
 import java.util.Arrays;
 import java.util.Collections;
 import org.apache.ignite.internal.processors.query.calcite.QueryChecker;
-import org.apache.ignite.internal.processors.query.calcite.integration.AbstractBasicIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.sql.fun.IgniteStdSqlOperatorTable;
 import org.apache.ignite.internal.util.typedef.F;
 import org.junit.Ignore;
@@ -42,7 +41,7 @@ public class StdSqlOperatorsTest extends AbstractBasicIntegrationTest {
         super.beforeTest();
 
         sql("CREATE TABLE t(val INT)");
-        sql("INSERT INTO t VALUES (0)");
+        sql("INSERT INTO t VALUES (1)");
     }
 
     /** */
@@ -98,7 +97,7 @@ public class StdSqlOperatorsTest extends AbstractBasicIntegrationTest {
         assertExpression("MIN(val)").returns(1).check();
         assertExpression("MAX(val)").returns(1).check();
         assertExpression("ANY_VALUE(val)").returns(1).check();
-        assertExpression("COUNT(*) FILTER(WHERE val <> 0)").returns(0L).check();
+        assertExpression("COUNT(*) FILTER(WHERE val <> 1)").returns(0L).check();
     }
 
     /** */
@@ -271,7 +270,7 @@ public class StdSqlOperatorsTest extends AbstractBasicIntegrationTest {
     /** */
     @Test
     public void testOtherFunctions() {
-        assertExpression("(SELECT * FROM (VALUES ROW('a', 1)))").returns("a", 1).check();
+        assertQuery("SELECT * FROM (VALUES ROW('a', 1))").returns("a", 1).check();
         assertExpression("CAST('1' AS INT)").returns(1).check();
         assertExpression("'1'::INT").returns(1).check();
         assertExpression("COALESCE(null, 'a', 'A')").returns("a").check();
@@ -345,6 +344,7 @@ public class StdSqlOperatorsTest extends AbstractBasicIntegrationTest {
 
     /** */
     private QueryChecker assertExpression(String qry) {
+        // Select expressions from table to test plan serialization containing these expressions.
         return assertQuery("SELECT " + qry + " FROM t");
     }
 }
