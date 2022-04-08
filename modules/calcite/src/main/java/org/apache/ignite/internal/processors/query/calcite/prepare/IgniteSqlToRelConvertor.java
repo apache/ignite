@@ -22,6 +22,7 @@ import java.util.List;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.prepare.Prepare;
+import org.apache.calcite.rel.RelCollation;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelRoot;
 import org.apache.calcite.rel.core.JoinRelType;
@@ -37,6 +38,7 @@ import org.apache.calcite.sql.SqlInsert;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlMerge;
 import org.apache.calcite.sql.SqlNode;
+import org.apache.calcite.sql.SqlSelect;
 import org.apache.calcite.sql.SqlUpdate;
 import org.apache.calcite.sql.validate.SqlValidator;
 import org.apache.calcite.sql.validate.SqlValidatorUtil;
@@ -68,6 +70,17 @@ public class IgniteSqlToRelConvertor extends SqlToRelConverter {
             return RelRoot.of(convertMerge((SqlMerge)qry), qry.getKind());
         else
             return super.convertQueryRecursive(qry, top, targetRowType);
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    protected void convertOrder(SqlSelect select, Blackboard bb, RelCollation collation, List<SqlNode> orderExprList,
+        @Nullable SqlNode offset, @Nullable SqlNode fetch) {
+//        if(fetch != null){
+//            collation == new IgniteCollation(collation, offset != null)
+//        }
+
+        super.convertOrder(select, bb, collation, orderExprList, offset, fetch);
     }
 
     /**

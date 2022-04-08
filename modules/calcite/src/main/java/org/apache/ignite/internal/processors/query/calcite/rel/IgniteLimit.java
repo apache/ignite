@@ -41,7 +41,7 @@ import org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils;
 /** */
 public class IgniteLimit extends SingleRel implements IgniteRel {
     /** In case the fetch value is a DYNAMIC_PARAM. */
-    private static final double FETCH_IS_PARAM_FACTOR = 0.01;
+    static final double FETCH_IS_PARAM_FACTOR = 0.01;
 
     /** In case the offset value is a DYNAMIC_PARAM. */
     private static final double OFFSET_IS_PARAM_FACTOR = 0.5;
@@ -163,7 +163,7 @@ public class IgniteLimit extends SingleRel implements IgniteRel {
     /**
      * @return Integer value of the literal expression.
      */
-    private double doubleFromRex(RexNode n, double def) {
+    static double doubleFromRex(RexNode n, double def) {
         try {
             if (n.isA(SqlKind.LITERAL))
                 return ((RexLiteral)n).getValueAs(Integer.class);

@@ -17,16 +17,18 @@
 
 package org.apache.ignite.internal.processors.query.calcite.planner;
 
-import java.util.Collections;
+import org.apache.calcite.rel.core.Exchange;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.util.ImmutableIntList;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteExchange;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexScan;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteLimit;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteLimitSort;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSort;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableScan;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableSpool;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteUnionAll;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteSchema;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
@@ -46,16 +48,13 @@ public class LimitOffsetPlannerTest extends AbstractPlannerTest {
     /** */
     @Test
     public void testTest() throws Exception {
-        IgniteSchema publicSchema = createSchemaWithTable(IgniteDistributions.broadcast());
+        IgniteSchema publicSchema = createSchemaWithTable(IgniteDistributions.random());
 
-        String sql = "SELECT * FROM TEST ORDER BY ID LIMIT 1";
-
-        IgniteRel plan = physicalPlan(sql, publicSchema);
-
-        System.err.println("TEST | plan: " + plan.explain());
-
-//        assertPlan(sql, publicSchema, nodeOrAnyChild(isInstanceOf(IgniteLimit.class))
-//            .and(hasChildThat(isInstanceOf(IgniteSort.class)).and(hasChildThat(isInstanceOf(IgniteTableScan.class)))));
+        assertPlan("SELECT * FROM TEST ORDER BY ID LIMIT 1", publicSchema,
+            isInstanceOf(IgniteLimit.class)
+                .and(input(isInstanceOf(IgniteExchange.class)
+                    .and(input(isInstanceOf(IgniteSort.class)
+                        .and(input(isInstanceOf(IgniteTableScan.class))))))));
     }
 
     /**

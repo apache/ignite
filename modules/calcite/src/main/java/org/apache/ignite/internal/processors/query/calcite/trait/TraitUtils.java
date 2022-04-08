@@ -35,6 +35,7 @@ import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.plan.RelTrait;
 import org.apache.calcite.plan.RelTraitDef;
 import org.apache.calcite.plan.RelTraitSet;
+import org.apache.calcite.plan.volcano.RelSubset;
 import org.apache.calcite.rel.RelCollation;
 import org.apache.calcite.rel.RelCollationTraitDef;
 import org.apache.calcite.rel.RelCollations;
@@ -75,8 +76,6 @@ import static org.apache.ignite.internal.processors.query.calcite.trait.IgniteDi
 public class TraitUtils {
     /** */
     @Nullable public static RelNode enforce(RelNode rel, RelTraitSet toTraits) {
-        System.err.println("TEST | enforce " + rel.explain() + " to " + toTraits);
-
         RelOptPlanner planner = rel.getCluster().getPlanner();
         RelTraitSet fromTraits = rel.getTraitSet();
         int size = Math.min(fromTraits.size(), toTraits.size());
@@ -95,6 +94,8 @@ public class TraitUtils {
                     rel = planner.register(rel, old);
 
                 old = rel;
+
+//                System.err.println("TEST | enforce " + rel.explain() + " to " + toTraits);
 
                 rel = convertTrait(planner, fromTrait, toTrait, rel);
 
@@ -125,8 +126,7 @@ public class TraitUtils {
     }
 
     /** */
-    @Nullable public static RelNode convertCollation(RelOptPlanner planner,
-        RelCollation toTrait, RelNode rel) {
+    @Nullable public static RelNode convertCollation(RelOptPlanner planner, RelCollation toTrait, RelNode rel) {
         RelCollation fromTrait = collation(rel);
 
         if (fromTrait.satisfies(toTrait))

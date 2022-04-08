@@ -19,9 +19,12 @@ package org.apache.ignite.internal.processors.query.calcite.exec.rel;
 import java.util.Comparator;
 import java.util.PriorityQueue;
 
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Supplier;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.util.typedef.F;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Sort node.
@@ -39,14 +42,32 @@ public class SortNode<Row> extends AbstractNode<Row> implements SingleNode<Row>,
     /** Rows buffer. */
     private final PriorityQueue<Row> rows;
 
+    private final int fetch;
+
+    /**
+     * @param ctx Execution context.
+     * @param comp Rows comparator.
+     * @param offset SQL offset.
+     * @param limit SQL limit.
+     */
+    public SortNode(ExecutionContext<Row> ctx, RelDataType rowType, Comparator<Row> comp,
+        @Nullable Supplier<Integer> offset, @Nullable Supplier<Integer> limit) {
+        super(ctx, rowType);
+
+        rows = comp == null ? new PriorityQueue<>() : new PriorityQueue<>(comp);
+
+        assert limit == null || limit.get() >= 0;
+        assert offset == null || offset.get() >= 0;
+
+        fetch = limit == null ? -1 : limit.get() + (offset == null ? 0 : offset.get());
+    }
+
     /**
      * @param ctx Execution context.
      * @param comp Rows comparator.
      */
     public SortNode(ExecutionContext<Row> ctx, RelDataType rowType, Comparator<Row> comp) {
-        super(ctx, rowType);
-
-        rows = comp == null ? new PriorityQueue<>() : new PriorityQueue<>(comp);
+        this(ctx, rowType, comp, null, null);
     }
 
     /** {@inheritDoc} */
@@ -91,6 +112,12 @@ public class SortNode<Row> extends AbstractNode<Row> implements SingleNode<Row>,
 
         rows.add(row);
 
+        if (fetch >= 0 && rows.size() > fetch) {
+            AtomicInteger i = new AtomicInteger();
+
+            rows.removeIf(r -> i.incrementAndGet() == rows.size());
+        }
+
         if (waiting == 0)
             source().request(waiting = IN_BUFFER_SIZE);
     }
@@ -134,8 +161,11 @@ public class SortNode<Row> extends AbstractNode<Row> implements SingleNode<Row>,
             }
 
             if (rows.isEmpty()) {
-                if (requested > 0)
+                if (requested > 0) {
+                    System.err.println("TEST | Downstream end");
+
                     downstream().end();
+                }
 
                 requested = 0;
             }
