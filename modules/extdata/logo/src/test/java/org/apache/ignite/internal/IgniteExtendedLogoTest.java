@@ -31,7 +31,7 @@ public class IgniteExtendedLogoTest extends GridCommonAbstractTest {
     public void testExtendedLogo() throws Exception {
         ListeningTestLogger testLog = new ListeningTestLogger(log);
 
-        LogListener waitLogoLsnr = LogListener.matches("Ignite InfoProvider is used to customize the logo version output.")
+        LogListener waitLogoLsnr = LogListener.matches("Ignite IgniteLogInfoProvider is used to customize the logo version output.")
             .build();
         testLog.registerListener(waitLogoLsnr);
 

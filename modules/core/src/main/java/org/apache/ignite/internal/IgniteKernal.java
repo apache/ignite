@@ -113,8 +113,8 @@ import org.apache.ignite.internal.managers.loadbalancer.GridLoadBalancerManager;
 import org.apache.ignite.internal.managers.systemview.GridSystemViewManager;
 import org.apache.ignite.internal.managers.tracing.GridTracingManager;
 import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller;
-import org.apache.ignite.internal.plugin.IgniteInfoProvider;
-import org.apache.ignite.internal.plugin.InfoProvider;
+import org.apache.ignite.internal.plugin.IgniteLogInfoProvider;
+import org.apache.ignite.internal.plugin.IgniteLogInfoProviderImpl;
 import org.apache.ignite.internal.processors.GridProcessor;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.affinity.GridAffinityProcessor;
@@ -381,7 +381,7 @@ public class IgniteKernal implements IgniteEx, Externalizable {
     public static final boolean DFLT_LOG_CLASSPATH_CONTENT_ON_STARTUP = true;
 
     /** Ignite node information provider. */
-    private final InfoProvider info = loadInfoProvider();
+    private final IgniteLogInfoProvider info = loadInfoProvider();
 
     /** Currently used instance of JVM pause detector thread. See {@link LongJVMPauseDetector} for details. */
     private LongJVMPauseDetector longJVMPauseDetector;
@@ -3373,15 +3373,15 @@ public class IgniteKernal implements IgniteEx, Externalizable {
     /**
      * @return Loaded info provider.
      */
-    private static InfoProvider loadInfoProvider() {
+    private static IgniteLogInfoProvider loadInfoProvider() {
         try {
-            return ofNullable(F.first(U.loadService(InfoProvider.class))).orElse(new IgniteInfoProvider());
+            return ofNullable(F.first(U.loadService(IgniteLogInfoProvider.class))).orElse(new IgniteLogInfoProviderImpl());
         }
         catch (Throwable t) {
             U.error(null, t.getMessage());
         }
 
-        return new IgniteInfoProvider();
+        return new IgniteLogInfoProviderImpl();
     }
 
     /**

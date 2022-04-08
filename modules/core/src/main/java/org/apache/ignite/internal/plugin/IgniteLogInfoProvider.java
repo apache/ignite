@@ -26,7 +26,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
  * Pluggable Ignite component that is responsible for printing custom information during the Ignite lifecycle start phase.
  * The Ignite info is loaded using JDK {@link ServiceLoader}.
  */
-public interface InfoProvider {
+public interface IgniteLogInfoProvider {
     /**
      * @param log Ignite logger.
      * @param cfg Ignite configuration.

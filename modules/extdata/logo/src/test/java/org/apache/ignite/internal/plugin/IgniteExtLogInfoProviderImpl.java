@@ -29,14 +29,14 @@ import static org.apache.ignite.internal.IgniteVersionUtils.COPYRIGHT;
 /**
  * Change the message output for metrics log.
  */
-public class IgniteExtInfoProvider extends IgniteInfoProvider {
+public class IgniteExtLogInfoProviderImpl extends IgniteLogInfoProviderImpl {
     /** {@inheritDoc} */
     @Override void ackAsciiLogo(IgniteLogger log, IgniteConfiguration cfg, RuntimeMXBean rtBean) {
         String ver = "ver. " + ACK_VER_STR;
 
         U.quietAndInfo(log,
             NL + NL +
-                ">>> Ignite InfoProvider is used to customize the logo version output. " + NL +
+                ">>> Ignite IgniteLogInfoProvider is used to customize the logo version output. " + NL +
                 ">>> " + ver + NL +
                 ">>> " + cfg.getIgniteHome() + NL +
                 ">>> " + rtBean.getName() + NL +

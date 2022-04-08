@@ -83,7 +83,7 @@ import static org.apache.ignite.internal.util.IgniteUtils.MB;
 /**
  * Default implementation of Ignite information.
  */
-public class IgniteInfoProvider implements InfoProvider {
+public class IgniteLogInfoProviderImpl implements IgniteLogInfoProvider {
     /** Format of output metrics. */
     private final DecimalFormat decimalFormat = new DecimalFormat("#.##", DecimalFormatSymbols.getInstance(Locale.US));
 
