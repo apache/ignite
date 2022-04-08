@@ -3381,7 +3381,7 @@ public class IgniteKernal implements IgniteEx, Externalizable {
             U.error(null, t.getMessage());
         }
 
-        return null;
+        return new IgniteInfoProvider();
     }
 
     /**
