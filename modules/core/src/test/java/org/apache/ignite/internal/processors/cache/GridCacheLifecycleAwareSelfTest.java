@@ -342,28 +342,24 @@ public class GridCacheLifecycleAwareSelfTest extends GridAbstractLifecycleAwareS
     @SuppressWarnings("ErrorNotRethrown")
     @Test
     @Override public void testLifecycleAware() throws Exception {
-        for (boolean nearEnabled : new boolean[] {true, false}) {
-            near = nearEnabled;
+        writeBehind = false;
 
-            writeBehind = false;
+        try {
+            super.testLifecycleAware();
+        }
+        catch (AssertionError e) {
+            throw new AssertionError("Failed for [near=" + near + ", writeBehind=" + writeBehind + ']',
+                e);
+        }
 
-            try {
-                super.testLifecycleAware();
-            }
-            catch (AssertionError e) {
-                throw new AssertionError("Failed for [near=" + near + ", writeBehind=" + writeBehind + ']',
-                    e);
-            }
+        writeBehind = true;
 
-            writeBehind = true;
-
-            try {
-                super.testLifecycleAware();
-            }
-            catch (AssertionError e) {
-                throw new AssertionError("Failed for [near=" + near + ", writeBehind=" + writeBehind + ']',
-                    e);
-            }
+        try {
+            super.testLifecycleAware();
+        }
+        catch (AssertionError e) {
+            throw new AssertionError("Failed for [near=" + near + ", writeBehind=" + writeBehind + ']',
+                e);
         }
     }
 }
