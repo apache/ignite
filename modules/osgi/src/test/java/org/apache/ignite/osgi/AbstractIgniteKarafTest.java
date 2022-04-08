@@ -18,7 +18,6 @@
 package org.apache.ignite.osgi;
 
 import java.io.File;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
