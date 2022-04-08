@@ -91,7 +91,6 @@ import org.apache.calcite.sql.SqlOperator;
 import org.apache.calcite.sql.SqlSelectKeyword;
 import org.apache.calcite.sql.SqlSyntax;
 import org.apache.calcite.sql.SqlWindow;
-import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.sql.fun.SqlTrimFunction;
 import org.apache.calcite.sql.parser.SqlParserPos;
 import org.apache.calcite.sql.type.SqlTypeFamily;
@@ -813,17 +812,12 @@ class RelJson {
                         list.add(toJson(operand));
 
                     map.put("operands", list);
-
-                    // The MINUS_DATE operator converted from AST to REX without third parameter, but to derive the type,
-                    // third parameter is required. Store the type explicitly to don't derive it on deserialization.
-                    if (node.getKind() == SqlKind.CAST || call.getOperator() == SqlStdOperatorTable.MINUS_DATE)
-                        map.put("type", toJson(node.getType()));
+                    map.put("type", toJson(node.getType()));
 
                     if (call.getOperator() instanceof SqlFunction)
                         if (((SqlFunction)call.getOperator()).getFunctionType().isUserDefined()) {
                             SqlOperator op = call.getOperator();
                             map.put("class", op.getClass().getName());
-                            map.put("type", toJson(node.getType()));
                             map.put("deterministic", op.isDeterministic());
                             map.put("dynamic", op.isDynamicFunction());
                         }
@@ -831,7 +825,6 @@ class RelJson {
                     if (call instanceof RexOver) {
                         RexOver over = (RexOver)call;
                         map.put("distinct", over.isDistinct());
-                        map.put("type", toJson(node.getType()));
                         map.put("window", toJson(over.getWindow()));
                     }
 
