@@ -35,6 +35,7 @@ import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.plan.RelTrait;
 import org.apache.calcite.plan.RelTraitDef;
 import org.apache.calcite.plan.RelTraitSet;
+import org.apache.calcite.plan.volcano.RelSubset;
 import org.apache.calcite.rel.RelCollation;
 import org.apache.calcite.rel.RelCollationTraitDef;
 import org.apache.calcite.rel.RelCollations;
@@ -127,6 +128,7 @@ public class TraitUtils {
     /** */
     @Nullable public static RelNode convertCollation(RelOptPlanner planner,
         RelCollation toTrait, RelNode rel) {
+
         RelCollation fromTrait = collation(rel);
 
         if (fromTrait.satisfies(toTrait))

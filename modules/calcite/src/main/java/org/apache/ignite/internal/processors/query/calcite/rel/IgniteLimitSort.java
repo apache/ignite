@@ -2,11 +2,11 @@
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
- * The ASF licenses this file to you under the Apache License, Version 2.0
+ * The ASF licenses this file to You under the Apache License, Version 2.0
  * (the "License"); you may not use this file except in compliance with
  * the License.  You may obtain a copy of the License at
  *
- * http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -14,100 +14,81 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.ignite.internal.processors.query.calcite.rel;
 
-import java.util.List;
-
 import com.google.common.collect.ImmutableList;
+import java.util.List;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptCost;
 import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelCollation;
+import org.apache.calcite.rel.RelCollations;
 import org.apache.calcite.rel.RelInput;
 import org.apache.calcite.rel.RelNode;
-import org.apache.calcite.rel.RelWriter;
 import org.apache.calcite.rel.SingleRel;
+import org.apache.calcite.rel.core.Sort;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
-import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.rex.RexNode;
-import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.util.Pair;
+import org.apache.calcite.util.Util;
 import org.apache.ignite.internal.processors.query.calcite.metadata.cost.IgniteCost;
+import org.apache.ignite.internal.processors.query.calcite.metadata.cost.IgniteCostFactory;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
 import org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils;
 
-/** */
-public class IgniteLimit extends SingleRel implements IgniteRel {
-    /** In case the fetch value is a DYNAMIC_PARAM. */
-    static final double FETCH_IS_PARAM_FACTOR = 0.01;
+import static org.apache.ignite.internal.processors.query.calcite.rel.IgniteLimit.FETCH_IS_PARAM_FACTOR;
+import static org.apache.ignite.internal.processors.query.calcite.rel.IgniteLimit.doubleFromRex;
 
-    /** In case the offset value is a DYNAMIC_PARAM. */
-    private static final double OFFSET_IS_PARAM_FACTOR = 0.5;
-
-    /** Offset. */
-    private final RexNode offset;
-
-    /** Fetches rows expression (limit) */
-    private final RexNode fetch;
+/**
+ * Ignite sort operator.
+ */
+public class IgniteLimitSort extends Sort implements IgniteRel {
+    /** Order fetch limit. */
+    private RexNode limit;
 
     /**
      * Constructor.
      *
      * @param cluster Cluster.
      * @param traits Trait set.
-     * @param child Input relational expression.
-     * @param offset Offset.
-     * @param fetch Limit.
+     * @param child Input node.
+     * @param collation Collation.
      */
-    public IgniteLimit(
+    public IgniteLimitSort(
         RelOptCluster cluster,
         RelTraitSet traits,
         RelNode child,
-        RexNode offset,
-        RexNode fetch
+        RelCollation collation,
+        RexNode limit
     ) {
-        super(cluster, traits, child);
-        this.offset = offset;
-        this.fetch = fetch;
+        super(cluster, traits, child, collation);
+
+//        traitSet = getTraitSet().replace(RelCollations.EMPTY);
+
+        this.limit = limit;
     }
 
     /** */
-    public IgniteLimit(RelInput input) {
-        super(
-            input.getCluster(),
-            input.getTraitSet().replace(IgniteConvention.INSTANCE),
-            input.getInputs().get(0)
-        );
-
-        offset = input.getExpression("offset");
-        fetch = input.getExpression("fetch");
+    public IgniteLimitSort(RelInput input) {
+        super(input);
     }
 
     /** {@inheritDoc} */
-    @Override public final IgniteLimit copy(RelTraitSet traitSet, List<RelNode> inputs) {
-        return new IgniteLimit(getCluster(), traitSet, sole(inputs), offset, fetch);
-    }
+    @Override public Sort copy(
+        RelTraitSet traitSet,
+        RelNode newInput,
+        RelCollation newCollation,
+        RexNode offset,
+        RexNode fetch
+    ) {
+        assert offset == null && fetch == null;
 
-    /** {@inheritDoc} */
-    @Override public RelWriter explainTerms(RelWriter pw) {
-        super.explainTerms(pw);
-        pw.itemIf("offset", offset, offset != null);
-        pw.itemIf("fetch", fetch, fetch != null);
-        return pw;
-    }
-
-    /** {@inheritDoc} */
-    @Override public <T> T accept(IgniteRelVisitor<T> visitor) {
-        return visitor.visit(this);
+        return new IgniteLimitSort(getCluster(), traitSet, newInput, newCollation, limit);
     }
 
     /** {@inheritDoc} */
     @Override public Pair<RelTraitSet, List<RelTraitSet>> passThroughTraits(RelTraitSet required) {
-        if (required.getConvention() != IgniteConvention.INSTANCE)
-            return null;
-
         if (TraitUtils.distribution(required) != IgniteDistributions.single())
             return null;
 
@@ -129,9 +110,6 @@ public class IgniteLimit extends SingleRel implements IgniteRel {
         if (childTraits.getConvention() != IgniteConvention.INSTANCE)
             return null;
 
-        if (TraitUtils.distribution(childTraits) != IgniteDistributions.single())
-            return null;
-
         if (!TraitUtils.collation(childTraits).satisfies(TraitUtils.collation(traitSet)))
             return null;
 
@@ -139,60 +117,46 @@ public class IgniteLimit extends SingleRel implements IgniteRel {
     }
 
     /** {@inheritDoc} */
-    @Override public RelOptCost computeSelfCost(RelOptPlanner planner, RelMetadataQuery mq) {
-        double inputRowCount = mq.getRowCount(getInput());
-
-        double lim = fetch != null ? doubleFromRex(fetch, inputRowCount * FETCH_IS_PARAM_FACTOR) : inputRowCount;
-        double off = offset != null ? doubleFromRex(offset, inputRowCount * OFFSET_IS_PARAM_FACTOR) : 0;
-
-        double rows = Math.min(lim + off, inputRowCount);
-
-        return planner.getCostFactory().makeCost(rows, rows * IgniteCost.ROW_PASS_THROUGH_COST, 0);
-    }
-
-    /** {@inheritDoc} */
     @Override public double estimateRowCount(RelMetadataQuery mq) {
         double inputRowCount = mq.getRowCount(getInput());
 
         double lim = fetch != null ? doubleFromRex(fetch, inputRowCount * FETCH_IS_PARAM_FACTOR) : inputRowCount;
-        double off = offset != null ? doubleFromRex(offset, inputRowCount * OFFSET_IS_PARAM_FACTOR) : 0;
+//        double off = offset != null ? doubleFromRex(offset, inputRowCount * OFFSET_IS_PARAM_FACTOR) : 0;
 
-        return Math.min(lim, inputRowCount - off);
+//        return Math.min(lim, inputRowCount - off);
+        return Math.min(lim, inputRowCount);
     }
 
-    /**
-     * @return Integer value of the literal expression.
-     */
-    static double doubleFromRex(RexNode n, double def) {
-        try {
-            if (n.isA(SqlKind.LITERAL))
-                return ((RexLiteral)n).getValueAs(Integer.class);
-            else
-                return def;
-        }
-        catch (Exception e) {
-            assert false : "Unable to extract value: " + e.getMessage();
+    /** {@inheritDoc} */
+    @Override public RelOptCost computeSelfCost(RelOptPlanner planner, RelMetadataQuery mq) {
+        double inputRowCount = mq.getRowCount(getInput());
 
-            return def;
-        }
+        double lim = fetch != null ? doubleFromRex(fetch, inputRowCount * FETCH_IS_PARAM_FACTOR) : inputRowCount;
+
+        double rows = Math.min(mq.getRowCount(getInput()), lim);
+
+        double cpuCost = rows * IgniteCost.ROW_PASS_THROUGH_COST + Util.nLogM(1, rows) * IgniteCost.ROW_COMPARISON_COST;
+        double memory = rows * getRowType().getFieldCount() * IgniteCost.AVERAGE_FIELD_SIZE;
+
+        IgniteCostFactory costFactory = (IgniteCostFactory)planner.getCostFactory();
+
+        RelOptCost cost = costFactory.makeCost(rows, cpuCost, 0, memory, 0);
+
+        return cost;
     }
 
-    /**
-     * @return Offset.
-     */
-    public RexNode offset() {
-        return offset;
-    }
-
-    /**
-     * @return Fetches rows expression (limit)
-     */
-    public RexNode fetch() {
-        return fetch;
+    /** {@inheritDoc} */
+    @Override public <T> T accept(IgniteRelVisitor<T> visitor) {
+        return visitor.visit(this);
     }
 
     /** {@inheritDoc} */
     @Override public IgniteRel clone(RelOptCluster cluster, List<IgniteRel> inputs) {
-        return new IgniteLimit(cluster, getTraitSet(), sole(inputs), offset, fetch);
+        return new IgniteLimitSort(cluster, getTraitSet(), sole(inputs), collation, limit);
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean isEnforcer() {
+        return false;
     }
 }

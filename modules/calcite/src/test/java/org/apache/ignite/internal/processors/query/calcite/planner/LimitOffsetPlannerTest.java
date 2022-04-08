@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.query.calcite.planner;
 
-import java.util.Collections;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.util.ImmutableIntList;
@@ -26,7 +25,6 @@ import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexScan;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteLimit;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSort;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableScan;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteUnionAll;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteSchema;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
@@ -48,14 +46,13 @@ public class LimitOffsetPlannerTest extends AbstractPlannerTest {
     public void testTest() throws Exception {
         IgniteSchema publicSchema = createSchemaWithTable(IgniteDistributions.broadcast());
 
+//        String sql = "SELECT * FROM TEST ORDER BY ID LIMIT 184766";
         String sql = "SELECT * FROM TEST ORDER BY ID LIMIT 1";
+//        String sql = "SELECT * FROM TEST ORDER BY ID";
 
         IgniteRel plan = physicalPlan(sql, publicSchema);
 
         System.err.println("TEST | plan: " + plan.explain());
-
-//        assertPlan(sql, publicSchema, nodeOrAnyChild(isInstanceOf(IgniteLimit.class))
-//            .and(hasChildThat(isInstanceOf(IgniteSort.class)).and(hasChildThat(isInstanceOf(IgniteTableScan.class)))));
     }
 
     /**

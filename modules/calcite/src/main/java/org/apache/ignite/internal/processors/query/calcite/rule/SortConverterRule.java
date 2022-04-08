@@ -24,8 +24,10 @@ import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.Sort;
 import org.apache.calcite.rel.logical.LogicalSort;
+import org.apache.calcite.rex.RexLiteral;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteConvention;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteLimit;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteLimitSort;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSort;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
 import org.immutables.value.Value;
@@ -63,11 +65,28 @@ public class SortConverterRule extends RelRule<SortConverterRule.Config> {
         RelOptCluster cluster = sort.getCluster();
 
         if (sort.fetch != null || sort.offset != null) {
+//            RelTraitSet traits = cluster.traitSetOf(IgniteConvention.INSTANCE)
+//                .replace(sort.getCollation())
+//                .replace(IgniteDistributions.broadcast());
+//
+//            call.transformTo(new IgniteLimit(cluster, traits, convert(sort.getInput(), traits), sort.offset,
+//                sort.fetch));
+
             RelTraitSet traits = cluster.traitSetOf(IgniteConvention.INSTANCE)
                 .replace(sort.getCollation())
-                .replace(IgniteDistributions.single());
+                .replace(IgniteDistributions.broadcast());
 
-            call.transformTo(new IgniteLimit(cluster, traits, convert(sort.getInput(), traits), sort.offset,
+            IgniteLimitSort limitSort = new IgniteLimitSort(
+                cluster,
+                traits,
+                convert(sort.getInput(), traits),
+                sort.getCollation(),
+                sort.fetch
+            );
+
+            traits = cluster.traitSetOf(IgniteConvention.INSTANCE).replace(IgniteDistributions.single());
+
+            call.transformTo(new IgniteLimit(cluster, traits, limitSort, sort.offset,
                 sort.fetch));
         }
         else {

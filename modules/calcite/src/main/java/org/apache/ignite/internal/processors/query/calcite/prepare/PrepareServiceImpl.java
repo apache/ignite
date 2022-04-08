@@ -151,6 +151,8 @@ public class PrepareServiceImpl extends AbstractService implements PrepareServic
 
         IgniteRel igniteRel = optimize(sqlNode, planner, log);
 
+        System.err.println("TETS | planner dump: " + planner.dump());
+
         // Split query plan to query fragments.
         List<Fragment> fragments = new Splitter().go(igniteRel);
 
