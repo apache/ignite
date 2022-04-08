@@ -17,43 +17,25 @@
 
 package org.apache.ignite.internal;
 
-import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.After;
 import org.junit.Test;
 
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /** */
 public class IgniteExtendedLogoTest extends GridCommonAbstractTest {
-    /** */
-    private ListeningTestLogger testLog;
-
-    /** */
-    @Override protected IgniteConfiguration getConfiguration(String instanceName) throws Exception {
-        return super.getConfiguration(instanceName).setGridLogger(testLog);
-    }
-
-    /** */
-    @After
-    public void afterLogo() {
-        testLog.clearListeners();
-
-        stopAllGrids();
-    }
-
     /** @throws Exception If fails. */
     @Test
     public void testExtendedLogo() throws Exception {
-        testLog = new ListeningTestLogger(log);
+        ListeningTestLogger testLog = new ListeningTestLogger(log);
 
         LogListener waitLogoLsnr = LogListener.matches("Ignite InfoProvider is used to customize the logo version output.")
             .build();
         testLog.registerListener(waitLogoLsnr);
 
-        startGrid();
+        startGrid(getConfiguration().setGridLogger(testLog));
 
         assertTrue(waitForCondition(waitLogoLsnr::check, 5_000L));
     }
