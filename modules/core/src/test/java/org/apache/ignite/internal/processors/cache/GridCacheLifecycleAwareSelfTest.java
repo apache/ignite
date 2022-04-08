@@ -184,13 +184,6 @@ public class GridCacheLifecycleAwareSelfTest extends GridAbstractLifecycleAwareS
         @Override public boolean evictAllowed(Cache.Entry entry) {
             return false;
         }
-
-        /** {@inheritDoc} */
-        @Override public void start() {
-            startCnt.incrementAndGet();
-
-            assertEquals("Unexpected cache name for " + this, CACHE_NAME, cacheName);
-        }
     }
 
     /**
@@ -220,13 +213,6 @@ public class GridCacheLifecycleAwareSelfTest extends GridAbstractLifecycleAwareS
          */
         private TestInterceptor() {
             super(CACHE_NAME);
-        }
-
-        /** {@inheritDoc} */
-        @Override public void start() {
-            startCnt.incrementAndGet();
-
-            assertEquals("Unexpected cache name for " + this, CACHE_NAME, cacheName);
         }
 
         /** {@inheritDoc} */
