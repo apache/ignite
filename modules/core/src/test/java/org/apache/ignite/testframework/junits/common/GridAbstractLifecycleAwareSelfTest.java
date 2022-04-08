@@ -17,6 +17,7 @@
 
 package org.apache.ignite.testframework.junits.common;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -35,7 +36,7 @@ public abstract class GridAbstractLifecycleAwareSelfTest extends GridCommonAbstr
     /**
      */
     @SuppressWarnings("PublicInnerClass")
-    public static class TestLifecycleAware implements LifecycleAware {
+    public static class TestLifecycleAware implements LifecycleAware, Serializable {
         /** */
         private AtomicInteger startCnt = new AtomicInteger();
 
