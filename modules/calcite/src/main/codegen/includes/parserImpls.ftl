@@ -32,13 +32,23 @@ SqlNodeList WithCreateTableOptionList() :
 {
     [
         <WITH> { s = span(); }
-        CreateTableOption(list)
         (
-            <COMMA> { s.add(this); } CreateTableOption(list)
-        )*
-        {
-            return new SqlNodeList(list, s.end(this));
-        }
+            <QUOTED_IDENTIFIER>
+            {
+                return IgniteSqlCreateTable.parseOptionList(
+                    SqlParserUtil.stripQuotes(token.image, DQ, DQ, DQDQ, quotedCasing),
+                    getPos().withQuoting(true)
+                );
+            }
+        |
+            CreateTableOption(list)
+            (
+                <COMMA> { s.add(this); } CreateTableOption(list)
+            )*
+            {
+                return new SqlNodeList(list, s.end(this));
+            }
+        )
     ]
     { return null; }
 }
