@@ -40,9 +40,11 @@ jobs:
           server-username: NEXUS_USER
           server-password: NEXUS_PW
       - name: Install libnuma-dev
-        run: sudo apt-get install -y libnuma-dev
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y libnuma-dev
       - name: Deploy
-        run: mvn deploy -Pall-java,lgpl,checkstyle,examples,all-scala,scala -DskipTests -B -V
+        run: ./mvnw deploy -Pall-java,lgpl,checkstyle,examples,all-scala,scala -DskipTests -B -V
         env:
           NEXUS_USER: ${{ secrets.NEXUS_USER }}
           NEXUS_PW: ${{ secrets.NEXUS_PW }}
