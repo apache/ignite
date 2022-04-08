@@ -57,9 +57,6 @@ public class GridCacheLifecycleAwareSelfTest extends GridAbstractLifecycleAwareS
     private static final String CACHE_NAME = "cache";
 
     /** */
-    private boolean near;
-
-    /** */
     private boolean writeBehind;
 
     /**
@@ -334,8 +331,7 @@ public class GridCacheLifecycleAwareSelfTest extends GridAbstractLifecycleAwareS
             super.testLifecycleAware();
         }
         catch (AssertionError e) {
-            throw new AssertionError("Failed for [near=" + near + ", writeBehind=" + writeBehind + ']',
-                e);
+            throw new AssertionError("Failed for [writeBehind=" + writeBehind + ']', e);
         }
 
         writeBehind = true;
@@ -344,8 +340,7 @@ public class GridCacheLifecycleAwareSelfTest extends GridAbstractLifecycleAwareS
             super.testLifecycleAware();
         }
         catch (AssertionError e) {
-            throw new AssertionError("Failed for [near=" + near + ", writeBehind=" + writeBehind + ']',
-                e);
+            throw new AssertionError("Failed for [writeBehind=" + writeBehind + ']', e);
         }
     }
 }
