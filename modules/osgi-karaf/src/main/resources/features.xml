@@ -42,7 +42,6 @@
         <!-- KARAF-4129 Karaf feature containing a fragment that attaches to pax-logging-api cannot be installed
         <feature>ignite-log4j</feature>-->
         <feature>ignite-rest-http</feature>
-        <feature>ignite-scalar-2.11</feature>
         <feature>ignite-schedule</feature>
         <feature>ignite-slf4j</feature>
         <feature>ignite-spring</feature>
