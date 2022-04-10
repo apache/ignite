@@ -102,5 +102,4 @@ val result = cacheRdd.sql("select _val from Integer where val > ? and val < ?", 
 
 There are​ a couple of examples available on GitHub that demonstrate the usage of `IgniteRDD`:
 
-* link:{githubUrl}/examples/src/main/scala/org/apache/ignite/scalar/examples/spark/ScalarSharedRDDExample.scala[Scala Example^]
 * link:{githubUrl}/examples/src/main/spark/org/apache/ignite/examples/spark/SharedRDDExample.java[Java Example^]

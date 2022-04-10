@@ -1,3 +1,9 @@
+apache-ignite (2.13.0-1) unstable; urgency=low
+
+  * Updated Apache Ignite to version 2.13.0
+
+ -- Nikita Amelchev <namelchev@apache.org>  Thu, 07 Apr 2022 22:00:00 +0300
+
 apache-ignite (2.12.0-1) unstable; urgency=low
 
   * Updated Apache Ignite to version 2.12.0

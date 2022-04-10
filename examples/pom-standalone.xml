@@ -164,12 +164,6 @@
             <dependencies>
                 <dependency>
                     <groupId>${project.groupId}</groupId>
-                    <artifactId>ignite-scalar</artifactId>
-                    <version>to_be_replaced_by_ignite_version</version>
-                </dependency>
-
-                <dependency>
-                    <groupId>${project.groupId}</groupId>
                     <artifactId>ignite-spark</artifactId>
                     <version>to_be_replaced_by_ignite_version</version>
                 </dependency>
@@ -250,12 +244,6 @@
             </properties>
 
             <dependencies>
-                <dependency>
-                    <groupId>${project.groupId}</groupId>
-                    <artifactId>ignite-scalar</artifactId>
-                    <version>to_be_replaced_by_ignite_version</version>
-                </dependency>
-
                 <dependency>
                     <groupId>${project.groupId}</groupId>
                     <artifactId>ignite-spark-2.4</artifactId>

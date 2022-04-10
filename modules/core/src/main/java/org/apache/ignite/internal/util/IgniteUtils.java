@@ -6803,7 +6803,6 @@ public abstract class IgniteUtils {
      * Replaces all occurrences of {@code org.apache.ignite.} with {@code o.a.i.},
      * {@code org.apache.ignite.internal.} with {@code o.a.i.i.},
      * {@code org.apache.ignite.internal.visor.} with {@code o.a.i.i.v.} and
-     * {@code org.apache.ignite.scalar.} with {@code o.a.i.s.}.
      *
      * @param s String to replace in.
      * @return Replaces string.
@@ -6811,7 +6810,6 @@ public abstract class IgniteUtils {
     public static String compact(String s) {
         return s.replace("org.apache.ignite.internal.visor.", "o.a.i.i.v.").
             replace("org.apache.ignite.internal.", "o.a.i.i.").
-            replace("org.apache.ignite.scalar.", "o.a.i.s.").
             replace("org.apache.ignite.", "o.a.i.");
     }
 

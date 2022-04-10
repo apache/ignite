@@ -159,8 +159,6 @@
                 <exclude>${project.groupId}:ignite-osgi</exclude>
                 <exclude>${project.groupId}:ignite-osgi-karaf</exclude>
                 <exclude>${project.groupId}:ignite-osgi-paxlogging</exclude>
-                <exclude>${project.groupId}:ignite-scalar</exclude>
-                <exclude>${project.groupId}:ignite-scalar_2.10</exclude>
                 <exclude>${project.groupId}:ignite-spark</exclude>
                 <exclude>${project.groupId}:ignite-spark-2.4</exclude>
                 <exclude>${project.groupId}:ignite-ssh</exclude>

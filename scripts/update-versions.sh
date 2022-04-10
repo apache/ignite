@@ -19,7 +19,9 @@
 #
 # Updates Ignite version in Java pom files, .NET AssemblyInfo files, C++ configure files.
 # Run in Ignite sources root directory.
-# Usage: ./update-versions 2.6.0
+# Usage:
+# update snapshot version: ./scripts/update-versions.sh 2.14.0-SNAPSHOT
+# update release version: ./scripts/update-versions.sh 2.13.0
 #
 
 if [ $# -eq 0 ]

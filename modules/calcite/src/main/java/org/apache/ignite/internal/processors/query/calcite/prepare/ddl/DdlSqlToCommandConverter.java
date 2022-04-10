@@ -58,6 +58,7 @@ import org.apache.ignite.internal.processors.query.calcite.sql.IgniteSqlCreateTa
 import org.apache.ignite.internal.processors.query.calcite.sql.IgniteSqlCreateTableOption;
 import org.apache.ignite.internal.processors.query.calcite.sql.IgniteSqlCreateTableOptionEnum;
 import org.apache.ignite.internal.processors.query.calcite.sql.IgniteSqlRollback;
+import org.apache.ignite.internal.processors.query.calcite.type.OtherType;
 import org.apache.ignite.internal.processors.query.calcite.util.TypeUtils;
 import org.apache.ignite.internal.util.typedef.F;
 
@@ -107,6 +108,22 @@ public class DdlSqlToCommandConverter {
         new TableOptionProcessor<>(WRITE_SYNCHRONIZATION_MODE, validatorForEnumValue(CacheWriteSynchronizationMode.class),
             CreateTableCommand::writeSynchronizationMode),
         new TableOptionProcessor<>(BACKUPS, (opt, ctx) -> {
+            if (opt.value() instanceof SqlIdentifier) {
+                String val = VALUE_IS_IDENTIFIER_VALIDATOR.apply(opt, ctx);
+
+                try {
+                    int intVal = Integer.parseInt(val);
+
+                    if (intVal < 0)
+                        throwOptionParsingException(opt, "a non-negative integer", ctx.query());
+
+                    return intVal;
+                }
+                catch (NumberFormatException e) {
+                    throwOptionParsingException(opt, "a non-negative integer", ctx.query());
+                }
+            }
+
             if (!(opt.value() instanceof SqlNumericLiteral)
                 || !((SqlNumericLiteral)opt.value()).isInteger()
                 || ((SqlLiteral)opt.value()).intValue(true) < 0
@@ -116,6 +133,12 @@ public class DdlSqlToCommandConverter {
             return ((SqlLiteral)opt.value()).intValue(true);
         }, CreateTableCommand::backups),
         new TableOptionProcessor<>(ENCRYPTED, (opt, ctx) -> {
+            if (opt.value() instanceof SqlIdentifier) {
+                String val = VALUE_IS_IDENTIFIER_VALIDATOR.apply(opt, ctx);
+
+                return Boolean.parseBoolean(val);
+            }
+
             if (!(opt.value() instanceof SqlLiteral) && ((SqlLiteral)opt.value()).getTypeName() != BOOLEAN)
                 throwOptionParsingException(opt, "a boolean", ctx.query());
 
@@ -204,6 +227,9 @@ public class DdlSqlToCommandConverter {
                     Type storageType = ctx.typeFactory().getResultClass(type);
 
                     DataContext dataCtx = new BaseDataContext(ctx.typeFactory());
+
+                    if (type instanceof OtherType)
+                        throw new IgniteSQLException("Type '" + type + "' doesn't support default value.");
 
                     dflt = TypeUtils.fromLiteral(dataCtx, storageType, (SqlLiteral)col.expression);
                 }

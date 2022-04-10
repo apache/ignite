@@ -34,7 +34,7 @@
 
     <groupId>org.apache.ignite</groupId>
     <artifactId>ignite-checkstyle</artifactId>
-    <version>2.13.0-SNAPSHOT</version>
+    <version>2.14.0-SNAPSHOT</version>
 
     <properties>
         <maven.compiler.source>1.8</maven.compiler.source>
@@ -81,9 +81,7 @@
                             <outputDirectory>${project.build.directory}/classes/checkstyle</outputDirectory>
                             <resources>
                                 <resource>
-                                    <!-- This is working due to the .mvn directory placed in
-                                        the multi-module project root directory -->
-                                    <directory>${maven.multiModuleProjectDirectory}/checkstyle</directory>
+                                    <directory>${project.basedir}/../../checkstyle</directory>
                                     <filtering>false</filtering>
                                 </resource>
                             </resources>

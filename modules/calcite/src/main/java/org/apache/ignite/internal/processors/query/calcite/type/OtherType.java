@@ -15,20 +15,24 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.scalar.lang
+package org.apache.ignite.internal.processors.query.calcite.type;
 
-import org.apache.ignite.internal.util.lang.IgniteClosure2X
+import java.lang.reflect.Type;
 
-/**
- * Wrapping Scala function for `GridClosure2X`.
- */
-class ScalarClosure2XFunction[T1, T2, R](val inner: IgniteClosure2X[T1, T2, R]) extends ((T1, T2) => R) {
-    assert(inner != null)
+/** OTHER SQL type for any value. */
+public class OtherType extends IgniteCustomType {
+    /** Ctor. */
+    public OtherType(boolean nullable) {
+        super(nullable);
+    }
 
-    /**
-     * Delegates to passed in grid closure.
-     */
-    def apply(t1: T1, t2: T2): R = {
-        inner.applyx(t1, t2)
+    /** {@inheritDoc} */
+    @Override protected void generateTypeString(StringBuilder sb, boolean withDetail) {
+        sb.append("OTHER");
+    }
+
+    /** @return Storage type */
+    @Override public Type storageType() {
+        return Object.class;
     }
 }
