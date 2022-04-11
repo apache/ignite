@@ -31,7 +31,8 @@ from ignitetest.services.utils.config_template import IgniteClientConfigTemplate
 from ignitetest.services.utils.jvm_utils import create_jvm_settings, merge_jvm_settings
 from ignitetest.services.utils.path import get_home_dir, get_module_path, IgnitePathAware
 from ignitetest.services.utils.ssl.ssl_params import is_ssl_enabled
-from ignitetest.services.utils.metrics.metrics import OpencensusMetricsParams, JmxMetricsParams
+from ignitetest.services.utils.metrics.metrics import is_opencensus_metrics_enabled, configure_opencensus_metrics,\
+    is_jmx_metrics_enabled, configure_jmx_metrics
 from ignitetest.services.utils.jmx_remote.jmx_remote_params import get_jmx_remote_params
 from ignitetest.utils.ignite_test import JFR_ENABLED
 from ignitetest.utils.version import DEV_BRANCH
@@ -147,21 +148,21 @@ class IgniteSpec(metaclass=ABCMeta):
         Extend config with custom variables
         """
         if config.service_type == IgniteServiceType.NODE:
-            if OpencensusMetricsParams.enabled(self.service):
-                config = OpencensusMetricsParams.add_to_config(config, self.service.context.globals)
+            if is_opencensus_metrics_enabled(self.service):
+                config = configure_opencensus_metrics(config, self.service.context.globals)
 
-            if JmxMetricsParams.enabled(self.service):
-                config = JmxMetricsParams.add_to_config(config)
+            if is_jmx_metrics_enabled(self.service):
+                config = configure_jmx_metrics(config)
 
-            if (OpencensusMetricsParams.enabled(self.service) or
-                    JmxMetricsParams.enabled(self.service)):
-                config = config._replace(ignite_instance_name=self.__test_id(self.service.context.test_name))
+            if (is_opencensus_metrics_enabled(self.service) or
+                    is_jmx_metrics_enabled(self.service)):
+                config = config._replace(ignite_instance_name=self._test_id)
 
         return config
 
-    @staticmethod
-    def __test_id(test_name: str):
-        return sub("^[0-9A-Fa-f]+@ignitetest\\.tests\\.", "", test_name).replace("=", ".")[:255]
+    @property
+    def _test_id(self):
+        return sub("^[0-9A-Fa-f]+@ignitetest\\.tests\\.", "", self.service.context.test_name).replace("=", ".")[:255]
 
     def __home(self, product=None):
         """
@@ -193,7 +194,7 @@ class IgniteSpec(metaclass=ABCMeta):
 
         libs.append("log4j2")
 
-        if OpencensusMetricsParams.enabled(self.service):
+        if is_opencensus_metrics_enabled(self.service):
             libs.append("opencensus")
 
         return [os.path.join(self.__home(str(DEV_BRANCH)), "modules", "ducktests", "target", "*"),

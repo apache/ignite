@@ -22,7 +22,7 @@ class Bean:
         return self.class_name == other.class_name
 
     def __hash__(self):
-        return self.class_name.__hash__()
+        return hash(self.class_name)
 
     def __repr__(self):
         return self.class_name
