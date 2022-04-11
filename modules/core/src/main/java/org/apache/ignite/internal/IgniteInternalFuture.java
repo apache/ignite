@@ -24,7 +24,6 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.jetbrains.annotations.Async;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * Extension for standard {@link Future} interface. It adds simplified exception handling,
