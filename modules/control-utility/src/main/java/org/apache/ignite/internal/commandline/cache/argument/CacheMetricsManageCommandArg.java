@@ -25,17 +25,20 @@ import org.apache.ignite.internal.visor.cache.metrics.VisorCacheMetricsManageTas
 /**
  * Command arguments for {@link CacheMetricsManage} command.
  */
-public enum CacheMetricsCommandArg implements CommandArg {
-    /** Enable cache metrics. */
-    ENABLE("--enable", CacheMetricsManageSubCommand.ENABLE),
+public enum CacheMetricsManageCommandArg implements CommandArg {
+    /** Enable metrics sub-command. */
+    ENABLE("enable", CacheMetricsManageSubCommand.ENABLE),
 
-    /** Disable cache metrics. */
-    DISABLE("--disable", CacheMetricsManageSubCommand.DISABLE),
+    /** Disable metrics sub-command. */
+    DISABLE("disable", CacheMetricsManageSubCommand.DISABLE),
 
-    /** Status of cache metrics. */
-    STATUS("--status", CacheMetricsManageSubCommand.STATUS),
+    /** Status sub-command. */
+    STATUS("status", CacheMetricsManageSubCommand.STATUS),
 
-    /** Perform command for all caches instead of defined list. */
+    /** Argument for applying a sub-command to all user caches. */
+    CACHES("caches", null),
+
+    /** Argument for applying a sub-command to all user caches. */
     ALL_CACHES("--all-caches", null);
 
     /** Name of command. */
@@ -48,7 +51,7 @@ public enum CacheMetricsCommandArg implements CommandArg {
      * @param name Name.
      * @param taskArgSubCmd Sub-command value for {@link VisorCacheMetricsManageTaskArg}.
      */
-    CacheMetricsCommandArg(String name, CacheMetricsManageSubCommand taskArgSubCmd) {
+    CacheMetricsManageCommandArg(String name, CacheMetricsManageSubCommand taskArgSubCmd) {
         this.name = name;
         this.taskArgSubCmd = taskArgSubCmd;
     }

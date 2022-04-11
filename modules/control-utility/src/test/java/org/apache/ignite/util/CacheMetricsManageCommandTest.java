@@ -26,7 +26,7 @@ import org.apache.ignite.internal.cluster.IgniteClusterEx;
 import org.apache.ignite.internal.commandline.CommandList;
 import org.apache.ignite.internal.commandline.cache.CacheCommandList;
 import org.apache.ignite.internal.commandline.cache.CacheMetricsManage;
-import org.apache.ignite.internal.commandline.cache.argument.CacheMetricsCommandArg;
+import org.apache.ignite.internal.commandline.cache.argument.CacheMetricsManageCommandArg;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -37,23 +37,27 @@ import org.junit.Test;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_INVALID_ARGUMENTS;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_UNEXPECTED_ERROR;
+import static org.apache.ignite.internal.commandline.cache.CacheMetricsManage.SUCCESS_MESSAGE;
 import static org.apache.ignite.internal.util.lang.GridFunc.t;
 
 /**
  * Test for {@link CacheMetricsManage} command.
  */
 public class CacheMetricsManageCommandTest extends GridCommandHandlerAbstractTest {
-    /** All caches flag. */
-    private static final String ALL_CACHES = CacheMetricsCommandArg.ALL_CACHES.argName();
+    /** Enable command. */
+    private static final String ENABLE_COMMAND = CacheMetricsManageCommandArg.ENABLE.argName();
 
-    /** Command enable. */
-    private static final String COMMAND_ENABLE = CacheMetricsCommandArg.ENABLE.argName();
+    /** Disable command. */
+    private static final String DISABLE_COMMAND = CacheMetricsManageCommandArg.DISABLE.argName();
 
-    /** Command disable. */
-    private static final String COMMAND_DISABLE = CacheMetricsCommandArg.DISABLE.argName();
+    /** Status command. */
+    private static final String STATUS_COMMAND = CacheMetricsManageCommandArg.STATUS.argName();
 
-    /** Command status. */
-    private static final String COMMAND_STATUS = CacheMetricsCommandArg.STATUS.argName();
+    /** All caches option. */
+    private static final String ALL_CACHES_OPTION = CacheMetricsManageCommandArg.ALL_CACHES.argName();
+
+    /** Caches option. */
+    private static final String CACHES_OPTION = CacheMetricsManageCommandArg.CACHES.argName();
 
     /** Cache one. */
     private static final String CACHE_ONE = "cache-1";
@@ -75,9 +79,6 @@ public class CacheMetricsManageCommandTest extends GridCommandHandlerAbstractTes
 
     /** Status enabled. */
     private static final String STATUS_ENABLED = "enabled";
-
-    /** Success toggle. */
-    private static final String SUCCESS_TOGGLE = "Command performed successfully.";
 
     /** {@inheritDoc} */
     @Override public void beforeTest() throws Exception {
@@ -104,17 +105,17 @@ public class CacheMetricsManageCommandTest extends GridCommandHandlerAbstractTes
     public void testEnableDisable() {
         createCachesWithMetricsModes(t(CACHE_ONE, false), t(CACHE_TWO, true), t(NON_METRIC_CACHE, false));
 
-        checkExecutionOk(SUCCESS_TOGGLE, COMMAND_ENABLE, CACHE_ONE);
-        checkExecutionOk(SUCCESS_TOGGLE, COMMAND_DISABLE, CACHE_TWO);
+        checkExecutionOk(SUCCESS_MESSAGE, ENABLE_COMMAND, CACHES_OPTION, CACHE_ONE);
+        checkExecutionOk(SUCCESS_MESSAGE, DISABLE_COMMAND, CACHES_OPTION, CACHE_TWO);
         checkClusterMetrics(t(CACHE_ONE, true), t(CACHE_TWO, false), t(NON_METRIC_CACHE, false));
 
-        checkExecutionOk(SUCCESS_TOGGLE, COMMAND_DISABLE, CACHE_ONE + ',' + CACHE_TWO);
+        checkExecutionOk(SUCCESS_MESSAGE, DISABLE_COMMAND, CACHES_OPTION, CACHE_ONE + ',' + CACHE_TWO);
         checkClusterMetrics(t(CACHE_ONE, false), t(CACHE_TWO, false), t(NON_METRIC_CACHE, false));
 
         // Cache list with duplicates and shuffled order
         String cacheNames = String.join(",", CACHE_TWO, CACHE_TWO, CACHE_ONE, CACHE_ONE, CACHE_TWO);
 
-        checkExecutionOk(SUCCESS_TOGGLE, COMMAND_ENABLE, cacheNames);
+        checkExecutionOk(SUCCESS_MESSAGE, ENABLE_COMMAND, CACHES_OPTION, cacheNames);
         checkClusterMetrics(t(CACHE_ONE, true), t(CACHE_TWO, true), t(NON_METRIC_CACHE, false));
     }
 
@@ -125,18 +126,18 @@ public class CacheMetricsManageCommandTest extends GridCommandHandlerAbstractTes
     public void testEnableDisableAll() {
         createCachesWithMetricsModes(t(CACHE_ONE, false));
 
-        checkExecutionOk(SUCCESS_TOGGLE, COMMAND_ENABLE, ALL_CACHES);
+        checkExecutionOk(SUCCESS_MESSAGE, ENABLE_COMMAND, ALL_CACHES_OPTION);
         checkClusterMetrics(t(CACHE_ONE, true));
 
-        checkExecutionOk(SUCCESS_TOGGLE, COMMAND_DISABLE, ALL_CACHES);
+        checkExecutionOk(SUCCESS_MESSAGE, DISABLE_COMMAND, ALL_CACHES_OPTION);
         checkClusterMetrics(t(CACHE_ONE, false));
 
         createCachesWithMetricsModes(t(CACHE_TWO, true), t(CACHE_THREE, false));
 
-        checkExecutionOk(SUCCESS_TOGGLE, COMMAND_DISABLE, ALL_CACHES);
+        checkExecutionOk(SUCCESS_MESSAGE, DISABLE_COMMAND, ALL_CACHES_OPTION);
         checkClusterMetrics(t(CACHE_ONE, false), t(CACHE_TWO, false), t(CACHE_THREE, false));
 
-        checkExecutionOk(SUCCESS_TOGGLE, COMMAND_ENABLE, ALL_CACHES);
+        checkExecutionOk(SUCCESS_MESSAGE, ENABLE_COMMAND, ALL_CACHES_OPTION);
         checkClusterMetrics(t(CACHE_ONE, true), t(CACHE_TWO, true), t(CACHE_THREE, true));
     }
 
@@ -149,11 +150,13 @@ public class CacheMetricsManageCommandTest extends GridCommandHandlerAbstractTes
 
         String cacheArg = String.join(",", CACHE_ONE, CACHE_TWO, NON_EXISTENT_CACHE);
 
-        checkExecutionError(descriptorsNotFound(CACHE_ONE, CACHE_TWO, NON_EXISTENT_CACHE), COMMAND_ENABLE, cacheArg);
+        checkExecutionError(descriptorsNotFound(CACHE_ONE, CACHE_TWO, NON_EXISTENT_CACHE), ENABLE_COMMAND, CACHES_OPTION,
+            cacheArg);
 
         createCachesWithMetricsModes(t(CACHE_TWO, true));
 
-        checkExecutionError(descriptorsNotFound(CACHE_ONE, CACHE_TWO, NON_EXISTENT_CACHE), COMMAND_DISABLE, cacheArg);
+        checkExecutionError(descriptorsNotFound(CACHE_ONE, CACHE_TWO, NON_EXISTENT_CACHE), DISABLE_COMMAND, CACHES_OPTION,
+            cacheArg);
     }
 
     /**
@@ -163,15 +166,15 @@ public class CacheMetricsManageCommandTest extends GridCommandHandlerAbstractTes
     public void testStatus() {
         createCachesWithMetricsModes(t(CACHE_ONE, false), t(CACHE_TWO, true), t(NON_METRIC_CACHE, false));
 
-        checkExecutionOk(successStatus(t(CACHE_ONE, STATUS_DISABLED)), COMMAND_STATUS, CACHE_ONE);
-        checkExecutionOk(successStatus(t(CACHE_TWO, STATUS_ENABLED)), COMMAND_STATUS, CACHE_TWO);
+        checkExecutionOk(successStatus(t(CACHE_ONE, STATUS_DISABLED)), STATUS_COMMAND, CACHES_OPTION, CACHE_ONE);
+        checkExecutionOk(successStatus(t(CACHE_TWO, STATUS_ENABLED)), STATUS_COMMAND, CACHES_OPTION, CACHE_TWO);
 
         IgniteClusterEx cluster = grid(0).cluster();
         cluster.enableStatistics(Collections.singleton(CACHE_ONE), true);
         cluster.enableStatistics(Collections.singleton(CACHE_TWO), false);
 
-        checkExecutionOk(successStatus(t(CACHE_ONE, STATUS_ENABLED), t(CACHE_TWO, STATUS_DISABLED)), COMMAND_STATUS,
-            CACHE_ONE + ',' + CACHE_TWO);
+        checkExecutionOk(successStatus(t(CACHE_ONE, STATUS_ENABLED), t(CACHE_TWO, STATUS_DISABLED)), STATUS_COMMAND,
+            CACHES_OPTION, CACHE_ONE + ',' + CACHE_TWO);
 
         cluster.enableStatistics(Arrays.asList(CACHE_ONE, CACHE_TWO), true);
 
@@ -179,29 +182,29 @@ public class CacheMetricsManageCommandTest extends GridCommandHandlerAbstractTes
         String cacheNames = String.join(",", NON_METRIC_CACHE, CACHE_TWO, CACHE_ONE, CACHE_TWO, NON_METRIC_CACHE);
 
         checkExecutionOk(successStatus(t(CACHE_ONE, STATUS_ENABLED), t(CACHE_TWO, STATUS_ENABLED),
-                t(NON_METRIC_CACHE, STATUS_DISABLED)), COMMAND_STATUS, cacheNames);
+                t(NON_METRIC_CACHE, STATUS_DISABLED)), STATUS_COMMAND, CACHES_OPTION, cacheNames);
     }
 
     /**
-     * Tests <tt>--all-caches</tt> flag for the status command.
+     * Tests <tt>--all-caches</tt> option for the status command.
      */
     @Test
     public void testStatusAll() {
         createCachesWithMetricsModes(t(CACHE_ONE, false));
 
-        checkExecutionOk(successStatus(t(CACHE_ONE, STATUS_DISABLED)), COMMAND_STATUS, ALL_CACHES);
+        checkExecutionOk(successStatus(t(CACHE_ONE, STATUS_DISABLED)), STATUS_COMMAND, ALL_CACHES_OPTION);
 
         createCachesWithMetricsModes(t(CACHE_TWO, true), t(CACHE_THREE, false));
 
         checkExecutionOk(successStatus(t(CACHE_ONE, STATUS_DISABLED), t(CACHE_TWO, STATUS_ENABLED),
-            t(CACHE_THREE, STATUS_DISABLED)), COMMAND_STATUS, ALL_CACHES);
+            t(CACHE_THREE, STATUS_DISABLED)), STATUS_COMMAND, ALL_CACHES_OPTION);
 
         IgniteClusterEx cluster = grid(0).cluster();
         cluster.enableStatistics(Collections.singleton(CACHE_ONE), true);
         cluster.enableStatistics(Collections.singleton(CACHE_TWO), false);
 
         checkExecutionOk(successStatus(t(CACHE_ONE, STATUS_ENABLED), t(CACHE_TWO, STATUS_DISABLED),
-            t(CACHE_THREE, STATUS_DISABLED)), COMMAND_STATUS, ALL_CACHES);
+            t(CACHE_THREE, STATUS_DISABLED)), STATUS_COMMAND, ALL_CACHES_OPTION);
     }
 
     /**
@@ -213,11 +216,11 @@ public class CacheMetricsManageCommandTest extends GridCommandHandlerAbstractTes
 
         String cacheArg = String.join(",", CACHE_ONE, CACHE_TWO, NON_EXISTENT_CACHE);
 
-        checkExecutionError(doesNotExist(CACHE_TWO), COMMAND_STATUS, cacheArg);
+        checkExecutionError(doesNotExist(CACHE_TWO), STATUS_COMMAND, CACHES_OPTION, cacheArg);
 
         createCachesWithMetricsModes(t(CACHE_TWO, true));
 
-        checkExecutionError(doesNotExist(NON_EXISTENT_CACHE), COMMAND_STATUS, cacheArg);
+        checkExecutionError(doesNotExist(NON_EXISTENT_CACHE), STATUS_COMMAND, CACHES_OPTION, cacheArg);
     }
 
     /**
@@ -227,34 +230,35 @@ public class CacheMetricsManageCommandTest extends GridCommandHandlerAbstractTes
     public void testNoCachesAffected() {
         String noCachesAffected = "No caches affected. Are there any caches in cluster?";
 
-        checkExecutionOk(noCachesAffected, COMMAND_ENABLE, ALL_CACHES);
+        checkExecutionOk(noCachesAffected, ENABLE_COMMAND, ALL_CACHES_OPTION);
 
-        checkExecutionOk(noCachesAffected, COMMAND_DISABLE, ALL_CACHES);
+        checkExecutionOk(noCachesAffected, DISABLE_COMMAND, ALL_CACHES_OPTION);
 
-        checkExecutionOk(noCachesAffected, COMMAND_STATUS, ALL_CACHES);
+        checkExecutionOk(noCachesAffected, STATUS_COMMAND, ALL_CACHES_OPTION);
     }
 
     /**
      *
      */
+    // TODO: Syntax was changed, should be modified.
     @Test
     public void testInvalidArguments() {
         checkInvalidArguments("Check arguments. Expected correct sub-command.");
 
         checkInvalidArguments("Check arguments. Expected correct sub-command.", "bad-command");
 
-        String cacheArgErrorMsg = "cache names list or '" + ALL_CACHES + "' argument.";
+        String cacheArgErrorMsg = "cache names list or '" + ALL_CACHES_OPTION + "' argument.";
 
-        checkInvalidArguments(cacheArgErrorMsg, COMMAND_ENABLE);
+        checkInvalidArguments(cacheArgErrorMsg, ENABLE_COMMAND);
 
-        checkInvalidArguments(cacheArgErrorMsg, COMMAND_DISABLE);
+        checkInvalidArguments(cacheArgErrorMsg, DISABLE_COMMAND);
 
-        checkInvalidArguments(cacheArgErrorMsg, COMMAND_STATUS);
+        checkInvalidArguments(cacheArgErrorMsg, STATUS_COMMAND);
 
-        checkInvalidArguments(cacheArgErrorMsg, COMMAND_STATUS, "--all");
+        checkInvalidArguments(cacheArgErrorMsg, STATUS_COMMAND, "--all");
 
         checkInvalidArguments("Check arguments. Unexpected argument of --cache subcommand: " + CACHE_TWO,
-            COMMAND_ENABLE, CACHE_ONE, CACHE_TWO);
+            ENABLE_COMMAND, CACHE_ONE, CACHE_TWO);
     }
 
     /**

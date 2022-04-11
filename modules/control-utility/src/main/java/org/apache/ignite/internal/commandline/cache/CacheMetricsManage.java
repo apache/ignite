@@ -29,7 +29,7 @@ import org.apache.ignite.internal.commandline.Command;
 import org.apache.ignite.internal.commandline.CommandArgIterator;
 import org.apache.ignite.internal.commandline.TaskExecutor;
 import org.apache.ignite.internal.commandline.argument.CommandArgUtils;
-import org.apache.ignite.internal.commandline.cache.argument.CacheMetricsCommandArg;
+import org.apache.ignite.internal.commandline.cache.argument.CacheMetricsManageCommandArg;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.cache.metrics.VisorCacheMetricsManageTask;
@@ -39,20 +39,37 @@ import org.apache.ignite.internal.visor.cache.metrics.VisorCacheMetricsManageTas
 import static org.apache.ignite.internal.commandline.CommandLogger.optional;
 import static org.apache.ignite.internal.commandline.CommandLogger.or;
 import static org.apache.ignite.internal.commandline.cache.CacheSubcommands.METRICS;
-import static org.apache.ignite.internal.commandline.cache.argument.CacheMetricsCommandArg.ALL_CACHES;
-import static org.apache.ignite.internal.commandline.cache.argument.CacheMetricsCommandArg.DISABLE;
-import static org.apache.ignite.internal.commandline.cache.argument.CacheMetricsCommandArg.ENABLE;
-import static org.apache.ignite.internal.commandline.cache.argument.CacheMetricsCommandArg.STATUS;
+import static org.apache.ignite.internal.commandline.cache.argument.CacheMetricsManageCommandArg.ALL_CACHES;
+import static org.apache.ignite.internal.commandline.cache.argument.CacheMetricsManageCommandArg.CACHES;
+import static org.apache.ignite.internal.commandline.cache.argument.CacheMetricsManageCommandArg.DISABLE;
+import static org.apache.ignite.internal.commandline.cache.argument.CacheMetricsManageCommandArg.ENABLE;
+import static org.apache.ignite.internal.commandline.cache.argument.CacheMetricsManageCommandArg.STATUS;
 
 /**
  * Cache sub-command for a cache metrics collection management. It provides to enable, disable or show status.
  */
 public class CacheMetricsManage extends AbstractCommand<VisorCacheMetricsManageTaskArg> {
+    /** Incorrect sub command message. */
+    public static final String INCORRECT_SUB_COMMAND_MESSAGE = "Expected correct sub-command.";
+
+    /** Incorrect cache argument message. */
+    public static final String INCORRECT_CACHE_ARGUMENT_MESSAGE =
+        String.format("'%s' or '%s' arguments should be passed.", CACHES, ALL_CACHES);
+
+    /** Invalid caches list message. */
+    public static final String INVALID_CACHES_LIST_MESSAGE = "comma-separated list of cache names";
+
+    /** No caches affected message. */
+    public static final String NO_CACHES_AFFECTED_MESSAGE = "No caches affected. Are there any caches in cluster?";
+
+    /** Success message. */
+    public static final String SUCCESS_MESSAGE = "Command performed successfully.";
+
     /** Task argument. */
     private VisorCacheMetricsManageTaskArg arg;
 
     /** Cache metrics sub-command argument. */
-    private CacheMetricsCommandArg subCmdArg;
+    private CacheMetricsManageCommandArg subCmdArg;
 
     /** {@inheritDoc} */
     @Override public Object execute(GridClientConfiguration clientCfg, Logger log) throws Exception {
@@ -73,19 +90,17 @@ public class CacheMetricsManage extends AbstractCommand<VisorCacheMetricsManageT
 
         String resultMsg;
 
-        String noCachesAffectedMsg = "No caches affected. Are there any caches in cluster?";
-
         switch (subCmdArg) {
             case ENABLE:
             case DISABLE:
-                resultMsg = ((Integer)result) > 0 ? "Command performed successfully." : noCachesAffectedMsg;
+                resultMsg = ((Integer)result) > 0 ? SUCCESS_MESSAGE : NO_CACHES_AFFECTED_MESSAGE;
 
                 break;
             case STATUS:
                 Map<String, Boolean> statusTaskResult = (Map<String, Boolean>)result;
 
                 if (statusTaskResult.isEmpty())
-                    resultMsg = noCachesAffectedMsg;
+                    resultMsg = NO_CACHES_AFFECTED_MESSAGE;
                 else {
                     resultMsg = "[Cache Name -> Metrics status]:" + U.nl();
 
@@ -109,10 +124,10 @@ public class CacheMetricsManage extends AbstractCommand<VisorCacheMetricsManageT
 
     /** {@inheritDoc} */
     @Override public void printUsage(Logger log) {
-        String desc = "Manages user cache metrics collection: enables, disables it or shows status.";
+        String desc = "Manages user cache metrics collection: enables, disables them or shows status.";
 
         usageCache(log, METRICS, desc, null, or(ENABLE, DISABLE, STATUS),
-            or("cache1" + optional(",...,cacheN"), ALL_CACHES));
+            or(CACHES + "cache1" + optional(",...,cacheN"), ALL_CACHES));
     }
 
     /** {@inheritDoc} */
@@ -122,34 +137,41 @@ public class CacheMetricsManage extends AbstractCommand<VisorCacheMetricsManageT
 
     /** {@inheritDoc} */
     @Override public void parseArguments(CommandArgIterator argIter) {
-        String incorrectSubCmdMsg = "Expected correct sub-command.";
+        subCmdArg = ensureArg(argIter, INCORRECT_SUB_COMMAND_MESSAGE);
 
-        String readSubCmd = argIter.nextArg(incorrectSubCmdMsg);
+        CacheMetricsManageCommandArg cachesArg = ensureArg(argIter, INCORRECT_CACHE_ARGUMENT_MESSAGE);
 
-        subCmdArg = CommandArgUtils.of(readSubCmd, CacheMetricsCommandArg.class);
+        switch (cachesArg) {
+            case CACHES:
+                Set<String> caches = argIter.nextStringSet(INVALID_CACHES_LIST_MESSAGE);
 
-        if (subCmdArg == null)
-            throw new IllegalArgumentException(incorrectSubCmdMsg);
+                if (caches.isEmpty())
+                    throw new IllegalArgumentException("Expected " + INVALID_CACHES_LIST_MESSAGE);
 
-        String cacheArgErrorMsg = "cache names list or '" + ALL_CACHES + "' argument.";
+                arg = new VisorCacheMetricsManageTaskArg(subCmdArg.taskArgumentSubCommand(), caches);
 
-        Set<String> caches = argIter.nextStringSet(cacheArgErrorMsg);
+                break;
+            case ALL_CACHES:
+                arg = new VisorCacheMetricsManageTaskArg(subCmdArg.taskArgumentSubCommand());
 
-        String allCachesStr;
-        boolean applyToAllCaches = false;
-
-        // An empty string set if a command or option was passed.
-        if (caches.isEmpty()) {
-            allCachesStr = argIter.nextArg("Expected " + cacheArgErrorMsg);
-
-            applyToAllCaches = ALL_CACHES.argName().equals(allCachesStr);
-
-            if (!applyToAllCaches)
-                throw new IllegalArgumentException("Expected " + cacheArgErrorMsg);
+                break;
+            default:
+                throw new IllegalArgumentException(INCORRECT_CACHE_ARGUMENT_MESSAGE);
         }
+    }
 
-        arg = applyToAllCaches ? new VisorCacheMetricsManageTaskArg(subCmdArg.taskArgumentSubCommand()) :
-            new VisorCacheMetricsManageTaskArg(subCmdArg.taskArgumentSubCommand(), caches);
+    /**
+     * @param argIter Argument iterator.
+     * @param errorMsg Error message.
+     */
+    private CacheMetricsManageCommandArg ensureArg(CommandArgIterator argIter, String errorMsg) {
+        CacheMetricsManageCommandArg arg = CommandArgUtils.of(argIter.nextArg(errorMsg),
+            CacheMetricsManageCommandArg.class);
+
+        if (arg == null)
+            throw new IllegalArgumentException(errorMsg);
+
+        return arg;
     }
 
     /** {@inheritDoc} */

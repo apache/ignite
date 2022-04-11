@@ -32,9 +32,6 @@ public class VisorCacheMetricsManageTaskArg extends IgniteDataTransferObject {
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;
 
-    /** Flag indicates if the operation should be performed on all user caches or on a specified list. */
-    private boolean applyToAllCaches;
-
     /** Names of a caches which will be affected by task when <tt>applyToAllCaches</tt> is <code>false</code>. */
     private Set<String> cacheNames;
 
@@ -56,8 +53,6 @@ public class VisorCacheMetricsManageTaskArg extends IgniteDataTransferObject {
     public VisorCacheMetricsManageTaskArg(CacheMetricsManageSubCommand subCmd, Set<String> cacheNames) {
         this.subCmd = subCmd;
         this.cacheNames = Collections.unmodifiableSet(cacheNames);
-
-        applyToAllCaches = false;
     }
 
     /**
@@ -67,15 +62,11 @@ public class VisorCacheMetricsManageTaskArg extends IgniteDataTransferObject {
      */
     public VisorCacheMetricsManageTaskArg(CacheMetricsManageSubCommand subCmd) {
         this.subCmd = subCmd;
-
-        applyToAllCaches = true;
-
-        cacheNames = Collections.emptySet();
+        cacheNames = null;
     }
 
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        out.writeBoolean(applyToAllCaches);
         U.writeCollection(out, cacheNames);
         U.writeEnum(out, subCmd);
     }
@@ -83,7 +74,6 @@ public class VisorCacheMetricsManageTaskArg extends IgniteDataTransferObject {
     /** {@inheritDoc} */
     @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException,
         ClassNotFoundException {
-        applyToAllCaches = in.readBoolean();
         cacheNames = U.readSet(in);
         subCmd = U.readEnum(in, CacheMetricsManageSubCommand.class);
     }
@@ -96,10 +86,10 @@ public class VisorCacheMetricsManageTaskArg extends IgniteDataTransferObject {
     }
 
     /**
-     * @return Flag indicates if the operation should be performed on all user caches or on a specified list.
+     * @return Flag indicating that command should be applied to the all user caches.
      */
     public boolean applyToAllCaches() {
-        return applyToAllCaches;
+        return cacheNames == null;
     }
 
     /**
