@@ -49,6 +49,7 @@ public class IgniteAtomicConsistencyViolationException extends IgniteConsistency
         Map<KeyCacheObject, EntryGetResult> primaryMap,
         Consumer<Map<KeyCacheObject, EntryGetResult>> callback) {
         super(fixedMap.keySet());
+
         this.fixedMap = Collections.unmodifiableMap(fixedMap);
         this.primaryMap = Collections.unmodifiableMap(primaryMap);
         this.callback = callback;
