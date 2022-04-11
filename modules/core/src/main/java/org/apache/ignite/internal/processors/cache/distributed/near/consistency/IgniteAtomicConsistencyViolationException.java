@@ -40,7 +40,7 @@ public class IgniteAtomicConsistencyViolationException extends IgniteConsistency
     private final Consumer<Map<KeyCacheObject, EntryGetResult>> callback;
 
     /**
-     *  @param fixedMap Fixed map.
+     * @param fixedMap Fixed map.
      * @param primaryMap Primary map.
      * @param callback Fixed callback.
      */
