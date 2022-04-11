@@ -294,6 +294,26 @@ namespace ignite
                 connectionTimeout = timeout;
             }
 
+            /**
+             * Set thread pool size.
+             *
+             * @param size Desired number of threads in user thread pool. Zero means to use number of available core.
+             */
+            void SetUserThreadPoolSize(uint32_t size)
+            {
+                userThreadPoolSize = size;
+            }
+
+            /**
+             * Get thread pool size.
+             *
+             * @return Number of threads in user thread pool. Zero means to use number of available core.
+             */
+            uint32_t GetUserThreadPoolSize()
+            {
+                return userThreadPoolSize;
+            }
+
         private:
             /** Connection end points */
             std::string endPoints;
@@ -324,6 +344,9 @@ namespace ignite
 
             /** Connection timeout in milliseconds. */
             int32_t connectionTimeout;
+
+            /** User thread pool size. */
+            uint32_t userThreadPoolSize;
         };
     }
 }

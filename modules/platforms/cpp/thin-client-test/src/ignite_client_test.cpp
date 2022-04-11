@@ -81,7 +81,7 @@ public:
     static void CheckThreadsNum(IgniteClientConfiguration &cfg, uint32_t num)
     {
         // 1 is for network working thread.
-        int32_t threadsExpected = ignite::common::concurrent::GetThreadsCount() + 1 + num;
+        int32_t threadsExpected = ignite::common::concurrent::GetThreadsCount() + 1 + static_cast<int32_t>(num);
 
 #ifdef _WIN32
         // One more thread for Windows for connecting.
@@ -94,6 +94,7 @@ public:
         int32_t threadsActual = ignite::common::concurrent::GetThreadsCount();
 
         BOOST_CHECK_EQUAL(threadsExpected, threadsActual);
+        BOOST_CHECK_EQUAL(num, cfg.GetUserThreadPoolSize());
     }
 
     /**
