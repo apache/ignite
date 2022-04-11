@@ -14,6 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#include <test_server.h>
 
 #include <boost/test/unit_test.hpp>
 #include <boost/bind.hpp>
@@ -80,21 +81,34 @@ public:
      */
     static void CheckThreadsNum(IgniteClientConfiguration &cfg, uint32_t num)
     {
-        // 1 is for network working thread.
-        int32_t threadsExpected = ignite::common::concurrent::GetThreadsCount() + 1 + static_cast<int32_t>(num);
+        ignite::TestServer server;
+        server.PushHandshakeResponse(true);
+        server.Start();
+
+        int32_t threadsBefore = ignite::common::concurrent::GetThreadsCount();
+        int32_t netThreads = 1;
 
 #ifdef _WIN32
-        // One more thread for Windows for connecting.
-        threadsExpected += 1;
+        // In Windows there is one additional thread for connecting.
+        netThreads += 1;
 #endif
+        int32_t threadsExpected = static_cast<int32_t>(num) + netThreads;
 
         cfg.SetUserThreadPoolSize(num);
-        IgniteClient client = IgniteClient::Start(cfg);
+        {
+            IgniteClient client = IgniteClient::Start(cfg);
 
-        int32_t threadsActual = ignite::common::concurrent::GetThreadsCount();
+            int32_t threadsActual = ignite::common::concurrent::GetThreadsCount() - threadsBefore;
 
-        BOOST_CHECK_EQUAL(threadsExpected, threadsActual);
+            BOOST_CHECK_EQUAL(threadsExpected, threadsActual);
+        }
+
+        int32_t threadsAfter = ignite::common::concurrent::GetThreadsCount();
+
+        BOOST_CHECK_EQUAL(threadsBefore, threadsAfter);
         BOOST_CHECK_EQUAL(num, cfg.GetUserThreadPoolSize());
+
+        server.Stop();
     }
 
     /**
@@ -220,9 +234,9 @@ BOOST_AUTO_TEST_CASE(IgniteClientReconnect)
 
 BOOST_AUTO_TEST_CASE(IgniteClientUserThreadPoolSize)
 {
-    ignite::Ignite serverNode0 = StartNodeWithLog("0");
-
     IgniteClientConfiguration cfg;
+
+    BOOST_CHECK_EQUAL(0, cfg.GetUserThreadPoolSize());
 
     cfg.SetEndPoints("127.0.0.1:11110");
 

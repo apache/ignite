@@ -51,7 +51,8 @@ namespace ignite
                 sslMode(SslMode::DISABLE),
                 partitionAwareness(true),
                 connectionsLimit(0),
-                connectionTimeout(DEFAULT_CONNECTION_TIMEOUT)
+                connectionTimeout(DEFAULT_CONNECTION_TIMEOUT),
+                userThreadPoolSize(0)
             {
                 // No-op.
             }
@@ -309,7 +310,7 @@ namespace ignite
              *
              * @return Number of threads in user thread pool. Zero means to use number of available core.
              */
-            uint32_t GetUserThreadPoolSize()
+            uint32_t GetUserThreadPoolSize() const
             {
                 return userThreadPoolSize;
             }
