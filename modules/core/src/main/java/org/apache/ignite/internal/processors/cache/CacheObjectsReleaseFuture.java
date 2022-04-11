@@ -88,7 +88,7 @@ public class CacheObjectsReleaseFuture<T, R> extends GridCompoundFuture<T, R> {
             }
         }
         else {
-            futures = (Collection) futures();
+            futures = (Collection)futures();
             totalFuts = futures.size();
         }
 

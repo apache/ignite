@@ -64,7 +64,7 @@ public class IgniteDiagnosticPartitionReleaseFutureLimitTest extends GridCommonA
     @WithSystemProperty(key = "IGNITE_LONG_OPERATIONS_DUMP_TIMEOUT_LIMIT", value = "1000")
     @WithSystemProperty(key = "IGNITE_PARTITION_RELEASE_FUTURE_WARN_LIMIT", value = "5")
     public void testDiagnosticMessageLimit() throws Exception {
-        IgniteEx crd = (IgniteEx) startGridsMultiThreaded(3);
+        IgniteEx crd = (IgniteEx)startGridsMultiThreaded(3);
 
         IgniteEx client = startClientGrid(3);
 
@@ -147,7 +147,7 @@ public class IgniteDiagnosticPartitionReleaseFutureLimitTest extends GridCommonA
         AtomicBoolean stop
     ) {
         IgniteInternalFuture<List<T4<Long, Integer, Integer, String>>> futExec = GridTestUtils.runAsync(() -> {
-            ThreadPoolExecutor exec = (ThreadPoolExecutor) node.context().pools().getSystemExecutorService();
+            ThreadPoolExecutor exec = (ThreadPoolExecutor)node.context().pools().getSystemExecutorService();
 
             List<T4<Long, Integer, Integer, String>> inf = new ArrayList<>();
 
