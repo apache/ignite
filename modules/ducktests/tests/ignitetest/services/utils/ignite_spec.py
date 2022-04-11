@@ -23,7 +23,7 @@ import json
 import os
 import subprocess
 from abc import ABCMeta, abstractmethod
-from re import sub
+import re
 
 from ignitetest.services.utils import IgniteServiceType
 from ignitetest.services.utils.config_template import IgniteClientConfigTemplate, IgniteServerConfigTemplate, \
@@ -162,7 +162,7 @@ class IgniteSpec(metaclass=ABCMeta):
 
     @property
     def _test_id(self):
-        return sub("^[0-9A-Fa-f]+@ignitetest\\.tests\\.", "", self.service.context.test_name).replace("=", ".")[:255]
+        return re.sub("^[0-9A-Fa-f]+@ignitetest\\.tests\\.", "", self.service.context.test_name).replace("=", ".")[:255]
 
     def __home(self, product=None):
         """

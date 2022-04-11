@@ -30,19 +30,40 @@ JMX_KEY_NAME = "jmx"
 
 
 class OpencensusMetricsParams(NamedTuple):
+    """
+    Params for Opencensus metrics exporter.
+
+    Attributes:
+        period  period of metrics export in millisecs
+        port    port of http server to export metrics
+        name    params name
+    """
     period: int
     port: int
     name: str
 
 
 def is_opencensus_metrics_enabled(service):
+    """
+    Returns True if OpenCensus metrics exporter is enabled via globals
+
+    :param service: Ignite service
+    :return: bool
+    """
     return service.config.version > V_2_7_6 and \
-           METRICS_KEY in service.context.globals and \
-           OPENCENSUS_KEY_NAME in service.context.globals[METRICS_KEY] and \
-           service.context.globals[METRICS_KEY][OPENCENSUS_KEY_NAME].get(ENABLED, False)
+        METRICS_KEY in service.context.globals and \
+        OPENCENSUS_KEY_NAME in service.context.globals[METRICS_KEY] and \
+        service.context.globals[METRICS_KEY][OPENCENSUS_KEY_NAME].get(ENABLED, False)
 
 
 def configure_opencensus_metrics(config, _globals):
+    """
+    Adds OpenCensus metrics exporter beans into the Ignite node configuration
+
+    :param config: config object to be modified
+    :param _globals: Globals parameters
+    :return: the updated configuration object
+    """
     if config.metrics_update_frequency is None:
         config = config._replace(metrics_update_frequency=1000)
 
@@ -58,19 +79,37 @@ def configure_opencensus_metrics(config, _globals):
 
 
 def __get_opencensus_metrics_params(_globals: dict):
+    """
+    Get OpenCensus metrics exporter parameters from Globals.
+
+    :param _globals: Globals parameters
+    :return: instance of the OpencensusMetricsParams
+    """
     return OpencensusMetricsParams(period=_globals[METRICS_KEY][OPENCENSUS_KEY_NAME].get("period", 1000),
                                    port=_globals[METRICS_KEY][OPENCENSUS_KEY_NAME].get("port", 8082),
                                    name=OPENCENSUS_NAME)
 
 
 def is_jmx_metrics_enabled(service):
+    """
+    Returns True if JMX metrics exporter is enabled via globals
+
+    :param service: Ignite service
+    :return: bool
+    """
     return service.config.version > V_2_7_6 and \
-           METRICS_KEY in service.context.globals and \
-           JMX_KEY_NAME in service.context.globals[METRICS_KEY] and \
-           service.context.globals[METRICS_KEY][JMX_KEY_NAME].get(ENABLED, False)
+        METRICS_KEY in service.context.globals and \
+        JMX_KEY_NAME in service.context.globals[METRICS_KEY] and \
+        service.context.globals[METRICS_KEY][JMX_KEY_NAME].get(ENABLED, False)
 
 
 def configure_jmx_metrics(config):
+    """
+    Adds JMX metrics exporter bean into the Ignite node configuration
+
+    :param config: configuration object to be modified
+    :return: the updated configuration object
+    """
     if config.metrics_update_frequency is None:
         config = config._replace(metrics_update_frequency=1000)
 

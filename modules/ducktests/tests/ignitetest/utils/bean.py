@@ -14,7 +14,19 @@
 # limitations under the License
 
 class Bean:
+    """
+    Helper class to store bean class name and optional set of name/value pairs for properties.
+
+    Serves as a parameter for the 'bean' jinja2 template macro used to generate lists of beans in the XML
+    ignite node configuration (see the ignitetest/services/utils/templates/misc_macro.j2::bean).
+
+    Hashable to be stored in a set.
+    """
     def __init__(self, class_name, **kwargs):
+        """
+        :param class_name: bean class name
+        :param kwargs: properties name / value pairs
+        """
         self.class_name = class_name
         self.properties = kwargs
 
