@@ -165,7 +165,15 @@ public class GridFinishedFuture<T> implements IgniteInternalFuture<T> {
     @Override public <R> IgniteInternalFuture<R> chainCompose(
         IgniteClosure<? super IgniteInternalFuture<T>, IgniteInternalFuture<R>> doneCb
     ) {
-        return doneCb.apply(this);
+        try {
+            return doneCb.apply(this);
+        }
+        catch (GridClosureException e) {
+            return new GridFinishedFuture<>(e.unwrap());
+        }
+        catch (RuntimeException | Error e) {
+            return new GridFinishedFuture<>(e);
+        }
     }
 
     /** {@inheritDoc} */

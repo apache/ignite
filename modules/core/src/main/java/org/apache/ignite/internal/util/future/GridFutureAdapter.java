@@ -394,6 +394,9 @@ public class GridFutureAdapter<R> implements IgniteInternalFuture<R> {
     ) {
         GridFutureAdapter<T> res = new GridFutureAdapter<>();
 
+        if (ignoreInterrupts)
+            res.ignoreInterrupts();
+
         listen(fut -> {
             if (exec == null)
                 applyChainComposeCallback(doneCb, fut, res);

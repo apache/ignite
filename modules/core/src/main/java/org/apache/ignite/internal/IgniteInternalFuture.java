@@ -157,7 +157,7 @@ public interface IgniteInternalFuture<R> {
      */
     @Async.Schedule
     public <T> IgniteInternalFuture<T> chainCompose(
-        IgniteClosure<? super IgniteInternalFuture<R>, IgniteInternalFuture<T>> doneCb, @Nullable Executor exec
+        IgniteClosure<? super IgniteInternalFuture<R>, IgniteInternalFuture<T>> doneCb, Executor exec
     );
 
     /**
