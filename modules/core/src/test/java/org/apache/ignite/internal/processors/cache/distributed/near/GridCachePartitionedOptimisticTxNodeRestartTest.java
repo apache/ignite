@@ -37,10 +37,7 @@ public class GridCachePartitionedOptimisticTxNodeRestartTest extends GridCacheAb
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
 
-        c.getTransactionConfiguration()
-            .setDefaultTxConcurrency(OPTIMISTIC)
-            // Set a timeout to stop the node on a test timeout and prevent the suite from hanging.
-            .setTxTimeoutOnPartitionMapExchange(getTestTimeout());
+        c.getTransactionConfiguration().setDefaultTxConcurrency(OPTIMISTIC);
 
         return c;
     }

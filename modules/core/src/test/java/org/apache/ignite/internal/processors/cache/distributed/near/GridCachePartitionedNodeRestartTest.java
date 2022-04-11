@@ -35,10 +35,7 @@ public class GridCachePartitionedNodeRestartTest extends GridCacheAbstractNodeRe
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
 
-        c.getTransactionConfiguration()
-            .setDefaultTxConcurrency(PESSIMISTIC)
-            // Set a timeout to stop the node on a test timeout and prevent the suite from hanging.
-            .setTxTimeoutOnPartitionMapExchange(getTestTimeout());
+        c.getTransactionConfiguration().setDefaultTxConcurrency(PESSIMISTIC);
 
         return c;
     }
