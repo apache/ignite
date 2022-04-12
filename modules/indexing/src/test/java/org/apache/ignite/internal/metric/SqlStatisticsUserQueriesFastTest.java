@@ -289,14 +289,14 @@ public class SqlStatisticsUserQueriesFastTest extends UserQueriesTestBase {
     public void testLocalSelectFailed() {
         // Lazy query fails on `getAll`.
         // `getAll' don't wrap IgniteSQLException with CacheException.
-        Class<? extends Throwable> expError = GridTestUtils.getFieldValue(SqlFieldsQuery.class, "DFLT_LAZY")
+        Class<? extends Throwable> expErr = GridTestUtils.getFieldValue(SqlFieldsQuery.class, "DFLT_LAZY")
             ? IgniteSQLException.class
             : CacheException.class;
 
         assertMetricsIncrementedOnlyOnReducer(() -> GridTestUtils.assertThrows(
             log,
             () -> cache.query(new SqlFieldsQuery("SELECT * FROM TAB WHERE ID = failFunction()").setLocal(true)).getAll(),
-            expError,
+            expErr,
             null),
             "failed");
     }
