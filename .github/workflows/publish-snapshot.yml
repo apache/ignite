@@ -39,10 +39,6 @@ jobs:
           server-id: apache.snapshots.https
           server-username: NEXUS_USER
           server-password: NEXUS_PW
-      - name: Install libnuma-dev
-        run: |
-          sudo apt-get update -y
-          sudo apt-get install -y libnuma-dev
       - name: Deploy
         run: ./mvnw deploy -Pcheckstyle,examples -DskipTests -Dmaven.javadoc.skip=true -B -V
         env:
