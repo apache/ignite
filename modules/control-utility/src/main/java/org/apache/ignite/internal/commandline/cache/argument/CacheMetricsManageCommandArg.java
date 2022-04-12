@@ -36,7 +36,7 @@ public enum CacheMetricsManageCommandArg implements CommandArg {
     STATUS("status", CacheMetricsManageSubCommand.STATUS),
 
     /** Argument for applying a sub-command to all user caches. */
-    CACHES("caches", null),
+    CACHES("--caches", null),
 
     /** Argument for applying a sub-command to all user caches. */
     ALL_CACHES("--all-caches", null);

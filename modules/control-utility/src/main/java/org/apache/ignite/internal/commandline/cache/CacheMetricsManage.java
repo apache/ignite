@@ -130,7 +130,7 @@ public class CacheMetricsManage extends AbstractCommand<VisorCacheMetricsManageT
         String desc = "Manages user cache metrics collection: enables, disables them or shows status.";
 
         usageCache(log, METRICS, desc, null, or(ENABLE, DISABLE, STATUS),
-            or(CACHES + "cache1" + optional(",...,cacheN"), ALL_CACHES));
+            or(CACHES + " cache1" + optional(",...,cacheN"), ALL_CACHES));
     }
 
     /** {@inheritDoc} */
