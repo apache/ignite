@@ -37,6 +37,10 @@ import org.junit.Test;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_INVALID_ARGUMENTS;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_UNEXPECTED_ERROR;
+import static org.apache.ignite.internal.commandline.cache.CacheMetricsManage.INCORRECT_CACHE_ARGUMENT_MESSAGE;
+import static org.apache.ignite.internal.commandline.cache.CacheMetricsManage.INCORRECT_SUB_COMMAND_MESSAGE;
+import static org.apache.ignite.internal.commandline.cache.CacheMetricsManage.INVALID_CACHES_LIST_MESSAGE;
+import static org.apache.ignite.internal.commandline.cache.CacheMetricsManage.STATUS_TABLE_HEADER;
 import static org.apache.ignite.internal.commandline.cache.CacheMetricsManage.SUCCESS_MESSAGE;
 import static org.apache.ignite.internal.util.lang.GridFunc.t;
 
@@ -240,25 +244,34 @@ public class CacheMetricsManageCommandTest extends GridCommandHandlerAbstractTes
     /**
      *
      */
-    // TODO: Syntax was changed, should be modified.
     @Test
     public void testInvalidArguments() {
-        checkInvalidArguments("Check arguments. Expected correct sub-command.");
+        // Check without sub-command
+        checkInvalidArguments("Check arguments. " + INCORRECT_SUB_COMMAND_MESSAGE);
 
-        checkInvalidArguments("Check arguments. Expected correct sub-command.", "bad-command");
+        // Check with unknown sub-command
+        checkInvalidArguments("Check arguments. " + INCORRECT_SUB_COMMAND_MESSAGE, "bad-command");
 
-        String cacheArgErrorMsg = "cache names list or '" + ALL_CACHES_OPTION + "' argument.";
+        // Check without --caches option.
+        checkInvalidArguments(INCORRECT_CACHE_ARGUMENT_MESSAGE, ENABLE_COMMAND);
+        checkInvalidArguments(INCORRECT_CACHE_ARGUMENT_MESSAGE, DISABLE_COMMAND);
+        checkInvalidArguments(INCORRECT_CACHE_ARGUMENT_MESSAGE, STATUS_COMMAND);
 
-        checkInvalidArguments(cacheArgErrorMsg, ENABLE_COMMAND);
+        // Check with --caches option but without list of caches
+        checkInvalidArguments(INVALID_CACHES_LIST_MESSAGE, ENABLE_COMMAND, CACHES_OPTION);
+        checkInvalidArguments(INVALID_CACHES_LIST_MESSAGE, DISABLE_COMMAND, CACHES_OPTION);
+        checkInvalidArguments(INVALID_CACHES_LIST_MESSAGE, STATUS_COMMAND, CACHES_OPTION);
 
-        checkInvalidArguments(cacheArgErrorMsg, DISABLE_COMMAND);
+        // Check with incorrect option after sub-command
+        checkInvalidArguments(INCORRECT_CACHE_ARGUMENT_MESSAGE, ENABLE_COMMAND, "--all");
+        checkInvalidArguments(INCORRECT_CACHE_ARGUMENT_MESSAGE, DISABLE_COMMAND, "--all");
+        checkInvalidArguments(INCORRECT_CACHE_ARGUMENT_MESSAGE, STATUS_COMMAND, "--all");
 
-        checkInvalidArguments(cacheArgErrorMsg, STATUS_COMMAND);
-
-        checkInvalidArguments(cacheArgErrorMsg, STATUS_COMMAND, "--all");
-
+        // Check extra argument passed
         checkInvalidArguments("Check arguments. Unexpected argument of --cache subcommand: " + CACHE_TWO,
-            ENABLE_COMMAND, CACHE_ONE, CACHE_TWO);
+            ENABLE_COMMAND, CACHES_OPTION, CACHE_ONE, CACHE_TWO);
+        checkInvalidArguments("Check arguments. Unexpected argument of --cache subcommand: " + CACHE_ONE,
+            STATUS_COMMAND, ALL_CACHES_OPTION, CACHE_ONE, CACHE_TWO);
     }
 
     /**
@@ -335,13 +348,11 @@ public class CacheMetricsManageCommandTest extends GridCommandHandlerAbstractTes
      * @param expectedMetricsModes Expected metrics modes.
      */
     private String successStatus(IgniteBiTuple<String, String>... expectedMetricsModes) {
-        String tableHdr = "[Cache Name -> Metrics status]:";
-
         String tableRows = Arrays.stream(expectedMetricsModes)
             .map(t -> t.get1() + " -> " + t.get2())
             .collect(Collectors.joining(U.nl()));
 
-        return tableHdr + U.nl() + tableRows;
+        return STATUS_TABLE_HEADER + U.nl() + tableRows;
     }
 
     /**
@@ -354,7 +365,7 @@ public class CacheMetricsManageCommandTest extends GridCommandHandlerAbstractTes
     }
 
     /**
-     * Forms expected output for <tt>--enable / --disable</tt> commands when caches do not exist.
+     * Forms expected output for enable and disable commands when caches do not exist.
      *
      * @param cacheNames Cache names.
      */

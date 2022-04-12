@@ -65,6 +65,9 @@ public class CacheMetricsManage extends AbstractCommand<VisorCacheMetricsManageT
     /** Success message. */
     public static final String SUCCESS_MESSAGE = "Command performed successfully.";
 
+    /** Status table header. */
+    public static final String STATUS_TABLE_HEADER = "[Cache Name -> Metrics status]:";
+
     /** Task argument. */
     private VisorCacheMetricsManageTaskArg arg;
 
@@ -102,7 +105,7 @@ public class CacheMetricsManage extends AbstractCommand<VisorCacheMetricsManageT
                 if (statusTaskResult.isEmpty())
                     resultMsg = NO_CACHES_AFFECTED_MESSAGE;
                 else {
-                    resultMsg = "[Cache Name -> Metrics status]:" + U.nl();
+                    resultMsg = STATUS_TABLE_HEADER + U.nl();
 
                     Collection<String> rowsCollection = F.transform(statusTaskResult.entrySet(),
                         e -> e.getKey() + " -> " + (e.getValue() ? "enabled" : "disabled"));
