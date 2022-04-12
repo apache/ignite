@@ -113,7 +113,7 @@ JDBC/ODBC:
 * Fixed wrong value of SQLGetStmtAttr(SQL_ATTR_ROW_ARRAY_SIZE) for row array size.
 
 .Net:
-* Add GetServiceDescriptors to Thin Client Services.
+* Added GetServiceDescriptors to Thin Client Services.
 * Added ThinClientConfiguration.SendServerExceptionStackTraceToClient.
 * Added services metrics.
 * Fixed platform service with node filter cancellation on joining pure java node.
