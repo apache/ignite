@@ -26,6 +26,7 @@ on:
 
 jobs:
   deploy:
+    if: github.repository == 'apache/ignite'
     name: "Deploy Apache Ignite"
     runs-on: ubuntu-latest
     steps:
