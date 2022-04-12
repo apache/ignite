@@ -42,7 +42,7 @@ namespace ignite
         {
             DataRouter::DataRouter(const ignite::thin::IgniteClientConfiguration& cfg) :
                 config(cfg),
-                userThreadPool(0)
+                userThreadPool(cfg.GetUserThreadPoolSize())
             {
                 srand(common::GetRandSeed());
 
