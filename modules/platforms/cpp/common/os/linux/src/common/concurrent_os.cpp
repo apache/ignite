@@ -18,6 +18,8 @@
 #include <sys/sysinfo.h>
 #include <sys/types.h>
 #include <dirent.h>
+#include <unistd.h>
+
 #include <stdlib.h>
 #include <stdio.h>
 
