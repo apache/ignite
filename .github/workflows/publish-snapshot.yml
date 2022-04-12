@@ -44,7 +44,7 @@ jobs:
           sudo apt-get update -y
           sudo apt-get install -y libnuma-dev
       - name: Deploy
-        run: ./mvnw deploy -Pall-java,lgpl,checkstyle,examples,all-scala,scala -DskipTests -B -V
+        run: ./mvnw deploy -Pall-java,checkstyle,examples -DskipTests -Dmaven.javadoc.skip=true -B -V
         env:
           NEXUS_USER: ${{ secrets.NEXUS_USER }}
           NEXUS_PW: ${{ secrets.NEXUS_PW }}
