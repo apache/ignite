@@ -56,6 +56,9 @@ public class IgniteTypeFactory extends JavaTypeFactoryImpl {
         TimeUnit.SECOND, SqlParserPos.ZERO);
 
     /** */
+    private final RelDataType unknownType;;
+
+    /** */
     private final Charset charset;
 
     /** */
@@ -77,6 +80,8 @@ public class IgniteTypeFactory extends JavaTypeFactoryImpl {
             // If JVM default charset is not supported by Calcite - use UTF-8.
             charset = StandardCharsets.UTF_8;
         }
+
+        unknownType = createUnknownType();
     }
 
     /** {@inheritDoc} */
@@ -294,6 +299,11 @@ public class IgniteTypeFactory extends JavaTypeFactoryImpl {
 
     /** {@inheritDoc} */
     @Override public RelDataType createTypeWithNullability(RelDataType type, boolean nullable) {
+        // TODO workaround for https://issues.apache.org/jira/browse/CALCITE-4872
+        // Remove this after update to Calcite 1.30.
+        if (unknownType.equals(type))
+            return type;
+
         if (type instanceof IgniteCustomType && type.isNullable() != nullable)
             return createCustomType(((IgniteCustomType)type).storageType(), nullable);
 
