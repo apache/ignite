@@ -5165,14 +5165,14 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         CacheObject fixedObj = fixedRes != null ? fixedRes.value() : null;
         CacheObject primValObj = primRes != null ? primRes.value() : null;
 
-        V fixedVal = fixedObj != null ? (V)ctx.unwrapBinaryIfNeeded(fixedObj, opCtx.isKeepBinary(), false, null) : null;
-        V primVal = primValObj != null ? (V)ctx.unwrapBinaryIfNeeded(primValObj, opCtx.isKeepBinary(), false, null) : null;
+        V fixedVal = fixedObj != null ? (V)ctx.unwrapBinaryIfNeeded(fixedObj, true, false, null) : null;
+        V primVal = primValObj != null ? (V)ctx.unwrapBinaryIfNeeded(primValObj, true, false, null) : null;
 
         return ctx.kernalContext().closure().callLocalSafe(new GridPlainCallable<Boolean>() {
             @Override public Boolean call() throws IgniteCheckedException {
                 CacheOperationContext prevOpCtx = ctx.operationContextPerCall();
 
-                ctx.operationContextPerCall(opCtx);
+                ctx.operationContextPerCall(opCtx.keepBinary());
 
                 try {
                     return invoke((K)key, new AtomicReadRepairEntryProcessor<>(fixedVal, primVal)).get();

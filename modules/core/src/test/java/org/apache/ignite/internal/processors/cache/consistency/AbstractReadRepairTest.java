@@ -24,7 +24,6 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.TreeMap;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.ThreadLocalRandom;
@@ -32,7 +31,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteBinary;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteEvents;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.CacheAtomicityMode;
@@ -50,6 +51,7 @@ import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.CacheObjectImpl;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
@@ -58,12 +60,13 @@ import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.distributed.near.consistency.IgniteIrreparableConsistencyViolationException;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionManager;
+import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
 import org.apache.ignite.internal.processors.dr.GridDrType;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
-import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
@@ -82,6 +85,15 @@ public abstract class AbstractReadRepairTest extends GridCommonAbstractTest {
 
     /** Key. */
     private static final AtomicInteger iterableKey = new AtomicInteger();
+
+    /** External class loader. */
+    private static final ClassLoader extClsLdr = getExternalClassLoader();
+
+    /** Use external class loader. */
+    private static volatile boolean useExtClsLdr;
+
+    /** Nodes aware of the entry value class. */
+    protected static volatile List<Ignite> clsAwareNodes;
 
     /** Backups count. */
     protected Integer backupsCount() {
@@ -115,10 +127,22 @@ public abstract class AbstractReadRepairTest extends GridCommonAbstractTest {
         if (persistenceEnabled())
             cleanPersistenceDir();
 
-        Ignite ignite = startGrids(serverNodesCount()); // Server nodes.
+        Ignite ignite = startGrids(serverNodesCount() / 2); // Server nodes.
 
-        startClientGrid(G.allGrids().size() + 1); // Client node 1.
-        startClientGrid(G.allGrids().size() + 1); // Client node 2.
+        useExtClsLdr = true;
+
+        List<Ignite> extClsLdrNodes = new ArrayList<>();
+
+        while (G.allGrids().size() < serverNodesCount())
+            extClsLdrNodes.add(startGrid(G.allGrids().size())); // Server nodes.
+
+        extClsLdrNodes.add(startClientGrid(G.allGrids().size())); // Client node 1.
+
+        clsAwareNodes = extClsLdrNodes;
+
+        useExtClsLdr = false;
+
+        startClientGrid(G.allGrids().size()); // Client node 2.
 
         final IgniteEvents evts = ignite.events();
 
@@ -180,6 +204,9 @@ public abstract class AbstractReadRepairTest extends GridCommonAbstractTest {
             cfg.getDataStorageConfiguration().getDefaultDataRegionConfiguration().setPersistenceEnabled(true);
         }
 
+        if (useExtClsLdr)
+            cfg.setClassLoader(extClsLdr);
+
         return cfg;
     }
 
@@ -215,12 +242,10 @@ public abstract class AbstractReadRepairTest extends GridCommonAbstractTest {
             }
         }
 
-        boolean binary = data.binary;
-
         for (Map.Entry<Integer, InconsistentMapping> mapping : inconsistent.entrySet()) {
             Integer key = mapping.getKey();
-            Object fixed = mapping.getValue().fixed;
-            Object primary = mapping.getValue().primary;
+            Object fixed = mapping.getValue().fixedBin;
+            Object primary = mapping.getValue().primaryBin;
             boolean repairable = mapping.getValue().repairable;
 
             if (!repairable)
@@ -230,7 +255,7 @@ public abstract class AbstractReadRepairTest extends GridCommonAbstractTest {
                 assertTrue(repairable);
                 assertTrue(evtFixed.containsKey(key));
 
-                assertEquals(fixed, unwrapBinaryIfNeeded(binary, evtFixed.get(key)));
+                assertEquals(fixed, evtFixed.get(key));
             }
             // Repairable but not repaired (because of irreparable entry at the same tx) entries.
             else if (e.irreparableKeys().contains(key) || (e.repairableKeys() != null && e.repairableKeys().contains(key)))
@@ -243,7 +268,7 @@ public abstract class AbstractReadRepairTest extends GridCommonAbstractTest {
                     ClusterNode node = evtEntryInfo.getKey();
                     CacheConsistencyViolationEvent.EntryInfo info = evtEntryInfo.getValue();
 
-                    Object val = unwrapBinaryIfNeeded(binary, info.getValue());
+                    Object val = info.getValue();
 
                     if (info.isCorrect())
                         assertEquals(fixed, val);
@@ -312,20 +337,20 @@ public abstract class AbstractReadRepairTest extends GridCommonAbstractTest {
 
                 for (Ignite node : G.allGrids()) { // Check that cache filled properly.
                     Map<Integer, Object> all =
-                        node.<Integer, Object>getOrCreateCache(DEFAULT_CACHE_NAME).getAll(results.keySet());
+                        node.getOrCreateCache(DEFAULT_CACHE_NAME).<Integer, Object>withKeepBinary().getAll(results.keySet());
 
                     for (Map.Entry<Integer, Object> entry : all.entrySet()) {
                         Integer key = entry.getKey();
                         Object val = entry.getValue();
 
-                        T2<Object, GridCacheVersion> valVer = results.get(key).mapping.get(node);
+                        T2<Object, GridCacheVersion> valVer = results.get(key).mappingBin.get(node);
 
                         Object exp;
 
                         if (valVer != null)
                             exp = valVer.get1(); // Should read from itself (backup or primary).
                         else
-                            exp = results.get(key).primary; // Or read from primary (when not a partition owner).
+                            exp = results.get(key).primaryBin; // Or read from primary (when not a partition owner).
 
                         assertEquals(exp, val);
                     }
@@ -446,7 +471,7 @@ public abstract class AbstractReadRepairTest extends GridCommonAbstractTest {
 
             GridKernalContext kctx = ((IgniteEx)node).context();
 
-            byte[] bytes = kctx.cacheObjects().marshal(entry.context().cacheObjectContext(), rmv ? -1 : val); // Incremental value.
+            byte[] bytes = marshalValue(entry.context().cacheObjectContext(), rmv ? -1 : val); // Incremental value.
 
             try {
                 kctx.cache().context().database().checkpointReadLock();
@@ -638,11 +663,30 @@ public abstract class AbstractReadRepairTest extends GridCommonAbstractTest {
      * @param wrap Wrap.
      * @param val  Value.
      */
-    private Object wrapTestValueIfNeeded(boolean wrap, Integer val) {
-        if (wrap)
-            return new ReadRepairTestValue(val);
+    private Object wrapTestValueIfNeeded(boolean wrap, Integer val) throws ReflectiveOperationException {
+        if (wrap) {
+            // Some nodes will be unable to deserialize this object.
+            // Checking that Read Repair feature cause no `class not found` problems.
+            Class<?> clazz = extClsLdr.loadClass("org.apache.ignite.tests.p2p.cache.PersonKey");
+
+            Object obj = clazz.newInstance();
+
+            GridTestUtils.setFieldValue(obj, "id", val);
+
+            return obj;
+        }
         else
             return val;
+    }
+
+    /**
+     * @param ctx Context.
+     * @param val Value.
+     */
+    byte[] marshalValue(CacheObjectContext ctx, Object val) throws IgniteCheckedException {
+        IgniteCacheObjectProcessor clsAwareProc = ((IgniteEx)clsAwareNodes.get(0)).context().cacheObjects();
+
+        return clsAwareProc.marshal(ctx, val);
     }
 
     /**
@@ -700,11 +744,20 @@ public abstract class AbstractReadRepairTest extends GridCommonAbstractTest {
         /** Value per node. */
         final Map<Ignite, T2<Object, GridCacheVersion>> mapping;
 
+        /** Value per node, binary. */
+        final Map<Ignite, T2<Object, GridCacheVersion>> mappingBin;
+
         /** Primary node's value. */
         final Object primary;
 
+        /** Primary node's value, binary. */
+        final Object primaryBin;
+
         /** Expected fix result. */
         final Object fixed;
+
+        /** Expected fix result, binary. */
+        final Object fixedBin;
 
         /** Inconsistency can be repaired using the specified strategy. */
         final boolean repairable;
@@ -726,44 +779,20 @@ public abstract class AbstractReadRepairTest extends GridCommonAbstractTest {
             this.fixed = fixed;
             this.repairable = repairable;
             this.consistent = consistent;
-        }
-    }
 
-    /**
-     *
-     */
-    protected static final class ReadRepairTestValue {
-        /** Value. */
-        final Integer val;
+            IgniteBinary igniteBinary = clsAwareNodes.get(0).binary();
 
-        /**
-         * @param val Value.
-         */
-        public ReadRepairTestValue(Integer val) {
-            this.val = val;
-        }
+            primaryBin = igniteBinary.toBinary(primary);
+            fixedBin = igniteBinary.toBinary(fixed);
 
-        /** {@inheritDoc} */
-        @Override public boolean equals(Object o) {
-            if (this == o)
-                return true;
+            mappingBin = mapping.entrySet().stream().collect(
+                Collectors.toMap(
+                    Map.Entry::getKey,
+                    (entry) -> {
+                        T2<Object, GridCacheVersion> t2 = entry.getValue();
 
-            if (o == null || getClass() != o.getClass())
-                return false;
-
-            ReadRepairTestValue val = (ReadRepairTestValue)o;
-
-            return this.val.equals(val.val);
-        }
-
-        /** {@inheritDoc} */
-        @Override public int hashCode() {
-            return Objects.hash(val);
-        }
-
-        /** {@inheritDoc} */
-        @Override public String toString() {
-            return S.toString(ReadRepairTestValue.class, this);
+                        return new T2<>(igniteBinary.toBinary(t2.getKey()), t2.getValue());
+                    }));
         }
     }
 }

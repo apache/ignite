@@ -31,7 +31,6 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheEntry;
 import org.apache.ignite.cache.ReadRepairStrategy;
 import org.apache.ignite.internal.processors.cache.distributed.near.consistency.IgniteIrreparableConsistencyViolationException;
-import org.apache.ignite.internal.util.typedef.G;
 import org.junit.Test;
 
 /**
@@ -343,7 +342,9 @@ public abstract class AbstractFullSetReadRepairTest extends AbstractReadRepairTe
      */
     @Test
     public void test() throws Exception {
-        for (Ignite initiator : G.allGrids()) {
+        assertTrue(!clsAwareNodes.isEmpty());
+
+        for (Ignite initiator : clsAwareNodes) {
             test(initiator, 1, false); // just get
             test(initiator, 1, true); // 1 (all keys available at primary)
             test(initiator, 2, true); // less than backups

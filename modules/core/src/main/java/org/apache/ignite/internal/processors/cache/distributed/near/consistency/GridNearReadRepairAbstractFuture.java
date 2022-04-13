@@ -552,7 +552,7 @@ public abstract class GridNearReadRepairAbstractFuture extends GridFutureAdapter
             for (KeyCacheObject key : fut.keys()) {
                 if (inconsistentKeys.contains(key)) {
                     sensitiveKeyMap.computeIfAbsent(key, k -> includeSensitive
-                        ? ctx.unwrapBinaryIfNeeded(k, !deserializeBinary, false, null)
+                        ? ctx.unwrapBinaryIfNeeded(k, true, false, null)
                         : "[HIDDEN_KEY#" + UUID.randomUUID() + "]");
 
                     CacheConsistencyViolationEvent.EntriesInfo entriesInfo =
@@ -610,7 +610,7 @@ public abstract class GridNearReadRepairAbstractFuture extends GridFutureAdapter
 
                 return sensitiveValMap.computeIfAbsent(wrapped, w ->
                     includeSensitive ?
-                        ctx.unwrapBinaryIfNeeded(val, !deserializeBinary, false, null) :
+                        ctx.unwrapBinaryIfNeeded(val, true, false, null) :
                         "[HIDDEN_VALUE#" + UUID.randomUUID() + "]");
             }
             catch (IgniteCheckedException e) {
