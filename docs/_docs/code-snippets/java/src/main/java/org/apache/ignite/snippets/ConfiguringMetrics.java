@@ -24,7 +24,6 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi;
 import org.apache.ignite.spi.metric.log.LogExporterSpi;
-import org.apache.ignite.spi.metric.sql.SqlViewMetricExporterSpi;
 import org.junit.jupiter.api.Test;
 
 public class ConfiguringMetrics {
@@ -106,7 +105,7 @@ public class ConfiguringMetrics {
         //tag::new-metric-framework[]
         IgniteConfiguration cfg = new IgniteConfiguration();
 
-        cfg.setMetricExporterSpi(new JmxMetricExporterSpi(), new SqlViewMetricExporterSpi());
+        cfg.setMetricExporterSpi(new JmxMetricExporterSpi());
 
         Ignite ignite = Ignition.start(cfg);
         //end::new-metric-framework[]
@@ -114,23 +113,6 @@ public class ConfiguringMetrics {
         ignite.close();
     }
     
-    @Test
-    void sqlExporter() {
-
-        //tag::sql-exporter[]
-        IgniteConfiguration cfg = new IgniteConfiguration();
-
-        SqlViewMetricExporterSpi jmxExporter = new SqlViewMetricExporterSpi();
-
-        //export cache metrics only
-        jmxExporter.setExportFilter(mreg -> mreg.name().startsWith("cache."));
-
-        cfg.setMetricExporterSpi(jmxExporter);
-        //end::sql-exporter[]
-
-        Ignition.start(cfg).close();
-    }
-
     @Test
     void jmxExporter() {
 
