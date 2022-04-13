@@ -43,6 +43,7 @@ import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
+import org.apache.ignite.internal.sql.SqlKeyword;
 import org.apache.ignite.internal.util.typedef.F;
 import org.h2.command.Command;
 import org.h2.command.CommandContainer;
@@ -1225,6 +1226,10 @@ public class GridSqlQueryParser {
 
         res.columns(cols);
         res.primaryKeyColumns(pkCols);
+
+        if (SqlKeyword.isKeyword(data.tableName))
+            throw new IgniteSQLException("Table name: " + data.tableName + " is keyword");
+
         res.tableName(data.tableName);
         res.ifNotExists(CREATE_TABLE_IF_NOT_EXISTS.get(createTbl));
 
