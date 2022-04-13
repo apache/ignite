@@ -27,6 +27,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -65,6 +66,7 @@ import org.apache.ignite.internal.processors.query.h2.H2TableDescriptor;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.processors.query.schema.SchemaOperationException;
+import org.apache.ignite.internal.sql.SqlKeyword;
 import org.apache.ignite.internal.util.GridStringBuilder;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
@@ -617,6 +619,47 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
         execute("CREATE TABLE QP_OVERWRITE_TEMPLATE (id INT PRIMARY KEY, val INT) " +
             "WITH \"parallelism = 42, template = " + CACHE_NAME_PARALLELISM_7 + " \"");
         assertQueryParallelism("QP_OVERWRITE_TEMPLATE", 42);
+    }
+
+    /**
+     * Test keywords in table name.
+     * Try to create table with all keywords.
+     */
+    @Test
+    public void testCreateTableWithKeywordName() throws Exception {
+        //full set of keywords
+        HashSet<String> allKeywords = U.staticField(SqlKeyword.class, "KEYWORDS");
+
+        //keywords that are processed before checking the table name
+        List<String> excludedKeywords = Arrays.asList("IF", "FROM", "NOT", "UNIQUE", "ON", "EXISTS", "PRIMARY", "WITH");
+
+        //keywords to be checked
+        HashSet<String> resultKeywords = new HashSet<>(allKeywords);
+        resultKeywords.removeAll(excludedKeywords);
+
+        //check table is not created with the name of the set (resultKeywords) of keywords for which the check is written
+        for (String entry : resultKeywords
+        ) {
+            GridTestUtils.assertThrows(log, new Callable<Object>() {
+                @Override public Object call() throws Exception {
+                    execute("CREATE TABLE " + entry + " (ID INT, CODE INT, PRIMARY KEY (ID));");
+
+                    return null;
+                }
+            }, IgniteSQLException.class, "Table name: " + entry + " is keyword");
+        }
+
+        //check table is not created with the name of the set excludedKeywords
+        for (String entry : excludedKeywords
+        ) {
+            GridTestUtils.assertThrows(log, new Callable<Object>() {
+                @Override public Object call() throws Exception {
+                    execute("CREATE TABLE " + entry + " (ID INT, CODE INT, PRIMARY KEY (ID));");
+
+                    return null;
+                }
+            }, IgniteSQLException.class, null);
+        }
     }
 
     /**
