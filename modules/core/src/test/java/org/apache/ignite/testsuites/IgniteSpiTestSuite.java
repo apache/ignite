@@ -17,10 +17,6 @@
 
 package org.apache.ignite.testsuites;
 
-import org.apache.ignite.internal.managers.GridManagerLocalMessageListenerSelfTest;
-import org.apache.ignite.internal.managers.GridNoopManagerSelfTest;
-import org.apache.ignite.spi.encryption.KeystoreEncryptionSpiSelfTest;
-import org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpiTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
@@ -29,36 +25,8 @@ import org.junit.runners.Suite;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-    // Failover.
-    IgniteSpiFailoverSelfTestSuite.class,
-
-    // Collision.
-    IgniteSpiCollisionSelfTestSuite.class,
-
-    // Event storage.
-    IgniteSpiEventStorageSelfTestSuite.class,
-
-    // Load Balancing.
-    IgniteSpiLoadBalancingSelfTestSuite.class,
-
-    // Checkpoints.
-    IgniteSpiCheckpointSelfTestSuite.class,
-
-    // Deployment
-    IgniteSpiDeploymentSelfTestSuite.class,
-
     // Communication.
-    IgniteSpiCommunicationSelfTestSuite.class,
-
-    // All other tests.
-    GridNoopManagerSelfTest.class,
-
-    // Local Message Listener tests.
-    GridManagerLocalMessageListenerSelfTest.class,
-
-    KeystoreEncryptionSpiSelfTest.class,
-
-    JmxMetricExporterSpiTest.class
+    IgniteSpiCommunicationSelfTestSuite.class
 })
 public class IgniteSpiTestSuite {
 }
