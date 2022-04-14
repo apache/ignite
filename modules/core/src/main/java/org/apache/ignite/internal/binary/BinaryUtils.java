@@ -2605,10 +2605,10 @@ public class BinaryUtils {
 
     /**
      * @param f File.
-     * @return {@code True} if file is temporary.
+     * @return {@code True} if file is regular(not temporary).
      */
-    public static boolean isTmpFile(File f) {
-        return f.getName().endsWith(TMP_SUFFIX);
+    public static boolean notTmpFile(File f) {
+        return !f.getName().endsWith(TMP_SUFFIX);
     }
 
     /**

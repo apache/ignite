@@ -598,7 +598,7 @@ public class CdcMain implements Runnable {
     /** Search for new or changed {@link TypeMapping} and notifies the consumer. */
     private void updateMappings() {
         try {
-            File[] files = marshaller.listFiles(f -> !BinaryUtils.isTmpFile(f));
+            File[] files = marshaller.listFiles(BinaryUtils::notTmpFile);
 
             if (files == null)
                 return;

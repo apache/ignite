@@ -142,7 +142,7 @@ final class MarshallerMappingFileStore {
      * @param marshCtx Marshaller context to register mappings.
      */
     void restoreMappings(MarshallerContext marshCtx) throws IgniteCheckedException {
-        File[] files = mappingDir.listFiles(f -> !BinaryUtils.isTmpFile(f));
+        File[] files = mappingDir.listFiles(BinaryUtils::notTmpFile);
 
         if (files == null)
             return;
