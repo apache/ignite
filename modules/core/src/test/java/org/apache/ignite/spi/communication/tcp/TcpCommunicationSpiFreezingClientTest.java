@@ -39,16 +39,14 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_ENABLE_FORCIBLE_NODE_KILL;
-import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /**
  * Tests that freezing due to JVM STW client will be failed if connection can't be established.
  */
 @WithSystemProperty(key = IGNITE_ENABLE_FORCIBLE_NODE_KILL, value = "true")
-@SuppressWarnings("ThrowableNotThrown")
 public class TcpCommunicationSpiFreezingClientTest extends GridCommonAbstractTest {
-    /** */
+    /** Message to catch GC start on a client. */
     private static final String GC_START_MSG = "Try to start GC.";
 
     /** Last GC start time. */
@@ -101,14 +99,21 @@ public class TcpCommunicationSpiFreezingClientTest extends GridCommonAbstractTes
             triggerSTW();
         });
 
-        // Make sure connections closed on the server.
-        waitConnectionsClosed(srv);
+        while (!Thread.interrupted()) {
+            // Make sure connections closed on the server.
+            waitConnectionsClosed(srv);
 
-        // Make sure that the client is freezed by STW.
-        assertTrue(waitForCondition(() -> System.currentTimeMillis() - lastGC.get() > 1000, getTestTimeout()));
+            // Make sure that the client is freezed by STW.
+            assertTrue(waitForCondition(() -> System.currentTimeMillis() - lastGC.get() > 1000, getTestTimeout()));
 
-        // Open new connection to the freezed client.
-        assertThrowsWithCause(() -> compute.run(() -> {}), ClusterTopologyException.class);
+            // Open new connection to the freezed client. Retry if client has completed GC and was not freezed.
+            try {
+                compute.run(() -> {});
+            }
+            catch (ClusterTopologyException ignored) {
+                break;
+            }
+        }
 
         assertEquals(1, srv.cluster().nodes().size());
     }
