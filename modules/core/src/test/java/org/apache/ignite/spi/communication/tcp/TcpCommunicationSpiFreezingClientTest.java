@@ -40,7 +40,7 @@ import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCaus
 /**
  * Tests that freezing due to JVM STW client will be failed if connection can't be established.
  */
-@WithSystemProperty(key=IGNITE_ENABLE_FORCIBLE_NODE_KILL, value = "true")
+@WithSystemProperty(key = IGNITE_ENABLE_FORCIBLE_NODE_KILL, value = "true")
 @SuppressWarnings("ThrowableNotThrown")
 public class TcpCommunicationSpiFreezingClientTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
