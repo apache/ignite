@@ -37,6 +37,7 @@ import org.apache.ignite.marshaller.MarshallerContext;
 import static java.nio.file.StandardCopyOption.ATOMIC_MOVE;
 import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 import static org.apache.ignite.internal.binary.BinaryUtils.MAPPING_FILE_EXTENSION;
+import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.TMP_SUFFIX;
 
 /**
  * File-based persistence provider for {@link MarshallerContextImpl}.
@@ -83,7 +84,7 @@ final class MarshallerMappingFileStore {
     public void writeMapping(byte platformId, int typeId, String typeName) {
         String fileName = BinaryUtils.mappingFileName(platformId, typeId);
 
-        File tmpFile = new File(mappingDir, fileName + ThreadLocalRandom.current().nextInt() + ".tmp");
+        File tmpFile = new File(mappingDir, fileName + ThreadLocalRandom.current().nextInt() + TMP_SUFFIX);
         File file = new File(mappingDir, fileName);
 
         Lock lock = fileLock(fileName);
@@ -141,7 +142,7 @@ final class MarshallerMappingFileStore {
      * @param marshCtx Marshaller context to register mappings.
      */
     void restoreMappings(MarshallerContext marshCtx) throws IgniteCheckedException {
-        File[] files = mappingDir.listFiles(BinaryUtils::isMappingFile);
+        File[] files = mappingDir.listFiles(f -> !BinaryUtils.isTmpFile(f));
 
         if (files == null)
             return;
@@ -201,7 +202,7 @@ final class MarshallerMappingFileStore {
             "marshaller"
         );
 
-        File legacyTmpDir = new File(legacyDir + ".tmp");
+        File legacyTmpDir = new File(legacyDir + TMP_SUFFIX);
 
         if (legacyTmpDir.exists() && !IgniteUtils.delete(legacyTmpDir))
             throw new IgniteCheckedException("Failed to delete legacy marshaller mappings dir: "

@@ -83,6 +83,7 @@ import org.jetbrains.annotations.Nullable;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_BINARY_MARSHALLER_USE_STRING_SERIALIZATION_VER_2;
+import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.TMP_SUFFIX;
 
 /**
  * Binary utils.
@@ -2604,13 +2605,10 @@ public class BinaryUtils {
 
     /**
      * @param f File.
-     * @return {@code True} if file is marshaller mapping.
+     * @return {@code True} if file is temporary.
      */
-    public static boolean isMappingFile(File f) {
-        String fileName = f.getName();
-
-        return fileName.indexOf(MAPPING_FILE_EXTENSION) ==
-            (fileName.length() - 1 /* platform id */ - MAPPING_FILE_EXTENSION.length());
+    public static boolean isTmpFile(File f) {
+        return f.getName().endsWith(TMP_SUFFIX);
     }
 
     /**
@@ -2620,7 +2618,7 @@ public class BinaryUtils {
      * @see #METADATA_FILE_SUFFIX
      */
     public static int typeId(String fileName) {
-        return Integer.parseInt(fileName.replace(METADATA_FILE_SUFFIX, ""));
+        return Integer.parseInt(fileName.substring(0, fileName.length() - METADATA_FILE_SUFFIX.length()));
     }
 
     /**

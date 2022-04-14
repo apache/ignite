@@ -46,6 +46,8 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.thread.IgniteThread;
 
+import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.TMP_SUFFIX;
+
 /**
  * Class handles saving/restoring binary metadata to/from disk.
  *
@@ -338,7 +340,7 @@ class BinaryMetadataFileStore {
             "binary_meta"
         ), consistendId);
 
-        File legacyTmpDir = new File(legacyDir.toString() + ".tmp");
+        File legacyTmpDir = new File(legacyDir.toString() + TMP_SUFFIX);
 
         if (legacyTmpDir.exists() && !IgniteUtils.delete(legacyTmpDir))
             throw new IgniteCheckedException("Failed to delete legacy binary metadata dir: "
