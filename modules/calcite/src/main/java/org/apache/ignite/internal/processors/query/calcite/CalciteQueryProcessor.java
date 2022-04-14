@@ -430,7 +430,7 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
         try {
             return executionSvc.executePlan(qry, plan.apply(qry));
         }
-        catch (Exception e) {
+        catch (Throwable e) {
             boolean isCanceled = qry.isCancelled();
 
             if (qrys != null)
