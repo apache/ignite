@@ -149,7 +149,7 @@ public class TcpCommunicationSpiFreezingClientTest extends GridCommonAbstractTes
         ConcurrentMap<UUID, GridCommunicationClient[]> clientsMap = U.field(pool, "clients");
 
         try {
-            waitForCondition(() -> {
+            assertTrue(waitForCondition(() -> {
                 for (GridCommunicationClient[] clients : clientsMap.values()) {
                     if (clients == null)
                         continue;
@@ -161,7 +161,7 @@ public class TcpCommunicationSpiFreezingClientTest extends GridCommonAbstractTes
                 }
 
                 return true;
-            }, getTestTimeout());
+            }, getTestTimeout()));
         }
         catch (IgniteInterruptedCheckedException e) {
             throw new RuntimeException(e);
