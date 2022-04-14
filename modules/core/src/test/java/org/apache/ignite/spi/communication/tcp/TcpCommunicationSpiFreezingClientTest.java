@@ -19,6 +19,7 @@ package org.apache.ignite.spi.communication.tcp;
 
 import java.util.UUID;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.Ignition;
@@ -31,12 +32,15 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.communication.tcp.internal.ConnectionClientPool;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.ListeningTestLogger;
+import org.apache.ignite.testframework.junits.GridAbstractTest;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_ENABLE_FORCIBLE_NODE_KILL;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
+import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /**
  * Tests that freezing due to JVM STW client will be failed if connection can't be established.
@@ -44,6 +48,12 @@ import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCaus
 @WithSystemProperty(key = IGNITE_ENABLE_FORCIBLE_NODE_KILL, value = "true")
 @SuppressWarnings("ThrowableNotThrown")
 public class TcpCommunicationSpiFreezingClientTest extends GridCommonAbstractTest {
+    /** */
+    private static final String GC_START_MSG = "Try to start GC.";
+
+    /** Last GC start time. */
+    private final AtomicLong lastGC = new AtomicLong(Long.MAX_VALUE);
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
@@ -54,11 +64,20 @@ public class TcpCommunicationSpiFreezingClientTest extends GridCommonAbstractTes
         TcpCommunicationSpi spi = new TcpCommunicationSpi();
 
         spi.setConnectTimeout(1000);
-        spi.setMaxConnectTimeout(2000);
+        spi.setMaxConnectTimeout(1000);
         spi.setIdleConnectionTimeout(100);
         spi.setSharedMemoryPort(-1);
 
         cfg.setCommunicationSpi(spi);
+
+        ListeningTestLogger log = new ListeningTestLogger(GridAbstractTest.log);
+
+        log.registerListener((s) -> {
+            if (s.contains(GC_START_MSG))
+                lastGC.set(System.currentTimeMillis());
+        });
+
+        cfg.setGridLogger(log);
 
         return cfg;
     }
@@ -86,7 +105,7 @@ public class TcpCommunicationSpiFreezingClientTest extends GridCommonAbstractTes
         waitConnectionsClosed(srv);
 
         // Make sure that the client is freezed by STW.
-        doSleep(1000);
+        assertTrue(waitForCondition(() -> System.currentTimeMillis() - lastGC.get() > 1000, getTestTimeout()));
 
         // Open new connection to the freezed client.
         assertThrowsWithCause(() -> compute.run(() -> {}), ClusterTopologyException.class);
@@ -101,8 +120,11 @@ public class TcpCommunicationSpiFreezingClientTest extends GridCommonAbstractTes
         while (!Thread.interrupted() && (System.currentTimeMillis() < end)) {
             IgniteInternalFuture<?> fut = GridTestUtils.runAsync(this::simulateLoad);
 
-            while (!fut.isDone())
+            while (!fut.isDone()) {
+                System.out.println(GC_START_MSG);
+
                 GridTestUtils.runGC();
+            }
         }
     }
 
@@ -123,7 +145,7 @@ public class TcpCommunicationSpiFreezingClientTest extends GridCommonAbstractTes
         ConcurrentMap<UUID, GridCommunicationClient[]> clientsMap = U.field(pool, "clients");
 
         try {
-            GridTestUtils.waitForCondition(() -> {
+            waitForCondition(() -> {
                 for (GridCommunicationClient[] clients : clientsMap.values()) {
                     if (clients == null)
                         continue;
