@@ -128,7 +128,7 @@ public class CdcConsumerState {
      * @param typesState State of types.
      */
     public void saveTypes(Map<Integer, Long> typesState) throws IOException {
-        save0(typesState, tmpTypes, types);
+        save(typesState, tmpTypes, types);
     }
 
     /**
@@ -208,7 +208,7 @@ public class CdcConsumerState {
      * @return Saved state.
      */
     public Map<Integer, Long> loadTypes() {
-        Map<Integer, Long> state = load0(types);
+        Map<Integer, Long> state = load(types);
 
         log.info("Initial types state loaded [typesCnt=" + state.size() + ']');
 
@@ -250,7 +250,7 @@ public class CdcConsumerState {
     }
 
     /** Saves state to file. */
-    private void save0(Map<Integer, Long> state, Path tmpFile, Path file) throws IOException {
+    private void save(Map<Integer, Long> state, Path tmpFile, Path file) throws IOException {
         save(() -> {
             ByteBuffer buf = ByteBuffer.allocate(INT_SZ + (LONG_SZ + INT_SZ) * state.size());
 
@@ -268,7 +268,7 @@ public class CdcConsumerState {
     }
 
     /** Loads state from file. */
-    private Map<Integer, Long> load0(Path file) {
+    private Map<Integer, Long> load(Path file) {
         Map<Integer, Long> state = load(file, ch -> {
             ByteBuffer buf = ByteBuffer.allocate(INT_SZ);
 
