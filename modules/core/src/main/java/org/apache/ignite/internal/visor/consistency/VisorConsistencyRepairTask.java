@@ -226,6 +226,9 @@ public class VisorConsistencyRepairTask extends AbstractConsistencyTask<VisorCon
                         .append(" (cache: ").append(evt.getCacheName())
                         .append(", partition: ").append(entry.getValue().partition())
                         .append(", strategy: ").append(evt.getStrategy())
+                        .append(", id: ").append(evt.id())
+                        .append(", timestamp: ").append(evt.timestamp())
+                        .append(", node: ").append(evt.node())
                         .append(")").append("\n");
 
                     if (evt.getFixedEntries().containsKey(key))
