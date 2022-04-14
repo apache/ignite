@@ -17,8 +17,8 @@
 
 package org.apache.ignite.spi.communication.tcp;
 
+import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCompute;
@@ -29,7 +29,6 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.util.nio.GridCommunicationClient;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.spi.communication.tcp.internal.ConnectionClientPool;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.junits.GridAbstractTest;
@@ -145,8 +144,7 @@ public class TcpCommunicationSpiFreezingClientTest extends GridCommonAbstractTes
     /** Waits for all communication connections closed by idle. */
     private void waitConnectionsClosed(Ignite node) {
         TcpCommunicationSpi spi = (TcpCommunicationSpi)node.configuration().getCommunicationSpi();
-        ConnectionClientPool pool = U.field(spi, "clientPool");
-        ConcurrentMap<UUID, GridCommunicationClient[]> clientsMap = U.field(pool, "clients");
+        Map<UUID, GridCommunicationClient[]> clientsMap = GridTestUtils.getFieldValue(spi, "clientPool", "clients");
 
         try {
             assertTrue(waitForCondition(() -> {
