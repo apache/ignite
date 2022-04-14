@@ -69,7 +69,7 @@ public class ComputeInlineSizeTest extends AbstractIndexingCommonTest {
     public void testSQLIndexes() {
         StringBuilder bld = new StringBuilder();
 
-        String createQry = "create table TABLE (" +
+        String createQry = "create table TABLE1 (" +
             "id long primary key" +
             ", str varchar" +
             ", bytes binary" +
@@ -81,7 +81,7 @@ public class ComputeInlineSizeTest extends AbstractIndexingCommonTest {
         bld.append(createQry);
 
         for (String s: Arrays.asList("str", "strprec", "bytes", "bytesprec", "strprecbig"))
-            bld.append(String.format("create index PERSON_%s_IDX on TABLE (%s); ", s.toUpperCase(), s));
+            bld.append(String.format("create index PERSON_%s_IDX on TABLE1 (%s); ", s.toUpperCase(), s));
 
         query(new SqlFieldsQuery(bld.toString()));
 

@@ -47,7 +47,7 @@ public class SqlCdcTest extends AbstractCdcTest {
     private static final String SARAH = "Sarah Connor";
 
     /** */
-    public static final String USER = "user";
+    public static final String USERS = "users";
 
     /** */
     public static final String CITY = "city";
@@ -94,7 +94,7 @@ public class SqlCdcTest extends AbstractCdcTest {
 
         CountDownLatch latch = new CountDownLatch(1);
 
-        GridAbsPredicate userPredicate = sizePredicate(KEYS_CNT, USER, UPDATE, cnsmr);
+        GridAbsPredicate userPredicate = sizePredicate(KEYS_CNT, USERS, UPDATE, cnsmr);
         GridAbsPredicate cityPredicate = sizePredicate(KEYS_CNT, CITY, UPDATE, cnsmr);
 
         CdcMain cdc = createCdc(cnsmr, cfg, latch, userPredicate, cityPredicate);
@@ -103,7 +103,7 @@ public class SqlCdcTest extends AbstractCdcTest {
 
         executeSql(
             ign,
-            "CREATE TABLE USER(id int, city_id int, name varchar, PRIMARY KEY (id, city_id)) WITH \"CACHE_NAME=user\""
+            "CREATE TABLE USERS(id int, city_id int, name varchar, PRIMARY KEY (id, city_id)) WITH \"CACHE_NAME=users\""
         );
 
         executeSql(
@@ -114,7 +114,7 @@ public class SqlCdcTest extends AbstractCdcTest {
         for (int i = 0; i < KEYS_CNT; i++) {
             executeSql(
                 ign,
-                "INSERT INTO USER VALUES(?, ?, ?)",
+                "INSERT INTO USERS VALUES(?, ?, ?)",
                 i,
                 42 * i,
                 (i % 2 == 0 ? JOHN : SARAH) + i);
@@ -134,19 +134,19 @@ public class SqlCdcTest extends AbstractCdcTest {
 
         fut.cancel();
 
-        assertEquals(KEYS_CNT, cnsmr.data(UPDATE, cacheId(USER)).size());
+        assertEquals(KEYS_CNT, cnsmr.data(UPDATE, cacheId(USERS)).size());
         assertEquals(KEYS_CNT, cnsmr.data(UPDATE, cacheId(CITY)).size());
 
         assertTrue(cnsmr.stopped());
 
         for (int i = 0; i < KEYS_CNT; i++)
-            executeSql(ign, "DELETE FROM USER WHERE id = ?", i);
+            executeSql(ign, "DELETE FROM USERS WHERE id = ?", i);
 
         cdc = createCdc(cnsmr, cfg);
 
         IgniteInternalFuture<?> rmvFut = runAsync(cdc);
 
-        waitForSize(KEYS_CNT, USER, DELETE, cnsmr);
+        waitForSize(KEYS_CNT, USERS, DELETE, cnsmr);
 
         checkMetrics(cdc, KEYS_CNT);
 
@@ -162,7 +162,7 @@ public class SqlCdcTest extends AbstractCdcTest {
             if (evt.value() == null)
                 return;
 
-            if (evt.cacheId() == cacheId(USER)) {
+            if (evt.cacheId() == cacheId(USERS)) {
                 int id = ((BinaryObject)evt.key()).field("ID");
                 int cityId = ((BinaryObject)evt.key()).field("CITY_ID");
 
