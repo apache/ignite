@@ -141,7 +141,12 @@ final class MarshallerMappingFileStore {
      * @param marshCtx Marshaller context to register mappings.
      */
     void restoreMappings(MarshallerContext marshCtx) throws IgniteCheckedException {
-        for (File file : mappingDir.listFiles(BinaryUtils::isMappingFile)) {
+        File[] files = mappingDir.listFiles(BinaryUtils::isMappingFile);
+
+        if (files == null)
+            return;
+
+        for (File file : files) {
             String name = file.getName();
 
             byte platformId = getPlatformId(name);
