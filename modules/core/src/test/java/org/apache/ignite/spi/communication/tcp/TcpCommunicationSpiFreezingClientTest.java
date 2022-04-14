@@ -20,6 +20,7 @@ package org.apache.ignite.spi.communication.tcp;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentMap;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cluster.ClusterTopologyException;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -53,7 +54,7 @@ public class TcpCommunicationSpiFreezingClientTest extends GridCommonAbstractTes
         TcpCommunicationSpi spi = new TcpCommunicationSpi();
 
         spi.setConnectTimeout(1000);
-        spi.setMaxConnectTimeout(1000);
+        spi.setMaxConnectTimeout(2000);
         spi.setIdleConnectionTimeout(100);
         spi.setSharedMemoryPort(-1);
 
@@ -72,9 +73,10 @@ public class TcpCommunicationSpiFreezingClientTest extends GridCommonAbstractTes
     public void testFreezingClient() throws Exception {
         Ignite srv = startGrid(0);
         Ignite client = startClientGrid("client");
+        IgniteCompute compute = srv.compute(srv.cluster().forNode(client.cluster().localNode())).withNoFailover();
 
         // Close communication connections by idle and trigger STW on the client.
-        srv.compute(srv.cluster().forNode(client.cluster().localNode())).withNoFailover().runAsync(() -> {
+        compute.runAsync(() -> {
             waitConnectionsClosed(Ignition.localIgnite());
 
             triggerSTW();
@@ -87,11 +89,7 @@ public class TcpCommunicationSpiFreezingClientTest extends GridCommonAbstractTes
         doSleep(1000);
 
         // Open new connection to the freezed client.
-        assertThrowsWithCause(() -> {
-            srv.compute(srv.cluster().forNode(client.cluster().localNode())).withNoFailover().run(() -> {
-                // No-op.
-            });
-        }, ClusterTopologyException.class);
+        assertThrowsWithCause(() -> compute.run(() -> {}), ClusterTopologyException.class);
 
         assertEquals(1, srv.cluster().nodes().size());
     }
