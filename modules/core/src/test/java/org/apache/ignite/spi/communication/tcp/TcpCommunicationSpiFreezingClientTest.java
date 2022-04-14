@@ -28,7 +28,6 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.util.nio.GridCommunicationClient;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.communication.tcp.internal.ConnectionClientPool;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -165,7 +164,7 @@ public class TcpCommunicationSpiFreezingClientTest extends GridCommonAbstractTes
             }, getTestTimeout());
         }
         catch (IgniteInterruptedCheckedException e) {
-            throw F.wrap(e);
+            throw new RuntimeException(e);
         }
     }
 }
