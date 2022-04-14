@@ -171,9 +171,6 @@ public class BinaryUtils {
     /** FNV1 hash prime. */
     private static final int FNV1_PRIME = 0x01000193;
 
-    /** File lock timeout in milliseconds. */
-    private static final int FILE_LOCK_TIMEOUT_MS = 5000;
-
     /*
      * Static class initializer.
      */

@@ -1072,8 +1072,7 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
 
         ConcurrentMap<Integer, BinaryMetadataHolder> metaCache = new ConcurrentHashMap<>();
 
-        new BinaryMetadataFileStore(metaCache, ctx, log, metadataDir)
-            .restoreMetadata(typeId);
+        new BinaryMetadataFileStore(metaCache, ctx, log, metadataDir).restoreMetadata(typeId);
 
         addMetaLocally(typeId, metaCache.get(typeId).metadata().wrap(binaryContext()), false);
     }

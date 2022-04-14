@@ -150,7 +150,7 @@ final class MarshallerMappingFileStore {
         for (File file : files) {
             String name = file.getName();
 
-            byte platformId = getPlatformId(name);
+            byte platformId = BinaryUtils.mappedFilePlatformId(name);
 
             int typeId = getTypeId(name);
 
@@ -228,27 +228,6 @@ final class MarshallerMappingFileStore {
             if (!IgniteUtils.delete(legacyTmpDir))
                 throw new IgniteCheckedException("Failed to delete legacy marshaller mappings dir");
         }
-    }
-
-    /**
-     * @param fileName Name of file with marshaller mapping information.
-     * @throws IgniteCheckedException If file name format is broken.
-     */
-    private byte getPlatformId(String fileName) throws IgniteCheckedException {
-        String lastSymbol = fileName.substring(fileName.length() - 1);
-
-        byte platformId;
-
-        try {
-            platformId = Byte.parseByte(lastSymbol);
-        }
-        catch (NumberFormatException e) {
-            throw new IgniteCheckedException("Reading marshaller mapping from file "
-                + fileName
-                + " failed; last symbol of file name is expected to be numeric.", e);
-        }
-
-        return platformId;
     }
 
     /**
