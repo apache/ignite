@@ -508,7 +508,7 @@ public class CdcMain implements Runnable {
                     if (log.isDebugEnabled())
                         log.debug("Saving state [curState=" + curState + ']');
 
-                    state.save(curState);
+                    state.saveWal(curState);
 
                     committedSegmentIdx.value(curState.get1().index());
                     committedSegmentOffset.value(curState.get1().fileOffset());
@@ -632,7 +632,7 @@ public class CdcMain implements Runnable {
             if (changedMappings.hasNext())
                 throw new IllegalStateException("Consumer should handle all changed mappings");
 
-            state.save(mappingsState);
+            state.saveMappings(mappingsState);
         }
         catch (IOException e) {
             throw new IgniteException(e);

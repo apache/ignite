@@ -106,11 +106,11 @@ public class CdcConsumerState {
     }
 
     /**
-     * Saves state to file.
+     * Saves WAL consumption state to file.
      *
      * @param state WAL pointer and index of {@link DataEntry} inside {@link DataRecord}.
      */
-    public void save(T2<WALPointer, Integer> state) throws IOException {
+    public void saveWal(T2<WALPointer, Integer> state) throws IOException {
         save(() -> {
             ByteBuffer buf = ByteBuffer.allocate(POINTER_SIZE);
 
@@ -124,7 +124,8 @@ public class CdcConsumerState {
     }
 
     /**
-     * Saves types state to file.
+     * Saves binary types state to file.
+     *
      * @param typesState State of types.
      */
     public void saveTypes(Map<Integer, Long> typesState) throws IOException {
@@ -132,10 +133,11 @@ public class CdcConsumerState {
     }
 
     /**
-     * Saves mappings state to file
+     * Saves types mappings state to file.
+     *
      * @param mappingsState Mappings state.
      */
-    public void save(Set<T2<Integer, Byte>> mappingsState) throws IOException {
+    public void saveMappings(Set<T2<Integer, Byte>> mappingsState) throws IOException {
         save(() -> {
             ByteBuffer buf = ByteBuffer.allocate(INT_SZ + (INT_SZ + 1 /* byte */) * mappingsState.size());
 
@@ -153,7 +155,7 @@ public class CdcConsumerState {
     }
 
     /**
-     * Loads CDC mappings state from file.
+     * Loads types mappings state from file.
      *
      * @return Saved state.
      */
