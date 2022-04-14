@@ -101,7 +101,7 @@ public class SystemViewCommand extends AbstractCommand<VisorSystemViewTaskArg> {
      * @param data Table data rows.
      * @param log Logger.
      */
-    public static void printTable(List<String> titles, List<SimpleType> types, List<List<?>> data, Logger log) {
+    public static void printTable(List<String> titles, List<SimpleType> types, Collection<List<?>> data, Logger log) {
         List<Integer> colSzs = titles.stream().map(String::length).collect(Collectors.toList());
 
         List<List<String>> rows = new ArrayList<>(data.size());

@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.commandline.cache;
 
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -30,21 +31,23 @@ import org.apache.ignite.internal.commandline.CommandArgIterator;
 import org.apache.ignite.internal.commandline.TaskExecutor;
 import org.apache.ignite.internal.commandline.argument.CommandArgUtils;
 import org.apache.ignite.internal.commandline.cache.argument.CacheMetricsManageCommandArg;
+import org.apache.ignite.internal.commandline.systemview.SystemViewCommand;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.cache.metrics.CacheMetricsManageSubCommand;
 import org.apache.ignite.internal.visor.cache.metrics.VisorCacheMetricsManageTask;
 import org.apache.ignite.internal.visor.cache.metrics.VisorCacheMetricsManageTaskArg;
 import org.apache.ignite.internal.visor.cache.metrics.VisorCacheMetricsManageTaskResult;
 
+import static java.util.Arrays.asList;
 import static org.apache.ignite.internal.commandline.CommandLogger.optional;
 import static org.apache.ignite.internal.commandline.CommandLogger.or;
-import static org.apache.ignite.internal.commandline.cache.CacheSubcommands.METRICS;
+import static org.apache.ignite.internal.commandline.cache.CacheSubcommands.METRICS_MANAGE;
 import static org.apache.ignite.internal.commandline.cache.argument.CacheMetricsManageCommandArg.ALL_CACHES;
 import static org.apache.ignite.internal.commandline.cache.argument.CacheMetricsManageCommandArg.CACHES;
 import static org.apache.ignite.internal.visor.cache.metrics.CacheMetricsManageSubCommand.DISABLE;
 import static org.apache.ignite.internal.visor.cache.metrics.CacheMetricsManageSubCommand.ENABLE;
 import static org.apache.ignite.internal.visor.cache.metrics.CacheMetricsManageSubCommand.STATUS;
+import static org.apache.ignite.internal.visor.systemview.VisorSystemViewTask.SimpleType.STRING;
 
 /**
  * Cache sub-command for a cache metrics collection management. It provides to enable, disable or show status.
@@ -96,28 +99,24 @@ public class CacheMetricsManage extends AbstractCommand<VisorCacheMetricsManageT
     private String processTaskResult(Logger log, Object result) {
         Objects.requireNonNull(result);
 
-        String resultMsg;
-
         switch (arg.subCommand()) {
             case ENABLE:
             case DISABLE:
-                resultMsg = ((Integer)result) > 0 ? SUCCESS_MESSAGE : NONE_CACHES_PROCECCED_MESSAGE;
+                String resultMsg = ((Integer)result) > 0 ? SUCCESS_MESSAGE : NONE_CACHES_PROCECCED_MESSAGE;
+
+                log.info(resultMsg);
 
                 break;
             case STATUS:
                 Map<String, Boolean> statusTaskResult = (Map<String, Boolean>)result;
 
                 if (statusTaskResult.isEmpty())
-                    resultMsg = NONE_CACHES_PROCECCED_MESSAGE;
+                    log.info(NONE_CACHES_PROCECCED_MESSAGE);
                 else {
-                    resultMsg = STATUS_TABLE_HEADER + U.nl();
+                    Collection<List<?>> values = F.viewReadOnly(statusTaskResult.entrySet(),
+                        e -> asList(e.getKey(), e.getValue() ? "enabled" : "disabled"));
 
-                    Collection<String> rowsCollection = F.transform(statusTaskResult.entrySet(),
-                        e -> e.getKey() + " -> " + (e.getValue() ? "enabled" : "disabled"));
-
-                    String rowsStr = String.join(U.nl(), rowsCollection);
-
-                    resultMsg += rowsStr;
+                    SystemViewCommand.printTable(asList("Cache Name", "Status"), asList(STRING, STRING), values, log);
                 }
 
                 break;
@@ -125,16 +124,14 @@ public class CacheMetricsManage extends AbstractCommand<VisorCacheMetricsManageT
                 throw new IllegalStateException("Unexpected value: " + arg.subCommand());
         }
 
-        log.info(resultMsg);
-
-        return resultMsg;
+        return null;
     }
 
     /** {@inheritDoc} */
     @Override public void printUsage(Logger log) {
         String desc = "Manages user cache metrics collection: enables, disables them or shows status.";
 
-        usageCache(log, METRICS, desc, null, or(ENABLE, DISABLE, STATUS),
+        usageCache(log, METRICS_MANAGE, desc, null, or(ENABLE, DISABLE, STATUS),
             or(CACHES + " cache1" + optional(",...,cacheN"), ALL_CACHES));
     }
 
@@ -199,6 +196,6 @@ public class CacheMetricsManage extends AbstractCommand<VisorCacheMetricsManageT
 
     /** {@inheritDoc} */
     @Override public String name() {
-        return METRICS.text().toUpperCase();
+        return METRICS_MANAGE.text().toUpperCase();
     }
 }
