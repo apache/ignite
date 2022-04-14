@@ -76,9 +76,6 @@ public class CacheMetricsManage extends AbstractCommand<VisorCacheMetricsManageT
     /** Success message. */
     public static final String SUCCESS_MESSAGE = "Command performed successfully.";
 
-    /** Status table header. */
-    public static final String STATUS_TABLE_HEADER = "[Cache Name -> Metrics status]:";
-
     /** Task argument. */
     private VisorCacheMetricsManageTaskArg arg;
 
