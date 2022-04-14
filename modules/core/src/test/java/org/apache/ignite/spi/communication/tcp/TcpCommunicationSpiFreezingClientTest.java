@@ -164,7 +164,7 @@ public class TcpCommunicationSpiFreezingClientTest extends GridCommonAbstractTes
             }, getTestTimeout()));
         }
         catch (IgniteInterruptedCheckedException e) {
-            throw new RuntimeException(e);
+            throw U.convertException(e);
         }
     }
 }
