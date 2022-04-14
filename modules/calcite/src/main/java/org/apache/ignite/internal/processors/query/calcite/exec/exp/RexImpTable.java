@@ -24,7 +24,6 @@ import java.lang.reflect.Type;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -48,7 +47,6 @@ import org.apache.calcite.linq4j.tree.MethodCallExpression;
 import org.apache.calcite.linq4j.tree.OptimizeShuttle;
 import org.apache.calcite.linq4j.tree.ParameterExpression;
 import org.apache.calcite.linq4j.tree.Primitive;
-import org.apache.calcite.linq4j.tree.Types;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rel.type.RelDataTypeFactoryImpl;
@@ -76,7 +74,6 @@ import org.apache.calcite.util.BuiltInMethod;
 import org.apache.calcite.util.Util;
 import org.apache.ignite.calcite.CalciteQueryEngineConfiguration;
 import org.apache.ignite.internal.processors.query.calcite.util.IgniteMethod;
-import org.jetbrains.annotations.Nullable;
 
 import static org.apache.calcite.adapter.enumerable.EnumUtils.generateCollatorExpression;
 import static org.apache.calcite.linq4j.tree.ExpressionType.Add;
@@ -967,9 +964,9 @@ public class RexImpTable {
             final Expression expression;
             Class clazz = method.getDeclaringClass();
             if (Modifier.isStatic(method.getModifiers()))
-                expression = call(null, clazz, method.getName(), argValueList);
+                expression = EnumUtils.call(null, clazz, method.getName(), argValueList);
             else {
-                expression = call(argValueList.get(0), clazz, method.getName(),
+                expression = EnumUtils.call(argValueList.get(0), clazz, method.getName(),
                     Util.skip(argValueList, 1));
             }
             return expression;
@@ -1061,7 +1058,7 @@ public class RexImpTable {
             newOperands.add(errorBehavior);
             newOperands.add(defaultValueOnError);
             Class clazz = method.getDeclaringClass();
-            expression = call(null, clazz, method.getName(), newOperands);
+            expression = EnumUtils.call(null, clazz, method.getName(), newOperands);
 
             final Type returnType =
                 translator.typeFactory.getJavaClass(call.getType());
@@ -1094,7 +1091,7 @@ public class RexImpTable {
         /** {@inheritDoc} */
         @Override Expression implementSafe(RexToLixTranslator translator,
             RexCall call, List<Expression> argValueList) {
-            return call(
+            return EnumUtils.call(
                 null,
                 SqlFunctions.class,
                 methodName,
@@ -2575,126 +2572,5 @@ public class RexImpTable {
                 return implementor.implement(translator, call, argValueList);
             }
         };
-    }
-
-    /**
-     * A safe version of
-     * {@link EnumUtils#call(org.apache.calcite.linq4j.tree.Expression, java.lang.Class, java.lang.String, java.util.List)}.
-     * Tries best effort to convert the accepted arguments to match parameter type, but throw an exception unique method
-     * can't be found (there are more than one overloaded methods can be used).
-     *
-     * @param targetExpression Target expression, or null if method is static
-     * @param clazz Class against which method is invoked
-     * @param methodName Name of method
-     * @param arguments Argument expressions
-     *
-     * @return MethodCallExpression that call the given name method
-     * @throws RuntimeException if no suitable method found
-     */
-    private static MethodCallExpression call(
-        @Nullable Expression targetExpression,
-        Class<?> clazz,
-        String methodName,
-        List<? extends Expression> arguments
-    ) {
-        Class<?>[] argTypes = Types.toClassArray(arguments);
-
-        List<MethodCallExpression> candidates = new ArrayList<>();
-
-        try {
-            Method candidate = clazz.getMethod(methodName, argTypes);
-
-            return Expressions.call(targetExpression, candidate, arguments);
-        }
-        catch (NoSuchMethodException e) {
-            for (Method method : clazz.getMethods()) {
-                if (method.getName().equals(methodName)) {
-                    final boolean varArgs = method.isVarArgs();
-
-                    final Class<?>[] paramTypes = method.getParameterTypes();
-
-                    if (Types.allAssignable(varArgs, paramTypes, argTypes))
-                        return Expressions.call(targetExpression, method, arguments);
-
-                    // Fall through.
-                    final List<? extends Expression> typeMatchedArguments =
-                        matchMethodParameterTypes(varArgs, paramTypes, arguments);
-
-                    if (typeMatchedArguments != null)
-                        candidates.add(Expressions.call(targetExpression, method, typeMatchedArguments));
-                }
-            }
-
-            if (candidates.isEmpty()) {
-                throw new RuntimeException("while resolving method '" + methodName
-                    + Arrays.toString(argTypes) + "' in class " + clazz, e);
-            }
-            else if (candidates.size() == 1)
-                return candidates.get(0);
-            else {
-                throw new RuntimeException("more than one overloaded methods can be used as '" + methodName
-                    + Arrays.toString(argTypes) + "' in class " + clazz, e);
-            }
-        }
-    }
-
-    /** */
-    private static @Nullable List<? extends Expression> matchMethodParameterTypes(
-        boolean varArgs,
-        Class<?>[] paramTypes,
-        List<? extends Expression> arguments
-    ) {
-        if ((varArgs  && arguments.size() < paramTypes.length - 1)
-            || (!varArgs && arguments.size() != paramTypes.length))
-            return null;
-
-        final List<Expression> typeMatchedArguments = new ArrayList<>();
-
-        for (int i = 0; i < arguments.size(); i++) {
-            Class<?> paramType = !varArgs || i < paramTypes.length - 1 ? paramTypes[i] : Object.class;
-
-            final Expression typeMatchedArg = matchMethodParameterType(arguments.get(i), paramType);
-
-            if (typeMatchedArg == null)
-                return null;
-
-            typeMatchedArguments.add(typeMatchedArg);
-        }
-
-        return typeMatchedArguments;
-    }
-
-    /**
-     * Matches an argument expression to method parameter type with best effort.
-     *
-     * @param arg Argument Expression
-     * @param param Parameter type
-     * @return Converted argument expression that matches the parameter type.
-     *         Returns null if it is impossible to match.
-     */
-    private static @Nullable Expression matchMethodParameterType(
-        Expression arg,
-        Class<?> param
-    ) {
-        Type argType = arg.getType();
-
-        if (Types.isAssignableFrom(param, argType))
-            return arg;
-
-        // Object.class is not assignable from primitive types,
-        // but the method with Object parameters can accept primitive types.
-        // E.g., "array(Object... args)" in SqlFunctions.
-        if (param == Object.class && Primitive.of(argType) != null)
-            return arg;
-
-        // Convert argument with Object.class type to parameter explicitly.
-        if (argType == Object.class && Primitive.of(argType) == null)
-            return EnumUtils.convert(arg, param);
-
-        // Assignable types that can be accepted with explicit conversion.
-        if (param == BigDecimal.class && Primitive.ofBoxOr(argType) != null)
-            return EnumUtils.convert(arg, param);
-
-        return null;
     }
 }

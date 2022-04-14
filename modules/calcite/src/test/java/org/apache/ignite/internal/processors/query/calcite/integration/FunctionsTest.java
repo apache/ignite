@@ -288,11 +288,5 @@ public class FunctionsTest extends AbstractBasicIntegrationTest {
             .returns(Date.valueOf("2022-01-31")).check();
         assertQuery("SELECT ?").withParams("asd").returns("asd").check();
         assertQuery("SELECT coalesce(?, ?)").withParams("a", 10).returns("a").check();
-
-        // Parameter types for SUBSTRING can't be infered from the checker and there are more than one overloaded method
-        // so, we can't find exactly one matching method.
-        assertThrows("SELECT substring(?, ?, ?)", RuntimeException.class, "more than one overloaded methods");
-        // But if we know type of the first parameter, the matching method is unique.
-        assertQuery("SELECT substring(cast(? AS VARCHAR), ?, ?)").withParams("asd", 1, 2).returns("as").check();
     }
 }

@@ -56,7 +56,7 @@ public class IgniteTypeFactory extends JavaTypeFactoryImpl {
         TimeUnit.SECOND, SqlParserPos.ZERO);
 
     /** */
-    private final RelDataType unknownType;;
+    private final RelDataType unknownType;
 
     /** */
     private final Charset charset;
