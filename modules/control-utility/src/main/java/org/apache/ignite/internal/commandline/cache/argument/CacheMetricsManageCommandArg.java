@@ -19,53 +19,30 @@ package org.apache.ignite.internal.commandline.cache.argument;
 
 import org.apache.ignite.internal.commandline.argument.CommandArg;
 import org.apache.ignite.internal.commandline.cache.CacheMetricsManage;
-import org.apache.ignite.internal.visor.cache.metrics.CacheMetricsManageSubCommand;
-import org.apache.ignite.internal.visor.cache.metrics.VisorCacheMetricsManageTaskArg;
 
 /**
  * Command arguments for {@link CacheMetricsManage} command.
  */
 public enum CacheMetricsManageCommandArg implements CommandArg {
-    /** Enable metrics sub-command. */
-    ENABLE("enable", CacheMetricsManageSubCommand.ENABLE),
-
-    /** Disable metrics sub-command. */
-    DISABLE("disable", CacheMetricsManageSubCommand.DISABLE),
-
-    /** Status sub-command. */
-    STATUS("status", CacheMetricsManageSubCommand.STATUS),
+    /** Argument for applying a sub-command to all user caches. */
+    CACHES("--caches"),
 
     /** Argument for applying a sub-command to all user caches. */
-    CACHES("--caches", null),
-
-    /** Argument for applying a sub-command to all user caches. */
-    ALL_CACHES("--all-caches", null);
+    ALL_CACHES("--all-caches");
 
     /** Name of command. */
     private final String name;
 
-    /** Sub-command value for {@link VisorCacheMetricsManageTaskArg}.*/
-    private final CacheMetricsManageSubCommand taskArgSubCmd;
-
     /**
      * @param name Name.
-     * @param taskArgSubCmd Sub-command value for {@link VisorCacheMetricsManageTaskArg}.
      */
-    CacheMetricsManageCommandArg(String name, CacheMetricsManageSubCommand taskArgSubCmd) {
+    CacheMetricsManageCommandArg(String name) {
         this.name = name;
-        this.taskArgSubCmd = taskArgSubCmd;
     }
 
     /** {@inheritDoc} */
     @Override public String argName() {
         return name;
-    }
-
-    /**
-     * @return /** Sub-command value for {@link VisorCacheMetricsManageTaskArg}.
-     */
-    public CacheMetricsManageSubCommand taskArgumentSubCommand() {
-        return taskArgSubCmd;
     }
 
     /** {@inheritDoc} */

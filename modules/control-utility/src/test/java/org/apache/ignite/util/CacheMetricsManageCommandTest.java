@@ -30,6 +30,7 @@ import org.apache.ignite.internal.commandline.cache.argument.CacheMetricsManageC
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.visor.cache.metrics.CacheMetricsManageSubCommand;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
@@ -37,9 +38,12 @@ import org.junit.Test;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_INVALID_ARGUMENTS;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_UNEXPECTED_ERROR;
+import static org.apache.ignite.internal.commandline.cache.CacheMetricsManage.DUPLICATED_ALL_CACHES_OPTION_MESSAGE;
+import static org.apache.ignite.internal.commandline.cache.CacheMetricsManage.DUPLICATED_CACHES_OPTION_MESSAGE;
 import static org.apache.ignite.internal.commandline.cache.CacheMetricsManage.INCORRECT_CACHE_ARGUMENT_MESSAGE;
 import static org.apache.ignite.internal.commandline.cache.CacheMetricsManage.INCORRECT_SUB_COMMAND_MESSAGE;
 import static org.apache.ignite.internal.commandline.cache.CacheMetricsManage.INVALID_CACHES_LIST_MESSAGE;
+import static org.apache.ignite.internal.commandline.cache.CacheMetricsManage.NONE_CACHES_PROCECCED_MESSAGE;
 import static org.apache.ignite.internal.commandline.cache.CacheMetricsManage.STATUS_TABLE_HEADER;
 import static org.apache.ignite.internal.commandline.cache.CacheMetricsManage.SUCCESS_MESSAGE;
 import static org.apache.ignite.internal.util.lang.GridFunc.t;
@@ -49,13 +53,13 @@ import static org.apache.ignite.internal.util.lang.GridFunc.t;
  */
 public class CacheMetricsManageCommandTest extends GridCommandHandlerAbstractTest {
     /** Enable command. */
-    private static final String ENABLE_COMMAND = CacheMetricsManageCommandArg.ENABLE.argName();
+    private static final String ENABLE_COMMAND = CacheMetricsManageSubCommand.ENABLE.toString();
 
     /** Disable command. */
-    private static final String DISABLE_COMMAND = CacheMetricsManageCommandArg.DISABLE.argName();
+    private static final String DISABLE_COMMAND = CacheMetricsManageSubCommand.DISABLE.toString();
 
     /** Status command. */
-    private static final String STATUS_COMMAND = CacheMetricsManageCommandArg.STATUS.argName();
+    private static final String STATUS_COMMAND = CacheMetricsManageSubCommand.STATUS.toString();
 
     /** All caches option. */
     private static final String ALL_CACHES_OPTION = CacheMetricsManageCommandArg.ALL_CACHES.argName();
@@ -124,7 +128,7 @@ public class CacheMetricsManageCommandTest extends GridCommandHandlerAbstractTes
     }
 
     /**
-     * Tests <tt>--all-caches</tt> flag for the enable/disable commands.
+     * Tests <tt>--all-caches</tt> option for the enable/disable sub-commands.
      */
     @Test
     public void testEnableDisableAll() {
@@ -190,7 +194,7 @@ public class CacheMetricsManageCommandTest extends GridCommandHandlerAbstractTes
     }
 
     /**
-     * Tests <tt>--all-caches</tt> option for the status command.
+     * Tests <tt>--all-caches</tt> option for the status sub-command.
      */
     @Test
     public void testStatusAll() {
@@ -231,14 +235,12 @@ public class CacheMetricsManageCommandTest extends GridCommandHandlerAbstractTes
      * Tests commands on an empty cluster without caches.
      */
     @Test
-    public void testNoCachesAffected() {
-        String noCachesAffected = "No caches affected. Are there any caches in cluster?";
+    public void testNoCachesProcessed() {
+        checkExecutionOk(NONE_CACHES_PROCECCED_MESSAGE, ENABLE_COMMAND, ALL_CACHES_OPTION);
 
-        checkExecutionOk(noCachesAffected, ENABLE_COMMAND, ALL_CACHES_OPTION);
+        checkExecutionOk(NONE_CACHES_PROCECCED_MESSAGE, DISABLE_COMMAND, ALL_CACHES_OPTION);
 
-        checkExecutionOk(noCachesAffected, DISABLE_COMMAND, ALL_CACHES_OPTION);
-
-        checkExecutionOk(noCachesAffected, STATUS_COMMAND, ALL_CACHES_OPTION);
+        checkExecutionOk(NONE_CACHES_PROCECCED_MESSAGE, STATUS_COMMAND, ALL_CACHES_OPTION);
     }
 
     /**
@@ -246,32 +248,46 @@ public class CacheMetricsManageCommandTest extends GridCommandHandlerAbstractTes
      */
     @Test
     public void testInvalidArguments() {
-        // Check without sub-command
-        checkInvalidArguments("Check arguments. " + INCORRECT_SUB_COMMAND_MESSAGE);
+        String checkArgs = "Check arguments. ";
 
-        // Check with unknown sub-command
-        checkInvalidArguments("Check arguments. " + INCORRECT_SUB_COMMAND_MESSAGE, "bad-command");
+        // Check when no sub-command passed
+        checkInvalidArguments(checkArgs + INCORRECT_SUB_COMMAND_MESSAGE);
 
-        // Check without --caches option.
-        checkInvalidArguments(INCORRECT_CACHE_ARGUMENT_MESSAGE, ENABLE_COMMAND);
-        checkInvalidArguments(INCORRECT_CACHE_ARGUMENT_MESSAGE, DISABLE_COMMAND);
-        checkInvalidArguments(INCORRECT_CACHE_ARGUMENT_MESSAGE, STATUS_COMMAND);
+        // Check when unknown sub-command passed
+        checkInvalidArguments(checkArgs + INCORRECT_SUB_COMMAND_MESSAGE, "bad-command");
 
-        // Check with --caches option but without list of caches
-        checkInvalidArguments(INVALID_CACHES_LIST_MESSAGE, ENABLE_COMMAND, CACHES_OPTION);
-        checkInvalidArguments(INVALID_CACHES_LIST_MESSAGE, DISABLE_COMMAND, CACHES_OPTION);
-        checkInvalidArguments(INVALID_CACHES_LIST_MESSAGE, STATUS_COMMAND, CACHES_OPTION);
+        // Check when no --caches/--all-caches option passed
+        checkInvalidArguments(checkArgs + INCORRECT_CACHE_ARGUMENT_MESSAGE, ENABLE_COMMAND);
+        checkInvalidArguments(checkArgs + INCORRECT_CACHE_ARGUMENT_MESSAGE, DISABLE_COMMAND);
+        checkInvalidArguments(checkArgs + INCORRECT_CACHE_ARGUMENT_MESSAGE, STATUS_COMMAND);
 
-        // Check with incorrect option after sub-command
-        checkInvalidArguments(INCORRECT_CACHE_ARGUMENT_MESSAGE, ENABLE_COMMAND, "--all");
-        checkInvalidArguments(INCORRECT_CACHE_ARGUMENT_MESSAGE, DISABLE_COMMAND, "--all");
-        checkInvalidArguments(INCORRECT_CACHE_ARGUMENT_MESSAGE, STATUS_COMMAND, "--all");
+        String invalidCacheListFullMsg = "Check arguments. Expected " + INVALID_CACHES_LIST_MESSAGE;
 
-        // Check extra argument passed
-        checkInvalidArguments("Check arguments. Unexpected argument of --cache subcommand: " + CACHE_TWO,
-            ENABLE_COMMAND, CACHES_OPTION, CACHE_ONE, CACHE_TWO);
-        checkInvalidArguments("Check arguments. Unexpected argument of --cache subcommand: " + CACHE_ONE,
-            STATUS_COMMAND, ALL_CACHES_OPTION, CACHE_ONE, CACHE_TWO);
+        // Check when --caches option passed without list of caches
+        checkInvalidArguments(invalidCacheListFullMsg, ENABLE_COMMAND, CACHES_OPTION);
+        checkInvalidArguments(invalidCacheListFullMsg, DISABLE_COMMAND, CACHES_OPTION);
+        checkInvalidArguments(invalidCacheListFullMsg, STATUS_COMMAND, CACHES_OPTION);
+
+        String incorrectCacheArgFullMsg = checkArgs + INCORRECT_CACHE_ARGUMENT_MESSAGE;
+
+        // Check when unknown option after sub-command passed
+        checkInvalidArguments(incorrectCacheArgFullMsg, ENABLE_COMMAND, "--all");
+        checkInvalidArguments(incorrectCacheArgFullMsg, DISABLE_COMMAND, "--all");
+        checkInvalidArguments(incorrectCacheArgFullMsg, STATUS_COMMAND, "--all");
+
+        // Check when extra argument passed after correct command
+        checkInvalidArguments(incorrectCacheArgFullMsg, ENABLE_COMMAND, CACHES_OPTION, CACHE_ONE, CACHE_TWO);
+        checkInvalidArguments(incorrectCacheArgFullMsg, STATUS_COMMAND, ALL_CACHES_OPTION, CACHE_ONE);
+
+        // Check when mutual exclusive options passed
+        checkInvalidArguments(incorrectCacheArgFullMsg, ENABLE_COMMAND, CACHES_OPTION, CACHE_ONE, ALL_CACHES_OPTION);
+        checkInvalidArguments(incorrectCacheArgFullMsg, STATUS_COMMAND, ALL_CACHES_OPTION, CACHES_OPTION, CACHE_ONE);
+
+        // Check duplicated options passed
+        checkInvalidArguments(checkArgs + DUPLICATED_CACHES_OPTION_MESSAGE, ENABLE_COMMAND, CACHES_OPTION,
+            CACHE_ONE, CACHES_OPTION, CACHE_TWO);
+        checkInvalidArguments(checkArgs + DUPLICATED_ALL_CACHES_OPTION_MESSAGE, STATUS_COMMAND,
+            ALL_CACHES_OPTION, ALL_CACHES_OPTION);
     }
 
     /**
@@ -343,7 +359,7 @@ public class CacheMetricsManageCommandTest extends GridCommandHandlerAbstractTes
     }
 
     /**
-     * Form expected <tt>--status</tt> command output with table of processed caches.
+     * Form expected 'status' command output with table of processed caches.
      *
      * @param expectedMetricsModes Expected metrics modes.
      */
@@ -356,7 +372,7 @@ public class CacheMetricsManageCommandTest extends GridCommandHandlerAbstractTes
     }
 
     /**
-     * Forms expected output for <tt>--status</tt> command when cache does not exist.
+     * Forms expected output for <tt>status</tt> command when cache does not exist.
      *
      * @param cacheName Cache name.
      */
@@ -365,7 +381,7 @@ public class CacheMetricsManageCommandTest extends GridCommandHandlerAbstractTes
     }
 
     /**
-     * Forms expected output for enable and disable commands when caches do not exist.
+     * Forms expected output for 'enable' and 'disable' commands when caches do not exist.
      *
      * @param cacheNames Cache names.
      */

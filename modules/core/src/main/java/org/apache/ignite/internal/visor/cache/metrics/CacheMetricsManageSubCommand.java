@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.visor.cache.metrics;
 
+import org.jetbrains.annotations.Nullable;
+
 /**
  * Sub-command enum for {@link VisorCacheMetricsManageTask}.
  */
@@ -28,5 +30,23 @@ public enum CacheMetricsManageSubCommand {
     DISABLE,
 
     /** Status sub-command. */
-    STATUS
+    STATUS;
+
+    /**
+     * @param strRep String representation of subcommand.
+     * @return Subcommand for its string representation.
+     */
+    public static @Nullable CacheMetricsManageSubCommand of(String strRep) {
+        for (CacheMetricsManageSubCommand cmd : values()) {
+            if (cmd.name().equalsIgnoreCase(strRep))
+                return cmd;
+        }
+
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return super.toString().toLowerCase();
+    }
 }

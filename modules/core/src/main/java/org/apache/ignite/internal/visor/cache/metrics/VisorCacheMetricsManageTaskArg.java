@@ -52,17 +52,7 @@ public class VisorCacheMetricsManageTaskArg extends IgniteDataTransferObject {
      */
     public VisorCacheMetricsManageTaskArg(CacheMetricsManageSubCommand subCmd, Set<String> cacheNames) {
         this.subCmd = subCmd;
-        this.cacheNames = Collections.unmodifiableSet(cacheNames);
-    }
-
-    /**
-     * Creates a task argument to process all user caches.
-     *
-     * @param subCmd Operation type.
-     */
-    public VisorCacheMetricsManageTaskArg(CacheMetricsManageSubCommand subCmd) {
-        this.subCmd = subCmd;
-        cacheNames = null;
+        this.cacheNames = cacheNames == null ? null : Collections.unmodifiableSet(cacheNames);
     }
 
     /** {@inheritDoc} */
