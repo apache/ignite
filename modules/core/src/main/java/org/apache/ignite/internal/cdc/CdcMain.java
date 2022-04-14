@@ -598,7 +598,12 @@ public class CdcMain implements Runnable {
     /** Search for new or changed {@link TypeMapping} and notifies the consumer. */
     private void updateMappings() {
         try {
-            Iterator<TypeMapping> changedMappings = Arrays.stream(marshaller.listFiles(BinaryUtils::isMappingFile))
+            File[] files = marshaller.listFiles(BinaryUtils::isMappingFile);
+
+            if (files == null)
+                return;
+
+            Iterator<TypeMapping> changedMappings = Arrays.stream(files)
                 .map(f -> {
                     String fileName = f.getName();
 
