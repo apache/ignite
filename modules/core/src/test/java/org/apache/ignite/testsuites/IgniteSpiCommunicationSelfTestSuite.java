@@ -17,7 +17,40 @@
 
 package org.apache.ignite.testsuites;
 
+import org.apache.ignite.spi.communication.tcp.GridCacheDhtLockBackupSelfTest;
+import org.apache.ignite.spi.communication.tcp.GridSandboxedClientWithoutNetworkTest;
+import org.apache.ignite.spi.communication.tcp.GridTcpCommunicationInverseConnectionEstablishingTest;
+import org.apache.ignite.spi.communication.tcp.GridTcpCommunicationSpiConcurrentConnectSelfTest;
+import org.apache.ignite.spi.communication.tcp.GridTcpCommunicationSpiConcurrentConnectSslSelfTest;
+import org.apache.ignite.spi.communication.tcp.GridTcpCommunicationSpiConfigSelfTest;
+import org.apache.ignite.spi.communication.tcp.GridTcpCommunicationSpiMultithreadedSelfTest;
+import org.apache.ignite.spi.communication.tcp.GridTcpCommunicationSpiRecoveryAckSelfTest;
+import org.apache.ignite.spi.communication.tcp.GridTcpCommunicationSpiRecoveryFailureDetectionSelfTest;
+import org.apache.ignite.spi.communication.tcp.GridTcpCommunicationSpiRecoveryNoPairedConnectionsTest;
+import org.apache.ignite.spi.communication.tcp.GridTcpCommunicationSpiRecoverySelfTest;
+import org.apache.ignite.spi.communication.tcp.GridTcpCommunicationSpiRecoverySslSelfTest;
+import org.apache.ignite.spi.communication.tcp.GridTcpCommunicationSpiSkipWaitHandshakeOnClientTest;
+import org.apache.ignite.spi.communication.tcp.GridTcpCommunicationSpiSslSelfTest;
+import org.apache.ignite.spi.communication.tcp.GridTcpCommunicationSpiSslSmallBuffersSelfTest;
+import org.apache.ignite.spi.communication.tcp.GridTcpCommunicationSpiStartStopSelfTest;
+import org.apache.ignite.spi.communication.tcp.GridTcpCommunicationSpiTcpFailureDetectionSelfTest;
+import org.apache.ignite.spi.communication.tcp.GridTcpCommunicationSpiTcpNoDelayOffSelfTest;
+import org.apache.ignite.spi.communication.tcp.GridTcpCommunicationSpiTcpSelfTest;
+import org.apache.ignite.spi.communication.tcp.GridTotallyUnreachableClientTest;
+import org.apache.ignite.spi.communication.tcp.IgniteTcpCommunicationConnectOnInitTest;
+import org.apache.ignite.spi.communication.tcp.IgniteTcpCommunicationHandshakeWaitSslTest;
+import org.apache.ignite.spi.communication.tcp.IgniteTcpCommunicationHandshakeWaitTest;
+import org.apache.ignite.spi.communication.tcp.IgniteTcpCommunicationRecoveryAckClosureSelfTest;
+import org.apache.ignite.spi.communication.tcp.TcpCommunicationHandshakeTimeoutTest;
+import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpiDropNodesTest;
+import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpiFaultyClientSslTest;
+import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpiFaultyClientTest;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpiFreezingClientTest;
+import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpiHalfOpenedConnectionTest;
+import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpiMultiJvmTest;
+import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpiSkipMessageSendTest;
+import org.apache.ignite.spi.communication.tcp.TcpCommunicationStatisticsTest;
+import org.apache.ignite.spi.communication.tcp.TooManyOpenFilesTcpCommunicationSpiTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
@@ -26,115 +59,56 @@ import org.junit.runners.Suite;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-    TcpCommunicationSpiFreezingClientTest.class,
-    TcpCommunicationSpiFreezingClientTest.class,
-    TcpCommunicationSpiFreezingClientTest.class,
-    TcpCommunicationSpiFreezingClientTest.class,
-    TcpCommunicationSpiFreezingClientTest.class,
-    TcpCommunicationSpiFreezingClientTest.class,
-    TcpCommunicationSpiFreezingClientTest.class,
-    TcpCommunicationSpiFreezingClientTest.class,
-    TcpCommunicationSpiFreezingClientTest.class,
-    TcpCommunicationSpiFreezingClientTest.class,
+    GridTcpCommunicationSpiRecoveryAckSelfTest.class,
+    IgniteTcpCommunicationRecoveryAckClosureSelfTest.class,
+    GridTcpCommunicationSpiRecoverySelfTest.class,
+    GridTcpCommunicationSpiRecoveryNoPairedConnectionsTest.class,
+    GridTcpCommunicationSpiRecoverySslSelfTest.class,
+
+    GridTcpCommunicationSpiConcurrentConnectSelfTest.class,
+    GridTcpCommunicationSpiConcurrentConnectSslSelfTest.class,
+
+    GridTcpCommunicationSpiSslSelfTest.class,
+    GridTcpCommunicationSpiSslSmallBuffersSelfTest.class,
+
+    GridTcpCommunicationSpiTcpSelfTest.class,
+    GridTcpCommunicationSpiTcpNoDelayOffSelfTest.class,
+
+    GridTcpCommunicationSpiStartStopSelfTest.class,
+
+    GridTcpCommunicationSpiMultithreadedSelfTest.class,
+
+    GridTcpCommunicationSpiRecoveryFailureDetectionSelfTest.class,
+    GridTcpCommunicationSpiTcpFailureDetectionSelfTest.class,
+
+    GridTcpCommunicationSpiConfigSelfTest.class,
+
+    TcpCommunicationSpiSkipMessageSendTest.class,
+
+    TcpCommunicationSpiFaultyClientTest.class,
+    TcpCommunicationSpiFaultyClientSslTest.class,
 
     TcpCommunicationSpiFreezingClientTest.class,
-    TcpCommunicationSpiFreezingClientTest.class,
-    TcpCommunicationSpiFreezingClientTest.class,
-    TcpCommunicationSpiFreezingClientTest.class,
-    TcpCommunicationSpiFreezingClientTest.class,
-    TcpCommunicationSpiFreezingClientTest.class,
-    TcpCommunicationSpiFreezingClientTest.class,
-    TcpCommunicationSpiFreezingClientTest.class,
-    TcpCommunicationSpiFreezingClientTest.class,
-    TcpCommunicationSpiFreezingClientTest.class,
 
-    TcpCommunicationSpiFreezingClientTest.class,
-    TcpCommunicationSpiFreezingClientTest.class,
-    TcpCommunicationSpiFreezingClientTest.class,
-    TcpCommunicationSpiFreezingClientTest.class,
-    TcpCommunicationSpiFreezingClientTest.class,
-    TcpCommunicationSpiFreezingClientTest.class,
-    TcpCommunicationSpiFreezingClientTest.class,
-    TcpCommunicationSpiFreezingClientTest.class,
-    TcpCommunicationSpiFreezingClientTest.class,
-    TcpCommunicationSpiFreezingClientTest.class,
+    TcpCommunicationSpiDropNodesTest.class,
+    TcpCommunicationSpiHalfOpenedConnectionTest.class,
+    GridTcpCommunicationSpiSkipWaitHandshakeOnClientTest.class,
 
-    TcpCommunicationSpiFreezingClientTest.class,
-    TcpCommunicationSpiFreezingClientTest.class,
-    TcpCommunicationSpiFreezingClientTest.class,
-    TcpCommunicationSpiFreezingClientTest.class,
-    TcpCommunicationSpiFreezingClientTest.class,
-    TcpCommunicationSpiFreezingClientTest.class,
-    TcpCommunicationSpiFreezingClientTest.class,
-    TcpCommunicationSpiFreezingClientTest.class,
-    TcpCommunicationSpiFreezingClientTest.class,
-    TcpCommunicationSpiFreezingClientTest.class,
+    TcpCommunicationStatisticsTest.class,
 
-    TcpCommunicationSpiFreezingClientTest.class,
-    TcpCommunicationSpiFreezingClientTest.class,
-    TcpCommunicationSpiFreezingClientTest.class,
-    TcpCommunicationSpiFreezingClientTest.class,
-    TcpCommunicationSpiFreezingClientTest.class,
-    TcpCommunicationSpiFreezingClientTest.class,
-    TcpCommunicationSpiFreezingClientTest.class,
-    TcpCommunicationSpiFreezingClientTest.class,
-    TcpCommunicationSpiFreezingClientTest.class,
-    TcpCommunicationSpiFreezingClientTest.class,
+    IgniteTcpCommunicationHandshakeWaitTest.class,
+    IgniteTcpCommunicationHandshakeWaitSslTest.class,
+    IgniteTcpCommunicationConnectOnInitTest.class,
 
-    TcpCommunicationSpiFreezingClientTest.class,
-    TcpCommunicationSpiFreezingClientTest.class,
-    TcpCommunicationSpiFreezingClientTest.class,
-    TcpCommunicationSpiFreezingClientTest.class,
-    TcpCommunicationSpiFreezingClientTest.class,
-    TcpCommunicationSpiFreezingClientTest.class,
-    TcpCommunicationSpiFreezingClientTest.class,
-    TcpCommunicationSpiFreezingClientTest.class,
-    TcpCommunicationSpiFreezingClientTest.class,
-    TcpCommunicationSpiFreezingClientTest.class,
+    TcpCommunicationSpiMultiJvmTest.class,
+    TooManyOpenFilesTcpCommunicationSpiTest.class,
 
-    TcpCommunicationSpiFreezingClientTest.class,
-    TcpCommunicationSpiFreezingClientTest.class,
-    TcpCommunicationSpiFreezingClientTest.class,
-    TcpCommunicationSpiFreezingClientTest.class,
-    TcpCommunicationSpiFreezingClientTest.class,
-    TcpCommunicationSpiFreezingClientTest.class,
-    TcpCommunicationSpiFreezingClientTest.class,
-    TcpCommunicationSpiFreezingClientTest.class,
-    TcpCommunicationSpiFreezingClientTest.class,
-    TcpCommunicationSpiFreezingClientTest.class,
+    GridTcpCommunicationInverseConnectionEstablishingTest.class,
+    GridTotallyUnreachableClientTest.class,
+    GridSandboxedClientWithoutNetworkTest.class,
 
-    TcpCommunicationSpiFreezingClientTest.class,
-    TcpCommunicationSpiFreezingClientTest.class,
-    TcpCommunicationSpiFreezingClientTest.class,
-    TcpCommunicationSpiFreezingClientTest.class,
-    TcpCommunicationSpiFreezingClientTest.class,
-    TcpCommunicationSpiFreezingClientTest.class,
-    TcpCommunicationSpiFreezingClientTest.class,
-    TcpCommunicationSpiFreezingClientTest.class,
-    TcpCommunicationSpiFreezingClientTest.class,
-    TcpCommunicationSpiFreezingClientTest.class,
-
-    TcpCommunicationSpiFreezingClientTest.class,
-    TcpCommunicationSpiFreezingClientTest.class,
-    TcpCommunicationSpiFreezingClientTest.class,
-    TcpCommunicationSpiFreezingClientTest.class,
-    TcpCommunicationSpiFreezingClientTest.class,
-    TcpCommunicationSpiFreezingClientTest.class,
-    TcpCommunicationSpiFreezingClientTest.class,
-    TcpCommunicationSpiFreezingClientTest.class,
-    TcpCommunicationSpiFreezingClientTest.class,
-    TcpCommunicationSpiFreezingClientTest.class,
-
-    TcpCommunicationSpiFreezingClientTest.class,
-    TcpCommunicationSpiFreezingClientTest.class,
-    TcpCommunicationSpiFreezingClientTest.class,
-    TcpCommunicationSpiFreezingClientTest.class,
-    TcpCommunicationSpiFreezingClientTest.class,
-    TcpCommunicationSpiFreezingClientTest.class,
-    TcpCommunicationSpiFreezingClientTest.class,
-    TcpCommunicationSpiFreezingClientTest.class,
-    TcpCommunicationSpiFreezingClientTest.class,
-    TcpCommunicationSpiFreezingClientTest.class
+    GridCacheDhtLockBackupSelfTest.class,
+    TcpCommunicationHandshakeTimeoutTest.class,
 })
 public class IgniteSpiCommunicationSelfTestSuite {
 }

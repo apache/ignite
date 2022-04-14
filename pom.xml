@@ -800,23 +800,23 @@
                         </executions>
                     </plugin>
 
-<!--                    <plugin>-->
-<!--                        &lt;!&ndash; Check final list of orphaned tests. &ndash;&gt;-->
-<!--                        <groupId>org.codehaus.mojo</groupId>-->
-<!--                        <artifactId>exec-maven-plugin</artifactId>-->
-<!--                        <executions>-->
-<!--                            <execution>-->
-<!--                                <phase>test</phase>-->
-<!--                                <goals>-->
-<!--                                    <goal>java</goal>-->
-<!--                                </goals>-->
-<!--                            </execution>-->
-<!--                        </executions>-->
-<!--                        <configuration>-->
-<!--                            <includePluginDependencies>true</includePluginDependencies>-->
-<!--                            <mainClass>org.apache.ignite.tools.surefire.testsuites.AssertOnOrphanedTests</mainClass>-->
-<!--                        </configuration>-->
-<!--                    </plugin>-->
+                    <plugin>
+                        <!-- Check final list of orphaned tests. -->
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>exec-maven-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <phase>test</phase>
+                                <goals>
+                                    <goal>java</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                        <configuration>
+                            <includePluginDependencies>true</includePluginDependencies>
+                            <mainClass>org.apache.ignite.tools.surefire.testsuites.AssertOnOrphanedTests</mainClass>
+                        </configuration>
+                    </plugin>
                 </plugins>
             </build>
         </profile>
