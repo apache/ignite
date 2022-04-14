@@ -5520,6 +5520,9 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             delayedLatestMsg = fullMsg;
 
             listen(f -> {
+                if (f.error() != null)
+                    return;
+
                 GridDhtPartitionsFullMessage msg;
 
                 synchronized (this) {

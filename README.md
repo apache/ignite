@@ -23,7 +23,6 @@ Apache Ignite is a distributed database for high-performance computing with in-m
 * [JavaDoc](https://ignite.apache.org/releases/latest/javadoc/)
 * [C#/.NET APIs](https://ignite.apache.org/releases/latest/dotnetdoc/api/)
 * [C++ APIs](https://ignite.apache.org/releases/latest/cppdoc/)
-* [Scala APIs](https://ignite.apache.org/releases/latest/scaladoc/scalar/index.html)
 
 ## Multi-Tier Storage
 
