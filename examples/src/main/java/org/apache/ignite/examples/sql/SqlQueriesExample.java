@@ -36,7 +36,7 @@ import org.apache.ignite.examples.model.Person;
  * Example also demonstrates usage of fields queries that return only required
  * fields instead of whole key-value pairs. When fields queries are distributed
  * across several nodes, they may not work as expected. Keep in mind following
- * limitations (not applied if data is queried from one node only):
+ * limitations (not applied if data is queried from one node only and for Calcite-based query engine):
  * <ul>
  *     <li>
  *         Non-distributed joins will work correctly only if joined objects are stored in
@@ -56,6 +56,9 @@ import org.apache.ignite.examples.model.Person;
  * <p>
  * Remote nodes should be started using {@link ExampleNodeStartup} which will
  * start node with {@code examples/config/example-ignite.xml} configuration.
+ * <p>
+ * To run this example on the Calcite-based SQL engine, modify {@code examples/config/example-sql.xml}
+ * file and set {@code CalciteQueryEngineConfiguration} as default.
  */
 public class SqlQueriesExample {
     /** Organizations cache name. */
@@ -74,7 +77,7 @@ public class SqlQueriesExample {
      * @throws Exception If example execution failed.
      */
     public static void main(String[] args) throws Exception {
-        try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
+        try (Ignite ignite = Ignition.start("examples/config/example-sql.xml")) {
             System.out.println();
             System.out.println(">>> SQL queries example started.");
 

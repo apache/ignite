@@ -28,7 +28,7 @@
 
     <import resource="example-default.xml"/>
 
-    <bean id="queries.cfg" class="org.apache.ignite.configuration.IgniteConfiguration">
+    <bean parent="ignite.cfg">
         <property name="sqlConfiguration">
             <bean class="org.apache.ignite.configuration.SqlConfiguration">
                 <property name="queryEnginesConfiguration">
