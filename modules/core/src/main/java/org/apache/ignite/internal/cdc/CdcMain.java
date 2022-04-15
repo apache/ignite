@@ -557,25 +557,24 @@ public class CdcMain implements Runnable {
                 .filter(p -> p.toString().endsWith(METADATA_FILE_SUFFIX))
                 .map(p -> {
                     int typeId = BinaryUtils.typeId(p.getFileName().toString());
+                    long lastModified = p.toFile().lastModified();
 
                     // Filter out files already in `typesState` with the same last modify date.
-                    return typesState.containsKey(typeId) && p.toFile().lastModified() == typesState.get(typeId)
-                        ? null
-                        : new T2<>(typeId, p.toFile().lastModified());
+                    if (typesState.containsKey(typeId) && lastModified == typesState.get(typeId))
+                        return null;
 
-                })
-                .filter(Objects::nonNull)
-                .peek(t -> typesState.put(t.get1(), t.get2())) // Adding peeked up types to the state map.
-                .map(t -> {
+                    typesState.put(typeId, lastModified);
+
                     try {
-                        kctx.cacheObjects().cacheMetadataLocally(binaryMeta, t.get1());
+                        kctx.cacheObjects().cacheMetadataLocally(binaryMeta, typeId);
                     }
                     catch (IgniteCheckedException e) {
                         throw new IgniteException(e);
                     }
 
-                    return kctx.cacheObjects().metadata(t.get1());
+                    return kctx.cacheObjects().metadata(typeId);
                 })
+                .filter(Objects::nonNull)
                 .iterator();
 
             if (!changedTypes.hasNext())
