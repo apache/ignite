@@ -52,7 +52,7 @@ namespace Apache.Ignite.Core.Impl
 
                     if (!process.WaitForExit(timeoutMs))
                     {
-                        log.Warn("Shell command '{0}' timed out.", file);
+                        log?.Warn("Shell command '{0}' timed out.", file);
 
                         process.Kill();
                     }
@@ -62,7 +62,7 @@ namespace Apache.Ignite.Core.Impl
             }
             catch (Exception e)
             {
-                log.Warn("Shell command '{0}' failed: {1}", file, e.Message, e);
+                log?.Warn("Shell command '{0}' failed: {1}", file, e.Message, e);
 
                 return string.Empty;
             }
