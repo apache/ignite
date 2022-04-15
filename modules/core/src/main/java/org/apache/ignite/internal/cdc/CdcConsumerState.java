@@ -124,6 +124,24 @@ public class CdcConsumerState {
     }
 
     /**
+     * Saves binary types state to file.
+     *
+     * @param typesState State of types.
+     */
+    public void saveTypes(Map<Integer, Long> typesState) throws IOException {
+        save(typesState, tmpTypes, types);
+    }
+
+    /**
+     * Saves types mappings state to file.
+     *
+     * @param mappingsState Mappings state.
+     */
+    public void saveMappings(Set<T2<Integer, Byte>> mappingsState) throws IOException {
+        save(mappingsState, tmpMappings, mappings);
+    }
+
+    /**
      * Loads CDC consumer state from file.
      *
      * @return Saved state.
@@ -161,33 +179,6 @@ public class CdcConsumerState {
     }
 
     /**
-     * Saves binary types state to file.
-     *
-     * @param typesState State of types.
-     */
-    public void saveTypes(Map<Integer, Long> typesState) throws IOException {
-        save(typesState, tmpTypes, types);
-    }
-
-    /**
-     * Saves types mappings state to file.
-     *
-     * @param mappingsState Mappings state.
-     */
-    public void saveMappings(Set<T2<Integer, Byte>> mappingsState) throws IOException {
-        save(mappingsState, tmpMappings, mappings);
-    }
-
-    /** Save object to file. */
-    private <T> void save(T state, Path tmp, Path file) throws IOException {
-        try (ObjectOutputStream oos = new ObjectOutputStream(Files.newOutputStream(tmp))) {
-            oos.writeObject(state);
-        }
-
-        Files.move(tmp, file, ATOMIC_MOVE, REPLACE_EXISTING);
-    }
-
-    /**
      * Loads types mappings state from file.
      *
      * @return Saved state.
@@ -221,6 +212,15 @@ public class CdcConsumerState {
         }
 
         return state;
+    }
+
+    /** Save object to file. */
+    private <T> void save(T state, Path tmp, Path file) throws IOException {
+        try (ObjectOutputStream oos = new ObjectOutputStream(Files.newOutputStream(tmp))) {
+            oos.writeObject(state);
+        }
+
+        Files.move(tmp, file, ATOMIC_MOVE, REPLACE_EXISTING);
     }
 
     /** Loads data from path. */
