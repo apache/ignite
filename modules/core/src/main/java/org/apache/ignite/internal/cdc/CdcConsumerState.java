@@ -189,7 +189,7 @@ public class CdcConsumerState {
 
         assert state != null;
 
-        log.info("Initial mappings state loaded [mappingsCnt=" + (state != null ? state.size() : 0) + ']');
+        log.info("Initial mappings state loaded [mappingsCnt=" + state.size() + ']');
 
         if (log.isDebugEnabled()) {
             for (T2<Integer, Byte> m : state)
@@ -229,11 +229,13 @@ public class CdcConsumerState {
     }
 
     /** Loads data from path. */
+    @SuppressWarnings("unchecked")
     private <D> D load(Path state, Supplier<D> dflt) {
         if (!Files.exists(state))
             return dflt.get();
 
         try (ObjectInputStream ois = new ObjectInputStream(Files.newInputStream(state))) {
+
             return (D)ois.readObject();
         }
         catch (IOException | ClassNotFoundException e) {

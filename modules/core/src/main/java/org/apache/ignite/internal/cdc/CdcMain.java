@@ -600,24 +600,25 @@ public class CdcMain implements Runnable {
             if (files == null)
                 return;
 
-            Iterator<TypeMapping> changedMappings = Arrays.stream(files).map(f -> {
-                String fileName = f.getName();
+            Iterator<TypeMapping> changedMappings = Arrays.stream(files)
+                .map(f -> {
+                    String fileName = f.getName();
 
-                int typeId = BinaryUtils.mappedTypeId(fileName);
-                byte platformId = BinaryUtils.mappedFilePlatformId(fileName);
+                    int typeId = BinaryUtils.mappedTypeId(fileName);
+                    byte platformId = BinaryUtils.mappedFilePlatformId(fileName);
 
-                T2<Integer, Byte> state = new T2<>(typeId, platformId);
+                    T2<Integer, Byte> state = new T2<>(typeId, platformId);
 
-                if (mappingsState.contains(state))
-                    return null;
+                    if (mappingsState.contains(state))
+                        return null;
 
-                mappingsState.add(state);
+                    mappingsState.add(state);
 
-                return (TypeMapping)new TypeMappingImpl(
-                    typeId,
-                    BinaryUtils.readMapping(f),
-                    platformId == 0 ? PlatformType.JAVA : PlatformType.DOTNET);
-            })
+                    return (TypeMapping)new TypeMappingImpl(
+                        typeId,
+                        BinaryUtils.readMapping(f),
+                        platformId == 0 ? PlatformType.JAVA : PlatformType.DOTNET);
+                })
                 .filter(Objects::nonNull)
                 .iterator();
 
