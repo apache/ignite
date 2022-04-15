@@ -29,10 +29,13 @@ import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import org.apache.ignite.IgniteBinary;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
+import org.apache.ignite.client.ClientAtomicConfiguration;
+import org.apache.ignite.client.ClientAtomicLong;
 import org.apache.ignite.client.ClientCache;
 import org.apache.ignite.client.ClientCacheConfiguration;
 import org.apache.ignite.client.ClientCluster;
@@ -327,6 +330,18 @@ public class TcpIgniteClient implements IgniteClient {
     /** {@inheritDoc} */
     @Override public ClientServices services(ClientClusterGroup grp) {
         return services.withClusterGroup((ClientClusterGroupImpl)grp);
+    }
+
+    /** {@inheritDoc} */
+    @Override public ClientAtomicLong atomicLong(String name, long initVal, boolean create) throws IgniteException {
+        // TODO: perform a server call to create / check existence depending on create flag.
+        return new ClientAtomicLongImpl(name);
+    }
+
+    /** {@inheritDoc} */
+    @Override public ClientAtomicLong atomicLong(String name, ClientAtomicConfiguration cfg, long initVal, boolean create) throws IgniteException {
+        // TODO: perform a server call to create / check existence depending on create flag.
+        return new ClientAtomicLongImpl(name);
     }
 
     /**
