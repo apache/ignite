@@ -17,18 +17,14 @@
 
 package org.apache.ignite.internal.processors.query.calcite.planner;
 
-import org.apache.calcite.rel.core.Exchange;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.util.ImmutableIntList;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteExchange;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexScan;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteLimit;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteLimitSort;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSort;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableScan;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableSpool;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteUnionAll;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteSchema;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
@@ -43,14 +39,26 @@ import org.junit.Test;
  */
 public class LimitOffsetPlannerTest extends AbstractPlannerTest {
     /** Row count in table. */
-    private static final double ROW_CNT = 100d;
+    private static final double ROW_CNT = 90;
 
-    /** */
+    /** Tests Exchange goes before Sort with LIMIT. */
     @Test
-    public void testTest() throws Exception {
+    public void testLimitExchange() throws Exception {
         IgniteSchema publicSchema = createSchemaWithTable(IgniteDistributions.random());
 
-        assertPlan("SELECT * FROM TEST ORDER BY ID LIMIT 1", publicSchema,
+        assertPlan("SELECT * FROM TEST ORDER BY ID LIMIT 10", publicSchema,
+            isInstanceOf(IgniteLimit.class)
+                .and(input(isInstanceOf(IgniteExchange.class)
+                    .and(input(isInstanceOf(IgniteSort.class)
+                        .and(input(isInstanceOf(IgniteTableScan.class))))))));
+
+        assertPlan("SELECT * FROM TEST ORDER BY ID LIMIT 10000", publicSchema,
+            isInstanceOf(IgniteLimit.class)
+                .and(input(isInstanceOf(IgniteSort.class)
+                    .and(input(isInstanceOf(IgniteExchange.class)
+                        .and(input(isInstanceOf(IgniteTableScan.class))))))));
+
+        assertPlan("SELECT * FROM TEST ORDER BY ID LIMIT 10 OFFSET 5", publicSchema,
             isInstanceOf(IgniteLimit.class)
                 .and(input(isInstanceOf(IgniteExchange.class)
                     .and(input(isInstanceOf(IgniteSort.class)

@@ -118,6 +118,10 @@ public class IgniteSort extends Sort implements IgniteRel {
         return Pair.of(required.replace(collation), ImmutableList.of(required.replace(RelCollations.EMPTY)));
     }
 
+    @Override public double estimateRowCount(RelMetadataQuery mq) {
+        return super.estimateRowCount(mq);
+    }
+
     /** {@inheritDoc} */
     @Override public Pair<RelTraitSet, List<RelTraitSet>> deriveTraits(RelTraitSet childTraits, int childId) {
         assert childId == 0;
@@ -133,8 +137,10 @@ public class IgniteSort extends Sort implements IgniteRel {
         double inputRowCount = mq.getRowCount(getInput());
 
         double lim = fetch != null ? doubleFromRex(fetch, inputRowCount * FETCH_IS_PARAM_FACTOR) : inputRowCount;
+        double offset = this.offset != null ? doubleFromRex(this.offset, inputRowCount * FETCH_IS_PARAM_FACTOR)
+            : 0;
 
-        double rows = Math.min(mq.getRowCount(getInput()), lim);
+        double rows = Math.min(inputRowCount, offset + lim);
 
         double cpuCost = rows * IgniteCost.ROW_PASS_THROUGH_COST + Util.nLogN(rows) * IgniteCost.ROW_COMPARISON_COST;
         double memory = rows * getRowType().getFieldCount() * IgniteCost.AVERAGE_FIELD_SIZE;
@@ -164,7 +170,7 @@ public class IgniteSort extends Sort implements IgniteRel {
     public RexNode getOffset(){
         return offset;
     }
-
+//
 //    /** {@inheritDoc} */
 //    @Override public boolean isEnforcer() {
 //        return false;

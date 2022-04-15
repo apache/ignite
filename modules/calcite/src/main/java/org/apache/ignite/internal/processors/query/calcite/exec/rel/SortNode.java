@@ -42,6 +42,7 @@ public class SortNode<Row> extends AbstractNode<Row> implements SingleNode<Row>,
     /** Rows buffer. */
     private final PriorityQueue<Row> rows;
 
+    /** TODO */
     private final int fetch;
 
     /**
@@ -161,11 +162,8 @@ public class SortNode<Row> extends AbstractNode<Row> implements SingleNode<Row>,
             }
 
             if (rows.isEmpty()) {
-                if (requested > 0) {
-                    System.err.println("TEST | Downstream end");
-
+                if (requested > 0)
                     downstream().end();
-                }
 
                 requested = 0;
             }

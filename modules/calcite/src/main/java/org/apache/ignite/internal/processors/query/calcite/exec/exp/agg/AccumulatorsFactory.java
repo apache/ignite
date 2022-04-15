@@ -132,8 +132,6 @@ public class AccumulatorsFactory<Row> implements Supplier<List<AccumulatorWrappe
         MethodDeclaration decl = Expressions.methodDecl(
             Modifier.PUBLIC, Object.class, "apply", ImmutableList.of(in_), list.toBlock());
 
-//        System.err.println("TEST | compilt: " + Expressions.toString(F.asList(decl), "\n", false));
-
         return Commons.compile(CastFunction.class, Expressions.toString(F.asList(decl), "\n", false));
     }
 

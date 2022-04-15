@@ -455,14 +455,14 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
             .setName("orders")
             .setSqlSchema("PUBLIC")
             .setQueryEntities(F.asList(new QueryEntity(Integer.class, Employer.class).setTableName("orders")))
-            .setBackups(0)
+            .setBackups(2)
         );
 
         IgniteCache<Integer, Employer> account = client.getOrCreateCache(new CacheConfiguration<Integer, Employer>()
             .setName("account")
             .setSqlSchema("PUBLIC")
             .setQueryEntities(F.asList(new QueryEntity(Integer.class, Employer.class).setTableName("account")))
-            .setBackups(0)
+            .setBackups(1)
         );
 
         orders.put(1, new Employer("Igor", 10d));
@@ -1041,12 +1041,12 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
     public void quantifiedCompTest() throws InterruptedException {
         populateTables();
 
-        assertQuery(client, "select salary from account ORDER BY salary LIMIT 1 OFFSET 1")
-//            .returns(10d)
+        assertQuery(client, "select salary from account where salary > SOME (10, 11) ORDER BY salary")
             .returns(11d)
-//            .returns(13d)
-//            .returns(13d)
-//            .returns(13d)
+            .returns(12d)
+            .returns(13d)
+            .returns(13d)
+            .returns(13d)
             .check();
 
         assertQuery(client, "select salary from account where salary < SOME (12, 12) ORDER BY salary")

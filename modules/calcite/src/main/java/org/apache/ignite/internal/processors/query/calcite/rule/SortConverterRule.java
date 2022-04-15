@@ -21,6 +21,7 @@ import org.apache.calcite.plan.RelOptRule;
 import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.RelRule;
 import org.apache.calcite.plan.RelTraitSet;
+import org.apache.calcite.rel.RelCollations;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.Sort;
 import org.apache.calcite.rel.logical.LogicalSort;
@@ -63,34 +64,37 @@ public class SortConverterRule extends RelRule<SortConverterRule.Config> {
         RelOptCluster cluster = sort.getCluster();
 
         if (sort.fetch != null || sort.offset != null) {
-//            RelTraitSet traits = cluster.traitSetOf(IgniteConvention.INSTANCE)
-//                .replace(sort.getCollation())
-//                .replace(IgniteDistributions.single());
+            RelTraitSet limitTraits = cluster.traitSetOf(IgniteConvention.INSTANCE)
+                .replace(sort.getCollation())
+                .replace(IgniteDistributions.single());
+
+            RelNode limitInput;
+
+            if (sort.collation == RelCollations.EMPTY)
+               limitInput = sort.getInput();
+            else {
+                RelTraitSet sortTraits = cluster.traitSetOf(IgniteConvention.INSTANCE)
+                    .replace(sort.getCollation());
+
+                limitInput = new IgniteSort(
+                    cluster,
+                    sortTraits,
+                    convert(sort.getInput(), cluster.traitSetOf(IgniteConvention.INSTANCE)),
+                    sort.getCollation(),
+                    sort.offset,
+                    sort.fetch
+                );
+
+//                outTraits = cluster.traitSetOf(IgniteConvention.INSTANCE)
+//                    .replace(sort.getCollation())
+//                    .replace(IgniteDistributions.single())
+//                ;
 //
-//            call.transformTo(new IgniteLimit(cluster, traits, convert(sort.getInput(), traits), sort.offset,
-//                sort.fetch));
+//                call.transformTo(new IgniteLimit(cluster, outTraits, convert(limitSort, outTraits), sort.offset, sort.fetch));
+            }
 
-            RelTraitSet outTraits = cluster.traitSetOf(IgniteConvention.INSTANCE)
-                .replace(sort.getCollation())
-                ;
-
-//            IgniteLimitSort limitSort = new IgniteLimitSort(
-            IgniteSort limitSort = new IgniteSort(
-                cluster,
-                outTraits,
-                convert(sort.getInput(), cluster.traitSetOf(IgniteConvention.INSTANCE)),
-                sort.getCollation(),
-                sort.offset,
-                sort.fetch
-            );
-
-            outTraits = cluster.traitSetOf(IgniteConvention.INSTANCE)
-                .replace(sort.getCollation())
-                .replace(IgniteDistributions.single())
-            ;
-
-//            call.transformTo(new IgniteLimit(cluster, outTraits, convert(limitSort, outTraits), sort.offset, sort.fetch));
-            call.transformTo(new IgniteLimit(cluster, outTraits, convert(limitSort, outTraits), sort.offset, sort.fetch));
+            call.transformTo(new IgniteLimit(cluster, limitTraits, convert(limitInput, limitTraits), sort.offset,
+                sort.fetch));
         }
         else {
             RelTraitSet outTraits = cluster.traitSetOf(IgniteConvention.INSTANCE).replace(sort.getCollation());
