@@ -19,6 +19,7 @@ package org.apache.ignite.internal.cdc;
 
 import java.io.IOException;
 import java.io.ObjectInputStream;
+import java.io.ObjectOutput;
 import java.io.ObjectOutputStream;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
@@ -186,6 +187,8 @@ public class CdcConsumerState {
     public Set<T2<Integer, Byte>> loadMappingsState() {
         Set<T2<Integer, Byte>> state = load(mappings, HashSet::new);
 
+        assert state != null;
+
         log.info("Initial mappings state loaded [mappingsCnt=" + (state != null ? state.size() : 0) + ']');
 
         if (log.isDebugEnabled()) {
@@ -204,6 +207,8 @@ public class CdcConsumerState {
     public Map<Integer, Long> loadTypesState() {
         Map<Integer, Long> state = load(types, HashMap::new);
 
+        assert state != null;
+
         log.info("Initial types state loaded [typesCnt=" + state.size() + ']');
 
         if (log.isDebugEnabled()) {
@@ -216,7 +221,7 @@ public class CdcConsumerState {
 
     /** Save object to file. */
     private <T> void save(T state, Path tmp, Path file) throws IOException {
-        try (ObjectOutputStream oos = new ObjectOutputStream(Files.newOutputStream(tmp))) {
+        try (ObjectOutput oos = new ObjectOutputStream(Files.newOutputStream(tmp))) {
             oos.writeObject(state);
         }
 
