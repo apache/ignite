@@ -229,7 +229,6 @@ public class CdcConsumerState {
     }
 
     /** Loads data from path. */
-    @SuppressWarnings("unchecked")
     private <D> D load(Path state, Supplier<D> dflt) {
         if (!Files.exists(state))
             return dflt.get();
