@@ -57,7 +57,7 @@ public class TypeMappingImpl implements TypeMapping {
     }
 
     /** {@inheritDoc} */
-    @Override public PlatformType platform() {
+    @Override public PlatformType platformType() {
         return platform;
     }
 

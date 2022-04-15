@@ -172,7 +172,7 @@ public class CdcConsumerState {
             throw new IgniteException("Failed to read state [file=" + walPtr + ']', e);
         }
 
-        if (state != null && log.isInfoEnabled())
+        if (log.isInfoEnabled())
             log.info("Initial WAL state loaded [ptr=" + state.get1() + ", idx=" + state.get2() + ']');
 
         return state;
