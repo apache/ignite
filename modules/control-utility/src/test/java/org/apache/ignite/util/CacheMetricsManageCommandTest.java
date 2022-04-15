@@ -339,6 +339,8 @@ public class CacheMetricsManageCommandTest extends GridCommandHandlerAbstractTes
     }
 
     /**
+     * Check execution of 'status' comand and resulting table.
+     *
      * @param expEntries Expected entries for output of status sub-command.
      * @param statusArgs Status args.
      */
@@ -409,21 +411,19 @@ public class CacheMetricsManageCommandTest extends GridCommandHandlerAbstractTes
     }
 
     /**
-     * Form expected 'status' command output with table of processed caches.
      *
-     * @param expectedMetricsModes Expected metrics modes.
      */
-    private Map<String, String> toMap(IgniteBiTuple<String, String>... expectedMetricsModes) {
+    private Map<String, String> toMap(IgniteBiTuple<String, String>... tuples) {
         Map<String, String> entries = new HashMap<>();
 
-        for (IgniteBiTuple<String, String> mode : expectedMetricsModes)
+        for (IgniteBiTuple<String, String> mode : tuples)
             entries.put(mode.getKey(), mode.getValue());
 
         return entries;
     }
 
     /**
-     * Forms expected output for <tt>status</tt> command when cache does not exist.
+     * Forms expected output for 'status' command when cache does not exist.
      *
      * @param cacheName Cache name.
      */
