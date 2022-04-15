@@ -187,7 +187,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
             }
 
             var messages = new List<string>();
-            foreach (var dllPath in GetJvmDllPaths(configJvmDllPath))
+            foreach (var dllPath in GetJvmDllPaths(configJvmDllPath, log))
             {
                 log.Debug("Trying to load {0} from [option={1}, path={2}]...", FileJvmDll, dllPath.Key, dllPath.Value);
 
@@ -265,7 +265,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
         /// <summary>
         /// Gets the JVM DLL paths in order of lookup priority.
         /// </summary>
-        private static IEnumerable<KeyValuePair<string, string>> GetJvmDllPaths(string configJvmDllPath)
+        private static IEnumerable<KeyValuePair<string, string>> GetJvmDllPaths(string configJvmDllPath, ILogger log)
         {
             if (!string.IsNullOrEmpty(configJvmDllPath))
             {
@@ -285,7 +285,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
 
             foreach (var keyValuePair in
                 GetJvmDllPathsWindows()
-                    .Concat(GetJvmDllPathsLinux())
+                    .Concat(GetJvmDllPathsLinux(log))
                     .Concat(GetJvmDllPathsMacOs()))
             {
                 yield return keyValuePair;
@@ -337,7 +337,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
         /// <summary>
         /// Gets the Jvm dll paths from /usr/bin/java symlink.
         /// </summary>
-        private static IEnumerable<KeyValuePair<string, string>> GetJvmDllPathsLinux()
+        private static IEnumerable<KeyValuePair<string, string>> GetJvmDllPathsLinux(ILogger log)
         {
             if (Os.IsWindows || Os.IsMacOs)
             {
@@ -350,7 +350,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
                 yield break;
             }
 
-            var file = Shell.ExecuteSafe("readlink", "-f /usr/bin/java");
+            var file = Shell.ExecuteSafe("readlink", "-f /usr/bin/java", log: log);
             // /usr/lib/jvm/java-8-openjdk-amd64/jre/bin/java
 
             if (string.IsNullOrWhiteSpace(file))
