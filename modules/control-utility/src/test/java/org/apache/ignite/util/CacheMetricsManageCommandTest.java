@@ -339,7 +339,7 @@ public class CacheMetricsManageCommandTest extends GridCommandHandlerAbstractTes
     }
 
     /**
-     * Check execution of 'status' comand and resulting table.
+     * Check execution of 'status' command and resulting table.
      *
      * @param expEntries Expected entries for output of status sub-command.
      * @param statusArgs Status args.
