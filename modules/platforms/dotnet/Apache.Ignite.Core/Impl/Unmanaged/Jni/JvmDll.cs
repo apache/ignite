@@ -283,6 +283,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
                 }
             }
 
+            // TODO: Log all variants.
             foreach (var keyValuePair in
                 GetJvmDllPathsWindows()
                     .Concat(GetJvmDllPathsLinux(log))
@@ -347,6 +348,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
             const string javaExec = "/usr/bin/java";
             if (!File.Exists(javaExec))
             {
+                log.Debug("/usr/bin/java does not exist.");
                 yield break;
             }
 
@@ -355,8 +357,11 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
 
             if (string.IsNullOrWhiteSpace(file))
             {
+                log.Debug("readlink -f /usr/bin/java failed.");
                 yield break;
             }
+
+            log.Debug("/usr/bin/java resolved to '{0}'", file);
 
             var dir = Path.GetDirectoryName(file);
             // /usr/lib/jvm/java-8-openjdk-amd64/jre/bin
@@ -369,6 +374,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
             var libFolder = Path.GetFullPath(Path.Combine(dir, "../lib/"));
             if (!Directory.Exists(libFolder))
             {
+                log.Debug("Directory does not exist: '{0}'", libFolder);
                 yield break;
             }
 

@@ -52,6 +52,8 @@ namespace Apache.Ignite.Core.Impl
 
                     if (!process.WaitForExit(timeoutMs))
                     {
+                        log.Warn("Shell command '{0}' timed out.", file);
+
                         process.Kill();
                     }
 
