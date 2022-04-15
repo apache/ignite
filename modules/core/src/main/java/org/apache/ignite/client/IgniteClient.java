@@ -20,6 +20,7 @@ package org.apache.ignite.client;
 import java.util.Collection;
 import java.util.List;
 import org.apache.ignite.IgniteBinary;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 
@@ -216,6 +217,31 @@ public interface IgniteClient extends AutoCloseable {
      * @return {@code Services} functionality over given cluster group.
      */
     public ClientServices services(ClientClusterGroup grp);
+
+    /**
+     * Gets an atomic long from cache and create one if it has not been created yet and {@code create} flag
+     * is {@code true}.
+     *
+     * @param name Name of atomic long.
+     * @param initVal Initial value for atomic long. Ignored if {@code create} flag is {@code false}.
+     * @param create Boolean flag indicating whether data structure should be created if does not exist.
+     * @return Atomic long.
+     * @throws IgniteException If atomic long could not be fetched or created.
+     */
+    public ClientAtomicLong atomicLong(String name, long initVal, boolean create) throws IgniteException;
+
+    /**
+     * Gets an atomic long from cache and create one if it has not been created yet and {@code create} flag
+     * is {@code true}.
+     *
+     * @param name Name of atomic long.
+     * @param cfg Configuration.
+     * @param initVal Initial value for atomic long. Ignored if {@code create} flag is {@code false}.
+     * @param create Boolean flag indicating whether data structure should be created if does not exist.
+     * @return Atomic long.
+     * @throws IgniteException If atomic long could not be fetched or created.
+     */
+    public ClientAtomicLong atomicLong(String name, ClientAtomicConfiguration cfg, long initVal, boolean create) throws IgniteException;
 
     /**
      * Closes this client's open connections and relinquishes all underlying resources.
