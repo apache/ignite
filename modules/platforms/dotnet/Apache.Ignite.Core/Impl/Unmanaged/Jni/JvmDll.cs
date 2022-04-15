@@ -283,9 +283,8 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
                 }
             }
 
-            // TODO: Log all variants.
             foreach (var keyValuePair in
-                GetJvmDllPathsWindows()
+                GetJvmDllPathsWindows(log)
                     .Concat(GetJvmDllPathsLinux(log))
                     .Concat(GetJvmDllPathsMacOs()))
             {
@@ -296,7 +295,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
         /// <summary>
         /// Gets Jvm dll paths from Windows registry.
         /// </summary>
-        private static IEnumerable<KeyValuePair<string, string>> GetJvmDllPathsWindows()
+        private static IEnumerable<KeyValuePair<string, string>> GetJvmDllPathsWindows(ILogger log)
         {
             if (!Os.IsWindows)
             {
@@ -314,7 +313,11 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
                 using (var jSubKey = Microsoft.Win32.Registry.LocalMachine.OpenSubKey(regPath))
                 {
                     if (jSubKey == null)
+                    {
+                        log.Debug("Registry key does not exist: " + regPath);
+
                         continue;
+                    }
 
                     var curVer = jSubKey.GetValue("CurrentVersion") as string;
 
@@ -323,12 +326,24 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
 
                     foreach (var ver in versions.Where(v => !string.IsNullOrEmpty(v)))
                     {
-                        using (var verKey = jSubKey.OpenSubKey(ver))
-                        {
-                            var dllPath = verKey == null ? null : verKey.GetValue("RuntimeLib") as string;
+                        using var verKey = jSubKey.OpenSubKey(ver);
 
-                            if (dllPath != null)
-                                yield return new KeyValuePair<string, string>(verKey.Name, dllPath);
+                        if (verKey == null)
+                        {
+                            log.Debug("Registry key does not exist: " + ver);
+
+                            continue;
+                        }
+
+                        var dllPath = verKey.GetValue("RuntimeLib") as string;
+
+                        if (dllPath != null)
+                        {
+                            yield return new KeyValuePair<string, string>(verKey.Name, dllPath);
+                        }
+                        else
+                        {
+                            log.Debug("Registry key does not have 'RuntimeLib' value: " + ver);
                         }
                     }
                 }
