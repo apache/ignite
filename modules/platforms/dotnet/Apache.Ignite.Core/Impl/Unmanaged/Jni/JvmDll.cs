@@ -286,7 +286,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
             foreach (var keyValuePair in
                 GetJvmDllPathsWindows(log)
                     .Concat(GetJvmDllPathsLinux(log))
-                    .Concat(GetJvmDllPathsMacOs()))
+                    .Concat(GetJvmDllPathsMacOs(log)))
             {
                 yield return keyValuePair;
             }
@@ -407,12 +407,14 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
         /// <summary>
         /// Gets the JVM DLL paths on macOs.
         /// </summary>
-        private static IEnumerable<KeyValuePair<string, string>> GetJvmDllPathsMacOs()
+        private static IEnumerable<KeyValuePair<string, string>> GetJvmDllPathsMacOs(ILogger log)
         {
             const string jvmDir = "/Library/Java/JavaVirtualMachines";
 
             if (!Directory.Exists(jvmDir))
             {
+                log.Debug("Directory does not exist: " + jvmDir);
+
                 yield break;
             }
 
