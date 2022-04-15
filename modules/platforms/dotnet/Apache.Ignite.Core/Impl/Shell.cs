@@ -20,6 +20,7 @@ namespace Apache.Ignite.Core.Impl
     using System;
     using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
+    using Apache.Ignite.Core.Log;
 
     /// <summary>
     /// Shell utils (cmd/bash).
@@ -30,9 +31,9 @@ namespace Apache.Ignite.Core.Impl
         /// <summary>
         /// Executes the command.
         /// </summary>
-        [SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes", 
+        [SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes",
             Justification = "ExecuteSafe should ignore all exceptions.")]
-        public static string ExecuteSafe(string file, string args, int timeoutMs = 1000)
+        public static string ExecuteSafe(string file, string args, int timeoutMs = 1000, ILogger log = null)
         {
             try
             {
@@ -51,14 +52,18 @@ namespace Apache.Ignite.Core.Impl
 
                     if (!process.WaitForExit(timeoutMs))
                     {
+                        log?.Warn("Shell command '{0}' timed out.", file);
+
                         process.Kill();
                     }
 
                     return process.StandardOutput.ReadToEnd();
                 }
             }
-            catch (Exception)
+            catch (Exception e)
             {
+                log?.Warn("Shell command '{0}' failed: {1}", file, e.Message, e);
+
                 return string.Empty;
             }
         }
