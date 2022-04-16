@@ -726,7 +726,7 @@ public class TcpCommunicationSpi extends TcpCommunicationConfigInitializer {
             commWorker,
             ignite.configuration(),
             this.srvLsnr,
-            getName(),
+            this.getName(),
             getWorkersRegistry(ignite),
             ignite instanceof IgniteEx ? ((IgniteEx)ignite).context().metric() : null,
             this::createTcpClient,
@@ -762,7 +762,7 @@ public class TcpCommunicationSpi extends TcpCommunicationConfigInitializer {
             this,
             stateProvider,
             nioSrvWrapper,
-            getName()
+            this.getName()
         ));
 
         this.srvLsnr.setClientPool(clientPool);

@@ -28,7 +28,7 @@ panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
             .pc-form-grid-col-120
                 .ignite-form-field
                     list-editable.pcb-caches-list(
-                        ng-model='$ctrl.caches'
+                        ng-model='$ctrl.cacheDataProvider'
                         list-editable-one-way
                         on-item-change='$ctrl.changeCache($event)'
                         on-item-remove='$ctrl.removeCache($event)'
@@ -36,11 +36,11 @@ panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
                         list-editable-cols-row-class='pc-form-grid-row pcb-row-no-margin'
                     )
                         list-editable-item-view                            
-                            div {{ $item.name }}
-                            div {{ $item.clusterName }}
+                            div {{ $item.source }}
+                            div {{ $item.sourceCluster }}
                             div {{ $item.cacheMode }}
                             div {{ $item.atomicityMode }}
-                            div {{ $ctrl.Caches.getCacheBackupsCount($item) }}
+                            div {{ $item.amount }}
                         list-editable-item-edit
                                                              
                             div

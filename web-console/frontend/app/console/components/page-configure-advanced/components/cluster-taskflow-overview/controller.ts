@@ -15,7 +15,7 @@
  */
 
 import {Subject, Observable, combineLatest, from, of} from 'rxjs';
-import {count,tap, map, refCount, pluck, take, filter, publishReplay, switchMap, distinctUntilChanged} from 'rxjs/operators';
+import {count,tap, map, refCount, pluck, take, filter, publishReplay, switchMap, distinctUntilChanged, catchError} from 'rxjs/operators';
 import naturalCompare from 'natural-compare-lite';
 
 import {default as ConfigureState} from 'app/configuration/services/ConfigureState';
@@ -56,6 +56,8 @@ export default class ClusterTaskFlowController {
     selectedRows$: Subject<Array<ShortCluster>>;
     selectedRowsIDs$: Observable<Array<string>>;
     
+    targetCaches: Array<object>; // user selected caches    
+    targetModels: Array<object>; // cluster defined models
     
     clustersColumnDefs: Array<any> = [
         {
@@ -148,7 +150,7 @@ export default class ClusterTaskFlowController {
         this.clusterID$ = this.$uiRouter.globals.params$.pipe(           
             pluck('clusterID')           
         );
-        
+         
         this.shortClusters$ = this.ConfigureState.state$.pipe(this.ConfigSelectors.selectShortClustersValue());
         
         this.selectedRows$ = new Subject();
@@ -186,6 +188,8 @@ export default class ClusterTaskFlowController {
     
         
     onSave(event) {
-        this.saved = true;
+        this.saved = true; 
+        event.caches = this.targetCaches;
+        return event;
     }
 }

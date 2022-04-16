@@ -25,6 +25,8 @@ export default {
         cache: '<',
         caches: '<',
         models: '<',
+        cacheDataProvider: '=',
+        clusterId: '=',
         onSave: '&'
     }
 };

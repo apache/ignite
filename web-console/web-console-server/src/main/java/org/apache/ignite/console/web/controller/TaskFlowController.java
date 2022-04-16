@@ -3,6 +3,8 @@ package org.apache.ignite.console.web.controller;
 import java.util.Collection;
 import java.util.UUID;
 import io.swagger.annotations.ApiOperation;
+import lombok.Synchronized;
+
 import org.apache.ignite.console.dto.Account;
 import org.apache.ignite.console.dto.TaskFlow;
 import org.apache.ignite.console.repositories.TaskFlowRepository;
@@ -67,11 +69,11 @@ public class TaskFlowController {
      */
     @ApiOperation(value = "Save user's flow.")
     @PutMapping(consumes = APPLICATION_JSON_VALUE)
-    public ResponseEntity<?> save(@AuthenticationPrincipal Account acc, @RequestBody TaskFlow flow) {
+    public synchronized ResponseEntity<?> save(@AuthenticationPrincipal Account acc, @RequestBody TaskFlow flow) {
     	if(flow.getTarget()==null || flow.getSource()==null) {
     		return ResponseEntity.badRequest().body("TargetCache or SourceCache must not null!");
     	}
-    	Collection<TaskFlow> exists = taskFlowsSrv.taskFlowForGroup(acc.getId(),flow.getGroup(),null, flow.getTarget(), flow.getSource());
+    	Collection<TaskFlow> exists = taskFlowsSrv.taskFlowForGroup(acc.getId(),flow.getGroup(),flow.getSourceCluster(), flow.getTarget(), flow.getSource());
         if(flow.getId()==null) {
         	if(exists.size()>0) {
         		flow.setId(exists.iterator().next().getId());

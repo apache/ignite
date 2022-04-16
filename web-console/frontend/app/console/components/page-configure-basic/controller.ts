@@ -136,9 +136,9 @@ export default class PageConfigureBasicController {
         ).subscribe();  
 
         this.cachesColDefs = [
-            {name: 'Name:', cellClass: 'pc-form-grid-col-10'},
+            {name: 'Name:', cellClass: 'pc-form-grid-col-20'},
             {name: 'Mode:', cellClass: 'pc-form-grid-col-10'},
-            {name: 'Atomicity:', cellClass: 'pc-form-grid-col-20', tip: `
+            {name: 'Atomicity:', cellClass: 'pc-form-grid-col-10', tip: `
                 Atomicity:
                 <ul>
                     <li>ATOMIC - in this mode distributed transactions and distributed locking are not supported</li>
@@ -206,7 +206,9 @@ export default class PageConfigureBasicController {
        return formActionsMenu;
     }
     
+    
     restart() {
+        this.clonedCluster['restart'] = true;
         this.AgentManager.startCluster(this.clonedCluster).then((msg) => {  
             if(!msg.message){
                this.$scope.status = msg.status;

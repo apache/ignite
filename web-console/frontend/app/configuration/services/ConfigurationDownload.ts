@@ -97,8 +97,6 @@ export default class ConfigurationDownload {
                 });
             })
             .then(this.blobToBase64);
-            
-     
     }
     
     blobToBase64(blob:Blob) {

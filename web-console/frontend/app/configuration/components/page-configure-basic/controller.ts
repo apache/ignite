@@ -167,6 +167,16 @@ export default class PageConfigureBasicController {
                 text: 'Save and Download',
                 click: () => this.save(true),
                 icon: 'download'
+            },
+            {
+                text: 'Deploy and ReStart',
+                click: () => this.deploy(true),
+                icon: 'download'
+            },
+            {
+                text: 'Deploy Only',
+                click: () => this.deploy(false),
+                icon: 'plus'
             }
         ];
 
@@ -212,20 +222,29 @@ export default class PageConfigureBasicController {
         this.clonedCluster = cloneDeep(this.originalCluster);
         this.ConfigureState.dispatchAction({type: 'RESET_EDIT_CHANGES'});
     }
+    
+    deploy(restart) {
+        this.ConfigurationDownload.generateDownloadData(this.clonedCluster)
+        .then((data)=>{
+            var cfg = Object.assign({}, this.clonedCluster, {'blob': data, 'restart': restart});
+            this.AgentManager.startCluster(cfg).then((msg) => {  
+                if(!msg.message){
+                   this.$scope.status = msg.status;
+                   this.ConfigureState.dispatchAction({type: 'RESTART_CLUSTER'});
+                   this.clonedCluster.status = msg.status;
+                }            
+                this.$scope.message = msg.message;
+     
+            })
+        })
+       .catch((e) => {
+            this.$scope.message = ('Failed to generate project config file: '+e);           
+        });
+    }
 
     confirmAndReset() {
         return this.Confirm.confirm('Are you sure you want to undo all changes for current cluster?')
             .then(() => this.reset())
             .catch(() => {});
-    }
-    confirmAndRestart() {
-        return this.Confirm.confirm('Are you sure you want to restart current cluster? Current status:' + this.clonedCluster.status)
-            .then(() => this.restart())
-            .catch(() => {});
-    }
-    confirmAndStop() {
-        return this.Confirm.confirm('Are you sure you want to stop current cluster?  Current status:' + this.clonedCluster.status)
-            .then(() => this.stop())
-            .catch(() => {});
-    }
+    }    
 }

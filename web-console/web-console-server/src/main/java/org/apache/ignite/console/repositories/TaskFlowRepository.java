@@ -96,20 +96,20 @@ public class TaskFlowRepository {
      * find activity.
      *
      * @param accId Account ID.
-     * @param grp TaskFlow group.
-     * @param act TaskFlow action.
+     * @param grp TaskFlow group == targetCluster
+     * @param sourceCluster TaskFlow source cluster.
      *
      * @return TaskFlow.
      */
-    public Collection<TaskFlow> taskFlowForGroup(UUID accId, String grp, String act,String target,String source) {
+    public Collection<TaskFlow> taskFlowForGroup(UUID accId, String grp, String sourceCluster,String target,String source) {
         return txMgr.doInTransaction(() -> {
             Set<UUID> ids = grpIdx.get(grp);
 
             Collection<TaskFlow> activities = taskflowTbl.loadAll(ids);
-            if(act!=null) {
+            if(sourceCluster!=null) {
             	Collection<TaskFlow> activitie2 = activities
                     .stream()
-                    .filter(item -> item.getGroup().equals(grp) && item.getAction().equals(act))
+                    .filter(item -> item.getGroup().equals(grp) && item.getSourceCluster().equals(sourceCluster))
                     .collect(Collectors.toList())
                    ;
             	activities  = activitie2;
@@ -174,10 +174,18 @@ public class TaskFlowRepository {
     public void save(UUID accId, TaskFlow activity) {
         txMgr.doInTransaction(() -> {
         	accountsIdx.validateBeforeSave(accId, activity.getId(), taskflowTbl);
-            taskflowTbl.save(activity);
-
-            accountsIdx.add(accId, activity.getId());
-            grpIdx.add(activity.getGroup(), activity.getId());
+        	TaskFlow old = taskflowTbl.save(activity);
+        	if(old==null) {
+        		accountsIdx.add(accId, activity.getId());
+        		grpIdx.add(activity.getGroup(), activity.getId());
+        	}
+        	else if(!old.getId().equals(activity.getId())){
+        		accountsIdx.remove(accId, old.getId());
+        		grpIdx.remove(old.getGroup(), old.getId());
+        		
+        		accountsIdx.add(accId, activity.getId());
+        		grpIdx.add(activity.getGroup(), activity.getId());
+        	}
         });
     }
     
@@ -226,9 +234,13 @@ public class TaskFlowRepository {
         txMgr.doInTransaction(() -> {
             Set<UUID> flowsIds = accountsIdx.delete(accId);
 
-            taskflowTbl.deleteAll(flowsIds);
-            // todo@byron
-            //grpIdx.delete(grp);
+            Collection<TaskFlow> flows = taskflowTbl.loadAll(flowsIds);
+            for(TaskFlow flow: flows) {            	
+                grpIdx.remove(flow.getGroup(),flow.getId());
+            }            
+            taskflowTbl.deleteAll(flowsIds);           
+            
+            
         });
     }
 }

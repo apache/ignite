@@ -32,7 +32,7 @@ public class TaskFlow extends AbstractDto {
     private String grp;
 
     /** */
-    private String act;
+    private String act; //action
     
     /** from cluster */
     private String sourceCluster;

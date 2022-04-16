@@ -14,14 +14,15 @@
  * limitations under the License.
  */
 
-import {Subject, merge, combineLatest} from 'rxjs';
+import {Subject, from, merge, combineLatest} from 'rxjs';
 import {tap, map, refCount, pluck, publishReplay, switchMap, distinctUntilChanged} from 'rxjs/operators';
 import {UIRouter, TransitionService, StateService} from '@uirouter/angularjs';
 import naturalCompare from 'natural-compare-lite';
-import {removeClusterItems, advancedSaveCache} from 'app/configuration/store/actionCreators';
+
 import ConfigureState from 'app/configuration/services/ConfigureState';
 import ConfigSelectors from 'app/configuration/store/selectors';
 import Caches from 'app/configuration/services/Caches';
+import TaskFlows from 'app/console/services/TaskFlows';
 import Version from 'app/services/Version.service';
 import {ShortCache} from '../../../../types';
 import {IColumnDefOf} from 'ui-grid';
@@ -36,6 +37,7 @@ export default class Controller {
         'ConfigureState',
         '$state',
         'IgniteVersion',
+        'TaskFlows',
         'Caches'
     ];
 
@@ -47,6 +49,7 @@ export default class Controller {
         private ConfigureState: ConfigureState,
         private $state: StateService,
         private Version: Version,
+        private TaskFlows: TaskFlows,
         private Caches: Caches
     ) {}
 
@@ -93,10 +96,10 @@ export default class Controller {
     ];
 
     $onInit() {
-        this.clusterID$ = this.$uiRouter.globals.params$.pipe(
-            pluck('clusterID')            
-        );
         
+        this.clusterID$ = this.$uiRouter.globals.params$.pipe(pluck('clusterID'));
+        this.clusterID$.subscribe((c)=>{ this.clusterId = c; }); 
+                
         const cacheID$ = this.$uiRouter.globals.params$.pipe(
             pluck('cacheID'),
             publishReplay(1),
@@ -109,6 +112,15 @@ export default class Controller {
             switchMap((id) => {
                 return this.ConfigureState.state$.pipe(this.ConfigSelectors.selectCacheToEdit(id));
             })
+        );
+        
+        this.cacheDataProvider$ = this.originalCache$.pipe(            
+            switchMap((cache) => {
+                return this.TaskFlows.getTaskFlowsOfTarget(this.clusterId,cache.name);
+                   
+            }),
+            map((result) => { return result.data; })
+            
         );
 
         this.isNew$ = cacheID$.pipe(map((id) => id === 'new'));
@@ -149,9 +161,15 @@ export default class Controller {
     }
 
     remove(itemIDs: Array<string>) {
-        this.ConfigureState.dispatchAction(
-            removeClusterItems(this.$uiRouter.globals.params.clusterID, 'caches', itemIDs, true, true)
-        );
+       // this.ConfigureState.dispatchAction(
+            //removeClusterItems(this.$uiRouter.globals.params.clusterID, 'caches', itemIDs, true, true)
+       // );
+    }
+    
+    clone(itemIDs: Array<string>) {
+       // this.ConfigureState.dispatchAction(
+            //removeClusterItems(this.$uiRouter.globals.params.clusterID, 'caches', itemIDs, true, true)
+       // );
     }
 
     $onDestroy() {

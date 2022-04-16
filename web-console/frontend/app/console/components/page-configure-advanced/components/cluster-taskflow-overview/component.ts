@@ -22,7 +22,8 @@ export default {
     templateUrl,
     controller,
     bindings: {
-        clusterId: '<',       
-        caches: '<'        
+        clusterId: '<',
+        targetModels: '=',
+        targetCaches: '=' 
     }
 };

@@ -79,13 +79,7 @@ export default class TaskFlows {
         {value: 'Custom', label: 'Custom'},
         {value: null, label: 'Not set'}
     ];
-
-    memoryModes = [
-        {value: 'ONHEAP_TIERED', label: 'ONHEAP_TIERED'},
-        {value: 'OFFHEAP_TIERED', label: 'OFFHEAP_TIERED'},
-        {value: 'OFFHEAP_VALUES', label: 'OFFHEAP_VALUES'}
-    ];
-
+    
     diskPageCompression = [
         {value: 'SKIP_GARBAGE', label: 'SKIP_GARBAGE'},
         {value: 'ZSTD', label: 'ZSTD'},
@@ -142,17 +136,25 @@ export default class TaskFlows {
     getTaskFlowOfGroup(clusterID: string) {
         return this.$http.get(`/api/v1/taskflow/group/${clusterID}`);
     }   
+    
+    getTaskFlows(clusterID: string,targetCache: string,sourceCache: string) {
+        return this.$http.get(`/api/v1/taskflow/group/${clusterID}?source=`+sourceCache+'&target='+targetCache);
+    }
 
     getTaskFlowsOfSource(clusterID: string,cacheID: string) {
         return this.$http.get(`/api/v1/taskflow/group/${clusterID}?source=`+cacheID);
     }
     
-    removeTaskFlowOfGroup(clusterID: string) {
-        return this.$http.delete('/api/v1/taskflow/group/${clusterID}');
+    getTaskFlowsOfTarget(clusterID: string,cacheID: string) {
+        return this.$http.get(`/api/v1/taskflow/group/${clusterID}?target=`+cacheID);
     }
     
-    removeTaskFlow(clusterID: string,id: string) {
-        return this.$http.delete('/api/v1/taskflow/${id}');
+    removeTaskFlowOfGroup(clusterID: string) {
+        return this.$http.delete(`/api/v1/taskflow/group/${clusterID}`);
+    }
+    
+    removeTaskFlow(clusterID: string, id: string) {
+        return this.$http.delete(`/api/v1/taskflow/${id}`);
     }
 
     saveBasic(changedItems) {

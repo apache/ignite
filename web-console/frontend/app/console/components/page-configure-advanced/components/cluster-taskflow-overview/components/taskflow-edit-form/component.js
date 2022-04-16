@@ -23,6 +23,7 @@ export default {
     bindings: {
         sourceCluster: '=',
         targetCaches: '=',
+        targetModels: '=',
         targetClusterId: '=',
         onSave: '&'
     }

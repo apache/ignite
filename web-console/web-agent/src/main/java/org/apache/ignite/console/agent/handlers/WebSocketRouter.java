@@ -264,10 +264,12 @@ public class WebSocketRouter implements AutoCloseable {
             HttpClient httpClient = new HttpClient(createServerSslFactory(cfg));
             httpClient.setMaxConnectionsPerDestination(4);
             httpClient.setConnectBlocking(false);
+            httpClient.setFollowRedirects(false);
+            
             // TODO GG-18379 Investigate how to establish native websocket connection with proxy.
             configureProxy(httpClient, cfg.serverUri());
 
-            client = new WebSocketClient(httpClient);
+            client = new WebSocketClient(httpClient);            
 
             httpClient.start();
             client.start();
@@ -394,6 +396,12 @@ public class WebSocketRouter implements AutoCloseable {
 			
 			AgentClusterLauncher.saveBlobToFile(json);
 			
+			Boolean restart = json.getBoolean("restart");
+			if(restart!=null && restart) {
+				String id = json.getString("id");
+	        	AgentClusterLauncher.stop(clusterName,id);
+			}
+			
 			if(!json.getBoolean("demo",false)) {	
 				// 启动一个独立的node，jvm内部的node之间相互隔离
 				Ignite ignite = AgentClusterLauncher.trySingleStart(json);
@@ -434,6 +442,8 @@ public class WebSocketRouter implements AutoCloseable {
 		        	stat.put("status", "started");
 		        }
 			}
+			
+			stat.put("message","Ignite started successfully.");
 			
 		} catch (Exception e) {
 			// TODO Auto-generated catch block

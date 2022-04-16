@@ -55,7 +55,11 @@ export default class TaskFlowFormController {
     
     sourceCluster: object;
     
-    targetCaches: Array<string>;
+    targetCaches: Array<object>;
+    
+    targetModels: Array<object>;
+    
+    targetCluster: object;
     
     targetClusterId: string;
     
@@ -85,7 +89,8 @@ export default class TaskFlowFormController {
         this.$scope.ui = this.IgniteFormUtils.formUI();
 
         this.formActions = [
-            {text: 'Save TaskFlow', icon: 'checkmark', click: () => this.confirmAndSave()}                      
+            {text: 'Save TaskFlow', icon: 'checkmark', click: () => this.confirmAndSave()},
+            {text: 'Start TaskFlow', icon: 'checkmark', click: () => this.confirmAndStart()}                
         ];
     }
 
@@ -94,11 +99,11 @@ export default class TaskFlowFormController {
     }
     
     buildTaskFlows(tplFlow){      
-       this.taskFlow.group = this.targetClusterId;
-       this.taskFlow.targetCluster = this.targetClusterId;
+       tplFlow.group = this.targetClusterId;
+       tplFlow.targetCluster = this.targetClusterId;
        let taskList = []
        for(let cache of this.targetCaches){
-           this.taskFlow = Object.assign(this.taskFlow,tplFlow);
+           this.taskFlow = Object.assign({},tplFlow);
            this.taskFlow.target = cache.name;
            this.taskFlow.source = cache.name;
            this.taskFlow.name = 'Data from '+this.taskFlow.source+' to '+cache.name;
@@ -124,8 +129,8 @@ export default class TaskFlowFormController {
         return [this.taskFlow, this.clonedTaskFlow];
     }    
     
-    saveTaskFlowForGrid(taskId:string,tplFlow) {
-        let args = this.onSave({$event:{id: taskId,args: tplFlow}});
+    saveTaskFlowForGrid(tplFlow) {
+        let args = this.onSave({$event:{sourceCluster: tplFlow.sourceCluster,args: tplFlow}});
         
         let tasks = this.buildTaskFlows(tplFlow);
         let result = [];
@@ -144,9 +149,39 @@ export default class TaskFlowFormController {
                 }))
             );    
             result.push(stat);
+            
+            stat.subscribe((d)=>{
+                if(d.error){
+                    this.$scope.message = d.error.message;
+                }
+            });
         }
         if(!result){
-            this.AgentManager.callClusterCommand({id: clusterId},serviceName,params).then((data) => {
+            this.$scope.message = 'no task save!';
+        }        
+    }
+    
+    startTaskFlowForGrid(tplFlow) {
+        let tasks = this.buildTaskFlows(tplFlow);
+        let result = [];
+        let serviceName = 'computeTaskLoadService';
+        let task = 'ContinuousMapperTask';
+        for(let task of tasks){           
+            let stat = from(this.TaskFlows.getTaskFlows(task.group,task.target,task.source)).pipe(
+                switchMap(({data}) => of(                   
+                    {type: 'LOAD_TASK_FLOW', taskFlow: data}                   
+                )),
+                catchError((error) => of({
+                    type: 'LOAD_TASK_FLOW_ERR',
+                    error: {
+                        message: `Failed to save cluster task flow: ${error.data.message}.`
+                    }
+                }))
+            );    
+            result.push(stat);
+        }
+        if(result){
+            this.AgentManager.callClusterService({id: tplFlow.sourceCluster},serviceName,{tasks,task,targetModel:this.targetModels}).then((data) => {
                  this.$scope.status = data.status; 
                  if(data.result){
                      return data.result;
@@ -169,7 +204,12 @@ export default class TaskFlowFormController {
         if (this.$scope.ui.inputForm && this.$scope.ui.inputForm.$invalid)
             return this.IgniteFormUtils.triggerValidation(this.$scope.ui.inputForm, this.$scope);
         return this.IgniteConfirm.confirm('Are you sure you want to save task flow ' + this.taskFlow.name + ' for current grid?')
-        .then(() => { this.saveTaskFlowForGrid(this.taskFlow.id, this.clonedTaskFlow); } );
+        .then(() => { this.saveTaskFlowForGrid(this.clonedTaskFlow); } );
+    }
+    
+    confirmAndStart() {        
+        return this.IgniteConfirm.confirm('Are you sure you want to start this task flow ' + this.taskFlow.name + ' for current grid?')
+        .then(() => { this.startTaskFlowForGrid(this.clonedTaskFlow); } );
     }
 
     clearImplementationVersion(storeFactory) {
