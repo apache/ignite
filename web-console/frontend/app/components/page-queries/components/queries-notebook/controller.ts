@@ -2127,12 +2127,12 @@ export class NotebookCtrl {
             setTimeout(() => paragraph.ace.focus(), 100);
         };
 
-        $scope.importMetadata = function() {
+        $scope.importMetadata = function(cacheName) {
             Loading.start('loadingCacheMetadata');
 
             $scope.metadata = [];
 
-            agentMgr.metadata()
+            agentMgr.metadata(cacheName)
                 .then((metadata) => {
                     $scope.metadata = _.sortBy(_.filter(metadata, (meta) => {
                         const cache = _.find($scope.caches, { value: meta.cacheName });

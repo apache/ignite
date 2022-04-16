@@ -87,9 +87,7 @@ function registerStates($stateProvider) {
                     );
                 }),
                 map(([cluster = {caches: []}, clusters]) => {
-                    return (clusters.value.size > 10 || cluster.caches.length > 5)
-                        ? 'base.console.edit.advanced'
-                        : 'base.console.edit.basic';
+                    return 'base.console.edit.basic'
                 })
             )
             .toPromise();

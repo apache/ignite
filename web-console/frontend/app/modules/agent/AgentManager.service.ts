@@ -650,8 +650,8 @@ export default class AgentManager {
     /**
      * @returns {Promise}
      */
-    metadata() {
-        return this._restOnCluster(EVENT_REST, {cmd: 'metadata'})
+    metadata(schema: string) {
+        return this._restOnCluster(EVENT_REST, {cmd: 'metadata', p4: schema})
             .then((caches) => {
                 let types = [];
 
