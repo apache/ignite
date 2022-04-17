@@ -314,7 +314,7 @@
                     <artifactId>maven-jar-plugin</artifactId>
                 </plugin>
 
-                <plugin>
+                <!-- <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-javadoc-plugin</artifactId>
                     <version>${maven.javadoc.plugin.version}</version>
@@ -385,7 +385,7 @@
                                 ]]>
                         </bottom>
                     </configuration>
-                </plugin>
+                </plugin> -->
 
                 <plugin>
                     <groupId>org.apache.felix</groupId>
@@ -620,7 +620,7 @@
                 </executions>
             </plugin>
 
-            <plugin>
+            <!-- <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-javadoc-plugin</artifactId>
                 <executions>
@@ -632,7 +632,7 @@
                         <phase>package</phase>
                     </execution>
                 </executions>
-            </plugin>
+            </plugin> -->
         </plugins>
     </build>
 
@@ -899,6 +899,7 @@
                             <!-- TODO https://issues.apache.org/jira/browse/IGNITE-13202 -->
                             <additionalOptions>${javadoc.opts} --add-exports=java.base/sun.nio.ch=ALL-UNNAMED --add-exports=java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED</additionalOptions>
                             <detectJavaApiLink>false</detectJavaApiLink>
+                            <skip>true</skip>
                         </configuration>
                     </plugin>
                 </plugins>

@@ -2,18 +2,15 @@
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 	
-	 <parent>
+	<parent>
         <groupId>org.apache.ignite</groupId>
-        <artifactId>ignite-parent</artifactId>
-        <version>1</version>
-        <relativePath>../../parent</relativePath>
+        <artifactId>ignite-parent-internal</artifactId>
+        <version>${revision}</version>
+        <relativePath>../../parent-internal/pom.xml</relativePath>
     </parent>
     
-	<groupId>org.apache.ignite</groupId>
 	<artifactId>elasticsearch-relay</artifactId>
-
-
-	<version>2.9.0-SNAPSHOT</version>
+	
 	<build>
 		<finalName>es-relay</finalName>		
 	</build>

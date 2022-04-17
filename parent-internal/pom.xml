@@ -85,6 +85,7 @@
                     <artifactId>maven-javadoc-plugin</artifactId>
                     <version>${maven.javadoc.plugin.version}</version>
                     <configuration>
+                        <skip>true</skip>
                         <groups>
                             <group>
                                 <title>Common Grid APIs</title>
