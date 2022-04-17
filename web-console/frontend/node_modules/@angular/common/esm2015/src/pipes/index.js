@@ -1,0 +1,46 @@
+/**
+ * @fileoverview added by tsickle
+ * @suppress {checkTypes,constantProperty,extraRequire,missingOverride,missingReturn,unusedPrivateMembers,uselessCode} checked by tsc
+ */
+/**
+ * @license
+ * Copyright Google Inc. All Rights Reserved.
+ *
+ * Use of this source code is governed by an MIT-style license that can be
+ * found in the LICENSE file at https://angular.io/license
+ */
+/**
+ * @module
+ * @description
+ * This module provides a set of common Pipes.
+ */
+import { AsyncPipe } from './async_pipe';
+import { LowerCasePipe, TitleCasePipe, UpperCasePipe } from './case_conversion_pipes';
+import { DatePipe } from './date_pipe';
+import { I18nPluralPipe } from './i18n_plural_pipe';
+import { I18nSelectPipe } from './i18n_select_pipe';
+import { JsonPipe } from './json_pipe';
+import { KeyValuePipe } from './keyvalue_pipe';
+import { CurrencyPipe, DecimalPipe, PercentPipe } from './number_pipe';
+import { SlicePipe } from './slice_pipe';
+export { AsyncPipe, CurrencyPipe, DatePipe, DecimalPipe, KeyValuePipe, I18nPluralPipe, I18nSelectPipe, JsonPipe, LowerCasePipe, PercentPipe, SlicePipe, TitleCasePipe, UpperCasePipe, };
+/**
+ * A collection of Angular pipes that are likely to be used in each and every application.
+ * @type {?}
+ */
+export const COMMON_PIPES = [
+    AsyncPipe,
+    UpperCasePipe,
+    LowerCasePipe,
+    JsonPipe,
+    SlicePipe,
+    DecimalPipe,
+    PercentPipe,
+    TitleCasePipe,
+    CurrencyPipe,
+    DatePipe,
+    I18nPluralPipe,
+    I18nSelectPipe,
+    KeyValuePipe,
+];
+//# sourceMappingURL=data:application/json;base64,eyJ2ZXJzaW9uIjozLCJmaWxlIjoiaW5kZXguanMiLCJzb3VyY2VSb290IjoiIiwic291cmNlcyI6WyIuLi8uLi8uLi8uLi8uLi8uLi8uLi9wYWNrYWdlcy9jb21tb24vc3JjL3BpcGVzL2luZGV4LnRzIl0sIm5hbWVzIjpbXSwibWFwcGluZ3MiOiI7Ozs7Ozs7Ozs7Ozs7Ozs7QUFhQSxPQUFPLEVBQUMsU0FBUyxFQUFDLE1BQU0sY0FBYyxDQUFDO0FBQ3ZDLE9BQU8sRUFBQyxhQUFhLEVBQUUsYUFBYSxFQUFFLGFBQWEsRUFBQyxNQUFNLHlCQUF5QixDQUFDO0FBQ3BGLE9BQU8sRUFBQyxRQUFRLEVBQUMsTUFBTSxhQUFhLENBQUM7QUFDckMsT0FBTyxFQUFDLGNBQWMsRUFBQyxNQUFNLG9CQUFvQixDQUFDO0FBQ2xELE9BQU8sRUFBQyxjQUFjLEVBQUMsTUFBTSxvQkFBb0IsQ0FBQztBQUNsRCxPQUFPLEVBQUMsUUFBUSxFQUFDLE1BQU0sYUFBYSxDQUFDO0FBQ3JDLE9BQU8sRUFBVyxZQUFZLEVBQUMsTUFBTSxpQkFBaUIsQ0FBQztBQUN2RCxPQUFPLEVBQUMsWUFBWSxFQUFFLFdBQVcsRUFBRSxXQUFXLEVBQUMsTUFBTSxlQUFlLENBQUM7QUFDckUsT0FBTyxFQUFDLFNBQVMsRUFBQyxNQUFNLGNBQWMsQ0FBQztBQUV2QyxPQUFPLEVBQ0wsU0FBUyxFQUNULFlBQVksRUFDWixRQUFRLEVBQ1IsV0FBVyxFQUVYLFlBQVksRUFDWixjQUFjLEVBQ2QsY0FBYyxFQUNkLFFBQVEsRUFDUixhQUFhLEVBQ2IsV0FBVyxFQUNYLFNBQVMsRUFDVCxhQUFhLEVBQ2IsYUFBYSxHQUNkLENBQUM7Ozs7O0FBTUYsTUFBTSxPQUFPLFlBQVksR0FBRztJQUMxQixTQUFTO0lBQ1QsYUFBYTtJQUNiLGFBQWE7SUFDYixRQUFRO0lBQ1IsU0FBUztJQUNULFdBQVc7SUFDWCxXQUFXO0lBQ1gsYUFBYTtJQUNiLFlBQVk7SUFDWixRQUFRO0lBQ1IsY0FBYztJQUNkLGNBQWM7SUFDZCxZQUFZO0NBQ2IiLCJzb3VyY2VzQ29udGVudCI6WyIvKipcbiAqIEBsaWNlbnNlXG4gKiBDb3B5cmlnaHQgR29vZ2xlIEluYy4gQWxsIFJpZ2h0cyBSZXNlcnZlZC5cbiAqXG4gKiBVc2Ugb2YgdGhpcyBzb3VyY2UgY29kZSBpcyBnb3Zlcm5lZCBieSBhbiBNSVQtc3R5bGUgbGljZW5zZSB0aGF0IGNhbiBiZVxuICogZm91bmQgaW4gdGhlIExJQ0VOU0UgZmlsZSBhdCBodHRwczovL2FuZ3VsYXIuaW8vbGljZW5zZVxuICovXG5cbi8qKlxuICogQG1vZHVsZVxuICogQGRlc2NyaXB0aW9uXG4gKiBUaGlzIG1vZHVsZSBwcm92aWRlcyBhIHNldCBvZiBjb21tb24gUGlwZXMuXG4gKi9cbmltcG9ydCB7QXN5bmNQaXBlfSBmcm9tICcuL2FzeW5jX3BpcGUnO1xuaW1wb3J0IHtMb3dlckNhc2VQaXBlLCBUaXRsZUNhc2VQaXBlLCBVcHBlckNhc2VQaXBlfSBmcm9tICcuL2Nhc2VfY29udmVyc2lvbl9waXBlcyc7XG5pbXBvcnQge0RhdGVQaXBlfSBmcm9tICcuL2RhdGVfcGlwZSc7XG5pbXBvcnQge0kxOG5QbHVyYWxQaXBlfSBmcm9tICcuL2kxOG5fcGx1cmFsX3BpcGUnO1xuaW1wb3J0IHtJMThuU2VsZWN0UGlwZX0gZnJvbSAnLi9pMThuX3NlbGVjdF9waXBlJztcbmltcG9ydCB7SnNvblBpcGV9IGZyb20gJy4vanNvbl9waXBlJztcbmltcG9ydCB7S2V5VmFsdWUsIEtleVZhbHVlUGlwZX0gZnJvbSAnLi9rZXl2YWx1ZV9waXBlJztcbmltcG9ydCB7Q3VycmVuY3lQaXBlLCBEZWNpbWFsUGlwZSwgUGVyY2VudFBpcGV9IGZyb20gJy4vbnVtYmVyX3BpcGUnO1xuaW1wb3J0IHtTbGljZVBpcGV9IGZyb20gJy4vc2xpY2VfcGlwZSc7XG5cbmV4cG9ydCB7XG4gIEFzeW5jUGlwZSxcbiAgQ3VycmVuY3lQaXBlLFxuICBEYXRlUGlwZSxcbiAgRGVjaW1hbFBpcGUsXG4gIEtleVZhbHVlLFxuICBLZXlWYWx1ZVBpcGUsXG4gIEkxOG5QbHVyYWxQaXBlLFxuICBJMThuU2VsZWN0UGlwZSxcbiAgSnNvblBpcGUsXG4gIExvd2VyQ2FzZVBpcGUsXG4gIFBlcmNlbnRQaXBlLFxuICBTbGljZVBpcGUsXG4gIFRpdGxlQ2FzZVBpcGUsXG4gIFVwcGVyQ2FzZVBpcGUsXG59O1xuXG5cbi8qKlxuICogQSBjb2xsZWN0aW9uIG9mIEFuZ3VsYXIgcGlwZXMgdGhhdCBhcmUgbGlrZWx5IHRvIGJlIHVzZWQgaW4gZWFjaCBhbmQgZXZlcnkgYXBwbGljYXRpb24uXG4gKi9cbmV4cG9ydCBjb25zdCBDT01NT05fUElQRVMgPSBbXG4gIEFzeW5jUGlwZSxcbiAgVXBwZXJDYXNlUGlwZSxcbiAgTG93ZXJDYXNlUGlwZSxcbiAgSnNvblBpcGUsXG4gIFNsaWNlUGlwZSxcbiAgRGVjaW1hbFBpcGUsXG4gIFBlcmNlbnRQaXBlLFxuICBUaXRsZUNhc2VQaXBlLFxuICBDdXJyZW5jeVBpcGUsXG4gIERhdGVQaXBlLFxuICBJMThuUGx1cmFsUGlwZSxcbiAgSTE4blNlbGVjdFBpcGUsXG4gIEtleVZhbHVlUGlwZSxcbl07XG4iXX0=

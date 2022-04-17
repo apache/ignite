@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!--
+    shard property configuration file
+    every shard indicate the shard property of class, it has the following attributes
+        class:shard class name, with it's full specify name
+        type:shard-type
+            case "hash":
+                every match is a case, has an attribute match indicate that hash val, text is the dataSourceId
+                <match match="0">data1</match>
+            case "range";
+                every match indicate that when the shard value is in the scope of range value, then the dataSourceId match.
+                the range mark is "~"
+                <match match="0~50">data1</match>
+            case "range-hash":
+                every range is a value match scope, scope is spilt by "~", the inner match node is the same meaning of hash.
+                <range range="0~30">
+                    <match match="0">data1</match>
+                </range>
+            case "none":
+                the class is not shard, just add match node by not specifying add match attribute.
+                <match>data1</match>
+
+        match node:
+            indicate what case to be match.
+
+        range node:
+            indicate what scope to be match.
+-->
+<shards>
+    <shard class="com.shard.jdbc.domain.Student" type="hash">
+        <match match="0">data1</match>
+        <match match="1">data2</match>
+        <match match="2">data3</match>
+        <match match="3">data4</match>
+    </shard>
+    <shard class="com.shard.jdbc.domain.Teacher" type="range-hash">
+        <range range="0~30">
+            <match match="0">data1</match>
+            <match match="1">data2</match>
+            <match match="2">data3</match>
+            <match match="3">data4</match>
+        </range>
+        <range range="31~60">
+            <match match="0">data1</match>
+            <match match="1">data2</match>
+            <match match="2">data3</match>
+            <match match="3">data4</match>
+        </range>
+    </shard>
+    <shard class="com.shard.jdbc.domain.Building" type="range">
+        <match match="0~20">data1</match>
+        <match match="21~40">data2</match>
+        <match match="41~60">data3</match>
+        <match match="61~80">data4</match>
+    </shard>
+    <shard class="com.shard.jdbc.domain.Course" type="none">
+        <match>data4</match>
+    </shard>
+</shards>

@@ -1,0 +1,37 @@
+/**
+ * @fileoverview added by tsickle
+ * @suppress {checkTypes,constantProperty,extraRequire,missingOverride,missingReturn,unusedPrivateMembers,uselessCode} checked by tsc
+ */
+/**
+ * @license
+ * Copyright Google Inc. All Rights Reserved.
+ *
+ * Use of this source code is governed by an MIT-style license that can be
+ * found in the LICENSE file at https://angular.io/license
+ */
+/*
+ * This file exists to support compilation of @angular/core in Ivy mode.
+ *
+ * When the Angular compiler processes a compilation unit, it normally writes imports to
+ * @angular/core. When compiling the core package itself this strategy isn't usable. Instead, the
+ * compiler writes imports to this file.
+ *
+ * Only a subset of such imports are supported - core is not allowed to declare components or pipes.
+ * A check in ngtsc's `R3SymbolsImportRewriter` validates this condition. The rewriter is only used
+ * when compiling @angular/core and is responsible for translating an external name (prefixed with
+ * ɵ) to the internal symbol name as exported below.
+ *
+ * The below symbols are used for @Injectable and @NgModule compilation.
+ */
+export { ɵɵinject } from './di/injector_compatibility';
+export { ɵɵdefineInjectable, ɵɵdefineInjector } from './di/interface/defs';
+export { ɵɵdefineNgModule } from './render3/definition';
+export { setClassMetadata } from './render3/metadata';
+export { NgModuleFactory } from './render3/ng_module_ref';
+/**
+ * The existence of this constant (in this particular file) informs the Angular compiler that the
+ * current program is actually \@angular/core, which needs to be compiled specially.
+ * @type {?}
+ */
+export const ITS_JUST_ANGULAR = true;
+//# sourceMappingURL=data:application/json;base64,eyJ2ZXJzaW9uIjozLCJmaWxlIjoicjNfc3ltYm9scy5qcyIsInNvdXJjZVJvb3QiOiIiLCJzb3VyY2VzIjpbIi4uLy4uLy4uLy4uLy4uLy4uL3BhY2thZ2VzL2NvcmUvc3JjL3IzX3N5bWJvbHMudHMiXSwibmFtZXMiOltdLCJtYXBwaW5ncyI6Ijs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7OztBQXVCQSxPQUFPLEVBQUMsUUFBUSxFQUFDLE1BQU0sNkJBQTZCLENBQUM7QUFDckQsT0FBTyxFQUFpQyxrQkFBa0IsRUFBRSxnQkFBZ0IsRUFBQyxNQUFNLHFCQUFxQixDQUFDO0FBRXpHLE9BQU8sRUFBQyxnQkFBZ0IsRUFBQyxNQUFNLHNCQUFzQixDQUFDO0FBQ3RELE9BQU8sRUFBQyxnQkFBZ0IsRUFBQyxNQUFNLG9CQUFvQixDQUFDO0FBQ3BELE9BQU8sRUFBQyxlQUFlLEVBQUMsTUFBTSx5QkFBeUIsQ0FBQzs7Ozs7O0FBUXhELE1BQU0sT0FBTyxnQkFBZ0IsR0FBRyxJQUFJIiwic291cmNlc0NvbnRlbnQiOlsiLyoqXG4gKiBAbGljZW5zZVxuICogQ29weXJpZ2h0IEdvb2dsZSBJbmMuIEFsbCBSaWdodHMgUmVzZXJ2ZWQuXG4gKlxuICogVXNlIG9mIHRoaXMgc291cmNlIGNvZGUgaXMgZ292ZXJuZWQgYnkgYW4gTUlULXN0eWxlIGxpY2Vuc2UgdGhhdCBjYW4gYmVcbiAqIGZvdW5kIGluIHRoZSBMSUNFTlNFIGZpbGUgYXQgaHR0cHM6Ly9hbmd1bGFyLmlvL2xpY2Vuc2VcbiAqL1xuXG4vKlxuICogVGhpcyBmaWxlIGV4aXN0cyB0byBzdXBwb3J0IGNvbXBpbGF0aW9uIG9mIEBhbmd1bGFyL2NvcmUgaW4gSXZ5IG1vZGUuXG4gKlxuICogV2hlbiB0aGUgQW5ndWxhciBjb21waWxlciBwcm9jZXNzZXMgYSBjb21waWxhdGlvbiB1bml0LCBpdCBub3JtYWxseSB3cml0ZXMgaW1wb3J0cyB0b1xuICogQGFuZ3VsYXIvY29yZS4gV2hlbiBjb21waWxpbmcgdGhlIGNvcmUgcGFja2FnZSBpdHNlbGYgdGhpcyBzdHJhdGVneSBpc24ndCB1c2FibGUuIEluc3RlYWQsIHRoZVxuICogY29tcGlsZXIgd3JpdGVzIGltcG9ydHMgdG8gdGhpcyBmaWxlLlxuICpcbiAqIE9ubHkgYSBzdWJzZXQgb2Ygc3VjaCBpbXBvcnRzIGFyZSBzdXBwb3J0ZWQgLSBjb3JlIGlzIG5vdCBhbGxvd2VkIHRvIGRlY2xhcmUgY29tcG9uZW50cyBvciBwaXBlcy5cbiAqIEEgY2hlY2sgaW4gbmd0c2MncyBgUjNTeW1ib2xzSW1wb3J0UmV3cml0ZXJgIHZhbGlkYXRlcyB0aGlzIGNvbmRpdGlvbi4gVGhlIHJld3JpdGVyIGlzIG9ubHkgdXNlZFxuICogd2hlbiBjb21waWxpbmcgQGFuZ3VsYXIvY29yZSBhbmQgaXMgcmVzcG9uc2libGUgZm9yIHRyYW5zbGF0aW5nIGFuIGV4dGVybmFsIG5hbWUgKHByZWZpeGVkIHdpdGhcbiAqIMm1KSB0byB0aGUgaW50ZXJuYWwgc3ltYm9sIG5hbWUgYXMgZXhwb3J0ZWQgYmVsb3cuXG4gKlxuICogVGhlIGJlbG93IHN5bWJvbHMgYXJlIHVzZWQgZm9yIEBJbmplY3RhYmxlIGFuZCBATmdNb2R1bGUgY29tcGlsYXRpb24uXG4gKi9cblxuZXhwb3J0IHvJtcm1aW5qZWN0fSBmcm9tICcuL2RpL2luamVjdG9yX2NvbXBhdGliaWxpdHknO1xuZXhwb3J0IHvJtcm1SW5qZWN0YWJsZURlZiwgybXJtUluamVjdG9yRGVmLCDJtcm1ZGVmaW5lSW5qZWN0YWJsZSwgybXJtWRlZmluZUluamVjdG9yfSBmcm9tICcuL2RpL2ludGVyZmFjZS9kZWZzJztcbmV4cG9ydCB7TmdNb2R1bGVEZWYsIMm1ybVOZ01vZHVsZURlZldpdGhNZXRhfSBmcm9tICcuL21ldGFkYXRhL25nX21vZHVsZSc7XG5leHBvcnQge8m1ybVkZWZpbmVOZ01vZHVsZX0gZnJvbSAnLi9yZW5kZXIzL2RlZmluaXRpb24nO1xuZXhwb3J0IHtzZXRDbGFzc01ldGFkYXRhfSBmcm9tICcuL3JlbmRlcjMvbWV0YWRhdGEnO1xuZXhwb3J0IHtOZ01vZHVsZUZhY3Rvcnl9IGZyb20gJy4vcmVuZGVyMy9uZ19tb2R1bGVfcmVmJztcblxuXG5cbi8qKlxuICogVGhlIGV4aXN0ZW5jZSBvZiB0aGlzIGNvbnN0YW50IChpbiB0aGlzIHBhcnRpY3VsYXIgZmlsZSkgaW5mb3JtcyB0aGUgQW5ndWxhciBjb21waWxlciB0aGF0IHRoZVxuICogY3VycmVudCBwcm9ncmFtIGlzIGFjdHVhbGx5IEBhbmd1bGFyL2NvcmUsIHdoaWNoIG5lZWRzIHRvIGJlIGNvbXBpbGVkIHNwZWNpYWxseS5cbiAqL1xuZXhwb3J0IGNvbnN0IElUU19KVVNUX0FOR1VMQVIgPSB0cnVlO1xuIl19
