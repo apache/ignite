@@ -105,6 +105,7 @@ import org.apache.ignite.internal.processors.query.calcite.trait.DistributionFun
 import org.apache.ignite.internal.processors.query.calcite.trait.DistributionTrait;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
+import org.apache.ignite.internal.processors.query.calcite.type.IgniteCustomType;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.util.typedef.F;
@@ -337,9 +338,11 @@ class RelJson {
 
         Map<String, Object> map = (Map<String, Object>)distribution;
         Number cacheId = (Number)map.get("cacheId");
-        if (cacheId != null)
+
+        if (cacheId != null) {
             return IgniteDistributions.hash((List<Integer>)map.get("keys"),
-                DistributionFunction.affinity(cacheId.intValue(), cacheId));
+                DistributionFunction.affinity(cacheId.intValue(), map.get("identity")));
+        }
 
         return IgniteDistributions.hash((List<Integer>)map.get("keys"), DistributionFunction.hash());
     }
@@ -374,7 +377,7 @@ class RelJson {
                 SqlTypeName sqlTypeName = toEnum(map.get("type"));
                 Integer precision = (Integer)map.get("precision");
                 Integer scale = (Integer)map.get("scale");
-                RelDataType type;
+                RelDataType type = null;
 
                 if (SqlTypeName.INTERVAL_TYPES.contains(sqlTypeName)) {
                     TimeUnit startUnit = sqlTypeName.getStartUnit();
@@ -384,11 +387,23 @@ class RelJson {
                 }
                 else if (sqlTypeName == SqlTypeName.ARRAY)
                     type = typeFactory.createArrayType(toType(typeFactory, map.get("elementType")), -1);
+                else if (sqlTypeName == SqlTypeName.MAP)
+                    type = typeFactory.createMapType(
+                        toType(typeFactory, map.get("keyType")),
+                        toType(typeFactory, map.get("valueType"))
+                    );
+                else if (sqlTypeName == SqlTypeName.ANY) {
+                    String customType = (String)map.get("customType");
+
+                    if (customType != null)
+                        type = ((IgniteTypeFactory)typeFactory).createCustomType(classForName(customType, false));
+                }
                 else if (precision == null)
                     type = typeFactory.createSqlType(sqlTypeName);
                 else if (scale == null)
                     type = typeFactory.createSqlType(sqlTypeName, precision);
-                else
+
+                if (type == null)
                     type = typeFactory.createSqlType(sqlTypeName, precision, scale);
 
                 if (Boolean.TRUE == map.get("nullable"))
@@ -612,11 +627,9 @@ class RelJson {
         for (Map<String, Object> o : order) {
             RexNode expr = toRex(relInput, o.get("expr"));
             Set<SqlKind> directions = new HashSet<>();
-            Direction direction = toEnum(o.get("direction"));
-            NullDirection nulldirection = toEnum(o.get("null-direction"));
-            if (direction == Direction.DESCENDING)
+            if (toEnum(o.get("direction")) == Direction.DESCENDING)
                 directions.add(SqlKind.DESCENDING);
-            if (nulldirection == NullDirection.FIRST)
+            if (toEnum(o.get("null-direction")) == NullDirection.FIRST)
                 directions.add(SqlKind.NULLS_FIRST);
             else
                 directions.add(SqlKind.NULLS_LAST);
@@ -711,9 +724,18 @@ class RelJson {
             map.put("elementType", toJson(node.getComponentType()));
             return map;
         }
+        else if (node.getSqlTypeName() == SqlTypeName.MAP) {
+            Map<String, Object> map = map();
+            map.put("type", toJson(node.getSqlTypeName()));
+            map.put("keyType", toJson(node.getKeyType()));
+            map.put("valueType", toJson(node.getValueType()));
+            return map;
+        }
         else {
             Map<String, Object> map = map();
             map.put("type", toJson(node.getSqlTypeName()));
+            if (node.getSqlTypeName() == SqlTypeName.ANY && node instanceof IgniteCustomType)
+                map.put("customType", ((IgniteCustomType)node).storageType().getTypeName());
             if (node.isNullable())
                 map.put("nullable", true);
             if (node.getSqlTypeName().allowsPrec())
@@ -745,7 +767,7 @@ class RelJson {
     /** */
     private Object toJson(RexNode node) {
         // removes calls to SEARCH and the included Sarg and converts them to comparisons
-        node = RexUtil.expandSearch(Commons.cluster().getRexBuilder(), null, node);
+        node = RexUtil.expandSearch(Commons.emptyCluster().getRexBuilder(), null, node);
 
         Map<String, Object> map;
         switch (node.getKind()) {
@@ -802,15 +824,12 @@ class RelJson {
                         list.add(toJson(operand));
 
                     map.put("operands", list);
-
-                    if (node.getKind() == SqlKind.CAST)
-                        map.put("type", toJson(node.getType()));
+                    map.put("type", toJson(node.getType()));
 
                     if (call.getOperator() instanceof SqlFunction)
                         if (((SqlFunction)call.getOperator()).getFunctionType().isUserDefined()) {
                             SqlOperator op = call.getOperator();
                             map.put("class", op.getClass().getName());
-                            map.put("type", toJson(node.getType()));
                             map.put("deterministic", op.isDeterministic());
                             map.put("dynamic", op.isDynamicFunction());
                         }
@@ -818,7 +837,6 @@ class RelJson {
                     if (call instanceof RexOver) {
                         RexOver over = (RexOver)call;
                         map.put("distinct", over.isDistinct());
-                        map.put("type", toJson(node.getType()));
                         map.put("window", toJson(over.getWindow()));
                     }
 
@@ -875,8 +893,10 @@ class RelJson {
 
                 DistributionFunction function = distribution.function();
 
-                if (function.affinity())
+                if (function.affinity()) {
                     map.put("cacheId", function.cacheId());
+                    map.put("identity", function.identity().toString());
+                }
 
                 return map;
             default:

@@ -46,7 +46,7 @@ import org.apache.ignite.internal.processors.cache.IgniteDynamicCacheAndNodeStop
 import org.apache.ignite.internal.processors.cache.IgniteNearClientCacheCloseTest;
 import org.apache.ignite.internal.processors.cache.IgniteOnePhaseCommitInvokeTest;
 import org.apache.ignite.internal.processors.cache.IgniteOnePhaseCommitNearReadersTest;
-
+import org.apache.ignite.internal.processors.cache.MemoryPolicyConfigValidationTest;
 import org.apache.ignite.internal.processors.cache.NoPresentCacheInterceptorOnClientTest;
 import org.apache.ignite.internal.processors.cache.NonAffinityCoordinatorDynamicStartStopTest;
 import org.apache.ignite.internal.processors.cache.distributed.CacheLoadingConcurrentGridStartSelfTest;
@@ -104,7 +104,7 @@ import org.apache.ignite.internal.processors.cache.local.GridCacheLocalAtomicBas
 import org.apache.ignite.internal.processors.cache.local.GridCacheLocalAtomicGetAndTransformStoreSelfTest;
 import org.apache.ignite.internal.processors.cache.local.GridCacheLocalBasicStoreMultithreadedSelfTest;
 import org.apache.ignite.internal.processors.cache.local.GridCacheLocalTxReadTest;
-
+import org.apache.ignite.internal.processors.cache.persistence.MemoryPolicyInitializationTest;
 import org.apache.ignite.internal.processors.continuous.IgniteContinuousQueryMetadataUpdateTest;
 import org.apache.ignite.internal.processors.continuous.IgniteNoCustomEventsOnNodeStart;
 import org.apache.ignite.testframework.junits.DynamicSuite;
@@ -189,7 +189,8 @@ public class IgniteCacheMvccTestSuite2 {
         ignoredTests.add(GridCacheNearJobExecutionSelfTest.class);
 
         ignoredTests.add(CacheConfigurationLeakTest.class);
-        
+        ignoredTests.add(MemoryPolicyConfigValidationTest.class);
+        ignoredTests.add(MemoryPolicyInitializationTest.class);
         ignoredTests.add(CacheGroupLocalConfigurationSelfTest.class);
 
         ignoredTests.add(CachePartitionStateTest.class);

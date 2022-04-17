@@ -232,7 +232,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
             ctx.diagnostic().pageLockTracker()
         );
 
-        persStoreMetrics = databaseSharedManager.persistentStoreMetricsImpl();
+        persStoreMetrics = databaseSharedManager.dataStorageMetricsImpl();
 
         databaseSharedManager.addCheckpointListener(this, grp.dataRegion());
     }
@@ -1041,7 +1041,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
         int tag = pageMemory.invalidate(grp.groupId(), partId);
 
-        if (grp.walEnabled())
+        if (grp.persistenceEnabled() && grp.walEnabled())
             ctx.wal().log(new PartitionDestroyRecord(grp.groupId(), partId));
 
         ctx.pageStore().truncate(grp.groupId(), partId, tag);
@@ -3095,7 +3095,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                 part = cctx.topology().localPartition(partId, AffinityTopologyVersion.NONE, false, false);
 
                 // Skip non-owned partitions.
-                if (part == null || part.state() != OWNING)
+                if (part == null || part.state() != OWNING || !cctx.topology().initialized())
                     return 0;
             }
 
@@ -3106,7 +3106,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                     return 0;
 
                 try {
-                    if (part != null && part.state() != OWNING)
+                    if (part == null || part.state() != OWNING || !cctx.topology().initialized())
                         return 0;
 
                     long now = U.currentTimeMillis();

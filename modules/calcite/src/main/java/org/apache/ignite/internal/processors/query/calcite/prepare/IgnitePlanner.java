@@ -78,6 +78,7 @@ import org.apache.ignite.internal.processors.query.calcite.metadata.IgniteMetada
 import org.apache.ignite.internal.processors.query.calcite.metadata.RelMetadataQueryEx;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  * Query planer.
@@ -517,6 +518,22 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
         /** {@inheritDoc} */
         @Override public RelOptCost getCost(RelNode rel, RelMetadataQuery mq) {
             return mq.getCumulativeCost(rel);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void checkCancel() {
+            PlanningContext ctx = getContext().unwrap(PlanningContext.class);
+
+            long timeout = ctx.plannerTimeout();
+
+            if (timeout > 0) {
+                long startTs = ctx.startTs();
+
+                if (U.currentTimeMillis() - startTs > timeout)
+                    cancelFlag.set(true);
+            }
+
+            super.checkCancel();
         }
     }
 }

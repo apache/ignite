@@ -1284,10 +1284,10 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
         }
 
         qry.setRemoteFilter(evt -> {
-                FILTERED.put(evt.getKey(), evt.getValue());
+            FILTERED.put(evt.getKey(), evt.getValue());
 
-                return bypassFilter;
-            });
+            return bypassFilter;
+        });
 
         try (QueryCursor<Cache.Entry<Integer, Integer>> qryCursor = grid(0).cache(DEFAULT_CACHE_NAME).query(qry)) {
             checkLsnrAndFilterResults(setLocLsnr, bypassFilter, listened);

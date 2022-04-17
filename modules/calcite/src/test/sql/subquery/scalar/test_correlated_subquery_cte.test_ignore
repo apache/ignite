@@ -1,7 +1,6 @@
 # name: test/sql/subquery/scalar/test_correlated_subquery_cte.test
 # description: Test correlated subqueries
 # group: [scalar]
-# Ignore https://issues.apache.org/jira/browse/IGNITE-15993
 # Ignore https://issues.apache.org/jira/browse/IGNITE-15995
 
 statement ok

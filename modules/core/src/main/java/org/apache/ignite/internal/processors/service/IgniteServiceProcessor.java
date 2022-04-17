@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.service;
 
+import java.io.Externalizable;
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -67,7 +69,9 @@ import org.apache.ignite.internal.processors.cache.ValidationOnNodeJoinUtils;
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateMessage;
 import org.apache.ignite.internal.processors.cluster.DiscoveryDataClusterState;
 import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
+import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.platform.services.PlatformService;
+import org.apache.ignite.internal.processors.platform.services.PlatformServiceConfiguration;
 import org.apache.ignite.internal.processors.security.OperationSecurityContext;
 import org.apache.ignite.internal.processors.security.SecurityContext;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
@@ -84,7 +88,6 @@ import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.plugin.security.SecurityException;
 import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.services.Service;
-import org.apache.ignite.services.ServiceCallContext;
 import org.apache.ignite.services.ServiceConfiguration;
 import org.apache.ignite.services.ServiceContext;
 import org.apache.ignite.services.ServiceDeploymentException;
@@ -94,17 +97,22 @@ import org.apache.ignite.spi.communication.CommunicationSpi;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag;
 import org.apache.ignite.spi.discovery.DiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.metric.ReadOnlyMetricRegistry;
 import org.apache.ignite.spi.systemview.view.ServiceView;
 import org.apache.ignite.thread.IgniteThreadFactory;
 import org.apache.ignite.thread.OomExceptionHandler;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static org.apache.ignite.configuration.DeploymentMode.ISOLATED;
 import static org.apache.ignite.configuration.DeploymentMode.PRIVATE;
 import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
 import static org.apache.ignite.internal.GridComponent.DiscoveryDataExchangeType.SERVICE_PROC;
+import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 import static org.apache.ignite.internal.processors.security.SecurityUtils.nodeSecurityContext;
+import static org.apache.ignite.internal.util.IgniteUtils.allInterfaces;
 import static org.apache.ignite.plugin.security.SecurityPermission.SERVICE_DEPLOY;
 
 /**
@@ -126,6 +134,21 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
 
     /** */
     public static final String SVCS_VIEW_DESC = "Services";
+
+    /** Base name domain for invocation metrics. */
+    private static final String SERVICE_METRIC_REGISTRY = "Services";
+
+    /** Description for the service method invocation metric. */
+    private static final String DESCRIPTION_OF_INVOCATION_METRIC_PREF = "Duration in milliseconds of ";
+
+    /** Default bounds of invocation histogram in nanoseconds. */
+    public static final long[] DEFAULT_INVOCATION_BOUNDS = new long[] {
+        NANOSECONDS.convert(1, MILLISECONDS),
+        NANOSECONDS.convert(10, MILLISECONDS),
+        NANOSECONDS.convert(50, MILLISECONDS),
+        NANOSECONDS.convert(200, MILLISECONDS),
+        NANOSECONDS.convert(1000, MILLISECONDS)
+    };
 
     /** Local service instances. */
     private final ConcurrentMap<IgniteUuid, Collection<ServiceContextImpl>> locServices = new ConcurrentHashMap<>();
@@ -316,6 +339,8 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
         assert opsLock.isWriteLockedByCurrentThread();
 
         deployedServices.clear();
+
+        ctx.metric().remove(SERVICE_METRIC_REGISTRY);
 
         locServices.values().stream().flatMap(Collection::stream).forEach(srvcCtx -> {
             cancel(srvcCtx);
@@ -530,6 +555,9 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
         ensure(c.getService() != null, "getService() != null", c.getService());
         ensure(c.getTotalCount() > 0 || c.getMaxPerNodeCount() > 0,
             "c.getTotalCount() > 0 || c.getMaxPerNodeCount() > 0", null);
+        ensure(!c.isStatisticsEnabled() || !(c.getService() instanceof PlatformService) ||
+            c instanceof PlatformServiceConfiguration, "The service is a platform service and has statistics" +
+            "enabled. Service configuration must be PlatformServiceConfiguration.", null);
     }
 
     /**
@@ -640,7 +668,10 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
                 try {
                     byte[] srvcBytes = U.marshal(marsh, cfg.getService());
 
-                    cfgsCp.add(new LazyServiceConfiguration(cfg, srvcBytes));
+                    String[] knownSvcMdtNames = cfg instanceof PlatformServiceConfiguration ?
+                        ((PlatformServiceConfiguration)cfg).mtdNames() : null;
+
+                    cfgsCp.add(new LazyServiceConfiguration(cfg, srvcBytes).platformMtdNames(knownSvcMdtNames));
                 }
                 catch (Exception e) {
                     U.error(log, "Failed to marshal service with configured marshaller " +
@@ -1020,7 +1051,7 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
      * @param name Service name.
      * @param srvcCls Service class.
      * @param sticky Whether multi-node request should be done.
-     * @param callCtxProvider Caller context provider.
+     * @param callAttrsProvider Service call context attributes provider.
      * @param timeout If greater than 0 limits service acquire time. Cannot be negative.
      * @param <T> Service interface type.
      * @return The proxy of a service by its name and class.
@@ -1031,43 +1062,13 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
         String name,
         Class<? super T> srvcCls,
         boolean sticky,
-        @Nullable Supplier<ServiceCallContext> callCtxProvider,
+        @Nullable Supplier<Map<String, Object>> callAttrsProvider,
         long timeout,
         boolean keepBinary
     ) throws IgniteException {
         ctx.security().authorize(name, SecurityPermission.SERVICE_INVOKE);
 
-        if (hasLocalNode(prj)) {
-            ServiceContextImpl ctx = serviceContext(name);
-
-            if (ctx != null) {
-                Service srvc = ctx.service();
-
-                if (srvc != null && callCtxProvider == null) {
-                    if (srvcCls.isAssignableFrom(srvc.getClass()))
-                        return (T)srvc;
-                    else if (!PlatformService.class.isAssignableFrom(srvc.getClass())) {
-                        throw new IgniteException("Service does not implement specified interface [srvcCls="
-                                + srvcCls.getName() + ", srvcCls=" + srvc.getClass().getName() + ']');
-                    }
-                }
-            }
-        }
-
-        return new GridServiceProxy<T>(prj, name, srvcCls, sticky, timeout, ctx, callCtxProvider, keepBinary).proxy();
-    }
-
-    /**
-     * @param prj Grid nodes projection.
-     * @return Whether given projection contains any local node.
-     */
-    private boolean hasLocalNode(ClusterGroup prj) {
-        for (ClusterNode n : prj.nodes()) {
-            if (n.isLocal())
-                return true;
-        }
-
-        return false;
+        return new GridServiceProxy<T>(prj, name, srvcCls, sticky, timeout, ctx, callAttrsProvider, keepBinary).proxy();
     }
 
     /**
@@ -1268,7 +1269,8 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
                         UUID.randomUUID(),
                         cacheName,
                         affKey,
-                        Executors.newSingleThreadExecutor(threadFactory));
+                        Executors.newSingleThreadExecutor(threadFactory),
+                        cfg.isStatisticsEnabled());
 
                     ctxs.add(srvcCtx);
 
@@ -1276,6 +1278,8 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
                 }
             }
         }
+
+        ReadOnlyMetricRegistry invocationMetrics = null;
 
         for (final ServiceContextImpl srvcCtx : toInit) {
             final Service srvc;
@@ -1302,6 +1306,13 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
             if (log.isInfoEnabled())
                 log.info("Starting service instance [name=" + srvcCtx.name() + ", execId=" +
                     srvcCtx.executionId() + ']');
+
+            if (cfg.isStatisticsEnabled()) {
+                if (invocationMetrics == null)
+                    invocationMetrics = createServiceMetrics(srvcCtx, cfg);
+
+                srvcCtx.metrics(invocationMetrics);
+            }
 
             // Start service in its own thread.
             final ExecutorService exe = srvcCtx.executor();
@@ -1389,14 +1400,20 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
      * @param ctxs Contexts to cancel.
      * @param cancelCnt Number of contexts to cancel.
      */
-    private void cancel(Iterable<ServiceContextImpl> ctxs, int cancelCnt) {
+    private void cancel(Collection<ServiceContextImpl> ctxs, int cancelCnt) {
         for (Iterator<ServiceContextImpl> it = ctxs.iterator(); it.hasNext(); ) {
-            cancel(it.next());
+            ServiceContextImpl svcCtx = it.next();
+
+            cancel(svcCtx);
 
             it.remove();
 
-            if (--cancelCnt == 0)
+            if (--cancelCnt == 0) {
+                if (ctxs.isEmpty())
+                    ctx.metric().remove(serviceMetricRegistryName(svcCtx.name()));
+
                 break;
+            }
         }
     }
 
@@ -1627,9 +1644,9 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
         ServiceDeploymentActions depActions = null;
 
         if (!registeredServices.isEmpty()) {
-            depActions = new ServiceDeploymentActions();
+            depActions = new ServiceDeploymentActions(ctx);
 
-            depActions.servicesToDeploy(new HashMap<>(registeredServices));
+            depActions.servicesToDeploy(registeredServices);
         }
 
         depMgr.onLocalJoin(evt, discoCache, depActions);
@@ -1775,7 +1792,7 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
         }
 
         if (!toDeploy.isEmpty() || !toUndeploy.isEmpty()) {
-            ServiceDeploymentActions depActions = new ServiceDeploymentActions();
+            ServiceDeploymentActions depActions = new ServiceDeploymentActions(ctx);
 
             if (!toDeploy.isEmpty())
                 depActions.servicesToDeploy(toDeploy);
@@ -1803,10 +1820,10 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
         if (msg.activate() && registeredServices.isEmpty())
             return;
 
-        ServiceDeploymentActions depActions = new ServiceDeploymentActions();
+        ServiceDeploymentActions depActions = new ServiceDeploymentActions(ctx);
 
         if (msg.activate())
-            depActions.servicesToDeploy(new HashMap<>(registeredServices));
+            depActions.servicesToDeploy(registeredServices);
         else
             depActions.deactivate(true);
 
@@ -1836,7 +1853,7 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
         }
 
         if (!toUndeploy.isEmpty()) {
-            ServiceDeploymentActions depActions = new ServiceDeploymentActions();
+            ServiceDeploymentActions depActions = new ServiceDeploymentActions(ctx);
 
             depActions.servicesToUndeploy(toUndeploy);
 
@@ -1880,7 +1897,7 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
             servicesTopsUpdateMux.notifyAll();
         }
 
-        ServiceDeploymentActions depActions = new ServiceDeploymentActions();
+        ServiceDeploymentActions depActions = new ServiceDeploymentActions(ctx);
 
         depActions.deploymentTopologies(fullTops);
         depActions.deploymentErrors(fullErrors);
@@ -1966,5 +1983,53 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
         }
 
         return null;
+    }
+
+    /**
+     * Creates metrics registry for the invocation histograms.
+     *
+     * @param srvcCtx ServiceContext.
+     * @param cfg Service configuration.
+     * @return Created metric registry.
+     */
+    private ReadOnlyMetricRegistry createServiceMetrics(ServiceContextImpl srvcCtx, ServiceConfiguration cfg) {
+        MetricRegistry metricRegistry = ctx.metric().registry(serviceMetricRegistryName(srvcCtx.name()));
+
+        if (cfg instanceof LazyServiceConfiguration && ((LazyServiceConfiguration)cfg).platformMtdNames() != null) {
+            for (String definedMtdName : ((LazyServiceConfiguration)cfg).platformMtdNames()) {
+                metricRegistry.histogram(definedMtdName, DEFAULT_INVOCATION_BOUNDS,
+                    DESCRIPTION_OF_INVOCATION_METRIC_PREF + '\'' + definedMtdName + "()'");
+            }
+        }
+        else {
+            for (Class<?> itf : allInterfaces(srvcCtx.service().getClass())) {
+                for (Method mtd : itf.getMethods()) {
+                    if (metricIgnored(mtd.getDeclaringClass()))
+                        continue;
+
+                    metricRegistry.histogram(mtd.getName(), DEFAULT_INVOCATION_BOUNDS,
+                        DESCRIPTION_OF_INVOCATION_METRIC_PREF + '\'' + mtd.getName() + "()'");
+                }
+            }
+        }
+
+        return metricRegistry;
+    }
+
+    /**
+     * @return {@code True} if metrics should not be created for this class or interface.
+     */
+    private static boolean metricIgnored(Class<?> cls) {
+        return Service.class.equals(cls) || Externalizable.class.equals(cls) || PlatformService.class.equals(cls);
+    }
+
+    /**
+     * Gives proper name for service metric registry.
+     *
+     * @param srvcName Name of the service.
+     * @return registry name for service {@code srvcName}.
+     */
+    public static String serviceMetricRegistryName(String srvcName) {
+        return metricName(SERVICE_METRIC_REGISTRY, srvcName);
     }
 }

@@ -30,11 +30,7 @@
 
     <artifactId>ignite-websphere-test</artifactId>
     <packaging>war</packaging>
-<<<<<<< HEAD
-    <version>${revision}</version>
-=======
 
->>>>>>> upstream/master
     <url>http://ignite.apache.org</url>
 
     <dependencies>

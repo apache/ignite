@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Properties;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -115,6 +116,7 @@ import static org.apache.ignite.internal.processors.query.h2.SchemaManager.SQL_V
 import static org.apache.ignite.internal.processors.service.IgniteServiceProcessor.SVCS_VIEW;
 import static org.apache.ignite.internal.processors.task.GridTaskProcessor.TASKS_VIEW;
 import static org.apache.ignite.internal.util.IgniteUtils.toStringSafe;
+import static org.apache.ignite.spi.systemview.view.SnapshotView.SNAPSHOT_SYS_VIEW;
 import static org.apache.ignite.testframework.GridTestUtils.assertContains;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
@@ -413,7 +415,7 @@ public class SystemViewCommandTest extends GridCommandHandlerClusterByClassAbstr
     /** */
     @Test
     public void testViews() {
-        Set<String> expViewNames = new HashSet<>(asList(
+        Set<String> expViewNames = new TreeSet<>(asList(
             "METRICS",
             "VIEWS",
             "SERVICES",
@@ -431,6 +433,7 @@ public class SystemViewCommandTest extends GridCommandHandlerClusterByClassAbstr
             "LOCAL_CACHE_GROUPS_IO",
             "SQL_QUERIES",
             "SCAN_QUERIES",
+            "SNAPSHOT",
             "NODE_ATTRIBUTES",
             "TABLES",
             "CLIENT_CONNECTIONS",
@@ -449,6 +452,7 @@ public class SystemViewCommandTest extends GridCommandHandlerClusterByClassAbstr
             "STATISTICS_CONFIGURATION",
             "STATISTICS_PARTITION_DATA",
             "STATISTICS_LOCAL_DATA",
+            "STATISTICS_GLOBAL_DATA",
             "DS_ATOMICLONGS",
             "DS_ATOMICREFERENCES",
             "DS_ATOMICSTAMPED",
@@ -460,7 +464,7 @@ public class SystemViewCommandTest extends GridCommandHandlerClusterByClassAbstr
             "DS_QUEUES"
         ));
 
-        Set<String> viewNames = new HashSet<>();
+        Set<String> viewNames = new TreeSet<>();
 
         List<List<String>> sqlViewsView = systemView(ignite0, SQL_VIEWS_VIEW);
 
@@ -1106,6 +1110,18 @@ public class SystemViewCommandTest extends GridCommandHandlerClusterByClassAbstr
                 .filter(row -> name.equals(row.get(0)) && val.equals(row.get(1)))
                 .count() == 1,
             getTestTimeout()));
+    }
+
+    /** */
+    @Test
+    public void testSnapshotView() throws Exception {
+        int srvCnt = ignite0.cluster().forServers().nodes().size();
+
+        String snap0 = "testSnapshot0";
+
+        ignite0.snapshot().createSnapshot(snap0).get();
+
+        assertEquals(srvCnt, systemView(ignite0, SNAPSHOT_SYS_VIEW).size());
     }
 
     /**

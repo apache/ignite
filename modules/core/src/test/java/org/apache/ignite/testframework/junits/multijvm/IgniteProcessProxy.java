@@ -47,7 +47,6 @@ import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteEncryption;
 import org.apache.ignite.IgniteEvents;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.IgniteFileSystem;
 import org.apache.ignite.IgniteIllegalStateException;
 import org.apache.ignite.IgniteLock;
 import org.apache.ignite.IgniteLogger;
@@ -695,16 +694,6 @@ public class IgniteProcessProxy implements IgniteEx {
         throw new UnsupportedOperationException("Operation isn't supported yet.");
     }
     
-
-    /** {@inheritDoc} */
-    @Override public IgniteFileSystem fileSystem(String name) {
-        throw new UnsupportedOperationException("Operation isn't supported yet.");
-    }
-
-    /** {@inheritDoc} */
-    @Override public Collection<IgniteFileSystem> fileSystems() {
-        throw new UnsupportedOperationException("Operation isn't supported yet.");
-    }
 
     /** {@inheritDoc} */
     @Override public IgniteAtomicSequence atomicSequence(String name, long initVal, boolean create)

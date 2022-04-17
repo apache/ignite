@@ -43,8 +43,8 @@ import org.hamcrest.Matcher;
 import org.junit.Ignore;
 import org.junit.Test;
 
+import static org.apache.ignite.internal.processors.query.calcite.TestUtils.hasSize;
 import static org.apache.ignite.internal.util.IgniteUtils.map;
-import static org.apache.ignite.testframework.GridTestUtils.hasSize;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.hasItem;
 import static org.hamcrest.CoreMatchers.nullValue;
@@ -187,6 +187,53 @@ public class TableDdlIntegrationTest extends AbstractDdlIntegrationTest {
         assertThat(ent.getTableName(), equalTo("MY_TABLE"));
         assertThat(ent.getKeyType(), equalTo("MY_KEY_TYPE"));
         assertThat(ent.getValueType(), equalTo("MY_VALUE_TYPE"));
+        assertThat(ent.getKeyFields(), equalTo(new LinkedHashSet<>(F.asList("ID1", "ID2"))));
+    }
+
+    /**
+     * Creates table with all possible options (as double-quoted identifier) except template,
+     * and verifies created cache.
+     */
+    @Test
+    public void createTableWithOptionsQuoted() {
+        Set<String> cachesBefore = new HashSet<>(client.cacheNames());
+
+        sql("create table my_table (id1 int, id2 int, val varchar, primary key(id1, id2)) with \"" +
+                " backups=2," +
+                " affinity_key=id2," +
+                " atomicity=transactional," +
+                " write_synchronization_mode=full_async," +
+                " cache_group=my_cache_group," +
+                " cache_name=my_cache_name," +
+                " data_region=" + DATA_REGION_NAME + "," +
+                " key_type=my_key_type," +
+                " value_type=my_value_type" +
+// due to uncertain reason a test hangs if encryption is enabled
+//                " encrypted=true" +
+                "\""
+        );
+
+        Set<String> newCaches = new HashSet<>(client.cacheNames());
+        newCaches.removeAll(cachesBefore);
+
+        assertThat(newCaches, hasSize(1));
+
+        CacheConfiguration<?, ?> ccfg = client.cachex(newCaches.iterator().next()).configuration();
+
+        assertThat(ccfg.getQueryEntities(), hasSize(1));
+        assertThat(ccfg.getBackups(), equalTo(2));
+        assertThat(ccfg.getAtomicityMode(), equalTo(CacheAtomicityMode.TRANSACTIONAL));
+        assertThat(ccfg.getWriteSynchronizationMode(), equalTo(CacheWriteSynchronizationMode.FULL_ASYNC));
+        assertThat(ccfg.getGroupName(), equalTo("my_cache_group"));
+        assertThat(ccfg.getName(), equalTo("my_cache_name"));
+        assertThat(ccfg.getDataRegionName(), equalTo(DATA_REGION_NAME));
+        assertThat(ccfg.getKeyConfiguration()[0].getAffinityKeyFieldName(), equalTo("id2"));
+
+        QueryEntity ent = ccfg.getQueryEntities().iterator().next();
+
+        assertThat(ent.getTableName(), equalTo("MY_TABLE"));
+        assertThat(ent.getKeyType(), equalTo("my_key_type"));
+        assertThat(ent.getValueType(), equalTo("my_value_type"));
         assertThat(ent.getKeyFields(), equalTo(new LinkedHashSet<>(F.asList("ID1", "ID2"))));
     }
 

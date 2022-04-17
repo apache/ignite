@@ -32,13 +32,23 @@ SqlNodeList WithCreateTableOptionList() :
 {
     [
         <WITH> { s = span(); }
-        CreateTableOption(list)
         (
-            <COMMA> { s.add(this); } CreateTableOption(list)
-        )*
-        {
-            return new SqlNodeList(list, s.end(this));
-        }
+            <QUOTED_IDENTIFIER>
+            {
+                return IgniteSqlCreateTable.parseOptionList(
+                    SqlParserUtil.stripQuotes(token.image, DQ, DQ, DQDQ, quotedCasing),
+                    getPos().withQuoting(true)
+                );
+            }
+        |
+            CreateTableOption(list)
+            (
+                <COMMA> { s.add(this); } CreateTableOption(list)
+            )*
+            {
+                return new SqlNodeList(list, s.end(this));
+            }
+        )
     ]
     { return null; }
 }
@@ -464,7 +474,7 @@ SqlCharStringLiteral UuidLiteral():
     <QUOTED_STRING> {
         String rawUuid = SqlParserUtil.parseString(token.image);
         try {
-            UUID.fromString(rawUuid);
+            java.util.UUID.fromString(rawUuid);
             return SqlLiteral.createCharString(rawUuid, getPos());
         }
         catch (Exception e) {
@@ -557,5 +567,51 @@ SqlNode SqlKillComputeTask():
     <KILL> { s = span(); } <COMPUTE>
     sesId = IgniteUuidLiteral() {
         return IgniteSqlKill.createComputeTaskKill(s.end(this), sesId);
+    }
+}
+
+boolean IsAsyncOpt() :
+{
+}
+{
+    <ASYNC> { return true; } | { return false; }
+}
+
+SqlNode SqlKillQuery():
+{
+    final Span s;
+    final boolean isAsync;
+}
+{
+    <KILL> { s = span(); } <QUERY>
+    isAsync= IsAsyncOpt()
+    <QUOTED_STRING> {
+        String rawQueryId = SqlParserUtil.parseString(token.image);
+        SqlCharStringLiteral queryIdLiteral = SqlLiteral.createCharString(rawQueryId, getPos());
+        Pair<UUID, Long> id = IgniteSqlKill.parseGlobalQueryId(rawQueryId);
+        if (id == null) {
+            throw SqlUtil.newContextException(getPos(), IgniteResource.INSTANCE.illegalGlobalQueryId(rawQueryId));
+        }
+        return IgniteSqlKill.createQueryKill(s.end(this), queryIdLiteral, id.getKey(), id.getValue(), isAsync);
+    }
+}
+
+SqlNode SqlCommitTransaction():
+{
+    final Span s;
+}
+{
+    <COMMIT> { s = span(); } (<TRANSACTION>)? {
+        return new IgniteSqlCommit(s.end(this));
+    }
+}
+
+SqlNode SqlRollbackTransaction():
+{
+    final Span s;
+}
+{
+    <ROLLBACK> { s = span(); } (<TRANSACTION>)? {
+        return new IgniteSqlRollback(s.end(this));
     }
 }

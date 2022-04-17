@@ -19,27 +19,32 @@ package org.apache.ignite.testsuites;
 
 import org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessorTest;
 import org.apache.ignite.internal.processors.query.calcite.CancelTest;
-import org.apache.ignite.internal.processors.query.calcite.DataTypesTest;
 import org.apache.ignite.internal.processors.query.calcite.DateTimeTest;
-import org.apache.ignite.internal.processors.query.calcite.FunctionsTest;
 import org.apache.ignite.internal.processors.query.calcite.LimitOffsetTest;
 import org.apache.ignite.internal.processors.query.calcite.SqlFieldsQueryUsageTest;
-import org.apache.ignite.internal.processors.query.calcite.StdSqlOperatorsTest;
 import org.apache.ignite.internal.processors.query.calcite.UnstableTopologyTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.AggregatesIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.CalciteBasicSecondaryIndexIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.CalciteErrorHandlilngIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.CorrelatesIntegrationTest;
+import org.apache.ignite.internal.processors.query.calcite.integration.DataTypesTest;
+import org.apache.ignite.internal.processors.query.calcite.integration.FunctionsTest;
+import org.apache.ignite.internal.processors.query.calcite.integration.HashSpoolIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.IndexDdlIntegrationTest;
+import org.apache.ignite.internal.processors.query.calcite.integration.IndexRebuildIntegrationTest;
+import org.apache.ignite.internal.processors.query.calcite.integration.IndexScanlIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.IndexSpoolIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.IntervalTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.JoinIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.KillCommandDdlIntegrationTest;
+import org.apache.ignite.internal.processors.query.calcite.integration.KillQueryCommandDdlIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.MetadataIntegrationTest;
+import org.apache.ignite.internal.processors.query.calcite.integration.QueryEngineConfigurationIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.RunningQueriesIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.ServerStatisticsIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.SetOpIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.SortAggregateIntegrationTest;
+import org.apache.ignite.internal.processors.query.calcite.integration.StdSqlOperatorsTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.SystemViewsIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.TableDdlIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.TableDmlIntegrationTest;
@@ -77,11 +82,14 @@ import org.junit.runners.Suite;
     IndexDdlIntegrationTest.class,
     UserDdlIntegrationTest.class,
     KillCommandDdlIntegrationTest.class,
+    KillQueryCommandDdlIntegrationTest.class,
     FunctionsTest.class,
     StdSqlOperatorsTest.class,
     TableDmlIntegrationTest.class,
     DataTypesTest.class,
     IndexSpoolIntegrationTest.class,
+    HashSpoolIntegrationTest.class,
+    IndexScanlIntegrationTest.class,
     SetOpIntegrationTest.class,
     UnstableTopologyTest.class,
     JoinCommuteRulesTest.class,
@@ -91,6 +99,8 @@ import org.junit.runners.Suite;
     UserDefinedFunctionsIntegrationTest.class,
     CorrelatesIntegrationTest.class,
     SystemViewsIntegrationTest.class,
+    IndexRebuildIntegrationTest.class,
+    QueryEngineConfigurationIntegrationTest.class,
 })
 public class IntegrationTestSuite {
 }

@@ -17,14 +17,19 @@
 
 package org.apache.ignite.internal.processors.query.calcite.exec;
 
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
-
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import org.apache.calcite.plan.Context;
 import org.apache.calcite.plan.Contexts;
+import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.sql.SqlInsert;
+import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.tools.Frameworks;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -76,11 +81,11 @@ import org.apache.ignite.internal.processors.query.calcite.prepare.QueryPlan;
 import org.apache.ignite.internal.processors.query.calcite.prepare.QueryPlanCache;
 import org.apache.ignite.internal.processors.query.calcite.prepare.ddl.CreateTableCommand;
 import org.apache.ignite.internal.processors.query.calcite.schema.SchemaHolder;
+import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.util.AbstractService;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.processors.query.calcite.util.ListFieldsQueryCursor;
 import org.apache.ignite.internal.processors.query.calcite.util.TypeUtils;
-import org.apache.ignite.internal.processors.query.h2.H2Utils;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -380,7 +385,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
         prepareService(proc.prepareService());
 
         init();
-     }
+    }
 
     /** {@inheritDoc} */
     @Override public void init() {
@@ -446,7 +451,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
                 );
 
             case EXPLAIN:
-                return executeExplain((ExplainPlan)plan);
+                return executeExplain(qry, (ExplainPlan)plan);
 
             case DDL:
                 return executeDdl(qry, (DdlPlan)plan);
@@ -481,8 +486,17 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
 
             return executePlan(insQry, dmlPlan);
         }
-        else
-            return H2Utils.zeroCursor();
+        else {
+            QueryCursorImpl<List<?>> resCur = new QueryCursorImpl<>(Collections.singletonList(
+                Collections.singletonList(0L)), null, false, false);
+
+            IgniteTypeFactory typeFactory = qry.context().typeFactory();
+
+            resCur.fieldsMeta(new FieldsMetadataImpl(RelOptUtil.createDmlRowType(
+                SqlKind.INSERT, typeFactory), null).queryFieldsMetadata(typeFactory));
+
+            return resCur;
+        }
     }
 
     /** */
@@ -534,7 +548,12 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
 
         qry.run(ectx, plan, node);
 
-        // start remote execution
+        Map<UUID, Long> fragmentsPerNode = fragments.stream()
+            .skip(1)
+            .flatMap(f -> f.mapping().nodeIds().stream())
+            .collect(Collectors.groupingBy(Function.identity(), Collectors.counting()));
+
+        // Start remote execution.
         for (int i = 1; i < fragments.size(); i++) {
             fragment = fragments.get(i);
             fragmentDesc = new FragmentDescription(
@@ -544,6 +563,8 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
                 plan.remotes(fragment));
 
             Throwable ex = null;
+            byte[] parametersMarshalled = null;
+
             for (UUID nodeId : fragmentDesc.nodeIds()) {
                 if (ex != null)
                     qry.onResponse(nodeId, fragment.fragmentId(), ex);
@@ -555,9 +576,16 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
                             fragment.serialized(),
                             ectx.topologyVersion(),
                             fragmentDesc,
-                            qry.parameters());
+                            fragmentsPerNode.get(nodeId).intValue(),
+                            qry.parameters(),
+                            parametersMarshalled
+                        );
 
                         messageService().send(nodeId, req);
+
+                        // Avoid marshaling of the same parameters for other nodes.
+                        if (parametersMarshalled == null)
+                            parametersMarshalled = req.parametersMarshalled();
                     }
                     catch (Throwable e) {
                         qry.onResponse(nodeId, fragment.fragmentId(), ex = e);
@@ -570,9 +598,11 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
     }
 
     /** */
-    private FieldsQueryCursor<List<?>> executeExplain(ExplainPlan plan) {
+    private FieldsQueryCursor<List<?>> executeExplain(RootQuery<Row> qry, ExplainPlan plan) {
         QueryCursorImpl<List<?>> cur = new QueryCursorImpl<>(singletonList(singletonList(plan.plan())));
         cur.fieldsMeta(plan.fieldsMeta().queryFieldsMetadata(Commons.typeFactory()));
+
+        qryReg.unregister(qry.id());
 
         return cur;
     }
@@ -592,16 +622,18 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
 
         qry.addFragment(new RunningFragment<>(plan.root(), node, ectx));
 
-        try {
-            messageService().send(origNodeId, new QueryStartResponse(qry.id(), ectx.fragmentId()));
-        }
-        catch (IgniteCheckedException e) {
-            IgniteException wrpEx = new IgniteException("Failed to send reply. [nodeId=" + origNodeId + ']', e);
-
-            throw wrpEx;
-        }
-
         node.init();
+
+        if (!qry.isExchangeWithInitNodeStarted(ectx.fragmentId())) {
+            try {
+                messageService().send(origNodeId, new QueryStartResponse(qry.id(), ectx.fragmentId()));
+            }
+            catch (IgniteCheckedException e) {
+                IgniteException wrpEx = new IgniteException("Failed to send reply. [nodeId=" + origNodeId + ']', e);
+
+                throw wrpEx;
+            }
+        }
     }
 
     /** */
@@ -624,7 +656,8 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
                     null,
                     exchangeSvc,
                     (q) -> qryReg.unregister(q.id()),
-                    log
+                    log,
+                    msg.totalFragmentsCount()
                 )
             );
 

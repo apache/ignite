@@ -51,7 +51,7 @@ import static org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.A
 @WithSystemProperty(key = "calcite.debug", value = "true")
 public class HashAggregateExecutionTest extends BaseAggregateTest {
     /** {@inheritDoc} */
-    @Override protected SingleNode<Object[]> createSingleAggregateNodesChain(
+    @Override protected SingleNode<Object[]> createColocatedAggregateNodesChain(
         ExecutionContext<Object[]> ctx,
         ImmutableList<ImmutableBitSet> grpSets,
         AggregateCall call,

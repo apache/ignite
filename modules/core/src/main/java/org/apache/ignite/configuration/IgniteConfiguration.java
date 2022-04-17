@@ -257,14 +257,28 @@ public class IgniteConfiguration {
     /** Default policy for node shutdown. */
     public static final ShutdownPolicy DFLT_SHUTDOWN_POLICY = ShutdownPolicy.IMMEDIATE;
 
-    
+    /**
+     *  Default timeout after which long query warning will be printed.
+     *
+     * @deprecated Please use {@link SqlConfiguration#DFLT_LONG_QRY_WARN_TIMEOUT}.
+     */
+    @Deprecated
+    public static final long DFLT_LONG_QRY_WARN_TIMEOUT = SqlConfiguration.DFLT_LONG_QRY_WARN_TIMEOUT;
+
     /** Default number of MVCC vacuum threads.. */
     public static final int DFLT_MVCC_VACUUM_THREAD_CNT = 2;
 
     /** Default time interval between MVCC vacuum runs in milliseconds. */
     public static final long DFLT_MVCC_VACUUM_FREQUENCY = 5000;
 
-   
+    /**
+     * Default SQL query history size.
+     *
+     * @deprecated Please use {@link SqlConfiguration#DFLT_SQL_QUERY_HISTORY_SIZE}.
+     */
+    @Deprecated
+    public static final int DFLT_SQL_QUERY_HISTORY_SIZE = SqlConfiguration.DFLT_SQL_QUERY_HISTORY_SIZE;
+
     /** Optional local Ignite instance name. */
     private String igniteInstanceName;
 
@@ -461,7 +475,9 @@ public class IgniteConfiguration {
     /** Flag indicating whether cache sanity check is enabled. */
     private boolean cacheSanityCheckEnabled = DFLT_CACHE_SANITY_CHECK_ENABLED;
 
-    
+    /** Discovery startup delay. */
+    @Deprecated
+    private long discoStartupDelay = DFLT_DISCOVERY_STARTUP_DELAY;
 
     /** Tasks classes sharing mode. */
     private DeploymentMode deployMode = DFLT_DEPLOYMENT_MODE;
@@ -654,7 +670,7 @@ public class IgniteConfiguration {
         daemon = cfg.isDaemon();
         dataStreamerPoolSize = cfg.getDataStreamerThreadPoolSize();
         deployMode = cfg.getDeploymentMode();
-        
+        discoStartupDelay = cfg.getDiscoveryStartupDelay();
         execCfgs = cfg.getExecutorConfiguration();
         failureDetectionTimeout = cfg.getFailureDetectionTimeout();
        
@@ -2383,6 +2399,45 @@ public class IgniteConfiguration {
     }
     
     /**
+     * This value is used to expire messages from waiting list whenever node
+     * discovery discrepancies happen.
+     * <p>
+     * During startup, it is possible for some SPIs to have a small time window when
+     * <tt>Node A</tt> has discovered <tt>Node B</tt>, but <tt>Node B</tt>
+     * has not discovered <tt>Node A</tt> yet. Such time window is usually very small,
+     * a matter of milliseconds, but certain JMS providers, for example, may be very slow
+     * and hence have larger discovery delay window.
+     * <p>
+     * The default value of this property is {@code 60,000} specified by
+     * {@link #DFLT_DISCOVERY_STARTUP_DELAY}. This should be good enough for vast
+     * majority of configurations. However, if you do anticipate an even larger
+     * delay, you should increase this value.
+     *
+     * @return Time in milliseconds for when nodes can be out-of-sync.
+     * @deprecated Not used any more.
+     */
+    @Deprecated
+    public long getDiscoveryStartupDelay() {
+        return discoStartupDelay;
+    }
+
+    /**
+     * Sets time in milliseconds after which a certain metric value is considered expired.
+     * If not set explicitly, then default value is {@code 600,000} milliseconds (10 minutes).
+     *
+     * @param discoStartupDelay Time in milliseconds for when nodes
+     *      can be out-of-sync during startup.
+     * @return {@code this} for chaining.
+     * @deprecated Not used any more.
+     */
+    @Deprecated
+    public IgniteConfiguration setDiscoveryStartupDelay(long discoStartupDelay) {
+        this.discoStartupDelay = discoStartupDelay;
+
+        return this;
+    }
+
+    /**
      * Sets fully configured instance of {@link LoadBalancingSpi}.
      *
      * @param loadBalancingSpi Fully configured instance of {@link LoadBalancingSpi} or
@@ -2680,7 +2735,7 @@ public class IgniteConfiguration {
         this.dsCfg = dsCfg;
 
         return this;
-    }    
+    }
 
     /**
      * Gets flag indicating whether the cluster will be active on start. If cluster is not active on start,

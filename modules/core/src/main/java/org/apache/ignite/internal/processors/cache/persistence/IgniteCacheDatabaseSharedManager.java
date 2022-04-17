@@ -57,6 +57,7 @@ import org.apache.ignite.internal.mem.unsafe.UnsafeMemoryProvider;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.impl.PageMemoryNoStoreImpl;
+import org.apache.ignite.internal.pagemem.wal.WALIterator;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -99,7 +100,10 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_REUSE_MEMORY_ON_DE
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_THRESHOLD_WAL_ARCHIVE_SIZE_PERCENTAGE;
 import static org.apache.ignite.IgniteSystemProperties.getDouble;
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_DATA_REG_DEFAULT_NAME;
+import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_METRICS_ENABLED;
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_PAGE_SIZE;
+import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_RATE_TIME_INTERVAL_MILLIS;
+import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_SUB_INTERVALS;
 import static org.apache.ignite.configuration.DataStorageConfiguration.HALF_MAX_WAL_ARCHIVE_SIZE;
 import static org.apache.ignite.configuration.DataStorageConfiguration.UNLIMITED_WAL_ARCHIVE;
 import static org.apache.ignite.internal.processors.cache.mvcc.txlog.TxLog.TX_LOG_CACHE_NAME;
@@ -163,6 +167,38 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     /** First eviction was warned flag. */
     private volatile boolean firstEvictWarn;
 
+    /** Data storege metrics. */
+    protected final DataStorageMetricsImpl dsMetrics;
+
+    /**
+     * @param ctx Kernal context.
+     */
+    public IgniteCacheDatabaseSharedManager(GridKernalContext ctx) {
+        if (!CU.isCdcEnabled(ctx.config()) && !CU.isPersistenceEnabled(ctx.config())) {
+            dsMetrics = null;
+
+            return;
+        }
+
+        DataStorageConfiguration dsCfg = ctx.config().getDataStorageConfiguration();
+
+        if (dsCfg != null) {
+            dsMetrics = new DataStorageMetricsImpl(
+                ctx.metric(),
+                dsCfg.isMetricsEnabled(),
+                dsCfg.getMetricsRateTimeInterval(),
+                dsCfg.getMetricsSubIntervalCount()
+            );
+        }
+        else {
+            dsMetrics = new DataStorageMetricsImpl(
+                ctx.metric(),
+                DFLT_METRICS_ENABLED,
+                DFLT_RATE_TIME_INTERVAL_MILLIS,
+                DFLT_SUB_INTERVALS
+            );
+        }
+    }
 
     /** {@inheritDoc} */
     @Override protected void start0() throws IgniteCheckedException {
@@ -372,8 +408,8 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
         addDataRegion(
             memCfg,
             createSystemDataRegion(
-                memCfg.getSystemRegionInitialSize(),
-                memCfg.getSystemRegionMaxSize(),
+                memCfg.getSystemDataRegionConfiguration().getInitialSize(),
+                memCfg.getSystemDataRegionConfiguration().getMaxSize(),
                 persistenceEnabled
             ),
             persistenceEnabled
@@ -382,8 +418,8 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
         addDataRegion(
             memCfg,
             createVolatileDataRegion(
-                memCfg.getSystemRegionInitialSize(),
-                memCfg.getSystemRegionMaxSize()
+                memCfg.getSystemDataRegionConfiguration().getInitialSize(),
+                memCfg.getSystemDataRegionConfiguration().getMaxSize()
             ),
             false
         );
@@ -581,8 +617,8 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
         Set<String> regNames = new HashSet<>();
 
         checkSystemDataRegionSizeConfiguration(
-            memCfg.getSystemRegionInitialSize(),
-            memCfg.getSystemRegionMaxSize()
+            memCfg.getSystemDataRegionConfiguration().getInitialSize(),
+            memCfg.getSystemDataRegionConfiguration().getMaxSize()
         );
 
         Map<Class<? extends WarmUpConfiguration>, WarmUpStrategy> warmUpStrategies =
@@ -904,6 +940,13 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     }
 
     /**
+     * @return Data storage metrics implementation.
+     */
+    public DataStorageMetricsImpl dataStorageMetricsImpl() {
+        return dsMetrics;
+    }
+
+    /**
      * @param dataRegionName Name of {@link DataRegion} to obtain {@link DataRegionMetrics} for.
      * @return {@link DataRegionMetrics} snapshot for specified {@link DataRegion} or {@code null} if
      * no {@link DataRegion} is configured for specified name.
@@ -1093,7 +1136,20 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      * @throws IgniteCheckedException If fails.
      */
     public void startMemoryRestore(GridKernalContext kctx, TimeBag startTimer) throws IgniteCheckedException {
-        // No-op.
+        if (!CU.isCdcEnabled(kctx.config()) || kctx.clientNode())
+            return;
+
+        WALIterator iter = cctx.wal(true).replay(null, (type, ptr) -> true);
+
+        while (iter.hasNext())
+            iter.next();
+
+        WALPointer ptr = iter.lastRead().orElse(null);
+
+        if (ptr != null)
+            ptr = ptr.next();
+
+        cctx.wal(true).resumeLogging(ptr);
     }
 
     /**
@@ -1276,7 +1332,11 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
         boolean trackable,
         PageReadWriteManager pmPageMgr
     ) throws IgniteCheckedException {
-        PageMemory pageMem = createPageMemory(createOrReuseMemoryProvider(plcCfg), memCfg, plcCfg, memMetrics, trackable, pmPageMgr);
+        if (plcCfg.getMemoryAllocator() == null)
+            plcCfg.setMemoryAllocator(memCfg.getMemoryAllocator());
+
+        PageMemory pageMem = createPageMemory(createOrReuseMemoryProvider(plcCfg), memCfg, plcCfg, memMetrics,
+            trackable, pmPageMgr);
 
         return new DataRegion(pageMem, plcCfg, memMetrics, createPageEvictionTracker(plcCfg, pageMem));
     }
@@ -1315,7 +1375,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
         File allocPath = buildAllocPath(plcCfg);
 
         return allocPath == null ?
-            new UnsafeMemoryProvider(log) :
+            new UnsafeMemoryProvider(log, plcCfg.getMemoryAllocator()) :
             new MappedFileMemoryProvider(
                 log,
                 allocPath);
@@ -1491,16 +1551,9 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
 
         dataRegionsStarted = true;
 
-        if (log.isQuiet()) {
-            U.quiet(false, "Data Regions Started: " + dataRegionMap.size());
+        U.quietAndInfo(log, "Data Regions Started: " + dataRegionMap.size());
 
-            U.quietMultipleLines(false, IgniteKernal.dataStorageReport(this, false));
-        }
-        else if (log.isInfoEnabled()) {
-            log.info("Data Regions Started: " + dataRegionMap.size());
-
-            log.info(IgniteKernal.dataStorageReport(this, false));
-        }
+        ((IgniteKernal)cctx.kernalContext().grid()).dataStorageReport();
     }
 
     /** {@inheritDoc} */

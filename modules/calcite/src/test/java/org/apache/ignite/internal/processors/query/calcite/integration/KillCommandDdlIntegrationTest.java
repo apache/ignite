@@ -153,7 +153,7 @@ public class KillCommandDdlIntegrationTest extends AbstractDdlIntegrationTest {
 
             assertTrue(res);
 
-            sql(client, "KILL COMPUTE '" + jobViewHolder.get().id() + "'");
+            sql(client, "KILL COMPUTE '" + jobViewHolder.get().sessionId() + "'");
 
             assertThrowsWithCause(() -> fut.get(TIMEOUT), IgniteException.class);
         }

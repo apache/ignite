@@ -31,11 +31,7 @@
     </parent>
 
     <artifactId>ignite-ssh</artifactId>
-<<<<<<< HEAD
-    <version>${revision}</version>
-=======
 
->>>>>>> upstream/master
     <url>http://ignite.apache.org</url>
 
     <dependencies>
@@ -72,10 +68,6 @@
         <dependency>
             <groupId>${project.groupId}</groupId>
             <artifactId>ignite-tools</artifactId>
-<<<<<<< HEAD
-            <version>${project.version}</version>
-=======
->>>>>>> upstream/master
             <scope>test</scope>
         </dependency>
     </dependencies>

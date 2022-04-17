@@ -37,3 +37,15 @@ SELECT COUNT(1 ORDER BY 1)
 statement error
 SELECT COUNT(DISTINCT *) FROM integers
 
+# Multiple arguments are not supported as it is not a part of SQL standard.
+statement error
+SELECT COUNT(1, 1)
+
+statement error
+SELECT COUNT(null, 1)
+
+statement error
+SELECT COUNT(1, null)
+
+statement error
+SELECT COUNT(null, null)

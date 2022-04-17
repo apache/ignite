@@ -70,6 +70,8 @@ import org.apache.calcite.sql.validate.SqlConformance;
 import org.apache.calcite.util.BuiltInMethod;
 import org.apache.calcite.util.ControlFlowException;
 import org.apache.calcite.util.Pair;
+import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
+import org.apache.ignite.internal.processors.query.calcite.util.IgniteMethod;
 
 import static org.apache.calcite.sql.fun.SqlStdOperatorTable.CASE;
 import static org.apache.calcite.sql.fun.SqlStdOperatorTable.SEARCH;
@@ -175,7 +177,7 @@ public class RexToLixTranslator implements RexVisitor<RexToLixTranslator.Result>
                 storageTypes.add(outputPhysType.getJavaFieldType(i));
         }
         return new RexToLixTranslator(program, typeFactory, root, inputGetter,
-            list, new RexBuilder(typeFactory), conformance, null)
+            list, new IgniteRexBuilder(typeFactory), conformance, null)
             .setCorrelates(correlates)
             .translateList(program.getProjectList(), storageTypes);
     }
@@ -506,7 +508,7 @@ public class RexToLixTranslator implements RexVisitor<RexToLixTranslator.Result>
                     case VARBINARY:
                         convert = RexImpTable.optimize2(
                             operand,
-                            Expressions.call(IgniteBuiltInMethod.BYTESTRING_TO_STRING.method, operand));
+                            Expressions.call(IgniteMethod.BYTESTRING_TO_STRING.method(), operand));
                         break;
                 }
                 break;
@@ -528,8 +530,8 @@ public class RexToLixTranslator implements RexVisitor<RexToLixTranslator.Result>
                         SqlIntervalQualifier intervalQualifier = targetType.getIntervalQualifier();
 
                         Method method = intervalQualifier.isYearMonth() ?
-                            IgniteBuiltInMethod.PARSE_INTERVAL_YEAR_MONTH.method :
-                            IgniteBuiltInMethod.PARSE_INTERVAL_DAY_TIME.method;
+                            IgniteMethod.PARSE_INTERVAL_YEAR_MONTH.method() :
+                            IgniteMethod.PARSE_INTERVAL_DAY_TIME.method();
 
                         convert = Expressions.call(
                             method,
@@ -548,7 +550,7 @@ public class RexToLixTranslator implements RexVisitor<RexToLixTranslator.Result>
             case VARBINARY:
                 switch (sourceType.getSqlTypeName().getFamily()) {
                     case CHARACTER:
-                        convert = Expressions.call(IgniteBuiltInMethod.STRING_TO_BYTESTRING.method, operand);
+                        convert = Expressions.call(IgniteMethod.STRING_TO_BYTESTRING.method(), operand);
                 }
                 break;
         }
@@ -1049,7 +1051,7 @@ public class RexToLixTranslator implements RexVisitor<RexToLixTranslator.Result>
         translator.currentStorageType = storageType;
         Result operandResult = operand.accept(translator);
         if (storageType != null)
-          operandResult = translator.toInnerStorageType(operandResult, storageType);
+            operandResult = translator.toInnerStorageType(operandResult, storageType);
         translator.currentStorageType = originalStorageType;
         return operandResult;
     }
@@ -1187,10 +1189,15 @@ public class RexToLixTranslator implements RexVisitor<RexToLixTranslator.Result>
 
         final Type storageType = currentStorageType != null
             ? currentStorageType : typeFactory.getJavaClass(dynamicParam.getType());
-        final Expression valueExpression = ConverterUtils.convert(
-            Expressions.call(root, BuiltInMethod.DATA_CONTEXT_GET.method,
-                Expressions.constant("?" + dynamicParam.getIndex())),
-            storageType);
+
+        final Type paramType = ((IgniteTypeFactory)typeFactory).getResultClass(dynamicParam.getType());
+
+        final Expression ctxGet = Expressions.call(root, IgniteMethod.CONTEXT_GET_PARAMETER_VALUE.method(),
+            Expressions.constant("?" + dynamicParam.getIndex()), Expressions.constant(paramType));
+
+        final Expression valueExpression = SqlTypeUtil.isDecimal(dynamicParam.getType()) ?
+            ConverterUtils.convertToDecimal(ctxGet, dynamicParam.getType()) : ConverterUtils.convert(ctxGet, storageType);
+
         final ParameterExpression valueVariable =
             Expressions.parameter(valueExpression.getType(), list.newName("value_dynamic_param"));
         list.add(Expressions.declare(Modifier.FINAL, valueVariable, valueExpression));

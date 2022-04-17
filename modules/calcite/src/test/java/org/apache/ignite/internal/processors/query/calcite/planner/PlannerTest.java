@@ -27,7 +27,6 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.plan.RelTraitSet;
-import org.apache.calcite.rel.RelCollations;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelRoot;
 import org.apache.calcite.rel.RelVisitor;
@@ -35,8 +34,8 @@ import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.schema.SchemaPlus;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.util.ImmutableBitSet;
-import org.apache.calcite.util.ImmutableIntList;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.query.calcite.QueryRegistryImpl;
 import org.apache.ignite.internal.processors.query.calcite.exec.ArrayRowHandler;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExchangeServiceImpl;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
@@ -163,7 +162,7 @@ public class PlannerTest extends AbstractPlannerTest {
 
         assertNotNull(ctx);
 
-        IgniteRel phys = physicalPlan(sql, ctx);
+        IgniteRel phys = physicalPlan(ctx);
 
         assertNotNull(phys);
 
@@ -271,7 +270,7 @@ public class PlannerTest extends AbstractPlannerTest {
             .parameters(-10)
             .build();
 
-        IgniteRel phys = physicalPlan(sql, ctx);
+        IgniteRel phys = physicalPlan(ctx);
 
         assertNotNull(phys);
 
@@ -328,6 +327,7 @@ public class PlannerTest extends AbstractPlannerTest {
         exchangeSvc.taskExecutor(taskExecutor);
         exchangeSvc.messageService(msgSvc);
         exchangeSvc.mailboxRegistry(mailboxRegistry);
+        exchangeSvc.queryRegistry(new QueryRegistryImpl(kernal));
         exchangeSvc.init();
 
         ectx = new ExecutionContext<>(
@@ -385,6 +385,7 @@ public class PlannerTest extends AbstractPlannerTest {
         exchangeSvc.taskExecutor(taskExecutor);
         exchangeSvc.messageService(msgSvc);
         exchangeSvc.mailboxRegistry(mailboxRegistry);
+        exchangeSvc.queryRegistry(new QueryRegistryImpl(kernal));
         exchangeSvc.init();
 
         ectx = new ExecutionContext<>(
@@ -496,7 +497,7 @@ public class PlannerTest extends AbstractPlannerTest {
             .parameters(-10)
             .build();
 
-        IgniteRel phys = physicalPlan(sql, ctx);
+        IgniteRel phys = physicalPlan(ctx);
 
         assertNotNull(phys);
 
@@ -553,6 +554,7 @@ public class PlannerTest extends AbstractPlannerTest {
         exchangeSvc.taskExecutor(taskExecutor);
         exchangeSvc.messageService(msgSvc);
         exchangeSvc.mailboxRegistry(mailboxRegistry);
+        exchangeSvc.queryRegistry(new QueryRegistryImpl(kernal));
         exchangeSvc.init();
 
         ectx = new ExecutionContext<>(
@@ -609,6 +611,7 @@ public class PlannerTest extends AbstractPlannerTest {
         exchangeSvc.taskExecutor(taskExecutor);
         exchangeSvc.messageService(msgSvc);
         exchangeSvc.mailboxRegistry(mailboxRegistry);
+        exchangeSvc.queryRegistry(new QueryRegistryImpl(kernal));
         exchangeSvc.init();
 
         ectx = new ExecutionContext<>(
@@ -713,7 +716,7 @@ public class PlannerTest extends AbstractPlannerTest {
             .parameters(2)
             .build();
 
-        IgniteRel phys = physicalPlan(sql, ctx);
+        IgniteRel phys = physicalPlan(ctx);
 
         assertNotNull(phys);
 
@@ -796,7 +799,7 @@ public class PlannerTest extends AbstractPlannerTest {
             .parameters(2)
             .build();
 
-        IgniteRel phys = physicalPlan(sql, ctx);
+        IgniteRel phys = physicalPlan(ctx);
 
         assertNotNull(phys);
 
@@ -876,7 +879,7 @@ public class PlannerTest extends AbstractPlannerTest {
             .parameters(2)
             .build();
 
-        IgniteRel phys = physicalPlan(sql, ctx);
+        IgniteRel phys = physicalPlan(ctx);
 
         assertNotNull(phys);
 
@@ -958,7 +961,7 @@ public class PlannerTest extends AbstractPlannerTest {
             .parameters(2)
             .build();
 
-        IgniteRel phys = physicalPlan(sql, ctx);
+        IgniteRel phys = physicalPlan(ctx);
 
         assertNotNull(phys);
 
@@ -1034,7 +1037,7 @@ public class PlannerTest extends AbstractPlannerTest {
             .parameters(2)
             .build();
 
-        IgniteRel phys = physicalPlan(sql, ctx);
+        IgniteRel phys = physicalPlan(ctx);
 
         assertNotNull(phys);
 
@@ -1227,7 +1230,7 @@ public class PlannerTest extends AbstractPlannerTest {
             }
         };
 
-        emp.addIndex(RelCollations.of(ImmutableIntList.of(1, 2)), "emp_idx");
+        emp.addIndex("emp_idx", 1, 2);
 
         TestTable dept = new TestTable(
             new RelDataTypeFactory.Builder(f)
@@ -1240,7 +1243,7 @@ public class PlannerTest extends AbstractPlannerTest {
             }
         };
 
-        dept.addIndex(RelCollations.of(ImmutableIntList.of(1, 0)), "dep_idx");
+        dept.addIndex("dep_idx", 1, 0);
 
         IgniteSchema publicSchema = new IgniteSchema("PUBLIC");
 
@@ -1295,5 +1298,15 @@ public class PlannerTest extends AbstractPlannerTest {
 
             checkSplitAndSerialization(phys, publicSchema);
         }
+    }
+
+    /** */
+    @Test
+    public void testMinusDateSerialization() throws Exception {
+        IgniteSchema publicSchema = new IgniteSchema("PUBLIC");
+
+        IgniteRel phys = physicalPlan("SELECT (DATE '2021-03-01' - DATE '2021-01-01') MONTHS", publicSchema);
+
+        checkSplitAndSerialization(phys, publicSchema);
     }
 }

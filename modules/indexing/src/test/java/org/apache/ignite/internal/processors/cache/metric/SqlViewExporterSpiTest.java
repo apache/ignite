@@ -26,6 +26,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Properties;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.UUID;
 import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.CountDownLatch;
@@ -70,6 +71,7 @@ import org.apache.ignite.internal.processors.metastorage.DistributedMetaStorage;
 import org.apache.ignite.internal.processors.service.DummyService;
 import org.apache.ignite.internal.util.StripedExecutor;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.services.ServiceConfiguration;
 import org.apache.ignite.spi.systemview.view.MetastorageView;
@@ -398,7 +400,7 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
     /** */
     @Test
     public void testViews() throws Exception {
-        Set<String> expViews = new HashSet<>(asList(
+        Set<String> expViews = new TreeSet<>(asList(
             "METRICS",
             "SERVICES",
             "CACHE_GROUPS",
@@ -416,6 +418,7 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
             "SQL_QUERIES",
             "SCAN_QUERIES",
             "NODE_ATTRIBUTES",
+            "SNAPSHOT",
             "TABLES",
             "CLIENT_CONNECTIONS",
             "VIEWS",
@@ -434,6 +437,7 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
             "STATISTICS_CONFIGURATION",
             "STATISTICS_PARTITION_DATA",
             "STATISTICS_LOCAL_DATA",
+            "STATISTICS_GLOBAL_DATA",
             "DS_ATOMICLONGS",
             "DS_ATOMICREFERENCES",
             "DS_ATOMICSTAMPED",
@@ -445,7 +449,7 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
             "DS_QUEUES"
         ));
 
-        Set<String> actViews = new HashSet<>();
+        Set<String> actViews = new TreeSet<>();
 
         List<List<?>> res = execute(ignite0, "SELECT * FROM SYS.VIEWS");
 
@@ -1159,6 +1163,30 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
         assertTrue(waitForCondition(() -> execute(ignite1,
             "SELECT * FROM SYS.DISTRIBUTED_METASTORAGE WHERE name = ? AND value = ?", name, val).size() == 1,
             getTestTimeout()));
+    }
+
+    /** */
+    @Test
+    public void testSnapshot() throws Exception {
+        String snap0 = "testSnapshot0";
+        String snap1 = "testSnapshot1";
+
+        int nodesCnt = G.allGrids().size();
+
+        assertEquals(0, execute(ignite0, "SELECT * FROM SYS.SNAPSHOT").size());
+
+        ignite0.snapshot().createSnapshot(snap0).get();
+
+        assertEquals(nodesCnt, execute(ignite0, "SELECT * FROM SYS.SNAPSHOT").size());
+
+        ignite0.createCache(DEFAULT_CACHE_NAME).put("key", "val");
+
+        ignite0.snapshot().createSnapshot(snap1).get();
+
+        assertEquals(nodesCnt * 2, execute(ignite0, "SELECT * FROM SYS.SNAPSHOT").size());
+        assertEquals(nodesCnt, execute(ignite0, "SELECT * FROM SYS.SNAPSHOT where name = ?", snap0).size());
+        assertEquals(nodesCnt, execute(ignite0,
+            "SELECT * FROM SYS.SNAPSHOT WHERE cache_groups LIKE '%" + DEFAULT_CACHE_NAME + "%'").size());
     }
 
     /**

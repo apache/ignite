@@ -98,7 +98,7 @@ public class IgniteMdCollation implements MetadataHandler<BuiltInMetadata.Collat
     }
 
     /** Catch-all implementation for
-     * {@link BuiltInMetadata.Collation#collations()},
+     * {@link org.apache.calcite.rel.metadata.BuiltInMetadata.Collation#collations()},
      * invoked using reflection, for any relational expression not
      * handled by a more specific method.
      *

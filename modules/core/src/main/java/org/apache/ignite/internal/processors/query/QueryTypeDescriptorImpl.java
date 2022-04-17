@@ -138,11 +138,20 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
     /** Primary key fields. */
     private Set<String> pkFields;
 
-    /** Logger. */
-    private final IgniteLogger log;
-
     /** */
     private boolean implicitPk;
+
+    /** Whether absent PK parts should be filled with defaults or not. */
+    private boolean fillAbsentPKsWithDefaults;
+
+    /** */
+    private int pkInlineSize;
+
+    /** */
+    private int affFieldInlineSize;
+
+    /** Logger. */
+    private final IgniteLogger log;
 
     /**
      * Constructor.
@@ -726,20 +735,13 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
                                 propVal.getClass().getSimpleName() + "'");
                         }
                     }
-                }
-                else if (coCtx.kernalContext().cacheObjects().typeId(propType.getName()) !=
+                } else if (coCtx.kernalContext().cacheObjects().typeId(propType.getName()) !=
                     ((BinaryObject)propVal).type().typeId()) {
                     // Check for classes/enums implementing indexed interfaces.
-                    String clsName = ((BinaryObject)propVal).type().typeName();
-                    try {
-                        final Class<?> cls = Class.forName(clsName);
+                    final Class<?> cls = U.classForName(((BinaryObject)propVal).type().typeName(), null, true);
 
-                        if (propType.isAssignableFrom(cls))
-                            continue;
-                    } catch (ClassNotFoundException e) {
-                        if (log.isDebugEnabled())
-                            U.error(log, "Failed to find child class: " + clsName, e);
-                    }
+                    if ((cls == null && propType == Object.class) || (cls != null && propType.isAssignableFrom(cls)))
+                        continue;
 
                     throw new IgniteSQLException("Type for a column '" + idxField +
                         "' is not compatible with index definition. Expected '" +
@@ -781,5 +783,35 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
     /** {@inheritDoc} */
     @Override public void implicitPk(boolean implicitPk) {
         this.implicitPk = implicitPk;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean fillAbsentPKsWithDefaults() {
+        return fillAbsentPKsWithDefaults;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void setFillAbsentPKsWithDefaults(boolean fillAbsentPKsWithDefaults) {
+        this.fillAbsentPKsWithDefaults = fillAbsentPKsWithDefaults;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int primaryKeyInlineSize() {
+        return pkInlineSize;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void primaryKeyInlineSize(int pkInlineSize) {
+        this.pkInlineSize = pkInlineSize;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int affinityFieldInlineSize() {
+        return affFieldInlineSize;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void affinityFieldInlineSize(int affFieldInlineSize) {
+        this.affFieldInlineSize = affFieldInlineSize;
     }
 }

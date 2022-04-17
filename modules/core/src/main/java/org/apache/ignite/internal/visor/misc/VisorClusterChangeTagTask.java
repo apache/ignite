@@ -58,8 +58,10 @@ public class VisorClusterChangeTagTask extends VisorOneNodeTask<VisorClusterChan
         }
 
         /** {@inheritDoc} */
-        @Override protected VisorClusterChangeTagTaskResult run(@Nullable VisorClusterChangeTagTaskArg arg) throws IgniteException {
-                return update(arg.newTag());
+        @Override protected VisorClusterChangeTagTaskResult run(
+            @Nullable VisorClusterChangeTagTaskArg arg
+        ) throws IgniteException {
+            return update(arg.newTag());
         }
 
         /**

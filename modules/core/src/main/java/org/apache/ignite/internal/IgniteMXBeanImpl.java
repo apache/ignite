@@ -57,7 +57,7 @@ public class IgniteMXBeanImpl implements IgniteMXBean {
     }
 
     /** {@inheritDoc} */
-    @Override public void active(boolean active) {
+    @Override public void active(boolean active) throws JMException {
         clusterState(active ? ACTIVE.toString() : INACTIVE.toString(), false);
     }
 
@@ -118,7 +118,7 @@ public class IgniteMXBeanImpl implements IgniteMXBean {
 
     /** {@inheritDoc} */
     @Override public boolean isNodeInBaseline() {
-       return kernal.nodeInBaseline();
+        return kernal.nodeInBaseline();
     }
 
     /** {@inheritDoc} */
@@ -273,7 +273,7 @@ public class IgniteMXBeanImpl implements IgniteMXBean {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean pingNodeByAddress(String host) {
+    @Override public boolean pingNodeByAddress(String host) throws JMException {
         ctx.gateway().readLock();
 
         try {
@@ -284,7 +284,7 @@ public class IgniteMXBeanImpl implements IgniteMXBean {
             return false;
         }
         catch (IgniteCheckedException e) {
-            throw U.convertException(e);
+            throw U.jmException(U.convertException(e));
         }
         finally {
             ctx.gateway().readUnlock();
@@ -316,12 +316,12 @@ public class IgniteMXBeanImpl implements IgniteMXBean {
     }
 
     /** {@inheritDoc} */
-    @Override public void clusterState(String state) {
+    @Override public void clusterState(String state) throws JMException {
         clusterState(state, false);
     }
 
     /** {@inheritDoc} */
-    @Override public void clusterState(String state, boolean forceDeactivation) {
+    @Override public void clusterState(String state, boolean forceDeactivation) throws JMException {
         ClusterState newState = ClusterState.valueOf(state);
 
         ctx.gateway().readLock();
@@ -331,7 +331,7 @@ public class IgniteMXBeanImpl implements IgniteMXBean {
                 .forServers().nodes(), false).get();
         }
         catch (IgniteCheckedException e) {
-            throw U.convertException(e);
+            throw U.jmException(e);
         }
         finally {
             ctx.gateway().readUnlock();

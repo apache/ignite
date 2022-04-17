@@ -25,7 +25,6 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.LongAdder;
@@ -117,12 +116,6 @@ public class GridH2Table extends TableBase {
      */
     private static final double STATS_UPDATE_THRESHOLD = 0.1; // 10%.
 
-    /** */
-    private static final int STATS_CLI_UPDATE_THRESHOLD = 200;
-
-    /** */
-    AtomicInteger cliReqCnt = new AtomicInteger();
-
     /** Cache context info. */
     private final GridCacheContextInfo cacheInfo;
 
@@ -190,10 +183,10 @@ public class GridH2Table extends TableBase {
 
     /** Index manager. */
     @GridToStringExclude
-    private IndexProcessor idxMgr;
+    private final IndexProcessor idxProc;
 
     /** Table name. Use it to persist table name for destroy index after destroying table. */
-    private String tableName;
+    private final String tableName;
 
     /**
      * Creates table.
@@ -209,7 +202,7 @@ public class GridH2Table extends TableBase {
         GridH2RowDescriptor desc,
         H2TableDescriptor tblDesc,
         GridCacheContextInfo cacheInfo,
-        IndexProcessor idxMgr
+        IndexProcessor idxProc
     ) {
         super(createTblData);
 
@@ -217,9 +210,9 @@ public class GridH2Table extends TableBase {
 
         this.desc = desc;
         this.cacheInfo = cacheInfo;
-        this.idxMgr = idxMgr;
+        this.idxProc = idxProc;
 
-        this.tableName = createTblData.tableName;
+        tableName = createTblData.tableName;
 
         affKeyCol = calculateAffinityKeyColumn();
         affKeyColIsKey = affKeyCol != null && desc.isKeyColumn(affKeyCol.column.getColumnId());
@@ -762,11 +755,18 @@ public class GridH2Table extends TableBase {
                 }
             };
 
-            idxMgr.removeIndex(cacheContext(), deleteDef.idxName(), !rmIndex);
+            idxProc.removeIndex(cacheContext(), deleteDef.idxName(), !rmIndex);
 
             // Call it too, if H2 index stores some state.
             h2idx.destroy(rmIndex);
         }
+    }
+
+    /**
+     * @return Index Processor.
+     */
+    public IndexProcessor idxProc() {
+        return idxProc;
     }
 
     /**
@@ -1164,13 +1164,6 @@ public class GridH2Table extends TableBase {
         return tblStats.primaryRowCount();
     }
 
-    /** */
-    public long getRowCountApproximationNoCheck() {
-        refreshStatsIfNeededEx();
-
-        return tblStats.primaryRowCount();
-    }
-
     /**
      * @param qctx Context.
      *
@@ -1200,26 +1193,6 @@ public class GridH2Table extends TableBase {
             size.add(totalRowCnt);
 
             tblStats = new TableStatistics(totalRowCnt, primaryRowCnt);
-        }
-    }
-
-    /**
-     * Refreshes table stats if they are possibly outdated, must be called only in client mode.
-     */
-    private void refreshStatsIfNeededEx() {
-        if (cliReqCnt.getAndIncrement() % STATS_CLI_UPDATE_THRESHOLD == 0) {
-            TableStatistics stats = tblStats;
-
-            long primaryRowCnt = stats.primaryRowCount();
-
-            try {
-                primaryRowCnt = cacheInfo.cacheContext().cache().size(new CachePeekMode[] {CachePeekMode.PRIMARY});
-            }
-            catch (IgniteCheckedException e) {
-                log.warning("Can`t update cache size.", e);
-            }
-
-            tblStats = new TableStatistics(stats.totalRowCount(), primaryRowCnt);
         }
     }
 

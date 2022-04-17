@@ -617,7 +617,7 @@ public abstract class BaseAggregateTest extends AbstractExecutionTest {
     ) {
         switch (testAgg) {
             case SINGLE:
-                return createSingleAggregateNodesChain(ctx, grpSets, aggCall, inRowType, aggRowType, rowFactory, scan);
+                return createColocatedAggregateNodesChain(ctx, grpSets, aggCall, inRowType, aggRowType, rowFactory, scan);
 
             case MAP_REDUCE:
                 return createMapReduceAggregateNodesChain(ctx, grpSets, aggCall, inRowType, aggRowType, rowFactory, scan);
@@ -630,7 +630,7 @@ public abstract class BaseAggregateTest extends AbstractExecutionTest {
     }
 
     /** */
-    protected abstract SingleNode<Object[]> createSingleAggregateNodesChain(
+    protected abstract SingleNode<Object[]> createColocatedAggregateNodesChain(
         ExecutionContext<Object[]> ctx,
         ImmutableList<ImmutableBitSet> grpSets,
         AggregateCall aggCall,

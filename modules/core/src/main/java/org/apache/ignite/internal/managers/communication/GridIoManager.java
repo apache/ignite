@@ -1453,7 +1453,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
             /*if (msg0.processedFromNioThread())
                 c.run();
             else*/
-                ctx.pools().getStripedExecutorService().execute(-1, c);
+            ctx.pools().getStripedExecutorService().execute(-1, c);
 
             return;
         }

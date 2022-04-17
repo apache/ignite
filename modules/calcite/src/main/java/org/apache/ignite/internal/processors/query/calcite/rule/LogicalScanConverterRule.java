@@ -62,10 +62,16 @@ public abstract class LogicalScanConverterRule<T extends ProjectableFilterableTa
             ) {
                 RelOptCluster cluster = rel.getCluster();
                 IgniteTable table = rel.getTable().unwrap(IgniteTable.class);
-                IgniteIndex index = table.getIndex(rel.indexName());
+                IgniteIndex idx = table.getIndex(rel.indexName());
+
+                if (table.isIndexRebuildInProgress()) {
+                    cluster.getPlanner().prune(rel);
+
+                    return null;
+                }
 
                 RelDistribution distribution = table.distribution();
-                RelCollation collation = index.collation();
+                RelCollation collation = idx.collation();
 
                 if (rel.projects() != null || rel.requiredColumns() != null) {
                     Mappings.TargetMapping mapping = createMapping(
@@ -101,7 +107,8 @@ public abstract class LogicalScanConverterRule<T extends ProjectableFilterableTa
                     rel.projects(),
                     rel.condition(),
                     rel.indexConditions(),
-                    rel.requiredColumns()
+                    rel.requiredColumns(),
+                    idx.collation()
                 );
             }
         };
@@ -154,7 +161,7 @@ public abstract class LogicalScanConverterRule<T extends ProjectableFilterableTa
     }
 
     /** */
-    private static Mappings.TargetMapping createMapping(
+    public static Mappings.TargetMapping createMapping(
         List<RexNode> projects,
         ImmutableBitSet requiredColumns,
         int tableRowSize

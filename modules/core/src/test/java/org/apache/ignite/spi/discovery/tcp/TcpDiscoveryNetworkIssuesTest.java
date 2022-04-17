@@ -185,7 +185,7 @@ public class TcpDiscoveryNetworkIssuesTest extends GridCommonAbstractTest {
             illNodeSegmented.set(true);
 
             return false;
-            }, EVT_NODE_SEGMENTED);
+        }, EVT_NODE_SEGMENTED);
 
         specialSpi = null;
 

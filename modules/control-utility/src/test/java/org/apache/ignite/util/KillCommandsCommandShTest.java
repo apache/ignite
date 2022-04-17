@@ -24,11 +24,13 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.cache.ReadRepairStrategy;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
+import org.apache.ignite.internal.commandline.consistency.ConsistencyCommand;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearGetRequest;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.visor.consistency.VisorConsistencyRepairTask;
@@ -224,11 +226,11 @@ public class KillCommandsCommandShTest extends GridCommandHandlerClusterByClassA
     /** */
     @Test
     public void testCancelConsistencyTask() throws InterruptedException {
-        String consistencyCancheName = "consistencyCache";
+        String consistencyCacheName = "consistencyCache";
 
         CacheConfiguration<Integer, Integer> cfg = new CacheConfiguration<>();
 
-        cfg.setName(consistencyCancheName);
+        cfg.setName(consistencyCacheName);
         cfg.setBackups(SERVER_NODE_CNT - 1);
         cfg.setAffinity(new RendezvousAffinityFunction().setPartitions(1));
 
@@ -312,7 +314,11 @@ public class KillCommandsCommandShTest extends GridCommandHandlerClusterByClassA
 
         injectTestSystemOut();
 
-        assertEquals(EXIT_CODE_UNEXPECTED_ERROR, execute("--consistency", "repair", consistencyCancheName, "0"));
+        assertEquals(EXIT_CODE_UNEXPECTED_ERROR,
+            execute("--consistency", "repair",
+                ConsistencyCommand.STRATEGY, ReadRepairStrategy.LWW.toString(),
+                ConsistencyCommand.PARTITION, "0",
+                ConsistencyCommand.CACHE, consistencyCacheName));
 
         assertContains(log, testOut.toString(), "Operation execution cancelled.");
         assertContains(log, testOut.toString(), VisorConsistencyRepairTask.NOTHING_FOUND);

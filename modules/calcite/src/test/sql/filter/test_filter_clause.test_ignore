@@ -1,14 +1,15 @@
 # name: test/sql/filter/test_filter_clause.test
 # description: Test aggregation with filter clause
 # group: [filter]
-# Ignore https://issues.apache.org/jira/browse/IGNITE-15563
+# Ignore https://issues.apache.org/jira/browse/IGNITE-15589
 
 statement ok
-PRAGMA enable_verification
+create table t as select x i, mod(x,10) j,mod(x,10)*10000000 k from table(system_range(0, 999));
 
-statement ok
-create temporary table t as select range i, mod(range,10) j,mod(range,10)*10000000 k from range(1000);
-
+query I
+SELECT count(*) from t;
+----
+1000
 
 query II
 SELECT
@@ -94,7 +95,7 @@ FROM t;
 ----
 45	10
 
-query II
+query II rowsort
  SELECT
   sum(i) AS unfiltered,
   sum(i) FILTER (WHERE i < 5) AS filtered
@@ -112,15 +113,14 @@ group by j;
 50300	NULL
 50400	NULL
 
-
-
-query III
+query III rowsort
  SELECT
   COUNT(*) AS unfiltered,
   COUNT(*) FILTER (WHERE i > 5 and i < 10) AS filtered,
   j
 FROM t
-group by j;
+group by j
+order by j;
 ----
 100	0	0
 100	0	1
@@ -133,9 +133,7 @@ group by j;
 100	1	8
 100	1	9
 
-
-
-query II
+query II rowsort
 SELECT
   SUM(i) AS unfiltered,
   SUM(i) FILTER (WHERE i between 5 and 10) AS filtered
@@ -153,10 +151,7 @@ group by j;
 50300	8
 50400	9
 
-
-
-
-query III
+query III rowsort
 SELECT
   SUM(i) AS unfiltered,
   SUM(j) FILTER (WHERE j = 1) AS filtered,
@@ -165,7 +160,7 @@ FROM t
 group by j;
 ----
 49500	NULL	0
-49600	100	    1
+49600	100	1
 49700	NULL	2
 49800	NULL	3
 49900	NULL	4
@@ -175,8 +170,7 @@ group by j;
 50300	NULL	8
 50400	NULL	9
 
-
-query I
+query I rowsort
 SELECT
   SUM(j) FILTER (WHERE i < 10)
 FROM t
@@ -193,7 +187,7 @@ group by j;
 8
 9
 
-query I
+query I rowsort
 SELECT
   SUM(j) FILTER (WHERE i < (select 10))
 FROM t
@@ -242,7 +236,7 @@ limit 5;
 45
 
 # multiple filters
-query II
+query II rowsort
 SELECT
  SUM(j) FILTER (WHERE i < 10),
   SUM(i) FILTER (WHERE i < 5)
@@ -260,8 +254,7 @@ group by j;
 8	NULL
 9	NULL
 
-
-query II
+query II rowsort
  SELECT
   sum(i) AS unfiltered,
   sum(i) FILTER (WHERE i < 5) AS filtered
@@ -279,9 +272,7 @@ group by k;
 50300	NULL
 50400	NULL
 
-
-
-query II
+query II rowsort
  SELECT
   COUNT(*) AS unfiltered,
   COUNT(*) FILTER (WHERE i > 5 and i < 10) AS filtered
@@ -299,9 +290,7 @@ group by k;
 100	1
 100	1
 
-
-
-query II
+query II rowsort
 SELECT
   SUM(i) AS unfiltered,
   SUM(i) FILTER (WHERE i between 5 and 10) AS filtered
@@ -319,10 +308,7 @@ group by k;
 50300	8
 50400	9
 
-
-
-
-query III
+query III rowsort
 SELECT
   SUM(i) AS unfiltered,
   SUM(j) FILTER (WHERE j = 1) AS filtered,
@@ -341,8 +327,7 @@ group by k;
 50300	NULL	80000000
 50400	NULL	90000000
 
-
-query I
+query I rowsort
 SELECT
   SUM(j) FILTER (WHERE i < 10)
 FROM t
@@ -359,7 +344,7 @@ group by k;
 8
 9
 
-query I
+query I rowsort
 SELECT
   SUM(j) FILTER (WHERE i < (select 10))
 FROM t
@@ -376,7 +361,7 @@ group by k;
 8
 9
 
-query I
+query I rowsort
 SELECT
   SUM(i) FILTER (WHERE i < (select i from t as t2 where t.i = t2.i))
 FROM t
@@ -408,7 +393,7 @@ limit 5;
 45
 
 # multiple filters
-query II
+query II rowsort
 SELECT
  SUM(j) FILTER (WHERE i < 10),
   SUM(i) FILTER (WHERE i < 5)
@@ -428,7 +413,7 @@ group by k;
 
 
 # use correlated expression inside the filter itself
-query I
+query I rowsort
     SELECT
  (select sum(t2.i) FILTER (where t.i = t2.i)  from t as t2)
 FROM t
@@ -442,7 +427,7 @@ where i < 5
 
 #Query with many different filter clauses (e.g. 5 aggregates, 5 different filters)
 statement ok
-create temporary table t_2 as select range a, length(range) b, mod(range,100) c, 5 d, 10000 e from range(1000);
+create table t_2 as select x a, length(x) b, mod(x,100) c, 5 d, 10000 e from table(system_range(0, 999)) t1(x);
 
 query IIIII
 select count (a) filter (where a>10 and a < 15), count (b) filter (where b between 1 and 3),

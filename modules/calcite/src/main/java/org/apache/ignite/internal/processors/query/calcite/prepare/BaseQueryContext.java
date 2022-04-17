@@ -17,7 +17,10 @@
 
 package org.apache.ignite.internal.processors.query.calcite.prepare;
 
+import java.lang.reflect.Method;
+import java.util.List;
 import java.util.Properties;
+import com.google.common.collect.Multimap;
 import org.apache.calcite.config.CalciteConnectionConfig;
 import org.apache.calcite.config.CalciteConnectionConfigImpl;
 import org.apache.calcite.config.CalciteConnectionProperty;
@@ -25,9 +28,15 @@ import org.apache.calcite.jdbc.CalciteSchema;
 import org.apache.calcite.plan.Context;
 import org.apache.calcite.plan.Contexts;
 import org.apache.calcite.plan.RelOptCluster;
+import org.apache.calcite.plan.RelOptSchema;
 import org.apache.calcite.plan.volcano.VolcanoPlanner;
 import org.apache.calcite.prepare.CalciteCatalogReader;
-import org.apache.calcite.rel.metadata.CachingRelMetadataProvider;
+import org.apache.calcite.rel.RelNode;
+import org.apache.calcite.rel.metadata.Metadata;
+import org.apache.calcite.rel.metadata.MetadataDef;
+import org.apache.calcite.rel.metadata.MetadataHandler;
+import org.apache.calcite.rel.metadata.RelMetadataProvider;
+import org.apache.calcite.rel.metadata.UnboundMetadata;
 import org.apache.calcite.rel.type.RelDataTypeSystem;
 import org.apache.calcite.rex.RexBuilder;
 import org.apache.calcite.schema.SchemaPlus;
@@ -37,8 +46,7 @@ import org.apache.calcite.tools.FrameworkConfig;
 import org.apache.calcite.tools.Frameworks;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.processors.query.GridQueryCancel;
-import org.apache.ignite.internal.processors.query.calcite.metadata.IgniteMetadata;
-import org.apache.ignite.internal.processors.query.calcite.metadata.RelMetadataQueryEx;
+import org.apache.ignite.internal.processors.query.calcite.exec.exp.IgniteRexBuilder;
 import org.apache.ignite.internal.processors.query.calcite.metadata.cost.IgniteCostFactory;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.logger.NullLogger;
@@ -64,7 +72,7 @@ public final class BaseQueryContext extends AbstractQueryContext {
     private static final VolcanoPlanner EMPTY_PLANNER;
 
     /** */
-    private static final RexBuilder DFLT_REX_BUILDER;
+    private static final RexBuilder REX_BUILDER;
 
     /** */
     public static final RelOptCluster CLUSTER;
@@ -86,17 +94,44 @@ public final class BaseQueryContext extends AbstractQueryContext {
 
         EMPTY_CONTEXT = builder().build();
 
-        EMPTY_PLANNER = new VolcanoPlanner(COST_FACTORY, EMPTY_CONTEXT);
+        EMPTY_PLANNER = new VolcanoPlanner(COST_FACTORY, EMPTY_CONTEXT) {
+            @Override public void registerSchema(RelOptSchema schema) {
+                // This method in VolcanoPlanner stores schema in hash map. It can be invoked during relational
+                // operators cloning, so, can be executed even with empty context. Override it for empty context to
+                // prevent memory leaks.
+            }
+        };
 
         RelDataTypeSystem typeSys = CALCITE_CONNECTION_CONFIG.typeSystem(RelDataTypeSystem.class, FRAMEWORK_CONFIG.getTypeSystem());
         TYPE_FACTORY = new IgniteTypeFactory(typeSys);
 
-        DFLT_REX_BUILDER = new RexBuilder(TYPE_FACTORY);
+        REX_BUILDER = new IgniteRexBuilder(TYPE_FACTORY);
 
-        CLUSTER = RelOptCluster.create(EMPTY_PLANNER, DFLT_REX_BUILDER);
+        CLUSTER = RelOptCluster.create(EMPTY_PLANNER, REX_BUILDER);
 
-        CLUSTER.setMetadataProvider(new CachingRelMetadataProvider(IgniteMetadata.METADATA_PROVIDER, EMPTY_PLANNER));
-        CLUSTER.setMetadataQuerySupplier(RelMetadataQueryEx::create);
+        // Forbid using the empty cluster in any planning or mapping procedures to prevent memory leaks.
+        String cantBeUsedMsg = "Empty cluster can't be used for planning or mapping";
+
+        CLUSTER.setMetadataProvider(
+            new RelMetadataProvider() {
+                @Override public <M extends Metadata> UnboundMetadata<M> apply(
+                    Class<? extends RelNode> relCls,
+                    Class<? extends M> metadataCls)
+                {
+                    throw new AssertionError(cantBeUsedMsg);
+                }
+
+                @Override public <M extends Metadata> Multimap<Method, MetadataHandler<M>> handlers(MetadataDef<M> def) {
+                    throw new AssertionError(cantBeUsedMsg);
+                }
+
+                @Override public List<MetadataHandler<?>> handlers(Class<? extends MetadataHandler<?>> hndCls) {
+                    throw new AssertionError(cantBeUsedMsg);
+                }
+            }
+        );
+
+        CLUSTER.setMetadataQuerySupplier(() -> { throw new AssertionError(cantBeUsedMsg); });
     }
 
     /** */
@@ -135,13 +170,11 @@ public final class BaseQueryContext extends AbstractQueryContext {
 
         this.log = log;
 
-        RelDataTypeSystem typeSys = CALCITE_CONNECTION_CONFIG.typeSystem(RelDataTypeSystem.class, cfg.getTypeSystem());
-
-        typeFactory = new IgniteTypeFactory(typeSys);
-
         qryCancel = unwrap(GridQueryCancel.class);
 
-        rexBuilder = new RexBuilder(typeFactory);
+        typeFactory = TYPE_FACTORY;
+
+        rexBuilder = REX_BUILDER;
     }
 
     /**
@@ -234,7 +267,7 @@ public final class BaseQueryContext extends AbstractQueryContext {
     /**
      * Query context builder.
      */
-    @SuppressWarnings("PublicInnerClass") 
+    @SuppressWarnings("PublicInnerClass")
     public static class Builder {
         /** */
         private static final FrameworkConfig EMPTY_CONFIG =

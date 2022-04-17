@@ -400,7 +400,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
         if (log.isDebugEnabled())
             log.debug("Ignore event, cluster is inactive: " + evt);
-   }
+    }
 
     /** {@inheritDoc} */
     @Override protected void start0() throws IgniteCheckedException {
@@ -1888,10 +1888,11 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                 if (initTopVer.compareTo(fut.exchangeId().topologyVersion()) < 0)
                     continue;
 
-                skipped++;
-
-                if (skipped > 10)
+                // Skip recent exchange futures (ignore futures that have been merged into another).
+                if (skipped == 10 || fut.isMerged())
                     fut.cleanUp();
+                else
+                    skipped++;
             }
         }
     }
@@ -3300,7 +3301,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
                             assert fut.changedAffinity() :
                                 "Reassignment request started for exchange future which didn't change affinity " +
-                                    "[exchId=" + exchId + ", fut=" + exchFut + ']';
+                                    "[exchId=" + exchId + ", fut=" + fut + ']';
 
                             if (fut.hasInapplicableNodesForRebalance()) {
                                 GridDhtPartitionsExchangeFuture lastFut = lastFinishedFut.get();
@@ -3311,15 +3312,11 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                                 if (fut.topologyVersion().equals(lastAffChangedVer))
                                     exchFut = fut;
                                 else if (lastAffChangedVer.after(exchId.topologyVersion())) {
-                                    // There is a new exchange which should trigger rebalancing.
-                                    // This reassignment request can be skipped.
-                                    if (log.isInfoEnabled()) {
-                                        log.info("Partitions reassignment request skipped due to affinity was already changed" +
-                                            " [reassignTopVer=" + exchId.topologyVersion() +
-                                            ", lastAffChangedTopVer=" + lastAffChangedVer + ']');
-                                    }
+                                    exchId = lastFut.exchangeId();
 
-                                    continue;
+                                    exchFut = lastFut;
+
+                                    exchFut.copyInapplicableNodesFrom(fut);
                                 }
                             }
                         }
@@ -3519,13 +3516,14 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
                                 long rebId = cnt;
 
+                                final GridDhtPartitionExchangeId finalExchId = exchId;
                                 rebFut.listen(new IgniteInClosure<IgniteInternalFuture<Boolean>>() {
                                     @Override public void apply(IgniteInternalFuture<Boolean> f) {
                                         U.log(log, "Rebalancing scheduled [order=" + rebList +
                                             ", top=" + finalR.topologyVersion() +
                                             ", rebalanceId=" + rebId +
-                                            ", evt=" + exchId.discoveryEventName() +
-                                            ", node=" + exchId.nodeId() + ']');
+                                            ", evt=" + finalExchId.discoveryEventName() +
+                                            ", node=" + finalExchId.nodeId() + ']');
 
                                         finalR.requestPartitions();
                                     }

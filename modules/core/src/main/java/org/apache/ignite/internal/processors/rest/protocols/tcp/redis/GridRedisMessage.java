@@ -51,6 +51,9 @@ public class GridRedisMessage implements GridClientMessage {
     /** Request message parts. */
     private final transient List<String> msgParts;
 
+    /** Count of message parts . */
+    private final transient int fullLen;
+
     /** Response. */
     private ByteBuffer response;
 
@@ -66,12 +69,18 @@ public class GridRedisMessage implements GridClientMessage {
     /**
      * Constructor.
      *
-     * @param msgLen Length of the Redis message (command with parameters).
+     * @param fullLen Length of the Redis message (command with parameters).
      */
-    public GridRedisMessage(int msgLen) {
-        msgParts = new ArrayList<>(msgLen);
+    public GridRedisMessage(int fullLen) {
+        this.fullLen = fullLen;
+        msgParts = new ArrayList<>(fullLen);
 
         cacheName = DFLT_CACHE_NAME;
+    }
+
+    /** @return Full message length; */
+    public int fullLength() {
+        return fullLen;
     }
 
     /**

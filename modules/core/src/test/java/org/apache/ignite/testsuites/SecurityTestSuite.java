@@ -138,6 +138,6 @@ public class SecurityTestSuite {
     /** */
     @BeforeClass
     public static void init() {
-       JUnitTeamcityReporter.suite = SecurityTestSuite.class.getName();
+        JUnitTeamcityReporter.suite = SecurityTestSuite.class.getName();
     }
 }

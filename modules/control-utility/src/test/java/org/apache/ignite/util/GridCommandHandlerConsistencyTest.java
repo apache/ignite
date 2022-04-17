@@ -23,10 +23,12 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.binary.BinaryObjectBuilder;
+import org.apache.ignite.cache.ReadRepairStrategy;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.commandline.consistency.ConsistencyCommand;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObjectImpl;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
@@ -35,20 +37,27 @@ import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionManager;
 import org.apache.ignite.internal.processors.dr.GridDrType;
 import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.visor.consistency.VisorConsistencyStatusTask;
+import org.apache.ignite.testframework.ListeningTestLogger;
+import org.apache.ignite.testframework.LogListener;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
-import static org.apache.ignite.events.EventType.EVT_CONSISTENCY_VIOLATION;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_UNEXPECTED_ERROR;
 import static org.apache.ignite.internal.visor.consistency.VisorConsistencyRepairTask.CONSISTENCY_VIOLATIONS_FOUND;
 import static org.apache.ignite.testframework.GridTestUtils.assertContains;
+import static org.apache.ignite.testframework.LogListener.matches;
 
 /**
  *
  */
+@RunWith(Parameterized.class)
 public class GridCommandHandlerConsistencyTest extends GridCommandHandlerClusterPerMethodAbstractTest {
     /** Default cache name atomic. */
     private static final String DEFAULT_CACHE_NAME_ATOMIC = DEFAULT_CACHE_NAME + "Atomic";
@@ -61,6 +70,26 @@ public class GridCommandHandlerConsistencyTest extends GridCommandHandlerCluster
 
     /** Partitions. */
     private static final int PARTITIONS = 32;
+
+    /** */
+    protected final ListeningTestLogger listeningLog = new ListeningTestLogger(log);
+
+    /** */
+    @Parameterized.Parameters(name = "strategy={0}")
+    public static Iterable<Object[]> data() {
+        List<Object[]> res = new ArrayList<>();
+
+        for (ReadRepairStrategy strategy : ReadRepairStrategy.values())
+            res.add(new Object[] {strategy});
+
+        return res;
+    }
+
+    /**
+     *
+     */
+    @Parameterized.Parameter
+    public ReadRepairStrategy strategy;
 
     /**
      *
@@ -81,7 +110,8 @@ public class GridCommandHandlerConsistencyTest extends GridCommandHandlerCluster
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setDataStorageConfiguration(null);
-        cfg.setIncludeEventTypes(EVT_CONSISTENCY_VIOLATION);
+
+        cfg.setGridLogger(listeningLog);
 
         return cfg;
     }
@@ -118,17 +148,59 @@ public class GridCommandHandlerConsistencyTest extends GridCommandHandlerCluster
 
         injectTestSystemOut();
 
+        LogListener lsnrUnmaskedKey = matches("Key: 0 (cache: ").build(); // Unmasked key.
+        LogListener lsnrMaskedKey = matches("Key: [HIDDEN_KEY#").build(); // Masked key.
+        LogListener lsnrMaskedVal = matches("Value: [HIDDEN_VALUE#").build(); // Masked value.
+
+        listeningLog.registerListener(lsnrUnmaskedKey);
+        listeningLog.registerListener(lsnrMaskedKey);
+        listeningLog.registerListener(lsnrMaskedVal);
+
+        List<LogListener> listeners = new ArrayList<>();
+
+        // It's unable to check just "Key:" count while https://issues.apache.org/jira/browse/IGNITE-15316 not fixed
+        if (S.includeSensitive()) {
+            for (int i = 0; i < PARTITIONS; i++) {
+                LogListener keyListener = matches("Key: " + i + " (cache: ").build();
+
+                listeningLog.registerListener(keyListener);
+
+                listeners.add(keyListener);
+            }
+        }
+
         assertEquals(EXIT_CODE_OK, execute("--cache", "idle_verify"));
         assertContains(log, testOut.toString(),
             "conflict partitions has been found: [counterConflicts=0, hashConflicts=" + brokenParts.get());
 
-        readRepairTx(brokenParts, txCacheName);
+        Integer fixesPerEntry = fixesPerEntry();
 
-        assertEquals(PARTITIONS, brokenParts.get()); // Half fixed.
+        readRepair(brokenParts, txCacheName, fixesPerEntry);
 
-        readRepaitAtomic(brokenParts, atomicCacheName);
+        if (S.includeSensitive()) {
+            for (LogListener listener : listeners) {
+                assertTrue(listener.check());
 
-        assertEquals(PARTITIONS, brokenParts.get()); // Atomics still broken.
+                listener.reset();
+            }
+        }
+
+        if (fixesPerEntry != null && fixesPerEntry > 0)
+            assertEquals(PARTITIONS, brokenParts.get()); // Half fixed.
+
+        readRepair(brokenParts, atomicCacheName, fixesPerEntry != null ? 0 : null);
+
+        if (S.includeSensitive()) {
+            for (LogListener listener : listeners)
+                assertTrue(listener.check());
+        }
+
+        if (fixesPerEntry != null && fixesPerEntry > 0)
+            assertEquals(PARTITIONS, brokenParts.get()); // Atomics still broken.
+
+        assertEquals(S.includeSensitive(), lsnrUnmaskedKey.check());
+        assertEquals(S.includeSensitive(), !lsnrMaskedKey.check());
+        assertEquals(S.includeSensitive(), !lsnrMaskedVal.check());
     }
 
     /**
@@ -164,9 +236,12 @@ public class GridCommandHandlerConsistencyTest extends GridCommandHandlerCluster
         assertContains(log, testOut.toString(),
             "conflict partitions has been found: [counterConflicts=0, hashConflicts=" + brokenParts.get());
 
-        readRepairTx(brokenParts, cacheName);
+        Integer fixesPerEntry = fixesPerEntry();
 
-        assertEquals(0, brokenParts.get());
+        readRepair(brokenParts, cacheName, fixesPerEntry);
+
+        if (fixesPerEntry != null)
+            assertEquals(fixesPerEntry > 0 ? 0 : PARTITIONS, brokenParts.get());
     }
 
     /**
@@ -179,7 +254,14 @@ public class GridCommandHandlerConsistencyTest extends GridCommandHandlerCluster
         injectTestSystemOut();
 
         for (int i = 0; i < PARTITIONS; i++) {
-            assertEquals(EXIT_CODE_UNEXPECTED_ERROR, execute("--consistency", "repair", "non-existent", String.valueOf(i)));
+            assertEquals(EXIT_CODE_UNEXPECTED_ERROR,
+                execute("--consistency", "repair",
+                    ConsistencyCommand.CACHE, "non-existent",
+                    ConsistencyCommand.PARTITION, String.valueOf(i),
+                    ConsistencyCommand.STRATEGY, strategy.toString()));
+
+            assertTrue(VisorConsistencyStatusTask.MAP.isEmpty());
+
             assertContains(log, testOut.toString(), "Cache not found");
         }
     }
@@ -187,36 +269,54 @@ public class GridCommandHandlerConsistencyTest extends GridCommandHandlerCluster
     /**
      *
      */
-    private void readRepairTx(AtomicInteger brokenParts, String cacheName) {
+    private void readRepair(AtomicInteger brokenParts, String cacheName, Integer fixesPerEntry) {
         for (int i = 0; i < PARTITIONS; i++) {
-            assertEquals(EXIT_CODE_OK, execute("--consistency", "repair", cacheName, String.valueOf(i)));
+            assertEquals(EXIT_CODE_OK, execute("--consistency", "repair",
+                ConsistencyCommand.CACHE, cacheName,
+                ConsistencyCommand.PARTITION, String.valueOf(i),
+                ConsistencyCommand.STRATEGY, strategy.toString()));
+
+            assertTrue(VisorConsistencyStatusTask.MAP.isEmpty());
+
             assertContains(log, testOut.toString(), CONSISTENCY_VIOLATIONS_FOUND);
-            assertContains(log, testOut.toString(), "[found=1, fixed=1");
+            assertContains(log, testOut.toString(), "[found=1, fixed=" + (fixesPerEntry != null ? fixesPerEntry.toString() : ""));
 
             assertEquals(EXIT_CODE_OK, execute("--cache", "idle_verify"));
 
-            brokenParts.decrementAndGet();
+            if (fixesPerEntry != null)
+                if (fixesPerEntry > 0) {
+                    brokenParts.decrementAndGet();
 
-            if (brokenParts.get() > 0)
-                assertContains(log, testOut.toString(),
-                    "conflict partitions has been found: [counterConflicts=0, hashConflicts=" + brokenParts);
-            else
-                assertContains(log, testOut.toString(), "no conflicts have been found");
+                    if (brokenParts.get() > 0)
+                        assertContains(log, testOut.toString(),
+                            "conflict partitions has been found: [counterConflicts=0, hashConflicts=" + brokenParts);
+                    else
+                        assertContains(log, testOut.toString(), "no conflicts have been found");
+                }
+                else
+                    assertContains(log, testOut.toString(),
+                        "conflict partitions has been found: [counterConflicts=0, hashConflicts=" + brokenParts); // Nothing fixed.
         }
     }
 
     /**
      *
      */
-    private void readRepaitAtomic(AtomicInteger brokenParts, String cacheName) {
-        for (int i = 0; i < PARTITIONS; i++) { // This may be a copy of previous (tx case), implement atomic repair to make this happen :)
-            assertEquals(EXIT_CODE_OK, execute("--consistency", "repair", cacheName, String.valueOf(i)));
-            assertContains(log, testOut.toString(), CONSISTENCY_VIOLATIONS_FOUND);
-            assertContains(log, testOut.toString(), "[found=1, fixed=0"); // Nothing fixed.
+    private Integer fixesPerEntry() {
+        switch (strategy) {
+            case PRIMARY:
+            case REMOVE:
+                return 1;
 
-            assertEquals(EXIT_CODE_OK, execute("--cache", "idle_verify"));
-            assertContains(log, testOut.toString(),
-                "conflict partitions has been found: [counterConflicts=0, hashConflicts=" + brokenParts); // Nothing fixed.
+            case CHECK_ONLY:
+                return 0;
+
+            case RELATIVE_MAJORITY:
+            case LWW:
+                return null; // Who knows :)
+
+            default:
+                throw new UnsupportedOperationException("Unsupported strategy");
         }
     }
 

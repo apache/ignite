@@ -31,11 +31,7 @@
     </parent>
 
     <artifactId>ignite-osgi-paxlogging</artifactId>
-<<<<<<< HEAD
-    <version>${revision}</version>
-=======
 
->>>>>>> upstream/master
     <packaging>jar</packaging>
 
     <dependencies>

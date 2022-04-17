@@ -109,11 +109,6 @@ public class DmlUtils {
             if (val instanceof Time && LocalDateTimeUtils.LOCAL_TIME == expCls)
                 return LocalDateTimeUtils.valueToLocalTime(ValueTime.get((Time)val));
 
-            //add@byron Object[] is same type java.sql.Array
-            if(java.sql.Array.class == expCls && currCls.isArray()) {
-            	return val;
-            }
-            //end@
             // We have to convert arrays of reference types manually -
             // see https://issues.apache.org/jira/browse/IGNITE-4327
             // Still, we only can convert from Object[] to something more precise.
@@ -564,7 +559,7 @@ public class DmlUtils {
 
             if (opCtx == null)
                 // Mimics behavior of GridCacheAdapter#keepBinary and GridCacheProxyImpl#keepBinary
-                newOpCtx = new CacheOperationContext(false, true, null, false, null, false, false, true);
+                newOpCtx = new CacheOperationContext(false, true, null, false, null, false, null, true);
             else if (!opCtx.isKeepBinary())
                 newOpCtx = opCtx.keepBinary();
 

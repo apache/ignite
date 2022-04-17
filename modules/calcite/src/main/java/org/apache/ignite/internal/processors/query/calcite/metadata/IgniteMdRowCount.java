@@ -56,13 +56,13 @@ public class IgniteMdRowCount extends RelMdRowCount {
     /** */
     @Nullable public static Double joinRowCount(RelMetadataQuery mq, Join rel) {
         if (!rel.getJoinType().projectsRight()) {
-          // Create a RexNode representing the selectivity of the
-          // semijoin filter and pass it to getSelectivity
-          RexNode semiJoinSelectivity =
-              RelMdUtil.makeSemiJoinSelectivityRexNode(mq, rel);
+            // Create a RexNode representing the selectivity of the
+            // semijoin filter and pass it to getSelectivity
+            RexNode semiJoinSelectivity =
+                RelMdUtil.makeSemiJoinSelectivityRexNode(mq, rel);
 
-          return multiply(mq.getSelectivity(rel.getLeft(), semiJoinSelectivity),
-              mq.getRowCount(rel.getLeft()));
+            return multiply(mq.getSelectivity(rel.getLeft(), semiJoinSelectivity),
+                mq.getRowCount(rel.getLeft()));
         }
 
         // Row count estimates of 0 will be rounded up to 1.

@@ -55,7 +55,7 @@ public class IgniteSqlCreateIndex extends SqlCreate {
         new SqlSpecialOperator("CREATE INDEX", SqlKind.CREATE_INDEX);
 
     /** Creates a SqlCreateIndex. */
-    protected IgniteSqlCreateIndex(SqlParserPos pos, boolean ifNotExists, SqlIdentifier idxName, SqlIdentifier tblName,
+    public IgniteSqlCreateIndex(SqlParserPos pos, boolean ifNotExists, SqlIdentifier idxName, SqlIdentifier tblName,
         SqlNodeList columnList, SqlNumericLiteral parallel, SqlNumericLiteral inlineSize) {
         super(OPERATOR, pos, false, ifNotExists);
         this.idxName = Objects.requireNonNull(idxName, "index name");

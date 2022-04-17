@@ -385,13 +385,13 @@ public class IgniteChangeGlobalStateTest extends IgniteChangeGlobalStateAbstract
         assertTrue(!ig2C.active());
         assertTrue(!ig3C.active());
 
-       checkExceptionTryUseCache(ig1B);
-       checkExceptionTryUseCache(ig2B);
-       checkExceptionTryUseCache(ig3B);
+        checkExceptionTryUseCache(ig1B);
+        checkExceptionTryUseCache(ig2B);
+        checkExceptionTryUseCache(ig3B);
 
-       checkExceptionTryUseCache(ig1C);
-       checkExceptionTryUseCache(ig2C);
-       checkExceptionTryUseCache(ig3C);
+        checkExceptionTryUseCache(ig1C);
+        checkExceptionTryUseCache(ig2C);
+        checkExceptionTryUseCache(ig3C);
     }
 
     /**

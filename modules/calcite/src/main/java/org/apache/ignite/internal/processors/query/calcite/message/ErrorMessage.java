@@ -121,7 +121,7 @@ public class ErrorMessage implements MarshalableMessage {
             return false;
 
         switch (reader.state()) {
-             case 0:
+            case 0:
                 errBytes = reader.readByteArray("errBytes");
 
                 if (!reader.isLastRead())

@@ -364,11 +364,11 @@ public class SqlTransactionsSelfTest extends AbstractSchemaSelfTest {
     /** */
     private static final EntryProcessor<Integer, Integer, Object> ENTRY_PROC =
         new EntryProcessor<Integer, Integer, Object>() {
-        @Override public Object process(MutableEntry<Integer, Integer> entry, Object... arguments)
-        throws EntryProcessorException {
-            return null;
-        }
-    };
+            @Override public Object process(MutableEntry<Integer, Integer> entry, Object... arguments)
+                throws EntryProcessorException {
+                return null;
+            }
+        };
 
     /** */
     private static final CacheEntryProcessor<Integer, Integer, Object> CACHE_ENTRY_PROC =

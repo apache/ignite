@@ -20,23 +20,20 @@ package org.apache.ignite.internal.processors.query.calcite.planner;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
 import org.apache.calcite.plan.RelOptUtil;
-import org.apache.calcite.rel.RelCollations;
 import org.apache.calcite.sql.SqlExplainLevel;
-import org.apache.calcite.util.ImmutableIntList;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteAggregate;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexScan;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
+import org.apache.ignite.internal.processors.query.calcite.rel.agg.IgniteColocatedAggregateBase;
+import org.apache.ignite.internal.processors.query.calcite.rel.agg.IgniteColocatedHashAggregate;
+import org.apache.ignite.internal.processors.query.calcite.rel.agg.IgniteColocatedSortAggregate;
 import org.apache.ignite.internal.processors.query.calcite.rel.agg.IgniteMapAggregateBase;
 import org.apache.ignite.internal.processors.query.calcite.rel.agg.IgniteMapHashAggregate;
 import org.apache.ignite.internal.processors.query.calcite.rel.agg.IgniteMapSortAggregate;
 import org.apache.ignite.internal.processors.query.calcite.rel.agg.IgniteReduceAggregateBase;
 import org.apache.ignite.internal.processors.query.calcite.rel.agg.IgniteReduceHashAggregate;
 import org.apache.ignite.internal.processors.query.calcite.rel.agg.IgniteReduceSortAggregate;
-import org.apache.ignite.internal.processors.query.calcite.rel.agg.IgniteSingleAggregateBase;
-import org.apache.ignite.internal.processors.query.calcite.rel.agg.IgniteSingleHashAggregate;
-import org.apache.ignite.internal.processors.query.calcite.rel.agg.IgniteSingleSortAggregate;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteSchema;
 import org.apache.ignite.internal.util.typedef.F;
 import org.junit.Assert;
@@ -65,7 +62,7 @@ public class AggregateDistinctPlannerTest extends AbstractAggregatePlannerTest {
      */
     @Test
     public void mapReduceDistinctWithIndex() throws Exception {
-        TestTable tbl = createAffinityTable().addIndex(RelCollations.of(ImmutableIntList.of(1, 2)), "val0_val1");
+        TestTable tbl = createAffinityTable().addIndex("val0_val1", 1, 2);
 
         IgniteSchema publicSchema = new IgniteSchema("PUBLIC");
 
@@ -103,28 +100,28 @@ public class AggregateDistinctPlannerTest extends AbstractAggregatePlannerTest {
     enum AggregateAlgorithm {
         /** */
         SORT(
-            IgniteSingleSortAggregate.class,
+            IgniteColocatedSortAggregate.class,
             IgniteMapSortAggregate.class,
             IgniteReduceSortAggregate.class,
-            "HashSingleAggregateConverterRule",
-            "HashMapReduceAggregateConverterRule",
-            "SortSingleAggregateConverterRule"
+            "ColocatedHashAggregateConverterRule",
+            "MapReduceHashAggregateConverterRule",
+            "ColocatedSortAggregateConverterRule"
         ),
 
         /**
          *
          */
         HASH(
-            IgniteSingleHashAggregate.class,
+            IgniteColocatedHashAggregate.class,
             IgniteMapHashAggregate.class,
             IgniteReduceHashAggregate.class,
-            "SortSingleAggregateConverterRule",
-            "SortMapReduceAggregateConverterRule",
-            "HashSingleAggregateConverterRule"
+            "ColocatedSortAggregateConverterRule",
+            "MapReduceSortAggregateConverterRule",
+            "ColocatedHashAggregateConverterRule"
         );
 
         /** */
-        public final Class<? extends IgniteSingleAggregateBase> single;
+        public final Class<? extends IgniteColocatedAggregateBase> single;
 
         /** */
         public final Class<? extends IgniteMapAggregateBase> map;
@@ -137,7 +134,7 @@ public class AggregateDistinctPlannerTest extends AbstractAggregatePlannerTest {
 
         /** */
         AggregateAlgorithm(
-            Class<? extends IgniteSingleAggregateBase> single,
+            Class<? extends IgniteColocatedAggregateBase> single,
             Class<? extends IgniteMapAggregateBase> map,
             Class<? extends IgniteReduceAggregateBase> reduce,
             String... rulesToDisable) {

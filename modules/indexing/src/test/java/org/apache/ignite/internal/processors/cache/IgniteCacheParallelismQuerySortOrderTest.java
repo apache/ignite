@@ -25,7 +25,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
-
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
@@ -116,7 +116,7 @@ public class IgniteCacheParallelismQuerySortOrderTest extends GridCommonAbstract
         List<List<?>> res = cache.query(new SqlFieldsQuery("SELECT * FROM Person ORDER BY city ASC NULLS LAST")).getAll();
 
         List<Long> resList = res.stream().map(val -> (Long)val.get(0)).collect(Collectors.toList());
-        //Assert.assertTrue(CollectionUtils.isEqualCollection(NULLS_ID, resList.subList(resList.size() - NULLS_ID.size(), resList.size())));
+        Assert.assertTrue(CollectionUtils.isEqualCollection(NULLS_ID, resList.subList(resList.size() - NULLS_ID.size(), resList.size())));
         Assert.assertEquals(CITY_SORTED_ASC, resList.subList(0, resList.size() - NULLS_ID.size()));
     }
 
@@ -130,7 +130,7 @@ public class IgniteCacheParallelismQuerySortOrderTest extends GridCommonAbstract
         List<List<?>> res = cache.query(new SqlFieldsQuery("SELECT * FROM Person ORDER BY city DESC NULLS LAST")).getAll();
 
         List<Long> resList = res.stream().map(val -> (Long)val.get(0)).collect(Collectors.toList());
-        //Assert.assertTrue(CollectionUtils.isEqualCollection(NULLS_ID, resList.subList(resList.size() - NULLS_ID.size(), resList.size())));
+        Assert.assertTrue(CollectionUtils.isEqualCollection(NULLS_ID, resList.subList(resList.size() - NULLS_ID.size(), resList.size())));
         Assert.assertEquals(CITY_SORTED_DESC, resList.subList(0, resList.size() - NULLS_ID.size()));
     }
 
@@ -144,7 +144,7 @@ public class IgniteCacheParallelismQuerySortOrderTest extends GridCommonAbstract
         List<List<?>> res = cache.query(new SqlFieldsQuery("SELECT * FROM Person ORDER BY city ASC NULLS FIRST")).getAll();
 
         List<Long> resList = res.stream().map(val -> (Long)val.get(0)).collect(Collectors.toList());
-        //Assert.assertTrue(CollectionUtils.isEqualCollection(NULLS_ID, resList.subList(0, NULLS_ID.size())));
+        Assert.assertTrue(CollectionUtils.isEqualCollection(NULLS_ID, resList.subList(0, NULLS_ID.size())));
         Assert.assertEquals(CITY_SORTED_ASC, resList.subList(NULLS_ID.size(), resList.size()));
     }
 
@@ -158,7 +158,7 @@ public class IgniteCacheParallelismQuerySortOrderTest extends GridCommonAbstract
         List<List<?>> res = cache.query(new SqlFieldsQuery("SELECT * FROM Person ORDER BY city DESC NULLS FIRST")).getAll();
 
         List<Long> resList = res.stream().map(val -> (Long)val.get(0)).collect(Collectors.toList());
-        //Assert.assertTrue(CollectionUtils.isEqualCollection(NULLS_ID, resList.subList(0, NULLS_ID.size())));
+        Assert.assertTrue(CollectionUtils.isEqualCollection(NULLS_ID, resList.subList(0, NULLS_ID.size())));
         Assert.assertEquals(CITY_SORTED_DESC, resList.subList(NULLS_ID.size(), resList.size()));
     }
 

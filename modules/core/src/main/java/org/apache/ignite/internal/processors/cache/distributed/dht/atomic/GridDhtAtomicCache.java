@@ -37,6 +37,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.binary.BinaryInvalidTypeException;
+import org.apache.ignite.cache.ReadRepairStrategy;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.NodeStoppingException;
@@ -83,7 +84,6 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearGetR
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearSingleGetRequest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearSingleGetResponse;
 import org.apache.ignite.internal.processors.cache.distributed.near.consistency.GridNearReadRepairCheckOnlyFuture;
-import org.apache.ignite.internal.processors.cache.distributed.near.consistency.IgniteConsistencyViolationException;
 import org.apache.ignite.internal.processors.cache.dr.GridCacheDrExpirationInfo;
 import org.apache.ignite.internal.processors.cache.dr.GridCacheDrInfo;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
@@ -372,15 +372,15 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             ctx.cacheId(),
             GridDhtAtomicNearResponse.class,
             new CI2<UUID, GridDhtAtomicNearResponse>() {
-            @Override public void apply(UUID uuid, GridDhtAtomicNearResponse msg) {
-                processDhtAtomicNearResponse(uuid, msg);
-            }
+                @Override public void apply(UUID uuid, GridDhtAtomicNearResponse msg) {
+                    processDhtAtomicNearResponse(uuid, msg);
+                }
 
-            @Override public String toString() {
-                return "GridDhtAtomicNearResponse handler " +
-                    "[msgIdx=" + GridDhtAtomicNearResponse.CACHE_MSG_IDX + ']';
-            }
-        });
+                @Override public String toString() {
+                    return "GridDhtAtomicNearResponse handler " +
+                        "[msgIdx=" + GridDhtAtomicNearResponse.CACHE_MSG_IDX + ']';
+                }
+            });
 
         ctx.io().addCacheHandler(
             ctx.cacheId(),
@@ -474,7 +474,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         final ExpiryPolicy expiryPlc = skipVals ? null : opCtx != null ? opCtx.expiry() : null;
         final boolean skipStore = opCtx != null && opCtx.skipStore();
         final boolean recovery = opCtx != null && opCtx.recovery();
-        final boolean readRepair = opCtx != null && opCtx.readRepair();
+        final ReadRepairStrategy readRepairStrategy = opCtx != null ? opCtx.readRepairStrategy() : null;
 
         return asyncOp(new CO<IgniteInternalFuture<V>>() {
             @Override public IgniteInternalFuture<V> apply() {
@@ -483,7 +483,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                     taskName,
                     deserializeBinary,
                     recovery,
-                    readRepair,
+                    readRepairStrategy,
                     expiryPlc,
                     skipVals,
                     skipStore,
@@ -498,13 +498,13 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         boolean deserializeBinary,
         boolean needVer,
         boolean recovery,
-        boolean readRepair) throws IgniteCheckedException {
+        ReadRepairStrategy readRepairStrategy) throws IgniteCheckedException {
         return getAllAsyncInternal(keys,
             !ctx.config().isReadFromBackup(),
             ctx.kernalContext().job().currentTaskName(),
             deserializeBinary,
             recovery,
-            readRepair,
+            readRepairStrategy,
             false,
             needVer,
             false).get();
@@ -518,7 +518,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         final String taskName,
         final boolean deserializeBinary,
         final boolean recovery,
-        final boolean readRepair,
+        final ReadRepairStrategy readRepairStrategy,
         final boolean skipVals,
         final boolean needVer
     ) {
@@ -527,7 +527,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             taskName,
             deserializeBinary,
             recovery,
-            readRepair,
+            readRepairStrategy,
             skipVals,
             needVer,
             true);
@@ -538,7 +538,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
      * @param forcePrimary Force primary flag.
      * @param taskName Task name.
      * @param deserializeBinary Deserialize binary flag.
-     * @param readRepair Read Repair flag.
+     * @param readRepairStrategy Read Repair strategy.
      * @param skipVals Skip values flag.
      * @param needVer Need version flag.
      * @param asyncOp Async operation flag.
@@ -550,7 +550,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         final String taskName,
         final boolean deserializeBinary,
         final boolean recovery,
-        final boolean readRepair,
+        final ReadRepairStrategy readRepairStrategy,
         final boolean skipVals,
         final boolean needVer,
         boolean asyncOp
@@ -576,7 +576,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                         taskName,
                         deserializeBinary,
                         recovery,
-                        readRepair,
+                        readRepairStrategy,
                         expiryPlc,
                         skipVals,
                         skipStore,
@@ -590,7 +590,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                 taskName,
                 deserializeBinary,
                 recovery,
-                readRepair,
+                readRepairStrategy,
                 expiryPlc,
                 skipVals,
                 skipStore,
@@ -1374,7 +1374,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
      * @param forcePrimary Force primary flag.
      * @param taskName Task name.
      * @param deserializeBinary Deserialize binary flag.
-     * @param readRepair Read Repair flag.
+     * @param readRepairStrategy Read Repair strategy.
      * @param expiryPlc Expiry policy.
      * @param skipVals Skip values flag.
      * @param skipStore Skip store flag.
@@ -1386,7 +1386,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         String taskName,
         boolean deserializeBinary,
         boolean recovery,
-        boolean readRepair,
+        ReadRepairStrategy readRepairStrategy,
         @Nullable ExpiryPolicy expiryPlc,
         boolean skipVals,
         boolean skipStore,
@@ -1396,10 +1396,12 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
         IgniteCacheExpiryPolicy expiry = skipVals ? null : expiryPolicy(expiryPlc);
 
-        if (readRepair) {
+        if (readRepairStrategy != null) {
             return new GridNearReadRepairCheckOnlyFuture(
+                topVer,
                 ctx,
                 Collections.singleton(ctx.toCacheKeyObject(key)),
+                readRepairStrategy,
                 !skipStore,
                 taskName,
                 deserializeBinary,
@@ -1449,7 +1451,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         String taskName,
         boolean deserializeBinary,
         boolean recovery,
-        boolean readRepair,
+        ReadRepairStrategy readRepairStrategy,
         @Nullable ExpiryPolicy expiryPlc,
         boolean skipVals,
         boolean skipStore,
@@ -1461,10 +1463,12 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
         final boolean evt = !skipVals;
 
-        if (readRepair) {
+        if (readRepairStrategy != null) {
             return new GridNearReadRepairCheckOnlyFuture(
+                topVer,
                 ctx,
                 ctx.cacheKeysView(keys),
+                readRepairStrategy,
                 !skipStore,
                 taskName,
                 deserializeBinary,
@@ -1710,20 +1714,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                 }
             });
         }
-    }
-
-    /** {@inheritDoc} */
-    @Override protected IgniteInternalFuture<Void> repairAsync(Collection<? extends K> keys,
-        final CacheOperationContext opCtx, boolean skipVals) {
-        return new GridFinishedFuture<>(
-            new IgniteConsistencyViolationException("Consistency violation detected during Read Repair procedure."));
-    }
-
-    /** {@inheritDoc} */
-    @Override protected IgniteInternalFuture<Void> repairAsync(final K key, final CacheOperationContext opCtx,
-        boolean skipVals) {
-        return new GridFinishedFuture<>(
-            new IgniteConsistencyViolationException("Consistency violation detected during Read Repair procedure."));
     }
 
     /**

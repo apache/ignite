@@ -27,7 +27,6 @@ import org.apache.ignite.internal.cache.query.index.IndexName;
 import org.apache.ignite.internal.cache.query.index.SortOrder;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyDefinition;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypeSettings;
-import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypes;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexRow;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexRowCache;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexRowImpl;
@@ -58,12 +57,16 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIoRes
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
 import org.apache.ignite.internal.processors.cache.tree.mvcc.data.MvccDataRow;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.maintenance.MaintenanceTask;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.cache.query.index.sorted.inline.types.NullableInlineIndexKeyType.CANT_BE_COMPARE;
 import static org.apache.ignite.internal.cache.query.index.sorted.inline.types.NullableInlineIndexKeyType.COMPARE_UNSUPPORTED;
+import static org.apache.ignite.internal.cache.query.index.sorted.maintenance.MaintenanceRebuildIndexUtils.mergeTasks;
+import static org.apache.ignite.internal.cache.query.index.sorted.maintenance.MaintenanceRebuildIndexUtils.toMaintenanceTask;
 
 /**
  * BPlusTree where nodes stores inlined index keys.
@@ -77,9 +80,6 @@ public class InlineIndexTree extends BPlusTree<IndexRow, IndexRow> {
 
     /** Amount of bytes to store inlined index keys. */
     private final int inlineSize;
-
-    /** Index key type settings for this tree. */
-    private final IndexKeyTypeSettings keyTypeSettings;
 
     /** Recommends change inline size if needed. */
     private final InlineRecommender recommender;
@@ -192,8 +192,6 @@ public class InlineIndexTree extends BPlusTree<IndexRow, IndexRow> {
             setIos(inlineSize, mvccEnabled);
         }
 
-        this.keyTypeSettings = keyTypeSettings;
-
         initTree(initNew, inlineSize);
 
         this.recommender = recommender;
@@ -292,38 +290,18 @@ public class InlineIndexTree extends BPlusTree<IndexRow, IndexRow> {
 
                 InlineIndexKeyType keyType = keyTypes.get(keyIdx);
 
-                IndexKeyDefinition keyDef = keyDefs.get(keyIdx);
-
-                int cmp = COMPARE_UNSUPPORTED;
-
-                // Value can be set up by user in query with different data type.
-                // By default do not compare different types.
-                if (keyDef.validate(row.key(keyIdx))) {
-                    if (keyType.type() != IndexKeyTypes.JAVA_OBJECT || keyTypeSettings.inlineObjSupported()) {
-                        cmp = keyType.compare(pageAddr, off + fieldOff, maxSize, row.key(keyIdx));
-
-                        fieldOff += keyType.inlineSize(pageAddr, off + fieldOff);
-                    }
-                    // If inlining of POJO is not supported then fallback to previous logic.
-                    else
-                        break;
-                }
-
-                // Can't compare as inlined bytes are not enough for comparation.
-                if (cmp == CANT_BE_COMPARE)
-                    break;
-
-                // Try compare stored values for inlined keys with different approach?
-                if (cmp == COMPARE_UNSUPPORTED)
-                    cmp = def.rowComparator().compareKey(
-                        pageAddr, off + fieldOff, maxSize, row.key(keyIdx), keyType.type());
+                int cmp = def.rowComparator().compareKey(pageAddr, off + fieldOff, maxSize, row.key(keyIdx), keyType);
 
                 if (cmp == CANT_BE_COMPARE || cmp == COMPARE_UNSUPPORTED)
                     break;
+                else
+                    fieldOff += keyType.inlineSize(pageAddr, off + fieldOff);
 
-                if (cmp != 0)
+                if (cmp != 0) {
+                    IndexKeyDefinition keyDef = keyDefs.get(keyIdx);
+
                     return applySortOrder(cmp, keyDef.order().sortOrder());
-
+                }
             } catch (Exception e) {
                 throw new IgniteException("Failed to store new index row.", e);
             }
@@ -607,8 +585,34 @@ public class InlineIndexTree extends BPlusTree<IndexRow, IndexRow> {
      * @return New CorruptedTreeException instance.
      */
     @Override protected CorruptedTreeException corruptedTreeException(String msg, Throwable cause, int grpId, long... pageIds) {
-        CorruptedTreeException e = new CorruptedTreeException(msg, cause, grpName, def.idxName().cacheName(),
-            def.idxName().idxName(), grpId, pageIds);
+        IndexName idx = def.idxName();
+
+        String indexName = idx.idxName();
+        String cacheName = idx.cacheName();
+        String tableName = idx.tableName();
+
+        CorruptedTreeException e = new CorruptedTreeException(msg, cause, grpName, cacheName,
+            indexName, grpId, pageIds);
+
+        String errorMsg = "Index " + idx + " of the table " + tableName + " (cache " + cacheName + ") is " +
+            "corrupted, to fix this issue a rebuild is required. On the next restart, node will enter the " +
+            "maintenance mode and rebuild corrupted indexes.";
+
+        log.warning(errorMsg);
+
+        int cacheId = CU.cacheId(cacheName);
+
+        try {
+            MaintenanceTask task = toMaintenanceTask(cacheId, indexName);
+
+            grpCtx.shared().kernalContext().maintenanceRegistry().registerMaintenanceTask(
+                task,
+                oldTask -> mergeTasks(oldTask, task)
+            );
+        }
+        catch (IgniteCheckedException ex) {
+            log.warning("Failed to register maintenance record for corrupted partition files.", ex);
+        }
 
         processFailure(FailureType.CRITICAL_ERROR, e);
 

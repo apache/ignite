@@ -35,6 +35,8 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.processors.query.calcite.prepare.BaseQueryContext;
 
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_CALCITE_REL_JSON_PRETTY_PRINT;
+
 /**
  * Callback for a relational expression to dump itself as JSON.
  *
@@ -42,7 +44,7 @@ import org.apache.ignite.internal.processors.query.calcite.prepare.BaseQueryCont
  */
 public class RelJsonWriter implements RelWriter {
     /** */
-    private static final boolean PRETTY_PRINT = IgniteSystemProperties.getBoolean("IGNITE_CALCITE_REL_JSON_PRETTY_PRINT", false);
+    private static final boolean PRETTY_PRINT = IgniteSystemProperties.getBoolean(IGNITE_CALCITE_REL_JSON_PRETTY_PRINT, false);
 
     /** */
     private final RelJson relJson;

@@ -53,9 +53,12 @@ import org.apache.ignite.internal.processors.query.calcite.prepare.PlanningConte
 import org.apache.ignite.internal.processors.query.calcite.prepare.ValidationResult;
 import org.apache.ignite.internal.processors.query.calcite.sql.IgniteSqlAlterTableAddColumn;
 import org.apache.ignite.internal.processors.query.calcite.sql.IgniteSqlAlterTableDropColumn;
+import org.apache.ignite.internal.processors.query.calcite.sql.IgniteSqlCommit;
 import org.apache.ignite.internal.processors.query.calcite.sql.IgniteSqlCreateTable;
 import org.apache.ignite.internal.processors.query.calcite.sql.IgniteSqlCreateTableOption;
 import org.apache.ignite.internal.processors.query.calcite.sql.IgniteSqlCreateTableOptionEnum;
+import org.apache.ignite.internal.processors.query.calcite.sql.IgniteSqlRollback;
+import org.apache.ignite.internal.processors.query.calcite.type.OtherType;
 import org.apache.ignite.internal.processors.query.calcite.util.TypeUtils;
 import org.apache.ignite.internal.util.typedef.F;
 
@@ -94,26 +97,48 @@ public class DdlSqlToCommandConverter {
 
     /** Map of the supported table option processors. */
     private final Map<IgniteSqlCreateTableOptionEnum, TableOptionProcessor<?>> tblOptionProcessors = Stream.of(
-        new TableOptionProcessor<String>(TEMPLATE, VALUE_IS_IDENTIFIER_VALIDATOR, CreateTableCommand::templateName),
-        new TableOptionProcessor<String>(AFFINITY_KEY, VALUE_IS_IDENTIFIER_VALIDATOR, CreateTableCommand::affinityKey),
-        new TableOptionProcessor<String>(CACHE_GROUP, VALUE_IS_IDENTIFIER_VALIDATOR, CreateTableCommand::cacheGroup),
-        new TableOptionProcessor<String>(CACHE_NAME, VALUE_IS_IDENTIFIER_VALIDATOR, CreateTableCommand::cacheName),
-        new TableOptionProcessor<String>(DATA_REGION, VALUE_IS_IDENTIFIER_VALIDATOR, CreateTableCommand::dataRegionName),
-        new TableOptionProcessor<String>(KEY_TYPE, VALUE_IS_IDENTIFIER_VALIDATOR, CreateTableCommand::keyTypeName),
-        new TableOptionProcessor<String>(VALUE_TYPE, VALUE_IS_IDENTIFIER_VALIDATOR, CreateTableCommand::valueTypeName),
-        new TableOptionProcessor<CacheAtomicityMode>(ATOMICITY, validatorForEnumValue(CacheAtomicityMode.class), CreateTableCommand::atomicityMode),
-        new TableOptionProcessor<CacheWriteSynchronizationMode>(WRITE_SYNCHRONIZATION_MODE, validatorForEnumValue(CacheWriteSynchronizationMode.class),
+        new TableOptionProcessor<>(TEMPLATE, VALUE_IS_IDENTIFIER_VALIDATOR, CreateTableCommand::templateName),
+        new TableOptionProcessor<>(AFFINITY_KEY, VALUE_IS_IDENTIFIER_VALIDATOR, CreateTableCommand::affinityKey),
+        new TableOptionProcessor<>(CACHE_GROUP, VALUE_IS_IDENTIFIER_VALIDATOR, CreateTableCommand::cacheGroup),
+        new TableOptionProcessor<>(CACHE_NAME, VALUE_IS_IDENTIFIER_VALIDATOR, CreateTableCommand::cacheName),
+        new TableOptionProcessor<>(DATA_REGION, VALUE_IS_IDENTIFIER_VALIDATOR, CreateTableCommand::dataRegionName),
+        new TableOptionProcessor<>(KEY_TYPE, VALUE_IS_IDENTIFIER_VALIDATOR, CreateTableCommand::keyTypeName),
+        new TableOptionProcessor<>(VALUE_TYPE, VALUE_IS_IDENTIFIER_VALIDATOR, CreateTableCommand::valueTypeName),
+        new TableOptionProcessor<>(ATOMICITY, validatorForEnumValue(CacheAtomicityMode.class), CreateTableCommand::atomicityMode),
+        new TableOptionProcessor<>(WRITE_SYNCHRONIZATION_MODE, validatorForEnumValue(CacheWriteSynchronizationMode.class),
             CreateTableCommand::writeSynchronizationMode),
-        new TableOptionProcessor<Integer>(BACKUPS, (opt, ctx) -> {
-                if (!(opt.value() instanceof SqlNumericLiteral)
-                    || !((SqlNumericLiteral)opt.value()).isInteger()
-                    || ((SqlLiteral)opt.value()).intValue(true) < 0
-                )
-                    throwOptionParsingException(opt, "a non-negative integer", ctx.query());
+        new TableOptionProcessor<>(BACKUPS, (opt, ctx) -> {
+            if (opt.value() instanceof SqlIdentifier) {
+                String val = VALUE_IS_IDENTIFIER_VALIDATOR.apply(opt, ctx);
 
-                return ((SqlLiteral)opt.value()).intValue(true);
-            }, CreateTableCommand::backups),
-        new TableOptionProcessor<Boolean>(ENCRYPTED, (opt, ctx) -> {
+                try {
+                    int intVal = Integer.parseInt(val);
+
+                    if (intVal < 0)
+                        throwOptionParsingException(opt, "a non-negative integer", ctx.query());
+
+                    return intVal;
+                }
+                catch (NumberFormatException e) {
+                    throwOptionParsingException(opt, "a non-negative integer", ctx.query());
+                }
+            }
+
+            if (!(opt.value() instanceof SqlNumericLiteral)
+                || !((SqlNumericLiteral)opt.value()).isInteger()
+                || ((SqlLiteral)opt.value()).intValue(true) < 0
+            )
+                throwOptionParsingException(opt, "a non-negative integer", ctx.query());
+
+            return ((SqlLiteral)opt.value()).intValue(true);
+        }, CreateTableCommand::backups),
+        new TableOptionProcessor<>(ENCRYPTED, (opt, ctx) -> {
+            if (opt.value() instanceof SqlIdentifier) {
+                String val = VALUE_IS_IDENTIFIER_VALIDATOR.apply(opt, ctx);
+
+                return Boolean.parseBoolean(val);
+            }
+
             if (!(opt.value() instanceof SqlLiteral) && ((SqlLiteral)opt.value()).getTypeName() != BOOLEAN)
                 throwOptionParsingException(opt, "a boolean", ctx.query());
 
@@ -139,6 +164,9 @@ public class DdlSqlToCommandConverter {
 
         if (ddlNode instanceof IgniteSqlAlterTableDropColumn)
             return convertAlterTableDrop((IgniteSqlAlterTableDropColumn)ddlNode, ctx);
+
+        if (ddlNode instanceof IgniteSqlCommit || ddlNode instanceof IgniteSqlRollback)
+            return new TransactionCommand();
 
         if (SqlToNativeCommandConverter.isSupported(ddlNode))
             return SqlToNativeCommandConverter.convert(ddlNode, ctx);
@@ -199,6 +227,9 @@ public class DdlSqlToCommandConverter {
                     Type storageType = ctx.typeFactory().getResultClass(type);
 
                     DataContext dataCtx = new BaseDataContext(ctx.typeFactory());
+
+                    if (type instanceof OtherType)
+                        throw new IgniteSQLException("Type '" + type + "' doesn't support default value.");
 
                     dflt = TypeUtils.fromLiteral(dataCtx, storageType, (SqlLiteral)col.expression);
                 }
@@ -375,7 +406,7 @@ public class DdlSqlToCommandConverter {
 
         return ((SqlIdentifier)opt.value()).getSimple();
     }
-    
+
     /**
      * Creates a validator for an option which value should be value of given enumeration.
      *

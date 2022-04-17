@@ -32,6 +32,8 @@ import org.apache.ignite.internal.processors.platform.client.cache.ClientCacheSq
 import org.apache.ignite.internal.processors.platform.client.cache.ClientCacheSqlQueryRequest;
 import org.apache.ignite.internal.processors.platform.client.tx.ClientTxAwareRequest;
 import org.apache.ignite.internal.processors.platform.client.tx.ClientTxContext;
+import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.security.SecurityException;
 
 import static org.apache.ignite.internal.processors.platform.client.ClientProtocolVersionFeature.BITMAP_FEATURES;
@@ -122,6 +124,9 @@ public class ClientRequestHandler implements ClientListenerRequestHandler {
             String sqlState = IgniteQueryErrorCode.codeToSqlState(SqlListenerUtils.exceptionToSqlErrorCode(e));
             msg = sqlState + ": " + msg;
         }
+
+        if (ctx.kernalContext().sqlListener().sendServerExceptionStackTraceToClient())
+            msg = msg + U.nl() + X.getFullStackTrace(e);
 
         return new ClientResponse(req.requestId(), status, msg);
     }

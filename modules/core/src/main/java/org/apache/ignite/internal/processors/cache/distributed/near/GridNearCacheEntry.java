@@ -398,8 +398,8 @@ public class GridNearCacheEntry extends GridDistributedCacheEntry {
         try {
             checkObsolete();
 
-                if (cctx.statisticsEnabled())
-                    cctx.cache().metrics0().onRead(false);
+            if (cctx.statisticsEnabled())
+                cctx.cache().metrics0().onRead(false);
 
             boolean ret = false;
 
@@ -473,7 +473,13 @@ public class GridNearCacheEntry extends GridDistributedCacheEntry {
     }
 
     /** {@inheritDoc} */
-    @Override protected WALPointer logTxUpdate(IgniteInternalTx tx, CacheObject val, long expireTime, long updCntr) {
+    @Override protected WALPointer logTxUpdate(
+        IgniteInternalTx tx,
+        CacheObject val,
+        GridCacheVersion writeVer,
+        long expireTime,
+        long updCntr
+    ) {
         return null;
     }
 

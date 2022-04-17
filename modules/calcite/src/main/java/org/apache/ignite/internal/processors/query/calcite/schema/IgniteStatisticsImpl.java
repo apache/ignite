@@ -18,23 +18,34 @@
 package org.apache.ignite.internal.processors.query.calcite.schema;
 
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 import com.google.common.collect.ImmutableList;
 import org.apache.calcite.rel.RelCollation;
 import org.apache.calcite.rel.RelReferentialConstraint;
 import org.apache.calcite.schema.Statistic;
 import org.apache.calcite.util.ImmutableBitSet;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
-import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.processors.query.stat.ColumnStatistics;
 import org.apache.ignite.internal.processors.query.stat.ObjectStatisticsImpl;
 
 /** Calcite statistics wrapper. */
 public class IgniteStatisticsImpl implements Statistic {
+    /** */
+    private static final int STATS_CLI_UPDATE_THRESHOLD = 200;
+
+    /** */
+    AtomicInteger cliReqCnt = new AtomicInteger();
+
+    /** */
+    private volatile long primaryRowCnt;
+
     /** Internal statistics implementation. */
     private final ObjectStatisticsImpl statistics;
 
-    /** Grid table. */
-    private final GridH2Table tbl;
+    /** Table descriptor. */
+    private final CacheTableDescriptor desc;
 
     /**
      * Constructor.
@@ -43,17 +54,17 @@ public class IgniteStatisticsImpl implements Statistic {
      */
     public IgniteStatisticsImpl(ObjectStatisticsImpl statistics) {
         this.statistics = statistics;
-        tbl = null;
+        desc = null;
     }
 
     /**
      * Constructor.
      *
-     * @param tbl Base grid table.
+     * @param desc Table descriptor.
      */
-    public IgniteStatisticsImpl(GridH2Table tbl) {
+    public IgniteStatisticsImpl(CacheTableDescriptor desc) {
         statistics = null;
-        this.tbl = tbl;
+        this.desc = desc;
     }
 
     /** {@inheritDoc} */
@@ -62,8 +73,8 @@ public class IgniteStatisticsImpl implements Statistic {
 
         if (statistics != null)
             rows = statistics.rowCount();
-        else if (tbl != null)
-            rows = tbl.getRowCountApproximationNoCheck();
+        else if (desc != null)
+            rows = getRowCountApproximation();
         else
             rows = 1000;
 
@@ -103,5 +114,26 @@ public class IgniteStatisticsImpl implements Statistic {
      */
     public ColumnStatistics getColumnStatistics(String colName) {
         return (statistics == null) ? null : statistics.columnStatistics(colName);
+    }
+
+    /**
+     * Refreshes table stats if they are possibly outdated, must be called only in client mode.
+     */
+    private void refreshStatsIfNeededEx() {
+        if (cliReqCnt.getAndIncrement() % STATS_CLI_UPDATE_THRESHOLD == 0) {
+            try {
+                primaryRowCnt = desc.cacheInfo().cacheContext().cache().size(new CachePeekMode[] {CachePeekMode.PRIMARY});
+            }
+            catch (IgniteCheckedException ignore) {
+                // No-op.
+            }
+        }
+    }
+
+    /** */
+    private long getRowCountApproximation() {
+        refreshStatsIfNeededEx();
+
+        return primaryRowCnt;
     }
 }

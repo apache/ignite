@@ -154,6 +154,9 @@ public class GridSubqueryJoinOptimizer {
 
             if (col instanceof GridSqlSubquery)
                 wasPulledOut = pullOutSubQryFromSelectExpr(select, null, i);
+            else if (col instanceof GridSqlOperation && ((GridSqlOperation)col).operationType() == EXISTS)
+                //We actially can't rewrite select query under exists operator. So we skip it.
+                continue;
             else {
                 ASTNodeFinder finder = new ASTNodeFinder(
                     col,

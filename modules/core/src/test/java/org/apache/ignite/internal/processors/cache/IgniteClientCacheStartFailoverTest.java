@@ -564,7 +564,7 @@ public class IgniteClientCacheStartFailoverTest extends GridCommonAbstractTest {
             cache.putAll(map);
         }
 
-       for (int i = 0; i < 3; i++) {
+        for (int i = 0; i < 3; i++) {
             CacheConfiguration<Object, Object> ccfg = cacheConfiguration("mvcc-" + i, TRANSACTIONAL_SNAPSHOT, i);
 
             IgniteCache<Object, Object> cache = node.createCache(ccfg);

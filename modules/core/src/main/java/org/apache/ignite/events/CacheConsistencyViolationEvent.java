@@ -17,8 +17,10 @@
 
 package org.apache.ignite.events;
 
+import java.util.Collections;
 import java.util.Map;
 import org.apache.ignite.cache.CacheEntryVersion;
+import org.apache.ignite.cache.ReadRepairStrategy;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.lang.IgniteExperimental;
 
@@ -67,28 +69,39 @@ public class CacheConsistencyViolationEvent extends EventAdapter {
     private static final long serialVersionUID = 0L;
 
     /** Represents original values of entries.*/
-    final Map<Object, Map<ClusterNode, EntryInfo>> entries;
+    private final Map<Object, EntriesInfo> entries;
+
+    /** Fixed entries. */
+    private final Map<Object, Object> fixed;
 
     /** Cache name. */
-    final String cacheName;
+    private final String cacheName;
+
+    /** Strategy. */
+    private final ReadRepairStrategy strategy;
 
     /**
      * Creates a new instance of CacheConsistencyViolationEvent.
-     *
      * @param cacheName Cache name.
      * @param node Local node.
      * @param msg Event message.
      * @param entries Collection of original entries.
+     * @param fixed Collection of fixed entries.
+     * @param strategy Strategy.
      */
     public CacheConsistencyViolationEvent(
         String cacheName,
         ClusterNode node,
         String msg,
-        Map<Object, Map<ClusterNode, EntryInfo>> entries) {
+        Map<Object, EntriesInfo> entries,
+        Map<Object, Object> fixed,
+        ReadRepairStrategy strategy) {
         super(node, msg, EVT_CONSISTENCY_VIOLATION);
 
         this.cacheName = cacheName;
-        this.entries = entries;
+        this.entries = Collections.unmodifiableMap(entries);
+        this.fixed = Collections.unmodifiableMap(fixed);
+        this.strategy = strategy;
     }
 
     /**
@@ -96,8 +109,17 @@ public class CacheConsistencyViolationEvent extends EventAdapter {
      *
      * @return Collection of original entries.
      */
-    public Map<Object, Map<ClusterNode, EntryInfo>> getEntries() {
+    public Map<Object, EntriesInfo> getEntries() {
         return entries;
+    }
+
+    /**
+     * Returns a mapping of keys to a collection of fixed entries.
+     *
+     * @return Collection of fixed entries.
+     */
+    public Map<Object, Object> getFixedEntries() {
+        return fixed;
     }
 
     /**
@@ -107,6 +129,30 @@ public class CacheConsistencyViolationEvent extends EventAdapter {
      */
     public String getCacheName() {
         return cacheName;
+    }
+
+    /**
+     * Returns strategy.
+     *
+     * @return Strategy.
+     */
+    public ReadRepairStrategy getStrategy() {
+        return strategy;
+    }
+
+    /**
+     * Inconsistent entries mapping.
+     */
+    public interface EntriesInfo {
+        /**
+         * @return Entry's mapping.
+         */
+        public Map<ClusterNode, EntryInfo> getMapping();
+
+        /**
+         * @return Entry's partition.
+         */
+        public int partition();
     }
 
     /**

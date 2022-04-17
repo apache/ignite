@@ -22,23 +22,18 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 import java.util.function.BiFunction;
-import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import com.google.common.collect.ImmutableSet;
-import org.apache.calcite.config.CalciteConnectionConfig;
-import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.AbstractRelNode;
-import org.apache.calcite.rel.RelCollation;
+import org.apache.calcite.rel.RelDistribution;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelRoot;
 import org.apache.calcite.rel.RelVisitor;
@@ -46,14 +41,9 @@ import org.apache.calcite.rel.core.TableModify;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rel.type.RelDataTypeField;
-import org.apache.calcite.rel.type.RelDataTypeImpl;
-import org.apache.calcite.rel.type.RelProtoDataType;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.schema.ColumnStrategy;
-import org.apache.calcite.schema.Schema;
 import org.apache.calcite.schema.SchemaPlus;
-import org.apache.calcite.schema.Statistic;
-import org.apache.calcite.sql.SqlCall;
 import org.apache.calcite.sql.SqlExplainLevel;
 import org.apache.calcite.sql.SqlFunction;
 import org.apache.calcite.sql.SqlNode;
@@ -85,21 +75,16 @@ import org.apache.ignite.internal.processors.query.calcite.prepare.MappingQueryC
 import org.apache.ignite.internal.processors.query.calcite.prepare.PlannerHelper;
 import org.apache.ignite.internal.processors.query.calcite.prepare.PlanningContext;
 import org.apache.ignite.internal.processors.query.calcite.prepare.Splitter;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexScan;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableScan;
-import org.apache.ignite.internal.processors.query.calcite.rel.logical.IgniteLogicalTableScan;
-import org.apache.ignite.internal.processors.query.calcite.schema.CacheIndexImpl;
 import org.apache.ignite.internal.processors.query.calcite.schema.CacheTableDescriptor;
 import org.apache.ignite.internal.processors.query.calcite.schema.ColumnDescriptor;
-import org.apache.ignite.internal.processors.query.calcite.schema.IgniteCacheTable;
-import org.apache.ignite.internal.processors.query.calcite.schema.IgniteIndex;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteSchema;
-import org.apache.ignite.internal.processors.query.calcite.schema.IgniteStatisticsImpl;
 import org.apache.ignite.internal.processors.query.calcite.schema.ModifyTuple;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeSystem;
-import org.apache.ignite.internal.processors.query.stat.ObjectStatisticsImpl;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -251,41 +236,39 @@ public abstract class AbstractPlannerTest extends GridCommonAbstractTest {
 
     /** */
     protected IgniteRel physicalPlan(String sql, IgniteSchema publicSchema, String... disabledRules) throws Exception {
-        return physicalPlan(sql, plannerCtx(sql, publicSchema, disabledRules));
+        return physicalPlan(plannerCtx(sql, publicSchema, disabledRules));
     }
 
     /** */
     protected IgniteRel physicalPlan(String sql, Collection<IgniteSchema> schemas, String... disabledRules) throws Exception {
-        return physicalPlan(sql, plannerCtx(sql, schemas, disabledRules));
+        return physicalPlan(plannerCtx(sql, schemas, disabledRules));
     }
 
     /** */
-    protected IgniteRel physicalPlan(String sql, PlanningContext ctx) throws Exception {
+    protected IgniteRel physicalPlan(PlanningContext ctx) throws Exception {
         try (IgnitePlanner planner = ctx.planner()) {
             assertNotNull(planner);
+            assertNotNull(ctx.query());
 
-            String qry = ctx.query();
+            return physicalPlan(planner, ctx.query());
+        }
+    }
 
-            assertNotNull(qry);
+    /** */
+    protected IgniteRel physicalPlan(IgnitePlanner planner, String qry) throws Exception {
+        // Parse
+        SqlNode sqlNode = planner.parse(qry);
 
-            // Parse
-            SqlNode sqlNode = planner.parse(qry);
+        // Validate
+        sqlNode = planner.validate(sqlNode);
 
-            // Validate
-            sqlNode = planner.validate(sqlNode);
+        try {
+            return PlannerHelper.optimize(sqlNode, planner, log);
+        }
+        catch (Throwable ex) {
+            System.err.println(planner.dump());
 
-            try {
-                IgniteRel rel = PlannerHelper.optimize(sqlNode, planner, log);
-
-//                System.out.println(RelOptUtil.toString(rel));
-
-                return rel;
-            }
-            catch (Throwable ex) {
-                System.err.println(planner.dump());
-
-                throw ex;
-            }
+            throw ex;
         }
     }
 
@@ -362,6 +345,9 @@ public abstract class AbstractPlannerTest extends GridCommonAbstractTest {
             clearTraits(deserialized);
 
             if (!expected.deepEquals(deserialized)) {
+                // RelOptUtil.toString requires metadata, that can be obtained only from the real cluster.
+                deserialized = Cloner.clone((IgniteRel)deserialized, expected.getCluster());
+
                 assertTrue(
                     "Invalid serialization / deserialization.\n" +
                         "Expected:\n" + RelOptUtil.toString(expected) +
@@ -496,6 +482,30 @@ public abstract class AbstractPlannerTest extends GridCommonAbstractTest {
     }
 
     /**
+     * Predicate builder for "Index scan with given name" condition.
+     */
+    protected <T extends RelNode> Predicate<IgniteIndexScan> isIndexScan(String tableName, String idxName) {
+        return isInstanceOf(IgniteIndexScan.class).and(
+            n -> {
+                String scanTableName = Util.last(n.getTable().getQualifiedName());
+
+                if (!tableName.equalsIgnoreCase(scanTableName)) {
+                    lastErrorMsg = "Unexpected table name [exp=" + tableName + ", act=" + scanTableName + ']';
+
+                    return false;
+                }
+
+                if (!idxName.equals(n.indexName())) {
+                    lastErrorMsg = "Unexpected index name [exp=" + idxName + ", act=" + n.indexName() + ']';
+
+                    return false;
+                }
+
+                return true;
+            });
+    }
+
+    /**
      * Predicate builder for "Any child satisfy predicate" condition.
      */
     protected <T extends RelNode> Predicate<RelNode> hasChildThat(Predicate<T> predicate) {
@@ -522,6 +532,19 @@ public abstract class AbstractPlannerTest extends GridCommonAbstractTest {
 
                 return false;
             }
+        };
+    }
+
+    /**
+     * Predicate builder for "Operator has distribution" condition.
+     */
+    protected <T extends IgniteRel> Predicate<IgniteRel> hasDistribution(IgniteDistribution distribution) {
+        return node -> {
+            if (distribution.getType() == RelDistribution.Type.HASH_DISTRIBUTED &&
+                node.distribution().getType() == RelDistribution.Type.HASH_DISTRIBUTED)
+                return distribution.satisfies(node.distribution());
+            else
+                return distribution.equals(node.distribution());
         };
     }
 
@@ -638,7 +661,7 @@ public abstract class AbstractPlannerTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private BaseQueryContext baseQueryContext(Collection<IgniteSchema> schemas) {
+    protected BaseQueryContext baseQueryContext(Collection<IgniteSchema> schemas) {
         SchemaPlus rootSchema = createRootSchema(false);
         SchemaPlus dfltSchema = null;
 
@@ -657,190 +680,6 @@ public abstract class AbstractPlannerTest extends GridCommonAbstractTest {
             )
             .logger(log)
             .build();
-    }
-
-    /** */
-    protected static class TestTable implements IgniteCacheTable {
-        /** */
-        private final String name;
-
-        /** */
-        private final RelProtoDataType protoType;
-
-        /** */
-        private final Map<String, IgniteIndex> indexes = new HashMap<>();
-
-        /** */
-        private IgniteDistribution distribution;
-
-        /** */
-        private IgniteStatisticsImpl statistics;
-
-        /** */
-        private final CacheTableDescriptor desc;
-
-        /** */
-        TestTable(RelDataType type) {
-            this(type, 100.0);
-        }
-
-        /** */
-        TestTable(RelDataType type, double rowCnt) {
-            this(UUID.randomUUID().toString(), type, rowCnt);
-        }
-
-        /** */
-        TestTable(String name, RelDataType type, double rowCnt) {
-            protoType = RelDataTypeImpl.proto(type);
-            statistics = new IgniteStatisticsImpl(new ObjectStatisticsImpl((long)rowCnt, Collections.emptyMap()));
-            this.name = name;
-
-            desc = new TestTableDescriptor(this::distribution, type);
-        }
-
-        /**
-         * Set table distribution.
-         *
-         * @param distribution Table distribution to set.
-         * @return TestTable for chaining.
-         */
-        public TestTable setDistribution(IgniteDistribution distribution) {
-            this.distribution = distribution;
-
-            return this;
-        }
-
-        /**
-         * Set table statistics;
-         *
-         * @param statistics Statistics to set.
-         * @return TestTable for chaining.
-         */
-        public TestTable setStatistics(IgniteStatisticsImpl statistics) {
-            this.statistics = statistics;
-
-            return this;
-        }
-
-        /** {@inheritDoc} */
-        @Override public IgniteLogicalTableScan toRel(
-            RelOptCluster cluster,
-            RelOptTable relOptTbl,
-            @Nullable List<RexNode> proj,
-            @Nullable RexNode cond,
-            @Nullable ImmutableBitSet requiredColumns
-        ) {
-            return IgniteLogicalTableScan.create(cluster, cluster.traitSet(), relOptTbl, proj, cond, requiredColumns);
-        }
-
-        /** {@inheritDoc} */
-        @Override public RelDataType getRowType(RelDataTypeFactory typeFactory, ImmutableBitSet bitSet) {
-            RelDataType rowType = protoType.apply(typeFactory);
-
-            if (bitSet != null) {
-                RelDataTypeFactory.Builder b = new RelDataTypeFactory.Builder(typeFactory);
-                for (int i = bitSet.nextSetBit(0); i != -1; i = bitSet.nextSetBit(i + 1))
-                    b.add(rowType.getFieldList().get(i));
-                rowType = b.build();
-            }
-
-            return rowType;
-        }
-
-        /** {@inheritDoc} */
-        @Override public Statistic getStatistic() {
-            return statistics;
-        }
-
-        /** {@inheritDoc} */
-        @Override public <Row> Iterable<Row> scan(
-            ExecutionContext<Row> execCtx,
-            ColocationGroup group, Predicate<Row> filter,
-            Function<Row, Row> transformer,
-            ImmutableBitSet bitSet
-        ) {
-            throw new AssertionError();
-        }
-
-        /** {@inheritDoc} */
-        @Override public Schema.TableType getJdbcTableType() {
-            throw new AssertionError();
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean isRolledUp(String col) {
-            return false;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean rolledUpColumnValidInsideAgg(
-            String column,
-            SqlCall call,
-            SqlNode parent,
-            CalciteConnectionConfig config
-        ) {
-            throw new AssertionError();
-        }
-
-        /** {@inheritDoc} */
-        @Override public ColocationGroup colocationGroup(MappingQueryContext ctx) {
-            throw new AssertionError();
-        }
-
-        /** {@inheritDoc} */
-        @Override public IgniteDistribution distribution() {
-            if (distribution != null)
-                return distribution;
-
-            throw new AssertionError();
-        }
-
-        /** {@inheritDoc} */
-        @Override public CacheTableDescriptor descriptor() {
-            return desc;
-        }
-
-        /** {@inheritDoc} */
-        @Override public Map<String, IgniteIndex> indexes() {
-            return Collections.unmodifiableMap(indexes);
-        }
-
-        /** {@inheritDoc} */
-        @Override public void addIndex(IgniteIndex idxTbl) {
-            indexes.put(idxTbl.name(), idxTbl);
-        }
-
-        /** */
-        public TestTable addIndex(RelCollation collation, String name) {
-            indexes.put(name, new CacheIndexImpl(collation, name, null, this));
-
-            return this;
-        }
-
-        /** {@inheritDoc} */
-        @Override public IgniteIndex getIndex(String idxName) {
-            return indexes.get(idxName);
-        }
-
-        /** {@inheritDoc} */
-        @Override public void removeIndex(String idxName) {
-            throw new AssertionError();
-        }
-
-        /** {@inheritDoc} */
-        @Override public void ensureCacheStarted() {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean isModifiable() {
-            return true;
-        }
-
-        /** */
-        public String name() {
-            return name;
-        }
     }
 
     /** */

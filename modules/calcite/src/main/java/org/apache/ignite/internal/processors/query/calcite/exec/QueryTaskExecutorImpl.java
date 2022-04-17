@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.query.calcite.exec;
 
 import java.util.Objects;
 import java.util.UUID;
-import java.util.concurrent.CompletableFuture;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor;
 import org.apache.ignite.internal.processors.query.calcite.util.AbstractService;
@@ -77,11 +76,6 @@ public class QueryTaskExecutorImpl extends AbstractService implements QueryTaskE
             },
             hash(qryId, fragmentId)
         );
-    }
-
-    /** {@inheritDoc} */
-    @Override public CompletableFuture<?> submit(UUID qryId, long fragmentId, Runnable qryTask) {
-        return stripedThreadPoolExecutor.submit(qryTask, hash(qryId, fragmentId));
     }
 
     /** {@inheritDoc} */

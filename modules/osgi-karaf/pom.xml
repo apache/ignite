@@ -31,11 +31,7 @@
     </parent>
 
     <artifactId>ignite-osgi-karaf</artifactId>
-<<<<<<< HEAD
-    <version>${revision}</version>
-=======
 
->>>>>>> upstream/master
     <packaging>pom</packaging>
 
     <build>

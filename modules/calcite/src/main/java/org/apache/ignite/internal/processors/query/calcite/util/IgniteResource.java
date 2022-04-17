@@ -57,6 +57,19 @@ public interface IgniteResource {
     Resources.ExInst<SqlValidatorException> illegalIgniteUuid(String value);
 
     /** */
+    @Resources.BaseMessage("Illegal value ''{0}''. The value should have format '{node_id}_{query_id}', " +
+        "e.g. '6fa749ee-7cf8-4635-be10-36a1c75267a7_54321'")
+    Resources.ExInst<SqlValidatorException> illegalGlobalQueryId(String value);
+
+    /** */
+    @Resources.BaseMessage("Cannot parse pair:''{0}''. The pair should have format 'key=value'")
+    Resources.ExInst<SqlValidatorException> cannotParsePair(String value);
+
+    /** */
+    @Resources.BaseMessage("Illegal option ''{0}''")
+    Resources.ExInst<SqlValidatorException> illegalOption(String value);
+
+    /** */
     @Resources.BaseMessage("Modify operation is not supported for table ''{0}''")
     Resources.ExInst<SqlValidatorException> modifyTableNotSupported(String table);
 }

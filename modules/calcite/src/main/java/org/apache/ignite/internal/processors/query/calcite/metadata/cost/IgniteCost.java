@@ -156,8 +156,7 @@ public class IgniteCost implements RelOptCost {
             && cpu == ((IgniteCost)cost).cpu
             && memory == ((IgniteCost)cost).memory
             && io == ((IgniteCost)cost).io
-            && network == ((IgniteCost)cost).network
-        );
+            && network == ((IgniteCost)cost).network);
     }
 
     /** {@inheritDoc} */
@@ -167,8 +166,7 @@ public class IgniteCost implements RelOptCost {
             && Math.abs(cpu - ((IgniteCost)cost).cpu) < RelOptUtil.EPSILON
             && Math.abs(memory - ((IgniteCost)cost).memory) < RelOptUtil.EPSILON
             && Math.abs(io - ((IgniteCost)cost).io) < RelOptUtil.EPSILON
-            && Math.abs(network - ((IgniteCost)cost).network) < RelOptUtil.EPSILON
-        );
+            && Math.abs(network - ((IgniteCost)cost).network) < RelOptUtil.EPSILON);
     }
 
     /** {@inheritDoc} */

@@ -21,8 +21,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.Executor;
-import java.util.concurrent.ExecutorService;
-
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.cache.query.index.IndexProcessor;
@@ -272,8 +270,7 @@ public interface GridKernalContext extends Iterable<GridComponent> {
      *
      * @return Service processor.
      */
-    public IgniteServiceProcessor service();    
-    
+    public IgniteServiceProcessor service();
 
     /**
      * Gets port processor.
@@ -323,7 +320,7 @@ public interface GridKernalContext extends Iterable<GridComponent> {
      * @return Pool processor.
      */
     public PoolProcessor pools();
-    
+
 
     /**
      * Gets file system processor.

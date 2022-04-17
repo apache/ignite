@@ -21,6 +21,7 @@ import java.util.HashSet;
 import java.util.Set;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.configuration.QueryEngineConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.processors.odbc.ClientListenerAbstractConnectionContext;
@@ -30,6 +31,7 @@ import org.apache.ignite.internal.processors.odbc.ClientListenerRequestHandler;
 import org.apache.ignite.internal.processors.odbc.ClientListenerResponse;
 import org.apache.ignite.internal.processors.odbc.ClientListenerResponseSender;
 import org.apache.ignite.internal.processors.query.NestedTxMode;
+import org.apache.ignite.internal.processors.query.QueryEngineConfigurationEx;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.nio.GridNioSession;
 
@@ -60,8 +62,11 @@ public class OdbcConnectionContext extends ClientListenerAbstractConnectionConte
     /** Version 2.8.0: added column nullability info. */
     public static final ClientListenerProtocolVersion VER_2_8_0 = ClientListenerProtocolVersion.create(2, 8, 0);
 
+    /** Version 2.13.0: added ability to choose of query engine support. */
+    public static final ClientListenerProtocolVersion VER_2_13_0 = ClientListenerProtocolVersion.create(2, 13, 0);
+
     /** Current version. */
-    private static final ClientListenerProtocolVersion CURRENT_VER = VER_2_8_0;
+    private static final ClientListenerProtocolVersion CURRENT_VER = VER_2_13_0;
 
     /** Supported versions. */
     private static final Set<ClientListenerProtocolVersion> SUPPORTED_VERS = new HashSet<>();
@@ -83,6 +88,7 @@ public class OdbcConnectionContext extends ClientListenerAbstractConnectionConte
 
     static {
         SUPPORTED_VERS.add(CURRENT_VER);
+        SUPPORTED_VERS.add(VER_2_8_0);
         SUPPORTED_VERS.add(VER_2_7_0);
         SUPPORTED_VERS.add(VER_2_5_0);
         SUPPORTED_VERS.add(VER_2_3_0);
@@ -160,6 +166,29 @@ public class OdbcConnectionContext extends ClientListenerAbstractConnectionConte
             nestedTxMode = NestedTxMode.fromByte(nestedTxModeVal);
         }
 
+        String qryEngine = null;
+        if (ver.compareTo(VER_2_13_0) >= 0) {
+            qryEngine = reader.readString();
+
+            if (qryEngine != null) {
+                QueryEngineConfiguration[] cfgs = ctx.config().getSqlConfiguration().getQueryEnginesConfiguration();
+
+                boolean found = false;
+
+                if (cfgs != null) {
+                    for (int i = 0; i < cfgs.length; i++) {
+                        if (qryEngine.equalsIgnoreCase(((QueryEngineConfigurationEx)cfgs[i]).engineName())) {
+                            found = true;
+                            break;
+                        }
+                    }
+                }
+
+                if (!found)
+                    throw new IgniteCheckedException("Not found configuration for query engine: " + qryEngine);
+            }
+        }
+
         authenticate(ses, user, passwd);
 
         ClientListenerResponseSender sender = new ClientListenerResponseSender() {
@@ -176,7 +205,7 @@ public class OdbcConnectionContext extends ClientListenerAbstractConnectionConte
         initClientDescriptor("odbc");
 
         handler = new OdbcRequestHandler(ctx, busyLock, sender, maxCursors, distributedJoins, enforceJoinOrder,
-            replicatedOnly, collocated, lazy, skipReducerOnUpdate, nestedTxMode, ver, this);
+            replicatedOnly, collocated, lazy, skipReducerOnUpdate, qryEngine, nestedTxMode, ver, this);
 
         parser = new OdbcMessageParser(ctx, ver);
 

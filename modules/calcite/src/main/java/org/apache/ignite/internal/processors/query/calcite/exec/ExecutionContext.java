@@ -17,11 +17,11 @@
 
 package org.apache.ignite.internal.processors.query.calcite.exec;
 
+import java.lang.reflect.Type;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import org.apache.calcite.DataContext;
@@ -49,6 +49,9 @@ import static org.apache.ignite.internal.processors.query.calcite.util.Commons.c
  * Runtime context allowing access to the tables in a database.
  */
 public class ExecutionContext<Row> extends AbstractQueryContext implements DataContext {
+    /** Placeholder for values, which expressions is not specified. */
+    private static final Object UNSPECIFIED_VALUE = new Object();
+
     /** */
     private final UUID qryId;
 
@@ -119,7 +122,8 @@ public class ExecutionContext<Row> extends AbstractQueryContext implements DataC
         expressionFactory = new ExpressionFactoryImpl<>(
             this,
             qctx.typeFactory(),
-            qctx.config().getParserConfig().conformance()
+            qctx.config().getParserConfig().conformance(),
+            qctx.rexBuilder()
         );
     }
 
@@ -233,6 +237,13 @@ public class ExecutionContext<Row> extends AbstractQueryContext implements DataC
         return baseDataContext.get(name);
     }
 
+    /** */
+    public Object getParameter(String name, Type storageType) {
+        assert name.startsWith("?") : name;
+
+        return TypeUtils.toInternal(this, params.get(name), storageType);
+    }
+
     /**
      * Gets correlated value.
      *
@@ -279,29 +290,6 @@ public class ExecutionContext<Row> extends AbstractQueryContext implements DataC
         });
     }
 
-    /**
-     * Submits a Runnable task for execution and returns a Future
-     * representing that task. The Future's {@code get} method will
-     * return {@code null} upon <em>successful</em> completion.
-     *
-     * @param task the task to submit.
-     * @return a {@link CompletableFuture} representing pending task
-     */
-    public CompletableFuture<?> submit(RunnableX task, Consumer<Throwable> onError) {
-        assert !isCancelled() : "Call submit after execution was cancelled.";
-
-        return executor.submit(qryId, fragmentId(), () -> {
-            try {
-                task.run();
-            }
-            catch (Throwable e) {
-                onError.accept(e);
-
-                throw new IgniteException("Unexpected exception", e);
-            }
-        });
-    }
-
     /** */
     @FunctionalInterface
     public interface RunnableX {
@@ -321,6 +309,11 @@ public class ExecutionContext<Row> extends AbstractQueryContext implements DataC
     /** */
     public boolean isCancelled() {
         return cancelFlag.get();
+    }
+
+    /** */
+    public Object unspecifiedValue() {
+        return UNSPECIFIED_VALUE;
     }
 
     /** {@inheritDoc} */

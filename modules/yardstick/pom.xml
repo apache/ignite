@@ -31,10 +31,6 @@
     </parent>
 
     <artifactId>ignite-yardstick</artifactId>
-<<<<<<< HEAD
-    <version>${revision}</version>
-=======
->>>>>>> upstream/master
     <url>http://ignite.apache.org</url>
 
     <dependencies>

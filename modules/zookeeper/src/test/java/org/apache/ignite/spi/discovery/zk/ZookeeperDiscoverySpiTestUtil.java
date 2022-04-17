@@ -68,14 +68,8 @@ public class ZookeeperDiscoverySpiTestUtil {
                     throw new IgniteException("Failed to create directory for test Zookeeper server: " + file.getAbsolutePath());
             }
 
-<<<<<<< HEAD
-            Map<String, Object> props = customProps != null ? customProps[i] : null;
-
-            specs.add(new InstanceSpec(file, -1, -1, -1, true, -1, -1, 500, props));
-=======
             specs.add(new InstanceSpec(file, -1, -1, -1, true, -1, -1, 500,
                 optimizeProperties(customProps, i)));
->>>>>>> upstream/master
         }
 
         return new TestingCluster(specs);

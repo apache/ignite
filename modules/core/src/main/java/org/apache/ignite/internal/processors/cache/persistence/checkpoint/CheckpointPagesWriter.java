@@ -208,7 +208,7 @@ public class CheckpointPagesWriter implements Runnable {
             pageMem.checkpointWritePage(fullId, tmpWriteBuf, pageStoreWriter, tracker);
 
             if (throttlingEnabled) {
-                while (pageMem.shouldThrottle()) {
+                while (pageMem.isCpBufferOverflowThresholdExceeded()) {
                     FullPageId cpPageId = pageMem.pullPageFromCpBuffer();
 
                     if (cpPageId.equals(FullPageId.NULL_PAGE))

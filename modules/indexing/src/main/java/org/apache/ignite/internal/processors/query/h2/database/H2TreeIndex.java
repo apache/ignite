@@ -35,6 +35,7 @@ import org.apache.ignite.internal.cache.query.index.sorted.IndexRowImpl;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexSearchRowImpl;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexValueCursor;
 import org.apache.ignite.internal.cache.query.index.sorted.InlineIndexRowHandler;
+import org.apache.ignite.internal.cache.query.index.sorted.SortedIndexDefinition;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.IndexQueryContext;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexImpl;
 import org.apache.ignite.internal.cache.query.index.sorted.keys.IndexKey;
@@ -223,7 +224,7 @@ public class H2TreeIndex extends H2TreeIndexBase {
         if (qctx == null)
             return null;
 
-        return new IndexQueryContext(qctx.filter(), qctx.mvccSnapshot());
+        return new IndexQueryContext(qctx.filter(), null, qctx.mvccSnapshot());
     }
 
     /** */
@@ -333,6 +334,22 @@ public class H2TreeIndex extends H2TreeIndexBase {
 
             super.destroy(rmvIdx);
 
+        } finally {
+            if (msgLsnr != null)
+                ctx.io().removeMessageListener(msgTopic, msgLsnr);
+        }
+    }
+
+    /**
+     * Destroy index immediately.
+     *
+     * @throws IgniteCheckedException If failed.
+     */
+    public void destroyImmediately() throws IgniteCheckedException {
+        try {
+            queryIndex.destroy0(false, true);
+
+            super.destroy(false);
         } finally {
             if (msgLsnr != null)
                 ctx.io().removeMessageListener(msgTopic, msgLsnr);
@@ -665,6 +682,29 @@ public class H2TreeIndex extends H2TreeIndexBase {
      */
     public long size() throws IgniteCheckedException {
         return queryIndex.totalCount();
+    }
+
+    /**
+     * Creates a new index that is an exact copy of this index.
+     *
+     * @return New index.
+     */
+    public H2TreeIndex createCopy(InlineIndexImpl inlineIndex, SortedIndexDefinition idxDef) throws IgniteCheckedException {
+        return new H2TreeIndex(inlineIndex, tbl, indexColumns, idxDef.primary(), log);
+    }
+
+    /**
+     * @return Index's id.
+     */
+    public UUID indexId() {
+        return queryIndex.id();
+    }
+
+    /**
+     * @return Index.
+     */
+    public InlineIndexImpl index() {
+        return queryIndex;
     }
 
     /** {@inheritDoc} */

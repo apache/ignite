@@ -84,7 +84,7 @@ public class CatboostRegressionModelParserExample {
             try (Model<NamedVector, Future<Double>> mdl = mdlBuilder.build(reader, parser);
                  Scanner testDataScanner = new Scanner(testData);
                  Scanner testExpResultsScanner = new Scanner(testExpRes)) {
-                String[] columns = new String[]{
+                String[] columns = new String[] {
                     "f_0",
                     "f_1",
                     "f_2",
@@ -117,9 +117,9 @@ public class CatboostRegressionModelParserExample {
                     System.out.println("Expected: " + expPrediction + ", prediction: " + prediction);
                 }
             }
+        }
+        finally {
+            System.out.flush();
+        }
     }
-    finally {
-        System.out.flush();
-    }
-  }
 }

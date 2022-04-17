@@ -64,6 +64,9 @@ public class Outbox<Row> extends AbstractNode<Row> implements Mailbox<Row>, Sing
     /** */
     private int waiting;
 
+    /** */
+    private boolean exchangeFinished;
+
     /**
      * @param ctx Execution context.
      * @param exchange Exchange service.
@@ -254,6 +257,12 @@ public class Outbox<Row> extends AbstractNode<Row> implements Mailbox<Row>, Sing
         else if (waiting == -1) {
             for (UUID node : dest.targets())
                 getOrCreateBuffer(node).end();
+
+            if (!exchangeFinished) {
+                exchange.onOutboundExchangeFinished(queryId(), exchangeId);
+
+                exchangeFinished = true;
+            }
         }
     }
 

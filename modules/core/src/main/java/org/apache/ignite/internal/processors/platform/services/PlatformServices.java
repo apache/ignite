@@ -43,7 +43,6 @@ import org.apache.ignite.internal.processors.platform.utils.PlatformUtils;
 import org.apache.ignite.internal.processors.platform.utils.PlatformWriterBiClosure;
 import org.apache.ignite.internal.processors.platform.utils.PlatformWriterClosure;
 import org.apache.ignite.internal.processors.service.GridServiceProxy;
-import org.apache.ignite.internal.processors.service.ServiceCallContextImpl;
 import org.apache.ignite.internal.util.typedef.T3;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgnitePredicate;
@@ -108,10 +107,10 @@ public class PlatformServices extends PlatformAbstractTarget {
     private static final int OP_DOTNET_DEPLOY_ALL_ASYNC = 16;
 
     /** */
-    private static final byte PLATFORM_JAVA = 0;
+    public static final byte PLATFORM_JAVA = 0;
 
     /** */
-    private static final byte PLATFORM_DOTNET = 1;
+    public static final byte PLATFORM_DOTNET = 1;
 
     /** */
     private static final CopyOnWriteConcurrentMap<T3<Class, String, Integer>, Method> SVC_METHODS
@@ -485,8 +484,8 @@ public class PlatformServices extends PlatformAbstractTarget {
      * @param reader Binary reader,
      * @return Service configuration.
      */
-    @NotNull private ServiceConfiguration dotnetConfiguration(BinaryRawReaderEx reader) {
-        ServiceConfiguration cfg = new ServiceConfiguration();
+    @NotNull private PlatformServiceConfiguration dotnetConfiguration(BinaryRawReaderEx reader) {
+        PlatformServiceConfiguration cfg = new PlatformServiceConfiguration();
 
         cfg.setName(reader.readString());
         cfg.setService(new PlatformDotNetServiceImpl(reader.readObjectDetached(), platformCtx, srvKeepBinary));
@@ -499,6 +498,11 @@ public class PlatformServices extends PlatformAbstractTarget {
 
         if (filter != null)
             cfg.setNodeFilter(platformCtx.createClusterNodeFilter(filter));
+
+        cfg.setStatisticsEnabled(reader.readBoolean());
+
+        if (cfg.isStatisticsEnabled())
+            cfg.mtdNames(reader.readStringArray());
 
         return cfg;
     }
@@ -514,9 +518,8 @@ public class PlatformServices extends PlatformAbstractTarget {
 
         List<ServiceConfiguration> cfgs = new ArrayList<>(numServices);
 
-        for (int i = 0; i < numServices; i++) {
+        for (int i = 0; i < numServices; i++)
             cfgs.add(dotnetConfiguration(reader));
-        }
 
         return cfgs;
     }
@@ -632,8 +635,7 @@ public class PlatformServices extends PlatformAbstractTarget {
                 if (!BinaryArray.useBinaryArrays())
                     convertArrayArgs(args, mtd);
 
-                return ((GridServiceProxy)proxy)
-                    .invokeMethod(mtd, args, callAttrs == null ? null : new ServiceCallContextImpl(callAttrs));
+                return ((GridServiceProxy)proxy).invokeMethod(mtd, args, callAttrs);
             }
         }
 
@@ -824,5 +826,7 @@ public class PlatformServices extends PlatformAbstractTarget {
         if (svcCfg.getNodeFilter() instanceof PlatformClusterNodeFilterImpl)
             dotnetFilter = ((PlatformClusterNodeFilterImpl)svcCfg.getNodeFilter()).getInternalPredicate();
         w.writeObjectDetached(dotnetFilter);
+
+        w.writeBoolean(svcCfg.isStatisticsEnabled());
     }
 }

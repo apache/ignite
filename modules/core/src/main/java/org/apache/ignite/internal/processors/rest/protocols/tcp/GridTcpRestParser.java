@@ -21,7 +21,6 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
-import java.nio.charset.Charset;
 import java.util.Date;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
@@ -44,6 +43,7 @@ import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.jetbrains.annotations.Nullable;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.apache.ignite.internal.processors.rest.protocols.tcp.GridMemcachedMessage.BOOLEAN_FLAG;
 import static org.apache.ignite.internal.processors.rest.protocols.tcp.GridMemcachedMessage.BYTE_ARR_FLAG;
 import static org.apache.ignite.internal.processors.rest.protocols.tcp.GridMemcachedMessage.BYTE_FLAG;
@@ -68,9 +68,6 @@ import static org.apache.ignite.internal.util.nio.GridNioSessionMetaKey.PARSER_S
  * Parser for extended memcache protocol. Handles parsing and encoding activity.
  */
 public class GridTcpRestParser implements GridNioParser {
-    /** UTF-8 charset. */
-    private static final Charset UTF_8 = Charset.forName("UTF-8");
-
     /** JDK marshaller. */
     private final Marshaller marsh;
 
@@ -156,7 +153,7 @@ public class GridTcpRestParser implements GridNioParser {
                 break;
 
             case REDIS:
-                res = parseRedisPacket(ses, buf, state);
+                res = parseRedisPacket(buf, state);
 
                 break;
 
@@ -249,39 +246,100 @@ public class GridTcpRestParser implements GridNioParser {
     /**
      * Parses redis protocol message.
      *
-     * @param ses Session.
      * @param buf Buffer containing not parsed bytes.
      * @param state Current parser state.
-     * @return Parsed packet.s
+     * @return Parsed packet(s)
      * @throws IOException If packet cannot be parsed.
      * @throws IgniteCheckedException If deserialization error occurred.
      */
-    private GridClientMessage parseRedisPacket(GridNioSession ses, ByteBuffer buf, ParserState state)
-            throws IOException, IgniteCheckedException {
+    static GridClientMessage parseRedisPacket(
+        ByteBuffer buf,
+        ParserState state
+    ) throws IOException, IgniteCheckedException {
         assert state.packetType() == GridClientPacketType.REDIS;
 
-        ByteArrayOutputStream tmp = state.buffer();
+        // If previous data exists add it to buf.
+        if (state.buffer().size() > 0) {
+            byte[] tail = state.buffer().toByteArray();
 
-        if (GridRedisProtocolParser.validatePacket(buf)) {
-            //single parsable packet
-            return GridRedisProtocolParser.readArray(buf);
-        } else if (GridRedisProtocolParser.validatePacketFooter(buf)) { //Scenario 2
+            buf = ByteBuffer.allocate(tail.length + buf.remaining())
+                .put(tail)
+                .put(buf);
 
-            int fullLength = tmp.size() + buf.limit();
-            ByteBuffer fullPacket = ByteBuffer.allocate(fullLength);
-            fullPacket.put(tmp.toByteArray());
-            fullPacket = fullPacket.put(buf);
-            fullPacket.flip();
+            buf.rewind();
+        }
 
-            tmp.reset();
-            return GridRedisProtocolParser.readArray(fullPacket);
-        } else { //Scenario 1 or 3
+        int i;
+        int arrLen;
+        GridRedisMessage msg;
 
-            byte[] data = new byte[buf.limit()];
+        if (state.packet() == null) {
+            i = 0;
+
+            if (!GridRedisProtocolParser.ensureArrayStart(buf)) {
+                saveTail(state.buffer(), buf);
+
+                return null;
+            }
+
+            arrLen = GridRedisProtocolParser.readInt(buf);
+
+            if (arrLen == GridRedisProtocolParser.ERROR_INT) {
+                buf.rewind();
+
+                saveTail(state.buffer(), buf);
+
+                return null;
+            }
+
+            msg = new GridRedisMessage(arrLen);
+
+            state.packet(msg);
+        }
+        else {
+            msg = (GridRedisMessage)state.packet();
+
+            i = msg.messageSize();
+            arrLen = msg.fullLength();
+        }
+
+        for (; i < arrLen; i++) {
+            int pos = buf.position();
+
+            String str = GridRedisProtocolParser.readBulkStr(buf);
+
+            if (str == null) {
+                buf.position(pos);
+
+                saveTail(state.buffer(), buf);
+
+                return null;
+            }
+
+            msg.append(str);
+        }
+
+        return msg;
+    }
+
+    /** */
+    private static void saveTail(ByteArrayOutputStream os, ByteBuffer buf) throws IOException {
+        os.reset();
+
+        if (!buf.hasRemaining())
+            return;
+
+        if (buf.hasArray()) {
+            os.write(buf.array(), buf.position(), buf.remaining());
+
+            buf.position(buf.position() + buf.remaining());
+        }
+        else {
+            byte[] data = new byte[buf.remaining()];
+
             buf.get(data);
-            tmp.write(data);
 
-            return null;
+            os.write(data);
         }
     }
 

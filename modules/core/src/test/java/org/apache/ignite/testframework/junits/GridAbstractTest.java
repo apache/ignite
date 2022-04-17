@@ -188,9 +188,8 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
     private static final String NULL_NAME = UUID.randomUUID().toString();
 
     /** Ip finder for TCP discovery. */
-    public static final TcpDiscoveryIpFinder LOCAL_IP_FINDER = new TcpDiscoveryVmIpFinder(false) {{
+    public static final TcpDiscoveryIpFinder LOCAL_IP_FINDER = new TcpDiscoveryVmIpFinder(false).
         setAddresses(Collections.singleton("127.0.0.1:47500..47509"));
-    }};
 
     /** Shared static IP finder which is used in configuration at nodes startup <b>for all test methods in class</b>. */
     protected static TcpDiscoveryIpFinder sharedStaticIpFinder;
@@ -1410,7 +1409,7 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
             }
         }
 
-        return new IgniteProcessProxy(cfg, log, (x) -> grid(0), resetDiscovery, additionalRemoteJvmArgs());
+        return new IgniteProcessProxy(cfg, cfg.getGridLogger(), (x) -> grid(0), resetDiscovery, additionalRemoteJvmArgs());
     }
 
     /**
@@ -1947,7 +1946,7 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
 
         marsh.setContext(new MarshallerContextTestImpl());
 
-        IgniteUtils.invoke(BinaryMarshaller.class, marsh, "setBinaryContext", ctx, cfg);
+        marsh.setBinaryContext(ctx, cfg);
 
         return marsh;
     }

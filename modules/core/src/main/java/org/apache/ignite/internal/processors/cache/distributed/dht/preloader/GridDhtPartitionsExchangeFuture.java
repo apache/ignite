@@ -605,6 +605,19 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     }
 
     /**
+     * Marks nodes as not applicable for full and historical rebalancing.
+     *
+     * @param fut Exchange future that is used for getting nodes that are not applicable for rebalancing.
+     */
+    public void copyInapplicableNodesFrom(GridDhtPartitionsExchangeFuture fut) {
+        fut.exclusionsFromFullRebalance.forEach((k, v) -> {
+            v.forEach(p -> markNodeAsInapplicableForFullRebalance(k.get2(), k.get1(), p));
+        });
+
+        fut.exclusionsFromHistoricalRebalance.forEach(this::markNodeAsInapplicableForHistoricalRebalance);
+    }
+
+    /**
      * Marks the given node as not applicable for full rebalancing
      * for the given group and partition.
      *
@@ -4397,15 +4410,25 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         Collection<Integer> affReq = msg.cacheGroupsAffinityRequest();
 
         if (affReq != null) {
-            Map<Integer, CacheGroupAffinityMessage> cachesAff = U.newHashMap(affReq.size());
+            try {
+                Map<Integer, CacheGroupAffinityMessage> cachesAff = U.newHashMap(affReq.size());
 
-            CacheGroupAffinityMessage.createAffinityMessages(
-                cctx,
-                finishState.resTopVer,
-                affReq,
-                cachesAff);
+                CacheGroupAffinityMessage.createAffinityMessages(
+                    cctx,
+                    finishState.resTopVer,
+                    affReq,
+                    cachesAff);
 
-            fullMsg.joinedNodeAffinity(cachesAff);
+                fullMsg.joinedNodeAffinity(cachesAff);
+            }
+            catch (IllegalStateException e) {
+                // Cannot create affinity message.
+                Map<UUID, Exception> errs = Collections.singletonMap(
+                    nodeId,
+                    node.isClient() ? new IgniteNeedReconnectException(node, e) : new IgniteCheckedException(e));
+
+                fullMsg.setErrorsMap(errs);
+            }
         }
 
         if (!fullMsg.exchangeId().equals(msg.exchangeId())) {
@@ -5497,6 +5520,9 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             delayedLatestMsg = fullMsg;
 
             listen(f -> {
+                if (f.error() != null)
+                    return;
+
                 GridDhtPartitionsFullMessage msg;
 
                 synchronized (this) {

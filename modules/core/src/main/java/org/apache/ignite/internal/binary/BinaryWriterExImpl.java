@@ -709,21 +709,21 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
         }
     }
 
-     /**
-      * @param val Array of timestamps.
-      */
-     void doWriteTimestampArray(@Nullable Timestamp[] val) {
-         if (val == null)
-             out.writeByte(GridBinaryMarshaller.NULL);
-         else {
-             out.unsafeEnsure(1 + 4);
-             out.unsafeWriteByte(GridBinaryMarshaller.TIMESTAMP_ARR);
-             out.unsafeWriteInt(val.length);
+    /**
+     * @param val Array of timestamps.
+     */
+    void doWriteTimestampArray(@Nullable Timestamp[] val) {
+        if (val == null)
+            out.writeByte(GridBinaryMarshaller.NULL);
+        else {
+            out.unsafeEnsure(1 + 4);
+            out.unsafeWriteByte(GridBinaryMarshaller.TIMESTAMP_ARR);
+            out.unsafeWriteInt(val.length);
 
-             for (Timestamp ts : val)
-                 doWriteTimestamp(ts);
-         }
-     }
+            for (Timestamp ts : val)
+                doWriteTimestamp(ts);
+        }
+    }
 
     /**
      * @param val Array of time.

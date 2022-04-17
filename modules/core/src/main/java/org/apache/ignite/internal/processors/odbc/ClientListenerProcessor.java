@@ -30,12 +30,15 @@ import javax.management.JMException;
 import javax.management.ObjectName;
 import javax.net.ssl.SSLContext;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.ClientConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-
+import org.apache.ignite.configuration.OdbcConfiguration;
+import org.apache.ignite.configuration.SqlConnectorConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.managers.systemview.walker.ClientConnectionViewWalker;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
+import org.apache.ignite.internal.processors.configuration.distributed.DistributedThinClientConfiguration;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcConnectionContext;
 import org.apache.ignite.internal.processors.odbc.odbc.OdbcConnectionContext;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
@@ -88,6 +91,9 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
 
     /** Executor service. */
     private ExecutorService execSvc;
+
+    /** Thin client distributed configuration. */
+    private DistributedThinClientConfiguration distrThinCfg;
 
     /**
      * @param ctx Kernal context.
@@ -144,8 +150,6 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
 
                 int selectorCnt = cliConnCfg.getSelectorCount();
 
-                ctx.metric().registry(CLIENT_CONNECTOR_METRICS);
-
                 for (int port = cliConnCfg.getPort(); port <= portTo && port <= 65535; port++) {
                     try {
                         srv = GridNioServer.<ClientMessage>builder()
@@ -197,6 +201,8 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
                     new ClientConnectionViewWalker(),
                     srv.sessions(),
                     ClientConnectionView::new);
+
+                distrThinCfg = new DistributedThinClientConfiguration(ctx);
             }
             catch (Exception e) {
                 throw new IgniteCheckedException("Failed to start client connector processor.", e);
@@ -440,18 +446,64 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
     @SuppressWarnings("deprecation")
     @Nullable private ClientConnectorConfiguration prepareConfiguration(IgniteConfiguration cfg)
         throws IgniteCheckedException {
-        
+        OdbcConfiguration odbcCfg = cfg.getOdbcConfiguration();
+        SqlConnectorConfiguration sqlConnCfg = cfg.getSqlConnectorConfiguration();
         ClientConnectorConfiguration cliConnCfg = cfg.getClientConnectorConfiguration();
 
-        if (cliConnCfg == null)
+        if (cliConnCfg == null && sqlConnCfg == null && odbcCfg == null)
             return null;
 
         if (isNotDefault(cliConnCfg)) {
-            
+            // User set configuration explicitly. User it, but print a warning about ignored SQL/ODBC configs.
+            if (odbcCfg != null) {
+                U.warn(log, "Deprecated " + OdbcConfiguration.class.getSimpleName() + " will be ignored because " +
+                    ClientConnectorConfiguration.class.getSimpleName() + " is set.");
+            }
+
+            if (sqlConnCfg != null) {
+                U.warn(log, "Deprecated " + SqlConnectorConfiguration.class.getSimpleName() + " will be ignored " +
+                    "because " + ClientConnectorConfiguration.class.getSimpleName() + " is set.");
+            }
         }
         else {
             cliConnCfg = new ClientConnectorConfiguration();
-            
+
+            if (sqlConnCfg != null) {
+                // Migrate from SQL configuration.
+                cliConnCfg.setHost(sqlConnCfg.getHost());
+                cliConnCfg.setMaxOpenCursorsPerConnection(sqlConnCfg.getMaxOpenCursorsPerConnection());
+                cliConnCfg.setPort(sqlConnCfg.getPort());
+                cliConnCfg.setPortRange(sqlConnCfg.getPortRange());
+                cliConnCfg.setSocketSendBufferSize(sqlConnCfg.getSocketSendBufferSize());
+                cliConnCfg.setSocketReceiveBufferSize(sqlConnCfg.getSocketReceiveBufferSize());
+                cliConnCfg.setTcpNoDelay(sqlConnCfg.isTcpNoDelay());
+                cliConnCfg.setThreadPoolSize(sqlConnCfg.getThreadPoolSize());
+
+                U.warn(log, "Automatically converted deprecated "
+                    + SqlConnectorConfiguration.class.getSimpleName() +
+                    " to " + ClientConnectorConfiguration.class.getSimpleName() + ".");
+
+                if (odbcCfg != null) {
+                    U.warn(log, "Deprecated " + OdbcConfiguration.class.getSimpleName() +
+                        " will be ignored because " +
+                        SqlConnectorConfiguration.class.getSimpleName() + " is set.");
+                }
+            }
+            else if (odbcCfg != null) {
+                // Migrate from ODBC configuration.
+                HostAndPortRange hostAndPort = parseOdbcEndpoint(odbcCfg);
+
+                cliConnCfg.setHost(hostAndPort.host());
+                cliConnCfg.setPort(hostAndPort.portFrom());
+                cliConnCfg.setPortRange(hostAndPort.portTo() - hostAndPort.portFrom());
+                cliConnCfg.setThreadPoolSize(odbcCfg.getThreadPoolSize());
+                cliConnCfg.setSocketSendBufferSize(odbcCfg.getSocketSendBufferSize());
+                cliConnCfg.setSocketReceiveBufferSize(odbcCfg.getSocketReceiveBufferSize());
+                cliConnCfg.setMaxOpenCursorsPerConnection(odbcCfg.getMaxOpenCursors());
+
+                U.warn(log, "Automatically converted deprecated " + OdbcConfiguration.class.getSimpleName() +
+                    " to " + ClientConnectorConfiguration.class.getSimpleName() + ".");
+            }
         }
 
         return cliConnCfg;
@@ -473,7 +525,34 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
         assertParameter(cfg.getThreadPoolSize() > 0, "threadPoolSize > 0");
     }
 
-    
+    /**
+     * Parse ODBC endpoint.
+     *
+     * @param odbcCfg ODBC configuration.
+     * @return ODBC host and port range.
+     * @throws IgniteCheckedException If failed.
+     */
+    @SuppressWarnings("deprecation")
+    private HostAndPortRange parseOdbcEndpoint(OdbcConfiguration odbcCfg) throws IgniteCheckedException {
+        HostAndPortRange res;
+
+        if (F.isEmpty(odbcCfg.getEndpointAddress())) {
+            res = new HostAndPortRange(OdbcConfiguration.DFLT_TCP_HOST,
+                OdbcConfiguration.DFLT_TCP_PORT_FROM,
+                OdbcConfiguration.DFLT_TCP_PORT_TO
+            );
+        }
+        else {
+            res = HostAndPortRange.parse(odbcCfg.getEndpointAddress(),
+                OdbcConfiguration.DFLT_TCP_PORT_FROM,
+                OdbcConfiguration.DFLT_TCP_PORT_TO,
+                "Failed to parse ODBC endpoint address"
+            );
+        }
+
+        return res;
+    }
+
     /**
      * Check whether configuration is not default.
      *
@@ -482,6 +561,16 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
      */
     private static boolean isNotDefault(ClientConnectorConfiguration cliConnCfg) {
         return cliConnCfg != null && !(cliConnCfg instanceof ClientConnectorConfigurationEx);
+    }
+
+    /**
+     * @return If {@code true} sends a server exception stack to the client side.
+     */
+    public boolean sendServerExceptionStackTraceToClient() {
+        Boolean send = distrThinCfg.sendServerExceptionStackTraceToClient();
+
+        return send == null ?
+            ctx.config().getClientConnectorConfiguration().getThinClientConfiguration().sendServerExceptionStackTraceToClient() : send;
     }
 
     /**
@@ -545,6 +634,16 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
             }
 
             return false;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void showFullStackOnClientSide(boolean show) {
+            try {
+                distrThinCfg.updateThinClientSendServerStackTraceAsync(show).get();
+            }
+            catch (IgniteCheckedException e) {
+                throw new IgniteException(e);
+            }
         }
     }
 }

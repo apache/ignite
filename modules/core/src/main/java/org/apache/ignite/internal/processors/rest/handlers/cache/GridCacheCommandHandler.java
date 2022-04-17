@@ -1103,7 +1103,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
         /** {@inheritDoc} */
         @Override public Collection<GridCacheSqlMetadata> execute() {
             try {
-               if (future == null) {
+                if (future == null) {
                     if (!ignite.cluster().active())
                         return Collections.emptyList();
 
@@ -1347,10 +1347,6 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
 
         /** {@inheritDoc} */
         @Override public IgniteInternalFuture<?> applyx(IgniteInternalCache<Object, Object> c, GridKernalContext ctx) {
-            //add@byron
-        	if(keys==null || keys.isEmpty()) {
-            	return c.getAllAsync(c.context().cache().keySet());
-            }
             return c.getAllAsync(keys);
         }
     }

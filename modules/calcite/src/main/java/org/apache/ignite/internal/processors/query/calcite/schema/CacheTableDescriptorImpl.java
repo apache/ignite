@@ -27,7 +27,6 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
-
 import org.apache.calcite.DataContext;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.rel.core.TableModify;
@@ -76,6 +75,8 @@ import org.jetbrains.annotations.Nullable;
 
 import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
+import static org.apache.calcite.rel.type.RelDataType.PRECISION_NOT_SPECIFIED;
+import static org.apache.calcite.rel.type.RelDataType.SCALE_NOT_SPECIFIED;
 
 /**
  *
@@ -307,9 +308,7 @@ public class CacheTableDescriptorImpl extends NullInitializerExpressionFactory
 
         DataContext dataCtx = new BaseDataContext(typeFactory);
 
-        Object dfltVal = TypeUtils.toInternal(dataCtx, desc.defaultValue());
-
-        return rexBuilder.makeLiteral(dfltVal, desc.logicalType(typeFactory), false);
+        return TypeUtils.toRexLiteral(desc.defaultValue(), desc.logicalType(typeFactory), dataCtx, rexBuilder);
     }
 
     /** {@inheritDoc} */
@@ -550,7 +549,7 @@ public class CacheTableDescriptorImpl extends NullInitializerExpressionFactory
                 b.add(descriptors[i].name(), descriptors[i].logicalType(factory));
         }
 
-        return TypeUtils.sqlType(factory, b.build());
+        return b.build();
     }
 
     /** {@inheritDoc} */
@@ -644,6 +643,9 @@ public class CacheTableDescriptorImpl extends NullInitializerExpressionFactory
         private final Class<?> storageType;
 
         /** */
+        private volatile RelDataType logicalType;
+
+        /** */
         private KeyValDescriptor(String name, Class<?> type, boolean isKey, int fieldIdx) {
             this.name = name;
             this.isKey = isKey;
@@ -684,7 +686,10 @@ public class CacheTableDescriptorImpl extends NullInitializerExpressionFactory
 
         /** {@inheritDoc} */
         @Override public RelDataType logicalType(IgniteTypeFactory f) {
-            return f.toSql(f.createJavaType(storageType));
+            if (logicalType == null)
+                logicalType = TypeUtils.sqlType(f, storageType, PRECISION_NOT_SPECIFIED, SCALE_NOT_SPECIFIED);
+
+            return logicalType;
         }
 
         /** {@inheritDoc} */
@@ -716,6 +721,9 @@ public class CacheTableDescriptorImpl extends NullInitializerExpressionFactory
 
         /** */
         private final Class<?> storageType;
+
+        /** */
+        private volatile RelDataType logicalType;
 
         /** */
         private FieldDescriptor(GridQueryProperty desc, int fieldIdx) {
@@ -758,7 +766,13 @@ public class CacheTableDescriptorImpl extends NullInitializerExpressionFactory
 
         /** {@inheritDoc} */
         @Override public RelDataType logicalType(IgniteTypeFactory f) {
-            return f.toSql(f.createJavaType(storageType));
+            if (logicalType == null) {
+                logicalType = TypeUtils.sqlType(f, storageType,
+                    desc.precision() == -1 ? PRECISION_NOT_SPECIFIED : desc.precision(),
+                    desc.scale() == -1 ? SCALE_NOT_SPECIFIED : desc.scale());
+            }
+
+            return logicalType;
         }
 
         /** {@inheritDoc} */

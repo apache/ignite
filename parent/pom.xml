@@ -27,10 +27,7 @@
         <groupId>org.apache</groupId>
         <artifactId>apache</artifactId>
         <version>23</version>
-<<<<<<< HEAD
-=======
         <relativePath/>
->>>>>>> upstream/master
     </parent>
 
     <!--
@@ -51,16 +48,11 @@
     <properties>
         <maven.compiler.source>1.8</maven.compiler.source>
         <maven.compiler.target>1.8</maven.compiler.target>
-<<<<<<< HEAD
-        <maven.javadoc.skip>true</maven.javadoc.skip>
-        <revision>2.9.0-SNAPSHOT</revision>
-=======
 
         <revision>2.14.0-SNAPSHOT</revision>
         <!-- Ignite version will be substituted with the flatten-maven-plugin and used as
             a version dependency for Ignite extensions. -->
         <ignite.version>${revision}</ignite.version>
->>>>>>> upstream/master
         <ignite.edition>apache-ignite</ignite.edition>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.build.timestamp.format>MMMM d yyyy</maven.build.timestamp.format>
@@ -77,11 +69,7 @@
         <asm.version>4.2</asm.version>
         <aspectj.bundle.version>1.8.13_1</aspectj.bundle.version>
         <aspectj.version>1.8.13</aspectj.version>
-<<<<<<< HEAD
-        <netty.version>4.1.66.Final</netty.version>
-=======
         <netty.version>4.1.75.Final</netty.version>
->>>>>>> upstream/master
         <camel.version>2.22.0</camel.version>
         <bouncycastle.version>1.69</bouncycastle.version>
         <commons.beanutils.bundle.version>1.9.2_1</commons.beanutils.bundle.version>
@@ -106,10 +94,6 @@
         <httpclient.version>4.5.13</httpclient.version>
         <httpcore.version>4.4.14</httpcore.version>
         <jackson.version>2.12.4</jackson.version>
-<<<<<<< HEAD
-        <jackson1.version>1.9.13</jackson1.version>
-=======
->>>>>>> upstream/master
         <jaxb.api.version>2.1</jaxb.api.version>
         <jaxb.impl.version>2.1.14</jaxb.impl.version>
         <javassist.version>3.28.0-GA</javassist.version>
@@ -122,11 +106,7 @@
         <jmh.version>1.13</jmh.version>
         <jms.spec.version>1.1.1</jms.spec.version>
         <jna.version>4.5.2</jna.version>
-<<<<<<< HEAD
-        <jnr.posix.version>3.0.50</jnr.posix.version>
-=======
         <jnr.posix.version>3.1.15</jnr.posix.version>
->>>>>>> upstream/master
         <jotm.version>2.3.1-M1</jotm.version>
         <jsch.bundle.version>0.1.54_1</jsch.bundle.version>
         <jsch.version>0.1.54</jsch.version>
@@ -142,12 +122,9 @@
         <lz4.version>1.5.0</lz4.version>
         <maven.bundle.plugin.version>3.5.0</maven.bundle.plugin.version>
         <maven.checkstyle.plugin.version>3.1.1</maven.checkstyle.plugin.version>
-<<<<<<< HEAD
-=======
         <maven.flatten.plugin.version>1.2.7</maven.flatten.plugin.version>
         <maven.flatten.file.name>pom-installed.xml</maven.flatten.file.name>
         <maven.model.version>3.8.4</maven.model.version>
->>>>>>> upstream/master
         <checkstyle.puppycrawl.version>8.45</checkstyle.puppycrawl.version>
         <mockito.version>3.4.6</mockito.version>
         <mysql.connector.version>8.0.26</mysql.connector.version>
@@ -156,11 +133,7 @@
         <osgi.core.version>5.0.0</osgi.core.version>
         <osgi.enterprise.version>5.0.0</osgi.enterprise.version>
         <paho.version>1.0.2</paho.version>
-<<<<<<< HEAD
-        <postgres.connector.version>42.2.23</postgres.connector.version>
-=======
         <postgres.connector.version>42.3.3</postgres.connector.version>
->>>>>>> upstream/master
         <scala210.jline.version>2.10.7</scala210.jline.version>
         <scala210.library.version>2.10.7</scala210.library.version>
         <scala.library.version>2.11.12</scala.library.version>
@@ -173,12 +146,6 @@
         <spring.version>4.3.26.RELEASE</spring.version>
         <spring-5.0.version>5.0.16.RELEASE</spring-5.0.version>
         <spring-5.2.version>5.2.3.RELEASE</spring-5.2.version>
-<<<<<<< HEAD
-        <spring.data.version>1.13.23.RELEASE</spring.data.version> <!-- don't forget to update spring version -->        
-        <spring.data-2.0.version>2.0.13.RELEASE</spring.data-2.0.version> <!-- don't forget to update spring-5.0 version -->
-        <spring.data-2.2.version>2.2.3.RELEASE</spring.data-2.2.version> <!-- don't forget to update spring-5.2 version -->
-=======
->>>>>>> upstream/master
         <spring41.osgi.feature.version>4.1.7.RELEASE_1</spring41.osgi.feature.version>
         <storm.version>1.1.1</storm.version>
         <surefire.version>3.0.0-M4</surefire.version>
@@ -279,11 +246,8 @@
                     <version>${maven.checkstyle.plugin.version}</version>
                     <configuration>
                         <skip>true</skip>
-<<<<<<< HEAD
-=======
                         <!-- The source directories tag below is used to dynamically add the sources in case
                             additional build profiles are activated (combine.children="append" is used). -->
->>>>>>> upstream/master
                         <sourceDirectories>
                             <sourceDirectory>${project.build.sourceDirectory}</sourceDirectory>
                             <sourceDirectory>${project.build.testSourceDirectory}</sourceDirectory>
@@ -293,14 +257,9 @@
                         <failsOnError>true</failsOnError>
                         <failOnViolation>true</failOnViolation>
                         <outputFile>${project.build.directory}/checkstyle-result.xml</outputFile>
-<<<<<<< HEAD
-                        <configLocation>../checkstyle/checkstyle.xml</configLocation>
-                        <suppressionsLocation>../checkstyle/checkstyle-suppressions.xml</suppressionsLocation>
-=======
                         <!-- This configuration checkstyle files will be obtained from the 'ignite-checkstyle' resources. -->
                         <configLocation>checkstyle/checkstyle.xml</configLocation>
                         <suppressionsLocation>checkstyle/checkstyle-suppressions.xml</suppressionsLocation>
->>>>>>> upstream/master
                         <includeTestSourceDirectory>true</includeTestSourceDirectory>
                         <excludes>**/generated/**/*</excludes>
                     </configuration>
@@ -310,14 +269,11 @@
                             <artifactId>checkstyle</artifactId>
                             <version>${checkstyle.puppycrawl.version}</version>
                         </dependency>
-<<<<<<< HEAD
-=======
                         <dependency>
                             <groupId>${project.groupId}</groupId>
                             <artifactId>ignite-checkstyle</artifactId>
                             <version>${ignite.version}</version>
                         </dependency>
->>>>>>> upstream/master
                     </dependencies>
                 </plugin>
 
@@ -382,191 +338,6 @@
                         <author>false</author>
                         <version>false</version>
                         <additionalOptions>${javadoc.opts}</additionalOptions>
-<<<<<<< HEAD
-                        <groups>
-                            <group>
-                                <title>Common Grid APIs</title>
-                                <packages>
-                                    org.apache.ignite:org.apache.ignite.cluster:org.apache.ignite.lifecycle:org.apache.ignite.configuration:org.apache.ignite.spi:org.apache.ignite.lang:org.apache.ignite.resources:org.apache.ignite.thread:org.apache.ignite.scheduler
-                                </packages>
-                            </group>
-                            <group>
-                                <title>Messaging APIs</title>
-                                <packages>org.apache.ignite.messaging</packages>
-                            </group>
-                            <group>
-                                <title>Event Notification APIs</title>
-                                <packages>org.apache.ignite.events</packages>
-                            </group>
-                            <group>
-                                <title>Compute Grid APIs</title>
-                                <packages>org.apache.ignite.compute*</packages>
-                            </group>
-                            <group>
-                                <title>Data Grid APIs</title>
-                                <packages>
-                                    org.apache.ignite.cache*:org.apache.ignite.transactions:org.apache.ignite.datastructures:org.apache.ignite.dataload
-                                </packages>
-                            </group>
-                            <group>
-                                <title>Service Grid APIs</title>
-                                <packages>org.apache.ignite.services</packages>
-                            </group>
-                            <group>
-                                <title>Ignite Thin Client APIs</title>
-                                <packages>org.apache.ignite.client</packages>
-                            </group>
-                            <group>
-                                <title>Streaming APIs</title>
-                                <packages>org.apache.ignite.streamer*:org.apache.ignite.stream*</packages>
-                            </group>
-                            <group>
-                                <title>Security APIs</title>
-                                <packages>org.apache.ignite.plugin.security:org.apache.ignite.ssl</packages>
-                            </group>
-                            <group>
-                                <title>Maintenance APIs</title>
-                                <packages>org.apache.ignite.maintenance</packages>
-                            </group>
-                            <group>
-                                <title>MXBeans classes</title>
-                                <packages>org.apache.ignite.mbean:org.apache.ignite.mxbean</packages>
-                            </group>
-                            <group>
-                                <title>SPI: CheckPoint</title>
-                                <packages>org.apache.ignite.spi.checkpoint*</packages>
-                            </group>
-                            <group>
-                                <title>SPI: Collision</title>
-                                <packages>org.apache.ignite.spi.collision*</packages>
-                            </group>
-                            <group>
-                                <title>SPI: Indexing</title>
-                                <packages>org.apache.ignite.spi.indexing*</packages>
-                            </group>
-                            <group>
-                                <title>SPI: Load Balancing</title>
-                                <packages>org.apache.ignite.spi.loadbalancing*</packages>
-                            </group>
-                            <group>
-                                <title>SPI: Communication</title>
-                                <packages>org.apache.ignite.spi.communication*</packages>
-                            </group>
-                            <group>
-                                <title>SPI: Deployment</title>
-                                <packages>org.apache.ignite.spi.deployment*</packages>
-                            </group>
-                            <group>
-                                <title>SPI: Swap Space</title>
-                                <packages>org.apache.ignite.spi.swapspace*</packages>
-                            </group>
-                            <group>
-                                <title>SPI: Discovery</title>
-                                <packages>org.apache.ignite.spi.discovery*</packages>
-                            </group>
-                            <group>
-                                <title>SPI: Failover</title>
-                                <packages>org.apache.ignite.spi.failover*</packages>
-                            </group>
-                            <group>
-                                <title>SPI: Event Storage</title>
-                                <packages>org.apache.ignite.spi.eventstorage*</packages>
-                            </group>
-                            <group>
-                                <title>Communication Failure Detection</title>
-                                <packages>org.apache.ignite.failure</packages>
-                            </group>
-                            <group>
-                                <title>Segmentation Detection</title>
-                                <packages>org.apache.ignite.plugin.segmentation</packages>
-                            </group>
-                            <group>
-                                <title>Ignite plugin API</title>
-                                <packages>org.apache.ignite.plugin*</packages>
-                            </group>
-                            <group>
-                                <title>Logging</title>
-                                <packages>org.apache.ignite.logger*</packages>
-                            </group>
-                            <group>
-                                <title>Loaders</title>
-                                <packages>org.apache.ignite.startup*</packages>
-                            </group>
-                            <group>
-                                <title>Marshallers</title>
-                                <packages>org.apache.ignite.marshaller*</packages>
-                            </group>
-                            <group>
-                                <title>Ignite Binary Objects API</title>
-                                <packages>org.apache.ignite.binary*</packages>
-                            </group>
-                            <group>
-                                <title>Visor Plugins</title>
-                                <packages>org.apache.ignite.visor.plugin</packages>
-                            </group>
-                            <group>
-                                <title>Spring Integration</title>
-                                <packages>org.apache.ignite.cache.spring:org.apache.ignite.transactions.spring</packages>
-                            </group>
-                            <group>
-                                <title>Mesos Framework</title>
-                                <packages>org.apache.ignite.mesos*</packages>
-                            </group>
-                            <group>
-                                <title>Yarn Integration</title>
-                                <packages>org.apache.ignite.yarn*</packages>
-                            </group>
-                            <group>
-                                <title>Kubernetes Integration</title>
-                                <packages>org.apache.ignite.kubernetes*</packages>
-                            </group>
-                            <group>
-                                <title>Platforms</title>
-                                <packages>org.apache.ignite.platform*</packages>
-                            </group>
-                            <group>
-                                <title>Spark Integration</title>
-                                <packages>org.apache.ignite.spark.examples.java</packages>
-                            </group>
-                            <group>
-                                <title>OSGi integration</title>
-                                <packages>org.apache.ignite.osgi*</packages>
-                            </group>
-                            <group>
-                                <title>Storm integration</title>
-                                <packages>org.apache.ignite.stream.storm*</packages>
-                            </group>
-                            <group>
-                                <title>Ignite Development Utils</title>
-                                <packages>org.apache.ignite.development.utils*</packages>
-                            </group>
-                            <group>
-                                <title>Ignite ML</title>
-                                <packages>org.apache.ignite.ml*</packages>
-                            </group>
-                            <group>
-                                <title>Encryption SPI</title>
-                                <packages>org.apache.ignite.spi.encryption*</packages>
-                            </group>
-                            <group>
-                                <title>Metric SPI</title>
-                                <packages>org.apache.ignite.spi.metric*</packages>
-                            </group>
-                            <group>
-                                <title>System view SPI</title>
-                                <packages>org.apache.ignite.spi.systemview*</packages>
-                            </group>
-                            <group>
-                                <title>Tracing SPI</title>
-                                <packages>org.apache.ignite.spi.tracing*</packages>
-                            </group>
-                            <group>
-                                <title>Capture Data Change API</title>
-                                <packages>org.apache.ignite.cdc*</packages>
-                            </group>
-                        </groups>
-=======
->>>>>>> upstream/master
                         <bottom>
                             <![CDATA[
                                     <table width="100%" border="0" cellspacing=0 cellpadding=0 style="padding: 5px">
@@ -744,11 +515,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
-<<<<<<< HEAD
-                <version>${surefire.version}</version>
-=======
 
->>>>>>> upstream/master
                 <configuration>
                     <forkCount>0</forkCount>
                     <statelessTestsetInfoReporter implementation="org.apache.ignite.tools.surefire.TestSuiteAwareTestsetReporter"/>
@@ -763,13 +530,6 @@
                         <include>**/*.java</include>
                     </includes>
                 </configuration>
-                <dependencies>
-                    <dependency>
-                        <groupId>${project.groupId}</groupId>
-                        <artifactId>ignite-tools</artifactId>
-                        <version>${project.version}</version>
-                    </dependency>
-                </dependencies>
             </plugin>
 
             <plugin>
@@ -823,46 +583,10 @@
 
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
-<<<<<<< HEAD
-                <artifactId>maven-install-plugin</artifactId>
-                <version>2.5.2</version>
-                <inherited>false</inherited>
-                <configuration>
-                    <skip>true</skip>
-                </configuration>
-            </plugin>
-
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-deploy-plugin</artifactId>
-                <version>2.8.2</version>
-                <configuration>
-                    <skip>true</skip>
-                </configuration>
-            </plugin>
-
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-=======
->>>>>>> upstream/master
                 <artifactId>maven-enforcer-plugin</artifactId>
                 <version>3.0.0-M2</version>
                 <configuration>
                     <rules>
-<<<<<<< HEAD
-                        <requireJavaVersion>
-                            <!--Detected JDK Version: 1.8.0 is not in the allowed range [1.7,1.8),[1.8.0-40,).-->
-                            <message>
-[INFO] ------------------------------------------------------------------------
-[ERROR] You are trying to compile Apache Ignite with inappropriate JDK version!
-[ERROR] Detected JDK Version: ${java.runtime.version}
-[ERROR] JDK version should be 1.7.0-* or >= 1.8.0-u40.
-                            </message>
-                            <version>[1.7,1.8),[1.8.0-40,)</version>
-                        </requireJavaVersion>
-
-=======
->>>>>>> upstream/master
                         <requireMavenVersion>
                             <version>[3.5.0,)</version>
                         </requireMavenVersion>
@@ -909,23 +633,6 @@
                     </execution>
                 </executions>
             </plugin>
-
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-checkstyle-plugin</artifactId>
-                <configuration>
-                    <skip>true</skip>
-                </configuration>
-                <executions>
-                    <execution>
-                        <id>style</id>
-                        <goals>
-                            <goal>check</goal>
-                        </goals>
-                        <phase>validate</phase>
-                    </execution>
-                </executions>
-            </plugin>
         </plugins>
     </build>
 
@@ -937,11 +644,6 @@
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-checkstyle-plugin</artifactId>
-<<<<<<< HEAD
-                        <configuration>
-                            <skip>false</skip>
-                        </configuration>
-=======
                         <configuration>
                             <skip>false</skip>
                         </configuration>
@@ -1126,13 +828,10 @@
                                 </configuration>
                             </execution>
                         </executions>
->>>>>>> upstream/master
                     </plugin>
                 </plugins>
             </build>
         </profile>
-
-        
 
         <profile>
             <id>surefire-fork-count-1</id>
@@ -1337,7 +1036,7 @@
 
             <dependencies>
                 <dependency>
-                    <groupId>${project.groupId}</groupId>
+                    <groupId>org.apache.ignite</groupId>
                     <artifactId>ignite-apache-license-gen</artifactId>
                     <version>1.4.0</version>
                 </dependency>
@@ -1356,12 +1055,7 @@
                                 </goals>
                                 <configuration>
                                     <resourceBundles>
-<<<<<<< HEAD
-                                        <resourceBundle>${project.groupId}:ignite-apache-license-gen:${project.version}
-                                        </resourceBundle>
-=======
                                         <resourceBundle>org.apache.ignite:ignite-apache-license-gen:1.4.0</resourceBundle>
->>>>>>> upstream/master
                                     </resourceBundles>
                                     <excludeTransitive>true</excludeTransitive>
                                 </configuration>
@@ -1391,12 +1085,6 @@
                     </plugin>
                 </plugins>
             </build>
-        </profile>
-        <profile>
-            <id>skip-docs</id>
-            <properties>
-                <maven.javadoc.skip>true</maven.javadoc.skip>
-            </properties>
         </profile>
         <profile>
             <id>skip-docs</id>

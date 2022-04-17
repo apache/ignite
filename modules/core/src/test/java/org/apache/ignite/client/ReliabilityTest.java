@@ -17,6 +17,7 @@
 
 package org.apache.ignite.client;
 
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -31,15 +32,20 @@ import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import javax.cache.Cache;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.query.Query;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
+import org.apache.ignite.configuration.ClientConfiguration;
+import org.apache.ignite.configuration.ClientConnectorConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.failure.FailureHandler;
 import org.apache.ignite.internal.client.thin.AbstractThinClientTest;
+import org.apache.ignite.internal.client.thin.ClientOperation;
 import org.apache.ignite.internal.client.thin.ClientServerError;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.services.Service;
@@ -190,6 +196,132 @@ public class ReliabilityTest extends AbstractThinClientTest {
             // Reuse second address without fail.
             cachePut(cache, 0, 0);
         }
+    }
+
+    /**
+     * Test single server can be used multiple times in configuration.
+     */
+    @Test
+    public void testRetryReadPolicyRetriesCacheGet() {
+        try (LocalIgniteCluster cluster = LocalIgniteCluster.start(1);
+             IgniteClient client = Ignition.startClient(getClientConfiguration()
+                 .setRetryPolicy(new ClientRetryReadPolicy())
+                 .setAddresses(
+                     cluster.clientAddresses().iterator().next(),
+                     cluster.clientAddresses().iterator().next()))
+        ) {
+            ClientCache<Integer, Integer> cache = client.createCache("cache");
+
+            // Before fail.
+            cachePut(cache, 0, 0);
+
+            // Fail.
+            dropAllThinClientConnections(Ignition.allGrids().get(0));
+
+            // Reuse second address without fail.
+            cache.get(0);
+        }
+    }
+
+    /**
+     * Tests that retry limit of 1 effectively disables retry/failover.
+     */
+    @SuppressWarnings("ThrowableNotThrown")
+    @Test
+    public void testRetryLimitDisablesFailover() {
+        try (LocalIgniteCluster cluster = LocalIgniteCluster.start(1);
+             IgniteClient client = Ignition.startClient(getClientConfiguration()
+                 .setRetryLimit(1)
+                 .setAddresses(
+                     cluster.clientAddresses().iterator().next(),
+                     cluster.clientAddresses().iterator().next()))
+        ) {
+            ClientCache<Integer, Integer> cache = client.createCache("cache");
+
+            // Before fail.
+            cachePut(cache, 0, 0);
+
+            // Fail.
+            dropAllThinClientConnections(Ignition.allGrids().get(0));
+
+            // Reuse second address without fail.
+            GridTestUtils.assertThrows(null, () -> cachePut(cache, 0, 0), IgniteException.class,
+                    "Channel is closed");
+        }
+    }
+
+    /**
+     * Tests that setting retry policy to null effectively disables retry/failover.
+     */
+    @SuppressWarnings("ThrowableNotThrown")
+    @Test
+    public void testNullRetryPolicyDisablesFailover() {
+        try (LocalIgniteCluster cluster = LocalIgniteCluster.start(1);
+             IgniteClient client = Ignition.startClient(getClientConfiguration()
+                 .setRetryPolicy(null)
+                 .setAddresses(
+                     cluster.clientAddresses().iterator().next(),
+                     cluster.clientAddresses().iterator().next()))
+        ) {
+            ClientCache<Integer, Integer> cache = client.createCache("cache");
+
+            // Before fail.
+            cachePut(cache, 0, 0);
+
+            // Fail.
+            dropAllThinClientConnections(Ignition.allGrids().get(0));
+
+            // Reuse second address without fail.
+            GridTestUtils.assertThrows(null, () -> cachePut(cache, 0, 0), IgniteException.class,
+                    "Channel is closed");
+        }
+    }
+
+    /**
+     * Tests that retry limit of 1 effectively disables retry/failover.
+     */
+    @SuppressWarnings("ThrowableNotThrown")
+    @Test
+    public void testRetryNonePolicyDisablesFailover() {
+        try (LocalIgniteCluster cluster = LocalIgniteCluster.start(1);
+             IgniteClient client = Ignition.startClient(getClientConfiguration()
+                 .setRetryPolicy(new ClientRetryNonePolicy())
+                 .setAddresses(
+                     cluster.clientAddresses().iterator().next(),
+                     cluster.clientAddresses().iterator().next()))
+        ) {
+            ClientCache<Integer, Integer> cache = client.createCache("cache");
+
+            // Before fail.
+            cachePut(cache, 0, 0);
+
+            // Fail.
+            dropAllThinClientConnections(Ignition.allGrids().get(0));
+
+            // Reuse second address without fail.
+            GridTestUtils.assertThrows(null, () -> cachePut(cache, 0, 0), IgniteException.class,
+                    "Channel is closed");
+        }
+    }
+
+    /**
+     * Tests that {@link ClientOperationType} is updated accordingly when {@link ClientOperation} is added.
+     */
+    @Test
+    public void testRetryPolicyConvertOpAllOperationsSupported() {
+        List<ClientOperation> nullOps = Arrays.stream(ClientOperation.values())
+                .filter(o -> o.toPublicOperationType() == null)
+                .collect(Collectors.toList());
+
+        String nullOpsNames = nullOps.stream().map(Enum::name).collect(Collectors.joining(", "));
+
+        long expectedNullCount = 14;
+
+        String msg = nullOps.size()
+                + " operation codes do not have public equivalent. When adding new codes, update ClientOperationType too. Missing ops: "
+                + nullOpsNames;
+
+        assertEquals(msg, expectedNullCount, nullOps.size());
     }
 
     /**
@@ -438,6 +570,25 @@ public class ReliabilityTest extends AbstractThinClientTest {
                 } catch (Throwable ignore) {
                 }
             }
+        }
+    }
+
+    /**
+     * Tests that server does not disconnect idle clients when heartbeats are enabled.
+     */
+    @Test
+    public void testServerDoesNotDisconnectIdleClientWithHeartbeats() throws Exception {
+        IgniteConfiguration serverCfg = getConfiguration().setClientConnectorConfiguration(
+                new ClientConnectorConfiguration().setIdleTimeout(2000));
+
+        ClientConfiguration clientCfg = new ClientConfiguration()
+                .setAddresses("127.0.0.1")
+                .setHeartbeatEnabled(true)
+                .setHeartbeatInterval(500);
+
+        try (Ignite ignored = startGrid(serverCfg); IgniteClient client = Ignition.startClient(clientCfg)) {
+            Thread.sleep(6000);
+            assertEquals(0, client.cacheNames().size());
         }
     }
 

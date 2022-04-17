@@ -31,7 +31,6 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.tracing.NoopTracing;
 import org.apache.ignite.internal.processors.tracing.Tracing;
-import org.apache.ignite.internal.util.ipc.shmem.IpcSharedMemoryServerEndpoint;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -47,7 +46,6 @@ import org.apache.ignite.spi.communication.tcp.AttributeNames;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationMetricsListener;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.DiscoverySpi;
-import org.jetbrains.annotations.Nullable;
 
 import static java.util.Collections.emptyList;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_TCP_COMM_SET_ATTR_HOST_NAMES;
@@ -58,7 +56,6 @@ import static org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi.ATTR_F
 import static org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi.ATTR_HOST_NAMES;
 import static org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi.ATTR_PAIRED_CONN;
 import static org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi.ATTR_PORT;
-import static org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi.ATTR_SHMEM_PORT;
 import static org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi.DISABLED_CLIENT_PORT;
 import static org.apache.ignite.spi.communication.tcp.internal.GridNioServerWrapper.MAX_CONN_PER_NODE;
 
@@ -71,9 +68,6 @@ public abstract class TcpCommunicationConfigInitializer extends IgniteSpiAdapter
 
     /** Attribute names. */
     protected AttributeNames attributeNames;
-
-    /** Shared memory server. */
-    protected IpcSharedMemoryServerEndpoint shmemSrv;
 
     /** Statistics. */
     protected TcpCommunicationMetricsListener metricsLsnr;
@@ -268,29 +262,20 @@ public abstract class TcpCommunicationConfigInitializer extends IgniteSpiAdapter
     }
 
     /**
-     * Sets local port to accept shared memory connections.
-     * <p>
-     * If set to {@code -1} shared memory communication will be disabled.
-     * <p>
-     * If not provided, default value is {@link TcpCommunicationSpi#DFLT_SHMEM_PORT}.
-     *
-     * @param shmemPort Port number.
-     * @return {@code this} for chaining.
+     * @deprecated This property is ignored and will be removed in future releases.
      */
     @IgniteSpiConfiguration(optional = true)
+    @Deprecated
     public TcpCommunicationSpi setSharedMemoryPort(int shmemPort) {
-        cfg.shmemPort(shmemPort);
-
         return (TcpCommunicationSpi)this;
     }
 
     /**
-     * See {@link #setSharedMemoryPort(int)}.
-     *
-     * @return Port number.
+     * @deprecated This property is ignored and will be removed in future releases.
      */
+    @Deprecated
     public int getSharedMemoryPort() {
-        return cfg.shmemPort();
+        return -1;
     }
 
     /**
@@ -681,7 +666,7 @@ public abstract class TcpCommunicationConfigInitializer extends IgniteSpiAdapter
      */
     @IgniteSpiConfiguration(optional = true)
     public TcpCommunicationSpi setSocketSendBuffer(int sockSndBuf) {
-cfg.socketSendBuffer(sockSndBuf);
+        cfg.socketSendBuffer(sockSndBuf);
 
         return (TcpCommunicationSpi)this;
     }
@@ -831,7 +816,6 @@ cfg.socketSendBuffer(sockSndBuf);
         assertParameter(cfg.socketReceiveBuffer() >= 0, "sockRcvBuf >= 0");
         assertParameter(cfg.socketSendBuffer() >= 0, "sockSndBuf >= 0");
         assertParameter(cfg.messageQueueLimit() >= 0, "msgQueueLimit >= 0");
-        assertParameter(cfg.shmemPort() > 0 || cfg.shmemPort() == -1, "shmemPort > 0 || shmemPort == -1");
         assertParameter(cfg.selectorsCount() > 0, "selectorsCnt > 0");
         assertParameter(cfg.connectionsPerNode() > 0, "connectionsPerNode > 0");
         assertParameter(cfg.connectionsPerNode() <= MAX_CONN_PER_NODE, "connectionsPerNode <= 1024");
@@ -874,7 +858,6 @@ cfg.socketSendBuffer(sockSndBuf);
             res.put(createSpiAttributeName(ATTR_ADDRS), addrs.get1());
             res.put(createSpiAttributeName(ATTR_HOST_NAMES), setEmptyHostNamesAttr ? emptyList() : addrs.get2());
             res.put(createSpiAttributeName(ATTR_PORT), cfg.boundTcpPort() == -1 ? DISABLED_CLIENT_PORT : cfg.boundTcpPort());
-            res.put(createSpiAttributeName(ATTR_SHMEM_PORT), cfg.boundTcpShmemPort() >= 0 ? cfg.boundTcpShmemPort() : null);
             res.put(createSpiAttributeName(ATTR_EXT_ADDRS), extAddrs);
             res.put(createSpiAttributeName(ATTR_PAIRED_CONN), cfg.usePairedConnections());
             res.put(createSpiAttributeName(ATTR_FORCE_CLIENT_SERVER_CONNECTIONS), cfg.forceClientToSrvConnections());
@@ -884,57 +867,5 @@ cfg.socketSendBuffer(sockSndBuf);
         catch (IOException | IgniteCheckedException e) {
             throw new IgniteSpiException("Failed to resolve local host to addresses: " + cfg.localHost(), e);
         }
-    }
-
-    /**
-     * Creates new shared memory communication server.
-     *
-     * @return Server.
-     * @throws IgniteCheckedException If failed.
-     */
-    @Nullable protected IpcSharedMemoryServerEndpoint resetShmemServer() throws IgniteCheckedException {
-        if (cfg.boundTcpShmemPort() >= 0)
-            throw new IgniteCheckedException("Shared memory server was already created on port " + cfg.boundTcpShmemPort());
-
-        if (cfg.shmemPort() == -1 || U.isWindows())
-            return null;
-
-        IgniteCheckedException lastEx = null;
-
-        // If configured TCP port is busy, find first available in range.
-        for (int port = cfg.shmemPort(); port < cfg.shmemPort() + cfg.localPortRange(); port++) {
-            try {
-                IgniteConfiguration icfg = ignite.configuration();
-
-                IpcSharedMemoryServerEndpoint srv =
-                    new IpcSharedMemoryServerEndpoint(log, icfg.getNodeId(), igniteInstanceName, icfg.getWorkDirectory());
-
-                srv.setPort(port);
-
-                srv.omitOutOfResourcesWarning(true);
-
-                srv.start();
-
-                cfg.boundTcpShmemPort(port);
-
-                // Ack Port the TCP server was bound to.
-                if (log.isInfoEnabled())
-                    log.info("Successfully bound shared memory communication to TCP port [port=" + cfg.boundTcpShmemPort() +
-                        ", locHost=" + cfg.localHost() + ']');
-
-                return srv;
-            }
-            catch (IgniteCheckedException e) {
-                lastEx = e;
-
-                if (log.isDebugEnabled())
-                    log.debug("Failed to bind to local port (will try next port within range) [port=" + port +
-                        ", locHost=" + cfg.localHost() + ']');
-            }
-        }
-
-        // If free port wasn't found.
-        throw new IgniteCheckedException("Failed to bind shared memory communication to any port within range [startPort=" +
-            cfg.localPort() + ", portRange=" + cfg.localPortRange() + ", locHost=" + cfg.localHost() + ']', lastEx);
     }
 }

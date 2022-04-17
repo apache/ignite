@@ -25,6 +25,7 @@ import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
+import javax.management.JMException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
@@ -83,7 +84,7 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
     static final String CACHE_NAME_PREFIX = "cache-";
 
     /** Non-persistent data region name. */
-    private static final String NO_PERSISTENCE_REGION = "no-persistence-region";
+    protected static final String NO_PERSISTENCE_REGION = "no-persistence-region";
 
     /** */
     private static final int DEFAULT_CACHES_COUNT = 2;
@@ -1419,27 +1420,35 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
         if (persistenceEnabled())
             ignite.cluster().state(ACTIVE);
 
-        checkDeactivation(ignite, () -> mxBean.active(false), false);
+        // Create a new cache in order to trigger all needed checks on deactivation.
+        ignite.getOrCreateCache("test-partitioned-cache");
 
-        checkDeactivation(ignite, () -> mxBean.clusterState(INACTIVE.name()), false);
+        checkMXBeanDeactivation(ignite, () -> mxBean.active(false), false);
 
-        checkDeactivation(ignite, () -> mxBean.clusterState(INACTIVE.name(), false), false);
+        checkMXBeanDeactivation(ignite, () -> mxBean.clusterState(INACTIVE.name()), false);
 
-        checkDeactivation(ignite, () -> mxBean.clusterState(INACTIVE.name(), true), true);
+        checkMXBeanDeactivation(ignite, () -> mxBean.clusterState(INACTIVE.name(), false), false);
+
+        checkMXBeanDeactivation(ignite, () -> mxBean.clusterState(INACTIVE.name(), true), true);
     }
 
     /**
      * Checks that not forced deactivation fails only if cluster has in-memory caches.
      *
      * @param ignite Ignite instance.
-     * @param deactivator Deactivation call to check.
+     * @param deactivator Deactivation call to check. Assuming from the mx bean.
      * @param forceDeactivation {@code True} if {@code deactivator} is forced.
      */
-    private void checkDeactivation(Ignite ignite, Runnable deactivator, boolean forceDeactivation) {
+    private void checkMXBeanDeactivation(Ignite ignite, MXAction deactivator, boolean forceDeactivation) {
         assertEquals(ACTIVE, ignite.cluster().state());
 
         if (persistenceEnabled() || forceDeactivation) {
-            deactivator.run();
+            try {
+                deactivator.action();
+            }
+            catch (JMException e) {
+                throw new IllegalStateException("Unexpected exception on cluster deactivation.", e);
+            }
 
             assertEquals(INACTIVE, ignite.cluster().state());
 
@@ -1447,10 +1456,19 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
         }
         else {
             assertThrows(log, () -> {
-                deactivator.run();
+                deactivator.action();
 
                 return null;
-            }, IgniteException.class, DATA_LOST_ON_DEACTIVATION_WARNING);
+            }, JMException.class, DATA_LOST_ON_DEACTIVATION_WARNING);
+
+            try {
+                deactivator.action();
+            }
+            catch (JMException e) {
+                assertNull("A JMX exception should not contain any cause. JMX client might be launched with " +
+                        "other class path witout remote class loading and won't be able to deserialize teh stacktrace.",
+                    e.getCause());
+            }
         }
 
         assertEquals(ACTIVE, ignite.cluster().state());
@@ -1813,5 +1831,11 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
                 throw new IgniteException(e);
             }
         }, "start" + "-" + (client ? "client" : "server") + "-node" + nodeNumber);
+    }
+
+    /** An JMX bean call that can throw JMException. */
+    private interface MXAction {
+        /** */
+        void action() throws JMException;
     }
 }

@@ -215,6 +215,10 @@ public class SchemaManager implements GridQuerySchemaManager {
 
         // Create schemas listed in node's configuration.
         createPredefinedSchemas(schemaNames);
+
+        // Register predefined system functions.
+        createSqlFunction(QueryUtils.DFLT_SCHEMA, "QUERY_ENGINE", true,
+            H2Utils.class.getName() + ".queryEngine");
     }
 
     /**
@@ -473,17 +477,30 @@ public class SchemaManager implements GridQuerySchemaManager {
 
                     String alias = ann.alias().isEmpty() ? m.getName() : ann.alias();
 
-                    String clause = "CREATE ALIAS IF NOT EXISTS " + alias + (ann.deterministic() ?
-                        " DETERMINISTIC FOR \"" :
-                        " FOR \"") +
-                        cls.getName() + '.' + m.getName() + '"';
-
-                    connMgr.executeStatement(schema, clause);
+                    createSqlFunction(schema, alias, ann.deterministic(), cls.getName() + '.' + m.getName());
 
                     lsnr.onFunctionCreated(schema, alias, m);
                 }
             }
         }
+    }
+
+    /**
+     * Registers SQL function.
+     *
+     * @param schema Schema.
+     * @param alias Function alias.
+     * @param deterministic Deterministic flag.
+     * @param methodName Public static method name (including class full name).
+     */
+    private void createSqlFunction(String schema, String alias, boolean deterministic, String methodName)
+        throws IgniteCheckedException {
+        String clause = "CREATE ALIAS IF NOT EXISTS " + alias + (deterministic ?
+            " DETERMINISTIC FOR \"" :
+            " FOR \"") +
+            methodName + '"';
+
+        connMgr.executeStatement(schema, clause);
     }
 
     /**
@@ -714,6 +731,45 @@ public class SchemaManager implements GridQuerySchemaManager {
     }
 
     /**
+     * Creates index dynamically.
+     *
+     * @param schemaName Schema name.
+     * @param tblName Table name.
+     * @param h2Idx Index.
+     * @param ifNotExists If-not-exists.
+     * @throws IgniteCheckedException If failed.
+     */
+    public void createIndex(String schemaName, String tblName, GridH2IndexBase h2Idx, boolean ifNotExists)
+        throws IgniteCheckedException {
+        // Locate table.
+        H2Schema schema = schema(schemaName);
+
+        H2TableDescriptor desc = (schema != null ? schema.tableByName(tblName) : null);
+
+        if (desc == null)
+            throw new IgniteCheckedException("Table not found in internal H2 database [schemaName=" + schemaName +
+                ", tblName=" + tblName + ']');
+
+        GridH2Table h2Tbl = desc.table();
+
+        h2Tbl.proposeUserIndex(h2Idx);
+
+        try {
+            // At this point index is in consistent state, promote it through H2 SQL statement, so that cached
+            // prepared statements are re-built.
+            String sql = H2Utils.indexCreateSql(desc.fullTableName(), h2Idx, ifNotExists);
+
+            connMgr.executeStatement(schemaName, sql);
+        }
+        catch (Exception e) {
+            // Rollback and re-throw.
+            h2Tbl.rollbackUserIndex(h2Idx.getName());
+
+            throw e;
+        }
+    }
+
+    /**
      * Drop index.
      *
      * @param schemaName Schema name.
@@ -882,6 +938,25 @@ public class SchemaManager implements GridQuerySchemaManager {
         return null;
     }
 
+    /**
+     * Mark tables for index rebuild, so that their indexes are not used.
+     *
+     * @param cacheName Cache name.
+     * @param mark Mark/unmark flag, {@code true} if index rebuild started, {@code false} if finished.
+     */
+    public void markIndexRebuild(String cacheName, boolean mark) {
+        for (H2TableDescriptor tblDesc : tablesForCache(cacheName)) {
+            assert tblDesc.table() != null;
+
+            tblDesc.table().markRebuildFromHashInProgress(mark);
+
+            if (mark)
+                lsnr.onIndexRebuildStarted(tblDesc.schemaName(), tblDesc.tableName());
+            else
+                lsnr.onIndexRebuildFinished(tblDesc.schemaName(), tblDesc.tableName());
+        }
+    }
+
     /** {@inheritDoc} */
     @Override public GridQueryTypeDescriptor typeDescriptorForTable(String schemaName, String tableName) {
         GridH2Table dataTable = dataTable(schemaName, tableName);
@@ -927,6 +1002,12 @@ public class SchemaManager implements GridQuerySchemaManager {
 
         /** {@inheritDoc} */
         @Override public void onIndexDropped(String schemaName, String tblName, String idxName) {}
+
+        /** {@inheritDoc} */
+        @Override public void onIndexRebuildStarted(String schemaName, String tblName) {}
+
+        /** {@inheritDoc} */
+        @Override public void onIndexRebuildFinished(String schemaName, String tblName) {}
 
         /** {@inheritDoc} */
         @Override public void onSqlTypeCreated(
@@ -1022,6 +1103,16 @@ public class SchemaManager implements GridQuerySchemaManager {
          */
         @Override public void onIndexDropped(String schemaName, String tblName, String idxName) {
             lsnrs.forEach(lsnr -> lsnr.onIndexDropped(schemaName, tblName, idxName));
+        }
+
+        /** {@inheritDoc} */
+        @Override public void onIndexRebuildStarted(String schemaName, String tblName) {
+            lsnrs.forEach(lsnr -> lsnr.onIndexRebuildStarted(schemaName, tblName));
+        }
+
+        /** {@inheritDoc} */
+        @Override public void onIndexRebuildFinished(String schemaName, String tblName) {
+            lsnrs.forEach(lsnr -> lsnr.onIndexRebuildFinished(schemaName, tblName));
         }
 
         /** {@inheritDoc} */

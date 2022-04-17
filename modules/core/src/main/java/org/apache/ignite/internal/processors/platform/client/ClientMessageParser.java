@@ -78,6 +78,8 @@ import org.apache.ignite.internal.processors.platform.client.cluster.ClientClust
 import org.apache.ignite.internal.processors.platform.client.cluster.ClientClusterWalChangeStateRequest;
 import org.apache.ignite.internal.processors.platform.client.cluster.ClientClusterWalGetStateRequest;
 import org.apache.ignite.internal.processors.platform.client.compute.ClientExecuteTaskRequest;
+import org.apache.ignite.internal.processors.platform.client.service.ClientServiceGetDescriptorRequest;
+import org.apache.ignite.internal.processors.platform.client.service.ClientServiceGetDescriptorsRequest;
 import org.apache.ignite.internal.processors.platform.client.service.ClientServiceInvokeRequest;
 import org.apache.ignite.internal.processors.platform.client.streamer.ClientDataStreamerAddDataRequest;
 import org.apache.ignite.internal.processors.platform.client.streamer.ClientDataStreamerStartRequest;
@@ -91,6 +93,12 @@ public class ClientMessageParser implements ClientListenerMessageParser {
     /* General-purpose operations. */
     /** */
     private static final short OP_RESOURCE_CLOSE = 0;
+
+    /** */
+    private static final short OP_HEARTBEAT = 1;
+
+    /** */
+    private static final short OP_GET_IDLE_TIMEOUT = 2;
 
     /* Cache operations */
     /** */
@@ -268,6 +276,12 @@ public class ClientMessageParser implements ClientListenerMessageParser {
     /** Service invocation. */
     private static final short OP_SERVICE_INVOKE = 7000;
 
+    /** Get service descriptors. */
+    private static final short OP_SERVICE_GET_DESCRIPTORS = 7001;
+
+    /** Get service descriptor. */
+    private static final short OP_SERVICE_GET_DESCRIPTOR = 7002;
+
     /** Data streamers. */
     /** */
     private static final short OP_DATA_STREAMER_START = 8000;
@@ -352,6 +366,12 @@ public class ClientMessageParser implements ClientListenerMessageParser {
 
             case OP_RESOURCE_CLOSE:
                 return new ClientResourceCloseRequest(reader);
+
+            case OP_HEARTBEAT:
+                return new ClientRequest(reader);
+
+            case OP_GET_IDLE_TIMEOUT:
+                return new ClientGetIdleTimeoutRequest(reader);
 
             case OP_CACHE_CONTAINS_KEY:
                 return new ClientCacheContainsKeyRequest(reader);
@@ -483,7 +503,13 @@ public class ClientMessageParser implements ClientListenerMessageParser {
                 return new ClientExecuteTaskRequest(reader);
 
             case OP_SERVICE_INVOKE:
-                return new ClientServiceInvokeRequest(reader);
+                return new ClientServiceInvokeRequest(reader, protocolCtx);
+
+            case OP_SERVICE_GET_DESCRIPTORS:
+                return new ClientServiceGetDescriptorsRequest(reader);
+
+            case OP_SERVICE_GET_DESCRIPTOR:
+                return new ClientServiceGetDescriptorRequest(reader);
 
             case OP_DATA_STREAMER_START:
                 return new ClientDataStreamerStartRequest(reader);

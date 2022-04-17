@@ -18,8 +18,6 @@
 package org.apache.ignite.internal.processors.query.calcite.exec;
 
 import java.util.UUID;
-import java.util.concurrent.CompletableFuture;
-
 import org.apache.ignite.internal.processors.query.calcite.util.Service;
 
 /**
@@ -34,16 +32,4 @@ public interface QueryTaskExecutor extends Service {
      * @param qryTask Query task.
      */
     void execute(UUID qryId, long fragmentId, Runnable qryTask);
-
-    /**
-     * Returns a new CompletableFuture that is asynchronously completed
-     * by a task running in the given executor after it runs the given
-     * action.
-     *
-     * @param qryId Id of the query this task created for.
-     * @param fragmentId Id of the particular fragment this task created for.
-     * @param qryTask The task to submit.
-     * @return the new CompletableFuture
-     */
-    CompletableFuture<?> submit(UUID qryId, long fragmentId, Runnable qryTask);
 }

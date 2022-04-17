@@ -42,6 +42,8 @@ import org.apache.ignite.spi.systemview.view.SystemView;
 import org.apache.ignite.spi.systemview.view.SystemViewRowAttributeWalker;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.calcite.rel.type.RelDataType.PRECISION_NOT_SPECIFIED;
+import static org.apache.calcite.rel.type.RelDataType.SCALE_NOT_SPECIFIED;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.toSqlName;
 
 /**
@@ -179,7 +181,7 @@ public class SystemViewTableDescriptorImpl<ViewRow> extends NullInitializerExpre
                 b.add(descriptors[i].name(), descriptors[i].logicalType(factory));
         }
 
-        return TypeUtils.sqlType(factory, b.build());
+        return b.build();
     }
 
     /** {@inheritDoc} */
@@ -220,6 +222,9 @@ public class SystemViewTableDescriptorImpl<ViewRow> extends NullInitializerExpre
         private final boolean isFiltrable;
 
         /** */
+        private volatile RelDataType logicalType;
+
+        /** */
         private SystemViewColumnDescriptorImpl(String name, Class<?> type, int fieldIdx, boolean isFiltrable) {
             originalName = name;
             sqlName = toSqlName(name);
@@ -255,7 +260,10 @@ public class SystemViewTableDescriptorImpl<ViewRow> extends NullInitializerExpre
 
         /** {@inheritDoc} */
         @Override public RelDataType logicalType(IgniteTypeFactory f) {
-            return f.toSql(f.createJavaType(type));
+            if (logicalType == null)
+                logicalType = TypeUtils.sqlType(f, type, PRECISION_NOT_SPECIFIED, SCALE_NOT_SPECIFIED);
+
+            return logicalType;
         }
 
         /** {@inheritDoc} */
