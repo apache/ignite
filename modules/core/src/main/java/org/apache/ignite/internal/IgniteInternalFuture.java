@@ -133,6 +133,33 @@ public interface IgniteInternalFuture<R> {
     public <T> IgniteInternalFuture<T> chain(IgniteClosure<? super IgniteInternalFuture<R>, T> doneCb, Executor exec);
 
     /**
+     * Make a chained future that is completed when {@code doneCb} is executed. Callback is called with this future
+     * as the argument, when this future completes. It is guaranteed that done callback will be called only ONCE.
+     *
+     * @param doneCb Done callback.
+     * @param <T> Type parameter.
+     * @return Chained future.
+     */
+    @Async.Schedule
+    public <T> IgniteInternalFuture<T> chainCompose(
+        IgniteClosure<? super IgniteInternalFuture<R>, IgniteInternalFuture<T>> doneCb
+    );
+
+    /**
+     * Make a chained future that is completed when {@code doneCb} is executed. Callback is called with this future
+     * as the argument, when this future completes. It is guaranteed that done callback will be called only ONCE.
+     *
+     * @param doneCb Done callback.
+     * @param exec Executor to run callback.
+     * @param <T> Type parameter.
+     * @return Chained future.
+     */
+    @Async.Schedule
+    public <T> IgniteInternalFuture<T> chainCompose(
+        IgniteClosure<? super IgniteInternalFuture<R>, IgniteInternalFuture<T>> doneCb, Executor exec
+    );
+
+    /**
      * @return Error value if future has already been completed with error.
      */
     public Throwable error();

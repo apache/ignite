@@ -43,6 +43,7 @@ fi
 SCRIPTS_HOME="${IGNITE_HOME_TMP}/bin"
 
 source "${SCRIPTS_HOME}"/include/functions.sh
+source "${SCRIPTS_HOME}"/include/jvmdefaults.sh
 
 #
 # Discover path to Java executable and check it's version.
@@ -64,6 +65,7 @@ JVM_OPTS=${JVM_OPTS:-}
 #
 # Final JVM_OPTS for Java 9+ compatibility
 #
+<<<<<<< HEAD
 if [ $version -eq 8 ] ; then
     JVM_OPTS="\
         -XX:+AggressiveOpts \
@@ -93,6 +95,9 @@ elif [ $version -ge 11 ] ; then
         ${JVM_OPTS}"
 fi
 
+=======
+JVM_OPTS=$(getJavaSpecificOpts $version "$JVM_OPTS")
+>>>>>>> upstream/master
 
 JDBCLINK="jdbc:ignite:thin://${HOST_AND_PORT:-}${SCHEMA_DELIMITER:-}${SCHEMA:-}${PARAMS:-}"
 

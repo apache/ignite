@@ -17,9 +17,6 @@
   limitations under the License.
 -->
 
-<!--
-    POM file.
--->
 <project
         xmlns="http://maven.apache.org/POM/4.0.0"
         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
@@ -30,13 +27,40 @@
         <groupId>org.apache</groupId>
         <artifactId>apache</artifactId>
         <version>23</version>
+<<<<<<< HEAD
+=======
+        <relativePath/>
+>>>>>>> upstream/master
     </parent>
+
+    <!--
+        NOTE:
+        The ignite-parent module is used as a shared pom between the Ignite internal submodules and the Ignite Extensions.
+        This parent module will be released each time a new Ignite release occurs, so, if you're adding a new
+        maven profile, plugin or dependency only for Ignite submodule in this scm use the `parent-internal`
+        maven project instead.
+        Also, please, use the maven `$project` substitution variables in this pom.xml carefully (e.g. `${project.version}`)
+        since for in the Ignite Extension projects they may be inlined the different values.
+    -->
+
+    <groupId>org.apache.ignite</groupId>
+    <artifactId>ignite-parent</artifactId>
+    <version>${revision}</version>
+    <packaging>pom</packaging>
 
     <properties>
         <maven.compiler.source>1.8</maven.compiler.source>
         <maven.compiler.target>1.8</maven.compiler.target>
+<<<<<<< HEAD
         <maven.javadoc.skip>true</maven.javadoc.skip>
         <revision>2.9.0-SNAPSHOT</revision>
+=======
+
+        <revision>2.14.0-SNAPSHOT</revision>
+        <!-- Ignite version will be substituted with the flatten-maven-plugin and used as
+            a version dependency for Ignite extensions. -->
+        <ignite.version>${revision}</ignite.version>
+>>>>>>> upstream/master
         <ignite.edition>apache-ignite</ignite.edition>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.build.timestamp.format>MMMM d yyyy</maven.build.timestamp.format>
@@ -53,7 +77,11 @@
         <asm.version>4.2</asm.version>
         <aspectj.bundle.version>1.8.13_1</aspectj.bundle.version>
         <aspectj.version>1.8.13</aspectj.version>
+<<<<<<< HEAD
         <netty.version>4.1.66.Final</netty.version>
+=======
+        <netty.version>4.1.75.Final</netty.version>
+>>>>>>> upstream/master
         <camel.version>2.22.0</camel.version>
         <bouncycastle.version>1.69</bouncycastle.version>
         <commons.beanutils.bundle.version>1.9.2_1</commons.beanutils.bundle.version>
@@ -64,7 +92,7 @@
         <commons.io.version>2.6</commons.io.version>
         <commons.dbcp.version>1.4</commons.dbcp.version>
         <cron4j.version>2.2.5</cron4j.version>
-        <curator.version>4.2.0</curator.version>
+        <curator.version>5.2.0</curator.version>
         <easymock.version>3.4</easymock.version>
         <ezmorph.bundle.version>1.0.6_1</ezmorph.bundle.version>
         <ezmorph.version>1.0.6</ezmorph.version>
@@ -78,10 +106,13 @@
         <httpclient.version>4.5.13</httpclient.version>
         <httpcore.version>4.4.14</httpcore.version>
         <jackson.version>2.12.4</jackson.version>
+<<<<<<< HEAD
         <jackson1.version>1.9.13</jackson1.version>
+=======
+>>>>>>> upstream/master
         <jaxb.api.version>2.1</jaxb.api.version>
         <jaxb.impl.version>2.1.14</jaxb.impl.version>
-        <javassist.version>3.20.0-GA</javassist.version>
+        <javassist.version>3.28.0-GA</javassist.version>
         <javax.cache.bundle.version>1.0.0_1</javax.cache.bundle.version>
         <javax.cache.tck.version>1.1.0</javax.cache.tck.version>
         <javax.cache.version>1.0.0</javax.cache.version>
@@ -91,7 +122,11 @@
         <jmh.version>1.13</jmh.version>
         <jms.spec.version>1.1.1</jms.spec.version>
         <jna.version>4.5.2</jna.version>
+<<<<<<< HEAD
         <jnr.posix.version>3.0.50</jnr.posix.version>
+=======
+        <jnr.posix.version>3.1.15</jnr.posix.version>
+>>>>>>> upstream/master
         <jotm.version>2.3.1-M1</jotm.version>
         <jsch.bundle.version>0.1.54_1</jsch.bundle.version>
         <jsch.version>0.1.54</jsch.version>
@@ -100,12 +135,19 @@
         <jtidy.version>r938</jtidy.version>
         <kafka.version>2.0.1</kafka.version>
         <karaf.version>4.0.2</karaf.version>
-        <log4j.version>2.11.0</log4j.version>
+        <log4j2.version>2.17.1</log4j2.version>
+        <log4j.version>1.2.17</log4j.version>
         <lucene.bundle.version>7.4.0_1</lucene.bundle.version>
         <lucene.version>7.4.0</lucene.version>
         <lz4.version>1.5.0</lz4.version>
         <maven.bundle.plugin.version>3.5.0</maven.bundle.plugin.version>
         <maven.checkstyle.plugin.version>3.1.1</maven.checkstyle.plugin.version>
+<<<<<<< HEAD
+=======
+        <maven.flatten.plugin.version>1.2.7</maven.flatten.plugin.version>
+        <maven.flatten.file.name>pom-installed.xml</maven.flatten.file.name>
+        <maven.model.version>3.8.4</maven.model.version>
+>>>>>>> upstream/master
         <checkstyle.puppycrawl.version>8.45</checkstyle.puppycrawl.version>
         <mockito.version>3.4.6</mockito.version>
         <mysql.connector.version>8.0.26</mysql.connector.version>
@@ -114,12 +156,16 @@
         <osgi.core.version>5.0.0</osgi.core.version>
         <osgi.enterprise.version>5.0.0</osgi.enterprise.version>
         <paho.version>1.0.2</paho.version>
+<<<<<<< HEAD
         <postgres.connector.version>42.2.23</postgres.connector.version>
+=======
+        <postgres.connector.version>42.3.3</postgres.connector.version>
+>>>>>>> upstream/master
         <scala210.jline.version>2.10.7</scala210.jline.version>
         <scala210.library.version>2.10.7</scala210.library.version>
         <scala.library.version>2.11.12</scala.library.version>
         <scala.test.version>2.2.6</scala.test.version>
-        <slf4j.version>1.7.7</slf4j.version>
+        <slf4j.version>1.7.33</slf4j.version>
         <slf4j16.version>1.6.4</slf4j16.version>
         <snappy.version>1.1.7.2</snappy.version>
         <spark.hadoop.version>2.6.5</spark.hadoop.version>
@@ -127,9 +173,12 @@
         <spring.version>4.3.26.RELEASE</spring.version>
         <spring-5.0.version>5.0.16.RELEASE</spring-5.0.version>
         <spring-5.2.version>5.2.3.RELEASE</spring-5.2.version>
+<<<<<<< HEAD
         <spring.data.version>1.13.23.RELEASE</spring.data.version> <!-- don't forget to update spring version -->        
         <spring.data-2.0.version>2.0.13.RELEASE</spring.data-2.0.version> <!-- don't forget to update spring-5.0 version -->
         <spring.data-2.2.version>2.2.3.RELEASE</spring.data-2.2.version> <!-- don't forget to update spring-5.2 version -->
+=======
+>>>>>>> upstream/master
         <spring41.osgi.feature.version>4.1.7.RELEASE_1</spring41.osgi.feature.version>
         <storm.version>1.1.1</storm.version>
         <surefire.version>3.0.0-M4</surefire.version>
@@ -139,7 +188,7 @@
         <yammer.metrics.core.version>2.2.0</yammer.metrics.core.version>
         <yardstick.version>0.8.3</yardstick.version>
         <zkclient.version>0.5</zkclient.version>
-        <zookeeper.version>3.5.5</zookeeper.version>
+        <zookeeper.version>3.6.3</zookeeper.version>
         <zstd.version>1.3.7-2</zstd.version>
         <opencensus.version>0.22.0</opencensus.version>
         <commons.lang3.version>3.9</commons.lang3.version>
@@ -157,21 +206,24 @@
         <osgi.embed.transitive>false</osgi.embed.transitive>
         <osgi.fail.ok>false</osgi.fail.ok>
 
+        <flattenMode>clean</flattenMode>
     </properties>
 
-    <groupId>org.apache.ignite</groupId>
-    <artifactId>ignite-parent</artifactId>
-    <version>1</version>
-    <packaging>pom</packaging>
+    <url>https://ignite.apache.org</url>
 
-    <url>http://ignite.apache.org</url>
+    <description>Apache Ignite® is a Distributed Database For High-Performance Computing With In-Memory Speed.</description>
 
-    <description>Java-based middleware for in-memory processing of big data in a distributed environment.</description>
+    <scm>
+        <url>https://gitbox.apache.org/repos/asf/ignite.git</url>
+        <connection>scm:git:https://gitbox.apache.org/repos/asf/ignite.git</connection>
+        <developerConnection>scm:git:https://gitbox.apache.org/repos/asf/ignite.git</developerConnection>
+        <tag>HEAD</tag>
+    </scm>
 
     <licenses>
         <license>
             <name>The Apache Software License, Version 2.0</name>
-            <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+            <url>https://www.apache.org/licenses/LICENSE-2.0.txt</url>
         </license>
     </licenses>
 
@@ -181,34 +233,26 @@
             <subscribe>dev-subscribe@ignite.apache.org</subscribe>
             <unsubscribe>dev-unsubscribe@ignite.apache.org</unsubscribe>
             <post>dev@ignite.apache.org</post>
-            <archive>http://mail-archives.apache.org/mod_mbox/ignite-dev</archive>
+            <archive>https://mail-archives.apache.org/mod_mbox/ignite-dev</archive>
+        </mailingList>
+        <mailingList>
+            <name>Ignite User List</name>
+            <subscribe>user-subscribe@ignite.apache.org</subscribe>
+            <unsubscribe>user-unsubscribe@ignite.apache.org</unsubscribe>
+            <post>user@ignites.apache.org</post>
+            <archive>https://mail-archives.apache.org/mod_mbox/ignite-user/</archive>
         </mailingList>
     </mailingLists>
 
     <issueManagement>
         <system>jira</system>
-        <url>http://issues.apache.org/jira/browse/IGNITE</url>
+        <url>https://issues.apache.org/jira/browse/IGNITE</url>
     </issueManagement>
 
-    <dependencyManagement>
-        <dependencies>
-            <dependency>
-                <groupId>log4j</groupId>
-                <artifactId>log4j</artifactId>
-                <version>1.2.17</version>
-                <exclusions>
-                    <exclusion>
-                        <groupId>com.sun.jdmk</groupId>
-                        <artifactId>jmxtools</artifactId>
-                    </exclusion>
-                    <exclusion>
-                        <groupId>com.sun.jmx</groupId>
-                        <artifactId>jmxri</artifactId>
-                    </exclusion>
-                </exclusions>
-            </dependency>
-        </dependencies>
-    </dependencyManagement>
+    <ciManagement>
+        <system>teamcity</system>
+        <url>https://ci.ignite.apache.org/</url>
+    </ciManagement>
 
     <dependencies>
         <dependency>
@@ -235,6 +279,11 @@
                     <version>${maven.checkstyle.plugin.version}</version>
                     <configuration>
                         <skip>true</skip>
+<<<<<<< HEAD
+=======
+                        <!-- The source directories tag below is used to dynamically add the sources in case
+                            additional build profiles are activated (combine.children="append" is used). -->
+>>>>>>> upstream/master
                         <sourceDirectories>
                             <sourceDirectory>${project.build.sourceDirectory}</sourceDirectory>
                             <sourceDirectory>${project.build.testSourceDirectory}</sourceDirectory>
@@ -244,8 +293,14 @@
                         <failsOnError>true</failsOnError>
                         <failOnViolation>true</failOnViolation>
                         <outputFile>${project.build.directory}/checkstyle-result.xml</outputFile>
+<<<<<<< HEAD
                         <configLocation>../checkstyle/checkstyle.xml</configLocation>
                         <suppressionsLocation>../checkstyle/checkstyle-suppressions.xml</suppressionsLocation>
+=======
+                        <!-- This configuration checkstyle files will be obtained from the 'ignite-checkstyle' resources. -->
+                        <configLocation>checkstyle/checkstyle.xml</configLocation>
+                        <suppressionsLocation>checkstyle/checkstyle-suppressions.xml</suppressionsLocation>
+>>>>>>> upstream/master
                         <includeTestSourceDirectory>true</includeTestSourceDirectory>
                         <excludes>**/generated/**/*</excludes>
                     </configuration>
@@ -255,6 +310,14 @@
                             <artifactId>checkstyle</artifactId>
                             <version>${checkstyle.puppycrawl.version}</version>
                         </dependency>
+<<<<<<< HEAD
+=======
+                        <dependency>
+                            <groupId>${project.groupId}</groupId>
+                            <artifactId>ignite-checkstyle</artifactId>
+                            <version>${ignite.version}</version>
+                        </dependency>
+>>>>>>> upstream/master
                     </dependencies>
                 </plugin>
 
@@ -306,12 +369,12 @@
                                 <tagletArtifact>
                                     <groupId>${project.groupId}</groupId>
                                     <artifactId>ignite-tools</artifactId>
-                                    <version>${project.version}</version>
+                                    <version>${ignite.version}</version>
                                 </tagletArtifact>
                             </taglet>
                         </taglets>
-                        <doctitle>Ignite ${project.version}</doctitle>
-                        <windowtitle>Ignite ${project.version}</windowtitle>
+                        <doctitle>Ignite ${ignite.version}</doctitle>
+                        <windowtitle>Ignite ${ignite.version}</windowtitle>
                         <breakiterator>true</breakiterator>
                         <verbose>true</verbose>
                         <show>protected</show>
@@ -319,6 +382,7 @@
                         <author>false</author>
                         <version>false</version>
                         <additionalOptions>${javadoc.opts}</additionalOptions>
+<<<<<<< HEAD
                         <groups>
                             <group>
                                 <title>Common Grid APIs</title>
@@ -501,6 +565,8 @@
                                 <packages>org.apache.ignite.cdc*</packages>
                             </group>
                         </groups>
+=======
+>>>>>>> upstream/master
                         <bottom>
                             <![CDATA[
                                     <table width="100%" border="0" cellspacing=0 cellpadding=0 style="padding: 5px">
@@ -595,6 +661,82 @@
                         </execution>
                     </executions>
                 </plugin>
+
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-resources-plugin</artifactId>
+                    <version>3.2.0</version>
+                </plugin>
+
+                <plugin>
+                    <groupId>org.codehaus.mojo</groupId>
+                    <artifactId>build-helper-maven-plugin</artifactId>
+                    <version>3.0.0</version>
+                </plugin>
+
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-surefire-plugin</artifactId>
+                    <version>${surefire.version}</version>
+                    <dependencies>
+                        <dependency>
+                            <groupId>${project.groupId}</groupId>
+                            <artifactId>ignite-tools</artifactId>
+                            <version>${ignite.version}</version>
+                        </dependency>
+                    </dependencies>
+                </plugin>
+
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-antrun-plugin</artifactId>
+                    <version>1.8</version>
+                </plugin>
+
+                <plugin>
+                    <groupId>org.codehaus.mojo</groupId>
+                    <artifactId>exec-maven-plugin</artifactId>
+                    <version>1.3.2</version>
+                    <dependencies>
+                        <dependency>
+                            <groupId>${project.groupId}</groupId>
+                            <artifactId>ignite-tools</artifactId>
+                            <version>${ignite.version}</version>
+                        </dependency>
+                    </dependencies>
+                </plugin>
+
+                <plugin>
+                    <groupId>org.codehaus.mojo</groupId>
+                    <artifactId>flatten-maven-plugin</artifactId>
+                    <version>${maven.flatten.plugin.version}</version>
+
+                    <executions>
+                        <execution>
+                            <id>flatten</id>
+                            <configuration>
+                                <flattenMode>oss</flattenMode>
+                                <flattenedPomFilename>${maven.flatten.file.name}</flattenedPomFilename>
+                            </configuration>
+                            <phase>process-resources</phase>
+                            <goals>
+                                <goal>flatten</goal>
+                            </goals>
+                        </execution>
+
+                        <!-- ensure proper cleanup before start -->
+                        <execution>
+                            <id>flatten.clean.before</id>
+                            <configuration>
+                                <flattenedPomFilename>${maven.flatten.file.name}</flattenedPomFilename>
+                            </configuration>
+                            <phase>clean</phase>
+                            <goals>
+                                <goal>clean</goal>
+                            </goals>
+                        </execution>
+                    </executions>
+                </plugin>
             </plugins>
         </pluginManagement>
 
@@ -602,7 +744,11 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
+<<<<<<< HEAD
                 <version>${surefire.version}</version>
+=======
+
+>>>>>>> upstream/master
                 <configuration>
                     <forkCount>0</forkCount>
                     <statelessTestsetInfoReporter implementation="org.apache.ignite.tools.surefire.TestSuiteAwareTestsetReporter"/>
@@ -647,63 +793,37 @@
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>flatten-maven-plugin</artifactId>
-                <version>1.0.1</version>
-
-                <configuration>
-                    <flattenMode>minimum</flattenMode>
-                    <flattenedPomFilename>pom-installed.xml</flattenedPomFilename>
-                </configuration>
 
                 <executions>
-                    <!-- enable flattening -->
+                    <!-- disable flattering for parent pom. -->
                     <execution>
                         <id>flatten</id>
+                        <inherited>false</inherited>
+                        <phase/>
+                    </execution>
+
+                    <execution>
+                        <id>flatten-parent</id>
+                        <inherited>false</inherited>
+                        <configuration>
+                            <updatePomFile>true</updatePomFile>
+                            <flattenMode>resolveCiFriendliesOnly</flattenMode>
+                            <flattenedPomFilename>${maven.flatten.file.name}</flattenedPomFilename>
+                            <pomElements>
+                                <properties>resolve</properties>
+                            </pomElements>
+                        </configuration>
                         <phase>process-resources</phase>
                         <goals>
                             <goal>flatten</goal>
                         </goals>
                     </execution>
-
-                    <!-- ensure proper cleanup before start -->
-                    <execution>
-                        <id>flatten.clean.before</id>
-                        <phase>clean</phase>
-                        <goals>
-                            <goal>clean</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
-
-            <!-- ensure proper cleanup after install -->
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-clean-plugin</artifactId>
-                <inherited>false</inherited>
-                <executions>
-                    <execution>
-                        <id>flatten.clean.after</id>
-                        <phase>install</phase>
-                        <goals>
-                            <goal>clean</goal>
-                        </goals>
-                        <configuration>
-                            <excludeDefaultDirectories>true</excludeDefaultDirectories>
-                            <filesets>
-                                <fileset>
-                                    <directory>${project.basedir}</directory>
-                                    <includes>
-                                        <include>**/pom-installed.xml</include>
-                                    </includes>
-                                </fileset>
-                            </filesets>
-                        </configuration>
-                    </execution>
                 </executions>
             </plugin>
 
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
+<<<<<<< HEAD
                 <artifactId>maven-install-plugin</artifactId>
                 <version>2.5.2</version>
                 <inherited>false</inherited>
@@ -723,10 +843,13 @@
 
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
+=======
+>>>>>>> upstream/master
                 <artifactId>maven-enforcer-plugin</artifactId>
                 <version>3.0.0-M2</version>
                 <configuration>
                     <rules>
+<<<<<<< HEAD
                         <requireJavaVersion>
                             <!--Detected JDK Version: 1.8.0 is not in the allowed range [1.7,1.8),[1.8.0-40,).-->
                             <message>
@@ -738,6 +861,8 @@
                             <version>[1.7,1.8),[1.8.0-40,)</version>
                         </requireJavaVersion>
 
+=======
+>>>>>>> upstream/master
                         <requireMavenVersion>
                             <version>[3.5.0,)</version>
                         </requireMavenVersion>
@@ -812,9 +937,196 @@
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-checkstyle-plugin</artifactId>
+<<<<<<< HEAD
                         <configuration>
                             <skip>false</skip>
                         </configuration>
+=======
+                        <configuration>
+                            <skip>false</skip>
+                        </configuration>
+                        <executions>
+                            <execution>
+                                <id>style</id>
+                                <goals>
+                                    <goal>check</goal>
+                                </goals>
+                                <phase>validate</phase>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
+        <profile>
+            <id>check-licenses</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.rat</groupId>
+                        <artifactId>apache-rat-plugin</artifactId>
+                        <version>0.12</version>
+                        <configuration>
+                            <addDefaultLicenseMatchers>true</addDefaultLicenseMatchers>
+                            <licenses>
+                                <license implementation="org.apache.rat.analysis.license.FullTextMatchingLicense">
+                                    <licenseFamilyCategory>IAL20</licenseFamilyCategory>
+                                    <licenseFamilyName>Ignite Apache License 2.0</licenseFamilyName>
+                                    <fullText>
+                                        Licensed to the Apache Software Foundation (ASF) under one or more
+                                        contributor license agreements.  See the NOTICE file distributed with
+                                        this work for additional information regarding copyright ownership.
+                                        The ASF licenses this file to You under the Apache License, Version 2.0
+                                        (the "License"); you may not use this file except in compliance with
+                                        the License.  You may obtain a copy of the License at
+
+                                        http://www.apache.org/licenses/LICENSE-2.0
+
+                                        Unless required by applicable law or agreed to in writing, software
+                                        distributed under the License is distributed on an "AS IS" BASIS,
+                                        WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+                                        See the License for the specific language governing permissions and
+                                        limitations under the License.
+                                    </fullText>
+                                </license>
+                            </licenses>
+                            <licenseFamilies>
+                                <licenseFamily implementation="org.apache.rat.license.SimpleLicenseFamily">
+                                    <familyName>Ignite Apache License 2.0</familyName>
+                                </licenseFamily>
+                            </licenseFamilies>
+                        </configuration>
+                        <executions>
+                            <execution>
+                                <id>check-licenses</id>
+                                <phase>validate</phase>
+                                <goals>
+                                    <goal>check</goal>
+                                </goals>
+                                <configuration>
+                                    <excludes>
+                                        <exclude>work/**</exclude>
+                                        <exclude>**/target/**</exclude>
+                                        <exclude>**/*.log</exclude>
+                                        <exclude>**/*.m4</exclude><!--Free Software Foundation notice-->
+                                        <exclude>**/*.dylib</exclude><!--bin-files-->
+                                        <exclude>**/*.gar</exclude><!--bin-files-->
+                                        <exclude>**/licenses/*.txt</exclude><!--files of licenses-->
+                                        <exclude>**/*readme*.txt</exclude><!--readme files-->
+                                        <exclude>**/*.sql</exclude><!--sql files-->
+                                        <exclude>**/*README*.txt</exclude><!--readme files-->
+                                        <exclude>**/*README*.md</exclude><!--readme files-->
+                                        <exclude>**/*CONTRIBUTING*.md</exclude><!--readme files-->
+                                        <exclude>**/*DEVNOTES*.md</exclude><!--readme files-->
+                                        <exclude>**/*index*.md</exclude><!--readme files-->
+                                        <exclude>**/*.timestamp</exclude><!--tmp-files-->
+                                        <exclude>**/*.iml</exclude><!--IDEA files-->
+                                        <exclude>**/*.csv</exclude><!--CSV files-->
+                                        <exclude>**/*.jks</exclude><!--bin-files-->
+                                        <exclude>**/pom-installed.xml</exclude><!--tmp-files-->
+                                        <exclude>**/keystore</exclude><!--bin-files-->
+                                        <exclude>**/keystore/*.jks</exclude><!--bin-files-->
+                                        <exclude>**/keystore/*.pem</exclude><!--auto generated files-->
+                                        <exclude>**/keystore/*.pfx</exclude><!--bin-files-->
+                                        <exclude>**/keystore/ca/*.jks</exclude><!--bin-files-->
+                                        <exclude>**/keystore/ca/*.key</exclude><!--bin-files-->
+                                        <exclude>**/keystore/ca/*.txt</exclude><!--auto generated files-->
+                                        <exclude>**/keystore/ca/*.txt.attr</exclude><!--auto generated files-->
+                                        <exclude>**/keystore/ca/*serial</exclude><!--auto generated files-->
+                                        <exclude>**/META-INF/services/**</exclude> <!-- Interface mappings: cannot be changed -->
+                                        <exclude>**/id_rsa**</exclude>  <!--SSH-->
+                                        <!--special excludes-->
+                                        <exclude>.travis.yml</exclude>
+                                        <exclude>.github/PULL_REQUEST_TEMPLATE.md</exclude>
+                                        <exclude>idea/ignite_codeStyle.xml</exclude>
+                                        <exclude>**/DEVNOTES*.txt</exclude>
+                                        <exclude>**/NOTICE*</exclude>
+                                        <exclude>**/LICENSE*</exclude>
+                                        <exclude>**/MIGRATION_GUIDE*</exclude>
+                                        <exclude>src/main/java/org/apache/ignite/internal/util/offheap/unsafe/GridOffHeapSnapTreeMap.java</exclude><!--BSD license-->
+                                        <exclude>src/main/java/org/apache/ignite/internal/util/nio/SelectedSelectionKeySet.java</exclude><!-- Apache 2.0 license -->
+                                        <exclude>src/main/java/org/apache/ignite/internal/util/snaptree/*.java</exclude><!--BSD license-->
+                                        <exclude>src/main/java/org/apache/ignite/internal/processors/query/calcite/sql/generated/*.java</exclude><!--auto generated files-->
+                                        <exclude>src/main/java/org/jsr166/*.java</exclude>
+                                        <exclude>src/main/java/org/mindrot/*.java</exclude>
+                                        <exclude>src/test/java/org/apache/ignite/p2p/p2p.properties</exclude><!--test depends on file content-->
+                                        <exclude>src/test/resources/org.apache.ignite.util/*.output</exclude><!--test depends on file content-->
+                                        <exclude>src/test/resources/log/ignite.log.tst</exclude><!--test resource-->
+                                        <exclude>src/test/java/org/apache/ignite/spi/deployment/uri/META-INF/ignite.incorrefs</exclude><!--test resource-->
+                                        <exclude>src/test/java/org/apache/ignite/spi/deployment/uri/META-INF/ignite.empty</exclude><!--should be empty-->
+                                        <exclude>src/test/java/org/apache/ignite/spi/deployment/uri/META-INF/ignite.brokenxml</exclude><!--test resource-->
+                                        <exclude>**/books/*.txt</exclude><!--books examples-->
+                                        <exclude>src/main/java/org/apache/ignite/examples/streaming/wordcount/*.txt</exclude><!--books examples-->
+                                        <exclude>examples/src/main/java/org/apache/ignite/examples/streaming/wordcount/*.txt</exclude><!--books examples-->
+                                        <exclude>**/resources/datasets/**/*</exclude><!--Datasets in ml module-->
+                                        <exclude>**/resources/models/**/*</exclude><!--Pre-trained ml models-->
+                                        <exclude>src/main/java/org/jetbrains/annotations/*.java</exclude><!--copyright-->
+                                        <exclude>dev-tools/IGNITE-*.patch</exclude>
+                                        <exclude>dev-tools/.gradle/**/*</exclude>
+                                        <exclude>dev-tools/gradle/wrapper/**/*</exclude>
+                                        <exclude>dev-tools/gradlew</exclude>
+                                        <exclude>src/test/binaries/repo/org/apache/ignite/binary/test2/1.1/test2-1.1.pom</exclude>
+                                        <exclude>src/test/binaries/repo/org/apache/ignite/binary/test2/maven-metadata-local.xml</exclude>
+                                        <exclude>src/test/binaries/repo/org/apache/ignite/binary/test1/1.1/test1-1.1.pom</exclude>
+                                        <exclude>src/test/binaries/repo/org/apache/ignite/binary/test1/maven-metadata-local.xml</exclude>
+                                        <exclude>src/test/resources/org/apache/ignite/internal/managers/discovery/Wrapper.ser</exclude>
+                                    <!--platforms-->
+                                        <exclude>src/test/binaries/repo/org/apache/ignite/binary/test1/1.1/test1-1.1.jar</exclude>
+                                        <exclude>src/test/binaries/repo/org/apache/ignite/binary/test2/1.1/test2-1.1.jar</exclude>
+                                        <exclude>**/*.cmake</exclude>
+                                        <exclude>**/CMakeLists.txt</exclude>
+                                        <exclude>**/CMakeSettings.json.in</exclude>
+                                        <exclude>**/cmake-build-*/</exclude>
+                                        <exclude>**/.idea/**</exclude>
+                                        <exclude>**/*.pc.in</exclude>
+                                        <exclude>**/*.sln</exclude>
+                                        <exclude>**/*.snk</exclude>
+                                        <exclude>**/*.slnrel</exclude>
+                                        <exclude>**/*.ini</exclude>
+                                        <exclude>**/*.DotSettings</exclude>
+                                        <exclude>**/*.FxCop</exclude>
+                                        <exclude>**/*.ruleset</exclude>
+                                        <exclude>**/*.csproj</exclude>
+                                        <exclude>**/*.ndproj</exclude>
+                                        <exclude>**/*.csprojrel</exclude>
+                                        <exclude>**/mkbuild.cmd</exclude>
+                                        <exclude>**/module.def</exclude>
+                                        <exclude>**/*.fxcop</exclude>
+                                        <exclude>**/*.ruleset</exclude>
+                                        <exclude>**/*.metaproj</exclude>
+                                        <exclude>**/*.metaproj.tmp</exclude>
+                                        <exclude>**/*.nunit</exclude>
+                                        <exclude>**/teamcity_boost.cpp</exclude>
+                                        <exclude>**/teamcity_messages.h</exclude>
+                                        <exclude>**/teamcity_messages.cpp</exclude>
+                                        <exclude>**/obj/x64/**</exclude>
+                                        <exclude>**/obj/x86/**</exclude>
+                                        <exclude>**/bin/x64/**</exclude>
+                                        <exclude>**/bin/x86/**</exclude>
+                                        <exclude>**/*.dxg</exclude>
+                                        <exclude>**/*.cmd</exclude>
+                                        <exclude>**/*.ps1</exclude>
+                                        <exclude>**/*.json</exclude>
+                                        <exclude>**/.dockerignore</exclude>
+                                        <exclude>modules/platforms/dotnet/Apache.Ignite.Core.Tests/Examples/ExpectedOutput/*.txt</exclude>
+                                        <!--Packaging -->
+                                        <exclude>packaging/**</exclude>
+                                        <!-- Calcite test scripts -->
+                                        <exclude>src/test/sql/**</exclude>
+                                        <!-- Ignite Documentation-->
+                                        <exclude>docs/_site/**</exclude>
+                                        <exclude>docs/assets/images/**</exclude>
+                                        <exclude>docs/Gemfile.lock</exclude>
+                                        <exclude>docs/.jekyll-cache/**</exclude>
+                                        <exclude>docs/_docs/images/**</exclude>
+                                        <exclude>docs/Gemfile</exclude>
+                                        <exclude>docs/assets/js/anchor.min.js</exclude><!-- Distributed under the MIT license. The original license header is badly formatted. -->
+                                    </excludes>
+                                </configuration>
+                            </execution>
+                        </executions>
+>>>>>>> upstream/master
                     </plugin>
                 </plugins>
             </build>
@@ -846,7 +1158,7 @@
         <profile>
             <id>java-9+</id>
             <activation>
-                <jdk>[1.9,)</jdk>
+                <jdk>[1.9,15)</jdk>
             </activation>
             <properties>
                 <maven.compiler.source>1.8</maven.compiler.source>
@@ -924,6 +1236,67 @@
         </profile>
 
         <profile>
+            <id>java-15+</id>
+            <activation>
+                <jdk>[15,)</jdk>
+            </activation>
+            <properties>
+                <maven.compiler.source>1.8</maven.compiler.source>
+                <maven.compiler.target>15</maven.compiler.target>
+                <scala.library.version>2.12.15</scala.library.version>
+            </properties>
+            <dependencies/>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-compiler-plugin</artifactId>
+                        <version>3.7.0</version>
+                        <configuration>
+                            <compilerArgs>
+                                <arg>--add-exports</arg>
+                                <arg>java.base/jdk.internal.misc=ALL-UNNAMED</arg>
+                                <arg>--add-exports</arg>
+                                <arg>java.base/sun.nio.ch=ALL-UNNAMED</arg>
+                                <arg>--add-exports</arg>
+                                <arg>java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED</arg>
+                                <arg>--add-exports</arg>
+                                <arg>jdk.internal.jvmstat/sun.jvmstat.monitor=ALL-UNNAMED</arg>
+                                <arg>--add-exports</arg>
+                                <arg>java.base/java.io=ALL-UNNAMED</arg>
+                                <arg>--add-exports</arg>
+                                <arg>java.base/java.nio=ALL-UNNAMED</arg>
+                                <arg>--add-exports</arg>
+                                <arg>java.base/java.util=ALL-UNNAMED</arg>
+                                <arg>--add-exports</arg>
+                                <arg>java.base/java.lang=ALL-UNNAMED</arg>
+                            </compilerArgs>
+                        </configuration>
+                    </plugin>
+
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-surefire-plugin</artifactId>
+                        <configuration>
+                            <argLine>
+                                --add-opens=java.base/jdk.internal.misc=ALL-UNNAMED
+                                --add-opens=java.base/sun.nio.ch=ALL-UNNAMED
+                                --add-opens=java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED
+                                --add-opens=jdk.internal.jvmstat/sun.jvmstat.monitor=ALL-UNNAMED
+                                --add-opens=java.base/sun.reflect.generics.reflectiveObjects=ALL-UNNAMED
+                                --add-opens=jdk.management/com.sun.management.internal=ALL-UNNAMED
+                                --add-opens=java.base/java.io=ALL-UNNAMED
+                                --add-opens=java.base/java.nio=ALL-UNNAMED
+                                --add-opens=java.base/java.util=ALL-UNNAMED
+                                --add-opens=java.base/java.lang=ALL-UNNAMED
+                            </argLine>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
+        <profile>
             <id>tools.jar-default</id>
             <activation>
                 <file>
@@ -966,8 +1339,7 @@
                 <dependency>
                     <groupId>${project.groupId}</groupId>
                     <artifactId>ignite-apache-license-gen</artifactId>
-                    <version>${project.version}</version>
-                    <scope>test</scope><!-- hack to have ignite-apache-license-gen at first place at mvn reactor -->
+                    <version>1.4.0</version>
                 </dependency>
             </dependencies>
 
@@ -984,8 +1356,12 @@
                                 </goals>
                                 <configuration>
                                     <resourceBundles>
+<<<<<<< HEAD
                                         <resourceBundle>${project.groupId}:ignite-apache-license-gen:${project.version}
                                         </resourceBundle>
+=======
+                                        <resourceBundle>org.apache.ignite:ignite-apache-license-gen:1.4.0</resourceBundle>
+>>>>>>> upstream/master
                                     </resourceBundles>
                                     <excludeTransitive>true</excludeTransitive>
                                 </configuration>
@@ -996,7 +1372,6 @@
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-antrun-plugin</artifactId>
-                        <version>1.7</version>
                         <executions>
                             <execution>
                                 <id>licenses-file-rename</id>
@@ -1018,93 +1393,10 @@
             </build>
         </profile>
         <profile>
-            <id>m2e</id>
-            <!--This profile is activated when eclipse interacts with maven (using m2e).-->
-            <activation>
-                <property>
-                    <name>m2e.version</name>
-                </property>
-            </activation>
-            <build>
-                <plugins>
-                    <plugin>
-                        <!--eclipse do not support duplicated package-info.java, in both src and test.-->
-                        <artifactId>maven-compiler-plugin</artifactId>
-                        <executions>
-                            <execution>
-                                <id>default-testCompile</id>
-                                <phase>test-compile</phase>
-                                <configuration>
-                                    <testExcludes>
-                                        <exclude>**/package-info.java</exclude>
-                                    </testExcludes>
-                                </configuration>
-                                <goals>
-                                    <goal>testCompile</goal>
-                                </goals>
-                            </execution>
-                        </executions>
-                    </plugin>
-                </plugins>
-                <pluginManagement>
-                    <plugins>
-                        <!--This plugin's configuration is used to store Eclipse m2e settings only. It has no influence on the Maven build itself.-->
-                        <plugin>
-                            <groupId>org.eclipse.m2e</groupId>
-                            <artifactId>lifecycle-mapping</artifactId>
-                            <version>1.0.0</version>
-                            <configuration>
-                                <lifecycleMappingMetadata>
-                                    <pluginExecutions>
-                                        <pluginExecution>
-                                            <pluginExecutionFilter>
-                                                <groupId>org.apache.maven.plugins</groupId>
-                                                <artifactId>maven-antrun-plugin</artifactId>
-                                                <versionRange>[1.7,)</versionRange>
-                                                <goals>
-                                                    <goal>run</goal>
-                                                    <goal>properties-augmentation</goal>
-                                                    <goal>licenses-file-rename</goal>
-                                                </goals>
-                                            </pluginExecutionFilter>
-                                            <action>
-                                                <ignore></ignore>
-                                            </action>
-                                        </pluginExecution>
-                                        <pluginExecution>
-                                            <pluginExecutionFilter>
-                                                <groupId>org.codehaus.mojo</groupId>
-                                                <artifactId>flatten-maven-plugin</artifactId>
-                                                <versionRange>1.0.1</versionRange>
-                                                <goals>
-                                                    <goal>flatten</goal>
-                                                </goals>
-                                            </pluginExecutionFilter>
-                                            <action>
-                                                <ignore></ignore>
-                                            </action>
-                                        </pluginExecution>
-                                        <pluginExecution>
-                                            <pluginExecutionFilter>
-                                                <groupId>org.codehaus.mojo</groupId>
-                                                <artifactId>exec-maven-plugin</artifactId>
-                                                <versionRange>[1.3.2,)</versionRange>
-                                                <goals>
-                                                    <goal>java</goal>
-                                                    <goal>default</goal>
-                                                </goals>
-                                            </pluginExecutionFilter>
-                                            <action>
-                                                <ignore></ignore>
-                                            </action>
-                                        </pluginExecution>
-                                    </pluginExecutions>
-                                </lifecycleMappingMetadata>
-                            </configuration>
-                        </plugin>
-                    </plugins>
-                </pluginManagement>
-            </build>
+            <id>skip-docs</id>
+            <properties>
+                <maven.javadoc.skip>true</maven.javadoc.skip>
+            </properties>
         </profile>
         <profile>
             <id>skip-docs</id>

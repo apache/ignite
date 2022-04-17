@@ -1,0 +1,198 @@
+// Licensed to the Apache Software Foundation (ASF) under one or more
+// contributor license agreements.  See the NOTICE file distributed with
+// this work for additional information regarding copyright ownership.
+// The ASF licenses this file to You under the Apache License, Version 2.0
+// (the "License"); you may not use this file except in compliance with
+// the License.  You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+= Entity Framework 2nd Level Cache
+
+== Overview
+
+Entity Framework, as most other ORMs, can use caching on multiple levels.
+
+* First level caching is performed by `DbContext` on the entity level (entities are cached within corresponding `DbSet`)
+* Second level caching is on the level of `DataReader` and holds raw query data (however, there is no out-of-the-box 2nd
+level caching mechanism in Entity Framework 6).
+
+Ignite.NET provides an EF6 second level caching solution that stores data in a distributed Ignite cache. This is ideal
+for scenarios with multiple application servers using a single SQL database via Entity Framework - cached queries are
+shared between all machines in the cluster.
+
+== Installation
+* *Binary distribution*: add a reference to `Apache.Ignite.EntityFramework.dll`
+* *NuGet*: `Install-Package Apache.Ignite.EntityFramework`
+
+== Configuration
+
+Ignite.NET provides a custom `DbConfiguration` implementation which enables second level caching - `Apache.Ignite.EntityFramework.IgniteDbConfiguration`.
+There is a number of ways to apply `DbConfiguration` to the EntityFramework `DbContext`. See the following MSDN document
+for details: https://msdn.microsoft.com/en-us/library/jj680699[msdn.microsoft.com/en-us/library/jj680699, window=_blank].
+
+The simplest way to implement this is to use the `[DbConfigurationType]` attribute:
+
+[tabs]
+--
+tab:C#[]
+[source,csharp]
+----
+[DbConfigurationType(typeof(IgniteDbConfiguration))]
+class MyContext : DbContext
+{
+  public virtual DbSet<Foo> Foos { get; set; }
+  public virtual DbSet<Bar> Bars { get; set; }
+}
+----
+--
+
+To customize caching behavior, create a class that inherits `IgniteDbConfiguration` and call one of the base constructors.
+The example below shows the most custom base constructor:
+
+[tabs]
+--
+tab:C#[]
+[source,csharp]
+----
+private class MyDbConfiguration : IgniteDbConfiguration
+{
+  public MyDbConfiguration()
+    : base(
+      // IIgnite instance to use
+      Ignition.Start(),
+      // Metadata cache configuration (small cache, does not tolerate data loss)
+      // Should be replicated or partitioned with backups
+      new CacheConfiguration("metaCache")
+      {
+        CacheMode = CacheMode.Replicated
+      },
+      // Data cache configuration (large cache, holds actual query results,
+      // tolerates data loss). Can have no backups.
+      new CacheConfiguration("dataCache")
+      {
+        CacheMode = CacheMode.Partitioned,
+        Backups = 0
+      },
+      // Custom caching policy.
+      new MyCachingPolicy())
+    {
+      // No-op.
+    }
+}
+
+// Apply custom configuration to the DbContext
+[DbConfigurationType(typeof(MyDbConfiguration))]
+class MyContext : DbContext
+{
+  ...
+}
+----
+--
+
+=== Caching Policy
+
+The caching policy feature controls a selected caching mode, expiration, and which entity sets should be cached. With the default
+`null` policy, all entity sets are cached in the `ReadWrite` mode with no expiration. A caching policy can be configured
+by implementing the `IDbCachingPolicy` interface or inheriting the `DbCachingPolicy` class. The example below shows a sample implementation:
+
+[tabs]
+--
+tab:C#[]
+[source,csharp]
+----
+public class DbCachingPolicy : IDbCachingPolicy
+{
+  /// <summary>
+  /// Determines whether the specified query can be cached.
+  /// </summary>
+  public virtual bool CanBeCached(DbQueryInfo queryInfo)
+  {
+    // This method is called before database call.
+    // Cache only Persons.
+    return queryInfo.AffectedEntitySets.All(x => x.Name == "Person");
+  }
+
+  /// <summary>
+  /// Determines whether specified number of rows should be cached.
+  /// </summary>
+  public virtual bool CanBeCached(DbQueryInfo queryInfo, int rowCount)
+  {
+    // This method is called after database call.
+    // Cache only queries that return less than 1000 rows.
+    return rowCount < 1000;
+  }
+
+  /// <summary>
+  /// Gets the absolute expiration timeout for a given query.
+  /// </summary>
+  public virtual TimeSpan GetExpirationTimeout(DbQueryInfo queryInfo)
+  {
+    // Cache for 5 minutes.
+    return TimeSpan.FromMinutes(5);
+  }
+
+  /// <summary>
+  /// Gets the caching strategy for a given query.
+  /// </summary>
+  public virtual DbCachingMode GetCachingMode(DbQueryInfo queryInfo)
+  {
+    // Cache with invalidation.
+    return DbCachingMode.ReadWrite;
+  }
+}
+----
+--
+
+=== Caching Modes
+
+[cols="1,3",opts="header"]
+|===
+|DbCachingMode |Description
+|`ReadOnly`| Read-only mode, never invalidates. Database updates are ignored in this mode. Once query results have been
+cached, they are kept in cache until expired (forever when no expiration is specified). This mode is suitable for data
+that is not expected to change (like a list of countries and other dictionary data).
+|`ReadWrite`| Read-write mode. Cached data is invalidated when underlying entity set changes. This is "normal" cache mode
+which always provides correct query results. Keep in mind that this mode works correctly only when all database changes
+are performed via DbContext with Ignite caching configured. Other database updates are not tracked.
+|===
+
+== app.config & web.config
+
+Ignite caching can be enabled in the config files by providing an assembly-qualified type name of `IgniteDbConfiguration` (or your class that inherits it):
+
+[tabs]
+--
+tab:app.config[]
+[source,xml]
+----
+<entityFramework codeConfigurationType="Apache.Ignite.EntityFramework.IgniteDbConfiguration, Apache.Ignite.EntityFramework">
+    ...Your EF config...
+</entityFramework>
+----
+--
+
+== Advanced Configuration
+
+When there is no possibility to inherit `IgniteDbConfiguration` (it already inherits some other class), you can call the
+`IgniteDbConfiguration.InitializeIgniteCaching` static method from the constructor, passing `this` as the first argument:
+
+[tabs]
+--
+tab:C#[]
+[source,csharp]
+----
+private class MyDbConfiguration : OtherDbConfiguration
+{
+  public MyDbConfiguration() : base(...)
+  {
+    IgniteDbConfiguration.InitializeIgniteCaching(this, Ignition.GetIgnite(), null, null, null);
+  }
+}
+----
+--

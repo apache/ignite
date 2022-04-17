@@ -23,14 +23,18 @@
 
     <parent>
         <groupId>org.apache.ignite</groupId>
-        <artifactId>ignite-parent</artifactId>
-        <version>1</version>
-        <relativePath>../../../parent</relativePath>
+        <artifactId>ignite-parent-internal</artifactId>
+        <version>${revision}</version>
+        <relativePath>../../../parent-internal/pom.xml</relativePath>
     </parent>
 
     <artifactId>ignite-websphere-test</artifactId>
     <packaging>war</packaging>
+<<<<<<< HEAD
     <version>${revision}</version>
+=======
+
+>>>>>>> upstream/master
     <url>http://ignite.apache.org</url>
 
     <dependencies>
@@ -43,7 +47,6 @@
         <dependency>
             <groupId>${project.groupId}</groupId>
             <artifactId>ignite-jta</artifactId>
-            <version>${project.version}</version>
         </dependency>
 
         <dependency>
@@ -63,6 +66,11 @@
                 <configuration>
                     <skip>true</skip>
                 </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-war-plugin</artifactId>
+                <version>3.2.2</version>
             </plugin>
         </plugins>
     </build>

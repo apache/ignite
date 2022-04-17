@@ -1,0 +1,1090 @@
+// Licensed to the Apache Software Foundation (ASF) under one or more
+// contributor license agreements.  See the NOTICE file distributed with
+// this work for additional information regarding copyright ownership.
+// The ASF licenses this file to You under the Apache License, Version 2.0
+// (the "License"); you may not use this file except in compliance with
+// the License.  You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+= Specification
+
+== Overview
+
+ODBC defines several Interface conformance levels. In this section you can find which features are supported by the Apache Ignite ODBC driver.
+
+== Core Interface Conformance
+
+[width="100%",cols="60%,10%,30%"]
+|=======================================================================
+|Feature |Supported|Comments
+
+|Allocate and free all types of handles, by calling `SQLAllocHandle` and `SQLFreeHandle`.
+|YES
+|
+
+|Use all forms of the `SQLFreeStmt` function.
+|YES
+|
+
+|Bind result set columns, by calling `SQLBindCol`.
+|YES
+|
+
+|Handle dynamic parameters, including arrays of parameters, in the input direction only, by calling `SQLBindParameter` and `SQLNumParams`.
+|YES
+|
+
+|Specify a bind offset.
+|YES
+|
+
+|Use the data-at-execution dialog, involving calls to `SQLParamData` and `SQLPutData`
+|YES
+|
+
+|Manage cursors and cursor names, by calling `SQLCloseCursor`, `SQLGetCursorName`, and `SQLSetCursorName`.
+|PARTIALLY
+|`SQLCloseCursor` is implemented. Named cursors are not supported by Ignite SQL.
+
+|Gain access to the description (metadata) of result sets, by calling `SQLColAttribute`, `SQLDescribeCol`, `SQLNumResultCols`, and `SQLRowCount`.
+|YES
+|
+
+|Query the data dictionary, by calling the catalog functions `SQLColumns`, `SQLGetTypeInfo`, `SQLStatistics`, and `SQLTables`.
+|PARTIALLY
+|`SQLStatistics` is not supported.
+
+|Manage data sources and connections, by calling `SQLConnect`, `SQLDataSources`, `SQLDisconnect`, and `SQLDriverConnect`. Obtain information on drivers, no matter which ODBC level they support, by calling `SQLDrivers`.
+|YES
+|
+
+|Prepare and execute SQL statements, by calling `SQLExecDirect`, `SQLExecute`, and `SQLPrepare`.
+|YES
+|
+
+|Fetch one row of a result set or multiple rows, in the forward direction only, by calling `SQLFetch` or by calling `SQLFetchScroll` with the `FetchOrientation` argument set to `SQL_FETCH_NEXT`
+|YES
+|
+
+|Obtain an unbound column in parts, by calling `SQLGetData`.
+|YES
+|
+
+|Obtain current values of all attributes, by calling `SQLGetConnectAttr`, `SQLGetEnvAttr`, and `SQLGetStmtAttr`, and set all attributes to their default values and set certain attributes to non-default values by calling `SQLSetConnectAttr`, `SQLSetEnvAttr`, and `SQLSetStmtAttr`.
+|PARTIALLY
+|Not all attributes are supported by now. See table below for details.
+
+|Manipulate certain fields of descriptors, by calling `SQLCopyDesc`, `SQLGetDescField`, `SQLGetDescRec`, `SQLSetDescField`, and `SQLSetDescRec`.
+|NO
+|
+
+|Obtain diagnostic information, by calling `SQLGetDiagField` and `SQLGetDiagRec`.
+|YES
+|
+
+|Detect driver capabilities, by calling `SQLGetFunctions` and `SQLGetInfo`. Also, detect the result of any text substitutions made to an SQL statement before it is sent to the data source, by calling `SQLNativeSql`.
+|YES
+|
+
+|Use the syntax of `SQLEndTran` to commit a transaction. A Core-level driver need not support true transactions; therefore, the application cannot specify `SQL_ROLLBACK` nor `SQL_AUTOCOMMIT_OFF` for the `SQL_ATTR_AUTOCOMMIT` connection attribute.
+|YES
+|
+
+|Call `SQLCancel` to cancel the data-at-execution dialog and, in multi-thread environments, to cancel an ODBC function executing in another thread. Core-level interface conformance does not mandate support for asynchronous execution of functions, nor the use of `SQLCancel` to cancel an ODBC function executing asynchronously. Neither the platform nor the ODBC driver need be multi-thread for the driver to conduct independent activities at the same time. However, in multi-thread environments, the ODBC driver must be thread-safe. Serialization of requests from the application is a conformant way to implement this specification, even though it might create serious performance problems.
+|NO
+|Current implementation does not support asynchronous execution. Also, is not supported for data-at-execution.
+
+|Obtain the `SQL_BEST_ROWID` row-identifying column of tables, by calling `SQLSpecialColumns`.
+|PARTIALLY
+|Current implementation always returns empty row set.
+
+|=======================================================================
+
+
+== Level 1 Interface Conformance
+[width="100%",cols="60%,10%,30%"]
+|=======================================================================
+|Specify the schema of database tables and views (using two-part naming).
+|YES
+|
+
+|Invoke true asynchronous execution of ODBC functions, where applicable ODBC functions are all synchronous or all asynchronous on a given connection.
+|NO
+|
+
+|Use scrollable cursors, and thereby achieve access to a result set in methods other than forward-only, by calling `SQLFetchScroll` with the `FetchOrientation` argument other than `SQL_FETCH_NEXT`.
+|NO
+|
+
+|Obtain primary keys of tables, by calling `SQLPrimaryKeys`.
+|PARTIALLY
+|Returns empty result set by now.
+
+|Use stored procedures, through the ODBC escape sequence for procedure calls, and query the data dictionary regarding stored procedures, by calling `SQLProcedureColumns` and `SQLProcedures`.
+|NO
+|
+
+|Connect to a data source by interactively browsing the available servers, by calling `SQLBrowseConnect`.
+|NO
+|
+
+|Use ODBC functions instead of SQL statements to perform certain database operations: `SQLSetPos` with `SQL_POSITION` and `SQL_REFRESH`.
+|NO
+|
+
+|Gain access to the contents of multiple result sets generated by batches and stored procedures, by calling `SQLMoreResults`.
+|YES
+|
+
+|Delimit transactions spanning several ODBC functions, with true atomicity and the ability to specify `SQL_ROLLBACK` in `SQLEndTran`.
+|NO
+|Ignite SQL does not support transactions.
+|=======================================================================
+
+== Level 2 Interface Conformance
+[width="100%",cols="60%,10%,30%"]
+|=======================================================================
+|Feature|Supported|Comments
+
+|Use three-part names of database tables and views.
+|NO
+|Ignite SQL does not support catalogs.
+
+|Describe dynamic parameters, by calling `SQLDescribeParam`.
+|YES
+|
+
+|Use not only input parameters but also output and input/output parameters, and result values of stored procedures.
+|NO
+|Ignite SQL does not support output parameters
+
+|Use bookmarks, including retrieving bookmarks, by calling `SQLDescribeCol` and `SQLColAttribute` on column number 0; fetching based on a bookmark, by calling `SQLFetchScroll` with the `FetchOrientation` argument set to `SQL_FETCH_BOOKMARK`; and update, delete, and fetch by bookmark operations, by calling `SQLBulkOperations` with the Operation argument set to `SQL_UPDATE_BY_BOOKMARK`, `SQL_DELETE_BY_BOOKMARK`, or `SQL_FETCH_BY_BOOKMARK`.
+|NO
+|Ignite SQL does not support bookmarks.
+
+|Retrieve advanced information about the data dictionary, by calling `SQLColumnPrivileges`, `SQLForeignKeys`, and `SQLTablePrivileges`.
+|PARTIALLY
+|`SQLForeignKeys` implemented, but returns empty result set.
+
+|Use ODBC functions instead of SQL statements to perform additional database operations, by calling `SQLBulkOperations` with `SQL_ADD`, or `SQLSetPos` with `SQL_DELETE` or `SQL_UPDATE`.
+|NO
+|
+
+|Enable asynchronous execution of ODBC functions for specified individual statements.
+|NO
+|
+
+|Obtain the `SQL_ROWVER` row-identifying column of tables, by calling `SQLSpecialColumns`.
+|PARTIALLY
+|Implemented by returning an empty row set.
+
+|Set the `SQL_ATTR_CONCURRENCY` statement attribute to at least one value other than `SQL_CONCUR_READ_ONLY`.
+|NO
+|
+
+|The ability to time out login request and SQL queries (`SQL_ATTR_LOGIN_TIMEOUT` and `SQL_ATTR_QUERY_TIMEOUT`).
+|PARTIALLY
+|`SQL_ATTR_QUERY_TIMEOUT` support implemented.
+`SQL_ATTR_LOGIN_TIMEOUT` is not implemented yet.
+
+|The ability to change the default isolation level; the ability to execute transactions with the "serializable" level of isolation.
+|NO
+|Ignite does not support SQL transactions.
+|=======================================================================
+
+== Function Support
+[width="100%",cols="70%,15%,15%"]
+|=======================================================================
+|Function|Supported|Conformance level
+
+|`SQLAllocHandle`
+|YES
+|Core
+
+|`SQLBindCol`
+|YES
+|Core
+
+|`SQLBindParameter`
+|YES
+|Core
+
+|`SQLBrowseConnect`
+|NO
+|Level 1
+
+|`SQLBulkOperations`
+|NO
+|Level 1
+
+|`SQLCancel`
+|NO
+|Core
+
+|`SQLCloseCursor`
+|YES
+|Core
+
+|`SQLColAttribute`
+|YES
+|Core
+
+|`SQLColumnPrivileges`
+|NO
+|Level 2
+
+|`SQLColumns`
+|YES
+|Core
+
+|`SQLConnect`
+|YES
+|Core
+
+|`SQLCopyDesc`
+|NO
+|Core
+
+|`SQLDataSources`
+|N/A
+|Core
+
+|`SQLDescribeCol`
+|YES
+|Core
+
+|`SQLDescribeParam`
+|YES
+|Level 2
+
+|`SQLDisconnect`
+|YES
+|Core
+
+|`SQLDriverConnect`
+|YES
+|Core
+
+|`SQLDrivers`
+|N/A
+|Core
+
+|`SQLEndTran`
+|PARTIALLY
+|Core
+
+|`SQLExecDirect`
+|YES
+|Core
+
+|`SQLExecute`
+|YES
+|Core
+
+|`SQLFetch`
+|YES
+|Core
+
+|`SQLFetchScroll`
+|YES
+|Core
+
+|`SQLForeignKeys`
+|PARTIALLY
+|Level 2
+
+|`SQLFreeHandle`
+|YES
+|Core
+
+|`SQLFreeStmt`
+|YES
+|Core
+
+|`SQLGetConnectAttr`
+|PARTIALLY
+|Core
+
+|`SQLGetCursorName`
+|NO
+|Core
+
+|`SQLGetData`
+|YES
+|Core
+
+|`SQLGetDescField`
+|NO
+|Core
+
+|`SQLGetDescRec`
+|NO
+|Core
+
+|`SQLGetDiagField`
+|YES
+|Core
+
+|`SQLGetDiagRec`
+|YES
+|Core
+
+|`SQLGetEnvAttr`
+|PARTIALLY
+|Core
+
+|`SQLGetFunctions`
+|NO
+|Core
+
+|`SQLGetInfo`
+|YES
+|Core
+
+|`SQLGetStmtAttr`
+|PARTIALLY
+|Core
+
+|`SQLGetTypeInfo`
+|YES
+|Core
+
+|`SQLMoreResults`
+|YES
+|Level 1
+
+|`SQLNativeSql`
+|YES
+|Core
+
+|`SQLNumParams`
+|YES
+|Core
+
+|`SQLNumResultCols`
+|YES
+|Core
+
+|`SQLParamData`
+|YES
+|Core
+
+|`SQLPrepare`
+|YES
+|Core
+
+|`SQLPrimaryKeys`
+|PARTIALLY
+|Level 1
+
+|`SQLProcedureColumns`
+|NO
+|Level 1
+
+|`SQLProcedures`
+|NO
+|Level 1
+
+|`SQLPutData`
+|YES
+|Core
+
+|`SQLRowCount`
+|YES
+|Core
+
+|`SQLSetConnectAttr`
+|PARTIALLY
+|Core
+
+|`SQLSetCursorName`
+|NO
+|Core
+
+|`SQLSetDescField`
+|NO
+|Core
+
+|`SQLSetDescRec`
+|NO
+|Core
+
+|`SQLSetEnvAttr`
+|PARTIALLY
+|Core
+
+|`SQLSetPos`
+|NO
+|Level 1
+
+|`SQLSetStmtAttr`
+|PARTIALLY
+|Core
+
+|`SQLSpecialColumns`
+|PARTIALLY
+|Core
+
+|`SQLStatistics`
+|NO
+|Core
+
+|`SQLTablePrivileges`
+|NO
+|Level 2
+
+|`SQLTables`
+|YES
+|Core
+|=======================================================================
+
+== Environment Attribute Conformance
+[width="100%",cols="70%,15%,15%"]
+|=======================================================================
+|Feature|Supported|Conformance Level
+
+|`SQL_ATTR_CONNECTION_POOLING`
+|NO
+|Optional
+
+|`SQL_ATTR_CP_MATCH`
+|NO
+|Optional
+
+|`SQL_ATTR_ODBC_VER`
+|YES
+|Core
+
+|`SQL_ATTR_OUTPUT_NTS`
+|YES
+|Optional
+|=======================================================================
+
+== Connection Attribute Conformance
+[width="100%",cols="70%,15%,15%"]
+|=======================================================================
+|Feature|Supported|Conformance Level
+
+|`SQL_ATTR_ACCESS_MODE`
+|NO
+|Core
+
+|`SQL_ATTR_ASYNC_ENABLE`
+|NO
+|Level 1 / Level 2
+
+|`SQL_ATTR_AUTO_IPD`
+|NO
+|Level 2
+
+|`SQL_ATTR_AUTOCOMMIT`
+|NO
+|Level 1
+
+|`SQL_ATTR_CONNECTION_DEAD`
+|YES
+|Level 1
+
+|`SQL_ATTR_CONNECTION_TIMEOUT`
+|YES
+|Level 2
+
+|`SQL_ATTR_CURRENT_CATALOG`
+|NO
+|Level 2
+
+|`SQL_ATTR_LOGIN_TIMEOUT`
+|NO
+|Level 2
+
+|`SQL_ATTR_ODBC_CURSORS`
+|NO
+|Core
+
+|`SQL_ATTR_PACKET_SIZE`
+|NO
+|Level 2
+
+|`SQL_ATTR_QUIET_MODE`
+|NO
+|Core
+
+|`SQL_ATTR_TRACE`
+|NO
+|Core
+
+|`SQL_ATTR_TRACEFILE`
+|NO
+|Core
+
+|`SQL_ATTR_TRANSLATE_LIB`
+|NO
+|Core
+
+|`SQL_ATTR_TRANSLATE_OPTION`
+|NO
+|Core
+
+|`SQL_ATTR_TXN_ISOLATION`
+|NO
+|Level 1 / Level 2
+|=======================================================================
+
+== Statement Attribute Conformance
+[width="100%",cols="70%,15%,15%"]
+|=======================================================================
+|Feature|Supported|Conformance Level
+
+|`SQL_ATTR_APP_PARAM_DESC`
+|PARTIALLY
+|Core
+
+|`SQL_ATTR_APP_ROW_DESC`
+|PARTIALLY
+|Core
+
+|`SQL_ATTR_ASYNC_ENABLE`
+|NO
+|Level 1/ Level 2
+
+|`SQL_ATTR_CONCURRENCY`
+|NO
+|Level 1 / Level 2
+
+|`SQL_ATTR_CURSOR_SCROLLABLE`
+|NO
+|Level 1
+
+|`SQL_ATTR_CURSOR_SENSITIVITY`
+|NO
+|Level 2
+
+|`SQL_ATTR_CURSOR_TYPE`
+|NO
+|Level 1 / Level 2
+
+|`SQL_ATTR_ENABLE_AUTO_IPD`
+|NO
+|Level 2
+
+|`SQL_ATTR_FETCH_BOOKMARK_PTR`
+|NO
+|Level 2
+
+|`SQL_ATTR_IMP_PARAM_DESC`
+|PARTIALLY
+|Core
+
+|`SQL_ATTR_IMP_ROW_DESC`
+|PARTIALLY
+|Core
+
+|`SQL_ATTR_KEYSET_SIZE`
+|NO
+|Level 2
+
+|`SQL_ATTR_MAX_LENGTH`
+|NO
+|Level 1
+
+|`SQL_ATTR_MAX_ROWS`
+|NO
+|Level 1
+
+|`SQL_ATTR_METADATA_ID`
+|NO
+|Core
+
+|`SQL_ATTR_NOSCAN`
+|NO
+|Core
+
+|`SQL_ATTR_PARAM_BIND_OFFSET_PTR`
+|YES
+|Core
+
+|`SQL_ATTR_PARAM_BIND_TYPE`
+|NO
+|Core
+
+|`SQL_ATTR_PARAM_OPERATION_PTR`
+|NO
+|Core
+
+|`SQL_ATTR_PARAM_STATUS_PTR`
+|YES
+|Core
+
+|`SQL_ATTR_PARAMS_PROCESSED_PTR`
+|YES
+|Core
+
+|`SQL_ATTR_PARAMSET_SIZE`
+|YES
+|Core
+
+|`SQL_ATTR_QUERY_TIMEOUT`
+|YES
+|Level 2
+
+|`SQL_ATTR_RETRIEVE_DATA`
+|NO
+|Level 1
+
+|`SQL_ATTR_ROW_ARRAY_SIZE`
+|YES
+|Core
+
+|`SQL_ATTR_ROW_BIND_OFFSET_PTR`
+|YES
+|Core
+
+|`SQL_ATTR_ROW_BIND_TYPE`
+|YES
+|Core
+
+|`SQL_ATTR_ROW_NUMBER`
+|NO
+|Level 1
+
+|`SQL_ATTR_ROW_OPERATION_PTR`
+|NO
+|Level 1
+
+|`SQL_ATTR_ROW_STATUS_PTR`
+|YES
+|Core
+
+|`SQL_ATTR_ROWS_FETCHED_PTR`
+|YES
+|Core
+
+|`SQL_ATTR_SIMULATE_CURSOR`
+|NO
+|Level 2
+
+|`SQL_ATTR_USE_BOOKMARKS`
+|NO
+|Level 2
+|=======================================================================
+
+== Descriptor Header Fields Conformance
+[width="100%",cols="70%,15%,15%"]
+|=======================================================================
+|Feature|Supported|Conformance Level
+
+|`SQL_DESC_ALLOC_TYPE`
+|NO
+|Core
+
+|`SQL_DESC_ARRAY_SIZE`
+|NO
+|Core
+
+|`SQL_DESC_ARRAY_STATUS_PTR`
+|NO
+|Core / Level 1
+
+|`SQL_DESC_BIND_OFFSET_PTR`
+|NO
+|Core
+
+|`SQL_DESC_BIND_TYPE`
+|NO
+|Core
+
+|`SQL_DESC_COUNT`
+|NO
+|Core
+
+|`SQL_DESC_ROWS_PROCESSED_PTR`
+|NO
+|Core
+|=======================================================================
+
+== Descriptor Record Fields Conformance
+[width="100%",cols="70%,15%,15%"]
+|=======================================================================
+|Feature|Supported|Conformance Level
+
+|`SQL_DESC_AUTO_UNIQUE_VALUE`
+|NO
+|Level 2
+
+|`SQL_DESC_BASE_COLUMN_NAME`
+|NO
+|Core
+
+|`SQL_DESC_BASE_TABLE_NAME`
+|NO
+|Level 1
+
+|`SQL_DESC_CASE_SENSITIVE`
+|NO
+|Core
+
+|`SQL_DESC_CATALOG_NAME`
+|NO
+|Level 2
+
+|`SQL_DESC_CONCISE_TYPE`
+|NO
+|Core
+
+|`SQL_DESC_DATA_PTR`
+|NO
+|Core
+
+|`SQL_DESC_DATETIME_INTERVAL_CODE`
+|NO
+|Core
+
+|`SQL_DESC_DATETIME_INTERVAL_PRECISION`
+|NO
+|Core
+
+|`SQL_DESC_DISPLAY_SIZE`
+|NO
+|Core
+
+|`SQL_DESC_FIXED_PREC_SCALE`
+|NO
+|Core
+
+|`SQL_DESC_INDICATOR_PTR`
+|NO
+|Core
+
+|`SQL_DESC_LABEL`
+|NO
+|Level 2
+
+|`SQL_DESC_LENGTH`
+|NO
+|Core
+
+|`SQL_DESC_LITERAL_PREFIX`
+|NO
+|Core
+
+|`SQL_DESC_LITERAL_SUFFIX`
+|NO
+|Core
+
+|`SQL_DESC_LOCAL_TYPE_NAME`
+|NO
+|Core
+
+|`SQL_DESC_NAME`
+|NO
+|Core
+
+|`SQL_DESC_NULLABLE`
+|NO
+|Core
+
+|`SQL_DESC_OCTET_LENGTH`
+|NO
+|Core
+
+|`SQL_DESC_OCTET_LENGTH_PTR`
+|NO
+|Core
+
+|`SQL_DESC_PARAMETER_TYPE`
+|NO
+|Core / Level 2
+
+|`SQL_DESC_PRECISION`
+|NO
+|Core
+
+|`SQL_DESC_ROWVER`
+|NO
+|Level 1
+
+|`SQL_DESC_SCALE`
+|NO
+|Core
+
+|`SQL_DESC_SCHEMA_NAME`
+|NO
+|Level 1
+
+|`SQL_DESC_SEARCHABLE`
+|NO
+|Core
+
+|`SQL_DESC_TABLE_NAME`
+|NO
+|Level 1
+
+|`SQL_DESC_TYPE`
+|NO
+|Core
+
+|`SQL_DESC_TYPE_NAME`
+|NO
+|Core
+
+|`SQL_DESC_UNNAMED`
+|NO
+|Core
+
+|`SQL_DESC_UNSIGNED`
+|NO
+|Core
+
+|`SQL_DESC_UPDATABLE`
+|NO
+|Core
+
+|=======================================================================
+
+== SQL Data Types
+
+The following SQL data types listed in the link:https://docs.microsoft.com/en-us/sql/odbc/reference/appendixes/sql-data-types[specification] are supported:
+
+[width="100%",cols="80%,20%"]
+|=======================================================================
+|Data Type |Supported
+
+|`SQL_CHAR`
+|YES
+
+|`SQL_VARCHAR`
+|YES
+
+|`SQL_LONGVARCHAR`
+|YES
+
+|`SQL_WCHAR`
+|NO
+
+|`SQL_WVARCHAR`
+|NO
+
+|`SQL_WLONGVARCHAR`
+|NO
+
+|`SQL_DECIMAL`
+|YES
+
+|`SQL_NUMERIC`
+|NO
+
+|`SQL_SMALLINT`
+|YES
+
+|`SQL_INTEGER`
+|YES
+
+|`SQL_REAL`
+|NO
+
+|`SQL_FLOAT`
+|YES
+
+|`SQL_DOUBLE`
+|YES
+
+|`SQL_BIT`
+|YES
+
+|`SQL_TINYINT`
+|YES
+
+|`SQL_BIGINT`
+|YES
+
+|`SQL_BINARY`
+|YES
+
+|`SQL_VARBINARY`
+|YES
+
+|`SQL_LONGVARBINARY`
+|YES
+
+|`SQL_TYPE_DATE`
+|YES
+
+|`SQL_TYPE_TIME`
+|YES
+
+|`SQL_TYPE_TIMESTAMP`
+|YES
+
+|`SQL_TYPE_UTCDATETIME`
+|NO
+
+|`SQL_TYPE_UTCTIME`
+|NO
+
+|`SQL_INTERVAL_MONTH`
+|NO
+
+|`SQL_INTERVAL_YEAR`
+|NO
+
+|`SQL_INTERVAL_YEAR_TO_MONTH`
+|NO
+
+|`SQL_INTERVAL_DAY`
+|NO
+
+|`SQL_INTERVAL_HOUR`
+|NO
+
+|`SQL_INTERVAL_MINUTE`
+|NO
+
+|`SQL_INTERVAL_SECOND`
+|NO
+
+|`SQL_INTERVAL_DAY_TO_HOUR`
+|NO
+
+|`SQL_INTERVAL_DAY_TO_MINUTE`
+|NO
+
+|`SQL_INTERVAL_DAY_TO_SECOND`
+|NO
+
+|`SQL_INTERVAL_HOUR_TO_MINUTE`
+|NO
+
+|`SQL_INTERVAL_HOUR_TO_SECOND`
+|NO
+
+|`SQL_INTERVAL_MINUTE_TO_SECOND`
+|NO
+
+|`SQL_GUID`
+|YES
+|=======================================================================
+
+
+== C Data Types
+
+The following C data types listed in the link:https://docs.microsoft.com/en-us/sql/odbc/reference/appendixes/c-data-types[specification] are supported:
+
+[width="100%",cols="80%,20%"]
+|=======================================================================
+|Data Type |Supported
+
+|`SQL_C_CHAR`
+|YES
+
+|`SQL_C_WCHAR`
+|YES
+
+|`SQL_C_SHORT`
+|YES
+
+|`SQL_C_SSHORT`
+|YES
+
+|`SQL_C_USHORT`
+|YES
+
+|`SQL_C_LONG`
+|YES
+
+|`SQL_C_SLONG`
+|YES
+
+|`SQL_C_ULONG`
+|YES
+
+|`SQL_C_FLOAT`
+|YES
+
+|`SQL_C_DOUBLE`
+|YES
+
+|`SQL_C_BIT`
+|YES
+
+|`SQL_C_TINYINT`
+|YES
+
+|`SQL_C_STINYINT`
+|YES
+
+|`SQL_C_UTINYINT`
+|YES
+
+|`SQL_C_BIGINT`
+|YES
+
+|`SQL_C_SBIGINT`
+|YES
+
+|`SQL_C_UBIGINT`
+|YES
+
+|`SQL_C_BINARY`
+|YES
+
+|`SQL_C_BOOKMARK`
+|NO
+
+|`SQL_C_VARBOOKMARK`
+|NO
+
+|`SQL_C_INTERVAL`* (all interval types)
+|NO
+
+|`SQL_C_TYPE_DATE`
+|YES
+
+|`SQL_C_TYPE_TIME`
+|YES
+
+|`SQL_C_TYPE_TIMESTAMP`
+|YES
+
+|`SQL_C_NUMERIC`
+|YES
+
+|`SQL_C_GUID`
+|YES
+|=======================================================================
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

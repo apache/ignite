@@ -72,8 +72,13 @@ public class TracingConfigurationValidationTest extends GridCommonAbstractTest {
             "",
             "label", "Some really long label with spaces, Some really long label with spaces," +
                 " Some really long label with spaces, Some really long label with spaces," +
+<<<<<<< HEAD
                 " Some really long label with spaces").forEach(
             lb -> new TracingConfigurationCoordinates.Builder(TX).withLabel(lb).build());
+=======
+                " Some really long label with spaces"
+        ).forEach(lb -> new TracingConfigurationCoordinates.Builder(TX).withLabel(lb).build());
+>>>>>>> upstream/master
     }
 
     /**

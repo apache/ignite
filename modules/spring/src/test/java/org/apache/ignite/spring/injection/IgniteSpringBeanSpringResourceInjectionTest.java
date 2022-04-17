@@ -172,7 +172,7 @@ public class IgniteSpringBeanSpringResourceInjectionTest extends GridCommonAbstr
         Future<?> fut = executorSvc.submit(testRunnable);
 
         try {
-            fut.get(5, TimeUnit.SECONDS);
+            fut.get(15, TimeUnit.SECONDS);
         }
         catch (TimeoutException ignored) {
             fail("Failed to wait for completion. Deadlock is possible");
@@ -195,7 +195,7 @@ public class IgniteSpringBeanSpringResourceInjectionTest extends GridCommonAbstr
                 /** {@inheritDoc} */
                 @Override Integer getInjectedBean() {
                     IgniteCacheStoreWithSpringResource cacheStore = (IgniteCacheStoreWithSpringResource)
-                        ((IgniteEx) G.allGrids().get(0)).cachex("cache1").context().store().store();
+                        ((IgniteEx)G.allGrids().get(0)).cachex("cache1").context().store().store();
 
                     return cacheStore.getInjectedSpringField();
                 }
@@ -211,7 +211,9 @@ public class IgniteSpringBeanSpringResourceInjectionTest extends GridCommonAbstr
                 /** {@inheritDoc} */
                 @Override Integer getInjectedBean() {
                     Ignite ignite = appCtx.getBean(Ignite.class);
-                    ServiceWithSpringResource svc = ignite.services().service("ServiceWithSpringResource");
+
+                    ServiceWithSpringResource svc = ignite.services().serviceProxy("ServiceWithSpringResource",
+                        ServiceWithSpringResource.class, false);
 
                     return svc.getInjectedSpringField();
                 }

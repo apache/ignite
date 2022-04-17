@@ -1,0 +1,108 @@
+Apache Ignite C++ Build Instructions
+====================================
+Here you can find instruction on how to build Apache Ignite C++.
+In order to build examples you need to build and install Apache Ignite C++
+libraries then refer to $IGNITE_HOME/platforms/cpp/example/README.txt for
+further instructions.
+
+For details on ODBC driver installation and usage please refer to
+$IGNITE_HOME/platforms/cpp/odbc/README.txt.
+
+Common Requirements:
+ * C++ compiler and SDK:
+  Linux and Mac OS X:
+   * clang >= 3.9 or gcc >= 3.6
+  Windows:
+   * Visual Studio 2010 or later
+   * Windows SDK 7.1 or later
+ * CMake >= 3.6 must be installed
+
+Core module requirements:
+ * Java Development Kit (JDK) must be installed: https://java.com/en/download/index.jsp
+ * JAVA_HOME environment variable must be set pointing to Java installation directory.
+ * IGNITE_HOME environment variable must be set to Ignite installation directory.
+
+Building core module is enabled by default, you can disable building core module by setting CMake
+option -DWITH_CORE=OFF
+
+Thin-client module requirements:
+ * OpenSSL, 1.0 or later
+
+Thin-client module is disabled by default, you can enable it by setting CMake option -DWITH_THIN_CLIENT=ON
+
+ODBC module requirements:
+ * OpenSSL, 1.0 or later
+ * UnixODBC on Linux or Mac OS X
+
+ODBC module is disabled by default, you can enable it by setting CMake option -DWITH_ODBC=ON.
+OPENSSL_ROOT_DIR environment variable must be set to openssl installation directory on Windows, on other platforms
+it is required if you want to use non-system openssl.
+
+Building and installing the Apache Ignite C++ components:
+ * Navigate to the directory $IGNITE_HOME/platforms/cpp
+ * Execute the following commands one by one to build the project:
+ * mkdir cmake-build-[release|debug]
+ * cd ./cmake-build-[release|debug]
+ * run CMake configuration:
+  * on Linux or Mac OS X:
+    cmake .. -DCMAKE_BUILD_TYPE=[Release|Debug] [-DCMAKE_INSTALL_PREFIX=<install_dir>] [-DWITH_THIN_CLIENT=ON]
+          [-DWITH_ODBC=ON] [-DWITH_TESTS=ON]
+  * on Windows:
+    cmake .. -DCMAKE_GENERATOR_PLATFORM=[Win32|x64] [-DCMAKE_INSTALL_PREFIX=<install_dir>] [-DWITH_THIN_CLIENT=ON]
+          [-DWITH_ODBC=ON] [-DWITH_TESTS=ON]
+
+    CMake by default generate on Windows Visual Studio projects. You can find generated projects in CMake
+    build directory (./cmake-build-[release|debug]) and open Ignite.C++.sln in Visual Studio.
+ * cmake --build . --target install --config [Release|Debug]
+
+Testing:
+ Tests are disabled by default, you can enable them by setting CMake option -DWITH_TESTS=ON.
+ For building tests, boost framework is required. The following boost libraries are used:
+  * boost_unit_test_framework
+  * boost_thread
+  * boost_system
+  * boost_chrono
+  * boost_regex
+
+ BOOST_ROOT environment variable must be set to boost installation directory.
+
+Running test:
+ * For core tests: ctest -V -R IgniteCoreTest
+ * For thin-client tests: ctest -V -R IgniteThinClientTest
+ * For ODBC tests: ctest -V -R IgniteOdbcTest
+ * For all tests: ctest -V
+
+WARNING!
+ * For running ODBC tests, ODBC driver must be installed in driver manager. See odbc/README.txt for details.
+ * On Mac OS X Homebrew doesn't create symlinks for OpenSSL, so they should be created or as alternative
+   OPENSSL_HOME should be set before running ODBC or thin-client tests.
+
+
+Building ODBC Installers on Windows:
+------------------------------------
+ * Install WiX Toolset if you do not have it yet.
+ * Add WiX Toolset "bin" directory to your PATH environmental variable.
+ * Navigate to the directory $IGNITE_HOME/platforms/cpp
+ * mkdir cmake-build-release-[32|64]
+ * cd ./cmake-build-release-[32|64]
+ * Run CMake configuration:
+    cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_GENERATOR_PLATFORM=[Win32|x64] -
+       -DCMAKE_INSTALL_PREFIX=<install_dir> -DWITH_CORE=OFF -DWITH_ODBC=ON -DWITH_ODBC_MSI=ON
+ * cmake --build . --target install --config Release
+
+ODBC msi installers will be located in <install_dir>/bin
+
+
+Importing CMake projects to Visual Studio (tm) (since 2015):
+------------------------------------------------------------
+ Use CMakeSettings.json.in files in root directory as a template real CMakeSettings.json.
+ Edit it manually to set up correct environment variables and import CMake projects as usual.
+
+
+Building with QT Creator (tm):
+------------------------------
+ * File -> Open file or project -> and choose from ($IGNITE_HOME/modules/platforms) CMakeLists.txt
+ * If you have no $JAVA_HOME env variable, you need to append it.
+ * Additionally for odbc-test or thin-client-test you need to append IGNITE_NATIVE_TEST_CPP_THIN_CONFIG_PATH and set it 
+   $IGNITE_HOME/modules/platforms/cpp/thin-client-test/config for thin-client-test and $IGNITE_HOME/modules/platforms/cpp/odbc-test/config for odbc-test
+ * Command line arguments for tests running need to have this additional lines : --catch_system_errors=no --log_level=all

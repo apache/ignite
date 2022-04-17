@@ -1,0 +1,139 @@
+// Licensed to the Apache Software Foundation (ASF) under one or more
+// contributor license agreements.  See the NOTICE file distributed with
+// this work for additional information regarding copyright ownership.
+// The ASF licenses this file to You under the Apache License, Version 2.0
+// (the "License"); you may not use this file except in compliance with
+// the License.  You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+= Transparent Data Encryption
+
+== Overview
+Transparent data encryption (TDE) allows users to encrypt their data at rest.
+
+When link:persistence/native-persistence[Ignite persistence] is turned on, encryption can be enabled per cache/table, in which case the following data will be encrypted:
+
+- Data on disk
+- WAL records
+
+If you enable cache/table encryption, Ignite will generate a key (called _cache encryption key_) and will use this key to encrypt/decrypt the data in the cache.
+The cache encryption key is held in the system cache and cannot be accessed by users.
+When the cache encryption key is sent to other nodes or saved to disk (when the node goes down), it is encrypted using the _master key_.
+The master key must be specified by the user in the configuration.
+
+The _same_ master key must be specified via the configuration in every server node. One way to ensure you're using the same key is to copy the JKS file from one node to the other nodes. If you try to enable TDE using different keys, the nodes with the different key will not be able to join the cluster (will be rejected based on differing digests).
+
+Ignite uses JDK-provided encryption algorithms: "AES/CBC/PKCS5Padding" to encrypt WAL records and "AES/CBC/NoPadding" to encrypt data pages on disk. To learn more about implementation details, see link:{githubUrl}/modules/core/src/main/java/org/apache/ignite/spi/encryption/keystore/KeystoreEncryptionSpi.java[KeystoreEncryptionSpi, window=_blank].
+
+== Limitations
+
+Transparent Data Encryption has some limitations that you should be aware of before deploying it in your production environment.
+
+*Encryption*
+
+* No option to encrypt/decrypt existing caches/tables.
+
+*Snapshots and Recovery*
+
+* Encryption, changing of master key or cache group key are not allowed during snapshot operations.
+
+== Configuration
+To enable encryption in the cluster, provide a master key in the configuration of each server node. A configuration example is shown below.
+
+
+[tabs]
+--
+tab:XML[]
+
+[source, xml]
+----
+include::code-snippets/xml/tde.xml[tags=ignite-config;!discovery, indent=0]
+
+----
+
+tab:Java[]
+
+[source, java]
+----
+include::{javaCodeDir}/TDE.java[tags=config, indent=0]
+
+----
+
+tab:C#/.NET[]
+tab:C++[unsupported]
+--
+
+
+When the master key is configured, you can enable encryption for a cache as follows:
+
+[tabs]
+--
+tab:XML[]
+
+[source, xml]
+----
+include::code-snippets/xml/tde.xml[tags=cache, indent=0]
+----
+
+tab:Java[]
+
+[source, java]
+----
+include::{javaCodeDir}/TDE.java[tags=cache, indent=0]
+
+----
+
+tab:SQL[]
+[source,sql]
+----
+CREATE TABLE encrypted(
+  ID BIGINT,
+  NAME VARCHAR(10),
+  PRIMARY KEY (ID))
+WITH "ENCRYPTED=true";
+----
+
+--
+
+
+== Master Key Generation Example
+A keystore with a master key can be created using `keytool` as follows:
+
+.Master Key Generation Example
+[source,shell]
+----
+user:~/tmp:[]$ java -version
+java version "1.8.0_161"
+Java(TM) SE Runtime Environment (build 1.8.0_161-b12)
+Java HotSpot(TM) 64-Bit Server VM (build 25.161-b12, mixed mode)
+
+user:~/tmp:[]$ keytool -genseckey \
+-alias ignite.master.key \
+-keystore ./ignite_keystore.jks \
+-storetype PKCS12 \
+-keyalg aes \
+-storepass mypassw0rd \
+-keysize 256
+
+user:~/tmp:[]$ keytool \
+-storepass mypassw0rd \
+-storetype PKCS12 \
+-keystore ./ignite_keystore.jks \
+-list
+
+Keystore type: PKCS12
+Keystore provider: SunJSSE
+
+Your keystore contains 1 entry
+
+ignite.master.key, 07.11.2018, SecretKeyEntry,
+----
+
+== Source Code Example
+link:{githubUrl}/examples/src/main/java/org/apache/ignite/examples/encryption/EncryptedCacheExample.java[EncryptedCacheExample.java, window=_blank]

@@ -229,7 +229,7 @@ public interface GridClientCompute {
      * @return Node for given ID or {@code null} if node with given id was not found.
      * @throws GridClientException If client doesn't have an actual topology version.
      */
-     public GridClientNode node(UUID id) throws GridClientException;
+    public GridClientNode node(UUID id) throws GridClientException;
 
     /**
      * Gets cached nodes for the given IDs based on most recently refreshed topology.

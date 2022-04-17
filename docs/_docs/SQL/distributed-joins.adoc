@@ -1,0 +1,51 @@
+// Licensed to the Apache Software Foundation (ASF) under one or more
+// contributor license agreements.  See the NOTICE file distributed with
+// this work for additional information regarding copyright ownership.
+// The ASF licenses this file to You under the Apache License, Version 2.0
+// (the "License"); you may not use this file except in compliance with
+// the License.  You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+= Distributed Joins
+
+A distributed join is a SQL statement with a join clause that combines two or more partitioned tables.
+If the tables are joined on the partitioning column (affinity key), the join is called a _colocated join_. Otherwise, it is called a _non-colocated join_.
+
+Colocated joins are more efficient because they can be effectively distributed between the cluster nodes.
+
+By default, Ignite treats each join query as if it is a colocated join and executes it accordingly (see the corresponding section below).
+
+WARNING: If your query is non-colocated, you have to enable the non-colocated mode of query execution by setting `SqlFieldsQuery.setDistributedJoins(true)`; otherwise, the results of the query execution may be incorrect.
+
+[CAUTION]
+====
+If you often join tables, we recommend that you partition your tables on the same column (on which you join the tables).
+
+Non-colocated joins should be reserved for cases when it's impossible to use colocated joins.
+====
+
+== Colocated Joins
+
+The following image illustrates the procedure of executing a colocated join. A colocated join (`Q`) is sent to all the nodes that store the data matching the query condition. Then the query is executed over the local data set on each node (`E(Q)`). The results (`R`) are aggregated on the node that initiated the query (the client node).
+
+image::images/collocated_joins.png[]
+
+
+== Non-colocated Joins
+
+If you execute a query in a non-colocated mode, the SQL Engine executes the query locally on all the nodes that store the data matching the query condition. But because the data is not colocated, each node will request missing data (that is not present locally) from other nodes by sending either broadcast or unicast requests. This process is depicted on the image below.
+
+image::images/non_collocated_joins.png[]
+
+If the join is done on the primary or affinity key, the nodes send unicast requests because in this case the nodes know the location of the missing data. Otherwise, nodes send broadcast requests. For performance reasons, both broadcast and unicast requests are aggregated into batches.
+
+Enable the non-colocated mode of query execution by setting a JDBC/ODBC parameter or, if you use SQL API, by calling `SqlFieldsQuery.setDistributedJoins(true)`.
+
+WARNING: If you use a non-collocated join on a column from a link:data-modeling/data-partitioning#replicated[replicated table], the column must have an index.
+Otherwise, you will get an exception.

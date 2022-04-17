@@ -1,0 +1,139 @@
+// Licensed to the Apache Software Foundation (ASF) under one or more
+// contributor license agreements.  See the NOTICE file distributed with
+// this work for additional information regarding copyright ownership.
+// The ASF licenses this file to You under the Apache License, Version 2.0
+// (the "License"); you may not use this file except in compliance with
+// the License.  You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+= Machine Learning
+
+== Overview
+
+Apache Ignite Machine Learning (ML) is a set of simple, scalable and efficient tools that allow the building of predictive Machine Learning models without costly data transfers.
+
+The rationale for adding machine and deep learning (DL) to Apache Ignite is quite simple. Today's data scientists have to deal with two major factors that keep ML from mainstream adoption:
+
+* First, the models are trained and deployed (after the training is over) in different systems. The data scientists have to wait for ETL or some other data transfer process to move the data into a system like Apache Mahout or Apache Spark for a training purpose. Then they have to wait while this process completes and redeploy the models in a production environment. The whole process can take hours moving terabytes of data from one system to another. Moreover, the training part usually happens over the old data set.
+
+* The second factor is related to scalability. ML and DL algorithms that have to process data sets which no longer fit within a single server unit are constantly growing. This urges the data scientist to come up with sophisticated solutions o​r turn to distributed computing platforms such as Apache Spark and TensorFlow. However, those platforms mostly solve only a part of the puzzle which is the model training, making it a burden of the developers to decide how do deploy the models in production later.
+
+
+image::images/machine_learning.png[]
+
+
+=== Zero ETL and Massive Scalability
+
+Ignite Machine Learning relies on Ignite's memory-centric storage that brings massive scalability for ML and DL tasks and eliminates the wait imposed by ETL between the different systems. For instance, it allows users to run ML/DL training and inference directly on data stored across memory and disk in an Ignite cluster. Next, Ignite provides a host of ML and DL algorithms that are optimized for Ignite's collocated distributed processing. These implementations deliver in-memory speed and unlimited horizontal scalability when running in place against massive data sets or incrementally against incoming data streams, without requiring the data to be moved into another store. By eliminating the data movement and the long processing wait times, Ignite Machine learning enables continuous learning that can improve decisions based on the latest data as it arrives in real-time.
+
+
+=== Fault Tolerance and Continuous Learning
+
+Apache Ignite Machine Learning is tolerant to node failures. This means that in the case of node failures during the learning process, all recovery procedures will be transparent to the user, learning processes won't be interrupted, and we will get results in the time similar to the case when all nodes work fine. For more information please see link:machine-learning/partition-based-dataset[Partition Based Dataset].
+
+
+== Algorithms and Applicability
+
+=== Classification
+
+Identifying to which category a new observation belongs, on the basis of a training set.
+
+*Applicability:* spam detection, image recognition, credit scoring, disease identification.
+
+*Algorithms:* link:machine-learning/binary-classification/logistic-regression[Logistic Regression], link:machine-learning/binary-classification/linear-svm[Linear SVM (Support Vector Machine)], link:machine-learning/binary-classification/knn-classification[k-NN Classification], link:machine-learning/binary-classification/naive-bayes[Naive Bayes], link:machine-learning/binary-classification/decision-trees[Decision Trees], link:machine-learning/binary-classification/random-forest[Random Forest], link:machine-learning/binary-classification/multilayer-perceptron[Multilayer perceptron], link:machine-learning/ensemble-methods/gradient-boosting[Gradient Boosting], link:machine-learning/binary-classification/ann[ANN (Approximate Nearest Neighbor)].
+
+
+=== Regression
+
+Modeling the relationship between a scalar dependent variable (y) and one or more explanatory variables or independent variables (x).
+
+
+*Applicability:* drug response, stock prices, supermarket revenue.
+
+*Algorithms:* Linear Regression, Decision Trees Regression, k-NN Regression.
+
+=== Clustering
+
+Grouping a set of objects in such a way that objects in the same group (called a cluster) are more similar (in some sense) to each other than to those in other groups (clusters).
+
+*Applicability:* customer segmentation, grouping experiment outcomes, grouping of shopping items.
+
+*Algorithms:* K-Means Clustering, Gaussian mixture (GMM).
+
+=== Recommendation
+
+Building a recommendation system, which is a subclass of information filtering systems that seeks to predict the "rating" or "preference" a user would give to an item.
+
+*Applicability:*  playlist generators for video and music services, product recommenders for services
+
+*Algorithms:* link:machine-learning/recommendation-systems[Matrix Factorization].
+
+=== Preprocessing
+
+Feature extraction and normalization.
+
+*Applicability:* transform input data such as text for use with machine learning algorithms, to extract features we need to fit on, to normalize input data.
+
+*Algorithms:* Apache Ignite ML supports custom preprocessing using partition based dataset capabilities and has default link:machine-learning/preprocessing[preprocessors] such as normalization preprocessor, one-hot-encoder, min-max scaler and so on.
+
+
+== Getting Started
+
+The fastest way to get started with the Machine Learning is to build and run existing examples, study their output and keep coding. The ML examples are located in the https://github.com/apache/ignite/tree/master/examples/src/main/java/org/apache/ignite/examples/ml[examples] folder of every Apache Ignite distribution.
+
+Follow the steps below to try out the examples:
+
+. Download Apache Ignite version 2.8 or later.
+. Open the `examples` project in an IDE, such as IntelliJ IDEA or Eclipse.
+. Go to the `src/main/java/org/apache/ignite/examples/ml` folder in the IDE and run an ML example.
+
+The examples do not require any special configuration. All ML  examples will launch, run and stop successfully without any user intervention and provide meaningful output on the console. Additionally, the Tracer API example will launch a web browser and generate HTML output.
+
+=== Get it With Maven
+
+Add the Maven dependency below to your project in order to include the ML functionality provided by Ignite:
+
+[source, xml]
+----
+<dependency>
+    <groupId>org.apache.ignite</groupId>
+    <artifactId>ignite-ml</artifactId>
+    <version>${ignite.version}</version>
+</dependency>
+
+----
+
+
+Replace `${ignite-version}` with an actual Ignite version.
+
+=== Build From Sources
+
+The latest Apache Ignite Machine Learning jar is always uploaded to the Maven repository. If you need to take the jar and deploy it in a custom environment, then it can be either downloaded from Maven or built from scratch. To build the Machine Learning component from sources:
+
+1. Download the latest Apache Ignite source release.
+2. Clean the local Maven repository (this is to ensure that older Maven builds don’t impact the build).
+3. Build and install Apache Ignite from the project's root directory:
++
+[source, shell]
+----
+./mvnw clean install -DskipTests -Dmaven.javadoc.skip=true
+----
+
+4. Locate the Machine Learning jar in your local Maven repository under the path `{user_dir}/.m2/repository/org/apache/ignite/ignite-ml/{ignite-version}/ignite-ml-{ignite-version}.jar`.
+
+5. If you want to build ML or DL examples from sources, execute the following commands:
++
+[source, shell]
+----
+cd examples
+mvn clean package -DskipTests
+----
+
+
+If needed, refer to `DEVNOTES.txt` in the project's root folder and the `README` files in the `ignite-ml` component for more details.

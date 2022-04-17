@@ -1,0 +1,92 @@
+// Licensed to the Apache Software Foundation (ASF) under one or more
+// contributor license agreements.  See the NOTICE file distributed with
+// this work for additional information regarding copyright ownership.
+// The ASF licenses this file to You under the Apache License, Version 2.0
+// (the "License"); you may not use this file except in compliance with
+// the License.  You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+= Objects Lifetime in Ignite.C++
+
+== Ignite Objects
+
+Apache Ignite objects, such as `Ignite` or `Cache`, that are created using Ignite public APIs are implemented as a thin
+handler of an internal/underlying object and can be safely and quickly copied or passed to functions by value. It is also
+a recommended way for passing Ignite objects from one function to another because an underlying object lives as long as
+there is at least one handler object alive.
+
+[tabs]
+--
+tab:C++[]
+[source,cpp]
+----
+// Fast and safe passing of the ignite::Ignite instance to the function.
+// Here 'val' points to the same underlying node instance even though
+// Ignite object gets copied on call.
+// It's guarateed that the underlying object will live as long as 'val'
+// object is alive.
+void Foo(ignite::Ignite val)
+{
+  ...
+}
+----
+--
+
+== Custom Objects
+Your application can put in Ignite custom objects which lifetime can not be easily
+determined during the compilation. For example, when a `ContinuousQuery` instance is created, you are required to
+provide the continuous query with an instance of the local listener - `CacheEntryEventListener`. In such a case, it is
+unclear whether it is the responsibility of Apache Ignite or the application to manage the local listener's lifetime and
+release it once it is no longer needed.
+
+Apache Ignite C{pp} is pretty flexible in this part. It uses `ignite::Reference` class to address custom objects ownership
+problem. Refer to the code below to see how this class can be used in practice.
+
+[tabs]
+--
+tab:C++[]
+[source,cpp]
+----
+// Ignite function that takes a value of 'SomeType'.
+void Foo(ignite::Reference<SomeType> val);
+
+//...
+
+// Defining an object.
+SomeType obj1;
+
+// Passing a simple reference to the function.
+// Ignite will not get ownership over the instance.
+// The application is responsible for keeping instance alive while
+// it's used by Ignite and for releasing it once it is no longer needed.
+Foo(ignite::MakeReference(obj1);
+
+// Passing the object by copy.
+// Ignite gets a copy of the object instance and manages
+// its lifetime by itself.
+// 'SomeType' is required to have a copy constructor.
+foo(ignite::MakeReferenceFromCopy(obj1);
+
+// Defining another object.
+SomeType* obj2 = new SomeType;
+
+// Passing object's ownership to the function.
+// Ignite will release the object once it's no longer needed.
+// The applicaiton must not use the pointer once it have been passed
+// to Ignite as it might be released at any point of time.
+foo(ignite::MakeReferenceFromOwningPointer(obj2);
+
+std::shared_ptr<SomeType> obj3 = std::make_shared<SomeType>();
+
+// Passing the object by smart pointer.
+// In this case, Reference class behaves just like an underlying
+// smart pointer type.
+foo(ignite::MakeReferenceFromSmartPointer(obj3);
+----
+--

@@ -17,20 +17,36 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.near.consistency;
 
+import java.util.Collections;
+import java.util.Set;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 
 /**
- * Possible consistency violation exception.
- * Each such case should be rechecked under locks.
+ * Consistency violation exception.
  */
 public class IgniteConsistencyViolationException extends IgniteCheckedException {
     /** */
     private static final long serialVersionUID = 0L;
 
+    /** Inconsistent entries keys. */
+    private final Set<KeyCacheObject> keys;
+
     /**
-     * @param msg Message.
+     * @param keys Keys.
      */
-    public IgniteConsistencyViolationException(String msg) {
-        super(msg);
+    public IgniteConsistencyViolationException(Set<KeyCacheObject> keys) {
+        super("Distributed cache consistency violation detected.");
+
+        assert keys != null && !keys.isEmpty();
+
+        this.keys = Collections.unmodifiableSet(keys);
+    }
+
+    /**
+     * Inconsistent entries keys.
+     */
+    public Set<KeyCacheObject> keys() {
+        return keys;
     }
 }

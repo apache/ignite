@@ -264,7 +264,7 @@ public class CacheNearReaderUpdateTest extends GridCommonAbstractTest {
 
                     if (getNode.configuration().isClientMode() ||
                         cache.getConfiguration(CacheConfiguration.class).getNearConfiguration() != null)
-                    assertNotNull(getNode.cache(cacheName).localPeek(key));
+                        assertNotNull(getNode.cache(cacheName).localPeek(key));
                 }
 
                 checkValue(key, val, cacheName);

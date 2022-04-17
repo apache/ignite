@@ -277,12 +277,12 @@ public class GridExecutorService implements ExecutorService, Externalizable {
         try {
             IgniteInternalFuture<T> fut = ctx.closure().runAsync(BALANCE, task, prj.nodes()).chain(
                 new CX1<IgniteInternalFuture<?>, T>() {
-                @Override public T applyx(IgniteInternalFuture<?> fut) throws IgniteCheckedException {
-                    fut.get();
+                    @Override public T applyx(IgniteInternalFuture<?> fut) throws IgniteCheckedException {
+                        fut.get();
 
-                    return res;
-                }
-            });
+                        return res;
+                    }
+                });
 
             return addFuture(fut);
         }

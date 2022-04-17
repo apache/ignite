@@ -106,7 +106,9 @@ for /f "tokens=1-3  delims= " %%a in ("%var%") do set JAVA_VER_STR=%%c
 set JAVA_VER_STR=%JAVA_VER_STR:"=%
 
 for /f "tokens=1,2 delims=." %%a in ("%JAVA_VER_STR%.x") do set MAJOR_JAVA_VER=%%a& set MINOR_JAVA_VER=%%b
+if %MAJOR_JAVA_VER% == 1 set MAJOR_JAVA_VER=%MINOR_JAVA_VER%
 
+<<<<<<< HEAD
 if %MAJOR_JAVA_VER% == 8 (
     set JVM_OPTS= ^
     -XX:+AggressiveOpts ^
@@ -137,6 +139,9 @@ if %MAJOR_JAVA_VER% GEQ 11 (
     --illegal-access=permit ^
     %JVM_OPTS%
 )
+=======
+call "%SCRIPTS_HOME%\include\jvmdefaults.bat" %MAJOR_JAVA_VER% "%JVM_OPTS%" JVM_OPTS
+>>>>>>> upstream/master
 
 set CP=%IGNITE_LIBS%
 set CP=%CP%;%IGNITE_HOME%\bin\include\sqlline\*
@@ -144,7 +149,13 @@ set CP=%CP%;%IGNITE_HOME%\bin\include\sqlline\*
 :: Between version 2 and 3, jline changed the format of its history file. After this change,
 :: the Ignite provides --historyfile argument to SQLLine usage
 set SQLLINE_HISTORY=%HOMEPATH%\.sqlline\ignite_history
+<<<<<<< HEAD
 
 "%JAVA_HOME%\bin\java.exe" %JVM_OPTS% -cp "%CP%" sqlline.SqlLine --historyFile=%SQLLINE_HISTORY% %*
 
+=======
+
+"%JAVA_HOME%\bin\java.exe" %JVM_OPTS% -cp "%CP%" sqlline.SqlLine --historyFile=%SQLLINE_HISTORY% %*
+
+>>>>>>> upstream/master
 :error_finish

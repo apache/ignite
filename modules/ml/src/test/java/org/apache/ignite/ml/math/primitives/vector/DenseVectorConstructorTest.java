@@ -17,6 +17,7 @@
 
 package org.apache.ignite.ml.math.primitives.vector;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import org.apache.ignite.ml.math.exceptions.UnsupportedOperationException;
@@ -34,18 +35,16 @@ public class DenseVectorConstructorTest {
     @Test(expected = UnsupportedOperationException.class)
     public void mapInvalidArgsTest() {
         assertEquals("Expect exception due to invalid args.", IMPOSSIBLE_SIZE,
-            new DenseVector(new HashMap<String, Object>() {{
-                put("invalid", 99);
-            }}).size());
+            new DenseVector(Collections.singletonMap("invalid", 99)).size());
     }
 
     /** */
     @Test(expected = UnsupportedOperationException.class)
     public void mapMissingArgsTest() {
-        final Map<String, Object> test = new HashMap<String, Object>() {{
-            put("arr", new double[0]);
-            put("shallowCopyMissing", "whatever");
-        }};
+        final Map<String, Object> test = new HashMap<>();
+
+        test.put("arr", new double[0]);
+        test.put("shallowCopyMissing", "whatever");
 
         assertEquals("Expect exception due to missing args.", IMPOSSIBLE_SIZE,
             new DenseVector(test).size());
@@ -54,9 +53,7 @@ public class DenseVectorConstructorTest {
     /** */
     @Test(expected = ClassCastException.class)
     public void mapInvalidArrTypeTest() {
-        final Map<String, Object> test = new HashMap<String, Object>() {{
-            put("size", "whatever");
-        }};
+        final Map<String, Object> test = Collections.singletonMap("size", "whatever");
 
         assertEquals("Expect exception due to invalid arr type.", IMPOSSIBLE_SIZE,
             new DenseVector(test).size());
@@ -65,10 +62,10 @@ public class DenseVectorConstructorTest {
     /** */
     @Test(expected = UnsupportedOperationException.class)
     public void mapInvalidCopyTypeTest() {
-        final Map<String, Object> test = new HashMap<String, Object>() {{
-            put("arr", new double[0]);
-            put("shallowCopy", 0);
-        }};
+        final Map<String, Object> test = new HashMap<String, Object>();
+
+        test.put("arr", new double[0]);
+        test.put("shallowCopy", 0);
 
         assertEquals("Expect exception due to invalid copy type.", IMPOSSIBLE_SIZE,
             new DenseVector(test).size());
@@ -86,23 +83,20 @@ public class DenseVectorConstructorTest {
     @Test
     public void mapTest() {
         assertEquals("Size from args.", 99,
-            new DenseVector(new HashMap<String, Object>() {{
-                put("size", 99);
-            }}).size());
+            new DenseVector(Collections.singletonMap("size", 99)).size());
 
         final double[] test = new double[99];
 
-        assertEquals("Size from array in args.", test.length,
-            new DenseVector(new HashMap<String, Object>() {{
-                put("arr", test);
-                put("copy", false);
-            }}).size());
+        Map<String, Object> map = new HashMap<>();
 
-        assertEquals("Size from array in args, shallow copy.", test.length,
-            new DenseVector(new HashMap<String, Object>() {{
-                put("arr", test);
-                put("copy", true);
-            }}).size());
+        map.put("arr", test);
+        map.put("copy", false);
+
+        assertEquals("Size from array in args.", test.length, new DenseVector(map).size());
+
+        map.put("copy", true);
+
+        assertEquals("Size from array in args, shallow copy.", test.length, new DenseVector(map).size());
     }
 
     /** */

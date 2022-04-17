@@ -25,9 +25,6 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.io.Writer;
-import java.nio.channels.FileChannel;
-import java.nio.channels.FileLock;
-import java.nio.channels.OverlappingFileLockException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.concurrent.ThreadLocalRandom;
@@ -38,6 +35,9 @@ import org.apache.ignite.internal.util.GridStripedLock;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.MarshallerContext;
+
+import static java.nio.file.StandardCopyOption.ATOMIC_MOVE;
+import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 
 /**
  * File-based persistence provider for {@link MarshallerContextImpl}.
@@ -50,9 +50,6 @@ import org.apache.ignite.marshaller.MarshallerContext;
 final class MarshallerMappingFileStore {
     /** */
     private static final String FILE_EXTENSION = ".classname";
-
-    /** File lock timeout in milliseconds. */
-    private static final int FILE_LOCK_TIMEOUT_MS = 5000;
 
     /** */
     private static final GridStripedLock fileLock = new GridStripedLock(32);
@@ -74,8 +71,7 @@ final class MarshallerMappingFileStore {
      * @param kctx Grid kernal context.
      * @param workDir custom marshaller work directory.
      */
-    MarshallerMappingFileStore(final GridKernalContext kctx,
-        final File workDir) throws IgniteCheckedException {
+    MarshallerMappingFileStore(final GridKernalContext kctx, final File workDir) throws IgniteCheckedException {
         this.ctx = kctx;
         this.mappingDir = workDir;
         log = kctx.log(MarshallerMappingFileStore.class);
@@ -88,80 +84,30 @@ final class MarshallerMappingFileStore {
      * @param typeId Type id.
      * @param typeName Type name.
      */
-    void writeMapping(byte platformId, int typeId, String typeName) {
+    public void writeMapping(byte platformId, int typeId, String typeName) {
         String fileName = getFileName(platformId, typeId);
 
+        File tmpFile = new File(mappingDir, fileName + ThreadLocalRandom.current().nextInt() + ".tmp");
+        File file = new File(mappingDir, fileName);
+
         Lock lock = fileLock(fileName);
 
         lock.lock();
 
         try {
-            File file = new File(mappingDir, fileName);
-
-            try (FileOutputStream out = new FileOutputStream(file)) {
+            try (FileOutputStream out = new FileOutputStream(tmpFile)) {
                 try (Writer writer = new OutputStreamWriter(out, StandardCharsets.UTF_8)) {
-                    try (FileLock ignored = fileLock(out.getChannel(), false)) {
-                        writer.write(typeName);
+                    writer.write(typeName);
 
-                        writer.flush();
-                    }
+                    writer.flush();
                 }
             }
-            catch (IOException e) {
-                U.error(log, "Failed to write class name to file [platformId=" + platformId + "id=" + typeId +
-                        ", clsName=" + typeName + ", file=" + file.getAbsolutePath() + ']', e);
-            }
-            catch (OverlappingFileLockException ignored) {
-                if (log.isDebugEnabled())
-                    log.debug("File already locked (will ignore): " + file.getAbsolutePath());
-            }
-            catch (IgniteInterruptedCheckedException e) {
-                U.error(log, "Interrupted while waiting for acquiring file lock: " + file, e);
-            }
+
+            Files.move(tmpFile.toPath(), file.toPath(), REPLACE_EXISTING, ATOMIC_MOVE);
         }
-        finally {
-            lock.unlock();
-        }
-    }
-
-    /**
-     * @param fileName File name.
-     */
-    private String readMapping(String fileName) throws IgniteCheckedException {
-        ThreadLocalRandom rnd = null;
-
-        Lock lock = fileLock(fileName);
-
-        lock.lock();
-
-        try {
-            File file = new File(mappingDir, fileName);
-
-            long time = 0;
-
-            while (true) {
-                try (FileInputStream in = new FileInputStream(file)) {
-                    try (BufferedReader reader = new BufferedReader(new InputStreamReader(in, StandardCharsets.UTF_8))) {
-                        try (FileLock ignored = fileLock(in.getChannel(), true)) {
-                            if (file.length() > 0)
-                                return reader.readLine();
-
-                            if (rnd == null)
-                                rnd = ThreadLocalRandom.current();
-
-                            if (time == 0)
-                                time = System.nanoTime();
-                            else if (U.millisSinceNanos(time) >= FILE_LOCK_TIMEOUT_MS)
-                                return null;
-
-                            U.sleep(rnd.nextLong(50));
-                        }
-                    }
-                }
-                catch (IOException ignored) {
-                    return null;
-                }
-            }
+        catch (IOException e) {
+            U.error(log, "Failed to write class name to file [platformId=" + platformId + ", id=" + typeId +
+                ", clsName=" + typeName + ", file=" + file.getAbsolutePath() + ']', e);
         }
         finally {
             lock.unlock();
@@ -172,8 +118,37 @@ final class MarshallerMappingFileStore {
      * @param platformId Platform id.
      * @param typeId Type id.
      */
-    String readMapping(byte platformId, int typeId) throws IgniteCheckedException {
+    public String readMapping(byte platformId, int typeId) {
         return readMapping(getFileName(platformId, typeId));
+    }
+
+    /**
+     * @param fileName File name.
+     */
+    private String readMapping(String fileName) {
+        Lock lock = fileLock(fileName);
+
+        lock.lock();
+
+        try {
+            File file = new File(mappingDir, fileName);
+
+            try (FileInputStream in = new FileInputStream(file)) {
+                try (BufferedReader reader = new BufferedReader(new InputStreamReader(in, StandardCharsets.UTF_8))) {
+                    if (file.length() == 0)
+                        return null;
+
+                    return reader.readLine();
+                }
+
+            }
+            catch (IOException ignored) {
+                return null;
+            }
+        }
+        finally {
+            lock.unlock();
+        }
     }
 
     /**
@@ -310,7 +285,7 @@ final class MarshallerMappingFileStore {
      * @param platformId Platform id.
      * @param typeId Type id.
      */
-    private String getFileName(byte platformId, int typeId) {
+    String getFileName(byte platformId, int typeId) {
         return typeId + FILE_EXTENSION + platformId;
     }
 
@@ -320,25 +295,5 @@ final class MarshallerMappingFileStore {
      */
     private static Lock fileLock(String fileName) {
         return fileLock.getLock(fileName.hashCode());
-    }
-
-    /**
-     * @param ch File channel.
-     * @param shared Shared.
-     */
-    private static FileLock fileLock(
-            FileChannel ch,
-            boolean shared
-    ) throws IOException, IgniteInterruptedCheckedException {
-        ThreadLocalRandom rnd = ThreadLocalRandom.current();
-
-        while (true) {
-            FileLock fileLock = ch.tryLock(0L, Long.MAX_VALUE, shared);
-
-            if (fileLock != null)
-                return fileLock;
-
-            U.sleep(rnd.nextLong(50));
-        }
     }
 }

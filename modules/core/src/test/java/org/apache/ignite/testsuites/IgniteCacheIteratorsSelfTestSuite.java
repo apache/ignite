@@ -41,5 +41,5 @@ public class IgniteCacheIteratorsSelfTestSuite {
         GridTestUtils.addTestIfNeeded(suite, GridCachePartitionedIteratorsSelfTest.class, ignoredTests);
 
         return suite;
-   }
+    }
 }

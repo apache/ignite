@@ -1,0 +1,49 @@
+// Licensed to the Apache Software Foundation (ASF) under one or more
+// contributor license agreements.  See the NOTICE file distributed with
+// this work for additional information regarding copyright ownership.
+// The ASF licenses this file to You under the Apache License, Version 2.0
+// (the "License"); you may not use this file except in compliance with
+// the License.  You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+= Generic Performance Tips
+
+Ignite as distributed storages and platforms require certain optimization techniques. Before you dive
+into the more advanced techniques described in this and other articles, consider the following basic checklist:
+
+* Ignite is designed and optimized for distributed computing scenarios. Deploy and benchmark a multi-node cluster
+rather than a single-node one.
+
+* Ignite can scale horizontally and vertically equally well.
+Thus, consider allocating all the CPU and RAM resources available on a local machine to an Ignite node.
+A single node per physical machine is a recommended configuration.
+
+* In cases when Ignite is deployed in a virtual or cloud environment, it's ideal (but not strictly required) to
+pin a Ignite node to a single host. This provides two benefits:
+
+** Avoids the "noisy neighbor" problem where Ignite VM would compete for the host resources with other applications.
+This might cause performance spikes on your Ignite cluster.
+** Ensures high-availability. If a host goes down and you have two or more Ignite server node VMs pinned to it, then it can lead to data loss.
+
+* If resources allow, store the entire data set in RAM. Even though Ignite can keep and work with on-disk data,
+its architecture is memory-first. In other words, _the more data you cache in RAM the faster the performance_.
+link:perf-and-troubleshooting/memory-tuning[Configure and tune] memory appropriately.
+
+* It might seem counter to the bullet point above but it's not enough just to put data in RAM and expect an
+order of magnitude performance improvements. Be ready to adjust your data model and existing applications if any.
+Use the link:data-modeling/affinity-collocation[affinity colocation] concept during the data
+modelling phase for proper data distribution. For instance, if your data is properly colocated, you can run SQL
+queries with JOINs at massive scale and expect significant performance benefits.
+
+* If Native persistence is used, then follow these link:perf-and-troubleshooting/persistence-tuning[persistence optimization techniques].
+
+* If you are going to run SQL with Ignite, then get to know link:perf-and-troubleshooting/sql-tuning[SQL-related optimizations].
+
+* Adjust link:data-rebalancing[data rebalancing settings] to ensure that rebalancing completes faster when your cluster topology changes.
+

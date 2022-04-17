@@ -1,0 +1,247 @@
+// Licensed to the Apache Software Foundation (ASF) under one or more
+// contributor license agreements.  See the NOTICE file distributed with
+// this work for additional information regarding copyright ownership.
+// The ASF licenses this file to You under the Apache License, Version 2.0
+// (the "License"); you may not use this file except in compliance with
+// the License.  You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+= Using PHP PDO With Apache Ignite
+
+== Overview
+
+PHP provides a lightweight, consistent interface for accessing databases named PHP Data Objects - PDO. This extension works
+with several database-specific PDO drivers. One of them is http://php.net/manual/en/ref.pdo-odbc.php[PDO_ODBC, window=_blank],
+which allows connecting to any database that provides its own ODBC driver implementation.
+
+With the usage of Apache Ignite's ODBC driver, it's possible to connect to an Apache Ignite cluster from a PHP application
+ accessing and modifying data that is stored there.
+
+== Setting Up ODBC Driver
+
+Apache Ignite conforms to ODBC protocol and has its own ODBC driver that is delivered along with other functionality.
+This is the driver that will be used by PHP PDO framework going forward in order to connect to an Apache Ignite cluster.
+
+Refer to the Ignite link:SQL/ODBC/odbc-driver[ODBC Driver] documentation to configure and install the driver
+on a target system. Once the driver is installed and functional move to the next sections of this guide below.
+
+== Installing and Configuring PHP PDO
+
+To install PHP, PDO and the PDO_ODBC driver refer to the generic PHP resources:
+
+* http://php.net/downloads.php[Download, window=_blank] and install the desired PHP version. Note, that PDO driver is
+enabled by default in PHP as of PHP 5.1.0. On Windows environment you can download PHP binary from the
+http://windows.php.net/download[following page, window=_blank].
+* http://php.net/manual/en/book.pdo.php[Configure, window=_blank] PHP PDO framework.
+* http://php.net/manual/en/ref.pdo-odbc.php[Enable, window=_blank] PDO_ODBC driver.
+  ** On Windows it may be needed to uncomment `extension=php_pdo_odbc.dll` line in the php.ini and make sure that `extension_dir`
+points to a directory which contains `php_pdo_odbc.dll`. Moreover, this directory has to be added to `PATH` environment variable.
+  ** On Unix based systems most often it's simply required to install a special PHP_ODBC package. For instance, `php5-odbc`
+package has to be installed on Ubuntu 14.04.
+* If necessary, http://php.net/manual/en/ref.pdo-odbc.php#ref.pdo-odbc.installation[configure, window=_blank] and build PDO_ODBC driver
+for a specific system that does not fall under a general case. In most cases, however, simple installation of both PHP
+and PDO_ODBC driver is going to be enough.
+
+== Starting Ignite Cluster
+
+After PHP PDO is installed and ready to be used let's start an Ignite cluster with an exemplary configuration and connect
+to the cluster from a PHP application updating and querying cluster's data:
+
+* First, the ODBC processor has to be enabled cluster wide. To do so, `odbcConfiguration` property has to be added to
+`IgniteConfiguration` of every cluster node.
+
+* Next, list configurations for all the caches related to specific data models inside of `IgniteConfiguration`.
+Since we're going to execute SQL queries from PHP PDO side over the cluster, every cache configuration needs to contain
+a definition for `QueryEntity`. Alternatively, you can define SQL tables and indexes with Ignite DDL commands.
+
+* Finally, use the configuration template below to start an Ignite cluster
++
+[tabs]
+--
+tab:XML[]
+[source,xml]
+----
+<?xml version="1.0" encoding="UTF-8"?>
+
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:util="http://www.springframework.org/schema/util"
+       xsi:schemaLocation="
+        http://www.springframework.org/schema/beans
+        http://www.springframework.org/schema/beans/spring-beans.xsd
+        http://www.springframework.org/schema/util
+        http://www.springframework.org/schema/util/spring-util.xsd">
+  <bean id="ignite.cfg" class="org.apache.ignite.configuration.IgniteConfiguration">
+
+    <!-- Enabling ODBC. -->
+    <property name="odbcConfiguration">
+      <bean class="org.apache.ignite.configuration.OdbcConfiguration"></bean>
+    </property>
+
+    <!-- Configuring cache. -->
+    <property name="cacheConfiguration">
+      <list>
+        <bean class="org.apache.ignite.configuration.CacheConfiguration">
+          <property name="name" value="Person"/>
+          <property name="cacheMode" value="PARTITIONED"/>
+          <property name="atomicityMode" value="TRANSACTIONAL"/>
+          <property name="writeSynchronizationMode" value="FULL_SYNC"/>
+
+          <property name="queryEntities">
+            <list>
+              <bean class="org.apache.ignite.cache.QueryEntity">
+                <property name="keyType" value="java.lang.Long"/>
+                <property name="valueType" value="Person"/>
+
+                <property name="fields">
+                  <map>
+                    <entry key="firstName" value="java.lang.String"/>
+                    <entry key="lastName" value="java.lang.String"/>
+                    <entry key="resume" value="java.lang.String"/>
+                    <entry key="salary" value="java.lang.Integer"/>
+                  </map>
+                </property>
+
+                <property name="indexes">
+                  <list>
+                    <bean class="org.apache.ignite.cache.QueryIndex">
+                      <constructor-arg value="salary"/>
+                    </bean>
+                  </list>
+                </property>
+              </bean>
+            </list>
+          </property>
+        </bean>
+      </list>
+    </property>
+  </bean>
+</beans>
+----
+--
+
+== Connecting From PHP to Ignite Cluster
+
+To connect to Ignite from PHP PDO side the DSN has to be properly configured for Ignite.
+Refer to the link:SQL/ODBC/connection-string-dsn#configuring-dsn[Configuring DSN] documentation page for details.
+
+In the example below it's assumed that DSN's name is "LocalApacheIgniteDSN". Once everything is configured and can be
+inter-connected it's time to connect to the Apache Ignite cluster from a PHP PDO application and execute a number of
+queries like the ones shown below.
+[tabs]
+--
+tab:Insert[]
+[source,php]
+----
+<?php
+try {
+    // Connecting to Ignite using pre-configured DSN.
+    $dbh = new PDO('odbc:LocalApacheIgniteDSN');
+
+    // Changing PDO error mode.
+    $dbh->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+
+    // Preparing query.
+    $dbs = $dbh->prepare('INSERT INTO Person (_key, firstName, lastName, resume, salary)
+        VALUES (?, ?, ?, ?, ?)');
+
+    // Declaring parameters.
+    $key = 777;
+    $firstName = "James";
+    $lastName = "Bond";
+    $resume = "Secret Service agent";
+    $salary = 65000;
+
+    // Binding parameters.
+    $dbs->bindParam(1, $key);
+    $dbs->bindParam(2, $firstName);
+    $dbs->bindParam(3, $lastName);
+    $dbs->bindParam(4, $resume);
+    $dbs->bindParam(5, $salary);
+
+    // Executing the query.
+    $dbs->execute();
+
+} catch (PDOException $e) {
+    print "Error!: " . $e->getMessage() . "\n";
+    die();
+}
+?>
+----
+tab:Update[]
+[source,php]
+----
+<?php
+try {
+    // Connecting to Ignite using pre-configured DSN.
+    $dbh = new PDO('odbc:LocalApacheIgniteDSN');
+
+    // Changing PDO error mode.
+    $dbh->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+
+    // Executing the query. The salary field is an indexed field.
+    $dbh->query('UPDATE Person SET salary = 42000 WHERE salary > 50000');
+
+} catch (PDOException $e) {
+    print "Error!: " . $e->getMessage() . "\n";
+    die();
+}
+?>
+----
+tab:Select[]
+[source,php]
+----
+<?php
+try {
+    // Connecting to Ignite using pre-configured DSN.
+    $dbh = new PDO('odbc:LocalApacheIgniteDSN');
+
+    // Changing PDO error mode.
+    $dbh->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+
+    // Executing the query and getting a result set. The salary field is an indexed field.
+    $res = $dbh->query('SELECT firstName, lastName, resume, salary from Person
+        WHERE salary > 12000');
+
+    if ($res == FALSE)
+        print_r("Exception");
+
+    // Printing results.
+    foreach($res as $row) {
+        print_r($row);
+    }
+
+} catch (PDOException $e) {
+    print "Error!: " . $e->getMessage() . "\n";
+    die();
+}
+?>
+----
+tab:Delete[]
+[source,php]
+----
+<?php
+try {
+    // Connecting to Ignite using pre-configured DSN.
+    $dbh = new PDO('odbc:LocalApacheIgniteDSN');
+
+    // Changing PDO error mode.
+    $dbh->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+
+    // Performing query. Both firstName and lastName are non indexed fields.
+    $dbh->query('DELETE FROM Person WHERE firstName = \'James\' and lastName = \'Bond\'');
+
+} catch (PDOException $e) {
+    print "Error!: " . $e->getMessage() . "\n";
+    die();
+}
+?>
+----
+--
+

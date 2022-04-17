@@ -25,17 +25,20 @@
 
     <parent>
         <groupId>org.apache.ignite</groupId>
-        <artifactId>ignite-parent</artifactId>
-        <version>1</version>
-        <relativePath>../../parent</relativePath>
+        <artifactId>ignite-parent-internal</artifactId>
+        <version>${revision}</version>
+        <relativePath>../../parent-internal/pom.xml</relativePath>
     </parent>
 
     <artifactId>ignite-yarn</artifactId>
+<<<<<<< HEAD
     <version>${revision}</version>
+=======
+>>>>>>> upstream/master
     <url>http://ignite.apache.org</url>
 
     <properties>
-        <hadoop-yarn.version>2.7.7</hadoop-yarn.version>
+        <hadoop-yarn.version>3.3.1</hadoop-yarn.version>
     </properties>
 
     <dependencies>
@@ -92,7 +95,10 @@
         <dependency>
             <groupId>${project.groupId}</groupId>
             <artifactId>ignite-tools</artifactId>
+<<<<<<< HEAD
             <version>${project.version}</version>
+=======
+>>>>>>> upstream/master
             <scope>test</scope>
         </dependency>
 

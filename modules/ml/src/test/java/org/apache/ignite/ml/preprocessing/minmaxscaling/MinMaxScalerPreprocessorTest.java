@@ -52,8 +52,8 @@ public class MinMaxScalerPreprocessorTest {
             {0., (22. - 4.) / 18., (300. - 1.) / 299.}
         };
 
-       for (int i = 0; i < data.length; i++)
-           assertArrayEquals(standardData[i], preprocessor.apply(i, data[i]).features().asArray(), 1e-8);
+        for (int i = 0; i < data.length; i++)
+            assertArrayEquals(standardData[i], preprocessor.apply(i, data[i]).features().asArray(), 1e-8);
     }
 
     /** Test {@code apply()} method with division by zero. */

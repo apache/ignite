@@ -40,6 +40,10 @@ public class LazyServiceConfiguration extends ServiceConfiguration {
     /** */
     private byte[] srvcBytes;
 
+    /** Names of platform service methods to build service statistics. */
+    @GridToStringExclude
+    private String[] platformMtdNames;
+
     /**
      * Default constructor.
      */
@@ -64,6 +68,7 @@ public class LazyServiceConfiguration extends ServiceConfiguration {
         this.srvcBytes = srvcBytes;
         srvc = cfg.getService();
         srvcClsName = srvc.getClass().getName();
+        isStatisticsEnabled = cfg.isStatisticsEnabled();
     }
 
     /**
@@ -117,6 +122,18 @@ public class LazyServiceConfiguration extends ServiceConfiguration {
             return false;
 
         return true;
+    }
+
+    /** */
+    LazyServiceConfiguration platformMtdNames(String[] platformMtdNames) {
+        this.platformMtdNames = platformMtdNames;
+
+        return this;
+    }
+
+    /** @return Names of known service methods. */
+    String[] platformMtdNames() {
+        return platformMtdNames;
     }
 
     /** {@inheritDoc} */
