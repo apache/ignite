@@ -219,6 +219,8 @@
             <properties>
                 <spark.folder>src/main/spark</spark.folder>
                 <spark.test.folder>src/test/spark</spark.test.folder>
+                <spark.janino.version>3.0.8</spark.janino.version>
+                <spark.jackson.version>2.6.7</spark.jackson.version>
             </properties>
 
             <dependencies>
@@ -233,6 +235,48 @@
                             <artifactId>scala-library</artifactId>
                         </exclusion>
                     </exclusions>
+                </dependency>
+
+                <dependency>
+                    <groupId>org.codehaus.janino</groupId>
+                    <artifactId>commons-compiler</artifactId>
+                    <version>${spark.janino.version}</version>
+                </dependency>
+
+                <dependency>
+                    <groupId>org.codehaus.janino</groupId>
+                    <artifactId>janino</artifactId>
+                    <version>${spark.janino.version}</version>
+                </dependency>
+
+                <dependency>
+                    <groupId>org.codehaus.janino</groupId>
+                    <artifactId>commons-compiler</artifactId>
+                    <version>${spark.janino.version}</version>
+                </dependency>
+
+                <dependency>
+                    <groupId>org.codehaus.janino</groupId>
+                    <artifactId>janino</artifactId>
+                    <version>${spark.janino.version}</version>
+                </dependency>
+
+                <dependency>
+                    <groupId>com.fasterxml.jackson.core</groupId>
+                    <artifactId>jackson-core</artifactId>
+                    <version>${spark.jackson.version}</version>
+                </dependency>
+
+                <dependency>
+                    <groupId>com.fasterxml.jackson.core</groupId>
+                    <artifactId>jackson-databind</artifactId>
+                    <version>${spark.jackson.version}</version>
+                </dependency>
+
+                <dependency>
+                    <groupId>com.fasterxml.jackson.core</groupId>
+                    <artifactId>jackson-annotations</artifactId>
+                    <version>${spark.jackson.version}</version>
                 </dependency>
 
                 <dependency>
