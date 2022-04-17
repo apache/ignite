@@ -143,7 +143,6 @@ import org.apache.ignite.internal.processors.query.h2.QueryDataPageScanTest;
 import org.apache.ignite.internal.processors.query.h2.sql.ExplainSelfTest;
 import org.apache.ignite.internal.processors.query.h2.sql.GridQueryParsingTest;
 import org.apache.ignite.internal.processors.query.h2.sql.SqlUnsupportedSelfTest;
-import org.apache.ignite.internal.processors.sql.SqlConnectorConfigurationValidationSelfTest;
 import org.apache.ignite.internal.sql.SqlParserBulkLoadSelfTest;
 import org.apache.ignite.internal.sql.SqlParserCreateIndexSelfTest;
 import org.apache.ignite.internal.sql.SqlParserDropIndexSelfTest;
@@ -185,7 +184,7 @@ import org.junit.runners.Suite;
     SqlParserKillQuerySelfTest.class,
     SqlParserMultiStatementSelfTest.class,
 
-    SqlConnectorConfigurationValidationSelfTest.class,
+   
     ClientConnectorConfigurationValidationSelfTest.class,
 
     SqlSchemaSelfTest.class,

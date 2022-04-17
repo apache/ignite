@@ -744,8 +744,9 @@ public class PlatformConfigurationUtils {
             cfg.setFailureDetectionTimeout(in.readLong());
         if (in.readBoolean())
             cfg.setClientFailureDetectionTimeout(in.readLong());
-        //if (in.readBoolean())
-        //    cfg.setLongQueryWarningTimeout(in.readLong());
+        if (in.readBoolean())
+            //cfg.setLongQueryWarningTimeout(in.readLong());
+        	in.readLong();
         if (in.readBoolean())
             cfg.setActiveOnStart(in.readBoolean());
         if (in.readBoolean())
@@ -1348,8 +1349,8 @@ public class PlatformConfigurationUtils {
         w.writeLong(cfg.getFailureDetectionTimeout());
         w.writeBoolean(true);
         w.writeLong(cfg.getClientFailureDetectionTimeout());
-       // w.writeBoolean(true);
-       // w.writeLong(cfg.getLongQueryWarningTimeout());
+        w.writeBoolean(false);
+        //w.writeLong(cfg.getLongQueryWarningTimeout());
         w.writeBoolean(true);
         w.writeBoolean(cfg.isActiveOnStart());
         w.writeBoolean(true);

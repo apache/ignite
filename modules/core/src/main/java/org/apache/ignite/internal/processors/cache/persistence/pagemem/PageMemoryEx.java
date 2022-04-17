@@ -145,9 +145,6 @@ public interface PageMemoryEx extends PageMemory {
         CheckpointMetricsTracker tracker
     ) throws IgniteCheckedException;
 
-    /** */
-    public PageReadWriteManager pageManager();
-
      /** */
      public PageReadWriteManager pageManager();
 

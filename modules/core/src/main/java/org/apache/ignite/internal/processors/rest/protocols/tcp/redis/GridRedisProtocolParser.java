@@ -68,26 +68,28 @@ public class GridRedisProtocolParser {
     private static final byte[] OK = "OK".getBytes();
 
     /**
-     * Reads an array into {@link GridRedisMessage}.
-     *
-     * @param buf Buffer.
-     * @return {@link GridRedisMessage}.
-     * @throws IgniteCheckedException
+     * Error while reading int.
+     * {@code -1} used to mark null array.
+     * @see #NIL
      */
-    public static GridRedisMessage readArray(ByteBuffer buf) throws IgniteCheckedException {
+    public static final int ERROR_INT = -2;
+
+    /**
+     * Checks first byte is {@link #ARRAY}.
+     * @param buf Buffer.
+     * @return {@code False} if no data available in buffer.
+     * @throws IgniteCheckedException If failed.
+     */
+    public static boolean ensureArrayStart(ByteBuffer buf) throws IgniteCheckedException {
+        if (!buf.hasRemaining())
+            return false;
+
         byte b = buf.get();
 
         if (b != ARRAY)
             throw new IgniteCheckedException("Invalid request byte! " + b);
 
-        int arrLen = elCnt(buf);
-
-        GridRedisMessage msg = new GridRedisMessage(arrLen);
-
-        for (int i = 0; i < arrLen; i++)
-            msg.append(readBulkStr(buf));
-
-        return msg;
+        return true;
     }
 
     /**
@@ -95,77 +97,40 @@ public class GridRedisProtocolParser {
      *
      * @param buf Buffer.
      * @return Bulk string.
-     * @throws IgniteCheckedException
+     * @throws IgniteCheckedException If failed.
      */
     public static String readBulkStr(ByteBuffer buf) throws IgniteCheckedException {
+        if (!buf.hasRemaining())
+            return null;
+
         byte b = buf.get();
 
         if (b != BULK_STRING)
             throw new IgniteCheckedException("Invalid bulk string prefix! " + b);
 
-        int len = elCnt(buf);
+        if (!buf.hasRemaining())
+            return null;
+
+        int len = readInt(buf);
+
+        if (len == ERROR_INT || buf.remaining() < len)
+            return null;
+
         byte[] bulkStr = new byte[len];
-       
+
         buf.get(bulkStr, 0, len);
 
-        if (buf.get() != CR || buf.get() != LF)
-            throw new IgniteCheckedException("Invalid request syntax!");
+        if (buf.remaining() < 2)
+            return null;
+
+        byte b0 = buf.get();
+        byte b1 = buf.get();
+
+        if (b0 != CR || b1 != LF)
+            throw new IgniteCheckedException("Invalid request syntax[len=" + len + ']');
 
         return new String(bulkStr);
     }
-    
-    /*
-     * A validation method to check packet completeness.
-     * return true if and only if
-     * 1. First byte is ARRAY (43)
-     * 2. Last two bytes are CR(13) LF(10)
-     *
-     * Otherwise, return false representing this is an incomplete packet with three possible scenarios:
-     * 1. A beginning packet with leading ARRAY byte
-     * 2. A continual packet with ending CRLF bytes.
-     * 3. A continual packet with neither conditions above.
-     */
-    public static boolean validatePacket(ByteBuffer buf) {
-        return validatePacketHeader(buf) && validatePacketFooter(buf);
-    }
-
-    public static boolean validatePacketHeader(ByteBuffer buf) {
-        boolean result = true;
-
-        //mark at initial position
-        buf.mark();
-
-        if (buf.get() != ARRAY) {
-            result = false;
-        }
-
-        //reset to initial position
-        buf.reset();
-
-        return result;
-    }
-
-    public static boolean validatePacketFooter(ByteBuffer buf) {
-        boolean result = true;
-
-        //mark at initial position
-        buf.mark();
-
-        int limit = buf.limit();
-
-        assert limit > 2;
-
-        //check the final CR(last -2 ) and LF(last -1) byte
-        if (buf.get(limit - 2) != CR || buf.get(limit - 1) != LF) {
-            result = false;
-        }
-
-        //reset to initial position
-        buf.reset();
-
-        return result;
-    }
-
 
     /**
      * Counts elements in buffer.
@@ -173,15 +138,25 @@ public class GridRedisProtocolParser {
      * @param buf Buffer.
      * @return Count of elements.
      */
-    private static int elCnt(ByteBuffer buf) throws IgniteCheckedException {
+    public static int readInt(ByteBuffer buf) throws IgniteCheckedException {
+        if (!buf.hasRemaining())
+            return ERROR_INT;
+
         byte[] arrLen = new byte[9];
 
         int idx = 0;
         byte b = buf.get();
+
         while (b != CR) {
+            if (!buf.hasRemaining())
+                return ERROR_INT;
+
             arrLen[idx++] = b;
             b = buf.get();
         }
+
+        if (!buf.hasRemaining())
+            return ERROR_INT;
 
         if (buf.get() != LF)
             throw new IgniteCheckedException("Invalid request syntax!");
@@ -332,7 +307,8 @@ public class GridRedisProtocolParser {
 
         return buf;
     }
-
+	
+	
     /**
      * Converts a resultant map response to an array.
      *
@@ -348,6 +324,17 @@ public class GridRedisProtocolParser {
         	vals.forEach((k,v)->{ values.add(k); values.add(v);});
     	}
         return toArray(values);
+    }
+	
+
+    /**
+     * Converts a resultant map response to an array.
+     *
+     * @param vals Map.
+     * @return Array response.
+     */
+    public static ByteBuffer toArray(Map<Object, Object> vals) {
+        return toArray(vals.values());
     }
 
     /**
@@ -387,6 +374,7 @@ public class GridRedisProtocolParser {
 
         return buf;
     }
+
     /**
      * Converts a resultant collection response to an array.
      *

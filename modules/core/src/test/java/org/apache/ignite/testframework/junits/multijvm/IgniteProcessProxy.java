@@ -47,6 +47,7 @@ import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteEncryption;
 import org.apache.ignite.IgniteEvents;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteFileSystem;
 import org.apache.ignite.IgniteIllegalStateException;
 import org.apache.ignite.IgniteLock;
 import org.apache.ignite.IgniteLogger;
@@ -948,4 +949,16 @@ public class IgniteProcessProxy implements IgniteEx {
             return ((IgniteEx)ignite).localNode();
         }
     }
+
+	@Override
+	public IgniteFileSystem fileSystem(String name) throws IllegalArgumentException {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public Collection<IgniteFileSystem> fileSystems() {
+		// TODO Auto-generated method stub
+		return null;
+	}
 }

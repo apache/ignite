@@ -56,7 +56,6 @@ import org.apache.ignite.internal.processors.cache.IgniteDynamicCacheAndNodeStop
 import org.apache.ignite.internal.processors.cache.IgniteNearClientCacheCloseTest;
 import org.apache.ignite.internal.processors.cache.IgniteOnePhaseCommitInvokeTest;
 import org.apache.ignite.internal.processors.cache.IgniteOnePhaseCommitNearReadersTest;
-import org.apache.ignite.internal.processors.cache.MemoryPolicyConfigValidationTest;
 import org.apache.ignite.internal.processors.cache.NoPresentCacheInterceptorOnClientTest;
 import org.apache.ignite.internal.processors.cache.NonAffinityCoordinatorDynamicStartStopTest;
 import org.apache.ignite.internal.processors.cache.RebalanceIteratorLargeEntriesOOMTest;
@@ -175,7 +174,6 @@ import org.apache.ignite.internal.processors.cache.local.GridCacheLocalTxMultiTh
 import org.apache.ignite.internal.processors.cache.local.GridCacheLocalTxReadTest;
 import org.apache.ignite.internal.processors.cache.local.GridCacheLocalTxSingleThreadedSelfTest;
 import org.apache.ignite.internal.processors.cache.local.GridCacheLocalTxTimeoutSelfTest;
-import org.apache.ignite.internal.processors.cache.persistence.MemoryPolicyInitializationTest;
 import org.apache.ignite.internal.processors.continuous.IgniteContinuousQueryMetadataUpdateTest;
 import org.apache.ignite.internal.processors.continuous.IgniteNoCustomEventsOnNodeStart;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -360,8 +358,7 @@ public class IgniteCacheTestSuite2 {
 
         // Configuration validation
         GridTestUtils.addTestIfNeeded(suite, CacheConfigurationLeakTest.class, ignoredTests);
-        GridTestUtils.addTestIfNeeded(suite, MemoryPolicyConfigValidationTest.class, ignoredTests);
-        GridTestUtils.addTestIfNeeded(suite, MemoryPolicyInitializationTest.class, ignoredTests);
+       
         GridTestUtils.addTestIfNeeded(suite, CacheGroupLocalConfigurationSelfTest.class, ignoredTests);
 
         // Affinity and collocation

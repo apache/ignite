@@ -849,10 +849,11 @@ public class QueryUtils {
                     field = alias;
 
                 d.addFieldToTextIndex(field);
-            }
+            }  
+            
             //add@byron set extra index info.
             QueryIndexDescriptorImpl qidx = (QueryIndexDescriptorImpl)d.textIndex();
-            qidx.setQueryIndex(idx);          
+            qidx.setQueryIndex(idx);      
             //end@
         }
         else if (idxTyp != null)

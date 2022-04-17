@@ -35,7 +35,7 @@ import org.apache.ignite.internal.igfs.common.IgfsMessage;
 import org.apache.ignite.internal.util.ipc.IpcEndpoint;
 import org.apache.ignite.internal.util.ipc.IpcServerEndpoint;
 import org.apache.ignite.internal.util.ipc.loopback.IpcServerTcpEndpoint;
-import org.apache.ignite.internal.util.ipc.shmem.IpcSharedMemoryServerEndpoint;
+
 import org.apache.ignite.internal.util.typedef.CIX1;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -102,12 +102,7 @@ public class IgfsServer {
      * @throws IgniteCheckedException If failed.
      */
     public void start() throws IgniteCheckedException {
-        srvEndpoint = createEndpoint(endpointCfg, mgmt);
-
-        if (U.isWindows() && srvEndpoint instanceof IpcSharedMemoryServerEndpoint)
-            throw new IgniteCheckedException(IpcSharedMemoryServerEndpoint.class.getSimpleName() +
-                " should not be configured on Windows (configure " +
-                IpcServerTcpEndpoint.class.getSimpleName() + ")");
+        srvEndpoint = createEndpoint(endpointCfg, mgmt);        
 
         if (srvEndpoint instanceof IpcServerTcpEndpoint) {
             IpcServerTcpEndpoint srvEndpoint0 = (IpcServerTcpEndpoint)srvEndpoint;
@@ -162,17 +157,7 @@ public class IgfsServer {
         if (typ == null)
             throw new IgniteCheckedException("Failed to create server endpoint (type is not specified)");
 
-        switch (typ) {
-            case SHMEM: {
-                IpcSharedMemoryServerEndpoint endpoint =
-                    new IpcSharedMemoryServerEndpoint(igfsCtx.kernalContext().config().getWorkDirectory());
-
-                endpoint.setPort(endpointCfg.getPort());
-                endpoint.setSize(endpointCfg.getMemorySize());
-                endpoint.setTokenDirectoryPath(endpointCfg.getTokenDirectoryPath());
-
-                return endpoint;
-            }
+        switch (typ) {            
             case TCP: {
                 IpcServerTcpEndpoint endpoint = new IpcServerTcpEndpoint();
 

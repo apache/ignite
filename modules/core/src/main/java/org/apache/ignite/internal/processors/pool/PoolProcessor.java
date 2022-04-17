@@ -658,6 +658,7 @@ public class PoolProcessor extends GridProcessorAdapter {
             case GridIoPolicy.SYSTEM_POOL:
                 return getSystemExecutorService();
             case GridIoPolicy.PUBLIC_POOL:
+            case GridIoPolicy.IGFS_POOL: // add@byron
                 return getExecutorService();
             case GridIoPolicy.MANAGEMENT_POOL:
                 return getManagementExecutorService();

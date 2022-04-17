@@ -623,6 +623,21 @@ public class IgniteSpringBean implements Ignite, DisposableBean, SmartInitializi
 
         g.active(active);
     }
+    
+
+    /** {@inheritDoc} */
+    @Override public IgniteFileSystem fileSystem(String name) {
+        checkIgnite();
+
+        return g.fileSystem(name);
+    }
+
+    /** {@inheritDoc} */
+    @Override public Collection<IgniteFileSystem> fileSystems() {
+        checkIgnite();
+
+        return g.fileSystems();
+    }
 
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
@@ -655,5 +670,5 @@ public class IgniteSpringBean implements Ignite, DisposableBean, SmartInitializi
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(IgniteSpringBean.class, this);
-    }
+    }	
 }

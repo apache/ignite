@@ -113,9 +113,6 @@ public class VisorGridConfiguration extends VisorDataTransferObject {
     /** Hadoop configuration. */
     private VisorHadoopConfiguration hadoopCfg;
 
-    /** SQL connector configuration. */
-    private VisorSqlConnectorConfiguration sqlConnCfg;
-
     /** List of service configurations. */
     private List<VisorServiceConfiguration> srvcCfgs;
 
@@ -353,12 +350,6 @@ public class VisorGridConfiguration extends VisorDataTransferObject {
         return hadoopCfg;
     }
 
-    /**
-     * @return SQL connector configuration.
-     */
-    public VisorSqlConnectorConfiguration getSqlConnectorConfiguration() {
-        return sqlConnCfg;
-    }
 
     /**
      * @return Client connector configuration.
@@ -418,7 +409,7 @@ public class VisorGridConfiguration extends VisorDataTransferObject {
         out.writeObject(binaryCfg);
         U.writeCollection(out, cacheKeyCfgs);
         out.writeObject(null);
-        out.writeObject(sqlConnCfg);
+        //out.writeObject(sqlConnCfg);
         U.writeCollection(out, srvcCfgs);
         out.writeObject(dataStorage);
         out.writeObject(clnConnCfg);
@@ -450,7 +441,7 @@ public class VisorGridConfiguration extends VisorDataTransferObject {
         binaryCfg = (VisorBinaryConfiguration)in.readObject();
         cacheKeyCfgs = U.readList(in);
         hadoopCfg = (VisorHadoopConfiguration)in.readObject();
-        sqlConnCfg = (VisorSqlConnectorConfiguration)in.readObject();
+        //sqlConnCfg = (VisorSqlConnectorConfiguration)in.readObject();
         srvcCfgs = U.readList(in);
 
         if (protoVer > V1)
