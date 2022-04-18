@@ -32,6 +32,8 @@ import java.util.function.Function;
 import javax.management.DynamicMBean;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.binary.BinaryBasicIdMapper;
+import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
@@ -117,9 +119,9 @@ public abstract class AbstractCdcTest extends GridCommonAbstractTest {
 
         return new CdcMain(cfg, null, cdcCfg) {
             @Override protected CdcConsumerState createState(Path stateDir) {
-                return new CdcConsumerState(stateDir) {
-                    @Override public void save(T2<WALPointer, Integer> state) throws IOException {
-                        super.save(state);
+                return new CdcConsumerState(log, stateDir) {
+                    @Override public void saveWal(T2<WALPointer, Integer> state) throws IOException {
+                        super.saveWal(state);
 
                         if (!F.isEmpty(conditions)) {
                             for (GridAbsPredicate p : conditions) {
@@ -306,6 +308,11 @@ public abstract class AbstractCdcTest extends GridCommonAbstractTest {
             return commit();
         }
 
+        /** {@inheritDoc} */
+        @Override public void onTypes(Iterator<BinaryType> types) {
+            types.forEachRemaining(t -> assertNotNull(t));
+        }
+
         /** */
         public abstract void checkEvent(CdcEvent evt);
 
@@ -330,8 +337,12 @@ public abstract class AbstractCdcTest extends GridCommonAbstractTest {
 
     /** */
     public static class UserCdcConsumer extends TestCdcConsumer<Integer> {
+        /** */
+        protected boolean userTypeFound;
+
         /** {@inheritDoc} */
         @Override public void checkEvent(CdcEvent evt) {
+            assertTrue(userTypeFound);
             assertNull(evt.version().otherClusterVersion());
 
             if (evt.value() == null)
@@ -346,6 +357,38 @@ public abstract class AbstractCdcTest extends GridCommonAbstractTest {
         /** {@inheritDoc} */
         @Override public Integer extract(CdcEvent evt) {
             return (Integer)evt.key();
+        }
+
+        /** {@inheritDoc} */
+        @Override public void onTypes(Iterator<BinaryType> types) {
+            types.forEachRemaining(t -> {
+                if (t.typeName().equals(User.class.getName())) {
+                    userTypeFound = true;
+
+                    assertNotNull(t.field("name"));
+                    assertEquals(String.class.getSimpleName(), t.fieldTypeName("name"));
+                    assertNotNull(t.field("age"));
+                    assertEquals(int.class.getName(), t.fieldTypeName("age"));
+                    assertNotNull(t.field("payload"));
+                    assertEquals(byte[].class.getSimpleName(), t.fieldTypeName("payload"));
+                }
+
+                assertNotNull(t);
+            });
+        }
+
+        /** {@inheritDoc} */
+        @Override public void onMappings(Iterator<TypeMapping> mappings) {
+            BinaryBasicIdMapper mapper = new BinaryBasicIdMapper();
+
+            mappings.forEachRemaining(m -> {
+                assertNotNull(m);
+
+                String typeName = m.typeName();
+
+                assertFalse(typeName.isEmpty());
+                assertEquals(mapper.typeId(typeName), m.typeId());
+            });
         }
     }
 
