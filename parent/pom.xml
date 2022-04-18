@@ -60,7 +60,7 @@
         <docfx.exec>docfx</docfx.exec>
         <git.exec>git</git.exec>
         <javadoc.opts>-Xdoclint:none</javadoc.opts>
-        <update.notifier.enabled.by.default>true</update.notifier.enabled.by.default>
+        <update.notifier.enabled.by.default>false</update.notifier.enabled.by.default>
         <failIfNoTests>false</failIfNoTests>
 
         <!-- Dependency versions -->
@@ -857,7 +857,7 @@
         <profile>
             <id>java-9+</id>
             <activation>
-                <jdk>[1.9,15)</jdk>
+                <jdk>[1.9,16)</jdk>
             </activation>
             <properties>
                 <maven.compiler.source>1.8</maven.compiler.source>
@@ -938,7 +938,7 @@
         <profile>
             <id>java-15+</id>
             <activation>
-                <jdk>[15,)</jdk>
+                <jdk>[16,)</jdk>
             </activation>
             <properties>
                 <maven.compiler.source>1.8</maven.compiler.source>

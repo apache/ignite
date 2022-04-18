@@ -27,7 +27,9 @@ import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.examples.ExampleNodeStartup;
+import org.apache.ignite.examples.model.Address;
 import org.apache.ignite.examples.model.Organization;
+import org.apache.ignite.examples.model.OrganizationType;
 import org.apache.ignite.examples.model.Person;
 
 /**
@@ -272,9 +274,12 @@ public class SqlQueriesExample {
         // Clear cache before running the example.
         orgCache.clear();
 
+        Address addr = new Address("CN",86);
+        Address addr2 = new Address("美国",11);
         // Organizations.
-        Organization org1 = new Organization("ApacheIgnite");
-        Organization org2 = new Organization("Other");
+        Organization org1 = new Organization("ApacheIgnite",addr,OrganizationType.GOVERNMENT,null);
+        
+        Organization org2 = new Organization("Other",addr2,OrganizationType.GOVERNMENT,null);
 
         orgCache.put(org1.id(), org1);
         orgCache.put(org2.id(), org2);

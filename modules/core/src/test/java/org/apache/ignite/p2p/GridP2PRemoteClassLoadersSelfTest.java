@@ -93,9 +93,9 @@ public class GridP2PRemoteClassLoadersSelfTest extends GridCommonAbstractTest {
             Class<? extends ComputeTask<?, ?>> task2 =
                 (Class<? extends ComputeTask<?, ?>>)tstClsLdr.loadClass(GridP2PRemoteTestTask1.class.getName());
 
-            Object res1 = ignite1.compute().execute(task1.newInstance(), null);
+            Object res1 = ignite1.compute().execute((GridP2PRemoteTestTask)task1.newInstance(), null);
 
-            Object res2 = ignite1.compute().execute(task2.newInstance(), null);
+            Object res2 = ignite1.compute().execute((GridP2PRemoteTestTask1)task2.newInstance(), null);
 
             info("Check results.");
 
@@ -150,9 +150,9 @@ public class GridP2PRemoteClassLoadersSelfTest extends GridCommonAbstractTest {
             Class<? extends ComputeTask<?, ?>> task2 =
                 (Class<? extends ComputeTask<?, ?>>)tstClsLdr2.loadClass(GridP2PRemoteTestTask1.class.getName());
 
-            Object res1 = ignite1.compute().execute(task1.newInstance(), null);
+            Object res1 = ignite1.compute().execute((GridP2PRemoteTestTask)task1.newInstance(), null);
 
-            Object res2 = ignite1.compute().execute(task2.newInstance(), null);
+            Object res2 = ignite1.compute().execute((GridP2PRemoteTestTask1)task2.newInstance(), null);
 
             info("Check results.");
 

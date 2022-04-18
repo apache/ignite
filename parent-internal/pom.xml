@@ -342,6 +342,7 @@
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>flatten-maven-plugin</artifactId>
+                <version>1.2.7</version>
                 <executions>
                     <!-- disable flattering for parent pom. -->
                     <execution>
@@ -414,6 +415,7 @@
                                             <pluginExecutionFilter>
                                                 <groupId>org.codehaus.mojo</groupId>
                                                 <artifactId>flatten-maven-plugin</artifactId>
+                                                <versionRange>[1.2,)</versionRange>
                                                 <goals>
                                                     <goal>flatten</goal>
                                                 </goals>

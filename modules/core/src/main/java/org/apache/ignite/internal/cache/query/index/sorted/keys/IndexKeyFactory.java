@@ -24,6 +24,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.binary.BinaryEnumObjectImpl;
 import org.apache.ignite.internal.binary.BinaryObjectImpl;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypeSettings;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypes;
@@ -67,7 +68,16 @@ public class IndexKeyFactory {
                 return new ByteIndexKey((byte)o);
             case IndexKeyTypes.SHORT:
                 return new ShortIndexKey((short)o);
-            case IndexKeyTypes.INT:
+            case IndexKeyTypes.ENUM:
+            	// add@byron
+            	if(BinaryEnumObjectImpl.class == o.getClass()) {
+            		return new IntegerIndexKey(((BinaryEnumObjectImpl)o).enumOrdinal());
+            	}
+            	if(o.getClass().isEnum()) {
+            		return new IntegerIndexKey(((Enum)o).ordinal());
+            	}
+            	
+            case IndexKeyTypes.INT:            	
                 return new IntegerIndexKey((int)o);
             case IndexKeyTypes.LONG:
                 return new LongIndexKey((long)o);
@@ -81,7 +91,7 @@ public class IndexKeyFactory {
                 return keyTypeSettings.binaryUnsigned() ?
                     new BytesIndexKey((byte[])o) : new SignedBytesIndexKey((byte[])o);
             case IndexKeyTypes.STRING:
-                return new StringIndexKey((String)o);
+                return new StringIndexKey(o.toString());
             case IndexKeyTypes.UUID:
                 return new UuidIndexKey((UUID)o);
             case IndexKeyTypes.JAVA_OBJECT:

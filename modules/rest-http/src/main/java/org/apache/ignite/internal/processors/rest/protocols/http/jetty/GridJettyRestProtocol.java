@@ -382,39 +382,43 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
 		
 		List<Handler> plugins = new ArrayList<>();
 		File webPlugins = new File(webAppDirs);
-	    for(File warFile: webPlugins.listFiles()) {
-		    String warPath = warFile.getPath();
-		    int pos = warFile.getName().indexOf('.');
-		    String contextPath =  pos>0? warFile.getName().substring(0,pos): warFile.getName();
-		    WebAppContext webApp = new WebAppContext();
-		    webApp.setContextPath("/"+contextPath);
-		    webApp.setConfigurationDiscovered(true);
-		    
-		    if (warFile.isDirectory()) {
-		        // Development mode, read from FS
-		    	webApp.setResourceBase(warFile.getPath());
-		        webApp.setDescriptor(warPath+"/WEB-INF/web.xml");
-		        webApp.setExtraClasspath(warPath+"/WEB-INF/classes/");		        
-		       
-	        } else if(warFile.getName().endsWith(".war")) {
-		        // use packaged WAR
-		        webApp.setWar(warFile.getAbsolutePath());
-		        webApp.setExtractWAR(false);
-		       
-		    }
-	        else {
-	        	continue;
-	        }
-		    
-		    //webApp.setClassLoader(Thread.currentThread().getContextClassLoader());  
-			webApp.setParentLoaderPriority(false);
-			webApp.setServer(httpSrv);
-			webApp.setErrorHandler(new ErrorHandler());
-			webApp.setAttribute("gridKernalContext", ctx);
+		if(webPlugins.isDirectory()) {
 			
-			plugins.add(webApp);	
-		
-	    }
+			for(File warFile: webPlugins.listFiles()) {
+			    String warPath = warFile.getPath();
+			    int pos = warFile.getName().indexOf('.');
+			    String contextPath =  pos>0? warFile.getName().substring(0,pos): warFile.getName();
+			    WebAppContext webApp = new WebAppContext();
+			    webApp.setContextPath("/"+contextPath);
+			    webApp.setConfigurationDiscovered(true);
+			    
+			    if (warFile.isDirectory()) {
+			        // Development mode, read from FS
+			    	webApp.setResourceBase(warFile.getPath());
+			        webApp.setDescriptor(warPath+"/WEB-INF/web.xml");
+			        webApp.setExtraClasspath(warPath+"/WEB-INF/classes/");		        
+			       
+		        } else if(warFile.getName().endsWith(".war")) {
+			        // use packaged WAR
+			        webApp.setWar(warFile.getAbsolutePath());
+			        webApp.setExtractWAR(false);
+			       
+			    }
+		        else {
+		        	continue;
+		        }
+			    
+			    //webApp.setClassLoader(Thread.currentThread().getContextClassLoader());  
+				webApp.setParentLoaderPriority(false);
+				webApp.setServer(httpSrv);
+				webApp.setErrorHandler(new ErrorHandler());
+				webApp.setAttribute("gridKernalContext", ctx);
+				
+				plugins.add(webApp);	
+			
+		    }
+		}
+	    
 	 // Create a handler list to store our static and servlet context handlers.
 	    Handler hnd = httpSrv.getHandler();
 		HandlerList handlers = new HandlerList();

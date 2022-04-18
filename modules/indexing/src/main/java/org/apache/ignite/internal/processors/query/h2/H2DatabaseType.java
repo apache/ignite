@@ -154,7 +154,7 @@ public enum H2DatabaseType {
             return TIMESTAMP;
         //add@byron use int storage enum
         if(cls.isEnum() || Enum.class==cls) {
-        	return INT;
+            return ENUM;
         }
 
         return cls.isArray() && !cls.getComponentType().isPrimitive() ? ARRAY : OTHER;

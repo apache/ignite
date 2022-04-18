@@ -45,8 +45,10 @@ import java.util.UUID;
 import javax.cache.CacheException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.indexing.IndexingQueryEngineConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.binary.BinaryArray;
+import org.apache.ignite.internal.binary.BinaryEnumObjectImpl;
 import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
@@ -92,6 +94,8 @@ import org.h2.value.ValueBytes;
 import org.h2.value.ValueDate;
 import org.h2.value.ValueDecimal;
 import org.h2.value.ValueDouble;
+import org.h2.value.ValueEnum;
+import org.h2.value.ValueEnumBase;
 import org.h2.value.ValueFloat;
 import org.h2.value.ValueGeometry;
 import org.h2.value.ValueInt;
@@ -599,6 +603,14 @@ public class H2Utils {
         		return ValueInt.get(eObj.ordinal());
         	if(type==Value.STRING) 
         		return ValueString.get(eObj.name());
+        	else {        		
+        		Enum[] items = eObj.getClass().getEnumConstants();
+        		String[] names = new String[items.length];
+        		for(int i=0;i<names.length;i++) {
+        			names[i] = items[i].name();
+        		}        		
+        		return ValueEnum.get(names,eObj.name());
+        	}
         }
         //end@
         switch (type) {
@@ -648,6 +660,10 @@ public class H2Utils {
                 return ValueBytes.get((byte[])obj);
             case Value.JAVA_OBJECT:
                 return ValueJavaObject.getNoCopy(obj, null, null);
+            case Value.ENUM:            	
+            	BinaryEnumObjectImpl bmObj = (BinaryEnumObjectImpl)obj;
+            	return ValueInt.get(bmObj.enumOrdinal());
+            	
             case Value.ARRAY:
                 Object[] arr = BinaryUtils.rawArrayFromBinary(obj);
 
@@ -1070,6 +1086,13 @@ public class H2Utils {
         }
 
         return keyCols.toArray(new IndexColumn[0]);
+    }
+
+    /**
+     * @return Query engine name.
+     */
+    public static String queryEngine() {
+        return IndexingQueryEngineConfiguration.ENGINE_NAME;
     }
 
     /**

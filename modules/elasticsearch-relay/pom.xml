@@ -25,7 +25,7 @@
 		<dependency>
 			<groupId>org.apache.ignite</groupId>
 			<artifactId>ignite-rest-http</artifactId>			
-			<!-- <scope>provided</scope> -->
+			<scope>provided</scope>
 		</dependency>
 		
 		 <dependency>
@@ -46,7 +46,8 @@
         <dependency>
             <groupId>org.springframework</groupId>
             <artifactId>spring-context</artifactId>
-            <version>${spring.version}</version>           
+            <version>${spring.version}</version>
+            <scope>provided</scope>           
         </dependency>		
 		
 		<dependency>
@@ -58,14 +59,7 @@
 			<groupId>org.jsoup</groupId>
 			<artifactId>jsoup</artifactId>
 			<version>1.9.2</version>
-		</dependency>
-
-		<dependency>
-			<groupId>org.eclipse.jetty</groupId>
-			<artifactId>jetty-webapp</artifactId>
-			<version>9.4.11.v20180605</version>
-			<scope>provided</scope>
-		</dependency>
+		</dependency>		
 
 	</dependencies>
 	<packaging>war</packaging>

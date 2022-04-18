@@ -25,13 +25,12 @@
 
     <parent>
         <groupId>org.apache.ignite</groupId>
-        <artifactId>ignite-parent</artifactId>
-        <version>1</version>
-        <relativePath>../parent</relativePath>
+        <artifactId>ignite-parent-internal</artifactId>
+        <version>${revision}</version>
+        <relativePath>../parent-internal/pom.xml</relativePath>
     </parent>
 
-    <artifactId>ignite-web-console</artifactId>
-    <version>2.9.0-SNAPSHOT</version>
+    <artifactId>ignite-web-console</artifactId>    
     <packaging>pom</packaging>
     <url>http://ignite.apache.org</url>
 
@@ -41,7 +40,7 @@
         <maven.compiler.target>11</maven.compiler.target>
         <node.version>v10.15.3</node.version>
         <spring.boot.version>2.2.6.RELEASE</spring.boot.version>
-        <web-console.ignite.version>2.9.0-SNAPSHOT</web-console.ignite.version>
+        <web-console.ignite.version>${revision}</web-console.ignite.version>
         <commons.lang3.version>3.1</commons.lang3.version>
         <hibernate.validate.version>5.2.4.Final</hibernate.validate.version>
         <commons.compress.version>1.20</commons.compress.version>

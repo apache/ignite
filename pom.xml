@@ -34,19 +34,27 @@
     <packaging>pom</packaging>
 
     <modules>
+       
+        <!-- 
         <module>modules/checkstyle</module>
         <module>parent</module>
         <module>parent-internal</module>
-        <module>modules/bom</module>
+        -->
+        
+        <module>modules/bom</module>  
+        
+        
         <module>modules/tools</module>
         <module>modules/core</module>
         <module>modules/compress</module>
         <module>modules/dev-utils</module>
         <module>modules/direct-io</module>
+        <!-- 
         <module>modules/extdata/p2p</module>
         <module>modules/extdata/uri</module>
         <module>modules/extdata/platform</module>
-        <module>modules/extdata/logo</module>
+        <module>modules/extdata/logo</module> 
+        -->
         <module>modules/clients</module>
         <module>modules/spring</module>
         <module>modules/web</module>
@@ -69,16 +77,20 @@
         <module>modules/osgi-paxlogging</module>
         <module>modules/osgi-karaf</module>
         <module>modules/osgi</module>
-        <!-- <module>modules/web/ignite-appserver-test</module>
-        <module>modules/web/ignite-websphere-test</module> -->
+        <!-- 
+        <module>modules/web/ignite-appserver-test</module>
+        <module>modules/web/ignite-websphere-test</module> 
+        -->
         <module>modules/cassandra</module>
         <module>modules/kubernetes</module>
         <module>modules/sqlline</module>
         <module>modules/ml</module>
-        <!-- <module>modules/ml/spark-model-parser</module>
+        <!-- 
+        <module>modules/ml/spark-model-parser</module>
         <module>modules/ml/xgboost-model-parser</module>
         <module>modules/ml/catboost-model-parser</module>
-        <module>modules/ml/h2o-model-parser</module> -->
+        <module>modules/ml/h2o-model-parser</module> 
+        -->
         <module>modules/opencensus</module>
         <module>modules/control-utility</module>
         <module>modules/calcite</module>
@@ -443,8 +455,7 @@
 
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-assembly-plugin</artifactId>
-                        <version>2.4</version>
+                        <artifactId>maven-assembly-plugin</artifactId>                       
                         <inherited>false</inherited>
                         <executions>
                             <execution>
@@ -478,13 +489,13 @@
                                 </configuration>
                             </execution>
 
-                            <execution>
+                           <!--  <execution>
                                 <id>dependencies-visor-console</id>
                                 <phase>validate</phase>
                                 <goals>
                                     <goal>single</goal>
                                 </goals>
-                                <configuration>
+                                <configuration>                                    
                                     <descriptors>
                                         <descriptor>assembly/dependencies-visor-console.xml</descriptor>
                                     </descriptors>
@@ -492,7 +503,7 @@
                                     <finalName>include</finalName>
                                     <appendAssemblyId>false</appendAssemblyId>
                                 </configuration>
-                            </execution>
+                            </execution> -->
 
                             <execution>
                                 <id>dependencies-sqlline</id>
@@ -510,13 +521,13 @@
                                 </configuration>
                             </execution>
 
-                            <execution>
+                            <!-- <execution>
                                 <id>scala-scripts</id>
                                 <phase>validate</phase>
                                 <goals>
                                     <goal>single</goal>
                                 </goals>
-                                <configuration>
+                                <configuration>                                    
                                     <descriptors>
                                         <descriptor>assembly/release-scala.xml</descriptor>
                                     </descriptors>
@@ -524,7 +535,7 @@
                                     <finalName>bin</finalName>
                                     <appendAssemblyId>false</appendAssemblyId>
                                 </configuration>
-                            </execution>
+                            </execution> -->
                         </executions>
                     </plugin>
 
@@ -553,24 +564,13 @@
             </modules>
         </profile>
 
-        <profile>
-            <id>scala</id>
-
-            <activation>
-                <property><name>!scala-2.10</name></property>
-            </activation>
-
-            <modules>
-                <module>modules/visor-console</module>
-                <module>modules/visor-plugins</module>
-            </modules>
-        </profile>
+        
 
         <profile>
             <id>spark-2.4</id>
 
             <activation>
-                <property><name>!scala-2.10</name></property>
+                <property><name>spark-2.4</name></property>
             </activation>
 
             <modules>
