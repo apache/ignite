@@ -143,9 +143,7 @@
         <snappy.version>1.1.7.2</snappy.version>
         <spark.hadoop.version>2.6.5</spark.hadoop.version>
         <spark.version>2.3.0</spark.version>
-        <spring.version>4.3.26.RELEASE</spring.version>
-        <spring-5.0.version>5.0.16.RELEASE</spring-5.0.version>
-        <spring-5.2.version>5.2.3.RELEASE</spring-5.2.version>
+        <spring.version>5.2.21.RELEASE</spring.version>
         <spring41.osgi.feature.version>4.1.7.RELEASE_1</spring41.osgi.feature.version>
         <storm.version>1.1.1</storm.version>
         <surefire.version>3.0.0-M4</surefire.version>
