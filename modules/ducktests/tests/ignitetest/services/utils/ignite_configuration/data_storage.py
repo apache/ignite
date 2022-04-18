@@ -28,6 +28,8 @@ class DataRegionConfiguration(NamedTuple):
     persistent: bool = False
     init_size: int = 100 * 1024 * 1024
     max_size: int = 512 * 1024 * 1024
+    metrics_enabled: bool = True
+    metrics_rate_time_interval: int = None
 
 
 class DataStorageConfiguration(NamedTuple):
@@ -36,4 +38,5 @@ class DataStorageConfiguration(NamedTuple):
     """
     default: DataRegionConfiguration = DataRegionConfiguration()
     max_wal_archive_size: int = None
+    metrics_enabled: bool = True
     regions: list = []

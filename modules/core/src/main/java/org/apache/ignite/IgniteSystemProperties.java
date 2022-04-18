@@ -67,6 +67,7 @@ import static org.apache.ignite.internal.processors.affinity.AffinityAssignment.
 import static org.apache.ignite.internal.processors.affinity.GridAffinityAssignmentCache.DFLT_AFFINITY_HISTORY_SIZE;
 import static org.apache.ignite.internal.processors.affinity.GridAffinityAssignmentCache.DFLT_PART_DISTRIBUTION_WARN_THRESHOLD;
 import static org.apache.ignite.internal.processors.cache.CacheAffinitySharedManager.DFLT_CLIENT_CACHE_CHANGE_MESSAGE_TIMEOUT;
+import static org.apache.ignite.internal.processors.cache.CacheObjectsReleaseFuture.DFLT_IGNITE_PARTITION_RELEASE_FUTURE_WARN_LIMIT;
 import static org.apache.ignite.internal.processors.cache.GridCacheAdapter.DFLT_CACHE_RETRIES_COUNT;
 import static org.apache.ignite.internal.processors.cache.GridCacheAdapter.DFLT_CACHE_START_SIZE;
 import static org.apache.ignite.internal.processors.cache.GridCacheContext.DFLT_READ_LOAD_BALANCING;
@@ -1195,6 +1196,15 @@ public final class IgniteSystemProperties {
         "0 means disabled", type = Integer.class, defaults = "" + DFLT_PARTITION_RELEASE_FUTURE_DUMP_THRESHOLD)
     public static final String IGNITE_PARTITION_RELEASE_FUTURE_DUMP_THRESHOLD =
         "IGNITE_PARTITION_RELEASE_FUTURE_DUMP_THRESHOLD";
+
+    /**
+     * This property specifies the maximum number of futures that are included into diagnostic message.
+     * The default value is {@code 10}.
+     */
+    @SystemProperty(value = "This property specifies the maximum number of futures that are included into diagnostic " +
+        "message", type = Integer.class, defaults = "" + DFLT_IGNITE_PARTITION_RELEASE_FUTURE_WARN_LIMIT)
+    public static final String IGNITE_PARTITION_RELEASE_FUTURE_WARN_LIMIT =
+        "IGNITE_PARTITION_RELEASE_FUTURE_WARN_LIMIT";
 
     /**
      * If this property is set, a node will forcible fail a remote node when it fails to establish a communication

@@ -729,4 +729,24 @@ public class CacheDataRegionConfigurationTest extends GridCommonAbstractTest {
 
         assertFalse(logLsnr.check());
     }
+
+    /** 
+     * Verify that the eviction strategy can support large dataregion.
+     */
+    @Test
+    public void testLargeRegionsWithEviction() throws Exception {
+        DataRegionConfiguration cfg1 = new DataRegionConfiguration()
+            .setName("region-1")
+            .setMaxSize(4 * 1024 * U.GB)
+            .setPageEvictionMode(DataPageEvictionMode.RANDOM_LRU);
+
+        DataRegionConfiguration cfg2 = new DataRegionConfiguration()
+            .setName("region-2")
+            .setMaxSize(4 * 1024 * U.GB)
+            .setPageEvictionMode(DataPageEvictionMode.RANDOM_2_LRU);
+
+        memCfg = new DataStorageConfiguration().setDataRegionConfigurations(cfg1, cfg2);
+
+        startGrid();
+    }
 }
