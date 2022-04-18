@@ -157,9 +157,6 @@ class RelJson {
         builder.add(Expressions.new_(constructor, input_));
         MethodDeclaration declaration = Expressions.methodDecl(
             Modifier.PUBLIC, RelNode.class, "apply", F.asList(input_), builder.toBlock());
-
-//        System.err.println("TEST | compilt: " + Expressions.toString(F.asList(declaration), "\n", false));
-
         return Commons.compile(RelFactory.class, Expressions.toString(F.asList(declaration), "\n", true));
     }
 

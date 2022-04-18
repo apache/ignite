@@ -69,7 +69,6 @@ import org.apache.ignite.internal.processors.query.calcite.rel.IgniteFilter;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteHashIndexSpool;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexScan;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteLimit;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteLimitSort;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteMergeJoin;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteNestedLoopJoin;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteProject;
@@ -461,23 +460,10 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
     }
 
     /** {@inheritDoc} */
-    @Override public Node<Row> visit(IgniteLimitSort rel) {
-        RelCollation collation = rel.getCollation();
-
-        SortNode<Row> node = new SortNode<>(ctx, rel.getRowType(), expressionFactory.comparator(collation));
-
-        Node<Row> input = visit(rel.getInput());
-
-        node.register(input);
-
-        return node;
-    }
-
-    /** {@inheritDoc} */
     @Override public Node<Row> visit(IgniteSort rel) {
         RelCollation collation = rel.getCollation();
-        Supplier<Integer> limit = (rel.getFetch() == null) ? null : expressionFactory.execute(rel.getFetch());
-        Supplier<Integer> offset = (rel.getFetch() == null) ? null : expressionFactory.execute(rel.getOffset());
+        Supplier<Integer> limit = (rel.fetch == null) ? null : expressionFactory.execute(rel.fetch);
+        Supplier<Integer> offset = (rel.offset == null) ? null : expressionFactory.execute(rel.offset);
 
         SortNode<Row> node = new SortNode<>(ctx, rel.getRowType(), expressionFactory.comparator(collation), offset,
             limit);
