@@ -17,19 +17,26 @@
 
 package org.apache.ignite.internal.ducktest.tests.thin_client_test;
 
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Optional;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.TimeUnit;
+
 import com.fasterxml.jackson.databind.JsonNode;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.client.ClientCache;
 import org.apache.ignite.client.IgniteClient;
-import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.ducktest.utils.IgniteAwareApplication;
-
-import java.util.*;
-import java.util.concurrent.*;
 
 /**
  * Application generates cache data via the thin client.
@@ -58,7 +65,7 @@ public class ThinClientDataGenerationApplication extends IgniteAwareApplication 
 
         ExecutorService executorService = Executors.newFixedThreadPool(threads);
 
-        List<Future<JobResult>> results = new LinkedList<>();
+        List<Future<Integer>> results = new LinkedList<>();
 
         int i = from;
         while (i < to) {
@@ -71,8 +78,8 @@ public class ThinClientDataGenerationApplication extends IgniteAwareApplication 
         }
 
         int errors = 0;
-        for (Future<JobResult> result : results) {
-            errors += result.get(timeoutSecs, TimeUnit.SECONDS).error;
+        for (Future<Integer> result : results) {
+            errors += result.get(timeoutSecs, TimeUnit.SECONDS);
         }
 
         executorService.shutdown();
@@ -91,33 +98,45 @@ public class ThinClientDataGenerationApplication extends IgniteAwareApplication 
             markFinished();
     }
 
-    static class JobResult {
-        int error;
-        int ok;
-
-        private JobResult(int error, int ok) {
-            this.error = error;
-            this.ok = ok;
-        }
-
-        public static JobResult error() {
-            return new JobResult(1, 0);
-        }
-        public static JobResult ok() {
-            return new JobResult(0, 1);
-        }
-    }
-
-    static class PutJob implements Callable<JobResult> {
+    /**
+     * Class representing a single job inserting data into cache via the thin ignite client using the putAll API.
+     *
+     * Returns number of errors occurred during the execution.
+     */
+    static class PutJob implements Callable<Integer> {
+        /** Path to the thin client configuration file */
         private final String cfgPath;
+
+        /** Name of cache to load data into */
         private final String cacheName;
+
+        /** First key to load data */
         private final int from;
+
+        /** Last key to load data */
         private final int to;
+
+        /** Size of the batch to be passed to putAll */
         private final int batchSize;
+
+        /** Size of each data record */
         private final int entrySize;
+
+        /** Indicate if job should create its own thin client connection */
         private final boolean createClientConnection;
+
+        /** Ignite thin client connection. May be either passed via constructor or created by the job itself. */
         private IgniteClient client;
 
+        /**
+         * @param cfgPath Path to the thin client configuration file
+         * @param cacheName Name of cache to load data into
+         * @param from First key to load data
+         * @param to Last key to load data
+         * @param batchSize Size of the batch to be passed to putAll
+         * @param entrySize Size of each data record
+         * @param client Optional Ignite thin client connection. If null job will create it by itself.
+         */
         PutJob(String cfgPath, String cacheName, int from, int to, int batchSize, int entrySize, IgniteClient client) {
             this.cfgPath = cfgPath;
             this.cacheName = cacheName;
@@ -129,13 +148,13 @@ public class ThinClientDataGenerationApplication extends IgniteAwareApplication 
             this.client = client;
         }
 
-        @Override
-        public JobResult call() {
+        /** {@inheritDoc} */
+        @Override public Integer call() {
             log.info(String.format("Start job: [%s]", toString()));
 
             try {
                 if (createClientConnection)
-                    client = getClient();
+                    client = Ignition.startClient(IgnitionEx.loadSpringBean(cfgPath, "thin.client.cfg"));
 
                 ClientCache<Integer, BinaryObject> cache = client.cache(cacheName);
 
@@ -166,23 +185,18 @@ public class ThinClientDataGenerationApplication extends IgniteAwareApplication 
                 }
 
                 log.error(String.format("Failed job: [%s]", this.toString()), e);
-                return JobResult.error();
+                return 1;
             }
 
             if (createClientConnection && client != null)
                 client.close();
 
             log.info(String.format("Finish job: [%s]", this.toString()));
-            return JobResult.ok();
+            return 0;
         }
 
-        private IgniteClient getClient() throws IgniteCheckedException {
-            ClientConfiguration cfg = IgnitionEx.loadSpringBean(cfgPath, "thin.client.cfg");
-            return Ignition.startClient(cfg);
-        }
-
-        @Override
-        public String toString() {
+        /** {@inheritDoc} */
+        @Override public String toString() {
             return "PutJob{" +
                     "from=" + from +
                     ", to=" + to +
