@@ -69,15 +69,19 @@ class JmxClient:
         return os.path.join(f"java -jar {self.install_root}/jmxterm.jar -v silent -n")
 
     @memoize
-    def find_mbean(self, pattern, domain='org.apache'):
+    def find_mbean(self, pattern, negative_pattern=None, domain='org.apache'):
         """
         Find mbean by specified pattern and domain on node.
         :param pattern: MBean name pattern.
+        :param negative_pattern: if passed used to filter out some MBeans
         :param domain: Domain of MBean
         :return: JmxMBean instance
         """
         cmd = "echo $'open %s\\n beans -d %s \\n close' | %s | grep -E -o '%s'" \
               % (self.pid, domain, self.jmx_util_cmd, pattern)
+
+        if negative_pattern:
+            cmd += " | grep -E -v '%s'" % negative_pattern
 
         name = next(self.__run_cmd(cmd)).strip()
 

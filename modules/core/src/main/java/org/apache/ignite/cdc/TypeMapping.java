@@ -47,5 +47,5 @@ public interface TypeMapping extends Serializable {
     public String typeName();
 
     /** @return Platform type. */
-    public PlatformType platform();
+    public PlatformType platformType();
 }

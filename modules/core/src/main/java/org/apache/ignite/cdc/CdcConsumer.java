@@ -110,7 +110,7 @@ public interface CdcConsumer {
      * and ongoing notifications after CDC application fail/restart will be continued for newly changed caches.
      * Invoked before all other notifications.
      *
-     * @see Ignite#createCache(String) 
+     * @see Ignite#createCache(String)
      * @see Ignite#getOrCreateCache(String)
      * @see CdcCacheEvent
      */

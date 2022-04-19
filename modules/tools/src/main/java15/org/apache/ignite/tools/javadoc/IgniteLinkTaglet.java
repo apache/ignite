@@ -17,13 +17,13 @@
 
 package org.apache.ignite.tools.javadoc;
 
-import com.sun.source.doctree.DocTree;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import javax.lang.model.element.Element;
+import com.sun.source.doctree.DocTree;
 
 /**
  * Represents {@ignitelink Class} tag. This tag can
@@ -42,6 +42,7 @@ public class IgniteLinkTaglet implements jdk.javadoc.doclet.Taglet {
         return NAME;
     }
 
+    /** {@inheritDoc} */
     @Override public String toString(List<? extends DocTree> tags, Element element) {
         StringBuilder sb = new StringBuilder();
 
@@ -54,6 +55,7 @@ public class IgniteLinkTaglet implements jdk.javadoc.doclet.Taglet {
         return sb.toString();
     }
 
+    /** {@inheritDoc} */
     @Override public Set<Location> getAllowedLocations() {
         return new HashSet<>();
     }

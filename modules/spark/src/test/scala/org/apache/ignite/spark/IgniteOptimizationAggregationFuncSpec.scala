@@ -131,7 +131,7 @@ class IgniteOptimizationAggregationFuncSpec extends AbstractDataFrameSpec {
               |    id LONG,
               |    val DOUBLE,
               |    int_val LONG,
-              |    decimal_val DECIMAL(5, 5),
+              |    decimal_val DECIMAL(5, 2),
               |    PRIMARY KEY (id)) WITH "backups=1"
             """.stripMargin)).getAll
 
