@@ -47,8 +47,8 @@ public class SortNode<Row> extends AbstractNode<Row> implements SingleNode<Row>,
     /**
      * @param ctx Execution context.
      * @param comp Rows comparator.
-     * @param offset SQL select offset.
-     * @param limit SQL select limit.
+     * @param offset Offset.
+     * @param limit Limit.
      */
     public SortNode(ExecutionContext<Row> ctx, RelDataType rowType, Comparator<Row> comp,
         @Nullable Supplier<Integer> offset, @Nullable Supplier<Integer> limit) {

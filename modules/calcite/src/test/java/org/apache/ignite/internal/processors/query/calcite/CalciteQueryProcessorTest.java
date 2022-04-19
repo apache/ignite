@@ -1049,6 +1049,27 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
             .returns(13d)
             .check();
 
+        assertQuery(client, "select salary from account where salary > SOME (10, 11) ORDER BY salary OFFSET 1")
+            .returns(12d)
+            .returns(13d)
+            .returns(13d)
+            .returns(13d)
+            .check();
+
+        assertQuery(client, "select salary from account where salary > 11 ORDER BY salary LIMIT 3 OFFSET 1")
+            .returns(13d)
+            .returns(13d)
+            .returns(13d)
+            .check();
+
+        assertQuery(client, "select salary from account where salary > 11 ORDER BY salary LIMIT 0")
+            .returns()
+            .check();
+
+        assertQuery(client, "select salary from account where salary > 11 ORDER BY salary LIMIT 0 offset 1")
+            .returns()
+            .check();
+
         assertQuery(client, "select salary from account where salary < SOME (12, 12) ORDER BY salary")
             .returns(10d)
             .returns(11d)

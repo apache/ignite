@@ -309,7 +309,8 @@ public abstract class QueryChecker {
         if (expectedResult == null)
             expectedResult = new ArrayList<>();
 
-        expectedResult.add(Arrays.asList(res));
+        if (res.length > 0)
+            expectedResult.add(Arrays.asList(res));
 
         return this;
     }
