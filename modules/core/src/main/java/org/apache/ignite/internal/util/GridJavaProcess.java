@@ -251,6 +251,19 @@ public final class GridJavaProcess {
         return proc;
     }
 
+    /** Sends STOP signal to pause the process. */
+    public void stopProcess() throws Exception {
+        assert U.isUnix() || U.isMacOs();
+
+        if (pid.equals(DFLT_PID))
+            return;
+
+        Process stopProc = Runtime.getRuntime().exec(new String[]{"kill", "-STOP", pid});
+
+        if (!stopProc.waitFor(5000, TimeUnit.MILLISECONDS))
+            throw new IllegalStateException("The stop process is hanging.");
+    }
+
     /**
      * Class which grabs sys.err and sys.out of the running process in separate thread
      * and implements the interchange-with-a-process protocol.
