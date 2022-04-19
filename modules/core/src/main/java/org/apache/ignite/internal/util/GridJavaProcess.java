@@ -253,7 +253,7 @@ public final class GridJavaProcess {
 
     /** Suspends the process. */
     public void suspend() throws Exception {
-        if (!(U.isUnix() || U.isMacOs()))
+        if (!U.isUnix() && !U.isMacOs())
             throw new UnsupportedOperationException();
 
         if (pid.equals(DFLT_PID))
