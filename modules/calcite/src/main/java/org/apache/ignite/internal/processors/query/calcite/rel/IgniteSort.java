@@ -94,8 +94,7 @@ public class IgniteSort extends Sort implements IgniteRel {
         RelCollation newCollation,
         RexNode offset,
         RexNode limit
-
-        ) {
+    ) {
         return new IgniteSort(getCluster(), traitSet, newInput, newCollation, offset, limit);
     }
 
@@ -131,20 +130,21 @@ public class IgniteSort extends Sort implements IgniteRel {
 
     /** {@inheritDoc} */
     @Override public RelOptCost computeSelfCost(RelOptPlanner planner, RelMetadataQuery mq) {
-        double inputRowCount = mq.getRowCount(getInput());
+        double inputRows = mq.getRowCount(getInput());
 
-        double lim = fetch != null ? doubleFromRex(fetch, inputRowCount * FETCH_IS_PARAM_FACTOR) : inputRowCount;
-        double offset = this.offset != null ? doubleFromRex(this.offset, inputRowCount * OFFSET_IS_PARAM_FACTOR)
+        double lim = fetch != null ? doubleFromRex(fetch, inputRows * FETCH_IS_PARAM_FACTOR) : inputRows;
+        double offset = this.offset != null ? doubleFromRex(this.offset, inputRows * OFFSET_IS_PARAM_FACTOR)
             : 0;
 
-        double rows = Math.min(inputRowCount, offset + lim);
+        double memRows = Math.min(inputRows, offset + lim);
 
-        double cpuCost = rows * IgniteCost.ROW_PASS_THROUGH_COST + Util.nLogN(rows) * IgniteCost.ROW_COMPARISON_COST;
-        double memory = rows * getRowType().getFieldCount() * IgniteCost.AVERAGE_FIELD_SIZE;
+        double cpuCost = inputRows * IgniteCost.ROW_PASS_THROUGH_COST + Util.nLogM(inputRows, memRows)
+            * IgniteCost.ROW_COMPARISON_COST;
+        double memory = memRows * getRowType().getFieldCount() * IgniteCost.AVERAGE_FIELD_SIZE;
 
         IgniteCostFactory costFactory = (IgniteCostFactory)planner.getCostFactory();
 
-        RelOptCost cost = costFactory.makeCost(rows, cpuCost, 0, memory, 0);
+        RelOptCost cost = costFactory.makeCost(inputRows, cpuCost, 0, memory, 0);
 
         // Distributed sorting is more preferable than sorting on the single node.
         if (TraitUtils.distribution(traitSet).satisfies(IgniteDistributions.single()))

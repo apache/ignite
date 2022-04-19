@@ -18,7 +18,6 @@ package org.apache.ignite.internal.processors.query.calcite.exec.rel;
 
 import java.util.Comparator;
 import java.util.PriorityQueue;
-
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 import org.apache.calcite.rel.type.RelDataType;
@@ -42,14 +41,14 @@ public class SortNode<Row> extends AbstractNode<Row> implements SingleNode<Row>,
     /** Rows buffer. */
     private final PriorityQueue<Row> rows;
 
-    /** The limit. Negative if disabled. */
+    /** SQL select limit. Negative if disabled. */
     private final int limit;
 
     /**
      * @param ctx Execution context.
      * @param comp Rows comparator.
-     * @param offset SQL offset.
-     * @param limit SQL limit.
+     * @param offset SQL select offset.
+     * @param limit SQL select limit.
      */
     public SortNode(ExecutionContext<Row> ctx, RelDataType rowType, Comparator<Row> comp,
         @Nullable Supplier<Integer> offset, @Nullable Supplier<Integer> limit) {

@@ -136,9 +136,9 @@ public class TraitUtils {
 
         Sort sortNode = null;
 
-        if(rel instanceof SortNode)
+        if (rel instanceof SortNode)
             sortNode = (Sort)rel;
-        if(rel instanceof RelSubset && ((RelSubset)rel).getOriginal() instanceof Sort)
+        if (rel instanceof RelSubset && ((RelSubset)rel).getOriginal() instanceof Sort)
             sortNode = (Sort)((RelSubset)rel).getOriginal();
 
         return new IgniteSort(rel.getCluster(), traits, rel, toTrait, sortNode == null ? null : sortNode.offset,

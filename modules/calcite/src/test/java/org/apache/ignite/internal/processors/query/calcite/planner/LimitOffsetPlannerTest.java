@@ -39,9 +39,9 @@ import org.junit.Test;
  */
 public class LimitOffsetPlannerTest extends AbstractPlannerTest {
     /** Row count in table. */
-    private static final double ROW_CNT = 90;
+    private static final double ROW_CNT = 100d;
 
-    /** Tests Exchange goes before Sort with limit. */
+    /** Tests Exchange goes before Sort and limit. */
     @Test
     public void testLimitExchange() throws Exception {
         IgniteSchema publicSchema = createSchemaWithTable(IgniteDistributions.random());
