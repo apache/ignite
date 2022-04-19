@@ -66,8 +66,9 @@ public class TcpCommunicationSpiFreezingClientTest extends GridCommonAbstractTes
 
     /** @throws Exception If failed. */
     @Test
+    @SuppressWarnings("ThrowableNotThrown")
     public void testFreezingClient() throws Exception {
-        Assume.assumeTrue("The 'kill' command is used to simulate freezing client.", U.isUnix() || U.isMacOs());
+        Assume.assumeTrue("The test reqires the 'kill' command.", U.isUnix() || U.isMacOs());
 
         Ignite srv = startGrid(0);
         IgniteProcessProxy client = (IgniteProcessProxy)startClientGrid("client");
@@ -75,8 +76,8 @@ public class TcpCommunicationSpiFreezingClientTest extends GridCommonAbstractTes
         // Close communication connections by idle.
         waitConnectionsClosed(srv);
 
-        // Simulate STW on the client.
-        client.getProcess().stopProcess();
+        // Simulate freeze/STW on the client.
+        client.getProcess().stop();
 
         // Open new communication connection to the freezing client.
         GridTestUtils.assertThrowsWithCause(

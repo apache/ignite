@@ -252,7 +252,7 @@ public final class GridJavaProcess {
     }
 
     /** Sends STOP signal to pause the process. */
-    public void stopProcess() throws Exception {
+    public void stop() throws Exception {
         assert U.isUnix() || U.isMacOs();
 
         if (pid.equals(DFLT_PID))
