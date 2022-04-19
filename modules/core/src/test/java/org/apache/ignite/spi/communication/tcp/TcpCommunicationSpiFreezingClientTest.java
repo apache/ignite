@@ -77,7 +77,7 @@ public class TcpCommunicationSpiFreezingClientTest extends GridCommonAbstractTes
         waitConnectionsClosed(srv);
 
         // Simulate freeze/STW on the client.
-        client.getProcess().stop();
+        client.getProcess().suspend();
 
         // Open new communication connection to the freezing client.
         GridTestUtils.assertThrowsWithCause(
