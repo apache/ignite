@@ -196,7 +196,7 @@ public class CdcConsumerState {
      * @return Saved state.
      */
     public Map<Integer, Long> loadCaches() {
-        Map<Integer, Long> state = load0(caches);
+        Map<Integer, Long> state = load(caches, HashMap::new);
 
         log.info("Initial caches state loaded [cachesCnt=" + state.size() + ']');
 
@@ -213,7 +213,7 @@ public class CdcConsumerState {
      * @param cachesState State of caches.
      */
     public void saveCaches(Map<Integer, Long> cachesState) throws IOException {
-        save0(cachesState, tmpCaches, caches);
+        save(cachesState, tmpCaches, caches);
     }
 
     /**

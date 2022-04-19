@@ -31,15 +31,14 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.function.Function;
 import java.util.stream.Stream;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.binary.BinaryType;
+import org.apache.ignite.cdc.CdcCacheEvent;
 import org.apache.ignite.cdc.CdcConfiguration;
 import org.apache.ignite.cdc.CdcConsumer;
-import org.apache.ignite.cdc.CdcCacheEvent;
 import org.apache.ignite.cdc.CdcEvent;
 import org.apache.ignite.cdc.TypeMapping;
 import org.apache.ignite.configuration.DataRegionConfiguration;
@@ -66,7 +65,6 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.marshaller.MarshallerUtils;
 import org.apache.ignite.platform.PlatformType;
 import org.apache.ignite.startup.cmdline.CdcCommandLineStartup;
@@ -561,110 +559,12 @@ public class CdcMain implements Runnable {
     private void updateMetadata() {
         long start = System.currentTimeMillis();
 
-        updateMappings();
-
-        updateTypes();
-
-        metaUpdate.value(System.currentTimeMillis() - start);
-    }
-
-    /** Search for new or changed {@link BinaryType} and notifies the consumer. */
-    private void updateTypes() {
-        try {
-            Iterator<BinaryType> changedTypes = Files.list(binaryMeta.toPath())
-                .filter(p -> p.toString().endsWith(METADATA_FILE_SUFFIX))
-                .map(p -> {
-                    int typeId = BinaryUtils.typeId(p.getFileName().toString());
-                    long lastModified = p.toFile().lastModified();
-
-                    // Filter out files already in `typesState` with the same last modify date.
-                    if (typesState.containsKey(typeId) && lastModified == typesState.get(typeId))
-                        return null;
-
-                    typesState.put(typeId, lastModified);
-
-                    try {
-                        kctx.cacheObjects().cacheMetadataLocally(binaryMeta, typeId);
-                    }
-                    catch (IgniteCheckedException e) {
-                        throw new IgniteException(e);
-                    }
-
-                    return kctx.cacheObjects().metadata(typeId);
-                })
-                .filter(Objects::nonNull)
-                .iterator();
-
-            if (!changedTypes.hasNext())
-                return;
-
-            consumer.onTypes(changedTypes);
-
-            if (changedTypes.hasNext())
-                throw new IllegalStateException("Consumer should handle all changed types");
-
-            state.saveTypes(typesState);
-        }
-        catch (IOException e) {
-            throw new IgniteException(e);
-        }
-    }
-
-    /** Search for new or changed {@link TypeMapping} and notifies the consumer. */
-    private void updateMappings() {
-        try {
-            File[] files = marshaller.listFiles(BinaryUtils::notTmpFile);
-
-            if (files == null)
-                return;
-
-            Iterator<TypeMapping> changedMappings = Arrays.stream(files)
-                .map(f -> {
-                    String fileName = f.getName();
-
-                    int typeId = BinaryUtils.mappedTypeId(fileName);
-                    byte platformId = BinaryUtils.mappedFilePlatformId(fileName);
-
-                    T2<Integer, Byte> state = new T2<>(typeId, platformId);
-
-                    if (mappingsState.contains(state))
-                        return null;
-
-                    mappingsState.add(state);
-
-                    return (TypeMapping)new TypeMappingImpl(
-                        typeId,
-                        BinaryUtils.readMapping(f),
-                        platformId == 0 ? PlatformType.JAVA : PlatformType.DOTNET);
-                })
-                .filter(Objects::nonNull)
-                .iterator();
-
-            if (!changedMappings.hasNext())
-                return;
-
-            consumer.onMappings(changedMappings);
-
-            if (changedMappings.hasNext())
-                throw new IllegalStateException("Consumer should handle all changed mappings");
-
-            state.saveMappings(mappingsState);
-        }
-        catch (IOException e) {
-            throw new IgniteException(e);
-        }
-    }
-
-    /** Metadata update. */
-    private void updateMetadata() {
-        long start = System.currentTimeMillis();
-
         try {
             updateMappings();
 
             updateTypes();
 
-            updateTypes();
+            updateCaches();
         }
         catch (IOException e) {
             throw new IgniteException(e);
@@ -672,6 +572,87 @@ public class CdcMain implements Runnable {
         finally {
             metaUpdate.value(System.currentTimeMillis() - start);
         }
+    }
+
+    /** Search for new or changed {@link BinaryType} and notifies the consumer. */
+    private void updateTypes() throws IOException {
+        File[] files = binaryMeta.listFiles(f -> f.getName().endsWith(METADATA_FILE_SUFFIX));
+
+        if (files == null)
+            return;
+
+        Iterator<BinaryType> changedTypes = Arrays.stream(files)
+            .map(f -> {
+                int typeId = BinaryUtils.typeId(f.getName());
+                long lastModified = f.lastModified();
+
+                // Filter out files already in `typesState` with the same last modify date.
+                if (typesState.containsKey(typeId) && lastModified == typesState.get(typeId))
+                    return null;
+
+                typesState.put(typeId, lastModified);
+
+                try {
+                    kctx.cacheObjects().cacheMetadataLocally(binaryMeta, typeId);
+                }
+                catch (IgniteCheckedException e) {
+                    throw new IgniteException(e);
+                }
+
+                return kctx.cacheObjects().metadata(typeId);
+            })
+            .filter(Objects::nonNull)
+            .iterator();
+
+        if (!changedTypes.hasNext())
+            return;
+
+        consumer.onTypes(changedTypes);
+
+        if (changedTypes.hasNext())
+            throw new IllegalStateException("Consumer should handle all changed types");
+
+        state.saveTypes(typesState);
+    }
+
+    /** Search for new or changed {@link TypeMapping} and notifies the consumer. */
+    private void updateMappings() throws IOException {
+        File[] files = marshaller.listFiles(BinaryUtils::notTmpFile);
+
+        if (files == null)
+            return;
+
+        Iterator<TypeMapping> changedMappings = Arrays.stream(files)
+            .map(f -> {
+                String fileName = f.getName();
+
+                int typeId = BinaryUtils.mappedTypeId(fileName);
+                byte platformId = BinaryUtils.mappedFilePlatformId(fileName);
+
+                T2<Integer, Byte> state = new T2<>(typeId, platformId);
+
+                if (mappingsState.contains(state))
+                    return null;
+
+                mappingsState.add(state);
+
+                return (TypeMapping)new TypeMappingImpl(
+                    typeId,
+                    BinaryUtils.readMapping(f),
+                    platformId == 0 ? PlatformType.JAVA : PlatformType.DOTNET);
+            })
+            .filter(Objects::nonNull)
+            .iterator();
+
+        if (!changedMappings.hasNext())
+            return;
+
+        consumer.onMappings(changedMappings);
+
+        if (changedMappings.hasNext())
+            throw new IllegalStateException("Consumer should handle all changed mappings");
+
+        state.saveMappings(mappingsState);
     }
 
     /** Search for new or changed {@link CdcCacheEvent} and notifies the consumer. */
@@ -731,78 +712,6 @@ public class CdcMain implements Runnable {
         }
 
         state.saveCaches(cachesState);
-    }
-
-    /** Search for new or changed {@link BinaryType} and notifies the consumer. */
-    private void updateTypes() throws IOException {
-        Iterator<BinaryType> changedTypes = Files.list(binaryMeta.toPath())
-            .filter(p -> p.toString().endsWith(METADATA_FILE_SUFFIX))
-            .map(p -> {
-                int typeId = BinaryUtils.typeId(p.getFileName().toString());
-
-                // Filter out files already in `typesState` with the same last modify date.
-                return typesState.containsKey(typeId) && p.toFile().lastModified() == typesState.get(typeId)
-                    ? null
-                    : new T2<>(typeId, p.toFile().lastModified());
-
-            })
-            .filter(Objects::nonNull)
-            .peek(t -> typesState.put(t.get1(), t.get2())) // Adding peeked up types to the state map.
-            .map(t -> {
-                try {
-                    kctx.cacheObjects().cacheMetadataLocally(binaryMeta, t.get1());
-                }
-                catch (IgniteCheckedException e) {
-                    throw new IgniteException(e);
-                }
-
-                return kctx.cacheObjects().metadata(t.get1());
-            })
-            .iterator();
-
-        if (!changedTypes.hasNext())
-            return;
-
-        consumer.onTypes(changedTypes);
-
-        if (changedTypes.hasNext())
-            throw new IllegalStateException("Consumer should handle all changed types");
-
-        state.saveTypes(typesState);
-    }
-
-    /** Search for new or changed {@link TypeMapping} and notifies the consumer. */
-    private void updateMappings() throws IOException {
-        Iterator<TypeMapping> changedMappings = Arrays.stream(marshaller.listFiles(BinaryUtils::isMappingFile))
-            .map(f -> {
-                String fileName = f.getName();
-
-                int typeId = BinaryUtils.mappedTypeId(fileName);
-                byte platformId = BinaryUtils.mappedFilePlatformId(fileName);
-
-                T2<Integer, Byte> data = new T2<>(typeId, platformId);
-
-                // Filter out files already in `mappingsState`.
-                return mappingsState.contains(data) ? null : new Object[] {data, f};
-            })
-            .filter(Objects::nonNull)
-            .peek(d -> mappingsState.add((T2<Integer, Byte>)d[0])) // Adding peeked up mappings to state.
-            .map((Function<Object[], TypeMapping>)(t -> new TypeMappingImpl(
-                ((IgniteBiTuple<Integer, Byte>)t[0]).get1(),
-                BinaryUtils.readMapping((File)t[1]),
-                ((IgniteBiTuple<Integer, Byte>)t[0]).get2() == 0 ? PlatformType.JAVA : PlatformType.DOTNET)
-            ))
-            .iterator();
-
-        if (!changedMappings.hasNext())
-            return;
-
-        consumer.onMappings(changedMappings);
-
-        if (changedMappings.hasNext())
-            throw new IllegalStateException("Consumer should handle all changed mappings");
-
-        state.save(mappingsState);
     }
 
     /**
