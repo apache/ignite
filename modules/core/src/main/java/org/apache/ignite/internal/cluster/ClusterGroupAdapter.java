@@ -52,7 +52,7 @@ import org.apache.ignite.internal.IgniteServicesImpl;
 import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.executor.GridExecutorService;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
-import org.apache.ignite.internal.processors.igfs.IgfsNodePredicate;
+
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -613,8 +613,7 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
 	/** {@inheritDoc} */
     @Override public ClusterGroup forIgfsMetadataDataNodes(String igfsName, String metaCacheName) {
         assert metaCacheName != null;
-
-        return forPredicate(new IgfsNodePredicate(igfsName)).forDataNodes(metaCacheName);
+        return forPredicate(this.ctx.igfsHelper().igfsNodePredicate(igfsName)).forDataNodes(metaCacheName);
     }
 
     /** {@inheritDoc} */

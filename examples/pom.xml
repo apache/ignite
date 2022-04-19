@@ -83,6 +83,12 @@
             <groupId>${project.groupId}</groupId>
             <artifactId>ignite-calcite</artifactId>
         </dependency>
+        
+        <dependency>
+            <groupId>org.apache.ignite</groupId>
+            <artifactId>ignite-igfs</artifactId>
+             <version>${project.version}</version>         
+        </dependency>  
 
         <dependency>
             <groupId>${project.groupId}</groupId>

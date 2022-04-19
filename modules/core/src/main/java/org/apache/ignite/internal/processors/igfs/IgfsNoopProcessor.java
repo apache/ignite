@@ -21,6 +21,7 @@ import java.util.Collection;
 import java.util.Collections;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteFileSystem;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.compute.ComputeJob;
 import org.apache.ignite.igfs.IgfsPath;
 import org.apache.ignite.igfs.mapreduce.IgfsJob;
@@ -28,6 +29,9 @@ import org.apache.ignite.igfs.mapreduce.IgfsRecordResolver;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.util.ipc.IpcServerEndpoint;
 import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.plugin.extensions.communication.IgniteMessageFactory;
+import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -49,7 +53,8 @@ public class IgfsNoopProcessor extends IgfsProcessorAdapter {
         X.println(">>> IGFS processor memory stats [igniteInstanceName=" + ctx.igniteInstanceName() + ']');
         X.println(">>>   igfsCacheSize: " + 0);
     }
-
+   
+    
     /** {@inheritDoc} */
     @Override public Collection<IgniteFileSystem> igfss() {
         return Collections.emptyList();
@@ -80,4 +85,6 @@ public class IgfsNoopProcessor extends IgfsProcessorAdapter {
     @Override public void onDeActivate(GridKernalContext kctx) {
         // No-op
     }
+    
+    
 }

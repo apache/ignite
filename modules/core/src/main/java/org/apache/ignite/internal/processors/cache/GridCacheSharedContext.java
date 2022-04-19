@@ -308,7 +308,7 @@ public class GridCacheSharedContext<K, V> {
      * @throws IgniteCheckedException If failed.
      */
     public void activate() throws IgniteCheckedException {
-        long time = System.currentTimeMillis();
+        long time = System.currentTimeMillis();        
 
         for (IgniteChangeGlobalStateSupport mgr : stateAwareMgrs)
             mgr.onActivate(kernalCtx);
@@ -320,9 +320,11 @@ public class GridCacheSharedContext<K, V> {
     /**
      *
      */
-    public void deactivate() {
+    public void deactivate() {    	
+        
         for (int i = stateAwareMgrs.size() - 1; i >= 0; i--)
             stateAwareMgrs.get(i).onDeActivate(kernalCtx);
+        
     }
 
     /**

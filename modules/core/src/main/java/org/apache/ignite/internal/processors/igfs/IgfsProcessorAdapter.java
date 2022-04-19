@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.igfs;
 
 import java.util.Collection;
 import org.apache.ignite.IgniteFileSystem;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.compute.ComputeJob;
 import org.apache.ignite.igfs.IgfsPath;
 import org.apache.ignite.igfs.mapreduce.IgfsJob;
@@ -27,6 +28,8 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
 import org.apache.ignite.internal.util.ipc.IpcServerEndpoint;
+import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -42,6 +45,8 @@ public abstract class IgfsProcessorAdapter extends GridProcessorAdapter implemen
         super(ctx);
     }
 
+    
+    
     /**
      * Gets all IGFS instances.
      *
@@ -77,5 +82,5 @@ public abstract class IgfsProcessorAdapter extends GridProcessorAdapter implemen
      * @return Compute job.
      */
     @Nullable public abstract ComputeJob createJob(IgfsJob job, @Nullable String igfsName, IgfsPath path,
-        long start, long length, IgfsRecordResolver recRslv);
+        long start, long length, IgfsRecordResolver recRslv);    
 }

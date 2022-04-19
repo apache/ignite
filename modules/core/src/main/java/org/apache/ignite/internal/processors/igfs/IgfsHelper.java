@@ -18,7 +18,10 @@
 package org.apache.ignite.internal.processors.igfs;
 
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
 
 /**
  * IGFS utility processor adapter.
@@ -46,4 +49,8 @@ public interface IgfsHelper {
      * @return {@code True} if IGFS block key.
      */
     public abstract boolean isIgfsBlockKey(Object key);
+    
+    public abstract IgnitePredicate<ClusterNode> igfsNodePredicate(String igfsName);
+    
+    public abstract MessageFactoryProvider igfsMessageFactory();
 }

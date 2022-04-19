@@ -1463,6 +1463,9 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
                 try {
                     ctx.dataStructures().onActivate(ctx);
 
+                    // add@byron
+                    ctx.igfs().onActivate(ctx);
+                    // end@
                     ctx.task().onActivate(ctx);
 
                     ctx.encryption().onActivate(ctx);

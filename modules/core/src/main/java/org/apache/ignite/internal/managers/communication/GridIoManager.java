@@ -469,6 +469,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         List<MessageFactory> compMsgs = new ArrayList<>();
 
         compMsgs.add(new GridIoMessageFactory());
+        compMsgs.add(ctx.igfsHelper().igfsMessageFactory());
 
         for (IgniteComponentType compType : IgniteComponentType.values()) {
             MessageFactory f = compType.messageFactory();

@@ -28,8 +28,9 @@ import org.apache.ignite.binary.BinaryRawWriter;
 import org.apache.ignite.binary.BinaryReader;
 import org.apache.ignite.binary.BinaryWriter;
 import org.apache.ignite.binary.Binarylizable;
-import org.apache.ignite.internal.processors.igfs.IgfsUtils;
+
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Path summary: total files count, total directories count, total length.
@@ -137,7 +138,7 @@ public class IgfsPathSummary implements Externalizable, Binarylizable {
         dirCnt = in.readInt();
         totalLen = in.readLong();
 
-        path = IgfsUtils.readPath(in);
+        path = readPath(in);
     }
 
     /** {@inheritDoc} */
@@ -148,7 +149,7 @@ public class IgfsPathSummary implements Externalizable, Binarylizable {
         rawWriter.writeInt(dirCnt);
         rawWriter.writeLong(totalLen);
 
-        IgfsUtils.writePath(rawWriter, path);
+        writePath(rawWriter, path);
     }
 
     /** {@inheritDoc} */
@@ -159,11 +160,62 @@ public class IgfsPathSummary implements Externalizable, Binarylizable {
         dirCnt = rawReader.readInt();
         totalLen = rawReader.readLong();
 
-        path = IgfsUtils.readPath(rawReader);
+        path = readPath(rawReader);
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(IgfsPathSummary.class, this);
     }
+    
+
+    /**
+     * Read non-null path from the input.
+     *
+     * @param in Input.
+     * @return IGFS path.
+     * @throws IOException If failed.
+     */
+    public static IgfsPath readPath(ObjectInput in) throws IOException {
+        IgfsPath res = new IgfsPath();
+
+        res.readExternal(in);
+
+        return res;
+    }
+    
+    /**
+     * Read IGFS path.
+     *
+     * @param reader Reader.
+     * @return Path.
+     */
+    @Nullable public static IgfsPath readPath(BinaryRawReader reader) {
+        if (reader.readBoolean()) {
+            IgfsPath path = new IgfsPath();
+
+            path.readRawBinary(reader);
+
+            return path;
+        }
+        else
+            return null;
+    }
+    
+    /**
+     * Write IGFS path.
+     *
+     * @param writer Writer.
+     * @param path Path.
+     */
+    public static void writePath(BinaryRawWriter writer, @Nullable IgfsPath path) {
+        if (path != null) {
+            writer.writeBoolean(true);
+
+            path.writeRawBinary(writer);
+        }
+        else
+            writer.writeBoolean(false);
+    }
+
 }

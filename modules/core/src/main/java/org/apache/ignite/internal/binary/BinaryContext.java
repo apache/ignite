@@ -105,7 +105,7 @@ public class BinaryContext {
         new BinaryInternalMapper(new BinaryBasicNameMapper(true), new BinaryBasicIdMapper(true), false);
 
     /** Set of system classes that should be marshalled with BinaryMarshaller. */
-    private static final Set<String> BINARYLIZABLE_SYS_CLSS;
+    public static final Set<String> BINARYLIZABLE_SYS_CLSS = new HashSet<>();
 
     /* Binarylizable system classes set initialization. */
     static {
@@ -129,7 +129,7 @@ public class BinaryContext {
             sysClss.add(TreeSet.class.getName());
         }
 
-        BINARYLIZABLE_SYS_CLSS = Collections.unmodifiableSet(sysClss);
+        BINARYLIZABLE_SYS_CLSS.addAll(sysClss);
     }
 
     /** */
