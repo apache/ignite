@@ -462,6 +462,7 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
     /** {@inheritDoc} */
     @Override public Node<Row> visit(IgniteSort rel) {
         RelCollation collation = rel.getCollation();
+
         Supplier<Integer> limit = (rel.fetch == null) ? null : expressionFactory.execute(rel.fetch);
         Supplier<Integer> offset = (rel.offset == null) ? null : expressionFactory.execute(rel.offset);
 

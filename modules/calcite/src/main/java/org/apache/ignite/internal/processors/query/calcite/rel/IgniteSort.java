@@ -38,6 +38,7 @@ import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribut
 import org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils;
 
 import static org.apache.ignite.internal.processors.query.calcite.rel.IgniteLimit.FETCH_IS_PARAM_FACTOR;
+import static org.apache.ignite.internal.processors.query.calcite.rel.IgniteLimit.OFFSET_IS_PARAM_FACTOR;
 import static org.apache.ignite.internal.processors.query.calcite.rel.IgniteLimit.doubleFromRex;
 import static org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils.changeTraits;
 
@@ -133,12 +134,10 @@ public class IgniteSort extends Sort implements IgniteRel {
         double inputRowCount = mq.getRowCount(getInput());
 
         double lim = fetch != null ? doubleFromRex(fetch, inputRowCount * FETCH_IS_PARAM_FACTOR) : inputRowCount;
-        double offset = this.offset != null ? doubleFromRex(this.offset, inputRowCount * FETCH_IS_PARAM_FACTOR)
+        double offset = this.offset != null ? doubleFromRex(this.offset, inputRowCount * OFFSET_IS_PARAM_FACTOR)
             : 0;
 
         double rows = Math.min(inputRowCount, offset + lim);
-
-        rows = mq.getRowCount(getInput());
 
         double cpuCost = rows * IgniteCost.ROW_PASS_THROUGH_COST + Util.nLogN(rows) * IgniteCost.ROW_COMPARISON_COST;
         double memory = rows * getRowType().getFieldCount() * IgniteCost.AVERAGE_FIELD_SIZE;
@@ -157,5 +156,10 @@ public class IgniteSort extends Sort implements IgniteRel {
     /** {@inheritDoc} */
     @Override public IgniteRel clone(RelOptCluster cluster, List<IgniteRel> inputs) {
         return new IgniteSort(cluster, getTraitSet(), sole(inputs), collation, fetch, offset);
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean isEnforcer() {
+        return true;
     }
 }

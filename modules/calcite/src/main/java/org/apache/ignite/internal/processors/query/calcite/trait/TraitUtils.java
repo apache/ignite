@@ -141,10 +141,8 @@ public class TraitUtils {
         if(rel instanceof RelSubset && ((RelSubset)rel).getOriginal() instanceof Sort)
             sortNode = (Sort)((RelSubset)rel).getOriginal();
 
-//        return new IgniteSort(rel.getCluster(), traits, rel, toTrait, sortNode == null ? null : sortNode.offset,
-//            sortNode == null ? null : sortNode.fetch);
-
-        return new IgniteSort(rel.getCluster(), traits, rel, toTrait);
+        return new IgniteSort(rel.getCluster(), traits, rel, toTrait, sortNode == null ? null : sortNode.offset,
+            sortNode == null ? null : sortNode.fetch);
     }
 
     /** */

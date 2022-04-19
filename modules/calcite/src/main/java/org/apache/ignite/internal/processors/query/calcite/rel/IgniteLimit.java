@@ -44,7 +44,7 @@ public class IgniteLimit extends SingleRel implements IgniteRel {
     static final double FETCH_IS_PARAM_FACTOR = 0.01;
 
     /** In case the offset value is a DYNAMIC_PARAM. */
-    private static final double OFFSET_IS_PARAM_FACTOR = 0.5;
+    static final double OFFSET_IS_PARAM_FACTOR = 0.5;
 
     /** Offset. */
     private final RexNode offset;

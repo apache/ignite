@@ -42,8 +42,8 @@ public class SortNode<Row> extends AbstractNode<Row> implements SingleNode<Row>,
     /** Rows buffer. */
     private final PriorityQueue<Row> rows;
 
-    /** TODO */
-    private final int fetch;
+    /** The limit. Negative if disabled. */
+    private final int limit;
 
     /**
      * @param ctx Execution context.
@@ -60,7 +60,7 @@ public class SortNode<Row> extends AbstractNode<Row> implements SingleNode<Row>,
         assert limit == null || limit.get() >= 0;
         assert offset == null || offset.get() >= 0;
 
-        fetch = limit == null ? -1 : limit.get() + (offset == null ? 0 : offset.get());
+        this.limit = limit == null ? -1 : limit.get() + (offset == null ? 0 : offset.get());
     }
 
     /**
@@ -113,7 +113,7 @@ public class SortNode<Row> extends AbstractNode<Row> implements SingleNode<Row>,
 
         rows.add(row);
 
-        if (fetch >= 0 && rows.size() > fetch) {
+        if (limit >= 0 && rows.size() > limit) {
             AtomicInteger i = new AtomicInteger();
 
             rows.removeIf(r -> i.incrementAndGet() == rows.size());

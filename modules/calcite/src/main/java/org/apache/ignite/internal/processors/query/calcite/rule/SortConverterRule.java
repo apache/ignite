@@ -95,12 +95,12 @@ public class SortConverterRule extends RelRule<SortConverterRule.Config> {
 //            call.transformTo(new IgniteLimit(cluster, limitTraits, convert(limitInput, limitTraits), sort.offset,
 //                sort.fetch));
         }
-        else {
-            RelTraitSet outTraits = cluster.traitSetOf(IgniteConvention.INSTANCE).replace(sort.getCollation());
-            RelTraitSet inTraits = cluster.traitSetOf(IgniteConvention.INSTANCE);
-            RelNode input = convert(sort.getInput(), inTraits);
-
-            call.transformTo(new IgniteSort(cluster, outTraits, input, sort.getCollation()));
-        }
+//        else {
+//            RelTraitSet outTraits = cluster.traitSetOf(IgniteConvention.INSTANCE).replace(sort.getCollation());
+//            RelTraitSet inTraits = cluster.traitSetOf(IgniteConvention.INSTANCE);
+//            RelNode input = convert(sort.getInput(), inTraits);
+//
+//            call.transformTo(new IgniteSort(cluster, outTraits, input, sort.getCollation()));
+//        }
     }
 }
