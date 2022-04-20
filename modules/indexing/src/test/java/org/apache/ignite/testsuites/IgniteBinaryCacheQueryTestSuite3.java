@@ -100,6 +100,7 @@ import org.apache.ignite.internal.processors.cache.metric.SqlViewExporterSpiTest
 import org.apache.ignite.internal.processors.cache.query.IgniteCacheQueryCacheDestroySelfTest;
 import org.apache.ignite.internal.processors.cache.query.ScanQueryConcurrentSqlUpdatesTest;
 import org.apache.ignite.internal.processors.cache.query.ScanQueryConcurrentUpdatesTest;
+import org.apache.ignite.internal.processors.query.IgniteQueryConvertibleTypesValidationTest;
 import org.apache.ignite.internal.processors.query.IgniteQueryDedicatedPoolTest;
 import org.apache.ignite.internal.processors.query.IgniteSqlCustomSchemaTest;
 import org.apache.ignite.internal.processors.query.IgniteSqlCustomSchemaWithPdsEnabled;
@@ -369,6 +370,8 @@ import org.junit.runners.Suite;
     SqlFieldTypeValidationOnKeyValueInsertTest.class,
 
     InlineIndexKeyTypeRegistryTest.class,
+
+    IgniteQueryConvertibleTypesValidationTest.class,
 
     IgniteStatisticsTestSuite.class,
 
