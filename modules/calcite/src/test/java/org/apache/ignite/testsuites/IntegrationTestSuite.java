@@ -21,7 +21,7 @@ import org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor
 import org.apache.ignite.internal.processors.query.calcite.CancelTest;
 import org.apache.ignite.internal.processors.query.calcite.DateTimeTest;
 import org.apache.ignite.internal.processors.query.calcite.FunctionsTest;
-import org.apache.ignite.internal.processors.query.calcite.LimitOffsetTest;
+import org.apache.ignite.internal.processors.query.calcite.integration.LimitOffsetTest;
 import org.apache.ignite.internal.processors.query.calcite.SqlFieldsQueryUsageTest;
 import org.apache.ignite.internal.processors.query.calcite.StdSqlOperatorsTest;
 import org.apache.ignite.internal.processors.query.calcite.UnstableTopologyTest;

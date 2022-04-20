@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.calcite;
+package org.apache.ignite.internal.processors.query.calcite.integration;
 
 import java.math.BigDecimal;
 import java.util.Arrays;
@@ -35,7 +35,6 @@ import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
 import static java.util.Collections.singletonList;
@@ -43,7 +42,7 @@ import static java.util.Collections.singletonList;
 /**
  * Limit / offset tests.
  */
-public class LimitOffsetTest extends GridCommonAbstractTest {
+public class LimitOffsetTest extends AbstractBasicIntegrationTest {
     /** */
     private static IgniteCache<Integer, String> cacheRepl;
 
@@ -89,6 +88,62 @@ public class LimitOffsetTest extends GridCommonAbstractTest {
                     .setQueryEntities(singletonList(ePart))
                     .setSqlSchema("PUBLIC"));
     }
+
+//    /** Quantified predicates test. */
+//    @Test
+//    public void quantifiedCompTest() throws InterruptedException {
+//        populateTables();
+//
+//        assertQuery(client, "select salary from account where salary > SOME (10, 11) ORDER BY salary")
+//            .returns(11d)
+//            .returns(12d)
+//            .returns(13d)
+//            .returns(13d)
+//            .returns(13d)
+//            .check();
+//
+//        assertQuery(client, "select salary from account where salary > SOME (10, 11) ORDER BY salary OFFSET 1")
+//            .returns(12d)
+//            .returns(13d)
+//            .returns(13d)
+//            .returns(13d)
+//            .check();
+//
+//        assertQuery(client, "select salary from account where salary > 11 ORDER BY salary LIMIT 3 OFFSET 1")
+//            .returns(13d)
+//            .returns(13d)
+//            .returns(13d)
+//            .check();
+//
+//        assertQuery(client, "select salary from account where salary > 11 ORDER BY salary LIMIT 0")
+//            .returnsEmpty()
+//            .check();
+//
+//        assertQuery(client, "select salary from account where salary > 11 ORDER BY salary LIMIT 0 offset 1")
+//            .returnsEmpty()
+//            .check();
+//
+//        assertQuery(client, "select salary from account where salary < SOME (12, 12) ORDER BY salary")
+//            .returns(10d)
+//            .returns(11d)
+//            .check();
+//
+//        assertQuery(client, "select salary from account where salary < ANY (11, 12) ORDER BY salary")
+//            .returns(10d)
+//            .returns(11d)
+//            .check();
+//
+//        assertQuery(client, "select salary from account where salary > ANY (12, 13) ORDER BY salary")
+//            .returns(13d)
+//            .returns(13d)
+//            .returns(13d)
+//            .check();
+//
+//        assertQuery(client, "select salary from account where salary <> ALL (12, 13) ORDER BY salary")
+//            .returns(10d)
+//            .returns(11d)
+//            .check();
+//    }
 
     /** Tests correctness of fetch / offset params. */
     @Test

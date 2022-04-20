@@ -47,6 +47,7 @@ import org.hamcrest.core.SubstringMatcher;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 /**
@@ -274,6 +275,9 @@ public abstract class QueryChecker {
     private List<List<?>> expectedResult;
 
     /** */
+    private boolean emptyResult = false;
+
+    /** */
     private List<String> expectedColumnNames;
 
     /** */
@@ -309,8 +313,18 @@ public abstract class QueryChecker {
         if (expectedResult == null)
             expectedResult = new ArrayList<>();
 
-        if (res.length > 0)
-            expectedResult.add(Arrays.asList(res));
+        expectedResult.add(Arrays.asList(res));
+
+        emptyResult = false;
+
+        return this;
+    }
+
+    /** */
+    public QueryChecker returnsEmpty() {
+        emptyResult = true;
+
+        expectedResult = null;
 
         return this;
     }
@@ -385,6 +399,8 @@ public abstract class QueryChecker {
 
             assertEqualsCollections(expectedResult, res);
         }
+        else if (emptyResult)
+            assertTrue("", res == null || res.isEmpty());
     }
 
     /** */

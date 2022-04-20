@@ -39,8 +39,8 @@ import org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils;
 
 import static org.apache.ignite.internal.processors.query.calcite.rel.IgniteLimit.FETCH_IS_PARAM_FACTOR;
 import static org.apache.ignite.internal.processors.query.calcite.rel.IgniteLimit.OFFSET_IS_PARAM_FACTOR;
-import static org.apache.ignite.internal.processors.query.calcite.rel.IgniteLimit.doubleFromRex;
 import static org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils.changeTraits;
+import static org.apache.ignite.internal.processors.query.calcite.util.RexUtils.doubleFromRex;
 
 /**
  * Ignite sort operator.
@@ -54,7 +54,7 @@ public class IgniteSort extends Sort implements IgniteRel {
      * @param child Input node.
      * @param collation Collation.
      * @param offset Offset.
-     * @param limit Limit.
+     * @param fetch Limit.
      */
     public IgniteSort(
         RelOptCluster cluster,
@@ -62,8 +62,8 @@ public class IgniteSort extends Sort implements IgniteRel {
         RelNode child,
         RelCollation collation,
         RexNode offset,
-        RexNode limit) {
-        super(cluster, traits, child, collation, offset, limit);
+        RexNode fetch) {
+        super(cluster, traits, child, collation, offset, fetch);
     }
 
     /**
@@ -132,11 +132,11 @@ public class IgniteSort extends Sort implements IgniteRel {
     @Override public RelOptCost computeSelfCost(RelOptPlanner planner, RelMetadataQuery mq) {
         double inputRows = mq.getRowCount(getInput());
 
-        double lim = fetch != null ? doubleFromRex(fetch, inputRows * FETCH_IS_PARAM_FACTOR) : inputRows;
+        double fetch = this.fetch != null ? doubleFromRex(this.fetch, inputRows * FETCH_IS_PARAM_FACTOR) : inputRows;
         double offset = this.offset != null ? doubleFromRex(this.offset, inputRows * OFFSET_IS_PARAM_FACTOR)
             : 0;
 
-        double memRows = Math.min(inputRows, offset + lim);
+        double memRows = Math.min(inputRows, offset + fetch);
 
         double cpuCost = inputRows * IgniteCost.ROW_PASS_THROUGH_COST + Util.nLogM(inputRows, memRows)
             * IgniteCost.ROW_COMPARISON_COST;
@@ -155,7 +155,7 @@ public class IgniteSort extends Sort implements IgniteRel {
 
     /** {@inheritDoc} */
     @Override public IgniteRel clone(RelOptCluster cluster, List<IgniteRel> inputs) {
-        return new IgniteSort(cluster, getTraitSet(), sole(inputs), collation, fetch, offset);
+        return new IgniteSort(cluster, getTraitSet(), sole(inputs), collation, offset, fetch);
     }
 
     /** {@inheritDoc} */

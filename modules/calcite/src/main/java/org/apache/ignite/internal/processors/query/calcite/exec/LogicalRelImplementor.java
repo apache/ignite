@@ -463,11 +463,11 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
     @Override public Node<Row> visit(IgniteSort rel) {
         RelCollation collation = rel.getCollation();
 
-        Supplier<Integer> limit = (rel.fetch == null) ? null : expressionFactory.execute(rel.fetch);
         Supplier<Integer> offset = (rel.offset == null) ? null : expressionFactory.execute(rel.offset);
+        Supplier<Integer> fetch = (rel.fetch == null) ? null : expressionFactory.execute(rel.fetch);
 
         SortNode<Row> node = new SortNode<>(ctx, rel.getRowType(), expressionFactory.comparator(collation), offset,
-            limit);
+            fetch);
 
         Node<Row> input = visit(rel.getInput());
 

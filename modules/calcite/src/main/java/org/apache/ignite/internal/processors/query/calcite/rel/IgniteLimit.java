@@ -30,13 +30,13 @@ import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelWriter;
 import org.apache.calcite.rel.SingleRel;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
-import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.rex.RexNode;
-import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.util.Pair;
 import org.apache.ignite.internal.processors.query.calcite.metadata.cost.IgniteCost;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
 import org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils;
+
+import static org.apache.ignite.internal.processors.query.calcite.util.RexUtils.doubleFromRex;
 
 /** */
 public class IgniteLimit extends SingleRel implements IgniteRel {
@@ -158,23 +158,6 @@ public class IgniteLimit extends SingleRel implements IgniteRel {
         double off = offset != null ? doubleFromRex(offset, inputRowCount * OFFSET_IS_PARAM_FACTOR) : 0;
 
         return Math.min(lim, inputRowCount - off);
-    }
-
-    /**
-     * @return Integer value of the literal expression.
-     */
-    static double doubleFromRex(RexNode n, double def) {
-        try {
-            if (n.isA(SqlKind.LITERAL))
-                return ((RexLiteral)n).getValueAs(Integer.class);
-            else
-                return def;
-        }
-        catch (Exception e) {
-            assert false : "Unable to extract value: " + e.getMessage();
-
-            return def;
-        }
     }
 
     /**
