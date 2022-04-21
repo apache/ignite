@@ -64,6 +64,30 @@ Apache Ignite with LGPL Maven Build Instructions
    Look for apache-ignite-lgpl-<version>-bin.zip in ./target/bin directory.
 
 
+Apache Ignite with NUMA allocator Build Instructions (Linux only)
+================================================
+1) Install dependencies as described at modules/numa-allocator/README.md.
+
+2) Compile and install:
+
+        ./mvnw clean install -Pall-java,licenses -DskipTests
+
+   or if you have built Apache Ignite.NET on the first step use following command:
+   (Note that 'doxygen' should be installed before running this command.)
+
+        ./mvnw clean install -Pall-java,licenses -DskipTests -DclientDocs
+
+3) Javadoc generation with NUMA allocator (optional):
+
+        ./mvnw initialize -Pjavadoc,numa-allocator
+
+4) Build Apache Ignite assembly with NUMA allocator:
+
+        ./mvnw initialize -Prelease,numa-allocator
+
+   Look for apache-ignite-<version>-bin.zip in ./target/bin directory.
+
+
 Ignite C++ Build Instructions
 =============================
 Instructions can be found at modules/platforms/cpp/DEVNOTES.txt.
