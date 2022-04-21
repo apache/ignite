@@ -194,14 +194,14 @@ public class PagesWriteThrottleSandboxTest extends GridCommonAbstractTest {
                 }
             }, "metrics-view");
 
-            final boolean sawForm = false;
+            final boolean intermittentPuts = false;
 
             try (IgniteDataStreamer<Object, Object> ds = ig.dataStreamer(CACHE_NAME)) {
                 ds.allowOverwrite(true);
 
                 while (true) {
                     long tensOfSecondsPassed = TimeUnit.NANOSECONDS.toSeconds(System.nanoTime() - startNanos) / 10;
-                    if (sawForm && tensOfSecondsPassed % 2 == 1) {
+                    if (intermittentPuts && tensOfSecondsPassed % 2 == 1) {
                         System.out.println("... sleeping ...");
                         Thread.sleep(1000);
                     }
