@@ -160,7 +160,9 @@ final class MarshallerMappingFileStore {
     void restoreMappings(MarshallerContext marshCtx) throws IgniteCheckedException {
         for (File file : mappingDir.listFiles()) {
             String name = file.getName();
-
+            // add@byron
+            if(name.endsWith(".tmp")) continue;
+            // end@
             byte platformId = getPlatformId(name);
 
             int typeId = getTypeId(name);

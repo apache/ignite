@@ -65,10 +65,5 @@ public class IgfsHelperImpl implements IgfsHelper {
     @Override public IgnitePredicate<ClusterNode> igfsNodePredicate(String igfsName) {
     	return new IgfsNodePredicate(igfsName);
     }
-    
 
-    public MessageFactoryProvider igfsMessageFactory() {
-    	IgfsMessageProvider patch = new IgfsMessageProvider();
-        return patch;
-    }
 }

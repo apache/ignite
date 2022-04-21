@@ -50,12 +50,5 @@ public class IgfsNoopHelper implements IgfsHelper {
 				return false;
 			}    		
     	};
-    }
-    
-    @Override public MessageFactoryProvider igfsMessageFactory() {
-    	return new MessageFactoryProvider() {
-			public void registerAll(IgniteMessageFactory factory) {
-			}    		
-    	};
-    }
+    }   
 }

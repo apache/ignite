@@ -657,8 +657,7 @@ public class PoolProcessor extends GridProcessorAdapter {
                 return getPeerClassLoadingExecutorService();
             case GridIoPolicy.SYSTEM_POOL:
                 return getSystemExecutorService();
-            case GridIoPolicy.PUBLIC_POOL:
-            case GridIoPolicy.IGFS_POOL: // add@byron
+            case GridIoPolicy.PUBLIC_POOL:           
                 return getExecutorService();
             case GridIoPolicy.MANAGEMENT_POOL:
                 return getManagementExecutorService();
@@ -679,7 +678,8 @@ public class PoolProcessor extends GridProcessorAdapter {
                 assert getServiceExecutorService() != null : "Service pool is not configured.";
 
                 return getServiceExecutorService();
-
+                
+            case GridIoPolicy.IGFS_POOL: // add@byronIGFS_POOL
             case GridIoPolicy.DATA_STREAMER_POOL:
                 assert getDataStreamerExecutorService() != null : "Data streamer pool is not configured.";
 

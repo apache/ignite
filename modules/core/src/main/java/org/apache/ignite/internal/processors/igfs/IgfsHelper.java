@@ -52,5 +52,4 @@ public interface IgfsHelper {
     
     public abstract IgnitePredicate<ClusterNode> igfsNodePredicate(String igfsName);
     
-    public abstract MessageFactoryProvider igfsMessageFactory();
 }

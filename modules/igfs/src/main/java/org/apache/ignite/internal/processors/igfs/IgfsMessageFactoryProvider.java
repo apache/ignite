@@ -33,7 +33,7 @@ import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
 /**
  * Binary context.
  */
-public class IgfsMessageProvider implements MessageFactoryProvider {
+public class IgfsMessageFactoryProvider implements MessageFactoryProvider {
    
 
     /** Set of system classes that should be marshalled with BinaryMarshaller. */

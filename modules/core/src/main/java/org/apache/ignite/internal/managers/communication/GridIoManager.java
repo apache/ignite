@@ -468,8 +468,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
 
         List<MessageFactory> compMsgs = new ArrayList<>();
 
-        compMsgs.add(new GridIoMessageFactory());
-        compMsgs.add(ctx.igfsHelper().igfsMessageFactory());
+        compMsgs.add(new GridIoMessageFactory());        
 
         for (IgniteComponentType compType : IgniteComponentType.values()) {
             MessageFactory f = compType.messageFactory();
@@ -1320,6 +1319,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
                 case AFFINITY_POOL:
                 case UTILITY_CACHE_POOL:
                 case IDX_POOL:
+                case GridIoPolicy.IGFS_POOL: //add@byron
                 case DATA_STREAMER_POOL:
                 case QUERY_POOL:
                 case SCHEMA_POOL:

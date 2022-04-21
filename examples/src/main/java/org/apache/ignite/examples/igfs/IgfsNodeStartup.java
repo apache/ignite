@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.util.Arrays;
 import java.util.Collection;
+
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteFileSystem;
@@ -31,57 +32,38 @@ import org.apache.ignite.igfs.IgfsPath;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Example that shows usage of {@link org.apache.ignite.IgniteFileSystem} API. It starts a node with {@code IgniteFs}
- * configured and performs several file system operations (create, write, append, read and delete
- * files, create, list and delete directories).
- * <p>
- * Remote nodes should always be started with configuration file which includes
- * IGFS: {@code 'ignite.sh examples/config/filesystem/example-igfs.xml'}.
- * <p>
- * Alternatively you can run {@link IgfsNodeStartup} in another JVM which will start
- * node with {@code examples/config/filesystem/example-igfs.xml} configuration.
+ * Starts up an empty node with example compute configuration.
  */
-public final class IgfsExample {
-    /**
+public class IgfsNodeStartup {
+	/**
      * Executes example.
-     * restart:
-     * control.bat  --cache reset_lost_partitions igfs-internal-igfs-data
+     *
      * @param args Command line arguments, none required.
      * @throws Exception If example execution failed.
      */
     public static void main(String[] args) throws Exception {
         Ignite ignite = Ignition.start("examples/config/example-igfs.xml");
-        //-ignite.active(true);     
         
         while(!ignite.cluster().active()){
         	Thread.sleep(100);
         }
-        
         System.out.println();
         System.out.println(">>> IGFS example started.");
+        
+        
 
         try {
             // Get an instance of Ignite File System.
             IgniteFileSystem fs = ignite.fileSystem("igfs");
 
             // Working directory path.
-            IgfsPath workDir = new IgfsPath("/examples/fs");
-            
-            
-            if(!fs.exists(workDir)) {
-	            // Create empty working directory.
-	            mkdirs(fs, workDir);            
-            }
-            
-            Collection<IgfsPath> files = list(fs, workDir);
-            
-            for(IgfsPath path: files) {
-            	 // Read data from file.
-                read(fs, path);
-            }
-            
-         // Cleanup working directory.
-            // delete(fs, workDir);
+            IgfsPath workDir = new IgfsPath("/examples/fs");            
+
+            // Cleanup working directory.
+            delete(fs, workDir);
+
+            // Create empty working directory.
+            mkdirs(fs, workDir);
 
             // Print information for working directory.
             printInfo(fs, workDir);
@@ -94,35 +76,24 @@ public final class IgfsExample {
 
             // Print information for file.
             printInfo(fs, filePath);
-            byte [] data = new byte[1024*10]; 
-            for(int i=1;i<data.length+1;i++) {
-	            data[i-1] = (byte)i;
-            }
-         // Append more data to previously created file.
-            append(fs, filePath, data);
+
+            // Append more data to previously created file.
+            append(fs, filePath, new byte[] {4, 5});
 
             // Print information for file.
             printInfo(fs, filePath);
 
             // Read data from file.
-            read(fs, filePath);
-
-            // Delete file.
-            // delete(fs, filePath);
-
-            // Print information for file.
-            printInfo(fs, filePath);
+            read(fs, filePath);           
 
             // Create several files.
             for (int i = 0; i < 5; i++)
-                create(fs, new IgfsPath(workDir, "file-" + i + ".txt"), null);
+                create(fs, new IgfsPath(workDir, "file-old-" + i + ".txt"), ("data"+i).getBytes());
 
             list(fs, workDir);
-            
-            
         }
         finally {
-            Ignition.stop(false);
+            
         }
     }
 
@@ -257,9 +228,6 @@ public final class IgfsExample {
         try (IgfsInputStream in = fs.open(path)) {
             in.read(data);
         }
-        catch(Exception e) {
-        	e.printStackTrace();
-        }
 
         System.out.println();
         System.out.println(">>> Read data from " + path + ": " + Arrays.toString(data));
@@ -272,7 +240,7 @@ public final class IgfsExample {
      * @param path Directory path.
      * @throws IgniteException In case of error.
      */
-    private static Collection<IgfsPath> list(IgniteFileSystem fs, IgfsPath path) throws IgniteException {
+    private static void list(IgniteFileSystem fs, IgfsPath path) throws IgniteException {
         assert fs != null;
         assert path != null;
         assert fs.info(path).isDirectory();
@@ -292,7 +260,6 @@ public final class IgfsExample {
         }
 
         System.out.println();
-        return files;
     }
 
     /**

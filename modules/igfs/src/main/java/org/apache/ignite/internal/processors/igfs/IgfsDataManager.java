@@ -190,7 +190,7 @@ public class IgfsDataManager extends IgfsManager {
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override protected void onKernalStart0() throws IgniteCheckedException {
-        dataCachePrj = igfsCtx.kernalContext().cache().getOrStartCache(dataCacheName);
+        dataCachePrj = igfsCtx.kernalContext().cache().getOrStartCache(dataCacheName,igfsCtx.configuration().getDataCacheConfiguration());
 
         assert dataCachePrj != null;
 

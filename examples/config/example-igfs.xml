@@ -32,6 +32,8 @@
         Configuration below demonstrates how to setup a IgniteFs node with file data.
     -->
     <bean id="igfs.cfg" class="org.apache.ignite.configuration.IgniteConfiguration">
+        <property name="igniteInstanceName" value="igfs" />
+        <property name="autoActivationEnabled" value="true" />
         <property name="marshaller">
             <bean class="org.apache.ignite.internal.binary.BinaryMarshaller" />
         </property>
@@ -54,7 +56,7 @@
                     <property name="name" value="igfs"/>
 
                     <!-- Must correlate with cache affinity mapper. -->
-                    <property name="blockSize" value="#{128 * 1024}"/>
+                    <property name="blockSize" value="#{64 * 1024}"/>
                     <property name="perNodeBatchSize" value="512"/>
                     <property name="perNodeParallelBatchCount" value="16"/>
 
