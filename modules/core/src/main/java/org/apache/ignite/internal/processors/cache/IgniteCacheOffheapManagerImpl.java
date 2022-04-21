@@ -1368,8 +1368,6 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         cctx.shared().database().checkpointReadLock();
 
         try {
-            assert !grp.sharedGroup();
-
             int cacheId = grp.sharedGroup() ? cctx.cacheId() : CU.UNDEFINED_CACHE_ID;
 
             if (!busyLock.enterBusy())
