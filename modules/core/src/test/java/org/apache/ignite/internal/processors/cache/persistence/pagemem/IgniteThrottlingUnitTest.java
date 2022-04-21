@@ -100,7 +100,7 @@ public class IgniteThrottlingUnitTest extends GridCommonAbstractTest {
      *
      */
     @Test
-    public void shouldThrottleWhenWritingTooFast() {
+    public void shouldThrottleWhenWritingFasterThanTargetSpeedAndDirtyRatioIsAboveTargetRatio() {
         PagesWriteSpeedBasedThrottle throttle = new PagesWriteSpeedBasedThrottle(pageMemory2g, null, stateChecker, log);
 
         long parkTime = throttle.getCleanPagesProtectionParkTime(0.67,
