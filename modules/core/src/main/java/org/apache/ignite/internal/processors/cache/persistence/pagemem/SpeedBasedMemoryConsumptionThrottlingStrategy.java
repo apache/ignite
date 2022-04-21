@@ -155,7 +155,7 @@ class SpeedBasedMemoryConsumptionThrottlingStrategy {
         // The progress is set to 0 at the beginning of a checkpoint, so we can be sure that the start time remembered
         // in cpWriteSpeed is pretty accurate even without writing to cpWriteSpeed from this method.
         cpWriteSpeed.setProgress(donePages, curNanoTime);
-        // IDEA: use exponential moving average instead of regular moving average so that we react to changes faster?
+        // TODO: IGNITE-16878 use exponential moving average so that we react to changes faster?
         final long avgCpWriteSpeed = cpWriteSpeed.getOpsPerSecond(curNanoTime);
 
         final int cpTotalPages = cpTotalPages();
@@ -182,9 +182,9 @@ class SpeedBasedMemoryConsumptionThrottlingStrategy {
      * @return estimation of work done (in pages)
      */
     private int cpDonePagesEstimation(int cpWrittenPages) {
-        // IDEA: this only works correctly if time-to-write a page is close to time-to-sync a page. In reality, this
-        // does not seem to hold, which produces wrong estimations. We could measure the real times in Checkpointer
-        // and make this estimation a lot more precise.
+        // TODO: IGNITE-16879 - this only works correctly if time-to-write a page is close to time-to-sync a page.
+        // In reality, this oes not seem to hold, which produces wrong estimations. We could measure the real times
+        // in Checkpointer and make this estimation a lot more precise.
         return (cpWrittenPages + cpSyncedPages()) / 2;
     }
 
