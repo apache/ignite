@@ -1363,6 +1363,60 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         IgniteInClosure2X<GridCacheEntryEx, GridCacheVersion> c,
         int amount
     ) throws IgniteCheckedException {
+        GridCacheVersion obsoleteVer = null;
+
+        cctx.shared().database().checkpointReadLock();
+
+        try {
+            assert !grp.sharedGroup();
+
+            int cacheId = grp.sharedGroup() ? cctx.cacheId() : CU.UNDEFINED_CACHE_ID;
+
+            if (!busyLock.enterBusy())
+                return 0;
+
+            try {
+                List<PendingRow> rows = pendingEntries.removeRange(
+                    new PendingRow(cacheId), new PendingRow(cacheId, U.currentTimeMillis(), 0), amount);
+
+                for (PendingRow row : rows) {
+                    if (row.key.partition() == -1)
+                        row.key.partition(cctx.affinity().partition(row.key));
+
+                    assert row.key != null && row.link != 0 && row.expireTime != 0 : row;
+
+                    if (obsoleteVer == null)
+                        obsoleteVer = cctx.cache().nextVersion();
+
+                    GridCacheEntryEx entry = cctx.cache().entryEx(row.key);
+
+                    if (entry != null)
+                        c.apply(entry, obsoleteVer);
+                }
+
+                return rows.size();
+            }
+            finally {
+                busyLock.leaveBusy();
+            }
+        }
+        finally {
+            cctx.shared().database().checkpointReadUnlock();
+        }
+    }
+
+    /**
+     * @param cctx Cache context.
+     * @param c Closure.
+     * @param amount Limit of processed entries by single call, {@code -1} for no limit.
+     * @return cleared entries count.
+     * @throws IgniteCheckedException If failed.
+     */
+    private int expireInternalOld(
+        GridCacheContext cctx,
+        IgniteInClosure2X<GridCacheEntryEx, GridCacheVersion> c,
+        int amount
+    ) throws IgniteCheckedException {
         long now = U.currentTimeMillis();
 
         GridCacheVersion obsoleteVer = null;

@@ -3163,7 +3163,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private static class TestPageLockListener implements PageLockListener {
+    static class TestPageLockListener implements PageLockListener {
         /** */
         static ConcurrentMap<Object, Long> beforeReadLock = new ConcurrentHashMap<>();
 
@@ -3182,7 +3182,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
         /**
          * @param delegate Real implementation of page lock listener.
          */
-        private TestPageLockListener(PageLockListener delegate) {
+        TestPageLockListener(PageLockListener delegate) {
             this.delegate = delegate;
         }
 
