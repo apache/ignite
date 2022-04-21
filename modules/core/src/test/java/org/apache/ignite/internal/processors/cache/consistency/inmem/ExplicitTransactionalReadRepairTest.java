@@ -18,11 +18,11 @@
 package org.apache.ignite.internal.processors.cache.consistency.inmem;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 import java.util.function.Consumer;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.internal.processors.cache.consistency.AbstractFullSetReadRepairTest;
+import org.apache.ignite.internal.processors.cache.consistency.ReadRepairDataGenerator.ReadRepairData;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
@@ -37,7 +37,7 @@ import org.junit.runners.Parameterized;
 public class ExplicitTransactionalReadRepairTest extends AbstractFullSetReadRepairTest {
     /** Test parameters. */
     @Parameterized.Parameters(name = "concurrency={0}, isolation={1}, getEntry={2}, async={3}, misses={4}, nulls={5}, binary={6}")
-    public static Collection parameters() {
+    public static Iterable<Object[]> parameters() {
         List<Object[]> res = new ArrayList<>();
 
         for (TransactionConcurrency concurrency : TransactionConcurrency.values()) {
@@ -85,7 +85,7 @@ public class ExplicitTransactionalReadRepairTest extends AbstractFullSetReadRepa
 
     /** {@inheritDoc} */
     @Override protected void testGet(Ignite initiator, Integer cnt, boolean all) throws Exception {
-        prepareAndCheck(
+        generateAndCheck(
             initiator,
             cnt,
             raw,
@@ -93,6 +93,7 @@ public class ExplicitTransactionalReadRepairTest extends AbstractFullSetReadRepa
             misses,
             nulls,
             binary,
+            null,
             (ReadRepairData data) -> repairIfRepairable.accept(data, () -> {
                 boolean fixByOtherTx = concurrency == TransactionConcurrency.OPTIMISTIC ||
                     isolation == TransactionIsolation.READ_COMMITTED;
@@ -103,7 +104,7 @@ public class ExplicitTransactionalReadRepairTest extends AbstractFullSetReadRepa
 
     /** {@inheritDoc} */
     @Override protected void testContains(Ignite initiator, Integer cnt, boolean all) throws Exception {
-        prepareAndCheck(
+        generateAndCheck(
             initiator,
             cnt,
             raw,
@@ -111,6 +112,7 @@ public class ExplicitTransactionalReadRepairTest extends AbstractFullSetReadRepa
             misses,
             nulls,
             binary,
+            null,
             (ReadRepairData data) -> repairIfRepairable.accept(data, () -> {
                 // "Contains" works like optimistic() || readCommitted() and always fixed by other tx.
                 testReadRepair(initiator, data, all ? CONTAINS_ALL_CHECK_AND_FIX : CONTAINS_CHECK_AND_FIX, true, true);
@@ -119,7 +121,7 @@ public class ExplicitTransactionalReadRepairTest extends AbstractFullSetReadRepa
 
     /** {@inheritDoc} */
     @Override protected void testGetNull(Ignite initiator, Integer cnt, boolean all) throws Exception {
-        prepareAndCheck(
+        generateAndCheck(
             initiator,
             cnt,
             raw,
@@ -127,6 +129,7 @@ public class ExplicitTransactionalReadRepairTest extends AbstractFullSetReadRepa
             misses,
             nulls,
             binary,
+            null,
             (ReadRepairData data) -> testReadRepair(initiator, data, all ? GET_ALL_NULL : GET_NULL, false, false));
     }
 

@@ -18,22 +18,14 @@
 package org.apache.ignite.internal.processors.cache.consistency;
 
 import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.TreeMap;
 import java.util.concurrent.ConcurrentLinkedDeque;
-import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteBinary;
-import org.apache.ignite.IgniteCache;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteEvents;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.CacheAtomicityMode;
@@ -48,31 +40,15 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.CacheConsistencyViolationEvent;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.events.EventType;
-import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.cache.CacheObjectContext;
-import org.apache.ignite.internal.processors.cache.CacheObjectImpl;
-import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
-import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
-import org.apache.ignite.internal.processors.cache.GridCacheOperation;
-import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
+import org.apache.ignite.internal.processors.cache.consistency.ReadRepairDataGenerator.InconsistentMapping;
+import org.apache.ignite.internal.processors.cache.consistency.ReadRepairDataGenerator.ReadRepairData;
 import org.apache.ignite.internal.processors.cache.distributed.near.consistency.IgniteIrreparableConsistencyViolationException;
-import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
-import org.apache.ignite.internal.processors.cache.version.GridCacheVersionManager;
-import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
-import org.apache.ignite.internal.processors.dr.GridDrType;
 import org.apache.ignite.internal.util.typedef.G;
-import org.apache.ignite.internal.util.typedef.T2;
-import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.lang.IgnitePredicate;
-import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
-import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
-import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.events.EventType.EVT_CONSISTENCY_VIOLATION;
 
@@ -80,6 +56,9 @@ import static org.apache.ignite.events.EventType.EVT_CONSISTENCY_VIOLATION;
  *
  */
 public abstract class AbstractReadRepairTest extends GridCommonAbstractTest {
+    /** Partitions. */
+    protected static final int PARTITIONS = 32;
+
     /** Events. */
     private static final ConcurrentLinkedDeque<CacheConsistencyViolationEvent> evtDeq = new ConcurrentLinkedDeque<>();
 
@@ -94,6 +73,9 @@ public abstract class AbstractReadRepairTest extends GridCommonAbstractTest {
 
     /** Nodes aware of the entry value class. */
     protected static volatile List<Ignite> clsAwareNodes;
+
+    /** Generator. */
+    private static volatile ReadRepairDataGenerator gen;
 
     /** Backups count. */
     protected Integer backupsCount() {
@@ -162,6 +144,16 @@ public abstract class AbstractReadRepairTest extends GridCommonAbstractTest {
         ignite.getOrCreateCache(cacheConfiguration());
 
         awaitPartitionMapExchange();
+
+        gen = new ReadRepairDataGenerator(
+            iterableKey,
+            DEFAULT_CACHE_NAME,
+            clsAwareNodes,
+            extClsLdr,
+            this::primaryNode,
+            this::backupNodes,
+            this::serverNodesCount,
+            this::backupsCount);
     }
 
     /** {@inheritDoc} */
@@ -182,12 +174,12 @@ public abstract class AbstractReadRepairTest extends GridCommonAbstractTest {
     protected CacheConfiguration<Integer, Object> cacheConfiguration() {
         CacheConfiguration<Integer, Object> cfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
 
-        cfg.setWriteSynchronizationMode(FULL_SYNC);
+        cfg.setWriteSynchronizationMode(FULL_SYNC); // Read from backup guaranted after the repair.
         cfg.setCacheMode(cacheMode());
         cfg.setAtomicityMode(atomicityMode());
         cfg.setBackups(backupsCount());
 
-        cfg.setAffinity(new RendezvousAffinityFunction().setPartitions(32));
+        cfg.setAffinity(new RendezvousAffinityFunction().setPartitions(PARTITIONS));
 
         return cfg;
     }
@@ -305,7 +297,7 @@ public abstract class AbstractReadRepairTest extends GridCommonAbstractTest {
     /**
      *
      */
-    protected void prepareAndCheck(
+    protected void generateAndCheck(
         Ignite initiator,
         Integer cnt,
         boolean raw,
@@ -313,486 +305,17 @@ public abstract class AbstractReadRepairTest extends GridCommonAbstractTest {
         boolean misses,
         boolean nulls,
         boolean binary,
-        Consumer<ReadRepairData> c)
-        throws Exception {
-        IgniteCache<Integer, Object> cache = initiator.getOrCreateCache(DEFAULT_CACHE_NAME);
-
-        ThreadLocalRandom rnd = ThreadLocalRandom.current();
-
-        for (int i = 0; i < rnd.nextInt(1, 10); i++) {
-            ReadRepairStrategy[] strategies = ReadRepairStrategy.values();
-
-            ReadRepairStrategy strategy = strategies[rnd.nextInt(strategies.length)];
-
-            Map<Integer, InconsistentMapping> results = new TreeMap<>(); // Sorted to avoid warning.
-
-            try {
-                for (int j = 0; j < cnt; j++) {
-                    int curKey = iterableKey.incrementAndGet();
-
-                    InconsistentMapping res = setDifferentValuesForSameKey(curKey, misses, nulls, strategy);
-
-                    results.put(curKey, res);
-                }
-
-                for (Ignite node : G.allGrids()) { // Check that cache filled properly.
-                    Map<Integer, Object> all =
-                        node.getOrCreateCache(DEFAULT_CACHE_NAME).<Integer, Object>withKeepBinary().getAll(results.keySet());
-
-                    for (Map.Entry<Integer, Object> entry : all.entrySet()) {
-                        Integer key = entry.getKey();
-                        Object val = entry.getValue();
-
-                        T2<Object, GridCacheVersion> valVer = results.get(key).mappingBin.get(node);
-
-                        Object exp;
-
-                        if (valVer != null)
-                            exp = valVer.get1(); // Should read from itself (backup or primary).
-                        else
-                            exp = results.get(key).primaryBin; // Or read from primary (when not a partition owner).
-
-                        assertEquals(exp, val);
-                    }
-                }
-
-                c.accept(new ReadRepairData(cache, results, raw, async, strategy, binary));
-            }
-            catch (Throwable th) {
-                StringBuilder sb = new StringBuilder();
-
-                sb.append("Read Repair test failed [")
-                    .append("cache=").append(cache.getName())
-                    .append(", strategy=").append(strategy)
-                    .append("]\n");
-
-                for (Map.Entry<Integer, InconsistentMapping> entry : results.entrySet()) {
-                    sb.append("Key: ").append(entry.getKey()).append("\n");
-
-                    InconsistentMapping mapping = entry.getValue();
-
-                    sb.append(" Random data [primary=").append(mapping.primary)
-                        .append(", fixed=").append(mapping.fixed)
-                        .append(", repairable=").append(mapping.repairable)
-                        .append(", consistent=").append(mapping.consistent)
-                        .append("]\n");
-
-                    sb.append("  Distribution: \n");
-
-                    for (Map.Entry<Ignite, T2<Object, GridCacheVersion>> dist : mapping.mapping.entrySet()) {
-                        sb.append("   Node: ").append(dist.getKey().name()).append("\n");
-                        sb.append("    Value: ").append(dist.getValue().get1()).append("\n");
-                        sb.append("    Version: ").append(dist.getValue().get2()).append("\n");
-                    }
-
-                    sb.append("\n");
-                }
-
-                throw new Exception(sb.toString(), th);
-            }
-        }
-    }
-
-    /**
-     *
-     */
-    private InconsistentMapping setDifferentValuesForSameKey(int key, boolean misses, boolean nulls,
-        ReadRepairStrategy strategy) throws Exception {
-        List<Ignite> nodes = new ArrayList<>();
-        Map<Ignite, T2<Object, GridCacheVersion>> mapping = new HashMap<>();
-
-        Ignite primary = primaryNode(key, DEFAULT_CACHE_NAME);
-
-        ThreadLocalRandom rnd = ThreadLocalRandom.current();
-
-        boolean wrap = rnd.nextBoolean();
-
-        if (rnd.nextBoolean()) { // Reversed order.
-            nodes.addAll(backupNodes(key, DEFAULT_CACHE_NAME));
-            nodes.add(primary);
-        }
-        else {
-            nodes.add(primary);
-            nodes.addAll(backupNodes(key, DEFAULT_CACHE_NAME));
-        }
-
-        if (rnd.nextBoolean()) // Random order.
-            Collections.shuffle(nodes);
-
-        IgniteInternalCache<Integer, Object> internalCache = (grid(1)).cachex(DEFAULT_CACHE_NAME);
-
-        GridCacheVersionManager mgr = ((GridCacheAdapter)internalCache.cache()).context().shared().versions();
-
-        int incVal = 0;
-        Object primVal = null;
-        Collection<T2<Object, GridCacheVersion>> vals = new ArrayList<>();
-
-        if (misses) {
-            List<Ignite> keeped = nodes.subList(0, rnd.nextInt(1, nodes.size()));
-
-            nodes.stream()
-                .filter(node -> !keeped.contains(node))
-                .forEach(node -> {
-                    T2<Object, GridCacheVersion> nullT2 = new T2<>(null, null);
-
-                    vals.add(nullT2);
-                    mapping.put(node, nullT2);
-                });  // Recording nulls (missed values).
-
-            nodes = keeped;
-        }
-
-        boolean rmvd = false;
-
-        boolean incVer = rnd.nextBoolean();
-
-        GridCacheVersion ver = null;
-
-        for (Ignite node : nodes) {
-            IgniteInternalCache<Integer, Object> cache = ((IgniteEx)node).cachex(DEFAULT_CACHE_NAME);
-
-            GridCacheAdapter<Integer, Object> adapter = (GridCacheAdapter)cache.cache();
-
-            GridCacheEntryEx entry = adapter.entryEx(key);
-
-            if (ver == null || incVer)
-                ver = mgr.next(entry.context().kernalContext().discovery().topologyVersion()); // Incremental version.
-
-            boolean rmv = nulls && (!rmvd || rnd.nextBoolean());
-
-            Object val = rmv ?
-                null :
-                wrapTestValueIfNeeded(wrap, rnd.nextBoolean()/*increment or same as previously*/ ? ++incVal : incVal);
-
-            T2<Object, GridCacheVersion> valVer = new T2<>(val, val != null ? ver : null);
-
-            vals.add(valVer);
-            mapping.put(node, valVer);
-
-            GridKernalContext kctx = ((IgniteEx)node).context();
-
-            byte[] bytes = marshalValue(entry.context().cacheObjectContext(), rmv ? -1 : val); // Incremental value.
-
-            try {
-                kctx.cache().context().database().checkpointReadLock();
-
-                boolean init = entry.initialValue(
-                    new CacheObjectImpl(null, bytes),
-                    ver,
-                    0,
-                    0,
-                    false,
-                    AffinityTopologyVersion.NONE,
-                    GridDrType.DR_NONE,
-                    false,
-                    false);
-
-                if (rmv) {
-                    if (cache.configuration().getAtomicityMode() == ATOMIC)
-                        entry.innerUpdate(
-                            ver,
-                            ((IgniteEx)node).localNode().id(),
-                            ((IgniteEx)node).localNode().id(),
-                            GridCacheOperation.DELETE,
-                            null,
-                            null,
-                            false,
-                            false,
-                            false,
-                            false,
-                            null,
-                            false,
-                            false,
-                            false,
-                            false,
-                            false,
-                            AffinityTopologyVersion.NONE,
-                            null,
-                            GridDrType.DR_NONE,
-                            0,
-                            0,
-                            null,
-                            false,
-                            false,
-                            null,
-                            null,
-                            null,
-                            null,
-                            false);
-                    else
-                        entry.innerRemove(
-                            null,
-                            ((IgniteEx)node).localNode().id(),
-                            ((IgniteEx)node).localNode().id(),
-                            false,
-                            false,
-                            false,
-                            false,
-                            false,
-                            null,
-                            AffinityTopologyVersion.NONE,
-                            CU.empty0(),
-                            GridDrType.DR_NONE,
-                            null,
-                            null,
-                            null,
-                            1L);
-
-                    rmvd = true;
-
-                    assertFalse(entry.hasValue());
-                }
-                else
-                    assertTrue(entry.hasValue());
-
-                assertTrue("iterableKey " + key + " already inited", init);
-
-                if (node.equals(primary))
-                    primVal = val;
-            }
-            finally {
-                ((IgniteEx)node).context().cache().context().database().checkpointReadUnlock();
-            }
-        }
-
-        assertEquals(vals.size(), mapping.size());
-        assertEquals(vals.size(),
-            internalCache.configuration().getCacheMode() == REPLICATED ? serverNodesCount() : backupsCount() + 1);
-
-        if (!misses && !nulls)
-            assertTrue(primVal != null); // Primary value set.
-
-        Object fixed;
-
-        boolean consistent;
-        boolean repairable;
-
-        if (vals.stream().distinct().count() == 1) { // Consistent value.
-            consistent = true;
-            repairable = true;
-            fixed = vals.iterator().next().getKey();
-        }
-        else {
-            consistent = false;
-
-            switch (strategy) {
-                case LWW:
-                    if (misses || rmvd || !incVer) {
-                        fixed = incomparableTestValue();
-
-                        repairable = false;
-                    }
-                    else {
-                        fixed = wrapTestValueIfNeeded(wrap, incVal);
-
-                        repairable = true;
-                    }
-
-                    break;
-
-                case PRIMARY:
-                    fixed = primVal;
-
-                    repairable = true;
-
-                    break;
-
-                case RELATIVE_MAJORITY:
-                    fixed = incomparableTestValue();
-
-                    Map<T2<Object, GridCacheVersion>, Integer> counts = new HashMap<>();
-
-                    for (T2<Object, GridCacheVersion> val : vals) {
-                        counts.putIfAbsent(val, 0);
-
-                        counts.compute(val, (k, v) -> v + 1);
-                    }
-
-                    int[] sorted = counts.values().stream().sorted(Comparator.reverseOrder()).mapToInt(v -> v).toArray();
-
-                    int max = sorted[0];
-
-                    repairable = !(sorted.length > 1 && sorted[1] == max);
-
-                    if (repairable)
-                        for (Map.Entry<T2<Object, GridCacheVersion>, Integer> count : counts.entrySet())
-                            if (count.getValue().equals(max)) {
-                                fixed = count.getKey().getKey();
-
-                                break;
-                            }
-
-                    break;
-
-                case REMOVE:
-                    fixed = null;
-
-                    repairable = true;
-
-                    break;
-
-                case CHECK_ONLY:
-                    fixed = incomparableTestValue();
-
-                    repairable = false;
-
-                    break;
-
-                default:
-                    throw new UnsupportedOperationException(strategy.toString());
-            }
-        }
-
-        return new InconsistentMapping(mapping, primVal, fixed, repairable, consistent);
-    }
-
-    /**
-     *
-     */
-    private Object incomparableTestValue() {
-        return new Object() {
-            @Override public boolean equals(Object obj) {
-                fail("Shound never be compared.");
-
-                return false;
-            }
-        };
-    }
-
-    /**
-     * @param wrap Wrap.
-     * @param val  Value.
-     */
-    private Object wrapTestValueIfNeeded(boolean wrap, Integer val) throws ReflectiveOperationException {
-        if (wrap) {
-            // Some nodes will be unable to deserialize this object.
-            // Checking that Read Repair feature cause no `class not found` problems.
-            Class<?> clazz = extClsLdr.loadClass("org.apache.ignite.tests.p2p.cache.PersonKey");
-
-            Object obj = clazz.newInstance();
-
-            GridTestUtils.setFieldValue(obj, "id", val);
-
-            return obj;
-        }
-        else
-            return val;
-    }
-
-    /**
-     * @param ctx Context.
-     * @param val Value.
-     */
-    byte[] marshalValue(CacheObjectContext ctx, Object val) throws IgniteCheckedException {
-        IgniteCacheObjectProcessor clsAwareProc = ((IgniteEx)clsAwareNodes.get(0)).context().cacheObjects();
-
-        return clsAwareProc.marshal(ctx, val);
-    }
-
-    /**
-     *
-     */
-    protected static final class ReadRepairData {
-        /** Initiator's cache. */
-        final IgniteCache<Integer, Object> cache;
-
-        /** Generated data across topology per key mapping. */
-        final Map<Integer, InconsistentMapping> data;
-
-        /** Raw read flag. True means required GetEntry() instead of get(). */
-        final boolean raw;
-
-        /** Async read flag. */
-        final boolean async;
-
-        /** Read with keepBinary flag. */
-        final boolean binary;
-
-        /** Strategy. */
-        final ReadRepairStrategy strategy;
-
-        /**
-         *
-         */
-        public ReadRepairData(
-            IgniteCache<Integer, Object> cache,
-            Map<Integer, InconsistentMapping> data,
-            boolean raw,
-            boolean async,
-            ReadRepairStrategy strategy,
-            boolean binary) {
-            this.cache = cache;
-            this.data = data;
-            this.raw = raw;
-            this.async = async;
-            this.binary = binary;
-            this.strategy = strategy;
-        }
-
-        /**
-         *
-         */
-        boolean repairable() {
-            return data.values().stream().allMatch(mapping -> mapping.repairable);
-        }
-    }
-
-    /**
-     *
-     */
-    protected static final class InconsistentMapping {
-        /** Value per node. */
-        final Map<Ignite, T2<Object, GridCacheVersion>> mapping;
-
-        /** Value per node, binary. */
-        final Map<Ignite, T2<Object, GridCacheVersion>> mappingBin;
-
-        /** Primary node's value. */
-        final Object primary;
-
-        /** Primary node's value, binary. */
-        final Object primaryBin;
-
-        /** Expected fix result. */
-        final Object fixed;
-
-        /** Expected fix result, binary. */
-        final Object fixedBin;
-
-        /** Inconsistency can be repaired using the specified strategy. */
-        final boolean repairable;
-
-        /** Consistent value. */
-        final boolean consistent;
-
-        /**
-         *
-         */
-        public InconsistentMapping(
-            Map<Ignite, T2<Object, GridCacheVersion>> mapping,
-            Object primary,
-            Object fixed,
-            boolean repairable,
-            boolean consistent) {
-            this.mapping = new HashMap<>(mapping);
-            this.primary = primary;
-            this.fixed = fixed;
-            this.repairable = repairable;
-            this.consistent = consistent;
-
-            IgniteBinary igniteBinary = clsAwareNodes.get(0).binary();
-
-            primaryBin = igniteBinary.toBinary(primary);
-            fixedBin = igniteBinary.toBinary(fixed);
-
-            mappingBin = mapping.entrySet().stream().collect(
-                Collectors.toMap(
-                    Map.Entry::getKey,
-                    (entry) -> {
-                        T2<Object, GridCacheVersion> t2 = entry.getValue();
-
-                        return new T2<>(igniteBinary.toBinary(t2.getKey()), t2.getValue());
-                    }));
-        }
+        ReadRepairStrategy strategy,
+        Consumer<ReadRepairData> c) throws Exception {
+        gen.generate(
+            initiator,
+            cnt,
+            raw,
+            async,
+            misses,
+            nulls,
+            binary,
+            strategy,
+            c);
     }
 }

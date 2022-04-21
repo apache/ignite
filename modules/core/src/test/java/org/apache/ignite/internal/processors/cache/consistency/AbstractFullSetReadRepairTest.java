@@ -30,6 +30,8 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheEntry;
 import org.apache.ignite.cache.ReadRepairStrategy;
+import org.apache.ignite.internal.processors.cache.consistency.ReadRepairDataGenerator.InconsistentMapping;
+import org.apache.ignite.internal.processors.cache.consistency.ReadRepairDataGenerator.ReadRepairData;
 import org.apache.ignite.internal.processors.cache.distributed.near.consistency.IgniteIrreparableConsistencyViolationException;
 import org.junit.Test;
 
@@ -342,7 +344,7 @@ public abstract class AbstractFullSetReadRepairTest extends AbstractReadRepairTe
      */
     @Test
     public void test() throws Exception {
-        assertTrue(!clsAwareNodes.isEmpty());
+        assertFalse(clsAwareNodes.isEmpty());
 
         for (Ignite initiator : clsAwareNodes) {
             test(initiator, 1, false); // just get

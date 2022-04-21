@@ -18,11 +18,11 @@
 package org.apache.ignite.internal.processors.cache.consistency.inmem;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 import java.util.function.Consumer;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.internal.processors.cache.consistency.AbstractFullSetReadRepairTest;
+import org.apache.ignite.internal.processors.cache.consistency.ReadRepairDataGenerator.ReadRepairData;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
@@ -33,7 +33,7 @@ import org.junit.runners.Parameterized;
 public class ImplicitTransactionalReadRepairTest extends AbstractFullSetReadRepairTest {
     /** Test parameters. */
     @Parameterized.Parameters(name = "getEntry={0}, async={1}, misses={2}, nulls={3}, binary={4}")
-    public static Collection parameters() {
+    public static Iterable<Object[]> parameters() {
         List<Object[]> res = new ArrayList<>();
 
         for (boolean raw : new boolean[] {false, true}) {
@@ -69,7 +69,7 @@ public class ImplicitTransactionalReadRepairTest extends AbstractFullSetReadRepa
 
     /** {@inheritDoc} */
     @Override protected void testGet(Ignite initiator, Integer cnt, boolean all) throws Exception {
-        prepareAndCheck(
+        generateAndCheck(
             initiator,
             cnt,
             raw,
@@ -77,13 +77,14 @@ public class ImplicitTransactionalReadRepairTest extends AbstractFullSetReadRepa
             misses,
             nulls,
             binary,
+            null,
             (ReadRepairData data) -> repairIfRepairable.accept(data,
                 () -> testReadRepair(data, all ? GETALL_CHECK_AND_FIX : GET_CHECK_AND_FIX, true)));
     }
 
     /** {@inheritDoc} */
     @Override protected void testContains(Ignite initiator, Integer cnt, boolean all) throws Exception {
-        prepareAndCheck(
+        generateAndCheck(
             initiator,
             cnt,
             raw,
@@ -91,13 +92,14 @@ public class ImplicitTransactionalReadRepairTest extends AbstractFullSetReadRepa
             misses,
             nulls,
             binary,
+            null,
             (ReadRepairData data) -> repairIfRepairable.accept(data,
                 () -> testReadRepair(data, all ? CONTAINS_ALL_CHECK_AND_FIX : CONTAINS_CHECK_AND_FIX, true)));
     }
 
     /** {@inheritDoc} */
     @Override protected void testGetNull(Ignite initiator, Integer cnt, boolean all) throws Exception {
-        prepareAndCheck(
+        generateAndCheck(
             initiator,
             cnt,
             raw,
@@ -105,6 +107,7 @@ public class ImplicitTransactionalReadRepairTest extends AbstractFullSetReadRepa
             misses,
             nulls,
             binary,
+            null,
             (ReadRepairData data) -> testReadRepair(data, all ? GET_ALL_NULL : GET_NULL, false));
     }
 
