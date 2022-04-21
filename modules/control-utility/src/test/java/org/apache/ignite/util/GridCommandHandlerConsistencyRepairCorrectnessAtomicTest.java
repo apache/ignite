@@ -22,7 +22,8 @@ import org.apache.ignite.cache.CacheAtomicityMode;
 /**
  *
  */
-public class GridCommandHandlerConsistencyRepairCorrectnessAtomicTest extends GridCommandHandlerConsistencyRepairCorrectnessTransactionalTest {
+public class GridCommandHandlerConsistencyRepairCorrectnessAtomicTest extends
+    GridCommandHandlerConsistencyRepairCorrectnessTransactionalTest {
     /** {@inheritDoc} */
     @Override protected CacheAtomicityMode atomicityMode() {
         return CacheAtomicityMode.ATOMIC;
