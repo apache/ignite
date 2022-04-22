@@ -83,11 +83,13 @@ namespace Apache.Ignite.Core.Tests
                 Logger = null
             };
             
-            using (Ignition.Start(cfg))
+            using (var ignite = Ignition.Start(cfg))
             {
-                Assert.IsTrue(TestUtils.WaitForCondition(() =>
-                    Regex.Matches(_outSb.ToString(), "ver=1, locNode=[a-fA-F0-9]{8,8}, servers=1, clients=0,").Count
-                        .Equals(1), 3000));
+                ignite.WaitTopology(1);
+                
+                var output = _outSb.ToString();
+                
+                Assert.AreEqual(1, Regex.Matches(output, "ver=1, locNode=[a-fA-F0-9]{8,8}, servers=1, clients=0,").Count, output);
             }
         }
 
