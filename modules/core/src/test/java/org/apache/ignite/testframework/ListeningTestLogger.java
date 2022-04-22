@@ -18,8 +18,6 @@
 package org.apache.ignite.testframework;
 
 import java.util.Collection;
-import java.util.List;
-import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.function.Consumer;
 import org.apache.ignite.IgniteLogger;
@@ -64,7 +62,7 @@ public class ListeningTestLogger implements IgniteLogger {
      * @param echo Logger to echo all messages, limited by {@code dbg} flag.
      */
     public ListeningTestLogger(@Nullable IgniteLogger echo) {
-        this(echo, new CopyOnWriteArrayList<>());
+        this(echo, new CopyOnWriteArraySet<>());
     }
 
     /**
