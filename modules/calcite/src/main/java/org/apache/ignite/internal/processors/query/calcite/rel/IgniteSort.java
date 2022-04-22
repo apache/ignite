@@ -27,6 +27,7 @@ import org.apache.calcite.rel.RelCollation;
 import org.apache.calcite.rel.RelCollations;
 import org.apache.calcite.rel.RelInput;
 import org.apache.calcite.rel.RelNode;
+import org.apache.calcite.rel.RelWriter;
 import org.apache.calcite.rel.core.Sort;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rex.RexNode;
@@ -36,6 +37,7 @@ import org.apache.ignite.internal.processors.query.calcite.metadata.cost.IgniteC
 import org.apache.ignite.internal.processors.query.calcite.metadata.cost.IgniteCostFactory;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
 import org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 import static org.apache.ignite.internal.processors.query.calcite.rel.IgniteLimit.FETCH_IS_PARAM_FACTOR;
 import static org.apache.ignite.internal.processors.query.calcite.rel.IgniteLimit.OFFSET_IS_PARAM_FACTOR;
@@ -46,6 +48,12 @@ import static org.apache.ignite.internal.processors.query.calcite.util.RexUtils.
  * Ignite sort operator.
  */
 public class IgniteSort extends Sort implements IgniteRel {
+    /** */
+    private final boolean enforcer;
+
+    /** */
+    private final @Nullable RexNode offset;
+
     /**
      * Constructor.
      *
@@ -53,6 +61,7 @@ public class IgniteSort extends Sort implements IgniteRel {
      * @param traits Trait set.
      * @param child Input node.
      * @param collation Collation.
+     * @param enforcer Enforcer flag.
      * @param offset Offset.
      * @param fetch Limit.
      */
@@ -61,9 +70,14 @@ public class IgniteSort extends Sort implements IgniteRel {
         RelTraitSet traits,
         RelNode child,
         RelCollation collation,
+        boolean enforcer,
         RexNode offset,
         RexNode fetch) {
-        super(cluster, traits, child, collation, offset, fetch);
+        super(cluster, traits, child, collation, null, fetch);
+
+        this.enforcer = enforcer;
+
+        this.offset = offset;
     }
 
     /**
@@ -73,18 +87,26 @@ public class IgniteSort extends Sort implements IgniteRel {
      * @param traits Trait set.
      * @param child Input node.
      * @param collation Collation.
+     * @param enforcer Enforcer.
      */
     public IgniteSort(
         RelOptCluster cluster,
         RelTraitSet traits,
         RelNode child,
-        RelCollation collation) {
-        this(cluster, traits, child, collation, null, null);
+        RelCollation collation,
+        boolean enforcer) {
+        this(cluster, traits, child, collation, enforcer, null, null);
     }
 
     /** */
     public IgniteSort(RelInput input) {
         super(changeTraits(input, IgniteConvention.INSTANCE));
+
+        assert input.get("enforcer") != null;
+
+        this.enforcer = input.getBoolean("enforcer", true);
+
+        this.offset = input.getExpression("offset");
     }
 
     /** {@inheritDoc} */
@@ -95,7 +117,7 @@ public class IgniteSort extends Sort implements IgniteRel {
         RexNode offset,
         RexNode limit
     ) {
-        return new IgniteSort(getCluster(), traitSet, newInput, newCollation, offset, limit);
+        return new IgniteSort(getCluster(), traitSet, newInput, newCollation, enforcer, getOffset(), limit);
     }
 
     /** {@inheritDoc} */
@@ -114,6 +136,9 @@ public class IgniteSort extends Sort implements IgniteRel {
             return null;
 
         RelCollation collation = TraitUtils.collation(required);
+
+        if(!this.collation.satisfies(collation))
+            return null;
 
         return Pair.of(required.replace(collation), ImmutableList.of(required.replace(RelCollations.EMPTY)));
     }
@@ -155,11 +180,26 @@ public class IgniteSort extends Sort implements IgniteRel {
 
     /** {@inheritDoc} */
     @Override public IgniteRel clone(RelOptCluster cluster, List<IgniteRel> inputs) {
-        return new IgniteSort(cluster, getTraitSet(), sole(inputs), collation, offset, fetch);
+        return new IgniteSort(cluster, getTraitSet(), sole(inputs), collation, enforcer, getOffset(), fetch);
+    }
+
+    /** {@inheritDoc} */
+    @Override public RelWriter explainTerms(RelWriter pw) {
+        RelWriter relWriter = super.explainTerms(pw);
+
+        relWriter.item("enforcer", enforcer);
+        relWriter.itemIf("offset", getOffset(), getOffset() != null);
+
+        return relWriter;
     }
 
     /** {@inheritDoc} */
     @Override public boolean isEnforcer() {
-        return true;
+        return enforcer;
+    }
+
+    /** */
+    public RexNode getOffset() {
+        return offset;
     }
 }

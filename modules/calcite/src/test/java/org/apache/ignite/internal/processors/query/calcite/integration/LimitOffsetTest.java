@@ -89,62 +89,6 @@ public class LimitOffsetTest extends AbstractBasicIntegrationTest {
                     .setSqlSchema("PUBLIC"));
     }
 
-//    /** Quantified predicates test. */
-//    @Test
-//    public void quantifiedCompTest() throws InterruptedException {
-//        populateTables();
-//
-//        assertQuery(client, "select salary from account where salary > SOME (10, 11) ORDER BY salary")
-//            .returns(11d)
-//            .returns(12d)
-//            .returns(13d)
-//            .returns(13d)
-//            .returns(13d)
-//            .check();
-//
-//        assertQuery(client, "select salary from account where salary > SOME (10, 11) ORDER BY salary OFFSET 1")
-//            .returns(12d)
-//            .returns(13d)
-//            .returns(13d)
-//            .returns(13d)
-//            .check();
-//
-//        assertQuery(client, "select salary from account where salary > 11 ORDER BY salary LIMIT 3 OFFSET 1")
-//            .returns(13d)
-//            .returns(13d)
-//            .returns(13d)
-//            .check();
-//
-//        assertQuery(client, "select salary from account where salary > 11 ORDER BY salary LIMIT 0")
-//            .returnsEmpty()
-//            .check();
-//
-//        assertQuery(client, "select salary from account where salary > 11 ORDER BY salary LIMIT 0 offset 1")
-//            .returnsEmpty()
-//            .check();
-//
-//        assertQuery(client, "select salary from account where salary < SOME (12, 12) ORDER BY salary")
-//            .returns(10d)
-//            .returns(11d)
-//            .check();
-//
-//        assertQuery(client, "select salary from account where salary < ANY (11, 12) ORDER BY salary")
-//            .returns(10d)
-//            .returns(11d)
-//            .check();
-//
-//        assertQuery(client, "select salary from account where salary > ANY (12, 13) ORDER BY salary")
-//            .returns(13d)
-//            .returns(13d)
-//            .returns(13d)
-//            .check();
-//
-//        assertQuery(client, "select salary from account where salary <> ALL (12, 13) ORDER BY salary")
-//            .returns(10d)
-//            .returns(11d)
-//            .check();
-//    }
-
     /** Tests correctness of fetch / offset params. */
     @Test
     public void testInvalidLimitOffset() {

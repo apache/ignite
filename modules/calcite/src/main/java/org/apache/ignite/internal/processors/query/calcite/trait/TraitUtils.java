@@ -35,7 +35,6 @@ import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.plan.RelTrait;
 import org.apache.calcite.plan.RelTraitDef;
 import org.apache.calcite.plan.RelTraitSet;
-import org.apache.calcite.plan.volcano.RelSubset;
 import org.apache.calcite.rel.RelCollation;
 import org.apache.calcite.rel.RelCollationTraitDef;
 import org.apache.calcite.rel.RelCollations;
@@ -44,7 +43,6 @@ import org.apache.calcite.rel.RelFieldCollation;
 import org.apache.calcite.rel.RelInput;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.AggregateCall;
-import org.apache.calcite.rel.core.Sort;
 import org.apache.calcite.rel.core.Spool;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rex.RexInputRef;
@@ -54,7 +52,6 @@ import org.apache.calcite.util.ControlFlowException;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.calcite.util.Pair;
 import org.apache.calcite.util.mapping.Mappings;
-import org.apache.ignite.internal.processors.query.calcite.exec.rel.SortNode;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteConvention;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteExchange;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
@@ -134,15 +131,7 @@ public class TraitUtils {
 
         RelTraitSet traits = rel.getTraitSet().replace(toTrait);
 
-        Sort sortNode = null;
-
-        if (rel instanceof SortNode)
-            sortNode = (Sort)rel;
-        if (rel instanceof RelSubset && ((RelSubset)rel).getOriginal() instanceof Sort)
-            sortNode = (Sort)((RelSubset)rel).getOriginal();
-
-        return new IgniteSort(rel.getCluster(), traits, rel, toTrait, sortNode == null ? null : sortNode.offset,
-            sortNode == null ? null : sortNode.fetch);
+        return new IgniteSort(rel.getCluster(), traits, rel, toTrait, true);
     }
 
     /** */

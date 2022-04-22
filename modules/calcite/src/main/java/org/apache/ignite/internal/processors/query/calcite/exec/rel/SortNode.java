@@ -16,9 +16,10 @@
  */
 package org.apache.ignite.internal.processors.query.calcite.exec.rel;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
-import java.util.PriorityQueue;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.List;
 import java.util.function.Supplier;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
@@ -39,7 +40,10 @@ public class SortNode<Row> extends AbstractNode<Row> implements SingleNode<Row>,
     private boolean inLoop;
 
     /** Rows buffer. */
-    private final PriorityQueue<Row> rows;
+    private final List<Row> rows;
+
+    /** Rows comparator. */
+    private final Comparator<Row> rowsCmp;
 
     /** SQL select limit. Negative if disabled. */
     private final int limit;
@@ -54,12 +58,18 @@ public class SortNode<Row> extends AbstractNode<Row> implements SingleNode<Row>,
         @Nullable Supplier<Integer> offset, @Nullable Supplier<Integer> limit) {
         super(ctx, rowType);
 
-        rows = comp == null ? new PriorityQueue<>() : new PriorityQueue<>(comp);
-
         assert limit == null || limit.get() >= 0;
         assert offset == null || offset.get() >= 0;
 
         this.limit = limit == null ? -1 : limit.get() + (offset == null ? 0 : offset.get());
+
+        this.rows = this.limit < 0 ? new ArrayList<>() : new ArrayList<>(this.limit + 1);
+
+        this.rowsCmp = comp == null ? new Comparator<Row>() {
+            @Override public int compare(Row o1, Row o2) {
+                return ((Comparable<Row>)o1).compareTo(o2);
+            }
+        } : comp;
     }
 
     /**
@@ -110,13 +120,7 @@ public class SortNode<Row> extends AbstractNode<Row> implements SingleNode<Row>,
 
         waiting--;
 
-        rows.add(row);
-
-        if (limit >= 0 && rows.size() > limit) {
-            AtomicInteger i = new AtomicInteger();
-
-            rows.removeIf(r -> i.incrementAndGet() == rows.size());
-        }
+        addRow(row);
 
         if (waiting == 0)
             source().request(waiting = IN_BUFFER_SIZE);
@@ -150,7 +154,7 @@ public class SortNode<Row> extends AbstractNode<Row> implements SingleNode<Row>,
 
                 requested--;
 
-                downstream().push(rows.poll());
+                downstream().push(rows.remove(0));
 
                 if (++processed >= IN_BUFFER_SIZE && requested > 0) {
                     // allow others to do their job
@@ -170,5 +174,18 @@ public class SortNode<Row> extends AbstractNode<Row> implements SingleNode<Row>,
         finally {
             inLoop = false;
         }
+    }
+
+    /** Adds new row in proper order. */
+    private void addRow(Row row) {
+        int insertIdx = Collections.binarySearch(rows, row, rowsCmp);
+
+        if (insertIdx < 0)
+            rows.add(-insertIdx - 1, row);
+        else
+            rows.add(insertIdx + 1, row);
+
+        while (limit >= 0 && rows.size() > limit)
+            rows.remove(rows.size() - 1);
     }
 }

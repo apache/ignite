@@ -21,10 +21,13 @@ import org.apache.calcite.plan.RelOptRule;
 import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.RelRule;
 import org.apache.calcite.plan.RelTraitSet;
+import org.apache.calcite.rel.RelCollations;
+import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.Sort;
 import org.apache.calcite.rel.logical.LogicalSort;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteConvention;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteLimit;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSort;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
 import org.immutables.value.Value;
 
@@ -61,11 +64,30 @@ public class SortConverterRule extends RelRule<SortConverterRule.Config> {
         RelOptCluster cluster = sort.getCluster();
 
         if (sort.fetch != null || sort.offset != null) {
-            RelTraitSet traits = cluster.traitSetOf(IgniteConvention.INSTANCE)
+            RelTraitSet limitTraits = cluster.traitSetOf(IgniteConvention.INSTANCE)
                 .replace(sort.getCollation())
                 .replace(IgniteDistributions.single());
 
-            call.transformTo(new IgniteLimit(cluster, traits, convert(sort.getInput(), traits), sort.offset,
+            RelNode limitInput;
+
+            if (sort.collation == RelCollations.EMPTY)
+                limitInput = sort.getInput();
+            else {
+                RelTraitSet sortTraits = cluster.traitSetOf(IgniteConvention.INSTANCE)
+                    .replace(sort.getCollation());
+
+                limitInput = new IgniteSort(
+                    cluster,
+                    sortTraits,
+                    convert(sort.getInput(), cluster.traitSetOf(IgniteConvention.INSTANCE)),
+                    sort.getCollation(),
+                    false,
+                    sort.offset,
+                    sort.fetch
+                );
+            }
+
+            call.transformTo(new IgniteLimit(cluster, limitTraits, convert(limitInput, limitTraits), sort.offset,
                 sort.fetch));
         }
     }
