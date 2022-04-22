@@ -298,7 +298,7 @@ public class CacheDataRegionConfigurationTest extends GridCommonAbstractTest {
 
         ccfg = manyPartitionsCache;
 
-        ListeningTestLogger srv0Logger = new ListeningTestLogger(false, null);
+        ListeningTestLogger srv0Logger = new ListeningTestLogger(null);
         LogListener cacheGrpLsnr0 = matches("Cache group 'default' brings high overhead").build();
         LogListener dataRegLsnr0 = matches("metainformation in data region 'smallRegion'").build();
         LogListener partsInfoLsnr0 = matches(numOfPartitions + " partitions, " +
@@ -309,7 +309,7 @@ public class CacheDataRegionConfigurationTest extends GridCommonAbstractTest {
 
         IgniteEx ignite0 = startGrid("srv0");
 
-        ListeningTestLogger srv1Logger = new ListeningTestLogger(false, null);
+        ListeningTestLogger srv1Logger = new ListeningTestLogger(null);
         LogListener cacheGrpLsnr1 = matches("Cache group 'default' brings high overhead").build();
         LogListener dataRegLsnr1 = matches("metainformation in data region 'smallRegion'").build();
         LogListener partsInfoLsnr1 = matches(numOfPartitions + " partitions, " +
@@ -364,7 +364,7 @@ public class CacheDataRegionConfigurationTest extends GridCommonAbstractTest {
         //one hour to guarantee that checkpoint will be triggered by 'dirty pages amount' trigger
         memCfg.setCheckpointFrequency(60 * 60 * 1000);
 
-        ListeningTestLogger srv0Logger = new ListeningTestLogger(false, null);
+        ListeningTestLogger srv0Logger = new ListeningTestLogger(null);
         LogListener cacheGrpLsnr0 = matches("Cache group 'default' brings high overhead").build();
         LogListener dataRegLsnr0 = matches("metainformation in data region 'defaultRegion'").build();
         LogListener partsInfoLsnr0 = matches(numOfPartitions + " partitions, " +
@@ -375,7 +375,7 @@ public class CacheDataRegionConfigurationTest extends GridCommonAbstractTest {
 
         IgniteEx ignite0 = startGrid("srv0");
 
-        ListeningTestLogger srv1Logger = new ListeningTestLogger(false, null);
+        ListeningTestLogger srv1Logger = new ListeningTestLogger(null);
         LogListener cacheGrpLsnr1 = matches("Cache group 'default' brings high overhead").build();
         LogListener dataRegLsnr1 = matches("metainformation in data region 'defaultRegion'").build();
         LogListener partsInfoLsnr1 = matches(numOfPartitions + " partitions, " +
@@ -386,7 +386,7 @@ public class CacheDataRegionConfigurationTest extends GridCommonAbstractTest {
 
         startGrid("srv1");
 
-        ListeningTestLogger srv2Logger = new ListeningTestLogger(false, null);
+        ListeningTestLogger srv2Logger = new ListeningTestLogger(null);
         LogListener cacheGrpLsnr2 = matches("Cache group 'default' brings high overhead").build();
         srv2Logger.registerListener(cacheGrpLsnr2);
         logger = srv2Logger;
@@ -436,14 +436,14 @@ public class CacheDataRegionConfigurationTest extends GridCommonAbstractTest {
         //one hour to guarantee that checkpoint will be triggered by 'dirty pages amount' trigger
         memCfg.setCheckpointFrequency(60 * 60 * 1000);
 
-        ListeningTestLogger srv0Logger = new ListeningTestLogger(false, null);
+        ListeningTestLogger srv0Logger = new ListeningTestLogger(null);
         LogListener cacheGrpLsnr0 = matches("Cache group 'default' brings high overhead").build();
         srv0Logger.registerListener(cacheGrpLsnr0);
         logger = srv0Logger;
 
         IgniteEx ignite0 = startGrid("srv0");
 
-        ListeningTestLogger srv1Logger = new ListeningTestLogger(false, null);
+        ListeningTestLogger srv1Logger = new ListeningTestLogger(null);
         LogListener cacheGrpLsnr1 = matches("Cache group 'default' brings high overhead").build();
         srv1Logger.registerListener(cacheGrpLsnr1);
         logger = srv1Logger;
@@ -502,7 +502,7 @@ public class CacheDataRegionConfigurationTest extends GridCommonAbstractTest {
 
         ccfg = fewPartitionsCache;
 
-        ListeningTestLogger srv0Logger = new ListeningTestLogger(false, null);
+        ListeningTestLogger srv0Logger = new ListeningTestLogger(null);
         LogListener cacheGrpLsnr0 = matches("Cache group 'default' brings high overhead").build();
         LogListener dynamicGrpLsnr = matches("Cache group 'dynamicCache' brings high overhead").build();
         srv0Logger.registerListener(cacheGrpLsnr0);

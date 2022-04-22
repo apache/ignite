@@ -64,7 +64,7 @@ public class GridTcpCommunicationSpiLogTest extends GridCommonAbstractTest {
 
         setRootLoggerDebugLevel();
 
-        srvTestLog = new ListeningTestLogger(true, log);
+        srvTestLog = new ListeningTestLogger(log);
     }
 
     /** {@inheritDoc} */

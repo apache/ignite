@@ -141,7 +141,7 @@ public class GridCachePartitionExchangeManagerWarningsTest extends GridCommonAbs
     public void testLongRunningCacheFutures() throws Exception {
         long timeout = Long.parseLong(LONG_OPERATIONS_DUMP_TIMEOUT);
 
-        testLog = new CustomTestLogger(false, log, "future");
+        testLog = new CustomTestLogger(log, "future");
 
         int longRunFuturesCnt = 1000;
 
@@ -173,7 +173,7 @@ public class GridCachePartitionExchangeManagerWarningsTest extends GridCommonAbs
     public void testLongRunningTransactions() throws Exception {
         long timeout = Long.parseLong(LONG_OPERATIONS_DUMP_TIMEOUT);
 
-        testLog = new CustomTestLogger(false, log, "transaction");
+        testLog = new CustomTestLogger(log, "transaction");
 
         int transactions = 100;
 
@@ -374,12 +374,11 @@ public class GridCachePartitionExchangeManagerWarningsTest extends GridCommonAbs
         private final String substr;
 
         /**
-         * @param dbg If set to {@code true}, enables debug and trace log messages processing.
          * @param echo Logger to echo all messages, limited by {@code dbg} flag.
          * @param substr Substring to filter warning messages.
          */
-        public CustomTestLogger(boolean dbg, @Nullable IgniteLogger echo, String substr) {
-            super(dbg, echo);
+        public CustomTestLogger(@Nullable IgniteLogger echo, String substr) {
+            super(echo);
 
             this.substr = substr;
         }

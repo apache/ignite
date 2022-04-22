@@ -74,7 +74,7 @@ public class P2PUnsupportedClassVersionTest extends GridCommonAbstractTest {
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 
-        lsnrLog = new ListeningTestLogger(false, log);
+        lsnrLog = new ListeningTestLogger(log);
 
         srv = startGrid("server");
         cli = startClientGrid("client");
