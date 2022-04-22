@@ -196,7 +196,7 @@ public class GridCommandHandlerConsistencyRepairCorrectnessTransactionalTest ext
         for (Ignite initiator : clsAwareNodes) {
             gen.generate(
                 initiator,
-                1,
+                50,
                 false,
                 false,
                 misses,

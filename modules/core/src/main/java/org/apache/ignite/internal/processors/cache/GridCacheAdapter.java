@@ -5162,6 +5162,8 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         V fixedVal = fixedObj != null ? (V)ctx.unwrapBinaryIfNeeded(fixedObj, true, false, null) : null;
         V primVal = primValObj != null ? (V)ctx.unwrapBinaryIfNeeded(primValObj, true, false, null) : null;
 
+        GridCacheVersion primVer = primRes != null ? primRes.version() : null;
+
         return ctx.kernalContext().closure().callLocalSafe(new GridPlainCallable<Boolean>() {
             @Override public Boolean call() throws IgniteCheckedException {
                 CacheOperationContext prevOpCtx = ctx.operationContextPerCall();
@@ -5169,7 +5171,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                 ctx.operationContextPerCall(opCtx.keepBinary());
 
                 try {
-                    return invoke((K)key, new AtomicReadRepairEntryProcessor<>(fixedVal, primVal)).get();
+                    return invoke((K)key, new AtomicReadRepairEntryProcessor<>(fixedVal, primVal, primVer)).get();
                 }
                 finally {
                     ctx.operationContextPerCall(prevOpCtx);
@@ -5196,31 +5198,43 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         /** Primary value.*/
         private final V primVal;
 
+        /** Primary version. */
+        private final GridCacheVersion primVer;
+
         /**
          * @param fixedVal Fixed value.
          * @param primVal Primary value.
+         * @param primVer Primary version.
          */
-        public AtomicReadRepairEntryProcessor(V fixedVal, V primVal) {
+        public AtomicReadRepairEntryProcessor(V fixedVal, V primVal, GridCacheVersion primVer) {
             this.fixedVal = fixedVal;
             this.primVal = primVal;
+            this.primVer = primVer;
         }
 
         /** {@inheritDoc} */
         @Override public Boolean process(MutableEntry<K, V> entry, Object... arguments) throws EntryProcessorException {
             V entryVal = entry.getValue();
 
-            if ((primVal == null && entryVal == null) ||
-                (primVal != null && primVal.equals(entryVal))) {
+            try {
+                if ((primVal == null && entryVal == null) || // Still null at primary.
+                    // No updates since consistency violation has been found.
+                    ((primVal != null && primVal.equals(entryVal)) &&
+                        (primVer.equals(((CacheInvokeEntry<Object, Object>)entry).entry().version())))) {
 
-                if (fixedVal != null)
-                    entry.setValue(fixedVal);
+                    if (fixedVal != null)
+                        entry.setValue(fixedVal);
+                    else
+                        entry.remove();
+
+                    return true;
+                }
                 else
-                    entry.remove();
-
-                return true;
+                    return false;
             }
-            else
-                return false;
+            catch (GridCacheEntryRemovedException e) {
+                throw new EntryProcessorException(e);
+            }
         }
     }
 
