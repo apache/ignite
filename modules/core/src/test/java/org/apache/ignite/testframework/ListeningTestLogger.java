@@ -18,6 +18,8 @@
 package org.apache.ignite.testframework;
 
 import java.util.Collection;
+import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.function.Consumer;
 import org.apache.ignite.IgniteLogger;
@@ -39,21 +41,12 @@ public class ListeningTestLogger implements IgniteLogger {
     /**
      * Registered log messages listeners.
      */
-    private final Collection<Consumer<String>> lsnrs = new CopyOnWriteArraySet<>();
+    private final Collection<Consumer<String>> lsnrs;
 
     /**
      * Default constructor.
      */
     public ListeningTestLogger() {
-        this(null);
-    }
-
-    /**
-     * @param dbg Ignored. For setting debug use {@link GridAbstractTest#setRootLoggerDebugLevel()}.
-     * @deprecated Use {@link #ListeningTestLogger()} instead.
-     */
-    @Deprecated
-    public ListeningTestLogger(boolean dbg) {
         this(null);
     }
 
@@ -71,18 +64,16 @@ public class ListeningTestLogger implements IgniteLogger {
      * @param echo Logger to echo all messages, limited by {@code dbg} flag.
      */
     public ListeningTestLogger(@Nullable IgniteLogger echo) {
-        this.echo = echo;
+        this(echo, new CopyOnWriteArrayList<>());
     }
 
     /**
-     * @param dbg Ignored. For setting debug use {@link GridAbstractTest#setRootLoggerDebugLevel()}.
      * @param echo Logger to echo all messages, limited by {@code dbg} flag.
-     * @param lsnrs LogListeners to register instantly.
-     * @deprecated Use {@link #ListeningTestLogger(IgniteLogger, LogListener...)} instead.
+     * @param lsnrs Message listeners.
      */
-    @Deprecated
-    public ListeningTestLogger(boolean dbg, @Nullable IgniteLogger echo, @NotNull LogListener... lsnrs) {
-        this(echo, lsnrs);
+    private ListeningTestLogger(IgniteLogger echo, Collection<Consumer<String>> lsnrs) {
+        this.echo = echo;
+        this.lsnrs = lsnrs;
     }
 
     /**
@@ -151,7 +142,7 @@ public class ListeningTestLogger implements IgniteLogger {
 
     /** {@inheritDoc} */
     @Override public ListeningTestLogger getLogger(Object ctgr) {
-        return this;
+        return echo == null ? this : new ListeningTestLogger(echo.getLogger(ctgr), lsnrs);
     }
 
     /** {@inheritDoc} */

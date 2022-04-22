@@ -685,7 +685,7 @@ public class CacheDataRegionConfigurationTest extends GridCommonAbstractTest {
             .setDefaultDataRegionConfiguration(new DataRegionConfiguration().setPersistenceEnabled(true));
 
         LogListener logLsnr = matches("Possible failure suppressed accordingly to a configured handler").build();
-        logger = new ListeningTestLogger(false, log, logLsnr);
+        logger = new ListeningTestLogger(log, logLsnr);
 
         IgniteEx srvNode = startGrid(0);
 

@@ -26,6 +26,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.compatibility.testframework.util.CompatibilityTestsUtils;
 import org.apache.ignite.compatibility.testframework.util.MavenUtils;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -143,6 +144,10 @@ public abstract class IgniteCompatibilityAbstractTest extends GridCommonAbstract
         final ListeningTestLogger logger = new ListeningTestLogger(log);
 
         IgniteProcessProxy ignite = new IgniteProcessProxy(cfg, logger, locJvmInstance == null ? null : (x) -> locJvmInstance, true) {
+            @Override protected IgniteLogger logger(IgniteLogger log, Object ctgr) {
+                return logger.getLogger(ctgr + "#" + ver.replaceAll("\\.", "_"));
+            }
+
             @Override protected String igniteNodeRunnerClassName() throws Exception {
                 return IgniteCompatibilityNodeRunner.class.getCanonicalName();
             }
