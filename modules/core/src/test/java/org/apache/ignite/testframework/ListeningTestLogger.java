@@ -30,7 +30,7 @@ import org.jetbrains.annotations.Nullable;
  * Implementation of {@link org.apache.ignite.IgniteLogger} that performs any actions when certain message is logged.
  * It can be useful in tests to ensure that a specific message was (or was not) printed to the log.
  * <p>
- * Note: for setting debug level use {@link GridAbstractTest#setRootLoggerDebugLevel()}.
+ * Note: for setting debug level use {@link GridAbstractTest#setLoggerDebugLevel()}.
  */
 public class ListeningTestLogger implements IgniteLogger {
     /**

@@ -128,6 +128,7 @@ import org.apache.ignite.testframework.junits.multijvm.IgniteProcessProxy;
 import org.apache.ignite.thread.IgniteThread;
 import org.apache.log4j.ConsoleAppender;
 import org.apache.log4j.Level;
+import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
 import org.apache.log4j.PatternLayout;
 import org.apache.log4j.Priority;
@@ -457,11 +458,13 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
     }
 
     /**
-     * Sets the log level for root logger ({@link #log}) to {@link Level#DEBUG}. The log level will be resetted to
+     * Sets the log level for logger ({@link #log}) to {@link Level#DEBUG}. The log level will be resetted to
      * default in {@link #afterTest()}.
      */
-    protected final void setRootLoggerDebugLevel() {
-        Logger logger = Logger.getRootLogger();
+    protected final void setLoggerDebugLevel() {
+        Logger logger = LogManager.getLogger("org.apache.ignite");
+
+        assert logger != null : "'org.apache.ignite' category is not specified in the logger configuration";
 
         assertNull(logger + " level: " + Level.DEBUG, changedLevels.put(logger, logger.getLevel()));
 
