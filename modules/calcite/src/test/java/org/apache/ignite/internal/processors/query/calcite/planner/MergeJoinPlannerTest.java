@@ -253,8 +253,6 @@ public class MergeJoinPlannerTest extends AbstractPlannerTest {
 
         IgniteRel rel = physicalPlan(sql, schema, DISABLED_RULES);
 
-        System.err.println("TEST | plan: " + rel.explain());
-
         assertNull(sortOnTopOfJoin(rel));
 
         List<IgniteSort> sortNodes = sortOnTopOfScan(rel);
