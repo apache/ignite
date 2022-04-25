@@ -76,7 +76,7 @@ public class GridCommandHandlerBrokenIndexTest extends GridCommandHandlerCluster
         if (cfg.isClientMode())
             return cfg;
 
-        ListeningTestLogger testLog = new ListeningTestLogger(false, log);
+        ListeningTestLogger testLog = new ListeningTestLogger(log);
 
         Pattern logErrMsgPattern = Pattern.compile("Failed to lookup key: " + IDX_ISSUE_STR);
 

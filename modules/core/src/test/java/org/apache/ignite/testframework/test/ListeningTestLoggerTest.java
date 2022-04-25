@@ -39,7 +39,7 @@ import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCaus
 @SuppressWarnings("ThrowableNotThrown")
 public class ListeningTestLoggerTest extends GridCommonAbstractTest {
     /** */
-    private final ListeningTestLogger log = new ListeningTestLogger(false, super.log);
+    private final ListeningTestLogger log = new ListeningTestLogger(log());
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -390,7 +390,7 @@ public class ListeningTestLoggerTest extends GridCommonAbstractTest {
     public void testEchoLogger() {
         IgniteLogger echo = new StringLogger();
 
-        ListeningTestLogger log = new ListeningTestLogger(true, echo);
+        ListeningTestLogger log = new ListeningTestLogger(echo);
 
         log.error("1");
         log.warning("2");
