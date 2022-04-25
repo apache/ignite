@@ -464,9 +464,9 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
     protected final void setLoggerDebugLevel() {
         Logger logger = LogManager.getLogger("org.apache.ignite");
 
-        assert logger != null : "'org.apache.ignite' category is not specified in the logger configuration";
+        Level lvl = logger.getLevel() == null ? LogManager.getRootLogger().getLevel() : logger.getLevel();
 
-        assertNull(logger + " level: " + Level.DEBUG, changedLevels.put(logger, logger.getLevel()));
+        assertNull(logger + " level: " + Level.DEBUG, changedLevels.put(logger, lvl));
 
         logger.setLevel(Level.DEBUG);
     }

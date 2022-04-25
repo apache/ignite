@@ -137,11 +137,6 @@
         <level value="INFO"/>
     </category>
 
-    <!-- Ability to change the logging level while running tests. -->
-    <category name="org.apache.ignite">
-        <level value="INFO"/>
-    </category>
-
     <category name="org.eclipse.jetty">
         <level value="INFO"/>
     </category>
