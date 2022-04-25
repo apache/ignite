@@ -35,7 +35,6 @@ import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.plan.RelTrait;
 import org.apache.calcite.plan.RelTraitDef;
 import org.apache.calcite.plan.RelTraitSet;
-import org.apache.calcite.plan.volcano.RelSubset;
 import org.apache.calcite.rel.RelCollation;
 import org.apache.calcite.rel.RelCollationTraitDef;
 import org.apache.calcite.rel.RelCollations;
@@ -44,7 +43,6 @@ import org.apache.calcite.rel.RelFieldCollation;
 import org.apache.calcite.rel.RelInput;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.AggregateCall;
-import org.apache.calcite.rel.core.Sort;
 import org.apache.calcite.rel.core.Spool;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rex.RexInputRef;
@@ -54,7 +52,6 @@ import org.apache.calcite.util.ControlFlowException;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.calcite.util.Pair;
 import org.apache.calcite.util.mapping.Mappings;
-import org.apache.ignite.internal.processors.query.calcite.exec.rel.SortNode;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteConvention;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteExchange;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
@@ -132,26 +129,17 @@ public class TraitUtils {
         if (fromTrait.satisfies(toTrait))
             return rel;
 
-        Sort sortNode = null;
-
-        if(rel instanceof RelSubset){
-            RelSubset set = (RelSubset)rel;
-
-            Object o;
-
-            o = set.getParentRels();
-            o = set.getRelList();
-            o = set.getInputs();
-            System.err.println("TETS | o: " + o);
-
-        }
-            //sortNode = (Sort)((RelSubset)rel).getOriginal();
-
         RelTraitSet traits = rel.getTraitSet().replace(toTrait);
 
-        RelCollation collation = TraitUtils.collation(traits);
+        RelCollation collation = collation(traits);
 
-        return new IgniteSort(rel.getCluster(), traits, rel, toTrait, true, sortNode.offset, sortNode.fetch);
+        if(collation instanceof IgniteCollation) {
+            IgniteCollation ic = (IgniteCollation)collation;
+
+            return new IgniteSort(rel.getCluster(), traits, rel, toTrait, ic.getOffset(), ic.getFetch());
+        }
+
+        return new IgniteSort(rel.getCluster(), traits, rel, toTrait);
     }
 
     /** */
