@@ -331,7 +331,7 @@ public class TcpDiscoveryIpFinderFailureTest extends GridCommonAbstractTest {
         dynamicIpFinder.setShared(false);
         dynamicIpFinder.setAddresses(null);
 
-        setRootLoggerDebugLevel();
+        setLoggerDebugLevel();
 
         IgniteConfiguration cfgSrv = getConfigurationDynamicIpFinder("Server1", false);
 

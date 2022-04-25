@@ -107,7 +107,7 @@ public class GridP2PContinuousDeploymentClientDisconnectTest extends GridCommonA
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 
-        testLog = new ListeningTestLogger(true, log);
+        testLog = new ListeningTestLogger(log);
 
         startGrid(0);
 

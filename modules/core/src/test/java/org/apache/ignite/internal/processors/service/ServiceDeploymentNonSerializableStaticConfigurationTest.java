@@ -33,7 +33,7 @@ public class ServiceDeploymentNonSerializableStaticConfigurationTest extends Gri
     private static final String TEST_SERVICE_NAME = "nonSerializableService";
 
     /** */
-    private final ListeningTestLogger log = new ListeningTestLogger(false, super.log);
+    private final ListeningTestLogger log = new ListeningTestLogger(super.log);
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {

@@ -46,7 +46,7 @@ public class DeploymentRequestOfUnknownClassProcessingTest extends GridCommonAbs
     private static final String UNKNOWN_CLASS_NAME = "unknown.UnknownClassName";
 
     /** */
-    private final ListeningTestLogger remNodeLog = new ListeningTestLogger(false, log);
+    private final ListeningTestLogger remNodeLog = new ListeningTestLogger(log);
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {

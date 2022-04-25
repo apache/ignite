@@ -118,7 +118,7 @@ public class CleanupRestoredCachesSlowTest extends GridCommonAbstractTest implem
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         ListeningTestLogger testLog =
-            new ListeningTestLogger(false, super.getConfiguration(igniteInstanceName).getGridLogger());
+            new ListeningTestLogger(super.getConfiguration(igniteInstanceName).getGridLogger());
 
         testLog.registerListener(logLsnr);
 
