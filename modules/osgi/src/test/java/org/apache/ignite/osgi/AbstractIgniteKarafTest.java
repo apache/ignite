@@ -18,9 +18,7 @@
 package org.apache.ignite.osgi;
 
 import java.io.File;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 import javax.inject.Inject;
 import org.apache.karaf.features.FeaturesService;
 import org.junit.runner.RunWith;
