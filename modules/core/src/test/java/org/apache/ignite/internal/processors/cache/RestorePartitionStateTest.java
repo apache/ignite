@@ -38,11 +38,9 @@ import org.apache.ignite.internal.util.typedef.T3;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
-import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_QUIET;
 import static org.apache.ignite.internal.processors.cache.GridCacheProcessor.TIMEOUT_OUTPUT_RESTORE_PARTITION_STATE_PROGRESS;
 import static org.apache.ignite.internal.processors.cache.GridCacheProcessor.processedPartitionComparator;
 import static org.apache.ignite.internal.processors.cache.GridCacheProcessor.toStringTopProcessingPartitions;
@@ -167,7 +165,6 @@ public class RestorePartitionStateTest extends GridCommonAbstractTest {
      * @throws Exception If fail.
      */
     @Test
-    @WithSystemProperty(key = IGNITE_QUIET, value = "false")
     public void testLogTopPartitions() throws Exception {
         IgniteEx n = startGrid(0);
 
@@ -178,7 +175,7 @@ public class RestorePartitionStateTest extends GridCommonAbstractTest {
             .enableCheckpoints(false).get(getTestTimeout());
 
         for (IgniteInternalCache cache : n.context().cache().caches()) {
-            for (int i = 0; i < 1_000; i++)
+            for (int i = 0; i < 10_000; i++)
                 cache.put(i, cache.name() + i);
         }
 
