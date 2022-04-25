@@ -133,7 +133,7 @@ public class TraitUtils {
 
         RelCollation collation = collation(traits);
 
-        if(collation instanceof IgniteCollation) {
+        if (collation instanceof IgniteCollation) {
             IgniteCollation ic = (IgniteCollation)collation;
 
             return new IgniteSort(rel.getCluster(), traits, rel, toTrait, ic.getOffset(), ic.getFetch());

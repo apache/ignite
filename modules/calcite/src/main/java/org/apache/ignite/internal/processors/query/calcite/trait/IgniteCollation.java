@@ -1,7 +1,7 @@
 package org.apache.ignite.internal.processors.query.calcite.trait;
 
-import com.google.common.collect.ImmutableList;
 import java.util.Objects;
+import com.google.common.collect.ImmutableList;
 import org.apache.calcite.rel.RelCollationImpl;
 import org.apache.calcite.rel.RelFieldCollation;
 import org.apache.calcite.rex.RexNode;

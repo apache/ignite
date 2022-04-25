@@ -275,7 +275,7 @@ public abstract class QueryChecker {
     private List<List<?>> expectedResult;
 
     /** */
-    private boolean emptyResult = false;
+    private boolean emptyResult;
 
     /** */
     private List<String> expectedColumnNames;

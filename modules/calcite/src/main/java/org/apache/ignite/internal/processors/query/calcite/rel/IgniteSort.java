@@ -16,8 +16,8 @@
  */
 package org.apache.ignite.internal.processors.query.calcite.rel;
 
-import com.google.common.collect.ImmutableList;
 import java.util.List;
+import com.google.common.collect.ImmutableList;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptCost;
 import org.apache.calcite.plan.RelOptPlanner;
@@ -118,19 +118,19 @@ public class IgniteSort extends Sort implements IgniteRel {
 
     /** {@inheritDoc} */
     @Override public Pair<RelTraitSet, List<RelTraitSet>> passThroughTraits(RelTraitSet required) {
-        RelCollation collation = TraitUtils.collation(required);
-
-        if(required.getConvention() != IgniteConvention.INSTANCE || !this.collation.satisfies(collation))
+        if (isEnforcer() || required.getConvention() != IgniteConvention.INSTANCE)
             return null;
 
-        return Pair.of(required.replace(this.collation), ImmutableList.of(required.replace(RelCollations.EMPTY)));
+        RelCollation collation = TraitUtils.collation(required);
+
+        return Pair.of(required.replace(collation), ImmutableList.of(required.replace(RelCollations.EMPTY)));
     }
 
     /** {@inheritDoc} */
     @Override public Pair<RelTraitSet, List<RelTraitSet>> deriveTraits(RelTraitSet childTraits, int childId) {
         assert childId == 0;
 
-        if (childTraits.getConvention() != IgniteConvention.INSTANCE)
+        if (isEnforcer() || childTraits.getConvention() != IgniteConvention.INSTANCE)
             return null;
 
         return Pair.of(childTraits.replace(collation()), ImmutableList.of(childTraits));
@@ -147,7 +147,7 @@ public class IgniteSort extends Sort implements IgniteRel {
         double memRows = Math.min(inputRows, offset + fetch);
 
         double cpuCost = inputRows * IgniteCost.ROW_PASS_THROUGH_COST + Util.nLogM(inputRows, memRows)
-            * IgniteCost.ROW_COMPARISON_COST * getCollation().getFieldCollations().size();
+            * IgniteCost.ROW_COMPARISON_COST;
         double memory = memRows * getRowType().getFieldCount() * IgniteCost.AVERAGE_FIELD_SIZE;
 
         IgniteCostFactory costFactory = (IgniteCostFactory)planner.getCostFactory();
