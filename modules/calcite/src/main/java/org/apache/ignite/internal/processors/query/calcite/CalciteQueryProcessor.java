@@ -22,6 +22,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
+import java.util.function.Function;
 import org.apache.calcite.DataContexts;
 import org.apache.calcite.config.Lex;
 import org.apache.calcite.config.NullCollation;
@@ -32,6 +33,7 @@ import org.apache.calcite.rel.RelCollationTraitDef;
 import org.apache.calcite.rel.core.Aggregate;
 import org.apache.calcite.rel.hint.HintStrategyTable;
 import org.apache.calcite.schema.SchemaPlus;
+import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlNodeList;
 import org.apache.calcite.sql.parser.SqlParser;
@@ -326,87 +328,121 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
         QueryPlan plan = queryPlanCache().queryPlan(new CacheKey(schema.getName(), sql));
 
         if (plan != null) {
-            RootQuery<Object[]> qry = new RootQuery<>(
-                sql,
-                schema,
-                params,
-                qryCtx,
-                exchangeSvc,
-                (q) -> qryReg.unregister(q.id()),
-                log,
-                queryPlannerTimeout
+            return Collections.singletonList(
+                executeQuery(qryCtx, qry -> plan, schemaName, sql, null, params)
             );
-
-            qryReg.register(qry);
-
-            try {
-                return Collections.singletonList(executionSvc.executePlan(
-                    qry,
-                    plan
-                ));
-            }
-            catch (Exception e) {
-                boolean isCanceled = qry.isCancelled();
-
-                qry.cancel();
-
-                qryReg.unregister(qry.id());
-
-                if (isCanceled)
-                    throw new IgniteSQLException("The query was cancelled while planning", IgniteQueryErrorCode.QUERY_CANCELED, e);
-                else
-                    throw e;
-
-            }
         }
 
         SqlNodeList qryList = Commons.parse(sql, FRAMEWORK_CONFIG.getParserConfig());
-        List<FieldsQueryCursor<List<?>>> cursors = new ArrayList<>(qryList.size());
 
+        List<FieldsQueryCursor<List<?>>> cursors = new ArrayList<>(qryList.size());
         List<RootQuery<Object[]>> qrys = new ArrayList<>(qryList.size());
 
         for (final SqlNode sqlNode: qryList) {
-            RootQuery<Object[]> qry = new RootQuery<>(
-                sqlNode.toString(),
-                schemaHolder.schema(schemaName), // Update schema for each query in multiple statements.
-                params,
-                qryCtx,
-                exchangeSvc,
-                (q) -> qryReg.unregister(q.id()),
-                log,
-                queryPlannerTimeout
-            );
-
-            qrys.add(qry);
-
-            qryReg.register(qry);
-
-            try {
+            FieldsQueryCursor<List<?>> cursor = executeQuery(qryCtx, qry -> {
                 if (qryList.size() == 1) {
-                    plan = queryPlanCache().queryPlan(
+                    return queryPlanCache().queryPlan(
                         new CacheKey(schemaName, sql), // Use source SQL to avoid redundant parsing next time.
-                        () -> prepareSvc.prepareSingle(sqlNode, qry.planningContext()));
+                        () -> prepareSvc.prepareSingle(sqlNode, qry.planningContext())
+                    );
                 }
                 else
-                    plan = prepareSvc.prepareSingle(sqlNode, qry.planningContext());
+                    return prepareSvc.prepareSingle(sqlNode, qry.planningContext());
+            }, schemaName, sqlNode.toString(), qrys, params);
 
-                cursors.add(executionSvc.executePlan(qry, plan));
-            }
-            catch (Exception e) {
-                boolean isCanceled = qry.isCancelled();
-
-                qrys.forEach(RootQuery::cancel);
-
-                qryReg.unregister(qry.id());
-
-                if (isCanceled)
-                    throw new IgniteSQLException("The query was cancelled while planning", IgniteQueryErrorCode.QUERY_CANCELED, e);
-                else
-                    throw e;
-            }
+            cursors.add(cursor);
         }
 
         return cursors;
+    }
+
+    /** {@inheritDoc} */
+    @Override public List<FieldsQueryCursor<List<?>>> queryBatched(
+        @Nullable QueryContext qryCtx,
+        String schemaName,
+        String sql,
+        List<Object[]> batchedParams
+    ) throws IgniteSQLException {
+        SqlNodeList qryNodeList = Commons.parse(sql, FRAMEWORK_CONFIG.getParserConfig());
+
+        if (qryNodeList.size() != 1) {
+            throw new IgniteSQLException("Multiline statements are not supported in batched query",
+                IgniteQueryErrorCode.PARSING);
+        }
+
+        SqlNode qryNode = qryNodeList.get(0);
+
+        if (qryNode.getKind() != SqlKind.INSERT && qryNode.getKind() != SqlKind.UPDATE
+            && qryNode.getKind() != SqlKind.MERGE && qryNode.getKind() != SqlKind.DELETE) {
+            throw new IgniteSQLException("Unexpected operation kind for batched query [kind=" + qryNode.getKind() + "]",
+                IgniteQueryErrorCode.UNEXPECTED_OPERATION);
+        }
+
+        List<FieldsQueryCursor<List<?>>> cursors = new ArrayList<>(batchedParams.size());
+
+        List<RootQuery<Object[]>> qrys = new ArrayList<>(batchedParams.size());
+
+        Function<RootQuery<Object[]>, QueryPlan> planSupplier = new Function<RootQuery<Object[]>, QueryPlan>() {
+            private QueryPlan plan;
+
+            @Override public QueryPlan apply(RootQuery<Object[]> qry) {
+                if (plan == null) {
+                    plan = queryPlanCache().queryPlan(new CacheKey(schemaName, sql), () ->
+                        prepareSvc.prepareSingle(qryNode, qry.planningContext())
+                    );
+                }
+
+                return plan;
+            }
+        };
+
+        for (final Object[] batch: batchedParams)
+            cursors.add(executeQuery(qryCtx, planSupplier, schemaName, sql, qrys, batch));
+
+        return cursors;
+    }
+
+    /** */
+    private FieldsQueryCursor<List<?>> executeQuery(
+        @Nullable QueryContext qryCtx,
+        Function<RootQuery<Object[]>, QueryPlan> plan,
+        String schema,
+        String sql,
+        @Nullable List<RootQuery<Object[]>> qrys,
+        Object... params
+    ) {
+        RootQuery<Object[]> qry = new RootQuery<>(
+            sql,
+            schemaHolder.schema(schema),
+            params,
+            qryCtx,
+            exchangeSvc,
+            (q) -> qryReg.unregister(q.id()),
+            log,
+            queryPlannerTimeout
+        );
+
+        if (qrys != null)
+            qrys.add(qry);
+
+        qryReg.register(qry);
+
+        try {
+            return executionSvc.executePlan(qry, plan.apply(qry));
+        }
+        catch (Throwable e) {
+            boolean isCanceled = qry.isCancelled();
+
+            if (qrys != null)
+                qrys.forEach(RootQuery::cancel);
+
+            qryReg.unregister(qry.id());
+
+            if (isCanceled)
+                throw new IgniteSQLException("The query was cancelled while planning", IgniteQueryErrorCode.QUERY_CANCELED, e);
+            else
+                throw e;
+        }
     }
 
     /** */

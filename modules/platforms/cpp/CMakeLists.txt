@@ -16,7 +16,7 @@
 #
 
 cmake_minimum_required(VERSION 3.6)
-project(Ignite.C++ VERSION 2.13.0.58917)
+project(Ignite.C++ VERSION 2.14.0.62943)
 
 set(CMAKE_CXX_STANDARD 98)
 
@@ -73,6 +73,12 @@ if (${WITH_SANITIZERS} AND (CMAKE_CXX_COMPILER_ID MATCHES "Clang" OR CMAKE_CXX_C
     endif()
 
     message("Built with sanitizers. Sanitizers options for ctest: ${SANITIZERS_ENV}")
+endif()
+
+if (CMAKE_BUILD_TYPE STREQUAL "Debug")
+    if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fstandalone-debug")
+    endif()
 endif()
 
 if (${WITH_CORE} OR ${WITH_TESTS})

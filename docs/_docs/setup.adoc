@@ -242,10 +242,6 @@ by the Pax Logging API - the logging framework used by Apache Karaf.
 
 |ignite-rest-http | Ignite REST-HTTP starts a Jetty-based server within a node that can be used to execute tasks and/or cache commands in grid using HTTP-based link:restapi[RESTful APIs].
 
-|ignite-scalar | The Ignite Scalar module provides Scala-based DSL with extensions and shortcuts for Ignite API.
-
-|ignite-scalar_2.10 | Ignite Scalar module that supports Scala 2.10
-
 |ignite-schedule | This  module provides functionality for scheduling jobs locally using UNIX cron-based syntax.
 
 |ignite-slf4j | Support for link:logging#using-slf4j[SLF4J logging framework].

@@ -42,7 +42,6 @@
         <!-- KARAF-4129 Karaf feature containing a fragment that attaches to pax-logging-api cannot be installed
         <feature>ignite-log4j</feature>-->
         <feature>ignite-rest-http</feature>
-        <feature>ignite-scalar-2.11</feature>
         <feature>ignite-schedule</feature>
         <feature>ignite-slf4j</feature>
         <feature>ignite-spring</feature>
@@ -188,22 +187,6 @@
         <bundle start="true" dependency="true">mvn:commons-lang/commons-lang/${commons.lang.version}</bundle>
         <bundle start="true" dependency="true">mvn:commons-collections/commons-collections/${commons.collections.version}</bundle>
         <bundle start="true">mvn:org.apache.ignite/ignite-rest-http/${project.version}</bundle>
-    </feature>
-
-    <feature name="ignite-scalar-2.10" version="${project.version}" description="Apache Ignite :: Scala 2.10">
-        <details>
-            <![CDATA[The Apache Ignite Scala 2.11 integration module + dependencies. This module installs the Scala 2.10 library bundle.]]>
-        </details>
-        <bundle start="true" dependency="true">mvn:org.scala-lang/scala-library/${scala210.library.version}</bundle>
-        <bundle start="true">mvn:org.apache.ignite/ignite-scalar_2.10/${project.version}</bundle>
-    </feature>
-
-    <feature name="ignite-scalar-2.11" version="${project.version}" description="Apache Ignite :: Scala 2.11">
-        <details>
-            <![CDATA[The Apache Ignite Scala 2.11 integration module + dependencies. This module installs the Scala 2.11 library bundle.]]>
-        </details>
-        <bundle start="true" dependency="true">mvn:org.scala-lang/scala-library/${scala.library.version}</bundle>
-        <bundle start="true">mvn:org.apache.ignite/ignite-scalar/${project.version}</bundle>
     </feature>
 
     <feature name="ignite-schedule" version="${project.version}" description="Apache Ignite :: Schedule">

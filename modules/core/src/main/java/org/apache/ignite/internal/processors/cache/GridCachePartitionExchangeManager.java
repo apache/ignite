@@ -1888,10 +1888,11 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                 if (initTopVer.compareTo(fut.exchangeId().topologyVersion()) < 0)
                     continue;
 
-                skipped++;
-
-                if (skipped > 10)
+                // Skip recent exchange futures (ignore futures that have been merged into another).
+                if (skipped == 10 || fut.isMerged())
                     fut.cleanUp();
+                else
+                    skipped++;
             }
         }
     }

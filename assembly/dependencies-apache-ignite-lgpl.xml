@@ -112,6 +112,7 @@
         <moduleSet>
             <includeSubModules>true</includeSubModules>
             <excludes>
+                <exclude>${project.groupId}:ignite-bom</exclude>
                 <exclude>${project.groupId}:ignite-core</exclude>
                 <exclude>${project.groupId}:ignite-clients</exclude>
                 <exclude>${project.groupId}:ignite-spring</exclude>
@@ -119,13 +120,13 @@
                 <exclude>${project.groupId}:ignite-extdata-p2p</exclude>
                 <exclude>${project.groupId}:ignite-extdata-uri</exclude>
                 <exclude>${project.groupId}:ignite-extdata-uri-dep</exclude>
+                <exclude>${project.groupId}:ignite-extdata-logo</exclude>
                 <exclude>${project.groupId}:ignite-examples</exclude>
                 <exclude>${project.groupId}:ignite-indexing</exclude>
                 <exclude>${project.groupId}:ignite-visor-console</exclude>
                 <exclude>${project.groupId}:ignite-visor-console_2.10</exclude>
                 <exclude>${project.groupId}:ignite-visor-plugins</exclude>
                 <exclude>${project.groupId}:ignite-codegen</exclude>
-                <exclude>${project.groupId}:ignite-apache-license-gen</exclude>
                 <exclude>${project.groupId}:ignite-appserver-test</exclude>
                 <exclude>${project.groupId}:ignite-websphere-test</exclude>
                 <exclude>${project.groupId}:ignite-cassandra</exclude>

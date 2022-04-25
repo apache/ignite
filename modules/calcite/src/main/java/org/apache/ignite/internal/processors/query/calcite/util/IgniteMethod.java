@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.query.calcite.util;
 
 import java.lang.reflect.Method;
+import java.lang.reflect.Type;
 import org.apache.calcite.avatica.util.ByteString;
 import org.apache.calcite.linq4j.tree.Types;
 import org.apache.calcite.sql.SqlIntervalQualifier;
@@ -52,6 +53,9 @@ public enum IgniteMethod {
 
     /** See {@link ExecutionContext#getCorrelated(int)} */
     CONTEXT_GET_CORRELATED_VALUE(ExecutionContext.class, "getCorrelated", int.class),
+
+    /** See {@link ExecutionContext#getParameter(String, Type)} */
+    CONTEXT_GET_PARAMETER_VALUE(ExecutionContext.class, "getParameter", String.class, Type.class),
 
     /** See {@link SingleScalar#execute(ExecutionContext, Object, Object)} */
     SCALAR_EXECUTE(SingleScalar.class, "execute", ExecutionContext.class, Object.class, Object.class),

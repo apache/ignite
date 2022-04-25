@@ -100,7 +100,7 @@ tab:C++[unsupported]
 
 === SQL View
 
-`org.apache.ignite.spi.metric.sql.SqlViewMetricExporterSpi` exposes metrics via the `SYS.METRICS` view.
+`SqlViewMetricExporterSpi` is enabled by default, `SqlViewMetricExporterSpi` exposes metrics via the `SYS.METRICS` view.
 Each metric is displayed as a single record.
 You can use any supported SQL tool to view the metrics:
 
@@ -119,28 +119,6 @@ You can use any supported SQL tool to view the metrics:
 | cache.myCache.CommitTime          | [J@2eb66498                    |
 ....
 ----
-
-This is how you can configure the SQL View exporter:
-
-[tabs]
---
-tab:XML[]
-[source, xml]
-----
-include::code-snippets/xml/metrics.xml[tags=!*;ignite-config;sql-exporter, indent=0]
-----
-
-tab:Java[]
-
-[source, java]
-----
-include::{javaFile}[tags=sql-exporter, indent=0]
-----
-
-tab:C#/.NET[]
-
-tab:C++[unsupported]
---
 
 === Log
 

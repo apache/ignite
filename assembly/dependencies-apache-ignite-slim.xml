@@ -112,6 +112,7 @@
         <moduleSet>
             <includeSubModules>true</includeSubModules>
             <excludes>
+                <exclude>${project.groupId}:ignite-bom</exclude>
                 <exclude>${project.groupId}:ignite-core</exclude>
                 <exclude>${project.groupId}:ignite-clients</exclude>
                 <exclude>${project.groupId}:ignite-spring</exclude>
@@ -119,6 +120,7 @@
                 <exclude>${project.groupId}:ignite-extdata-p2p</exclude>
                 <exclude>${project.groupId}:ignite-extdata-uri</exclude>
                 <exclude>${project.groupId}:ignite-extdata-uri-dep</exclude>
+                <exclude>${project.groupId}:ignite-extdata-logo</exclude>
                 <exclude>${project.groupId}:ignite-examples</exclude>
                 <exclude>${project.groupId}:ignite-indexing</exclude>
                 <exclude>${project.groupId}:ignite-visor-console</exclude>
@@ -126,7 +128,6 @@
                 <exclude>${project.groupId}:ignite-visor-plugins</exclude>
                 <exclude>${project.groupId}:ignite-hadoop</exclude>
                 <exclude>${project.groupId}:ignite-codegen</exclude>
-                <exclude>${project.groupId}:ignite-apache-license-gen</exclude>
                 <exclude>${project.groupId}:ignite-hibernate-core</exclude>
                 <exclude>${project.groupId}:ignite-hibernate_4.2</exclude>
                 <exclude>${project.groupId}:ignite-hibernate_5.1</exclude>
@@ -158,8 +159,6 @@
                 <exclude>${project.groupId}:ignite-osgi</exclude>
                 <exclude>${project.groupId}:ignite-osgi-karaf</exclude>
                 <exclude>${project.groupId}:ignite-osgi-paxlogging</exclude>
-                <exclude>${project.groupId}:ignite-scalar</exclude>
-                <exclude>${project.groupId}:ignite-scalar_2.10</exclude>
                 <exclude>${project.groupId}:ignite-spark</exclude>
                 <exclude>${project.groupId}:ignite-spark-2.4</exclude>
                 <exclude>${project.groupId}:ignite-ssh</exclude>

@@ -18,7 +18,6 @@
 package org.apache.ignite.osgi;
 
 import java.io.File;
-import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -48,10 +47,6 @@ import static org.ops4j.pax.exam.karaf.options.KarafDistributionOption.logLevel;
 @RunWith(PaxExam.class)
 @ExamReactorStrategy(PerMethod.class)
 public abstract class AbstractIgniteKarafTest {
-    /** Features we do not expect to be installed. */
-    protected static final Set<String> IGNORED_FEATURES = new HashSet<>(
-        Arrays.asList("ignite-scalar-2.10"));
-
     /** Regex matching ignite features. */
     protected static final String IGNITE_FEATURES_NAME_REGEX = "ignite.*";
 

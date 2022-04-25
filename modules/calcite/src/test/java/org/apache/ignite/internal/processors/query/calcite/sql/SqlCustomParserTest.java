@@ -251,6 +251,49 @@ public class SqlCustomParserTest extends GridCommonAbstractTest {
     }
 
     /**
+     * Parsing of CREATE TABLE with specified table options (double quoted).
+     */
+    @Test
+    public void createTableWithOptionsQuoted() throws SqlParseException {
+        String query = "create table my_table(id int) with \"" +
+            " template=my_template," +
+            " backups=2," +
+            " affinity_key=My_Aff," +
+            " Atomicity=atomic," +
+            " Write_Synchronization_mode=transactional," +
+            " cache_group = my_cache_group," +
+            " cache_name=my_cache_name ," +
+            " data_region= my_data_region," +
+            " key_type=my_key_type," +
+            " value_type=my_value_type," +
+            " encrypted=true" +
+            "\"";
+
+        SqlNode node = parse(query);
+
+        assertThat(node, instanceOf(IgniteSqlCreateTable.class));
+
+        IgniteSqlCreateTable createTable = (IgniteSqlCreateTable)node;
+
+        List<SqlNode> opts = createTable.createOptionList().getList();
+        assertThatStringOptionPresent(opts, "TEMPLATE", "my_template");
+        assertThatStringOptionPresent(opts, "BACKUPS", "2");
+        assertThatStringOptionPresent(opts, "AFFINITY_KEY", "My_Aff");
+        assertThatStringOptionPresent(opts, "ATOMICITY", "atomic");
+        assertThatStringOptionPresent(opts, "WRITE_SYNCHRONIZATION_MODE", "transactional");
+        assertThatStringOptionPresent(opts, "CACHE_GROUP", "my_cache_group");
+        assertThatStringOptionPresent(opts, "CACHE_NAME", "my_cache_name");
+        assertThatStringOptionPresent(opts, "DATA_REGION", "my_data_region");
+        assertThatStringOptionPresent(opts, "KEY_TYPE", "my_key_type");
+        assertThatStringOptionPresent(opts, "VALUE_TYPE", "my_value_type");
+        assertThatStringOptionPresent(opts, "ENCRYPTED", "true");
+
+        assertParserThrows("create table my_table(id int) with \"unknown_key=val\"", SqlParseException.class);
+        assertParserThrows("create table my_table(id int) with \"template\"", SqlParseException.class);
+        assertParserThrows("create table my_table(id int) with \"template=t=t\"", SqlParseException.class);
+    }
+
+    /**
      * Parsing of CREATE TABLE AS SELECT.
      */
     @Test
@@ -816,7 +859,7 @@ public class SqlCustomParserTest extends GridCommonAbstractTest {
      */
     private static void assertThatIntegerOptionPresent(List<SqlNode> optionList, String option, int expVal) {
         assertThat(optionList, hasItem(ofTypeMatching(
-            "option" + option + "=" + expVal, IgniteSqlCreateTableOption.class,
+            "option " + option + "=" + expVal, IgniteSqlCreateTableOption.class,
             opt -> opt.key().name().equals(option) && opt.value() instanceof SqlNumericLiteral
                 && ((SqlNumericLiteral)opt.value()).isInteger()
                 && Objects.equals(expVal, ((SqlLiteral)opt.value()).intValue(true)))));

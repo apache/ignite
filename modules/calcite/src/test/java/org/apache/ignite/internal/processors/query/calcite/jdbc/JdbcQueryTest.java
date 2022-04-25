@@ -17,18 +17,32 @@
 
 package org.apache.ignite.internal.processors.query.calcite.jdbc;
 
+import java.io.Serializable;
+import java.sql.BatchUpdateException;
 import java.sql.Connection;
 import java.sql.DriverManager;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.Types;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.apache.ignite.calcite.CalciteQueryEngineConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.SqlConfiguration;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
@@ -87,6 +101,65 @@ public class JdbcQueryTest extends GridCommonAbstractTest {
      * @throws SQLException If failed.
      */
     @Test
+    public void testOtherType() throws Exception {
+        List<Object> values = new ArrayList<>();
+
+        values.add("str");
+        values.add(11);
+        values.add(2);
+        values.add(5);
+        values.add(7);
+        values.add(101.1);
+        values.add(202.2d);
+        values.add(new byte[] {1, 2, 3});
+        values.add(UUID.randomUUID());
+        values.add(new ObjectToStore(1, "noname", 22.2));
+
+        Map<String, Object> map = new HashMap<>();
+        map.put("a", "bb");
+        map.put("vvv", "zzz");
+        map.put("111", "222");
+        map.put("lst", Stream.of("abc", 1, null, 20.f).collect(Collectors.toSet()));
+        values.add(map);
+
+        List<Object> lst = new ArrayList<>();
+        lst.add(1);
+        lst.add(2.2f);
+        lst.add(3.3d);
+        lst.add("str");
+        lst.add(map);
+        values.add(lst);
+
+        stmt.execute("CREATE TABLE tbl(id INT, oth OTHER, primary key(id))");
+
+        try (PreparedStatement ps = conn.prepareStatement("insert into tbl values(?, ?)")) {
+            int idx = 1;
+
+            for (Object obj : values) {
+                ps.setInt(1, idx++);
+
+                ps.setObject(2, obj);
+
+                assertEquals(1, ps.executeUpdate());
+            }
+        }
+
+        try (ResultSet rs = stmt.executeQuery("select * from tbl order by id")) {
+            for (Object obj : values) {
+                assertTrue(rs.next());
+
+                if (F.isArray(obj))
+                    F.compareArrays(obj, rs.getObject(2));
+                else
+                    assertEquals(obj, rs.getObject(2));
+            }
+        }
+    }
+
+    /**
+     * @throws SQLException If failed.
+     */
+    @Test
     public void testSimpleQuery() throws Exception {
         stmt.execute("CREATE TABLE Person(\"id\" INT, PRIMARY KEY(\"id\"), \"name\" VARCHAR)");
 
@@ -106,6 +179,73 @@ public class JdbcQueryTest extends GridCommonAbstractTest {
         stmt.execute("drop table Person");
 
         stmt.close();
+    }
+
+    /** Test batched execution of statement. */
+    @Test
+    public void testBatch() throws Exception {
+        stmt.execute("CREATE TABLE Person(\"id\" INT, PRIMARY KEY(\"id\"), \"name\" VARCHAR)");
+
+        for (int i = 0; i < 10; ++i)
+            stmt.addBatch(String.format("INSERT INTO Person VALUES (%d, 'Name')", i));
+
+        stmt.executeBatch();
+
+        try (ResultSet rs = stmt.executeQuery("select * from Person p order by \"id\" asc")) {
+            for (int i = 0; rs.next(); ++i) {
+                assertEquals(i, rs.getInt(1));
+                assertEquals("Name", rs.getString(2));
+            }
+        }
+    }
+
+    /** Test batched execution of prepared statement. */
+    @Test
+    public void testBatchPrepared() throws Exception {
+        stmt.execute("CREATE TABLE Person(\"id\" INT, PRIMARY KEY(\"id\"), \"name\" VARCHAR)");
+
+        try (PreparedStatement stmt0 = conn.prepareStatement("INSERT INTO Person VALUES (?, ?);" +
+            "INSERT INTO Person VALUES (?, ?)")) {
+            stmt0.setInt(1, 0);
+            stmt0.setString(2, "Name");
+            stmt0.setInt(2, 1);
+            stmt0.setString(4, "Name");
+            stmt0.addBatch();
+
+            GridTestUtils.assertThrows(log, stmt0::executeBatch, BatchUpdateException.class,
+                "Multiline statements are not supported in batched query");
+        }
+
+        try (PreparedStatement stmt0 = conn.prepareStatement("SELECT * FROM Person WHERE id = ?")) {
+            stmt0.setInt(1, 0);
+            stmt0.addBatch();
+
+            GridTestUtils.assertThrows(log, stmt0::executeBatch, BatchUpdateException.class,
+                "Unexpected operation kind for batched query [kind=SELECT]");
+        }
+
+        int[] ret;
+        try (PreparedStatement stmt0 = conn.prepareStatement("INSERT INTO Person VALUES (?, ?), (?, ?)")) {
+            for (int i = 0; i < 1000; i += 2) {
+                stmt0.setInt(1, i);
+                stmt0.setString(2, "Name");
+                stmt0.setInt(3, i + 1);
+                stmt0.setString(4, "Name");
+                stmt0.addBatch();
+            }
+
+            ret = stmt0.executeBatch();
+        }
+
+        try (ResultSet rs = stmt.executeQuery("select * from Person p order by \"id\" asc")) {
+            int i = 0;
+            for (; rs.next(); ++i) {
+                assertEquals(i, rs.getInt(1));
+                assertEquals("Name", rs.getString(2));
+            }
+            assertEquals(ret.length * 2, i);
+            assertTrue(Arrays.stream(ret).anyMatch(k -> k == 2));
+        }
     }
 
     /**
@@ -155,6 +295,9 @@ public class JdbcQueryTest extends GridCommonAbstractTest {
             "date_col DATE, " +
             "interval_ym_col INTERVAL YEAR TO MONTH, " +
             "interval_dt_col INTERVAL DAY TO SECONDS, " +
+            "uuid_col UUID, " +
+            "other_col OTHER, " +
+            "binary_col BINARY, " +
             "PRIMARY KEY (id));");
 
         grid(0).context().cache().context().exchange().affinityReadyFuture(
@@ -162,8 +305,9 @@ public class JdbcQueryTest extends GridCommonAbstractTest {
 
         stmt.executeUpdate("INSERT INTO t1 (id, bool_col, tinyint_col, smallint_col, int_col, bigint_col, " +
             "varchar_col, char_col, float_col, double_col, time_col, timestamp_col_14, timestamp_col_10, " +
-            "timestamp_col_def, date_col, interval_ym_col, interval_dt_col) " +
-            "VALUES (1, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null);");
+            "timestamp_col_def, date_col, interval_ym_col, interval_dt_col, uuid_col, other_col, binary_col) " +
+            "VALUES (1, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, " +
+            "null, null, null, null);");
 
         try (ResultSet rs = stmt.executeQuery("SELECT * FROM t1;")) {
             assertTrue(rs.next());
@@ -189,10 +333,53 @@ public class JdbcQueryTest extends GridCommonAbstractTest {
             // Custom java types Period and Duration for intervals.
             assertEquals(Types.OTHER, md.getColumnType(16));
             assertEquals(Types.OTHER, md.getColumnType(17));
+
+            assertEquals(Types.OTHER, md.getColumnType(18));
+            assertEquals(UUID.class.getName(), md.getColumnClassName(18));
+
+            assertEquals(Types.OTHER, md.getColumnType(19));
+            assertEquals(Object.class.getName(), md.getColumnClassName(19));
         }
 
         stmt.execute("DROP TABLE t1");
 
         stmt.close();
+    }
+
+    /** Some object to store. */
+    private static class ObjectToStore implements Serializable {
+        /** */
+        private int id;
+
+        /** */
+        private String name;
+
+        /** */
+        private double val;
+
+        /** */
+        public ObjectToStore(int id, String name, double val) {
+            this.id = id;
+            this.name = name;
+            this.val = val;
+        }
+
+        /** */
+        @Override public boolean equals(Object o) {
+            if (this == o)
+                return true;
+
+            if (o == null || getClass() != o.getClass())
+                return false;
+
+            ObjectToStore store = (ObjectToStore)o;
+
+            return id == store.id && val == store.val && Objects.equals(name, store.name);
+        }
+
+        /** */
+        @Override public int hashCode() {
+            return Objects.hash(id, name, val);
+        }
     }
 }
