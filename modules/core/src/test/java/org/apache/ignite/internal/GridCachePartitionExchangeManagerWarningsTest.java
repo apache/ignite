@@ -24,14 +24,12 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteTransactions;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -49,12 +47,12 @@ import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.ListeningTestLogger;
+import org.apache.ignite.testframework.LogListener;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
-import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_LONG_OPERATIONS_DUMP_TIMEOUT;
@@ -81,7 +79,7 @@ public class GridCachePartitionExchangeManagerWarningsTest extends GridCommonAbs
     private String oldLongOpsDumpTimeout;
 
     /** */
-    private CustomTestLogger testLog;
+    private ListeningTestLogger testLog;
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
@@ -140,10 +138,13 @@ public class GridCachePartitionExchangeManagerWarningsTest extends GridCommonAbs
     @WithSystemProperty(key = IGNITE_LONG_OPERATIONS_DUMP_TIMEOUT, value = LONG_OPERATIONS_DUMP_TIMEOUT)
     public void testLongRunningCacheFutures() throws Exception {
         long timeout = Long.parseLong(LONG_OPERATIONS_DUMP_TIMEOUT);
-
-        testLog = new CustomTestLogger(false, log, "future");
-
         int longRunFuturesCnt = 1000;
+        String logSubstr = "future";
+
+        LogListener minWarnings = LogListener.matches(logSubstr).atLeast(1).build();
+        LogListener maxWarnings = LogListener.matches(logSubstr).atMost(longRunFuturesCnt - 1).build();
+
+        testLog = new ListeningTestLogger(log, minWarnings, maxWarnings);
 
         startGrids(2);
 
@@ -159,10 +160,8 @@ public class GridCachePartitionExchangeManagerWarningsTest extends GridCommonAbs
 
         stopAllGrids();
 
-        assertTrue("Warnings were not found", testLog.warningsTotal() > 0);
-
-        assertTrue("Too much warnings in the logs: " + testLog.warningsTotal(),
-            testLog.warningsTotal() < longRunFuturesCnt);
+        assertTrue("Warnings were not found", minWarnings.check());
+        assertTrue("Too much warnings in the logs", maxWarnings.check());
     }
 
     /**
@@ -172,10 +171,13 @@ public class GridCachePartitionExchangeManagerWarningsTest extends GridCommonAbs
     @WithSystemProperty(key = IGNITE_LONG_OPERATIONS_DUMP_TIMEOUT, value = LONG_OPERATIONS_DUMP_TIMEOUT)
     public void testLongRunningTransactions() throws Exception {
         long timeout = Long.parseLong(LONG_OPERATIONS_DUMP_TIMEOUT);
-
-        testLog = new CustomTestLogger(false, log, "transaction");
-
         int transactions = 100;
+        String logSubstr = "transaction";
+
+        LogListener minWarnings = LogListener.matches(logSubstr).atLeast(1).build();
+        LogListener maxWarnings = LogListener.matches(logSubstr).atMost(transactions - 1).build();
+
+        testLog = new ListeningTestLogger(log, minWarnings, maxWarnings);
 
         ExecutorService excSvc = Executors.newFixedThreadPool(transactions);
 
@@ -201,10 +203,8 @@ public class GridCachePartitionExchangeManagerWarningsTest extends GridCommonAbs
                 fail("Unable to wait for thread pool termination.");
         }
 
-        assertTrue("Warnings were not found", testLog.warningsTotal() > 0);
-
-        assertTrue("Too much warnings in the logs: " + testLog.warningsTotal(),
-            testLog.warningsTotal() < transactions);
+        assertTrue("Warnings were not found", minWarnings.check());
+        assertTrue("Too much warnings in the logs", maxWarnings.check());
     }
 
     /** */
@@ -360,43 +360,6 @@ public class GridCachePartitionExchangeManagerWarningsTest extends GridCommonAbs
 
                 tx.rollback();
             }
-        }
-    }
-
-    /**
-     * Custom logger for counting warning messages.
-     */
-    private static class CustomTestLogger extends ListeningTestLogger {
-        /** */
-        private final AtomicInteger warningsTotal = new AtomicInteger();
-
-        /** */
-        private final String substr;
-
-        /**
-         * @param dbg If set to {@code true}, enables debug and trace log messages processing.
-         * @param echo Logger to echo all messages, limited by {@code dbg} flag.
-         * @param substr Substring to filter warning messages.
-         */
-        public CustomTestLogger(boolean dbg, @Nullable IgniteLogger echo, String substr) {
-            super(dbg, echo);
-
-            this.substr = substr;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void warning(String msg, @Nullable Throwable t) {
-            super.warning(msg, t);
-
-            if (substr == null || msg.toLowerCase().contains(substr.toLowerCase()))
-                warningsTotal.incrementAndGet();
-        }
-
-        /**
-         * @return Total number of warnings.
-         */
-        public int warningsTotal() {
-            return warningsTotal.get();
         }
     }
 

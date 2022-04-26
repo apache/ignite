@@ -81,7 +81,7 @@ public class H2TreeCorruptedTreeExceptionTest extends GridCommonAbstractTest {
             .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
         );
 
-        ListeningTestLogger listeningTestLog = new ListeningTestLogger(false, log);
+        ListeningTestLogger listeningTestLog = new ListeningTestLogger(log);
 
         listeningTestLog.registerListener(logListener);
 
