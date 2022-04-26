@@ -116,8 +116,7 @@ public final class BaseQueryContext extends AbstractQueryContext {
             new RelMetadataProvider() {
                 @Override public <M extends Metadata> UnboundMetadata<M> apply(
                     Class<? extends RelNode> relCls,
-                    Class<? extends M> metadataCls)
-                {
+                    Class<? extends M> metadataCls) {
                     throw new AssertionError(cantBeUsedMsg);
                 }
 
@@ -131,7 +130,9 @@ public final class BaseQueryContext extends AbstractQueryContext {
             }
         );
 
-        CLUSTER.setMetadataQuerySupplier(() -> { throw new AssertionError(cantBeUsedMsg); });
+        CLUSTER.setMetadataQuerySupplier(() -> {
+            throw new AssertionError(cantBeUsedMsg);
+        });
     }
 
     /** */

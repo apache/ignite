@@ -568,8 +568,8 @@ public class GridSubqueryJoinOptimizer {
     private static boolean pullOutSubQryFromInClause(
         GridSqlSelect parent,
         @Nullable GridSqlAst targetEl,
-        int childInd)
-    {
+        int childInd
+    ) {
         // extract sub-query
         GridSqlSubquery subQry = targetEl != null
             ? targetEl.child(childInd).child(1)

@@ -36,9 +36,10 @@ import org.jetbrains.annotations.Nullable;
  * View/change cache group re-encryption rate limit .
  */
 @GridInternal
-public class VisorReencryptionRateTask extends VisorMultiNodeTask<VisorReencryptionRateTaskArg,
-    VisorCacheGroupEncryptionTaskResult<Double>, VisorReencryptionRateTask.ReencryptionRateJobResult>
-{
+public class VisorReencryptionRateTask extends VisorMultiNodeTask<
+    VisorReencryptionRateTaskArg,
+    VisorCacheGroupEncryptionTaskResult<Double>,
+    VisorReencryptionRateTask.ReencryptionRateJobResult> {
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;
 

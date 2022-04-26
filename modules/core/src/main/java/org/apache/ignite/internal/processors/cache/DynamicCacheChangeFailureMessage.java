@@ -67,8 +67,8 @@ public class DynamicCacheChangeFailureMessage implements DiscoveryCustomMessage 
         ClusterNode locNode,
         GridDhtPartitionExchangeId exchId,
         IgniteCheckedException cause,
-        Collection<String> cacheNames)
-    {
+        Collection<String> cacheNames
+    ) {
         assert exchId != null;
         assert cause != null;
         assert !F.isEmpty(cacheNames) : cacheNames;

@@ -64,8 +64,7 @@ class BaselineAutoAdjustExecutor {
      * @param data Data for operation.
      */
     public void execute(BaselineAutoAdjustData data) {
-        executorService.submit(() ->
-            {
+        executorService.submit(() -> {
                 if (isExecutionExpired(data))
                     return;
 

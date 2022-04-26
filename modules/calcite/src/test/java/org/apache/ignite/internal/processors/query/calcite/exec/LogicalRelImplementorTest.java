@@ -319,8 +319,8 @@ public class LogicalRelImplementorTest extends GridCommonAbstractTest {
             ColocationGroup grp,
             Predicate<Row> filter,
             Function<Row, Row> transformer,
-            ImmutableBitSet bitSet)
-        {
+            ImmutableBitSet bitSet
+        ) {
             lastScanHasFilter = filter != null;
             lastScanHasProject = transformer != null;
             return Collections.emptyList();

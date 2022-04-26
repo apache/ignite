@@ -6702,8 +6702,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                         oldConflictVer.dataCenterId() == newConflictVer.dataCenterId() &&                 // and data centers are equal,
                         ATOMIC_VER_COMPARATOR.compare(oldConflictVer, newConflictVer) == 0 && // and both versions are equal,
                         cctx.writeThrough() &&                                                            // and store is enabled,
-                        primary)                                                                          // and we are primary.
-                    {
+                        primary) {                                                                          // and we are primary.
+
                         CacheObject val = entry.val;
 
                         if (val == null) {

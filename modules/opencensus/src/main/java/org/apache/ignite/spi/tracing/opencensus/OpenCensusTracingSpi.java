@@ -87,8 +87,7 @@ public class OpenCensusTracingSpi extends IgniteSpiAdapter implements TracingSpi
     @Override public OpenCensusSpanAdapter create(
         @NotNull String name,
         @Nullable byte[] parentSerializedSpan
-    ) throws Exception
-    {
+    ) throws Exception {
         return new OpenCensusSpanAdapter(
             Tracing.getTracer().spanBuilderWithRemoteParent(
                 name,

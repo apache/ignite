@@ -756,8 +756,7 @@ public class ZookeeperDiscoveryCommunicationFailureTest extends ZookeeperDiscove
      * @throws Exception If failed.
      */
     private void checkResolverCachesInfo(Ignite crd, Map<String, T3<Integer, Integer, Integer>> expCaches)
-        throws Exception
-    {
+        throws Exception {
         CacheInfoCommunicationFailureResolver rslvr =
             (CacheInfoCommunicationFailureResolver)crd.configuration().getCommunicationFailureResolver();
 

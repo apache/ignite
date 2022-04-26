@@ -370,7 +370,9 @@ public abstract class GridSpiAbstractTest<T extends IgniteSpi> extends GridAbstr
     protected DiscoveryMetricsProvider createMetricsProvider() {
         return new DiscoveryMetricsProvider() {
             /** {@inheritDoc} */
-            @Override public ClusterMetrics metrics() { return new ClusterMetricsSnapshot(); }
+            @Override public ClusterMetrics metrics() {
+                return new ClusterMetricsSnapshot();
+            }
 
             /** {@inheritDoc} */
             @Override public Map<Integer, CacheMetrics> cacheMetrics() {

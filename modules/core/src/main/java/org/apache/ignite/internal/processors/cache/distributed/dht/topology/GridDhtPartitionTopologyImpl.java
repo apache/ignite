@@ -350,9 +350,8 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
     /** {@inheritDoc} */
     @Override public boolean initPartitionsWhenAffinityReady(AffinityTopologyVersion affVer,
-        GridDhtPartitionsExchangeFuture exchFut)
-        throws IgniteInterruptedCheckedException
-    {
+        GridDhtPartitionsExchangeFuture exchFut
+    ) throws IgniteInterruptedCheckedException {
         boolean needRefresh;
 
         ctx.database().checkpointReadLock();

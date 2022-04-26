@@ -188,9 +188,8 @@ public class IgniteNearClientCacheCloseTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     private void concurrentUpdateAndNearCacheClose(CacheAtomicityMode atomicityMode,
-        final int nearClient)
-        throws Exception
-    {
+        final int nearClient
+    ) throws Exception {
         final String cacheName = ignite(0).createCache(cacheConfiguration(atomicityMode, false)).getName();
 
         for (int iter = 0; iter < 5; iter++) {

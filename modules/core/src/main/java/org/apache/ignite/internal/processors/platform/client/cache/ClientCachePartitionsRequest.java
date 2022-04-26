@@ -116,8 +116,8 @@ public class ClientCachePartitionsRequest extends ClientRequest {
         List<ClientCachePartitionAwarenessGroup> groups,
         Map<Integer, ClientCachePartitionAwarenessGroup> cacheGroupIds,
         ClientAffinityTopologyVersion affinityVer,
-        DynamicCacheDescriptor cacheDesc)
-    {
+        DynamicCacheDescriptor cacheDesc
+    ) {
         int cacheGroupId = cacheDesc.groupId();
         int cacheId = cacheDesc.cacheId();
 
