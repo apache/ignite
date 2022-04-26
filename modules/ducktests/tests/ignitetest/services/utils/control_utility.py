@@ -197,7 +197,7 @@ class ControlUtility:
 
         while datetime.now() < delta_time:
             for node in self._cluster.nodes:
-                mbean = JmxClient(node).find_mbean('.*clsLdr=[[:xdigit:]]+,name=snapshot')
+                mbean = JmxClient(node).find_mbean('.*name=snapshot.*', negative_pattern='group=views')
 
                 if snapshot_name != next(mbean.LastSnapshotName, ""):
                     continue

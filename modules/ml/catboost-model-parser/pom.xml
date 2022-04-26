@@ -29,10 +29,10 @@
     </properties>
 
     <parent>
-        <artifactId>ignite-parent</artifactId>
+        <artifactId>ignite-parent-internal</artifactId>
         <groupId>org.apache.ignite</groupId>
         <version>${revision}</version>
-        <relativePath>../../../parent</relativePath>
+        <relativePath>../../../parent-internal</relativePath>
     </parent>
 
     <artifactId>ignite-ml-catboost-model-parser</artifactId>

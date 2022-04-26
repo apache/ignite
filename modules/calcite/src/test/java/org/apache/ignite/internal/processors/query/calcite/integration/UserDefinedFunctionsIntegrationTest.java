@@ -80,6 +80,7 @@ public class UserDefinedFunctionsIntegrationTest extends AbstractBasicIntegratio
         assertQuery("SELECT echo(name) FROM emp3").returns("Igor3").returns("Roman3").check();
         assertQuery("SELECT sq(salary) FROM EMP2_SCHEMA.emp2").returns(100d).returns(400d).check();
         assertQuery("SELECT sq(salary) FROM \"emp1\".emp1").returns(1d).returns(4d).check();
+        assertQuery("SELECT echo(?)").withParams("test").returns("test").check(); // Check type inference.
         assertThrows("SELECT add(1, 2)");
         assertThrows("SELECT mul(1, 2)");
         assertThrows("SELECT EMP2_SCHEMA.mul(1, 2)");

@@ -23,6 +23,7 @@ import json
 import os
 import subprocess
 from abc import ABCMeta, abstractmethod
+import re
 
 from ignitetest.services.utils import IgniteServiceType
 from ignitetest.services.utils.config_template import IgniteClientConfigTemplate, IgniteServerConfigTemplate, \
@@ -30,6 +31,9 @@ from ignitetest.services.utils.config_template import IgniteClientConfigTemplate
 from ignitetest.services.utils.jvm_utils import create_jvm_settings, merge_jvm_settings
 from ignitetest.services.utils.path import get_home_dir, get_module_path, IgnitePathAware
 from ignitetest.services.utils.ssl.ssl_params import is_ssl_enabled
+from ignitetest.services.utils.metrics.metrics import is_opencensus_metrics_enabled, configure_opencensus_metrics,\
+    is_jmx_metrics_enabled, configure_jmx_metrics
+from ignitetest.services.utils.jmx_remote.jmx_remote_params import get_jmx_remote_params
 from ignitetest.utils.ignite_test import JFR_ENABLED
 from ignitetest.utils.version import DEV_BRANCH
 
@@ -110,6 +114,15 @@ class IgniteSpec(metaclass=ABCMeta):
                                                    "-XX:StartFlightRecording=dumponexit=true," +
                                                    f"filename={self.service.jfr_dir}/recording.jfr"])
 
+        jmx_remote_params = get_jmx_remote_params(self.service.context.globals)
+        if jmx_remote_params.enabled:
+            default_jvm_opts = merge_jvm_settings(default_jvm_opts,
+                                                  ["-Dcom.sun.management.jmxremote",
+                                                   "-Dcom.sun.management.jmxremote.port=%d" % jmx_remote_params.port,
+                                                   "-Dcom.sun.management.jmxremote.local.only=false",
+                                                   "-Dcom.sun.management.jmxremote.authenticate=false",
+                                                   "-Dcom.sun.management.jmxremote.ssl=false"])
+
         return default_jvm_opts
 
     def config_templates(self):
@@ -134,7 +147,22 @@ class IgniteSpec(metaclass=ABCMeta):
         """
         Extend config with custom variables
         """
+        if config.service_type == IgniteServiceType.NODE:
+            if is_opencensus_metrics_enabled(self.service):
+                config = configure_opencensus_metrics(config, self.service.context.globals)
+
+            if is_jmx_metrics_enabled(self.service):
+                config = configure_jmx_metrics(config)
+
+            if (is_opencensus_metrics_enabled(self.service) or
+                    is_jmx_metrics_enabled(self.service)):
+                config = config._replace(ignite_instance_name=self._test_id)
+
         return config
+
+    @property
+    def _test_id(self):
+        return re.sub("^[0-9A-Fa-f]+@ignitetest\\.tests\\.", "", self.service.context.test_name).replace("=", ".")[:255]
 
     def __home(self, product=None):
         """
@@ -165,9 +193,13 @@ class IgniteSpec(metaclass=ABCMeta):
         libs = self.service.modules or []
 
         libs.append("log4j2")
-        libs.append("ducktests")
 
-        return list(map(lambda m: os.path.join(self._module(m), "*"), libs))
+        if is_opencensus_metrics_enabled(self.service):
+            libs.append("opencensus")
+
+        return [os.path.join(self.__home(str(DEV_BRANCH)), "modules", "ducktests", "target", "*"),
+                os.path.join(self.__home(str(DEV_BRANCH)), "modules", "ducktests", "target", "libs", "*"),
+                *list(map(lambda m: os.path.join(self._module(m), "*"), libs))]
 
     def envs(self):
         """

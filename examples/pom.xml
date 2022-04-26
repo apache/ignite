@@ -21,9 +21,9 @@
 
     <parent>
         <groupId>org.apache.ignite</groupId>
-        <artifactId>ignite-parent</artifactId>
+        <artifactId>ignite-parent-internal</artifactId>
         <version>${revision}</version>
-        <relativePath>../parent</relativePath>
+        <relativePath>../parent-internal/pom.xml</relativePath>
     </parent>
 
     <artifactId>ignite-examples</artifactId>
@@ -60,13 +60,13 @@
         <dependency>
             <groupId>org.springframework</groupId>
             <artifactId>spring-core</artifactId>
-            <version>${spring-5.0.version}</version>
+            <version>${spring.version}</version>
         </dependency>
 
         <dependency>
             <groupId>org.springframework</groupId>
             <artifactId>spring-beans</artifactId>
-            <version>${spring-5.0.version}</version>
+            <version>${spring.version}</version>
         </dependency>
 
         <dependency>
@@ -77,6 +77,11 @@
         <dependency>
             <groupId>${project.groupId}</groupId>
             <artifactId>ignite-indexing</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>ignite-calcite</artifactId>
         </dependency>
 
         <dependency>
@@ -214,14 +219,11 @@
             <properties>
                 <spark.folder>src/main/spark</spark.folder>
                 <spark.test.folder>src/test/spark</spark.test.folder>
+                <spark.janino.version>3.0.8</spark.janino.version>
+                <spark.jackson.version>2.6.7</spark.jackson.version>
             </properties>
 
             <dependencies>
-                <dependency>
-                    <groupId>${project.groupId}</groupId>
-                    <artifactId>ignite-scalar</artifactId>
-                </dependency>
-
                 <dependency>
                     <groupId>org.scalatest</groupId>
                     <artifactId>scalatest_2.11</artifactId>
@@ -233,6 +235,48 @@
                             <artifactId>scala-library</artifactId>
                         </exclusion>
                     </exclusions>
+                </dependency>
+
+                <dependency>
+                    <groupId>org.codehaus.janino</groupId>
+                    <artifactId>commons-compiler</artifactId>
+                    <version>${spark.janino.version}</version>
+                </dependency>
+
+                <dependency>
+                    <groupId>org.codehaus.janino</groupId>
+                    <artifactId>janino</artifactId>
+                    <version>${spark.janino.version}</version>
+                </dependency>
+
+                <dependency>
+                    <groupId>org.codehaus.janino</groupId>
+                    <artifactId>commons-compiler</artifactId>
+                    <version>${spark.janino.version}</version>
+                </dependency>
+
+                <dependency>
+                    <groupId>org.codehaus.janino</groupId>
+                    <artifactId>janino</artifactId>
+                    <version>${spark.janino.version}</version>
+                </dependency>
+
+                <dependency>
+                    <groupId>com.fasterxml.jackson.core</groupId>
+                    <artifactId>jackson-core</artifactId>
+                    <version>${spark.jackson.version}</version>
+                </dependency>
+
+                <dependency>
+                    <groupId>com.fasterxml.jackson.core</groupId>
+                    <artifactId>jackson-databind</artifactId>
+                    <version>${spark.jackson.version}</version>
+                </dependency>
+
+                <dependency>
+                    <groupId>com.fasterxml.jackson.core</groupId>
+                    <artifactId>jackson-annotations</artifactId>
+                    <version>${spark.jackson.version}</version>
                 </dependency>
 
                 <dependency>
@@ -311,11 +355,6 @@
             </properties>
 
             <dependencies>
-                <dependency>
-                    <groupId>${project.groupId}</groupId>
-                    <artifactId>ignite-scalar</artifactId>
-                </dependency>
-
                 <dependency>
                     <groupId>org.scalatest</groupId>
                     <artifactId>scalatest_2.11</artifactId>

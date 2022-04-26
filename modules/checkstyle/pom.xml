@@ -26,15 +26,43 @@
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
-        <groupId>org.apache.ignite</groupId>
-        <artifactId>ignite-bom</artifactId>
-        <version>${revision}</version>
-        <relativePath>../../parent-bom/pom.xml</relativePath>
+        <groupId>org.apache</groupId>
+        <artifactId>apache</artifactId>
+        <version>23</version>
+        <relativePath/>
     </parent>
 
+    <groupId>org.apache.ignite</groupId>
     <artifactId>ignite-checkstyle</artifactId>
+    <version>2.14.0-SNAPSHOT</version>
+
+    <properties>
+        <maven.compiler.source>1.8</maven.compiler.source>
+        <maven.compiler.target>1.8</maven.compiler.target>
+
+        <maven.flatten.file.name>pom-installed.xml</maven.flatten.file.name>
+    </properties>
 
     <url>https://ignite.apache.org</url>
+
+    <description>Apache Ignite® is a Distributed Database For High-Performance Computing With In-Memory Speed.</description>
+
+    <scm>
+        <url>https://gitbox.apache.org/repos/asf/ignite.git</url>
+        <connection>scm:git:https://gitbox.apache.org/repos/asf/ignite.git</connection>
+        <developerConnection>scm:git:https://gitbox.apache.org/repos/asf/ignite.git</developerConnection>
+        <tag>HEAD</tag>
+    </scm>
+
+    <mailingLists>
+        <mailingList>
+            <name>Ignite Dev List</name>
+            <subscribe>dev-subscribe@ignite.apache.org</subscribe>
+            <unsubscribe>dev-unsubscribe@ignite.apache.org</unsubscribe>
+            <post>dev@ignite.apache.org</post>
+            <archive>https://mail-archives.apache.org/mod_mbox/ignite-dev</archive>
+        </mailingList>
+    </mailingLists>
 
     <build>
         <plugins>
@@ -53,9 +81,7 @@
                             <outputDirectory>${project.build.directory}/classes/checkstyle</outputDirectory>
                             <resources>
                                 <resource>
-                                    <!-- This is working due to the .mvn directory placed in
-                                        the multi-module project root directory -->
-                                    <directory>${maven.multiModuleProjectDirectory}/checkstyle</directory>
+                                    <directory>${project.basedir}/../../checkstyle</directory>
                                     <filtering>false</filtering>
                                 </resource>
                             </resources>
@@ -67,7 +93,7 @@
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>flatten-maven-plugin</artifactId>
-                <version>${maven.flatten.plugin.version}</version>
+                <version>1.2.7</version>
 
                 <executions>
                     <execution>

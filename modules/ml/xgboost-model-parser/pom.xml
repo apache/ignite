@@ -29,10 +29,10 @@
     </properties>
 
     <parent>
-        <artifactId>ignite-parent</artifactId>
         <groupId>org.apache.ignite</groupId>
+        <artifactId>ignite-parent-internal</artifactId>
         <version>${revision}</version>
-        <relativePath>../../../parent</relativePath>
+        <relativePath>../../../parent-internal/pom.xml</relativePath>
     </parent>
 
     <artifactId>ignite-ml-xgboost-model-parser</artifactId>

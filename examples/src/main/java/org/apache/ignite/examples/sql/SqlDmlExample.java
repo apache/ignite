@@ -28,6 +28,9 @@ import org.apache.ignite.examples.model.Person;
 
 /**
  * Example to showcase DML capabilities of Ignite's SQL engine.
+ * <p>
+ * To run this example on the Calcite-based SQL engine, modify {@code examples/config/example-sql.xml}
+ * file and set {@code CalciteQueryEngineConfiguration} as default.
  */
 public class SqlDmlExample {
     /** Organizations cache name. */
@@ -44,7 +47,7 @@ public class SqlDmlExample {
      */
     @SuppressWarnings({"unused", "ThrowFromFinallyBlock"})
     public static void main(String[] args) throws Exception {
-        try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
+        try (Ignite ignite = Ignition.start("examples/config/example-sql.xml")) {
             print("Cache query DML example started.");
 
             CacheConfiguration<Long, Organization> orgCacheCfg = new CacheConfiguration<>(ORG_CACHE);

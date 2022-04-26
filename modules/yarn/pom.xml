@@ -25,9 +25,9 @@
 
     <parent>
         <groupId>org.apache.ignite</groupId>
-        <artifactId>ignite-parent</artifactId>
+        <artifactId>ignite-parent-internal</artifactId>
         <version>${revision}</version>
-        <relativePath>../../parent</relativePath>
+        <relativePath>../../parent-internal/pom.xml</relativePath>
     </parent>
 
     <artifactId>ignite-yarn</artifactId>
@@ -106,8 +106,8 @@
         <plugins>
             <plugin>
                 <!-- Copy ignite.properties from core module since it is not available as dependency. -->
-                <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-resources-plugin</artifactId>
+                <version>3.1.0</version>
                 <executions>
                     <execution>
                          <id>copy-resources</id>

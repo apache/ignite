@@ -40,7 +40,6 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.calcite.util.NumberUtil.multiply;
-import static org.apache.ignite.internal.processors.query.calcite.util.RexUtils.doubleFromRex;
 
 /** */
 @SuppressWarnings("unused") // actually all methods are used by runtime generated classes
@@ -56,8 +55,7 @@ public class IgniteMdRowCount extends RelMdRowCount {
     }
 
     /** {@inheritDoc} */
-    @Override
-    public @org.checkerframework.checker.nullness.qual.Nullable Double getRowCount(Sort rel, RelMetadataQuery mq) {
+    @Override public Double getRowCount(Sort rel, RelMetadataQuery mq) {
         return rel.estimateRowCount(mq);
     }
 

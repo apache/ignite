@@ -16,6 +16,12 @@
  */
 
 #include <sys/sysinfo.h>
+#include <sys/types.h>
+#include <dirent.h>
+#include <unistd.h>
+
+#include <stdlib.h>
+#include <stdio.h>
 
 #include "ignite/common/concurrent_os.h"
 
@@ -244,6 +250,33 @@ namespace ignite
                 int res = get_nprocs();
 
                 return static_cast<uint32_t>(res < 0 ? 0 : res);
+            }
+
+            int32_t GetThreadsCount()
+            {
+                DIR *proc_dir;
+                {
+                    char dirname[100];
+                    snprintf(dirname, sizeof dirname, "/proc/%d/task", getpid());
+                    proc_dir = opendir(dirname);
+                }
+
+                if (!proc_dir)
+                    return -1;
+
+                int32_t threadsCnt = 0;
+                struct dirent *entry;
+                while ((entry = readdir(proc_dir)) != NULL)
+                {
+                    if(entry->d_name[0] == '.')
+                        continue;
+
+                    ++threadsCnt;
+                }
+
+                closedir(proc_dir);
+
+                return threadsCnt;
             }
         }
     }

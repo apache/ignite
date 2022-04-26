@@ -25,9 +25,9 @@
 
     <parent>
         <groupId>org.apache.ignite</groupId>
-        <artifactId>ignite-parent</artifactId>
+        <artifactId>ignite-parent-internal</artifactId>
         <version>${revision}</version>
-        <relativePath>../../parent</relativePath>
+        <relativePath>../../parent-internal/pom.xml</relativePath>
     </parent>
 
     <artifactId>ignite-hibernate_5.3</artifactId>

@@ -27,7 +27,7 @@
         <groupId>org.apache.ignite</groupId>
         <artifactId>ignite-parent</artifactId>
         <version>${revision}</version>
-        <relativePath>../../parent</relativePath>
+        <relativePath>../../parent/pom.xml</relativePath>
     </parent>
 
     <artifactId>ignite-tools</artifactId>
@@ -138,6 +138,18 @@
                 <version>2.8.2</version>
                 <configuration>
                     <skip>false</skip>
+                </configuration>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-checkstyle-plugin</artifactId>
+                <configuration>
+                    <sourceDirectories combine.children="append">
+                        <sourceDirectory>src/main/java8</sourceDirectory>
+                        <sourceDirectory>src/main/java11</sourceDirectory>
+                        <sourceDirectory>src/main/java15</sourceDirectory>
+                    </sourceDirectories>
                 </configuration>
             </plugin>
         </plugins>

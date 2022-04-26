@@ -56,6 +56,9 @@ public class IgniteTypeFactory extends JavaTypeFactoryImpl {
         TimeUnit.SECOND, SqlParserPos.ZERO);
 
     /** */
+    private final RelDataType unknownType;
+
+    /** */
     private final Charset charset;
 
     /** */
@@ -77,6 +80,8 @@ public class IgniteTypeFactory extends JavaTypeFactoryImpl {
             // If JVM default charset is not supported by Calcite - use UTF-8.
             charset = StandardCharsets.UTF_8;
         }
+
+        unknownType = createUnknownType();
     }
 
     /** {@inheritDoc} */
@@ -139,8 +144,8 @@ public class IgniteTypeFactory extends JavaTypeFactoryImpl {
                     break;
             }
         }
-        else if (type instanceof UuidType)
-            return UUID.class;
+        else if (type instanceof IgniteCustomType)
+            return ((IgniteCustomType)type).storageType();
 
         switch (type.getSqlTypeName()) {
             case ROW:
@@ -225,8 +230,8 @@ public class IgniteTypeFactory extends JavaTypeFactoryImpl {
                     break;
             }
         }
-        else if (type instanceof UuidType)
-            return UUID.class;
+        else if (type instanceof IgniteCustomType)
+            return ((IgniteCustomType)type).storageType();
 
         switch (type.getSqlTypeName()) {
             case ROW:
@@ -266,22 +271,41 @@ public class IgniteTypeFactory extends JavaTypeFactoryImpl {
                 return createTypeWithNullability(createSqlIntervalType(INTERVAL_QUALIFIER_DAY_TIME), true);
             else if (clazz == Period.class)
                 return createTypeWithNullability(createSqlIntervalType(INTERVAL_QUALIFIER_YEAR_MONTH), true);
-            else if (clazz == UUID.class)
-                return createTypeWithNullability(createUuidType(), true);
+            else {
+                RelDataType relType = createCustomType(clazz);
+
+                if (relType != null)
+                    return relType;
+            }
         }
 
         return super.toSql(type);
     }
 
-    /** @return UUID SQL type. */
-    public RelDataType createUuidType() {
-        return canonize(new UuidType(true));
+    /** @return Custom type by storage type. {@code Null} if custom type not found. */
+    public RelDataType createCustomType(Type type) {
+        return createCustomType(type, true);
+    }
+
+    /** @return Nullable custom type by storage type. {@code Null} if custom type not found. */
+    public RelDataType createCustomType(Type type, boolean nullable) {
+        if (UUID.class == type)
+            return canonize(new UuidType(nullable));
+        else if (Object.class == type)
+            return canonize(new OtherType(nullable));
+
+        return null;
     }
 
     /** {@inheritDoc} */
     @Override public RelDataType createTypeWithNullability(RelDataType type, boolean nullable) {
-        if (type instanceof UuidType && type.isNullable() != nullable)
-            type = new UuidType(nullable);
+        // TODO workaround for https://issues.apache.org/jira/browse/CALCITE-4872
+        // Remove this after update to Calcite 1.30.
+        if (unknownType.equals(type))
+            return type;
+
+        if (type instanceof IgniteCustomType && type.isNullable() != nullable)
+            return createCustomType(((IgniteCustomType)type).storageType(), nullable);
 
         return super.createTypeWithNullability(type, nullable);
     }
@@ -290,6 +314,11 @@ public class IgniteTypeFactory extends JavaTypeFactoryImpl {
     @Override public RelDataType createType(Type type) {
         if (type == Duration.class || type == Period.class)
             return createJavaType((Class<?>)type);
+
+        RelDataType customType = createCustomType(type, false);
+
+        if (customType != null)
+            return customType;
 
         return super.createType(type);
     }

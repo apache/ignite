@@ -51,7 +51,8 @@ namespace ignite
                 sslMode(SslMode::DISABLE),
                 partitionAwareness(true),
                 connectionsLimit(0),
-                connectionTimeout(DEFAULT_CONNECTION_TIMEOUT)
+                connectionTimeout(DEFAULT_CONNECTION_TIMEOUT),
+                userThreadPoolSize(1)
             {
                 // No-op.
             }
@@ -294,6 +295,28 @@ namespace ignite
                 connectionTimeout = timeout;
             }
 
+            /**
+             * Set thread pool size.
+             *
+             * @param size Desired number of threads in user thread pool. Zero means to use number of available core.
+             *   Default value is 1.
+             */
+            void SetUserThreadPoolSize(uint32_t size)
+            {
+                userThreadPoolSize = size;
+            }
+
+            /**
+             * Get thread pool size.
+             *
+             * @return Number of threads in user thread pool. Zero means to use number of available core.
+             *   Default value is 1.
+             */
+            uint32_t GetUserThreadPoolSize() const
+            {
+                return userThreadPoolSize;
+            }
+
         private:
             /** Connection end points */
             std::string endPoints;
@@ -324,6 +347,9 @@ namespace ignite
 
             /** Connection timeout in milliseconds. */
             int32_t connectionTimeout;
+
+            /** User thread pool size. */
+            uint32_t userThreadPoolSize;
         };
     }
 }

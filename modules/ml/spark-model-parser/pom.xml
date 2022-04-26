@@ -25,10 +25,10 @@
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
-        <artifactId>ignite-parent</artifactId>
         <groupId>org.apache.ignite</groupId>
+        <artifactId>ignite-parent-internal</artifactId>
         <version>${revision}</version>
-        <relativePath>../../../parent</relativePath>
+        <relativePath>../../../parent-internal</relativePath>
     </parent>
 
     <artifactId>ignite-ml-spark-model-parser</artifactId>

@@ -27,6 +27,7 @@ import javax.cache.CacheException;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.SqlQuery;
+import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.RunningQueryManager;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.transactions.TransactionDuplicateKeyException;
@@ -286,10 +287,16 @@ public class SqlStatisticsUserQueriesFastTest extends UserQueriesTestBase {
      */
     @Test
     public void testLocalSelectFailed() {
+        // Lazy query fails on `getAll`.
+        // `getAll' don't wrap IgniteSQLException with CacheException.
+        Class<? extends Throwable> expErr = GridTestUtils.getFieldValue(SqlFieldsQuery.class, "DFLT_LAZY")
+            ? IgniteSQLException.class
+            : CacheException.class;
+
         assertMetricsIncrementedOnlyOnReducer(() -> GridTestUtils.assertThrows(
             log,
             () -> cache.query(new SqlFieldsQuery("SELECT * FROM TAB WHERE ID = failFunction()").setLocal(true)).getAll(),
-            CacheException.class,
+            expErr,
             null),
             "failed");
     }

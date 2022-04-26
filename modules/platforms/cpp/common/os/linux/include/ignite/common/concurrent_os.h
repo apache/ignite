@@ -743,6 +743,13 @@ namespace ignite
              * @return Number of logical processors.
              */
             IGNITE_IMPORT_EXPORT uint32_t GetNumberOfProcessors();
+            
+            /**
+             * Get current processor thread count.
+             *
+             * @return Current processor thread count.
+             */
+            IGNITE_IMPORT_EXPORT int32_t GetThreadsCount();
         }
     }
 }
