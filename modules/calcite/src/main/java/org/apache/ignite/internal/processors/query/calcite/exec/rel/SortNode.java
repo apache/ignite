@@ -40,7 +40,7 @@ public class SortNode<Row> extends AbstractNode<Row> implements SingleNode<Row>,
     private boolean inLoop;
 
     /** Rows buffer. */
-    private volatile PriorityQueue<Row> rows;
+    private final PriorityQueue<Row> rows;
 
     /** SQL select limit. Negative if disabled. */
     private final int limit;

@@ -154,15 +154,6 @@ public class IgniteSort extends Sort implements IgniteRel {
         return cost;
     }
 
-    /** */
-    private double memRows(double inputRows) {
-        double fetch = this.fetch != null ? doubleFromRex(this.fetch, inputRows * FETCH_IS_PARAM_FACTOR) : inputRows;
-        double offset = this.offset != null ? doubleFromRex(this.offset, inputRows * OFFSET_IS_PARAM_FACTOR)
-            : 0;
-
-        return Math.min(inputRows, fetch + offset);
-    }
-
     /** {@inheritDoc} */
     @Override public IgniteRel clone(RelOptCluster cluster, List<IgniteRel> inputs) {
         return new IgniteSort(cluster, getTraitSet(), sole(inputs), collation, offset, fetch);
@@ -171,5 +162,14 @@ public class IgniteSort extends Sort implements IgniteRel {
     /** {@inheritDoc} */
     @Override public boolean isEnforcer() {
         return true;
+    }
+
+    /** */
+    private double memRows(double inputRows) {
+        double fetch = this.fetch != null ? doubleFromRex(this.fetch, inputRows * FETCH_IS_PARAM_FACTOR) : inputRows;
+        double offset = this.offset != null ? doubleFromRex(this.offset, inputRows * OFFSET_IS_PARAM_FACTOR)
+            : 0;
+
+        return Math.min(inputRows, fetch + offset);
     }
 }

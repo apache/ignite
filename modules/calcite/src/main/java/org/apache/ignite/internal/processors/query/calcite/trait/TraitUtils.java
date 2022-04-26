@@ -123,7 +123,8 @@ public class TraitUtils {
     }
 
     /** */
-    @Nullable public static RelNode convertCollation(RelOptPlanner planner, RelCollation toTrait, RelNode rel) {
+    @Nullable public static RelNode convertCollation(RelOptPlanner planner,
+        RelCollation toTrait, RelNode rel) {
         RelCollation fromTrait = collation(rel);
 
         if (fromTrait.satisfies(toTrait))
