@@ -18,18 +18,26 @@
 package org.apache.ignite.cdc;
 
 import java.util.Collection;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.lang.IgniteExperimental;
 import org.apache.ignite.spi.systemview.view.CacheView;
 
 /**
- * ???
+ * Notification of {@link CdcConsumer} about cache creation/change events.
+ *
+ * @see CdcConsumer
+ * @see Ignite#createCache(String)
+ * @see IgniteCache
+ * @see CacheConfiguration
+ * @see QueryEntity
  */
 @IgniteExperimental
 public interface CdcCacheEvent {
     /**
-     * @return Cache ID
+     * @return Cache ID.
      * @see CacheView#cacheId()
      */
     public int cacheId();
@@ -40,7 +48,7 @@ public interface CdcCacheEvent {
     public CacheConfiguration<?, ?> configuration();
 
     /**
-     * @return Query entyties for cache.
+     * @return Query entities for cache.
      */
     public Collection<QueryEntity> queryEntyties();
 }

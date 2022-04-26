@@ -100,7 +100,7 @@ public class CdcSelfTest extends AbstractCdcTest {
 
         for (WALMode mode : EnumSet.of(WALMode.FSYNC, WALMode.LOG_ONLY, WALMode.BACKGROUND))
             for (boolean specificConsistentId : new boolean[] {false, true})
-                for (boolean persistenceEnabled : new boolean[] {true/*, false*/})
+                for (boolean persistenceEnabled : new boolean[] {true, false})
                     params.add(new Object[] {specificConsistentId, mode, persistenceEnabled});
 
         return params;

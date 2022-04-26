@@ -194,7 +194,7 @@ public class CdcMain implements Runnable {
     private Path cdcDir;
 
     /** Database directory. */
-    private Path dbDir;
+    private File dbDir;
 
     /** Binary meta directory. */
     private File binaryMeta;
@@ -559,159 +559,174 @@ public class CdcMain implements Runnable {
     private void updateMetadata() {
         long start = System.currentTimeMillis();
 
+        updateMappings();
+
+        updateTypes();
+
+        updateCaches();
+
+        metaUpdate.value(System.currentTimeMillis() - start);
+    }
+
+    /** Search for new or changed {@link BinaryType} and notifies the consumer. */
+    private void updateTypes() {
         try {
-            updateMappings();
+            File[] files = binaryMeta.listFiles();
 
-            updateTypes();
+            if (files == null)
+                return;
 
-            updateCaches();
+            Iterator<BinaryType> changedTypes = Arrays.stream(files)
+                .filter(p -> p.toString().endsWith(METADATA_FILE_SUFFIX))
+                .map(f -> {
+                    int typeId = BinaryUtils.typeId(f.getName());
+                    long lastModified = f.lastModified();
+
+                    // Filter out files already in `typesState` with the same last modify date.
+                    if (typesState.containsKey(typeId) && lastModified == typesState.get(typeId))
+                        return null;
+
+                    typesState.put(typeId, lastModified);
+
+                    try {
+                        kctx.cacheObjects().cacheMetadataLocally(binaryMeta, typeId);
+                    }
+                    catch (IgniteCheckedException e) {
+                        throw new IgniteException(e);
+                    }
+
+                    return kctx.cacheObjects().metadata(typeId);
+                })
+                .filter(Objects::nonNull)
+                .iterator();
+
+            if (!changedTypes.hasNext())
+                return;
+
+            consumer.onTypes(changedTypes);
+
+            if (changedTypes.hasNext())
+                throw new IllegalStateException("Consumer should handle all changed types");
+
+            state.saveTypes(typesState);
         }
         catch (IOException e) {
             throw new IgniteException(e);
         }
-        finally {
-            metaUpdate.value(System.currentTimeMillis() - start);
-        }
-    }
-
-    /** Search for new or changed {@link BinaryType} and notifies the consumer. */
-    private void updateTypes() throws IOException {
-        File[] files = binaryMeta.listFiles(f -> f.getName().endsWith(METADATA_FILE_SUFFIX));
-
-        if (files == null)
-            return;
-
-        Iterator<BinaryType> changedTypes = Arrays.stream(files)
-            .map(f -> {
-                int typeId = BinaryUtils.typeId(f.getName());
-                long lastModified = f.lastModified();
-
-                // Filter out files already in `typesState` with the same last modify date.
-                if (typesState.containsKey(typeId) && lastModified == typesState.get(typeId))
-                    return null;
-
-                typesState.put(typeId, lastModified);
-
-                try {
-                    kctx.cacheObjects().cacheMetadataLocally(binaryMeta, typeId);
-                }
-                catch (IgniteCheckedException e) {
-                    throw new IgniteException(e);
-                }
-
-                return kctx.cacheObjects().metadata(typeId);
-            })
-            .filter(Objects::nonNull)
-            .iterator();
-
-        if (!changedTypes.hasNext())
-            return;
-
-        consumer.onTypes(changedTypes);
-
-        if (changedTypes.hasNext())
-            throw new IllegalStateException("Consumer should handle all changed types");
-
-        state.saveTypes(typesState);
     }
 
     /** Search for new or changed {@link TypeMapping} and notifies the consumer. */
-    private void updateMappings() throws IOException {
-        File[] files = marshaller.listFiles(BinaryUtils::notTmpFile);
+    private void updateMappings() {
+        try {
+            File[] files = marshaller.listFiles(BinaryUtils::notTmpFile);
 
-        if (files == null)
-            return;
+            if (files == null)
+                return;
 
-        Iterator<TypeMapping> changedMappings = Arrays.stream(files)
-            .map(f -> {
-                String fileName = f.getName();
+            Iterator<TypeMapping> changedMappings = Arrays.stream(files)
+                .map(f -> {
+                    String fileName = f.getName();
 
-                int typeId = BinaryUtils.mappedTypeId(fileName);
-                byte platformId = BinaryUtils.mappedFilePlatformId(fileName);
+                    int typeId = BinaryUtils.mappedTypeId(fileName);
+                    byte platformId = BinaryUtils.mappedFilePlatformId(fileName);
 
-                T2<Integer, Byte> state = new T2<>(typeId, platformId);
+                    T2<Integer, Byte> state = new T2<>(typeId, platformId);
 
-                if (mappingsState.contains(state))
-                    return null;
+                    if (mappingsState.contains(state))
+                        return null;
 
-                mappingsState.add(state);
+                    mappingsState.add(state);
 
-                return (TypeMapping)new TypeMappingImpl(
-                    typeId,
-                    BinaryUtils.readMapping(f),
-                    platformId == 0 ? PlatformType.JAVA : PlatformType.DOTNET);
-            })
-            .filter(Objects::nonNull)
-            .iterator();
+                    return (TypeMapping)new TypeMappingImpl(
+                        typeId,
+                        BinaryUtils.readMapping(f),
+                        platformId == 0 ? PlatformType.JAVA : PlatformType.DOTNET);
+                })
+                .filter(Objects::nonNull)
+                .iterator();
 
-        if (!changedMappings.hasNext())
-            return;
+            if (!changedMappings.hasNext())
+                return;
 
-        consumer.onMappings(changedMappings);
+            consumer.onMappings(changedMappings);
 
-        if (changedMappings.hasNext())
-            throw new IllegalStateException("Consumer should handle all changed mappings");
+            if (changedMappings.hasNext())
+                throw new IllegalStateException("Consumer should handle all changed mappings");
 
-        state.saveMappings(mappingsState);
+            state.saveMappings(mappingsState);
+        }
+        catch (IOException e) {
+            throw new IgniteException(e);
+        }
     }
 
     /** Search for new or changed {@link CdcCacheEvent} and notifies the consumer. */
-    private void updateCaches() throws IOException {
-        //TODO: fix for in-memory CDC mode.
-        if (!Files.exists(dbDir))
-            return;
+    private void updateCaches() {
+        try {
+            //TODO: fix for in-memory CDC mode.
+            if (!dbDir.exists())
+                return;
 
-        Set<Integer> destroyed = new HashSet<>(cachesState.keySet());
+            File[] files = dbDir.listFiles();
 
-        Iterator<CdcCacheEvent> cacheEvts = Files.list(dbDir)
-            .filter(p -> Files.isDirectory(p) &&
-                !p.getFileName().toString().equals(TX_LOG_CACHE_NAME) &&
-                !p.getFileName().toString().equals(CACHE_DIR_PREFIX + UTILITY_CACHE_NAME) &&
-                !p.getFileName().toString().equals(CHECKPOINT_MARKERS_DIR))
-            .map(p -> p.resolve(CACHE_DATA_FILENAME))
-            .filter(Files::exists)
-            .filter(p -> {
-                String cacheNameFromDir = p.getName(p.getNameCount() - 2).toString().replace(CACHE_DIR_PREFIX, "");
+            if (files == null)
+                return;
 
-                int cacheId = CU.cacheId(cacheNameFromDir);
+            Set<Integer> destroyed = new HashSet<>(cachesState.keySet());
 
-                destroyed.remove(cacheId);
+            Iterator<CdcCacheEvent> cacheEvts = Arrays.stream(files)
+                .filter(f -> f.isDirectory() &&
+                    !f.getName().equals(TX_LOG_CACHE_NAME) &&
+                    !f.getName().equals(CACHE_DIR_PREFIX + UTILITY_CACHE_NAME) &&
+                    !f.getName().equals(CHECKPOINT_MARKERS_DIR))
+                .map(f -> new File(f, CACHE_DATA_FILENAME))
+                .filter(File::exists)
+                .filter(f -> {
+                    String cacheNameFromDir = f.getParentFile().getName().toString().replace(CACHE_DIR_PREFIX, "");
 
-                return !(cachesState.containsKey(cacheId) && p.toFile().lastModified() == cachesState.get(cacheId));
-            })
-            .peek(p -> cachesState.put(
-                CU.cacheId(p.getName(p.getNameCount() - 2).toString().replace(CACHE_DIR_PREFIX, "")),
-                p.toFile().lastModified()
-            ))
-            .map(p -> {
-                try {
-                    return (CdcCacheEvent)FilePageStoreManager.readCacheData(
-                        p.toFile(),
-                        MarshallerUtils.jdkMarshaller(kctx.igniteInstanceName()),
-                        igniteCfg
-                    );
-                }
-                catch (IgniteCheckedException e) {
-                    throw new IgniteException(e);
-                }
-            })
-            .iterator();
+                    int cacheId = CU.cacheId(cacheNameFromDir);
 
-        consumer.onCacheEvents(cacheEvts);
+                    destroyed.remove(cacheId);
 
-        if (cacheEvts.hasNext())
-            throw new IllegalStateException("Consumer should handle all cache change events");
+                    return !(cachesState.containsKey(cacheId) && f.lastModified() == cachesState.get(cacheId));
+                })
+                .peek(f -> cachesState.put(
+                    CU.cacheId(f.getParentFile().getName().replace(CACHE_DIR_PREFIX, "")),
+                    f.lastModified()
+                ))
+                .map(f -> {
+                    try {
+                        return (CdcCacheEvent)FilePageStoreManager.readCacheData(
+                            f,
+                            MarshallerUtils.jdkMarshaller(kctx.igniteInstanceName()),
+                            igniteCfg
+                        );
+                    }
+                    catch (IgniteCheckedException e) {
+                        throw new IgniteException(e);
+                    }
+                })
+                .iterator();
 
-        if (!destroyed.isEmpty()) {
-            Iterator<Integer> destroyedIter = destroyed.iterator();
+            consumer.onCacheEvents(cacheEvts);
 
-            consumer.onCacheDestroyEvents(destroyedIter);
+            if (cacheEvts.hasNext())
+                throw new IllegalStateException("Consumer should handle all cache change events");
 
-            if (destroyedIter.hasNext())
-                throw new IllegalStateException("Consumer should handle all cache destroy events");
+            if (!destroyed.isEmpty()) {
+                Iterator<Integer> destroyedIter = destroyed.iterator();
+
+                consumer.onCacheDestroyEvents(destroyedIter);
+
+                if (destroyedIter.hasNext())
+                    throw new IllegalStateException("Consumer should handle all cache destroy events");
+            }
+
+            state.saveCaches(cachesState);
         }
-
-        state.saveCaches(cachesState);
+        catch (IOException e) {
+            throw new IgniteException(e);
+        }
     }
 
     /**
@@ -757,7 +772,7 @@ TODO: uncommend when in-memory support.
         }
 
         this.cdcDir = cdcDir;
-        this.dbDir = dbStoreDirWithSubdirectory.toPath();
+        this.dbDir = dbStoreDirWithSubdirectory;
 
         CdcFileLockHolder lock = new CdcFileLockHolder(cdcDir.toString(), "cdc.lock", log);
 

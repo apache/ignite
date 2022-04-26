@@ -52,6 +52,13 @@ import org.apache.ignite.spi.systemview.view.CacheView;
  *
  * Note, consumption of the {@link CdcEvent} will be started from the last saved offset.
  * The offset of consumptions is saved on the disk every time {@link #onEvents(Iterator)} returns {@code true}.
+ * Note, order of notifications are following:
+ * <ul>
+ *     <li>{@link #onMappings(Iterator)}</li>
+ *     <li>{@link #onTypes(Iterator)}</li>
+ *     <li>{@link #onCacheChange(Iterator)}</li>
+ *     <li>{@link #onCacheDestroy(Iterator)}</li>
+ * </ul>
  *
  * @see CdcMain
  * @see CdcEvent
@@ -106,10 +113,11 @@ public interface CdcConsumer {
     public void onMappings(Iterator<TypeMapping> mappings);
 
     /**
-     * Handles cache change(create, edit) events. State of cache processing will be stored after method invocation
+     * Handles caches changes(create, edit) events. State of cache processing will be stored after method invocation
      * and ongoing notifications after CDC application fail/restart will be continued for newly changed caches.
      * Invoked before all other notifications.
      *
+     * @param cacheEvents Cache change events.
      * @see Ignite#createCache(String)
      * @see Ignite#getOrCreateCache(String)
      * @see CdcCacheEvent
@@ -121,6 +129,7 @@ public interface CdcConsumer {
      * and ongoing notifications after CDC application fail/restart will be continued for newly changed caches.
      * Invoked before all other notifications except {@link #onCacheChange(Iterator)}.
      *
+     * @param caches Destroyed caches.
      * @see Ignite#destroyCache(String)
      * @see CdcCacheEvent
      * @see CacheView#cacheId()
