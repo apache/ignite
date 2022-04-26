@@ -131,14 +131,6 @@ public class TraitUtils {
 
         RelTraitSet traits = rel.getTraitSet().replace(toTrait);
 
-        RelCollation collation = collation(traits);
-
-        if (collation instanceof IgniteCollation) {
-            IgniteCollation ic = (IgniteCollation)collation;
-
-            return new IgniteSort(rel.getCluster(), traits, rel, toTrait, ic.getOffset(), ic.getFetch());
-        }
-
         return new IgniteSort(rel.getCluster(), traits, rel, toTrait);
     }
 

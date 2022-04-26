@@ -16,13 +16,13 @@
  */
 package org.apache.ignite.internal.processors.query.calcite.exec.rel;
 
-import java.util.ArrayList;
-import java.util.Collections;
+import java.util.ArrayDeque;
 import java.util.Comparator;
-import java.util.List;
+import java.util.PriorityQueue;
 import java.util.function.Supplier;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
+import org.apache.ignite.internal.util.GridBoundedPriorityQueue;
 import org.apache.ignite.internal.util.typedef.F;
 import org.jetbrains.annotations.Nullable;
 
@@ -40,13 +40,13 @@ public class SortNode<Row> extends AbstractNode<Row> implements SingleNode<Row>,
     private boolean inLoop;
 
     /** Rows buffer. */
-    private final List<Row> rows;
-
-    /** Rows comparator. */
-    private final Comparator<Row> rowsCmp;
+    private volatile PriorityQueue<Row> rows;
 
     /** SQL select limit. Negative if disabled. */
     private final int limit;
+
+    /** Reverse-ordered rows in case of limited sort. */
+    private ArrayDeque<Row> reversed;
 
     /**
      * @param ctx Execution context.
@@ -63,13 +63,29 @@ public class SortNode<Row> extends AbstractNode<Row> implements SingleNode<Row>,
 
         this.limit = limit == null ? -1 : limit.get() + (offset == null ? 0 : offset.get());
 
-        this.rows = this.limit < 0 ? new ArrayList<>() : new ArrayList<>(this.limit + 1);
+        if (this.limit < 0)
+            rows = new PriorityQueue<>(comp);
+        else {
+            Comparator<Row> reverseCmp;
 
-        this.rowsCmp = comp == null ? new Comparator<Row>() {
-            @Override public int compare(Row o1, Row o2) {
-                return ((Comparable<Row>)o1).compareTo(o2);
+            // Reverse comparator
+            if (comp == null) {
+                reverseCmp = new Comparator<Row>() {
+                    @Override public int compare(Row r1, Row r2) {
+                        return ((Comparable<Row>)r2).compareTo(r1);
+                    }
+                };
             }
-        } : comp;
+            else {
+                reverseCmp = new Comparator<Row>() {
+                    @Override public int compare(Row o1, Row o2) {
+                        return comp.compare(o2, o1);
+                    }
+                };
+            }
+
+            rows = new GridBoundedPriorityQueue<>(this.limit, reverseCmp);
+        }
     }
 
     /**
@@ -115,12 +131,13 @@ public class SortNode<Row> extends AbstractNode<Row> implements SingleNode<Row>,
     @Override public void push(Row row) throws Exception {
         assert downstream() != null;
         assert waiting > 0;
+        assert reversed == null;
 
         checkState();
 
         waiting--;
 
-        addRow(row);
+        rows.add(row);
 
         if (waiting == 0)
             source().request(waiting = IN_BUFFER_SIZE);
@@ -147,14 +164,24 @@ public class SortNode<Row> extends AbstractNode<Row> implements SingleNode<Row>,
 
         int processed = 0;
 
+        if (limit > 0 && reversed == null && !rows.isEmpty()) {
+            reversed = new ArrayDeque<>(rows.size());
+
+            // Make final order (reversed).
+            while (!rows.isEmpty())
+                reversed.add(rows.poll());
+
+            rows.clear();
+        }
+
         inLoop = true;
         try {
-            while (requested > 0 && !rows.isEmpty()) {
+            while (requested > 0 && (!rows.isEmpty() || reversed != null && !reversed.isEmpty())) {
                 checkState();
 
                 requested--;
 
-                downstream().push(rows.remove(0));
+                downstream().push(reversed == null ? rows.poll() : reversed.pollLast());
 
                 if (++processed >= IN_BUFFER_SIZE && requested > 0) {
                     // allow others to do their job
@@ -164,7 +191,7 @@ public class SortNode<Row> extends AbstractNode<Row> implements SingleNode<Row>,
                 }
             }
 
-            if (rows.isEmpty()) {
+            if (rows.isEmpty() && (reversed == null || reversed.isEmpty())) {
                 if (requested > 0)
                     downstream().end();
 
@@ -174,18 +201,5 @@ public class SortNode<Row> extends AbstractNode<Row> implements SingleNode<Row>,
         finally {
             inLoop = false;
         }
-    }
-
-    /** Adds new row in proper order. */
-    private void addRow(Row row) {
-        int insertIdx = Collections.binarySearch(rows, row, rowsCmp);
-
-        if (insertIdx < 0)
-            rows.add(-insertIdx - 1, row);
-        else
-            rows.add(insertIdx + 1, row);
-
-        while (limit >= 0 && rows.size() > limit)
-            rows.remove(rows.size() - 1);
     }
 }

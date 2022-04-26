@@ -17,6 +17,7 @@
 package org.apache.ignite.internal.processors.query.calcite.rel;
 
 import java.util.List;
+
 import com.google.common.collect.ImmutableList;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptCost;
@@ -26,7 +27,6 @@ import org.apache.calcite.rel.RelCollation;
 import org.apache.calcite.rel.RelCollations;
 import org.apache.calcite.rel.RelInput;
 import org.apache.calcite.rel.RelNode;
-import org.apache.calcite.rel.RelWriter;
 import org.apache.calcite.rel.core.Sort;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rex.RexNode;
@@ -36,7 +36,6 @@ import org.apache.ignite.internal.processors.query.calcite.metadata.cost.IgniteC
 import org.apache.ignite.internal.processors.query.calcite.metadata.cost.IgniteCostFactory;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
 import org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils;
-import org.checkerframework.checker.nullness.qual.Nullable;
 
 import static org.apache.ignite.internal.processors.query.calcite.rel.IgniteLimit.FETCH_IS_PARAM_FACTOR;
 import static org.apache.ignite.internal.processors.query.calcite.rel.IgniteLimit.OFFSET_IS_PARAM_FACTOR;
@@ -47,9 +46,6 @@ import static org.apache.ignite.internal.processors.query.calcite.util.RexUtils.
  * Ignite sort operator.
  */
 public class IgniteSort extends Sort implements IgniteRel {
-    /** */
-    private final @Nullable RexNode offset;
-
     /**
      * Constructor.
      *
@@ -67,9 +63,7 @@ public class IgniteSort extends Sort implements IgniteRel {
         RelCollation collation,
         RexNode offset,
         RexNode fetch) {
-        super(cluster, traits, child, collation, null, fetch);
-
-        this.offset = offset;
+        super(cluster, traits, child, collation, offset, fetch);
     }
 
     /**
@@ -91,8 +85,6 @@ public class IgniteSort extends Sort implements IgniteRel {
     /** */
     public IgniteSort(RelInput input) {
         super(changeTraits(input, IgniteConvention.INSTANCE));
-
-        this.offset = input.getExpression("offset");
     }
 
     /** {@inheritDoc} */
@@ -103,7 +95,7 @@ public class IgniteSort extends Sort implements IgniteRel {
         RexNode offset,
         RexNode fetch
     ) {
-        return new IgniteSort(getCluster(), traitSet, newInput, newCollation, this.offset, fetch);
+        return new IgniteSort(getCluster(), traitSet, newInput, newCollation, offset, fetch);
     }
 
     /** {@inheritDoc} */
@@ -137,14 +129,15 @@ public class IgniteSort extends Sort implements IgniteRel {
     }
 
     /** {@inheritDoc} */
+    @Override public double estimateRowCount(RelMetadataQuery mq) {
+        return memRows(super.estimateRowCount(mq));
+    }
+
+    /** {@inheritDoc} */
     @Override public RelOptCost computeSelfCost(RelOptPlanner planner, RelMetadataQuery mq) {
         double inputRows = mq.getRowCount(getInput());
 
-        double fetch = this.fetch != null ? doubleFromRex(this.fetch, inputRows * FETCH_IS_PARAM_FACTOR) : inputRows;
-        double offset = this.offset != null ? doubleFromRex(this.offset, inputRows * OFFSET_IS_PARAM_FACTOR)
-            : 0;
-
-        double memRows = Math.min(inputRows, offset + fetch);
+        double memRows = memRows(inputRows);
 
         double cpuCost = inputRows * IgniteCost.ROW_PASS_THROUGH_COST + Util.nLogM(inputRows, memRows)
             * IgniteCost.ROW_COMPARISON_COST;
@@ -161,27 +154,22 @@ public class IgniteSort extends Sort implements IgniteRel {
         return cost;
     }
 
-    /** {@inheritDoc} */
-    @Override public IgniteRel clone(RelOptCluster cluster, List<IgniteRel> inputs) {
-        return new IgniteSort(cluster, getTraitSet(), sole(inputs), collation, getOffset(), fetch);
+    /** */
+    private double memRows(double inputRows) {
+        double fetch = this.fetch != null ? doubleFromRex(this.fetch, inputRows * FETCH_IS_PARAM_FACTOR) : inputRows;
+        double offset = this.offset != null ? doubleFromRex(this.offset, inputRows * OFFSET_IS_PARAM_FACTOR)
+            : 0;
+
+        return Math.min(inputRows, fetch + offset);
     }
 
     /** {@inheritDoc} */
-    @Override public RelWriter explainTerms(RelWriter pw) {
-        RelWriter relWriter = super.explainTerms(pw);
-
-        relWriter.itemIf("offset", getOffset(), getOffset() != null);
-
-        return relWriter;
+    @Override public IgniteRel clone(RelOptCluster cluster, List<IgniteRel> inputs) {
+        return new IgniteSort(cluster, getTraitSet(), sole(inputs), collation, offset, fetch);
     }
 
     /** {@inheritDoc} */
     @Override public boolean isEnforcer() {
         return true;
-    }
-
-    /** */
-    public RexNode getOffset() {
-        return offset;
     }
 }

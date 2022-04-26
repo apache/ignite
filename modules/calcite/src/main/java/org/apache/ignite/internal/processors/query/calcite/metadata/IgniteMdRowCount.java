@@ -22,6 +22,7 @@ import org.apache.calcite.rel.core.Join;
 import org.apache.calcite.rel.core.JoinInfo;
 import org.apache.calcite.rel.core.JoinRelType;
 import org.apache.calcite.rel.core.Minus;
+import org.apache.calcite.rel.core.Sort;
 import org.apache.calcite.rel.metadata.ReflectiveRelMetadataProvider;
 import org.apache.calcite.rel.metadata.RelMdRowCount;
 import org.apache.calcite.rel.metadata.RelMdUtil;
@@ -39,6 +40,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.calcite.util.NumberUtil.multiply;
+import static org.apache.ignite.internal.processors.query.calcite.util.RexUtils.doubleFromRex;
 
 /** */
 @SuppressWarnings("unused") // actually all methods are used by runtime generated classes
@@ -50,6 +52,12 @@ public class IgniteMdRowCount extends RelMdRowCount {
 
     /** {@inheritDoc} */
     @Override public Double getRowCount(Join rel, RelMetadataQuery mq) {
+        return rel.estimateRowCount(mq);
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public @org.checkerframework.checker.nullness.qual.Nullable Double getRowCount(Sort rel, RelMetadataQuery mq) {
         return rel.estimateRowCount(mq);
     }
 

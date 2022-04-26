@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.query.calcite.planner;
 
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
+import org.apache.calcite.util.ImmutableIntList;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteExchange;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexScan;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteLimit;
@@ -127,17 +128,11 @@ public class LimitOffsetPlannerTest extends AbstractPlannerTest {
                         .and(input(isInstanceOf(IgniteSort.class)))))))));
 
         // Check that extended collation is passed through the Limit node if it satisfies the Limit collation.
-        assertPlan("SELECT * FROM (SELECT * FROM TEST ORDER BY ID LIMIT 10) ORDER BY ID", publicSchema,
+        assertPlan("SELECT * FROM (SELECT * FROM TEST ORDER BY ID LIMIT 10) ORDER BY ID, VAL", publicSchema,
             isInstanceOf(IgniteLimit.class)
                 .and(input(isInstanceOf(IgniteExchange.class)
-                    .and(input(isInstanceOf(IgniteSort.class))))));
-
-        // Check that extended collation has bigger sort cost and is not passed through the Limit node.
-        assertPlan("SELECT * FROM (SELECT * FROM TEST ORDER BY ID LIMIT 10) ORDER BY ID, VAL", publicSchema,
-            nodeOrAnyChild(isInstanceOf(IgniteSort.class)
-                .and(hasChildThat(isInstanceOf(IgniteLimit.class)
-                    .and(input(isInstanceOf(IgniteExchange.class)
-                        .and(input(isInstanceOf(IgniteSort.class)))))))));
+                    .and(input(isInstanceOf(IgniteSort.class)
+                        .and(s -> s.collation().getKeys().equals(ImmutableIntList.of(0, 1))))))));
 
         // Check that external Sort node is not required if external collation is subset of internal collation.
         assertPlan("SELECT * FROM (SELECT * FROM TEST ORDER BY ID, VAL LIMIT 10) ORDER BY ID", publicSchema,
@@ -146,7 +141,7 @@ public class LimitOffsetPlannerTest extends AbstractPlannerTest {
                     .and(input(isInstanceOf(IgniteSort.class))))));
 
         // Check double limit when external collation is a subset of internal collation.
-        assertPlan("SELECT * FROM (SELECT * FROM TEST ORDER BY ID, VAL LIMIT 10) ORDER BY ID LIMIT 5",
+        assertPlan("SELECT * FROM (SELECT * FROM TEST ORDER BY ID, VAL LIMIT 10) ORDER BY ID LIMIT 5 OFFSET 3",
             publicSchema,
             isInstanceOf(IgniteLimit.class)
                 .and(input(isInstanceOf(IgniteLimit.class)
