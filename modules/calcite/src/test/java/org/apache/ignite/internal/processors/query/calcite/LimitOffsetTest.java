@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.calcite.integration;
+package org.apache.ignite.internal.processors.query.calcite;
 
 import java.math.BigDecimal;
 import java.util.Arrays;
@@ -35,6 +35,7 @@ import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
 import static java.util.Collections.singletonList;
@@ -42,7 +43,7 @@ import static java.util.Collections.singletonList;
 /**
  * Limit / offset tests.
  */
-public class LimitOffsetTest extends AbstractBasicIntegrationTest {
+public class LimitOffsetTest extends GridCommonAbstractTest {
     /** */
     private static IgniteCache<Integer, String> cacheRepl;
 

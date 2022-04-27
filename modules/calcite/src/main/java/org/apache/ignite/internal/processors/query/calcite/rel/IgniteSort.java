@@ -37,8 +37,8 @@ import org.apache.ignite.internal.processors.query.calcite.metadata.cost.IgniteC
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
 import org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils;
 
-import static org.apache.ignite.internal.processors.query.calcite.rel.IgniteLimit.FETCH_IS_PARAM_FACTOR;
-import static org.apache.ignite.internal.processors.query.calcite.rel.IgniteLimit.OFFSET_IS_PARAM_FACTOR;
+import static org.apache.ignite.internal.processors.query.calcite.metadata.cost.IgniteCost.FETCH_IS_PARAM_FACTOR;
+import static org.apache.ignite.internal.processors.query.calcite.metadata.cost.IgniteCost.OFFSET_IS_PARAM_FACTOR;
 import static org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils.changeTraits;
 import static org.apache.ignite.internal.processors.query.calcite.util.RexUtils.doubleFromRex;
 
@@ -46,6 +46,9 @@ import static org.apache.ignite.internal.processors.query.calcite.util.RexUtils.
  * Ignite sort operator.
  */
 public class IgniteSort extends Sort implements IgniteRel {
+    /** */
+    private final boolean enforcer;
+
     /**
      * Constructor.
      *
@@ -55,6 +58,7 @@ public class IgniteSort extends Sort implements IgniteRel {
      * @param collation Collation.
      * @param offset Offset.
      * @param fetch Limit.
+     * @param enforcer Enforcer flag.
      */
     public IgniteSort(
         RelOptCluster cluster,
@@ -62,8 +66,11 @@ public class IgniteSort extends Sort implements IgniteRel {
         RelNode child,
         RelCollation collation,
         RexNode offset,
-        RexNode fetch) {
+        RexNode fetch,
+        boolean enforcer) {
         super(cluster, traits, child, collation, offset, fetch);
+
+        this.enforcer = enforcer;
     }
 
     /**
@@ -73,18 +80,22 @@ public class IgniteSort extends Sort implements IgniteRel {
      * @param traits Trait set.
      * @param child Input node.
      * @param collation Collation.
+     * @param enforcer Enforcer flag.
      */
     public IgniteSort(
         RelOptCluster cluster,
         RelTraitSet traits,
         RelNode child,
-        RelCollation collation) {
-        this(cluster, traits, child, collation, null, null);
+        RelCollation collation,
+        boolean enforcer) {
+        this(cluster, traits, child, collation, null, null, enforcer);
     }
 
     /** */
     public IgniteSort(RelInput input) {
         super(changeTraits(input, IgniteConvention.INSTANCE));
+
+        this.enforcer = false;
     }
 
     /** {@inheritDoc} */
@@ -95,7 +106,7 @@ public class IgniteSort extends Sort implements IgniteRel {
         RexNode offset,
         RexNode fetch
     ) {
-        return new IgniteSort(getCluster(), traitSet, newInput, newCollation, offset, fetch);
+        return new IgniteSort(getCluster(), traitSet, newInput, newCollation, offset, fetch, enforcer);
     }
 
     /** {@inheritDoc} */
@@ -113,9 +124,16 @@ public class IgniteSort extends Sort implements IgniteRel {
         if (isEnforcer() || required.getConvention() != IgniteConvention.INSTANCE)
             return null;
 
-        RelCollation collation = TraitUtils.collation(required);
+        RelCollation relCollation = TraitUtils.collation(required);
 
-        return Pair.of(required.replace(collation), ImmutableList.of(required.replace(RelCollations.EMPTY)));
+        if (!relCollation.satisfies(collation) || !collation.satisfies(relCollation))
+            return null;
+//        if (!relCollation.satisfies(collation))
+//            return null;
+//        if (!collation.satisfies(relCollation))
+//            return null;
+
+        return Pair.of(required.replace(relCollation), ImmutableList.of(required.replace(RelCollations.EMPTY)));
     }
 
     /** {@inheritDoc} */
@@ -130,7 +148,7 @@ public class IgniteSort extends Sort implements IgniteRel {
 
     /** {@inheritDoc} */
     @Override public double estimateRowCount(RelMetadataQuery mq) {
-        return memRows(super.estimateRowCount(mq));
+        return memRows(mq.getRowCount(getInput()));
     }
 
     /** {@inheritDoc} */
@@ -156,17 +174,18 @@ public class IgniteSort extends Sort implements IgniteRel {
 
     /** {@inheritDoc} */
     @Override public IgniteRel clone(RelOptCluster cluster, List<IgniteRel> inputs) {
-        return new IgniteSort(cluster, getTraitSet(), sole(inputs), collation, offset, fetch);
+        return new IgniteSort(cluster, getTraitSet(), sole(inputs), collation, offset, fetch, enforcer);
     }
 
     /** {@inheritDoc} */
     @Override public boolean isEnforcer() {
-        return true;
+        return enforcer;
     }
 
     /** */
     private double memRows(double inputRows) {
-        double fetch = this.fetch != null ? doubleFromRex(this.fetch, inputRows * FETCH_IS_PARAM_FACTOR) : inputRows;
+        double fetch = this.fetch != null ? doubleFromRex(this.fetch, inputRows * FETCH_IS_PARAM_FACTOR)
+            : inputRows;
         double offset = this.offset != null ? doubleFromRex(this.offset, inputRows * OFFSET_IS_PARAM_FACTOR)
             : 0;
 

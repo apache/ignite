@@ -36,16 +36,12 @@ import org.apache.ignite.internal.processors.query.calcite.metadata.cost.IgniteC
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
 import org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils;
 
+import static org.apache.ignite.internal.processors.query.calcite.metadata.cost.IgniteCost.FETCH_IS_PARAM_FACTOR;
+import static org.apache.ignite.internal.processors.query.calcite.metadata.cost.IgniteCost.OFFSET_IS_PARAM_FACTOR;
 import static org.apache.ignite.internal.processors.query.calcite.util.RexUtils.doubleFromRex;
 
 /** */
 public class IgniteLimit extends SingleRel implements IgniteRel {
-    /** In case the fetch value is a DYNAMIC_PARAM. */
-    static final double FETCH_IS_PARAM_FACTOR = 0.01;
-
-    /** In case the offset value is a DYNAMIC_PARAM. */
-    static final double OFFSET_IS_PARAM_FACTOR = 0.5;
-
     /** Offset. */
     private final RexNode offset;
 

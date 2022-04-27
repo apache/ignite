@@ -53,40 +53,26 @@ public class SortNode<Row> extends AbstractNode<Row> implements SingleNode<Row>,
      * @param ctx Execution context.
      * @param comp Rows comparator.
      * @param offset Offset.
-     * @param limit Limit.
+     * @param fetch Limit.
      */
-    public SortNode(ExecutionContext<Row> ctx, RelDataType rowType, Comparator<Row> comp,
-        @Nullable Supplier<Integer> offset, @Nullable Supplier<Integer> limit) {
+    public SortNode(
+        ExecutionContext<Row> ctx, RelDataType rowType,
+        Comparator<Row> comp,
+        @Nullable Supplier<Integer> offset,
+        @Nullable Supplier<Integer> fetch
+    ) {
         super(ctx, rowType);
 
-        assert limit == null || limit.get() >= 0;
+        assert fetch == null || fetch.get() >= 0;
         assert offset == null || offset.get() >= 0;
 
-        this.limit = limit == null ? -1 : limit.get() + (offset == null ? 0 : offset.get());
+        this.limit = fetch == null ? -1 : fetch.get() + (offset == null ? 0 : offset.get());
 
         if (this.limit < 0)
             rows = new PriorityQueue<>(comp);
-        else {
-            Comparator<Row> reverseCmp;
-
-            // Reverse comparator
-            if (comp == null) {
-                reverseCmp = new Comparator<Row>() {
-                    @Override public int compare(Row r1, Row r2) {
-                        return ((Comparable<Row>)r2).compareTo(r1);
-                    }
-                };
-            }
-            else {
-                reverseCmp = new Comparator<Row>() {
-                    @Override public int compare(Row o1, Row o2) {
-                        return comp.compare(o2, o1);
-                    }
-                };
-            }
-
-            rows = new GridBoundedPriorityQueue<>(this.limit, reverseCmp);
-        }
+        else
+            rows = new GridBoundedPriorityQueue<>(this.limit, comp == null ?
+                (Comparator<Row>)Comparator.reverseOrder() : comp.reversed());
     }
 
     /**
@@ -166,15 +152,27 @@ public class SortNode<Row> extends AbstractNode<Row> implements SingleNode<Row>,
 
         int processed = 0;
 
-        if (limit > 0 && reversed == null && !rows.isEmpty()) {
-            reversed = new ArrayList<>(rows.size());
+        inLoop = true;
+
+        if (limit > 0 && !rows.isEmpty()) {
+            if (reversed == null)
+                reversed = new ArrayList<>(rows.size());
 
             // Make final order (reversed).
-            while (!rows.isEmpty())
+            while (!rows.isEmpty()) {
                 reversed.add(rows.poll());
+
+                if (++processed >= IN_BUFFER_SIZE) {
+                    // allow others to do their job
+                    context().execute(this::flush, this::onError);
+
+                    return;
+                }
+            }
         }
 
-        inLoop = true;
+        processed = 0;
+
         try {
             while (requested > 0 && (reversed == null ? !rows.isEmpty() : !reversed.isEmpty())) {
                 checkState();

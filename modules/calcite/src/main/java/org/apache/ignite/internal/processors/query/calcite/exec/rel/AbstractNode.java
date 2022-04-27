@@ -28,7 +28,6 @@ import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_CALCITE_EXEC_IN_BUFFER_SIZE;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_CALCITE_EXEC_IO_BATCH_CNT;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_CALCITE_EXEC_IO_BATCH_SIZE;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_CALCITE_EXEC_MODIFY_BATCH_SIZE;
@@ -38,7 +37,7 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_CALCITE_EXEC_MODIF
  */
 public abstract class AbstractNode<Row> implements Node<Row> {
     /** */
-    protected static final int IN_BUFFER_SIZE = IgniteSystemProperties.getInteger(IGNITE_CALCITE_EXEC_IN_BUFFER_SIZE, 512);
+    protected static final int IN_BUFFER_SIZE = 1; //IgniteSystemProperties.getInteger(IGNITE_CALCITE_EXEC_IN_BUFFER_SIZE, 512);
 
     /** */
     protected static final int MODIFY_BATCH_SIZE = IgniteSystemProperties.getInteger(IGNITE_CALCITE_EXEC_MODIFY_BATCH_SIZE, 100);
