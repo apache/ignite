@@ -663,7 +663,6 @@ public class CdcMain implements Runnable {
     /** Search for new or changed {@link CdcCacheEvent} and notifies the consumer. */
     private void updateCaches() {
         try {
-            //TODO: fix for in-memory CDC mode.
             if (!dbDir.exists())
                 return;
 
@@ -736,15 +735,12 @@ public class CdcMain implements Runnable {
      * @return Lock or null if lock failed.
      */
     private CdcFileLockHolder tryLock(File dbStoreDirWithSubdirectory) {
-/*
-TODO: uncommend when in-memory support.
         if (!dbStoreDirWithSubdirectory.exists()) {
             log.warning("DB store directory not exists. Should be created by Ignite Node " +
                 " [dir=" + dbStoreDirWithSubdirectory + ']');
 
             return null;
         }
-*/
 
         File cdcRoot = new File(igniteCfg.getDataStorageConfiguration().getCdcWalPath());
 

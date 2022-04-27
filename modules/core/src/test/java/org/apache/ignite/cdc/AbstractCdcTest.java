@@ -305,7 +305,7 @@ public abstract class AbstractCdcTest extends GridCommonAbstractTest {
                     F.t(evt.value() == null ? DELETE : UPDATE, evt.cacheId()),
                     k -> new ArrayList<>()).add(extract(evt));
 
-                //TODO: uncomment after in-memory support. assertTrue(caches.containsKey(evt.cacheId()));
+                assertTrue(caches.containsKey(evt.cacheId()));
 
                 checkEvent(evt);
             });
