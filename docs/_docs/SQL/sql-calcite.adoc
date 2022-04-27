@@ -1,0 +1,251 @@
+// Licensed to the Apache Software Foundation (ASF) under one or more
+// contributor license agreements.  See the NOTICE file distributed with
+// this work for additional information regarding copyright ownership.
+// The ASF licenses this file to You under the Apache License, Version 2.0
+// (the "License"); you may not use this file except in compliance with
+// the License.  You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+= Calcite-based SQL engine
+
+Apache Ignite since 2.13 version includes the new SQL engine based on the Apache Calcite framework.
+
+Apache Calcite is a dynamic data management framework, which mainly serves for mediating between applications and one or more data storage locations and data processing engines. For more information on Apache Calcite, please see the link:https://calcite.apache.org/docs[product documentation, window=_blank].
+
+Current H2-based SQL engine has some fundamental limitations of query execution in distributed environment. To address these limitations the new SQL engine was developed. The new engine uses tools, provided by Apache Calcite, for parsing and planning queries, and has a new query execution flow.
+
+CAUTION: The Calcite-based query engine is currently in beta status.
+
+== Calcite module libraries
+
+To use Calcite-based engine Calcite module libraries should be in a classpath.
+
+CAUTION: At now some logic from `ignite-indexing` module is reused, this means `ignite-indexing` module also has to be present at classpath.
+
+=== Standalone mode
+
+When starting a standalone node, move `optional/ignite-calcite` and `optional/ignite-slf4j` folders to `libs` folder before running `ignite.{sh|bat}` script. The content of the module folder will be added to classpath in this case.
+
+=== Maven configuration
+
+If you are using Maven to manage dependencies of your project, you can add Calcite module dependency like this (replace `${ignite.version}` with the actual Apache Ignite version you are interested in):
+
+[tabs]
+--
+tab:XML[]
+[source,xml]
+----
+<dependency>
+    <groupId>org.apache.ignite</groupId>
+    <artifactId>ignite-calcite</artifactId>
+    <version>${ignite.version}</version>
+</dependency>
+----
+--
+
+== Configuring query engines
+
+To enable engine for queries explicit `CalciteQueryEngineConfiguration` instance should be added to `SqlConfiguration.QueryEnginesConfiguration` property.
+
+Here is config example with two query engines configured (H2-based and Calcite-based) and Calcite-based engine chosen as default:
+
+[tabs]
+--
+tab:XML[]
+[source,xml]
+----
+<bean class="org.apache.ignite.configuration.IgniteConfiguration">
+    <property name="sqlConfiguration">
+        <bean class="org.apache.ignite.configuration.SqlConfiguration">
+            <property name="queryEnginesConfiguration">
+                <list>
+                    <bean class="org.apache.ignite.indexing.IndexingQueryEngineConfiguration">
+                        <property name="default" value="false"/>
+                    </bean>
+                    <bean class="org.apache.ignite.calcite.CalciteQueryEngineConfiguration">
+                        <property name="default" value="true"/>
+                    </bean>
+                </list>
+            </property>
+        </bean>
+    </property>
+    ...
+</bean>
+----
+tab:Java[]
+[source,java]
+----
+IgniteConfiguration cfg = new IgniteConfiguration().setSqlConfiguration(
+    new SqlConfiguration().setQueryEnginesConfiguration(
+        new IndexingQueryEngineConfiguration(),
+        new CalciteQueryEngineConfiguration().setDefault(true)
+    )
+);
+----
+--
+
+== Routing queries to query engine
+
+All querues by default are routed to the configured default query engine, but if more than one engine configured throught `queryEnginesConfiguration` it's possible to use not default configured engine for individual queries or for the whole connection.
+
+=== JDBC connection configuration
+
+To choose query engine for JDBC connection `queryEngine` connection parameter can be used.
+
+Example:
+
+[tabs]
+--
+tab:JDBC Connection url[]
+[source,text]
+----
+jdbc:ignite:thin://127.0.0.1:10800?queryEngine=calcite
+----
+--
+
+=== ODBC connection configuration
+
+For ODBC connection query engine can be configured by `QUERY_ENGINE` property.
+
+Example:
+
+[tabs]
+--
+tab:ODBC Connection properties[]
+[source,text]
+----
+[IGNITE_CALCITE]
+DRIVER={Apache Ignite};
+SERVER=127.0.0.1;
+PORT=10800;
+SCHEMA=PUBLIC;
+QUERY_ENGINE=CALCITE
+----
+--
+
+=== QUERY_ENGINE hint
+
+For individual queries exact engine to run query can be selected using `QUERY_ENGINE` hint.
+
+Example:
+
+[tabs]
+--
+tab:Query with QUERY_ENGINE hint[]
+[source,sql]
+----
+SELECT /*+ QUERY_ENGINE('calcite') */ fld FROM table;
+----
+--
+
+== SQL reference
+
+=== DDL
+
+Data definition language (DDL) statements are compilant with the old, H2-based engine. You can find DDL syntax description link:sql-reference/ddl[here].
+
+=== DML
+
+The new SQL engine mostly inherit Data manipulation language (DML) statements syntax from the Apache Calcite framework. Apache Calcite SQL grammer description can be found link:https://calcite.apache.org/docs/reference.html[here, window=_blank].
+
+In the most cases statements syntax is compilant with the old SQL engine. But there are also some differences between DML dialects in H2-based engine and Calcite-based engine. For example, note MERGE statement syntax change if you use this statement.
+
+=== Supported functions
+
+The Calcite-based SQL engine currently supports:
+
+[cols="1,3",opts="stretch,header"]
+|===
+|Group | Functions list
+
+|Aggregate functions
+|`COUNT`, `SUM`, `AVG`, `MIN`, `MAX`, `ANY_VALUE`
+
+|String functions
+|`UPPER`, `LOWER`, `INITCAP`, `TO_BASE64`, `FROM_BASE64`, `MD5`, `SHA1`, `SUBSTRING`, `LEFT`, `RIGHT`, `REPLACE`, `TRANSLATE`, `CHR`, `CHAR_LENGTH`, `CHARACTER_LENGTH`, `LENGTH`, `CONCAT`, `OVERLAY`, `POSITION`, `ASCII`, `REPEAT`, `SPACE`, `STRCMP`, `SOUNDEX`, `DIFFERENCE`, `REVERSE`, `TRIM`, `LTRIM`, `RTRIM`, `REGEXP_REPLACE`
+
+|Math functions
+|`MOD`, `EXP`, `POWER`, `LN`, `LOG10`, `ABS`, `RAND`, `RAND_INTEGER`, `ACOS`, `ASIN`, `ATAN`, `ATAN2`, `SQRT`, `CBRT`, `COS`, `COSH`, `COT`, `DEGREES`, `RADIANS`, `ROUND`, `SIGN`, `SIN`, `SINH`, `TAN`, `TANH`, `TRUNCATE`, `PI`
+
+|Date and time functions
+|`EXTRACT`, `FLOOR`, `CEIL`, `TIMESTAMPADD`, `TIMESTAMPDIFF`, `LAST_DATE`, `DAYNAME`, `MONTHNAME`, `DAYOFMONTH`, `DAYOFWEEK`, `DAYOFYEAR`, `YEAR`, `QUARTER`, `MONTH`, `WEEK`, `HOUR`, `MINUTE`, `SECOND`, `TIMESTAMP_SECONDS`, `TIMESTAMP_MILLIS`, `TIMESTAMP_MICROS`, `UNIX_SECONDS`, `UNIX_MILLIS`, `UNIX_MICROS`, `UNIX_DATE`, `DATE_FROM_UNIX_DATE`, `DATE`, `CURRENT_TIME`, `CURRENT_TIMESTAMP`, `CURRENT_DATE`, `LOCALTIME`, `LOCALTIMESTAMP`
+
+|XML functions
+|`EXTRACTVALUE`, `XMLTRANSFORM`, `EXTRACT`, `EXISTSNODE`
+
+|JSON functions
+|`JSON_VALUE`, `JSON_QUERY`, `JSON_TYPE`, `JSON_EXISTS`, `JSON_DEPTH`, `JSON_KEYS`, `JSON_PRETTY`, `JSON_LENGTH`, `JSON_REMOVE`, `JSON_STORAGE_SIZE`, `JSON_OBJECT`, `JSON_ARRAY`
+
+|Other functions
+|`ROW`, `CAST`, `COALESCE`, `NVL`, `NULLIF`, `CASE`, `DECODE`, `LEAST`, `GREATEST`, `COMPRESS`, `OCTET_LENGTH`, `TYPEOF`, `QUERY_ENGINE`
+
+|===
+
+Description for these functions can be found in the link:https://calcite.apache.org/docs/reference.html#operators-and-functions[Apache Calcite SQL language reference, window=_blank].
+
+=== Supported data types
+
+Data types supported by the Calcite-based SQL engine:
+
+[cols="1,1",opts="stretch,header"]
+|===
+|Data type | Mapped to Java class
+
+|BOOLEAN
+|`java.lang.Boolean`
+
+|DECIMAL
+|`java.math.BigDecimal`
+
+|DOUBLE
+|`java.lang.Double`
+
+|REAL/FLOAT
+|`java.lang.Float`
+
+|INT
+|`java.lang.Integer`
+
+|BIGINT
+|`java.lang.Long`
+
+|SMALLINT
+|`java.lang.Short`
+
+|TINYINT
+|`java.lang.Byte`
+
+|CHAR/VARCHAR
+|`java.lang.String`
+
+|DATE
+|`java.sql.Date`
+
+|TIME
+|`java.sql.Time`
+
+|TIMESTAMP
+|`java.sql.Timestamp`
+
+|INTERVAL YEAR TO MONTH
+|`java.time.Period`
+
+|INTERVAL DAY TO SECOND
+|`java.time.Duration`
+
+|BINARY/VARBINARY
+|`byte[]`
+
+|UUID
+|`java.util.UUID`
+
+|OTHER
+|`java.lang.Object`
+
+|===
