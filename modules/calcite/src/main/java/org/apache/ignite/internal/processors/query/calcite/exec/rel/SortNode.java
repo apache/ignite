@@ -16,8 +16,9 @@
  */
 package org.apache.ignite.internal.processors.query.calcite.exec.rel;
 
-import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.List;
 import java.util.PriorityQueue;
 import java.util.function.Supplier;
 import org.apache.calcite.rel.type.RelDataType;
@@ -46,7 +47,7 @@ public class SortNode<Row> extends AbstractNode<Row> implements SingleNode<Row>,
     private final int limit;
 
     /** Reverse-ordered rows in case of limited sort. */
-    private ArrayDeque<Row> reversed;
+    private List<Row> reversed;
 
     /**
      * @param ctx Execution context.
@@ -166,7 +167,7 @@ public class SortNode<Row> extends AbstractNode<Row> implements SingleNode<Row>,
         int processed = 0;
 
         if (limit > 0 && reversed == null && !rows.isEmpty()) {
-            reversed = new ArrayDeque<>(rows.size());
+            reversed = new ArrayList<>(rows.size());
 
             // Make final order (reversed).
             while (!rows.isEmpty())
@@ -182,7 +183,7 @@ public class SortNode<Row> extends AbstractNode<Row> implements SingleNode<Row>,
 
                 requested--;
 
-                downstream().push(reversed == null ? rows.poll() : reversed.pollLast());
+                downstream().push(reversed == null ? rows.poll() : reversed.remove(reversed.size() - 1));
 
                 if (++processed >= IN_BUFFER_SIZE && requested > 0) {
                     // allow others to do their job
