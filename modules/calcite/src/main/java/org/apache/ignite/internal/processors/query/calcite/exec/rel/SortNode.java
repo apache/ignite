@@ -172,13 +172,11 @@ public class SortNode<Row> extends AbstractNode<Row> implements SingleNode<Row>,
             // Make final order (reversed).
             while (!rows.isEmpty())
                 reversed.add(rows.poll());
-
-            rows.clear();
         }
 
         inLoop = true;
         try {
-            while (requested > 0 && (!rows.isEmpty() || reversed != null && !reversed.isEmpty())) {
+            while (requested > 0 && (reversed == null ? !rows.isEmpty() : !reversed.isEmpty())) {
                 checkState();
 
                 requested--;
@@ -193,7 +191,7 @@ public class SortNode<Row> extends AbstractNode<Row> implements SingleNode<Row>,
                 }
             }
 
-            if (rows.isEmpty() && (reversed == null || reversed.isEmpty())) {
+            if (reversed == null ? rows.isEmpty() : reversed.isEmpty()) {
                 if (requested > 0)
                     downstream().end();
 
