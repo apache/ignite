@@ -88,7 +88,7 @@ public class IgniteQueryConvertibleTypesValidationTest extends GridCommonAbstrac
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        cfg.getSqlConfiguration().setValidationEnabled(true);
+        cfg.getSqlConfiguration().setValidationEnabled(isValidationEnabled);
 
         return cfg;
     }

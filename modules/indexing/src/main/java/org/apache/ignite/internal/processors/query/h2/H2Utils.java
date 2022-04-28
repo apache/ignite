@@ -595,6 +595,11 @@ public class H2Utils {
      * @see #wrap(CacheObjectValueContext, Object, int)
      */
     public static boolean isConvertableToColumnType(Class<?> cls, int colType) {
+        assert cls != null;
+
+        if (DataType.getTypeClassName(colType).equals(cls.getName()))
+            return true;
+
         Set<Class<?>> types = CONVERTABLE_TYPES.get(colType);
 
         return types != null && types.contains(cls);

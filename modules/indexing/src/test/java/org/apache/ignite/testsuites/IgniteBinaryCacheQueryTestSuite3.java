@@ -136,6 +136,7 @@ import org.apache.ignite.internal.processors.query.SqlQueryHistorySelfTest;
 import org.apache.ignite.internal.processors.query.SqlSystemViewsSelfTest;
 import org.apache.ignite.internal.processors.query.h2.GridIndexRebuildSelfTest;
 import org.apache.ignite.internal.processors.query.h2.GridIndexRebuildTest;
+import org.apache.ignite.internal.processors.query.h2.H2ColumnTypeConversionCheckSelfTest;
 import org.apache.ignite.internal.processors.query.h2.QueryParserMetricsHolderSelfTest;
 import org.apache.ignite.internal.processors.query.h2.RowCountTableStatisticsSurvivesNodeRestartTest;
 import org.apache.ignite.internal.processors.query.h2.RowCountTableStatisticsUsageTest;
@@ -372,6 +373,7 @@ import org.junit.runners.Suite;
     InlineIndexKeyTypeRegistryTest.class,
 
     IgniteQueryConvertibleTypesValidationTest.class,
+    H2ColumnTypeConversionCheckSelfTest.class,
 
     IgniteStatisticsTestSuite.class,
 
