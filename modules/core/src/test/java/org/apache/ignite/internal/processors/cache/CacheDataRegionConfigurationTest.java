@@ -730,22 +730,34 @@ public class CacheDataRegionConfigurationTest extends GridCommonAbstractTest {
         assertFalse(logLsnr.check());
     }
 
-    /** 
+    /**
      * Verify that the eviction strategy can support large dataregion.
      */
     @Test
-    public void testLargeRegionsWithEviction() throws Exception {
+    public void testLargeRegionsWithRandomLRU() throws Exception {
+        doTestLargeRegionsWithEviction(DataPageEvictionMode.RANDOM_LRU);
+    }
+
+    /**
+     * Verify that the eviction strategy can support large dataregion.
+     */
+    @Test
+    public void testLargeRegionsWithRandom2LRU() throws Exception {
+        doTestLargeRegionsWithEviction(DataPageEvictionMode.RANDOM_2_LRU);
+    }
+
+    /**
+     * @param evictMode Page eviction mode.
+     * @throws Exception If failed.
+     */
+    private void doTestLargeRegionsWithEviction(DataPageEvictionMode evictMode) throws Exception {
         DataRegionConfiguration cfg1 = new DataRegionConfiguration()
             .setName("region-1")
+            .setInitialSize(U.GB)
             .setMaxSize(4 * 1024 * U.GB)
-            .setPageEvictionMode(DataPageEvictionMode.RANDOM_LRU);
+            .setPageEvictionMode(evictMode);
 
-        DataRegionConfiguration cfg2 = new DataRegionConfiguration()
-            .setName("region-2")
-            .setMaxSize(4 * 1024 * U.GB)
-            .setPageEvictionMode(DataPageEvictionMode.RANDOM_2_LRU);
-
-        memCfg = new DataStorageConfiguration().setDataRegionConfigurations(cfg1, cfg2);
+        memCfg = new DataStorageConfiguration().setDataRegionConfigurations(cfg1);
 
         startGrid();
     }
