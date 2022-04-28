@@ -66,9 +66,9 @@ public class SortNode<Row> extends AbstractNode<Row> implements SingleNode<Row>,
         assert fetch == null || fetch.get() >= 0;
         assert offset == null || offset.get() >= 0;
 
-        this.limit = fetch == null ? -1 : fetch.get() + (offset == null ? 0 : offset.get());
+        limit = fetch == null ? -1 : fetch.get() + (offset == null ? 0 : offset.get());
 
-        if (this.limit < 0)
+        if (limit < 0)
             rows = new PriorityQueue<>(comp);
         else
             rows = new GridBoundedPriorityQueue<>(this.limit, comp == null ?

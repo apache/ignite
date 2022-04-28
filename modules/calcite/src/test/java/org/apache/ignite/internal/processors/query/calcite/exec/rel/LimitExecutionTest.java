@@ -48,6 +48,67 @@ public class LimitExecutionTest extends AbstractExecutionTest {
         checkLimit(2000, 3000);
     }
 
+    /** */
+    @Test
+    public void testSort() throws Exception {
+        int bufSize = U.field(AbstractNode.class, "IN_BUFFER_SIZE");
+
+        checkLimitSort(0, 1);
+        checkLimitSort(1, 0);
+        checkLimitSort(1, 1);
+        checkLimitSort(0, bufSize);
+        checkLimitSort(bufSize, 0);
+        checkLimitSort(bufSize, bufSize);
+        checkLimitSort(bufSize - 1, 1);
+        checkLimitSort(2000, 0);
+        checkLimitSort(0, 3000);
+        checkLimitSort(2000, 3000);
+    }
+
+    /**
+     * @param offset Rows offset.
+     * @param fetch Fetch rows count (zero means unlimited).
+     */
+    private void checkLimitSort(int offset, int fetch) {
+        ExecutionContext<Object[]> ctx = executionContext(F.first(nodes()), UUID.randomUUID(), 0);
+        IgniteTypeFactory tf = ctx.getTypeFactory();
+        RelDataType rowType = TypeUtils.createRowType(tf, int.class);
+
+        RootNode<Object[]> rootNode = new RootNode<>(ctx, rowType);
+        SortNode<Object[]> sortNode = new SortNode<>(ctx, rowType, F::compareArrays, () -> offset,
+            fetch == 0 ? null : () -> fetch);
+        SourceNode srcNode = new SourceNode(ctx, rowType, fetch > 0 ?
+            fetch * 10 + offset : offset + SourceNode.IN_BUFFER_SIZE);
+
+        rootNode.register(sortNode);
+        sortNode.register(srcNode);
+
+        if (fetch > 0) {
+            for (int i = 0; i < offset + fetch; i++) {
+                assertTrue(rootNode.hasNext());
+                assertEquals(i, rootNode.next()[0]);
+            }
+
+            assertFalse(rootNode.hasNext());
+        }
+        else {
+            int skip = offset;
+
+            while (skip > 0) {
+                --skip;
+
+                assertTrue(rootNode.hasNext());
+
+                rootNode.next();
+            }
+
+            assertTrue(rootNode.hasNext());
+            assertEquals(offset, rootNode.next()[0]);
+
+            assertTrue(srcNode.requested.get() == offset + SourceNode.IN_BUFFER_SIZE);
+        }
+    }
+
     /**
      * @param offset Rows offset.
      * @param fetch Fetch rows count (zero means unlimited).
@@ -59,7 +120,7 @@ public class LimitExecutionTest extends AbstractExecutionTest {
 
         RootNode<Object[]> rootNode = new RootNode<>(ctx, rowType);
         LimitNode<Object[]> limitNode = new LimitNode<>(ctx, rowType, () -> offset, fetch == 0 ? null : () -> fetch);
-        SourceNode srcNode = new SourceNode(ctx, rowType);
+        SourceNode srcNode = new SourceNode(ctx, rowType, -1);
 
         rootNode.register(limitNode);
         limitNode.register(srcNode);
@@ -83,11 +144,16 @@ public class LimitExecutionTest extends AbstractExecutionTest {
     /** */
     private static class SourceNode extends AbstractNode<Object[]> {
         /** */
-        AtomicInteger requested = new AtomicInteger();
+        private AtomicInteger requested = new AtomicInteger();
 
         /** */
-        public SourceNode(ExecutionContext<Object[]> ctx, RelDataType rowType) {
+        private final int limit;
+
+        /** */
+        public SourceNode(ExecutionContext<Object[]> ctx, RelDataType rowType, int limit) {
             super(ctx, rowType);
+
+            this.limit = limit;
         }
 
         /** {@inheritDoc} */
@@ -102,11 +168,21 @@ public class LimitExecutionTest extends AbstractExecutionTest {
 
         /** {@inheritDoc} */
         @Override public void request(int rowsCnt) {
-            int r = requested.getAndAdd(rowsCnt);
+            int rowsToAdd;
+
+            if (limit >= 0 && requested.get() + rowsCnt > limit)
+                rowsToAdd = limit - requested.get();
+            else
+                rowsToAdd = rowsCnt;
+
+            int r = requested.getAndAdd(rowsToAdd);
 
             context().execute(() -> {
-                for (int i = 0; i < rowsCnt; i++)
+                for (int i = 0; i < rowsToAdd; i++)
                     downstream().push(new Object[] {r + i});
+
+                if (rowsToAdd < rowsCnt)
+                    context().execute(() -> downstream().end(), this::onError);
             }, this::onError);
         }
     }
