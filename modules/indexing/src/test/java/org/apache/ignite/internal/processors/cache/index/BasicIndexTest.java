@@ -199,7 +199,7 @@ public class BasicIndexTest extends AbstractIndexingCommonTest {
     static final String PAYLOAD_FIELD = "payload";
     static final String STATUS_FIELD = "status";
 
-    public static final Long TOTAL = 5000L;
+    public static final Long TOTAL = 10_000L;
     public static final Long KEY_FACTOR = TOTAL * 9 / 10;
     public static final Long ASOF_FACTOR = 1L;
     public static final Long ASAT_FACTOR = 20L;
@@ -420,7 +420,7 @@ public class BasicIndexTest extends AbstractIndexingCommonTest {
             .setArgs(prepareArgs(asof, asat, keys))
             .setCollocated(true);
 
-        for (int i=0; i<100_000; ++i) {
+        for (int i=0; i<1_000_000; ++i) {
             List<List<?>> result = client.cache(CACHE_NAMES.get(0)).query(query).getAll();
 
             summary += result.size();
