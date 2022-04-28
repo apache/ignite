@@ -19,10 +19,13 @@ package org.apache.ignite.internal.processors.database;
 
 import java.util.Comparator;
 import java.util.List;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.failure.FailureContext;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.mem.unsafe.UnsafeMemoryProvider;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
@@ -42,6 +45,8 @@ import org.apache.ignite.internal.processors.cache.tree.PendingEntryLeafIO;
 import org.apache.ignite.internal.processors.cache.tree.PendingRow;
 import org.apache.ignite.internal.processors.failure.FailureProcessor;
 import org.apache.ignite.internal.util.typedef.T2;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.GridTestKernalContext;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
@@ -104,6 +109,58 @@ public class PendingTreeSelfTest extends GridCommonAbstractTest {
      */
     private FullPageId allocateMetaPage() throws IgniteCheckedException {
         return new FullPageId(pageMem.allocatePage(CACHE_ID2, PageIdAllocator.INDEX_PARTITION, PageIdAllocator.FLAG_IDX), CACHE_ID2);
+    }
+
+    /** */
+    @Test
+    public void testPutRemoveRange() throws Throwable {
+        TestPendingEntriesTree tree = createTree(true);
+        AtomicReference<Throwable> stopped = new AtomicReference<>();
+
+        int startIdx = 1;
+        int cnt = 10_000;
+        long endTime = U.currentTimeMillis() + 5_000;
+        AtomicLong cntr = new AtomicLong();
+
+        IgniteInternalFuture<Long> putFut = GridTestUtils.runMultiThreadedAsync(() -> {
+            try {
+                while (stopped.get() == null && U.currentTimeMillis() < endTime) {
+                    int key = (int)(cntr.getAndIncrement() % cnt);
+
+                    tree.putx(row(startIdx + key));
+                }
+            }
+            catch (Throwable t) {
+                t.printStackTrace();
+
+                stopped.compareAndSet(null, t);
+            }
+        }, 4, "put");
+
+        IgniteInternalFuture<Long> rmvFut = GridTestUtils.runMultiThreadedAsync(() -> {
+            try {
+                while (stopped.get() == null && U.currentTimeMillis() < endTime) {
+                    int idx = startIdx + ThreadLocalRandom.current().nextInt(cnt);
+                    int amount = 1 + ThreadLocalRandom.current().nextInt(5);
+
+                    tree.removeRange(row(idx), row(idx + 10), amount);
+                }
+            }
+            catch (Throwable t) {
+                t.printStackTrace();
+
+                stopped.compareAndSet(null, t);
+            }
+        }, 2, "remove");
+
+        putFut.get(getTestTimeout());
+        rmvFut.get(getTestTimeout());
+
+        if (stopped.get() != null) {
+            System.err.println(tree.printTree());
+
+            throw stopped.get();
+        }
     }
 
     /** */

@@ -44,7 +44,7 @@ import org.openjdk.jmh.runner.options.Options;
 import org.openjdk.jmh.runner.options.OptionsBuilder;
 
 /**
- * Compare put with expiry policy and without expiry policy
+ * Compare put with expiry policy and without expiry policy.
  */
 @State(Scope.Benchmark)
 @Fork(1)

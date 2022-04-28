@@ -3085,7 +3085,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         long rootId;
 
         /** */
-        L row;
+        protected L row;
 
         /** In/Out parameter: Page ID. */
         protected long pageId;
@@ -4317,18 +4317,13 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
      */
     private abstract class Update extends Get {
         /** We may need to lock part of the tree branch from the bottom to up for multiple levels. */
-        Tail<L> tail;
+        protected Tail<L> tail;
 
         /**
          * @param row Row.
          */
         private Update(L row) {
             super(row, false);
-        }
-
-        /** @return Tail. */
-        public Tail<L> tail() {
-            return tail;
         }
 
         /**

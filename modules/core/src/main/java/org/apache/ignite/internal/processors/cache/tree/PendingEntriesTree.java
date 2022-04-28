@@ -155,14 +155,14 @@ public class PendingEntriesTree extends BPlusTree<PendingRow, PendingRow> {
             if (cmp != 0)
                 return cmp;
 
-            if (row.expireTime == 0 && row.link == 0) {
-                // A search row with a cache ID only is used as a cache bound.
-                // The found position will be shifted until the exact cache bound is found;
-                // See for details:
-                // o.a.i.i.p.c.database.tree.BPlusTree.ForwardCursor.findLowerBound()
-                // o.a.i.i.p.c.database.tree.BPlusTree.ForwardCursor.findUpperBound()
-                return cmp;
-            }
+//            if (row.expireTime == 0 && row.link == 0) {
+//                // A search row with a cache ID only is used as a cache bound.
+//                // The found position will be shifted until the exact cache bound is found;
+//                // See for details:
+//                // o.a.i.i.p.c.database.tree.BPlusTree.ForwardCursor.findLowerBound()
+//                // o.a.i.i.p.c.database.tree.BPlusTree.ForwardCursor.findUpperBound()
+//                return cmp;
+//            }
         }
 
         long expireTime = io.getExpireTime(pageAddr, idx);
@@ -253,6 +253,13 @@ public class PendingEntriesTree extends BPlusTree<PendingRow, PendingRow> {
         }
 
         /**
+         * @param row Found lower bound.
+         */
+        public void row(PendingRow row) {
+            this.row = row;
+        }
+
+        /**
          * @param row     Row.
          * @param needOld {@code True} If need return old value.
          */
@@ -280,6 +287,11 @@ public class PendingEntriesTree extends BPlusTree<PendingRow, PendingRow> {
             return backId;
         }
 
+        /** @return Tail. */
+        public Tail<PendingRow> tail() {
+            return tail;
+        }
+
         /** {@inheritDoc} */
         @Override protected Result lockForward(int lvl) throws IgniteCheckedException {
             return super.lockForward(lvl);
@@ -296,7 +308,8 @@ public class PendingEntriesTree extends BPlusTree<PendingRow, PendingRow> {
 
             assert leaf.idx >= 0 : leaf.idx;
 
-            int highIdx = findInsertionPoint(leaf.lvl, leaf.io, leaf.buf, leaf.idx, leaf.getCount(), upper, 0);
+            //todo
+            int highIdx = findInsertionPoint(leaf.lvl, leaf.io, leaf.buf, leaf.idx, leaf.getCount(), row(), 0);
 
             for (int i = highIdx; i >= leaf.idx; i--)
                 removeDataRowFromLeaf(leaf.pageId, leaf.page, leaf.buf, leaf.walPlc, leaf.io, leaf.getCount(), i);
@@ -342,29 +355,6 @@ public class PendingEntriesTree extends BPlusTree<PendingRow, PendingRow> {
             doRemove(pageId, page, pageAddr, walPlc, io, cnt, idx);
 
             assert isRemoved();
-        }
-
-        /**
-         * @return {@code true} If found.
-         * @throws IgniteCheckedException If failed.
-         */
-        @Override protected boolean isInnerKeyInTail() throws IgniteCheckedException {
-            Tail<PendingRow> tail = tail();
-
-            assert tail.lvl > 0 : tail.lvl;
-
-            assert tail.type == Tail.EXACT : tail.type;
-
-            return findInsertionPoint(tail.lvl, tail.io, tail.buf, 0, tail.getCount(), upper, 0) >= 0;
-//            if (tail.idx == Short.MIN_VALUE) {
-//                int idx = findInsertionPoint(tail.lvl, tail.io, tail.buf, 0, tail.getCount(), upper, 0);
-//
-//                assert checkIndex(idx) : idx;
-//
-//                tail.idx = (short)idx;
-//            }
-//
-//            return tail.idx >= 0;
         }
     }
 
@@ -439,11 +429,17 @@ public class PendingEntriesTree extends BPlusTree<PendingRow, PendingRow> {
 //                assert r.needReplaceInner == FALSE : "needReplaceInner";
 //                assert r.needMergeEmptyBranch == FALSE : "needMergeEmptyBranch";
 
-                if (cnt == 1 || (highIdx - lowIdx + 1) == cnt) // It was the last element on the leaf.
+                if (cnt == 1 || (highIdx - lowIdx + 1) == cnt) { // It was the last element on the leaf.
                     r.markNeedMergeEmptyBranch();
 
-                if (needReplaceInner)
+                    r.row(r.upper);
+                }
+
+                if (needReplaceInner) {
                     r.markNeedReplaceInner();
+
+                    r.row(r.upper);
+                }
 
                 Tail<PendingRow> t = r.addTail(leafId, leafPage, leafAddr, io, 0, Tail.EXACT);
 
