@@ -53,7 +53,7 @@ tab:XML[]
 
 To enable engine for queries explicit `CalciteQueryEngineConfiguration` instance should be added to `SqlConfiguration.QueryEnginesConfiguration` property.
 
-Here is config example with two query engines configured (H2-based and Calcite-based) and Calcite-based engine chosen as default:
+Below is a configuration example of two configured query engines (H2-based and Calcite-based engines) where the Calcite-based engine is chosen as a default one:
 
 [tabs]
 --
