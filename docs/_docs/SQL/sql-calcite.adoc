@@ -191,7 +191,7 @@ Description for these functions can be found in the link:https://calcite.apache.
 
 === Supported data types
 
-Data types supported by the Calcite-based SQL engine:
+Below are the data types supported by the Calcite-based SQL engine:
 
 [cols="1,1",opts="stretch,header"]
 |===
