@@ -24,7 +24,7 @@ CAUTION: The Calcite-based query engine is currently in beta status.
 
 == Calcite Module Libraries
 
-To use Calcite-based engine Calcite module libraries should be in a classpath.
+To use a Calcite-based engine, please make sure that the Calcite module libraries are in a classpath.
 
 CAUTION: At now some logic from `ignite-indexing` module is reused, this means `ignite-indexing` module also has to be present at classpath.
 
