@@ -49,7 +49,7 @@ tab:XML[]
 ----
 --
 
-== Configuring query engines
+== Configuring Query Engines
 
 To enable engine for queries explicit `CalciteQueryEngineConfiguration` instance should be added to `SqlConfiguration.QueryEnginesConfiguration` property.
 
