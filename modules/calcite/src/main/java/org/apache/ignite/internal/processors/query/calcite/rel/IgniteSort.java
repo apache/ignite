@@ -95,7 +95,8 @@ public class IgniteSort extends Sort implements IgniteRel {
     public IgniteSort(RelInput input) {
         super(changeTraits(input, IgniteConvention.INSTANCE));
 
-        this.enforcer = false;
+        // No need to enforce anyrhing on ready, fragmented and sent plan.
+        enforcer = false;
     }
 
     /** {@inheritDoc} */
@@ -128,10 +129,6 @@ public class IgniteSort extends Sort implements IgniteRel {
 
         if (!relCollation.satisfies(collation) || !collation.satisfies(relCollation))
             return null;
-//        if (!relCollation.satisfies(collation))
-//            return null;
-//        if (!collation.satisfies(relCollation))
-//            return null;
 
         return Pair.of(required.replace(relCollation), ImmutableList.of(required.replace(RelCollations.EMPTY)));
     }

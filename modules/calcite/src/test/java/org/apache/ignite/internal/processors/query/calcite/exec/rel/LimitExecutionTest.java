@@ -48,7 +48,7 @@ public class LimitExecutionTest extends AbstractExecutionTest {
         checkLimit(2000, 3000);
     }
 
-    /** */
+    /** Tests Sort node can as well limit its output when fetch param is set. */
     @Test
     public void testSort() throws Exception {
         int bufSize = U.field(AbstractNode.class, "IN_BUFFER_SIZE");
@@ -75,12 +75,15 @@ public class LimitExecutionTest extends AbstractExecutionTest {
         RelDataType rowType = TypeUtils.createRowType(tf, int.class);
 
         RootNode<Object[]> rootNode = new RootNode<>(ctx, rowType);
+
         SortNode<Object[]> sortNode = new SortNode<>(ctx, rowType, F::compareArrays, () -> offset,
             fetch == 0 ? null : () -> fetch);
-        SourceNode srcNode = new SourceNode(ctx, rowType, fetch > 0 ?
-            fetch * 10 + offset : offset + SourceNode.IN_BUFFER_SIZE);
+
+        SourceNode srcNode = new SourceNode(ctx, rowType, fetch > 0 ? fetch * 10 + offset :
+            offset + SourceNode.IN_BUFFER_SIZE);
 
         rootNode.register(sortNode);
+
         sortNode.register(srcNode);
 
         if (fetch > 0) {
@@ -146,7 +149,7 @@ public class LimitExecutionTest extends AbstractExecutionTest {
         /** */
         private AtomicInteger requested = new AtomicInteger();
 
-        /** */
+        /** If positive, prevents unlimited data providing. */
         private final int limit;
 
         /** */

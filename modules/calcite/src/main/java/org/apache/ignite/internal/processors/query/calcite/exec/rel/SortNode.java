@@ -88,7 +88,8 @@ public class SortNode<Row> extends AbstractNode<Row> implements SingleNode<Row>,
         requested = 0;
         waiting = 0;
         rows.clear();
-        reversed = null;
+        if (reversed != null)
+            reversed.clear();
     }
 
     /** {@inheritDoc} */
