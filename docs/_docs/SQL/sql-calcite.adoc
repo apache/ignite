@@ -131,7 +131,7 @@ QUERY_ENGINE=CALCITE
 
 === QUERY_ENGINE Hint
 
-For individual queries exact engine to run query can be selected using `QUERY_ENGINE` hint.
+To select a particular engine to run individual queries, use the `QUERY_ENGINE` hint:
 
 Example:
 
