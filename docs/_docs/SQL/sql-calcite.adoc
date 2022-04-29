@@ -90,7 +90,7 @@ IgniteConfiguration cfg = new IgniteConfiguration().setSqlConfiguration(
 ----
 --
 
-== Routing queries to query engine
+== Routing Queries to Query Engine
 
 All querues by default are routed to the configured default query engine, but if more than one engine configured throught `queryEnginesConfiguration` it's possible to use not default configured engine for individual queries or for the whole connection.
 
