@@ -151,7 +151,7 @@ public class GridCommandHandlerConsistencyTest extends GridCommandHandlerCluster
 
         injectTestSystemOut();
 
-        Integer repairsPerEntry = repairsPerEntry();
+        int repairsPerEntry = repairsPerEntry();
 
         int copies = BACKUPS + 1;
 
@@ -248,7 +248,7 @@ public class GridCommandHandlerConsistencyTest extends GridCommandHandlerCluster
         assertContains(log, testOut.toString(),
             "conflict partitions has been found: [counterConflicts=0, hashConflicts=" + brokenParts.get());
 
-        Integer repairsPerEntry = repairsPerEntry();
+        int repairsPerEntry = repairsPerEntry();
 
         readRepair(brokenParts, cacheName, repairsPerEntry);
 
@@ -312,7 +312,7 @@ public class GridCommandHandlerConsistencyTest extends GridCommandHandlerCluster
     /**
      *
      */
-    private Integer repairsPerEntry() {
+    private int repairsPerEntry() {
         switch (strategy) {
             case PRIMARY:
             case REMOVE:
