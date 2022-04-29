@@ -102,7 +102,7 @@ Example:
 
 [tabs]
 --
-tab:JDBC Connection url[]
+tab:JDBC Connection URL[]
 [source,text]
 ----
 jdbc:ignite:thin://127.0.0.1:10800?queryEngine=calcite
