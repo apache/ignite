@@ -256,7 +256,7 @@ public class GridTcpCommunicationInverseConnectionEstablishingTest extends GridC
             ccfg = cacheConfiguration(CACHE_NAME, ATOMIC);
 
             startGrid(i, (UnaryOperator<IgniteConfiguration>)cfg -> {
-                ListeningTestLogger log = new ListeningTestLogger(false, cfg.getGridLogger());
+                ListeningTestLogger log = new ListeningTestLogger(cfg.getGridLogger());
 
                 log.registerListener(lsnr);
 
@@ -290,7 +290,7 @@ public class GridTcpCommunicationInverseConnectionEstablishingTest extends GridC
         ).build();
 
         startGrid(SRVS_NUM - 1, (UnaryOperator<IgniteConfiguration>)cfg -> {
-            ListeningTestLogger log = new ListeningTestLogger(false, cfg.getGridLogger());
+            ListeningTestLogger log = new ListeningTestLogger(cfg.getGridLogger());
 
             log.registerListener(lsnr);
 

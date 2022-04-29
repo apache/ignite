@@ -68,7 +68,7 @@ public class TransactionSensitiveDataTest extends GridCommonAbstractTest {
 
         clearGridToStringClassCache();
 
-        testLog = new ListeningTestLogger(false, log);
+        testLog = new ListeningTestLogger(log);
     }
 
     /** {@inheritDoc} */

@@ -47,7 +47,7 @@ public class IgniteWalRebalanceLoggingTest extends GridCommonAbstractTest {
     private static final int CHECKPOINT_FREQUENCY = 600_000;
 
     /** Test logger. */
-    private final ListeningTestLogger srvLog = new ListeningTestLogger(false, log);
+    private final ListeningTestLogger srvLog = new ListeningTestLogger(log);
 
     /** */
     private static final int KEYS_LOW_BORDER = 100;
