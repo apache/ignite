@@ -133,7 +133,6 @@ QUERY_ENGINE=CALCITE
 
 To select a particular engine to run individual queries, use the `QUERY_ENGINE` hint:
 
-Example:
 
 [tabs]
 --
