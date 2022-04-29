@@ -109,7 +109,7 @@ jdbc:ignite:thin://127.0.0.1:10800?queryEngine=calcite
 ----
 --
 
-=== ODBC connection configuration
+=== ODBC
 
 For ODBC connection query engine can be configured by `QUERY_ENGINE` property.
 
