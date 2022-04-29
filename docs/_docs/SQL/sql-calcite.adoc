@@ -96,7 +96,7 @@ Normally, all queries are routed to the query engine that is configured by defau
 
 === JDBC connection configuration
 
-To choose query engine for JDBC connection `queryEngine` connection parameter can be used.
+To choose a query engine for the JDBC connection, use the `queryEngine` connection parameter.
 
 Example:
 
