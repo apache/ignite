@@ -751,13 +751,12 @@ public class CacheDataRegionConfigurationTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     private void doTestLargeRegionsWithEviction(DataPageEvictionMode evictMode) throws Exception {
-        DataRegionConfiguration cfg1 = new DataRegionConfiguration()
+        DataRegionConfiguration cfg = new DataRegionConfiguration()
             .setName("region-1")
-            .setInitialSize(U.GB)
             .setMaxSize(4 * 1024 * U.GB)
             .setPageEvictionMode(evictMode);
 
-        memCfg = new DataStorageConfiguration().setDataRegionConfigurations(cfg1);
+        memCfg = new DataStorageConfiguration().setDataRegionConfigurations(cfg);
 
         startGrid();
     }
