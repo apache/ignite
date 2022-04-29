@@ -94,7 +94,7 @@ IgniteConfiguration cfg = new IgniteConfiguration().setSqlConfiguration(
 
 Normally, all queries are routed to the query engine that is configured by default. If more than one engine is configured through `queryEnginesConfiguration`, it's possible to use another engine instead of the one configured default for individual queries or for the whole connection.
 
-=== JDBC connection configuration
+=== JDBC
 
 To choose a query engine for the JDBC connection, use the `queryEngine` connection parameter.
 
