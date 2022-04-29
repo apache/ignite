@@ -189,7 +189,7 @@ The Calcite-based SQL engine currently supports:
 
 Description for these functions can be found in the link:https://calcite.apache.org/docs/reference.html#operators-and-functions[Apache Calcite SQL language reference, window=_blank].
 
-=== Supported data types
+=== Supported Data Types
 
 Below are the data types supported by the Calcite-based SQL engine:
 
