@@ -154,7 +154,7 @@ Data definition language (DDL) statements are compliant with the old H2-based en
 
 The new SQL engine mostly inherits data manipulation language (DML) statements syntax from the Apache Calcite framework. See the Apache Calcite SQL grammar description link:https://calcite.apache.org/docs/reference.html[here, window=_blank].
 
-In the most cases statements syntax is compilant with the old SQL engine. But there are also some differences between DML dialects in H2-based engine and Calcite-based engine. For example, note MERGE statement syntax change if you use this statement.
+In most cases, statement syntax is compliant with the old SQL engine. But there are still some differences between DML dialects in H2-based engine and Calcite-based engine. For example, note the `MERGE` statement syntax has changed.
 
 === Supported Functions
 
