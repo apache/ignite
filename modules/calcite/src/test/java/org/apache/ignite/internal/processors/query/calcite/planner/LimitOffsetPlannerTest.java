@@ -110,10 +110,10 @@ public class LimitOffsetPlannerTest extends AbstractPlannerTest {
         // Simple case without ordering.
         assertPlan("SELECT * FROM TEST OFFSET 10 ROWS FETCH FIRST 5 ROWS ONLY", publicSchema,
             isInstanceOf(IgniteLimit.class)
-                .and(input(isInstanceOf(IgniteExchange.class)))
-                    .and(hasChildThat(isInstanceOf(IgniteSort.class)
-                        .and(s -> doubleFromRex(s.fetch, -1) == 5.0)
-                        .and(s -> doubleFromRex(s.offset, -1) == 10.0)).negate()));
+                .and(s -> doubleFromRex(s.fetch(), -1) == 5)
+                .and(s -> doubleFromRex(s.offset(), -1) == 10)
+                    .and(input(isInstanceOf(IgniteExchange.class)))
+                        .and(hasChildThat(isInstanceOf(IgniteSort.class)).negate()));
 
         // Check that Sort node is not eliminated by aggregation and Exchange node is not eliminated by distribution
         // required by parent nodes.
@@ -132,7 +132,7 @@ public class LimitOffsetPlannerTest extends AbstractPlannerTest {
                         .and(input(isInstanceOf(IgniteSort.class)
                             .and(s -> doubleFromRex(s.fetch, -1) == 10.0)))))))));
 
-//        // Check that extended collation is passed through the Limit node if it satisfies the Limit collation.
+        // Check that extended collation is passed through the Limit node if it satisfies the Limit collation.
         assertPlan("SELECT * FROM (SELECT * FROM TEST ORDER BY ID LIMIT 10) ORDER BY ID, VAL", publicSchema,
             isInstanceOf(IgniteLimit.class)
                 .and(input(isInstanceOf(IgniteExchange.class)
@@ -198,7 +198,7 @@ public class LimitOffsetPlannerTest extends AbstractPlannerTest {
                 .and(input(isInstanceOf(IgniteSort.class)
                     .and(s -> doubleFromRex(s.offset, -1) == 10)
                     .and(s -> doubleFromRex(s.fetch, -1) == 5)))
-                        .and(hasChildThat(isInstanceOf(IgniteExchange.class)).negate()));
+                    .and(hasChildThat(isInstanceOf(IgniteExchange.class)).negate()));
     }
 
     /**

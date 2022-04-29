@@ -155,26 +155,26 @@ public class SortNode<Row> extends AbstractNode<Row> implements SingleNode<Row>,
 
         inLoop = true;
 
-        if (limit > 0 && !rows.isEmpty()) {
-            if (reversed == null)
-                reversed = new ArrayList<>(rows.size());
-
-            // Make final order (reversed).
-            while (!rows.isEmpty()) {
-                reversed.add(rows.poll());
-
-                if (++processed >= IN_BUFFER_SIZE) {
-                    // allow others to do their job
-                    context().execute(this::flush, this::onError);
-
-                    return;
-                }
-            }
-        }
-
-        processed = 0;
-
         try {
+            if (limit > 0 && !rows.isEmpty()) {
+                if (reversed == null)
+                    reversed = new ArrayList<>(rows.size());
+
+                // Make final order (reversed).
+                while (!rows.isEmpty()) {
+                    reversed.add(rows.poll());
+
+                    if (++processed >= IN_BUFFER_SIZE) {
+                        // allow others to do their job
+                        context().execute(this::flush, this::onError);
+
+                        return;
+                    }
+                }
+
+                processed = 0;
+            }
+
             while (requested > 0 && (reversed == null ? !rows.isEmpty() : !reversed.isEmpty())) {
                 checkState();
 

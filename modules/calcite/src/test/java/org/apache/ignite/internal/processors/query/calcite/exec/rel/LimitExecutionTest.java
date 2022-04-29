@@ -17,8 +17,12 @@
 
 package org.apache.ignite.internal.processors.query.calcite.exec.rel;
 
+import java.util.Collections;
+import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
@@ -79,7 +83,7 @@ public class LimitExecutionTest extends AbstractExecutionTest {
         SortNode<Object[]> sortNode = new SortNode<>(ctx, rowType, F::compareArrays, () -> offset,
             fetch == 0 ? null : () -> fetch);
 
-        SourceNode srcNode = new SourceNode(ctx, rowType, fetch > 0 ? fetch * 10 + offset :
+        SourceNode srcNode = new SourceNode(ctx, rowType, false, fetch > 0 ? fetch * 10 + offset :
             offset + SourceNode.IN_BUFFER_SIZE);
 
         rootNode.register(sortNode);
@@ -123,7 +127,7 @@ public class LimitExecutionTest extends AbstractExecutionTest {
 
         RootNode<Object[]> rootNode = new RootNode<>(ctx, rowType);
         LimitNode<Object[]> limitNode = new LimitNode<>(ctx, rowType, () -> offset, fetch == 0 ? null : () -> fetch);
-        SourceNode srcNode = new SourceNode(ctx, rowType, -1);
+        SourceNode srcNode = new SourceNode(ctx, rowType, true, -1);
 
         rootNode.register(limitNode);
         limitNode.register(srcNode);
@@ -153,10 +157,15 @@ public class LimitExecutionTest extends AbstractExecutionTest {
         private final int limit;
 
         /** */
-        public SourceNode(ExecutionContext<Object[]> ctx, RelDataType rowType, int limit) {
+        private final boolean sorted;
+
+        /** */
+        public SourceNode(ExecutionContext<Object[]> ctx, RelDataType rowType, boolean sorted, int limit) {
             super(ctx, rowType);
 
             this.limit = limit;
+
+            this.sorted = sorted;
         }
 
         /** {@inheritDoc} */
@@ -178,11 +187,16 @@ public class LimitExecutionTest extends AbstractExecutionTest {
             else
                 rowsToAdd = rowsCnt;
 
-            int r = requested.getAndAdd(rowsToAdd);
+            AtomicInteger r = new AtomicInteger(requested.getAndAdd(rowsToAdd));
+
+            List<Integer> lst = Stream.generate(r::getAndIncrement).limit(rowsToAdd).collect(Collectors.toList());
+
+            if (!sorted)
+                Collections.shuffle(lst);
 
             context().execute(() -> {
-                for (int i = 0; i < rowsToAdd; i++)
-                    downstream().push(new Object[] {r + i});
+                for (int i : lst)
+                    downstream().push(new Object[] {i});
 
                 if (rowsToAdd < rowsCnt)
                     context().execute(() -> downstream().end(), this::onError);

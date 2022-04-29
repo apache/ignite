@@ -67,7 +67,8 @@ public class IgniteSort extends Sort implements IgniteRel {
         RelCollation collation,
         RexNode offset,
         RexNode fetch,
-        boolean enforcer) {
+        boolean enforcer
+    ) {
         super(cluster, traits, child, collation, offset, fetch);
 
         this.enforcer = enforcer;
@@ -87,7 +88,8 @@ public class IgniteSort extends Sort implements IgniteRel {
         RelTraitSet traits,
         RelNode child,
         RelCollation collation,
-        boolean enforcer) {
+        boolean enforcer
+    ) {
         this(cluster, traits, child, collation, null, null, enforcer);
     }
 
@@ -125,12 +127,12 @@ public class IgniteSort extends Sort implements IgniteRel {
         if (isEnforcer() || required.getConvention() != IgniteConvention.INSTANCE)
             return null;
 
-        RelCollation relCollation = TraitUtils.collation(required);
+        RelCollation requiredCollation = TraitUtils.collation(required);
 
-        if (!relCollation.satisfies(collation) || !collation.satisfies(relCollation))
+        if (!collation.satisfies(requiredCollation))
             return null;
 
-        return Pair.of(required.replace(relCollation), ImmutableList.of(required.replace(RelCollations.EMPTY)));
+        return Pair.of(required.replace(collation), ImmutableList.of(required.replace(RelCollations.EMPTY)));
     }
 
     /** {@inheritDoc} */
