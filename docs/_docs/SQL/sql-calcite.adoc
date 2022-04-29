@@ -156,7 +156,7 @@ The new SQL engine mostly inherit Data manipulation language (DML) statements sy
 
 In the most cases statements syntax is compilant with the old SQL engine. But there are also some differences between DML dialects in H2-based engine and Calcite-based engine. For example, note MERGE statement syntax change if you use this statement.
 
-=== Supported functions
+=== Supported Functions
 
 The Calcite-based SQL engine currently supports:
 
