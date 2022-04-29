@@ -28,7 +28,7 @@ To use a Calcite-based engine, please make sure that the Calcite module librarie
 
 CAUTION: Currently, a part of the `ignite-indexing` module functionality is reused, this means the `ignite-indexing` module also has to be present at classpath.
 
-=== Standalone mode
+=== Standalone Mode
 
 When starting a standalone node, move `optional/ignite-calcite` and `optional/ignite-slf4j` folders to `libs` folder before running `ignite.{sh|bat}` script. The content of the module folder will be added to classpath in this case.
 
