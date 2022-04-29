@@ -48,6 +48,7 @@ import org.junit.runners.Parameterized;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_UNEXPECTED_ERROR;
 import static org.apache.ignite.internal.visor.consistency.VisorConsistencyRepairTask.CONSISTENCY_VIOLATIONS_FOUND;
@@ -101,6 +102,7 @@ public class GridCommandHandlerConsistencyTest extends GridCommandHandlerCluster
         CacheConfiguration<Integer, Integer> cfg = new CacheConfiguration<>(
             tx ? DEFAULT_CACHE_NAME_TX : DEFAULT_CACHE_NAME_ATOMIC);
 
+        cfg.setWriteSynchronizationMode(FULL_SYNC);
         cfg.setAtomicityMode(tx ? TRANSACTIONAL : ATOMIC);
         cfg.setBackups(BACKUPS);
         cfg.setAffinity(new RendezvousAffinityFunction().setPartitions(PARTITIONS));
