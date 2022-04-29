@@ -198,7 +198,7 @@ public class LimitOffsetPlannerTest extends AbstractPlannerTest {
                 .and(input(isInstanceOf(IgniteSort.class)
                     .and(s -> doubleFromRex(s.offset, -1) == 10)
                     .and(s -> doubleFromRex(s.fetch, -1) == 5)))
-                    .and(hasChildThat(isInstanceOf(IgniteExchange.class)).negate()));
+                .and(hasChildThat(isInstanceOf(IgniteExchange.class)).negate()));
     }
 
     /**

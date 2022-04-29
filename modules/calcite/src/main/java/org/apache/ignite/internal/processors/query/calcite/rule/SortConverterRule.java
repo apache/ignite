@@ -24,6 +24,7 @@ import org.apache.calcite.plan.RelRule;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelCollations;
 import org.apache.calcite.rel.RelNode;
+import org.apache.calcite.rel.core.Sort;
 import org.apache.calcite.rel.logical.LogicalSort;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteConvention;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteLimit;
@@ -60,7 +61,7 @@ public class SortConverterRule extends RelRule<SortConverterRule.Config> {
 
     /** {@inheritDoc} */
     @Override public void onMatch(RelOptRuleCall call) {
-        final LogicalSort sort = call.rel(0);
+        final Sort sort = call.rel(0);
         RelOptCluster cluster = sort.getCluster();
 
         if (sort.fetch != null || sort.offset != null) {

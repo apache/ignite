@@ -71,8 +71,8 @@ public class SortNode<Row> extends AbstractNode<Row> implements SingleNode<Row>,
         if (limit < 0)
             rows = new PriorityQueue<>(comp);
         else
-            rows = new GridBoundedPriorityQueue<>(this.limit, comp == null ?
-                (Comparator<Row>)Comparator.reverseOrder() : comp.reversed());
+            rows = new GridBoundedPriorityQueue<>(limit, comp == null ? (Comparator<Row>)Comparator.reverseOrder()
+                : comp.reversed());
     }
 
     /**
@@ -120,7 +120,7 @@ public class SortNode<Row> extends AbstractNode<Row> implements SingleNode<Row>,
     @Override public void push(Row row) throws Exception {
         assert downstream() != null;
         assert waiting > 0;
-        assert reversed == null;
+        assert reversed == null || reversed.isEmpty();
 
         checkState();
 
@@ -154,18 +154,17 @@ public class SortNode<Row> extends AbstractNode<Row> implements SingleNode<Row>,
         int processed = 0;
 
         inLoop = true;
-
         try {
+            // Prepare final order (reversed).
             if (limit > 0 && !rows.isEmpty()) {
                 if (reversed == null)
                     reversed = new ArrayList<>(rows.size());
 
-                // Make final order (reversed).
                 while (!rows.isEmpty()) {
                     reversed.add(rows.poll());
 
                     if (++processed >= IN_BUFFER_SIZE) {
-                        // allow others to do their job
+                        // Allow the others to do their job.
                         context().execute(this::flush, this::onError);
 
                         return;

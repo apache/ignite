@@ -97,7 +97,7 @@ public class IgniteSort extends Sort implements IgniteRel {
     public IgniteSort(RelInput input) {
         super(changeTraits(input, IgniteConvention.INSTANCE));
 
-        // No need to enforce anyrhing on ready, fragmented and sent plan.
+        // No need to enforce anything on ready, fragmented and sent plan.
         enforcer = false;
     }
 
@@ -181,7 +181,7 @@ public class IgniteSort extends Sort implements IgniteRel {
         return enforcer;
     }
 
-    /** */
+    /** Rows number to keep in memory and sort. */
     private double memRows(double inputRows) {
         double fetch = this.fetch != null ? doubleFromRex(this.fetch, inputRows * FETCH_IS_PARAM_FACTOR)
             : inputRows;

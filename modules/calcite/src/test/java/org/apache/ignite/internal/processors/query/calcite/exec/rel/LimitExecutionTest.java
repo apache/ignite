@@ -52,7 +52,7 @@ public class LimitExecutionTest extends AbstractExecutionTest {
         checkLimit(2000, 3000);
     }
 
-    /** Tests Sort node can as well limit its output when fetch param is set. */
+    /** Tests Sort node can limit its output when fetch param is set. */
     @Test
     public void testSort() throws Exception {
         int bufSize = U.field(AbstractNode.class, "IN_BUFFER_SIZE");
