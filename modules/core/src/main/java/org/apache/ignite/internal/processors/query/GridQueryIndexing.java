@@ -474,7 +474,5 @@ public interface GridQueryIndexing {
      *         query engine.
      * @throws IgniteSQLException if table or column with specified name was not found.
      */
-    default boolean isConvertibleToColumnType(String schemaName, String tblName, String colName, Class<?> cls) {
-        return false;
-    }
+    boolean isConvertibleToColumnType(String schemaName, String tblName, String colName, Class<?> cls);
 }
