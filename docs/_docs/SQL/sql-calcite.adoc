@@ -117,7 +117,7 @@ Example:
 
 [tabs]
 --
-tab:ODBC Connection properties[]
+tab:ODBC Connection Properties[]
 [source,text]
 ----
 [IGNITE_CALCITE]
