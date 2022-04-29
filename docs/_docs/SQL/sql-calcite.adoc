@@ -129,7 +129,7 @@ QUERY_ENGINE=CALCITE
 ----
 --
 
-=== QUERY_ENGINE hint
+=== QUERY_ENGINE Hint
 
 For individual queries exact engine to run query can be selected using `QUERY_ENGINE` hint.
 
