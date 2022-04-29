@@ -22,7 +22,7 @@ The current H2-based SQL engine has a number of fundamental limitations of query
 
 CAUTION: The Calcite-based query engine is currently in beta status.
 
-== Calcite module libraries
+== Calcite Module Libraries
 
 To use Calcite-based engine Calcite module libraries should be in a classpath.
 
