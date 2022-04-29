@@ -630,7 +630,7 @@ public class StripedExecutor implements ExecutorService, MetricsAwareExecutorSer
                 }
             }
 
-            if (!isCancelled) {
+            if (!isCancelled.get()) {
                 errHnd.apply(new IllegalStateException("Thread " + Thread.currentThread().getName() +
                     " is terminated unexpectedly"));
             }
