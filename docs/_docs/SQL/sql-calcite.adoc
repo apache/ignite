@@ -32,7 +32,7 @@ CAUTION: Currently, a part of the `ignite-indexing` module functionality is reus
 
 When starting a standalone node, move `optional/ignite-calcite` and `optional/ignite-slf4j` folders to the `libs` folder before running `ignite.{sh|bat}` script. In this case, the content of the module folder is added to the classpath.
 
-=== Maven configuration
+=== Maven Configuration
 
 If you are using Maven to manage dependencies of your project, you can add Calcite module dependency like this (replace `${ignite.version}` with the actual Apache Ignite version you are interested in):
 
