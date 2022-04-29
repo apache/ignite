@@ -188,8 +188,8 @@ public class ReadRepairDataGenerator {
 
                     InconsistentMapping mapping = entry.getValue();
 
-                    sb.append(" Random data [primary=").append(mapping.primary)
-                        .append(", fixed=").append(mapping.fixed)
+                    sb.append(" Generated data [primary=").append(mapping.primary)
+                        .append(", repaired=").append(mapping.repaired)
                         .append(", repairable=").append(mapping.repairable)
                         .append(", consistent=").append(mapping.consistent)
                         .append("]\n");
@@ -387,7 +387,7 @@ public class ReadRepairDataGenerator {
         if (!misses && !nulls)
             assertNotNull(primVal); // Primary value set.
 
-        Object fixed;
+        Object repaired;
 
         boolean consistent;
         boolean repairable;
@@ -395,7 +395,7 @@ public class ReadRepairDataGenerator {
         if (vals.stream().distinct().count() == 1) { // Consistent value.
             consistent = true;
             repairable = true;
-            fixed = vals.iterator().next().getKey();
+            repaired = vals.iterator().next().getKey();
         }
         else {
             consistent = false;
@@ -403,12 +403,12 @@ public class ReadRepairDataGenerator {
             switch (strategy) {
                 case LWW:
                     if (misses || rmvd || !incVer) {
-                        fixed = incomparableTestValue();
+                        repaired = incomparableTestValue();
 
                         repairable = false;
                     }
                     else {
-                        fixed = wrapTestValueIfNeeded(wrap, incVal);
+                        repaired = wrapTestValueIfNeeded(wrap, incVal);
 
                         repairable = true;
                     }
@@ -416,14 +416,14 @@ public class ReadRepairDataGenerator {
                     break;
 
                 case PRIMARY:
-                    fixed = primVal;
+                    repaired = primVal;
 
                     repairable = true;
 
                     break;
 
                 case RELATIVE_MAJORITY:
-                    fixed = incomparableTestValue();
+                    repaired = incomparableTestValue();
 
                     Map<T2<Object, GridCacheVersion>, Integer> counts = new HashMap<>();
 
@@ -442,7 +442,7 @@ public class ReadRepairDataGenerator {
                     if (repairable)
                         for (Map.Entry<T2<Object, GridCacheVersion>, Integer> count : counts.entrySet())
                             if (count.getValue().equals(max)) {
-                                fixed = count.getKey().getKey();
+                                repaired = count.getKey().getKey();
 
                                 break;
                             }
@@ -450,14 +450,14 @@ public class ReadRepairDataGenerator {
                     break;
 
                 case REMOVE:
-                    fixed = null;
+                    repaired = null;
 
                     repairable = true;
 
                     break;
 
                 case CHECK_ONLY:
-                    fixed = incomparableTestValue();
+                    repaired = incomparableTestValue();
 
                     repairable = false;
 
@@ -471,7 +471,7 @@ public class ReadRepairDataGenerator {
         IgniteBinary igniteBinary = clsAwareNodes.get(0).binary();
 
         Object primValBin = igniteBinary.toBinary(primVal);
-        Object fixedBin = igniteBinary.toBinary(fixed);
+        Object repairedBin = igniteBinary.toBinary(repaired);
 
         Map<Ignite, T2<Object, GridCacheVersion>> mappingBin = mapping.entrySet().stream().collect(
             Collectors.toMap(
@@ -482,7 +482,7 @@ public class ReadRepairDataGenerator {
                     return new T2<>(igniteBinary.toBinary(t2.getKey()), t2.getValue());
                 }));
 
-        return new InconsistentMapping(mapping, mappingBin, primVal, primValBin, fixed, fixedBin, repairable, consistent);
+        return new InconsistentMapping(mapping, mappingBin, primVal, primValBin, repaired, repairedBin, repairable, consistent);
     }
 
     /**
@@ -571,7 +571,7 @@ public class ReadRepairDataGenerator {
         /**
          *
          */
-        boolean repairable() {
+        public boolean repairable() {
             return data.values().stream().allMatch(mapping -> mapping.repairable);
         }
     }
@@ -592,11 +592,11 @@ public class ReadRepairDataGenerator {
         /** Primary node's value, binary. */
         public final Object primaryBin;
 
-        /** Expected fix result. */
-        public final Object fixed;
+        /** Expected repaired result. */
+        public final Object repaired;
 
-        /** Expected fix result, binary. */
-        public final Object fixedBin;
+        /** Expected repaired result, binary. */
+        public final Object repairedBin;
 
         /** Inconsistency can be repaired using the specified strategy. */
         public final boolean repairable;
@@ -609,8 +609,8 @@ public class ReadRepairDataGenerator {
          * @param mappingBin Mapping bin.
          * @param primary Primary.
          * @param primaryBin Primary bin.
-         * @param fixed Fixed.
-         * @param fixedBin Fixed bin.
+         * @param repaired Repaired.
+         * @param repairedBin Repaired bin.
          * @param repairable Repairable.
          * @param consistent Consistent.
          */
@@ -619,16 +619,16 @@ public class ReadRepairDataGenerator {
             Map<Ignite, T2<Object, GridCacheVersion>> mappingBin,
             Object primary,
             Object primaryBin,
-            Object fixed,
-            Object fixedBin,
+            Object repaired,
+            Object repairedBin,
             boolean repairable,
             boolean consistent) {
             this.mapping = Collections.unmodifiableMap(mapping);
             this.mappingBin = Collections.unmodifiableMap(mappingBin);
             this.primary = primary;
             this.primaryBin = primaryBin;
-            this.fixed = fixed;
-            this.fixedBin = fixedBin;
+            this.repaired = repaired;
+            this.repairedBin = repairedBin;
             this.repairable = repairable;
             this.consistent = consistent;
         }

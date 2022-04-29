@@ -5153,13 +5153,13 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         final CacheOperationContext opCtx) {
         assert ctx.atomic();
 
-        EntryGetResult fixedRes = ex.fixedMap().get(key);
+        EntryGetResult correctedRes = ex.correctedMap().get(key);
         EntryGetResult primRes = ex.primaryMap().get(key);
 
-        CacheObject fixedObj = fixedRes != null ? fixedRes.value() : null;
+        CacheObject correctedObj = correctedRes != null ? correctedRes.value() : null;
         CacheObject primValObj = primRes != null ? primRes.value() : null;
 
-        V fixedVal = fixedObj != null ? (V)ctx.unwrapBinaryIfNeeded(fixedObj, true, false, null) : null;
+        V correctedVal = correctedObj != null ? (V)ctx.unwrapBinaryIfNeeded(correctedObj, true, false, null) : null;
         V primVal = primValObj != null ? (V)ctx.unwrapBinaryIfNeeded(primValObj, true, false, null) : null;
 
         GridCacheVersion primVer = primRes != null ? primRes.version() : null;
@@ -5171,7 +5171,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                 ctx.operationContextPerCall(opCtx.keepBinary());
 
                 try {
-                    return invoke((K)key, new AtomicReadRepairEntryProcessor<>(fixedVal, primVal, primVer)).get();
+                    return invoke((K)key, new AtomicReadRepairEntryProcessor<>(correctedVal, primVal, primVer)).get();
                 }
                 finally {
                     ctx.operationContextPerCall(prevOpCtx);
@@ -5179,7 +5179,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             }
         }).chain(fut -> {
             if (fut.result())
-                ex.onFixed(key); // Event recording after fixed.
+                ex.onRepaired(key); // Event recording after fixed.
 
             return null;
         });
@@ -5192,8 +5192,8 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         /** */
         private static final long serialVersionUID = 0L;
 
-        /** Fixed value. */
-        private final V fixedVal;
+        /** Corrected value. */
+        private final V correctedVal;
 
         /** Primary value.*/
         private final V primVal;
@@ -5202,12 +5202,12 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         private final GridCacheVersion primVer;
 
         /**
-         * @param fixedVal Fixed value.
+         * @param correctedVal Corrected value.
          * @param primVal Primary value.
          * @param primVer Primary version.
          */
-        public AtomicReadRepairEntryProcessor(V fixedVal, V primVal, GridCacheVersion primVer) {
-            this.fixedVal = fixedVal;
+        public AtomicReadRepairEntryProcessor(V correctedVal, V primVal, GridCacheVersion primVer) {
+            this.correctedVal = correctedVal;
             this.primVal = primVal;
             this.primVer = primVer;
         }
@@ -5222,8 +5222,8 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                     ((primVal != null && primVal.equals(entryVal)) &&
                         (primVer.equals(((CacheInvokeEntry<Object, Object>)entry).entry().version())))) {
 
-                    if (fixedVal != null)
-                        entry.setValue(fixedVal);
+                    if (correctedVal != null)
+                        entry.setValue(correctedVal);
                     else
                         entry.remove();
 

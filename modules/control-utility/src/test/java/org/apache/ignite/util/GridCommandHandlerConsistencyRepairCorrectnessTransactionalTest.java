@@ -226,18 +226,18 @@ public class GridCommandHandlerConsistencyRepairCorrectnessTransactionalTest ext
 
             if (mapping.repairable) {
                 // Regular get (form primary or backup or client node).
-                assertEquals("Checking key=" + key, mapping.fixed, cache.get(key));
+                assertEquals("Checking key=" + key, mapping.repaired, cache.get(key));
 
                 // All copies check.
-                assertEquals("Checking key=" + key, mapping.fixed,
+                assertEquals("Checking key=" + key, mapping.repaired,
                     cache.withReadRepair(ReadRepairStrategy.CHECK_ONLY).get(key));
             }
-            else {
+            else if (!mapping.consistent) {
                 // Removing irrepairable.
                 // Otherwice subsequent consistency repairs over this partition will regenerate the warning.
                 cache.withReadRepair(ReadRepairStrategy.REMOVE).get(key);
 
-                assertNull(cache.get(key));
+                assertNull("Checking key=" + key, cache.get(key));
             }
         }
     }

@@ -95,10 +95,10 @@ public class ExplicitTransactionalReadRepairTest extends AbstractFullSetReadRepa
             binary,
             null,
             (ReadRepairData data) -> repairIfRepairable.accept(data, () -> {
-                boolean fixByOtherTx = concurrency == TransactionConcurrency.OPTIMISTIC ||
+                boolean repairByOtherTx = concurrency == TransactionConcurrency.OPTIMISTIC ||
                     isolation == TransactionIsolation.READ_COMMITTED;
 
-                testReadRepair(initiator, data, all ? GETALL_CHECK_AND_FIX : GET_CHECK_AND_FIX, fixByOtherTx, true);
+                testReadRepair(initiator, data, all ? GETALL_CHECK_AND_REPAIR : GET_CHECK_AND_REPAIR, repairByOtherTx, true);
             }));
     }
 
@@ -114,8 +114,8 @@ public class ExplicitTransactionalReadRepairTest extends AbstractFullSetReadRepa
             binary,
             null,
             (ReadRepairData data) -> repairIfRepairable.accept(data, () -> {
-                // "Contains" works like optimistic() || readCommitted() and always fixed by other tx.
-                testReadRepair(initiator, data, all ? CONTAINS_ALL_CHECK_AND_FIX : CONTAINS_CHECK_AND_FIX, true, true);
+                // "Contains" works like optimistic() || readCommitted() and always repaired by other tx.
+                testReadRepair(initiator, data, all ? CONTAINS_ALL_CHECK_AND_REPAIR : CONTAINS_CHECK_AND_REPAIR, true, true);
             }));
     }
 
@@ -137,13 +137,13 @@ public class ExplicitTransactionalReadRepairTest extends AbstractFullSetReadRepa
      *
      */
     private void testReadRepair(Ignite initiator, ReadRepairData data, Consumer<ReadRepairData> readOp,
-        boolean fixByOtherTx, boolean hit) {
+        boolean repairByOtherTx, boolean hit) {
         try (Transaction tx = initiator.transactions().txStart(concurrency, isolation)) {
             // Recovery (inside tx).
             readOp.accept(data);
 
             if (hit) // Checks (inside tx).
-                check(data, null, fixByOtherTx); // Hit.
+                check(data, null, repairByOtherTx); // Hit.
             else
                 checkEventMissed(); // Miss.
 
@@ -156,7 +156,7 @@ public class ExplicitTransactionalReadRepairTest extends AbstractFullSetReadRepa
         }
 
         if (hit) // Checks (outside tx).
-            check(data, null, !fixByOtherTx); // Hit.
+            check(data, null, !repairByOtherTx); // Hit.
         else
             checkEventMissed(); // Miss.
     }

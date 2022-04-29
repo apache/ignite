@@ -20,11 +20,15 @@ package org.apache.ignite.internal.commandline.consistency;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
+import java.util.function.Predicate;
 import java.util.logging.Logger;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.ReadRepairStrategy;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.client.GridClientConfiguration;
+import org.apache.ignite.internal.client.GridClientNode;
 import org.apache.ignite.internal.commandline.AbstractCommand;
 import org.apache.ignite.internal.commandline.Command;
 import org.apache.ignite.internal.commandline.CommandArgIterator;
@@ -32,6 +36,7 @@ import org.apache.ignite.internal.commandline.CommandLogger;
 import org.apache.ignite.internal.visor.consistency.VisorConsistencyRepairTaskArg;
 import org.apache.ignite.internal.visor.consistency.VisorConsistencyTaskResult;
 
+import static java.util.stream.Collectors.toSet;
 import static org.apache.ignite.internal.commandline.CommandList.CONSISTENCY;
 import static org.apache.ignite.internal.commandline.TaskExecutor.BROADCAST_UUID;
 import static org.apache.ignite.internal.commandline.TaskExecutor.executeTaskByNameOnNode;
@@ -52,11 +57,20 @@ public class ConsistencyCommand extends AbstractCommand<Object> {
     /** Strategy. */
     public static final String STRATEGY = "--strategy";
 
+    /** Parallel. */
+    public static final String PARALLEL = "--parallel";
+
     /** Command argument. */
     private VisorConsistencyRepairTaskArg cmdArg;
 
     /** Consistency sub-command to execute. */
     private ConsistencySubCommand cmd;
+
+    /** Parallel check.*/
+    private boolean parallel;
+
+    /** Predicate to filter server nodes. */
+    private static final Predicate<GridClientNode> SRV_NODES = node -> !node.isClient() && !node.isDaemon();
 
     /** {@inheritDoc} */
     @Override public Object execute(GridClientConfiguration clientCfg, Logger log) throws Exception {
@@ -65,30 +79,42 @@ public class ConsistencyCommand extends AbstractCommand<Object> {
         StringBuilder sb = new StringBuilder();
 
         try (GridClient client = Command.startClient(clientCfg)) {
-            VisorConsistencyTaskResult res = executeTaskByNameOnNode(
-                client,
-                cmd.taskName(),
-                arg(),
-                BROADCAST_UUID,
-                clientCfg
-            );
+            Set<UUID> nodeIds = parallel ?
+                Collections.singleton(BROADCAST_UUID) :
+                client.compute().nodes().stream()
+                    .filter(SRV_NODES)
+                    .map(GridClientNode::nodeId)
+                    .collect(toSet());
 
-            if (res.cancelled()) {
-                sb.append("Operation execution cancelled.\n\n");
+            for (UUID serverNodeId : nodeIds) {
+                VisorConsistencyTaskResult res = executeTaskByNameOnNode(
+                    client,
+                    cmd.taskName(),
+                    arg(),
+                    serverNodeId,
+                    clientCfg
+                );
 
-                failed = true;
+                if (res.cancelled()) {
+                    sb.append("Operation execution cancelled.\n\n");
+
+                    failed = true;
+                }
+
+                if (res.failed()) {
+                    sb.append("Operation execution failed.\n\n");
+
+                    failed = true;
+                }
+
+                if (failed)
+                    sb.append("[EXECUTION FAILED OR CANCELLED, RESULTS MAY BE INCOMPLETE OR INCONSISTENT]\n\n");
+
+                sb.append(res.message());
+
+                if (failed)
+                    break;
             }
-
-            if (res.failed()) {
-                sb.append("Operation execution failed.\n\n");
-
-                failed = true;
-            }
-
-            if (failed)
-                sb.append("[EXECUTION FAILED OR CANCELLED, RESULTS MAY BE INCOMPLETE OR INCONSISTENT]\n\n");
-
-            sb.append(res.message());
         }
         catch (Throwable e) {
             log.severe("Failed to perform operation.");
@@ -138,6 +164,8 @@ public class ConsistencyCommand extends AbstractCommand<Object> {
 
     /** {@inheritDoc} */
     @Override public void parseArguments(CommandArgIterator argIter) {
+        parallel = false;
+
         cmd = of(argIter.nextArg("Expected consistency action."));
 
         if (cmd == REPAIR) {
@@ -166,6 +194,12 @@ public class ConsistencyCommand extends AbstractCommand<Object> {
                             strategy = ReadRepairStrategy.fromString(argIter.nextArg("Expected strategy."));
 
                             break;
+
+                        case PARALLEL:
+                            assert false : "May produce incorrect fixes when enabled, " +
+                                "see https://issues.apache.org/jira/browse/IGNITE-15316";
+
+                            parallel = true;
 
                         default:
                             throw new IllegalArgumentException("Illegal argument: " + arg);

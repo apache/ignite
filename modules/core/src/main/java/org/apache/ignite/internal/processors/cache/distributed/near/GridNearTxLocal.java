@@ -2468,7 +2468,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                                 GridNearTxLocal.this)
                                 .chain((fut) -> {
                                         try {
-                                            // For every fixed entry.
+                                            // For every repaired entry.
                                             for (Map.Entry<KeyCacheObject, EntryGetResult> entry : fut.get().entrySet()) {
                                                 EntryGetResult getRes = entry.getValue();
                                                 KeyCacheObject key = entry.getKey();
@@ -2491,7 +2491,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                                                     recovery,
                                                     null);
 
-                                                // Rewriting fixed, initially filled by explicit lock operation.
+                                                // Rewriting repaired, initially filled by explicit lock operation.
                                                 if (getRes != null)
                                                     cacheCtx.addResult(retMap,
                                                         key,

@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.distributed.near.consistency
 
 import java.util.Collections;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Consumer;
 import org.apache.ignite.internal.processors.cache.EntryGetResult;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
@@ -30,38 +31,36 @@ public class IgniteAtomicConsistencyViolationException extends IgniteConsistency
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** Fixed map. */
-    private final Map<KeyCacheObject, EntryGetResult> fixedMap;
+    /** Corrected map. */
+    private final Map<KeyCacheObject, EntryGetResult> correctedMap;
 
     /** Primary map. */
     private final Map<KeyCacheObject, EntryGetResult> primaryMap;
 
-    /** On fixed callback. */
+    /** On repaired callback. */
     private final Consumer<Map<KeyCacheObject, EntryGetResult>> callback;
 
     /**
-     * @param fixedMap Fixed map.
+     * @param correctedMap Corrected map.
      * @param primaryMap Primary map.
-     * @param callback Fixed callback.
+     * @param callback Repaired callback.
      */
     public IgniteAtomicConsistencyViolationException(
-        Map<KeyCacheObject, EntryGetResult> fixedMap,
+        Map<KeyCacheObject, EntryGetResult> correctedMap,
         Map<KeyCacheObject, EntryGetResult> primaryMap,
         Consumer<Map<KeyCacheObject, EntryGetResult>> callback) {
-        super(fixedMap.keySet());
-
-        this.fixedMap = Collections.unmodifiableMap(fixedMap);
+        this.correctedMap = Collections.unmodifiableMap(correctedMap);
         this.primaryMap = Collections.unmodifiableMap(primaryMap);
         this.callback = callback;
 
-        assert fixedMap.keySet().equals(primaryMap.keySet());
+        assert correctedMap.keySet().equals(primaryMap.keySet());
     }
 
     /**
      *
      */
-    public Map<KeyCacheObject, EntryGetResult> fixedMap() {
-        return fixedMap;
+    public Map<KeyCacheObject, EntryGetResult> correctedMap() {
+        return correctedMap;
     }
 
     /**
@@ -74,7 +73,12 @@ public class IgniteAtomicConsistencyViolationException extends IgniteConsistency
     /**
      *
      */
-    public void onFixed(KeyCacheObject key) {
-        callback.accept(Collections.singletonMap(key, fixedMap.get(key)));
+    public void onRepaired(KeyCacheObject key) {
+        callback.accept(Collections.singletonMap(key, correctedMap.get(key)));
+    }
+
+    /** {@inheritDoc} */
+    @Override public Set<KeyCacheObject> keys() {
+        return correctedMap.keySet();
     }
 }

@@ -214,7 +214,7 @@ public abstract class AbstractReadRepairTest extends GridCommonAbstractTest {
      */
     protected void checkEvent(ReadRepairData data, IgniteIrreparableConsistencyViolationException e) {
         Map<Object, Map<ClusterNode, CacheConsistencyViolationEvent.EntryInfo>> evtEntries = new HashMap<>();
-        Map<Object, Object> evtFixed = new HashMap<>();
+        Map<Object, Object> evtRepaired = new HashMap<>();
 
         Map<Integer, InconsistentMapping> inconsistent = data.data.entrySet().stream()
             .filter(entry -> !entry.getValue().consistent)
@@ -226,17 +226,17 @@ public abstract class AbstractReadRepairTest extends GridCommonAbstractTest {
 
                 assertEquals(data.strategy, evt.getStrategy());
 
-                // Optimistic and read committed transactions produce per key fixes.
+                // Optimistic and read committed transactions produce per key repair.
                 for (Map.Entry<Object, CacheConsistencyViolationEvent.EntriesInfo> entries : evt.getEntries().entrySet())
                     evtEntries.put(entries.getKey(), entries.getValue().getMapping());
 
-                evtFixed.putAll(evt.getFixedEntries());
+                evtRepaired.putAll(evt.getRepairedEntries());
             }
         }
 
         for (Map.Entry<Integer, InconsistentMapping> mapping : inconsistent.entrySet()) {
             Integer key = mapping.getKey();
-            Object fixed = mapping.getValue().fixedBin;
+            Object repairedBin = mapping.getValue().repairedBin;
             Object primary = mapping.getValue().primaryBin;
             boolean repairable = mapping.getValue().repairable;
 
@@ -245,13 +245,13 @@ public abstract class AbstractReadRepairTest extends GridCommonAbstractTest {
 
             if (e == null) {
                 assertTrue(repairable);
-                assertTrue(evtFixed.containsKey(key));
+                assertTrue(evtRepaired.containsKey(key));
 
-                assertEquals(fixed, evtFixed.get(key));
+                assertEquals(repairedBin, evtRepaired.get(key));
             }
             // Repairable but not repaired (because of irreparable entry at the same tx) entries.
             else if (e.irreparableKeys().contains(key) || (e.repairableKeys() != null && e.repairableKeys().contains(key)))
-                assertFalse(evtFixed.containsKey(key));
+                assertFalse(evtRepaired.containsKey(key));
 
             Map<ClusterNode, CacheConsistencyViolationEvent.EntryInfo> evtEntryInfos = evtEntries.get(key);
 
@@ -263,7 +263,7 @@ public abstract class AbstractReadRepairTest extends GridCommonAbstractTest {
                     Object val = info.getValue();
 
                     if (info.isCorrect())
-                        assertEquals(fixed, val);
+                        assertEquals(repairedBin, val);
 
                     if (info.isPrimary()) {
                         assertEquals(primary, val);
@@ -272,10 +272,22 @@ public abstract class AbstractReadRepairTest extends GridCommonAbstractTest {
                 }
         }
 
-        int expectedFixedCnt = inconsistent.size() -
-            (e != null ? (e.repairableKeys() != null ? e.repairableKeys().size() : 0) + e.irreparableKeys().size() : 0);
+        int irreparableCnt = 0;
+        int repairableCnt = 0;
 
-        assertEquals(expectedFixedCnt, evtFixed.size());
+        if (e != null) {
+            irreparableCnt = e.irreparableKeys().size();
+            repairableCnt = e.repairableKeys() != null ? e.repairableKeys().size() : 0;
+        }
+
+        if (repairableCnt > 0)
+            // Mentioned when pessimistic tx read-repair get contains irreparable entries,
+            // and it's impossible to repair repairable entries during this call.
+            assertEquals(TRANSACTIONAL, atomicityMode());
+
+        int expectedRepairedCnt = inconsistent.size() - (irreparableCnt + repairableCnt);
+
+        assertEquals(expectedRepairedCnt, evtRepaired.size());
 
         assertTrue(evtDeq.isEmpty());
     }
