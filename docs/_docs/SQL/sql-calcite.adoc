@@ -147,7 +147,8 @@ SELECT /*+ QUERY_ENGINE('calcite') */ fld FROM table;
 
 === DDL
 
-Data definition language (DDL) statements are compilant with the old, H2-based engine. You can find DDL syntax description link:sql-reference/ddl[here].
+Data definition language (DDL) statements are compliant with the old H2-based engine. You can find the DDL syntax description link:sql-reference/ddl[here,window=_blank].
+``
 
 === DML
 
