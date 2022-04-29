@@ -51,7 +51,7 @@ tab:XML[]
 
 == Configuring Query Engines
 
-To enable engine for queries explicit `CalciteQueryEngineConfiguration` instance should be added to `SqlConfiguration.QueryEnginesConfiguration` property.
+To enable engine, add the explicit `CalciteQueryEngineConfiguration` instance to the `SqlConfiguration.QueryEnginesConfiguration` property.
 
 Below is a configuration example of two configured query engines (H2-based and Calcite-based engines) where the Calcite-based engine is chosen as a default one:
 
@@ -96,9 +96,7 @@ Normally, all queries are routed to the query engine that is configured by defau
 
 === JDBC
 
-To choose a query engine for the JDBC connection, use the `queryEngine` connection parameter.
-
-Example:
+To choose a query engine for the JDBC connection, use the `queryEngine` connection parameter:
 
 [tabs]
 --
@@ -111,9 +109,7 @@ jdbc:ignite:thin://127.0.0.1:10800?queryEngine=calcite
 
 === ODBC
 
-For ODBC connection query engine can be configured by `QUERY_ENGINE` property.
-
-Example:
+To configure the query engine for the ODBC connection, use the `QUERY_ENGINE` property:
 
 [tabs]
 --
@@ -133,7 +129,6 @@ QUERY_ENGINE=CALCITE
 
 To select a particular engine to run individual queries, use the `QUERY_ENGINE` hint:
 
-
 [tabs]
 --
 tab:Query with QUERY_ENGINE hint[]
@@ -147,8 +142,7 @@ SELECT /*+ QUERY_ENGINE('calcite') */ fld FROM table;
 
 === DDL
 
-Data definition language (DDL) statements are compliant with the old H2-based engine. You can find the DDL syntax description link:sql-reference/ddl[here,window=_blank].
-``
+Data definition language (DDL) statements are compliant with the old H2-based engine. You can find the DDL syntax description link:sql-reference/ddl[here, window=_blank].
 
 === DML
 
