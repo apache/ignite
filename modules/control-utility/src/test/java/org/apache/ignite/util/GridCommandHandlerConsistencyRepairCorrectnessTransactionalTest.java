@@ -233,7 +233,7 @@ public class GridCommandHandlerConsistencyRepairCorrectnessTransactionalTest ext
                     cache.withReadRepair(ReadRepairStrategy.CHECK_ONLY).get(key));
             }
             else if (!mapping.consistent) {
-                // Removing irrepairable.
+                // Removing irreparable.
                 // Otherwice subsequent consistency repairs over this partition will regenerate the warning.
                 cache.withReadRepair(ReadRepairStrategy.REMOVE).get(key);
 
