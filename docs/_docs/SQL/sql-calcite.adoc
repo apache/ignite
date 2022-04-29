@@ -16,7 +16,7 @@
 
 Starting the 2.13 version, Apache Ignite includes a new SQL engine based on the Apache Calcite framework.
 
-Apache Calcite is a dynamic data management framework, which mainly serves for mediating between applications and one or more data storage locations and data processing engines. For more information on Apache Calcite, please see the link:https://calcite.apache.org/docs[product documentation, window=_blank].
+Apache Calcite is a dynamic data management framework, which mainly serves for mediating between applications, one or more data storage locations, and data processing engines. For more information on Apache Calcite, please see the link:https://calcite.apache.org/docs[product documentation, window=_blank].
 
 Current H2-based SQL engine has some fundamental limitations of query execution in distributed environment. To address these limitations the new SQL engine was developed. The new engine uses tools, provided by Apache Calcite, for parsing and planning queries, and has a new query execution flow.
 
