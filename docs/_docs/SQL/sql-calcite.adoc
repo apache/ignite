@@ -143,7 +143,7 @@ SELECT /*+ QUERY_ENGINE('calcite') */ fld FROM table;
 ----
 --
 
-== SQL reference
+== SQL Reference
 
 === DDL
 
