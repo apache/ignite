@@ -401,17 +401,20 @@ public class BasicIndexTest extends AbstractIndexingCommonTest {
 
         int summary = 0;
 
-        for (int i=0; i<10000; ++i) {
+        for (int i=0; i<1; ++i) {
             SqlFieldsQuery query = new SqlFieldsQuery(query(CACHE_NAMES.get(0)))
                 .setArgs(prepareArgs(asof, asat, keys))
                 .setCollocated(true);
 
             List<List<?>> result = client.cache(CACHE_NAMES.get(0)).query(query).getAll();
 
+            //System.err.println("---" + result.get(0).get(0));
+            //System.err.println();
+
             summary += result.size();
         }
 
-        System.err.println("warmup end " + summary);
+/*        System.err.println("warmup end " + summary);
         System.gc();
         summary = 0;
         long start = System.currentTimeMillis();
@@ -426,7 +429,7 @@ public class BasicIndexTest extends AbstractIndexingCommonTest {
             summary += result.size();
         }
 
-        System.err.println("!!!!sum: " + summary + " , spend time: " + (System.currentTimeMillis() - start));
+        System.err.println("!!!!sum: " + summary + " , spend time: " + (System.currentTimeMillis() - start));*/
     }
 
     /** */
