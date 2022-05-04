@@ -225,12 +225,18 @@ public class KillCommandsCommandShTest extends GridCommandHandlerClusterByClassA
         assertEquals(EXIT_CODE_OK, res);
     }
 
+    /**
+     *
+     */
     @Test
     @Ignore("https://issues.apache.org/jira/browse/IGNITE-15316")
     public void testCancelConsistencyTaskParallel() throws InterruptedException {
         testCancelConsistencyTask(true);
     }
 
+    /**
+     *
+     */
     @Test
     public void testCancelConsistencyTaskSequential() throws InterruptedException {
         testCancelConsistencyTask(false);
