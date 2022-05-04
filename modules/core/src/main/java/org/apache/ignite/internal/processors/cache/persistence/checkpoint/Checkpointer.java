@@ -294,7 +294,7 @@ public class Checkpointer extends GridWorker {
             throw t;
         }
         finally {
-            if (err == null && !(isCancelled))
+            if (err == null && !(isCancelled.get()))
                 err = new IllegalStateException("Thread is terminated unexpectedly: " + name());
 
             if (err instanceof OutOfMemoryError)
@@ -826,7 +826,7 @@ public class Checkpointer extends GridWorker {
         catch (InterruptedException ignored) {
             Thread.currentThread().interrupt();
 
-            isCancelled = true;
+            isCancelled.set(true);
         }
     }
 
@@ -887,7 +887,7 @@ public class Checkpointer extends GridWorker {
             log.debug("Cancelling grid runnable: " + this);
 
         // Do not interrupt runner thread.
-        isCancelled = true;
+        isCancelled.set(true);
 
         synchronized (this) {
             notifyAll();
@@ -915,7 +915,7 @@ public class Checkpointer extends GridWorker {
     public void shutdownNow() {
         shutdownNow = true;
 
-        if (!isCancelled)
+        if (!isCancelled.get())
             cancel();
     }
 
