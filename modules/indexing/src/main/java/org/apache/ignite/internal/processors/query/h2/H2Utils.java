@@ -448,7 +448,7 @@ public class H2Utils {
         s.setForceJoinOrder(enforceJoinOrder);
         s.setJoinBatchEnabled(distributedJoins);
         s.setLazyQueryExecution(lazy);
-        s.getTrace().setLevel(10);
+        //s.getTrace().setLevel(10);
 
         QueryContext oldCtx = (QueryContext)s.getVariable(QCTX_VARIABLE_NAME).getObject();
 

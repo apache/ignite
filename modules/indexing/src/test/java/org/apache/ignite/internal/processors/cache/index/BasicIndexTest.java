@@ -325,7 +325,7 @@ public class BasicIndexTest extends AbstractIndexingCommonTest {
         String table = "\"" + cacheName + "\".tbl";
         return "" +
             "SELECT origin._key, origin._val " +
-            "FROM " + table + " as origin, ( " +
+            "FROM ( " +
             "   SELECT key as k, max(asof) as asof " +
             "   FROM " + table + " t1 " +
             "   JOIN table (id varchar=?) t2  ON t1.key = t2.id " +
@@ -339,7 +339,8 @@ public class BasicIndexTest extends AbstractIndexingCommonTest {
             "   AND t1.asof <= ? " +
             "   AND t1.asat <= ? " +
             "   GROUP BY key, asof " +
-            ") as version " +
+            ") as version, " +
+            table + " as origin " +
             "WHERE snapshot.k=version.k " +
             "AND snapshot.asof=version.asof " +
             "AND snapshot.k=origin.key " +
@@ -401,12 +402,16 @@ public class BasicIndexTest extends AbstractIndexingCommonTest {
 
         int summary = 0;
 
-        for (int i=0; i<1; ++i) {
+        for (int i=0; i<10; ++i) {
             SqlFieldsQuery query = new SqlFieldsQuery(query(CACHE_NAMES.get(0)))
                 .setArgs(prepareArgs(asof, asat, keys))
-                .setCollocated(true);
+                .setCollocated(true)
+                .setEnforceJoinOrder(true)
+                .setDistributedJoins(true);
 
             List<List<?>> result = client.cache(CACHE_NAMES.get(0)).query(query).getAll();
+
+            System.err.println(result.get(0).get(0));
 
             //System.err.println("---" + result.get(0).get(0));
             //System.err.println();
@@ -414,22 +419,24 @@ public class BasicIndexTest extends AbstractIndexingCommonTest {
             summary += result.size();
         }
 
-/*        System.err.println("warmup end " + summary);
+        System.err.println("warmup end " + summary);
         System.gc();
         summary = 0;
         long start = System.currentTimeMillis();
 
         SqlFieldsQuery query = new SqlFieldsQuery(query(CACHE_NAMES.get(0)))
             .setArgs(prepareArgs(asof, asat, keys))
-            .setCollocated(true);
+            .setCollocated(true)
+            .setEnforceJoinOrder(true)
+            .setDistributedJoins(true);
 
-        for (int i=0; i<1_000_000; ++i) {
+        for (int i=0; i<5_00; ++i) {
             List<List<?>> result = client.cache(CACHE_NAMES.get(0)).query(query).getAll();
 
             summary += result.size();
         }
 
-        System.err.println("!!!!sum: " + summary + " , spend time: " + (System.currentTimeMillis() - start));*/
+        System.err.println("!!!!sum: " + summary + " , spend time: " + (System.currentTimeMillis() - start));
     }
 
     /** */
