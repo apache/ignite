@@ -193,7 +193,7 @@ public class BasicIndexTest extends AbstractIndexingCommonTest {
         return gridCount;
     }
 
-    static final String KEY_FIELD = "key";
+/*    static final String KEY_FIELD = "key";
     static final String ASOF_FIELD = "asof";
     static final String ASAT_FIELD = "asat";
     static final String PAYLOAD_FIELD = "payload";
@@ -382,7 +382,7 @@ public class BasicIndexTest extends AbstractIndexingCommonTest {
 
         IgniteEx ig0 = startGrid(0);
 
-        IgniteEx client = startGrid(CLIENT_NAME);
+        IgniteEx client = startClientGrid(CLIENT_NAME);
 
         CACHE_NAMES.forEach(cacheName -> {
             IgniteCache<Key0, Val0> cache0 = client.createCache(cacheConfig(cacheName));
@@ -430,14 +430,14 @@ public class BasicIndexTest extends AbstractIndexingCommonTest {
             .setEnforceJoinOrder(true)
             .setDistributedJoins(true);
 
-        for (int i=0; i<5_00; ++i) {
+        for (int i=0; i<1000; ++i) {
             List<List<?>> result = client.cache(CACHE_NAMES.get(0)).query(query).getAll();
 
             summary += result.size();
         }
 
         System.err.println("!!!!sum: " + summary + " , spend time: " + (System.currentTimeMillis() - start));
-    }
+    }*/
 
     /** */
     @Test
