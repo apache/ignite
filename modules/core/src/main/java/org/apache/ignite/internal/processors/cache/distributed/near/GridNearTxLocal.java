@@ -119,6 +119,7 @@ import org.apache.ignite.transactions.TransactionIsolation;
 import org.apache.ignite.transactions.TransactionState;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_READ;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.CREATE;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.DELETE;
@@ -2455,6 +2456,9 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                         }
 
                         if (readRepairStrategy != null) { // Checking and repairing each locked entry (if necessary).
+                            // Providing the guarantee that all copies are updated when read repair operation is finished.
+                            syncMode(FULL_SYNC);
+
                             return new GridNearReadRepairFuture(
                                 topVer != null ? topVer : topologyVersion(),
                                 cacheCtx,

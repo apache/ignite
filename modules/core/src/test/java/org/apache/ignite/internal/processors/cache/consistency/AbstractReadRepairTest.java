@@ -49,7 +49,6 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
-import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.events.EventType.EVT_CONSISTENCY_VIOLATION;
 
 /**
@@ -174,7 +173,6 @@ public abstract class AbstractReadRepairTest extends GridCommonAbstractTest {
     protected CacheConfiguration<Integer, Object> cacheConfiguration() {
         CacheConfiguration<Integer, Object> cfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
 
-        cfg.setWriteSynchronizationMode(FULL_SYNC); // Read from backup guaranted after the repair.
         cfg.setCacheMode(cacheMode());
         cfg.setAtomicityMode(atomicityMode());
         cfg.setBackups(backupsCount());
@@ -227,8 +225,11 @@ public abstract class AbstractReadRepairTest extends GridCommonAbstractTest {
                 assertEquals(data.strategy, evt.getStrategy());
 
                 // Optimistic and read committed transactions produce per key repair.
-                for (Map.Entry<Object, CacheConsistencyViolationEvent.EntriesInfo> entries : evt.getEntries().entrySet())
+                for (Map.Entry<Object, CacheConsistencyViolationEvent.EntriesInfo> entries : evt.getEntries().entrySet()) {
+                    assertFalse(evtEntries.containsKey(entries.getKey())); // Checking that duplicates are absent.
+
                     evtEntries.put(entries.getKey(), entries.getValue().getMapping());
+                }
 
                 evtRepaired.putAll(evt.getRepairedEntries());
             }

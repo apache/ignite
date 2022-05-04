@@ -41,7 +41,6 @@ import org.junit.runners.Parameterized;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_ENABLE_EXPERIMENTAL_COMMAND;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
-import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK;
 
 /**
@@ -118,7 +117,6 @@ public class GridCommandHandlerConsistencyRepairCorrectnessTransactionalTest ext
     protected CacheConfiguration<Integer, Object> cacheConfiguration() {
         CacheConfiguration<Integer, Object> cfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
 
-        cfg.setWriteSynchronizationMode(FULL_SYNC); // Read from backup guaranted after the repair.
         cfg.setAtomicityMode(atomicityMode());
         cfg.setBackups(backupsCount());
 
