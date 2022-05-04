@@ -74,6 +74,7 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridReservable;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
+import org.apache.ignite.internal.processors.configuration.distributed.DistributedLongProperty;
 import org.apache.ignite.internal.processors.jobmetrics.GridJobMetricsSnapshot;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
@@ -87,6 +88,7 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteUuid;
@@ -113,9 +115,11 @@ import static org.apache.ignite.internal.GridTopic.TOPIC_JOB;
 import static org.apache.ignite.internal.GridTopic.TOPIC_JOB_CANCEL;
 import static org.apache.ignite.internal.GridTopic.TOPIC_JOB_SIBLINGS;
 import static org.apache.ignite.internal.GridTopic.TOPIC_TASK;
+import static org.apache.ignite.internal.cluster.DistributedConfigurationUtils.makeUpdateListener;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.MANAGEMENT_POOL;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYSTEM_POOL;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.OWNING;
+import static org.apache.ignite.internal.processors.configuration.distributed.DistributedLongProperty.detachedLongProperty;
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.CPU_LOAD;
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.SYS_METRICS;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
@@ -165,6 +169,12 @@ public class GridJobProcessor extends GridProcessorAdapter {
 
     /** Total jobs waiting time metric name. */
     public static final String WAITING_TIME = "WaitingTime";
+
+    /**
+     * Distributed property that defines the timeout for interrupting the
+     * {@link GridJobWorker worker} after {@link GridJobWorker#cancel() cancellation} in mills.
+     */
+    public static final String COMPUTE_JOB_WORKER_INTERRUPT_TIMEOUT = "computeJobWorkerInterruptTimeout";
 
     /** */
     private final Marshaller marsh;
@@ -312,6 +322,10 @@ public class GridJobProcessor extends GridProcessorAdapter {
      */
     @Nullable private final String jobPriAttrKey;
 
+    /** Timeout interrupt {@link GridJobWorker workers} after {@link GridJobWorker#cancel cancel} im mills. */
+    private final DistributedLongProperty computeJobWorkerInterruptTimeout =
+        detachedLongProperty(COMPUTE_JOB_WORKER_INTERRUPT_TIMEOUT);
+
     /**
      * @param ctx Kernal context.
      */
@@ -378,6 +392,15 @@ public class GridJobProcessor extends GridProcessorAdapter {
             taskPriAttrKey = null;
             jobPriAttrKey = null;
         }
+
+        ctx.internalSubscriptionProcessor().registerDistributedConfigurationListener(dispatcher -> {
+            computeJobWorkerInterruptTimeout.addListener(makeUpdateListener(
+                "Compute job parameter '%s' was changed from '%s' to '%s'",
+                log
+            ));
+
+            dispatcher.registerProperty(computeJobWorkerInterruptTimeout);
+        });
     }
 
     /** {@inheritDoc} */
@@ -878,7 +901,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
      * In most cases this method should be called from main read lock
      * to avoid jobs activation after node stop has started.
      */
-    private void handleCollisions() {
+    public void handleCollisions() {
         assert !jobAlwaysActivate;
 
         if (handlingCollision.get()) {
@@ -1327,7 +1350,9 @@ public class GridJobProcessor extends GridProcessorAdapter {
                         holdLsnr,
                         partsReservation,
                         req.getTopVer(),
-                        req.executorName());
+                        req.executorName(),
+                        this::computeJobWorkerInterruptTimeout
+                    );
 
                     jobCtx.job(job);
 
@@ -2413,5 +2438,12 @@ public class GridJobProcessor extends GridProcessorAdapter {
             return w -> sesId.equals(w.getSession().getId());
         else
             return w -> sesId.equals(w.getSession().getId()) && jobId.equals(w.getJobId());
+    }
+
+    /**
+     * @return Interruption timeout of {@link GridJobWorker workers} (in millis) after {@link GridWorker#cancel cancel} is called.
+     */
+    public long computeJobWorkerInterruptTimeout() {
+        return computeJobWorkerInterruptTimeout.getOrDefault(ctx.config().getFailureDetectionTimeout());
     }
 }
