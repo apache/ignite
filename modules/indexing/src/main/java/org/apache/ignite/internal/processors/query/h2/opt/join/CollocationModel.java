@@ -639,7 +639,7 @@ public final class CollocationModel {
         SplitterContext ctx = SplitterContext.get();
 
         //if (!ctx.distributedJoins() || !ses.isJoinBatchEnabled() || ses.isPreparingQueryExpression())
-            return CollocationModelMultiplier.COLLOCATED;
+        return CollocationModelMultiplier.COLLOCATED;
 
 /*        assert filters != null;
 
