@@ -69,7 +69,6 @@ import org.apache.ignite.internal.processors.database.BPlusTreeSelfTest;
 import org.apache.ignite.internal.processors.database.CacheFreeListSelfTest;
 import org.apache.ignite.internal.processors.database.DataRegionMetricsSelfTest;
 import org.apache.ignite.internal.processors.database.IndexStorageSelfTest;
-import org.apache.ignite.internal.processors.database.PendingTreeSelfTest;
 import org.apache.ignite.internal.processors.database.SwapPathConstructionSelfTest;
 import org.apache.ignite.internal.processors.failure.FailureProcessorLoggingTest;
 import org.apache.ignite.internal.processors.failure.FailureProcessorThreadDumpThrottlingTest;
@@ -126,8 +125,6 @@ import org.junit.runners.Suite;
     SegmentedLruPageListTest.class,
     ClockPageReplacementFlagsTest.class,
     BPlusTreeSelfTest.class,
-    // todo
-    PendingTreeSelfTest.class,
     BPlusTreeFakeReuseSelfTest.class,
     BPlusTreeReuseSelfTest.class,
     BPlusTreeReplaceRemoveRaceTest.class,

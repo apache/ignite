@@ -22,7 +22,6 @@ import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRowAdapter;
 import org.apache.ignite.internal.processors.cache.tree.mvcc.data.MvccDataRow;
-import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
@@ -30,15 +29,12 @@ import org.apache.ignite.internal.util.typedef.internal.S;
  */
 public class PendingRow {
     /** Expire time. */
-    @GridToStringInclude
     public long expireTime;
 
     /** Link. */
-    @GridToStringInclude
     public long link;
 
     /** Cache ID. */
-    @GridToStringInclude
     public int cacheId;
 
     /** */
