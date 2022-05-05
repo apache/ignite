@@ -83,6 +83,7 @@ public class GridDhtAtomicSingleUpdateRequest extends GridDhtAtomicAbstractUpdat
      * @param addDepInfo Deployment info.
      * @param keepBinary Keep binary flag.
      * @param skipStore Skip store flag.
+     * @param readRepairRecovery Recovery on Read Repair flag.
      */
     GridDhtAtomicSingleUpdateRequest(
         int cacheId,
