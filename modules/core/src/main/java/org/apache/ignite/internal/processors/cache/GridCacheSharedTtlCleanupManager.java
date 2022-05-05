@@ -164,12 +164,6 @@ public class GridCacheSharedTtlCleanupManager extends GridCacheSharedManagerAdap
                         cctx.exchange().affinityReadyFuture(AffinityTopologyVersion.ZERO).get();
                     }
                     catch (IgniteCheckedException ex) {
-                        if (cctx.kernalContext().isStopping()) {
-                            isCancelled.set(true);
-
-                            return; // Node is stopped before affinity has prepared.
-                        }
-
                         throw new IgniteException("Failed to wait for initialization topology [err="
                             + ex.getMessage() + ']', ex);
                     }
@@ -220,13 +214,13 @@ public class GridCacheSharedTtlCleanupManager extends GridCacheSharedManagerAdap
             }
             catch (Throwable t) {
                 if (X.hasCause(t, NodeStoppingException.class)) {
-                    isCancelled.set(true); // Treat node stopping as valid worker cancellation.
+                    isCancelled = true; // Treat node stopping as valid worker cancellation.
 
                     return;
                 }
 
                 if (!(t instanceof IgniteInterruptedCheckedException || t instanceof InterruptedException)) {
-                    if (isCancelled.get())
+                    if (isCancelled)
                         return;
 
                     err = t;
@@ -235,7 +229,7 @@ public class GridCacheSharedTtlCleanupManager extends GridCacheSharedManagerAdap
                 throw t;
             }
             finally {
-                if (err == null && !isCancelled.get())
+                if (err == null && !isCancelled)
                     err = new IllegalStateException("Thread " + name() + " is terminated unexpectedly");
 
                 if (err instanceof OutOfMemoryError)

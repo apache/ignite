@@ -17,7 +17,6 @@
 
 package org.apache.ignite.testframework.junits.common;
 
-import java.io.Serializable;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -115,8 +114,6 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager;
 import org.apache.ignite.internal.processors.cache.verify.IdleVerifyResultV2;
-import org.apache.ignite.internal.processors.configuration.distributed.DistributedChangeableProperty;
-import org.apache.ignite.internal.processors.job.GridJobProcessor;
 import org.apache.ignite.internal.processors.service.IgniteServiceProcessor;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
@@ -160,8 +157,6 @@ import static org.apache.ignite.internal.processors.cache.persistence.file.FileP
 import static org.apache.ignite.testframework.GridTestUtils.setFieldValue;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.notNullValue;
 
 /**
  * Super class for all common tests.
@@ -2784,18 +2779,5 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
         finally {
             dbMgr.checkpointReadUnlock();
         }
-    }
-
-    /**
-     * @param n Node.
-     * @return Distributed property: {@code GridJobProcessor#computeJobWorkerInterruptTimeout}.
-     */
-    protected DistributedChangeableProperty<Serializable> computeJobWorkerInterruptTimeout(Ignite n) {
-        DistributedChangeableProperty<Serializable> timeoutProperty = ((IgniteEx)n).context().distributedConfiguration()
-            .property(GridJobProcessor.COMPUTE_JOB_WORKER_INTERRUPT_TIMEOUT);
-
-        assertThat(timeoutProperty, notNullValue());
-
-        return timeoutProperty;
     }
 }

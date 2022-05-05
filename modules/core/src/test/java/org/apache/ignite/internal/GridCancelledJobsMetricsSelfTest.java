@@ -31,6 +31,7 @@ import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.compute.ComputeTaskFuture;
 import org.apache.ignite.compute.ComputeTaskSplitAdapter;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.resources.LoggerResource;
@@ -43,13 +44,10 @@ import org.apache.ignite.spi.collision.CollisionJobContext;
 import org.apache.ignite.spi.collision.CollisionSpi;
 import org.apache.ignite.spi.discovery.DiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
 import org.junit.Test;
-
-import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.equalTo;
 
 /**
  * Cancelled jobs metrics self test.
@@ -87,24 +85,25 @@ public class GridCancelledJobsMetricsSelfTest extends GridCommonAbstractTest {
     public void testCancelledJobs() throws Exception {
         final Ignite ignite = G.ignite(getTestIgniteInstanceName());
 
-        // We change it because compute jobs will go to sleep.
-        assertTrue(computeJobWorkerInterruptTimeout(ignite).propagate(10L));
-
         Collection<ComputeTaskFuture<?>> futs = new ArrayList<>();
 
         for (int i = 1; i <= 10; i++)
             futs.add(ignite.compute().executeAsync(CancelledTask.class, null));
 
         // Wait to be sure that metrics were updated.
-        waitForCondition(() -> ignite.cluster().localNode().metrics().getTotalCancelledJobs() > 0, 5000);
+        GridTestUtils.waitForCondition(new GridAbsPredicate() {
+            @Override public boolean apply() {
+                return ignite.cluster().localNode().metrics().getTotalCancelledJobs() > 0;
+            }
+        }, 5000);
 
         colSpi.externalCollision();
 
         for (ComputeTaskFuture<?> fut : futs) {
             try {
-                fut.get(getTestTimeout());
+                fut.get();
 
-                fail("Job was not interrupted.");
+                assert false : "Job was not interrupted.";
             }
             catch (IgniteException e) {
                 if (e.hasCause(InterruptedException.class))
@@ -115,7 +114,9 @@ public class GridCancelledJobsMetricsSelfTest extends GridCommonAbstractTest {
         }
 
         // Job was cancelled and now we need to calculate metrics.
-        assertThat(ignite.cluster().localNode().metrics().getTotalCancelledJobs(), equalTo(10));
+        int totalCancelledJobs = ignite.cluster().localNode().metrics().getTotalCancelledJobs();
+
+        assert totalCancelledJobs == 10 : "Metrics were not updated. Expected 10 got " + totalCancelledJobs;
     }
 
     /**
@@ -129,7 +130,7 @@ public class GridCancelledJobsMetricsSelfTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public Object reduce(List<ComputeJobResult> results) {
-            assertFalse(results.get(0).isCancelled());
+            assert results.get(0).isCancelled() : "Wrong job result status.";
 
             return null;
         }
@@ -147,6 +148,13 @@ public class GridCancelledJobsMetricsSelfTest extends GridCommonAbstractTest {
                 Thread.sleep(Long.MAX_VALUE);
             }
             catch (InterruptedException ignored) {
+                try {
+                    Thread.sleep(1000);
+                }
+                catch (InterruptedException e1) {
+                    throw new IgniteException("Unexpected exception: ", e1);
+                }
+
                 throw new IgniteException("Job got interrupted while waiting for cancellation.");
             }
             finally {

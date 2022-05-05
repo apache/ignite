@@ -73,9 +73,6 @@ public class GridMultithreadedJobStealingSelfTest extends GridCommonAbstractTest
         stopAllGrids();
 
         ignite = startGridsMultiThreaded(2);
-
-        // We are changing it because compute jobs fall asleep.
-        assertTrue(computeJobWorkerInterruptTimeout(ignite).propagate(10L));
     }
 
     /** {@inheritDoc} */

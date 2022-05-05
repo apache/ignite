@@ -1962,30 +1962,11 @@ public final class GridTestUtils {
      * @return {@code true} if condition was achieved, {@code false} otherwise.
      * @throws org.apache.ignite.internal.IgniteInterruptedCheckedException If interrupted.
      */
-    public static boolean waitForCondition(
-        GridAbsPredicate cond,
-        long timeout
-    ) throws IgniteInterruptedCheckedException {
-        return waitForCondition(cond, timeout, DFLT_BUSYWAIT_SLEEP_INTERVAL);
-    }
-
-    /**
-     * Waits for condition, polling in busy wait loop.
-     *
-     * @param cond Condition to wait for.
-     * @param timeout Max time to wait in milliseconds.
-     * @return {@code true} if condition was achieved, {@code false} otherwise.
-     * @throws org.apache.ignite.internal.IgniteInterruptedCheckedException If interrupted.
-     */
-    public static boolean waitForCondition(
-        GridAbsPredicate cond,
-        long timeout,
-        long checkInterval
-    ) throws IgniteInterruptedCheckedException {
+    public static boolean waitForCondition(GridAbsPredicate cond, long timeout) throws IgniteInterruptedCheckedException {
         long endTime = U.currentTimeMillis() + timeout;
         long endTime0 = endTime < 0 ? Long.MAX_VALUE : endTime;
 
-        return waitForCondition(cond, () -> U.currentTimeMillis() < endTime0, checkInterval);
+        return waitForCondition(cond, () -> U.currentTimeMillis() < endTime0);
     }
 
     /**
@@ -1994,30 +1975,12 @@ public final class GridTestUtils {
      * @return {@code true} if condition was achieved, {@code false} otherwise.
      * @throws IgniteInterruptedCheckedException If interrupted.
      */
-    public static boolean waitForCondition(
-        GridAbsPredicate cond,
-        BooleanSupplier wait
-    ) throws IgniteInterruptedCheckedException {
-        return waitForCondition(cond, wait, DFLT_BUSYWAIT_SLEEP_INTERVAL);
-    }
-
-    /**
-     * @param cond Condition to wait for.
-     * @param wait Wait predicate.
-     * @return {@code true} if condition was achieved, {@code false} otherwise.
-     * @param checkInterval Time interval between two consecutive condition checks.
-     * @throws IgniteInterruptedCheckedException If interrupted.
-     */
-    public static boolean waitForCondition(
-        GridAbsPredicate cond,
-        BooleanSupplier wait,
-        long checkInterval
-    ) throws IgniteInterruptedCheckedException {
+    public static boolean waitForCondition(GridAbsPredicate cond, BooleanSupplier wait) throws IgniteInterruptedCheckedException {
         while (wait.getAsBoolean()) {
             if (cond.apply())
                 return true;
 
-            U.sleep(checkInterval);
+            U.sleep(DFLT_BUSYWAIT_SLEEP_INTERVAL);
         }
 
         return false;
