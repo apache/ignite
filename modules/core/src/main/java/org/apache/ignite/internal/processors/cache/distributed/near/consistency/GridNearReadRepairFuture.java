@@ -128,7 +128,7 @@ public class GridNearReadRepairFuture extends GridNearReadRepairAbstractFuture {
 
             onDone(Collections.emptyMap()); // Everything is fine.
         }
-        catch (IgniteConsistencyCheckFailedViolationException e) { // Inconsistent entries found.
+        catch (IgniteConsistencyCheckFailedException e) { // Inconsistent entries found.
             Set<KeyCacheObject> inconsistentKeys = e.keys();
 
             try {
@@ -145,7 +145,7 @@ public class GridNearReadRepairFuture extends GridNearReadRepairAbstractFuture {
 
                 onDone(correctedMap);
             }
-            catch (IgniteConsistencyRepairFailedViolationException rfe) { // Unable to repair all entries.
+            catch (IgniteConsistencyRepairFailedException rfe) { // Unable to repair all entries.
                 recordConsistencyViolation(inconsistentKeys, /*nothing repaired*/ null);
 
                 Map<KeyCacheObject, EntryGetResult> correctedMap = rfe.correctedMap();

@@ -167,7 +167,7 @@ public class GridNearReadRepairCheckOnlyFuture extends GridNearReadRepairAbstrac
         try {
             onDone(check());
         }
-        catch (IgniteConsistencyCheckFailedViolationException e) {
+        catch (IgniteConsistencyCheckFailedException e) {
             Set<KeyCacheObject> inconsistentKeys = e.keys();
 
             if (remapCnt >= MAX_REMAP_CNT) {
@@ -182,7 +182,7 @@ public class GridNearReadRepairCheckOnlyFuture extends GridNearReadRepairAbstrac
 
                         onDoneRepairRequired(correctedMap);
                     }
-                    catch (IgniteConsistencyRepairFailedViolationException rfe) { // Unable to repair all entries.
+                    catch (IgniteConsistencyRepairFailedException rfe) { // Unable to repair all entries.
                         Map<KeyCacheObject, EntryGetResult> correctedMap = rfe.correctedMap();
 
                         if (!correctedMap.isEmpty()) {

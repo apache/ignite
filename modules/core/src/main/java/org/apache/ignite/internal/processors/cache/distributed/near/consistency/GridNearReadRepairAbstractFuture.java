@@ -316,7 +316,7 @@ public abstract class GridNearReadRepairAbstractFuture extends GridFutureAdapter
         }
 
         if (!inconsistentKeys.isEmpty())
-            throw new IgniteConsistencyCheckFailedViolationException(inconsistentKeys);
+            throw new IgniteConsistencyCheckFailedException(inconsistentKeys);
 
         return resMap;
     }
@@ -339,7 +339,7 @@ public abstract class GridNearReadRepairAbstractFuture extends GridFutureAdapter
         else if (strategy == ReadRepairStrategy.REMOVE)
             correctedMap = correctWithRemove(keys);
         else if (strategy == ReadRepairStrategy.CHECK_ONLY)
-            throw new IgniteConsistencyRepairFailedViolationException(null, keys);
+            throw new IgniteConsistencyRepairFailedException(null, keys);
         else
             throw new UnsupportedOperationException("Unsupported strategy: " + strategy);
 
@@ -514,12 +514,12 @@ public abstract class GridNearReadRepairAbstractFuture extends GridFutureAdapter
      */
     private void throwRepairFailedIfNecessary(
         Map<KeyCacheObject, EntryGetResult> correctedMap,
-        Set<KeyCacheObject> irreparableSet) throws IgniteConsistencyRepairFailedViolationException {
+        Set<KeyCacheObject> irreparableSet) throws IgniteConsistencyRepairFailedException {
         if (!irreparableSet.isEmpty()) {
             // Fixing raw data, correctedMap may contain keys from irreparableSet.
             correctedMap.entrySet().removeIf(entry -> irreparableSet.contains(entry.getKey()));
 
-            throw new IgniteConsistencyRepairFailedViolationException(correctedMap, irreparableSet);
+            throw new IgniteConsistencyRepairFailedException(correctedMap, irreparableSet);
         }
     }
 
@@ -726,7 +726,7 @@ public abstract class GridNearReadRepairAbstractFuture extends GridFutureAdapter
     /**
      *
      */
-    protected static final class IgniteConsistencyCheckFailedViolationException extends IgniteCheckedException {
+    protected static final class IgniteConsistencyCheckFailedException extends IgniteCheckedException {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -736,7 +736,7 @@ public abstract class GridNearReadRepairAbstractFuture extends GridFutureAdapter
         /**
          * @param keys Keys.
          */
-        public IgniteConsistencyCheckFailedViolationException(Set<KeyCacheObject> keys) {
+        public IgniteConsistencyCheckFailedException(Set<KeyCacheObject> keys) {
             assert keys != null && !keys.isEmpty();
 
             this.keys = Collections.unmodifiableSet(keys);
@@ -753,7 +753,7 @@ public abstract class GridNearReadRepairAbstractFuture extends GridFutureAdapter
     /**
      *
      */
-    protected static final class IgniteConsistencyRepairFailedViolationException extends IgniteCheckedException {
+    protected static final class IgniteConsistencyRepairFailedException extends IgniteCheckedException {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -767,7 +767,7 @@ public abstract class GridNearReadRepairAbstractFuture extends GridFutureAdapter
          * @param correctedMap Repairable map.
          * @param irreparableKeys Irreparable keys.
          */
-        public IgniteConsistencyRepairFailedViolationException(Map<KeyCacheObject, EntryGetResult> correctedMap,
+        public IgniteConsistencyRepairFailedException(Map<KeyCacheObject, EntryGetResult> correctedMap,
             Set<KeyCacheObject> irreparableKeys) {
             this.correctedMap = correctedMap != null ? Collections.unmodifiableMap(correctedMap) : null;
             this.irreparableKeys = Collections.unmodifiableSet(irreparableKeys);
