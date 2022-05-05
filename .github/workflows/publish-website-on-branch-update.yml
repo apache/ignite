@@ -50,8 +50,8 @@ jobs:
 
       - name: Get the version from POM file
         run: |
-          ver=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)
-          echo "IGNITE_VERSION=${ver}" >> $GITHUB_ENV
+          version=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)
+          echo "IGNITE_VERSION=$version" >> $GITHUB_ENV
 
       - name: Check out 'ignite-website' repository code
         uses: actions/checkout@v3
