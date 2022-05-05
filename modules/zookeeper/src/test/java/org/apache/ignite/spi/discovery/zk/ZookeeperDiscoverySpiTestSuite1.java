@@ -63,5 +63,6 @@ public class ZookeeperDiscoverySpiTestSuite1 {
     public static void init() {
         System.setProperty("zookeeper.forceSync", "false");
         System.setProperty("zookeeper.jmx.log4j.disable", "true");
+        System.setProperty("jute.maxbuffer", String.valueOf(2 * 1024 * 1024));  // 2 MB.
     }
 }
