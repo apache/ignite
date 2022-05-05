@@ -18,7 +18,10 @@
 #
 
 #
-# The action to publish website on push to a branch with released Ignite.
+# The action to publish website on a push event to a branch with released Ignite.
+#
+# Note that GitHub Actions uses the workflow from a branch triggered by a push event.
+# So, any updates of this workflow should be cherry-picked to released branches.
 #
 name: Publish website documentation
 on:
@@ -27,21 +30,25 @@ on:
       # Since ignite-2.10
       - ignite-2.[0-9][0-9]
       - ignite-2.[0-9][0-9].[0-9]
+    paths:
+      - docs/**
+
 concurrency:
   group: publish-website-group
+
 jobs:
-  update-documentation:
-    name: Publish '${{ github.GITHUB_REF_NAME }}' documentation
+  publish-documentation:
+    name: Publish documentation
     runs-on: ubuntu-latest
     steps:
       - name: Check out 'ignite' repository code
         uses: actions/checkout@v3
 
-      - name: Check version is released
+      - name: Check that the version was released
         run: |
           mvn org.apache.maven.plugins:maven-enforcer-plugin:3.0.0-M3:enforce -Drules=requireReleaseDeps,requireReleaseVersion -pl modules/core
 
-      - name: Get version from POM file
+      - name: Get the version from POM file
         run: |
           ver=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)
           echo "IGNITE_VERSION=${ver}" >> $GITHUB_ENV
@@ -49,7 +56,16 @@ jobs:
       - name: Check out 'ignite-website' repository code
         uses: actions/checkout@v3
         with:
-          repository: 'NSAmelchev/ignite-website'
+          repository: 'apache/ignite-website'
+          token: ${{ secrets.IGNITE_WEBSITE_BUILD }}
+
+      - name: Check that documentation was published for given version
+        run: |
+          if ! grep -Fxq "$IGNITE_VERSION" ./docs/available-versions.txt
+          then
+            echo "Documentation must be published for given version: $IGNITE_VERSION"
+            exit 1
+          fi
 
       - name: Get latest version
         run: |
@@ -66,29 +82,26 @@ jobs:
           sudo chown -R $(whoami) /var/lib/gems/*
           gem install jekyll bundler
 
-      - name: Build ${{ env.IGNITE_VERSION }} documentation
+      - name: Build
         run: |
-          cd ${{ github.workspace }}/_docs
+          cd ./_docs
           
-          if [[ "${{ env.IGNITE_VERSION }}" == "${{ env.LATEST_VERSION }}" ]]
+          if [[ "$IGNITE_VERSION" == "$LATEST_VERSION" ]]
           then
-            echo "Building ${{ env.IGNITE_VERSION }} version (latest)."
-            ./build.sh --version=${{ env.IGNITE_VERSION }} --github-branch=${{ github.GITHUB_REF_NAME }} --latest
+            echo "Building $IGNITE_VERSION version (latest)."
+            ./build.sh --version=$IGNITE_VERSION --github-branch=$GITHUB_REF_NAME --latest
           else
-            echo "Building ${{ env.IGNITE_VERSION }} version."
-            ./build.sh --version=${{ env.IGNITE_VERSION }} --github-branch=${{ github.GITHUB_REF_NAME }}
+            echo "Building $IGNITE_VERSION version."
+            ./build.sh --version=$IGNITE_VERSION --github-branch=$GITHUB_REF_NAME
           fi
 
       - name: Commit and push
-        env:
-          TEMP_WEBSITE: ${{ secrets.TEMP_WEBSITE }}
         run: |
-          git config url."https://nsamelchev:TEMP_WEBSITE@github.com/".insteadOf "https://github.com/"
           git config user.name github-actions
           git config user.email github-actions@github.com
           
           git add --all
-          git commit -a -m "Update ${{ env.IGNITE_VERSION }} documentation."
+          git commit -a -m "Update $IGNITE_VERSION documentation." -m "Commit: $GITHUB_SHA."
           git push origin master
           
           echo "The documentation updated successfully. Check that the version was published successfully on"
