@@ -220,6 +220,10 @@ public abstract class GridNearReadRepairAbstractFuture extends GridFutureAdapter
         finally {
             ctx.tm().tx(prevTx);
         }
+
+        if (!ctx.kernalContext().cache().context().exchange().lastFinishedFuture().rebalanced())
+            throw new IllegalStateException("Operation can not be performed on unstable topology. " +
+                "Rebalance is in progress?");
     }
 
     /**
