@@ -264,8 +264,7 @@ by the Pax Logging API - the logging framework used by Apache Karaf.
 
 |ignite-web | Ignite Web allows you to start nodes inside any web container based on servlet and servlet context listener. In addition, this module provides capabilities to cache web sessions in an Ignite cache.
 
-|ignite-zookeeper | Ignite ZooKeeper provides a TCP Discovery IP Finder that uses a ZooKeeper
-directory to discover other Ignite nodes.
+|link:clustering/zookeeper-discovery[ignite-zookeeper] | ZooKeeper Discovery implementation.
 
 |=======================================================================
 
@@ -285,6 +284,8 @@ The following extensions are available:
 |ignite-spring-data_2.0-ext | Ignite Spring Data 2.0 provides an integration with Spring Data 2.0 framework.
 
 |ignite-spring-data_2.2-ext | Ignite Spring Data 2.2 provides an integration with Spring Data 2.2 framework.
+
+|link:extensions-and-integrations/zookeeper-ip-finder-ext[ignite-zookeeper-ip-finder-ext] | TCP Discovery IP Finder that uses a ZooKeeper directory to locate other Ignite nodes to connect to.
 |=======================================================================
 
 == Setting JVM Options
