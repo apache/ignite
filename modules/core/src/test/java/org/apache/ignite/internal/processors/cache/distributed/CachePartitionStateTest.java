@@ -294,8 +294,8 @@ public class CachePartitionStateTest extends GridCommonAbstractTest {
     private void checkNodePartitions(AffinityAssignment assign,
         ClusterNode clusterNode,
         String cacheName,
-        GridDhtPartitionState expState)
-    {
+        GridDhtPartitionState expState
+    ) {
         Affinity<Object> aff = ignite(0).affinity(cacheName);
 
         Set<Integer> nodeParts = new HashSet<>();

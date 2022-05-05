@@ -275,8 +275,8 @@ public class CacheExchangeMessageDuplicatedStateTest extends GridCommonAbstractT
     private void checkFullMessage(String cache1,
         String cache2,
         Map<Integer, Integer> dupPartsData,
-        GridDhtPartitionsFullMessage msg)
-    {
+        GridDhtPartitionsFullMessage msg
+    ) {
         int cache1Grp = groupIdForCache(ignite(0), cache1);
         int cache2Grp = groupIdForCache(ignite(0), cache2);
 
@@ -318,8 +318,8 @@ public class CacheExchangeMessageDuplicatedStateTest extends GridCommonAbstractT
     private void checkSingleMessage(String cache1,
         String cache2,
         Map<Integer, Integer> dupPartsData,
-        GridDhtPartitionsSingleMessage msg)
-    {
+        GridDhtPartitionsSingleMessage msg
+    ) {
         if (!F.isEmpty(msg.cacheGroupsAffinityRequest())) {
             for (GridDhtPartitionMap map : msg.partitions().values())
                 assertTrue(F.isEmpty(map.map()));

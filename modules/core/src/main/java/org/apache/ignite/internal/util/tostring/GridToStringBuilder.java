@@ -1770,8 +1770,8 @@ public class GridToStringBuilder {
         Object[] addNames,
         Object[] addVals,
         boolean[] addSens,
-        int addLen)
-    {
+        int addLen
+    ) {
         if (addLen > 0) {
             for (int i = 0; i < addLen; i++) {
                 Object addVal = addVals[i];

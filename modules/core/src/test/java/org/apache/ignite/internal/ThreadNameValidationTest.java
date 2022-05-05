@@ -172,8 +172,7 @@ public class ThreadNameValidationTest extends GridCommonAbstractTest {
         Arrays.stream(threadMXBean.dumpAllThreads(false, false))
             .filter(t -> t.getThreadName().startsWith("Thread-")
                 && !externalAnonymousThreads.contains(t.getThreadId()))
-            .forEach(threadInfo ->
-            {
+            .forEach(threadInfo -> {
                 StringBuilder sb = new StringBuilder();
                 sb.append("Thread with default name detected. StackTrace: ");
 

@@ -97,8 +97,8 @@ public class GridCacheTxRecoveryFuture extends GridCacheCompoundIdentityFuture<B
     public GridCacheTxRecoveryFuture(GridCacheSharedContext<?, ?> cctx,
         IgniteInternalTx tx,
         Set<UUID> failedNodeIds,
-        Map<UUID, Collection<UUID>> txNodes)
-    {
+        Map<UUID, Collection<UUID>> txNodes
+    ) {
         super(CU.boolReducer());
 
         this.cctx = cctx;

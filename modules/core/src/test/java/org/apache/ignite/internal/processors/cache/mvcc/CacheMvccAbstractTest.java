@@ -1082,9 +1082,7 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
         ReadMode readMode,
         WriteMode writeMode,
         RestartMode restartMode
-    )
-        throws Exception
-    {
+    ) throws Exception {
         final int TOTAL = 20;
 
         assert N <= TOTAL;

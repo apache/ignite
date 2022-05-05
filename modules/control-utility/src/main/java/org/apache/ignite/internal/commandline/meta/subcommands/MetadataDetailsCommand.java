@@ -36,8 +36,7 @@ import static org.apache.ignite.internal.commandline.CommandLogger.INDENT;
 
 /** */
 public class MetadataDetailsCommand
-    extends MetadataAbstractSubCommand<MetadataTypeArgs, MetadataListResult>
-{
+    extends MetadataAbstractSubCommand<MetadataTypeArgs, MetadataListResult> {
     /** {@inheritDoc} */
     @Override protected String taskName() {
         return MetadataInfoTask.class.getName();

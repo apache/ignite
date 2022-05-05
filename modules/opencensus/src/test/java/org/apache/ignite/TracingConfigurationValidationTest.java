@@ -96,10 +96,7 @@ public class TracingConfigurationValidationTest extends GridCommonAbstractTest {
      */
     @Test
     public void testThatItsPossibleToSpecifyOnlyValidSamplingRate() {
-        for (Double invalidSamplingRate : new double[] {
-            -1d,
-            10d})
-        {
+        for (Double invalidSamplingRate : new double[] {-1d, 10d}) {
             GridTestUtils.assertThrows(
                 log,
                 () -> new TracingConfigurationParameters.Builder().withSamplingRate(invalidSamplingRate).build(),

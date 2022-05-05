@@ -586,9 +586,8 @@ public abstract class GridCacheMessage implements Message {
     @SuppressWarnings("ForLoopReplaceableByForEach")
     public final void finishUnmarshalCacheObjects(@Nullable List<? extends CacheObject> col,
         GridCacheContext ctx,
-        ClassLoader ldr)
-        throws IgniteCheckedException
-    {
+        ClassLoader ldr
+    ) throws IgniteCheckedException {
         if (col == null)
             return;
 
@@ -610,9 +609,8 @@ public abstract class GridCacheMessage implements Message {
      */
     protected final void finishUnmarshalCacheObjects(@Nullable Collection<? extends CacheObject> col,
         GridCacheContext ctx,
-        ClassLoader ldr)
-        throws IgniteCheckedException
-    {
+        ClassLoader ldr
+    ) throws IgniteCheckedException {
         if (col == null)
             return;
 

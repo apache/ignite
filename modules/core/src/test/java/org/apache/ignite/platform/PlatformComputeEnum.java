@@ -20,8 +20,7 @@ package org.apache.ignite.platform;
 /**
  * Test enum.
  */
-public enum PlatformComputeEnum
-{
+public enum PlatformComputeEnum {
     /** */
     FOO,
 

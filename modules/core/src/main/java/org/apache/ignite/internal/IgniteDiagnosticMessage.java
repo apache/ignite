@@ -86,9 +86,8 @@ public class IgniteDiagnosticMessage implements Message {
      */
     public static IgniteDiagnosticMessage createRequest(Marshaller marsh,
         IgniteClosure<GridKernalContext, IgniteDiagnosticInfo> c,
-        long futId)
-        throws IgniteCheckedException
-    {
+        long futId
+    ) throws IgniteCheckedException {
         byte[] cBytes = U.marshal(marsh, c);
 
         IgniteDiagnosticMessage msg = new IgniteDiagnosticMessage();

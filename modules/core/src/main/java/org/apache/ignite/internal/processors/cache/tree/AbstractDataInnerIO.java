@@ -111,8 +111,8 @@ public abstract class AbstractDataInnerIO extends BPlusInnerIO<CacheSearchRow> i
         int dstIdx,
         BPlusIO<CacheSearchRow> srcIo,
         long srcPageAddr,
-        int srcIdx)
-    {
+        int srcIdx
+    ) {
         assertPageType(dstPageAddr);
 
         RowLinkIO rowIo = ((RowLinkIO)srcIo);

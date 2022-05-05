@@ -408,8 +408,7 @@ public class PlatformContextImpl implements PlatformContext, PartitionsExchangeA
     @Override public void writeEvent(BinaryRawWriterEx writer, Event evt) {
         assert writer != null;
 
-        if (evt == null)
-        {
+        if (evt == null) {
             writer.writeInt(-1);
 
             return;

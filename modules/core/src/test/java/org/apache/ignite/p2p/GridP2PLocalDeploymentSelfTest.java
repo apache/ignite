@@ -364,7 +364,9 @@ public class GridP2PLocalDeploymentSelfTest extends GridCommonAbstractTest {
             /**
              * @param nodeId Node ID for node this job is supposed to execute on.
              */
-            public DeployementTestJob(UUID nodeId) { super(nodeId); }
+            public DeployementTestJob(UUID nodeId) {
+                super(nodeId);
+            }
 
             /** {@inheritDoc} */
             @Override public Serializable execute() {
