@@ -116,7 +116,7 @@ public class ClientRequestHandler implements ClientListenerRequestHandler {
     @Override public void writeHandshake(BinaryWriterExImpl writer) {
         writer.writeBoolean(true);
 
-        if (protocolCtx.isFeatureSupported(BITMAP_FEATURES))
+        if (protocolCtx.isFeatureSupported(BITMAP_FEATURES) && !protocolCtx.isIse281Compatible())
             writer.writeByteArray(protocolCtx.featureBytes());
 
         if (protocolCtx.isFeatureSupported(PARTITION_AWARENESS))
