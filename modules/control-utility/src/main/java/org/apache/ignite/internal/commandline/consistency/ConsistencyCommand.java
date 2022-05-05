@@ -57,7 +57,7 @@ public class ConsistencyCommand extends AbstractCommand<Object> {
     /** Strategy. */
     public static final String STRATEGY = "--strategy";
 
-    /** Parallel. */
+    /** Parallel check. */
     public static final String PARALLEL = "--parallel";
 
     /** Command argument. */
@@ -86,12 +86,12 @@ public class ConsistencyCommand extends AbstractCommand<Object> {
                     .map(GridClientNode::nodeId)
                     .collect(toSet());
 
-            for (UUID serverNodeId : nodeIds) {
+            for (UUID nodeId : nodeIds) {
                 VisorConsistencyTaskResult res = executeTaskByNameOnNode(
                     client,
                     cmd.taskName(),
                     arg(),
-                    serverNodeId,
+                    nodeId,
                     clientCfg
                 );
 
