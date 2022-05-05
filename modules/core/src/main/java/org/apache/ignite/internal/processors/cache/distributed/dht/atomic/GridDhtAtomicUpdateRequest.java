@@ -149,6 +149,7 @@ public class GridDhtAtomicUpdateRequest extends GridDhtAtomicAbstractUpdateReque
      * @param forceTransformBackups Force transform backups flag.
      * @param taskNameHash Task name hash code.
      * @param addDepInfo Deployment info.
+     * @param readRepairRecovery Recovery on Read Repair flag.
      */
     public GridDhtAtomicUpdateRequest(
         int cacheId,
