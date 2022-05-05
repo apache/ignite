@@ -116,6 +116,9 @@ public abstract class GridNearReadRepairAbstractFuture extends GridFutureAdapter
     /** Remap calls. */
     private volatile int remapCalls;
 
+    /** Initialized flag. */
+    private volatile boolean inited;
+
     /**
      * Creates a new instance of GridNearReadRepairAbstractFuture.
      *
@@ -207,6 +210,13 @@ public abstract class GridNearReadRepairAbstractFuture extends GridFutureAdapter
         }
 
         this.futs = Collections.unmodifiableMap(futs);
+    }
+
+    /**
+     *
+     */
+    public GridNearReadRepairAbstractFuture init() {
+        assert !inited;
 
         IgniteInternalTx prevTx = ctx.tm().tx(tx); // Within the original tx.
 
@@ -224,6 +234,10 @@ public abstract class GridNearReadRepairAbstractFuture extends GridFutureAdapter
         if (!ctx.kernalContext().cache().context().exchange().lastFinishedFuture().rebalanced())
             throw new IllegalStateException("Operation can not be performed on unstable topology. " +
                 "Rebalance is in progress?");
+
+        inited = true;
+
+        return this;
     }
 
     /**
