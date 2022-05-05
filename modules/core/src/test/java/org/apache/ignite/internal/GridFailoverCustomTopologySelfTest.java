@@ -43,9 +43,6 @@ import org.apache.ignite.testframework.junits.common.GridCommonTest;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.equalTo;
-
 /**
  * Test failover and custom topology. Topology returns local node if remote node fails.
  */
@@ -90,10 +87,11 @@ public class GridFailoverCustomTopologySelfTest extends GridCommonAbstractTest {
     @Test
     public void testFailoverTopology() throws Exception {
         try {
-            Ignite ignite1 = startGrids(2);
+            Ignite ignite1 = startGrid(1);
+            Ignite ignite2 = startGrid(2);
 
-            // We change it because compute jobs will go to sleep.
-            assertTrue(computeJobWorkerInterruptTimeout(ignite1).propagate(10L));
+            assert ignite1 != null;
+            assert ignite2 != null;
 
             ignite1.compute().localDeployTask(JobTask.class, JobTask.class.getClassLoader());
 
@@ -106,9 +104,9 @@ public class GridFailoverCustomTopologySelfTest extends GridCommonAbstractTest {
                     mux.wait();
                 }
 
-                stopAndCancelGrid(1);
+                stopAndCancelGrid(2);
 
-                String res = fut.get(getTestTimeout());
+                String res = fut.get();
 
                 info("Task result: " + res);
             }
@@ -118,10 +116,13 @@ public class GridFailoverCustomTopologySelfTest extends GridCommonAbstractTest {
 
             info("Failed over: " + failCnt.get());
 
-            assertThat(failCnt.get(), equalTo(1));
+            assert failCnt.get() == 1 : "Invalid fail over counter [expected=1, actual=" + failCnt.get() + ']';
         }
         finally {
-            stopAllGrids();
+            stopGrid(1);
+
+            // Stopping stopped instance just in case.
+            stopGrid(2);
         }
     }
 
@@ -138,11 +139,11 @@ public class GridFailoverCustomTopologySelfTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @NotNull @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, String arg) {
-            assertNotNull(ignite);
+            assert ignite != null;
 
             UUID locNodeId = ignite.configuration().getNodeId();
 
-            assertNotNull(locNodeId);
+            assert locNodeId != null;
 
             if (log.isInfoEnabled())
                 log.info("Mapping jobs [subgrid=" + subgrid + ", arg=" + arg + ']');
@@ -166,7 +167,7 @@ public class GridFailoverCustomTopologySelfTest extends GridCommonAbstractTest {
 
                     UUID nodeId = ignite.configuration().getNodeId();
 
-                    assertNotNull(nodeId);
+                    assert nodeId != null;
 
                     if (!nodeId.equals(argument(0))) {
                         try {
