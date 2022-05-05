@@ -176,8 +176,8 @@ public class ComputeTaskInternalFuture<R> extends GridFutureAdapter<R> {
             @Override public void saveCheckpoint(String key,
                 Object state,
                 ComputeTaskSessionScope scope,
-                long timeout)
-            {
+                long timeout
+            ) {
                 throw new IgniteException("Session was closed.");
             }
 

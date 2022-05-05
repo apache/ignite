@@ -555,8 +555,7 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
 
         if (firstErr.isEmpty())
             return new OdbcResponse(new OdbcStreamingBatchResult(req.order()));
-        else
-        {
+        else {
             assert firstErr.getKey() != null;
 
             return new OdbcResponse(new OdbcStreamingBatchResult(firstErr.getKey(), firstErr.getValue(), req.order()));

@@ -157,8 +157,7 @@ public class StatisticsColumnConfiguration implements Serializable {
      *
      * @return Columns configuration for refresh statistic.
      */
-    public StatisticsColumnConfiguration refresh()
-    {
+    public StatisticsColumnConfiguration refresh() {
         return new StatisticsColumnConfiguration(this, tombstone ? ver : ver + 1, tombstone, overrides);
     }
 

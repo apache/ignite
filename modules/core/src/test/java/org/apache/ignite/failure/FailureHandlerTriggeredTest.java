@@ -95,7 +95,9 @@ public class FailureHandlerTriggeredTest extends GridCommonAbstractTest {
             .setIncludeEventTypes(EVT_CACHE_REBALANCE_OBJECT_LOADED)
             .setFailureHandler(hnd));
 
-        grid1.events().localListen(e -> { throw new Error(); }, EventType.EVT_CACHE_REBALANCE_OBJECT_LOADED);
+        grid1.events().localListen(e -> {
+            throw new Error();
+        }, EventType.EVT_CACHE_REBALANCE_OBJECT_LOADED);
 
         grid1.cluster().setBaselineTopology(grid1.cluster().topologyVersion());
 

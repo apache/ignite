@@ -347,8 +347,7 @@ public class JoinActiveNodeToActiveCluster extends AbstractNodeJoinTemplate {
 
     /** {@inheritDoc} */
     @Override public JoinNodeTestPlanBuilder joinClientStaticCacheConfigurationDifferentOnBothTemplate()
-        throws Exception
-    {
+        throws Exception {
         return staticCacheConfigurationDifferentOnBothTemplate()
             .nodeConfiguration(setClient)
             .afterActivate(new Runnable() {

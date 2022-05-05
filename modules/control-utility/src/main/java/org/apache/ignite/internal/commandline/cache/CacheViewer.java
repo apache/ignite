@@ -133,7 +133,9 @@ public class CacheViewer extends AbstractCommand<CacheViewer.Arguments> {
         /**
          * @return Output format.
          */
-        public OutputFormat outputFormat() { return outputFormat; }
+        public OutputFormat outputFormat() {
+            return outputFormat;
+        }
 
         /**
          * @return Cache view command.
@@ -145,7 +147,9 @@ public class CacheViewer extends AbstractCommand<CacheViewer.Arguments> {
         /**
          * @return Full config flag.
          */
-        public boolean fullConfig() { return fullConfig; }
+        public boolean fullConfig() {
+            return fullConfig;
+        }
     }
 
     /** Command parsed arguments */

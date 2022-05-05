@@ -337,7 +337,9 @@ public class ClusterProperties {
     /**
      * @return Yarn Queue
      */
-    public String yarnQueue() { return yarnQueue; }
+    public String yarnQueue() {
+        return yarnQueue;
+    }
 
     /**
      * Instantiate a ClusterProperties from a set of properties.

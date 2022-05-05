@@ -298,8 +298,8 @@ public class GridCommandHandlerIndexingUtils {
         final Ignite ignite,
         final String cacheName,
         final String grpName,
-        final Collection<QueryEntity> entities)
-    {
+        final Collection<QueryEntity> entities
+    ) {
         assert nonNull(ignite);
         assert nonNull(cacheName);
 

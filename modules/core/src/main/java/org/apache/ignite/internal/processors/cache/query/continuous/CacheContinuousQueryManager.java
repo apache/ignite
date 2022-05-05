@@ -386,9 +386,8 @@ public class CacheContinuousQueryManager<K, V> extends GridCacheManagerAdapter<K
         boolean preload,
         long updateCntr,
         @Nullable GridDhtAtomicAbstractUpdateFuture fut,
-        AffinityTopologyVersion topVer)
-        throws IgniteCheckedException
-    {
+        AffinityTopologyVersion topVer
+    ) throws IgniteCheckedException {
         assert key != null;
         assert lsnrCol != null;
 
@@ -528,8 +527,8 @@ public class CacheContinuousQueryManager<K, V> extends GridCacheManagerAdapter<K
         boolean autoUnsubscribe,
         boolean loc,
         final boolean keepBinary,
-        final boolean includeExpired) throws IgniteCheckedException
-    {
+        final boolean includeExpired
+    ) throws IgniteCheckedException {
         IgniteOutClosure<CacheContinuousQueryHandler> clsr;
 
         if (rmtTransFactory != null) {
@@ -609,9 +608,8 @@ public class CacheContinuousQueryManager<K, V> extends GridCacheManagerAdapter<K
         final boolean loc,
         final boolean notifyExisting,
         final boolean ignoreClassNotFound,
-        final boolean sync)
-        throws IgniteCheckedException
-    {
+        final boolean sync
+    ) throws IgniteCheckedException {
         return executeQuery0(
             locLsnr,
             new IgniteOutClosure<CacheContinuousQueryHandler>() {
@@ -729,8 +727,8 @@ public class CacheContinuousQueryManager<K, V> extends GridCacheManagerAdapter<K
         boolean notifyExisting,
         boolean loc,
         final boolean keepBinary,
-        boolean onStart) throws IgniteCheckedException
-    {
+        boolean onStart
+    ) throws IgniteCheckedException {
         cctx.checkSecurity(SecurityPermission.CACHE_READ);
 
         int taskNameHash = !internal && cctx.kernalContext().security().enabled() ?

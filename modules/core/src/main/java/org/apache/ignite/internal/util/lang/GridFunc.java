@@ -1412,8 +1412,8 @@ public class GridFunc {
     public static <T1, T2> Iterator<T2> iterator(final Iterator<? extends T1> c,
         final IgniteClosure<? super T1, T2> trans,
         final boolean readOnly,
-        @Nullable final IgnitePredicate<? super T1>... p)
-    {
+        @Nullable final IgnitePredicate<? super T1>... p
+    ) {
         A.notNull(c, "c", trans, "trans");
 
         if (isAlwaysFalse(p))

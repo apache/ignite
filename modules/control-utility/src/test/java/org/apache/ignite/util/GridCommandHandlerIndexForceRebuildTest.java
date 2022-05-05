@@ -657,8 +657,7 @@ public class GridCommandHandlerIndexForceRebuildTest extends GridCommandHandlerA
      * @throws IgniteInterruptedCheckedException if failed.
      */
     private boolean waitForIndexesRebuild(IgniteEx ignite, long timeout, Collection<String> excludedCacheNames)
-        throws IgniteInterruptedCheckedException
-    {
+        throws IgniteInterruptedCheckedException {
         return GridTestUtils.waitForCondition(
             () -> ignite.context().cache().publicCaches()
                 .stream()
