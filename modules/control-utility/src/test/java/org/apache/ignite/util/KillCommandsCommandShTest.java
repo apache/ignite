@@ -322,9 +322,8 @@ public class KillCommandsCommandShTest extends GridCommandHandlerClusterByClassA
 
         // GridNearGetRequest messages count required to pefrom getAll() with readRepair from all nodes twice.
         // First will be finished (which generates status), second will be frozen.
-        int twiceGetMsgCnt = parallel ?
-            SERVER_NODE_CNT /*from every owner*/ * (SERVER_NODE_CNT - 1) /*to every other*/ * 2 :
-            1 /*from first owner*/ * (SERVER_NODE_CNT - 1) /*to every other*/ * 2;
+        int twiceGetMsgCnt = (parallel ? SERVER_NODE_CNT /*from every owner*/ : 1 /*from first owner*/)
+            * (SERVER_NODE_CNT - 1) /*to every other*/ * 2;
 
         for (IgniteEx server : srvs) {
             TestRecordingCommunicationSpi spi =
