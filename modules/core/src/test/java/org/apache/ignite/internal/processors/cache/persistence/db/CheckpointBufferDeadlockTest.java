@@ -80,7 +80,7 @@ public class CheckpointBufferDeadlockTest extends GridCommonAbstractTest {
     private int checkpointThreads;
 
     /** Test logger. */
-    private final ListeningTestLogger log = new ListeningTestLogger(false, super.log);
+    private final ListeningTestLogger log = new ListeningTestLogger(super.log);
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {

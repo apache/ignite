@@ -67,7 +67,7 @@ public class EvictPartitionInLogTest extends GridCommonAbstractTest {
 
         clearStaticLog(GridDhtLocalPartition.class);
 
-        testLog = new ListeningTestLogger(false, log);
+        testLog = new ListeningTestLogger(log);
     }
 
     /** {@inheritDoc} */

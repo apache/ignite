@@ -45,7 +45,7 @@ public class AutoActivationPropertyTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        ListeningTestLogger testLog = new ListeningTestLogger(false, log);
+        ListeningTestLogger testLog = new ListeningTestLogger(log);
 
         LogListener lsnr = LogListener.matches(
             "Property autoActivation deprecated. Use clusterStateOnStart instead."

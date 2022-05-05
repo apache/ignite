@@ -125,7 +125,7 @@ public class CacheExchangeMergeTest extends GridCommonAbstractTest {
     private static ExecutorService executor;
 
     /** Logger for listen messages. */
-    private final ListeningTestLogger listeningLog = new ListeningTestLogger(false, log);
+    private final ListeningTestLogger listeningLog = new ListeningTestLogger(log);
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {

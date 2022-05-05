@@ -37,7 +37,7 @@ public class ReadMetricsOnNodeStartupTest extends GridCommonAbstractTest {
     private final CountDownLatch exportLatch = new CountDownLatch(1);
 
     /** */
-    private final ListeningTestLogger listeningLog = new ListeningTestLogger(false, log);
+    private final ListeningTestLogger listeningLog = new ListeningTestLogger(log);
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {

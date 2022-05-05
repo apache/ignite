@@ -95,6 +95,9 @@ public class KillCommandsSQLTest extends GridCommonAbstractTest {
 
         srvs.get(0).cluster().state(ACTIVE);
 
+        // We change to reduce the waiting time for interrupting compute job.
+        computeJobWorkerInterruptTimeout(srvs.get(0)).propagate(100L);
+
         IgniteCache<Object, Object> cache = startCli.getOrCreateCache(
             new CacheConfiguration<>(DEFAULT_CACHE_NAME).setIndexedTypes(Integer.class, Integer.class)
                 .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL));

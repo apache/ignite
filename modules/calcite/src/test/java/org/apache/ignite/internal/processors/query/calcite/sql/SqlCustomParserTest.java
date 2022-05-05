@@ -52,6 +52,7 @@ import static java.util.Collections.singleton;
 import static org.hamcrest.CoreMatchers.hasItem;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.nullValue;
 import static org.junit.Assert.assertThat;
 
 /**
@@ -353,6 +354,19 @@ public class SqlCustomParserTest extends GridCommonAbstractTest {
 
         assertThat(createIdx.indexName().names, is(ImmutableList.of("MY_INDEX")));
         assertThat(createIdx.tableName().names, is(ImmutableList.of("MY_SCHEMA", "MY_TABLE")));
+    }
+
+    /**
+     * Create index on table with schema.
+     */
+    @Test
+    public void createIndexEmptyName() throws SqlParseException {
+        String qry = "create index on my_table(id)";
+
+        IgniteSqlCreateIndex createIdx = parse(qry);
+
+        assertThat(createIdx.indexName(), nullValue());
+        assertThat(createIdx.tableName().names, is(ImmutableList.of("MY_TABLE")));
     }
 
     /**
