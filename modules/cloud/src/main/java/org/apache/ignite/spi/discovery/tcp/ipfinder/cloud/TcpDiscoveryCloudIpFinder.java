@@ -411,8 +411,7 @@ public class TcpDiscoveryCloudIpFinder extends TcpDiscoveryIpFinderAdapter {
             finally {
                 initLatch.countDown();
             }
-        else
-        {
+        else {
             try {
                 U.await(initLatch);
             }

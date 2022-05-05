@@ -60,9 +60,6 @@ public class GridCancelOnGridStopSelfTest extends GridCommonAbstractTest {
         cancelCall = false;
 
         try (Ignite g = startGrid(1)) {
-            // We change it because compute jobs will go to sleep.
-            assertTrue(computeJobWorkerInterruptTimeout(g).propagate(10L));
-
             cnt = new CountDownLatch(1);
 
             g.compute().executeAsync(CancelledTask.class, null);
@@ -70,7 +67,7 @@ public class GridCancelOnGridStopSelfTest extends GridCommonAbstractTest {
             cnt.await();
         }
 
-        assertTrue(cancelCall);
+        assert cancelCall;
     }
 
     /**

@@ -66,8 +66,7 @@ public class IndexListInfoContainer extends IgniteDataTransferObject {
         GridCacheContext ctx,
         String idxName,
         Collection<String> colsNames,
-        String tblName)
-    {
+        String tblName) {
         cacheName = ctx.name();
 
         final String cfgGrpName = ctx.config().getGroupName();

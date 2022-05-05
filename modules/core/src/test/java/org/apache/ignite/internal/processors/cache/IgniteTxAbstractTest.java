@@ -121,12 +121,17 @@ abstract class IgniteTxAbstractTest extends GridCommonAbstractTest {
      */
     protected OP getOp() {
         switch (RAND.nextInt(3)) {
-            case 0: { return OP.READ; }
-            case 1: { return OP.WRITE; }
-            case 2: { return OP.REMOVE; }
+            case 0:
+                return OP.READ;
+            case 1:
+                return OP.WRITE;
+            case 2:
+                return OP.REMOVE;
 
             // Should never be reached.
-            default: { assert false; return null; }
+            default:
+                assert false;
+                return null;
         }
     }
 
@@ -195,7 +200,8 @@ abstract class IgniteTxAbstractTest extends GridCommonAbstractTest {
                             break;
                         }
 
-                        default: { assert false; }
+                        default:
+                            assert false;
                     }
                 }
 
@@ -300,7 +306,8 @@ abstract class IgniteTxAbstractTest extends GridCommonAbstractTest {
                             break;
                         }
 
-                        default: { assert false; }
+                        default:
+                            assert false;
                     }
                 }
 

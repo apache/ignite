@@ -156,12 +156,10 @@ public class PlatformContinuousQueryImpl implements PlatformContinuousQuery {
                 initialQryCur = getInitialQueryCursor(initialQry);
             }
             catch (Exception e) {
-                try
-                {
+                try {
                     close0();
                 }
-                catch (Exception ignored)
-                {
+                catch (Exception ignored) {
                     // Ignore
                 }
 

@@ -684,7 +684,7 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
     }
 
     /** */
-    protected void beforeFirstTest() throws Exception {
+    private void beforeFirstTest() throws Exception {
         sharedStaticIpFinder = new TcpDiscoveryVmIpFinder(true);
 
         clsLdr = Thread.currentThread().getContextClassLoader();

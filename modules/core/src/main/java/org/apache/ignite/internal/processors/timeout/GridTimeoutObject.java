@@ -26,15 +26,15 @@ public interface GridTimeoutObject {
     /**
      * @return ID of the object.
      */
-    IgniteUuid timeoutId();
+    public IgniteUuid timeoutId();
 
     /**
      * @return End time.
      */
-    long endTime();
+    public long endTime();
 
     /**
      * Timeout callback.
      */
-    void onTimeout();
+    public void onTimeout();
 }

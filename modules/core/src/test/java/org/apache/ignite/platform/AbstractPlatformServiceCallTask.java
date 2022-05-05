@@ -171,8 +171,7 @@ public abstract class AbstractPlatformServiceCallTask extends ComputeTaskAdapter
     }
 
     /** */
-    public interface TestPlatformService
-    {
+    public interface TestPlatformService {
         /** */
         @PlatformServiceMethod("get_NodeId")
         UUID getNodeId();

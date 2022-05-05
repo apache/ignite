@@ -426,8 +426,8 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
                     if (Arrays.stream(
                         dir.listFiles())
                         .filter(f -> !f.getName().equals(CACHE_DATA_FILENAME))
-                        .count() > 0)
-                    {
+                        .count() > 0
+                    ) {
                         corruptedCachesDirs.add(cacheDirName(desc.config()));
                     }
                 }

@@ -32,8 +32,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 
 /** */
 public class MetadataUpdateCommand
-    extends MetadataAbstractSubCommand<MetadataMarshalled, MetadataMarshalled>
-{
+    extends MetadataAbstractSubCommand<MetadataMarshalled, MetadataMarshalled> {
     /** Output file name. */
     public static final String IN_FILE_NAME = "--in";
 

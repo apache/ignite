@@ -36,9 +36,8 @@ import org.jetbrains.annotations.Nullable;
  * Task to collect currently running queries.
  */
 @GridInternal
-public class VisorRunningQueriesCollectorTask
-    extends VisorMultiNodeTask<VisorRunningQueriesCollectorTaskArg, Map<UUID, Collection<VisorRunningQuery>>, Collection<VisorRunningQuery>>
-{
+public class VisorRunningQueriesCollectorTask extends
+    VisorMultiNodeTask<VisorRunningQueriesCollectorTaskArg, Map<UUID, Collection<VisorRunningQuery>>, Collection<VisorRunningQuery>> {
     /** */
     private static final long serialVersionUID = 0L;
 
