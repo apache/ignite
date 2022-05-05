@@ -134,14 +134,14 @@ public class GridNearReadRepairFuture extends GridNearReadRepairAbstractFuture {
             try {
                 Map<KeyCacheObject, EntryGetResult> correctedMap = correct(inconsistentKeys);
 
-                if (!correctedMap.isEmpty()) {
-                    tx.finishFuture().listen(future -> {
-                        TransactionState state = tx.state();
+                assert !correctedMap.isEmpty(); // Check failed on the same data.
 
-                        if (state == TransactionState.COMMITTED) // Explicit tx may fix the values but become rolled back later.
-                            recordConsistencyViolation(correctedMap.keySet(), correctedMap);
-                    });
-                }
+                tx.finishFuture().listen(future -> {
+                    TransactionState state = tx.state();
+
+                    if (state == TransactionState.COMMITTED) // Explicit tx may fix the values but become rolled back later.
+                        recordConsistencyViolation(correctedMap.keySet(), correctedMap);
+                });
 
                 onDone(correctedMap);
             }
