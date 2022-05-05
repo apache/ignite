@@ -20,6 +20,7 @@ import java.io.Serializable;
 import org.apache.ignite.DataRegionMetrics;
 import org.apache.ignite.internal.mem.IgniteOutOfMemoryException;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.mem.MemoryAllocator;
 import org.apache.ignite.mxbean.DataRegionMetricsMXBean;
 import org.apache.ignite.mxbean.MetricsMxBean;
 import org.jetbrains.annotations.Nullable;
@@ -152,6 +153,9 @@ public final class DataRegionConfiguration implements Serializable {
     /** Warm-up configuration. */
     @Nullable private WarmUpConfiguration warmUpCfg;
 
+    /** Memory allocator. */
+    @Nullable private MemoryAllocator memoryAllocator = null;
+
     /**
      * Gets data region name.
      *
@@ -240,6 +244,25 @@ public final class DataRegionConfiguration implements Serializable {
      */
     public DataRegionConfiguration setSwapPath(String swapPath) {
         this.swapPath = swapPath;
+
+        return this;
+    }
+
+    /**
+     * @return Memory allocator instance.
+     */
+    @Nullable public MemoryAllocator getMemoryAllocator() {
+        return memoryAllocator;
+    }
+
+    /**
+     * Sets memory allocator. If not specified, default, based on {@code Unsafe} allocator will be used.
+     *
+     * @param allocator Memory allocator instance.
+     * @return {@code this} for chaining.
+     */
+    public DataRegionConfiguration setMemoryAllocator(MemoryAllocator allocator) {
+        memoryAllocator = allocator;
 
         return this;
     }

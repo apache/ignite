@@ -99,6 +99,7 @@
                 <module>modules/hibernate-4.2</module>
                 <module>modules/hibernate-5.1</module>
                 <module>modules/hibernate-5.3</module>
+                <module>modules/numa-allocator</module>
                 <module>modules/schedule</module>
                 <module>modules/yardstick</module>
             </modules>
@@ -127,6 +128,13 @@
             <id>ducktests</id>
             <modules>
                 <module>modules/ducktests</module>
+            </modules>
+        </profile>
+
+        <profile>
+            <id>numa-allocator</id>
+            <modules>
+                <module>modules/numa-allocator</module>
             </modules>
         </profile>
 

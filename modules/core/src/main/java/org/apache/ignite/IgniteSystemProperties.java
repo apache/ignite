@@ -2008,6 +2008,16 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_PERF_STAT_CACHED_STRINGS_THRESHOLD = "IGNITE_PERF_STAT_CACHED_STRINGS_THRESHOLD";
 
     /**
+     * Flag for compatibility of Ignite SE 4.290+ thin clients with Ignite SE 4.280/4.281 servers.
+     * NOTE: in order to enable client compatibility mode, this option must be set to <code>true</code> only
+     * on the <em>thin client side</em>. Default value is <code>false</code>.
+     */
+    @SystemProperty(value = "Flag for compatibility of Ignite SE 4.290+ thin clients with " +
+        "Ignite SE 4.280/4.281 servers. In order to enable client compatibility mode, this option must be set to " +
+        "'true' only on the thin client side", defaults = "false")
+    public static final String IGNITE_SE_281_THIN_CLIENT_COMPATIBLE = "IGNITE_SE_281_THIN_CLIENT_COMPATIBLE";
+
+    /**
      * Count of rows, being processed within a single checkpoint lock when indexes are rebuilt.
      * The default value is {@link SchemaIndexCachePartitionWorker#DFLT_IGNITE_INDEX_REBUILD_BATCH_SIZE}.
      */
