@@ -27,7 +27,7 @@
             - restart the Apache Karaf container.
             You may safely ignore the 'Resource has no uri' exception if you follow this method.
 
-            NOTE #2: This feature *does not* include components that depend on LGPL software (e.g. ignite-hibernate).]]>
+            NOTE #2: This feature *does not* include components that depend on LGPL software (e.g. ignite-geospatial).]]>
         </details>
         <feature>ignite-core</feature>
         <feature>ignite-aop</feature>
@@ -88,18 +88,6 @@
         <feature prerequisite="true">wrap</feature>
         <bundle start="true" dependency="true">wrap:mvn:org.apache.flume/flume-ng-core/${flume.ng.version}$Bundle-SymbolicName=flume-ng-core&amp;Bundle-Version=${flume.ng.version}</bundle>
         <bundle start="true">mvn:org.apache.ignite/ignite-flume-ext/${ignite-flume-ext.version}</bundle>
-    </feature>
-
-    <feature name="ignite-hibernate" version="${project.version}" description="Apache Ignite :: Hibernate">
-        <details>
-            <![CDATA[The Apache Ignite Hibernate module + dependencies. 
-            
-            Installing this feature will trigger the installation of the 'hibernate' feature from the Apache Karaf distribution.
-
-            NOTE: Take into account that certain parts of Hibernate are offered under the LGPL license.]]>
-        </details>
-        <feature>hibernate</feature>
-        <bundle start="true">mvn:org.apache.ignite/ignite-hibernate_4.2/${project.version}</bundle>
     </feature>
 
     <feature name="ignite-indexing" version="${project.version}" description="Apache Ignite :: Indexing">

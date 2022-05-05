@@ -27,7 +27,7 @@ LGPL
 =====
 LGPL examples can be activated by turning lgpl profile on.
 
-lgpl profile required some lgpl-based libs, for example: ignite-hibernate & ignite-schedule.
+lgpl profile required some lgpl-based libs, for example: ignite-schedule.
 In case these libs can not be found by this maven project please download Apache Ignite sources
 at https://ignite.apache.org/download.cgi#sources.
 

@@ -19,6 +19,7 @@ package org.apache.ignite.osgi;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import org.apache.karaf.features.Feature;
 import org.junit.Test;
@@ -96,6 +97,6 @@ public class IgniteKarafFeaturesInstallationTest extends AbstractIgniteKarafTest
      * @return Features list.
      */
     @Override protected List<String> featuresToInstall() {
-        return Arrays.asList("ignite-all", "ignite-hibernate");
+        return Collections.singletonList("ignite-all");
     }
 }
