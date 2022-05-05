@@ -84,8 +84,8 @@ public class VisorTracingConfigurationItem extends IgniteDataTransferObject {
         Scope scope,
         String lb,
         Double samplingRate,
-        Set<Scope> includedScopes)
-    {
+        Set<Scope> includedScopes
+    ) {
         this.scope = scope;
         this.lb = lb;
         this.samplingRate = samplingRate;

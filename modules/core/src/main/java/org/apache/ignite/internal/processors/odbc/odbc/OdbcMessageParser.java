@@ -140,16 +140,14 @@ public class OdbcMessageParser implements ClientListenerMessageParser {
                 break;
             }
 
-            case OdbcRequest.STREAMING_BATCH:
-            {
+            case OdbcRequest.STREAMING_BATCH: {
                 String schema = reader.readString();
 
                 int num = reader.readInt();
 
                 ArrayList<OdbcQuery> queries = new ArrayList<>(num);
 
-                for (int i = 0; i < num; ++i)
-                {
+                for (int i = 0; i < num; ++i) {
                     OdbcQuery qry = new OdbcQuery();
                     qry.readBinary(reader);
 

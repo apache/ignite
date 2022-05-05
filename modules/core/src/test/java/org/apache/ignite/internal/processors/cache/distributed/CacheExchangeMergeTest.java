@@ -205,8 +205,8 @@ public class CacheExchangeMergeTest extends GridCommonAbstractTest {
     private CacheConfiguration cacheConfiguration(String name,
         CacheAtomicityMode atomicityMode,
         CacheMode cacheMode,
-        int backups)
-    {
+        int backups
+    ) {
         CacheConfiguration ccfg = new CacheConfiguration(name);
 
         ccfg.setAtomicityMode(atomicityMode);
@@ -1046,8 +1046,7 @@ public class CacheExchangeMergeTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     private void mergeJoinExchangesCoordinatorChange1(final int srvs, CoordinatorChangeMode mode)
-        throws Exception
-    {
+        throws Exception {
         log.info("Test mergeJoinExchangesCoordinatorChange1 [srvs=" + srvs + ", mode=" + mode + ']');
 
         testSpi = true;
@@ -1090,8 +1089,8 @@ public class CacheExchangeMergeTest extends GridCommonAbstractTest {
     private void mergeJoinExchangeCoordinatorChange2(final int srvs,
         final int startNodes,
         List<Integer> blockNodes,
-        List<Integer> waitMsgNodes) throws Exception
-    {
+        List<Integer> waitMsgNodes
+    ) throws Exception {
         testSpi = true;
 
         Ignite srv0 = startGrids(srvs);
@@ -1272,8 +1271,8 @@ public class CacheExchangeMergeTest extends GridCommonAbstractTest {
     private CountDownLatch blockExchangeFinish(Ignite crd,
         long topVer,
         final List<Integer> blockNodes,
-        final List<Integer> waitMsgNodes)
-    {
+        final List<Integer> waitMsgNodes
+    ) {
         log.info("blockExchangeFinish [crd=" + crd.cluster().localNode().id() +
             ", block=" + blockNodes +
             ", wait=" + waitMsgNodes + ']');

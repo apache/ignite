@@ -175,9 +175,11 @@ public class IndexStorageImpl implements IndexStorage {
     }
 
     /** {@inheritDoc} */
-    @Override public @Nullable RootPage findCacheIndex(Integer cacheId, String idxName, int segment)
-        throws IgniteCheckedException
-    {
+    @Override public @Nullable RootPage findCacheIndex(
+        Integer cacheId,
+        String idxName,
+        int segment
+    ) throws IgniteCheckedException {
         idxName = maskCacheIndexName(cacheId, idxName, segment);
 
         byte[] idxNameBytes = idxName.getBytes(UTF_8);

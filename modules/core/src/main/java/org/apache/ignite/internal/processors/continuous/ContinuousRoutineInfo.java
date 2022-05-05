@@ -68,8 +68,8 @@ class ContinuousRoutineInfo implements Serializable {
         byte[] nodeFilter,
         int bufSize,
         long interval,
-        boolean autoUnsubscribe)
-    {
+        boolean autoUnsubscribe
+    ) {
         this.srcNodeId = srcNodeId;
         this.routineId = routineId;
         this.hnd = hnd;

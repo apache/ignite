@@ -56,8 +56,7 @@ public class ClientListenerMetricsTest extends GridCommonAbstractTest {
      */
     @Test
     public void testClientListenerMetricsAccept() throws Exception {
-        try (IgniteEx ignite = startGrid(0))
-        {
+        try (IgniteEx ignite = startGrid(0)) {
             MetricRegistry mreg = ignite.context().metric().registry(CLIENT_CONNECTOR_METRICS);
 
             checkConnectionsMetrics(mreg, 0, 0);
@@ -103,8 +102,7 @@ public class ClientListenerMetricsTest extends GridCommonAbstractTest {
                 .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
                     .setPersistenceEnabled(true)));
 
-        try (IgniteEx ignite = startGrid(nodeCfg))
-        {
+        try (IgniteEx ignite = startGrid(nodeCfg)) {
             ignite.cluster().state(ClusterState.ACTIVE);
             MetricRegistry mreg = ignite.context().metric().registry(CLIENT_CONNECTOR_METRICS);
 
@@ -148,8 +146,7 @@ public class ClientListenerMetricsTest extends GridCommonAbstractTest {
             .setClientConnectorConfiguration(new ClientConnectorConfiguration()
             .setThinClientEnabled(false));
 
-        try (IgniteEx ignite = startGrid(nodeCfg))
-        {
+        try (IgniteEx ignite = startGrid(nodeCfg)) {
             MetricRegistry mreg = ignite.context().metric().registry(CLIENT_CONNECTOR_METRICS);
 
             checkRejectMetrics(mreg, 0, 0, 0);

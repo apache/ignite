@@ -412,7 +412,7 @@ public class FileHandleManagerImpl implements FileHandleManager {
 
                 unparkWaiters(MAX_VALUE);
 
-                if (err == null && !isCancelled.get())
+                if (err == null && !isCancelled)
                     err = new IllegalStateException("Worker " + name() + " is terminated unexpectedly");
 
                 if (err instanceof OutOfMemoryError)
@@ -592,7 +592,7 @@ public class FileHandleManagerImpl implements FileHandleManager {
         public void restart() {
             assert runner() == null : "WALWriter is still running.";
 
-            isCancelled.set(false);
+            isCancelled = false;
 
             new IgniteThread(this).start();
         }
@@ -649,7 +649,7 @@ public class FileHandleManagerImpl implements FileHandleManager {
         public void restart() {
             assert runner() == null : "WalSegmentSyncer is running.";
 
-            isCancelled.set(false);
+            isCancelled = false;
 
             new IgniteThread(walSegmentSyncWorker).start();
         }

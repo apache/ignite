@@ -84,8 +84,7 @@ public class MaintenanceRegistrySimpleTest {
     private GridKernalContext initContext(boolean persistenceEnabled) throws IgniteCheckedException {
         String dfltWorkDir = U.defaultWorkDirectory();
 
-        GridKernalContext kctx = new StandaloneGridKernalContext(log, null, null)
-        {
+        GridKernalContext kctx = new StandaloneGridKernalContext(log, null, null) {
             @Override protected IgniteConfiguration prepareIgniteConfiguration() {
                 IgniteConfiguration cfg = super.prepareIgniteConfiguration();
 

@@ -237,9 +237,13 @@ public class ServicesTest extends AbstractThinClientTest {
         try (IgniteClient client = startClient(0)) {
             // Check proxy creation with an invalid implementation.
             ServiceCallContext customCls = new ServiceCallContext() {
-                @Override public String attribute(String name) { return null; }
+                @Override public String attribute(String name) {
+                    return null;
+                }
 
-                @Override public byte[] binaryAttribute(String name) { return null; }
+                @Override public byte[] binaryAttribute(String name) {
+                    return null;
+                }
             };
 
             GridTestUtils.assertThrowsAnyCause(log, () -> client.services().serviceProxy(NODE_SINGLTON_SERVICE_NAME,

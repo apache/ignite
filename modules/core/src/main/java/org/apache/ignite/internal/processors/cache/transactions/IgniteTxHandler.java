@@ -929,8 +929,8 @@ public class IgniteTxHandler {
      */
     @Nullable public IgniteInternalFuture<IgniteInternalTx> finish(UUID nodeId,
         @Nullable GridNearTxLocal locTx,
-        GridNearTxFinishRequest req)
-    {
+        GridNearTxFinishRequest req
+    ) {
         assert nodeId != null;
         assert req != null;
 
@@ -983,8 +983,8 @@ public class IgniteTxHandler {
      */
     private IgniteInternalFuture<IgniteInternalTx> finishDhtLocal(UUID nodeId,
         @Nullable GridNearTxLocal locTx,
-        GridNearTxFinishRequest req)
-    {
+        GridNearTxFinishRequest req
+    ) {
         GridCacheVersion dhtVer = ctx.tm().mappedVersion(req.version());
 
         GridDhtTxLocal tx = null;

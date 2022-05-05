@@ -99,7 +99,9 @@ public enum MLSandboxDatasets {
     }
 
     /** */
-    public String getFileName() { return filename; }
+    public String getFileName() {
+        return filename;
+    }
 
     /** */
     public boolean hasHeader() {

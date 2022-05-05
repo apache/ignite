@@ -685,9 +685,9 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                     -1L);
 
                 PLC1<GridCacheReturn> plc1 = new PLC1<GridCacheReturn>(ret) {
-                    @Override public GridCacheReturn postLock(GridCacheReturn ret)
-                        throws IgniteCheckedException
-                    {
+                    @Override public GridCacheReturn postLock(
+                        GridCacheReturn ret
+                    ) throws IgniteCheckedException {
                         if (log.isDebugEnabled())
                             log.debug("Acquired transaction lock for put on keys: " + enlisted);
 
@@ -977,9 +977,9 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                     -1L);
 
                 PLC1<GridCacheReturn> plc1 = new PLC1<GridCacheReturn>(ret) {
-                    @Override public GridCacheReturn postLock(GridCacheReturn ret)
-                        throws IgniteCheckedException
-                    {
+                    @Override public GridCacheReturn postLock(
+                        GridCacheReturn ret
+                    ) throws IgniteCheckedException {
                         if (log.isDebugEnabled())
                             log.debug("Acquired transaction lock for put on keys: " + enlisted);
 
@@ -3813,8 +3813,8 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
     void readyNearLocks(GridDistributedTxMapping mapping,
         Collection<GridCacheVersion> pendingVers,
         Collection<GridCacheVersion> committedVers,
-        Collection<GridCacheVersion> rolledbackVers)
-    {
+        Collection<GridCacheVersion> rolledbackVers
+    ) {
         assert mapping.hasNearCacheEntries() : mapping;
 
         // Process writes, then reads.
@@ -3840,8 +3840,8 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         GridCacheVersion dhtVer,
         Collection<GridCacheVersion> pendingVers,
         Collection<GridCacheVersion> committedVers,
-        Collection<GridCacheVersion> rolledbackVers)
-    {
+        Collection<GridCacheVersion> rolledbackVers
+    ) {
         while (true) {
             GridCacheContext cacheCtx = txEntry.cached().context();
 

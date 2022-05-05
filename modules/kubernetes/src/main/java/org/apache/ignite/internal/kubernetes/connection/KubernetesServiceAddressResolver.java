@@ -71,7 +71,9 @@ public class KubernetesServiceAddressResolver {
 
             @Override public void checkClientTrusted(X509Certificate[] certs, String authType) {}
 
-            @Override public X509Certificate[] getAcceptedIssuers() { return null; }
+            @Override public X509Certificate[] getAcceptedIssuers() {
+                return null;
+            }
         }
     };
 

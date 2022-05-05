@@ -153,8 +153,8 @@ class OptimizedObjectInputStream extends ObjectInputStream {
         MarshallerContext ctx,
         OptimizedMarshallerIdMapper mapper,
         ClassLoader clsLdr,
-        boolean useCache)
-    {
+        boolean useCache
+    ) {
         this.clsMap = clsMap;
         this.ctx = ctx;
         this.mapper = mapper;

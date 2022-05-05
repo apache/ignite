@@ -25,8 +25,7 @@ import org.apache.ignite.internal.commandline.property.tasks.PropertyOperationRe
 import org.apache.ignite.internal.commandline.property.tasks.PropertyTask;
 
 /** */
-public class PropertyGetCommand extends PropertyAbstractSubCommand<PropertyArgs, PropertyOperationResult>
-{
+public class PropertyGetCommand extends PropertyAbstractSubCommand<PropertyArgs, PropertyOperationResult> {
     /** {@inheritDoc} */
     @Override protected String taskName() {
         return PropertyTask.class.getName();

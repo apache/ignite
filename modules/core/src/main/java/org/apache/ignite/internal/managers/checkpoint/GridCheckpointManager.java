@@ -157,9 +157,8 @@ public class GridCheckpointManager extends GridManagerAdapter<CheckpointSpi> {
         Object state,
         ComputeTaskSessionScope scope,
         long timeout,
-        boolean override)
-        throws IgniteCheckedException
-    {
+        boolean override
+    ) throws IgniteCheckedException {
         if (!enabled())
             return false;
 

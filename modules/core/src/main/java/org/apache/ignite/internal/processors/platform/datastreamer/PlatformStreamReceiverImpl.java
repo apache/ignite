@@ -49,8 +49,7 @@ public class PlatformStreamReceiverImpl extends PlatformAbstractPredicate implem
     /**
      * Constructor.
      */
-    public PlatformStreamReceiverImpl()
-    {
+    public PlatformStreamReceiverImpl() {
         super();
     }
 
