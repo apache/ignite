@@ -1117,7 +1117,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             if (destroy && (pageStore = sharedCtx.pageStore()) != null) {
                 try {
-                    pageStore.removeCacheData(new StoredCacheData(ctx.config()));
+                    locCfgMgr.removeCacheData(new StoredCacheData(ctx.config()));
                 }
                 catch (IgniteCheckedException e) {
                     U.error(log, "Failed to delete cache configuration data while destroying cache" +
@@ -2200,7 +2200,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         if (sharedCtx.pageStore() != null && affNode)
             initializationProtector.protect(
                 desc.groupDescriptor().groupId(),
-                () -> sharedCtx.pageStore().initializeForCache(desc.groupDescriptor(), desc.toStoredData(splitter))
+                () -> sharedCtx.pageStore().initializeForCache(desc.groupDescriptor(), desc.toStoredData(splitter).config())
             );
     }
 
@@ -4085,18 +4085,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * Save cache configuration to persistent store if necessary.
-     *
-     * @param storedCacheData Stored cache data.
-     * @param overwrite Overwrite existing.
-     */
-    public void saveCacheConfiguration(StoredCacheData storedCacheData, boolean overwrite) throws IgniteCheckedException {
-        assert storedCacheData != null;
-
-        locCfgMgr.saveCacheConfiguration(storedCacheData, overwrite);
-    }
-
-    /**
      * Remove all persistent files for all registered caches.
      */
     public void cleanupCachesDirectories() throws IgniteCheckedException {
@@ -4909,6 +4897,11 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      */
     public <K, V> GridCacheSharedContext<K, V> context() {
         return (GridCacheSharedContext<K, V>)sharedCtx;
+    }
+
+    /** @return Local config manager. */
+    public GridLocalConfigManager configManager() {
+        return locCfgMgr;
     }
 
     /**
