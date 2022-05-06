@@ -329,7 +329,8 @@ public final class Commons {
 
             try {
                 compilerFactory = CompilerFactoryFactory.getDefaultCompilerFactory();
-            } catch (Exception e) {
+            }
+            catch (Exception e) {
                 throw new IllegalStateException(
                     "Unable to instantiate java compiler", e);
             }
@@ -344,7 +345,8 @@ public final class Commons {
                 cbe.setDebuggingInformation(true, true, true);
 
             return (T)cbe.createInstance(new StringReader(body));
-        } catch (Exception e) {
+        }
+        catch (Exception e) {
             throw new IgniteException(e);
         }
     }

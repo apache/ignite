@@ -197,7 +197,8 @@ public abstract class ZookeeperDiscoverySpiSaslAuthAbstractTest extends GridComm
             try {
                 if (zkDb != null)
                     zkDb.close();
-            } catch (IOException ie) {
+            }
+            catch (IOException ie) {
                 // ignore
             }
         }

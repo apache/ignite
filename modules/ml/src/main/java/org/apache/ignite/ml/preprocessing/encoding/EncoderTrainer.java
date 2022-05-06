@@ -213,7 +213,8 @@ public class EncoderTrainer<K, V> implements PreprocessingTrainer<K, V> {
 
                     if (categorySize < minCategorySize) {
                         return prior;
-                    } else {
+                    }
+                    else {
                         double categoryMean = targetSum / categorySize;
 
                         double smoove = 1 / (1 +
