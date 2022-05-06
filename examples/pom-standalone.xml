@@ -218,12 +218,6 @@
             <dependencies>
                 <dependency>
                     <groupId>${project.groupId}</groupId>
-                    <artifactId>ignite-hibernate_5.1</artifactId>
-                    <version>to_be_replaced_by_ignite_version</version>
-                </dependency>
-
-                <dependency>
-                    <groupId>${project.groupId}</groupId>
                     <artifactId>ignite-schedule</artifactId>
                     <version>to_be_replaced_by_ignite_version</version>
                 </dependency>

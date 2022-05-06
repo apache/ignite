@@ -93,10 +93,6 @@ dependencies {
         exclude group: "org.slf4j", module: "slf4j-log4j12"
     }
 
-    // todo https://issues.apache.org/jira/browse/IGNITE-11485
-    // compile group: 'org.apache.ignite', name: 'ignite-hibernate_5.3', version: ignVer
-
-
     // todo https://issues.apache.org/jira/browse/IGNITE-11486
     compile (group: 'org.apache.ignite', name: 'ignite-zookeeper', version: ignVer) {
         exclude group: "org.slf4j", module: "slf4j-log4j12"
