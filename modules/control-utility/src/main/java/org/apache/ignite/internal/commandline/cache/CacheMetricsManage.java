@@ -126,10 +126,19 @@ public class CacheMetricsManage extends AbstractCommand<VisorCacheMetricsManageT
 
     /** {@inheritDoc} */
     @Override public void printUsage(Logger log) {
-        String desc = "Manages user cache metrics collection: enables, disables them or shows status.";
+        String desc = "Manages user cache metrics collection: enables, disables it or shows status.";
 
-        usageCache(log, METRICS_MANAGE, desc, null, or(ENABLE, DISABLE, STATUS),
-            or(CACHES + " cache1" + optional(",...,cacheN"), ALL_CACHES));
+        String cachesArgDesc = CACHES + " cache1" + optional(",...,cacheN");
+
+        usageCache(
+            log,
+            METRICS_MANAGE,
+            desc,
+            F.asMap(
+                cachesArgDesc, "apply sub-command to the specified caches.",
+                ALL_CACHES.argName(), "apply sub-command to all user caches."),
+            or(ENABLE, DISABLE, STATUS),
+            or(cachesArgDesc, ALL_CACHES));
     }
 
     /** {@inheritDoc} */

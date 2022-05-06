@@ -84,7 +84,11 @@ Arguments: --cache help --yes
       --group-names  - Comma-separated list of cache group names for which indexes should be rebuilt.
 
   --cache metrics enable|disable|status --caches cache1[,...,cacheN]|--all-caches
-    Manages user cache metrics collection: enables, disables them or shows status.
+    Manages user cache metrics collection: enables, disables it or shows status.
+
+    Parameters:
+      --caches cache1[,...,cacheN]  - apply sub-command to the specified caches.
+      --all-caches                  - apply sub-command to all user caches.
 
 Command [CACHE] finished with code: 0
 Control utility has completed execution at: <!any!>
