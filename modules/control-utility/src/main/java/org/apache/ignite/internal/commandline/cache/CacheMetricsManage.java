@@ -130,15 +130,11 @@ public class CacheMetricsManage extends AbstractCommand<VisorCacheMetricsManageT
 
         String cachesArgDesc = CACHES + " cache1" + optional(",...,cacheN");
 
-        usageCache(
-            log,
-            METRICS_MANAGE,
-            desc,
-            F.asMap(
-                cachesArgDesc, "apply sub-command to the specified caches.",
-                ALL_CACHES.argName(), "apply sub-command to all user caches."),
-            or(ENABLE, DISABLE, STATUS),
-            or(cachesArgDesc, ALL_CACHES));
+        Map<String, String> paramsDesc = F.asMap(
+            cachesArgDesc, "specifies a comma-separated list of cache names to which sub-command should be applied.",
+            ALL_CACHES.argName(), "applies sub-command to all user caches.");
+
+        usageCache(log, METRICS_MANAGE, desc, paramsDesc, or(ENABLE, DISABLE, STATUS), or(cachesArgDesc, ALL_CACHES));
     }
 
     /** {@inheritDoc} */
