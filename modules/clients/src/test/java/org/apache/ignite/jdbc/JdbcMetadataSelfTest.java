@@ -236,7 +236,8 @@ public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
                     assert rs.getInt("DATA_TYPE") == VARCHAR;
                     assert "VARCHAR".equals(rs.getString("TYPE_NAME"));
                     assert rs.getInt("NULLABLE") == 1;
-                } else if ("AGE".equals(name) || "ORGID".equals(name)) {
+                }
+                else if ("AGE".equals(name) || "ORGID".equals(name)) {
                     assert rs.getInt("DATA_TYPE") == INTEGER;
                     assert "INTEGER".equals(rs.getString("TYPE_NAME"));
                     assert rs.getInt("NULLABLE") == (primitivesInformationIsLostAfterStore ? 1 : 0);
@@ -276,7 +277,8 @@ public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
                     assert rs.getInt("DATA_TYPE") == INTEGER;
                     assert "INTEGER".equals(rs.getString("TYPE_NAME"));
                     assert rs.getInt("NULLABLE") == 0;
-                } else if ("name".equals(name)) {
+                }
+                else if ("name".equals(name)) {
                     assert rs.getInt("DATA_TYPE") == VARCHAR;
                     assert "VARCHAR".equals(rs.getString("TYPE_NAME"));
                     assert rs.getInt("NULLABLE") == 1;

@@ -88,7 +88,8 @@ public class DecisionTreeModel implements IgniteModel<Vector, Double>, JSONWrita
         try {
             File file = new File(path.toAbsolutePath().toString());
             writer.writeValue(file, this);
-        } catch (IOException e) {
+        }
+        catch (IOException e) {
             e.printStackTrace();
         }
     }
@@ -103,7 +104,8 @@ public class DecisionTreeModel implements IgniteModel<Vector, Double>, JSONWrita
             JacksonHelper.readAndValidateBasicJsonModelProperties(path, mapper, DecisionTreeModel.class.getSimpleName());
             mdl = mapper.readValue(new File(path.toAbsolutePath().toString()), DecisionTreeModel.class);
             return mdl;
-        } catch (IOException e) {
+        }
+        catch (IOException e) {
             e.printStackTrace();
         }
         return null;

@@ -468,7 +468,8 @@ public class DmlUtils {
                         sqlState = ((IgniteSQLException)e).sqlState();
 
                         code = ((IgniteSQLException)e).statusCode();
-                    } else {
+                    }
+                    else {
                         sqlState = SqlStateCode.INTERNAL_ERROR;
 
                         code = IgniteQueryErrorCode.UNKNOWN;

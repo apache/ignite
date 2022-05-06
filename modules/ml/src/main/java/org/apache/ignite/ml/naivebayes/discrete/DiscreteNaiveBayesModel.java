@@ -183,7 +183,8 @@ public class DiscreteNaiveBayesModel implements BayesModel<DiscreteNaiveBayesMod
         try {
             File file = new File(path.toAbsolutePath().toString());
             writer.writeValue(file, this);
-        } catch (IOException e) {
+        }
+        catch (IOException e) {
             e.printStackTrace();
         }
     }
@@ -198,7 +199,8 @@ public class DiscreteNaiveBayesModel implements BayesModel<DiscreteNaiveBayesMod
             JacksonHelper.readAndValidateBasicJsonModelProperties(path, mapper, DiscreteNaiveBayesModel.class.getSimpleName());
             mdl = mapper.readValue(new File(path.toAbsolutePath().toString()), DiscreteNaiveBayesModel.class);
             return mdl;
-        } catch (IOException e) {
+        }
+        catch (IOException e) {
             e.printStackTrace();
         }
         return null;

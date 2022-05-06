@@ -101,7 +101,8 @@ public abstract class AbstractInlineInnerIO extends BPlusInnerIO<IndexRow> imple
 
                 fieldOff += size;
 
-            } catch (Exception e) {
+            }
+            catch (Exception e) {
                 throw new IgniteException("Failed to store new index row.", e);
             }
         }

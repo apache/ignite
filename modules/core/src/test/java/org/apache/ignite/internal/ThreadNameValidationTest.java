@@ -122,7 +122,8 @@ public class ThreadNameValidationTest extends GridCommonAbstractTest {
             assertEquals("Thread without specific name detected",
                 anonymousThreadCountBeforeTest, getAnonymousThreadCount());
 
-        } finally {
+        }
+        finally {
             System.clearProperty(IgniteSystemProperties.IGNITE_USE_ASYNC_FILE_IO_FACTORY);
 
             super.afterTest();

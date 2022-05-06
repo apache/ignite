@@ -160,7 +160,8 @@ public class EncryptedCacheCreateTest extends AbstractEncryptionTest {
 
                     plainBytesFound[0] = plainBytesFound[0] || Bytes.indexOf(fileBytes, plainValBytes) != -1;
 
-                } catch (IOException e) {
+                }
+                catch (IOException e) {
                     throw new RuntimeException(e);
                 }
             });

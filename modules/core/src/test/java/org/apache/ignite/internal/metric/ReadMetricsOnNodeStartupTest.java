@@ -52,7 +52,8 @@ public class ReadMetricsOnNodeStartupTest extends GridCommonAbstractTest {
                         // Read metric value.
                         metrics.forEach(Metric::getAsString);
                     });
-                } catch (Throwable e) {
+                }
+                catch (Throwable e) {
                     log.error("Exception on metric export", e);
 
                     throw e;

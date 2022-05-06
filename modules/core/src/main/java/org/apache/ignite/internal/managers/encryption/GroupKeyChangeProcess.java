@@ -300,9 +300,11 @@ class GroupKeyChangeProcess {
 
             if (!ctx.clientNode())
                 ctx.encryption().changeCacheGroupKeyLocal(req.groupIds(), req.keyIds(), req.keys());
-        } catch (Exception e) {
+        }
+        catch (Exception e) {
             return new GridFinishedFuture<>(e);
-        } finally {
+        }
+        finally {
             this.req = null;
         }
 

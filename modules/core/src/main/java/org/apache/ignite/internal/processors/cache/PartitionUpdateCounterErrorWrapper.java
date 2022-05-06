@@ -56,7 +56,8 @@ public class PartitionUpdateCounterErrorWrapper implements PartitionUpdateCounte
     @Override public long reserve(long delta) {
         try {
             return delegate.reserve(delta);
-        } catch (AssertionError e) {
+        }
+        catch (AssertionError e) {
             SB sb = new SB();
 
             sb.a("Failed to increment HWM ")

@@ -2740,7 +2740,8 @@ public class IgnitionEx {
                     customDfltPlc = true;
 
                     dsCfg.setDefaultDataRegionConfiguration(region);
-                } else
+                }
+                else
                     optionalDataRegions.add(region);
             }
         }
@@ -2759,7 +2760,8 @@ public class IgnitionEx {
                 .setMaxSize(memCfg.getDefaultMemoryPolicySize())
                 .setName(memCfg.getDefaultMemoryPolicyName())
                 .setPersistenceEnabled(persistenceEnabled));
-        } else {
+        }
+        else {
             if (memCfg.getDefaultMemoryPolicySize() != DFLT_MEMORY_POLICY_MAX_SIZE)
                 throw new IgniteCheckedException(new IllegalArgumentException("User-defined MemoryPolicy " +
                     "configuration and defaultMemoryPolicySize properties are set at the same time."));

@@ -699,7 +699,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                                 if (!field.isNullable())
                                     QueryUtils.checkNotNullAllowed(ccfg);
                             }
-                        } catch (IgniteSQLException ex) {
+                        }
+                        catch (IgniteSQLException ex) {
                             msg.onError(new SchemaOperationException("Received schema propose discovery message, but " +
                                 "cache doesn't applicable for this modification", ex));
                         }
@@ -2041,7 +2042,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                             }
                             catch (Exception e) {
                                 throw new IgniteException(e);
-                            } finally {
+                            }
+                            finally {
                                 idxBuildStatusStorage.onFinishBuildNewIndex(cacheName);
                             }
                         }

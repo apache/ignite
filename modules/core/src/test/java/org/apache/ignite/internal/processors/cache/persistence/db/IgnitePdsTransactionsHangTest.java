@@ -244,7 +244,8 @@ public class IgnitePdsTransactionsHangTest extends GridCommonAbstractTest {
             IgniteTxManager tm = internalCache(cache).context().tm();
 
             assertEquals("There are still active transactions", 0, tm.activeTransactions().size());
-        } finally {
+        }
+        finally {
             stopAllGrids();
         }
     }

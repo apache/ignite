@@ -133,7 +133,8 @@ public class SandboxMLCache {
                 try {
                     if (cells[i].isEmpty()) data[i] = Double.NaN;
                     else data[i] = Double.valueOf(cells[i]);
-                } catch (NumberFormatException e) {
+                }
+                catch (NumberFormatException e) {
                     try {
                         data[i] = format.parse(cells[i]).doubleValue();
                     }

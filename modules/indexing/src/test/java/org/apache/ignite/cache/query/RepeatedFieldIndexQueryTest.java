@@ -305,7 +305,8 @@ public class RepeatedFieldIndexQueryTest extends GridCommonAbstractTest {
         if (range2.left > left) {
             left = range2.left;
             leftIncl = range2.leftIncl;
-        } else if (range2.left == left)
+        }
+        else if (range2.left == left)
             leftIncl = leftIncl && range2.leftIncl;
 
         int right = range1.right;
@@ -314,7 +315,8 @@ public class RepeatedFieldIndexQueryTest extends GridCommonAbstractTest {
         if (range2.right < right) {
             right = range2.right;
             rightIncl = range2.rightIncl;
-        } else if (range2.right == right)
+        }
+        else if (range2.right == right)
             rightIncl = rightIncl && range2.rightIncl;
 
         return new Range(left, right, leftIncl, rightIncl);

@@ -1040,7 +1040,8 @@ public class H2Utils {
                     if (!added)
                         keyCols.add(idxCol);
                 }
-            } else
+            }
+            else
                 keyCols.add(idxCol);
         }
 

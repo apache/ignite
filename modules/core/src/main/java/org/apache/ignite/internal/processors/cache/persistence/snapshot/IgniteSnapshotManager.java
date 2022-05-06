@@ -841,7 +841,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                     if (cancelled) {
                         clusterSnpFut.onDone(new IgniteFutureCancelledCheckedException("Execution of snapshot tasks " +
                             "has been cancelled by external process [err=" + err + ", snpReq=" + snpReq + ']'));
-                    } else {
+                    }
+                    else {
                         clusterSnpFut.onDone(new IgniteCheckedException("Snapshot operation has not been fully completed " +
                             "[err=" + err + ", snpReq=" + snpReq + ']'));
                     }
@@ -927,7 +928,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             });
 
             return resultFut;
-        } catch (RejectedExecutionException e) {
+        }
+        catch (RejectedExecutionException e) {
             return new GridFinishedFuture<>(e);
         }
     }

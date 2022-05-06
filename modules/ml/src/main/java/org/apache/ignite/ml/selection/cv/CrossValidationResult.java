@@ -66,7 +66,8 @@ public class CrossValidationResult implements Serializable {
         lock.lock();
         try {
             bestScoreCopy = bestScore.clone();
-        } finally {
+        }
+        finally {
             lock.unlock();
         }
 
@@ -90,7 +91,8 @@ public class CrossValidationResult implements Serializable {
             }
 
             scoringBoard.put(new ConcurrentHashMap<>(paramMap), locScores);
-        } finally {
+        }
+        finally {
             lock.unlock();
         }
     }
@@ -109,7 +111,8 @@ public class CrossValidationResult implements Serializable {
                 return Double.MIN_VALUE;
             else
                 return Arrays.stream(bestScore).average().orElse(Double.MIN_VALUE);
-        } finally {
+        }
+        finally {
             lock.unlock();
         }
     }
@@ -132,7 +135,8 @@ public class CrossValidationResult implements Serializable {
                 result.put(new HashMap<>(hyperParams), scores.clone());
             });
 
-        } finally {
+        }
+        finally {
             lock.unlock();
         }
 
@@ -157,7 +161,8 @@ public class CrossValidationResult implements Serializable {
                 result.put(new HashMap<>(hyperParams), Arrays.stream(scores).average().orElse(Double.MIN_VALUE));
             });
 
-        } finally {
+        }
+        finally {
             lock.unlock();
         }
 
@@ -174,7 +179,8 @@ public class CrossValidationResult implements Serializable {
         lock.lock();
         try {
             result = new HashMap<>(bestHyperParams);
-        } finally {
+        }
+        finally {
             lock.unlock();
         }
 

@@ -58,7 +58,8 @@ public class MedianOfMedianConvergenceCheckerTest extends ConvergenceCheckerTest
 
             double onDSError = checker.computeMeanErrorOnDataset(dataset, notConvergedMdl);
             Assert.assertEquals(1.6, onDSError, 0.01);
-        } catch (Exception e) {
+        }
+        catch (Exception e) {
             throw new RuntimeException(e);
         }
     }

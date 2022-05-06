@@ -534,7 +534,8 @@ public class CdcMain implements Runnable {
                 throw new IgniteException("Change Data Capture Application interrupted");
 
             processedSegments.add(segment);
-        } catch (IgniteCheckedException | IOException e) {
+        }
+        catch (IgniteCheckedException | IOException e) {
             throw new IgniteException(e);
         }
     }

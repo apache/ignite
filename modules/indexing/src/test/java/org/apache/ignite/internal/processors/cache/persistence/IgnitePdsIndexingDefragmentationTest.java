@@ -99,7 +99,8 @@ public class IgnitePdsIndexingDefragmentationTest extends IgnitePdsDefragmentati
         if (Boolean.TRUE.toString().equals(System.getProperty(USE_MVCC))) {
             cache1Cfg.setAtomicityMode(TRANSACTIONAL_SNAPSHOT);
             cache2Cfg.setAtomicityMode(TRANSACTIONAL_SNAPSHOT);
-        } else
+        }
+        else
             cache2Cfg.setExpiryPolicyFactory(new PolicyFactory());
 
         cfg.setCacheConfiguration(cache1Cfg, cache2Cfg);

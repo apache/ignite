@@ -81,7 +81,8 @@ public class IgniteComputeResultExceptionTest extends GridCommonAbstractTest {
             IgniteCompute compute = ignite.compute();
             try {
                 compute.execute(new ResultExceptionTask(resE), null);
-            } catch (IgniteException e) {
+            }
+            catch (IgniteException e) {
                 assertSame(resE, e);
             }
         }
@@ -131,7 +132,8 @@ public class IgniteComputeResultExceptionTest extends GridCommonAbstractTest {
             ComputeTaskFuture<Object> fut = compute.executeAsync(new ResultExceptionTask(resE), null);
             try {
                 fut.get();
-            } catch (IgniteException e) {
+            }
+            catch (IgniteException e) {
                 assertSame(resE, e);
             }
         }
