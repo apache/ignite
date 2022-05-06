@@ -2471,7 +2471,8 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                                 cacheCtx.cache().expiryPolicy(expiryPlc0),
                                 GridNearTxLocal.this)
                                 .init()
-                                .chain((fut) -> {
+                                .chain(
+                                    (fut) -> {
                                         try {
                                             // For every repaired entry.
                                             for (Map.Entry<KeyCacheObject, EntryGetResult> entry : fut.get().entrySet()) {
