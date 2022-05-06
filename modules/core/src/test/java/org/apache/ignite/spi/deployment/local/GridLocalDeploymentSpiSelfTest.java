@@ -57,7 +57,9 @@ public class GridLocalDeploymentSpiSelfTest extends GridSpiAbstractTest<LocalDep
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         getSpi().setListener(new DeploymentListener() {
-            @Override public void onUnregistered(ClassLoader ldr) { tasks.remove(ldr); }
+            @Override public void onUnregistered(ClassLoader ldr) {
+                tasks.remove(ldr);
+            }
         });
     }
 

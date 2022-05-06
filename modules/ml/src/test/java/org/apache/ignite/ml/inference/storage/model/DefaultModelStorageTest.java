@@ -64,7 +64,9 @@ public class DefaultModelStorageTest extends AbstractModelStorageTest {
         RuntimeException ex = new RuntimeException();
 
         try {
-            DefaultModelStorage.synchronize(() -> { throw ex; }, locks);
+            DefaultModelStorage.synchronize(() -> {
+                throw ex;
+            }, locks);
             fail();
         }
         catch (RuntimeException e) {

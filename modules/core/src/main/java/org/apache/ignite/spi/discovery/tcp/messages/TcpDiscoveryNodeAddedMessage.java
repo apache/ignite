@@ -79,8 +79,8 @@ public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractTraceableM
     public TcpDiscoveryNodeAddedMessage(UUID creatorNodeId,
         TcpDiscoveryNode node,
         DiscoveryDataPacket dataPacket,
-        long gridStartTime)
-    {
+        long gridStartTime
+    ) {
         super(creatorNodeId);
 
         assert node != null;

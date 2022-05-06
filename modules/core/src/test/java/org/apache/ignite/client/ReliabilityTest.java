@@ -495,14 +495,18 @@ public class ReliabilityTest extends AbstractThinClientTest {
 
             String msg = "critical error message";
 
-            ignite.events().localListen(e -> { throw new Error(msg); }, EVT_CACHE_OBJECT_READ);
+            ignite.events().localListen(e -> {
+                throw new Error(msg);
+            }, EVT_CACHE_OBJECT_READ);
 
             GridTestUtils.assertThrowsAnyCause(log, () -> cache.get(0), ClientServerError.class, msg);
 
             assertFalse(failure.get());
 
             // OutOfMemoryError should also invoke failure handler.
-            ignite.events().localListen(e -> { throw new OutOfMemoryError(msg); }, EVT_CACHE_OBJECT_REMOVED);
+            ignite.events().localListen(e -> {
+                throw new OutOfMemoryError(msg);
+            }, EVT_CACHE_OBJECT_REMOVED);
 
             GridTestUtils.assertThrowsAnyCause(log, () -> cache.remove(0), ClientServerError.class, msg);
 

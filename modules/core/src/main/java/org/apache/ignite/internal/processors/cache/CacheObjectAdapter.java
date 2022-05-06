@@ -213,9 +213,8 @@ public abstract class CacheObjectAdapter implements CacheObject, Externalizable 
         int off,
         int len,
         byte[] valBytes,
-        final int start)
-        throws IgniteCheckedException
-    {
+        final int start
+    ) throws IgniteCheckedException {
         int dataLen = valBytes.length;
 
         if (buf.remaining() < len)

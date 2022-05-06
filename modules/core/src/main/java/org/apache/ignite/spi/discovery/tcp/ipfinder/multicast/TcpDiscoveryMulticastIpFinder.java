@@ -545,8 +545,8 @@ public class TcpDiscoveryMulticastIpFinder extends TcpDiscoveryVmIpFinder {
      *      {@code true} if got error on send.
      */
     private T2<Collection<InetSocketAddress>, Boolean> requestAddresses(InetAddress mcastAddr,
-        @Nullable InetAddress sockItf)
-    {
+        @Nullable InetAddress sockItf
+    ) {
         Collection<InetSocketAddress> rmtAddrs = new HashSet<>();
 
         boolean sndErr = false;

@@ -2305,8 +2305,8 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
     @Nullable private IgniteInternalFuture<Boolean> txsPreparedOrCommitted(final GridCacheVersion nearVer,
         int txNum,
         @Nullable GridFutureAdapter<Boolean> fut,
-        @Nullable Collection<GridCacheVersion> processedVers)
-    {
+        @Nullable Collection<GridCacheVersion> processedVers
+    ) {
         for (final IgniteInternalTx tx : activeTransactions()) {
             if (nearVer.equals(tx.nearXidVersion())) {
                 IgniteInternalFuture<?> prepFut = tx.currentPrepareFuture();

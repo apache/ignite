@@ -123,9 +123,9 @@ public class IgniteClientSpringBean implements IgniteClient, SmartLifecycle {
     }
 
     /** {@inheritDoc} */
-    @Override public <K, V> IgniteClientFuture<ClientCache<K, V>> getOrCreateCacheAsync(String name)
-        throws ClientException
-    {
+    @Override public <K, V> IgniteClientFuture<ClientCache<K, V>> getOrCreateCacheAsync(
+        String name
+    ) throws ClientException {
         return cli.getOrCreateCacheAsync(name);
     }
 
@@ -135,9 +135,9 @@ public class IgniteClientSpringBean implements IgniteClient, SmartLifecycle {
     }
 
     /** {@inheritDoc} */
-    @Override public <K, V> IgniteClientFuture<ClientCache<K, V>> getOrCreateCacheAsync(ClientCacheConfiguration cfg)
-        throws ClientException
-    {
+    @Override public <K, V> IgniteClientFuture<ClientCache<K, V>> getOrCreateCacheAsync(
+        ClientCacheConfiguration cfg
+    ) throws ClientException {
         return cli.getOrCreateCacheAsync(cfg);
     }
 
@@ -182,9 +182,9 @@ public class IgniteClientSpringBean implements IgniteClient, SmartLifecycle {
     }
 
     /** {@inheritDoc} */
-    @Override public <K, V> IgniteClientFuture<ClientCache<K, V>> createCacheAsync(ClientCacheConfiguration cfg)
-        throws ClientException
-    {
+    @Override public <K, V> IgniteClientFuture<ClientCache<K, V>> createCacheAsync(
+        ClientCacheConfiguration cfg
+    ) throws ClientException {
         return cli.createCacheAsync(cfg);
     }
 

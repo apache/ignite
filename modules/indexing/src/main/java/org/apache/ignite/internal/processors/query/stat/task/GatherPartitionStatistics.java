@@ -261,8 +261,8 @@ public class GatherPartitionStatistics implements Callable<ObjectPartitionStatis
                 }
 
                 for (CacheDataRow row : grp.offheap().cachePartitionIterator(
-                    gathCtx.table().cacheId(), partId, null, false))
-                {
+                    gathCtx.table().cacheId(), partId, null, false)
+                ) {
                     if (--checkInt == 0) {
                         if (gathCtx.future().isCancelled())
                             throw new GatherStatisticCancelException();

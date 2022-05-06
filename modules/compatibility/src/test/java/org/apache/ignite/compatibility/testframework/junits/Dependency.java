@@ -97,7 +97,7 @@ public class Dependency {
      * @return Template of artifact's path in Maven repository.
      */
     public String artifactPathTemplate() {
-        return "repository/" + groupId.replaceAll("\\.", "/") + "/" + artifactId;
+        return "repository/" + groupId.replaceAll("\\.", "/") + "/" + artifactId + "/";
     }
 
     /**

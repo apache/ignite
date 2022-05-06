@@ -110,8 +110,8 @@ public class GridJobExecuteResponse implements Message {
         byte[] jobAttrsBytes,
         Map<Object, Object> jobAttrs,
         boolean isCancelled,
-        AffinityTopologyVersion retry)
-    {
+        AffinityTopologyVersion retry
+    ) {
         assert nodeId != null;
         assert sesId != null;
         assert jobId != null;

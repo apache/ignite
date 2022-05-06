@@ -180,20 +180,26 @@ your application.
 
 The following modules have LGPL dependencies and, therefore, can't be deployed on the Maven Central repository:
 
-* ignite-hibernate
+* ignite-hibernate (Apache Ignite Extensions)
 * ignite-geospatial
 * ignite-schedule
 
 To use these modules, you will need to build them from sources and add to your project.
-For example, to install `ignite-hibernate` into your local repository, run this command in the Ignite source package:
+For example, to install `ignite-geospatial` into your local repository, run this command in the Ignite source:
 
 
 [source, shell]
 ----
-./mvnw clean install -DskipTests -Plgpl -pl modules/hibernate -am
+./mvnw clean install -DskipTests -Plgpl -pl modules/geospatial -am
 ----
 
+To install the `ignite-hibernate` into your local repository and create distribution binaries,
+run the following command from the Ignite Extensions sources:
 
+[source, shell]
+----
+mvn clean install -DskipTests -f modules/hibernate-ext -Pextension-release
+----
 
 The following modules are available:
 
@@ -260,8 +266,7 @@ by the Pax Logging API - the logging framework used by Apache Karaf.
 
 |ignite-web | Ignite Web allows you to start nodes inside any web container based on servlet and servlet context listener. In addition, this module provides capabilities to cache web sessions in an Ignite cache.
 
-|ignite-zookeeper | Ignite ZooKeeper provides a TCP Discovery IP Finder that uses a ZooKeeper
-directory to discover other Ignite nodes.
+|link:clustering/zookeeper-discovery[ignite-zookeeper] | ZooKeeper Discovery implementation.
 
 |=======================================================================
 
@@ -281,6 +286,8 @@ The following extensions are available:
 |ignite-spring-data_2.0-ext | Ignite Spring Data 2.0 provides an integration with Spring Data 2.0 framework.
 
 |ignite-spring-data_2.2-ext | Ignite Spring Data 2.2 provides an integration with Spring Data 2.2 framework.
+
+|link:extensions-and-integrations/zookeeper-ip-finder-ext[ignite-zookeeper-ip-finder-ext] | TCP Discovery IP Finder that uses a ZooKeeper directory to locate other Ignite nodes to connect to.
 |=======================================================================
 
 == Setting JVM Options

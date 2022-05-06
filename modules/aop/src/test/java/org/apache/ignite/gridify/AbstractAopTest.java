@@ -762,7 +762,9 @@ public abstract class AbstractAopTest extends GridCommonAbstractTest {
         /**
          * @param cnt Deploy counter.
          */
-        private TestEventListener(AtomicInteger cnt) { this.cnt = cnt; }
+        private TestEventListener(AtomicInteger cnt) {
+            this.cnt = cnt;
+        }
 
         /** {@inheritDoc} */
         @Override public boolean apply(Event evt) {
