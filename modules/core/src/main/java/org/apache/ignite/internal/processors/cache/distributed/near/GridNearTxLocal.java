@@ -2817,7 +2817,8 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                             GridCacheVersion readVer = null;
                             EntryGetResult getRes = null;
 
-                            if ((!pessimistic() || (readCommitted() && !skipVals)) && readRepairStrategy == null) {
+                            if ((!pessimistic() || (readCommitted() && !skipVals)) &&
+                                readRepairStrategy == null) { // Read Repair must avoid local reads.
                                 IgniteCacheExpiryPolicy accessPlc =
                                     optimistic() ? accessPolicy(cacheCtx, txKey, expiryPlc) : null;
 
