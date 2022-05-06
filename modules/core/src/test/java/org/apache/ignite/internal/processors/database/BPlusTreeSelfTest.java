@@ -416,19 +416,6 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
      * @throws IgniteCheckedException If failed.
      */
     @Test
-    public void testPutRemove_1_20_mm2_0() throws IgniteCheckedException {
-        MAX_PER_PAGE = 1;
-        CNT = 20;
-        PUT_INC = -1;
-        RMV_INC = -2;
-
-        doTestPutRemove(false);
-    }
-
-    /**
-     * @throws IgniteCheckedException If failed.
-     */
-    @Test
     public void testPutRemove_1_20_pm_1() throws IgniteCheckedException {
         MAX_PER_PAGE = 1;
         CNT = 20;
@@ -468,19 +455,6 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
      * @throws IgniteCheckedException If failed.
      */
     @Test
-    public void testPutRemove_1_20_pm2_0() throws IgniteCheckedException {
-        MAX_PER_PAGE = 1;
-        CNT = 20;
-        PUT_INC = 1;
-        RMV_INC = -2;
-
-        doTestPutRemove(false);
-    }
-
-    /**
-     * @throws IgniteCheckedException If failed.
-     */
-    @Test
     public void testPutRemove_1_20_pp_1() throws IgniteCheckedException {
         MAX_PER_PAGE = 1;
         CNT = 20;
@@ -501,32 +475,6 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
         RMV_INC = 2;
 
         doTestPutRemove(true);
-    }
-
-    /**
-     * @throws IgniteCheckedException If failed.
-     */
-    @Test
-    public void testPutRemove_1_20_pp_0() throws IgniteCheckedException {
-        MAX_PER_PAGE = 1;
-        CNT = 20;
-        PUT_INC = 1;
-        RMV_INC = 1;
-
-        doTestPutRemove(false);
-    }
-
-    /**
-     * @throws IgniteCheckedException If failed.
-     */
-    @Test
-    public void testPutRemove_1_20_pp2_0() throws IgniteCheckedException {
-        MAX_PER_PAGE = 1;
-        CNT = 20;
-        PUT_INC = 1;
-        RMV_INC = 2;
-
-        doTestPutRemove(false);
     }
 
     /**
@@ -564,19 +512,6 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
         CNT = 20;
         PUT_INC = -1;
         RMV_INC = 1;
-
-        doTestPutRemove(false);
-    }
-
-    /**
-     * @throws IgniteCheckedException If failed.
-     */
-    @Test
-    public void testPutRemove_1_20_mp2_0() throws IgniteCheckedException {
-        MAX_PER_PAGE = 1;
-        CNT = 20;
-        PUT_INC = -1;
-        RMV_INC = 2;
 
         doTestPutRemove(false);
     }
@@ -664,19 +599,6 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
      * @throws IgniteCheckedException If failed.
      */
     @Test
-    public void testPutRemove_2_40_pm2_0() throws IgniteCheckedException {
-        MAX_PER_PAGE = 2;
-        CNT = 40;
-        PUT_INC = 1;
-        RMV_INC = -2;
-
-        doTestPutRemove(false);
-    }
-
-    /**
-     * @throws IgniteCheckedException If failed.
-     */
-    @Test
     public void testPutRemove_2_40_pp_1() throws IgniteCheckedException {
         MAX_PER_PAGE = 2;
         CNT = 40;
@@ -704,19 +626,6 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testPutRemove_2_40_pp_0() throws IgniteCheckedException {
-        MAX_PER_PAGE = 2;
-        CNT = 40;
-        PUT_INC = 1;
-        RMV_INC = 1;
-
-        doTestPutRemove(false);
-    }
-
-    /**
-     * @throws IgniteCheckedException If failed.
-     */
-    @Test
-    public void testPutRemove_2_40_pp2_0() throws IgniteCheckedException {
         MAX_PER_PAGE = 2;
         CNT = 40;
         PUT_INC = 1;
@@ -760,19 +669,6 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
         CNT = 40;
         PUT_INC = -1;
         RMV_INC = 1;
-
-        doTestPutRemove(false);
-    }
-
-    /**
-     * @throws IgniteCheckedException If failed.
-     */
-    @Test
-    public void testPutRemove_2_40_mp2_0() throws IgniteCheckedException {
-        MAX_PER_PAGE = 2;
-        CNT = 40;
-        PUT_INC = -1;
-        RMV_INC = 2;
 
         doTestPutRemove(false);
     }
@@ -860,19 +756,6 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
      * @throws IgniteCheckedException If failed.
      */
     @Test
-    public void testPutRemove_3_60_pm2_0() throws IgniteCheckedException {
-        MAX_PER_PAGE = 3;
-        CNT = 60;
-        PUT_INC = 1;
-        RMV_INC = -2;
-
-        doTestPutRemove(false);
-    }
-
-    /**
-     * @throws IgniteCheckedException If failed.
-     */
-    @Test
     public void testPutRemove_3_60_pp_1() throws IgniteCheckedException {
         MAX_PER_PAGE = 3;
         CNT = 60;
@@ -912,19 +795,6 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
      * @throws IgniteCheckedException If failed.
      */
     @Test
-    public void testPutRemove_3_60_pp2_0() throws IgniteCheckedException {
-        MAX_PER_PAGE = 3;
-        CNT = 60;
-        PUT_INC = 1;
-        RMV_INC = 2;
-
-        doTestPutRemove(false);
-    }
-
-    /**
-     * @throws IgniteCheckedException If failed.
-     */
-    @Test
     public void testPutRemove_3_60_mp_1() throws IgniteCheckedException {
         MAX_PER_PAGE = 3;
         CNT = 60;
@@ -956,19 +826,6 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
         CNT = 60;
         PUT_INC = -1;
         RMV_INC = 1;
-
-        doTestPutRemove(false);
-    }
-
-    /**
-     * @throws IgniteCheckedException If failed.
-     */
-    @Test
-    public void testPutRemove_3_60_mp2_0() throws IgniteCheckedException {
-        MAX_PER_PAGE = 3;
-        CNT = 60;
-        PUT_INC = -1;
-        RMV_INC = 2;
 
         doTestPutRemove(false);
     }
@@ -1531,10 +1388,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void testBasicBatchRemove() throws IgniteCheckedException {
-        // todo false
-        boolean canGetFromInner = true;
-
-        BPlusTree<Long, Long> tree = createTestTree(canGetFromInner);
+        BPlusTree<Long, Long> tree = createTestTree(true);
 
         assertEquals(0, tree.size());
 

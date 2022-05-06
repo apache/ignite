@@ -590,6 +590,8 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
                 if (needReplaceInner)
                     r.needReplaceInner = TRUE;
 
+                assert r.needMergeEmptyBranch == TRUE || r.needReplaceInner == TRUE;
+
                 Tail<L> t = r.addTail(leafId, leafPage, leafAddr, io, 0, Tail.EXACT);
 
                 t.idx = (short)idx;
@@ -2006,6 +2008,45 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         Boolean res = (Boolean)doRemove(new Remove(row, false));
 
         return res != null ? res : false;
+    }
+
+    /**
+     * @param lower Lower bound.
+     * @param upper Upper bound.
+     * @param limit Limit of processed entries by single call, {@code 0} for no limit.
+     * @return Removed rows.
+     * @throws IgniteCheckedException If failed.
+     */
+    public List<L> remove(L lower, L upper, int limit) throws IgniteCheckedException {
+        // We can't find the lower bound if the inner node does not contain a row
+        // from a leaf node (without reading forward page). But removal from right to left
+        // does not meet the main purpose of this operation - remove the lower rows first.
+        assert canGetRowFromInner : "Not supported";
+
+        List<L> rmvTotal = new ArrayList<>();
+
+        do {
+            RemoveRange rmvOp = new RemoveRange(lower, upper, true, limit - rmvTotal.size());
+
+            doRemove(rmvOp);
+
+            Deque<L> rmvd = rmvOp.removed;
+
+            rmvTotal.addAll(rmvd);
+
+            if (rmvOp.finished)
+                break;
+
+            lower = rmvd.getFirst();
+
+            if (debugMsg)
+                System.err.println(">xxx> retry " + lower + "-" + upper);
+
+            checkInterrupted();
+        }
+        while (limit == 0 || rmvTotal.size() < limit);
+
+        return rmvTotal;
     }
 
     /** {@inheritDoc} */
@@ -6360,40 +6401,6 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
             U.hexLong(metaPageId) + "].";
     }
 
-    /**
-     * @param lower Lower bound.
-     * @param upper Upper bound.
-     * @param limit Limit of processed entries by single call, {@code 0} for no limit.
-     * @return Removed rows.
-     * @throws IgniteCheckedException If failed.
-     */
-    public List<L> remove(L lower, L upper, int limit) throws IgniteCheckedException {
-        List<L> rmvTotal = new ArrayList<>();
-
-        L lowerRow = lower;
-
-        do {
-            RemoveRange rmvOp = new RemoveRange(lowerRow, upper, true, limit - rmvTotal.size());
-
-            doRemove(rmvOp);
-
-            Deque<L> rmvd = rmvOp.removed;
-
-            rmvTotal.addAll(rmvd);
-
-            if (rmvOp.finished)
-                break;
-
-            lowerRow = rmvd.getFirst();
-
-            if (debugMsg)
-                System.err.println(">xxx> retry " + lowerRow + "-" + upper);
-        }
-        while (!Thread.currentThread().isInterrupted() && (limit == 0 || rmvTotal.size() < limit));
-
-        return rmvTotal;
-    }
-
     /** */
     protected class RemoveRange extends Remove {
         /** */
@@ -6446,14 +6453,14 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         }
 
         /**
-         * @param row Row.
+         * @param lower Lower bound (inclusive).
+         * @param upper Upper bound (inclusive).
          * @param needOld {@code True} If need return old value.
          */
-        protected RemoveRange(L row, L upper, boolean needOld, int limit) {
-            super(row, needOld);
+        protected RemoveRange(L lower, L upper, boolean needOld, int limit) {
+            super(lower, needOld);
 
-            lower = row;
-
+            this.lower = lower;
             this.upper = upper;
             this.limit = limit;
         }
@@ -6598,24 +6605,19 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
                     assert r.tail != null; // We've just locked forward page.
                 }
 
-                // todo
-                L upper = getRow(io, leafAddr, highIdx);
-
                 // Retry must reset these fields when we release the whole branch without remove.
                 assert r.needReplaceInner == FALSE : "needReplaceInner";
                 assert r.needMergeEmptyBranch == FALSE : "needMergeEmptyBranch";
 
-                if (rmvCnt == cnt) { // It was the last element on the leaf.
+                if (rmvCnt == cnt) // It was the last element on the leaf.
                     r.needMergeEmptyBranch = TRUE;
 
-                    r.row = upper;
-                }
-
-                if (needReplaceInner) {
+                if (needReplaceInner)
                     r.needReplaceInner = TRUE;
 
-                    r.row = upper;
-                }
+                assert r.needMergeEmptyBranch == TRUE || r.needReplaceInner == TRUE;
+
+                r.row = getRow(io, leafAddr, highIdx);
 
                 Tail<L> t = r.addTail(leafId, leafPage, leafAddr, io, 0, Tail.EXACT);
 
