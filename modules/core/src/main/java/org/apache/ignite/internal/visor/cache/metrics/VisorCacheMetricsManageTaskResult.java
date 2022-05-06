@@ -43,14 +43,14 @@ public class VisorCacheMetricsManageTaskResult extends IgniteDataTransferObject 
     }
 
     /**
-     * @param result Result.
+     * @param result Task execution result.
      */
     public VisorCacheMetricsManageTaskResult(Object result) {
         this.result = result;
     }
 
     /**
-     * @param error Error.
+     * @param error Task execution error.
      */
     public VisorCacheMetricsManageTaskResult(Exception error) {
         this.error = error;
@@ -69,7 +69,7 @@ public class VisorCacheMetricsManageTaskResult extends IgniteDataTransferObject 
     }
 
     /**
-     * Task execution error.
+     * Get task result or task execution error.
      */
     public Object result() throws Exception {
         if (error != null)

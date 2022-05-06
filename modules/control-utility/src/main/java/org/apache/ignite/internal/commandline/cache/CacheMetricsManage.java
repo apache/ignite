@@ -50,7 +50,7 @@ import static org.apache.ignite.internal.visor.cache.metrics.CacheMetricsManageS
 import static org.apache.ignite.internal.visor.systemview.VisorSystemViewTask.SimpleType.STRING;
 
 /**
- * Cache sub-command for a cache metrics collection management. It provides to enable, disable or show status.
+ * Cache sub-command for a cache metrics collection management. It provides an ability to enable, disable or show status.
  */
 public class CacheMetricsManage extends AbstractCommand<VisorCacheMetricsManageTaskArg> {
     /** Incorrect sub command message. */
@@ -58,13 +58,13 @@ public class CacheMetricsManage extends AbstractCommand<VisorCacheMetricsManageT
 
     /** Incorrect cache argument message. */
     public static final String INCORRECT_CACHE_ARGUMENT_MESSAGE =
-        String.format("'%s' or '%s' arguments should be passed.", CACHES, ALL_CACHES);
+        String.format("Expected one of these arguments: '%s' or '%s'. Multiple arguments are not allowed.", CACHES, ALL_CACHES);
 
     /** Invalid caches list message. */
     public static final String INVALID_CACHES_LIST_MESSAGE = "comma-separated list of cache names.";
 
     /** No caches processed message. */
-    public static final String NONE_CACHES_PROCECCED_MESSAGE = "None of caches have been processed. " +
+    public static final String NONE_CACHES_PROCESSED_MESSAGE = "None of caches have been processed. " +
         "Are there any caches in cluster?";
 
     /** Duplicated '--caches' option message. */
@@ -99,7 +99,7 @@ public class CacheMetricsManage extends AbstractCommand<VisorCacheMetricsManageT
         switch (arg.subCommand()) {
             case ENABLE:
             case DISABLE:
-                String resultMsg = ((Integer)result) > 0 ? SUCCESS_MESSAGE : NONE_CACHES_PROCECCED_MESSAGE;
+                String resultMsg = ((Integer)result) > 0 ? SUCCESS_MESSAGE : NONE_CACHES_PROCESSED_MESSAGE;
 
                 log.info(resultMsg);
 
@@ -108,12 +108,12 @@ public class CacheMetricsManage extends AbstractCommand<VisorCacheMetricsManageT
                 Map<String, Boolean> statusTaskResult = (Map<String, Boolean>)result;
 
                 if (statusTaskResult.isEmpty())
-                    log.info(NONE_CACHES_PROCECCED_MESSAGE);
+                    log.info(NONE_CACHES_PROCESSED_MESSAGE);
                 else {
                     Collection<List<?>> values = F.viewReadOnly(statusTaskResult.entrySet(),
                         e -> asList(e.getKey(), e.getValue() ? "enabled" : "disabled"));
 
-                    SystemViewCommand.printTable(asList("Cache Name", "Status"), asList(STRING, STRING), values, log);
+                    SystemViewCommand.printTable(asList("Cache Name", "Metrics Enable Status"), asList(STRING, STRING), values, log);
                 }
 
                 break;

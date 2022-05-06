@@ -45,7 +45,15 @@ public class VisorCacheMetricsManageTask extends VisorOneNodeTask<VisorCacheMetr
     }
 
     /**
-     * Job result is a collection of processed cache names.
+     * Possible job results are described below:
+     * <ul>
+     * <li>For 'enable' or 'disable' subcommands - count of processed caches.</li>
+     * <li>For 'status' subcommand - {@link Map} with names of processed caches paired with corresponding
+     * metrics collection statuses.</li>
+     * <li>Exception, caught during execution of job.</li>
+     * </ul>
+     *
+     * Results are passed into instance of wrapper class {@link VisorCacheMetricsManageTaskResult}.
      */
     private static class VisorCacheMetricsManageJob extends VisorJob<VisorCacheMetricsManageTaskArg,
         VisorCacheMetricsManageTaskResult> {
@@ -72,7 +80,8 @@ public class VisorCacheMetricsManageTask extends VisorOneNodeTask<VisorCacheMetr
                     switch (arg.subCommand()) {
                         case ENABLE:
                         case DISABLE:
-                            ignite.cluster().enableStatistics(cacheNames, ENABLE == arg.subCommand());
+                            if (!cacheNames.isEmpty())
+                                ignite.cluster().enableStatistics(cacheNames, ENABLE == arg.subCommand());
 
                             return new VisorCacheMetricsManageTaskResult(cacheNames.size());
                         case STATUS:

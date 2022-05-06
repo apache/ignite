@@ -46,7 +46,7 @@ import static org.apache.ignite.internal.commandline.cache.CacheMetricsManage.DU
 import static org.apache.ignite.internal.commandline.cache.CacheMetricsManage.INCORRECT_CACHE_ARGUMENT_MESSAGE;
 import static org.apache.ignite.internal.commandline.cache.CacheMetricsManage.INCORRECT_SUB_COMMAND_MESSAGE;
 import static org.apache.ignite.internal.commandline.cache.CacheMetricsManage.INVALID_CACHES_LIST_MESSAGE;
-import static org.apache.ignite.internal.commandline.cache.CacheMetricsManage.NONE_CACHES_PROCECCED_MESSAGE;
+import static org.apache.ignite.internal.commandline.cache.CacheMetricsManage.NONE_CACHES_PROCESSED_MESSAGE;
 import static org.apache.ignite.internal.commandline.cache.CacheMetricsManage.SUCCESS_MESSAGE;
 import static org.apache.ignite.internal.commandline.systemview.SystemViewCommand.COLUMN_SEPARATOR;
 import static org.apache.ignite.internal.util.lang.GridFunc.t;
@@ -239,11 +239,11 @@ public class CacheMetricsManageCommandTest extends GridCommandHandlerAbstractTes
      */
     @Test
     public void testNoCachesProcessed() {
-        checkExecutionSuccess(NONE_CACHES_PROCECCED_MESSAGE, ENABLE_COMMAND, ALL_CACHES_OPTION);
+        checkExecutionSuccess(NONE_CACHES_PROCESSED_MESSAGE, ENABLE_COMMAND, ALL_CACHES_OPTION);
 
-        checkExecutionSuccess(NONE_CACHES_PROCECCED_MESSAGE, DISABLE_COMMAND, ALL_CACHES_OPTION);
+        checkExecutionSuccess(NONE_CACHES_PROCESSED_MESSAGE, DISABLE_COMMAND, ALL_CACHES_OPTION);
 
-        checkExecutionSuccess(NONE_CACHES_PROCECCED_MESSAGE, STATUS_COMMAND, ALL_CACHES_OPTION);
+        checkExecutionSuccess(NONE_CACHES_PROCESSED_MESSAGE, STATUS_COMMAND, ALL_CACHES_OPTION);
     }
 
     /**

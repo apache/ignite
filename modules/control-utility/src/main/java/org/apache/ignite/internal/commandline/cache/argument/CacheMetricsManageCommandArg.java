@@ -21,10 +21,10 @@ import org.apache.ignite.internal.commandline.argument.CommandArg;
 import org.apache.ignite.internal.commandline.cache.CacheMetricsManage;
 
 /**
- * Command arguments for {@link CacheMetricsManage} command.
+ * Common arguments for all {@link CacheMetricsManage} sub-commands.
  */
 public enum CacheMetricsManageCommandArg implements CommandArg {
-    /** Argument for applying a sub-command to all user caches. */
+    /** Argument for applying a sub-command to an explicitly specified caches. */
     CACHES("--caches"),
 
     /** Argument for applying a sub-command to all user caches. */
