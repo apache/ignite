@@ -87,7 +87,8 @@ public class IgniteCachingProviderSelfTest extends IgniteCacheAbstractTest {
     @Override protected void afterTest() throws Exception {
         try {
             Caching.getCachingProvider().close();
-        } finally {
+        }
+        finally {
             stopAllGrids();
         }
     }

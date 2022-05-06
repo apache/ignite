@@ -265,7 +265,8 @@ public class OdbcMessageParser implements ClientListenerMessageParser {
         if (ver.compareTo(OdbcConnectionContext.VER_2_1_5) < 0) {
             writer.writeByte((byte)(msg.status() == ClientListenerResponse.STATUS_SUCCESS ?
                 ClientListenerResponse.STATUS_SUCCESS : ClientListenerResponse.STATUS_FAILED));
-        } else
+        }
+        else
             writer.writeInt(msg.status());
 
         if (msg.status() != ClientListenerResponse.STATUS_SUCCESS) {

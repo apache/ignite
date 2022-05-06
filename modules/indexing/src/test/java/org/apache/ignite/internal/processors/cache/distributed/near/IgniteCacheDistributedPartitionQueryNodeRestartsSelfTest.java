@@ -98,7 +98,8 @@ public class IgniteCacheDistributedPartitionQueryNodeRestartsSelfTest extends
                                         !g.cachex("de").context().topology().hasMovingPartitions();
                                 }
                             }, 30_000));
-                        } finally {
+                        }
+                        finally {
                             states.set(grid, 0);
                         }
                     }
@@ -117,7 +118,8 @@ public class IgniteCacheDistributedPartitionQueryNodeRestartsSelfTest extends
             fut.get();
 
             fut2.get();
-        } finally {
+        }
+        finally {
             log().info("Queries count: " + cnt.get());
 
             for (int i = 0; i < GRIDS_COUNT; i++)

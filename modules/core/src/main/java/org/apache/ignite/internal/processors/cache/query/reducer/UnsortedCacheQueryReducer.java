@@ -59,7 +59,8 @@ public class UnsortedCacheQueryReducer<R> extends CacheQueryReducer<R> {
 
                     if (page.hasNext())
                         return true;
-                } else
+                }
+                else
                     futs[pendingNodesCnt++] = f;
             }
 

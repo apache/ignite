@@ -395,7 +395,8 @@ public class TxRecoveryWithConcurrentRollbackTest extends GridCommonAbstractTest
                 p.tx().prepareNearTxLocal();
 
                 p.tx().currentPrepareFuture().listen(fut -> txPrepareLatch.countDown());
-            } catch (Exception e) {
+            }
+            catch (Exception e) {
                 // No-op.
             }
         }, 1, "tx1-thread");

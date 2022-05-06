@@ -169,7 +169,8 @@ public class DistributedTransactionConfiguration {
                                 txOwnerDumpRequestsAllowed,
                                 dfltTxOwnerDumpRequestsAllowed,
                                 log);
-                    } else {
+                    }
+                    else {
                         log.warning("Distributed metastorage is not supported. " +
                             "All distributed transaction configuration parameters are unavailable. " +
                             "Default values will be set.");

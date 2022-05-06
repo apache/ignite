@@ -6142,7 +6142,8 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                         try {
                             res = pingNode(msg.nodeToPing());
-                        } catch (IgniteSpiException e) {
+                        }
+                        catch (IgniteSpiException e) {
                             log.error("Failed to ping node [nodeToPing=" + msg.nodeToPing() + ']', e);
 
                             res = false;

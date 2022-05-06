@@ -173,7 +173,8 @@ public class KubernetesServiceAddressResolver {
             for (Address address : addresses) {
                 try {
                     addrs.add(InetAddress.getByName(address.ip));
-                } catch (UnknownHostException ignore) {
+                }
+                catch (UnknownHostException ignore) {
                     throw new IgniteException("Kubernetes Address is not valid IP address");
                 }
             }
@@ -190,7 +191,8 @@ public class KubernetesServiceAddressResolver {
     private String serviceAccountToken(String file) {
         try {
             return new String(Files.readAllBytes(Paths.get(file)));
-        } catch (IOException e) {
+        }
+        catch (IOException e) {
             throw new IgniteException("Failed to load services account token [setAccountToken= " + file + "]", e);
         }
     }

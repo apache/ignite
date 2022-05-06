@@ -1286,7 +1286,8 @@ public class PlatformUtils {
                 writer.writeString(e.getKey());
                 writer.writeObjectDetached(e.getValue());
             }
-        } else {
+        }
+        else {
             writer.writeInt(0);
         }
     }

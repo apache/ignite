@@ -698,7 +698,8 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
             volatileGrpName += "@" + dataRegionName;
 
             grpName = volatileGrpName;
-        } else if (cfg.getGroupName() != null)
+        }
+        else if (cfg.getGroupName() != null)
             grpName = cfg.getGroupName();
         else
             grpName = DEFAULT_DS_GROUP_NAME;

@@ -34,7 +34,8 @@ public interface Promise<T> extends Future<T> {
     public default T unsafeGet() {
         try {
             return get();
-        } catch (InterruptedException | ExecutionException e) {
+        }
+        catch (InterruptedException | ExecutionException e) {
             throw new RuntimeException(e);
         }
     }
@@ -46,7 +47,8 @@ public interface Promise<T> extends Future<T> {
     public default Optional<T> getOpt() {
         try {
             return Optional.of(get());
-        } catch (InterruptedException | ExecutionException e) {
+        }
+        catch (InterruptedException | ExecutionException e) {
             return Optional.empty();
         }
     }

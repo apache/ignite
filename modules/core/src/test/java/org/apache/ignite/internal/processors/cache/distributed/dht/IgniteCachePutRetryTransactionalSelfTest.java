@@ -158,7 +158,8 @@ public class IgniteCachePutRetryTransactionalSelfTest extends IgniteCachePutRetr
                         if (i > 0 && i % 500 == 0)
                             info("Done: " + i);
                     }
-                } catch (Exception e) {
+                }
+                catch (Exception e) {
                     err.set(th, e);
                 }
 

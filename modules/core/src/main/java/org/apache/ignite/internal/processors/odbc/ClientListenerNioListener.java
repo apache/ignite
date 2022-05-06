@@ -278,7 +278,8 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<Clie
         try {
             if (timeoutTask != null)
                 timeoutTask.close();
-        } catch (Exception e) {
+        }
+        catch (Exception e) {
             U.warn(log, "Failed to cancel handshake timeout task " +
                 "[remoteAddr=" + ses.remoteAddress() + ", err=" + e + ']');
         }

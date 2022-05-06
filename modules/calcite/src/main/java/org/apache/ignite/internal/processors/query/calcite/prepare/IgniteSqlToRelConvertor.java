@@ -142,7 +142,8 @@ public class IgniteSqlToRelConvertor extends SqlToRelConverter {
                 int level2Idx =
                     ((RexInputRef)level1InsertExprs.get(level1Idx)).getIndex();
                 projects.add(level2InsertExprs.get(level2Idx));
-            } else
+            }
+            else
                 projects.add(level1InsertExprs.get(level1Idx));
         }
         if (updateCall != null) {

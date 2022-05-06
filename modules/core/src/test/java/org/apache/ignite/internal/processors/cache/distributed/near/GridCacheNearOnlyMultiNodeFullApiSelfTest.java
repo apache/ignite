@@ -544,7 +544,8 @@ public class GridCacheNearOnlyMultiNodeFullApiSelfTest extends GridCachePartitio
                 asyncCache.clear();
 
                 asyncCache.future().get();
-            } else
+            }
+            else
                 jcache(nearIdx).clearAsync().get();
         }
         else

@@ -695,10 +695,12 @@ public class FunctionalTest extends AbstractBinaryArraysTest {
                     try (ClientTransaction tx2 = client.transactions().txStart(OPTIMISTIC, REPEATABLE_READ, 500)) {
                         cache.put(0, "value2");
                         tx2.commit();
-                    } finally {
+                    }
+                    finally {
                         try {
                             barrier.await(2000, TimeUnit.MILLISECONDS);
-                        } catch (Throwable ignore) {
+                        }
+                        catch (Throwable ignore) {
                             // No-op.
                         }
                     }

@@ -100,7 +100,8 @@ abstract class GenericQueryPager<T> implements QueryPager<T> {
         if (cursorId != null && hasNext && !clientCh.closed()) {
             try {
                 clientCh.service(ClientOperation.RESOURCE_CLOSE, req -> req.out().writeLong(cursorId), null);
-            } catch (ClientConnectionException | ClientReconnectedException ignored) {
+            }
+            catch (ClientConnectionException | ClientReconnectedException ignored) {
                 // Original connection was lost and cursor was closed by the server.
             }
         }

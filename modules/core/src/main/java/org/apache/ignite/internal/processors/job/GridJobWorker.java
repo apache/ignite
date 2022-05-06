@@ -661,7 +661,8 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
                             U.error(log, msg, e);
 
                             ctx.failure().process(new FailureContext(FailureType.CRITICAL_ERROR, e));
-                        } else if (log.isDebugEnabled())
+                        }
+                        else if (log.isDebugEnabled())
                             U.error(log, msg, e);
                     }
 

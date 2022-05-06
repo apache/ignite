@@ -632,7 +632,8 @@ public class PlatformContextImpl implements PlatformContext, PartitionsExchangeA
                 out.writeInt(part);
                 out.writeLong(ver.topologyVersion());
                 out.writeInt(ver.minorTopologyVersion());
-            } else {
+            }
+            else {
                 out.writeBoolean(false);
             }
 
