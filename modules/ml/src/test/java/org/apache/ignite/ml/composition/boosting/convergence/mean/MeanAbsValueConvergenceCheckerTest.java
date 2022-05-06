@@ -55,7 +55,8 @@ public class MeanAbsValueConvergenceCheckerTest extends ConvergenceCheckerTest {
 
             double onDSError = checker.computeMeanErrorOnDataset(dataset, notConvergedMdl);
             Assert.assertEquals(1.55, onDSError, 0.01);
-        } catch (Exception e) {
+        }
+        catch (Exception e) {
             throw new RuntimeException(e);
         }
     }
@@ -75,7 +76,8 @@ public class MeanAbsValueConvergenceCheckerTest extends ConvergenceCheckerTest {
 
             double onDSError = checker.computeMeanErrorOnDataset(dataset, notConvergedMdl);
             Assert.assertEquals(9090.41, onDSError, 0.01);
-        } catch (Exception e) {
+        }
+        catch (Exception e) {
             throw new RuntimeException(e);
         }
     }

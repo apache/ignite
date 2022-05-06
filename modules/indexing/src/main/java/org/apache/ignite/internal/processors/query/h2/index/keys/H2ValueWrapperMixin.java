@@ -33,11 +33,13 @@ interface H2ValueWrapperMixin {
         try {
             return H2Utils.wrap(null, obj, type);
 
-        } catch (ClassCastException e) {
+        }
+        catch (ClassCastException e) {
             throw new IgniteSQLException("Failed to wrap object into H2 Value. " + e.getMessage(),
                 IgniteQueryErrorCode.FIELD_TYPE_MISMATCH, e);
 
-        } catch (IgniteCheckedException e) {
+        }
+        catch (IgniteCheckedException e) {
             throw new IgniteException("Failed to wrap object into H2 Value.", e);
         }
     }

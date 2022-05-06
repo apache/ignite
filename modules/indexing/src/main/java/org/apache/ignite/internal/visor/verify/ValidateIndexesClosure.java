@@ -647,11 +647,13 @@ public class ValidateIndexesClosure implements IgniteCallable<VisorValidateIndex
                         continue;
                     else
                         processedNumber++;
-                } else {
+                }
+                else {
                     if (checkFirst > 0) {
                         if (current++ > checkFirst)
                             break;
-                    } else {
+                    }
+                    else {
                         if (current++ % checkThrough > 0)
                             continue;
                     }
@@ -1206,7 +1208,8 @@ public class ValidateIndexesClosure implements IgniteCallable<VisorValidateIndex
                     cacheGrpInfo(cacheGrpCtx),
                     s -> new ValidateIndexesCheckSizeResult(0, new ArrayList<>())
                 ).issues().add(new ValidateIndexesCheckSizeIssue(null, 0, cacheSizeErr));
-            } else {
+            }
+            else {
                 cacheSizeTotal.computeIfAbsent(grpId, i -> new CacheSize(null, new HashMap<>()))
                     .merge(cacheSize.cacheSizePerTbl);
             }

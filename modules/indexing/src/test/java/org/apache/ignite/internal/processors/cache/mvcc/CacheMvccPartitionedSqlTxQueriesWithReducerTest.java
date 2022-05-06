@@ -80,7 +80,8 @@ public class CacheMvccPartitionedSqlTxQueriesWithReducerTest extends CacheMvccSq
 
         try {
             queryFut.get(TX_TIMEOUT, TimeUnit.MILLISECONDS);
-        } catch (Exception e) {
+        }
+        catch (Exception e) {
             assertTrue(X.hasCause(e, ClusterTopologyException.class));
         }
     }
