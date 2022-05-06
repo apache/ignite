@@ -1130,6 +1130,23 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
     public IgniteFuture<V> getAndReplaceAsync(K key, V val);
 
     /**
+     * Returns the remaining time to live of the specified key.
+     *
+     * @param key Key
+     * @return remaining TTL in milliseconds, null if there is no expiry policy or EternalExpiryPolicy.
+     */
+    @IgniteAsyncSupported
+    public Long ttl(K key);
+
+    /**
+     * Asynchronously returns the remaining time to live of the specified key.
+     *
+     * @param key
+     * @return remaining TTL in milliseconds, null if there is no expiry policy or EternalExpiryPolicy.
+     */
+    public IgniteFuture<Long> ttlAsync(K key);
+
+    /**
      * {@inheritDoc}
      * <p>
      * Keys are locked in the order in which they appear in key set. It is caller's responsibility to

@@ -478,6 +478,16 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
     }
 
     /** {@inheritDoc} */
+    @Override public Long ttl(K key) {
+        return compute.call(new TTLTask<>(cacheName, isAsync, key));
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteFuture<Long> ttlAsync(K key) {
+        return compute.callAsync(new TTLTask<>(cacheName, isAsync, key));
+    }
+
+    /** {@inheritDoc} */
     @Override public void removeAll(Set<? extends K> keys) {
         compute.call(new RemoveAllKeysTask<>(cacheName, isAsync, keys));
     }
@@ -1537,6 +1547,31 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
         /** {@inheritDoc} */
         @Override public V call() throws Exception {
             return cache().getAndReplace(key, val);
+        }
+    }
+
+    private static class TTLTask<K> extends CacheTaskAdapter<K, Long, Long> {
+        private final K key;
+
+        /**
+         *
+         * @param cacheName
+         * @param async
+         * @param key
+         */
+        public TTLTask(String cacheName, boolean async, K key) {
+            super(cacheName, async, null);
+            this.key = key;
+        }
+
+        /**
+         * Computes a result, or throws an exception if unable to do so.
+         *
+         * @return computed result
+         * @throws Exception if unable to compute a result
+         */
+        @Override public Long call() throws Exception {
+            return cache().ttl(key);
         }
     }
 

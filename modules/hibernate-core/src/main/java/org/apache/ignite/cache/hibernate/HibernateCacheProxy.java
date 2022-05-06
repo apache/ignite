@@ -235,6 +235,16 @@ public class HibernateCacheProxy implements IgniteInternalCache<Object, Object> 
     }
 
     /** {@inheritDoc} */
+    @Override public Long ttl(Object key) {
+        return delegate.get().ttl(key);
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteInternalFuture<Long> ttlAsync(Object key) {
+        return delegate.get().ttlAsync(key);
+    }
+
+    /** {@inheritDoc} */
     @Override public boolean replace(Object key, Object val) throws IgniteCheckedException {
         return delegate.get().replace(keyTransformer.transform(key), val);
     }

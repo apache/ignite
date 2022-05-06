@@ -540,6 +540,16 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
     }
 
     /** {@inheritDoc} */
+    @Override public Long ttl(K key) {
+        return dht.ttl(key);
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteInternalFuture<Long> ttlAsync(K key) {
+        return dht.ttlAsync(key);
+    }
+
+    /** {@inheritDoc} */
     @Override public void removeAll(Collection<? extends K> keys)
         throws IgniteCheckedException {
         dht.removeAll(keys);

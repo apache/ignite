@@ -3236,6 +3236,66 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     }
 
     /** {@inheritDoc} */
+    @Override public Long ttl(K key) {
+        boolean statsEnabled = ctx.statisticsEnabled();
+
+        long start = statsEnabled ? System.nanoTime() : 0L;
+
+        A.notNull(key, "key");
+
+        Long ttlVal = ttl0(key);
+
+        if (statsEnabled)
+            metrics0().addRemoveAndGetTimeNanos(System.nanoTime() - start);
+
+        return ttlVal;
+    }
+
+    /**
+     *
+     * @param key
+     * @return
+     */
+    protected Long ttl0(final K key) {
+        GridCacheEntryEx entry = entryEx(key);
+        try {
+            // if the data isn't loaded in, we don't get expiry date
+            entry.unswap(false);
+
+            // ...and ttl is always(?) empty, so use expireTime()
+            long expriryTime = entry.expireTime();
+            return (expriryTime == 0) ? null : expriryTime - U.currentTimeMillis();
+        }
+        catch (GridCacheEntryRemovedException | IgniteCheckedException e) {
+            return null;
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteInternalFuture<Long> ttlAsync(K key) {
+        final boolean statsEnabled = ctx.statisticsEnabled();
+
+        final long start = statsEnabled ? System.nanoTime() : 0L;
+
+        A.notNull(key, "key");
+
+        IgniteInternalFuture<Long> fut = ttlAsync0(key);
+
+        if (statsEnabled)
+            fut.listen(new UpdateRemoveTimeStatClosure<Long>(metrics0(), start));
+
+        return fut;
+    }
+
+    protected IgniteInternalFuture<Long> ttlAsync0(K key) {
+        return ctx.closures().callLocalSafe(new GridPlainCallable<Long>() {
+            @Override public Long call() {
+                return ttl0(key);
+            }
+        }, false);
+    }
+
+    /** {@inheritDoc} */
     @Override public void removeAll() throws IgniteCheckedException {
         assert ctx.isLocal();
 

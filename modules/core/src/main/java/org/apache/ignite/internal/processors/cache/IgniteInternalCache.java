@@ -1097,6 +1097,22 @@ public interface IgniteInternalCache<K, V> extends Iterable<Cache.Entry<K, V>> {
     public IgniteInternalFuture<V> getAndRemoveAsync(K key);
 
     /**
+     * Returns the remaining time to live of the specified key.
+     *
+     * @param key Key
+     * @return remaining TTL in milliseconds, null if there is no expiry policy or EternalExpiryPolicy.
+     */
+    public Long ttl(K key);
+
+    /**
+     * Asynchronously returns the remaining time to live of the specified key.
+     *
+     * @param key
+     * @return remaining TTL in milliseconds, null if there is no expiry policy or EternalExpiryPolicy.
+     */
+    public IgniteInternalFuture<Long> ttlAsync(K key);
+
+    /**
      * Removes given key mapping from cache.
      * <p>
      * This method will return {@code true} if remove did occur, which means that all optionally
