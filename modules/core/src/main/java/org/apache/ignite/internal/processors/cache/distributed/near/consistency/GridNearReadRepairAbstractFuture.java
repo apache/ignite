@@ -232,8 +232,8 @@ public abstract class GridNearReadRepairAbstractFuture extends GridFutureAdapter
         }
 
         if (!ctx.kernalContext().cache().context().exchange().lastFinishedFuture().rebalanced())
-            throw new IllegalStateException("Operation can not be performed on unstable topology. " +
-                "Rebalance is in progress?");
+            onDone(new IllegalStateException("Operation can not be performed on unstable topology. " +
+                "Rebalance is in progress?"));
 
         inited = true;
 
