@@ -45,7 +45,8 @@ public class HibernateGeneralDataRegion extends HibernateRegion implements Gener
     @Nullable @Override public Object get(Object key) throws CacheException {
         try {
             return cache.get(key);
-        } catch (IgniteCheckedException e) {
+        }
+        catch (IgniteCheckedException e) {
             throw new CacheException(e);
         }
     }
@@ -54,7 +55,8 @@ public class HibernateGeneralDataRegion extends HibernateRegion implements Gener
     @Override public void put(Object key, Object val) throws CacheException {
         try {
             cache.put(key, val);
-        } catch (IgniteCheckedException e) {
+        }
+        catch (IgniteCheckedException e) {
             throw new CacheException(e);
         }
     }

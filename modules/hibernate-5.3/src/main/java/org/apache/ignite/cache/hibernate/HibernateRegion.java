@@ -47,7 +47,8 @@ public abstract class HibernateRegion extends AbstractRegion implements Extended
     @Override public void clear() {
         try {
             cache.clear();
-        } catch (IgniteCheckedException e) {
+        }
+        catch (IgniteCheckedException e) {
             throw new CacheException("Problem clearing cache [name=" + cache.name() + "]", e);
         }
     }
