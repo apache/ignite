@@ -32,6 +32,7 @@
 
     <properties>
         <prometheus.version>0.3.0</prometheus.version>
+        <gatling.version>3.7.6</gatling.version>
     </properties>
 
     <artifactId>ignite-ducktests</artifactId>
@@ -217,6 +218,24 @@
             <groupId>io.prometheus</groupId>
             <artifactId>simpleclient_httpserver</artifactId>
             <version>${prometheus.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>io.gatling</groupId>
+            <artifactId>gatling-core</artifactId>
+            <version>${gatling.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>io.gatling</groupId>
+            <artifactId>gatling-app</artifactId>
+            <version>${gatling.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.ignite.gatling</groupId>
+            <artifactId>ignite-gatling-plugin</artifactId>
+            <version>1.0.0-SNAPSHOT</version>
         </dependency>
     </dependencies>
 
