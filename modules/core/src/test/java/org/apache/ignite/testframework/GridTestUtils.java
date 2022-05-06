@@ -371,7 +371,8 @@ public final class GridTestUtils {
     public static void assertNotContains(@Nullable IgniteLogger log, String str, String substr) {
         try {
             assertFalse(str.contains(substr));
-        } catch (AssertionError e) {
+        }
+        catch (AssertionError e) {
             U.warn(log, String.format("String contain substring: '%s', but shouldn't:", substr));
             U.warn(log, "String:");
             U.warn(log, str);
@@ -391,7 +392,8 @@ public final class GridTestUtils {
     public static void assertContains(@Nullable IgniteLogger log, String str, String substr) {
         try {
             assertTrue(str != null && str.contains(substr));
-        } catch (AssertionError e) {
+        }
+        catch (AssertionError e) {
             U.warn(log, String.format("String does not contain substring: '%s':", substr));
             U.warn(log, "String:");
             U.warn(log, str);
@@ -411,7 +413,8 @@ public final class GridTestUtils {
     public static <C extends Collection<T>, T> void assertContains(@Nullable IgniteLogger log, C col, T elem) {
         try {
             assertTrue(col.contains(elem));
-        } catch (AssertionError e) {
+        }
+        catch (AssertionError e) {
             U.warn(log, String.format("Collection does not contain: '%s':", elem));
             U.warn(log, "Collection:");
             U.warn(log, col);
@@ -431,7 +434,8 @@ public final class GridTestUtils {
     public static <C extends Collection<T>, T> void assertNotContains(@Nullable IgniteLogger log, C col, T elem) {
         try {
             assertFalse(col.contains(elem));
-        } catch (AssertionError e) {
+        }
+        catch (AssertionError e) {
             U.warn(log, String.format("Collection contain element: '%s' but shouldn't:", elem));
             U.warn(log, "Collection:");
             U.warn(log, col);
@@ -1101,7 +1105,8 @@ public final class GridTestUtils {
         try {
             for (Thread t : threads)
                 t.join();
-        } catch (InterruptedException e) {
+        }
+        catch (InterruptedException e) {
             for (Thread t : threads)
                 t.interrupt();
 

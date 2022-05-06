@@ -257,7 +257,8 @@ public class GeneticAlgorithm {
                 List<Chromosome> twoChildren = crossover(ch1, ch2);
                 newPopulation.setChromosome(amountOfEliteChromosomes + j, twoChildren.get(0));
                 newPopulation.setChromosome(amountOfEliteChromosomes + j + 1, twoChildren.get(1));
-            } else {
+            }
+            else {
                 newPopulation.setChromosome(amountOfEliteChromosomes + j, ch1);
                 newPopulation.setChromosome(amountOfEliteChromosomes + j + 1, ch2);
             }
@@ -352,7 +353,8 @@ public class GeneticAlgorithm {
             if (rnd.nextDouble() < UNIFORM_RATE) {
                 child1.setGene(i, firstParent.getGene(i));
                 child2.setGene(i, secondParent.getGene(i));
-            } else {
+            }
+            else {
                 child1.setGene(i, secondParent.getGene(i));
                 child2.setGene(i, firstParent.getGene(i));
             }

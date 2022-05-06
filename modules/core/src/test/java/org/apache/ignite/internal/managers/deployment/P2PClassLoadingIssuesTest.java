@@ -34,7 +34,8 @@ public class P2PClassLoadingIssuesTest {
             P2PClassLoadingIssues.rethrowDisarmedP2PClassLoadingFailure(p2pClassLoadingError());
 
             fail("An exception should be thrown");
-        } catch (IgniteException e) {
+        }
+        catch (IgniteException e) {
             // expected
         }
     }
@@ -62,7 +63,8 @@ public class P2PClassLoadingIssuesTest {
             P2PClassLoadingIssues.rethrowDisarmedP2PClassLoadingFailure(nonP2PClassLoadingError());
 
             fail("An exception should be thrown");
-        } catch (NoClassDefFoundError e) {
+        }
+        catch (NoClassDefFoundError e) {
             // expected
         }
     }

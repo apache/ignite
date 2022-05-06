@@ -62,14 +62,16 @@ public class InlineIndexFactory implements IndexFactory {
 
                     trees[i] = createIndexSegment(cctx, sdef, page, stats, recommender, i);
 
-                } finally {
+                }
+                finally {
                     db.checkpointReadUnlock();
                 }
             }
 
             return new InlineIndexImpl(cctx, sdef, trees, stats);
 
-        } catch (Exception e) {
+        }
+        catch (Exception e) {
             throw new RuntimeException(e);
         }
     }

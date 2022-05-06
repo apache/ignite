@@ -1644,7 +1644,8 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
 
                     return gate();
                 }
-            } catch (IgniteCheckedException ignore) {
+            }
+            catch (IgniteCheckedException ignore) {
                 // Opportunity didn't work out.
             }
         }

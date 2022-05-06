@@ -262,7 +262,8 @@ public class IgnitePdsDefragmentationTest extends GridCommonAbstractTest {
                 final FilePageStore store = (FilePageStore)((PageStoreCollection)grp.shared().pageStore()).getStore(grpId, p);
 
                 return new File(store.getFileAbsolutePath()).length();
-            } catch (IgniteCheckedException e) {
+            }
+            catch (IgniteCheckedException e) {
                 throw new IgniteException(e);
             }
         }).toArray();

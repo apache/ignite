@@ -379,7 +379,8 @@ public class CacheGroupKeyChangeTest extends AbstractEncryptionTest {
             try {
                 grpKeyFut.get(MAX_AWAIT_MILLIS);
                 checkGroupKey(grpId, keyId, MAX_AWAIT_MILLIS);
-            } catch (IgniteException e) {
+            }
+            catch (IgniteException e) {
                 assertTrue(e.getMessage().contains("Cache group key change was rejected. Master key has been changed."));
 
                 // Retry iteration.
@@ -717,7 +718,8 @@ public class CacheGroupKeyChangeTest extends AbstractEncryptionTest {
 
             waitForCondition(() ->
                 encrMgr0.groupKeyIds(grpId).size() == 1 && encrMgr1.groupKeyIds(grpId).size() == 1, MAX_AWAIT_MILLIS);
-        } finally {
+        }
+        finally {
             loadFut.cancel();
         }
 

@@ -598,7 +598,8 @@ public class IndexQueryProcessor {
                         }
 
                         return 0;
-                    } catch (IgniteCheckedException e) {
+                    }
+                    catch (IgniteCheckedException e) {
                         throw new IgniteException("Failed to sort remote index rows", e);
                     }
                 }

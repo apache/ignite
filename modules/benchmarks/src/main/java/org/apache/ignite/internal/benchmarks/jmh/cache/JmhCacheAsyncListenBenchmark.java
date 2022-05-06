@@ -101,7 +101,8 @@ public class JmhCacheAsyncListenBenchmark extends JmhCacheAbstractBenchmark {
                     ab.set(true);
                     ab.notifyAll();
                 }
-            } catch (Exception e) {
+            }
+            catch (Exception e) {
                 e.printStackTrace();
             }
         });

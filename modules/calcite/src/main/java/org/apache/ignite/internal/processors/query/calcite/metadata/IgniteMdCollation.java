@@ -256,7 +256,8 @@ public class IgniteMdCollation implements MetadataHandler<BuiltInMetadata.Collat
         for (Ord<RexNode> project : Ord.<RexNode>zip(projects)) {
             if (project.e instanceof RexInputRef) {
                 targets.put(((RexInputRef)project.e).getIndex(), project.i);
-            } else if (project.e instanceof RexCall) {
+            }
+            else if (project.e instanceof RexCall) {
                 final RexCall call = (RexCall)project.e;
                 final RexCallBinding binding =
                     RexCallBinding.create(Commons.typeFactory(input), call, inputCollations);
@@ -363,7 +364,8 @@ public class IgniteMdCollation implements MetadataHandler<BuiltInMetadata.Collat
                 Ordering<List<RexLiteral>> ordering;
                 if (pairs.isEmpty()) {
                     ordering = comparator;
-                } else {
+                }
+                else {
                     ordering = Util.last(pairs).right.compound(comparator);
                 }
                 pairs.add(Pair.of(fieldCollation, ordering));

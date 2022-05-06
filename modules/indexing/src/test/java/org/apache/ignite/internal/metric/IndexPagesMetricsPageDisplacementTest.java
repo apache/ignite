@@ -178,7 +178,8 @@ public class IndexPagesMetricsPageDisplacementTest extends GridCommonAbstractTes
 
             try {
                 pageStore.read(pageId, buf, false);
-            } catch (IgniteDataIntegrityViolationException ignored) {
+            }
+            catch (IgniteDataIntegrityViolationException ignored) {
                 // sometimes we try to access an invalid page, in which case this exception will be thrown.
                 // We simply ignore it and try to access other pages.
             }

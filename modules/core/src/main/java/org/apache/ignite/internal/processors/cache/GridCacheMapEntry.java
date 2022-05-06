@@ -3481,7 +3481,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                             updateCntr,
                             mvccVer == null ? MvccUtils.INITIAL_VERSION : mvccVer
                         )));
-                    } else {
+                    }
+                    else {
                         cctx.group().wal().log(new DataRecord(new DataEntry(
                             cctx.cacheId(),
                             key,
@@ -5285,7 +5286,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
                 try {
                     res = cctx.offheap().mvccRemove(entry, mvccVer, tx.local(), needHistory, needOldVal, filter, needVal);
-                } finally {
+                }
+                finally {
                     cctx.shared().database().checkpointReadUnlock();
                 }
 
@@ -5609,7 +5611,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 try {
                     res = cctx.offheap().mvccUpdate(entry, val, newVer, expireTime, mvccVer, tx.local(), needHistory,
                         noCreate, needOldVal, filter, needVal, keepBinary, entryProc, invokeArgs);
-                } finally {
+                }
+                finally {
                     cctx.shared().database().checkpointReadUnlock();
                 }
 
@@ -7078,7 +7081,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             byte[] valBytes = val == null ? null : val.valueBytes(ctx);
 
             proc.context().updatePlatformCache(this.cctx.cacheId(), keyBytes, valBytes, partition(), ver);
-        } catch (Throwable e) {
+        }
+        catch (Throwable e) {
             U.error(log, "Failed to update Platform Cache: " + e);
         }
     }
