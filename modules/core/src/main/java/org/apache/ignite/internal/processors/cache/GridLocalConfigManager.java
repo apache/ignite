@@ -94,17 +94,17 @@ public class GridLocalConfigManager {
     /** Cache processor. */
     private final GridCacheProcessor cacheProcessor;
 
+    /** Absolute directory for file page store. Includes consistent id based folder. */
+    private final File storeWorkDir;
+
+    /** Marshaller. */
+    private final Marshaller marshaller;
+
     /** Context. */
     private final GridKernalContext ctx;
 
     /** Lock which guards configuration changes. */
     private final ReentrantReadWriteLock chgLock = new ReentrantReadWriteLock();
-
-    /** Absolute directory for file page store. Includes consistent id based folder. */
-    private File storeWorkDir;
-
-    /** Marshaller. */
-    private final Marshaller marshaller;
 
     /**
      * @param cacheProcessor Cache processor.
@@ -118,11 +118,7 @@ public class GridLocalConfigManager {
         ctx = kernalCtx;
         log = ctx.log(getClass());
         marshaller = MarshallerUtils.jdkMarshaller(ctx.igniteInstanceName());
-
-        //TODO: execute in start method.
-        final PdsFolderSettings folderSettings = ctx.pdsFolderResolver().resolveFolders();
-
-        storeWorkDir = folderSettings.persistentStoreNodePath();
+        storeWorkDir = ctx.pdsFolderResolver().resolveFolders().persistentStoreNodePath();
 
         U.ensureDirectory(storeWorkDir, "page store work directory", log);
 
