@@ -233,6 +233,13 @@
             <version>${javassist.version}</version>
             <scope>test</scope>
         </dependency>
+
+        <dependency>
+            <groupId>log4j</groupId>
+            <artifactId>log4j</artifactId>
+            <version>${log4j.version}</version>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <build>
@@ -907,6 +914,7 @@
                     <dependency>
                         <groupId>org.apache.hadoop</groupId>
                         <artifactId>hadoop-common</artifactId>
+                        <version>${hadoop.version}</version>
                         <exclusions>
                             <exclusion>
                                 <!-- This dependency is not available with java 9.-->
@@ -918,6 +926,7 @@
                     <dependency>
                         <groupId>org.apache.hadoop</groupId>
                         <artifactId>hadoop-common</artifactId>
+                        <version>${hadoop.version}</version>
                         <type>test-jar</type>
                         <exclusions>
                             <exclusion>

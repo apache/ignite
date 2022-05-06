@@ -24,7 +24,7 @@ import org.apache.ignite.internal.util.IgniteUtils
 import org.apache.ignite.spark.IgniteContext.setIgniteHome
 import org.apache.spark.sql.SQLContext
 import org.apache.spark.SparkContext
-import org.apache.log4j.Logger
+import org.apache.logging.log4j.LogManager
 import org.apache.spark.scheduler.{SparkListener, SparkListenerApplicationEnd}
 
 /**
@@ -233,5 +233,5 @@ class Once(clo: () ⇒ IgniteConfiguration) extends Serializable {
   * This object is used to avoid problems with log4j serialization.
   */
 object Logging extends Serializable {
-    @transient lazy val log = Logger.getLogger(classOf[IgniteContext])
+    @transient lazy val log = LogManager.getLogger(classOf[IgniteContext])
 }

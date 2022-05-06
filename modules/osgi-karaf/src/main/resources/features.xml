@@ -158,18 +158,6 @@
         <bundle start="true">mvn:org.apache.ignite/ignite-kafka-ext/${ignite-kafka-ext.version}</bundle>
     </feature>
 
-    <feature name="ignite-log4j" version="${project.version}" description="Apache Ignite :: log4j">
-        <details>
-            <![CDATA[The Apache Ignite log4j module + dependencies. 
-            
-            This module installs an OSGi fragment that exposes extra packages from the Pax Logging bundle required by Ignite. 
-            
-            Be sure to refresh the Pax Logging bundles manually in case this does not happen automatically.]]>
-        </details>
-        <bundle dependency="true" start-level="8">mvn:org.apache.ignite/ignite-osgi-paxlogging/${project.version}</bundle>
-        <bundle start="true">mvn:org.apache.ignite/ignite-log4j/${project.version}</bundle>
-    </feature>
-
     <feature name="ignite-mqtt-ext" version="${ignite-mqtt-ext.version}" description="Apache Ignite :: MQTT">
         <details>
             <![CDATA[The Apache Ignite MQTT module + dependencies.]]>

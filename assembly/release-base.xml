@@ -38,11 +38,6 @@
         </file>
 
         <file>
-            <source>config/ignite-log4j.xml</source>
-            <outputDirectory>/config</outputDirectory>
-        </file>
-
-        <file>
             <source>config/ignite-log4j2.xml</source>
             <outputDirectory>/config</outputDirectory>
         </file>

@@ -62,7 +62,7 @@
 
         <dependency>
             <groupId>${project.groupId}</groupId>
-            <artifactId>ignite-log4j</artifactId>
+            <artifactId>ignite-log4j2</artifactId>
             <scope>test</scope>
         </dependency>
 
@@ -148,13 +148,6 @@
                     <artifactId>commons-codec</artifactId>
                 </exclusion>
             </exclusions>
-        </dependency>
-
-        <!-- Apache log4j -->
-        <dependency>
-            <groupId>log4j</groupId>
-            <artifactId>log4j</artifactId>
-            <scope>test</scope>
         </dependency>
 
         <dependency>

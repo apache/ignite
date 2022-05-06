@@ -34,6 +34,12 @@
 
     <url>http://ignite.apache.org</url>
 
+    <properties>
+        <javax.resource.version>1.5</javax.resource.version>
+        <jboss.version>3.4.1.Final</jboss.version>
+        <xstream.version>1.4.8</xstream.version>
+    </properties>
+
     <dependencies>
         <dependency>
             <groupId>${project.groupId}</groupId>
@@ -81,7 +87,7 @@
         <dependency>
             <groupId>javax.resource</groupId>
             <artifactId>connector-api</artifactId>
-            <version>1.5</version>
+            <version>${javax.resource.version}</version>
             <scope>test</scope>
         </dependency>
 
@@ -106,7 +112,14 @@
 
         <dependency>
             <groupId>${project.groupId}</groupId>
-            <artifactId>ignite-log4j</artifactId>
+            <artifactId>ignite-log4j2</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.jboss.logging</groupId>
+            <artifactId>jboss-logging</artifactId>
+            <version>${jboss.version}</version>
             <scope>test</scope>
         </dependency>
 
@@ -127,7 +140,7 @@
         <dependency>
             <groupId>com.thoughtworks.xstream</groupId>
             <artifactId>xstream</artifactId>
-            <version>1.4.8</version>
+            <version>${xstream.version}</version>
             <scope>test</scope>
         </dependency>
 
