@@ -166,7 +166,8 @@ public class BinaryClassLoaderTest extends GridCommonAbstractTest {
             if (i % 50 == 0)
                 try {
                     info("Val: " + binaryVal.toString());
-                } catch (IgniteException e) {
+                }
+                catch (IgniteException e) {
                     info("Can not execute toString() on class " + binaryVal.type().typeName());
                 }
 
@@ -176,7 +177,8 @@ public class BinaryClassLoaderTest extends GridCommonAbstractTest {
 
             try {
                 binaryVal.deserialize();
-            } catch (BinaryObjectException e) {
+            }
+            catch (BinaryObjectException e) {
                 ClassNotFoundException cause = X.cause(e, ClassNotFoundException.class);
 
                 if (cause != null && cause.getMessage().contains(valClsName))

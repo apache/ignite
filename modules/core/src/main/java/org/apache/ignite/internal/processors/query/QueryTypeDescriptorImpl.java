@@ -733,7 +733,8 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
                                 propVal.getClass().getSimpleName() + "'");
                         }
                     }
-                } else if (coCtx.kernalContext().cacheObjects().typeId(propType.getName()) !=
+                }
+                else if (coCtx.kernalContext().cacheObjects().typeId(propType.getName()) !=
                     ((BinaryObject)propVal).type().typeId()) {
                     // Check for classes/enums implementing indexed interfaces.
                     final Class<?> cls = U.classForName(((BinaryObject)propVal).type().typeName(), null, true);

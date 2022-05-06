@@ -279,7 +279,8 @@ class ClientClusterGroupImpl implements ClientClusterGroup {
                 nodeIds.retainAll(projectionFilters.nodeIds);
 
             return nodeIds;
-        } else
+        }
+        else
             return F.nodeIds(nodes0());
     }
 

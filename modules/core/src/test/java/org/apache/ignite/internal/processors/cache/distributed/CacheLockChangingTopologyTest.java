@@ -143,7 +143,8 @@ public class CacheLockChangingTopologyTest extends GridCommonAbstractTest {
                 unlocked = true;
 
                 t.join();
-            } finally {
+            }
+            finally {
                 if (!unlocked)
                     lock.unlock();
             }

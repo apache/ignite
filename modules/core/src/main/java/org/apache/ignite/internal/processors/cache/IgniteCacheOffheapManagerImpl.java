@@ -1252,7 +1252,8 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
                 try {
                     dataStore.insertRows(batch, initPred);
-                } finally {
+                }
+                finally {
                     ctx.database().checkpointReadUnlock();
                 }
 

@@ -184,7 +184,8 @@ public class AtomicOperationsInTxTest extends GridCommonAbstractTest {
 
         try (Transaction tx = grid(0).transactions().txStart()) {
             op.accept(cache);
-        } catch (IgniteException e) {
+        }
+        catch (IgniteException e) {
             err = e;
         }
 
@@ -208,7 +209,8 @@ public class AtomicOperationsInTxTest extends GridCommonAbstractTest {
             cache = grid(0).cache(DEFAULT_CACHE_NAME).withAllowAtomicOpsInTx();
             eCls = CacheException.class;
             eMsg = "Explicit lock can't be acquired within a transaction.";
-        } else {
+        }
+        else {
             cache = grid(0).cache(DEFAULT_CACHE_NAME);
             eCls = IgniteException.class;
             eMsg = "Transaction spans operations on atomic cache";

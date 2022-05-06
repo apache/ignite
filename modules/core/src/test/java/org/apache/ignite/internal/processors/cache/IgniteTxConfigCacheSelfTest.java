@@ -240,7 +240,8 @@ public class IgniteTxConfigCacheSelfTest extends GridCommonAbstractTest {
                 throws EntryProcessorException {
                 try {
                     sleepForTxFailure();
-                } catch (InterruptedException e) {
+                }
+                catch (InterruptedException e) {
                     throw new EntryProcessorException(e);
                 }
                 return null;

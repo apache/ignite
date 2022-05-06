@@ -540,7 +540,8 @@ public class WalModeChangeAdvancedSelfTest extends WalModeChangeCommonAbstractSe
 
                 log.info(">>> Finished iteration: " + i);
             }
-        } finally {
+        }
+        finally {
             done.set(true);
         }
 

@@ -129,7 +129,8 @@ public class FileVersionCheckingFactory {
 
         try {
             latestVer = Integer.parseInt(System.getProperty(LATEST_VERSION_OVERRIDE_PROPERTY));
-        } catch (NumberFormatException ignore) {
+        }
+        catch (NumberFormatException ignore) {
             // No override.
         }
 

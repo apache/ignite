@@ -115,7 +115,8 @@ public class IgniteCacheAtomicConcurrentUnorderedUpdateAllTest extends GridCommo
             if (threadIdx % 2 == 0) {
                 for (int i = 0; i < CACHE_SIZE; i++)
                     map.put(i, i);
-            } else {
+            }
+            else {
                 for (int i = CACHE_SIZE - 1; i >= 0; i--)
                     map.put(i, i);
             }
@@ -123,7 +124,8 @@ public class IgniteCacheAtomicConcurrentUnorderedUpdateAllTest extends GridCommo
             for (int i = 0; i < 20; i++) {
                 try {
                     barrier.await();
-                } catch (Exception e) {
+                }
+                catch (Exception e) {
                     fail(e.getMessage());
                 }
 

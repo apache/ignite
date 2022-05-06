@@ -448,7 +448,8 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
                         op = val.nextOperation();
 
                         value = (op == StoreOperation.PUT) ? val.nextEntry().getValue() : null;
-                    } else {
+                    }
+                    else {
                         op = val.operation();
 
                         value = (op == StoreOperation.PUT) ? val.entry().getValue() : null;
@@ -507,7 +508,8 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
                     op = val.nextOperation();
 
                     value = (op == StoreOperation.PUT) ? val.nextEntry().getValue() : null;
-                } else {
+                }
+                else {
                     op = val.operation();
 
                     value = (op == StoreOperation.PUT) ? val.entry().getValue() : null;
@@ -766,7 +768,8 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
                 assert val.status() == ValueStatus.PENDING || val.status() == ValueStatus.PENDING_AND_UPDATED;
 
                 batch.put(e.getKey(), val.entry());
-            } finally {
+            }
+            finally {
                 val.readLock().unlock();
             }
         }

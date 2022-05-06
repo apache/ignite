@@ -173,7 +173,10 @@ public class GridCachePartitionsStateValidationTest extends GridCommonAbstractTe
                     k++;
                     try {
                         atomicCache.put(k, k);
-                    } catch (Exception ignored) {}
+                    }
+                    catch (Exception ignored) {
+                        // Ignore.
+                    }
                 }
             }, 1, "atomic-load");
 
@@ -193,7 +196,9 @@ public class GridCachePartitionsStateValidationTest extends GridCommonAbstractTe
 
                         tx.commit();
                     }
-                    catch (Exception ignored) { }
+                    catch (Exception ignored) {
+                        // Ignore.
+                    }
                 }
             }, 4, "tx-load");
 
@@ -230,8 +235,8 @@ public class GridCachePartitionsStateValidationTest extends GridCommonAbstractTe
                     messagesMap,
                     Collections.emptySet()
                 );
-
-            } finally {
+            }
+            finally {
                 // Stop load and resume exchange.
                 spi.unblockFullMessage();
 
@@ -292,7 +297,9 @@ public class GridCachePartitionsStateValidationTest extends GridCommonAbstractTe
                         blockFullMsgLatch.await();
                 }
             }
-            catch (Exception ignored) { }
+            catch (Exception ignored) {
+                // Ignore.
+            }
 
             super.sendMessage(node, msg, ackC);
         }

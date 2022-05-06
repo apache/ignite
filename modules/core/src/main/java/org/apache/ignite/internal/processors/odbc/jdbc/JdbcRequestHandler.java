@@ -432,7 +432,8 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
             }
 
             sender.send(resp);
-        } catch (Exception e) {
+        }
+        catch (Exception e) {
             U.error(null, "Error processing file batch", e);
 
             sender.send(new JdbcResponse(IgniteQueryErrorCode.UNKNOWN, "Server error: " + e));

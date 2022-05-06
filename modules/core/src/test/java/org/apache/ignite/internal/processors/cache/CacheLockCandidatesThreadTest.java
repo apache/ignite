@@ -97,7 +97,8 @@ public class CacheLockCandidatesThreadTest extends GridCommonAbstractTest {
                         locked.countDown();
 
                         unlock.await();
-                    } finally {
+                    }
+                    finally {
                         lock.unlock();
 
                         System.out.println("Trigger is unlocked");

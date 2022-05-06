@@ -1934,7 +1934,8 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
             try {
                 db.metaStorage().write(name, val);
                 db.metaStorage().writeRaw(unmarshalledName, new byte[0]);
-            } finally {
+            }
+            finally {
                 db.checkpointReadUnlock();
             }
 

@@ -67,7 +67,8 @@ public class ListeningTestLoggerTest extends GridCommonAbstractTest {
             startGridsMultiThreaded(gridCnt);
 
             assertTrue(lsnr.check());
-        } finally {
+        }
+        finally {
             stopAllGrids();
         }
     }

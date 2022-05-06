@@ -702,7 +702,9 @@ public class IgniteClusterActivateDeactivateTestWithPersistence extends IgniteCl
 
                         Thread.sleep(10);
                     }
-                    catch (Exception ignored) { }
+                    catch (Exception ignored) {
+                        // Ignore.
+                    }
                 }
             },
             2,

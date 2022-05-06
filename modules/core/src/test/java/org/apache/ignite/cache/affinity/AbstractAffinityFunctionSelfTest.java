@@ -124,7 +124,8 @@ public abstract class AbstractAffinityFunctionSelfTest extends GridCommonAbstrac
             aff.partition(null);
 
             fail("Should throw IllegalArgumentException due to NULL affinity key.");
-        } catch (IllegalArgumentException e) {
+        }
+        catch (IllegalArgumentException e) {
             e.getMessage().contains("Null key is passed for a partition calculation. " +
                 "Make sure that an affinity key that is used is initialized properly.");
         }
