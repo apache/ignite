@@ -26,6 +26,7 @@
                         <property name="backups" value="{{ cache.backups or 0 }}"/>
                     {% endif %}
                     <property name="atomicityMode" value="{{ cache.atomicity_mode or 'ATOMIC' }}"/>
+                    <property name="statisticsEnabled" value="{{ cache.statistics_enabled }}"/>
                 </bean>
                 {% endfor %}
             </list>

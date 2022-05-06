@@ -62,8 +62,8 @@ public class VisorTracingConfigurationTaskArg extends VisorTracingConfigurationI
         Scope scope,
         String lb,
         Double samplingRate,
-        Set<Scope> includedScopes)
-    {
+        Set<Scope> includedScopes
+    ) {
         super(scope,
             lb,
             samplingRate,
@@ -89,8 +89,8 @@ public class VisorTracingConfigurationTaskArg extends VisorTracingConfigurationI
     /** {@inheritDoc} */
     @Override protected void readExternalData(
         byte protoVer,
-        ObjectInput in) throws IOException, ClassNotFoundException
-    {
+        ObjectInput in
+    ) throws IOException, ClassNotFoundException {
         op = VisorTracingConfigurationOperation.fromOrdinal(in.readByte());
 
         super.readExternalData(protoVer, in);

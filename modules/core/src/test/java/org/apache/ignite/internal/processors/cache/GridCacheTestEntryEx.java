@@ -486,9 +486,7 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
         String taskName,
         @Nullable GridCacheVersion dhtVer,
         @Nullable Long updateCntr
-    )
-        throws IgniteCheckedException, GridCacheEntryRemovedException
-    {
+    ) throws IgniteCheckedException, GridCacheEntryRemovedException {
         rawPut(val, ttl);
 
         return new GridCacheUpdateTxResult(true);
@@ -874,6 +872,11 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
     /** @inheritDoc */
     @Override public long ttl() {
         return ttl;
+    }
+
+    /** @inheritDoc */
+    @Override public void updateTtl(GridCacheVersion ver, IgniteCacheExpiryPolicy expiryPlc) {
+        throw new UnsupportedOperationException();
     }
 
     /** @inheritDoc */

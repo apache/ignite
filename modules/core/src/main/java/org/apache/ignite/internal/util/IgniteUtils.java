@@ -120,6 +120,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.Properties;
 import java.util.Random;
 import java.util.ServiceLoader;
 import java.util.Set;
@@ -293,8 +294,10 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_LOCAL_HOST;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_MBEAN_APPEND_CLASS_LOADER_ID;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_MBEAN_APPEND_JVM_ID;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_NO_DISCO_ORDER;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_REST_START_ON_CLIENT;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_SSH_HOST;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_SSH_USER_NAME;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_SUCCESS_FILE;
 import static org.apache.ignite.IgniteSystemProperties.getBoolean;
 import static org.apache.ignite.events.EventType.EVTS_ALL;
 import static org.apache.ignite.events.EventType.EVTS_ALL_MINUS_METRIC_UPDATE;
@@ -643,6 +646,19 @@ public abstract class IgniteUtils {
 
     /** Byte count prefixes. */
     private static final String BYTE_CNT_PREFIXES = " KMGTPE";
+
+    /**
+     * Success file name property. This file is used with auto-restarting functionality when Ignite
+     * is started by supplied ignite.{bat|sh} scripts.
+     */
+    public static final String IGNITE_SUCCESS_FILE_PROPERTY = System.getProperty(IGNITE_SUCCESS_FILE);
+
+    /**
+     * JMX remote system property. Setting this property registered the Java VM platform's MBeans and published
+     * the Remote Method Invocation (RMI) connector via a private interface to allow JMX client applications
+     * to monitor a local Java platform, that is, a Java VM running on the same machine as the JMX client.
+     */
+    public static final String IGNITE_JMX_REMOTE_PROPERTY = System.getProperty("com.sun.management.jmxremote");
 
     /*
      * Initializes enterprise check.
@@ -1044,16 +1060,25 @@ public abstract class IgniteUtils {
      * @return Plugins.
      */
     public static List<PluginProvider> allPluginProviders() {
-        return AccessController.doPrivileged(new PrivilegedAction<List<PluginProvider>>() {
-            @Override public List<PluginProvider> run() {
-                List<PluginProvider> providers = new ArrayList<>();
+        List<PluginProvider> providers = new ArrayList<>();
 
-                ServiceLoader<PluginProvider> ldr = ServiceLoader.load(PluginProvider.class);
+        Iterable<PluginProvider> it = loadService(PluginProvider.class);
 
-                for (PluginProvider provider : ldr)
-                    providers.add(provider);
+        for (PluginProvider provider : it)
+            providers.add(provider);
 
-                return providers;
+        return providers;
+    }
+
+    /**
+     * @param svcCls Service class to load.
+     * @param <S> Type of loaded interfaces.
+     * @return Lazy iterable structure over loaded class implementations.
+     */
+    public static <S> Iterable<S> loadService(Class<S> svcCls) {
+        return AccessController.doPrivileged(new PrivilegedAction<Iterable<S>>() {
+            @Override public Iterable<S> run() {
+                return ServiceLoader.load(svcCls);
             }
         });
     }
@@ -6778,7 +6803,6 @@ public abstract class IgniteUtils {
      * Replaces all occurrences of {@code org.apache.ignite.} with {@code o.a.i.},
      * {@code org.apache.ignite.internal.} with {@code o.a.i.i.},
      * {@code org.apache.ignite.internal.visor.} with {@code o.a.i.i.v.} and
-     * {@code org.apache.ignite.scalar.} with {@code o.a.i.s.}.
      *
      * @param s String to replace in.
      * @return Replaces string.
@@ -6786,7 +6810,6 @@ public abstract class IgniteUtils {
     public static String compact(String s) {
         return s.replace("org.apache.ignite.internal.visor.", "o.a.i.i.v.").
             replace("org.apache.ignite.internal.", "o.a.i.i.").
-            replace("org.apache.ignite.scalar.", "o.a.i.s.").
             replace("org.apache.ignite.", "o.a.i.");
     }
 
@@ -7789,17 +7812,14 @@ public abstract class IgniteUtils {
     }
 
     /**
-     * Utility method creating {@link JMException} with given cause.
+     * Utility method creating {@link JMException} with given cause. Keeps only the error message to avoid
+     * deserialization failure on remote side due to the other class path.
      *
      * @param e Cause exception.
      * @return Newly created {@link JMException}.
      */
     public static JMException jmException(Throwable e) {
-        JMException x = new JMException();
-
-        x.initCause(e);
-
-        return x;
+        return new JMException(e.getMessage());
     }
 
     /**
@@ -12320,5 +12340,76 @@ public abstract class IgniteUtils {
                     throw e;
             }
         }
+    }
+
+    /**
+     * @return Language runtime.
+     */
+    public static String language(ClassLoader ldr) {
+        boolean scala = false;
+        boolean groovy = false;
+        boolean clojure = false;
+
+        for (StackTraceElement elem : Thread.currentThread().getStackTrace()) {
+            String s = elem.getClassName().toLowerCase();
+
+            if (s.contains("scala")) {
+                scala = true;
+
+                break;
+            }
+            else if (s.contains("groovy")) {
+                groovy = true;
+
+                break;
+            }
+            else if (s.contains("clojure")) {
+                clojure = true;
+
+                break;
+            }
+        }
+
+        if (scala) {
+            try (InputStream in = ldr.getResourceAsStream("/library.properties")) {
+                Properties props = new Properties();
+
+                if (in != null)
+                    props.load(in);
+
+                return "Scala ver. " + props.getProperty("version.number", "<unknown>");
+            }
+            catch (Exception ignore) {
+                return "Scala ver. <unknown>";
+            }
+        }
+
+        // How to get Groovy and Clojure version at runtime?!?
+        return groovy ? "Groovy" : clojure ? "Clojure" : U.jdkName() + " ver. " + U.jdkVersion();
+    }
+
+    /**
+     * @return {@code True} if remote JMX management is enabled - {@code false} otherwise.
+     */
+    public static boolean isJmxRemoteEnabled() {
+        return IGNITE_JMX_REMOTE_PROPERTY != null;
+    }
+
+    /**
+     * @return {@code true} if the REST processor is enabled, {@code false} the otherwise.
+     */
+    public static boolean isRestEnabled(IgniteConfiguration cfg) {
+        boolean isClientNode = cfg.isClientMode() || cfg.isDaemon();
+
+        // By default, rest processor doesn't start on client nodes.
+        return cfg.getConnectorConfiguration() != null &&
+            (!isClientNode || (isClientNode && IgniteSystemProperties.getBoolean(IGNITE_REST_START_ON_CLIENT)));
+    }
+
+    /**
+     * @return {@code True} if restart mode is enabled, {@code false} otherwise.
+     */
+    public static boolean isRestartEnabled() {
+        return IGNITE_SUCCESS_FILE_PROPERTY != null;
     }
 }

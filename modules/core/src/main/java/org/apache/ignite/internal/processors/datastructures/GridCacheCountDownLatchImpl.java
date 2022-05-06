@@ -105,8 +105,8 @@ public final class GridCacheCountDownLatchImpl extends AtomicDataStructureProxy<
         int initCnt,
         boolean autoDel,
         GridCacheInternalKey key,
-        IgniteInternalCache<GridCacheInternalKey, GridCacheCountDownLatchValue> latchView)
-    {
+        IgniteInternalCache<GridCacheInternalKey, GridCacheCountDownLatchValue> latchView
+    ) {
         super(name, key, latchView);
 
         assert name != null;

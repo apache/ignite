@@ -32,13 +32,23 @@ SqlNodeList WithCreateTableOptionList() :
 {
     [
         <WITH> { s = span(); }
-        CreateTableOption(list)
         (
-            <COMMA> { s.add(this); } CreateTableOption(list)
-        )*
-        {
-            return new SqlNodeList(list, s.end(this));
-        }
+            <QUOTED_IDENTIFIER>
+            {
+                return IgniteSqlCreateTable.parseOptionList(
+                    SqlParserUtil.stripQuotes(token.image, DQ, DQ, DQDQ, quotedCasing),
+                    getPos().withQuoting(true)
+                );
+            }
+        |
+            CreateTableOption(list)
+            (
+                <COMMA> { s.add(this); } CreateTableOption(list)
+            )*
+            {
+                return new SqlNodeList(list, s.end(this));
+            }
+        )
     ]
     { return null; }
 }
@@ -97,8 +107,6 @@ SqlDataTypeSpec DataTypeEx() :
         dt = DataType()
     |
         dt = IntervalType()
-    |
-        dt = UuidType()
     )
     {
         return dt;
@@ -113,17 +121,6 @@ SqlDataTypeSpec IntervalType() :
 {
     <INTERVAL> { s = span(); } intervalQualifier = IntervalQualifier() {
         return new SqlDataTypeSpec(new IgniteSqlIntervalTypeNameSpec(intervalQualifier, s.end(this)), s.pos());
-    }
-}
-
-SqlDataTypeSpec UuidType() :
-{
-        final Span s;
-}
-{
-    <UUID> { s = span(); }
-    {
-        return new SqlDataTypeSpec(new SqlUserDefinedTypeNameSpec("UUID", s.end(this)), s.pos());
     }
 }
 
@@ -254,16 +251,16 @@ SqlNodeList IndexedColumnList() :
 SqlCreate SqlCreateIndex(Span s, boolean replace) :
 {
     final boolean ifNotExists;
-    final SqlIdentifier idxId;
     final SqlIdentifier tblId;
     final SqlNodeList columnList;
+    SqlIdentifier idxId = null;
     SqlNumericLiteral parallel = null;
     SqlNumericLiteral inlineSize = null;
 }
 {
     <INDEX>
     ifNotExists = IfNotExistsOpt()
-    idxId = SimpleIdentifier()
+    [ idxId = SimpleIdentifier() ]
     <ON>
     tblId = CompoundIdentifier()
     columnList = IndexedColumnList()

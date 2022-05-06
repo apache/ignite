@@ -483,12 +483,16 @@ public class StandaloneWalRecordsIteratorTest extends GridCommonAbstractTest {
          *
          * @return number of opened files.
          */
-        public static int getCountOpenedWalFiles() { return WAL_OPEN_COUNTER.get(); }
+        public static int getCountOpenedWalFiles() {
+            return WAL_OPEN_COUNTER.get();
+        }
 
         /**
          *
          * @return number of closed files.
          */
-        public static int getCountClosedWalFiles() { return WAL_CLOSE_COUNTER.get(); }
+        public static int getCountClosedWalFiles() {
+            return WAL_CLOSE_COUNTER.get();
+        }
     }
 }

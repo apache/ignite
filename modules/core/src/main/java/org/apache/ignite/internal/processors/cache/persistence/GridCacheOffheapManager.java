@@ -2663,9 +2663,8 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
             GridCacheVersion ver,
             long expireTime,
             MvccVersion mvccVer,
-            MvccVersion newMvccVer)
-            throws IgniteCheckedException
-        {
+            MvccVersion newMvccVer
+        ) throws IgniteCheckedException {
             CacheDataStore delegate = init0(false);
 
             return delegate.mvccInitialValue(cctx, key, val, ver, expireTime, mvccVer, newMvccVer);
@@ -3095,7 +3094,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                 part = cctx.topology().localPartition(partId, AffinityTopologyVersion.NONE, false, false);
 
                 // Skip non-owned partitions.
-                if (part == null || part.state() != OWNING)
+                if (part == null || part.state() != OWNING || !cctx.topology().initialized())
                     return 0;
             }
 
@@ -3106,7 +3105,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                     return 0;
 
                 try {
-                    if (part != null && part.state() != OWNING)
+                    if (part == null || part.state() != OWNING || !cctx.topology().initialized())
                         return 0;
 
                     long now = U.currentTimeMillis();

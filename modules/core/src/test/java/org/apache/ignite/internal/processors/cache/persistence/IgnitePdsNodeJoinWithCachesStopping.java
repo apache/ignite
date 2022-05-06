@@ -75,8 +75,7 @@ public class IgnitePdsNodeJoinWithCachesStopping extends GridCommonAbstractTest 
         for (int i = 0; i < 100; i++)
             ig.createCache(new CacheConfiguration<>("test0" + i).setBackups(0));
 
-        IgniteInternalFuture<Boolean> gridStartFut = GridTestUtils.runAsync(() ->
-        {
+        IgniteInternalFuture<Boolean> gridStartFut = GridTestUtils.runAsync(() -> {
             try {
                 startGrid(2);
             }

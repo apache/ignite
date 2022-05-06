@@ -48,7 +48,7 @@ public class CheckpointStartLoggingTest extends GridCommonAbstractTest {
         "reason=.*";
 
     /** */
-    private ListeningTestLogger testLogger = new ListeningTestLogger(false, log);
+    private ListeningTestLogger testLogger = new ListeningTestLogger(log);
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {

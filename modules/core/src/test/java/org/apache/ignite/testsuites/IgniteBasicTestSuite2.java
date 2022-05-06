@@ -26,6 +26,7 @@ import org.apache.ignite.failure.OomFailureHandlerTest;
 import org.apache.ignite.failure.StopNodeFailureHandlerTest;
 import org.apache.ignite.failure.StopNodeOrHaltFailureHandlerTest;
 import org.apache.ignite.internal.ClassSetTest;
+import org.apache.ignite.internal.ConcurrentMappingFileReadWriteTest;
 import org.apache.ignite.internal.ConsistentIdImplicitlyExplicitlyTest;
 import org.apache.ignite.internal.DiagnosticLogForPartitionStatesTest;
 import org.apache.ignite.internal.GridPeerDeploymentRetryModifiedTest;
@@ -34,6 +35,7 @@ import org.apache.ignite.internal.IgniteThreadGroupNodeRestartTest;
 import org.apache.ignite.internal.MarshallerContextLockingSelfTest;
 import org.apache.ignite.internal.managers.IgniteDiagnosticMessagesMultipleConnectionsTest;
 import org.apache.ignite.internal.managers.IgniteDiagnosticMessagesTest;
+import org.apache.ignite.internal.managers.IgniteDiagnosticPartitionReleaseFutureLimitTest;
 import org.apache.ignite.internal.managers.communication.GridIoManagerFileTransmissionSelfTest;
 import org.apache.ignite.internal.managers.discovery.IncompleteDeserializationExceptionTest;
 import org.apache.ignite.internal.metric.MetricsClusterActivationTest;
@@ -143,6 +145,7 @@ import org.junit.runners.Suite;
 
     IgniteDiagnosticMessagesTest.class,
     IgniteDiagnosticMessagesMultipleConnectionsTest.class,
+    IgniteDiagnosticPartitionReleaseFutureLimitTest.class,
 
     IgniteRejectConnectOnNodeStopTest.class,
 
@@ -216,8 +219,9 @@ import org.junit.runners.Suite;
     NoopCheckpointSpiLoggingTest.class,
     JvmConfigurationSuggestionsTest.class,
     ExponentialBackoffTest.class,
-    ProgressSpeedCalculationTest.class
+    ProgressSpeedCalculationTest.class,
 
+    ConcurrentMappingFileReadWriteTest.class
 })
 public class IgniteBasicTestSuite2 {
 }

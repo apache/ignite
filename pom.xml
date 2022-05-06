@@ -26,23 +26,18 @@
     <parent>
         <groupId>org.apache.ignite</groupId>
         <artifactId>ignite-parent</artifactId>
-        <version>1</version>
-        <relativePath>parent</relativePath>
+        <version>${revision}</version>
+        <relativePath>parent/pom.xml</relativePath>
     </parent>
 
     <artifactId>apache-ignite</artifactId>
-    <version>${revision}</version>
     <packaging>pom</packaging>
 
-    <scm>
-        <url>https://gitbox.apache.org/repos/asf/ignite.git</url>
-        <connection>scm:git:https://gitbox.apache.org/repos/asf/ignite.git</connection>
-        <developerConnection>scm:git:https://gitbox.apache.org/repos/asf/ignite.git</developerConnection>
-        <tag>HEAD</tag>
-    </scm>
-
     <modules>
-        <module>modules/apache-license-gen</module>
+        <module>modules/checkstyle</module>
+        <module>parent</module>
+        <module>parent-internal</module>
+        <module>modules/bom</module>
         <module>modules/tools</module>
         <module>modules/core</module>
         <module>modules/compress</module>
@@ -51,6 +46,7 @@
         <module>modules/extdata/p2p</module>
         <module>modules/extdata/uri</module>
         <module>modules/extdata/platform</module>
+        <module>modules/extdata/logo</module>
         <module>modules/clients</module>
         <module>modules/spring</module>
         <module>modules/web</module>
@@ -109,8 +105,6 @@
         <profile>
             <id>all-scala</id><!-- used to update project versions and check all modules compilation -->
             <modules><!-- sorted alphabetically -->
-                <module>modules/scalar-2.10</module>
-                <module>modules/scalar</module>
                 <module>modules/spark</module>
                 <module>modules/spark-2.4</module>
                 <module>modules/visor-console-2.10</module>
@@ -230,7 +224,6 @@
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-antrun-plugin</artifactId>
-                        <version>1.7</version>
                         <inherited>false</inherited>
                         <dependencies>
                             <dependency>
@@ -315,7 +308,6 @@
                      <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-antrun-plugin</artifactId>
-                        <version>1.7</version>
                         <inherited>false</inherited>
                         <dependencies>
                             <dependency>
@@ -568,8 +560,6 @@
             </activation>
 
             <modules>
-                <module>modules/scalar</module>
-                <module>modules/spark</module>
                 <module>modules/visor-console</module>
                 <module>modules/visor-plugins</module>
             </modules>
@@ -584,7 +574,6 @@
 
             <modules>
                 <module>modules/spark-2.4</module>
-                <module>modules/scalar</module>
             </modules>
         </profile>
 
@@ -596,16 +585,8 @@
             </activation>
 
             <modules>
-                <module>modules/scalar-2.10</module>
                 <module>modules/visor-console-2.10</module>
                 <module>modules/visor-plugins</module>
-            </modules>
-        </profile>
-
-        <profile>
-            <id>ignored-tests</id>
-            <modules>
-                <module>modules/ignored-tests</module>
             </modules>
         </profile>
 
@@ -624,7 +605,6 @@
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-antrun-plugin</artifactId>
-                        <version>1.7</version>
                         <executions>
                             <execution>
                                 <id>update-versions</id>
@@ -803,7 +783,6 @@
                         <!-- Clean up custom surefire test provider. -->
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-antrun-plugin</artifactId>
-                        <version>1.7</version>
                         <executions>
                             <execution>
                                 <phase>test</phase>
@@ -825,14 +804,6 @@
                         <!-- Check final list of orphaned tests. -->
                         <groupId>org.codehaus.mojo</groupId>
                         <artifactId>exec-maven-plugin</artifactId>
-                        <version>1.3.2</version>
-                        <dependencies>
-                            <dependency>
-                                <groupId>${project.groupId}</groupId>
-                                <artifactId>ignite-tools</artifactId>
-                                <version>${project.version}</version>
-                            </dependency>
-                        </dependencies>
                         <executions>
                             <execution>
                                 <phase>test</phase>

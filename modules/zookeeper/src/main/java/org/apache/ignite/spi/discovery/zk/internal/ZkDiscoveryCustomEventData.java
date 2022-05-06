@@ -57,8 +57,8 @@ class ZkDiscoveryCustomEventData extends ZkDiscoveryEventData {
         long topVer,
         UUID sndNodeId,
         DiscoverySpiCustomMessage msg,
-        String evtPath)
-    {
+        String evtPath
+    ) {
         super(evtId, ZK_EVT_CUSTOM_EVT, topVer);
 
         assert sndNodeId != null;

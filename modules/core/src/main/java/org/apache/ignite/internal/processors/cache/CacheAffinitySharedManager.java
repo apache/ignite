@@ -850,7 +850,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
 
         assert res.isDone() : "There should be no caches to start: " + exchActions;
 
-        processCacheStopRequests(fut, crd, exchActions, true);
+        processCacheStopRequests(fut, crd, exchActions);
 
         cctx.cache().forceCloseCaches(fut.initialVersion(), exchActions);
     }
@@ -882,7 +882,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
 
         processCacheStartRequests(fut, crd, exchActions);
 
-        Set<Integer> stoppedGrps = processCacheStopRequests(fut, crd, exchActions, false);
+        Set<Integer> stoppedGrps = processCacheStopRequests(fut, crd, exchActions);
 
         if (stoppedGrps != null) {
             AffinityTopologyVersion notifyTopVer = null;
@@ -1068,14 +1068,12 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
      * @param fut Exchange future.
      * @param crd Coordinator flag.
      * @param exchActions Cache change requests.
-     * @param forceClose Force close flag.
      * @return Set of cache groups to be stopped.
      */
     private Set<Integer> processCacheStopRequests(
         GridDhtPartitionsExchangeFuture fut,
         boolean crd,
-        final ExchangeActions exchActions,
-        boolean forceClose
+        final ExchangeActions exchActions
     ) {
         assert exchActions != null && !exchActions.empty() : exchActions;
 
@@ -1090,8 +1088,6 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
         for (ExchangeActions.CacheGroupActionData data : exchActions.cacheGroupsToStop()) {
             if (data.descriptor().config().getCacheMode() != LOCAL) {
                 CacheGroupHolder cacheGrp = grpHolders.remove(data.descriptor().groupId());
-
-                assert !crd || (cacheGrp != null || forceClose) : data.descriptor();
 
                 if (cacheGrp != null) {
                     if (stoppedGrps == null)
@@ -1804,10 +1800,11 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
      * @param aff Affinity.
      * @param topVer Topology version.
      */
-    private void calculateAndInit(ExchangeDiscoveryEvents evts,
+    private void calculateAndInit(
+        ExchangeDiscoveryEvents evts,
         GridAffinityAssignmentCache aff,
-        AffinityTopologyVersion topVer)
-    {
+        AffinityTopologyVersion topVer
+    ) {
         List<List<ClusterNode>> assignment = aff.calculate(topVer, evts, evts.discoveryCache()).assignment();
 
         aff.initialize(topVer, assignment);

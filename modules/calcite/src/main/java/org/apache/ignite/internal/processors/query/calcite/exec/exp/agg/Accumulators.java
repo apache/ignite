@@ -162,6 +162,7 @@ public class Accumulators {
             case ANY:
                 if (call.type instanceof UuidType)
                     return ComparableMinMax.UUID_MIN_FACTORY;
+                throw new UnsupportedOperationException("MIN() is not supported for type '" + call.type + "'.");
             case BIGINT:
             default:
                 return LongMinMax.MIN_FACTORY;
@@ -188,6 +189,7 @@ public class Accumulators {
             case ANY:
                 if (call.type instanceof UuidType)
                     return ComparableMinMax.UUID_MAX_FACTORY;
+                throw new UnsupportedOperationException("MAX() is not supported for type '" + call.type + "'.");
             case BIGINT:
             default:
                 return LongMinMax.MAX_FACTORY;
@@ -267,7 +269,7 @@ public class Accumulators {
     public static class DecimalAvg implements Accumulator {
         /** */
         public static final Supplier<Accumulator> FACTORY = DecimalAvg::new;
-        
+
         /** */
         private BigDecimal sum = BigDecimal.ZERO;
 
@@ -901,11 +903,11 @@ public class Accumulators {
 
         /** */
         public static final Supplier<Accumulator> UUID_MIN_FACTORY = () -> new ComparableMinMax<UUID>(true,
-            tf -> tf.createTypeWithNullability(tf.createUuidType(), true));
+            tf -> tf.createTypeWithNullability(tf.createCustomType(UUID.class), true));
 
         /** */
         public static final Supplier<Accumulator> UUID_MAX_FACTORY = () -> new ComparableMinMax<UUID>(false,
-            tf -> tf.createTypeWithNullability(tf.createUuidType(), true));
+            tf -> tf.createTypeWithNullability(tf.createCustomType(UUID.class), true));
 
         /** */
         private final boolean min;

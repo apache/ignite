@@ -124,7 +124,7 @@ public class GridTransactionsSystemUserTimeMetricsTest extends GridCommonAbstrac
     private static CommonLogProxy testLog = new CommonLogProxy(null);
 
     /** */
-    private final ListeningTestLogger listeningTestLog = new ListeningTestLogger(false, log());
+    private final ListeningTestLogger listeningTestLog = new ListeningTestLogger(log());
 
     /** */
     private static IgniteLogger oldLog;

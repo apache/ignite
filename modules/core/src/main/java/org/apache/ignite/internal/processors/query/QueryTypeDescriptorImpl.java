@@ -642,8 +642,7 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
                         // Some reference type arrays end up being converted to Object[]
                         if (!(prop.type().isArray() && BinaryUtils.isObjectArray(propVal.getClass()) &&
                             Arrays.stream(BinaryUtils.rawArrayFromBinary(propVal)).
-                            noneMatch(x -> x != null && !U.box(prop.type().getComponentType()).isAssignableFrom(U.box(x.getClass())))))
-                        {
+                            noneMatch(x -> x != null && !U.box(prop.type().getComponentType()).isAssignableFrom(U.box(x.getClass()))))) {
                             throw new IgniteSQLException("Type for a column '" + prop.name() +
                                 "' is not compatible with table definition. Expected '" +
                                 prop.type().getSimpleName() + "', actual type '" +
@@ -727,8 +726,7 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
                         // Some reference type arrays end up being converted to Object[]
                         if (!(propType.isArray() && BinaryUtils.isObjectArray(propVal.getClass()) &&
                             Arrays.stream(BinaryUtils.rawArrayFromBinary(propVal)).
-                                noneMatch(x -> x != null && !U.box(propType.getComponentType()).isAssignableFrom(U.box(x.getClass())))))
-                        {
+                                noneMatch(x -> x != null && !U.box(propType.getComponentType()).isAssignableFrom(U.box(x.getClass()))))) {
                             throw new IgniteSQLException("Type for a column '" + idxField +
                                 "' is not compatible with index definition. Expected '" +
                                 propType.getSimpleName() + "', actual type '" +

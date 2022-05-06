@@ -507,7 +507,9 @@ public class IgniteSchedulerSelfTest {
         }
 
         /** {@inheritDoc} */
-        @Override public Protos.Status reviveOffers(Collection<String> collection) { return null; }
+        @Override public Protos.Status reviveOffers(Collection<String> collection) {
+            return null;
+        }
 
         /** {@inheritDoc} */
         @Override public Protos.Status suppressOffers() {
@@ -515,7 +517,9 @@ public class IgniteSchedulerSelfTest {
         }
 
         /** {@inheritDoc} */
-        @Override public Protos.Status suppressOffers(Collection<String> collection) { return null; }
+        @Override public Protos.Status suppressOffers(Collection<String> collection) {
+            return null;
+        }
 
         /** {@inheritDoc} */
         @Override public Protos.Status acknowledgeStatusUpdate(Protos.TaskStatus status) {
@@ -540,6 +544,9 @@ public class IgniteSchedulerSelfTest {
         }
 
         /** {@inheritDoc} */
-        @Override public Protos.Status updateFramework(Protos.FrameworkInfo frameworkInfo, Collection<String> collection) { return null; }
+        @Override public Protos.Status updateFramework(Protos.FrameworkInfo frameworkInfo,
+            Collection<String> collection) {
+            return null;
+        }
     }
 }

@@ -1951,9 +1951,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         GridNearAtomicUpdateResponse res,
         DhtAtomicUpdateResult dhtUpdRes,
         String taskName
-    )
-        throws GridCacheEntryRemovedException
-    {
+    ) throws GridCacheEntryRemovedException {
         GridDhtPartitionTopology top = topology();
 
         boolean hasNear = req.nearCache();

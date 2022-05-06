@@ -306,9 +306,8 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
      */
     public <K> List<ClusterNode> mapKeyToPrimaryAndBackups(String cacheName,
         K key,
-        AffinityTopologyVersion topVer)
-        throws IgniteCheckedException
-    {
+        AffinityTopologyVersion topVer
+    ) throws IgniteCheckedException {
         assert cacheName != null;
 
         A.notNull(key, "key");

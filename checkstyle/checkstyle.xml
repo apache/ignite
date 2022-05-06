@@ -185,6 +185,8 @@
         </module>
 
         <module name="Indentation" />
+
+        <module name="LeftCurly"/>
     </module>
 
     <!--

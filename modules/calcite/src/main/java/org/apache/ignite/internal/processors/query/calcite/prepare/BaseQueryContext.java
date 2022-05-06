@@ -46,6 +46,7 @@ import org.apache.calcite.tools.FrameworkConfig;
 import org.apache.calcite.tools.Frameworks;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.processors.query.GridQueryCancel;
+import org.apache.ignite.internal.processors.query.calcite.exec.exp.IgniteRexBuilder;
 import org.apache.ignite.internal.processors.query.calcite.metadata.cost.IgniteCostFactory;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.logger.NullLogger;
@@ -104,7 +105,7 @@ public final class BaseQueryContext extends AbstractQueryContext {
         RelDataTypeSystem typeSys = CALCITE_CONNECTION_CONFIG.typeSystem(RelDataTypeSystem.class, FRAMEWORK_CONFIG.getTypeSystem());
         TYPE_FACTORY = new IgniteTypeFactory(typeSys);
 
-        REX_BUILDER = new RexBuilder(TYPE_FACTORY);
+        REX_BUILDER = new IgniteRexBuilder(TYPE_FACTORY);
 
         CLUSTER = RelOptCluster.create(EMPTY_PLANNER, REX_BUILDER);
 
@@ -115,8 +116,7 @@ public final class BaseQueryContext extends AbstractQueryContext {
             new RelMetadataProvider() {
                 @Override public <M extends Metadata> UnboundMetadata<M> apply(
                     Class<? extends RelNode> relCls,
-                    Class<? extends M> metadataCls)
-                {
+                    Class<? extends M> metadataCls) {
                     throw new AssertionError(cantBeUsedMsg);
                 }
 
@@ -130,7 +130,9 @@ public final class BaseQueryContext extends AbstractQueryContext {
             }
         );
 
-        CLUSTER.setMetadataQuerySupplier(() -> { throw new AssertionError(cantBeUsedMsg); });
+        CLUSTER.setMetadataQuerySupplier(() -> {
+            throw new AssertionError(cantBeUsedMsg);
+        });
     }
 
     /** */

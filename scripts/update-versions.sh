@@ -19,7 +19,9 @@
 #
 # Updates Ignite version in Java pom files, .NET AssemblyInfo files, C++ configure files.
 # Run in Ignite sources root directory.
-# Usage: ./update-versions 2.6.0
+# Usage:
+# update snapshot version: ./scripts/update-versions.sh 2.14.0-SNAPSHOT
+# update release version: ./scripts/update-versions.sh 2.13.0
 #
 
 if [ $# -eq 0 ]
@@ -31,10 +33,8 @@ fi
 echo Updating Java versions to $1 with Maven...
 sed -i '' -e "s/<revision>.*<\/revision>/<revision>$1<\/revision>/" ./parent/pom.xml;
 
-#TODO remove after IGNITE-12064
-cd modules/apache-license-gen
-mvn versions:set -DnewVersion=$1 -Pall-java,all-scala,all-other -DgenerateBackupPoms=false -DgroupId=* -DartifactId=* -DoldVersion=* -DprocessDependencies=false
-cd ../../
+echo Updating checkstyle resources versions to $1 with Maven...
+mvn -pl modules/checkstyle versions:set -DnewVersion=$1 -DgenerateBackupPoms=false -DoldVersion=* -DprocessDependencies=false
 
 echo Updating .NET, C++ and other resources versions to $1 with Maven...
 mvn validate -P update-versions -D new.ignite.version=$1

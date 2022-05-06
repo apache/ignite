@@ -71,6 +71,7 @@ import org.apache.ignite.internal.processors.cluster.DiscoveryDataClusterState;
 import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.platform.services.PlatformService;
+import org.apache.ignite.internal.processors.platform.services.PlatformServiceConfiguration;
 import org.apache.ignite.internal.processors.security.OperationSecurityContext;
 import org.apache.ignite.internal.processors.security.SecurityContext;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
@@ -554,6 +555,9 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
         ensure(c.getService() != null, "getService() != null", c.getService());
         ensure(c.getTotalCount() > 0 || c.getMaxPerNodeCount() > 0,
             "c.getTotalCount() > 0 || c.getMaxPerNodeCount() > 0", null);
+        ensure(!c.isStatisticsEnabled() || !(c.getService() instanceof PlatformService) ||
+            c instanceof PlatformServiceConfiguration, "The service is a platform service and has statistics" +
+            "enabled. Service configuration must be PlatformServiceConfiguration.", null);
     }
 
     /**
@@ -664,7 +668,10 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
                 try {
                     byte[] srvcBytes = U.marshal(marsh, cfg.getService());
 
-                    cfgsCp.add(new LazyServiceConfiguration(cfg, srvcBytes));
+                    String[] knownSvcMdtNames = cfg instanceof PlatformServiceConfiguration ?
+                        ((PlatformServiceConfiguration)cfg).mtdNames() : null;
+
+                    cfgsCp.add(new LazyServiceConfiguration(cfg, srvcBytes).platformMtdNames(knownSvcMdtNames));
                 }
                 catch (Exception e) {
                     U.error(log, "Failed to marshal service with configured marshaller " +
@@ -1302,7 +1309,7 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
 
             if (cfg.isStatisticsEnabled()) {
                 if (invocationMetrics == null)
-                    invocationMetrics = createServiceMetrics(srvcCtx);
+                    invocationMetrics = createServiceMetrics(srvcCtx, cfg);
 
                 srvcCtx.metrics(invocationMetrics);
             }
@@ -1982,18 +1989,27 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
      * Creates metrics registry for the invocation histograms.
      *
      * @param srvcCtx ServiceContext.
+     * @param cfg Service configuration.
      * @return Created metric registry.
      */
-    private ReadOnlyMetricRegistry createServiceMetrics(ServiceContextImpl srvcCtx) {
+    private ReadOnlyMetricRegistry createServiceMetrics(ServiceContextImpl srvcCtx, ServiceConfiguration cfg) {
         MetricRegistry metricRegistry = ctx.metric().registry(serviceMetricRegistryName(srvcCtx.name()));
 
-        for (Class<?> itf : allInterfaces(srvcCtx.service().getClass())) {
-            for (Method mtd : itf.getMethods()) {
-                if (metricIgnored(mtd.getDeclaringClass()))
-                    continue;
+        if (cfg instanceof LazyServiceConfiguration && ((LazyServiceConfiguration)cfg).platformMtdNames() != null) {
+            for (String definedMtdName : ((LazyServiceConfiguration)cfg).platformMtdNames()) {
+                metricRegistry.histogram(definedMtdName, DEFAULT_INVOCATION_BOUNDS,
+                    DESCRIPTION_OF_INVOCATION_METRIC_PREF + '\'' + definedMtdName + "()'");
+            }
+        }
+        else {
+            for (Class<?> itf : allInterfaces(srvcCtx.service().getClass())) {
+                for (Method mtd : itf.getMethods()) {
+                    if (metricIgnored(mtd.getDeclaringClass()))
+                        continue;
 
-                metricRegistry.histogram(mtd.getName(), DEFAULT_INVOCATION_BOUNDS, DESCRIPTION_OF_INVOCATION_METRIC_PREF +
-                    '\'' + mtd.getName() + "()'");
+                    metricRegistry.histogram(mtd.getName(), DEFAULT_INVOCATION_BOUNDS,
+                        DESCRIPTION_OF_INVOCATION_METRIC_PREF + '\'' + mtd.getName() + "()'");
+                }
             }
         }
 
@@ -2013,7 +2029,7 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
      * @param srvcName Name of the service.
      * @return registry name for service {@code srvcName}.
      */
-    static String serviceMetricRegistryName(String srvcName) {
+    public static String serviceMetricRegistryName(String srvcName) {
         return metricName(SERVICE_METRIC_REGISTRY, srvcName);
     }
 }

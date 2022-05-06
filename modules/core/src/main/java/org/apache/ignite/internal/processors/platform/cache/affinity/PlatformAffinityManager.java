@@ -54,8 +54,7 @@ public class PlatformAffinityManager extends PlatformAbstractTarget {
 
     /** {@inheritDoc} */
     @Override public long processInStreamOutLong(int type, BinaryRawReaderEx reader) throws IgniteCheckedException {
-        if (type == OP_IS_ASSIGNMENT_VALID)
-        {
+        if (type == OP_IS_ASSIGNMENT_VALID) {
             AffinityTopologyVersion ver = new AffinityTopologyVersion(reader.readLong(), reader.readInt());
             int part = reader.readInt();
             AffinityTopologyVersion endVer = affMgr.affinityTopologyVersion();
