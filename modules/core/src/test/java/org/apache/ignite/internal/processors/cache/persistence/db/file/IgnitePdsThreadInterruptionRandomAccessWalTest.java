@@ -15,15 +15,14 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.cache.hibernate;
+package org.apache.ignite.internal.processors.cache.persistence.db.file;
+
+import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.testframework.junits.WithSystemProperty;
 
 /**
- * Converts Ignite errors into Hibernate runtime exceptions.
+ * Same test, but WAL doesn't use MMAP this time.
  */
-public interface HibernateExceptionConverter {
-    /**
-     * @param e Exception.
-     * @return Converted exception.
-     */
-    public RuntimeException convert(Exception e);
+@WithSystemProperty(key = IgniteSystemProperties.IGNITE_WAL_MMAP, value = "false")
+public class IgnitePdsThreadInterruptionRandomAccessWalTest extends IgnitePdsThreadInterruptionTest {
 }
