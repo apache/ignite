@@ -18,44 +18,31 @@
 package org.apache.ignite.internal.processors.platform.client.datastructures;
 
 import org.apache.ignite.IgniteAtomicLong;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.binary.BinaryRawReader;
-import org.apache.ignite.configuration.AtomicConfiguration;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientLongResponse;
-import org.apache.ignite.internal.processors.platform.client.ClientRequest;
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
 
 /**
  * Atomic long value request.
  */
-public class ClientAtomicLongValueGetRequest extends ClientRequest {
-    /** */
-    private final String name;
-
-    /** */
-    private final String groupName;
-
+public class ClientAtomicLongValueGetRequest extends ClientAtomicLongRequest {
+    /**
+     * Constructor.
+     *
+     * @param reader Reader.
+     */
     public ClientAtomicLongValueGetRequest(BinaryRawReader reader) {
         super(reader);
-
-        name = reader.readString();
-        groupName = reader.readString();
     }
 
     /** {@inheritDoc} */
     @Override public ClientResponse process(ClientConnectionContext ctx) {
-        AtomicConfiguration cfg = groupName == null ? null : new AtomicConfiguration().setGroupName(groupName);
+        IgniteAtomicLong atomicLong = atomicLong(ctx);
 
-        try {
-            IgniteAtomicLong atomicLong = ctx.kernalContext().dataStructures().atomicLong(name, cfg, 0, false);
+        if (atomicLong == null)
+            return new ClientResponse(requestId(), String.format("AtomicLong with name '%s' does not exist.", name()));
 
-            if (atomicLong == null)
-                return new ClientResponse(requestId(), String.format("AtomicLong with name '%s' does not exist.", name));
-
-            return new ClientLongResponse(requestId(), atomicLong.get());
-        } catch (IgniteCheckedException e) {
-            return new ClientResponse(requestId(), e.getMessage());
-        }
+        return new ClientLongResponse(requestId(), atomicLong.get());
     }
 }
