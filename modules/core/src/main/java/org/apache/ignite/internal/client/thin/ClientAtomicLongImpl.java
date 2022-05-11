@@ -21,6 +21,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.client.ClientAtomicLong;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Client atomic long.
@@ -35,7 +36,7 @@ public class ClientAtomicLongImpl implements ClientAtomicLong {
     /** */
     private final ReliableChannel ch;
 
-    public ClientAtomicLongImpl(String name, String groupName, ReliableChannel ch) {
+    public ClientAtomicLongImpl(String name, @Nullable String groupName, ReliableChannel ch) {
         // Name and groupName uniquely identify the data structure.
         this.name = name;
         this.groupName = groupName;
@@ -64,8 +65,10 @@ public class ClientAtomicLongImpl implements ClientAtomicLong {
 
     /** {@inheritDoc} */
     @Override public long addAndGet(long l) throws IgniteException {
-        // TODO: Actual call
-        return 0;
+        return ch.service(ClientOperation.ATOMIC_LONG_VALUE_ADD_AND_GET, out -> {
+            writeName(out);
+            out.out().writeLong(l);
+        }, in -> in.in().readLong());
     }
 
     /** {@inheritDoc} */
@@ -85,23 +88,29 @@ public class ClientAtomicLongImpl implements ClientAtomicLong {
 
     /** {@inheritDoc} */
     @Override public long getAndSet(long l) throws IgniteException {
-        return 0;
+        return ch.service(ClientOperation.ATOMIC_LONG_VALUE_GET_AND_SET, out -> {
+            writeName(out);
+            out.out().writeLong(l);
+        }, in -> in.in().readLong());
     }
 
     /** {@inheritDoc} */
     @Override public boolean compareAndSet(long expVal, long newVal) throws IgniteException {
-        return false;
+        return ch.service(ClientOperation.ATOMIC_LONG_VALUE_COMPARE_AND_SET, out -> {
+            writeName(out);
+            out.out().writeLong(expVal);
+            out.out().writeLong(newVal);
+        }, in -> in.in().readBoolean());
     }
 
     /** {@inheritDoc} */
     @Override public boolean removed() {
-        // TODO: ???
-        return false;
+        return ch.service(ClientOperation.ATOMIC_LONG_EXISTS, this::writeName, in -> !in.in().readBoolean());
     }
 
     /** {@inheritDoc} */
     @Override public void close() {
-
+        ch.service(ClientOperation.ATOMIC_LONG_REMOVE, this::writeName, null);
     }
 
     /** Serialize string. */

@@ -60,6 +60,7 @@ import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
 import org.apache.ignite.internal.client.thin.io.ClientConnectionMultiplexer;
+import org.apache.ignite.internal.util.GridArgumentCheck;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.marshaller.MarshallerContext;
@@ -339,7 +340,9 @@ public class TcpIgniteClient implements IgniteClient {
 
     /** {@inheritDoc} */
     @Override public ClientAtomicLong atomicLong(String name, ClientAtomicConfiguration cfg, long initVal, boolean create) throws IgniteException {
-        // TODO: async version.
+        GridArgumentCheck.notNull(name, "name");
+
+        // TODO: async version?
         if (create) {
             ch.service(ClientOperation.ATOMIC_LONG_CREATE, out -> {
                 try (BinaryRawWriterEx w = new BinaryWriterExImpl(null, out.out(), null, null)) {

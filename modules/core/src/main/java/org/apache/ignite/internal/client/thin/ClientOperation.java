@@ -208,13 +208,13 @@ public enum ClientOperation {
     ATOMIC_LONG_VALUE_GET(9003),
 
     /** AtomicLong.addAndGet (also covers incrementAndGet, getAndIncrement, getAndAdd, decrementAndGet, getAndDecrement).  */
-    OP_ATOMIC_LONG_VALUE_ADD_AND_GET(9004),
+    ATOMIC_LONG_VALUE_ADD_AND_GET(9004),
 
     /** AtomicLong.getAndSet. */
-    OP_ATOMIC_LONG_VALUE_GET_AND_SET(9005),
+    ATOMIC_LONG_VALUE_GET_AND_SET(9005),
 
     /** AtomicLong.compareAndSet. */
-    OP_ATOMIC_LONG_VALUE_COMPARE_AND_SET(9006);
+    ATOMIC_LONG_VALUE_COMPARE_AND_SET(9006);
 
     /** Code. */
     private final int code;
