@@ -21,9 +21,8 @@ import {UIRouter} from '@uirouter/angularjs';
 import {withLatestFrom, tap, filter, scan} from 'rxjs/operators';
 
 
-
+import Datasource from 'app/datasource/services/Datasource';
 import ConfigureState from '../configuration/services/ConfigureState';
-import PageConfigure from '../configuration/services/PageConfigure';
 import ConfigSelectionManager from '../configuration/services/ConfigSelectionManager';
 
 
@@ -40,7 +39,7 @@ import pageDatasourceBasic from './components/page-datasource-basic';
 import pageDatasourceAdvanced from './components/page-datasource-advanced';
 import pageDatasourceOverview from './components/page-datasource-overview';
 
-import selectors from './store/selectors';
+
 import {registerStates} from './states';
 
 
@@ -96,9 +95,8 @@ export default angular
         .subscribe();
        
     }])
-    .factory('configSelectionManager', ConfigSelectionManager)
-      
-    .service('PageConfigure', PageConfigure)
+    .factory('configSelectionManager', ConfigSelectionManager)      
+    
     .service('ConfigureState', ConfigureState)           
-    .service('DatasourceSelectors', selectors)
+    .service('Datasource', Datasource)
     ;

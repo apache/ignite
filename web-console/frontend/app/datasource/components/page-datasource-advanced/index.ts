@@ -18,11 +18,11 @@ import angular from 'angular';
 import component from './component';
 
 
-import clusterMericForm from './components/cluster-edit-form';
+import datasourceEditForm from './components/datasource-edit-form';
 
 export default angular
     .module('ignite-console.page-datasource-advanced', [ 
-        clusterMericForm.name
+        datasourceEditForm.name
     ])
     .component('pageDatasourceAdvanced', component);
 

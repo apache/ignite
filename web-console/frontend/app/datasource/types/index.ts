@@ -19,7 +19,7 @@ export interface DatasourceDto {
     id: string,
     driverCls: string;
    	jdbcUrl: string;	
-   	dbName: string; // 数据库名称
+   	jndiName: string; // 数据库JNDI名称
    	schemaName: string; // 默认的模式名称
    	userName: string;
    	password: string;

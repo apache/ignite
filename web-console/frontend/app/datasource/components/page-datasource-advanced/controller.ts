@@ -14,19 +14,21 @@
  * limitations under the License.
  */
 
-import {default as DatasourceSelectors} from '../../store/selectors';
-import {default as ConfigureState} from '../../../configuration/services/ConfigureState';
-
-import {take, pluck, switchMap, map, filter, distinctUntilChanged, publishReplay, refCount} from 'rxjs/operators';
+import {Subject, Observable, from, of} from 'rxjs';
+import {take, pluck, switchMap, map, filter, catchError, distinctUntilChanged, publishReplay, refCount} from 'rxjs/operators';
 import {UIRouter} from '@uirouter/angularjs';
 
-// Controller for Clusters screen.
-export default class PageConfigureAdvancedCluster {
-    static $inject = ['$uiRouter', 'DatasourceSelectors', 'ConfigureState'];
+
+import ConfigureState from 'app/configuration/services/ConfigureState';
+import Datasource from 'app/datasource/services/Datasource';
+
+// Controller for Datasource screen.
+export default class PageConfigureAdvancedDatasource {
+    static $inject = ['$uiRouter', 'Datasource', 'ConfigureState'];
 
     constructor(
         private $uiRouter: UIRouter,
-        private DatasourceSelectors: DatasourceSelectors,
+        private Datasource: Datasource,
         private ConfigureState: ConfigureState
     ) {}
 
@@ -42,7 +44,7 @@ export default class PageConfigureAdvancedCluster {
         this.originalCluster$ = clusterID$.pipe(
             distinctUntilChanged(),
             switchMap((id) => {
-                return this.ConfigureState.state$.pipe(this.DatasourceSelectors.selectClusterToEdit(id));
+                return from(this.Datasource.selectDatasource(id));
             }),
             distinctUntilChanged(),
             publishReplay(1),
@@ -54,8 +56,18 @@ export default class PageConfigureAdvancedCluster {
         this.isBlocked$ = clusterID$;
     }
 
-    save({cluster, download}) {
-        const advancedSaveCluster = (cluster, download = false) => ({type: 'ADVANCED_SAVE_CLUSTER', cluster, download});
-        this.ConfigureState.dispatchAction(advancedSaveCluster(cluster, download));
+    save(datasource) {        
+        let stat = from(this.Datasource.saveAdvanced(datasource)).pipe(
+            switchMap(({data}) => of(                   
+                {type: 'EDIT_TASK_FLOW', datasource: data},
+                {type: 'SAVE_AND_EDIT_TASK_FLOW_OK'}
+            )),
+            catchError((error) => of({
+                type: 'SAVE_AND_EDIT_DATASOURCE_ERR',
+                error: {
+                    message: `Failed to save datasource : ${error.data.message}.`
+                }
+            }))
+        );    
     }
 }

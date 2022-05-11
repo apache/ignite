@@ -383,21 +383,26 @@ public class GridRedisProtocolParser {
      */
     public static ByteBuffer toArray(Collection<Object> vals) {
         assert vals != null;
+        int capacity = 0;
+        ArrayList<ByteBuffer> res = new ArrayList<>();
+        for (Object val : vals) {
+            if (val != null) {
+                ByteBuffer b = toBulkString(val);
+                res.add(b);
+                capacity += b.limit();
+            }
+        }
+        
 
-        byte[] arrSize = String.valueOf(vals.size()).getBytes();
+        byte[] arrSize = String.valueOf(res.size()).getBytes();
 
-        ByteBuffer buf = ByteBuffer.allocateDirect(1024 * 1024);
+        ByteBuffer buf = ByteBuffer.allocateDirect(capacity + arrSize.length + 1 + CRLF.length);
         buf.put(ARRAY);
         buf.put(arrSize);
         buf.put(CRLF);
 
-        for (Object val : vals) {
-        	if(val==null) { //add@byron
-        		buf.put(NIL);        		
-        	}
-        	else {
-        		buf.put(toBulkString(val));
-        	}
+        for (ByteBuffer val : res) {
+        	buf.put(val);
         }
 
         buf.flip();

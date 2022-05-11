@@ -21,7 +21,7 @@
 
 @echo off
 Setlocal EnableDelayedExpansion
-
+set JVM_OPTS=-agentlib:jdwp=transport=dt_socket,address=0.0.0.0:19001,server=y,suspend=n
 if "%OS%" == "Windows_NT"  setlocal
 
 :: Check JAVA_HOME.

@@ -29,9 +29,7 @@ html
         meta(ng-repeat='(key, value) in tfMetaTags.properties' name='{{::key}}' content='{{::value}}')
 
         meta(name='fragment' content='!')
-		
-        script(src='/libs/sdk/sdk.js')
-        link(href='/libs/sdk/sdk.css' rel='stylesheet')
+        
     body.theme-line.body-overlap(
         ng-class='{ "demo-mode": _demo.enabled }'
         demo-status

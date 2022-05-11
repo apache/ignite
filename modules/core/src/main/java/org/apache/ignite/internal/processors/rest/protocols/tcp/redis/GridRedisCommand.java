@@ -39,6 +39,10 @@ public enum GridRedisCommand {
     GET("GET"),
     /** MGET. */
     MGET("MGET"),
+    
+    /** KEYS. */
+    KEYS("KEYS"),
+    
     /** SET. */
     SET("SET"),
     /** MSET. */
@@ -115,7 +119,10 @@ public enum GridRedisCommand {
     HLEN("hLEN"),
     
     /** hGETALL. */
-    HGETALL("hGETALL"),    
+    HGETALL("hGETALL"),
+    
+    /** hKEYS. */
+    HKEYS("hKEYS"),
     
     /** hDEL. */
     HDEL("hDEL"),

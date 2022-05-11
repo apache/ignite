@@ -51,8 +51,7 @@ export default class ClusterTaskFlowController {
         
     }
 
-    shortClusters$: Observable<Array<ShortCluster>>;
-    clustersColumnDefs: Array<IColumnDefOf<ShortCluster>>;
+    shortClusters$: Observable<Array<ShortCluster>>;    
     selectedRows$: Subject<Array<ShortCluster>>;
     selectedRowsIDs$: Observable<Array<string>>;
     
@@ -143,7 +142,7 @@ export default class ClusterTaskFlowController {
     }
     
     ngAfterContentInit(){
-        this._clusterID = 123;
+        
     }
     
     $onInit() {

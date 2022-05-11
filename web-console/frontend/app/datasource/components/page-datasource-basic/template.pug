@@ -17,11 +17,14 @@ include /app/helpers/jade/mixins
 include /app/configuration/mixins
 
 - const model = '$ctrl.clonedCluster'
-- const modelDiscoveryKind = `${model}.discovery.kind`
+- const modelDiscoveryKind = `${model}.driverCls`
 - let form = '$ctrl.form'
 
 form(novalidate name=form)
     h2.pcb-section-header.pcb-inner-padding 1. Basic Settings
+    
+    .panel-group
+        include ./basic-form
     
     .panel-group        
         include ./client-connector
@@ -32,21 +35,16 @@ form(novalidate name=form)
        
         button.btn-ignite.btn-ignite--link-success(
         type='button'
-           ng-click='$ctrl.confirmAndRestart()'
-           ng-show='$ctrl.$scope.status!="started"'
+           ng-click='$ctrl.pingDatasource()'
+           ng-show='$ctrl.$scope.status!="connected"'
         ) 
            | Test Datasource
   
         button.btn-ignite.btn-ignite--link-success(
             type='button'
-            ng-click='$ctrl.confirmAndStop()'
-            ng-show='$ctrl.$scope.status=="started"'
+            ng-click='$ctrl.confirmAndDisconnect()'
+            ng-show='$ctrl.$scope.status=="connected"'
         ) 
            | Disconnect Datasource
-
-        button.btn-ignite.btn-ignite--link-success(
-            type='button'
-            ng-click='$ctrl.confirmAndReset()'
-        )
-            | Cancel
+       
         pc-split-button(actions=`::$ctrl.formActionsMenu`)

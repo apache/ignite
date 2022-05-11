@@ -26,5 +26,21 @@ header.header-with-selector
         
 
 .pco-relative-root
+    pc-items-table(
+        table-title='::"Choose Data Source"'
+        column-defs='$ctrl.datasourceColumnDefs'
+        items='$ctrl.dataSourceList$|async:this'
+        on-action='$ctrl.onDatasourceAction($event)'
+        max-rows-to-show='10'
+        one-way-selection='::true'
+        selected-row-id='$ctrl.selectedRowsIDs$|async:this'
+        on-selection-change='$ctrl.selectedRows$.next($event)'
+        actions-menu='$ctrl.actions$|async:this'
+    )
+        footer-slot(ng-hide='($ctrl.dataSourceList$|async:this).length' style='font-style: italic')
+            | You have no datasource configurations.
+            a.link-success(ui-sref='base.datasource.edit.basic({clusterID: "new"})') Create one?
+
+.pco-relative-root
     div(id='amis_root')    
     

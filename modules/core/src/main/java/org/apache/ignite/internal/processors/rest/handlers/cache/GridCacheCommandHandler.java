@@ -40,6 +40,8 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.CacheMetrics;
 import org.apache.ignite.cache.CachePeekMode;
+import org.apache.ignite.cache.query.FieldsQueryCursor;
+import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.compute.ComputeJob;
@@ -100,6 +102,7 @@ import static org.apache.ignite.internal.processors.rest.GridRestCommand.CACHE_C
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.CACHE_CLEAR;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.CACHE_CONTAINS_KEY;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.CACHE_CONTAINS_KEYS;
+import static org.apache.ignite.internal.processors.rest.GridRestCommand.CACHE_GET_KEYS;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.CACHE_GET;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.CACHE_GET_ALL;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.CACHE_GET_AND_PUT;
@@ -132,6 +135,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
         DESTROY_CACHE,
         GET_OR_CREATE_CACHE,
         CACHE_CONTAINS_KEYS,
+        CACHE_GET_KEYS,
         CACHE_CONTAINS_KEY,
         CACHE_GET,
         CACHE_GET_AND_PUT,
@@ -448,6 +452,13 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
                 case CACHE_CONTAINS_KEYS: {
                     fut = executeCommand(req.destinationId(), req0.cacheName(), cacheFlags, key,
                         new ContainsKeysCommand(getKeys(req0)));
+
+                    break;
+                }
+                
+                case CACHE_GET_KEYS: {
+                    fut = executeCommand(req.destinationId(), req0.cacheName(), cacheFlags, key,
+                        new GetKeysCommand(key));
 
                     break;
                 }
@@ -1183,6 +1194,42 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
             return c.containsKeysAsync(keys);
         }
     }
+    
+    /** */
+    private static class GetKeysCommand extends CacheProjectionCommand {
+        /** */
+        private static final long serialVersionUID = 0L;
+        
+        /** */
+        private final Object key;
+
+        /**
+         * @param key filter key: tableName where field = value.
+         */
+        GetKeysCommand(Object key) {
+            this.key = key;
+        }
+
+        /** {@inheritDoc} */
+        @Override public IgniteInternalFuture<?> applyx(IgniteInternalCache<Object, Object> c, GridKernalContext ctx) {
+        	List<Object> keys = new ArrayList<>();
+        	if(key!=null && key instanceof List && ((List)key).size()>0) {
+            	String tableName = c.name();
+            	SqlFieldsQuery qry = new SqlFieldsQuery("SELECT _key FROM "+tableName + " WHERE _key LIKE '"+((List)key).get(0)+"%'");
+            	FieldsQueryCursor cursor = ctx.query().querySqlFields(qry, true);
+            	
+            	List<List<?>> rows = cursor.getAll();            	
+            	for(List<?> row: rows) {
+            		keys.add(row.get(0));
+            	}
+            	return new GridFinishedFuture<>(keys);
+            }
+            
+            keys.addAll(c.keySet());
+            keys.add("*");
+        	return new GridFinishedFuture<>(keys);
+        }
+    }
 
     /** */
     private static class GetCommand extends CacheProjectionCommand {
@@ -1350,6 +1397,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
             return c.getAllAsync(keys);
         }
     }
+   
 
     /** */
     private static class PutAllCommand extends CacheProjectionCommand {

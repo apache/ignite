@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-import {forkJoin, merge} from 'rxjs';
-import {map, tap, pluck, take, filter, distinctUntilChanged, switchMap, publishReplay, refCount} from 'rxjs/operators';
+import {forkJoin, merge, from, of} from 'rxjs';
+import {map, tap, pluck, take, filter, catchError, distinctUntilChanged, switchMap, publishReplay, refCount} from 'rxjs/operators';
 import cloneDeep from 'lodash/cloneDeep';
 import get from 'lodash/get';
 import naturalCompare from 'natural-compare-lite';
@@ -24,26 +24,26 @@ import naturalCompare from 'natural-compare-lite';
 
 import {Confirm} from 'app/services/Confirm.service';
 
-import ConfigureState from '../../../configuration/services/ConfigureState';
-import DatasourceSelectors from '../../store/selectors';
+import ConfigureState from 'app/configuration/services/ConfigureState';
+import Datasource from 'app/datasource/services/Datasource';
 
 import {UIRouter} from '@uirouter/angularjs';
 import FormUtils from 'app/services/FormUtils.service';
 import AgentManager from 'app/modules/agent/AgentManager.service';
-
+import {dbPresets} from 'app/datasource/dbPresets';
 
 export default class PageDatasourceBasicController {
     form: ng.IFormController;
 
     static $inject = [
-        'Confirm', '$uiRouter', 'ConfigureState', 'DatasourceSelectors',  '$element', 'IgniteFormUtils', 'AgentManager', '$scope'
+        'Confirm', '$uiRouter', 'ConfigureState', 'Datasource',  '$element', 'IgniteFormUtils', 'AgentManager', '$scope'
     ];
 
     constructor(
         private Confirm: Confirm,
         private $uiRouter: UIRouter,
         private ConfigureState: ConfigureState,
-        private DatasourceSelectors: DatasourceSelectors,
+        private Datasource: Datasource,
         private $element: JQLite,        
         private IgniteFormUtils: ReturnType<typeof FormUtils>,
         private AgentManager: AgentManager,      
@@ -65,6 +65,13 @@ export default class PageDatasourceBasicController {
         //this.onBeforeTransition = this.$uiRouter.transitionService.onBefore({}, (t) => this._uiCanExit(t));
         this.available = (v) =>{ return true; }
         
+        let drivers = [];
+        for(let engine of dbPresets){
+            let option = {"label": engine.db, "value": engine.jdbcDriverClass}
+            drivers.push(option);
+        }
+        this.drivers = drivers;
+        
         const clusterID$ = this.$uiRouter.globals.params$.pipe(
             take(1),
             pluck('clusterID'),
@@ -75,16 +82,20 @@ export default class PageDatasourceBasicController {
 
         this.isNew$ = this.$uiRouter.globals.params$.pipe(pluck('clusterID'), map((id) => id === 'new'));
         
-        this.shortClusters$ = this.ConfigureState.state$.pipe(this.DatasourceSelectors.selectShortClustersValue());
+        
         this.originalCluster$ = clusterID$.pipe(
             distinctUntilChanged(),
             switchMap((id) => {
-                return this.ConfigureState.state$.pipe(this.DatasourceSelectors.selectClusterToEdit(id));
+                return from(this.Datasource.selectDatasource(id));
             }),
             distinctUntilChanged(),
             publishReplay(1),
             refCount()
         );  
+        
+        this.originalCluster$.subscribe((c) =>{
+            this.clonedCluster = cloneDeep(c);
+        })
        
        this.formActionsMenu = [
            {
@@ -93,70 +104,92 @@ export default class PageDatasourceBasicController {
                icon: 'checkmark'
            },
            {
-               text: 'Save and Public',
-               click: () => this.save(true),
+               text: 'Delete',
+               click: () => this.confirmAndDelete(),
                icon: 'download'
            }
        ];
        
     }
+    
+    pingDatasource() {
+      let cluster =  this.clonedCluster;
+      this.AgentManager.callClusterService(cluster.id,'datasourceTest',cluster).then((msg) => {
+          if(msg.status){
+             cluster.status = msg.status;
+             this.$scope =msg.status;
+          }
+      });    
+    }
+    
+    disconnectDatasource() {
+      let cluster =  this.clonedCluster;
+      this.AgentManager.callClusterService(cluster.id,'datasourceDisconnect').then((msg) => {
+          if(msg.status){
+             cluster.status = msg.status;
+             this.$scope =msg.status;
+          }
+      });    
+    }
 
-    save(download = false) {
+    save(redirect = false) {
         if (this.form.$invalid)
             return this.IgniteFormUtils.triggerValidation(this.form, this.$scope);
-
-        this.ConfigureState.dispatchAction((download ? basicSaveAndDownload : basicSave)(cloneDeep(this.clonedCluster)));
+        let datasource = this.clonedCluster
+        if(datasource) {
+            let stat = from(this.Datasource.saveBasic(datasource)).pipe(
+                switchMap(({data}) => of(                   
+                    {type: 'EDIT_DATASOURCE', datasource: data},
+                    {type: 'SAVE_AND_EDIT_DATASOURCE_OK'}
+                )),
+                catchError((error) => of({
+                    type: 'SAVE_AND_EDIT_DATASOURCE_ERR',
+                    error: {
+                        message: `Failed to save datasource : ${error.data.message}.`
+                    }
+                }))
+            );            
+            this.$scope.message = 'Save successful.'
+            if(redirect){
+                
+                return this.$uiRouter.stateService.go('/datasource');
+            } 
+        }
+        
     }
 
     reset() {
         this.clonedCluster = cloneDeep(this.originalCluster);
         this.ConfigureState.dispatchAction({type: 'RESET_EDIT_CHANGES'});
-    }
+    }    
 
-    restart() {
-        this.AgentManager.startCluster(this.clonedCluster).then((msg) => {  
-            if(!msg.message){
-               this.$scope.status = msg.status;
-               this.ConfigureState.dispatchAction({type: 'RESTART_CLUSTER'});
-               this.clonedCluster.status = msg.status;
-            }            
-            this.$scope.message = msg.message;
- 
-        })
-       .catch((e) => {
-            this.$scope.message = ('Failed to generate project config file: '+e);           
-        });
-    }
-
-    stop() {
-        this.AgentManager.stopCluster(this.clonedCluster).then((msg) => {  
-    	    if(!msg.message){
-               this.$scope.status = msg.status;
-               this.ConfigureState.dispatchAction({type: 'RESTART_CLUSTER'});
-               this.clonedCluster.status = msg.status;
-            }            
-            this.$scope.message = msg.message;
-        });        
+    confirmAndDisconnect() {
+        return this.Confirm.confirm('Are you sure you want to disconnect of current datasource?')
+            .then(() => this.disconnectDatasource())
+            .catch(() => {});
     }
     
-
-    isStoped() {
-        return this.$scope.status !== 'started';
+    delete(datasource) {
+        let stat = from(this.Datasource.removeDatasource(datasource.id)).pipe(
+            switchMap(({data}) => of(                   
+                {type: 'REMOVE_DATASOURCE', datasource: data},
+                {type: 'REMOVE_AND_EDIT_DATASOURCE_OK'}
+            )),
+            catchError((error) => of({
+                type: 'REMOVE_DATASOURCE_ERR',
+                error: {
+                    message: `Failed to remove datasource : ${error.data.message}.`
+                }
+            }))
+        );    
     }
-
-    confirmAndReset() {
-        return this.Confirm.confirm('Are you sure you want to undo all changes for current cluster?')
-            .then(() => this.reset())
+    
+    confirmAndDelete() {
+        return this.Confirm.confirm('Are you sure you want to delete current datasource?')
+            .then(() => this.delete(this.clonedCluster))
             .catch(() => {});
     }
-    confirmAndRestart() {
-        return this.Confirm.confirm('Are you sure you want to restart current cluster? Current status:' + this.clonedCluster.status)
-            .then(() => this.restart())
-            .catch(() => {});
-    }
-    confirmAndStop() {
-        return this.Confirm.confirm('Are you sure you want to stop current cluster?  Current status:' + this.clonedCluster.status)
-            .then(() => this.stop())
-            .catch(() => {});
-    }
+    
+    
+    
 }
