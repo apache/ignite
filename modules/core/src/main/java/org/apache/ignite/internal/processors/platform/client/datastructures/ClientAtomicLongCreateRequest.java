@@ -30,12 +30,20 @@ import org.jetbrains.annotations.Nullable;
  * Gets or creates atomic long by name.
  */
 public class ClientAtomicLongCreateRequest extends ClientRequest {
+    /** Atomic long name. */
     private final String name;
 
+    /** Initial value. */
     private final long initVal;
 
+    /** Configuration. */
     private final AtomicConfiguration atomicConfiguration;
 
+    /**
+     * Constructor.
+     *
+     * @param reader Reader.
+     */
     public ClientAtomicLongCreateRequest(BinaryRawReader reader) {
         super(reader);
 

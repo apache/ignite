@@ -25,16 +25,15 @@ import org.apache.ignite.configuration.AtomicConfiguration;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientRequest;
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
-import org.jetbrains.annotations.NotNull;
 
 /**
  * Atomic long value request.
  */
 public class ClientAtomicLongRequest extends ClientRequest {
-    /** */
+    /** Atomic long name. */
     private final String name;
 
-    /** */
+    /** Cache group name. */
     private final String groupName;
 
     /**
@@ -60,7 +59,8 @@ public class ClientAtomicLongRequest extends ClientRequest {
 
         try {
             return ctx.kernalContext().dataStructures().atomicLong(name, cfg, 0, false);
-        } catch (IgniteCheckedException e) {
+        }
+        catch (IgniteCheckedException e) {
             throw new IgniteException(e.getMessage(), e);
         }
     }
