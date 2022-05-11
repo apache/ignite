@@ -335,13 +335,13 @@ public class TcpIgniteClient implements IgniteClient {
     /** {@inheritDoc} */
     @Override public ClientAtomicLong atomicLong(String name, long initVal, boolean create) throws IgniteException {
         // TODO: perform a server call to create / check existence depending on create flag.
-        return new ClientAtomicLongImpl(name);
+        return new ClientAtomicLongImpl(name, null, ch);
     }
 
     /** {@inheritDoc} */
     @Override public ClientAtomicLong atomicLong(String name, ClientAtomicConfiguration cfg, long initVal, boolean create) throws IgniteException {
         // TODO: perform a server call to create / check existence depending on create flag.
-        return new ClientAtomicLongImpl(name);
+        return new ClientAtomicLongImpl(name, cfg != null ? cfg.getGroupName() : null, ch);
     }
 
     /**

@@ -27,9 +27,13 @@ public class ClientAtomicLongImpl implements ClientAtomicLong {
     /** */
     private final String name;
 
-    public ClientAtomicLongImpl(String name) {
-        // TODO: Stateless instance, sends name with every request
+    /** */
+    private final String groupName;
+
+    public ClientAtomicLongImpl(String name, String groupName, ReliableChannel ch) {
+        // Name and groupName uniquely identify the data structure.
         this.name = name;
+        this.groupName = groupName;
     }
 
     /** {@inheritDoc} */
