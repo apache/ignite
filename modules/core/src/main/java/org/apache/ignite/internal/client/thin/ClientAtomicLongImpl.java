@@ -44,35 +44,33 @@ public class ClientAtomicLongImpl implements ClientAtomicLong {
 
     /** {@inheritDoc} */
     @Override public long incrementAndGet() throws IgniteException {
-        return 0;
+        return addAndGet(1);
     }
 
     /** {@inheritDoc} */
     @Override public long getAndIncrement() throws IgniteException {
-        // TODO: Same as above
-        return 0;
+        return incrementAndGet() - 1;
     }
 
     /** {@inheritDoc} */
     @Override public long addAndGet(long l) throws IgniteException {
+        // TODO: Actual call
         return 0;
     }
 
     /** {@inheritDoc} */
     @Override public long getAndAdd(long l) throws IgniteException {
-        // TODO: Same as above
-        return 0;
+        return addAndGet(l) - l;
     }
 
     /** {@inheritDoc} */
     @Override public long decrementAndGet() throws IgniteException {
-        return 0;
+        return addAndGet(-1);
     }
 
     /** {@inheritDoc} */
     @Override public long getAndDecrement() throws IgniteException {
-        // TODO: Same as above
-        return 0;
+        return decrementAndGet() + 1;
     }
 
     /** {@inheritDoc} */

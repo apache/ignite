@@ -289,6 +289,19 @@ public class ClientMessageParser implements ClientListenerMessageParser {
     /** */
     private static final short OP_DATA_STREAMER_ADD_DATA = 8001;
 
+    /** Data structures. */
+    /** Get or create an AtomicLong by name. */
+    private static final short OP_ATOMIC_LONG_GET_OR_CREATE = 9000;
+
+    /** AtomicLong.addAndGet (also covers get, incrementAndGet, getAndIncrement, getAndAdd, decrementAndGet, getAndDecrement).  */
+    private static final short OP_ATOMIC_LONG_VALUE_ADD_AND_GET = 9001;
+
+    /** AtomicLong.getAndSet. */
+    private static final short OP_ATOMIC_LONG_VALUE_GET_AND_SET = 9002;
+
+    /** AtomicLong.compareAndSet. */
+    private static final short OP_ATOMIC_LONG_VALUE_COMPARE_AND_SET = 9003;
+
     /** Marshaller. */
     private final GridBinaryMarshaller marsh;
 
