@@ -334,13 +334,31 @@ public class TcpIgniteClient implements IgniteClient {
 
     /** {@inheritDoc} */
     @Override public ClientAtomicLong atomicLong(String name, long initVal, boolean create) throws IgniteException {
-        // TODO: perform a server call to create / check existence depending on create flag.
-        return new ClientAtomicLongImpl(name, null, ch);
+        return atomicLong(name, null, initVal, create);
     }
 
     /** {@inheritDoc} */
     @Override public ClientAtomicLong atomicLong(String name, ClientAtomicConfiguration cfg, long initVal, boolean create) throws IgniteException {
-        // TODO: perform a server call to create / check existence depending on create flag.
+        // TODO: async version.
+        if (create) {
+            ch.service(ClientOperation.ATOMIC_LONG_CREATE, out -> {
+                try (BinaryRawWriterEx w = new BinaryWriterExImpl(null, out.out(), null, null)) {
+                    w.writeString(name);
+                    w.writeLong(initVal);
+
+                    if (cfg != null) {
+                        w.writeBoolean(true);
+                        w.writeInt(cfg.getAtomicSequenceReserveSize());
+                        w.writeByte((byte) cfg.getCacheMode().ordinal());
+                        w.writeInt(cfg.getBackups());
+                        w.writeString(cfg.getGroupName());
+                    } else
+                        w.writeBoolean(false);
+                }
+
+            }, null);
+        }
+
         return new ClientAtomicLongImpl(name, cfg != null ? cfg.getGroupName() : null, ch);
     }
 

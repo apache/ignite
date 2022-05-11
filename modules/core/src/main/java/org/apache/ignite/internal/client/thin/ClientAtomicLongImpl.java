@@ -19,6 +19,8 @@ package org.apache.ignite.internal.client.thin;
 
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.client.ClientAtomicLong;
+import org.apache.ignite.internal.binary.BinaryRawWriterEx;
+import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 
 /**
  * Client atomic long.
@@ -30,10 +32,14 @@ public class ClientAtomicLongImpl implements ClientAtomicLong {
     /** */
     private final String groupName;
 
+    /** */
+    private final ReliableChannel ch;
+
     public ClientAtomicLongImpl(String name, String groupName, ReliableChannel ch) {
         // Name and groupName uniquely identify the data structure.
         this.name = name;
         this.groupName = groupName;
+        this.ch = ch;
     }
 
     /** {@inheritDoc} */
@@ -43,7 +49,7 @@ public class ClientAtomicLongImpl implements ClientAtomicLong {
 
     /** {@inheritDoc} */
     @Override public long get() throws IgniteException {
-        return 0;
+        return ch.service(ClientOperation.ATOMIC_LONG_VALUE_GET, this::writeName, in -> in.in().readLong());
     }
 
     /** {@inheritDoc} */
@@ -96,5 +102,13 @@ public class ClientAtomicLongImpl implements ClientAtomicLong {
     /** {@inheritDoc} */
     @Override public void close() {
 
+    }
+
+    /** Serialize string. */
+    private void writeName(PayloadOutputChannel out) {
+        try (BinaryRawWriterEx w = new BinaryWriterExImpl(null, out.out(), null, null)) {
+            w.writeString(name);
+            w.writeString(groupName);
+        }
     }
 }
