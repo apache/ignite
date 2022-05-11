@@ -17,15 +17,14 @@
 
 package org.apache.ignite.internal.client.thin;
 
-import static org.apache.ignite.testframework.GridTestUtils.assertContains;
-import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
-
 import java.util.concurrent.Callable;
 import org.apache.ignite.client.ClientAtomicConfiguration;
 import org.apache.ignite.client.ClientAtomicLong;
 import org.apache.ignite.client.ClientException;
 import org.apache.ignite.client.IgniteClient;
 import org.junit.Test;
+import static org.apache.ignite.testframework.GridTestUtils.assertContains;
+import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 
 /**
  * Tests client atomic long.
@@ -45,6 +44,9 @@ public class AtomicLongTest extends AbstractThinClientTest {
         super.afterTestsStopped();
     }
 
+    /**
+     * Tests initial value setting.
+     */
     @Test
     public void testCreateSetsInitialValue() {
         String name = "testCreateSetsInitialValue";
@@ -60,6 +62,9 @@ public class AtomicLongTest extends AbstractThinClientTest {
         }
     }
 
+    /**
+     * Tests that initial value is ignored when atomic long already exists.
+     */
     @Test
     public void testCreateIgnoresInitialValueWhenAlreadyExists() {
         String name = "testCreateIgnoresInitialValueWhenAlreadyExists";
@@ -73,6 +78,9 @@ public class AtomicLongTest extends AbstractThinClientTest {
         }
     }
 
+    /**
+     * Tests that exception is thrown when atomic long does not exist.
+     */
     @Test
     public void testOperationsThrowExceptionWhenAtomicLongDoesNotExist() {
         try (IgniteClient client = startClient(0)) {
@@ -95,6 +103,9 @@ public class AtomicLongTest extends AbstractThinClientTest {
         }
     }
 
+    /**
+     * Tests removed property.
+     */
     @Test
     public void testRemoved() {
         String name = "testRemoved";
@@ -112,6 +123,9 @@ public class AtomicLongTest extends AbstractThinClientTest {
         }
     }
 
+    /**
+     * Tests increment, decrement, add.
+     */
     @Test
     public void testIncrementDecrementAdd() {
         String name = "testIncrementDecrementAdd";
@@ -136,6 +150,9 @@ public class AtomicLongTest extends AbstractThinClientTest {
         }
     }
 
+    /**
+     * Tests getAndSet.
+     */
     @Test
     public void testGetAndSet() {
         String name = "testGetAndSet";
@@ -148,6 +165,9 @@ public class AtomicLongTest extends AbstractThinClientTest {
         }
     }
 
+    /**
+     * Tests compareAndSet.
+     */
     @Test
     public void testCompareAndSet() {
         String name = "testCompareAndSet";
