@@ -60,7 +60,8 @@ public class ClientAtomicLongGetOrCreateRequest extends ClientRequest {
         try {
             IgniteAtomicLong atomicLong = ctx.kernalContext().dataStructures().atomicLong(name, atomicConfiguration, initVal, create);
 
-            Long resId = atomicLong == null ? null : ctx.resources().put(atomicLong);
+            // TODO: Who will clear those resources?
+            Long resId = atomicLong == null ? null : ctx.resources().getOrCreate(atomicLong);
 
             return new ClientNullableLongResponse(requestId(), resId);
         } catch (IgniteCheckedException e) {
