@@ -82,4 +82,21 @@ public class AtomicLongTest extends AbstractThinClientTest {
                     "AtomicLong with name 'testGetThrowsExceptionWhenDoesNotExist' does not exist.");
         }
     }
+
+    @Test
+    public void testCreateRemoveExists() {
+        String name = "testCreateRemoveExists";
+
+        try (IgniteClient client = startClient(0)) {
+            ClientAtomicLong atomicLong = client.atomicLong(name, 0, false);
+            assertTrue(atomicLong.removed());
+
+            client.atomicLong(name, 1, true);
+            assertFalse(atomicLong.removed());
+            assertEquals(1, atomicLong.get());
+
+            atomicLong.close();
+            assertTrue(atomicLong.removed());
+        }
+    }
 }
