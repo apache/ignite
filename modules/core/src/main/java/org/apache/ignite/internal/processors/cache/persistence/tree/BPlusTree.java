@@ -2025,26 +2025,23 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
 
         List<L> rmvTotal = new ArrayList<>();
 
-        do {
+        for (;;) {
             RemoveRange rmvOp = new RemoveRange(lower, upper, true, limit - rmvTotal.size());
 
             doRemove(rmvOp);
 
-            Deque<L> rmvd = rmvOp.removed;
-
-            rmvTotal.addAll(rmvd);
+            rmvTotal.addAll(rmvOp.rmvdList);
 
             if (rmvOp.finished)
                 break;
 
-            lower = rmvd.getFirst();
+            lower = rmvOp.rmvdList.getFirst();
 
             if (debugMsg)
                 System.err.println(">xxx> retry " + lower + "-" + upper);
 
             checkInterrupted();
         }
-        while (limit == 0 || rmvTotal.size() < limit);
 
         return rmvTotal;
     }
@@ -2326,13 +2323,13 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
                         // We are at the bottom.
                         assert lvl == 0 : lvl;
 
-                        if (!r.range()) {
+                        if (r.exact()) {
                             r.finish();
 
                             return res;
                         }
 
-                        // try to remove soemthing from this page
+                        // Intentional fallthrough to remove something from this page.
 
                     case FOUND:
                         return r.tryRemoveFromLeaf(pageId, page, backId, fwdId, lvl);
@@ -4916,7 +4913,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
          * @param t Tail.
          * @throws IgniteCheckedException If failed.
          */
-        protected void removeDataRowFromLeafTail(Tail<L> t) throws IgniteCheckedException {
+        private void removeDataRowFromLeafTail(Tail<L> t) throws IgniteCheckedException {
             assert !isRemoved();
 
             Tail<L> leaf = getTail(t, 0);
@@ -5395,9 +5392,9 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
             return res;
         }
 
-        /** @return Flag indicating that we are removing a range of values. */
-        protected boolean range() {
-            return false;
+        /** @return Flag indicating that we are searching exact value to delete. */
+        protected boolean exact() {
+            return true;
         }
     }
 
@@ -6404,7 +6401,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
     /** */
     protected class RemoveRange extends Remove {
         /** */
-        private final Deque<L> removed = new ArrayDeque<>();
+        private final Deque<L> rmvdList = new ArrayDeque<>();
 
         /** */
         private final int limit;
@@ -6426,30 +6423,28 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
 
         /** {@inheritDoc} */
         @Override boolean notFound(BPlusIO<L> io, long pageAddr, int idx, int lvl) throws IgniteCheckedException {
-            if (lvl == 0) {
-                assert tail == null;
+            if (lvl != 0) {
+                lowerBoundFound = false;
 
-                int cnt = io.getCount(pageAddr);
-
-                lowerBoundFound = idx != cnt && compare(io, pageAddr, idx, upper) <= 0;
-
-                //idx != cnt &&
-                finished = !lowerBoundFound;
-
-                if (debugMsg && finished)
-                    System.err.println(">xxx> finished on notFound " + lower + "-" + upper);
-
-                return true;
+                return false;
             }
 
-            lowerBoundFound = false;
+            assert tail == null;
 
-            return false;
+            // If the found row is lower than the upper bound, then we've found a new lower bound.
+            lowerBoundFound = idx != io.getCount(pageAddr) && compare(io, pageAddr, idx, upper) <= 0;
+
+            finished = !lowerBoundFound;
+
+            if (debugMsg && finished)
+                System.err.println(">xxx> finished on notFound " + lower + "-" + upper);
+
+            return true;
         }
 
         /** {@inheritDoc} */
-        @Override protected boolean range() {
-            return lowerBoundFound;
+        @Override protected boolean exact() {
+            return !lowerBoundFound;
         }
 
         /**
@@ -6472,47 +6467,23 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
             return write(pageId, page, rmvRangeFromLeaf, this, 0, RETRY, statisticsHolder());
         }
 
-        /**
-         * @param t Tail.
-         * @throws IgniteCheckedException If failed.
-         */
-        @Override protected void removeDataRowFromLeafTail(Tail<L> t) throws IgniteCheckedException {
-            assert !isRemoved();
-
-            Tail<L> leaf = getTail(t, 0);
-
-            assert leaf.idx >= 0 : leaf.idx;
-
-            int cnt = leaf.getCount();
-
-            for (int i = highIdx; i >= leaf.idx; i--)
-                removeDataRowFromLeaf(leaf.pageId, leaf.page, leaf.buf, leaf.walPlc, leaf.io, cnt - (highIdx - i), i);
-        }
-
-        /**
-         * @param pageId Page ID.
-         * @param page Page pointer.
-         * @param pageAddr Page address.
-         * @param walPlc Full page WAL record policy.
-         * @param io IO.
-         * @param cnt Count.
-         * @param idx Index to remove.
-         * @throws IgniteCheckedException If failed.
-         */
-        @Override protected void removeDataRowFromLeaf(long pageId, long page, long pageAddr, Boolean walPlc,
-            BPlusIO<L> io, int cnt, int idx) throws IgniteCheckedException {
-            assert idx >= 0 && idx < cnt : idx;
+        /** {@inheritDoc} */
+        @Override protected void removeDataRowFromLeaf(long pageId, long page, long pageAddr, Boolean walPlc, BPlusIO<L> io,
+            int cnt, int idx) throws IgniteCheckedException {
+            assert highIdx < cnt : highIdx;
+            assert idx >= 0 && idx <= highIdx : idx;
             assert io.isLeaf() : "inner";
-//            assert !isRemoved() : "already removed";
+            assert !isRemoved() : "already removed";
 
-            assert needOld;
+            // it's just a marker.
+            rmvd = (T)Boolean.TRUE;
 
-            // Detach the row.
-            rmvd = getRow(io, pageAddr, idx);
+            for (int i = highIdx; i >= idx; i--) {
+                if (needOld)
+                    rmvdList.push(getRow(io, pageAddr, i));
 
-            removed.push(rmvd);
-
-            doRemove(pageId, page, pageAddr, walPlc, io, cnt, idx);
+                doRemove(pageId, page, pageAddr, walPlc, io, cnt - highIdx + i, i);
+            }
 
             assert isRemoved();
         }
@@ -6570,8 +6541,11 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
                 --highIdx;
             }
 
-            if (r.limit > 0 && (r.limit + lowIdx) <= highIdx)
+            if (r.limit > 0 && (r.limit + lowIdx) <= highIdx) {
+                r.finished = true;
+
                 highIdx = lowIdx + r.limit - 1;
+            }
 
             assert highIdx >= lowIdx : "low=" + lowIdx + ", high=" + highIdx;
 
@@ -6629,8 +6603,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
                 return FOUND;
             }
 
-            for (int idx = highIdx; idx >= lowIdx; idx--)
-                r.removeDataRowFromLeaf(leafId, leafPage, leafAddr, null, io, io.getCount(leafAddr), idx);
+            r.removeDataRowFromLeaf(leafId, leafPage, leafAddr, null, io, cnt, lowIdx);
 
             return FOUND;
         }

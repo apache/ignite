@@ -1406,35 +1406,34 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
             LongStream.range(31L, end + 1).boxed().collect(Collectors.toList());
 
         List<Long> res = tree.remove(rmvRange.get1(), end, 0);
-
+        assertNoLocks();
         assertEquals(expRange, res);
 
-        long startRow = res.get(0);
-        long endRow = res.get(res.size() - 1);
-
-        assertEquals(rmvRange.get2() + 1, startRow);
-        assertEquals(end, endRow);
-
         res = tree.remove(rmvRange.get1(), end, 0);
+        assertNoLocks();
         assertTrue(res.isEmpty());
 
         res = tree.remove(rmvRange.get1(), end + 1, 0);
+        assertNoLocks();
         assertEquals(1, res.size());
 
         res = tree.remove(1000L, 10010L, 0);
-
+        assertNoLocks();
         assertNotNull(res);
         assertTrue(res.isEmpty());
 
         res = tree.remove(999L, 10010L, 0);
+        assertNoLocks();
         assertNotNull(res);
         assertFalse(res.isEmpty());
         assertEquals(Long.valueOf(999), res.get(0));
 
         res = tree.remove(100L, 200L, 5);
+        assertNoLocks();
         assertEquals(5, res.size());
 
         res = tree.remove(100L, 200L, 95);
+        assertNoLocks();
         assertEquals(95, res.size());
 
         tree.validateTree();
