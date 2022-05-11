@@ -42,12 +42,29 @@ public class AtomicLongTest extends AbstractThinClientTest {
 
     @Test
     public void testCreateSetsInitialValue() {
+        String name = "testCreateSetsInitialValue";
+
         try (IgniteClient client = startClient(0)) {
-            ClientAtomicLong atomicLong = client.atomicLong("a", 42, true);
-            ClientAtomicLong atomicLong2 = client.atomicLong("a", new ClientAtomicConfiguration().setGroupName("grp"), 43, true);
+            ClientAtomicLong atomicLong = client.atomicLong(name, 42, true);
+
+            ClientAtomicLong atomicLongWithGroup = client.atomicLong(
+                    name, new ClientAtomicConfiguration().setGroupName("grp"), 43, true);
 
             assertEquals(42, atomicLong.get());
-            assertEquals(43, atomicLong2.get());
+            assertEquals(43, atomicLongWithGroup.get());
+        }
+    }
+
+    @Test
+    public void testCreateIgnoresInitialValueWhenAlreadyExists() {
+        String name = "testCreateIgnoresInitialValueWhenAlreadyExists";
+
+        try (IgniteClient client = startClient(0)) {
+            ClientAtomicLong atomicLong = client.atomicLong(name, 42, true);
+            ClientAtomicLong atomicLong2 = client.atomicLong(name, -42, true);
+
+            assertEquals(42, atomicLong.get());
+            assertEquals(42, atomicLong2.get());
         }
     }
 }
