@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.client.thin;
 
+import org.apache.ignite.client.ClientAtomicConfiguration;
 import org.apache.ignite.client.ClientAtomicLong;
 import org.apache.ignite.client.IgniteClient;
 import org.junit.Test;
@@ -42,9 +43,11 @@ public class AtomicLongTest extends AbstractThinClientTest {
     @Test
     public void testCreateSetsInitialValue() {
         try (IgniteClient client = startClient(0)) {
-            ClientAtomicLong atomicLong = client.atomicLong("a", 1, true);
+            ClientAtomicLong atomicLong = client.atomicLong("a", 42, true);
+            ClientAtomicLong atomicLong2 = client.atomicLong("a", new ClientAtomicConfiguration().setGroupName("grp"), 43, true);
 
-            assertEquals(1, atomicLong.get());
+            assertEquals(42, atomicLong.get());
+            assertEquals(43, atomicLong2.get());
         }
     }
 }
