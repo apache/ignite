@@ -72,7 +72,6 @@ public interface ClientAtomicLong extends Closeable {
      * Gets current value of atomic long.
      *
      * @return Current value of atomic long.
-     * @throws IgniteException If operation failed.
      */
     public long get() throws IgniteException;
 
@@ -80,7 +79,6 @@ public interface ClientAtomicLong extends Closeable {
      * Increments and gets current value of atomic long.
      *
      * @return Value.
-     * @throws IgniteException If operation failed.
      */
     public long incrementAndGet() throws IgniteException;
 
@@ -88,7 +86,6 @@ public interface ClientAtomicLong extends Closeable {
      * Gets and increments current value of atomic long.
      *
      * @return Value.
-     * @throws IgniteException If operation failed.
      */
     public long getAndIncrement() throws IgniteException;
 
@@ -97,7 +94,6 @@ public interface ClientAtomicLong extends Closeable {
      *
      * @param l Number which will be added.
      * @return Value.
-     * @throws IgniteException If operation failed.
      */
     public long addAndGet(long l) throws IgniteException;
 
@@ -106,7 +102,6 @@ public interface ClientAtomicLong extends Closeable {
      *
      * @param l Number which will be added.
      * @return Value.
-     * @throws IgniteException If operation failed.
      */
     public long getAndAdd(long l) throws IgniteException;
 
@@ -114,7 +109,6 @@ public interface ClientAtomicLong extends Closeable {
      * Decrements and gets current value of atomic long.
      *
      * @return Value.
-     * @throws IgniteException If operation failed.
      */
     public long decrementAndGet() throws IgniteException;
 
@@ -122,7 +116,6 @@ public interface ClientAtomicLong extends Closeable {
      * Gets and decrements current value of atomic long.
      *
      * @return Value.
-     * @throws IgniteException If operation failed.
      */
     public long getAndDecrement() throws IgniteException;
 
@@ -131,7 +124,6 @@ public interface ClientAtomicLong extends Closeable {
      *
      * @param l New value of atomic long.
      * @return Value.
-     * @throws IgniteException If operation failed.
      */
     public long getAndSet(long l) throws IgniteException;
 
@@ -142,7 +134,6 @@ public interface ClientAtomicLong extends Closeable {
      * @param expVal Expected atomic long's value.
      * @param newVal New atomic long's value to set if current value equal to expected value.
      * @return {@code True} if comparison succeeded, {@code false} otherwise.
-     * @throws IgniteException If failed.
      */
     public boolean compareAndSet(long expVal, long newVal) throws IgniteException;
 
@@ -156,7 +147,6 @@ public interface ClientAtomicLong extends Closeable {
     /**
      * Removes this atomic long.
      *
-     * @throws IgniteException If operation failed.
      */
     @Override public void close();
 }
