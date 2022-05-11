@@ -148,6 +148,21 @@ public class AtomicLongTest extends AbstractThinClientTest {
         }
     }
 
+    @Test
+    public void testCompareAndSet() {
+        String name = "testCompareAndSet";
+
+        try (IgniteClient client = startClient(0)) {
+            ClientAtomicLong atomicLong = client.atomicLong(name, 1, true);
+
+            assertFalse(atomicLong.compareAndSet(2, 3));
+            assertEquals(1, atomicLong.get());
+
+            assertTrue(atomicLong.compareAndSet(1, 4));
+            assertEquals(4, atomicLong.get());
+        }
+    }
+
     private void assertDoesNotExistError(String name, Callable<Object> callable) {
         ClientException ex = (ClientException) assertThrows(null, callable, ClientException.class, null);
 
