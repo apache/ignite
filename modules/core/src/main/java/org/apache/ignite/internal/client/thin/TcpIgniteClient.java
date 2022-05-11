@@ -362,7 +362,13 @@ public class TcpIgniteClient implements IgniteClient {
             }, null);
         }
 
-        return new ClientAtomicLongImpl(name, cfg != null ? cfg.getGroupName() : null, ch);
+        ClientAtomicLong res = new ClientAtomicLongImpl(name, cfg != null ? cfg.getGroupName() : null, ch);
+
+        // Return null when specified atomic long does not exist to match IgniteKernal behavior.
+        if (!create && res.removed())
+            return null;
+
+        return res;
     }
 
     /**

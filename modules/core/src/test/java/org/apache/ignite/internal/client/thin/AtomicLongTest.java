@@ -77,7 +77,8 @@ public class AtomicLongTest extends AbstractThinClientTest {
     public void testOperationsThrowExceptionWhenAtomicLongDoesNotExist() {
         try (IgniteClient client = startClient(0)) {
             String name = "testOperationsThrowExceptionWhenAtomicLongDoesNotExist";
-            ClientAtomicLong atomicLong = client.atomicLong(name, 0, false);
+            ClientAtomicLong atomicLong = client.atomicLong(name, 0, true);
+            atomicLong.close();
 
             assertDoesNotExistError(name, atomicLong::get);
 
@@ -99,11 +100,10 @@ public class AtomicLongTest extends AbstractThinClientTest {
         String name = "testRemoved";
 
         try (IgniteClient client = startClient(0)) {
-            // TODO: This should return null when does not exist to conform with thick semantics.
             ClientAtomicLong atomicLong = client.atomicLong(name, 0, false);
-            assertTrue(atomicLong.removed());
+            assertNull(atomicLong);
 
-            client.atomicLong(name, 1, true);
+            atomicLong = client.atomicLong(name, 1, true);
             assertFalse(atomicLong.removed());
             assertEquals(1, atomicLong.get());
 
