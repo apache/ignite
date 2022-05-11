@@ -53,6 +53,7 @@ import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.pagemem.store.IgnitePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
+import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderSettings;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -117,10 +118,16 @@ public class GridLocalConfigManager {
         ctx = kernalCtx;
         log = ctx.log(getClass());
         marshaller = MarshallerUtils.jdkMarshaller(ctx.igniteInstanceName());
-        storeWorkDir = ctx.pdsFolderResolver().resolveFolders().persistentStoreNodePath();
 
-        U.ensureDirectory(storeWorkDir, "page store work directory", log);
+        PdsFolderSettings<?> folderSettings = ctx.pdsFolderResolver().resolveFolders();
 
+        if (folderSettings.persistentStoreRootPath() != null) {
+            storeWorkDir = folderSettings.persistentStoreNodePath();
+
+            U.ensureDirectory(storeWorkDir, "page store work directory", log);
+        }
+        else
+            storeWorkDir = null;
     }
 
     /**
