@@ -112,6 +112,25 @@ public class AtomicLongTest extends AbstractThinClientTest {
         }
     }
 
+    @Test
+    public void testIncrementDecrement() {
+        String name = "testIncrementDecrement";
+
+        try (IgniteClient client = startClient(0)) {
+            ClientAtomicLong atomicLong = client.atomicLong(name, 1, true);
+
+            assertEquals(2, atomicLong.incrementAndGet());
+            assertEquals(2, atomicLong.getAndIncrement());
+
+            assertEquals(3, atomicLong.get());
+
+            assertEquals(2, atomicLong.decrementAndGet());
+            assertEquals(2, atomicLong.getAndDecrement());
+
+            assertEquals(1, atomicLong.get());
+        }
+    }
+
     private void assertDoesNotExistError(String name, Callable<Object> callable) {
         ClientException ex = (ClientException) assertThrows(null, callable, ClientException.class, null);
 
