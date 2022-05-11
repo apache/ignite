@@ -29,7 +29,6 @@ import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import org.apache.ignite.IgniteBinary;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
@@ -334,15 +333,14 @@ public class TcpIgniteClient implements IgniteClient {
     }
 
     /** {@inheritDoc} */
-    @Override public ClientAtomicLong atomicLong(String name, long initVal, boolean create) throws IgniteException {
+    @Override public ClientAtomicLong atomicLong(String name, long initVal, boolean create) {
         return atomicLong(name, null, initVal, create);
     }
 
     /** {@inheritDoc} */
-    @Override public ClientAtomicLong atomicLong(String name, ClientAtomicConfiguration cfg, long initVal, boolean create) throws IgniteException {
+    @Override public ClientAtomicLong atomicLong(String name, ClientAtomicConfiguration cfg, long initVal, boolean create) {
         GridArgumentCheck.notNull(name, "name");
 
-        // TODO: async version?
         if (create) {
             ch.service(ClientOperation.ATOMIC_LONG_CREATE, out -> {
                 try (BinaryRawWriterEx w = new BinaryWriterExImpl(null, out.out(), null, null)) {

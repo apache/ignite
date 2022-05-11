@@ -36,8 +36,15 @@ public class ClientAtomicLongImpl implements ClientAtomicLong {
     /** */
     private final ReliableChannel ch;
 
+    /**
+     * Constructor.
+     *
+     * @param name Atomic long name.
+     * @param groupName Cache group name.
+     * @param ch Channel.
+     */
     public ClientAtomicLongImpl(String name, @Nullable String groupName, ReliableChannel ch) {
-        // Name and groupName uniquely identify the data structure.
+        // name and groupName uniquely identify the data structure.
         this.name = name;
         this.groupName = groupName;
         this.ch = ch;
@@ -113,7 +120,11 @@ public class ClientAtomicLongImpl implements ClientAtomicLong {
         ch.service(ClientOperation.ATOMIC_LONG_REMOVE, this::writeName, null);
     }
 
-    /** Serialize string. */
+    /**
+     * Writes the name.
+     *
+     * @param out Output channel.
+     */
     private void writeName(PayloadOutputChannel out) {
         try (BinaryRawWriterEx w = new BinaryWriterExImpl(null, out.out(), null, null)) {
             w.writeString(name);
