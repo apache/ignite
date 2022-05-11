@@ -82,6 +82,8 @@ import org.apache.ignite.internal.processors.platform.client.datastructures.Clie
 import org.apache.ignite.internal.processors.platform.client.datastructures.ClientAtomicLongExistsRequest;
 import org.apache.ignite.internal.processors.platform.client.datastructures.ClientAtomicLongRemoveRequest;
 import org.apache.ignite.internal.processors.platform.client.datastructures.ClientAtomicLongValueAddAndGetRequest;
+import org.apache.ignite.internal.processors.platform.client.datastructures.ClientAtomicLongValueCompareAndSetRequest;
+import org.apache.ignite.internal.processors.platform.client.datastructures.ClientAtomicLongValueGetAndSetRequest;
 import org.apache.ignite.internal.processors.platform.client.datastructures.ClientAtomicLongValueGetRequest;
 import org.apache.ignite.internal.processors.platform.client.service.ClientServiceGetDescriptorRequest;
 import org.apache.ignite.internal.processors.platform.client.service.ClientServiceGetDescriptorsRequest;
@@ -560,10 +562,10 @@ public class ClientMessageParser implements ClientListenerMessageParser {
                 return new ClientAtomicLongValueAddAndGetRequest(reader);
 
             case OP_ATOMIC_LONG_VALUE_GET_AND_SET:
-                return new ClientAtomicLongValueAddAndGetRequest(reader);
+                return new ClientAtomicLongValueGetAndSetRequest(reader);
 
             case OP_ATOMIC_LONG_VALUE_COMPARE_AND_SET:
-                return new ClientAtomicLongValueAddAndGetRequest(reader);
+                return new ClientAtomicLongValueCompareAndSetRequest(reader);
         }
 
         return new ClientRawRequest(reader.readLong(), ClientStatus.INVALID_OP_CODE,
