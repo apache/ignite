@@ -78,7 +78,7 @@ import org.apache.ignite.internal.processors.platform.client.cluster.ClientClust
 import org.apache.ignite.internal.processors.platform.client.cluster.ClientClusterWalChangeStateRequest;
 import org.apache.ignite.internal.processors.platform.client.cluster.ClientClusterWalGetStateRequest;
 import org.apache.ignite.internal.processors.platform.client.compute.ClientExecuteTaskRequest;
-import org.apache.ignite.internal.processors.platform.client.datastructures.ClientAtomicLongGetOrCreateRequest;
+import org.apache.ignite.internal.processors.platform.client.datastructures.ClientAtomicLongCreateRequest;
 import org.apache.ignite.internal.processors.platform.client.service.ClientServiceGetDescriptorRequest;
 import org.apache.ignite.internal.processors.platform.client.service.ClientServiceGetDescriptorsRequest;
 import org.apache.ignite.internal.processors.platform.client.service.ClientServiceInvokeRequest;
@@ -291,8 +291,8 @@ public class ClientMessageParser implements ClientListenerMessageParser {
     private static final short OP_DATA_STREAMER_ADD_DATA = 8001;
 
     /** Data structures. */
-    /** Get or create an AtomicLong by name. */
-    private static final short OP_ATOMIC_LONG_GET_OR_CREATE = 9000;
+    /** Create an AtomicLong. */
+    private static final short OP_ATOMIC_LONG_CREATE = 9000;
 
     /** AtomicLong.get. */
     private static final short OP_ATOMIC_LONG_VALUE_GET = 9001;
@@ -534,8 +534,8 @@ public class ClientMessageParser implements ClientListenerMessageParser {
             case OP_DATA_STREAMER_ADD_DATA:
                 return new ClientDataStreamerAddDataRequest(reader);
 
-            case OP_ATOMIC_LONG_GET_OR_CREATE:
-                return new ClientAtomicLongGetOrCreateRequest(reader);
+            case OP_ATOMIC_LONG_CREATE:
+                return new ClientAtomicLongCreateRequest(reader);
         }
 
         return new ClientRawRequest(reader.readLong(), ClientStatus.INVALID_OP_CODE,

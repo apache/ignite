@@ -196,7 +196,7 @@ public enum ClientOperation {
     SERVICE_GET_DESCRIPTOR(7002),
 
     /** Get or create an AtomicLong by name. */
-    ATOMIC_LONG_GET_OR_CREATE(9000),
+    ATOMIC_LONG_CREATE(9000),
 
     /** AtomicLong.get. */
     ATOMIC_LONG_VALUE_GET(9001),

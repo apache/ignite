@@ -17,13 +17,11 @@
 
 package org.apache.ignite.internal.processors.platform.client.datastructures;
 
-import org.apache.ignite.IgniteAtomicLong;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.binary.BinaryRawReader;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.AtomicConfiguration;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
-import org.apache.ignite.internal.processors.platform.client.ClientNullableLongResponse;
 import org.apache.ignite.internal.processors.platform.client.ClientRequest;
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
 import org.jetbrains.annotations.Nullable;
@@ -31,44 +29,31 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Gets or creates atomic long by name.
  */
-public class ClientAtomicLongGetOrCreateRequest extends ClientRequest {
+public class ClientAtomicLongCreateRequest extends ClientRequest {
     private final String name;
-
-    private final boolean create;
 
     private final long initVal;
 
     private final AtomicConfiguration atomicConfiguration;
 
-    public ClientAtomicLongGetOrCreateRequest(BinaryRawReader reader) {
+    public ClientAtomicLongCreateRequest(BinaryRawReader reader) {
         super(reader);
 
         name = reader.readString();
-        create = reader.readBoolean();
-
-        if (create) {
-            initVal = reader.readLong();
-            atomicConfiguration = readAtomicConfiguration(reader);
-        } else {
-            initVal = 0;
-            atomicConfiguration = null;
-        }
+        initVal = reader.readLong();
+        atomicConfiguration = readAtomicConfiguration(reader);
     }
 
     /** {@inheritDoc} */
     @Override public ClientResponse process(ClientConnectionContext ctx) {
         try {
-            IgniteAtomicLong atomicLong = ctx.kernalContext().dataStructures().atomicLong(name, atomicConfiguration, initVal, create);
+            ctx.kernalContext().dataStructures().atomicLong(name, atomicConfiguration, initVal, true);
 
-            // TODO: Who will clear those resources?
-            Long resId = atomicLong == null ? null : ctx.resources().getOrCreate(atomicLong);
-
-            return new ClientNullableLongResponse(requestId(), resId);
+            return new ClientResponse(requestId());
         } catch (IgniteCheckedException e) {
             return new ClientResponse(requestId(), e.getMessage());
         }
     }
-
 
     /**
      * Reads the atomic configuration.
