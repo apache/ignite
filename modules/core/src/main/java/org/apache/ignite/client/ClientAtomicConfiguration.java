@@ -17,9 +17,120 @@
 
 package org.apache.ignite.client;
 
+import static org.apache.ignite.cache.CacheMode.PARTITIONED;
+
+import org.apache.ignite.IgniteAtomicSequence;
+import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.internal.util.typedef.internal.S;
+
 /**
  * Configuration for atomic data structures.
  */
 public class ClientAtomicConfiguration {
-    // TODO: Everything except affinityFunction from AtomicConfiguration
+    /** */
+    public static final int DFLT_BACKUPS = 1;
+
+    /** */
+    public static final CacheMode DFLT_CACHE_MODE = PARTITIONED;
+
+    /** Default atomic sequence reservation size. */
+    public static final int DFLT_ATOMIC_SEQUENCE_RESERVE_SIZE = 1000;
+
+    /** Default batch size for all cache's sequences. */
+    private int seqReserveSize = DFLT_ATOMIC_SEQUENCE_RESERVE_SIZE;
+
+    /** Cache mode. */
+    private CacheMode cacheMode = DFLT_CACHE_MODE;
+
+    /** Number of backups. */
+    private int backups = DFLT_BACKUPS;
+
+    /** Group name. */
+    private String grpName;
+
+    /**
+     * @return Number of backup nodes.
+     */
+    public int getBackups() {
+        return backups;
+    }
+
+    /**
+     * Constructor.
+     *
+     * @param backups Number of backup nodes.
+     * @return {@code this} for chaining.
+     */
+    public ClientAtomicConfiguration setBackups(int backups) {
+        this.backups = backups;
+
+        return this;
+    }
+
+    /**
+     * @return Cache mode.
+     */
+    public CacheMode getCacheMode() {
+        return cacheMode;
+    }
+
+    /**
+     * @param cacheMode Cache mode.
+     * @return {@code this} for chaining.
+     */
+    public ClientAtomicConfiguration setCacheMode(CacheMode cacheMode) {
+        this.cacheMode = cacheMode;
+
+        return this;
+    }
+
+    /**
+     * Gets default number of sequence values reserved for {@link IgniteAtomicSequence} instances. After
+     * a certain number has been reserved, consequent increments of sequence will happen locally,
+     * without communication with other nodes, until the next reservation has to be made.
+     * <p>
+     * Default value is {@link #DFLT_ATOMIC_SEQUENCE_RESERVE_SIZE}.
+     *
+     * @return Atomic sequence reservation size.
+     */
+    public int getAtomicSequenceReserveSize() {
+        return seqReserveSize;
+    }
+
+    /**
+     * Sets default number of sequence values reserved for {@link IgniteAtomicSequence} instances. After a certain
+     * number has been reserved, consequent increments of sequence will happen locally, without communication with other
+     * nodes, until the next reservation has to be made.
+     *
+     * @param seqReserveSize Atomic sequence reservation size.
+     * @see #getAtomicSequenceReserveSize()
+     * @return {@code this} for chaining.
+     */
+    public ClientAtomicConfiguration setAtomicSequenceReserveSize(int seqReserveSize) {
+        this.seqReserveSize = seqReserveSize;
+
+        return this;
+    }
+
+    /**
+     * @return Cache group name.
+     */
+    public String getGroupName() {
+        return grpName;
+    }
+
+    /**
+     * @param grpName Cache group name.
+     * @return {@code this} for chaining.
+     */
+    public ClientAtomicConfiguration setGroupName(String grpName) {
+        this.grpName = grpName;
+
+        return this;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(ClientAtomicConfiguration.class, this);
+    }
 }
