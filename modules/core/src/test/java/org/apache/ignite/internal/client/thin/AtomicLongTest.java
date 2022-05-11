@@ -99,6 +99,7 @@ public class AtomicLongTest extends AbstractThinClientTest {
         String name = "testRemoved";
 
         try (IgniteClient client = startClient(0)) {
+            // TODO: This should return null when does not exist to conform with thick semantics.
             ClientAtomicLong atomicLong = client.atomicLong(name, 0, false);
             assertTrue(atomicLong.removed());
 
