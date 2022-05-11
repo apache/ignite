@@ -1573,6 +1573,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
         for (IgniteBiTuple<CacheGroupContext, Boolean> tup : stoppedGrps) {
             CacheGroupContext gctx = tup.get1();
+
             boolean destroy = tup.get2();
 
             int grpId = gctx.groupId();
@@ -1625,6 +1626,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                 try {
                     boolean destroy = tup.get2();
+
                     cctx.pageStore().shutdownForCacheGroup(grp, destroy);
 
                     if (destroy)

@@ -3093,7 +3093,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
                     cacheData.groupKeyEncrypted(new GroupKeyEncrypted(gKey.id(), encSpi.encryptKey(gKey.key())));
 
-                    cctx.cache().configManager().writeCacheData(cacheData, targetCacheCfg);
+                    locCfgMgr.writeCacheData(cacheData, targetCacheCfg);
                 }
             }
             catch (IgniteCheckedException e) {
