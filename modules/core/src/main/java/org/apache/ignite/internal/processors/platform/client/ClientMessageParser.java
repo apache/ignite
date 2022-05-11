@@ -78,6 +78,7 @@ import org.apache.ignite.internal.processors.platform.client.cluster.ClientClust
 import org.apache.ignite.internal.processors.platform.client.cluster.ClientClusterWalChangeStateRequest;
 import org.apache.ignite.internal.processors.platform.client.cluster.ClientClusterWalGetStateRequest;
 import org.apache.ignite.internal.processors.platform.client.compute.ClientExecuteTaskRequest;
+import org.apache.ignite.internal.processors.platform.client.datastructures.ClientAtomicLongGetOrCreateRequest;
 import org.apache.ignite.internal.processors.platform.client.service.ClientServiceGetDescriptorRequest;
 import org.apache.ignite.internal.processors.platform.client.service.ClientServiceGetDescriptorsRequest;
 import org.apache.ignite.internal.processors.platform.client.service.ClientServiceInvokeRequest;
@@ -532,6 +533,9 @@ public class ClientMessageParser implements ClientListenerMessageParser {
 
             case OP_DATA_STREAMER_ADD_DATA:
                 return new ClientDataStreamerAddDataRequest(reader);
+
+            case OP_ATOMIC_LONG_GET_OR_CREATE:
+                return new ClientAtomicLongGetOrCreateRequest(reader);
         }
 
         return new ClientRawRequest(reader.readLong(), ClientStatus.INVALID_OP_CODE,
