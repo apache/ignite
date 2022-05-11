@@ -353,7 +353,8 @@ public class TcpIgniteClient implements IgniteClient {
                         w.writeByte((byte) cfg.getCacheMode().ordinal());
                         w.writeInt(cfg.getBackups());
                         w.writeString(cfg.getGroupName());
-                    } else
+                    }
+                    else
                         w.writeBoolean(false);
                 }
 
