@@ -306,7 +306,7 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
                 try (DirectoryStream<Path> ds = Files.newDirectoryStream(grpDirs.get(grpId).toPath(),
                     p -> Files.isRegularFile(p) && p.toString().endsWith(CACHE_DATA_FILENAME))) {
                     for (Path p : ds) {
-                        StoredCacheData cacheData = ((FilePageStoreManager)ctx.cache().context().pageStore()).readCacheData(p.toFile());
+                        StoredCacheData cacheData = ctx.cache().configManager().readCacheData(p.toFile());
 
                         GroupKeyEncrypted grpKeyEncrypted = cacheData.groupKeyEncrypted();
 

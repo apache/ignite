@@ -112,6 +112,7 @@ import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.CacheType;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
+import org.apache.ignite.internal.processors.cache.GridLocalConfigManager;
 import org.apache.ignite.internal.processors.cache.StoredCacheData;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.PartitionsExchangeAware;
@@ -365,6 +366,9 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     /** File store manager to create page store for restore. */
     private volatile FilePageStoreManager storeMgr;
 
+    /** File store manager to create page store for restore. */
+    private volatile GridLocalConfigManager locCfgMgr;
+
     /** System discovery message listener. */
     private DiscoveryEventListener discoLsnr;
 
@@ -445,6 +449,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         assert cctx.pageStore() instanceof FilePageStoreManager;
 
         storeMgr = (FilePageStoreManager)cctx.pageStore();
+        locCfgMgr = cctx.cache().configManager();
 
         pdsSettings = cctx.kernalContext().pdsFolderResolver().resolveFolders();
 
@@ -3079,7 +3084,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
                 copy(ioFactory, ccfg, targetCacheCfg, ccfg.length());
 
-                StoredCacheData cacheData = storeMgr.readCacheData(targetCacheCfg);
+                StoredCacheData cacheData = locCfgMgr.readCacheData(targetCacheCfg);
 
                 if (cacheData.config().isEncryptionEnabled()) {
                     EncryptionSpi encSpi = cctx.kernalContext().config().getEncryptionSpi();
@@ -3088,7 +3093,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
                     cacheData.groupKeyEncrypted(new GroupKeyEncrypted(gKey.id(), encSpi.encryptKey(gKey.key())));
 
-                    storeMgr.writeCacheData(cacheData, targetCacheCfg);
+                    locCfgMgr.writeCacheData(cacheData, targetCacheCfg);
                 }
             }
             catch (IgniteCheckedException e) {
