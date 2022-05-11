@@ -193,7 +193,22 @@ public enum ClientOperation {
     SERVICE_GET_DESCRIPTORS(7001),
 
     /** Get service descriptors. */
-    SERVICE_GET_DESCRIPTOR(7002);
+    SERVICE_GET_DESCRIPTOR(7002),
+
+    /** Get or create an AtomicLong by name. */
+    ATOMIC_LONG_GET_OR_CREATE(9000),
+
+    /** AtomicLong.get. */
+    ATOMIC_LONG_VALUE_GET(9001),
+
+    /** AtomicLong.addAndGet (also covers incrementAndGet, getAndIncrement, getAndAdd, decrementAndGet, getAndDecrement).  */
+    OP_ATOMIC_LONG_VALUE_ADD_AND_GET(9002),
+
+    /** AtomicLong.getAndSet. */
+    OP_ATOMIC_LONG_VALUE_GET_AND_SET(9003),
+
+    /** AtomicLong.compareAndSet. */
+    OP_ATOMIC_LONG_VALUE_COMPARE_AND_SET(9004);
 
     /** Code. */
     private final int code;
