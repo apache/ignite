@@ -1589,7 +1589,8 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                                         keepBinary,
                                         U.deploymentClassLoader(cctx.kernalContext(), deploymentLdrId)
                                     );
-                                } else
+                                }
+                                else
                                     ret.success(true);
                             }
                         }

@@ -78,7 +78,8 @@ public class PSUValueDistributionTableStatisticsUsageTest extends StatisticsAbst
                 smallNulls = "null";
                 bigNulls = null;
                 valAdd = 0;
-            } else {
+            }
+            else {
                 smallNulls = String.format("'small%d'", i);
                 bigNulls = String.format("'%s%d'", bigVal, i);
                 valAdd = 1;

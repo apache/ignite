@@ -417,7 +417,7 @@ abstract class TcpDiscoveryImpl {
                 LT.error(log, e, "Failed to register local node address in IP finder on start " +
                     "(retrying every " + spi.getReconnectDelay() + " ms; " +
                     "change 'reconnectDelay' to configure the frequency of retries).");
-            };
+            }
 
             if (spiJoinTimeout > 0 && U.millisSinceNanos(startNanos) > spiJoinTimeout)
                 throw new IgniteSpiException(

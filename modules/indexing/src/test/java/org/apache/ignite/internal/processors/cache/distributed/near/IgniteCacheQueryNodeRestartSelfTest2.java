@@ -255,7 +255,8 @@ public class IgniteCacheQueryNodeRestartSelfTest2 extends GridCommonAbstractTest
                                         assertEquals(pRes, cache.query(qry).getAll());
                                     }
                                 });
-                            } catch (CacheException e) {
+                            }
+                            catch (CacheException e) {
                                 // Interruptions are expected here.
                                 if (e.getCause() instanceof IgniteInterruptedCheckedException ||
                                     e.getCause() instanceof InterruptedException ||
@@ -303,12 +304,14 @@ public class IgniteCacheQueryNodeRestartSelfTest2 extends GridCommonAbstractTest
                                     fail("Must fail inside of GridResultPage.fetchNextPage or subclass.");
                                 }
                             }
-                        } else { // Replicated query.
+                        }
+                        else { // Replicated query.
                             IgniteCache<?, ?> cache = grid.cache("co");
 
                             assertEquals(rRes, cache.query(new SqlFieldsQuery(REPLICATED_QRY)).getAll());
                         }
-                    } finally {
+                    }
+                    finally {
                         // Clearing lock in final handler to avoid endless loop if exception is thrown.
                         locks.set(g, 0);
 
@@ -350,7 +353,8 @@ public class IgniteCacheQueryNodeRestartSelfTest2 extends GridCommonAbstractTest
                         startGrid(g);
 
                         Thread.sleep(rnd.nextInt(nodeLifeTime));
-                    } finally {
+                    }
+                    finally {
                         locks.set(g, 0);
 
                         int c = restartCnt.incrementAndGet();
@@ -386,7 +390,8 @@ public class IgniteCacheQueryNodeRestartSelfTest2 extends GridCommonAbstractTest
         // Query thread can stuck in next page waiting loop because all nodes are left.
         try {
             fut1.get(5_000);
-        } catch (IgniteFutureTimeoutCheckedException ignored) {
+        }
+        catch (IgniteFutureTimeoutCheckedException ignored) {
             fut1.cancel();
         }
 

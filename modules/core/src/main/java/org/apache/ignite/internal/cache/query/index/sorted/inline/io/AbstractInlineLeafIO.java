@@ -101,7 +101,8 @@ public abstract class AbstractInlineLeafIO extends BPlusLeafIO<IndexRow> impleme
 
                 fieldOff += size;
 
-            } catch (Exception e) {
+            }
+            catch (Exception e) {
                 throw new IgniteException("Failed to store new index row.", e);
             }
         }

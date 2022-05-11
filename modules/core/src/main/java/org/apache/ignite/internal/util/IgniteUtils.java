@@ -3756,7 +3756,8 @@ public abstract class IgniteUtils {
                             return false;
                     }
                 }
-            } catch (IOException e) {
+            }
+            catch (IOException e) {
                 return false;
             }
         }
@@ -3775,7 +3776,8 @@ public abstract class IgniteUtils {
             Files.delete(path);
 
             return true;
-        } catch (IOException e) {
+        }
+        catch (IOException e) {
             return false;
         }
     }
@@ -11149,7 +11151,8 @@ public abstract class IgniteUtils {
                     return FileVisitResult.CONTINUE;
                 }
             });
-        } catch (IOException e) {
+        }
+        catch (IOException e) {
             throw new IgniteCheckedException("walkFileTree will not throw IOException if the FileVisitor does not");
         }
 
@@ -11190,7 +11193,8 @@ public abstract class IgniteUtils {
                     return FileVisitResult.CONTINUE;
                 }
             });
-        } catch (IOException e) {
+        }
+        catch (IOException e) {
             throw new IgniteCheckedException("walkFileTree will not throw IOException if the FileVisitor does not");
         }
 

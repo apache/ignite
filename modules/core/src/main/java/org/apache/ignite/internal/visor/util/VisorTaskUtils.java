@@ -965,7 +965,8 @@ public class VisorTaskUtils {
                     }
 
                     run.add(openInConsole(envs.toString(), igniteCmd, quitePar, nodeCfg));
-                } else
+                }
+                else
                     run.add(openInConsole(null, envVars, igniteCmd, quitePar, nodeCfg));
             }
 

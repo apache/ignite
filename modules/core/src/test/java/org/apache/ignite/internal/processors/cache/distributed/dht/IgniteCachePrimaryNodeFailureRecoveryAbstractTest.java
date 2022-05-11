@@ -449,7 +449,8 @@ public abstract class IgniteCachePrimaryNodeFailureRecoveryAbstractTest extends 
                         checkKey(key2, rollback, key2Nodes, 0);
 
                         return true;
-                    } catch (AssertionError e) {
+                    }
+                    catch (AssertionError e) {
                         log.info("Check failed: " + e);
 
                         return false;

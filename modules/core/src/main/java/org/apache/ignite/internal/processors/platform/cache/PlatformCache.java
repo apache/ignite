@@ -874,7 +874,8 @@ public class PlatformCache extends PlatformAbstractTarget {
 
                     try {
                         cache.put(reader.readObjectDetached(), reader.readObjectDetached());
-                    } finally {
+                    }
+                    finally {
                         platformCtx.disableThreadLocalForPlatformCacheUpdate();
                     }
 

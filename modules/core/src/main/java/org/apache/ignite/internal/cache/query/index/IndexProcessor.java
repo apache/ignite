@@ -140,8 +140,8 @@ public class IndexProcessor extends GridProcessorAdapter {
         throws IgniteSpiException {
         try {
             updateIndexes(cctx.name(), newRow, prevRow, prevRowAvailable);
-
-        } catch (IgniteCheckedException e) {
+        }
+        catch (IgniteCheckedException e) {
             throw new IgniteSpiException("Failed to store row in cache", e);
         }
     }
@@ -186,8 +186,8 @@ public class IndexProcessor extends GridProcessorAdapter {
     public void remove(String cacheName, @Nullable CacheDataRow prevRow) throws IgniteSpiException {
         try {
             updateIndexes(cacheName, null, prevRow, true);
-
-        } catch (IgniteCheckedException e) {
+        }
+        catch (IgniteCheckedException e) {
             throw new IgniteSpiException("Failed to remove row in cache", e);
         }
     }

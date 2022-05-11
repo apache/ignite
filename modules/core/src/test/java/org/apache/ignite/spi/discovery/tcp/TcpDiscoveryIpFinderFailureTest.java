@@ -232,7 +232,8 @@ public class TcpDiscoveryIpFinderFailureTest extends GridCommonAbstractTest {
             fut.cancel();
 
             Assert.assertEquals("Node was not failed", fut.get(), true);
-        } else {
+        }
+        else {
             String nodeState = fut.get() ? "Connected" : "Failed";
 
             fail("Node should be still trying to join topology. State=" + nodeState);

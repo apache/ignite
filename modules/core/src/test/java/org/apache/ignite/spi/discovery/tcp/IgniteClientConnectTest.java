@@ -223,7 +223,8 @@ public class IgniteClientConnectTest extends GridCommonAbstractTest {
                         latch.await();
 
                         Thread.sleep(nodeAddFinishedDelay);
-                    } catch (InterruptedException e) {
+                    }
+                    catch (InterruptedException e) {
                         fail("Unexpected interrupt on nodeAddFinishedDelay");
                     }
 

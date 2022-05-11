@@ -102,7 +102,8 @@ public class GridMarshallerPerformanceTest extends GridCommonAbstractTest {
                 }
                 catch (ClassNotFoundException | IOException e) {
                     throw new IgniteCheckedException(e);
-                } finally {
+                }
+                finally {
                     U.close(objIn, log);
                 }
             }

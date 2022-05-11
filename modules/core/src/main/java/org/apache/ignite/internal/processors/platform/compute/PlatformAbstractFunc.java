@@ -77,7 +77,8 @@ public abstract class PlatformAbstractFunc implements Serializable {
             if (ptr != 0) {
                 out.writeBoolean(true);
                 out.writeLong(ptr);
-            } else {
+            }
+            else {
                 out.writeBoolean(false);
                 ctx.writer(out).writeObject(func);
             }

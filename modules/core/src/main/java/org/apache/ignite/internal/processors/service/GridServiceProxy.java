@@ -474,7 +474,8 @@ public class GridServiceProxy<T> implements Serializable {
 
         try {
             return target.call();
-        } finally {
+        }
+        finally {
             histogram.value(System.nanoTime() - startTime);
         }
     }

@@ -3382,7 +3382,8 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
                         return RETRY;
 
                     init(pageAddr, io, -1);
-                } finally {
+                }
+                finally {
                     unlock(pageId, page, pageAddr);
                 }
             }

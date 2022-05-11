@@ -180,7 +180,8 @@ public class InlineIndexTree extends BPlusTree<IndexRow, IndexRow> {
             if (!metaInfo.flagsSupported())
                 upgradeMetaPage(inlineObjSupported);
 
-        } else {
+        }
+        else {
             def.initByMeta(initNew, null);
 
             rowHnd = rowHndFactory.create(def, keyTypeSettings);
@@ -237,7 +238,8 @@ public class InlineIndexTree extends BPlusTree<IndexRow, IndexRow> {
 
                         return inlineObjDetector.inlineObjectSupported();
 
-                    } finally {
+                    }
+                    finally {
                         ThreadLocalRowHandlerHolder.clearRowHandler();
                     }
                 }
@@ -302,7 +304,8 @@ public class InlineIndexTree extends BPlusTree<IndexRow, IndexRow> {
 
                     return applySortOrder(cmp, keyDef.order().sortOrder());
                 }
-            } catch (Exception e) {
+            }
+            catch (Exception e) {
                 throw new IgniteException("Failed to store new index row.", e);
             }
         }

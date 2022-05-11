@@ -625,7 +625,8 @@ public class ExpressionFactoryImpl<Row> implements ExpressionFactory<Row> {
             if (desiredType == null) {
                 desiredType = fieldType;
                 fieldType = Object.class;
-            } else if (fieldType != java.sql.Date.class
+            }
+            else if (fieldType != java.sql.Date.class
                 && fieldType != java.sql.Time.class
                 && fieldType != java.sql.Timestamp.class)
                 fieldType = Object.class;

@@ -126,7 +126,8 @@ public class ClusterReadOnlyModeSelfTest extends GridCommonAbstractTest {
             metaStorage.remove("key");
 
             assertNull(metaStorage.read("key"));
-        } finally {
+        }
+        finally {
             db.checkpointReadUnlock();
         }
     }

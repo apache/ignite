@@ -91,7 +91,8 @@ public final class OneHotEncoderPreprocessor<K, V> extends EncoderPreprocessor<K
                     final Integer indexedVal = encodingValues[i].get(KEY_FOR_NULL_VALUES);
 
                     res[tmp.size() - amountOfCategorialFeatures + getIdxOffset(categorialFeatureCntr, indexedVal, encodingValues)] = 1.0;
-                } else {
+                }
+                else {
                     final String key = String.valueOf(tmpObj);
 
                     if (encodingValues[i].containsKey(key)) {
@@ -99,12 +100,12 @@ public final class OneHotEncoderPreprocessor<K, V> extends EncoderPreprocessor<K
 
                         res[tmp.size() - amountOfCategorialFeatures + getIdxOffset(categorialFeatureCntr, indexedVal, encodingValues)] =
                             1.0;
-
-                    } else
+                    }
+                    else
                         throw new UnknownCategorialValueException(tmpObj.toString());
                 }
-
-            } else {
+            }
+            else {
                 res[resIdx] = (double)tmpObj;
                 resIdx++;
             }

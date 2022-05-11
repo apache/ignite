@@ -278,7 +278,8 @@ public class PlatformConfigurationUtils {
                 if (in.readBoolean()) {
                     // Java cache plugin.
                     readCachePluginConfiguration(ccfg, in);
-                } else {
+                }
+                else {
                     // Platform cache plugin.
                     plugins.add(new PlatformCachePluginConfiguration(in.readObjectDetached()));
                 }
@@ -783,7 +784,8 @@ public class PlatformConfigurationUtils {
 
         if (consId instanceof Serializable) {
             cfg.setConsistentId((Serializable)consId);
-        } else if (consId != null) {
+        }
+        else if (consId != null) {
             throw new IgniteException("IgniteConfiguration.ConsistentId should be Serializable.");
         }
 
@@ -1188,7 +1190,8 @@ public class PlatformConfigurationUtils {
                 writer.writeString(key.getTypeName());
                 writer.writeString(key.getAffinityKeyFieldName());
             }
-        } else {
+        }
+        else {
             writer.writeInt(0);
         }
 
@@ -1366,7 +1369,8 @@ public class PlatformConfigurationUtils {
         if (cfg.getSystemWorkerBlockedTimeout() != null) {
             w.writeBoolean(true);
             w.writeLong(cfg.getSystemWorkerBlockedTimeout());
-        } else {
+        }
+        else {
             w.writeBoolean(false);
         }
         w.writeBoolean(true);
@@ -1554,7 +1558,8 @@ public class PlatformConfigurationUtils {
             w.writeBoolean(((StopNodeOrHaltFailureHandler)failureHnd).tryStop());
 
             w.writeLong(((StopNodeOrHaltFailureHandler)failureHnd).timeout());
-        } else
+        }
+        else
             w.writeBoolean(false);
 
         ExecutorConfiguration[] execCfgs = cfg.getExecutorConfiguration();
@@ -1566,7 +1571,8 @@ public class PlatformConfigurationUtils {
                 w.writeString(execCfg.getName());
                 w.writeInt(execCfg.getSize());
             }
-        } else
+        }
+        else
             w.writeInt(0);
 
         w.writeString(cfg.getIgniteHome());
@@ -1921,7 +1927,8 @@ public class PlatformConfigurationUtils {
             w.writeBoolean(cfg.isTcpNoDelay());
             w.writeInt(cfg.getMaxOpenCursorsPerConnection());
             w.writeInt(cfg.getThreadPoolSize());
-        } else
+        }
+        else
             w.writeBoolean(false);
     }
 
@@ -1996,7 +2003,8 @@ public class PlatformConfigurationUtils {
             }
             else
                 w.writeBoolean(false);
-        } else
+        }
+        else
             w.writeBoolean(false);
     }
 
@@ -2162,8 +2170,8 @@ public class PlatformConfigurationUtils {
             w.writeLong(cfg.getRateTimeInterval());
             w.writeInt(cfg.getCheckpointWriteOrder().ordinal());
             w.writeBoolean(cfg.isWriteThrottlingEnabled());
-
-        } else
+        }
+        else
             w.writeBoolean(false);
     }
 
