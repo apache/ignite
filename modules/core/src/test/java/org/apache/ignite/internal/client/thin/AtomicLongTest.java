@@ -95,8 +95,8 @@ public class AtomicLongTest extends AbstractThinClientTest {
     }
 
     @Test
-    public void testCreateRemoveExists() {
-        String name = "testCreateRemoveExists";
+    public void testRemoved() {
+        String name = "testRemoved";
 
         try (IgniteClient client = startClient(0)) {
             ClientAtomicLong atomicLong = client.atomicLong(name, 0, false);
