@@ -17,10 +17,15 @@
 
 package org.apache.ignite.internal.processors.platform.client.datastructures;
 
+import org.apache.ignite.IgniteAtomicLong;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.binary.BinaryRawReader;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.AtomicConfiguration;
+import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
+import org.apache.ignite.internal.processors.platform.client.ClientNullableLongResponse;
 import org.apache.ignite.internal.processors.platform.client.ClientRequest;
+import org.apache.ignite.internal.processors.platform.client.ClientResponse;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -49,6 +54,20 @@ public class ClientAtomicLongGetOrCreateRequest extends ClientRequest {
             atomicConfiguration = null;
         }
     }
+
+    /** {@inheritDoc} */
+    @Override public ClientResponse process(ClientConnectionContext ctx) {
+        try {
+            IgniteAtomicLong atomicLong = ctx.kernalContext().dataStructures().atomicLong(name, atomicConfiguration, initVal, create);
+
+            Long resId = atomicLong == null ? null : ctx.resources().put(atomicLong);
+
+            return new ClientNullableLongResponse(requestId(), resId);
+        } catch (IgniteCheckedException e) {
+            return new ClientResponse(requestId(), e.getMessage());
+        }
+    }
+
 
     /**
      * Reads the atomic configuration.
