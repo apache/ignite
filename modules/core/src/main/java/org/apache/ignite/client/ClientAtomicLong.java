@@ -21,7 +21,7 @@ import java.io.Closeable;
 import org.apache.ignite.IgniteException;
 
 /**
- * This interface provides a rich API for working with distributedly cached atomic long value.
+ * Distributed atomic long API.
  * <p>
  * <h1 class="header">Functionality</h1>
  * Distributed atomic long includes the following main functionality:
