@@ -28,9 +28,6 @@ public class ClientResourceRegistry {
     /** Handles. */
     private final Map<Long, Object> res = new ConcurrentHashMap<>();
 
-    /** Reverse map. */
-    private final Map<Object, Long> resReverse = new ConcurrentHashMap<>();
-
     /** ID generator. */
     private final AtomicLong idGen = new AtomicLong();
 
@@ -42,14 +39,6 @@ public class ClientResourceRegistry {
      */
     public long put(Object obj) {
         long id = idGen.incrementAndGet();
-
-        res.put(id, obj);
-
-        return id;
-    }
-
-    public long getOrCreate(Object obj) {
-        long id = resReverse.computeIfAbsent(obj, o -> idGen.incrementAndGet());
 
         res.put(id, obj);
 
@@ -89,7 +78,6 @@ public class ClientResourceRegistry {
                 "Failed to find resource with id: " + hnd
             );
 
-        resReverse.remove(obj);
         closeIfNeeded(obj);
     }
 
