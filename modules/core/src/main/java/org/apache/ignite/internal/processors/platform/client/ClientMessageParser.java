@@ -295,17 +295,23 @@ public class ClientMessageParser implements ClientListenerMessageParser {
     /** Create an AtomicLong. */
     private static final short OP_ATOMIC_LONG_CREATE = 9000;
 
+    /** Remove an AtomicLong. */
+    private static final short OP_ATOMIC_LONG_REMOVE = 9001;
+
+    /** Check if AtomicLong exists. */
+    private static final short OP_ATOMIC_LONG_EXISTS = 9002;
+
     /** AtomicLong.get. */
-    private static final short OP_ATOMIC_LONG_VALUE_GET = 9001;
+    private static final short OP_ATOMIC_LONG_VALUE_GET = 9003;
 
     /** AtomicLong.addAndGet (also covers incrementAndGet, getAndIncrement, getAndAdd, decrementAndGet, getAndDecrement).  */
-    private static final short OP_ATOMIC_LONG_VALUE_ADD_AND_GET = 9002;
+    private static final short OP_ATOMIC_LONG_VALUE_ADD_AND_GET = 9004;
 
     /** AtomicLong.getAndSet. */
-    private static final short OP_ATOMIC_LONG_VALUE_GET_AND_SET = 9003;
+    private static final short OP_ATOMIC_LONG_VALUE_GET_AND_SET = 9005;
 
     /** AtomicLong.compareAndSet. */
-    private static final short OP_ATOMIC_LONG_VALUE_COMPARE_AND_SET = 9004;
+    private static final short OP_ATOMIC_LONG_VALUE_COMPARE_AND_SET = 9006;
 
     /** Marshaller. */
     private final GridBinaryMarshaller marsh;

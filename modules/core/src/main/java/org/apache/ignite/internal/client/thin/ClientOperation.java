@@ -198,17 +198,23 @@ public enum ClientOperation {
     /** Get or create an AtomicLong by name. */
     ATOMIC_LONG_CREATE(9000),
 
+    /** Remove an AtomicLong. */
+    ATOMIC_LONG_REMOVE(9001),
+
+    /** Check if AtomicLong exists. */
+    ATOMIC_LONG_EXISTS(9002),
+
     /** AtomicLong.get. */
-    ATOMIC_LONG_VALUE_GET(9001),
+    ATOMIC_LONG_VALUE_GET(9003),
 
     /** AtomicLong.addAndGet (also covers incrementAndGet, getAndIncrement, getAndAdd, decrementAndGet, getAndDecrement).  */
-    OP_ATOMIC_LONG_VALUE_ADD_AND_GET(9002),
+    OP_ATOMIC_LONG_VALUE_ADD_AND_GET(9004),
 
     /** AtomicLong.getAndSet. */
-    OP_ATOMIC_LONG_VALUE_GET_AND_SET(9003),
+    OP_ATOMIC_LONG_VALUE_GET_AND_SET(9005),
 
     /** AtomicLong.compareAndSet. */
-    OP_ATOMIC_LONG_VALUE_COMPARE_AND_SET(9004);
+    OP_ATOMIC_LONG_VALUE_COMPARE_AND_SET(9006);
 
     /** Code. */
     private final int code;
