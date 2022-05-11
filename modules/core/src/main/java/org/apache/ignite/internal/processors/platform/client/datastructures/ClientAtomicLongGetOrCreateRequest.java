@@ -17,8 +17,11 @@
 
 package org.apache.ignite.internal.processors.platform.client.datastructures;
 
-import org.apache.ignite.internal.binary.BinaryReaderExImpl;
+import org.apache.ignite.binary.BinaryRawReader;
+import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.configuration.AtomicConfiguration;
 import org.apache.ignite.internal.processors.platform.client.ClientRequest;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Gets or creates atomic long by name.
@@ -30,7 +33,9 @@ public class ClientAtomicLongGetOrCreateRequest extends ClientRequest {
 
     private final long initVal;
 
-    public ClientAtomicLongGetOrCreateRequest(BinaryReaderExImpl reader) {
+    private final AtomicConfiguration atomicConfiguration;
+
+    public ClientAtomicLongGetOrCreateRequest(BinaryRawReader reader) {
         super(reader);
 
         name = reader.readString();
@@ -38,8 +43,27 @@ public class ClientAtomicLongGetOrCreateRequest extends ClientRequest {
 
         if (create) {
             initVal = reader.readLong();
+            atomicConfiguration = readAtomicConfiguration(reader);
         } else {
             initVal = 0;
+            atomicConfiguration = null;
         }
+    }
+
+    /**
+     * Reads the atomic configuration.
+     *
+     * @param reader Reader.
+     * @return Config.
+     */
+    @Nullable private static AtomicConfiguration readAtomicConfiguration(BinaryRawReader reader) {
+        if (!reader.readBoolean())
+            return null;
+
+        return new AtomicConfiguration()
+                .setAtomicSequenceReserveSize(reader.readInt())
+                .setCacheMode(CacheMode.fromOrdinal(reader.readByte()))
+                .setBackups(reader.readInt())
+                .setGroupName(reader.readString());
     }
 }
