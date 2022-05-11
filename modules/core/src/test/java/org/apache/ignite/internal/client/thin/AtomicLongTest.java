@@ -25,8 +25,22 @@ import org.junit.Test;
  * Tests client atomic long.
  */
 public class AtomicLongTest extends AbstractThinClientTest {
+    /** {@inheritDoc} */
+    @Override protected void beforeTestsStarted() throws Exception {
+        super.beforeTestsStarted();
+
+        startGrids(1);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTestsStopped() throws Exception {
+        stopAllGrids();
+
+        super.afterTestsStopped();
+    }
+
     @Test
-    void testCreateSetsInitialValue() {
+    public void testCreateSetsInitialValue() {
         try (IgniteClient client = startClient(0)) {
             ClientAtomicLong atomicLong = client.atomicLong("a", 1, true);
 
