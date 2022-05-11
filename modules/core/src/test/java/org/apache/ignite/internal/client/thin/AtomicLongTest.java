@@ -113,8 +113,8 @@ public class AtomicLongTest extends AbstractThinClientTest {
     }
 
     @Test
-    public void testIncrementDecrement() {
-        String name = "testIncrementDecrement";
+    public void testIncrementDecrementAdd() {
+        String name = "testIncrementDecrementAdd";
 
         try (IgniteClient client = startClient(0)) {
             ClientAtomicLong atomicLong = client.atomicLong(name, 1, true);
@@ -128,6 +128,11 @@ public class AtomicLongTest extends AbstractThinClientTest {
             assertEquals(2, atomicLong.getAndDecrement());
 
             assertEquals(1, atomicLong.get());
+
+            assertEquals(101, atomicLong.addAndGet(100));
+            assertEquals(101, atomicLong.getAndAdd(-50));
+
+            assertEquals(51, atomicLong.get());
         }
     }
 
