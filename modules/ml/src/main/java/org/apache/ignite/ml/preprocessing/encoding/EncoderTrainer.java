@@ -107,7 +107,8 @@ public class EncoderTrainer<K, V> implements PreprocessingTrainer<K, V> {
                         targetCounter = updateTargetCountersForNextRow(row, targetCounter);
                     }
                     partData.withTargetCounters(targetCounter);
-                } else {
+                }
+                else {
                     // This array will contain not null values for handled indices
                     Map<String, Integer>[] categoryFrequencies = null;
 
@@ -212,7 +213,8 @@ public class EncoderTrainer<K, V> implements PreprocessingTrainer<K, V> {
 
                     if (categorySize < minCategorySize) {
                         return prior;
-                    } else {
+                    }
+                    else {
                         double categoryMean = targetSum / categorySize;
 
                         double smoove = 1 / (1 +
@@ -495,14 +497,16 @@ public class EncoderTrainer<K, V> implements PreprocessingTrainer<K, V> {
 
                 if (categoryCounts.containsKey(strVal)) {
                     categoryCounts.put(strVal, categoryCounts.get(strVal) + 1);
-                } else {
+                }
+                else {
                     categoryCounts.put(strVal, 1L);
                 }
 
                 Map<String, Double> categoryTargetSum = targetCounter.getCategoryTargetSum();
                 if (categoryTargetSum.containsKey(strVal)) {
                     categoryTargetSum.put(strVal, categoryTargetSum.get(strVal) + targetValue);
-                } else {
+                }
+                else {
                     categoryTargetSum.put(strVal, targetValue);
                 }
             }

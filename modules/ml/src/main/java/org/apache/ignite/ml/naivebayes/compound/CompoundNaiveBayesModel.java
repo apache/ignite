@@ -213,7 +213,8 @@ public class CompoundNaiveBayesModel implements IgniteModel<Vector, Double>, Exp
         try {
             File file = new File(path.toAbsolutePath().toString());
             writer.writeValue(file, this);
-        } catch (IOException e) {
+        }
+        catch (IOException e) {
             e.printStackTrace();
         }
     }
@@ -228,7 +229,8 @@ public class CompoundNaiveBayesModel implements IgniteModel<Vector, Double>, Exp
             JacksonHelper.readAndValidateBasicJsonModelProperties(path, mapper, CompoundNaiveBayesModel.class.getSimpleName());
             mdl = mapper.readValue(new File(path.toAbsolutePath().toString()), CompoundNaiveBayesModel.class);
             return mdl;
-        } catch (IOException e) {
+        }
+        catch (IOException e) {
             e.printStackTrace();
         }
         return null;

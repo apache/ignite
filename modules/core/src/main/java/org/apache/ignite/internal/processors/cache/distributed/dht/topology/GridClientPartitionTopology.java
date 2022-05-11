@@ -1098,7 +1098,8 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
             }
 
             lostParts = null;
-        } finally {
+        }
+        finally {
             lock.writeLock().unlock();
         }
     }
@@ -1316,7 +1317,8 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
                 part2node.put(entry.getKey(), entry.getValue());
 
             updateSeq.incrementAndGet();
-        } finally {
+        }
+        finally {
             lock.writeLock().unlock();
         }
 

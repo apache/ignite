@@ -531,13 +531,15 @@ public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
                     assertEquals(0, rs.getInt("NULLABLE"));
                     assertEquals(0, rs.getInt(11)); // nullable column by index
                     assertEquals("NO", rs.getString("IS_NULLABLE"));
-                } else if ("AGE".equals(name)) {
+                }
+                else if ("AGE".equals(name)) {
                     assertEquals(INTEGER, rs.getInt("DATA_TYPE"));
                     assertEquals("INTEGER", rs.getString("TYPE_NAME"));
                     assertEquals(0, rs.getInt("NULLABLE"));
                     assertEquals(0, rs.getInt(11)); // nullable column by index
                     assertEquals("NO", rs.getString("IS_NULLABLE"));
-                } else if ("ORGID".equals(name)) {
+                }
+                else if ("ORGID".equals(name)) {
                     assertEquals(INTEGER, rs.getInt("DATA_TYPE"));
                     assertEquals("INTEGER", rs.getString("TYPE_NAME"));
                     assertEquals(1, rs.getInt("NULLABLE"));
@@ -571,7 +573,8 @@ public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
                     assertEquals(0, rs.getInt("NULLABLE"));
                     assertEquals(0, rs.getInt(11)); // nullable column by index
                     assertEquals("NO", rs.getString("IS_NULLABLE"));
-                } else if ("name".equals(name)) {
+                }
+                else if ("name".equals(name)) {
                     assertEquals(VARCHAR, rs.getInt("DATA_TYPE"));
                     assertEquals("VARCHAR", rs.getString("TYPE_NAME"));
                     assertEquals(1, rs.getInt("NULLABLE"));

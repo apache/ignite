@@ -776,7 +776,8 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
 
                 assertContains(log, testOut.toString(), outputExp);
             }
-        } else
+        }
+        else
             assertContains(log, testOut.toString(), outputExp);
     }
 

@@ -381,7 +381,8 @@ public class CacheJdbcPojoStoreTest extends GridAbstractCacheStoreSelfTest<Cache
                             && BinaryTest.class.getName().equals(valType))
                             binaryTestVals.add(val.field("bytes"));
                     }
-                } else {
+                }
+                else {
                     if (k instanceof OrganizationKey && v instanceof Organization)
                         orgKeys.add(k);
                     else if (k instanceof PersonKey && v instanceof Person)

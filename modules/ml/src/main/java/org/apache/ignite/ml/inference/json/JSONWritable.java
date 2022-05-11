@@ -32,7 +32,8 @@ public interface JSONWritable {
         try {
             File file = new File(path.toAbsolutePath().toString());
             mapper.writeValue(file, this);
-        } catch (IOException e) {
+        }
+        catch (IOException e) {
             e.printStackTrace();
         }
     }

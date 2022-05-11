@@ -187,6 +187,10 @@
         <module name="Indentation" />
 
         <module name="LeftCurly"/>
+
+        <module name="RightCurly">
+            <property name="option" value="alone" />
+        </module>
     </module>
 
     <!--

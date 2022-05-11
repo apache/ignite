@@ -521,13 +521,15 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
                     assert rs.getInt("NULLABLE") == 0;
                     assert rs.getInt(11) == 0; // nullable column by index
                     assert rs.getString("IS_NULLABLE").equals("NO");
-                } else if ("ORGID".equals(name)) {
+                }
+                else if ("ORGID".equals(name)) {
                     assert rs.getInt("DATA_TYPE") == INTEGER;
                     assert "INTEGER".equals(rs.getString("TYPE_NAME"));
                     assert rs.getInt("NULLABLE") == 1;
                     assert rs.getInt(11) == 1;  // nullable column by index
                     assert rs.getString("IS_NULLABLE").equals("YES");
-                } else if ("AGE".equals(name)) {
+                }
+                else if ("AGE".equals(name)) {
                     assert rs.getInt("DATA_TYPE") == INTEGER;
                     assert "INTEGER".equals(rs.getString("TYPE_NAME"));
                     assert rs.getInt("NULLABLE") == 0;
@@ -573,7 +575,8 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
                     assert rs.getInt("DATA_TYPE") == INTEGER;
                     assert "INTEGER".equals(rs.getString("TYPE_NAME"));
                     assert rs.getInt("NULLABLE") == 0;
-                } else if ("name".equals(name)) {
+                }
+                else if ("name".equals(name)) {
                     assert rs.getInt("DATA_TYPE") == VARCHAR;
                     assert "VARCHAR".equals(rs.getString("TYPE_NAME"));
                     assert rs.getInt("NULLABLE") == 1;

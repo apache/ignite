@@ -168,7 +168,8 @@ public class GridNodeMetricsLogSelfTest extends GridCommonAbstractTest {
                 int total = Integer.parseInt(matcher.group("total"));
 
                 assertTrue(total + " is less then " + used + ": " + subj, total >= used);
-            } else
+            }
+            else
                 assertTrue(F.isEmpty(matcher.group("total")));
 
             String regName = matcher.group("name").trim();

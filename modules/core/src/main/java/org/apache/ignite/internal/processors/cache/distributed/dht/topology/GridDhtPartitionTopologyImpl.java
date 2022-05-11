@@ -1720,7 +1720,8 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                 }
 
                 return changed;
-            } finally {
+            }
+            finally {
                 lock.writeLock().unlock();
             }
         }
@@ -2763,16 +2764,19 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                         try {
                             if (reserved && locPart.state() == MOVING)
                                 own(locPart);
-                        } finally {
+                        }
+                        finally {
                             if (reserved)
                                 locPart.release();
                         }
                     }
                 }
-            } finally {
+            }
+            finally {
                 lock.writeLock().unlock();
             }
-        } finally {
+        }
+        finally {
             ctx.database().checkpointReadUnlock();
         }
     }

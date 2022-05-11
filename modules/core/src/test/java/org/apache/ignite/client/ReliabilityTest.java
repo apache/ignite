@@ -122,7 +122,8 @@ public class ReliabilityTest extends AbstractThinClientTest {
 
                         assertEquals("Unexpected entries", data, act);
                     }
-                } catch (ClientConnectionException ignored) {
+                }
+                catch (ClientConnectionException ignored) {
                     // QueryCursor.getAll always executes on the same channel where the cursor is open,
                     // so failover is not possible, and the call will fail when connection drops.
                 }
@@ -355,7 +356,8 @@ public class ReliabilityTest extends AbstractThinClientTest {
                 }
 
                 fail("ClientReconnectedException or ClientConnectionException must be thrown");
-            } catch (ClientReconnectedException | ClientConnectionException expected) {
+            }
+            catch (ClientReconnectedException | ClientConnectionException expected) {
                 // No-op.
             }
         }
@@ -560,18 +562,23 @@ public class ReliabilityTest extends AbstractThinClientTest {
             // PersonExternalizable once again.
             result = svc.testMethod(person);
             assertEquals("testMethod(PersonExternalizable person): " + person, result);
-        } finally {
+        }
+        finally {
             if (ignite != null) {
                 try {
                     ignite.close();
-                } catch (Throwable ignore) {
+                }
+                catch (Throwable ignore) {
+                    // Ignore.
                 }
             }
 
             if (client != null) {
                 try {
                     client.close();
-                } catch (Throwable ignore) {
+                }
+                catch (Throwable ignore) {
+                    // Ignore.
                 }
             }
         }

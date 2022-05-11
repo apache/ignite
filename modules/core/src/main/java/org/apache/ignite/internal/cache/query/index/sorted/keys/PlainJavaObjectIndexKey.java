@@ -57,7 +57,8 @@ public class PlainJavaObjectIndexKey extends JavaObjectIndexKey {
 
             return key;
 
-        } catch (IgniteCheckedException e) {
+        }
+        catch (IgniteCheckedException e) {
             throw new IgniteException("Failed to deserialize Java Object from byte array", e);
         }
     }

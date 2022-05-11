@@ -65,7 +65,8 @@ public class GridListenActorSelfTest extends GridCommonAbstractTest {
                     // "Exit" after 1st message.
                     // Should never receive any more messages.
                     stop();
-                } else {
+                }
+                else {
                     assert false : "Unknown message: " + rcvMsg;
 
                     stop();
@@ -164,7 +165,8 @@ public class GridListenActorSelfTest extends GridCommonAbstractTest {
                     pingCnt.incrementAndGet();
 
                     respond("PONG");
-                } else if ("PONG".equals(rcvMsg)) {
+                }
+                else if ("PONG".equals(rcvMsg)) {
                     pongCnt.incrementAndGet();
 
                     latch.countDown();
@@ -206,7 +208,8 @@ public class GridListenActorSelfTest extends GridCommonAbstractTest {
                     System.out.println(Thread.currentThread().getName() + "Calling stop...");
 
                     stop();
-                } else if (cnt.intValue() < rcv)
+                }
+                else if (cnt.intValue() < rcv)
                     skip();
                 else
                     assert false;

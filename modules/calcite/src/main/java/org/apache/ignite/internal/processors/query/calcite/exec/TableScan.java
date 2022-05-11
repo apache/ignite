@@ -274,7 +274,8 @@ public class TableScan<Row> implements Iterable<Row>, AutoCloseable {
 
                     next = r;
                     break;
-                } else
+                }
+                else
                     cur = null;
             }
         }

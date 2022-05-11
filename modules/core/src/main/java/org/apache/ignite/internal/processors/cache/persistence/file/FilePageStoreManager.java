@@ -390,7 +390,8 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
                         "Corrupted cache groups found",
                         groupsWithWalDisabled.stream().collect(Collectors.joining(File.separator)))
                 );
-            } catch (IgniteCheckedException e) {
+            }
+            catch (IgniteCheckedException e) {
                 log.warning("Failed to register maintenance record for corrupted partition files.", e);
             }
 
@@ -1390,7 +1391,8 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
 
                 return holder0;
             });
-        } catch (IgniteException ex) {
+        }
+        catch (IgniteException ex) {
             if (X.hasCause(ex, IgniteCheckedException.class))
                 throw ex.getCause(IgniteCheckedException.class);
             else

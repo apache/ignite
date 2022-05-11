@@ -309,7 +309,8 @@ public class IgniteStatisticsPersistenceStoreImpl implements IgniteStatisticsSto
                     ));
                 }
             }, true);
-        } catch (IgniteCheckedException e) {
+        }
+        catch (IgniteCheckedException e) {
             log.warning("Unable to read local partition statistcs", e);
         }
 

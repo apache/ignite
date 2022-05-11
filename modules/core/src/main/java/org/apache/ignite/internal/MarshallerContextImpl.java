@@ -444,7 +444,8 @@ public class MarshallerContextImpl implements MarshallerContext {
                     for (byte otherPlatformId : otherPlatforms(platformId)) {
                         try {
                             clsName = getClassName(otherPlatformId, typeId, true);
-                        } catch (ClassNotFoundException ignored) {
+                        }
+                        catch (ClassNotFoundException ignored) {
                             continue;
                         }
 

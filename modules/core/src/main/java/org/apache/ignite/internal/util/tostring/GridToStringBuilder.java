@@ -1207,7 +1207,8 @@ public class GridToStringBuilder {
                 objArr = Arrays.copyOf(objArr, COLLECTION_LIMIT);
 
             res = Arrays.toString(objArr);
-        } else {
+        }
+        else {
             res = toStringWithLimit(arr, COLLECTION_LIMIT);
 
             arrLen = Array.getLength(arr);

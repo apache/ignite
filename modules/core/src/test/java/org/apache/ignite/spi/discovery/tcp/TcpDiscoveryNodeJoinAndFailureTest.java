@@ -182,7 +182,8 @@ public class TcpDiscoveryNodeJoinAndFailureTest extends GridCommonAbstractTest {
                         futureRef.set(GridTestUtils.runAsync(() -> {
                             try {
                                 startGrid(NODE_WITH_PORT_ID_3);
-                            } catch (Exception ignored) {
+                            }
+                            catch (Exception ignored) {
                                 //NO-op.
                             }
                         }));

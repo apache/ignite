@@ -119,7 +119,8 @@ public class IgniteTestsProvider extends AbstractProvider {
             reporter.testFailed(report);
             reporter.testSetCompleted(report);
 
-        } catch (Exception e) {
+        }
+        catch (Exception e) {
             throw new TestSetFailedException("Failed to dump exception to stdout");
         }
     }

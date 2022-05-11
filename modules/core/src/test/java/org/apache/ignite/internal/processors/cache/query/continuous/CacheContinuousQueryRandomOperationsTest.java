@@ -1479,7 +1479,8 @@ public class CacheContinuousQueryRandomOperationsTest extends GridCommonAbstract
                 default:
                     fail("Op:" + op);
             }
-        } finally {
+        }
+        finally {
             if (tx != null)
                 tx.close();
         }

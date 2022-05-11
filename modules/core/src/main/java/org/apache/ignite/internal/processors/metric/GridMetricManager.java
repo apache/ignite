@@ -596,7 +596,8 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
                     }
                 };
             }
-        } catch (@SuppressWarnings("ErrorNotRethrown") NoClassDefFoundError ignored) {
+        }
+        catch (@SuppressWarnings("ErrorNotRethrown") NoClassDefFoundError ignored) {
             log.warning("The 'com.sun.management.OperatingSystemMXBean' class is not available for class loader. " +
                 "System/JVM memory and CPU statistics may be not available.");
         }

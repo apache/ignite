@@ -970,7 +970,8 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
             IgniteCacheProxy<?, ?> cache = null;
             try {
                 cache = g0.context().cache().jcache(cacheName);
-            } catch (IllegalArgumentException e) {
+            }
+            catch (IllegalArgumentException e) {
                 continue; // Client topology.
             }
 

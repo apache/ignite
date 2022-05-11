@@ -260,7 +260,8 @@ public class GridP2PLocalDeploymentSelfTest extends GridCommonAbstractTest {
             }, 5, TimeUnit.SECONDS);
 
             fut.get();
-        } finally {
+        }
+        finally {
             stopAllGrids();
 
             System.clearProperty(IGNITE_CACHE_REMOVED_ENTRIES_TTL);
