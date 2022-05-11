@@ -20,6 +20,7 @@ package org.apache.ignite.internal.client.thin;
 import static org.apache.ignite.testframework.GridTestUtils.assertContains;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 
+import java.util.concurrent.Callable;
 import org.apache.ignite.client.ClientAtomicConfiguration;
 import org.apache.ignite.client.ClientAtomicLong;
 import org.apache.ignite.client.ClientException;
@@ -73,13 +74,23 @@ public class AtomicLongTest extends AbstractThinClientTest {
     }
 
     @Test
-    public void testGetThrowsExceptionWhenDoesNotExist() {
+    public void testOperationsThrowExceptionWhenAtomicLongDoesNotExist() {
         try (IgniteClient client = startClient(0)) {
-            ClientAtomicLong atomicLong = client.atomicLong("testGetThrowsExceptionWhenDoesNotExist", 0, false);
+            String name = "testOperationsThrowExceptionWhenAtomicLongDoesNotExist";
+            ClientAtomicLong atomicLong = client.atomicLong(name, 0, false);
 
-            ClientException ex = (ClientException) assertThrows(null, atomicLong::get, ClientException.class, null);
-            assertContains(null, ex.getMessage(),
-                    "AtomicLong with name 'testGetThrowsExceptionWhenDoesNotExist' does not exist.");
+            assertDoesNotExistError(name, atomicLong::get);
+
+            assertDoesNotExistError(name, atomicLong::incrementAndGet);
+            assertDoesNotExistError(name, atomicLong::getAndIncrement);
+            assertDoesNotExistError(name, atomicLong::decrementAndGet);
+            assertDoesNotExistError(name, atomicLong::getAndDecrement);
+
+            assertDoesNotExistError(name, () -> atomicLong.addAndGet(1));
+            assertDoesNotExistError(name, () -> atomicLong.getAndAdd(1));
+
+            assertDoesNotExistError(name, () -> atomicLong.getAndSet(1));
+            assertDoesNotExistError(name, () -> atomicLong.compareAndSet(1, 2));
         }
     }
 
@@ -98,5 +109,11 @@ public class AtomicLongTest extends AbstractThinClientTest {
             atomicLong.close();
             assertTrue(atomicLong.removed());
         }
+    }
+
+    private void assertDoesNotExistError(String name, Callable<Object> callable) {
+        ClientException ex = (ClientException) assertThrows(null, callable, ClientException.class, null);
+
+        assertContains(null, ex.getMessage(), "AtomicLong with name '" + name + "' does not exist.");
     }
 }
