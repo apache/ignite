@@ -17,8 +17,12 @@
 
 package org.apache.ignite.internal.client.thin;
 
+import static org.apache.ignite.testframework.GridTestUtils.assertContains;
+import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
+
 import org.apache.ignite.client.ClientAtomicConfiguration;
 import org.apache.ignite.client.ClientAtomicLong;
+import org.apache.ignite.client.ClientException;
 import org.apache.ignite.client.IgniteClient;
 import org.junit.Test;
 
@@ -65,6 +69,17 @@ public class AtomicLongTest extends AbstractThinClientTest {
 
             assertEquals(42, atomicLong.get());
             assertEquals(42, atomicLong2.get());
+        }
+    }
+
+    @Test
+    public void testGetThrowsExceptionWhenDoesNotExist() {
+        try (IgniteClient client = startClient(0)) {
+            ClientAtomicLong atomicLong = client.atomicLong("testGetThrowsExceptionWhenDoesNotExist", 0, false);
+
+            ClientException ex = (ClientException) assertThrows(null, atomicLong::get, ClientException.class, null);
+            assertContains(null, ex.getMessage(),
+                    "AtomicLong with name 'testGetThrowsExceptionWhenDoesNotExist' does not exist.");
         }
     }
 }

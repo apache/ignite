@@ -50,6 +50,9 @@ public class ClientAtomicLongValueGetRequest extends ClientRequest {
         try {
             IgniteAtomicLong atomicLong = ctx.kernalContext().dataStructures().atomicLong(name, cfg, 0, false);
 
+            if (atomicLong == null)
+                return new ClientResponse(requestId(), String.format("AtomicLong with name '%s' does not exist.", name));
+
             return new ClientLongResponse(requestId(), atomicLong.get());
         } catch (IgniteCheckedException e) {
             return new ClientResponse(requestId(), e.getMessage());
