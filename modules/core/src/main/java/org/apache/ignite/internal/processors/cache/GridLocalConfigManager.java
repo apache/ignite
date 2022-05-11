@@ -121,7 +121,7 @@ public class GridLocalConfigManager {
 
         PdsFolderSettings<?> folderSettings = ctx.pdsFolderResolver().resolveFolders();
 
-        if (folderSettings.persistentStoreRootPath() != null) {
+        if (!ctx.clientNode() && folderSettings.persistentStoreRootPath() != null) {
             storeWorkDir = folderSettings.persistentStoreNodePath();
 
             U.ensureDirectory(storeWorkDir, "page store work directory", log);
