@@ -417,7 +417,7 @@ class SnapshotFutureTask extends AbstractSnapshotFutureTask<Set<GroupPartitionId
                     MetaStorage.METASTORAGE_DIR_NAME);
             }
 
-            pageStore.readConfigurationFiles(ccfgs,
+            cctx.cache().configManager().readConfigurationFiles(ccfgs,
                 (ccfg, ccfgFile) -> ccfgSndrs.add(new CacheConfigurationSender(ccfg.getName(),
                     FilePageStoreManager.cacheDirName(ccfg), ccfgFile)));
         }
@@ -681,7 +681,7 @@ class SnapshotFutureTask extends AbstractSnapshotFutureTask<Set<GroupPartitionId
             this.cacheDirName = cacheDirName;
             this.ccfgFile = ccfgFile;
 
-            pageStore.addConfigurationChangeListener(this);
+            cctx.cache().configManager().addConfigurationChangeListener(this);
         }
 
         /**
@@ -743,7 +743,7 @@ class SnapshotFutureTask extends AbstractSnapshotFutureTask<Set<GroupPartitionId
         /** Close writer and remove listener. */
         private void close0() {
             sent = true;
-            pageStore.removeConfigurationChangeListener(this);
+            cctx.cache().configManager().removeConfigurationChangeListener(this);
 
             if (fromTemp)
                 U.delete(ccfgFile);
