@@ -19,26 +19,30 @@ package org.apache.ignite.internal.processors.platform.client.datastructures;
 
 import org.apache.ignite.IgniteAtomicLong;
 import org.apache.ignite.binary.BinaryRawReader;
+import org.apache.ignite.internal.processors.platform.client.ClientBooleanResponse;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
-import org.apache.ignite.internal.processors.platform.client.ClientLongResponse;
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
 
 /**
- * Atomic long add and get request.
+ * Atomic long get and set request.
  */
-public class ClientAtomicLongValueAddAndGetRequest extends ClientAtomicLongRequest {
-    /** Operand. */
-    private final long operand;
+public class ClientAtomicLongValueCompareAndSetRequest extends ClientAtomicLongRequest {
+    /** */
+    private final long expected;
+
+    /** */
+    private final long val;
 
     /**
      * Constructor.
      *
      * @param reader Reader.
      */
-    public ClientAtomicLongValueAddAndGetRequest(BinaryRawReader reader) {
+    public ClientAtomicLongValueCompareAndSetRequest(BinaryRawReader reader) {
         super(reader);
 
-        operand = reader.readLong();
+        expected = reader.readLong();
+        val = reader.readLong();
     }
 
     /** {@inheritDoc} */
@@ -48,6 +52,6 @@ public class ClientAtomicLongValueAddAndGetRequest extends ClientAtomicLongReque
         if (atomicLong == null)
             return notFoundResponse();
 
-        return new ClientLongResponse(requestId(), atomicLong.addAndGet(operand));
+        return new ClientBooleanResponse(requestId(), atomicLong.compareAndSet(expected, val));
     }
 }

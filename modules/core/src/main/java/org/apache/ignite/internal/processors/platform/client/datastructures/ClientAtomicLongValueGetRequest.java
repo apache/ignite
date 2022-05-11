@@ -41,7 +41,7 @@ public class ClientAtomicLongValueGetRequest extends ClientAtomicLongRequest {
         IgniteAtomicLong atomicLong = atomicLong(ctx);
 
         if (atomicLong == null)
-            return new ClientResponse(requestId(), String.format("AtomicLong with name '%s' does not exist.", name()));
+            return notFoundResponse();
 
         return new ClientLongResponse(requestId(), atomicLong.get());
     }

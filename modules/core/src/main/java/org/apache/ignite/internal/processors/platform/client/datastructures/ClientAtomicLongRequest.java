@@ -24,6 +24,8 @@ import org.apache.ignite.binary.BinaryRawReader;
 import org.apache.ignite.configuration.AtomicConfiguration;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientRequest;
+import org.apache.ignite.internal.processors.platform.client.ClientResponse;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * Atomic long value request.
@@ -48,30 +50,12 @@ public class ClientAtomicLongRequest extends ClientRequest {
     }
 
     /**
-     * Gets the name.
-     *
-     * @return Name.
-     */
-    public String name() {
-        return name;
-    }
-
-    /**
-     * Gets the group name.
-     *
-     * @return Group name.
-     */
-    public String groupName() {
-        return groupName;
-    }
-
-    /**
      * Gets the atomic long.
      *
      * @param ctx Context.
      * @return Atomic long or null.
      */
-    public IgniteAtomicLong atomicLong(ClientConnectionContext ctx) {
+    protected IgniteAtomicLong atomicLong(ClientConnectionContext ctx) {
         AtomicConfiguration cfg = groupName == null ? null : new AtomicConfiguration().setGroupName(groupName);
 
         try {
@@ -79,5 +63,14 @@ public class ClientAtomicLongRequest extends ClientRequest {
         } catch (IgniteCheckedException e) {
             throw new IgniteException(e.getMessage(), e);
         }
+    }
+
+    /**
+     * Gets a response for non-existent atomic long.
+     *
+     * @return Response for non-existent atomic long.
+     */
+    protected ClientResponse notFoundResponse() {
+        return new ClientResponse(requestId(), String.format("AtomicLong with name '%s' does not exist.", name));
     }
 }

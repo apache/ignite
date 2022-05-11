@@ -24,9 +24,9 @@ import org.apache.ignite.internal.processors.platform.client.ClientLongResponse;
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
 
 /**
- * Atomic long add and get request.
+ * Atomic long get and set request.
  */
-public class ClientAtomicLongValueAddAndGetRequest extends ClientAtomicLongRequest {
+public class ClientAtomicLongValueGetAndSetRequest extends ClientAtomicLongRequest {
     /** Operand. */
     private final long operand;
 
@@ -35,7 +35,7 @@ public class ClientAtomicLongValueAddAndGetRequest extends ClientAtomicLongReque
      *
      * @param reader Reader.
      */
-    public ClientAtomicLongValueAddAndGetRequest(BinaryRawReader reader) {
+    public ClientAtomicLongValueGetAndSetRequest(BinaryRawReader reader) {
         super(reader);
 
         operand = reader.readLong();
@@ -48,6 +48,6 @@ public class ClientAtomicLongValueAddAndGetRequest extends ClientAtomicLongReque
         if (atomicLong == null)
             return notFoundResponse();
 
-        return new ClientLongResponse(requestId(), atomicLong.addAndGet(operand));
+        return new ClientLongResponse(requestId(), atomicLong.getAndSet(operand));
     }
 }

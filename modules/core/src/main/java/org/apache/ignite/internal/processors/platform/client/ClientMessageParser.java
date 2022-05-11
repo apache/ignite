@@ -558,6 +558,12 @@ public class ClientMessageParser implements ClientListenerMessageParser {
 
             case OP_ATOMIC_LONG_VALUE_ADD_AND_GET:
                 return new ClientAtomicLongValueAddAndGetRequest(reader);
+
+            case OP_ATOMIC_LONG_VALUE_GET_AND_SET:
+                return new ClientAtomicLongValueAddAndGetRequest(reader);
+
+            case OP_ATOMIC_LONG_VALUE_COMPARE_AND_SET:
+                return new ClientAtomicLongValueAddAndGetRequest(reader);
         }
 
         return new ClientRawRequest(reader.readLong(), ClientStatus.INVALID_OP_CODE,
