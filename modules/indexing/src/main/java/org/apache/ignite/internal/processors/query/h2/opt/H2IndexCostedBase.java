@@ -636,6 +636,9 @@ public abstract class H2IndexCostedBase extends BaseIndex {
             boolean foundAllColumnsWeNeed = true;
 
             for (Column c : allColumnsSet) {
+                if (!c.getTable().equals(getTable()))
+                    continue;
+
                 boolean found = false;
 
                 for (Column c2 : columns) {
