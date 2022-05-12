@@ -171,33 +171,27 @@ public class LimitOffsetPlannerTest extends AbstractPlannerTest {
         publicSchema = createSchemaWithTable(IgniteDistributions.random(), 0);
 
         // Sort node is not required, since collation of the Limit node equals to the index collation.
-        assertPlan("SELECT * FROM TEST ORDER BY ID LIMIT 5 OFFSET 10", publicSchema,
+        assertPlan("SELECT * FROM TEST ORDER BY ID LIMIT 10 OFFSET 10", publicSchema,
             isInstanceOf(IgniteLimit.class)
                 .and(input(isInstanceOf(IgniteExchange.class)
                     .and(input(isInstanceOf(IgniteIndexScan.class)))))
-                .and(hasChildThat(isInstanceOf(IgniteSort.class)
-                    .and(s -> doubleFromRex(s.offset, -1) == 10)
-                    .and(s -> doubleFromRex(s.fetch, -1) == 5)).negate()));
+                .and(hasChildThat(isInstanceOf(IgniteSort.class)).negate()));
 
         publicSchema = createSchemaWithTable(IgniteDistributions.random(), 0, 1);
 
         // Sort node is not required, since collation of the Limit node satisfies the index collation.
-        assertPlan("SELECT * FROM TEST ORDER BY ID LIMIT 5 OFFSET 10", publicSchema,
+        assertPlan("SELECT * FROM TEST ORDER BY ID LIMIT 10 OFFSET 10", publicSchema,
             isInstanceOf(IgniteLimit.class)
                 .and(input(isInstanceOf(IgniteExchange.class)
                     .and(input(isInstanceOf(IgniteIndexScan.class)))))
-                .and(hasChildThat(isInstanceOf(IgniteSort.class)
-                    .and(s -> doubleFromRex(s.offset, -1) == 10)
-                    .and(s -> doubleFromRex(s.fetch, -1) == 5)).negate()));
+                .and(hasChildThat(isInstanceOf(IgniteSort.class)).negate()));
 
         publicSchema = createSchemaWithTable(IgniteDistributions.single());
 
         // Exchange node is not required, since distribution of the table is already "single".
-        assertPlan("SELECT * FROM TEST ORDER BY ID LIMIT 5 OFFSET 10", publicSchema,
+        assertPlan("SELECT * FROM TEST ORDER BY ID LIMIT 10 OFFSET 10", publicSchema,
             isInstanceOf(IgniteLimit.class)
-                .and(input(isInstanceOf(IgniteSort.class)
-                    .and(s -> doubleFromRex(s.offset, -1) == 10)
-                    .and(s -> doubleFromRex(s.fetch, -1) == 5)))
+                .and(input(isInstanceOf(IgniteSort.class)))
                 .and(hasChildThat(isInstanceOf(IgniteExchange.class)).negate()));
     }
 

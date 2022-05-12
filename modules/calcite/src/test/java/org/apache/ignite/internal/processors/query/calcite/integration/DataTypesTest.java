@@ -35,6 +35,18 @@ import org.junit.Test;
  * Test SQL data types.
  */
 public class DataTypesTest extends AbstractBasicIntegrationTest {
+    /** TODO. */
+    @Test
+    public void testTest() {
+        executeSql("CREATE TABLE integers(i INTEGER)");
+
+//        executeSql("INSERT INTO integers VALUES (1), (2), (3), (NULL)");
+
+        executeSql("SELECT * FROM integers s1 INNER JOIN integers s2 ON (SELECT s1.i=s2.i)");
+//        executeSql("SELECT true");
+//        executeSql("SELECT * FROM integers s1 INNER JOIN integers s2 (SELECT true) ORDER BY s1.i;");
+    }
+
     /** Tests Other type. */
     @Test
     public void testOtherType() {

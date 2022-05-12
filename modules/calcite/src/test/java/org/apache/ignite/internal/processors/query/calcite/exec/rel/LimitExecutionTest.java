@@ -22,7 +22,7 @@ import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
+import java.util.stream.IntStream;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
@@ -83,8 +83,15 @@ public class LimitExecutionTest extends AbstractExecutionTest {
         SortNode<Object[]> sortNode = new SortNode<>(ctx, rowType, F::compareArrays, () -> offset,
             fetch == 0 ? null : () -> fetch);
 
-        SourceNode srcNode = new SourceNode(ctx, rowType, false, fetch > 0 ? fetch * 10 + offset :
-            offset + SourceNode.IN_BUFFER_SIZE);
+        int limit = fetch > 0 ? fetch * 10 + offset : offset + SourceNode.IN_BUFFER_SIZE;
+
+        List<Object[]> data = IntStream.range(0, limit).boxed().map(i -> new Object[] {i})
+            .collect(Collectors.toList());
+        Collections.shuffle(data);
+
+//        SourceNode srcNode = new SourceNode(ctx, rowType, false, );
+
+        ScanNode<Object[]> srcNode = new ScanNode<>(ctx, rowType, data);
 
         rootNode.register(sortNode);
 
@@ -112,7 +119,7 @@ public class LimitExecutionTest extends AbstractExecutionTest {
             assertTrue(rootNode.hasNext());
             assertEquals(offset, rootNode.next()[0]);
 
-            assertTrue(srcNode.requested.get() == offset + SourceNode.IN_BUFFER_SIZE);
+//            assertTrue(srcNode.requested.get() == offset + SourceNode.IN_BUFFER_SIZE);
         }
     }
 
@@ -127,7 +134,7 @@ public class LimitExecutionTest extends AbstractExecutionTest {
 
         RootNode<Object[]> rootNode = new RootNode<>(ctx, rowType);
         LimitNode<Object[]> limitNode = new LimitNode<>(ctx, rowType, () -> offset, fetch == 0 ? null : () -> fetch);
-        SourceNode srcNode = new SourceNode(ctx, rowType, true, -1);
+        SourceNode srcNode = new SourceNode(ctx, rowType);
 
         rootNode.register(limitNode);
         limitNode.register(srcNode);
@@ -151,21 +158,11 @@ public class LimitExecutionTest extends AbstractExecutionTest {
     /** */
     private static class SourceNode extends AbstractNode<Object[]> {
         /** */
-        private AtomicInteger requested = new AtomicInteger();
-
-        /** If positive, prevents unlimited data providing. */
-        private final int limit;
+        AtomicInteger requested = new AtomicInteger();
 
         /** */
-        private final boolean sorted;
-
-        /** */
-        public SourceNode(ExecutionContext<Object[]> ctx, RelDataType rowType, boolean sorted, int limit) {
+        public SourceNode(ExecutionContext<Object[]> ctx, RelDataType rowType) {
             super(ctx, rowType);
-
-            this.limit = limit;
-
-            this.sorted = sorted;
         }
 
         /** {@inheritDoc} */
@@ -180,26 +177,11 @@ public class LimitExecutionTest extends AbstractExecutionTest {
 
         /** {@inheritDoc} */
         @Override public void request(int rowsCnt) {
-            int rowsToAdd;
-
-            if (limit >= 0 && requested.get() + rowsCnt > limit)
-                rowsToAdd = limit - requested.get();
-            else
-                rowsToAdd = rowsCnt;
-
-            AtomicInteger r = new AtomicInteger(requested.getAndAdd(rowsToAdd));
-
-            List<Integer> lst = Stream.generate(r::getAndIncrement).limit(rowsToAdd).collect(Collectors.toList());
-
-            if (!sorted)
-                Collections.shuffle(lst);
+            int r = requested.getAndAdd(rowsCnt);
 
             context().execute(() -> {
-                for (int i : lst)
-                    downstream().push(new Object[] {i});
-
-                if (rowsToAdd < rowsCnt)
-                    context().execute(() -> downstream().end(), this::onError);
+                for (int i = 0; i < rowsCnt; i++)
+                    downstream().push(new Object[] {r + i});
             }, this::onError);
         }
     }
