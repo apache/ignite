@@ -74,6 +74,9 @@ public class LimitExecutionTest extends AbstractExecutionTest {
      * @param fetch Fetch rows count (zero means unlimited).
      */
     private void checkLimitSort(int offset, int fetch) {
+        assert offset >= 0;
+        assert fetch >= 0;
+
         ExecutionContext<Object[]> ctx = executionContext(F.first(nodes()), UUID.randomUUID(), 0);
         IgniteTypeFactory tf = ctx.getTypeFactory();
         RelDataType rowType = TypeUtils.createRowType(tf, int.class);
@@ -83,10 +86,8 @@ public class LimitExecutionTest extends AbstractExecutionTest {
         SortNode<Object[]> sortNode = new SortNode<>(ctx, rowType, F::compareArrays, () -> offset,
             fetch == 0 ? null : () -> fetch);
 
-        int limit = fetch > 0 ? fetch * 10 + offset : offset + SourceNode.IN_BUFFER_SIZE;
-
-        List<Object[]> data = IntStream.range(0, limit).boxed().map(i -> new Object[] {i})
-            .collect(Collectors.toList());
+        List<Object[]> data = IntStream.range(0, SourceNode.IN_BUFFER_SIZE + fetch + offset).boxed()
+            .map(i -> new Object[] {i}).collect(Collectors.toList());
         Collections.shuffle(data);
 
         ScanNode<Object[]> srcNode = new ScanNode<>(ctx, rowType, data);
