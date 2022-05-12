@@ -25,7 +25,7 @@
   <ItemGroup>
     <ProjectReference Include="..\Apache.Ignite.Core\Apache.Ignite.Core.csproj" />
 
-    <!-- TODO: During publish, we get ConfigurationManager.dll for netcoreapp2.0, which causes issues. Can we overwrite it? -->
+    <!-- This reference is required to include correct binaries during publish. -->
     <PackageReference Include="System.Configuration.ConfigurationManager" Version="4.5.0" />
 
     <!--
