@@ -1202,10 +1202,14 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
 
         final TestTree tree = createTestTree(canGetRow);
 
+        final List<Long> expKeys = batchSize == 1 ? null : new ArrayList<>(keys);
+
         // Put keys in reverse order to have a better balance in the tree (lower height).
         for (long i = keys - 1; i >= 0; i--) {
             tree.put(i);
-//            X.println(tree.printTree());
+
+            if (expKeys != null)
+                expKeys.add(keys - i - 1);
         }
 
         assertEquals(keys, tree.size());
@@ -1246,10 +1250,11 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
                         }
                         else {
                             long startIdx = (long)idx * batchSize;
-                            long endIdx = startIdx + batchSize - 1;
-                            rmvdIds0 = tree.remove(startIdx, endIdx, batchSize);
 
-                            assertEquals(batchSize, rmvdIds0.size());
+                            // Ensure that we remove from left to right.
+                            rmvdIds0 = tree.remove(startIdx, Long.MAX_VALUE, batchSize);
+
+                            assertEquals(expKeys.subList((int)startIdx, (int)startIdx + batchSize), rmvdIds0);
                         }
 
                         if (canGetRow)
@@ -2736,7 +2741,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
                             continue;
 
                         if (rmvRange && toRmv + 1 != findKey)
-                            tree.remove(toRmv, toRmv + 1, keysPerOp);
+                            assertTrue(tree.remove(toRmv, toRmv + 1, keysPerOp).size() <= keysPerOp);
                         else
                             tree.remove(toRmv);
                     }
