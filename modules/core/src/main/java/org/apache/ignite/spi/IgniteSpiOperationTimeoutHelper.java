@@ -67,7 +67,8 @@ public class IgniteSpiOperationTimeoutHelper {
                 timeout = absoluteThreshold;
 
             timeoutThreshold = timeout;
-        } else {
+        }
+        else {
             // Save absolute threshold if it is set.
             timeoutThreshold = absoluteThreshold > 0 ? absoluteThreshold : 0;
         }

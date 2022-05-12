@@ -1252,7 +1252,8 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
                 try {
                     dataStore.insertRows(batch, initPred);
-                } finally {
+                }
+                finally {
                     ctx.database().checkpointReadUnlock();
                 }
 
@@ -1847,9 +1848,8 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             GridCacheVersion ver,
             long expireTime,
             MvccVersion mvccVer,
-            MvccVersion newMvccVer)
-            throws IgniteCheckedException
-        {
+            MvccVersion newMvccVer
+        ) throws IgniteCheckedException {
             assert mvccVer != null || newMvccVer == null : newMvccVer;
 
             if (!busyLock.enterBusy())
@@ -2689,9 +2689,11 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
          * @param oldRow Old row.
          * @throws IgniteCheckedException If failed.
          */
-        private void updatePendingEntries(GridCacheContext cctx, CacheDataRow newRow, @Nullable CacheDataRow oldRow)
-            throws IgniteCheckedException
-        {
+        private void updatePendingEntries(
+            GridCacheContext cctx,
+            CacheDataRow newRow,
+            @Nullable CacheDataRow oldRow
+        ) throws IgniteCheckedException {
             long expireTime = newRow.expireTime();
 
             int cacheId = grp.sharedGroup() ? cctx.cacheId() : CU.UNDEFINED_CACHE_ID;
@@ -2799,9 +2801,8 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         /** {@inheritDoc} */
         @Override public List<IgniteBiTuple<Object, MvccVersion>> mvccFindAllVersions(
             GridCacheContext cctx,
-            KeyCacheObject key)
-            throws IgniteCheckedException
-        {
+            KeyCacheObject key
+        ) throws IgniteCheckedException {
             assert grp.mvccEnabled();
 
             // Note: this method is intended for testing only.

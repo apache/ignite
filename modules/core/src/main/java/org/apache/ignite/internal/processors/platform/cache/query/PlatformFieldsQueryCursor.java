@@ -71,12 +71,14 @@ public class PlatformFieldsQueryCursor extends PlatformAbstractQueryCursor<List<
 
             for (GridQueryFieldMetadata meta : fieldsMeta)
                 writer.writeString(meta.fieldName());
-        } else if (type == OP_GET_FIELDS_META) {
+        }
+        else if (type == OP_GET_FIELDS_META) {
             List<GridQueryFieldMetadata> metas = cursor().fieldsMeta();
 
             if (metas == null) {
                 writer.writeInt(0);
-            } else {
+            }
+            else {
                 writer.writeInt(metas.size());
 
                 for (GridQueryFieldMetadata meta : metas) {
@@ -84,7 +86,8 @@ public class PlatformFieldsQueryCursor extends PlatformAbstractQueryCursor<List<
                     writer.writeString(meta.fieldTypeName());
                 }
             }
-        } else {
+        }
+        else {
             super.processOutStream(type, writer);
         }
     }

@@ -826,7 +826,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             );
 
             return res.iterator();
-        } else
+        }
+        else
             return plan.createRows(params).iterator();
     }
 

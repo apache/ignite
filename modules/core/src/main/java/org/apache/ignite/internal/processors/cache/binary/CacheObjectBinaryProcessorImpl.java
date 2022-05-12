@@ -1060,7 +1060,8 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
 
                 addMeta(newMeta.typeId(), newMeta.wrap(binaryContext()), false);
             }
-        } catch (BinaryObjectException e) {
+        }
+        catch (BinaryObjectException e) {
             throw new IgniteCheckedException(e);
         }
     }

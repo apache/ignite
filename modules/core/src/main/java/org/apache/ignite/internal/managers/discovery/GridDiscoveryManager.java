@@ -1209,7 +1209,8 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
                         return metrics;
                     }
-                } catch (Exception e) {
+                }
+                catch (Exception e) {
                     U.warn(log, "Failed to compute cache metrics", e);
                 }
 
@@ -3273,7 +3274,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
                 if (segmented)
                     onSegmentation();
-            };
+            }
         }
 
         /**

@@ -121,8 +121,8 @@ public class GridCacheEventManager extends GridCacheManagerAdapter {
         boolean hasOldVal,
         String cloClsName,
         String taskName,
-        boolean keepBinary)
-    {
+        boolean keepBinary
+    ) {
         addEvent(part,
             key,
             cctx.localNodeId(),
@@ -185,8 +185,8 @@ public class GridCacheEventManager extends GridCacheManagerAdapter {
         boolean hasOldVal,
         String cloClsName,
         String taskName,
-        boolean keepBinary)
-    {
+        boolean keepBinary
+    ) {
         addEvent(part,
             key,
             nodeId,
@@ -227,8 +227,8 @@ public class GridCacheEventManager extends GridCacheManagerAdapter {
         boolean hasOldVal,
         String cloClsName,
         String taskName,
-        boolean keepBinary)
-    {
+        boolean keepBinary
+    ) {
         IgniteInternalTx tx = owner == null ? null : cctx.tm().tx(owner.version());
 
         addEvent(part,

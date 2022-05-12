@@ -2137,7 +2137,8 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
             assertEquals("Expected items in marshaller discovery data: 2, actual: "
                     + TestTcpDiscoveryMarshallerDataSpi.marshalledItems,
                     2, TestTcpDiscoveryMarshallerDataSpi.marshalledItems);
-        } finally {
+        }
+        finally {
             stopAllGrids();
         }
     }

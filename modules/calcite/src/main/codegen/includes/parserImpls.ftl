@@ -251,16 +251,16 @@ SqlNodeList IndexedColumnList() :
 SqlCreate SqlCreateIndex(Span s, boolean replace) :
 {
     final boolean ifNotExists;
-    final SqlIdentifier idxId;
     final SqlIdentifier tblId;
     final SqlNodeList columnList;
+    SqlIdentifier idxId = null;
     SqlNumericLiteral parallel = null;
     SqlNumericLiteral inlineSize = null;
 }
 {
     <INDEX>
     ifNotExists = IfNotExistsOpt()
-    idxId = SimpleIdentifier()
+    [ idxId = SimpleIdentifier() ]
     <ON>
     tblId = CompoundIdentifier()
     columnList = IndexedColumnList()

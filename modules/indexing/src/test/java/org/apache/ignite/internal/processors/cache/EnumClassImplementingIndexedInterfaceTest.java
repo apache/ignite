@@ -193,7 +193,9 @@ public class EnumClassImplementingIndexedInterfaceTest extends GridCommonAbstrac
         }
 
         /** */
-        @Override public int hashCode() { return 1; }
+        @Override public int hashCode() {
+            return 1;
+        }
     }
 
     /** */

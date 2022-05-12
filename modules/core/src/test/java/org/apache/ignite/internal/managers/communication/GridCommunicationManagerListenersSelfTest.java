@@ -94,7 +94,8 @@ public class GridCommunicationManagerListenersSelfTest extends GridCommonAbstrac
             ignite.message().localListen(null, l);
 
             checkLoop(2000);
-        } finally {
+        }
+        finally {
             stop.set(true);
         }
     }

@@ -656,7 +656,8 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
                 grpKeys.addKey(grpId, key);
 
                 writeGroupKeysToMetaStore(grpId, grpKeys.getAll(grpId));
-            } catch (IgniteCheckedException e) {
+            }
+            catch (IgniteCheckedException e) {
                 throw new IgniteException("Failed to write cache group encryption key [grpId=" + grpId + ']', e);
             }
         }
@@ -690,7 +691,8 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
 
         try {
             digest = masterKeyDigest(masterKeyName);
-        } catch (Exception e) {
+        }
+        catch (Exception e) {
             return new IgniteFinishedFutureImpl<>(new IgniteException("Master key change was rejected. " +
                 "Unable to get the master key digest.", e));
         }
@@ -1496,7 +1498,8 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
                 grpKeys.setGroupKeys(entry.getKey(), entry.getValue());
 
             restoredFromWAL = true;
-        } catch (IgniteSpiException e) {
+        }
+        catch (IgniteSpiException e) {
             log.warning("Unable to apply group keys from WAL record [masterKeyName=" + rec.getMasterKeyName() + ']', e);
         }
     }
@@ -1715,9 +1718,11 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
                 getSpi().setMasterKeyName(masterKeyName);
 
                 digest = getSpi().masterKeyDigest();
-            } catch (Exception e) {
+            }
+            catch (Exception e) {
                 throw new IgniteException("Unable to set master key locally [masterKeyName=" + masterKeyName + ']', e);
-            } finally {
+            }
+            finally {
                 getSpi().setMasterKeyName(curName);
             }
         }

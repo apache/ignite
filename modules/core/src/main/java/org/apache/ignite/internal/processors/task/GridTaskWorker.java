@@ -906,7 +906,8 @@ public class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObjec
 
                             jobRes.resetResponse();
                         }
-                    } else {
+                    }
+                    else {
                         switch (plc) {
                             // Start reducing all results received so far.
                             case REDUCE: {

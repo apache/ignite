@@ -61,9 +61,7 @@ public class IndexForceRebuildTask extends VisorOneNodeTask<IndexForceRebuildTas
         }
 
         /** {@inheritDoc} */
-        @Override protected IndexForceRebuildTaskRes run(@Nullable IndexForceRebuildTaskArg arg)
-            throws IgniteException
-        {
+        @Override protected IndexForceRebuildTaskRes run(@Nullable IndexForceRebuildTaskArg arg) throws IgniteException {
             assert (arg.cacheNames() == null) ^ (arg.cacheGrps() == null) :
                 "Either cacheNames or cacheGroups must be specified.";
 

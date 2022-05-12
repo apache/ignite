@@ -51,9 +51,7 @@ public class IgniteSpringBeanSpringResourceInjectionTest extends GridCommonAbstr
     /**
      * Cache store with {@link SpringResource} fields to be injected.
      */
-    public static class IgniteCacheStoreWithSpringResource<K, V> extends CacheStoreAdapter<K, V>
-        implements Serializable
-    {
+    public static class IgniteCacheStoreWithSpringResource<K, V> extends CacheStoreAdapter<K, V> implements Serializable {
         /** */
         private static final long serialVersionUID = 0L;
 

@@ -550,9 +550,8 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
     public final IgniteAtomicSequence sequence(final String name,
         @Nullable final AtomicConfiguration cfg,
         final long initVal,
-        final boolean create)
-        throws IgniteCheckedException
-    {
+        final boolean create
+    ) throws IgniteCheckedException {
         return getAtomic(new AtomicAccessor<GridCacheAtomicSequenceEx>() {
             @Override public T2<GridCacheAtomicSequenceEx, AtomicDataStructureValue> get(GridCacheInternalKey key,
                 AtomicDataStructureValue val, IgniteInternalCache cache) throws IgniteCheckedException {
@@ -676,9 +675,8 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
         final String name,
         final DataStructureType type,
         final boolean create,
-        Class<? extends T> cls)
-        throws IgniteCheckedException
-    {
+        Class<? extends T> cls
+    ) throws IgniteCheckedException {
         A.notNull(name, "name");
 
         awaitInitialization();
@@ -700,7 +698,8 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
             volatileGrpName += "@" + dataRegionName;
 
             grpName = volatileGrpName;
-        } else if (cfg.getGroupName() != null)
+        }
+        else if (cfg.getGroupName() != null)
             grpName = cfg.getGroupName();
         else
             grpName = DEFAULT_DS_GROUP_NAME;
@@ -938,9 +937,8 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
     public final <T> IgniteAtomicReference<T> atomicReference(final String name,
         @Nullable AtomicConfiguration cfg,
         final T initVal,
-        final boolean create)
-        throws IgniteCheckedException
-    {
+        final boolean create
+    ) throws IgniteCheckedException {
         return getAtomic(new AtomicAccessor<GridCacheAtomicReferenceEx>() {
             @Override public T2<GridCacheAtomicReferenceEx, AtomicDataStructureValue> get(
                 GridCacheInternalKey key,
@@ -1244,9 +1242,8 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
         @Nullable String grpName,
         final DataStructureType type,
         boolean create,
-        boolean separated)
-        throws IgniteCheckedException
-    {
+        boolean separated
+    ) throws IgniteCheckedException {
         awaitInitialization();
 
         assert name != null;
@@ -1386,9 +1383,8 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
         @Nullable AtomicConfiguration cfg,
         final int cnt,
         final boolean autoDel,
-        final boolean create)
-        throws IgniteCheckedException
-    {
+        final boolean create
+    ) throws IgniteCheckedException {
         if (create)
             A.ensure(cnt >= 0, "count can not be negative");
 
@@ -1648,9 +1644,8 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
         CacheEntryUpdatedListener<GridCacheInternalKey, GridCacheInternal> {
         /** {@inheritDoc} */
         @Override public void onUpdated(
-            Iterable<CacheEntryEvent<? extends GridCacheInternalKey, ? extends GridCacheInternal>> evts)
-            throws CacheEntryListenerException
-        {
+            Iterable<CacheEntryEvent<? extends GridCacheInternalKey, ? extends GridCacheInternal>> evts
+        ) throws CacheEntryListenerException {
             for (CacheEntryEvent<? extends GridCacheInternalKey, ? extends GridCacheInternal> evt : evts) {
                 if (evt.getEventType() == EventType.CREATED || evt.getEventType() == EventType.UPDATED) {
                     GridCacheInternal val0 = evt.getValue();

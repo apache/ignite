@@ -1632,7 +1632,8 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
                     int order;
                     try {
                         order = putRmvOpBarrier.await();
-                    } catch (BrokenBarrierException e) {
+                    }
+                    catch (BrokenBarrierException e) {
                         break;
                     }
 
@@ -1675,7 +1676,8 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
 
                     try {
                         order = putRmvOpBarrier.await();
-                    } catch (BrokenBarrierException e) {
+                    }
+                    catch (BrokenBarrierException e) {
                         break;
                     }
 
@@ -1793,7 +1795,8 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
                     int order;
                     try {
                         order = putRmvOpBarrier.await();
-                    } catch (BrokenBarrierException e) {
+                    }
+                    catch (BrokenBarrierException e) {
                         // barrier reset() has been called: terminate
                         break;
                     }

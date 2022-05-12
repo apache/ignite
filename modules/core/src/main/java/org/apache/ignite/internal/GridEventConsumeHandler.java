@@ -300,7 +300,8 @@ class GridEventConsumeHandler implements GridContinuousHandler {
     private boolean filterDropsEvent(Event evt) {
         try {
             return filter != null && !filter.apply(evt);
-        } catch (NoClassDefFoundError e) {
+        }
+        catch (NoClassDefFoundError e) {
             // Filter might be installed using P2P class loading, so let's be careful and avoid a NCDFE from getting
             // to a Failure Handler.
 

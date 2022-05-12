@@ -116,8 +116,8 @@ public class ClientCachePartitionsRequest extends ClientRequest {
         List<ClientCachePartitionAwarenessGroup> groups,
         Map<Integer, ClientCachePartitionAwarenessGroup> cacheGroupIds,
         ClientAffinityTopologyVersion affinityVer,
-        DynamicCacheDescriptor cacheDesc)
-    {
+        DynamicCacheDescriptor cacheDesc
+    ) {
         int cacheGroupId = cacheDesc.groupId();
         int cacheId = cacheDesc.cacheId();
 
@@ -182,7 +182,8 @@ public class ClientCachePartitionsRequest extends ClientRequest {
         try {
             GridCacheContext cacheContext = ctx.kernalContext().cache().context().cacheContext(cacheId);
             return cacheContext.affinity().assignment(affinityVer.getVersion());
-        } catch (Exception e) {
+        }
+        catch (Exception e) {
             return null;
         }
     }

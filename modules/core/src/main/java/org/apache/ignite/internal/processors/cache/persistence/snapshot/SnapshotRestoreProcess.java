@@ -61,6 +61,7 @@ import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.processors.affinity.GridAffinityAssignmentCache;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
+import org.apache.ignite.internal.processors.cache.GridLocalConfigManager;
 import org.apache.ignite.internal.processors.cache.StoredCacheData;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.ClusterSnapshotFuture;
@@ -660,6 +661,7 @@ public class SnapshotRestoreProcess {
 
         Map<String, StoredCacheData> cfgsByName = new HashMap<>();
         FilePageStoreManager pageStore = (FilePageStoreManager)cctx.pageStore();
+        GridLocalConfigManager locCfgMgr = cctx.cache().configManager();
 
         // Collect the cache configurations and prepare a temporary directory for copying files.
         // Metastorage can be restored only manually by directly copying files.
@@ -698,7 +700,7 @@ public class SnapshotRestoreProcess {
                         "[group=" + grpName + ", dir=" + tmpCacheDir + ']');
                 }
 
-                pageStore.readCacheConfigurations(snpCacheDir, cfgsByName);
+                locCfgMgr.readCacheConfigurations(snpCacheDir, cfgsByName);
             }
         }
 

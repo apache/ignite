@@ -513,7 +513,8 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
                 cliCtx.waitTotalProcessedOrderedRequests(req.order());
 
             sender.send(processStreamingBatch(req));
-        } catch (Exception e) {
+        }
+        catch (Exception e) {
             U.error(null, "Error processing file batch", e);
 
             sender.send(new OdbcResponse(IgniteQueryErrorCode.UNKNOWN, "Server error: " + e));
@@ -555,8 +556,7 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
 
         if (firstErr.isEmpty())
             return new OdbcResponse(new OdbcStreamingBatchResult(req.order()));
-        else
-        {
+        else {
             assert firstErr.getKey() != null;
 
             return new OdbcResponse(new OdbcStreamingBatchResult(firstErr.getKey(), firstErr.getValue(), req.order()));

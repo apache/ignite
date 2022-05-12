@@ -301,7 +301,8 @@ class KillCommandsTests {
             }
 
             assertThrowsWithCause(() -> fut.get(TIMEOUT), IgniteException.class);
-        } finally {
+        }
+        finally {
             computeLatch.countDown();
         }
     }

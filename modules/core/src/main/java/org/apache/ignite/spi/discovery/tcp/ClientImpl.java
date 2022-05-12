@@ -1022,8 +1022,8 @@ class ClientImpl extends TcpDiscoveryImpl {
     @Override public void updateMetrics(UUID nodeId,
         ClusterMetrics metrics,
         Map<Integer, CacheMetrics> cacheMetrics,
-        long tsNanos)
-    {
+        long tsNanos
+    ) {
         boolean isLocDaemon = spi.locNode.isDaemon();
 
         assert nodeId != null;
@@ -2645,8 +2645,8 @@ class ClientImpl extends TcpDiscoveryImpl {
         private void updateMetrics(UUID nodeId,
             ClusterMetrics metrics,
             Map<Integer, CacheMetrics> cacheMetrics,
-            long tsNanos)
-        {
+            long tsNanos
+        ) {
             boolean isLocDaemon = spi.locNode.isDaemon();
 
             assert nodeId != null;

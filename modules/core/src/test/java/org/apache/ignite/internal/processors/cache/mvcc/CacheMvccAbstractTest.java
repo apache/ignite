@@ -650,7 +650,8 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
 
                                             assertNull("new=" + e + ", old=" + old, old);
                                         }
-                                    } finally {
+                                    }
+                                    finally {
                                         U.closeQuiet((AutoCloseable)it);
                                     }
 
@@ -1082,9 +1083,7 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
         ReadMode readMode,
         WriteMode writeMode,
         RestartMode restartMode
-    )
-        throws Exception
-    {
+    ) throws Exception {
         final int TOTAL = 20;
 
         assert N <= TOTAL;

@@ -198,7 +198,8 @@ final class ReliableChannel implements AutoCloseable {
 
         try {
             ch = applyOnDefaultChannel(channel -> channel, null, attemptsLimit, v -> attemptsCnt[0] = v);
-        } catch (Throwable ex) {
+        }
+        catch (Throwable ex) {
             if (failure != null) {
                 failure.addSuppressed(ex);
 
@@ -499,7 +500,8 @@ final class ReliableChannel implements AutoCloseable {
                 else
                     curChIdx = idx;
             }
-        } finally {
+        }
+        finally {
             curChannelsGuard.writeLock().unlock();
         }
     }
@@ -607,7 +609,8 @@ final class ReliableChannel implements AutoCloseable {
                 newAddrs = parsedAddresses(hostAddrs);
                 prevHostAddrs = hostAddrs;
             }
-        } else if (holders == null)
+        }
+        else if (holders == null)
             newAddrs = parsedAddresses(clientCfg.getAddresses());
 
         if (newAddrs == null) {
@@ -719,7 +722,8 @@ final class ReliableChannel implements AutoCloseable {
 
             if (channel != null)
                 return function.apply(channel);
-        } catch (ClientConnectionException e) {
+        }
+        catch (ClientConnectionException e) {
             onChannelFailure(hld, channel);
         }
 
@@ -752,7 +756,8 @@ final class ReliableChannel implements AutoCloseable {
 
                 try {
                     hld = channels.get(curChIdx);
-                } finally {
+                }
+                finally {
                     curChannelsGuard.readLock().unlock();
                 }
 
@@ -798,7 +803,8 @@ final class ReliableChannel implements AutoCloseable {
                 if (channel != null)
                     return function.apply(channel);
 
-            } catch (ClientConnectionException e) {
+            }
+            catch (ClientConnectionException e) {
                 onChannelFailure(hld, channel);
 
                 retryLimit -= 1;

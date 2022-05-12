@@ -300,7 +300,8 @@ public class TxLog implements CheckpointListener {
             synchronized (sync) {
                 tree.invoke(key, null, new TxLogUpdateClosure(key.major(), key.minor(), state, primary));
             }
-        } finally {
+        }
+        finally {
             evict(key, sync);
         }
     }

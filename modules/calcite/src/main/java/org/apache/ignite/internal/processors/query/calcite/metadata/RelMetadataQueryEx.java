@@ -96,7 +96,8 @@ public class RelMetadataQueryEx extends RelMetadataQuery {
         for (;;) {
             try {
                 return sourceDistributionHandler.fragmentMapping(rel, this, ctx);
-            } catch (JaninoRelMetadataProvider.NoHandler e) {
+            }
+            catch (JaninoRelMetadataProvider.NoHandler e) {
                 sourceDistributionHandler = revise(e.relClass, IgniteMetadata.FragmentMappingMetadata.DEF);
             }
         }

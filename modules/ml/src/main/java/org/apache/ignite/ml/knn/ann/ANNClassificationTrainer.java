@@ -88,7 +88,8 @@ public class ANNClassificationTrainer extends SingleLabelDatasetTrainer<ANNClass
                 return mdl;
             CentroidStat oldStat = mdl.getCentroindsStat();
             centroidStat = newStat.merge(oldStat);
-        } else {
+        }
+        else {
             centers = getCentroids(extractor, datasetBuilder);
             centroidStat = getCentroidStat(datasetBuilder, extractor, centers);
         }
@@ -203,7 +204,8 @@ public class ANNClassificationTrainer extends SingleLabelDatasetTrainer<ANNClass
                         centroidStat = new ConcurrentHashMap<>();
                         centroidStat.put(lb, 1);
                         res.centroidStat.put(centroidIdx, centroidStat);
-                    } else {
+                    }
+                    else {
                         int cnt = centroidStat.getOrDefault(lb, 0);
                         centroidStat.put(lb, cnt + 1);
                     }
@@ -219,8 +221,8 @@ public class ANNClassificationTrainer extends SingleLabelDatasetTrainer<ANNClass
                     return a;
                 return a.merge(b);
             });
-
-        } catch (Exception e) {
+        }
+        catch (Exception e) {
             throw new RuntimeException(e);
         }
     }
