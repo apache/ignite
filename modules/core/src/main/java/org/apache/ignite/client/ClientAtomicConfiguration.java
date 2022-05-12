@@ -35,7 +35,7 @@ public class ClientAtomicConfiguration {
     /** Default atomic sequence reservation size. */
     public static final int DFLT_ATOMIC_SEQUENCE_RESERVE_SIZE = 1000;
 
-    /** Default batch size for all cache's sequences. */
+    /** Atomic sequence reservation size. */
     private int seqReserveSize = DFLT_ATOMIC_SEQUENCE_RESERVE_SIZE;
 
     /** Cache mode. */
