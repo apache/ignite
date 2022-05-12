@@ -244,12 +244,12 @@ public enum ClientOperationType {
     ATOMIC_LONG_VALUE_ADD_AND_GET,
 
     /**
-     * AtomicLong.getAndSet.
+     * AtomicLong.getAndSet ({@link ClientAtomicLong#getAndSet(long)}).
      */
     ATOMIC_LONG_VALUE_GET_AND_SET,
 
     /**
-     * AtomicLong.compareAndSet.
+     * AtomicLong.compareAndSet ({@link ClientAtomicLong#compareAndSet(long, long)}).
      */
     ATOMIC_LONG_VALUE_COMPARE_AND_SET
 }
