@@ -48,6 +48,8 @@ public class ClientAtomicConfiguration {
     private String grpName;
 
     /**
+     * Gets the number of backup nodes.
+     *
      * @return Number of backup nodes.
      */
     public int getBackups() {
@@ -55,7 +57,7 @@ public class ClientAtomicConfiguration {
     }
 
     /**
-     * Constructor.
+     * Sets the number of backup nodes.
      *
      * @param backups Number of backup nodes.
      * @return {@code this} for chaining.
@@ -67,6 +69,8 @@ public class ClientAtomicConfiguration {
     }
 
     /**
+     * Gets the cache mode.
+     *
      * @return Cache mode.
      */
     public CacheMode getCacheMode() {
@@ -74,6 +78,8 @@ public class ClientAtomicConfiguration {
     }
 
     /**
+     * Sets the cache mode.
+     *
      * @param cacheMode Cache mode.
      * @return {@code this} for chaining.
      */
@@ -112,6 +118,8 @@ public class ClientAtomicConfiguration {
     }
 
     /**
+     * Sets the cache group name.
+     *
      * @return Cache group name.
      */
     public String getGroupName() {
@@ -119,6 +127,8 @@ public class ClientAtomicConfiguration {
     }
 
     /**
+     * Gets the cache group name.
+     *
      * @param grpName Cache group name.
      * @return {@code this} for chaining.
      */
