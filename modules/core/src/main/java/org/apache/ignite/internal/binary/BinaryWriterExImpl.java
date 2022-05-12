@@ -325,8 +325,8 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
                 flags |= BinaryUtils.FLAG_HAS_RAW;
             }
             else {
-                finalSchemaId = 0;
-                offset = 0;
+                finalSchemaId = BinaryUtils.schemaInitialId();
+                offset = GridBinaryMarshaller.DFLT_HDR_LEN;
             }
         }
 
