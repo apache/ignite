@@ -372,6 +372,14 @@ public enum ClientOperation {
             case SERVICE_GET_DESCRIPTOR:
                 return ClientOperationType.SERVICE_GET_DESCRIPTOR;
 
+            case ATOMIC_LONG_CREATE:
+            case ATOMIC_LONG_REMOVE:
+            case ATOMIC_LONG_EXISTS:
+            case ATOMIC_LONG_VALUE_GET:
+            case ATOMIC_LONG_VALUE_ADD_AND_GET:
+            case ATOMIC_LONG_VALUE_GET_AND_SET:
+            case ATOMIC_LONG_VALUE_COMPARE_AND_SET:
+
             default:
                 return null;
         }

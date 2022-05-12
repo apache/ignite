@@ -213,5 +213,43 @@ public enum ClientOperationType {
     /**
      * Get service descriptor ({@link ClientServices#serviceDescriptor(String)}).
      */
-    SERVICE_GET_DESCRIPTOR
+    SERVICE_GET_DESCRIPTOR,
+
+    /**
+     * Get or create an AtomicLong ({@link IgniteClient#atomicLong(String, long, boolean)},
+     * {@link IgniteClient#atomicLong(String, ClientAtomicConfiguration, long, boolean)}).
+     */
+    ATOMIC_LONG_CREATE,
+
+    /**
+     * Remove an AtomicLong ({@link ClientAtomicLong#close()}).
+     */
+    ATOMIC_LONG_REMOVE,
+
+    /**
+     * Check if AtomicLong exists ({@link ClientAtomicLong#removed()}).
+     */
+    ATOMIC_LONG_EXISTS,
+
+    /**
+     * AtomicLong.get ({@link ClientAtomicLong#get()}).
+     */
+    ATOMIC_LONG_VALUE_GET,
+
+    /**
+     * AtomicLong.addAndGet (includes {@link ClientAtomicLong#addAndGet(long)}, {@link ClientAtomicLong#incrementAndGet()},
+     * {@link ClientAtomicLong#getAndIncrement()}, {@link ClientAtomicLong#getAndAdd(long)}, {@link ClientAtomicLong#decrementAndGet()},
+     * {@link ClientAtomicLong#getAndDecrement()}).
+     */
+    ATOMIC_LONG_VALUE_ADD_AND_GET,
+
+    /**
+     * AtomicLong.getAndSet.
+     */
+    ATOMIC_LONG_VALUE_GET_AND_SET,
+
+    /**
+     * AtomicLong.compareAndSet.
+     */
+    ATOMIC_LONG_VALUE_COMPARE_AND_SET
 }
