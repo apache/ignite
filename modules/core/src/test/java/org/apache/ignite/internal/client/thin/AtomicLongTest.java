@@ -17,11 +17,15 @@
 
 package org.apache.ignite.internal.client.thin;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.Callable;
+import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.client.ClientAtomicConfiguration;
 import org.apache.ignite.client.ClientAtomicLong;
 import org.apache.ignite.client.ClientException;
 import org.apache.ignite.client.IgniteClient;
+import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.junit.Test;
 import static org.apache.ignite.testframework.GridTestUtils.assertContains;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
@@ -181,6 +185,43 @@ public class AtomicLongTest extends AbstractThinClientTest {
             assertTrue(atomicLong.compareAndSet(1, 4));
             assertEquals(4, atomicLong.get());
         }
+    }
+
+    /**
+     * Tests atomic long with custom configuration.
+     */
+    @Test
+    public void testCustomConfigurationPropagatesToServer() {
+        ClientAtomicConfiguration cfg1 = new ClientAtomicConfiguration()
+                .setAtomicSequenceReserveSize(64)
+                .setBackups(2)
+                .setCacheMode(CacheMode.PARTITIONED)
+                .setGroupName("atomic-long-group-partitioned");
+
+        ClientAtomicConfiguration cfg2 = new ClientAtomicConfiguration()
+                .setAtomicSequenceReserveSize(32)
+                .setBackups(3)
+                .setCacheMode(CacheMode.REPLICATED)
+                .setGroupName("atomic-long-group-replicated");
+
+        String name = "testCustomConfiguration";
+
+        try (IgniteClient client = startClient(0)) {
+            client.atomicLong(name, cfg1, 1, true);
+            client.atomicLong(name, cfg2, 2, true);
+        }
+
+        List<IgniteInternalCache<?, ?>> caches = new ArrayList<>(grid(0).cachesx());
+        assertEquals(3, caches.size());
+
+        IgniteInternalCache<?, ?> partitionedCache = caches.get(1);
+        IgniteInternalCache<?, ?> replicatedCache = caches.get(2);
+
+        assertEquals("ignite-sys-atomic-cache@atomic-long-group-partitioned", partitionedCache.name());
+        assertEquals("ignite-sys-atomic-cache@atomic-long-group-replicated", replicatedCache.name());
+
+        assertEquals(2, partitionedCache.configuration().getBackups());
+        assertEquals(Integer.MAX_VALUE, replicatedCache.configuration().getBackups());
     }
 
     /**
