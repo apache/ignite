@@ -26,10 +26,10 @@ import static org.apache.ignite.cache.CacheMode.PARTITIONED;
  * Configuration for atomic data structures.
  */
 public class ClientAtomicConfiguration {
-    /** */
+    /** Default number of backups. */
     public static final int DFLT_BACKUPS = 1;
 
-    /** */
+    /** Cache mode. */
     public static final CacheMode DFLT_CACHE_MODE = PARTITIONED;
 
     /** Default atomic sequence reservation size. */
