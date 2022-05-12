@@ -112,6 +112,13 @@ public class SqlCdcTest extends AbstractCdcTest {
         return cfg;
     }
 
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        stopAllGrids();
+
+        cleanPersistenceDir();
+    }
+
     /** Simplest CDC test. */
     @Test
     public void testReadAllSQLRows() throws Exception {
@@ -177,7 +184,7 @@ public class SqlCdcTest extends AbstractCdcTest {
 
         cdc = createCdc(cnsmr, cfg);
 
-        IgniteInternalFuture<?> rmvFut = runAsync(cdc);
+        IgniteInternalFuture<?> cdcFut = runAsync(cdc);
 
         waitForSize(KEYS_CNT, USER, DELETE, cnsmr);
 
@@ -189,13 +196,15 @@ public class SqlCdcTest extends AbstractCdcTest {
             ign,
             "INSERT INTO CITY VALUES(?, ?, ?, ?)",
             KEYS_CNT + 1,
-            MSK,
+            SPB,
             Integer.toString(127000 + KEYS_CNT + 1),
-            "Moscow region");
+            "Saint Petersburg");
 
         waitForSize(KEYS_CNT + 1, CITY, UPDATE, cnsmr);
 
-        rmvFut.cancel();
+        assertFalse(cdcFut.isDone());
+
+        cdcFut.cancel();
 
         assertTrue(cnsmr.stopped());
     }
@@ -367,7 +376,7 @@ public class SqlCdcTest extends AbstractCdcTest {
     }
 
     /** */
-    private List<List<?>> executeSql(IgniteEx node, String sqlText, Object... args) {
+    static List<List<?>> executeSql(IgniteEx node, String sqlText, Object... args) {
         return node.context().query().querySqlFields(new SqlFieldsQuery(sqlText).setArgs(args), true).getAll();
     }
 

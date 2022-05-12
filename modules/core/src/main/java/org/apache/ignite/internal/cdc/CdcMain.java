@@ -77,10 +77,9 @@ import static org.apache.ignite.internal.IgnitionEx.initializeDefaultMBeanServer
 import static org.apache.ignite.internal.binary.BinaryUtils.METADATA_FILE_SUFFIX;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.DATA_RECORD_V2;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.UTILITY_CACHE_NAME;
-import static org.apache.ignite.internal.processors.cache.mvcc.txlog.TxLog.TX_LOG_CACHE_NAME;
-import static org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointMarkersStorage.CHECKPOINT_MARKERS_DIR;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.CACHE_DATA_FILENAME;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.CACHE_DIR_PREFIX;
+import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.CACHE_GRP_DIR_PREFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager.WAL_SEGMENT_FILE_FILTER;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 
@@ -419,7 +418,7 @@ public class CdcMain implements Runnable {
             AtomicLong lastSgmnt = new AtomicLong(-1);
 
             while (!stopped) {
-                try (Stream<Path> cdcFiles = Files.walk(cdcDir, 1)) {
+                try (Stream<Path> cdcFiles = Files.list(cdcDir)) {
                     Set<Path> exists = new HashSet<>();
 
                     cdcFiles
@@ -438,6 +437,9 @@ public class CdcMain implements Runnable {
                         .forEach(this::consumeSegment); // Consuming segments.
 
                     seen.removeIf(p -> !exists.contains(p)); // Clean up seen set.
+
+                    if (lastSgmnt.get() == -1) //Forcefully updating metadata if no new segments found.
+                        updateMetadata();
                 }
 
                 if (!stopped)
@@ -451,10 +453,10 @@ public class CdcMain implements Runnable {
 
     /** Reads all available records from segment. */
     private void consumeSegment(Path segment) {
+        updateMetadata();
+
         if (log.isInfoEnabled())
             log.info("Processing WAL segment [segment=" + segment + ']');
-
-        updateMetadata();
 
         IgniteWalIteratorFactory.IteratorParametersBuilder builder =
             new IgniteWalIteratorFactory.IteratorParametersBuilder()
@@ -675,36 +677,36 @@ public class CdcMain implements Runnable {
 
             Iterator<CdcCacheEvent> cacheEvts = Arrays.stream(files)
                 .filter(f -> f.isDirectory() &&
-                    !f.getName().equals(TX_LOG_CACHE_NAME) &&
-                    !f.getName().equals(CACHE_DIR_PREFIX + UTILITY_CACHE_NAME) &&
-                    !f.getName().equals(CHECKPOINT_MARKERS_DIR))
-                .map(f -> new File(f, CACHE_DATA_FILENAME))
+                    (f.getName().startsWith(CACHE_DIR_PREFIX) || f.getName().startsWith(CACHE_GRP_DIR_PREFIX)) &&
+                    !f.getName().equals(CACHE_DIR_PREFIX + UTILITY_CACHE_NAME))
                 .filter(File::exists)
-                .filter(f -> {
-                    String cacheNameFromDir = f.getParentFile().getName().toString().replace(CACHE_DIR_PREFIX, "");
-
-                    int cacheId = CU.cacheId(cacheNameFromDir);
-
-                    destroyed.remove(cacheId);
-
-                    return !(cachesState.containsKey(cacheId) && f.lastModified() == cachesState.get(cacheId));
-                })
-                .peek(f -> cachesState.put(
-                    CU.cacheId(f.getParentFile().getName().replace(CACHE_DIR_PREFIX, "")),
-                    f.lastModified()
-                ))
+                // Cache group directory can contain several cache data files.
+                // See GridLocalConfigManager#cacheConfigurationFile(CacheConfiguration<?, ?>)
+                .flatMap(cacheDir -> Arrays.stream(cacheDir.listFiles(f -> f.getName().endsWith(CACHE_DATA_FILENAME))))
                 .map(f -> {
                     try {
-                        return (CdcCacheEvent)GridLocalConfigManager.readCacheData(
+                        CdcCacheEvent evt = (CdcCacheEvent)GridLocalConfigManager.readCacheData(
                             f,
                             MarshallerUtils.jdkMarshaller(kctx.igniteInstanceName()),
                             igniteCfg
                         );
+
+                        destroyed.remove(evt.cacheId());
+
+                        Long lastModified0 = cachesState.get(evt.cacheId());
+
+                        if (lastModified0 != null && lastModified0 == f.lastModified())
+                            return null;
+
+                        cachesState.put(evt.cacheId(), f.lastModified());
+
+                        return evt;
                     }
                     catch (IgniteCheckedException e) {
                         throw new IgniteException(e);
                     }
                 })
+                .filter(Objects::nonNull)
                 .iterator();
 
             consumer.onCacheEvents(cacheEvts);
@@ -726,6 +728,13 @@ public class CdcMain implements Runnable {
         catch (IOException e) {
             throw new IgniteException(e);
         }
+    }
+
+    /** */
+    private String cacheNameFromDir(File f) {
+        return f.getParentFile().getName()
+            .replace(CACHE_DIR_PREFIX, "")
+            .replace(CACHE_GRP_DIR_PREFIX, "");
     }
 
     /**
