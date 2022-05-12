@@ -54,7 +54,7 @@ public class LimitExecutionTest extends AbstractExecutionTest {
 
     /** Tests Sort node can limit its output when fetch param is set. */
     @Test
-    public void testSort() throws Exception {
+    public void testSortLimit() throws Exception {
         int bufSize = U.field(AbstractNode.class, "IN_BUFFER_SIZE");
 
         checkLimitSort(0, 1);
@@ -95,28 +95,13 @@ public class LimitExecutionTest extends AbstractExecutionTest {
 
         sortNode.register(srcNode);
 
-        if (fetch > 0) {
-            for (int i = 0; i < offset + fetch; i++) {
-                assertTrue(rootNode.hasNext());
-                assertEquals(i, rootNode.next()[0]);
-            }
-
-            assertFalse(rootNode.hasNext());
-        }
-        else {
-            int skip = offset;
-
-            while (skip > 0) {
-                --skip;
-
-                assertTrue(rootNode.hasNext());
-
-                rootNode.next();
-            }
-
+        for (int i = 0; i < offset + fetch; i++) {
             assertTrue(rootNode.hasNext());
-            assertEquals(offset, rootNode.next()[0]);
+            assertEquals(i, rootNode.next()[0]);
         }
+
+        if (fetch > 0)
+            assertFalse(rootNode.hasNext());
     }
 
     /**
