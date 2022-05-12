@@ -197,7 +197,8 @@ class IgniteSpec(metaclass=ABCMeta):
         if is_opencensus_metrics_enabled(self.service):
             libs.append("opencensus")
 
-        return [os.path.join(self.__home(str(DEV_BRANCH)), "modules", "ducktests", "target", "*"),
+        return [os.path.join(self.service.config_dir),
+                os.path.join(self.__home(str(DEV_BRANCH)), "modules", "ducktests", "target", "*"),
                 os.path.join(self.__home(str(DEV_BRANCH)), "modules", "ducktests", "target", "libs", "*"),
                 *list(map(lambda m: os.path.join(self._module(m), "*"), libs))]
 
