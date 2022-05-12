@@ -58,7 +58,8 @@ public class ClientAtomicLongCreateRequest extends ClientRequest {
             ctx.kernalContext().dataStructures().atomicLong(name, atomicConfiguration, initVal, true);
 
             return new ClientResponse(requestId());
-        } catch (IgniteCheckedException e) {
+        }
+        catch (IgniteCheckedException e) {
             return new ClientResponse(requestId(), e.getMessage());
         }
     }

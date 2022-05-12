@@ -183,8 +183,14 @@ public class AtomicLongTest extends AbstractThinClientTest {
         }
     }
 
+    /**
+     * Asserts that "does not exist" error is thrown.
+     *
+     * @param name Atomic long name.
+     * @param callable Callable.
+     */
     private void assertDoesNotExistError(String name, Callable<Object> callable) {
-        ClientException ex = (ClientException) assertThrows(null, callable, ClientException.class, null);
+        ClientException ex = (ClientException)assertThrows(null, callable, ClientException.class, null);
 
         assertContains(null, ex.getMessage(), "AtomicLong with name '" + name + "' does not exist.");
     }
