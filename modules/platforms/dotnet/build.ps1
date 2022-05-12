@@ -120,7 +120,7 @@ function Build-Solution([string]$targetSolution, [string]$targetDir) {
         Exec $cleanCommand
     }
 
-    $buildCommand = "dotnet publish $targetSolution -c $configuration -o $targetDir"
+    $buildCommand = "dotnet publish  --disable-parallel $targetSolution -c $configuration -o $targetDir"
     echo "Starting dotnet build: '$buildCommand'"
     Exec $buildCommand
 }
