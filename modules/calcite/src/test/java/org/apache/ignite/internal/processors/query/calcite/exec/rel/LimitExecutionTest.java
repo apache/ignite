@@ -89,8 +89,6 @@ public class LimitExecutionTest extends AbstractExecutionTest {
             .collect(Collectors.toList());
         Collections.shuffle(data);
 
-//        SourceNode srcNode = new SourceNode(ctx, rowType, false, );
-
         ScanNode<Object[]> srcNode = new ScanNode<>(ctx, rowType, data);
 
         rootNode.register(sortNode);
@@ -118,8 +116,6 @@ public class LimitExecutionTest extends AbstractExecutionTest {
 
             assertTrue(rootNode.hasNext());
             assertEquals(offset, rootNode.next()[0]);
-
-//            assertTrue(srcNode.requested.get() == offset + SourceNode.IN_BUFFER_SIZE);
         }
     }
 
