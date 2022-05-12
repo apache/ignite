@@ -2119,6 +2119,22 @@ public class GridCacheUtils {
     }
 
     /**
+     * Checks whether given cache configuration should be persisted.
+     *
+     * @param cacheCfg Cache config.
+     * @return {@code True} if cache configuration should be persisted, {@code false} in other case.
+     */
+    public static boolean storeCacheConfig(GridCacheSharedContext<?, ?> cctx, CacheConfiguration<?, ?> cacheCfg) {
+        if (cctx.kernalContext().clientNode())
+            return false;
+
+        DataRegionConfiguration drCfg =
+            findDataRegion(cctx.gridConfig().getDataStorageConfiguration(), cacheCfg.getDataRegionName());
+
+        return drCfg != null && (drCfg.isPersistenceEnabled() || drCfg.isCdcEnabled());
+    }
+
+    /**
      * @param pageSize Page size.
      * @param encSpi Encryption spi.
      * @return Page size without encryption overhead.

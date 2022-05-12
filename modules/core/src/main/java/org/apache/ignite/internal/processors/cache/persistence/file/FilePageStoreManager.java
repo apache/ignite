@@ -181,7 +181,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
     private final Set<Integer> grpsWithoutIdx = Collections.newSetFromMap(new ConcurrentHashMap<Integer, Boolean>());
 
     /** */
-    private final GridStripedReadWriteLock initDirLock =
+    private static final GridStripedReadWriteLock initDirLock =
         new GridStripedReadWriteLock(Math.max(Runtime.getRuntime().availableProcessors(), 8));
 
     /**
@@ -665,7 +665,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
         PageMetrics pageMetrics,
         boolean encrypted) throws IgniteCheckedException {
         try {
-            boolean dirExisted = checkAndInitCacheWorkDir(cacheWorkDir);
+            boolean dirExisted = checkAndInitCacheWorkDir(cacheWorkDir, log);
 
             if (dirExisted) {
                 MaintenanceRegistry mntcReg = cctx.kernalContext().maintenanceRegistry();
@@ -739,15 +739,10 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
         return partId == INDEX_PARTITION ? INDEX_FILE_NAME : format(PART_FILE_TEMPLATE, partId);
     }
 
-    /** {@inheritDoc} */
-    @Override public boolean checkAndInitCacheWorkDir(CacheConfiguration cacheCfg) throws IgniteCheckedException {
-        return checkAndInitCacheWorkDir(cacheWorkDir(cacheCfg));
-    }
-
     /**
      * @param cacheWorkDir Cache work directory.
      */
-    private boolean checkAndInitCacheWorkDir(File cacheWorkDir) throws IgniteCheckedException {
+    public static boolean checkAndInitCacheWorkDir(File cacheWorkDir, IgniteLogger log) throws IgniteCheckedException {
         boolean dirExisted = false;
 
         ReadWriteLock lock = initDirLock.getLock(cacheWorkDir.getName().hashCode());

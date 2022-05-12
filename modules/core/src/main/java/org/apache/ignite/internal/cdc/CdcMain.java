@@ -50,8 +50,8 @@ import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.MarshallerContextImpl;
 import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.cdc.WalRecordsConsumer.DataEntryIterator;
+import org.apache.ignite.internal.processors.cache.GridLocalConfigManager;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
-import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderResolver;
 import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderSettings;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
@@ -695,7 +695,7 @@ public class CdcMain implements Runnable {
                 ))
                 .map(f -> {
                     try {
-                        return (CdcCacheEvent)FilePageStoreManager.readCacheData(
+                        return (CdcCacheEvent)GridLocalConfigManager.readCacheData(
                             f,
                             MarshallerUtils.jdkMarshaller(kctx.igniteInstanceName()),
                             igniteCfg

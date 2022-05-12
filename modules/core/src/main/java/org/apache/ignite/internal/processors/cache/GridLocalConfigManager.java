@@ -51,7 +51,6 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.pagemem.store.IgnitePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderSettings;
 import org.apache.ignite.internal.util.typedef.F;
@@ -64,7 +63,6 @@ import org.apache.ignite.marshaller.MarshallerUtils;
 
 import static java.nio.file.Files.newDirectoryStream;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
-import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isPersistentCache;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.CACHE_DATA_FILENAME;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.CACHE_DIR_PREFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.CACHE_GRP_DIR_PREFIX;
@@ -196,7 +194,7 @@ public class GridLocalConfigManager {
             File conf = new File(dir, CACHE_DATA_FILENAME);
 
             if (conf.exists() && conf.length() > 0) {
-                StoredCacheData cacheData = readCacheData(conf);
+                StoredCacheData cacheData = readCacheData(conf, marshaller, ctx.config());
 
                 String cacheName = cacheData.config().getName();
 
@@ -218,8 +216,21 @@ public class GridLocalConfigManager {
      * @throws IgniteCheckedException If failed.
      */
     public StoredCacheData readCacheData(File conf) throws IgniteCheckedException {
+        return readCacheData(conf, marshaller, ctx.config());
+    }
+
+    /**
+     * @param conf File with stored cache data.
+     * @return Cache data.
+     * @throws IgniteCheckedException If failed.
+     */
+    public static StoredCacheData readCacheData(
+        File conf,
+        Marshaller marshaller,
+        IgniteConfiguration cfg
+    ) throws IgniteCheckedException {
         try (InputStream stream = new BufferedInputStream(new FileInputStream(conf))) {
-            return marshaller.unmarshal(stream, U.resolveClassLoader(ctx.config()));
+            return marshaller.unmarshal(stream, U.resolveClassLoader(cfg));
         }
         catch (IgniteCheckedException | IOException e) {
             throw new IgniteCheckedException("An error occurred during cache configuration loading from file [file=" +
@@ -255,19 +266,14 @@ public class GridLocalConfigManager {
     ) throws IgniteCheckedException {
         assert cacheData != null;
 
-        GridCacheSharedContext<Object, Object> sharedContext = cacheProcessor.context();
+        CacheConfiguration<?, ?> ccfg = cacheData.config();
 
-        boolean shouldStore = sharedContext.pageStore() != null
-            && !sharedContext.kernalContext().clientNode()
-            && isPersistentCache(cacheData.config(), sharedContext.gridConfig().getDataStorageConfiguration());
-
-        if (!shouldStore)
+        if (!CU.storeCacheConfig(cacheProcessor.context(), ccfg))
             return;
 
-        CacheConfiguration<?, ?> ccfg = cacheData.config();
         File cacheWorkDir = cacheWorkDir(ccfg);
 
-        cacheProcessor.context().pageStore().checkAndInitCacheWorkDir(ccfg);
+        FilePageStoreManager.checkAndInitCacheWorkDir(cacheWorkDir, log);
 
         assert cacheWorkDir.exists() : "Work directory does not exist: " + cacheWorkDir;
 
@@ -355,7 +361,7 @@ public class GridLocalConfigManager {
 
         Map<String, CacheJoinNodeDiscoveryData.CacheInfo> templates = new HashMap<>();
 
-        restoreCaches(caches, templates, ctx.config(), ctx.cache().context().pageStore());
+        restoreCaches(caches, templates, ctx.config());
 
         CacheJoinNodeDiscoveryData discoData = new CacheJoinNodeDiscoveryData(
             IgniteUuid.randomUuid(),
@@ -424,7 +430,7 @@ public class GridLocalConfigManager {
 
         for (File file : files) {
             if (!file.isDirectory() && file.getName().endsWith(CACHE_DATA_FILENAME) && file.length() > 0) {
-                StoredCacheData cacheData = readCacheData(file);
+                StoredCacheData cacheData = readCacheData(file, marshaller, ctx.config());
 
                 String cacheName = cacheData.config().getName();
 
@@ -453,7 +459,7 @@ public class GridLocalConfigManager {
      * @param ccfg Cache configuration.
      * @return Store dir for given cache.
      */
-    private File cacheWorkDir(CacheConfiguration<?, ?> ccfg) {
+    public File cacheWorkDir(CacheConfiguration<?, ?> ccfg) {
         return FilePageStoreManager.cacheWorkDir(storeWorkDir, FilePageStoreManager.cacheDirName(ccfg));
     }
 
@@ -476,18 +482,16 @@ public class GridLocalConfigManager {
     /**
      * @param caches Caches accumulator.
      * @param templates Templates accumulator.
-     * @param config Ignite configuration.
-     * @param pageStoreManager Page store manager.
+     * @param igniteCfg Ignite configuration.
      */
     private void restoreCaches(
         Map<String, CacheJoinNodeDiscoveryData.CacheInfo> caches,
         Map<String, CacheJoinNodeDiscoveryData.CacheInfo> templates,
-        IgniteConfiguration config,
-        IgnitePageStoreManager pageStoreManager
+        IgniteConfiguration igniteCfg
     ) throws IgniteCheckedException {
-        assert !config.isDaemon() : "Trying to restore cache configurations on daemon node.";
+        assert !igniteCfg.isDaemon() : "Trying to restore cache configurations on daemon node.";
 
-        CacheConfiguration[] cfgs = config.getCacheConfiguration();
+        CacheConfiguration[] cfgs = igniteCfg.getCacheConfiguration();
 
         for (int i = 0; i < cfgs.length; i++) {
             CacheConfiguration<?, ?> cfg = new CacheConfiguration(cfgs[i]);
@@ -498,7 +502,7 @@ public class GridLocalConfigManager {
             addCacheFromConfiguration(cfg, false, caches, templates);
         }
 
-        if (CU.isPersistenceEnabled(config) && pageStoreManager != null) {
+        if ((CU.isPersistenceEnabled(igniteCfg) && ctx.cache().context().pageStore() != null) || CU.isCdcEnabled(igniteCfg)) {
             Map<String, StoredCacheData> storedCaches = readCacheConfigurations();
 
             if (!F.isEmpty(storedCaches)) {
