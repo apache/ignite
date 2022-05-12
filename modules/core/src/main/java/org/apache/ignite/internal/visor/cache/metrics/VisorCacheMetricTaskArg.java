@@ -32,11 +32,11 @@ public class VisorCacheMetricTaskArg extends IgniteDataTransferObject {
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;
 
-    /** Names of a caches which will be affected by task when <tt>applyToAllCaches</tt> is <code>false</code>. */
-    private Set<String> cacheNames;
-
     /** Metric command operation. */
     private CacheMetricOperation operation;
+
+    /** Names of a caches which will be processed. If empty, operation will affect all caches. */
+    private Set<String> cacheNames;
 
     /**
      * Default constructor.
@@ -68,6 +68,13 @@ public class VisorCacheMetricTaskArg extends IgniteDataTransferObject {
     }
 
     /**
+     * @return Metric command operation.
+     */
+    public CacheMetricOperation operation() {
+        return operation;
+    }
+
+    /**
      * @return Names of a caches which will be affected by task when <tt>applyToAllCaches</tt> is <code>false</code>.
      */
     public Set<String> cacheNames() {
@@ -79,13 +86,6 @@ public class VisorCacheMetricTaskArg extends IgniteDataTransferObject {
      */
     public boolean applyToAllCaches() {
         return cacheNames == null;
-    }
-
-    /**
-     * @return Cache metrics sub-command.
-     */
-    public CacheMetricOperation subCommand() {
-        return operation;
     }
 }
 

@@ -76,17 +76,17 @@ public class VisorCacheMetricTask extends VisorOneNodeTask<VisorCacheMetricTaskA
                 Collection<String> cacheNames = arg.applyToAllCaches() ? ignite.cacheNames() : arg.cacheNames();
 
                 try {
-                    switch (arg.subCommand()) {
+                    switch (arg.operation()) {
                         case ENABLE:
                         case DISABLE:
                             if (!cacheNames.isEmpty())
-                                ignite.cluster().enableStatistics(cacheNames, ENABLE == arg.subCommand());
+                                ignite.cluster().enableStatistics(cacheNames, ENABLE == arg.operation());
 
                             return new VisorCacheMetricTaskResult(cacheNames.size());
                         case STATUS:
                             return new VisorCacheMetricTaskResult(cacheMetricsStatus(cacheNames));
                         default:
-                            throw new IllegalStateException("Unexpected value: " + arg.subCommand());
+                            throw new IllegalStateException("Unexpected value: " + arg.operation());
                     }
                 } catch (Exception e) {
                     return new VisorCacheMetricTaskResult(e);

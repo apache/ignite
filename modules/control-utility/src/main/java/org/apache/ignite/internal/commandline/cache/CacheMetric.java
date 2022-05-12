@@ -96,7 +96,7 @@ public class CacheMetric extends AbstractCommand<VisorCacheMetricTaskArg> {
     private String processTaskResult(Logger log, Object result) {
         Objects.requireNonNull(result);
 
-        switch (arg.subCommand()) {
+        switch (arg.operation()) {
             case ENABLE:
             case DISABLE:
                 String resultMsg = ((Integer)result) > 0 ? SUCCESS_MESSAGE : NONE_CACHES_PROCESSED_MESSAGE;
@@ -119,7 +119,7 @@ public class CacheMetric extends AbstractCommand<VisorCacheMetricTaskArg> {
 
                 break;
             default:
-                throw new IllegalStateException("Unexpected value: " + arg.subCommand());
+                throw new IllegalStateException("Unexpected value: " + arg.operation());
         }
 
         return null;
