@@ -21,6 +21,8 @@ import java.util.Collection;
 import java.util.List;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
+import org.apache.ignite.client.ClientAtomicConfiguration;
+import org.apache.ignite.client.ClientAtomicLong;
 import org.apache.ignite.client.ClientCache;
 import org.apache.ignite.client.ClientCacheConfiguration;
 import org.apache.ignite.client.ClientCluster;
@@ -226,6 +228,16 @@ public class IgniteClientSpringBean implements IgniteClient, SmartLifecycle {
     /** {@inheritDoc} */
     @Override public ClientServices services(ClientClusterGroup grp) {
         return cli.services(grp);
+    }
+
+    /** {@inheritDoc} */
+    @Override public ClientAtomicLong atomicLong(String name, long initVal, boolean create) {
+        return cli.atomicLong(name, initVal, create);
+    }
+
+    /** {@inheritDoc} */
+    @Override public ClientAtomicLong atomicLong(String name, ClientAtomicConfiguration cfg, long initVal, boolean create) {
+        return cli.atomicLong(name, cfg, initVal, create);
     }
 
     /** {@inheritDoc} */
