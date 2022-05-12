@@ -232,7 +232,10 @@ public class CacheEventsCdcTest extends AbstractCdcTest {
             return true;
         };
 
-        executeSql(node, "CREATE TABLE T1(ID INT, NAME VARCHAR, PRIMARY KEY (ID)) WITH \"CACHE_NAME=" + DEFAULT_CACHE_NAME + "\"");
+        executeSql(
+            node,
+            "CREATE TABLE T1(ID INT, NAME VARCHAR, PRIMARY KEY (ID)) WITH \"CACHE_NAME=" + DEFAULT_CACHE_NAME + "\""
+        );
     }
 
     /** */
