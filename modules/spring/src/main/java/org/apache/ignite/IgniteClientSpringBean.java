@@ -231,12 +231,12 @@ public class IgniteClientSpringBean implements IgniteClient, SmartLifecycle {
     }
 
     /** {@inheritDoc} */
-    @Override public ClientAtomicLong atomicLong(String name, long initVal, boolean create) throws IgniteException {
+    @Override public ClientAtomicLong atomicLong(String name, long initVal, boolean create) {
         return cli.atomicLong(name, initVal, create);
     }
 
     /** {@inheritDoc} */
-    @Override public ClientAtomicLong atomicLong(String name, ClientAtomicConfiguration cfg, long initVal, boolean create) throws IgniteException {
+    @Override public ClientAtomicLong atomicLong(String name, ClientAtomicConfiguration cfg, long initVal, boolean create) {
         return cli.atomicLong(name, cfg, initVal, create);
     }
 
