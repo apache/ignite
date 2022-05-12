@@ -145,7 +145,6 @@ public interface ClientAtomicLong extends Closeable {
 
     /**
      * Removes this atomic long.
-     *
      */
     @Override public void close();
 }
