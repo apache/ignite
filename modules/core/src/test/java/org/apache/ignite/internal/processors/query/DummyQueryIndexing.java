@@ -318,4 +318,9 @@ public class DummyQueryIndexing implements GridQueryIndexing {
         String colNamePtrn) {
         return null;
     }
+
+    /** {@inheritDoc} */
+    @Override public boolean isConvertibleToColumnType(String schemaName, String tblName, String colName, Class<?> cls) {
+        return false;
+    }
 }
