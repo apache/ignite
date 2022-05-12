@@ -59,7 +59,6 @@ import org.apache.ignite.IgniteException;
  * </ul>
  * @see IgniteClient#atomicLong(String, long, boolean)
  */
-
 public interface ClientAtomicLong extends Closeable {
     /**
      * Name of atomic long.
