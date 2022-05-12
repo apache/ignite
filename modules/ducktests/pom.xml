@@ -232,6 +232,12 @@
             <version>${gatling.version}</version>
         </dependency>
 
+         <dependency>
+            <groupId>io.gatling.highcharts</groupId>
+            <artifactId>gatling-charts-highcharts</artifactId>
+            <version>${gatling.version}</version>
+        </dependency>
+
         <dependency>
             <groupId>org.apache.ignite.gatling</groupId>
             <artifactId>ignite-gatling-plugin</artifactId>

@@ -18,13 +18,13 @@ This module contains gatling tests
 """
 
 from ignitetest.services.ignite import IgniteService
-from ignitetest.services.ignite_app import IgniteApplicationService
 from ignitetest.services.utils.ignite_configuration import IgniteConfiguration, IgniteThinClientConfiguration
 from ignitetest.utils import ignite_versions, cluster
 from ignitetest.utils.ignite_test import IgniteTest
 from ignitetest.utils.version import DEV_BRANCH, IgniteVersion
 from ignitetest.services.utils.ssl.client_connector_configuration import ClientConnectorConfiguration
 from ignitetest.services.utils.ignite_configuration.cache import CacheConfiguration
+from ignitetest.services.gatling.gatling import GatlingService
 
 
 class GatlingTest(IgniteTest):
@@ -47,16 +47,13 @@ class GatlingTest(IgniteTest):
 
         addresses = ignite.nodes[0].account.hostname + ":" + str(server_config.client_connector_configuration.port)
 
-        thin_clients = IgniteApplicationService(self.test_context,
-                                                IgniteThinClientConfiguration(
-                                                    addresses=addresses,
-                                                    version=IgniteVersion(ignite_version)),
-                                                java_class_name=self.JAVA_CLIENT_CLASS_NAME,
-                                                num_nodes=1)
+        gatling_clients = GatlingService(self.test_context,
+                                         IgniteThinClientConfiguration(
+                                             addresses=addresses,
+                                             version=IgniteVersion(ignite_version)),
+                                         simulation_class_name="org.apache.ignite.gatling.simulation.BasicSimulation",
+                                         num_nodes=1)
 
-        thin_clients.params = {
-            "simulation": "org.apache.ignite.gatling.simulation.BasicSimulation"
-        }
         ignite.start()
-        thin_clients.run()
+        gatling_clients.run()
         ignite.stop()
