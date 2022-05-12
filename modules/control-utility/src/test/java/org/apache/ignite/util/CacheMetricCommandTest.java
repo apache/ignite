@@ -25,12 +25,12 @@ import java.util.Map;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.cluster.IgniteClusterEx;
-import org.apache.ignite.internal.commandline.cache.CacheMetricsManage;
-import org.apache.ignite.internal.commandline.cache.argument.CacheMetricsManageCommandArg;
+import org.apache.ignite.internal.commandline.cache.CacheMetric;
+import org.apache.ignite.internal.commandline.cache.argument.CacheMetricCommandArg;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.internal.visor.cache.metrics.CacheMetricsManageSubCommand;
+import org.apache.ignite.internal.visor.cache.metrics.CacheMetricOperation;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
@@ -40,35 +40,35 @@ import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_IN
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_UNEXPECTED_ERROR;
 import static org.apache.ignite.internal.commandline.CommandList.CACHE;
-import static org.apache.ignite.internal.commandline.cache.CacheCommandList.METRICS_MANAGE;
-import static org.apache.ignite.internal.commandline.cache.CacheMetricsManage.DUPLICATED_ALL_CACHES_OPTION_MESSAGE;
-import static org.apache.ignite.internal.commandline.cache.CacheMetricsManage.DUPLICATED_CACHES_OPTION_MESSAGE;
-import static org.apache.ignite.internal.commandline.cache.CacheMetricsManage.INCORRECT_CACHE_ARGUMENT_MESSAGE;
-import static org.apache.ignite.internal.commandline.cache.CacheMetricsManage.INCORRECT_SUB_COMMAND_MESSAGE;
-import static org.apache.ignite.internal.commandline.cache.CacheMetricsManage.INVALID_CACHES_LIST_MESSAGE;
-import static org.apache.ignite.internal.commandline.cache.CacheMetricsManage.NONE_CACHES_PROCESSED_MESSAGE;
-import static org.apache.ignite.internal.commandline.cache.CacheMetricsManage.SUCCESS_MESSAGE;
+import static org.apache.ignite.internal.commandline.cache.CacheCommandList.METRIC;
+import static org.apache.ignite.internal.commandline.cache.CacheMetric.DUPLICATED_ALL_CACHES_OPTION_MESSAGE;
+import static org.apache.ignite.internal.commandline.cache.CacheMetric.DUPLICATED_CACHES_OPTION_MESSAGE;
+import static org.apache.ignite.internal.commandline.cache.CacheMetric.INCORRECT_CACHE_ARGUMENT_MESSAGE;
+import static org.apache.ignite.internal.commandline.cache.CacheMetric.INCORRECT_METRIC_OPERATION_MESSAGE;
+import static org.apache.ignite.internal.commandline.cache.CacheMetric.INVALID_CACHES_LIST_MESSAGE;
+import static org.apache.ignite.internal.commandline.cache.CacheMetric.NONE_CACHES_PROCESSED_MESSAGE;
+import static org.apache.ignite.internal.commandline.cache.CacheMetric.SUCCESS_MESSAGE;
 import static org.apache.ignite.internal.commandline.systemview.SystemViewCommand.COLUMN_SEPARATOR;
 import static org.apache.ignite.internal.util.lang.GridFunc.t;
 
 /**
- * Test for {@link CacheMetricsManage} command.
+ * Test for {@link CacheMetric} command.
  */
-public class CacheMetricsManageCommandTest extends GridCommandHandlerAbstractTest {
-    /** Enable command. */
-    private static final String ENABLE_COMMAND = CacheMetricsManageSubCommand.ENABLE.toString();
+public class CacheMetricCommandTest extends GridCommandHandlerAbstractTest {
+    /** Enable operation. */
+    private static final String ENABLE_COMMAND = CacheMetricOperation.ENABLE.toString();
 
-    /** Disable command. */
-    private static final String DISABLE_COMMAND = CacheMetricsManageSubCommand.DISABLE.toString();
+    /** Disable operation. */
+    private static final String DISABLE_COMMAND = CacheMetricOperation.DISABLE.toString();
 
-    /** Status command. */
-    private static final String STATUS_COMMAND = CacheMetricsManageSubCommand.STATUS.toString();
+    /** Status operation. */
+    private static final String STATUS_COMMAND = CacheMetricOperation.STATUS.toString();
 
     /** All caches option. */
-    private static final String ALL_CACHES_OPTION = CacheMetricsManageCommandArg.ALL_CACHES.argName();
+    private static final String ALL_CACHES_OPTION = CacheMetricCommandArg.ALL_CACHES.argName();
 
     /** Caches option. */
-    private static final String CACHES_OPTION = CacheMetricsManageCommandArg.CACHES.argName();
+    private static final String CACHES_OPTION = CacheMetricCommandArg.CACHES.argName();
 
     /** Cache one. */
     private static final String CACHE_ONE = "cache-1";
@@ -254,10 +254,10 @@ public class CacheMetricsManageCommandTest extends GridCommandHandlerAbstractTes
         String checkArgs = "Check arguments. ";
 
         // Check when no sub-command passed
-        checkInvalidArguments(checkArgs + INCORRECT_SUB_COMMAND_MESSAGE);
+        checkInvalidArguments(checkArgs + INCORRECT_METRIC_OPERATION_MESSAGE);
 
         // Check when unknown sub-command passed
-        checkInvalidArguments(checkArgs + INCORRECT_SUB_COMMAND_MESSAGE, "bad-command");
+        checkInvalidArguments(checkArgs + INCORRECT_METRIC_OPERATION_MESSAGE, "bad-command");
 
         // Check when no --caches/--all-caches option passed
         checkInvalidArguments(checkArgs + INCORRECT_CACHE_ARGUMENT_MESSAGE, ENABLE_COMMAND);
@@ -311,7 +311,7 @@ public class CacheMetricsManageCommandTest extends GridCommandHandlerAbstractTes
      * @param args Command arguments.
      */
     private void exec(int expExitCode, String... args) {
-        String[] fullArgs = F.concat(new String[] {CACHE.text(), METRICS_MANAGE.text()}, args);
+        String[] fullArgs = F.concat(new String[] {CACHE.text(), METRIC.text()}, args);
 
         int exitCode = execute(fullArgs);
         assertEquals("Unexpected exit code", expExitCode, exitCode);

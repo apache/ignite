@@ -15,38 +15,39 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.commandline.cache.argument;
+package org.apache.ignite.internal.visor.cache.metrics;
 
-import org.apache.ignite.internal.commandline.argument.CommandArg;
-import org.apache.ignite.internal.commandline.cache.CacheMetricsManage;
+import org.jetbrains.annotations.Nullable;
 
 /**
- * Common arguments for all {@link CacheMetricsManage} sub-commands.
+ * Enum for cache metric command operations.
  */
-public enum CacheMetricsManageCommandArg implements CommandArg {
-    /** Argument for applying a sub-command to an explicitly specified caches. */
-    CACHES("--caches"),
+public enum CacheMetricOperation {
+    /** Enable operation. */
+    ENABLE,
 
-    /** Argument for applying a sub-command to all user caches. */
-    ALL_CACHES("--all-caches");
+    /** Disable operation. */
+    DISABLE,
 
-    /** Name of command. */
-    private final String name;
+    /** Status operation. */
+    STATUS;
 
     /**
-     * @param name Name.
+     * @param strRep String representation of operation.
+     *
+     * @return Operation corresponding to the specified string representation.
      */
-    CacheMetricsManageCommandArg(String name) {
-        this.name = name;
-    }
+    public static @Nullable CacheMetricOperation of(String strRep) {
+        for (CacheMetricOperation operation : values()) {
+            if (operation.name().equalsIgnoreCase(strRep))
+                return operation;
+        }
 
-    /** {@inheritDoc} */
-    @Override public String argName() {
-        return name;
+        return null;
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return name;
+        return super.toString().toLowerCase();
     }
 }

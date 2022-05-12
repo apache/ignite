@@ -15,38 +15,38 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.visor.cache.metrics;
+package org.apache.ignite.internal.commandline.cache.argument;
 
-import org.jetbrains.annotations.Nullable;
+import org.apache.ignite.internal.commandline.argument.CommandArg;
+import org.apache.ignite.internal.commandline.cache.CacheMetric;
 
 /**
- * Sub-command enum for {@link VisorCacheMetricsManageTask}.
+ * Common arguments for all {@link CacheMetric} sub-commands.
  */
-public enum CacheMetricsManageSubCommand {
-    /** Enable sub-command. */
-    ENABLE,
+public enum CacheMetricCommandArg implements CommandArg {
+    /** Argument for applying metric command operation to explicitly specified caches. */
+    CACHES("--caches"),
 
-    /** Disable sub-command. */
-    DISABLE,
+    /** Argument for applying metric command operation to all user caches. */
+    ALL_CACHES("--all-caches");
 
-    /** Status sub-command. */
-    STATUS;
+    /** Name of command. */
+    private final String name;
 
     /**
-     * @param strRep String representation of subcommand.
-     * @return Subcommand for its string representation.
+     * @param name Name.
      */
-    public static @Nullable CacheMetricsManageSubCommand of(String strRep) {
-        for (CacheMetricsManageSubCommand cmd : values()) {
-            if (cmd.name().equalsIgnoreCase(strRep))
-                return cmd;
-        }
+    CacheMetricCommandArg(String name) {
+        this.name = name;
+    }
 
-        return null;
+    /** {@inheritDoc} */
+    @Override public String argName() {
+        return name;
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return super.toString().toLowerCase();
+        return name;
     }
 }

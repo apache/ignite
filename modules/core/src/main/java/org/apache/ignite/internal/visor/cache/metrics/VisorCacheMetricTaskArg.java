@@ -26,46 +26,45 @@ import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
- * Task argument for {@link VisorCacheMetricsManageTask}.
+ * Task argument for {@link VisorCacheMetricTask}.
  */
-public class VisorCacheMetricsManageTaskArg extends IgniteDataTransferObject {
+public class VisorCacheMetricTaskArg extends IgniteDataTransferObject {
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;
 
     /** Names of a caches which will be affected by task when <tt>applyToAllCaches</tt> is <code>false</code>. */
     private Set<String> cacheNames;
 
-    /** Cache metrics sub-command. */
-    private CacheMetricsManageSubCommand subCmd;
+    /** Metric command operation. */
+    private CacheMetricOperation operation;
 
     /**
      * Default constructor.
      */
-    public VisorCacheMetricsManageTaskArg() {
+    public VisorCacheMetricTaskArg() {
         // No-op.
     }
 
     /**
-     * Creates a task argument to process specified user caches.
-     *
-     * @param cacheNames Affected cache names.
+     * @param operation Metric command operation.
+     * @param cacheNames Names of the caches, which should be processed.
      */
-    public VisorCacheMetricsManageTaskArg(CacheMetricsManageSubCommand subCmd, Set<String> cacheNames) {
-        this.subCmd = subCmd;
+    public VisorCacheMetricTaskArg(CacheMetricOperation operation, Set<String> cacheNames) {
+        this.operation = operation;
         this.cacheNames = cacheNames == null ? null : Collections.unmodifiableSet(cacheNames);
     }
 
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
+        U.writeEnum(out, operation);
         U.writeCollection(out, cacheNames);
-        U.writeEnum(out, subCmd);
     }
 
     /** {@inheritDoc} */
     @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException,
         ClassNotFoundException {
+        operation = U.readEnum(in, CacheMetricOperation.class);
         cacheNames = U.readSet(in);
-        subCmd = U.readEnum(in, CacheMetricsManageSubCommand.class);
     }
 
     /**
@@ -85,8 +84,8 @@ public class VisorCacheMetricsManageTaskArg extends IgniteDataTransferObject {
     /**
      * @return Cache metrics sub-command.
      */
-    public CacheMetricsManageSubCommand subCommand() {
-        return subCmd;
+    public CacheMetricOperation subCommand() {
+        return operation;
     }
 }
 

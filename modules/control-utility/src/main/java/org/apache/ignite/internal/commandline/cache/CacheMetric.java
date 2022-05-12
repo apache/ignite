@@ -30,31 +30,31 @@ import org.apache.ignite.internal.commandline.Command;
 import org.apache.ignite.internal.commandline.CommandArgIterator;
 import org.apache.ignite.internal.commandline.TaskExecutor;
 import org.apache.ignite.internal.commandline.argument.CommandArgUtils;
-import org.apache.ignite.internal.commandline.cache.argument.CacheMetricsManageCommandArg;
+import org.apache.ignite.internal.commandline.cache.argument.CacheMetricCommandArg;
 import org.apache.ignite.internal.commandline.systemview.SystemViewCommand;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.visor.cache.metrics.CacheMetricsManageSubCommand;
-import org.apache.ignite.internal.visor.cache.metrics.VisorCacheMetricsManageTask;
-import org.apache.ignite.internal.visor.cache.metrics.VisorCacheMetricsManageTaskArg;
-import org.apache.ignite.internal.visor.cache.metrics.VisorCacheMetricsManageTaskResult;
+import org.apache.ignite.internal.visor.cache.metrics.CacheMetricOperation;
+import org.apache.ignite.internal.visor.cache.metrics.VisorCacheMetricTask;
+import org.apache.ignite.internal.visor.cache.metrics.VisorCacheMetricTaskArg;
+import org.apache.ignite.internal.visor.cache.metrics.VisorCacheMetricTaskResult;
 
 import static java.util.Arrays.asList;
 import static org.apache.ignite.internal.commandline.CommandLogger.optional;
 import static org.apache.ignite.internal.commandline.CommandLogger.or;
-import static org.apache.ignite.internal.commandline.cache.CacheSubcommands.METRICS_MANAGE;
-import static org.apache.ignite.internal.commandline.cache.argument.CacheMetricsManageCommandArg.ALL_CACHES;
-import static org.apache.ignite.internal.commandline.cache.argument.CacheMetricsManageCommandArg.CACHES;
-import static org.apache.ignite.internal.visor.cache.metrics.CacheMetricsManageSubCommand.DISABLE;
-import static org.apache.ignite.internal.visor.cache.metrics.CacheMetricsManageSubCommand.ENABLE;
-import static org.apache.ignite.internal.visor.cache.metrics.CacheMetricsManageSubCommand.STATUS;
+import static org.apache.ignite.internal.commandline.cache.CacheSubcommands.METRIC;
+import static org.apache.ignite.internal.commandline.cache.argument.CacheMetricCommandArg.ALL_CACHES;
+import static org.apache.ignite.internal.commandline.cache.argument.CacheMetricCommandArg.CACHES;
+import static org.apache.ignite.internal.visor.cache.metrics.CacheMetricOperation.DISABLE;
+import static org.apache.ignite.internal.visor.cache.metrics.CacheMetricOperation.ENABLE;
+import static org.apache.ignite.internal.visor.cache.metrics.CacheMetricOperation.STATUS;
 import static org.apache.ignite.internal.visor.systemview.VisorSystemViewTask.SimpleType.STRING;
 
 /**
  * Cache sub-command for a cache metrics collection management. It provides an ability to enable, disable or show status.
  */
-public class CacheMetricsManage extends AbstractCommand<VisorCacheMetricsManageTaskArg> {
-    /** Incorrect sub command message. */
-    public static final String INCORRECT_SUB_COMMAND_MESSAGE = "Expected correct sub-command.";
+public class CacheMetric extends AbstractCommand<VisorCacheMetricTaskArg> {
+    /** Incorrect metric operation message. */
+    public static final String INCORRECT_METRIC_OPERATION_MESSAGE = "Expected correct metric command operation name.";
 
     /** Incorrect cache argument message. */
     public static final String INCORRECT_CACHE_ARGUMENT_MESSAGE =
@@ -77,13 +77,13 @@ public class CacheMetricsManage extends AbstractCommand<VisorCacheMetricsManageT
     public static final String SUCCESS_MESSAGE = "Command performed successfully.";
 
     /** Task argument. */
-    private VisorCacheMetricsManageTaskArg arg;
+    private VisorCacheMetricTaskArg arg;
 
     /** {@inheritDoc} */
     @Override public Object execute(GridClientConfiguration clientCfg, Logger log) throws Exception {
         try (GridClient client = Command.startClient(clientCfg)) {
-            VisorCacheMetricsManageTaskResult taskResult = TaskExecutor.executeTaskByNameOnNode(client,
-                VisorCacheMetricsManageTask.class.getName(), arg, null, clientCfg);
+            VisorCacheMetricTaskResult taskResult = TaskExecutor.executeTaskByNameOnNode(client,
+                VisorCacheMetricTask.class.getName(), arg, null, clientCfg);
 
             return processTaskResult(log, taskResult.result());
         }
@@ -113,7 +113,8 @@ public class CacheMetricsManage extends AbstractCommand<VisorCacheMetricsManageT
                     Collection<List<?>> values = F.viewReadOnly(statusTaskResult.entrySet(),
                         e -> asList(e.getKey(), e.getValue() ? "enabled" : "disabled"));
 
-                    SystemViewCommand.printTable(asList("Cache Name", "Metrics Enable Status"), asList(STRING, STRING), values, log);
+                    SystemViewCommand.printTable(asList("Cache Name", "Metrics Enable Status"), asList(STRING, STRING),
+                        values, log);
                 }
 
                 break;
@@ -134,29 +135,29 @@ public class CacheMetricsManage extends AbstractCommand<VisorCacheMetricsManageT
             cachesArgDesc, "specifies a comma-separated list of cache names to which sub-command should be applied.",
             ALL_CACHES.argName(), "applies sub-command to all user caches.");
 
-        usageCache(log, METRICS_MANAGE, desc, paramsDesc, or(ENABLE, DISABLE, STATUS), or(cachesArgDesc, ALL_CACHES));
+        usageCache(log, METRIC, desc, paramsDesc, or(ENABLE, DISABLE, STATUS), or(cachesArgDesc, ALL_CACHES));
     }
 
     /** {@inheritDoc} */
-    @Override public VisorCacheMetricsManageTaskArg arg() {
+    @Override public VisorCacheMetricTaskArg arg() {
         return arg;
     }
 
     /** {@inheritDoc} */
     @Override public void parseArguments(CommandArgIterator argIter) {
-        CacheMetricsManageSubCommand subCmd = CacheMetricsManageSubCommand.of(argIter.nextArg(INCORRECT_SUB_COMMAND_MESSAGE));
+        CacheMetricOperation operation = CacheMetricOperation.of(argIter.nextArg(INCORRECT_METRIC_OPERATION_MESSAGE));
 
-        if (subCmd == null)
-            throw new IllegalArgumentException(INCORRECT_SUB_COMMAND_MESSAGE);
+        if (operation == null)
+            throw new IllegalArgumentException(INCORRECT_METRIC_OPERATION_MESSAGE);
 
         Set<String> cacheNames = null;
 
         boolean isAllCaches = false;
 
         while (argIter.hasNextSubArg()) {
-            CacheMetricsManageCommandArg cmdArg = CommandArgUtils.of(
+            CacheMetricCommandArg cmdArg = CommandArgUtils.of(
                 argIter.nextArg(INCORRECT_CACHE_ARGUMENT_MESSAGE),
-                CacheMetricsManageCommandArg.class
+                CacheMetricCommandArg.class
             );
 
             if (cmdArg == null)
@@ -193,11 +194,11 @@ public class CacheMetricsManage extends AbstractCommand<VisorCacheMetricsManageT
         if (!F.isEmpty(cacheNames) && isAllCaches)
             throw new IllegalArgumentException(INCORRECT_CACHE_ARGUMENT_MESSAGE);
 
-        arg = new VisorCacheMetricsManageTaskArg(subCmd, cacheNames);
+        arg = new VisorCacheMetricTaskArg(operation, cacheNames);
     }
 
     /** {@inheritDoc} */
     @Override public String name() {
-        return METRICS_MANAGE.text().toUpperCase();
+        return METRIC.text().toUpperCase();
     }
 }
