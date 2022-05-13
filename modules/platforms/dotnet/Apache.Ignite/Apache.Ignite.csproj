@@ -25,9 +25,6 @@
   <ItemGroup>
     <ProjectReference Include="..\Apache.Ignite.Core\Apache.Ignite.Core.csproj" />
 
-    <!-- This reference is required to include correct binaries during publish. -->
-    <PackageReference Include="System.Configuration.ConfigurationManager" Version="4.5.0" />
-
     <!--
     NOTE: Microsoft.CodeAnalysis.NetAnalyzers is the new replacement for FxCopAnalyzers,
     but it has some issues on older SDKs (https://github.com/dotnet/roslyn-analyzers/issues/4776).
