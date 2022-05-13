@@ -33,7 +33,8 @@ class GatlingService(IgniteApplicationService):
                  shutdown_timeout_sec=60, modules=None, jvm_opts=None, merge_with_default=True):
         super().__init__(
             context, config, SERVICE_JAVA_CLASS_NAME, num_nodes, {"simulation": simulation_class_name},
-            startup_timeout_sec, shutdown_timeout_sec, modules, jvm_opts=jvm_opts, merge_with_default=merge_with_default
+            startup_timeout_sec, shutdown_timeout_sec, extend_with(modules, "gatling-plugin"),
+            jvm_opts=jvm_opts, merge_with_default=merge_with_default
         )
 
     def _prepare_configs(self, node):
@@ -46,3 +47,13 @@ class GatlingService(IgniteApplicationService):
 
         config_file = self.render(DEFAULT_GATLING_AKKA_CONF, settings=config, data_dir=self.work_dir)
         node.account.create_file(os.path.join(self.config_dir, "gatling-akka.conf"), config_file)
+
+
+def extend_with(modules, new_module):
+    """
+
+    :param modules:
+    :param new_module:
+    :return:
+    """
+    return [new_module] if modules is None else modules.append(new_module)
