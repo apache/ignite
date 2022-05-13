@@ -105,6 +105,7 @@
         <profile>
             <id>all-scala</id><!-- used to update project versions and check all modules compilation -->
             <modules><!-- sorted alphabetically -->
+                <module>modules/gatling-plugin</module>
                 <module>modules/spark</module>
                 <module>modules/spark-2.4</module>
                 <module>modules/visor-console-2.10</module>
@@ -123,6 +124,7 @@
             <id>ducktests</id>
             <modules>
                 <module>modules/ducktests</module>
+                <module>modules/gatling-plugin</module>
             </modules>
         </profile>
 
