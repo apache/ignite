@@ -115,7 +115,8 @@ public class CdcConfiguration {
     }
 
     /**
-     * @param checkFreq Amount of time application sleeps between subsequent checks when no new files available.
+     * @param checkFreq Amount of time application sleeps between subsequent checks when no new
+     *                                           files available.
      */
     public void setCheckFrequency(long checkFreq) {
         this.checkFreq = checkFreq;
