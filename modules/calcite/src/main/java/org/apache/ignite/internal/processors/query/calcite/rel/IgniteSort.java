@@ -109,7 +109,7 @@ public class IgniteSort extends Sort implements IgniteRel {
         RexNode offset,
         RexNode fetch
     ) {
-        return new IgniteSort(getCluster(), traitSet, newInput, newCollation, offset, fetch, enforcer);
+        return new IgniteSort(getCluster(), traitSet, newInput, traitSet.getCollation(), offset, fetch, enforcer);
     }
 
     /** {@inheritDoc} */
@@ -128,11 +128,12 @@ public class IgniteSort extends Sort implements IgniteRel {
             return null;
 
         RelCollation requiredCollation = TraitUtils.collation(required);
+        RelCollation relCollation = traitSet.getCollation();
 
-        if (!collation.satisfies(requiredCollation))
+        if (!requiredCollation.satisfies(relCollation))
             return null;
 
-        return Pair.of(required.replace(collation), ImmutableList.of(required.replace(RelCollations.EMPTY)));
+        return Pair.of(required.replace(requiredCollation), ImmutableList.of(required.replace(RelCollations.EMPTY)));
     }
 
     /** {@inheritDoc} */

@@ -137,9 +137,7 @@ public class LimitOffsetPlannerTest extends AbstractPlannerTest {
             isInstanceOf(IgniteLimit.class)
                 .and(input(isInstanceOf(IgniteExchange.class)
                     .and(input(isInstanceOf(IgniteSort.class)
-                        .and(s -> s.collation().getKeys().equals(ImmutableIntList.of(0, 1)))
-                            .and(input(isInstanceOf(IgniteSort.class)
-                                .and(s -> doubleFromRex(s.fetch, -1) == 10.0))))))));
+                        .and(s -> s.collation().getKeys().equals(ImmutableIntList.of(0, 1))))))));
 
         // Check that external Sort node is not required if external collation is subset of internal collation.
         assertPlan("SELECT * FROM (SELECT * FROM TEST ORDER BY ID, VAL LIMIT 10) ORDER BY ID", publicSchema,
