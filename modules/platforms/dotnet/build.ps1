@@ -183,8 +183,10 @@ cd $PSScriptRoot
 
 # 2) Build .NET
 if (!$skipDotNet) {
-    # TODO: Build Apache.Ignite project separately to overwrite dlls?
     Build-Solution ".\Apache.Ignite.sln" "bin\net461"
+    
+    # Overwrite dlls to ensure that net461 versions are used instead of netstandard2. 
+    Copy-Item -Force -Recurse ".\Apache.Ignite\bin\$configuration\net461\*" "bin\net461"
 }
 
 if(!$skipDotNetCore) {
