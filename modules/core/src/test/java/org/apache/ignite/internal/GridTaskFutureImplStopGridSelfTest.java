@@ -40,6 +40,9 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
 import org.junit.Test;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.startsWith;
+
 /**
  * Test for task future when grid stops.
  */
@@ -72,17 +75,17 @@ public class GridTaskFutureImplStopGridSelfTest extends GridCommonAbstractTest {
     public void testGet() throws Exception {
         Ignite ignite = startGrid(getTestIgniteInstanceName());
 
+        // We change it because compute jobs fall asleep.
+        assertTrue(computeJobWorkerInterruptTimeout(ignite).propagate(10L));
+
         Thread futThread = null;
 
         try {
             final ComputeTaskFuture<?> fut = executeAsync(ignite.compute(), GridStopTestTask.class.getName(), null);
 
-            fut.listen(new CI1<IgniteFuture>() {
-                @SuppressWarnings({"NakedNotify"})
-                @Override public void apply(IgniteFuture gridFut) {
-                    synchronized (mux) {
-                        mux.notifyAll();
-                    }
+            fut.listen((CI1<IgniteFuture>)gridFut -> {
+                synchronized (mux) {
+                    mux.notifyAll();
                 }
             });
 
@@ -104,7 +107,7 @@ public class GridTaskFutureImplStopGridSelfTest extends GridCommonAbstractTest {
                         failed.set(true);
 
                         // Make sure that message contains info about stopping grid.
-                        assert e.getMessage().startsWith("Task failed due to stopping of the grid:");
+                        assertThat(e.getMessage(), startsWith("Task failed due to stopping of the grid:"));
                     }
                     finally {
                         latch.countDown();
@@ -135,7 +138,7 @@ public class GridTaskFutureImplStopGridSelfTest extends GridCommonAbstractTest {
 
             info("Test task result [failed=" + failed.get() + ", taskFuture=" + fut + ']');
 
-            assert finished : "Future thread was not stopped.";
+            assertTrue(finished);
 
             assert fut.isDone();
         }

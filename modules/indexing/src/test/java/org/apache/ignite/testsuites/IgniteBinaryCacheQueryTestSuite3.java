@@ -101,6 +101,7 @@ import org.apache.ignite.internal.processors.cache.metric.SqlViewExporterSpiTest
 import org.apache.ignite.internal.processors.cache.query.IgniteCacheQueryCacheDestroySelfTest;
 import org.apache.ignite.internal.processors.cache.query.ScanQueryConcurrentSqlUpdatesTest;
 import org.apache.ignite.internal.processors.cache.query.ScanQueryConcurrentUpdatesTest;
+import org.apache.ignite.internal.processors.query.IgniteQueryConvertibleTypesValidationTest;
 import org.apache.ignite.internal.processors.query.IgniteQueryDedicatedPoolTest;
 import org.apache.ignite.internal.processors.query.IgniteSqlCustomSchemaTest;
 import org.apache.ignite.internal.processors.query.IgniteSqlCustomSchemaWithPdsEnabled;
@@ -136,6 +137,7 @@ import org.apache.ignite.internal.processors.query.SqlQueryHistorySelfTest;
 import org.apache.ignite.internal.processors.query.SqlSystemViewsSelfTest;
 import org.apache.ignite.internal.processors.query.h2.GridIndexRebuildSelfTest;
 import org.apache.ignite.internal.processors.query.h2.GridIndexRebuildTest;
+import org.apache.ignite.internal.processors.query.h2.H2ColumnTypeConversionCheckSelfTest;
 import org.apache.ignite.internal.processors.query.h2.QueryParserMetricsHolderSelfTest;
 import org.apache.ignite.internal.processors.query.h2.RowCountTableStatisticsSurvivesNodeRestartTest;
 import org.apache.ignite.internal.processors.query.h2.RowCountTableStatisticsUsageTest;
@@ -370,6 +372,9 @@ import org.junit.runners.Suite;
     SqlFieldTypeValidationOnKeyValueInsertTest.class,
 
     InlineIndexKeyTypeRegistryTest.class,
+
+    IgniteQueryConvertibleTypesValidationTest.class,
+    H2ColumnTypeConversionCheckSelfTest.class,
 
     IgniteStatisticsTestSuite.class,
 

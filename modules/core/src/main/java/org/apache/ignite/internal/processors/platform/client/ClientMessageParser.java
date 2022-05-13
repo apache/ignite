@@ -78,6 +78,13 @@ import org.apache.ignite.internal.processors.platform.client.cluster.ClientClust
 import org.apache.ignite.internal.processors.platform.client.cluster.ClientClusterWalChangeStateRequest;
 import org.apache.ignite.internal.processors.platform.client.cluster.ClientClusterWalGetStateRequest;
 import org.apache.ignite.internal.processors.platform.client.compute.ClientExecuteTaskRequest;
+import org.apache.ignite.internal.processors.platform.client.datastructures.ClientAtomicLongCreateRequest;
+import org.apache.ignite.internal.processors.platform.client.datastructures.ClientAtomicLongExistsRequest;
+import org.apache.ignite.internal.processors.platform.client.datastructures.ClientAtomicLongRemoveRequest;
+import org.apache.ignite.internal.processors.platform.client.datastructures.ClientAtomicLongValueAddAndGetRequest;
+import org.apache.ignite.internal.processors.platform.client.datastructures.ClientAtomicLongValueCompareAndSetRequest;
+import org.apache.ignite.internal.processors.platform.client.datastructures.ClientAtomicLongValueGetAndSetRequest;
+import org.apache.ignite.internal.processors.platform.client.datastructures.ClientAtomicLongValueGetRequest;
 import org.apache.ignite.internal.processors.platform.client.service.ClientServiceGetDescriptorRequest;
 import org.apache.ignite.internal.processors.platform.client.service.ClientServiceGetDescriptorsRequest;
 import org.apache.ignite.internal.processors.platform.client.service.ClientServiceInvokeRequest;
@@ -288,6 +295,28 @@ public class ClientMessageParser implements ClientListenerMessageParser {
 
     /** */
     private static final short OP_DATA_STREAMER_ADD_DATA = 8001;
+
+    /** Data structures. */
+    /** Create an AtomicLong. */
+    private static final short OP_ATOMIC_LONG_CREATE = 9000;
+
+    /** Remove an AtomicLong. */
+    private static final short OP_ATOMIC_LONG_REMOVE = 9001;
+
+    /** Check if AtomicLong exists. */
+    private static final short OP_ATOMIC_LONG_EXISTS = 9002;
+
+    /** AtomicLong.get. */
+    private static final short OP_ATOMIC_LONG_VALUE_GET = 9003;
+
+    /** AtomicLong.addAndGet (also covers incrementAndGet, getAndIncrement, getAndAdd, decrementAndGet, getAndDecrement).  */
+    private static final short OP_ATOMIC_LONG_VALUE_ADD_AND_GET = 9004;
+
+    /** AtomicLong.getAndSet. */
+    private static final short OP_ATOMIC_LONG_VALUE_GET_AND_SET = 9005;
+
+    /** AtomicLong.compareAndSet. */
+    private static final short OP_ATOMIC_LONG_VALUE_COMPARE_AND_SET = 9006;
 
     /** Marshaller. */
     private final GridBinaryMarshaller marsh;
@@ -516,6 +545,27 @@ public class ClientMessageParser implements ClientListenerMessageParser {
 
             case OP_DATA_STREAMER_ADD_DATA:
                 return new ClientDataStreamerAddDataRequest(reader);
+
+            case OP_ATOMIC_LONG_CREATE:
+                return new ClientAtomicLongCreateRequest(reader);
+
+            case OP_ATOMIC_LONG_REMOVE:
+                return new ClientAtomicLongRemoveRequest(reader);
+
+            case OP_ATOMIC_LONG_EXISTS:
+                return new ClientAtomicLongExistsRequest(reader);
+
+            case OP_ATOMIC_LONG_VALUE_GET:
+                return new ClientAtomicLongValueGetRequest(reader);
+
+            case OP_ATOMIC_LONG_VALUE_ADD_AND_GET:
+                return new ClientAtomicLongValueAddAndGetRequest(reader);
+
+            case OP_ATOMIC_LONG_VALUE_GET_AND_SET:
+                return new ClientAtomicLongValueGetAndSetRequest(reader);
+
+            case OP_ATOMIC_LONG_VALUE_COMPARE_AND_SET:
+                return new ClientAtomicLongValueCompareAndSetRequest(reader);
         }
 
         return new ClientRawRequest(reader.readLong(), ClientStatus.INVALID_OP_CODE,

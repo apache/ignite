@@ -458,7 +458,7 @@ class BinaryMetadataFileStore {
                     body0();
                 }
                 catch (InterruptedException e) {
-                    if (!isCancelled) {
+                    if (!isCancelled.get()) {
                         ctx.failure().process(new FailureContext(FailureType.SYSTEM_WORKER_TERMINATION, e));
 
                         throw e;
