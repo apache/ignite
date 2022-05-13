@@ -9136,302 +9136,34 @@ public class IgniteSqlParserImpl extends SqlAbstractParserImpl implements Ignite
     } else if (jj_2_1127(2)) {
       jj_consume_token(SYSTEM_TIME);
     } else if (jj_2_1128(2)) {
-      jj_consume_token(TIMEZONE_HOUR);
+      jj_consume_token(GROUP_CONCAT);
     } else if (jj_2_1129(2)) {
-      jj_consume_token(TO);
-    } else if (jj_2_1130(2)) {
-      jj_consume_token(TRANSLATE);
-    } else if (jj_2_1131(2)) {
-      jj_consume_token(TREAT);
-    } else if (jj_2_1132(2)) {
-      jj_consume_token(TRIM_ARRAY);
-    } else if (jj_2_1133(2)) {
-      jj_consume_token(UESCAPE);
-    } else if (jj_2_1134(2)) {
-      jj_consume_token(UNKNOWN);
-    } else if (jj_2_1135(2)) {
-      jj_consume_token(USAGE);
-    } else if (jj_2_1136(2)) {
-      jj_consume_token(VALUE_OF);
-    } else if (jj_2_1137(2)) {
-      jj_consume_token(VARYING);
-    } else if (jj_2_1138(2)) {
-      jj_consume_token(VERSION);
-    } else if (jj_2_1139(2)) {
-      jj_consume_token(WEEK);
-    } else if (jj_2_1140(2)) {
-      jj_consume_token(WITHIN);
-    } else if (jj_2_1141(2)) {
-      jj_consume_token(WRITE);
-    } else {
-      jj_consume_token(-1);
-      throw new ParseException();
-    }
-  }
-
-/** @see #NonReservedKeyWord */
-  final public void NonReservedKeyWord1of3() throws ParseException {
-    if (jj_2_1142(2)) {
-      jj_consume_token(TEMPLATE);
-    } else if (jj_2_1143(2)) {
-      jj_consume_token(ATOMICITY);
-    } else if (jj_2_1144(2)) {
-      jj_consume_token(CACHE_NAME);
-    } else if (jj_2_1145(2)) {
-      jj_consume_token(ENCRYPTED);
-    } else if (jj_2_1146(2)) {
-      jj_consume_token(LOGGING);
-    } else if (jj_2_1147(2)) {
-      jj_consume_token(KILL);
-    } else if (jj_2_1148(2)) {
-      jj_consume_token(SERVICE);
-    } else if (jj_2_1149(2)) {
-      jj_consume_token(QUERY);
-    } else if (jj_2_1150(2)) {
-      jj_consume_token(ABS);
-    } else if (jj_2_1151(2)) {
-      jj_consume_token(ADD);
-    } else if (jj_2_1152(2)) {
-      jj_consume_token(ALLOW);
-    } else if (jj_2_1153(2)) {
-      jj_consume_token(ARE);
-    } else if (jj_2_1154(2)) {
-      jj_consume_token(AS);
-    } else if (jj_2_1155(2)) {
-      jj_consume_token(ASSERTION);
-    } else if (jj_2_1156(2)) {
-      jj_consume_token(ATOMIC);
-    } else if (jj_2_1157(2)) {
-      jj_consume_token(BEFORE);
-    } else if (jj_2_1158(2)) {
-      jj_consume_token(BEGIN_PARTITION);
-    } else if (jj_2_1159(2)) {
-      jj_consume_token(BINARY);
-    } else if (jj_2_1160(2)) {
-      jj_consume_token(BOOLEAN);
-    } else if (jj_2_1161(2)) {
-      jj_consume_token(BY);
-    } else if (jj_2_1162(2)) {
-      jj_consume_token(CARDINALITY);
-    } else if (jj_2_1163(2)) {
-      jj_consume_token(CAST);
-    } else if (jj_2_1164(2)) {
-      jj_consume_token(CEILING);
-    } else if (jj_2_1165(2)) {
-      jj_consume_token(CHARACTER_LENGTH);
-    } else if (jj_2_1166(2)) {
-      jj_consume_token(CLASSIFIER);
-    } else if (jj_2_1167(2)) {
-      jj_consume_token(COALESCE);
-    } else if (jj_2_1168(2)) {
-      jj_consume_token(COLLECT);
-    } else if (jj_2_1169(2)) {
-      jj_consume_token(CONDITION);
-    } else if (jj_2_1170(2)) {
-      jj_consume_token(CONSTRAINTS);
-    } else if (jj_2_1171(2)) {
-      jj_consume_token(CONTINUE);
-    } else if (jj_2_1172(2)) {
-      jj_consume_token(CORRESPONDING);
-    } else if (jj_2_1173(2)) {
-      jj_consume_token(COVAR_SAMP);
-    } else if (jj_2_1174(2)) {
-      jj_consume_token(CURRENT_CATALOG);
-    } else if (jj_2_1175(2)) {
-      jj_consume_token(CURRENT_PATH);
-    } else if (jj_2_1176(2)) {
-      jj_consume_token(CURRENT_SCHEMA);
-    } else if (jj_2_1177(2)) {
-      jj_consume_token(CURRENT_TRANSFORM_GROUP_FOR_TYPE);
-    } else if (jj_2_1178(2)) {
-      jj_consume_token(DATA);
-    } else if (jj_2_1179(2)) {
-      jj_consume_token(DEALLOCATE);
-    } else if (jj_2_1180(2)) {
-      jj_consume_token(DECLARE);
-    } else if (jj_2_1181(2)) {
-      jj_consume_token(DENSE_RANK);
-    } else if (jj_2_1182(2)) {
-      jj_consume_token(DESC);
-    } else if (jj_2_1183(2)) {
-      jj_consume_token(DIAGNOSTICS);
-    } else if (jj_2_1184(2)) {
-      jj_consume_token(DOMAIN);
-    } else if (jj_2_1185(2)) {
-      jj_consume_token(EACH);
-    } else if (jj_2_1186(2)) {
-      jj_consume_token(EMPTY);
-    } else if (jj_2_1187(2)) {
-      jj_consume_token(END_PARTITION);
-    } else if (jj_2_1188(2)) {
-      jj_consume_token(EVERY);
-    } else if (jj_2_1189(2)) {
-      jj_consume_token(EXECUTE);
-    } else if (jj_2_1190(2)) {
-      jj_consume_token(EXTEND);
-    } else if (jj_2_1191(2)) {
-      jj_consume_token(FALSE);
-    } else if (jj_2_1192(2)) {
-      jj_consume_token(FIRST_VALUE);
-    } else if (jj_2_1193(2)) {
-      jj_consume_token(FOR);
-    } else if (jj_2_1194(2)) {
-      jj_consume_token(FRAME_ROW);
-    } else if (jj_2_1195(2)) {
-      jj_consume_token(FUSION);
-    } else if (jj_2_1196(2)) {
-      jj_consume_token(GET);
-    } else if (jj_2_1197(2)) {
-      jj_consume_token(GOTO);
-    } else if (jj_2_1198(2)) {
-      jj_consume_token(HOUR);
-    } else if (jj_2_1199(2)) {
-      jj_consume_token(IMMEDIATELY);
-    } else if (jj_2_1200(2)) {
-      jj_consume_token(INITIAL);
-    } else if (jj_2_1201(2)) {
-      jj_consume_token(INPUT);
-    } else if (jj_2_1202(2)) {
-      jj_consume_token(INTEGER);
-    } else if (jj_2_1203(2)) {
-      jj_consume_token(ISOLATION);
-    } else if (jj_2_1204(2)) {
-      jj_consume_token(JSON_EXISTS);
-    } else if (jj_2_1205(2)) {
-      jj_consume_token(JSON_QUERY);
-    } else if (jj_2_1206(2)) {
-      jj_consume_token(KEY);
-    } else if (jj_2_1207(2)) {
-      jj_consume_token(LARGE);
-    } else if (jj_2_1208(2)) {
-      jj_consume_token(LEAD);
-    } else if (jj_2_1209(2)) {
-      jj_consume_token(LEVEL);
-    } else if (jj_2_1210(2)) {
-      jj_consume_token(LN);
-    } else if (jj_2_1211(2)) {
-      jj_consume_token(LOCALTIMESTAMP);
-    } else if (jj_2_1212(2)) {
-      jj_consume_token(M);
-    } else if (jj_2_1213(2)) {
-      jj_consume_token(MATCHES);
-    } else if (jj_2_1214(2)) {
-      jj_consume_token(MEASURES);
-    } else if (jj_2_1215(2)) {
-      jj_consume_token(MIN);
-    } else if (jj_2_1216(2)) {
-      jj_consume_token(MODIFIES);
-    } else if (jj_2_1217(2)) {
-      jj_consume_token(MULTISET);
-    } else if (jj_2_1218(2)) {
-      jj_consume_token(NATIONAL);
-    } else if (jj_2_1219(2)) {
-      jj_consume_token(NO);
-    } else if (jj_2_1220(2)) {
-      jj_consume_token(NOT);
-    } else if (jj_2_1221(2)) {
-      jj_consume_token(NULLIF);
-    } else if (jj_2_1222(2)) {
-      jj_consume_token(OCCURRENCES_REGEX);
-    } else if (jj_2_1223(2)) {
-      jj_consume_token(OLD);
-    } else if (jj_2_1224(2)) {
-      jj_consume_token(ONLY);
-    } else if (jj_2_1225(2)) {
-      jj_consume_token(OR);
-    } else if (jj_2_1226(2)) {
-      jj_consume_token(OUTPUT);
-    } else if (jj_2_1227(2)) {
-      jj_consume_token(PAD);
-    } else if (jj_2_1228(2)) {
-      jj_consume_token(PATH);
-    } else if (jj_2_1229(2)) {
-      jj_consume_token(PERCENTILE_CONT);
-    } else if (jj_2_1230(2)) {
-      jj_consume_token(PERIOD);
-    } else if (jj_2_1231(2)) {
-      jj_consume_token(POSITION);
-    } else if (jj_2_1232(2)) {
-      jj_consume_token(PRECEDES);
-    } else if (jj_2_1233(2)) {
-      jj_consume_token(PRESERVE);
-    } else if (jj_2_1234(2)) {
-      jj_consume_token(PRIVILEGES);
-    } else if (jj_2_1235(2)) {
-      jj_consume_token(QUARTER);
-    } else if (jj_2_1236(2)) {
-      jj_consume_token(READS);
-    } else if (jj_2_1237(2)) {
-      jj_consume_token(REF);
-    } else if (jj_2_1238(2)) {
-      jj_consume_token(REGR_AVGX);
-    } else if (jj_2_1239(2)) {
-      jj_consume_token(REGR_INTERCEPT);
-    } else if (jj_2_1240(2)) {
-      jj_consume_token(REGR_SXX);
-    } else if (jj_2_1241(2)) {
-      jj_consume_token(RELATIVE);
-    } else if (jj_2_1242(2)) {
-      jj_consume_token(RESET);
-    } else if (jj_2_1243(2)) {
-      jj_consume_token(RETURN);
-    } else if (jj_2_1244(2)) {
-      jj_consume_token(ROLE);
-    } else if (jj_2_1245(2)) {
-      jj_consume_token(ROW_NUMBER);
-    } else if (jj_2_1246(2)) {
-      jj_consume_token(SCHEMA);
-    } else if (jj_2_1247(2)) {
-      jj_consume_token(SEARCH);
-    } else if (jj_2_1248(2)) {
-      jj_consume_token(SEEK);
-    } else if (jj_2_1249(2)) {
-      jj_consume_token(SESSION_USER);
-    } else if (jj_2_1250(2)) {
-      jj_consume_token(SIZE);
-    } else if (jj_2_1251(2)) {
-      jj_consume_token(SPECIFIC);
-    } else if (jj_2_1252(2)) {
-      jj_consume_token(SQLEXCEPTION);
-    } else if (jj_2_1253(2)) {
-      jj_consume_token(SQRT);
-    } else if (jj_2_1254(2)) {
-      jj_consume_token(STATIC);
-    } else if (jj_2_1255(2)) {
-      jj_consume_token(SUBMULTISET);
-    } else if (jj_2_1256(2)) {
-      jj_consume_token(SUBSTRING_REGEX);
-    } else if (jj_2_1257(2)) {
-      jj_consume_token(SYMMETRIC);
-    } else if (jj_2_1258(2)) {
-      jj_consume_token(SYSTEM_USER);
-    } else if (jj_2_1259(2)) {
       jj_consume_token(TIMEZONE_MINUTE);
-    } else if (jj_2_1260(2)) {
+    } else if (jj_2_1130(2)) {
       jj_consume_token(TRAILING);
-    } else if (jj_2_1261(2)) {
+    } else if (jj_2_1131(2)) {
       jj_consume_token(TRANSLATE_REGEX);
-    } else if (jj_2_1262(2)) {
+    } else if (jj_2_1132(2)) {
       jj_consume_token(TRIGGER);
-    } else if (jj_2_1263(2)) {
+    } else if (jj_2_1133(2)) {
       jj_consume_token(TRUE);
-    } else if (jj_2_1264(2)) {
+    } else if (jj_2_1134(2)) {
       jj_consume_token(UNDER);
-    } else if (jj_2_1265(2)) {
+    } else if (jj_2_1135(2)) {
       jj_consume_token(UPPER);
-    } else if (jj_2_1266(2)) {
+    } else if (jj_2_1136(2)) {
       jj_consume_token(USER);
-    } else if (jj_2_1267(2)) {
+    } else if (jj_2_1137(2)) {
       jj_consume_token(VARBINARY);
-    } else if (jj_2_1268(2)) {
+    } else if (jj_2_1138(2)) {
       jj_consume_token(VAR_POP);
-    } else if (jj_2_1269(2)) {
+    } else if (jj_2_1139(2)) {
       jj_consume_token(VERSIONING);
-    } else if (jj_2_1270(2)) {
+    } else if (jj_2_1140(2)) {
       jj_consume_token(WHENEVER);
-    } else if (jj_2_1271(2)) {
+    } else if (jj_2_1141(2)) {
       jj_consume_token(WITHOUT);
-    } else if (jj_2_1272(2)) {
+    } else if (jj_2_1142(2)) {
       jj_consume_token(YEAR);
     } else {
       jj_consume_token(-1);
@@ -9440,269 +9172,541 @@ public class IgniteSqlParserImpl extends SqlAbstractParserImpl implements Ignite
   }
 
 /** @see #NonReservedKeyWord */
-  final public void NonReservedKeyWord2of3() throws ParseException {
-    if (jj_2_1273(2)) {
-      jj_consume_token(BACKUPS);
-    } else if (jj_2_1274(2)) {
-      jj_consume_token(WRITE_SYNCHRONIZATION_MODE);
-    } else if (jj_2_1275(2)) {
-      jj_consume_token(DATA_REGION);
-    } else if (jj_2_1276(2)) {
-      jj_consume_token(PARALLEL);
-    } else if (jj_2_1277(2)) {
-      jj_consume_token(NOLOGGING);
-    } else if (jj_2_1278(2)) {
-      jj_consume_token(SCAN);
-    } else if (jj_2_1279(2)) {
-      jj_consume_token(COMPUTE);
-    } else if (jj_2_1280(2)) {
-      jj_consume_token(UUID);
-    } else if (jj_2_1281(2)) {
-      jj_consume_token(ABSOLUTE);
-    } else if (jj_2_1282(2)) {
-      jj_consume_token(AFTER);
-    } else if (jj_2_1283(2)) {
-      jj_consume_token(ALTER);
-    } else if (jj_2_1284(2)) {
-      jj_consume_token(ARRAY);
-    } else if (jj_2_1285(2)) {
-      jj_consume_token(ASC);
-    } else if (jj_2_1286(2)) {
-      jj_consume_token(ASYMMETRIC);
-    } else if (jj_2_1287(2)) {
-      jj_consume_token(AUTHORIZATION);
-    } else if (jj_2_1288(2)) {
-      jj_consume_token(BEGIN);
-    } else if (jj_2_1289(2)) {
-      jj_consume_token(BETWEEN);
-    } else if (jj_2_1290(2)) {
-      jj_consume_token(BIT);
-    } else if (jj_2_1291(2)) {
-      jj_consume_token(BOTH);
-    } else if (jj_2_1292(2)) {
-      jj_consume_token(C);
-    } else if (jj_2_1293(2)) {
-      jj_consume_token(CASCADE);
-    } else if (jj_2_1294(2)) {
-      jj_consume_token(CATALOG);
-    } else if (jj_2_1295(2)) {
-      jj_consume_token(CHAR);
-    } else if (jj_2_1296(2)) {
-      jj_consume_token(CHAR_LENGTH);
-    } else if (jj_2_1297(2)) {
-      jj_consume_token(CLOB);
-    } else if (jj_2_1298(2)) {
-      jj_consume_token(COLLATE);
-    } else if (jj_2_1299(2)) {
-      jj_consume_token(COLUMN);
-    } else if (jj_2_1300(2)) {
-      jj_consume_token(CONNECT);
-    } else if (jj_2_1301(2)) {
-      jj_consume_token(CONSTRUCTOR);
-    } else if (jj_2_1302(2)) {
-      jj_consume_token(CONVERT);
-    } else if (jj_2_1303(2)) {
-      jj_consume_token(COUNT);
-    } else if (jj_2_1304(2)) {
-      jj_consume_token(CUBE);
-    } else if (jj_2_1305(2)) {
-      jj_consume_token(CURRENT_DATE);
-    } else if (jj_2_1306(2)) {
-      jj_consume_token(CURRENT_ROLE);
-    } else if (jj_2_1307(2)) {
-      jj_consume_token(CURRENT_TIME);
-    } else if (jj_2_1308(2)) {
-      jj_consume_token(CURRENT_USER);
-    } else if (jj_2_1309(2)) {
-      jj_consume_token(DATE);
-    } else if (jj_2_1310(2)) {
-      jj_consume_token(DEC);
-    } else if (jj_2_1311(2)) {
-      jj_consume_token(DEFERRABLE);
-    } else if (jj_2_1312(2)) {
-      jj_consume_token(DEPTH);
-    } else if (jj_2_1313(2)) {
-      jj_consume_token(DESCRIPTOR);
-    } else if (jj_2_1314(2)) {
-      jj_consume_token(DISALLOW);
-    } else if (jj_2_1315(2)) {
-      jj_consume_token(DOUBLE);
-    } else if (jj_2_1316(2)) {
-      jj_consume_token(ELEMENT);
-    } else if (jj_2_1317(2)) {
-      jj_consume_token(END);
-    } else if (jj_2_1318(2)) {
-      jj_consume_token(EQUALS);
-    } else if (jj_2_1319(2)) {
-      jj_consume_token(EXCEPTION);
-    } else if (jj_2_1320(2)) {
-      jj_consume_token(EXISTS);
-    } else if (jj_2_1321(2)) {
-      jj_consume_token(EXTERNAL);
-    } else if (jj_2_1322(2)) {
-      jj_consume_token(FILTER);
-    } else if (jj_2_1323(2)) {
-      jj_consume_token(FLOAT);
-    } else if (jj_2_1324(2)) {
-      jj_consume_token(FOREIGN);
-    } else if (jj_2_1325(2)) {
-      jj_consume_token(FREE);
-    } else if (jj_2_1326(2)) {
-      jj_consume_token(G);
-    } else if (jj_2_1327(2)) {
-      jj_consume_token(GLOBAL);
-    } else if (jj_2_1328(2)) {
-      jj_consume_token(GROUPS);
-    } else if (jj_2_1329(2)) {
-      jj_consume_token(IDENTITY);
-    } else if (jj_2_1330(2)) {
-      jj_consume_token(IMPORT);
-    } else if (jj_2_1331(2)) {
-      jj_consume_token(INITIALLY);
-    } else if (jj_2_1332(2)) {
-      jj_consume_token(INSENSITIVE);
-    } else if (jj_2_1333(2)) {
-      jj_consume_token(INTERSECTION);
-    } else if (jj_2_1334(2)) {
-      jj_consume_token(JSON_ARRAY);
-    } else if (jj_2_1335(2)) {
-      jj_consume_token(JSON_OBJECT);
-    } else if (jj_2_1336(2)) {
-      jj_consume_token(JSON_VALUE);
-    } else if (jj_2_1337(2)) {
-      jj_consume_token(LAG);
-    } else if (jj_2_1338(2)) {
-      jj_consume_token(LAST);
-    } else if (jj_2_1339(2)) {
-      jj_consume_token(LEADING);
-    } else if (jj_2_1340(2)) {
-      jj_consume_token(LIKE);
-    } else if (jj_2_1341(2)) {
-      jj_consume_token(LOCAL);
-    } else if (jj_2_1342(2)) {
-      jj_consume_token(LOCATOR);
-    } else if (jj_2_1343(2)) {
-      jj_consume_token(MAP);
-    } else if (jj_2_1344(2)) {
-      jj_consume_token(MATCH_NUMBER);
-    } else if (jj_2_1345(2)) {
-      jj_consume_token(MEMBER);
-    } else if (jj_2_1346(2)) {
-      jj_consume_token(MINUTE);
-    } else if (jj_2_1347(2)) {
-      jj_consume_token(MODULE);
-    } else if (jj_2_1348(2)) {
-      jj_consume_token(NAME);
-    } else if (jj_2_1349(2)) {
-      jj_consume_token(NCHAR);
-    } else if (jj_2_1350(2)) {
-      jj_consume_token(NONE);
-    } else if (jj_2_1351(2)) {
-      jj_consume_token(NTH_VALUE);
-    } else if (jj_2_1352(2)) {
-      jj_consume_token(NUMERIC);
-    } else if (jj_2_1353(2)) {
-      jj_consume_token(OCTET_LENGTH);
-    } else if (jj_2_1354(2)) {
-      jj_consume_token(OMIT);
-    } else if (jj_2_1355(2)) {
-      jj_consume_token(OPEN);
-    } else if (jj_2_1356(2)) {
-      jj_consume_token(ORDINALITY);
-    } else if (jj_2_1357(2)) {
-      jj_consume_token(OVERLAPS);
-    } else if (jj_2_1358(2)) {
-      jj_consume_token(PARAMETER);
-    } else if (jj_2_1359(2)) {
-      jj_consume_token(PER);
-    } else if (jj_2_1360(2)) {
-      jj_consume_token(PERCENTILE_DISC);
-    } else if (jj_2_1361(2)) {
-      jj_consume_token(PERMUTE);
-    } else if (jj_2_1362(2)) {
-      jj_consume_token(POSITION_REGEX);
-    } else if (jj_2_1363(2)) {
-      jj_consume_token(PRECISION);
-    } else if (jj_2_1364(2)) {
-      jj_consume_token(PREV);
-    } else if (jj_2_1365(2)) {
-      jj_consume_token(PROCEDURE);
-    } else if (jj_2_1366(2)) {
-      jj_consume_token(RANK);
-    } else if (jj_2_1367(2)) {
-      jj_consume_token(REAL);
-    } else if (jj_2_1368(2)) {
-      jj_consume_token(REFERENCES);
-    } else if (jj_2_1369(2)) {
-      jj_consume_token(REGR_AVGY);
-    } else if (jj_2_1370(2)) {
-      jj_consume_token(REGR_R2);
-    } else if (jj_2_1371(2)) {
-      jj_consume_token(REGR_SXY);
-    } else if (jj_2_1372(2)) {
-      jj_consume_token(RELEASE);
-    } else if (jj_2_1373(2)) {
-      jj_consume_token(RESTRICT);
-    } else if (jj_2_1374(2)) {
-      jj_consume_token(RETURNS);
-    } else if (jj_2_1375(2)) {
-      jj_consume_token(ROLLBACK);
-    } else if (jj_2_1376(2)) {
-      jj_consume_token(RUNNING);
-    } else if (jj_2_1377(2)) {
-      jj_consume_token(SCOPE);
-    } else if (jj_2_1378(2)) {
-      jj_consume_token(SECOND);
-    } else if (jj_2_1379(2)) {
-      jj_consume_token(SENSITIVE);
-    } else if (jj_2_1380(2)) {
-      jj_consume_token(SHOW);
-    } else if (jj_2_1381(2)) {
-      jj_consume_token(SMALLINT);
-    } else if (jj_2_1382(2)) {
-      jj_consume_token(SPECIFICTYPE);
-    } else if (jj_2_1383(2)) {
-      jj_consume_token(SQLSTATE);
-    } else if (jj_2_1384(2)) {
-      jj_consume_token(START);
-    } else if (jj_2_1385(2)) {
-      jj_consume_token(STDDEV_POP);
-    } else if (jj_2_1386(2)) {
-      jj_consume_token(SUBSET);
-    } else if (jj_2_1387(2)) {
-      jj_consume_token(SUCCEEDS);
-    } else if (jj_2_1388(2)) {
-      jj_consume_token(SYSTEM);
-    } else if (jj_2_1389(2)) {
+  final public void NonReservedKeyWord1of3() throws ParseException {
+    if (jj_2_1143(2)) {
+      jj_consume_token(TEMPLATE);
+    } else if (jj_2_1144(2)) {
+      jj_consume_token(ATOMICITY);
+    } else if (jj_2_1145(2)) {
+      jj_consume_token(CACHE_NAME);
+    } else if (jj_2_1146(2)) {
+      jj_consume_token(ENCRYPTED);
+    } else if (jj_2_1147(2)) {
+      jj_consume_token(LOGGING);
+    } else if (jj_2_1148(2)) {
+      jj_consume_token(KILL);
+    } else if (jj_2_1149(2)) {
+      jj_consume_token(SERVICE);
+    } else if (jj_2_1150(2)) {
+      jj_consume_token(QUERY);
+    } else if (jj_2_1151(2)) {
+      jj_consume_token(ABS);
+    } else if (jj_2_1152(2)) {
+      jj_consume_token(ADD);
+    } else if (jj_2_1153(2)) {
+      jj_consume_token(ALLOW);
+    } else if (jj_2_1154(2)) {
+      jj_consume_token(ARE);
+    } else if (jj_2_1155(2)) {
+      jj_consume_token(AS);
+    } else if (jj_2_1156(2)) {
+      jj_consume_token(ASSERTION);
+    } else if (jj_2_1157(2)) {
+      jj_consume_token(ATOMIC);
+    } else if (jj_2_1158(2)) {
+      jj_consume_token(BEFORE);
+    } else if (jj_2_1159(2)) {
+      jj_consume_token(BEGIN_PARTITION);
+    } else if (jj_2_1160(2)) {
+      jj_consume_token(BINARY);
+    } else if (jj_2_1161(2)) {
+      jj_consume_token(BOOLEAN);
+    } else if (jj_2_1162(2)) {
+      jj_consume_token(BY);
+    } else if (jj_2_1163(2)) {
+      jj_consume_token(CARDINALITY);
+    } else if (jj_2_1164(2)) {
+      jj_consume_token(CAST);
+    } else if (jj_2_1165(2)) {
+      jj_consume_token(CEILING);
+    } else if (jj_2_1166(2)) {
+      jj_consume_token(CHARACTER_LENGTH);
+    } else if (jj_2_1167(2)) {
+      jj_consume_token(CLASSIFIER);
+    } else if (jj_2_1168(2)) {
+      jj_consume_token(COALESCE);
+    } else if (jj_2_1169(2)) {
+      jj_consume_token(COLLECT);
+    } else if (jj_2_1170(2)) {
+      jj_consume_token(CONDITION);
+    } else if (jj_2_1171(2)) {
+      jj_consume_token(CONSTRAINTS);
+    } else if (jj_2_1172(2)) {
+      jj_consume_token(CONTINUE);
+    } else if (jj_2_1173(2)) {
+      jj_consume_token(CORRESPONDING);
+    } else if (jj_2_1174(2)) {
+      jj_consume_token(COVAR_SAMP);
+    } else if (jj_2_1175(2)) {
+      jj_consume_token(CURRENT_CATALOG);
+    } else if (jj_2_1176(2)) {
+      jj_consume_token(CURRENT_PATH);
+    } else if (jj_2_1177(2)) {
+      jj_consume_token(CURRENT_SCHEMA);
+    } else if (jj_2_1178(2)) {
+      jj_consume_token(CURRENT_TRANSFORM_GROUP_FOR_TYPE);
+    } else if (jj_2_1179(2)) {
+      jj_consume_token(DATA);
+    } else if (jj_2_1180(2)) {
+      jj_consume_token(DEALLOCATE);
+    } else if (jj_2_1181(2)) {
+      jj_consume_token(DECLARE);
+    } else if (jj_2_1182(2)) {
+      jj_consume_token(DENSE_RANK);
+    } else if (jj_2_1183(2)) {
+      jj_consume_token(DESC);
+    } else if (jj_2_1184(2)) {
+      jj_consume_token(DIAGNOSTICS);
+    } else if (jj_2_1185(2)) {
+      jj_consume_token(DOMAIN);
+    } else if (jj_2_1186(2)) {
+      jj_consume_token(EACH);
+    } else if (jj_2_1187(2)) {
+      jj_consume_token(EMPTY);
+    } else if (jj_2_1188(2)) {
+      jj_consume_token(END_PARTITION);
+    } else if (jj_2_1189(2)) {
+      jj_consume_token(EVERY);
+    } else if (jj_2_1190(2)) {
+      jj_consume_token(EXECUTE);
+    } else if (jj_2_1191(2)) {
+      jj_consume_token(EXTEND);
+    } else if (jj_2_1192(2)) {
+      jj_consume_token(FALSE);
+    } else if (jj_2_1193(2)) {
+      jj_consume_token(FIRST_VALUE);
+    } else if (jj_2_1194(2)) {
+      jj_consume_token(FOR);
+    } else if (jj_2_1195(2)) {
+      jj_consume_token(FRAME_ROW);
+    } else if (jj_2_1196(2)) {
+      jj_consume_token(FUSION);
+    } else if (jj_2_1197(2)) {
+      jj_consume_token(GET);
+    } else if (jj_2_1198(2)) {
+      jj_consume_token(GOTO);
+    } else if (jj_2_1199(2)) {
+      jj_consume_token(HOUR);
+    } else if (jj_2_1200(2)) {
+      jj_consume_token(IMMEDIATELY);
+    } else if (jj_2_1201(2)) {
+      jj_consume_token(INITIAL);
+    } else if (jj_2_1202(2)) {
+      jj_consume_token(INPUT);
+    } else if (jj_2_1203(2)) {
+      jj_consume_token(INTEGER);
+    } else if (jj_2_1204(2)) {
+      jj_consume_token(ISOLATION);
+    } else if (jj_2_1205(2)) {
+      jj_consume_token(JSON_EXISTS);
+    } else if (jj_2_1206(2)) {
+      jj_consume_token(JSON_QUERY);
+    } else if (jj_2_1207(2)) {
+      jj_consume_token(KEY);
+    } else if (jj_2_1208(2)) {
+      jj_consume_token(LARGE);
+    } else if (jj_2_1209(2)) {
+      jj_consume_token(LEAD);
+    } else if (jj_2_1210(2)) {
+      jj_consume_token(LEVEL);
+    } else if (jj_2_1211(2)) {
+      jj_consume_token(LN);
+    } else if (jj_2_1212(2)) {
+      jj_consume_token(LOCALTIMESTAMP);
+    } else if (jj_2_1213(2)) {
+      jj_consume_token(M);
+    } else if (jj_2_1214(2)) {
+      jj_consume_token(MATCHES);
+    } else if (jj_2_1215(2)) {
+      jj_consume_token(MEASURES);
+    } else if (jj_2_1216(2)) {
+      jj_consume_token(MIN);
+    } else if (jj_2_1217(2)) {
+      jj_consume_token(MODIFIES);
+    } else if (jj_2_1218(2)) {
+      jj_consume_token(MULTISET);
+    } else if (jj_2_1219(2)) {
+      jj_consume_token(NATIONAL);
+    } else if (jj_2_1220(2)) {
+      jj_consume_token(NO);
+    } else if (jj_2_1221(2)) {
+      jj_consume_token(NOT);
+    } else if (jj_2_1222(2)) {
+      jj_consume_token(NULLIF);
+    } else if (jj_2_1223(2)) {
+      jj_consume_token(OCCURRENCES_REGEX);
+    } else if (jj_2_1224(2)) {
+      jj_consume_token(OLD);
+    } else if (jj_2_1225(2)) {
+      jj_consume_token(ONLY);
+    } else if (jj_2_1226(2)) {
+      jj_consume_token(OR);
+    } else if (jj_2_1227(2)) {
+      jj_consume_token(OUTPUT);
+    } else if (jj_2_1228(2)) {
+      jj_consume_token(PAD);
+    } else if (jj_2_1229(2)) {
+      jj_consume_token(PATH);
+    } else if (jj_2_1230(2)) {
+      jj_consume_token(PERCENTILE_CONT);
+    } else if (jj_2_1231(2)) {
+      jj_consume_token(PERIOD);
+    } else if (jj_2_1232(2)) {
+      jj_consume_token(POSITION);
+    } else if (jj_2_1233(2)) {
+      jj_consume_token(PRECEDES);
+    } else if (jj_2_1234(2)) {
+      jj_consume_token(PRESERVE);
+    } else if (jj_2_1235(2)) {
+      jj_consume_token(PRIVILEGES);
+    } else if (jj_2_1236(2)) {
+      jj_consume_token(QUARTER);
+    } else if (jj_2_1237(2)) {
+      jj_consume_token(READS);
+    } else if (jj_2_1238(2)) {
+      jj_consume_token(REF);
+    } else if (jj_2_1239(2)) {
+      jj_consume_token(REGR_AVGX);
+    } else if (jj_2_1240(2)) {
+      jj_consume_token(REGR_INTERCEPT);
+    } else if (jj_2_1241(2)) {
+      jj_consume_token(REGR_SXX);
+    } else if (jj_2_1242(2)) {
+      jj_consume_token(RELATIVE);
+    } else if (jj_2_1243(2)) {
+      jj_consume_token(RESET);
+    } else if (jj_2_1244(2)) {
+      jj_consume_token(RETURN);
+    } else if (jj_2_1245(2)) {
+      jj_consume_token(ROLE);
+    } else if (jj_2_1246(2)) {
+      jj_consume_token(ROW_NUMBER);
+    } else if (jj_2_1247(2)) {
+      jj_consume_token(SCHEMA);
+    } else if (jj_2_1248(2)) {
+      jj_consume_token(SEARCH);
+    } else if (jj_2_1249(2)) {
+      jj_consume_token(SEEK);
+    } else if (jj_2_1250(2)) {
+      jj_consume_token(SESSION_USER);
+    } else if (jj_2_1251(2)) {
+      jj_consume_token(SIZE);
+    } else if (jj_2_1252(2)) {
+      jj_consume_token(SPECIFIC);
+    } else if (jj_2_1253(2)) {
+      jj_consume_token(SQLEXCEPTION);
+    } else if (jj_2_1254(2)) {
+      jj_consume_token(SQRT);
+    } else if (jj_2_1255(2)) {
+      jj_consume_token(STATIC);
+    } else if (jj_2_1256(2)) {
+      jj_consume_token(SUBMULTISET);
+    } else if (jj_2_1257(2)) {
+      jj_consume_token(SUBSTRING_REGEX);
+    } else if (jj_2_1258(2)) {
+      jj_consume_token(SYMMETRIC);
+    } else if (jj_2_1259(2)) {
+      jj_consume_token(SYSTEM_USER);
+    } else if (jj_2_1260(2)) {
       jj_consume_token(TEMPORARY);
-    } else if (jj_2_1390(2)) {
+    } else if (jj_2_1261(2)) {
       jj_consume_token(TINYINT);
-    } else if (jj_2_1391(2)) {
+    } else if (jj_2_1262(2)) {
       jj_consume_token(TRANSACTION);
-    } else if (jj_2_1392(2)) {
+    } else if (jj_2_1263(2)) {
       jj_consume_token(TRANSLATION);
-    } else if (jj_2_1393(2)) {
+    } else if (jj_2_1264(2)) {
       jj_consume_token(TRIM);
-    } else if (jj_2_1394(2)) {
+    } else if (jj_2_1265(2)) {
       jj_consume_token(TRUNCATE);
-    } else if (jj_2_1395(2)) {
+    } else if (jj_2_1266(2)) {
       jj_consume_token(UNIQUE);
-    } else if (jj_2_1396(2)) {
+    } else if (jj_2_1267(2)) {
       jj_consume_token(UPSERT);
-    } else if (jj_2_1397(2)) {
+    } else if (jj_2_1268(2)) {
       jj_consume_token(VALUE);
-    } else if (jj_2_1398(2)) {
+    } else if (jj_2_1269(2)) {
       jj_consume_token(VARCHAR);
-    } else if (jj_2_1399(2)) {
+    } else if (jj_2_1270(2)) {
       jj_consume_token(VAR_SAMP);
-    } else if (jj_2_1400(2)) {
+    } else if (jj_2_1271(2)) {
       jj_consume_token(VIEW);
-    } else if (jj_2_1401(2)) {
+    } else if (jj_2_1272(2)) {
       jj_consume_token(WIDTH_BUCKET);
-    } else if (jj_2_1402(2)) {
+    } else if (jj_2_1273(2)) {
       jj_consume_token(WORK);
-    } else if (jj_2_1403(2)) {
+    } else if (jj_2_1274(2)) {
       jj_consume_token(ZONE);
+    } else {
+      jj_consume_token(-1);
+      throw new ParseException();
+    }
+  }
+
+/** @see #NonReservedKeyWord */
+  final public void NonReservedKeyWord2of3() throws ParseException {
+    if (jj_2_1275(2)) {
+      jj_consume_token(BACKUPS);
+    } else if (jj_2_1276(2)) {
+      jj_consume_token(WRITE_SYNCHRONIZATION_MODE);
+    } else if (jj_2_1277(2)) {
+      jj_consume_token(DATA_REGION);
+    } else if (jj_2_1278(2)) {
+      jj_consume_token(PARALLEL);
+    } else if (jj_2_1279(2)) {
+      jj_consume_token(NOLOGGING);
+    } else if (jj_2_1280(2)) {
+      jj_consume_token(SCAN);
+    } else if (jj_2_1281(2)) {
+      jj_consume_token(COMPUTE);
+    } else if (jj_2_1282(2)) {
+      jj_consume_token(UUID);
+    } else if (jj_2_1283(2)) {
+      jj_consume_token(ABSOLUTE);
+    } else if (jj_2_1284(2)) {
+      jj_consume_token(AFTER);
+    } else if (jj_2_1285(2)) {
+      jj_consume_token(ALTER);
+    } else if (jj_2_1286(2)) {
+      jj_consume_token(ARRAY);
+    } else if (jj_2_1287(2)) {
+      jj_consume_token(ASC);
+    } else if (jj_2_1288(2)) {
+      jj_consume_token(ASYMMETRIC);
+    } else if (jj_2_1289(2)) {
+      jj_consume_token(AUTHORIZATION);
+    } else if (jj_2_1290(2)) {
+      jj_consume_token(BEGIN);
+    } else if (jj_2_1291(2)) {
+      jj_consume_token(BETWEEN);
+    } else if (jj_2_1292(2)) {
+      jj_consume_token(BIT);
+    } else if (jj_2_1293(2)) {
+      jj_consume_token(BOTH);
+    } else if (jj_2_1294(2)) {
+      jj_consume_token(C);
+    } else if (jj_2_1295(2)) {
+      jj_consume_token(CASCADE);
+    } else if (jj_2_1296(2)) {
+      jj_consume_token(CATALOG);
+    } else if (jj_2_1297(2)) {
+      jj_consume_token(CHAR);
+    } else if (jj_2_1298(2)) {
+      jj_consume_token(CHAR_LENGTH);
+    } else if (jj_2_1299(2)) {
+      jj_consume_token(CLOB);
+    } else if (jj_2_1300(2)) {
+      jj_consume_token(COLLATE);
+    } else if (jj_2_1301(2)) {
+      jj_consume_token(COLUMN);
+    } else if (jj_2_1302(2)) {
+      jj_consume_token(CONNECT);
+    } else if (jj_2_1303(2)) {
+      jj_consume_token(CONSTRUCTOR);
+    } else if (jj_2_1304(2)) {
+      jj_consume_token(CONVERT);
+    } else if (jj_2_1305(2)) {
+      jj_consume_token(COUNT);
+    } else if (jj_2_1306(2)) {
+      jj_consume_token(CUBE);
+    } else if (jj_2_1307(2)) {
+      jj_consume_token(CURRENT_DATE);
+    } else if (jj_2_1308(2)) {
+      jj_consume_token(CURRENT_ROLE);
+    } else if (jj_2_1309(2)) {
+      jj_consume_token(CURRENT_TIME);
+    } else if (jj_2_1310(2)) {
+      jj_consume_token(CURRENT_USER);
+    } else if (jj_2_1311(2)) {
+      jj_consume_token(DATE);
+    } else if (jj_2_1312(2)) {
+      jj_consume_token(DEC);
+    } else if (jj_2_1313(2)) {
+      jj_consume_token(DEFERRABLE);
+    } else if (jj_2_1314(2)) {
+      jj_consume_token(DEPTH);
+    } else if (jj_2_1315(2)) {
+      jj_consume_token(DESCRIPTOR);
+    } else if (jj_2_1316(2)) {
+      jj_consume_token(DISALLOW);
+    } else if (jj_2_1317(2)) {
+      jj_consume_token(DOUBLE);
+    } else if (jj_2_1318(2)) {
+      jj_consume_token(ELEMENT);
+    } else if (jj_2_1319(2)) {
+      jj_consume_token(END);
+    } else if (jj_2_1320(2)) {
+      jj_consume_token(EQUALS);
+    } else if (jj_2_1321(2)) {
+      jj_consume_token(EXCEPTION);
+    } else if (jj_2_1322(2)) {
+      jj_consume_token(EXISTS);
+    } else if (jj_2_1323(2)) {
+      jj_consume_token(EXTERNAL);
+    } else if (jj_2_1324(2)) {
+      jj_consume_token(FILTER);
+    } else if (jj_2_1325(2)) {
+      jj_consume_token(FLOAT);
+    } else if (jj_2_1326(2)) {
+      jj_consume_token(FOREIGN);
+    } else if (jj_2_1327(2)) {
+      jj_consume_token(FREE);
+    } else if (jj_2_1328(2)) {
+      jj_consume_token(G);
+    } else if (jj_2_1329(2)) {
+      jj_consume_token(GLOBAL);
+    } else if (jj_2_1330(2)) {
+      jj_consume_token(GROUPS);
+    } else if (jj_2_1331(2)) {
+      jj_consume_token(IDENTITY);
+    } else if (jj_2_1332(2)) {
+      jj_consume_token(IMPORT);
+    } else if (jj_2_1333(2)) {
+      jj_consume_token(INITIALLY);
+    } else if (jj_2_1334(2)) {
+      jj_consume_token(INSENSITIVE);
+    } else if (jj_2_1335(2)) {
+      jj_consume_token(INTERSECTION);
+    } else if (jj_2_1336(2)) {
+      jj_consume_token(JSON_ARRAY);
+    } else if (jj_2_1337(2)) {
+      jj_consume_token(JSON_OBJECT);
+    } else if (jj_2_1338(2)) {
+      jj_consume_token(JSON_VALUE);
+    } else if (jj_2_1339(2)) {
+      jj_consume_token(LAG);
+    } else if (jj_2_1340(2)) {
+      jj_consume_token(LAST);
+    } else if (jj_2_1341(2)) {
+      jj_consume_token(LEADING);
+    } else if (jj_2_1342(2)) {
+      jj_consume_token(LIKE);
+    } else if (jj_2_1343(2)) {
+      jj_consume_token(LOCAL);
+    } else if (jj_2_1344(2)) {
+      jj_consume_token(LOCATOR);
+    } else if (jj_2_1345(2)) {
+      jj_consume_token(MAP);
+    } else if (jj_2_1346(2)) {
+      jj_consume_token(MATCH_NUMBER);
+    } else if (jj_2_1347(2)) {
+      jj_consume_token(MEMBER);
+    } else if (jj_2_1348(2)) {
+      jj_consume_token(MINUTE);
+    } else if (jj_2_1349(2)) {
+      jj_consume_token(MODULE);
+    } else if (jj_2_1350(2)) {
+      jj_consume_token(NAME);
+    } else if (jj_2_1351(2)) {
+      jj_consume_token(NCHAR);
+    } else if (jj_2_1352(2)) {
+      jj_consume_token(NONE);
+    } else if (jj_2_1353(2)) {
+      jj_consume_token(NTH_VALUE);
+    } else if (jj_2_1354(2)) {
+      jj_consume_token(NUMERIC);
+    } else if (jj_2_1355(2)) {
+      jj_consume_token(OCTET_LENGTH);
+    } else if (jj_2_1356(2)) {
+      jj_consume_token(OMIT);
+    } else if (jj_2_1357(2)) {
+      jj_consume_token(OPEN);
+    } else if (jj_2_1358(2)) {
+      jj_consume_token(ORDINALITY);
+    } else if (jj_2_1359(2)) {
+      jj_consume_token(OVERLAPS);
+    } else if (jj_2_1360(2)) {
+      jj_consume_token(PARAMETER);
+    } else if (jj_2_1361(2)) {
+      jj_consume_token(PER);
+    } else if (jj_2_1362(2)) {
+      jj_consume_token(PERCENTILE_DISC);
+    } else if (jj_2_1363(2)) {
+      jj_consume_token(PERMUTE);
+    } else if (jj_2_1364(2)) {
+      jj_consume_token(POSITION_REGEX);
+    } else if (jj_2_1365(2)) {
+      jj_consume_token(PRECISION);
+    } else if (jj_2_1366(2)) {
+      jj_consume_token(PREV);
+    } else if (jj_2_1367(2)) {
+      jj_consume_token(PROCEDURE);
+    } else if (jj_2_1368(2)) {
+      jj_consume_token(RANK);
+    } else if (jj_2_1369(2)) {
+      jj_consume_token(REAL);
+    } else if (jj_2_1370(2)) {
+      jj_consume_token(REFERENCES);
+    } else if (jj_2_1371(2)) {
+      jj_consume_token(REGR_AVGY);
+    } else if (jj_2_1372(2)) {
+      jj_consume_token(REGR_R2);
+    } else if (jj_2_1373(2)) {
+      jj_consume_token(REGR_SXY);
+    } else if (jj_2_1374(2)) {
+      jj_consume_token(RELEASE);
+    } else if (jj_2_1375(2)) {
+      jj_consume_token(RESTRICT);
+    } else if (jj_2_1376(2)) {
+      jj_consume_token(RETURNS);
+    } else if (jj_2_1377(2)) {
+      jj_consume_token(ROLLBACK);
+    } else if (jj_2_1378(2)) {
+      jj_consume_token(RUNNING);
+    } else if (jj_2_1379(2)) {
+      jj_consume_token(SCOPE);
+    } else if (jj_2_1380(2)) {
+      jj_consume_token(SECOND);
+    } else if (jj_2_1381(2)) {
+      jj_consume_token(SENSITIVE);
+    } else if (jj_2_1382(2)) {
+      jj_consume_token(SHOW);
+    } else if (jj_2_1383(2)) {
+      jj_consume_token(SMALLINT);
+    } else if (jj_2_1384(2)) {
+      jj_consume_token(SPECIFICTYPE);
+    } else if (jj_2_1385(2)) {
+      jj_consume_token(SQLSTATE);
+    } else if (jj_2_1386(2)) {
+      jj_consume_token(START);
+    } else if (jj_2_1387(2)) {
+      jj_consume_token(STDDEV_POP);
+    } else if (jj_2_1388(2)) {
+      jj_consume_token(SUBSET);
+    } else if (jj_2_1389(2)) {
+      jj_consume_token(SUCCEEDS);
+    } else if (jj_2_1390(2)) {
+      jj_consume_token(SYSTEM);
+    } else if (jj_2_1391(2)) {
+      jj_consume_token(STRING_AGG);
+    } else if (jj_2_1392(2)) {
+      jj_consume_token(TIMEZONE_HOUR);
+    } else if (jj_2_1393(2)) {
+      jj_consume_token(TO);
+    } else if (jj_2_1394(2)) {
+      jj_consume_token(TRANSLATE);
+    } else if (jj_2_1395(2)) {
+      jj_consume_token(TREAT);
+    } else if (jj_2_1396(2)) {
+      jj_consume_token(TRIM_ARRAY);
+    } else if (jj_2_1397(2)) {
+      jj_consume_token(UESCAPE);
+    } else if (jj_2_1398(2)) {
+      jj_consume_token(UNKNOWN);
+    } else if (jj_2_1399(2)) {
+      jj_consume_token(USAGE);
+    } else if (jj_2_1400(2)) {
+      jj_consume_token(VALUE_OF);
+    } else if (jj_2_1401(2)) {
+      jj_consume_token(VARYING);
+    } else if (jj_2_1402(2)) {
+      jj_consume_token(VERSION);
+    } else if (jj_2_1403(2)) {
+      jj_consume_token(WEEK);
+    } else if (jj_2_1404(2)) {
+      jj_consume_token(WITHIN);
+    } else if (jj_2_1405(2)) {
+      jj_consume_token(WRITE);
     } else {
       jj_consume_token(-1);
       throw new ParseException();
@@ -19547,6 +19551,20 @@ public class IgniteSqlParserImpl extends SqlAbstractParserImpl implements Ignite
     finally { jj_save(1402, xla); }
   }
 
+  final private boolean jj_2_1404(int xla) {
+    jj_la = xla; jj_lastpos = jj_scanpos = token;
+    try { return !jj_3_1404(); }
+    catch(LookaheadSuccess ls) { return true; }
+    finally { jj_save(1403, xla); }
+  }
+
+  final private boolean jj_2_1405(int xla) {
+    jj_la = xla; jj_lastpos = jj_scanpos = token;
+    try { return !jj_3_1405(); }
+    catch(LookaheadSuccess ls) { return true; }
+    finally { jj_save(1404, xla); }
+  }
+
   final private boolean jj_3R_312() {
     if (jj_3R_66()) return true;
     return false;
@@ -20366,18 +20384,28 @@ public class IgniteSqlParserImpl extends SqlAbstractParserImpl implements Ignite
     return false;
   }
 
+  final private boolean jj_3_1405() {
+    if (jj_scan_token(WRITE)) return true;
+    return false;
+  }
+
+  final private boolean jj_3_1404() {
+    if (jj_scan_token(WITHIN)) return true;
+    return false;
+  }
+
   final private boolean jj_3_590() {
     if (jj_3R_115()) return true;
     return false;
   }
 
   final private boolean jj_3_1403() {
-    if (jj_scan_token(ZONE)) return true;
+    if (jj_scan_token(WEEK)) return true;
     return false;
   }
 
   final private boolean jj_3_1402() {
-    if (jj_scan_token(WORK)) return true;
+    if (jj_scan_token(VERSION)) return true;
     return false;
   }
 
@@ -20387,12 +20415,12 @@ public class IgniteSqlParserImpl extends SqlAbstractParserImpl implements Ignite
   }
 
   final private boolean jj_3_1401() {
-    if (jj_scan_token(WIDTH_BUCKET)) return true;
+    if (jj_scan_token(VARYING)) return true;
     return false;
   }
 
   final private boolean jj_3_1400() {
-    if (jj_scan_token(VIEW)) return true;
+    if (jj_scan_token(VALUE_OF)) return true;
     return false;
   }
 
@@ -20402,7 +20430,7 @@ public class IgniteSqlParserImpl extends SqlAbstractParserImpl implements Ignite
   }
 
   final private boolean jj_3_1399() {
-    if (jj_scan_token(VAR_SAMP)) return true;
+    if (jj_scan_token(USAGE)) return true;
     return false;
   }
 
@@ -20412,22 +20440,22 @@ public class IgniteSqlParserImpl extends SqlAbstractParserImpl implements Ignite
   }
 
   final private boolean jj_3_1398() {
-    if (jj_scan_token(VARCHAR)) return true;
+    if (jj_scan_token(UNKNOWN)) return true;
     return false;
   }
 
   final private boolean jj_3_1397() {
-    if (jj_scan_token(VALUE)) return true;
+    if (jj_scan_token(UESCAPE)) return true;
     return false;
   }
 
   final private boolean jj_3_1396() {
-    if (jj_scan_token(UPSERT)) return true;
+    if (jj_scan_token(TRIM_ARRAY)) return true;
     return false;
   }
 
   final private boolean jj_3_1395() {
-    if (jj_scan_token(UNIQUE)) return true;
+    if (jj_scan_token(TREAT)) return true;
     return false;
   }
 
@@ -20450,27 +20478,27 @@ public class IgniteSqlParserImpl extends SqlAbstractParserImpl implements Ignite
   }
 
   final private boolean jj_3_1394() {
-    if (jj_scan_token(TRUNCATE)) return true;
+    if (jj_scan_token(TRANSLATE)) return true;
     return false;
   }
 
   final private boolean jj_3_1393() {
-    if (jj_scan_token(TRIM)) return true;
+    if (jj_scan_token(TO)) return true;
     return false;
   }
 
   final private boolean jj_3_1392() {
-    if (jj_scan_token(TRANSLATION)) return true;
+    if (jj_scan_token(TIMEZONE_HOUR)) return true;
     return false;
   }
 
   final private boolean jj_3_1391() {
-    if (jj_scan_token(TRANSACTION)) return true;
+    if (jj_scan_token(STRING_AGG)) return true;
     return false;
   }
 
   final private boolean jj_3_1390() {
-    if (jj_scan_token(TINYINT)) return true;
+    if (jj_scan_token(SYSTEM)) return true;
     return false;
   }
 
@@ -20486,42 +20514,42 @@ public class IgniteSqlParserImpl extends SqlAbstractParserImpl implements Ignite
   }
 
   final private boolean jj_3_1389() {
-    if (jj_scan_token(TEMPORARY)) return true;
-    return false;
-  }
-
-  final private boolean jj_3_1388() {
-    if (jj_scan_token(SYSTEM)) return true;
-    return false;
-  }
-
-  final private boolean jj_3_1387() {
     if (jj_scan_token(SUCCEEDS)) return true;
     return false;
   }
 
-  final private boolean jj_3_1386() {
+  final private boolean jj_3_1388() {
     if (jj_scan_token(SUBSET)) return true;
     return false;
   }
 
-  final private boolean jj_3_1385() {
+  final private boolean jj_3_1387() {
     if (jj_scan_token(STDDEV_POP)) return true;
     return false;
   }
 
-  final private boolean jj_3_1384() {
+  final private boolean jj_3_1386() {
     if (jj_scan_token(START)) return true;
     return false;
   }
 
-  final private boolean jj_3_1383() {
+  final private boolean jj_3_1385() {
     if (jj_scan_token(SQLSTATE)) return true;
     return false;
   }
 
-  final private boolean jj_3_1382() {
+  final private boolean jj_3_1384() {
     if (jj_scan_token(SPECIFICTYPE)) return true;
+    return false;
+  }
+
+  final private boolean jj_3_1383() {
+    if (jj_scan_token(SMALLINT)) return true;
+    return false;
+  }
+
+  final private boolean jj_3_1382() {
+    if (jj_scan_token(SHOW)) return true;
     return false;
   }
 
@@ -20531,17 +20559,17 @@ public class IgniteSqlParserImpl extends SqlAbstractParserImpl implements Ignite
   }
 
   final private boolean jj_3_1381() {
-    if (jj_scan_token(SMALLINT)) return true;
+    if (jj_scan_token(SENSITIVE)) return true;
     return false;
   }
 
   final private boolean jj_3_1380() {
-    if (jj_scan_token(SHOW)) return true;
+    if (jj_scan_token(SECOND)) return true;
     return false;
   }
 
   final private boolean jj_3_1379() {
-    if (jj_scan_token(SENSITIVE)) return true;
+    if (jj_scan_token(SCOPE)) return true;
     return false;
   }
 
@@ -20552,22 +20580,22 @@ public class IgniteSqlParserImpl extends SqlAbstractParserImpl implements Ignite
   }
 
   final private boolean jj_3_1378() {
-    if (jj_scan_token(SECOND)) return true;
-    return false;
-  }
-
-  final private boolean jj_3_1377() {
-    if (jj_scan_token(SCOPE)) return true;
-    return false;
-  }
-
-  final private boolean jj_3_1376() {
     if (jj_scan_token(RUNNING)) return true;
     return false;
   }
 
-  final private boolean jj_3_1375() {
+  final private boolean jj_3_1377() {
     if (jj_scan_token(ROLLBACK)) return true;
+    return false;
+  }
+
+  final private boolean jj_3_1376() {
+    if (jj_scan_token(RETURNS)) return true;
+    return false;
+  }
+
+  final private boolean jj_3_1375() {
+    if (jj_scan_token(RESTRICT)) return true;
     return false;
   }
 
@@ -20582,12 +20610,12 @@ public class IgniteSqlParserImpl extends SqlAbstractParserImpl implements Ignite
   }
 
   final private boolean jj_3_1374() {
-    if (jj_scan_token(RETURNS)) return true;
+    if (jj_scan_token(RELEASE)) return true;
     return false;
   }
 
   final private boolean jj_3_1373() {
-    if (jj_scan_token(RESTRICT)) return true;
+    if (jj_scan_token(REGR_SXY)) return true;
     return false;
   }
 
@@ -20603,72 +20631,72 @@ public class IgniteSqlParserImpl extends SqlAbstractParserImpl implements Ignite
   }
 
   final private boolean jj_3_1372() {
-    if (jj_scan_token(RELEASE)) return true;
-    return false;
-  }
-
-  final private boolean jj_3_1371() {
-    if (jj_scan_token(REGR_SXY)) return true;
-    return false;
-  }
-
-  final private boolean jj_3_1370() {
     if (jj_scan_token(REGR_R2)) return true;
     return false;
   }
 
-  final private boolean jj_3_1369() {
+  final private boolean jj_3_1371() {
     if (jj_scan_token(REGR_AVGY)) return true;
     return false;
   }
 
-  final private boolean jj_3_1368() {
+  final private boolean jj_3_1370() {
     if (jj_scan_token(REFERENCES)) return true;
     return false;
   }
 
-  final private boolean jj_3_1367() {
+  final private boolean jj_3_1369() {
     if (jj_scan_token(REAL)) return true;
     return false;
   }
 
-  final private boolean jj_3_1366() {
+  final private boolean jj_3_1368() {
     if (jj_scan_token(RANK)) return true;
     return false;
   }
 
-  final private boolean jj_3_1365() {
+  final private boolean jj_3_1367() {
     if (jj_scan_token(PROCEDURE)) return true;
     return false;
   }
 
-  final private boolean jj_3_1364() {
+  final private boolean jj_3_1366() {
     if (jj_scan_token(PREV)) return true;
     return false;
   }
 
-  final private boolean jj_3_1363() {
+  final private boolean jj_3_1365() {
     if (jj_scan_token(PRECISION)) return true;
     return false;
   }
 
-  final private boolean jj_3_1362() {
+  final private boolean jj_3_1364() {
     if (jj_scan_token(POSITION_REGEX)) return true;
     return false;
   }
 
-  final private boolean jj_3_1361() {
+  final private boolean jj_3_1363() {
     if (jj_scan_token(PERMUTE)) return true;
     return false;
   }
 
-  final private boolean jj_3_1360() {
+  final private boolean jj_3_1362() {
     if (jj_scan_token(PERCENTILE_DISC)) return true;
     return false;
   }
 
-  final private boolean jj_3_1359() {
+  final private boolean jj_3_1361() {
     if (jj_scan_token(PER)) return true;
+    return false;
+  }
+
+  final private boolean jj_3_1360() {
+    if (jj_scan_token(PARAMETER)) return true;
+    return false;
+  }
+
+  final private boolean jj_3_1359() {
+    if (jj_scan_token(OVERLAPS)) return true;
     return false;
   }
 
@@ -20678,7 +20706,7 @@ public class IgniteSqlParserImpl extends SqlAbstractParserImpl implements Ignite
   }
 
   final private boolean jj_3_1358() {
-    if (jj_scan_token(PARAMETER)) return true;
+    if (jj_scan_token(ORDINALITY)) return true;
     return false;
   }
 
@@ -20688,7 +20716,7 @@ public class IgniteSqlParserImpl extends SqlAbstractParserImpl implements Ignite
   }
 
   final private boolean jj_3_1357() {
-    if (jj_scan_token(OVERLAPS)) return true;
+    if (jj_scan_token(OPEN)) return true;
     return false;
   }
 
@@ -20699,7 +20727,7 @@ public class IgniteSqlParserImpl extends SqlAbstractParserImpl implements Ignite
   }
 
   final private boolean jj_3_1356() {
-    if (jj_scan_token(ORDINALITY)) return true;
+    if (jj_scan_token(OMIT)) return true;
     return false;
   }
 
@@ -20714,22 +20742,22 @@ public class IgniteSqlParserImpl extends SqlAbstractParserImpl implements Ignite
   }
 
   final private boolean jj_3_1355() {
-    if (jj_scan_token(OPEN)) return true;
-    return false;
-  }
-
-  final private boolean jj_3_1354() {
-    if (jj_scan_token(OMIT)) return true;
-    return false;
-  }
-
-  final private boolean jj_3_1353() {
     if (jj_scan_token(OCTET_LENGTH)) return true;
     return false;
   }
 
-  final private boolean jj_3_1352() {
+  final private boolean jj_3_1354() {
     if (jj_scan_token(NUMERIC)) return true;
+    return false;
+  }
+
+  final private boolean jj_3_1353() {
+    if (jj_scan_token(NTH_VALUE)) return true;
+    return false;
+  }
+
+  final private boolean jj_3_1352() {
+    if (jj_scan_token(NONE)) return true;
     return false;
   }
 
@@ -20739,12 +20767,12 @@ public class IgniteSqlParserImpl extends SqlAbstractParserImpl implements Ignite
   }
 
   final private boolean jj_3_1351() {
-    if (jj_scan_token(NTH_VALUE)) return true;
+    if (jj_scan_token(NCHAR)) return true;
     return false;
   }
 
   final private boolean jj_3_1350() {
-    if (jj_scan_token(NONE)) return true;
+    if (jj_scan_token(NAME)) return true;
     return false;
   }
 
@@ -20755,12 +20783,12 @@ public class IgniteSqlParserImpl extends SqlAbstractParserImpl implements Ignite
   }
 
   final private boolean jj_3_1349() {
-    if (jj_scan_token(NCHAR)) return true;
+    if (jj_scan_token(MODULE)) return true;
     return false;
   }
 
   final private boolean jj_3_1348() {
-    if (jj_scan_token(NAME)) return true;
+    if (jj_scan_token(MINUTE)) return true;
     return false;
   }
 
@@ -20775,17 +20803,17 @@ public class IgniteSqlParserImpl extends SqlAbstractParserImpl implements Ignite
   }
 
   final private boolean jj_3_1347() {
-    if (jj_scan_token(MODULE)) return true;
+    if (jj_scan_token(MEMBER)) return true;
     return false;
   }
 
   final private boolean jj_3_1346() {
-    if (jj_scan_token(MINUTE)) return true;
+    if (jj_scan_token(MATCH_NUMBER)) return true;
     return false;
   }
 
   final private boolean jj_3_1345() {
-    if (jj_scan_token(MEMBER)) return true;
+    if (jj_scan_token(MAP)) return true;
     return false;
   }
 
@@ -20795,12 +20823,12 @@ public class IgniteSqlParserImpl extends SqlAbstractParserImpl implements Ignite
   }
 
   final private boolean jj_3_1344() {
-    if (jj_scan_token(MATCH_NUMBER)) return true;
+    if (jj_scan_token(LOCATOR)) return true;
     return false;
   }
 
   final private boolean jj_3_1343() {
-    if (jj_scan_token(MAP)) return true;
+    if (jj_scan_token(LOCAL)) return true;
     return false;
   }
 
@@ -20815,42 +20843,42 @@ public class IgniteSqlParserImpl extends SqlAbstractParserImpl implements Ignite
   }
 
   final private boolean jj_3_1342() {
-    if (jj_scan_token(LOCATOR)) return true;
-    return false;
-  }
-
-  final private boolean jj_3_1341() {
-    if (jj_scan_token(LOCAL)) return true;
-    return false;
-  }
-
-  final private boolean jj_3_1340() {
     if (jj_scan_token(LIKE)) return true;
     return false;
   }
 
-  final private boolean jj_3_1339() {
+  final private boolean jj_3_1341() {
     if (jj_scan_token(LEADING)) return true;
     return false;
   }
 
-  final private boolean jj_3_1338() {
+  final private boolean jj_3_1340() {
     if (jj_scan_token(LAST)) return true;
     return false;
   }
 
-  final private boolean jj_3_1337() {
+  final private boolean jj_3_1339() {
     if (jj_scan_token(LAG)) return true;
     return false;
   }
 
-  final private boolean jj_3_1336() {
+  final private boolean jj_3_1338() {
     if (jj_scan_token(JSON_VALUE)) return true;
     return false;
   }
 
-  final private boolean jj_3_1335() {
+  final private boolean jj_3_1337() {
     if (jj_scan_token(JSON_OBJECT)) return true;
+    return false;
+  }
+
+  final private boolean jj_3_1336() {
+    if (jj_scan_token(JSON_ARRAY)) return true;
+    return false;
+  }
+
+  final private boolean jj_3_1335() {
+    if (jj_scan_token(INTERSECTION)) return true;
     return false;
   }
 
@@ -20860,7 +20888,7 @@ public class IgniteSqlParserImpl extends SqlAbstractParserImpl implements Ignite
   }
 
   final private boolean jj_3_1334() {
-    if (jj_scan_token(JSON_ARRAY)) return true;
+    if (jj_scan_token(INSENSITIVE)) return true;
     return false;
   }
 
@@ -20874,22 +20902,22 @@ public class IgniteSqlParserImpl extends SqlAbstractParserImpl implements Ignite
   }
 
   final private boolean jj_3_1333() {
-    if (jj_scan_token(INTERSECTION)) return true;
-    return false;
-  }
-
-  final private boolean jj_3_1332() {
-    if (jj_scan_token(INSENSITIVE)) return true;
-    return false;
-  }
-
-  final private boolean jj_3_1331() {
     if (jj_scan_token(INITIALLY)) return true;
     return false;
   }
 
-  final private boolean jj_3_1330() {
+  final private boolean jj_3_1332() {
     if (jj_scan_token(IMPORT)) return true;
+    return false;
+  }
+
+  final private boolean jj_3_1331() {
+    if (jj_scan_token(IDENTITY)) return true;
+    return false;
+  }
+
+  final private boolean jj_3_1330() {
+    if (jj_scan_token(GROUPS)) return true;
     return false;
   }
 
@@ -20900,12 +20928,12 @@ public class IgniteSqlParserImpl extends SqlAbstractParserImpl implements Ignite
   }
 
   final private boolean jj_3_1329() {
-    if (jj_scan_token(IDENTITY)) return true;
+    if (jj_scan_token(GLOBAL)) return true;
     return false;
   }
 
   final private boolean jj_3_1328() {
-    if (jj_scan_token(GROUPS)) return true;
+    if (jj_scan_token(G)) return true;
     return false;
   }
 
@@ -20915,22 +20943,22 @@ public class IgniteSqlParserImpl extends SqlAbstractParserImpl implements Ignite
   }
 
   final private boolean jj_3_1327() {
-    if (jj_scan_token(GLOBAL)) return true;
-    return false;
-  }
-
-  final private boolean jj_3_1326() {
-    if (jj_scan_token(G)) return true;
-    return false;
-  }
-
-  final private boolean jj_3_1325() {
     if (jj_scan_token(FREE)) return true;
     return false;
   }
 
-  final private boolean jj_3_1324() {
+  final private boolean jj_3_1326() {
     if (jj_scan_token(FOREIGN)) return true;
+    return false;
+  }
+
+  final private boolean jj_3_1325() {
+    if (jj_scan_token(FLOAT)) return true;
+    return false;
+  }
+
+  final private boolean jj_3_1324() {
+    if (jj_scan_token(FILTER)) return true;
     return false;
   }
 
@@ -20940,7 +20968,7 @@ public class IgniteSqlParserImpl extends SqlAbstractParserImpl implements Ignite
   }
 
   final private boolean jj_3_1323() {
-    if (jj_scan_token(FLOAT)) return true;
+    if (jj_scan_token(EXTERNAL)) return true;
     return false;
   }
 
@@ -20951,47 +20979,47 @@ public class IgniteSqlParserImpl extends SqlAbstractParserImpl implements Ignite
   }
 
   final private boolean jj_3_1322() {
-    if (jj_scan_token(FILTER)) return true;
-    return false;
-  }
-
-  final private boolean jj_3_1321() {
-    if (jj_scan_token(EXTERNAL)) return true;
-    return false;
-  }
-
-  final private boolean jj_3_1320() {
     if (jj_scan_token(EXISTS)) return true;
     return false;
   }
 
-  final private boolean jj_3_1319() {
+  final private boolean jj_3_1321() {
     if (jj_scan_token(EXCEPTION)) return true;
     return false;
   }
 
-  final private boolean jj_3_1318() {
+  final private boolean jj_3_1320() {
     if (jj_scan_token(EQUALS)) return true;
     return false;
   }
 
-  final private boolean jj_3_1317() {
+  final private boolean jj_3_1319() {
     if (jj_scan_token(END)) return true;
     return false;
   }
 
-  final private boolean jj_3_1316() {
+  final private boolean jj_3_1318() {
     if (jj_scan_token(ELEMENT)) return true;
     return false;
   }
 
-  final private boolean jj_3_1315() {
+  final private boolean jj_3_1317() {
     if (jj_scan_token(DOUBLE)) return true;
     return false;
   }
 
-  final private boolean jj_3_1314() {
+  final private boolean jj_3_1316() {
     if (jj_scan_token(DISALLOW)) return true;
+    return false;
+  }
+
+  final private boolean jj_3_1315() {
+    if (jj_scan_token(DESCRIPTOR)) return true;
+    return false;
+  }
+
+  final private boolean jj_3_1314() {
+    if (jj_scan_token(DEPTH)) return true;
     return false;
   }
 
@@ -21002,32 +21030,32 @@ public class IgniteSqlParserImpl extends SqlAbstractParserImpl implements Ignite
   }
 
   final private boolean jj_3_1313() {
-    if (jj_scan_token(DESCRIPTOR)) return true;
-    return false;
-  }
-
-  final private boolean jj_3_1312() {
-    if (jj_scan_token(DEPTH)) return true;
-    return false;
-  }
-
-  final private boolean jj_3_1311() {
     if (jj_scan_token(DEFERRABLE)) return true;
     return false;
   }
 
-  final private boolean jj_3_1310() {
+  final private boolean jj_3_1312() {
     if (jj_scan_token(DEC)) return true;
     return false;
   }
 
-  final private boolean jj_3_1309() {
+  final private boolean jj_3_1311() {
     if (jj_scan_token(DATE)) return true;
     return false;
   }
 
-  final private boolean jj_3_1308() {
+  final private boolean jj_3_1310() {
     if (jj_scan_token(CURRENT_USER)) return true;
+    return false;
+  }
+
+  final private boolean jj_3_1309() {
+    if (jj_scan_token(CURRENT_TIME)) return true;
+    return false;
+  }
+
+  final private boolean jj_3_1308() {
+    if (jj_scan_token(CURRENT_ROLE)) return true;
     return false;
   }
 
@@ -21037,12 +21065,12 @@ public class IgniteSqlParserImpl extends SqlAbstractParserImpl implements Ignite
   }
 
   final private boolean jj_3_1307() {
-    if (jj_scan_token(CURRENT_TIME)) return true;
+    if (jj_scan_token(CURRENT_DATE)) return true;
     return false;
   }
 
   final private boolean jj_3_1306() {
-    if (jj_scan_token(CURRENT_ROLE)) return true;
+    if (jj_scan_token(CUBE)) return true;
     return false;
   }
 
@@ -21052,7 +21080,7 @@ public class IgniteSqlParserImpl extends SqlAbstractParserImpl implements Ignite
   }
 
   final private boolean jj_3_1305() {
-    if (jj_scan_token(CURRENT_DATE)) return true;
+    if (jj_scan_token(COUNT)) return true;
     return false;
   }
 
@@ -21065,12 +21093,12 @@ public class IgniteSqlParserImpl extends SqlAbstractParserImpl implements Ignite
   }
 
   final private boolean jj_3_1304() {
-    if (jj_scan_token(CUBE)) return true;
+    if (jj_scan_token(CONVERT)) return true;
     return false;
   }
 
   final private boolean jj_3_1303() {
-    if (jj_scan_token(COUNT)) return true;
+    if (jj_scan_token(CONSTRUCTOR)) return true;
     return false;
   }
 
@@ -21080,27 +21108,27 @@ public class IgniteSqlParserImpl extends SqlAbstractParserImpl implements Ignite
   }
 
   final private boolean jj_3_1302() {
-    if (jj_scan_token(CONVERT)) return true;
-    return false;
-  }
-
-  final private boolean jj_3_1301() {
-    if (jj_scan_token(CONSTRUCTOR)) return true;
-    return false;
-  }
-
-  final private boolean jj_3_1300() {
     if (jj_scan_token(CONNECT)) return true;
     return false;
   }
 
-  final private boolean jj_3_1299() {
+  final private boolean jj_3_1301() {
     if (jj_scan_token(COLUMN)) return true;
     return false;
   }
 
-  final private boolean jj_3_1298() {
+  final private boolean jj_3_1300() {
     if (jj_scan_token(COLLATE)) return true;
+    return false;
+  }
+
+  final private boolean jj_3_1299() {
+    if (jj_scan_token(CLOB)) return true;
+    return false;
+  }
+
+  final private boolean jj_3_1298() {
+    if (jj_scan_token(CHAR_LENGTH)) return true;
     return false;
   }
 
@@ -21111,27 +21139,27 @@ public class IgniteSqlParserImpl extends SqlAbstractParserImpl implements Ignite
   }
 
   final private boolean jj_3_1297() {
-    if (jj_scan_token(CLOB)) return true;
-    return false;
-  }
-
-  final private boolean jj_3_1296() {
-    if (jj_scan_token(CHAR_LENGTH)) return true;
-    return false;
-  }
-
-  final private boolean jj_3_1295() {
     if (jj_scan_token(CHAR)) return true;
     return false;
   }
 
-  final private boolean jj_3_1294() {
+  final private boolean jj_3_1296() {
     if (jj_scan_token(CATALOG)) return true;
     return false;
   }
 
-  final private boolean jj_3_1293() {
+  final private boolean jj_3_1295() {
     if (jj_scan_token(CASCADE)) return true;
+    return false;
+  }
+
+  final private boolean jj_3_1294() {
+    if (jj_scan_token(C)) return true;
+    return false;
+  }
+
+  final private boolean jj_3_1293() {
+    if (jj_scan_token(BOTH)) return true;
     return false;
   }
 
@@ -21141,12 +21169,12 @@ public class IgniteSqlParserImpl extends SqlAbstractParserImpl implements Ignite
   }
 
   final private boolean jj_3_1292() {
-    if (jj_scan_token(C)) return true;
+    if (jj_scan_token(BIT)) return true;
     return false;
   }
 
   final private boolean jj_3_1291() {
-    if (jj_scan_token(BOTH)) return true;
+    if (jj_scan_token(BETWEEN)) return true;
     return false;
   }
 
@@ -21159,37 +21187,37 @@ public class IgniteSqlParserImpl extends SqlAbstractParserImpl implements Ignite
   }
 
   final private boolean jj_3_1290() {
-    if (jj_scan_token(BIT)) return true;
-    return false;
-  }
-
-  final private boolean jj_3_1289() {
-    if (jj_scan_token(BETWEEN)) return true;
-    return false;
-  }
-
-  final private boolean jj_3_1288() {
     if (jj_scan_token(BEGIN)) return true;
     return false;
   }
 
-  final private boolean jj_3_1287() {
+  final private boolean jj_3_1289() {
     if (jj_scan_token(AUTHORIZATION)) return true;
     return false;
   }
 
-  final private boolean jj_3_1286() {
+  final private boolean jj_3_1288() {
     if (jj_scan_token(ASYMMETRIC)) return true;
     return false;
   }
 
-  final private boolean jj_3_1285() {
+  final private boolean jj_3_1287() {
     if (jj_scan_token(ASC)) return true;
     return false;
   }
 
-  final private boolean jj_3_1284() {
+  final private boolean jj_3_1286() {
     if (jj_scan_token(ARRAY)) return true;
+    return false;
+  }
+
+  final private boolean jj_3_1285() {
+    if (jj_scan_token(ALTER)) return true;
+    return false;
+  }
+
+  final private boolean jj_3_1284() {
+    if (jj_scan_token(AFTER)) return true;
     return false;
   }
 
@@ -21213,7 +21241,7 @@ public class IgniteSqlParserImpl extends SqlAbstractParserImpl implements Ignite
   }
 
   final private boolean jj_3_1283() {
-    if (jj_scan_token(ALTER)) return true;
+    if (jj_scan_token(ABSOLUTE)) return true;
     return false;
   }
 
@@ -21223,17 +21251,17 @@ public class IgniteSqlParserImpl extends SqlAbstractParserImpl implements Ignite
   }
 
   final private boolean jj_3_1282() {
-    if (jj_scan_token(AFTER)) return true;
+    if (jj_scan_token(UUID)) return true;
     return false;
   }
 
   final private boolean jj_3_1281() {
-    if (jj_scan_token(ABSOLUTE)) return true;
+    if (jj_scan_token(COMPUTE)) return true;
     return false;
   }
 
   final private boolean jj_3_1280() {
-    if (jj_scan_token(UUID)) return true;
+    if (jj_scan_token(SCAN)) return true;
     return false;
   }
 
@@ -21257,53 +21285,33 @@ public class IgniteSqlParserImpl extends SqlAbstractParserImpl implements Ignite
   }
 
   final private boolean jj_3_1279() {
-    if (jj_scan_token(COMPUTE)) return true;
-    return false;
-  }
-
-  final private boolean jj_3_1278() {
-    if (jj_scan_token(SCAN)) return true;
-    return false;
-  }
-
-  final private boolean jj_3_1277() {
     if (jj_scan_token(NOLOGGING)) return true;
     return false;
   }
 
-  final private boolean jj_3_1276() {
+  final private boolean jj_3_1278() {
     if (jj_scan_token(PARALLEL)) return true;
     return false;
   }
 
-  final private boolean jj_3_1275() {
+  final private boolean jj_3_1277() {
     if (jj_scan_token(DATA_REGION)) return true;
     return false;
   }
 
-  final private boolean jj_3_1274() {
+  final private boolean jj_3_1276() {
     if (jj_scan_token(WRITE_SYNCHRONIZATION_MODE)) return true;
     return false;
   }
 
-  final private boolean jj_3_1273() {
+  final private boolean jj_3_1275() {
     if (jj_scan_token(BACKUPS)) return true;
-    return false;
-  }
-
-  final private boolean jj_3_581() {
-    if (jj_scan_token(DOT)) return true;
-    if (jj_3R_214()) return true;
     return false;
   }
 
   final private boolean jj_3R_268() {
     Token xsp;
     xsp = jj_scanpos;
-    if (jj_3_1273()) {
-    jj_scanpos = xsp;
-    if (jj_3_1274()) {
-    jj_scanpos = xsp;
     if (jj_3_1275()) {
     jj_scanpos = xsp;
     if (jj_3_1276()) {
@@ -21560,7 +21568,11 @@ public class IgniteSqlParserImpl extends SqlAbstractParserImpl implements Ignite
     jj_scanpos = xsp;
     if (jj_3_1402()) {
     jj_scanpos = xsp;
-    if (jj_3_1403()) return true;
+    if (jj_3_1403()) {
+    jj_scanpos = xsp;
+    if (jj_3_1404()) {
+    jj_scanpos = xsp;
+    if (jj_3_1405()) return true;
     }
     }
     }
@@ -21691,6 +21703,22 @@ public class IgniteSqlParserImpl extends SqlAbstractParserImpl implements Ignite
     }
     }
     }
+    return false;
+  }
+
+  final private boolean jj_3_581() {
+    if (jj_scan_token(DOT)) return true;
+    if (jj_3R_214()) return true;
+    return false;
+  }
+
+  final private boolean jj_3_1274() {
+    if (jj_scan_token(ZONE)) return true;
+    return false;
+  }
+
+  final private boolean jj_3_1273() {
+    if (jj_scan_token(WORK)) return true;
     return false;
   }
 
@@ -21705,47 +21733,47 @@ public class IgniteSqlParserImpl extends SqlAbstractParserImpl implements Ignite
   }
 
   final private boolean jj_3_1272() {
-    if (jj_scan_token(YEAR)) return true;
+    if (jj_scan_token(WIDTH_BUCKET)) return true;
     return false;
   }
 
   final private boolean jj_3_1271() {
-    if (jj_scan_token(WITHOUT)) return true;
+    if (jj_scan_token(VIEW)) return true;
     return false;
   }
 
   final private boolean jj_3_1270() {
-    if (jj_scan_token(WHENEVER)) return true;
+    if (jj_scan_token(VAR_SAMP)) return true;
     return false;
   }
 
   final private boolean jj_3_1269() {
-    if (jj_scan_token(VERSIONING)) return true;
+    if (jj_scan_token(VARCHAR)) return true;
     return false;
   }
 
   final private boolean jj_3_1268() {
-    if (jj_scan_token(VAR_POP)) return true;
+    if (jj_scan_token(VALUE)) return true;
     return false;
   }
 
   final private boolean jj_3_1267() {
-    if (jj_scan_token(VARBINARY)) return true;
+    if (jj_scan_token(UPSERT)) return true;
     return false;
   }
 
   final private boolean jj_3_1266() {
-    if (jj_scan_token(USER)) return true;
+    if (jj_scan_token(UNIQUE)) return true;
     return false;
   }
 
   final private boolean jj_3_1265() {
-    if (jj_scan_token(UPPER)) return true;
+    if (jj_scan_token(TRUNCATE)) return true;
     return false;
   }
 
   final private boolean jj_3_1264() {
-    if (jj_scan_token(UNDER)) return true;
+    if (jj_scan_token(TRIM)) return true;
     return false;
   }
 
@@ -21755,72 +21783,72 @@ public class IgniteSqlParserImpl extends SqlAbstractParserImpl implements Ignite
   }
 
   final private boolean jj_3_1263() {
-    if (jj_scan_token(TRUE)) return true;
+    if (jj_scan_token(TRANSLATION)) return true;
     return false;
   }
 
   final private boolean jj_3_1262() {
-    if (jj_scan_token(TRIGGER)) return true;
+    if (jj_scan_token(TRANSACTION)) return true;
     return false;
   }
 
   final private boolean jj_3_1261() {
-    if (jj_scan_token(TRANSLATE_REGEX)) return true;
+    if (jj_scan_token(TINYINT)) return true;
     return false;
   }
 
   final private boolean jj_3_1260() {
-    if (jj_scan_token(TRAILING)) return true;
+    if (jj_scan_token(TEMPORARY)) return true;
     return false;
   }
 
   final private boolean jj_3_1259() {
-    if (jj_scan_token(TIMEZONE_MINUTE)) return true;
-    return false;
-  }
-
-  final private boolean jj_3_1258() {
     if (jj_scan_token(SYSTEM_USER)) return true;
     return false;
   }
 
-  final private boolean jj_3_1257() {
+  final private boolean jj_3_1258() {
     if (jj_scan_token(SYMMETRIC)) return true;
     return false;
   }
 
-  final private boolean jj_3_1256() {
+  final private boolean jj_3_1257() {
     if (jj_scan_token(SUBSTRING_REGEX)) return true;
     return false;
   }
 
-  final private boolean jj_3_1255() {
+  final private boolean jj_3_1256() {
     if (jj_scan_token(SUBMULTISET)) return true;
     return false;
   }
 
-  final private boolean jj_3_1254() {
+  final private boolean jj_3_1255() {
     if (jj_scan_token(STATIC)) return true;
     return false;
   }
 
-  final private boolean jj_3_1253() {
+  final private boolean jj_3_1254() {
     if (jj_scan_token(SQRT)) return true;
     return false;
   }
 
-  final private boolean jj_3_1252() {
+  final private boolean jj_3_1253() {
     if (jj_scan_token(SQLEXCEPTION)) return true;
     return false;
   }
 
-  final private boolean jj_3_1251() {
+  final private boolean jj_3_1252() {
     if (jj_scan_token(SPECIFIC)) return true;
     return false;
   }
 
-  final private boolean jj_3_1250() {
+  final private boolean jj_3_1251() {
     if (jj_scan_token(SIZE)) return true;
+    return false;
+  }
+
+  final private boolean jj_3_1250() {
+    if (jj_scan_token(SESSION_USER)) return true;
     return false;
   }
 
@@ -21831,27 +21859,27 @@ public class IgniteSqlParserImpl extends SqlAbstractParserImpl implements Ignite
   }
 
   final private boolean jj_3_1249() {
-    if (jj_scan_token(SESSION_USER)) return true;
-    return false;
-  }
-
-  final private boolean jj_3_1248() {
     if (jj_scan_token(SEEK)) return true;
     return false;
   }
 
-  final private boolean jj_3_1247() {
+  final private boolean jj_3_1248() {
     if (jj_scan_token(SEARCH)) return true;
     return false;
   }
 
-  final private boolean jj_3_1246() {
+  final private boolean jj_3_1247() {
     if (jj_scan_token(SCHEMA)) return true;
     return false;
   }
 
-  final private boolean jj_3_1245() {
+  final private boolean jj_3_1246() {
     if (jj_scan_token(ROW_NUMBER)) return true;
+    return false;
+  }
+
+  final private boolean jj_3_1245() {
+    if (jj_scan_token(ROLE)) return true;
     return false;
   }
 
@@ -21862,17 +21890,17 @@ public class IgniteSqlParserImpl extends SqlAbstractParserImpl implements Ignite
   }
 
   final private boolean jj_3_1244() {
-    if (jj_scan_token(ROLE)) return true;
-    return false;
-  }
-
-  final private boolean jj_3_1243() {
     if (jj_scan_token(RETURN)) return true;
     return false;
   }
 
-  final private boolean jj_3_1242() {
+  final private boolean jj_3_1243() {
     if (jj_scan_token(RESET)) return true;
+    return false;
+  }
+
+  final private boolean jj_3_1242() {
+    if (jj_scan_token(RELATIVE)) return true;
     return false;
   }
 
@@ -21883,12 +21911,12 @@ public class IgniteSqlParserImpl extends SqlAbstractParserImpl implements Ignite
   }
 
   final private boolean jj_3_1241() {
-    if (jj_scan_token(RELATIVE)) return true;
+    if (jj_scan_token(REGR_SXX)) return true;
     return false;
   }
 
   final private boolean jj_3_1240() {
-    if (jj_scan_token(REGR_SXX)) return true;
+    if (jj_scan_token(REGR_INTERCEPT)) return true;
     return false;
   }
 
@@ -21905,62 +21933,62 @@ public class IgniteSqlParserImpl extends SqlAbstractParserImpl implements Ignite
   }
 
   final private boolean jj_3_1239() {
-    if (jj_scan_token(REGR_INTERCEPT)) return true;
-    return false;
-  }
-
-  final private boolean jj_3_1238() {
     if (jj_scan_token(REGR_AVGX)) return true;
     return false;
   }
 
-  final private boolean jj_3_1237() {
+  final private boolean jj_3_1238() {
     if (jj_scan_token(REF)) return true;
     return false;
   }
 
-  final private boolean jj_3_1236() {
+  final private boolean jj_3_1237() {
     if (jj_scan_token(READS)) return true;
     return false;
   }
 
-  final private boolean jj_3_1235() {
+  final private boolean jj_3_1236() {
     if (jj_scan_token(QUARTER)) return true;
     return false;
   }
 
-  final private boolean jj_3_1234() {
+  final private boolean jj_3_1235() {
     if (jj_scan_token(PRIVILEGES)) return true;
     return false;
   }
 
-  final private boolean jj_3_1233() {
+  final private boolean jj_3_1234() {
     if (jj_scan_token(PRESERVE)) return true;
     return false;
   }
 
-  final private boolean jj_3_1232() {
+  final private boolean jj_3_1233() {
     if (jj_scan_token(PRECEDES)) return true;
     return false;
   }
 
-  final private boolean jj_3_1231() {
+  final private boolean jj_3_1232() {
     if (jj_scan_token(POSITION)) return true;
     return false;
   }
 
-  final private boolean jj_3_1230() {
+  final private boolean jj_3_1231() {
     if (jj_scan_token(PERIOD)) return true;
     return false;
   }
 
-  final private boolean jj_3_1229() {
+  final private boolean jj_3_1230() {
     if (jj_scan_token(PERCENTILE_CONT)) return true;
     return false;
   }
 
-  final private boolean jj_3_1228() {
+  final private boolean jj_3_1229() {
     if (jj_scan_token(PATH)) return true;
+    return false;
+  }
+
+  final private boolean jj_3_1228() {
+    if (jj_scan_token(PAD)) return true;
     return false;
   }
 
@@ -21971,22 +21999,22 @@ public class IgniteSqlParserImpl extends SqlAbstractParserImpl implements Ignite
   }
 
   final private boolean jj_3_1227() {
-    if (jj_scan_token(PAD)) return true;
-    return false;
-  }
-
-  final private boolean jj_3_1226() {
     if (jj_scan_token(OUTPUT)) return true;
     return false;
   }
 
-  final private boolean jj_3_1225() {
+  final private boolean jj_3_1226() {
     if (jj_scan_token(OR)) return true;
     return false;
   }
 
-  final private boolean jj_3_1224() {
+  final private boolean jj_3_1225() {
     if (jj_scan_token(ONLY)) return true;
+    return false;
+  }
+
+  final private boolean jj_3_1224() {
+    if (jj_scan_token(OLD)) return true;
     return false;
   }
 
@@ -21996,17 +22024,17 @@ public class IgniteSqlParserImpl extends SqlAbstractParserImpl implements Ignite
   }
 
   final private boolean jj_3_1223() {
-    if (jj_scan_token(OLD)) return true;
-    return false;
-  }
-
-  final private boolean jj_3_1222() {
     if (jj_scan_token(OCCURRENCES_REGEX)) return true;
     return false;
   }
 
-  final private boolean jj_3_1221() {
+  final private boolean jj_3_1222() {
     if (jj_scan_token(NULLIF)) return true;
+    return false;
+  }
+
+  final private boolean jj_3_1221() {
+    if (jj_scan_token(NOT)) return true;
     return false;
   }
 
@@ -22021,7 +22049,7 @@ public class IgniteSqlParserImpl extends SqlAbstractParserImpl implements Ignite
   }
 
   final private boolean jj_3_1220() {
-    if (jj_scan_token(NOT)) return true;
+    if (jj_scan_token(NO)) return true;
     return false;
   }
 
@@ -22031,17 +22059,17 @@ public class IgniteSqlParserImpl extends SqlAbstractParserImpl implements Ignite
   }
 
   final private boolean jj_3_1219() {
-    if (jj_scan_token(NO)) return true;
-    return false;
-  }
-
-  final private boolean jj_3_1218() {
     if (jj_scan_token(NATIONAL)) return true;
     return false;
   }
 
-  final private boolean jj_3_1217() {
+  final private boolean jj_3_1218() {
     if (jj_scan_token(MULTISET)) return true;
+    return false;
+  }
+
+  final private boolean jj_3_1217() {
+    if (jj_scan_token(MODIFIES)) return true;
     return false;
   }
 
@@ -22052,82 +22080,82 @@ public class IgniteSqlParserImpl extends SqlAbstractParserImpl implements Ignite
   }
 
   final private boolean jj_3_1216() {
-    if (jj_scan_token(MODIFIES)) return true;
-    return false;
-  }
-
-  final private boolean jj_3_1215() {
     if (jj_scan_token(MIN)) return true;
     return false;
   }
 
-  final private boolean jj_3_1214() {
+  final private boolean jj_3_1215() {
     if (jj_scan_token(MEASURES)) return true;
     return false;
   }
 
-  final private boolean jj_3_1213() {
+  final private boolean jj_3_1214() {
     if (jj_scan_token(MATCHES)) return true;
     return false;
   }
 
-  final private boolean jj_3_1212() {
+  final private boolean jj_3_1213() {
     if (jj_scan_token(M)) return true;
     return false;
   }
 
-  final private boolean jj_3_1211() {
+  final private boolean jj_3_1212() {
     if (jj_scan_token(LOCALTIMESTAMP)) return true;
     return false;
   }
 
-  final private boolean jj_3_1210() {
+  final private boolean jj_3_1211() {
     if (jj_scan_token(LN)) return true;
     return false;
   }
 
-  final private boolean jj_3_1209() {
+  final private boolean jj_3_1210() {
     if (jj_scan_token(LEVEL)) return true;
     return false;
   }
 
-  final private boolean jj_3_1208() {
+  final private boolean jj_3_1209() {
     if (jj_scan_token(LEAD)) return true;
     return false;
   }
 
-  final private boolean jj_3_1207() {
+  final private boolean jj_3_1208() {
     if (jj_scan_token(LARGE)) return true;
     return false;
   }
 
-  final private boolean jj_3_1206() {
+  final private boolean jj_3_1207() {
     if (jj_scan_token(KEY)) return true;
     return false;
   }
 
-  final private boolean jj_3_1205() {
+  final private boolean jj_3_1206() {
     if (jj_scan_token(JSON_QUERY)) return true;
     return false;
   }
 
-  final private boolean jj_3_1204() {
+  final private boolean jj_3_1205() {
     if (jj_scan_token(JSON_EXISTS)) return true;
     return false;
   }
 
-  final private boolean jj_3_1203() {
+  final private boolean jj_3_1204() {
     if (jj_scan_token(ISOLATION)) return true;
     return false;
   }
 
-  final private boolean jj_3_1202() {
+  final private boolean jj_3_1203() {
     if (jj_scan_token(INTEGER)) return true;
     return false;
   }
 
-  final private boolean jj_3_1201() {
+  final private boolean jj_3_1202() {
     if (jj_scan_token(INPUT)) return true;
+    return false;
+  }
+
+  final private boolean jj_3_1201() {
+    if (jj_scan_token(INITIAL)) return true;
     return false;
   }
 
@@ -22139,47 +22167,47 @@ public class IgniteSqlParserImpl extends SqlAbstractParserImpl implements Ignite
   }
 
   final private boolean jj_3_1200() {
-    if (jj_scan_token(INITIAL)) return true;
-    return false;
-  }
-
-  final private boolean jj_3_1199() {
     if (jj_scan_token(IMMEDIATELY)) return true;
     return false;
   }
 
-  final private boolean jj_3_1198() {
+  final private boolean jj_3_1199() {
     if (jj_scan_token(HOUR)) return true;
     return false;
   }
 
-  final private boolean jj_3_1197() {
+  final private boolean jj_3_1198() {
     if (jj_scan_token(GOTO)) return true;
     return false;
   }
 
-  final private boolean jj_3_1196() {
+  final private boolean jj_3_1197() {
     if (jj_scan_token(GET)) return true;
     return false;
   }
 
-  final private boolean jj_3_1195() {
+  final private boolean jj_3_1196() {
     if (jj_scan_token(FUSION)) return true;
     return false;
   }
 
-  final private boolean jj_3_1194() {
+  final private boolean jj_3_1195() {
     if (jj_scan_token(FRAME_ROW)) return true;
     return false;
   }
 
-  final private boolean jj_3_1193() {
+  final private boolean jj_3_1194() {
     if (jj_scan_token(FOR)) return true;
     return false;
   }
 
-  final private boolean jj_3_1192() {
+  final private boolean jj_3_1193() {
     if (jj_scan_token(FIRST_VALUE)) return true;
+    return false;
+  }
+
+  final private boolean jj_3_1192() {
+    if (jj_scan_token(FALSE)) return true;
     return false;
   }
 
@@ -22190,22 +22218,22 @@ public class IgniteSqlParserImpl extends SqlAbstractParserImpl implements Ignite
   }
 
   final private boolean jj_3_1191() {
-    if (jj_scan_token(FALSE)) return true;
-    return false;
-  }
-
-  final private boolean jj_3_1190() {
     if (jj_scan_token(EXTEND)) return true;
     return false;
   }
 
-  final private boolean jj_3_1189() {
+  final private boolean jj_3_1190() {
     if (jj_scan_token(EXECUTE)) return true;
     return false;
   }
 
-  final private boolean jj_3_1188() {
+  final private boolean jj_3_1189() {
     if (jj_scan_token(EVERY)) return true;
+    return false;
+  }
+
+  final private boolean jj_3_1188() {
+    if (jj_scan_token(END_PARTITION)) return true;
     return false;
   }
 
@@ -22216,27 +22244,27 @@ public class IgniteSqlParserImpl extends SqlAbstractParserImpl implements Ignite
   }
 
   final private boolean jj_3_1187() {
-    if (jj_scan_token(END_PARTITION)) return true;
-    return false;
-  }
-
-  final private boolean jj_3_1186() {
     if (jj_scan_token(EMPTY)) return true;
     return false;
   }
 
-  final private boolean jj_3_1185() {
+  final private boolean jj_3_1186() {
     if (jj_scan_token(EACH)) return true;
     return false;
   }
 
-  final private boolean jj_3_1184() {
+  final private boolean jj_3_1185() {
     if (jj_scan_token(DOMAIN)) return true;
     return false;
   }
 
-  final private boolean jj_3_1183() {
+  final private boolean jj_3_1184() {
     if (jj_scan_token(DIAGNOSTICS)) return true;
+    return false;
+  }
+
+  final private boolean jj_3_1183() {
+    if (jj_scan_token(DESC)) return true;
     return false;
   }
 
@@ -22251,22 +22279,22 @@ public class IgniteSqlParserImpl extends SqlAbstractParserImpl implements Ignite
   }
 
   final private boolean jj_3_1182() {
-    if (jj_scan_token(DESC)) return true;
-    return false;
-  }
-
-  final private boolean jj_3_1181() {
     if (jj_scan_token(DENSE_RANK)) return true;
     return false;
   }
 
-  final private boolean jj_3_1180() {
+  final private boolean jj_3_1181() {
     if (jj_scan_token(DECLARE)) return true;
     return false;
   }
 
-  final private boolean jj_3_1179() {
+  final private boolean jj_3_1180() {
     if (jj_scan_token(DEALLOCATE)) return true;
+    return false;
+  }
+
+  final private boolean jj_3_1179() {
+    if (jj_scan_token(DATA)) return true;
     return false;
   }
 
@@ -22277,47 +22305,47 @@ public class IgniteSqlParserImpl extends SqlAbstractParserImpl implements Ignite
   }
 
   final private boolean jj_3_1178() {
-    if (jj_scan_token(DATA)) return true;
-    return false;
-  }
-
-  final private boolean jj_3_1177() {
     if (jj_scan_token(CURRENT_TRANSFORM_GROUP_FOR_TYPE)) return true;
     return false;
   }
 
-  final private boolean jj_3_1176() {
+  final private boolean jj_3_1177() {
     if (jj_scan_token(CURRENT_SCHEMA)) return true;
     return false;
   }
 
-  final private boolean jj_3_1175() {
+  final private boolean jj_3_1176() {
     if (jj_scan_token(CURRENT_PATH)) return true;
     return false;
   }
 
-  final private boolean jj_3_1174() {
+  final private boolean jj_3_1175() {
     if (jj_scan_token(CURRENT_CATALOG)) return true;
     return false;
   }
 
-  final private boolean jj_3_1173() {
+  final private boolean jj_3_1174() {
     if (jj_scan_token(COVAR_SAMP)) return true;
     return false;
   }
 
-  final private boolean jj_3_1172() {
+  final private boolean jj_3_1173() {
     if (jj_scan_token(CORRESPONDING)) return true;
     return false;
   }
 
-  final private boolean jj_3_1171() {
+  final private boolean jj_3_1172() {
     if (jj_scan_token(CONTINUE)) return true;
     return false;
   }
 
-  final private boolean jj_3_1170() {
+  final private boolean jj_3_1171() {
     if (jj_scan_token(CONSTRAINTS)) return true;
+    return false;
+  }
+
+  final private boolean jj_3_1170() {
+    if (jj_scan_token(CONDITION)) return true;
     return false;
   }
 
@@ -22329,22 +22357,22 @@ public class IgniteSqlParserImpl extends SqlAbstractParserImpl implements Ignite
   }
 
   final private boolean jj_3_1169() {
-    if (jj_scan_token(CONDITION)) return true;
-    return false;
-  }
-
-  final private boolean jj_3_1168() {
     if (jj_scan_token(COLLECT)) return true;
     return false;
   }
 
-  final private boolean jj_3_1167() {
+  final private boolean jj_3_1168() {
     if (jj_scan_token(COALESCE)) return true;
     return false;
   }
 
-  final private boolean jj_3_1166() {
+  final private boolean jj_3_1167() {
     if (jj_scan_token(CLASSIFIER)) return true;
+    return false;
+  }
+
+  final private boolean jj_3_1166() {
+    if (jj_scan_token(CHARACTER_LENGTH)) return true;
     return false;
   }
 
@@ -22354,67 +22382,67 @@ public class IgniteSqlParserImpl extends SqlAbstractParserImpl implements Ignite
   }
 
   final private boolean jj_3_1165() {
-    if (jj_scan_token(CHARACTER_LENGTH)) return true;
-    return false;
-  }
-
-  final private boolean jj_3_1164() {
     if (jj_scan_token(CEILING)) return true;
     return false;
   }
 
-  final private boolean jj_3_1163() {
+  final private boolean jj_3_1164() {
     if (jj_scan_token(CAST)) return true;
     return false;
   }
 
-  final private boolean jj_3_1162() {
+  final private boolean jj_3_1163() {
     if (jj_scan_token(CARDINALITY)) return true;
     return false;
   }
 
-  final private boolean jj_3_1161() {
+  final private boolean jj_3_1162() {
     if (jj_scan_token(BY)) return true;
     return false;
   }
 
-  final private boolean jj_3_1160() {
+  final private boolean jj_3_1161() {
     if (jj_scan_token(BOOLEAN)) return true;
     return false;
   }
 
-  final private boolean jj_3_1159() {
+  final private boolean jj_3_1160() {
     if (jj_scan_token(BINARY)) return true;
     return false;
   }
 
-  final private boolean jj_3_1158() {
+  final private boolean jj_3_1159() {
     if (jj_scan_token(BEGIN_PARTITION)) return true;
     return false;
   }
 
-  final private boolean jj_3_1157() {
+  final private boolean jj_3_1158() {
     if (jj_scan_token(BEFORE)) return true;
     return false;
   }
 
-  final private boolean jj_3_1156() {
+  final private boolean jj_3_1157() {
     if (jj_scan_token(ATOMIC)) return true;
     return false;
   }
 
-  final private boolean jj_3_1155() {
+  final private boolean jj_3_1156() {
     if (jj_scan_token(ASSERTION)) return true;
     return false;
   }
 
-  final private boolean jj_3_1154() {
+  final private boolean jj_3_1155() {
     if (jj_scan_token(AS)) return true;
     return false;
   }
 
-  final private boolean jj_3_1153() {
+  final private boolean jj_3_1154() {
     if (jj_scan_token(ARE)) return true;
+    return false;
+  }
+
+  final private boolean jj_3_1153() {
+    if (jj_scan_token(ALLOW)) return true;
     return false;
   }
 
@@ -22440,27 +22468,27 @@ public class IgniteSqlParserImpl extends SqlAbstractParserImpl implements Ignite
   }
 
   final private boolean jj_3_1152() {
-    if (jj_scan_token(ALLOW)) return true;
-    return false;
-  }
-
-  final private boolean jj_3_1151() {
     if (jj_scan_token(ADD)) return true;
     return false;
   }
 
-  final private boolean jj_3_1150() {
+  final private boolean jj_3_1151() {
     if (jj_scan_token(ABS)) return true;
     return false;
   }
 
-  final private boolean jj_3_1149() {
+  final private boolean jj_3_1150() {
     if (jj_scan_token(QUERY)) return true;
     return false;
   }
 
-  final private boolean jj_3_1148() {
+  final private boolean jj_3_1149() {
     if (jj_scan_token(SERVICE)) return true;
+    return false;
+  }
+
+  final private boolean jj_3_1148() {
+    if (jj_scan_token(KILL)) return true;
     return false;
   }
 
@@ -22470,45 +22498,33 @@ public class IgniteSqlParserImpl extends SqlAbstractParserImpl implements Ignite
   }
 
   final private boolean jj_3_1147() {
-    if (jj_scan_token(KILL)) return true;
-    return false;
-  }
-
-  final private boolean jj_3_1146() {
     if (jj_scan_token(LOGGING)) return true;
     return false;
   }
 
-  final private boolean jj_3_1145() {
+  final private boolean jj_3_1146() {
     if (jj_scan_token(ENCRYPTED)) return true;
     return false;
   }
 
-  final private boolean jj_3_1144() {
+  final private boolean jj_3_1145() {
     if (jj_scan_token(CACHE_NAME)) return true;
     return false;
   }
 
-  final private boolean jj_3_1143() {
+  final private boolean jj_3_1144() {
     if (jj_scan_token(ATOMICITY)) return true;
     return false;
   }
 
-  final private boolean jj_3_1142() {
+  final private boolean jj_3_1143() {
     if (jj_scan_token(TEMPLATE)) return true;
-    return false;
-  }
-
-  final private boolean jj_3R_260() {
-    if (jj_3R_213()) return true;
     return false;
   }
 
   final private boolean jj_3R_267() {
     Token xsp;
     xsp = jj_scanpos;
-    if (jj_3_1142()) {
-    jj_scanpos = xsp;
     if (jj_3_1143()) {
     jj_scanpos = xsp;
     if (jj_3_1144()) {
@@ -22767,7 +22783,11 @@ public class IgniteSqlParserImpl extends SqlAbstractParserImpl implements Ignite
     jj_scanpos = xsp;
     if (jj_3_1271()) {
     jj_scanpos = xsp;
-    if (jj_3_1272()) return true;
+    if (jj_3_1272()) {
+    jj_scanpos = xsp;
+    if (jj_3_1273()) {
+    jj_scanpos = xsp;
+    if (jj_3_1274()) return true;
     }
     }
     }
@@ -22898,76 +22918,87 @@ public class IgniteSqlParserImpl extends SqlAbstractParserImpl implements Ignite
     }
     }
     }
+    }
+    return false;
+  }
+
+  final private boolean jj_3R_260() {
+    if (jj_3R_213()) return true;
+    return false;
+  }
+
+  final private boolean jj_3_1142() {
+    if (jj_scan_token(YEAR)) return true;
     return false;
   }
 
   final private boolean jj_3_1141() {
-    if (jj_scan_token(WRITE)) return true;
+    if (jj_scan_token(WITHOUT)) return true;
     return false;
   }
 
   final private boolean jj_3_1140() {
-    if (jj_scan_token(WITHIN)) return true;
+    if (jj_scan_token(WHENEVER)) return true;
     return false;
   }
 
   final private boolean jj_3_1139() {
-    if (jj_scan_token(WEEK)) return true;
+    if (jj_scan_token(VERSIONING)) return true;
     return false;
   }
 
   final private boolean jj_3_1138() {
-    if (jj_scan_token(VERSION)) return true;
+    if (jj_scan_token(VAR_POP)) return true;
     return false;
   }
 
   final private boolean jj_3_1137() {
-    if (jj_scan_token(VARYING)) return true;
+    if (jj_scan_token(VARBINARY)) return true;
     return false;
   }
 
   final private boolean jj_3_1136() {
-    if (jj_scan_token(VALUE_OF)) return true;
+    if (jj_scan_token(USER)) return true;
     return false;
   }
 
   final private boolean jj_3_1135() {
-    if (jj_scan_token(USAGE)) return true;
+    if (jj_scan_token(UPPER)) return true;
     return false;
   }
 
   final private boolean jj_3_1134() {
-    if (jj_scan_token(UNKNOWN)) return true;
+    if (jj_scan_token(UNDER)) return true;
     return false;
   }
 
   final private boolean jj_3_1133() {
-    if (jj_scan_token(UESCAPE)) return true;
+    if (jj_scan_token(TRUE)) return true;
     return false;
   }
 
   final private boolean jj_3_1132() {
-    if (jj_scan_token(TRIM_ARRAY)) return true;
+    if (jj_scan_token(TRIGGER)) return true;
     return false;
   }
 
   final private boolean jj_3_1131() {
-    if (jj_scan_token(TREAT)) return true;
+    if (jj_scan_token(TRANSLATE_REGEX)) return true;
     return false;
   }
 
   final private boolean jj_3_1130() {
-    if (jj_scan_token(TRANSLATE)) return true;
+    if (jj_scan_token(TRAILING)) return true;
     return false;
   }
 
   final private boolean jj_3_1129() {
-    if (jj_scan_token(TO)) return true;
+    if (jj_scan_token(TIMEZONE_MINUTE)) return true;
     return false;
   }
 
   final private boolean jj_3_1128() {
-    if (jj_scan_token(TIMEZONE_HOUR)) return true;
+    if (jj_scan_token(GROUP_CONCAT)) return true;
     return false;
   }
 
@@ -24080,7 +24111,10 @@ public class IgniteSqlParserImpl extends SqlAbstractParserImpl implements Ignite
     jj_scanpos = xsp;
     if (jj_3_1140()) {
     jj_scanpos = xsp;
-    if (jj_3_1141()) return true;
+    if (jj_3_1141()) {
+    jj_scanpos = xsp;
+    if (jj_3_1142()) return true;
+    }
     }
     }
     }
@@ -31803,7 +31837,7 @@ public class IgniteSqlParserImpl extends SqlAbstractParserImpl implements Ignite
    private static void jj_la1_24() {
       jj_la1_24 = new int[] {0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,};
    }
-  final private JJCalls[] jj_2_rtns = new JJCalls[1403];
+  final private JJCalls[] jj_2_rtns = new JJCalls[1405];
   private boolean jj_rescan = false;
   private int jj_gc = 0;
 
@@ -32092,7 +32126,7 @@ public class IgniteSqlParserImpl extends SqlAbstractParserImpl implements Ignite
 
   final private void jj_rescan_token() {
     jj_rescan = true;
-    for (int i = 0; i < 1403; i++) {
+    for (int i = 0; i < 1405; i++) {
     try {
       JJCalls p = jj_2_rtns[i];
       do {
@@ -33502,6 +33536,8 @@ public class IgniteSqlParserImpl extends SqlAbstractParserImpl implements Ignite
             case 1400: jj_3_1401(); break;
             case 1401: jj_3_1402(); break;
             case 1402: jj_3_1403(); break;
+            case 1403: jj_3_1404(); break;
+            case 1404: jj_3_1405(); break;
           }
         }
         p = p.next;

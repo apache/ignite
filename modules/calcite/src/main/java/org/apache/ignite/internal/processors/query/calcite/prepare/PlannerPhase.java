@@ -24,6 +24,7 @@ import org.apache.calcite.rel.logical.LogicalFilter;
 import org.apache.calcite.rel.logical.LogicalJoin;
 import org.apache.calcite.rel.logical.LogicalProject;
 import org.apache.calcite.rel.logical.LogicalSort;
+import org.apache.calcite.rel.rules.AggregateExpandDistinctAggregatesRule;
 import org.apache.calcite.rel.rules.AggregateMergeRule;
 import org.apache.calcite.rel.rules.CoreRules;
 import org.apache.calcite.rel.rules.FilterJoinRule.FilterIntoJoinRule;
@@ -37,6 +38,7 @@ import org.apache.calcite.rel.rules.ProjectMergeRule;
 import org.apache.calcite.rel.rules.ProjectRemoveRule;
 import org.apache.calcite.rel.rules.PruneEmptyRules;
 import org.apache.calcite.rel.rules.SortRemoveRule;
+import org.apache.calcite.sql.SqlSyntax;
 import org.apache.calcite.tools.Program;
 import org.apache.calcite.tools.RuleSet;
 import org.apache.calcite.tools.RuleSets;
@@ -184,7 +186,14 @@ public enum PlannerPhase {
                                         .predicate(Aggregate::isSimple)
                                         .anyInputs())).toRule(),
 
-                    CoreRules.AGGREGATE_EXPAND_DISTINCT_AGGREGATES_TO_JOIN,
+                    // Rule is applicable to aggregates without ordering, otherwise application of this rule
+                    // leads to invalid projections (i.e. LISTAGG).
+                    AggregateExpandDistinctAggregatesRule.Config.JOIN
+                        .withOperandSupplier(op -> op.operand(LogicalAggregate.class)
+                            .predicate(agg -> agg.getAggCallList().stream().noneMatch(
+                                call -> call.getAggregation().getSyntax() == SqlSyntax.ORDERED_FUNCTION))
+                            .anyInputs())
+                        .toRule(),
 
                     SortRemoveRule.Config.DEFAULT
                         .withOperandSupplier(b ->

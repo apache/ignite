@@ -169,7 +169,7 @@ public class AccumulatorsFactory<Row> implements Supplier<List<AccumulatorWrappe
     /** */
     private final class WrapperPrototype implements Supplier<AccumulatorWrapper<Row>> {
         /** */
-        private Supplier<Accumulator> accFactory;
+        private Supplier<Accumulator<Row>> accFactory;
 
         /** */
         private final AggregateCall call;
@@ -187,19 +187,19 @@ public class AccumulatorsFactory<Row> implements Supplier<List<AccumulatorWrappe
 
         /** {@inheritDoc} */
         @Override public AccumulatorWrapper<Row> get() {
-            Accumulator accumulator = accumulator();
+            Accumulator<Row> accumulator = accumulator();
 
             return new AccumulatorWrapperImpl(accumulator, call, inAdapter, outAdapter);
         }
 
         /** */
-        @NotNull private Accumulator accumulator() {
+        @NotNull private Accumulator<Row> accumulator() {
             if (accFactory != null)
                 return accFactory.get();
 
             // init factory and adapters
-            accFactory = Accumulators.accumulatorFactory(call);
-            Accumulator accumulator = accFactory.get();
+            accFactory = Accumulators.accumulatorFactory(call, ctx);
+            Accumulator<Row> accumulator = accFactory.get();
 
             inAdapter = createInAdapter(accumulator);
             outAdapter = createOutAdapter(accumulator);
@@ -208,7 +208,7 @@ public class AccumulatorsFactory<Row> implements Supplier<List<AccumulatorWrappe
         }
 
         /** */
-        @NotNull private Function<Object[], Object[]> createInAdapter(Accumulator accumulator) {
+        @NotNull private Function<Object[], Object[]> createInAdapter(Accumulator<Row> accumulator) {
             if (type == AggregateType.REDUCE || F.isEmpty(call.getArgList()))
                 return Function.identity();
 
@@ -228,15 +228,17 @@ public class AccumulatorsFactory<Row> implements Supplier<List<AccumulatorWrappe
 
             return new Function<Object[], Object[]>() {
                 @Override public Object[] apply(Object[] args) {
-                    for (int i = 0; i < args.length; i++)
-                        args[i] = casts.get(i).apply(args[i]);
+                    for (int i = 0; i < args.length; i++) {
+                        // Casting is not needed for collations.
+                        args[i] = i < casts.size() ? casts.get(i).apply(args[i]) : args[i];
+                    }
                     return args;
                 }
             };
         }
 
         /** */
-        @NotNull private Function<Object, Object> createOutAdapter(Accumulator accumulator) {
+        @NotNull private Function<Object, Object> createOutAdapter(Accumulator<Row> accumulator) {
             if (type == AggregateType.MAP)
                 return Function.identity();
 
@@ -267,6 +269,9 @@ public class AccumulatorsFactory<Row> implements Supplier<List<AccumulatorWrappe
         private final List<Integer> argList;
 
         /** */
+        private final List<Integer> collList;
+
+        /** */
         private final int filterArg;
 
         /** */
@@ -277,7 +282,7 @@ public class AccumulatorsFactory<Row> implements Supplier<List<AccumulatorWrappe
 
         /** */
         AccumulatorWrapperImpl(
-            Accumulator accumulator,
+            Accumulator<Row> accumulator,
             AggregateCall call,
             Function<Object[], Object[]> inAdapter,
             Function<Object, Object> outAdapter
@@ -289,6 +294,7 @@ public class AccumulatorsFactory<Row> implements Supplier<List<AccumulatorWrappe
             argList = call.getArgList();
             ignoreNulls = call.ignoreNulls();
             filterArg = call.hasFilter() ? call.filterArg : -1;
+            collList = call.getCollation().getKeys();
 
             handler = ctx.rowHandler();
         }
@@ -300,12 +306,23 @@ public class AccumulatorsFactory<Row> implements Supplier<List<AccumulatorWrappe
             if (filterArg >= 0 && Boolean.TRUE != handler.get(filterArg, row))
                 return;
 
-            Object[] args = new Object[argList.size()];
+            Object[] args = new Object[argList.size() + collList.size()];
+
             for (int i = 0; i < argList.size(); i++) {
                 args[i] = handler.get(argList.get(i), row);
 
                 if (ignoreNulls && args[i] == null)
                     return;
+            }
+
+            for (int i = 0, collOffset = 0; i < collList.size(); i++) {
+                int idx = collList.get(i);
+
+                if (!argList.contains(idx)) {
+                    args[collOffset + argList.size()] = handler.get(idx, row);
+
+                    collOffset++;
+                }
             }
 
             accumulator.add(inAdapter.apply(args));
