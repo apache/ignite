@@ -51,7 +51,8 @@ class GatlingTest(IgniteTest):
                                          IgniteThinClientConfiguration(
                                              addresses=addresses,
                                              version=IgniteVersion(ignite_version)),
-                                         simulation_class_name="org.apache.ignite.gatling.simulation.BasicSimulation",
+                                         simulation_class_name=
+                                         "org.apache.ignite.internal.gatling.simulation.BasicSimulation",
                                          num_nodes=1)
 
         ignite.start()
