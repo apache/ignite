@@ -730,13 +730,6 @@ public class CdcMain implements Runnable {
         }
     }
 
-    /** */
-    private String cacheNameFromDir(File f) {
-        return f.getParentFile().getName()
-            .replace(CACHE_DIR_PREFIX, "")
-            .replace(CACHE_GRP_DIR_PREFIX, "");
-    }
-
     /**
      * Try locks Change Data Capture directory.
      *
