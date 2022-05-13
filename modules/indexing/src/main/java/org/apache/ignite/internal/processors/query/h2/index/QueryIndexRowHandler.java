@@ -34,16 +34,14 @@ import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor;
-import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
-import org.h2.table.IndexColumn;
 
 /** Maps CacheDataRow to IndexRow using H2 columns references. */
 public class QueryIndexRowHandler implements InlineIndexRowHandler {
     /** Cache descriptor. */
-    private final GridH2RowDescriptor cacheDesc;
+    private final GridH2RowDescriptor rowDescriptor;
 
     /** H2 index columns. */
-    private final List<IndexColumn> h2IdxColumns;
+    private final List<Integer> keyColumns;
 
     /** List of key types for inlined index keys. */
     private final List<InlineIndexKeyType> keyTypes;
@@ -54,17 +52,18 @@ public class QueryIndexRowHandler implements InlineIndexRowHandler {
     /** Index key type settings. */
     private final IndexKeyTypeSettings keyTypeSettings;
 
-    /** H2 Table. */
-    private final GridH2Table h2Table;
-
     /** */
-    public QueryIndexRowHandler(GridH2Table h2table, List<IndexColumn> h2IdxColumns,
-        LinkedHashMap<String, IndexKeyDefinition> keyDefs, List<InlineIndexKeyType> keyTypes, IndexKeyTypeSettings keyTypeSettings) {
-        this.h2IdxColumns = h2IdxColumns;
-        this.keyTypes = keyTypes;
+    public QueryIndexRowHandler(
+        GridH2RowDescriptor rowDescriptor,
+        List<Integer> keyColumns,
+        LinkedHashMap<String, IndexKeyDefinition> keyDefs,
+        List<InlineIndexKeyType> keyTypes,
+        IndexKeyTypeSettings keyTypeSettings
+    ) {
+        this.keyColumns = Collections.unmodifiableList(keyColumns);
+        this.keyTypes = Collections.unmodifiableList(keyTypes);
         this.keyDefs = Collections.unmodifiableList(new ArrayList<>(keyDefs.values()));
-        this.h2Table = h2table;
-        cacheDesc = h2table.rowDescriptor();
+        this.rowDescriptor = rowDescriptor;
         this.keyTypeSettings = keyTypeSettings;
     }
 
@@ -73,12 +72,7 @@ public class QueryIndexRowHandler implements InlineIndexRowHandler {
         Object o = getKey(idx, row);
 
         return IndexKeyFactory.wrap(
-            o, keyDefs.get(idx).idxType(), cacheDesc.context().cacheObjectContext(), keyTypeSettings);
-    }
-
-    /** */
-    public List<IndexColumn> getH2IdxColumns() {
-        return h2IdxColumns;
+            o, keyDefs.get(idx).idxType(), rowDescriptor.context().cacheObjectContext(), keyTypeSettings);
     }
 
     /** {@inheritDoc} */
@@ -98,23 +92,23 @@ public class QueryIndexRowHandler implements InlineIndexRowHandler {
 
     /** */
     private Object getKey(int idx, CacheDataRow row) {
-        int cacheIdx = h2IdxColumns.get(idx).column.getColumnId();
+        int colId = keyColumns.get(idx);
 
-        if (cacheDesc.isKeyColumn(cacheIdx))
+        if (rowDescriptor.isKeyColumn(colId))
             return key(row);
 
-        else if (cacheDesc.isValueColumn(cacheIdx))
+        else if (rowDescriptor.isValueColumn(colId))
             return value(row);
 
         // columnValue ignores default columns (_KEY, _VAL), so make this shift.
-        return cacheDesc.columnValue(row.key(), row.value(), cacheIdx - QueryUtils.DEFAULT_COLUMNS_COUNT);
+        return rowDescriptor.columnValue(row.key(), row.value(), colId - QueryUtils.DEFAULT_COLUMNS_COUNT);
     }
 
     /** {@inheritDoc} */
     @Override public int partition(CacheDataRow row) {
         Object key = key(row);
 
-        return cacheDesc.context().affinity().partition(key);
+        return rowDescriptor.context().affinity().partition(key);
     }
 
     /** {@inheritDoc} */
@@ -127,13 +121,6 @@ public class QueryIndexRowHandler implements InlineIndexRowHandler {
         return value(row);
     }
 
-    /**
-     * @return H2 table.
-     */
-    public GridH2Table getTable() {
-        return h2Table;
-    }
-
     /** @return Cache key for specified cache row. */
     public Object key(CacheDataRow row) {
         KeyCacheObject key = row.key();
@@ -143,7 +130,7 @@ public class QueryIndexRowHandler implements InlineIndexRowHandler {
         if (o != null)
             return o;
 
-        CacheObjectContext coctx = cacheDesc.context().cacheObjectContext();
+        CacheObjectContext coctx = rowDescriptor.context().cacheObjectContext();
 
         return key.value(coctx, false);
     }
@@ -157,7 +144,7 @@ public class QueryIndexRowHandler implements InlineIndexRowHandler {
         if (o != null)
             return o;
 
-        CacheObjectContext coctx = cacheDesc.context().cacheObjectContext();
+        CacheObjectContext coctx = rowDescriptor.context().cacheObjectContext();
 
         return row.value().value(coctx, false);
     }

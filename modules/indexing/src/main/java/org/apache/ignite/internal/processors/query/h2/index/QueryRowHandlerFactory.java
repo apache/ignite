@@ -17,9 +17,9 @@
 
 package org.apache.ignite.internal.processors.query.h2.index;
 
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyDefinition;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypeSettings;
 import org.apache.ignite.internal.cache.query.index.sorted.InlineIndexRowHandler;
@@ -27,23 +27,23 @@ import org.apache.ignite.internal.cache.query.index.sorted.InlineIndexRowHandler
 import org.apache.ignite.internal.cache.query.index.sorted.SortedIndexDefinition;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexKeyType;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexKeyTypeRegistry;
-import org.h2.table.IndexColumn;
 
 /**
  * This factory applies tree's meta page info to build info about inlined types.
  */
 public class QueryRowHandlerFactory implements InlineIndexRowHandlerFactory {
     /** {@inheritDoc} */
-    @Override public InlineIndexRowHandler create(SortedIndexDefinition sdef, IndexKeyTypeSettings keyTypeSettings)
-        throws IgniteCheckedException {
-
+    @Override public InlineIndexRowHandler create(SortedIndexDefinition sdef, IndexKeyTypeSettings keyTypeSettings) {
         QueryIndexDefinition def = (QueryIndexDefinition)sdef;
 
         LinkedHashMap<String, IndexKeyDefinition> keyDefs = def.indexKeyDefinitions();
-        List<IndexColumn> h2IdxColumns = def.getColumns();
+
+        List<Integer> keyColumns = new ArrayList<>(keyDefs.size());
+
+        def.getColumns().forEach(col -> keyColumns.add(col.column.getColumnId()));
 
         List<InlineIndexKeyType> keyTypes = InlineIndexKeyTypeRegistry.types(keyDefs.values(), keyTypeSettings);
 
-        return new QueryIndexRowHandler(def.getTable(), h2IdxColumns, keyDefs, keyTypes, keyTypeSettings);
+        return new QueryIndexRowHandler(def.getTable().rowDescriptor(), keyColumns, keyDefs, keyTypes, keyTypeSettings);
     }
 }
