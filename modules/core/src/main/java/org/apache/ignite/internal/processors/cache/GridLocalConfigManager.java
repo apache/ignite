@@ -43,10 +43,12 @@ import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.BiConsumer;
+import java.util.function.Function;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.failure.FailureType;
@@ -182,32 +184,6 @@ public class GridLocalConfigManager {
         }
 
         return ccfgs;
-    }
-
-    /**
-     * @param dir Cache (group) directory.
-     * @param ccfgs Cache configurations.
-     * @throws IgniteCheckedException If failed.
-     */
-    public void readCacheConfigurations(File dir, Map<String, StoredCacheData> ccfgs) throws IgniteCheckedException {
-        if (dir.getName().startsWith(CACHE_DIR_PREFIX)) {
-            File conf = new File(dir, CACHE_DATA_FILENAME);
-
-            if (conf.exists() && conf.length() > 0) {
-                StoredCacheData cacheData = readCacheData(conf, marshaller, ctx.config());
-
-                String cacheName = cacheData.config().getName();
-
-                if (!ccfgs.containsKey(cacheName))
-                    ccfgs.put(cacheName, cacheData);
-                else {
-                    U.warn(log, "Cache with name=" + cacheName + " is already registered, skipping config file "
-                        + dir.getName());
-                }
-            }
-        }
-        else if (dir.getName().startsWith(CACHE_GRP_DIR_PREFIX))
-            readCacheGroupCaches(dir, ccfgs);
     }
 
     /**
@@ -429,19 +405,79 @@ public class GridLocalConfigManager {
             return;
 
         for (File file : files) {
-            if (!file.isDirectory() && file.getName().endsWith(CACHE_DATA_FILENAME) && file.length() > 0) {
-                StoredCacheData cacheData = readCacheData(file, marshaller, ctx.config());
+            if (!file.isDirectory() && file.getName().endsWith(CACHE_DATA_FILENAME) && file.length() > 0)
+                readAndAdd(
+                    ccfgs,
+                    file,
+                    cacheName -> "Cache with name=" + cacheName + " is already registered, " +
+                        "skipping config file " + file.getName() + " in group directory " + grpDir.getName()
+                );
+        }
+    }
 
-                String cacheName = cacheData.config().getName();
+    /**
+     * @param dir Cache (group) directory.
+     * @param ccfgs Cache configurations.
+     * @throws IgniteCheckedException If failed.
+     */
+    public void readCacheConfigurations(File dir, Map<String, StoredCacheData> ccfgs) throws IgniteCheckedException {
+        if (dir.getName().startsWith(CACHE_DIR_PREFIX)) {
+            File conf = new File(dir, CACHE_DATA_FILENAME);
 
-                if (!ccfgs.containsKey(cacheName))
-                    ccfgs.put(cacheName, cacheData);
-                else {
-                    U.warn(log, "Cache with name=" + cacheName + " is already registered, skipping config file "
-                        + file.getName() + " in group directory " + grpDir.getName());
-                }
+            if (conf.exists() && conf.length() > 0) {
+                readAndAdd(
+                    ccfgs,
+                    conf,
+                    cache -> "Cache with name=" + cache + " is already registered, skipping config file " + dir.getName()
+                );
             }
         }
+        else if (dir.getName().startsWith(CACHE_GRP_DIR_PREFIX))
+            readCacheGroupCaches(dir, ccfgs);
+    }
+
+    /**
+     * @param ccfgs Loaded configurations.
+     * @param file Storead cache data file.
+     * @param msg Warning message producer.
+     * @throws IgniteCheckedException If failed.
+     */
+    private void readAndAdd(
+        Map<String, StoredCacheData> ccfgs,
+        File file,
+        Function<String, String> msg
+    ) throws IgniteCheckedException {
+        StoredCacheData cacheData = readCacheData(file, marshaller, ctx.config());
+
+        String cacheName = cacheData.config().getName();
+
+        // In-memory CDC stored data must be removed on node failover.
+        if (inMemoryCdcCache(cacheData.config())) {
+            removeCacheData(cacheData);
+
+            U.warn(
+                log,
+                "Stored data for in-memory CDC cache removed[name=" + cacheName + ", file=" + file.getName() + ']'
+            );
+
+            return;
+        }
+
+        if (!ccfgs.containsKey(cacheName))
+            ccfgs.put(cacheName, cacheData);
+        else
+            U.warn(log, msg.apply(cacheName));
+    }
+
+    /**
+     * @param cfg Cache configuration.
+     * @return {@code True} if cache placed in in-memory and CDC enabled data region.
+     */
+    private boolean inMemoryCdcCache(CacheConfiguration<?, ?> cfg) {
+        DataRegionConfiguration drCfg =
+            CU.findDataRegion(ctx.config().getDataStorageConfiguration(), cfg.getDataRegionName());
+
+        return drCfg != null && !drCfg.isPersistenceEnabled() && drCfg.isCdcEnabled();
     }
 
     /**

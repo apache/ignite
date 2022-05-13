@@ -630,7 +630,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         for (GridCacheSharedManager mgr : sharedCtx.managers())
             mgr.start(sharedCtx);
 
-        if (!ctx.isDaemon() && (!CU.isPersistenceEnabled(ctx.config())) || ctx.config().isClientMode()) {
+        // Restoring cache configuration for non-persistent or client nodes.
+        // Cache restoration for persistence nodes performed on metastorage readiness.
+        if (!CU.isPersistenceEnabled(ctx.config()) || ctx.config().isClientMode()) {
             CacheJoinNodeDiscoveryData data = locCfgMgr.restoreCacheConfigurations();
 
             if (data != null)

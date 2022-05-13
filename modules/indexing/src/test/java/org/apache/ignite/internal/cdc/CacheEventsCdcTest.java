@@ -17,18 +17,11 @@
 
 package org.apache.ignite.internal.cdc;
 
-import java.util.Iterator;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
-import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cdc.AbstractCdcTest;
 import org.apache.ignite.cdc.CdcCacheEvent;
-import org.apache.ignite.cdc.CdcConsumer;
-import org.apache.ignite.cdc.CdcEvent;
-import org.apache.ignite.cdc.TypeMapping;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
@@ -36,8 +29,8 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -58,8 +51,8 @@ public class CacheEventsCdcTest extends AbstractCdcTest {
     /** CDC future. */
     private IgniteInternalFuture<?> cdcFut;
 
-    /** Cache events. */
-    Map<Integer, CdcCacheEvent> evts = new ConcurrentHashMap<>();
+    /** Consumer. */
+    private TrackCacheEventsConsumer cnsmr;
 
     /** */
     @Parameterized.Parameter
@@ -76,7 +69,6 @@ public class CacheEventsCdcTest extends AbstractCdcTest {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setDataStorageConfiguration(new DataStorageConfiguration()
-            .setWalForceArchiveTimeout(WAL_ARCHIVE_TIMEOUT)
             .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
                 .setPersistenceEnabled(persistenceEnabled)
                 .setCdcEnabled(true)));
@@ -92,7 +84,9 @@ public class CacheEventsCdcTest extends AbstractCdcTest {
 
         node.cluster().state(ClusterState.ACTIVE);
 
-        cdcFut = runAsync(createCdc(new TrackCacheEventsConsumer(), node.configuration()));
+        cnsmr = new TrackCacheEventsConsumer();
+
+        cdcFut = runAsync(createCdc(cnsmr, node.configuration()));
     }
 
     /** {@inheritDoc} */
@@ -106,8 +100,6 @@ public class CacheEventsCdcTest extends AbstractCdcTest {
         stopAllGrids();
 
         cleanPersistenceDir();
-
-        evts.clear();
     }
 
     /** */
@@ -115,11 +107,11 @@ public class CacheEventsCdcTest extends AbstractCdcTest {
     public void testCreateDestroyCache() throws Exception {
         node.createCache(DEFAULT_CACHE_NAME);
 
-        assertTrue(waitForCondition(() -> evts.containsKey(CU.cacheId(DEFAULT_CACHE_NAME)), getTestTimeout()));
+        assertTrue(waitForCondition(() -> cnsmr.evts.containsKey(CU.cacheId(DEFAULT_CACHE_NAME)), getTestTimeout()));
 
         node.destroyCache(DEFAULT_CACHE_NAME);
 
-        assertTrue(waitForCondition(() -> !evts.containsKey(CU.cacheId(DEFAULT_CACHE_NAME)), getTestTimeout()));
+        assertTrue(waitForCondition(() -> !cnsmr.evts.containsKey(CU.cacheId(DEFAULT_CACHE_NAME)), getTestTimeout()));
     }
 
     /** */
@@ -130,18 +122,18 @@ public class CacheEventsCdcTest extends AbstractCdcTest {
         node.createCache(new CacheConfiguration<Integer, Integer>(DEFAULT_CACHE_NAME).setGroupName("group"));
         node.createCache(new CacheConfiguration<Integer, Integer>(otherCache).setGroupName("group"));
 
-        assertTrue(waitForCondition(() -> evts.containsKey(CU.cacheId(DEFAULT_CACHE_NAME)), getTestTimeout()));
-        assertTrue(waitForCondition(() -> evts.containsKey(CU.cacheId(otherCache)), getTestTimeout()));
+        assertTrue(waitForCondition(() -> cnsmr.evts.containsKey(CU.cacheId(DEFAULT_CACHE_NAME)), getTestTimeout()));
+        assertTrue(waitForCondition(() -> cnsmr.evts.containsKey(CU.cacheId(otherCache)), getTestTimeout()));
 
         node.destroyCache(DEFAULT_CACHE_NAME);
 
-        assertTrue(waitForCondition(() -> !evts.containsKey(CU.cacheId(DEFAULT_CACHE_NAME)), getTestTimeout()));
-        assertTrue(evts.containsKey(CU.cacheId(otherCache)));
+        assertTrue(waitForCondition(() -> !cnsmr.evts.containsKey(CU.cacheId(DEFAULT_CACHE_NAME)), getTestTimeout()));
+        assertTrue(cnsmr.evts.containsKey(CU.cacheId(otherCache)));
 
         node.destroyCache(otherCache);
 
-        assertTrue(waitForCondition(() -> !evts.containsKey(CU.cacheId(otherCache)), getTestTimeout()));
-        assertFalse(evts.containsKey(CU.cacheId(DEFAULT_CACHE_NAME)));
+        assertTrue(waitForCondition(() -> !cnsmr.evts.containsKey(CU.cacheId(otherCache)), getTestTimeout()));
+        assertFalse(cnsmr.evts.containsKey(CU.cacheId(DEFAULT_CACHE_NAME)));
     }
 
     /** */
@@ -150,7 +142,7 @@ public class CacheEventsCdcTest extends AbstractCdcTest {
         executeSql(node, "CREATE TABLE T1(ID INT, NAME VARCHAR, PRIMARY KEY (ID)) WITH \"CACHE_NAME=T1\"");
 
         Function<Integer, GridAbsPredicate> checker = fldCnt -> () -> {
-            CdcCacheEvent evt = evts.get(CU.cacheId("T1"));
+            CdcCacheEvent evt = cnsmr.evts.get(CU.cacheId("T1"));
 
             if (evt == null)
                 return false;
@@ -183,11 +175,11 @@ public class CacheEventsCdcTest extends AbstractCdcTest {
         executeSql(node, "CREATE INDEX I1 ON T1(CITY_ID)");
 
         assertTrue(waitForCondition(() -> {
-            CdcCacheEvent evt = evts.get(CU.cacheId("T1"));
+            CdcCacheEvent evt = cnsmr.evts.get(CU.cacheId("T1"));
 
             QueryEntity qryEntity = evt.queryEntyties().iterator().next();
 
-            if (qryEntity.getIndexes().isEmpty())
+            if (F.isEmpty(qryEntity.getIndexes()))
                 return false;
 
             QueryIndex idx = qryEntity.getIndexes().iterator().next();
@@ -201,7 +193,7 @@ public class CacheEventsCdcTest extends AbstractCdcTest {
 
         executeSql(node, "DROP TABLE T1");
 
-        assertTrue(waitForCondition(() -> !evts.containsKey(CU.cacheId("T1")), getTestTimeout()));
+        assertTrue(waitForCondition(() -> !cnsmr.evts.containsKey(CU.cacheId("T1")), getTestTimeout()));
     }
 
     /** */
@@ -210,7 +202,7 @@ public class CacheEventsCdcTest extends AbstractCdcTest {
         node.createCache(new CacheConfiguration<Integer, Integer>(DEFAULT_CACHE_NAME));
 
         Function<Boolean, GridAbsPredicate> checker = chkTblExist -> () -> {
-            CdcCacheEvent evt = evts.get(CU.cacheId(DEFAULT_CACHE_NAME));
+            CdcCacheEvent evt = cnsmr.evts.get(CU.cacheId(DEFAULT_CACHE_NAME));
 
             if (evt == null)
                 return false;
@@ -218,7 +210,9 @@ public class CacheEventsCdcTest extends AbstractCdcTest {
             if (!chkTblExist)
                 return true;
 
-            assertNotNull(evt.queryEntyties());
+            if (F.isEmpty(evt.queryEntyties()))
+                return false;
+
             assertEquals(1, evt.queryEntyties().size());
 
             QueryEntity qryEntity = evt.queryEntyties().iterator().next();
@@ -232,50 +226,13 @@ public class CacheEventsCdcTest extends AbstractCdcTest {
             return true;
         };
 
+        assertTrue(waitForCondition(checker.apply(false), getTestTimeout()));
+
         executeSql(
             node,
             "CREATE TABLE T1(ID INT, NAME VARCHAR, PRIMARY KEY (ID)) WITH \"CACHE_NAME=" + DEFAULT_CACHE_NAME + "\""
         );
-    }
 
-    /** */
-    private class TrackCacheEventsConsumer implements CdcConsumer {
-        /** {@inheritDoc} */
-        @Override public void onCacheChange(Iterator<CdcCacheEvent> cacheEvents) {
-            cacheEvents.forEachRemaining(e -> evts.put(e.cacheId(), e));
-        }
-
-        /** {@inheritDoc} */
-        @Override public void onCacheDestroy(Iterator<Integer> caches) {
-            caches.forEachRemaining(evts::remove);
-        }
-
-        /** {@inheritDoc} */
-        @Override public void start(MetricRegistry mreg) {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean onEvents(Iterator<CdcEvent> evts) {
-            evts.forEachRemaining(e -> { /* No-op. */ });
-
-            return false;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void onTypes(Iterator<BinaryType> types) {
-            types.forEachRemaining(e -> { /* No-op. */ });
-        }
-
-        /** {@inheritDoc} */
-        @Override public void onMappings(Iterator<TypeMapping> mappings) {
-            mappings.forEachRemaining(e -> { /* No-op. */ });
-        }
-
-
-        /** {@inheritDoc} */
-        @Override public void stop() {
-            // No-op.
-        }
+        assertTrue(waitForCondition(checker.apply(true), getTestTimeout()));
     }
 }

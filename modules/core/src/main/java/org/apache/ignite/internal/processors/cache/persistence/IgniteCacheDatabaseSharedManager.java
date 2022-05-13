@@ -1190,7 +1190,20 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      * @param stoppedGrps A collection of tuples (cache group, destroy flag).
      */
     public void onCacheGroupsStopped(Collection<IgniteBiTuple<CacheGroupContext, Boolean>> stoppedGrps) {
-        // No-op.
+        for (IgniteBiTuple<CacheGroupContext, Boolean> tup : stoppedGrps) {
+            CacheGroupContext grp = tup.get1();
+
+            try {
+                boolean destroy = tup.get2();
+
+                if (destroy && CU.storeCacheConfig(cctx, grp.config()))
+                    cctx.cache().configManager().removeCacheGroupConfigurationData(grp);
+            }
+            catch (IgniteCheckedException e) {
+                U.error(log, "Failed to gracefully clean page store resources for destroyed cache " +
+                    "[cache=" + grp.cacheOrGroupName() + "]", e);
+            }
+        }
     }
 
     /**

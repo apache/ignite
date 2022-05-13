@@ -24,6 +24,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
@@ -408,6 +409,50 @@ public abstract class AbstractCdcTest extends GridCommonAbstractTest {
                 assertFalse(typeName.isEmpty());
                 assertEquals(mapper.typeId(typeName), m.typeId());
             });
+        }
+    }
+
+    /** */
+    public static class TrackCacheEventsConsumer implements CdcConsumer {
+        /** Cache events. */
+        public Map<Integer, CdcCacheEvent> evts = new ConcurrentHashMap<>();
+
+        /** {@inheritDoc} */
+        @Override public void onCacheChange(Iterator<CdcCacheEvent> cacheEvents) {
+            cacheEvents.forEachRemaining(e -> evts.put(e.cacheId(), e));
+        }
+
+        /** {@inheritDoc} */
+        @Override public void onCacheDestroy(Iterator<Integer> caches) {
+            caches.forEachRemaining(evts::remove);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void start(MetricRegistry mreg) {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean onEvents(Iterator<CdcEvent> evts) {
+            evts.forEachRemaining(e -> { /* No-op. */ });
+
+            return false;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void onTypes(Iterator<BinaryType> types) {
+            types.forEachRemaining(e -> { /* No-op. */ });
+        }
+
+        /** {@inheritDoc} */
+        @Override public void onMappings(Iterator<TypeMapping> mappings) {
+            mappings.forEachRemaining(e -> { /* No-op. */ });
+        }
+
+
+        /** {@inheritDoc} */
+        @Override public void stop() {
+            // No-op.
         }
     }
 
