@@ -25,19 +25,21 @@ import org.apache.ignite.internal.processors.cache.EntryGetResult;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 
 /**
- *
+ * Atomic consistency violation exception.
+ * Has additional fields like 'primary map' and 'on entry repaired callback', because it's impossible to perform repair
+ * on locked data (atomics can not be locked), so additional data should be provided to external CAS operation.
  */
 public class IgniteAtomicConsistencyViolationException extends IgniteConsistencyViolationException {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** Corrected map. */
+    /** Entries corrected by a specified strategy. */
     private final Map<KeyCacheObject, EntryGetResult> correctedMap;
 
-    /** Primary map. */
+    /** Entries located on primary, required to perform CAS operation on inconsistent entries. */
     private final Map<KeyCacheObject, EntryGetResult> primaryMap;
 
-    /** On repaired callback. */
+    /** On entry repaired callback, should be called once inconsistent entries replaced by corrected. */
     private final Consumer<Map<KeyCacheObject, EntryGetResult>> callback;
 
     /**
