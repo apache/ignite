@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.tree;
 
-import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -25,6 +24,7 @@ import java.util.Comparator;
 import java.util.Deque;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.ListIterator;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Supplier;
@@ -2022,25 +2022,13 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         assert canGetRowFromInner : "Not supported";
         assert limit >= 0 : limit;
 
-        List<L> removed = new ArrayList<>();
+        RemoveRange rmvOp = new RemoveRange(lower, upper, true, limit);
 
-        for (;;) {
-            RemoveRange rmvOp = new RemoveRange(lower, upper, true, limit - removed.size());
+        doRemove(rmvOp);
 
-            doRemove(rmvOp);
+        assert rmvOp.isDone();
 
-            removed.addAll(rmvOp.rmvdList);
-
-            if (rmvOp.finished())
-                break;
-
-            if (debugMsg)
-                System.err.println(">xxx> retry " + lower + "-" + upper);
-
-            checkInterrupted();
-        }
-
-        return removed;
+        return Collections.unmodifiableList(rmvOp.removedRows);
     }
 
     /** {@inheritDoc} */
@@ -2320,11 +2308,8 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
                         // We are at the bottom.
                         assert lvl == 0 : lvl;
 
-                        if (r.exact()) {
-                            r.finish();
-
-                            return res;
-                        }
+                        if (r.exact())
+                            return r.finish(res);
 
                         // Intentional fallthrough to remove something from this page.
 
@@ -4292,9 +4277,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
             if (isRemove()) {
                 assert lvl == 0;
 
-                ((Remove)op).finish();
-
-                return NOT_FOUND;
+                return ((Remove)op).finish(NOT_FOUND);
             }
 
             return ((Put)op).tryInsert(pageId, page, fwdId, lvl);
@@ -4673,10 +4656,12 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         /**
          * Finish the operation.
          */
-        private void finish() {
+        protected Result finish(Result res) {
             assert tail == null;
 
             row = null;
+
+            return res;
         }
 
         /**
@@ -4901,9 +4886,8 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
             assert isRemoved();
 
             releaseTail();
-            finish();
 
-            return FOUND;
+            return finish(FOUND);
         }
 
         /**
@@ -5384,7 +5368,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
             Result res = removeFromLeaf(pageId, page, backId, fwdId);
 
             if (res == FOUND && tail == null) // Finish if we don't need to do any merges.
-                finish();
+                return finish(res);
 
             return res;
         }
@@ -6397,8 +6381,8 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
 
     /** */
     protected class RemoveRange extends Remove {
-        /** */
-        private final Deque<L> rmvdList = new ArrayDeque<>();
+        /** List of removed rows. */
+        private final List<L> removedRows;
 
         /** */
         private final L upper;
@@ -6410,7 +6394,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         private int highIdx;
 
         /** */
-        private boolean finished;
+        private boolean completed;
 
         /** */
         private boolean lowerBoundFound;
@@ -6419,8 +6403,8 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         private int remaining;
 
         /** */
-        boolean finished() {
-            return finished || remaining == 0;
+        private boolean isDone() {
+            return completed || remaining == 0;
         }
 
         /** {@inheritDoc} */
@@ -6428,13 +6412,13 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
             if (lvl != 0)
                 return false;
 
-            assert !finished;
+            assert !completed;
             assert tail == null;
 
             // If the found row is lower than the upper bound, then we've found a new lower bound.
-            finished = !(lowerBoundFound = idx != io.getCount(pageAddr) && compare(io, pageAddr, idx, upper) <= 0);
+            completed = !(lowerBoundFound = idx != io.getCount(pageAddr) && compare(io, pageAddr, idx, upper) <= 0);
 
-            if (debugMsg && finished)
+            if (debugMsg && completed)
                 System.err.println(">xxx> finished on notFound " + lower + "-" + upper);
 
             return true;
@@ -6443,6 +6427,34 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         /** {@inheritDoc} */
         @Override protected boolean exact() {
             return !lowerBoundFound;
+        }
+
+        /** {@inheritDoc} */
+        @Override protected Result finish(Result res) {
+            assert tail == null;
+            assert res != RETRY;
+            assert res != RETRY_ROOT;
+//            assert lowerBoundFound || isDone();
+
+            // isFinished marker.
+            lowerBoundFound = false;
+
+            if (isDone())
+                return super.finish(res);
+
+            row = lower;
+            needReplaceInner = FALSE;
+            needMergeEmptyBranch = FALSE;
+            rmvd = null;
+
+            return RETRY;
+        }
+
+        /** {@inheritDoc} */
+        @Override protected boolean isFinished() {
+            boolean res = super.isFinished();
+
+            return res ? !lowerBoundFound : res;
         }
 
         /**
@@ -6457,6 +6469,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
             this.upper = upper;
 
             remaining = limit <= 0 ? -1 : limit;
+            removedRows = needOld ? new LinkedList<>() : null;
         }
 
         /** {@inheritDoc} */
@@ -6478,9 +6491,17 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
             // It's just a marker.
             rmvd = (T)Boolean.TRUE;
 
+            // Store the current position of the end of the list.
+            ListIterator<L> itr = needOld ? removedRows.listIterator(removedRows.size()) : null;
+
+            // Delete from right to left to reduce the number of items moved during the delete operation.
             for (int i = highIdx; i >= idx; i--) {
-                if (needOld)
-                    rmvdList.push(getRow(io, pageAddr, i));
+                if (itr != null) {
+                    itr.add(getRow(io, pageAddr, i));
+
+                    // Setting the previous position to add rows in reverse order (for predictability of the result).
+                    itr.previous();
+                }
 
                 doRemove(pageId, page, pageAddr, walPlc, io, cnt - highIdx + i, i);
 
@@ -6494,10 +6515,11 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         /** {@inheritDoc} */
         @Override protected boolean releaseForRetry(Tail<L> t) {
             if (t.lvl <= 1) {
-                finished = false;
+                // todo
+                completed = false;
 
                 // todo
-                if (needReplaceInner == TRUE)
+                if (needReplaceInner != FALSE)
                     row = lower;
             }
 
@@ -6607,7 +6629,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
 
                 t.idx = (short)lowIdx;
 
-                r.finished = finished;
+                r.completed = finished;
 
                 // We will do the actual remove only when we made sure that
                 // we've locked the whole needed branch correctly.
@@ -6615,7 +6637,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
                 return FOUND;
             }
 
-            r.finished = finished;
+            r.completed = finished;
 
             r.removeDataRowFromLeaf(leafId, leafPage, leafAddr, null, io, cnt, lowIdx);
 
