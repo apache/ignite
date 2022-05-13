@@ -16,12 +16,16 @@
 import os
 
 from ignitetest.services.ignite_app import IgniteApplicationService
-from ignitetest.services.gatling import GatlingConfiguration
+from typing import NamedTuple
 
 SERVICE_JAVA_CLASS_NAME = "org.apache.ignite.internal.ducktest.tests.gatling.GatlingRunnerApplication"
 
 DEFAULT_GATLING_CONF = "gatling.conf.j2"
 DEFAULT_GATLING_AKKA_CONF = "gatling-akka.conf.j2"
+
+
+class GatlingConfiguration(NamedTuple):
+    core_directory_results: str
 
 
 class GatlingService(IgniteApplicationService):
