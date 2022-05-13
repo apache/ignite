@@ -24,6 +24,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.processors.task.GridVisorManagementTask;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorOneNodeTask;
 import org.jetbrains.annotations.Nullable;
@@ -73,22 +74,24 @@ public class VisorCacheMetricTask extends VisorOneNodeTask<VisorCacheMetricTaskA
         @Override protected VisorCacheMetricTaskResult run(@Nullable VisorCacheMetricTaskArg arg)
             throws IgniteException {
             if (arg != null) {
-                Collection<String> cacheNames = arg.applyToAllCaches() ? ignite.cacheNames() : arg.cacheNames();
+                Collection<String> cacheNames = F.isEmpty(arg.cacheNames()) ? ignite.cacheNames() : arg.cacheNames();
 
                 try {
                     switch (arg.operation()) {
                         case ENABLE:
                         case DISABLE:
-                            if (!cacheNames.isEmpty())
-                                ignite.cluster().enableStatistics(cacheNames, ENABLE == arg.operation());
+                            ignite.cluster().enableStatistics(cacheNames, ENABLE == arg.operation());
 
                             return new VisorCacheMetricTaskResult(cacheNames.size());
+
                         case STATUS:
                             return new VisorCacheMetricTaskResult(cacheMetricsStatus(cacheNames));
+
                         default:
                             throw new IllegalStateException("Unexpected value: " + arg.operation());
                     }
-                } catch (Exception e) {
+                }
+                catch (Exception e) {
                     return new VisorCacheMetricTaskResult(e);
                 }
             }

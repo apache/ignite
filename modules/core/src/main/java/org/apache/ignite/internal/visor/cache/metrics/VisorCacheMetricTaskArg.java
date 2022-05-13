@@ -35,7 +35,7 @@ public class VisorCacheMetricTaskArg extends IgniteDataTransferObject {
     /** Metric command operation. */
     private CacheMetricOperation operation;
 
-    /** Names of a caches which will be processed. If empty, operation will affect all caches. */
+    /** Caches which will be processed. If not set, operation will affect all caches. */
     private Set<String> cacheNames;
 
     /**
@@ -79,13 +79,6 @@ public class VisorCacheMetricTaskArg extends IgniteDataTransferObject {
      */
     public Set<String> cacheNames() {
         return Collections.unmodifiableSet(cacheNames);
-    }
-
-    /**
-     * @return Flag indicating that command should be applied to the all user caches.
-     */
-    public boolean applyToAllCaches() {
-        return cacheNames == null;
     }
 }
 

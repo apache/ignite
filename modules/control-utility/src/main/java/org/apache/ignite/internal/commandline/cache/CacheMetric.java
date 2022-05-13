@@ -104,6 +104,7 @@ public class CacheMetric extends AbstractCommand<VisorCacheMetricTaskArg> {
                 log.info(resultMsg);
 
                 break;
+
             case STATUS:
                 Map<String, Boolean> statusTaskResult = (Map<String, Boolean>)result;
 
@@ -118,6 +119,7 @@ public class CacheMetric extends AbstractCommand<VisorCacheMetricTaskArg> {
                 }
 
                 break;
+
             default:
                 throw new IllegalStateException("Unexpected value: " + arg.operation());
         }
@@ -174,6 +176,7 @@ public class CacheMetric extends AbstractCommand<VisorCacheMetricTaskArg> {
                         throw new IllegalArgumentException("Expected " + INVALID_CACHES_LIST_MESSAGE);
 
                     break;
+
                 case ALL_CACHES:
                     if (isAllCaches)
                         throw new IllegalArgumentException(DUPLICATED_ALL_CACHES_OPTION_MESSAGE);
@@ -181,6 +184,7 @@ public class CacheMetric extends AbstractCommand<VisorCacheMetricTaskArg> {
                     isAllCaches = true;
 
                     break;
+
                 default:
                     throw new IllegalArgumentException(INCORRECT_CACHE_ARGUMENT_MESSAGE);
             }
