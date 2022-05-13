@@ -86,7 +86,6 @@ public interface CdcConsumer {
     /**
      * Handles new binary types. State of the types processing will be stored after method invocation
      * and ongoing notifications after CDC application fail/restart will be continued for newly created/updates types.
-     * Invoked before {@link #onEvents(Iterator)}.
      *
      * Note, unlike {@link #onEvents(Iterator)} this method MUST process all types or CDC will fail.
      * Because, in time of invocation {@link #onEvents(Iterator)} all changed types must be available on destionation.
@@ -103,7 +102,6 @@ public interface CdcConsumer {
     /**
      * Handles new mappings from type name to id. State of the types processing will be stored after method invocation
      * and ongoing notifications after CDC application fail/restart will be continued for newly created/updates mappings.
-     * Invoked before both {@link #onEvents(Iterator)} and {@link #onTypes(Iterator)}.
      *
      * @param mappings Binary mapping iterator.
      * @see IgniteBinary
@@ -115,7 +113,6 @@ public interface CdcConsumer {
     /**
      * Handles caches changes(create, edit) events. State of cache processing will be stored after method invocation
      * and ongoing notifications after CDC application fail/restart will be continued for newly changed caches.
-     * Invoked before all other notifications.
      *
      * @param cacheEvents Cache change events.
      * @see Ignite#createCache(String)
@@ -127,7 +124,6 @@ public interface CdcConsumer {
     /**
      * Handles cache destroy events. State of cache processing will be stored after method invocation
      * and ongoing notifications after CDC application fail/restart will be continued for newly changed caches.
-     * Invoked before all other notifications except {@link #onCacheChange(Iterator)}.
      *
      * @param caches Destroyed caches.
      * @see Ignite#destroyCache(String)
