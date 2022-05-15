@@ -70,9 +70,10 @@ public class SortNode<Row> extends AbstractNode<Row> implements SingleNode<Row>,
 
         if (limit < 0)
             rows = new PriorityQueue<>(comp);
-        else
+        else {
             rows = new GridBoundedPriorityQueue<>(limit, comp == null ? (Comparator<Row>)Comparator.reverseOrder()
                 : comp.reversed());
+        }
     }
 
     /**

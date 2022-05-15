@@ -133,7 +133,7 @@ public class IgniteSort extends Sort implements IgniteRel {
         if (!requiredCollation.satisfies(relCollation))
             return null;
 
-        return Pair.of(required.replace(requiredCollation), ImmutableList.of(required.replace(RelCollations.EMPTY)));
+        return Pair.of(required, ImmutableList.of(required.replace(RelCollations.EMPTY)));
     }
 
     /** {@inheritDoc} */

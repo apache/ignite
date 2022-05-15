@@ -113,8 +113,8 @@ public class LimitOffsetPlannerTest extends AbstractPlannerTest {
             isInstanceOf(IgniteLimit.class)
                 .and(s -> doubleFromRex(s.fetch(), -1) == 5)
                 .and(s -> doubleFromRex(s.offset(), -1) == 10)
-                    .and(input(isInstanceOf(IgniteExchange.class)))
-                        .and(hasChildThat(isInstanceOf(IgniteSort.class)).negate()));
+                .and(input(isInstanceOf(IgniteExchange.class)))
+                    .and(hasChildThat(isInstanceOf(IgniteSort.class)).negate()));
 
         // Check that Sort node is not eliminated by aggregation and Exchange node is not eliminated by distribution
         // required by parent nodes.

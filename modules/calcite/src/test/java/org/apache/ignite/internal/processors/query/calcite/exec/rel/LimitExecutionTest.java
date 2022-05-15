@@ -101,8 +101,7 @@ public class LimitExecutionTest extends AbstractExecutionTest {
             assertEquals(i, rootNode.next()[0]);
         }
 
-        if (fetch > 0)
-            assertFalse(rootNode.hasNext());
+        assertEquals(fetch == 0, rootNode.hasNext());
     }
 
     /**
