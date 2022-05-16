@@ -25,6 +25,7 @@ import org.apache.ignite.client.ClientAtomicConfiguration;
 import org.apache.ignite.client.ClientAtomicLong;
 import org.apache.ignite.client.ClientException;
 import org.apache.ignite.client.IgniteClient;
+import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.junit.Test;
 import static org.apache.ignite.testframework.GridTestUtils.assertContains;
@@ -39,6 +40,11 @@ public class AtomicLongTest extends AbstractThinClientTest {
         super.beforeTestsStarted();
 
         startGrids(1);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected ClientConfiguration getClientConfiguration() {
+        return super.getClientConfiguration().setPartitionAwarenessEnabled(true);
     }
 
     /** {@inheritDoc} */
