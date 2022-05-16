@@ -6476,8 +6476,6 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         /** {@inheritDoc} */
         @Override protected void removeDataRowFromLeaf(long pageId, long page, long pageAddr, Boolean walPlc, BPlusIO<L> io,
             int cnt, int idx) throws IgniteCheckedException {
-            assert highIdx < cnt : highIdx;
-            assert idx >= 0 && idx <= highIdx : idx;
             assert io.isLeaf() : "inner";
             assert !isRemoved() : "already removed";
             assert remaining > 0 || remaining == -1 : remaining;
@@ -6485,8 +6483,11 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
             // It's just a marker that we finished with this leaf-page.
             rmvd = (T)Boolean.TRUE;
 
-            if (highIdx < cnt - 1)
+            if (highIdx >= 0 || (highIdx = -highIdx - 1) < cnt - 1)
                 completed = true;
+
+            assert highIdx < cnt : highIdx;
+            assert idx >= 0 && idx <= highIdx : idx;
 
             // Store the current position of the end of the list.
             ListIterator<L> itr = needOld ? removedRows.listIterator(removedRows.size()) : null;
@@ -6550,17 +6551,16 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
 
             assert idx >= 0 && idx < cnt : idx;
 
-            int highIdx = findInsertionPoint(lvl, io, leafAddr, idx, cnt, r.upper, 0);
+            r.highIdx = findInsertionPoint(lvl, io, leafAddr, idx, cnt, r.upper, 0);
 
-            if (highIdx < 0)
-                highIdx = fix(highIdx) - 1;
+            int highIdx = r.highIdx >= 0 ? r.highIdx : fix(r.highIdx) - 1;
 
             if (r.remaining != -1 && highIdx - idx + 1 >= r.remaining)
                 highIdx = idx + r.remaining - 1;
 
             assert highIdx >= idx : "low=" + idx + ", high=" + highIdx;
 
-            r.highIdx = highIdx;
+            r.highIdx = r.highIdx > 0 ? highIdx : -highIdx - 1;
 
             int rmvCnt = highIdx - idx + 1;
 
