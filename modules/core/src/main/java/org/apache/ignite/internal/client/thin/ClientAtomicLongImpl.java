@@ -57,6 +57,9 @@ public class ClientAtomicLongImpl implements ClientAtomicLong {
 
     /** {@inheritDoc} */
     @Override public long get() throws IgniteException {
+        // TODO:
+        // cacheName = ignite-sys-atomic-cache@
+        // key = GridCacheInternalKeyImpl
         return ch.service(ClientOperation.ATOMIC_LONG_VALUE_GET, this::writeName, in -> in.in().readLong());
     }
 
