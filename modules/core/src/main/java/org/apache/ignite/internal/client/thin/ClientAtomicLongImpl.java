@@ -57,7 +57,7 @@ public class ClientAtomicLongImpl implements ClientAtomicLong {
         this.ch = ch;
 
         key = new GridCacheInternalKeyImpl(name, groupName);
-        cacheId = ClientUtils.cacheId("ignite-sys-atomic-cache@" + groupName);
+        cacheId = ClientUtils.cacheId("ignite-sys-atomic-cache@" + (groupName == null ? "default-ds-group" : groupName));
     }
 
     /** {@inheritDoc} */
