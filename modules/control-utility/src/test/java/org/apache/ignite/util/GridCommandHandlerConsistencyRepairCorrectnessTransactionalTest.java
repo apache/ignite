@@ -21,7 +21,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
@@ -88,9 +87,6 @@ public class GridCommandHandlerConsistencyRepairCorrectnessTransactionalTest ext
 
     /** Partitions. */
     private static final int PARTITIONS = 8;
-
-    /** Key. */
-    private static final AtomicInteger iterableKey = new AtomicInteger();
 
     /** External class loader. */
     private static final ClassLoader extClsLdr = getExternalClassLoader();
@@ -176,7 +172,6 @@ public class GridCommandHandlerConsistencyRepairCorrectnessTransactionalTest ext
         awaitPartitionMapExchange();
 
         gen = new ReadRepairDataGenerator(
-            iterableKey,
             DEFAULT_CACHE_NAME,
             clsAwareNodes,
             extClsLdr,
@@ -190,7 +185,7 @@ public class GridCommandHandlerConsistencyRepairCorrectnessTransactionalTest ext
     @Override protected void afterTestsStopped() throws Exception {
         super.afterTestsStopped();
 
-        log.info("Checked " + iterableKey.get() + " keys");
+        log.info("Checked " + gen.generated() + " keys");
 
         stopAllGrids();
     }

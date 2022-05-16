@@ -22,7 +22,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentLinkedDeque;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import org.apache.ignite.Ignite;
@@ -60,9 +59,6 @@ public abstract class AbstractReadRepairTest extends GridCommonAbstractTest {
 
     /** Events. */
     private static final ConcurrentLinkedDeque<CacheConsistencyViolationEvent> evtDeq = new ConcurrentLinkedDeque<>();
-
-    /** Key. */
-    private static final AtomicInteger iterableKey = new AtomicInteger();
 
     /** External class loader. */
     private static final ClassLoader extClsLdr = getExternalClassLoader();
@@ -145,7 +141,6 @@ public abstract class AbstractReadRepairTest extends GridCommonAbstractTest {
         awaitPartitionMapExchange();
 
         gen = new ReadRepairDataGenerator(
-            iterableKey,
             DEFAULT_CACHE_NAME,
             clsAwareNodes,
             extClsLdr,
@@ -159,7 +154,7 @@ public abstract class AbstractReadRepairTest extends GridCommonAbstractTest {
     @Override protected void afterTestsStopped() throws Exception {
         super.afterTestsStopped();
 
-        log.info("Checked " + iterableKey.get() + " keys");
+        log.info("Checked " + gen.generated() + " keys");
 
         stopAllGrids();
 

@@ -67,7 +67,7 @@ import static org.junit.Assert.fail;
  */
 public class ReadRepairDataGenerator {
     /** Key. */
-    private final AtomicInteger iterableKey;
+    private final AtomicInteger iterableKey = new AtomicInteger();
 
     /** Cache name. */
     private final String cacheName;
@@ -91,7 +91,6 @@ public class ReadRepairDataGenerator {
     private final Supplier<Integer> backupsCnt;
 
     /**
-     * @param iterableKey Iterable key.
      * @param cacheName Cache name.
      * @param clsAwareNodes Class aware nodes.
      * @param extClsLdr Ext class loader.
@@ -101,7 +100,6 @@ public class ReadRepairDataGenerator {
      * @param backupsCnt Backups count.
      */
     public ReadRepairDataGenerator(
-        AtomicInteger iterableKey,
         String cacheName,
         List<Ignite> clsAwareNodes,
         ClassLoader extClsLdr,
@@ -109,7 +107,6 @@ public class ReadRepairDataGenerator {
         BiFunction<Integer, String, List<Ignite>> backupNodes,
         Supplier<Integer> serverNodesCnt,
         Supplier<Integer> backupsCnt) {
-        this.iterableKey = iterableKey;
         this.cacheName = cacheName;
         this.clsAwareNodes = Collections.unmodifiableList(clsAwareNodes);
         this.extClsLdr = extClsLdr;
@@ -208,6 +205,13 @@ public class ReadRepairDataGenerator {
                 throw new Exception(sb.toString(), th);
             }
         }
+    }
+
+    /**
+     * Generated entries count.
+     */
+    public int generated(){
+        return iterableKey.get();
     }
 
     /**
