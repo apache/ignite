@@ -12,10 +12,11 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 import os
+import re
 
 from ignitetest.services.ignite_app import IgniteApplicationService
+import stat
 from typing import NamedTuple
 
 SERVICE_JAVA_CLASS_NAME = "org.apache.ignite.internal.ducktest.tests.gatling.GatlingRunnerApplication"
@@ -36,6 +37,7 @@ class GatlingService(IgniteApplicationService):
             startup_timeout_sec, shutdown_timeout_sec, extend_with(modules, "gatling-plugin"),
             jvm_opts=jvm_opts, merge_with_default=merge_with_default
         )
+        self.report_generated = False
 
     def _prepare_configs(self, node):
         super()._prepare_configs(node)
@@ -47,6 +49,29 @@ class GatlingService(IgniteApplicationService):
 
         config_file = self.render(DEFAULT_GATLING_AKKA_CONF, settings=config, data_dir=self.work_dir)
         node.account.create_file(os.path.join(self.config_dir, "gatling-akka.conf"), config_file)
+
+    def stop(self, force_stop=False, **kwargs):
+        super(GatlingService, self).stop(force_stop, **kwargs)
+        if not self.report_generated:
+            self.report_generated = True
+            self.generate_report()
+
+    def generate_report(self):
+        main_node = self.nodes[0]
+        main_node.account.sftp_client.mkdir(os.path.join(self.log_dir, "gatling-full-report"))
+        for node in self.nodes:
+            files = node.account.sftp_client.listdir(self.log_dir)
+            for filename in files:
+                if stat.S_ISDIR(node.account.sftp_client.stat(self.log_dir).st_mode) \
+                        and re.match("^gatling-report-.*$", filename):
+                    node.account.copy_between(os.path.join(self.log_dir, filename, "simulation.log"),
+                                              os.path.join(self.log_dir, "gatling-full-report",
+                                                           "simulation-%s.log" % node.name),
+                                              main_node)
+
+        self.params = {"reportsOnly": os.path.join(self.log_dir, "gatling-full-report")}
+        self.start_node(main_node)
+        self.await_stopped()
 
 
 def extend_with(modules, new_module):

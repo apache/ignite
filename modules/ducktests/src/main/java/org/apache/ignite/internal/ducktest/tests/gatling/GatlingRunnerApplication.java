@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.ducktest.tests.gatling;
 
+import java.util.Optional;
 import java.util.Properties;
 import com.fasterxml.jackson.databind.JsonNode;
 import io.gatling.core.config.GatlingPropertiesBuilder;
@@ -36,10 +37,15 @@ public class GatlingRunnerApplication extends IgniteAwareApplication {
         Properties sysProperties = System.getProperties();
         sysProperties.setProperty("config", cfgPath);
 
-        String simulationClass = jsonNode.get("simulation").asText();
-
         GatlingPropertiesBuilder gatlingPropertiesBuilder = new GatlingPropertiesBuilder();
-        gatlingPropertiesBuilder.simulationClass(simulationClass);
+
+        Optional.ofNullable(jsonNode.get("simulation"))
+                .map(JsonNode::asText)
+                .ifPresent(gatlingPropertiesBuilder::simulationClass);
+
+        Optional.ofNullable(jsonNode.get("reportsOnly"))
+                .map(JsonNode::asText)
+                .ifPresent(gatlingPropertiesBuilder::reportsOnly);
 
         Gatling.fromMap(gatlingPropertiesBuilder.build());
 

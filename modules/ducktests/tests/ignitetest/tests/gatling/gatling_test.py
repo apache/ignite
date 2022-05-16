@@ -33,7 +33,7 @@ class GatlingTest(IgniteTest):
     """
     JAVA_CLIENT_CLASS_NAME = "org.apache.ignite.internal.ducktest.tests.gatling.GatlingRunnerApplication"
 
-    @cluster(num_nodes=2)
+    @cluster(num_nodes=3)
     @ignite_versions(str(DEV_BRANCH))
     def test_ignite_app_start_stop(self, ignite_version):
         """
@@ -51,7 +51,7 @@ class GatlingTest(IgniteTest):
                                      addresses=addresses,
                                      version=IgniteVersion(ignite_version)),
                                  simulation_class_name="org.apache.ignite.internal.gatling.simulation.BasicSimulation",
-                                 num_nodes=1)
+                                 num_nodes=2)
 
         ignite.start()
         gatling_clients.run()
