@@ -41,7 +41,6 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.spi.systemview.view.ComputeJobView;
 import org.apache.ignite.spi.systemview.view.SystemView;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK;
@@ -229,7 +228,6 @@ public class KillCommandsCommandShTest extends GridCommandHandlerClusterByClassA
      *
      */
     @Test
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-15316")
     public void testCancelConsistencyTaskParallel() throws InterruptedException {
         testCancelConsistencyTask(true);
     }
@@ -350,7 +348,7 @@ public class KillCommandsCommandShTest extends GridCommandHandlerClusterByClassA
 
         List<String> cmd = new ArrayList<>(Arrays.asList(
             "--consistency", "repair",
-            ConsistencyCommand.STRATEGY, ReadRepairStrategy.LWW.toString(),
+            ConsistencyCommand.STRATEGY, ReadRepairStrategy.CHECK_ONLY.toString(),
             ConsistencyCommand.PARTITION, "0",
             ConsistencyCommand.CACHE, consistencyCacheName));
 

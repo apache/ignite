@@ -213,8 +213,12 @@ public class ReadRepairDataGenerator {
     /**
      *
      */
-    private InconsistentMapping setDifferentValuesForSameKey(int key, boolean misses, boolean nulls,
-        ReadRepairStrategy strategy) throws Exception {
+    private InconsistentMapping setDifferentValuesForSameKey(
+        int key,
+        boolean misses,
+        boolean nulls,
+        ReadRepairStrategy strategy) throws Exception
+    {
         List<Ignite> nodes = new ArrayList<>();
         Map<Ignite, T2<Object, GridCacheVersion>> mapping = new HashMap<>();
 

@@ -18,6 +18,7 @@
 package org.apache.ignite.util;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -50,14 +51,20 @@ import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK
 @WithSystemProperty(key = IGNITE_ENABLE_EXPERIMENTAL_COMMAND, value = "true")
 public class GridCommandHandlerConsistencyRepairCorrectnessTransactionalTest extends GridCommandHandlerAbstractTest {
     /** Test parameters. */
-    @Parameterized.Parameters(name = "misses={0}, nulls={1}, strategy={2}")
+    @Parameterized.Parameters(name = "misses={0}, nulls={1}, strategy={2}, parallel={3}")
     public static Iterable<Object[]> parameters() {
         List<Object[]> res = new ArrayList<>();
 
         for (boolean misses : new boolean[] {false, true}) {
             for (boolean nulls : new boolean[] {false, true})
-                for (ReadRepairStrategy strategy : ReadRepairStrategy.values())
-                    res.add(new Object[] {misses, nulls, strategy});
+                for (ReadRepairStrategy strategy : ReadRepairStrategy.values()) {
+                    for (boolean parallel : new boolean[] {false, true}) {
+                        if (parallel && strategy != ReadRepairStrategy.CHECK_ONLY)
+                            continue; // see https://issues.apache.org/jira/browse/IGNITE-15316
+
+                        res.add(new Object[] {misses, nulls, strategy, parallel});
+                    }
+                }
         }
 
         return res;
@@ -74,6 +81,10 @@ public class GridCommandHandlerConsistencyRepairCorrectnessTransactionalTest ext
     /** Strategy. */
     @Parameterized.Parameter(2)
     public ReadRepairStrategy strategy;
+
+    /** Parallel consistency check. */
+    @Parameterized.Parameter(3)
+    public boolean parallel;
 
     /** Partitions. */
     private static final int PARTITIONS = 8;
@@ -210,10 +221,16 @@ public class GridCommandHandlerConsistencyRepairCorrectnessTransactionalTest ext
      */
     protected final void repairAndCheck(ReadRepairData data) {
         for (int i = 0; i < PARTITIONS; i++) {
-            assertEquals(EXIT_CODE_OK, execute("--consistency", "repair",
+            List<String> cmd = new ArrayList<>(Arrays.asList(
+                "--consistency", "repair",
                 ConsistencyCommand.CACHE, DEFAULT_CACHE_NAME,
                 ConsistencyCommand.PARTITION, String.valueOf(i),
                 ConsistencyCommand.STRATEGY, strategy.toString()));
+
+            if (parallel)
+                cmd.add(ConsistencyCommand.PARALLEL);
+
+            assertEquals(EXIT_CODE_OK, execute(cmd));
         }
 
         IgniteCache<Integer, Object> cache = data.cache;
