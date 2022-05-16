@@ -189,9 +189,14 @@ public class ThinClientPartitionAwarenessStableTopologyTest extends ThinClientAb
         String cacheName = "ignite-sys-atomic-cache@default-ds-group";
         IgniteInternalCache<Object, Object> cache = grid(0).context().cache().cache(cacheName);
 
+        // Warm up.
+        clientAtomicLong.get();
+        opsQueue.clear();
+
+        // Test.
+        clientAtomicLong.get();
         TestTcpClientChannel opCh = affinityChannel(serverAtomicLong.key(), cache);
 
-        clientAtomicLong.get();
         assertOpOnChannel(opCh, ClientOperation.ATOMIC_LONG_VALUE_GET);
     }
 
