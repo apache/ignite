@@ -1901,7 +1901,8 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
 
                                             try {
                                                 assertTrue(U.await(l2, 10, TimeUnit.SECONDS));
-                                            } catch (IgniteInterruptedCheckedException e) {
+                                            }
+                                            catch (IgniteInterruptedCheckedException e) {
                                                 fail(X.getFullStackTrace(e));
                                             }
                                         }

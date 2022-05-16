@@ -82,6 +82,9 @@ public class KillCommandsCommandShTest extends GridCommandHandlerClusterByClassA
             cache.put(i, i);
 
         awaitPartitionMapExchange();
+
+        // We change to reduce the waiting time for interrupting compute job.
+        computeJobWorkerInterruptTimeout(srvs.get(0)).propagate(100L);
     }
 
     /** {@inheritDoc} */

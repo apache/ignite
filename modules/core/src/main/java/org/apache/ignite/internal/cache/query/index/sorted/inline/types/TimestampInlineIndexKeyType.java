@@ -67,7 +67,8 @@ public class TimestampInlineIndexKeyType extends NullableInlineIndexKeyType<Abst
         if (dv > MAX_DATE_VALUE) {
             dv = MAX_DATE_VALUE;
             nanos = NANOS_PER_DAY - 1;
-        } else if (dv < MIN_DATE_VALUE) {
+        }
+        else if (dv < MIN_DATE_VALUE) {
             dv = MIN_DATE_VALUE;
             nanos = 0;
         }

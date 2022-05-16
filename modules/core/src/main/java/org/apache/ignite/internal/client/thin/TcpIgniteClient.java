@@ -33,6 +33,8 @@ import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
+import org.apache.ignite.client.ClientAtomicConfiguration;
+import org.apache.ignite.client.ClientAtomicLong;
 import org.apache.ignite.client.ClientCache;
 import org.apache.ignite.client.ClientCacheConfiguration;
 import org.apache.ignite.client.ClientCluster;
@@ -57,6 +59,7 @@ import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
 import org.apache.ignite.internal.client.thin.io.ClientConnectionMultiplexer;
+import org.apache.ignite.internal.util.GridArgumentCheck;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.marshaller.MarshallerContext;
@@ -327,6 +330,44 @@ public class TcpIgniteClient implements IgniteClient {
     /** {@inheritDoc} */
     @Override public ClientServices services(ClientClusterGroup grp) {
         return services.withClusterGroup((ClientClusterGroupImpl)grp);
+    }
+
+    /** {@inheritDoc} */
+    @Override public ClientAtomicLong atomicLong(String name, long initVal, boolean create) {
+        return atomicLong(name, null, initVal, create);
+    }
+
+    /** {@inheritDoc} */
+    @Override public ClientAtomicLong atomicLong(String name, ClientAtomicConfiguration cfg, long initVal, boolean create) {
+        GridArgumentCheck.notNull(name, "name");
+
+        if (create) {
+            ch.service(ClientOperation.ATOMIC_LONG_CREATE, out -> {
+                try (BinaryRawWriterEx w = new BinaryWriterExImpl(null, out.out(), null, null)) {
+                    w.writeString(name);
+                    w.writeLong(initVal);
+
+                    if (cfg != null) {
+                        w.writeBoolean(true);
+                        w.writeInt(cfg.getAtomicSequenceReserveSize());
+                        w.writeByte((byte)cfg.getCacheMode().ordinal());
+                        w.writeInt(cfg.getBackups());
+                        w.writeString(cfg.getGroupName());
+                    }
+                    else
+                        w.writeBoolean(false);
+                }
+
+            }, null);
+        }
+
+        ClientAtomicLong res = new ClientAtomicLongImpl(name, cfg != null ? cfg.getGroupName() : null, ch);
+
+        // Return null when specified atomic long does not exist to match IgniteKernal behavior.
+        if (!create && res.removed())
+            return null;
+
+        return res;
     }
 
     /**

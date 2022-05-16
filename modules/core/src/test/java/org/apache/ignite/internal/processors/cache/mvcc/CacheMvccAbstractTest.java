@@ -650,7 +650,8 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
 
                                             assertNull("new=" + e + ", old=" + old, old);
                                         }
-                                    } finally {
+                                    }
+                                    finally {
                                         U.closeQuiet((AutoCloseable)it);
                                     }
 

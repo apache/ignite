@@ -156,7 +156,8 @@ public class PersistenceTask extends VisorOneNodeTask<PersistenceTaskArg, Persis
                         copyCacheFiles(workDir.toPath().resolve(dir).toFile(), backupDir);
 
                         backupCompletedCaches.add(backupDirName);
-                    } catch (IgniteCheckedException | IOException e) {
+                    }
+                    catch (IgniteCheckedException | IOException e) {
                         backupFailedCaches.add(dir);
                     }
                 }
@@ -282,7 +283,8 @@ public class PersistenceTask extends VisorOneNodeTask<PersistenceTaskArg, Persis
 
             try {
                 cacheProc.cleanupCachesDirectories();
-            } catch (IgniteCheckedException e) {
+            }
+            catch (IgniteCheckedException e) {
                 throw U.convertException(e);
             }
 

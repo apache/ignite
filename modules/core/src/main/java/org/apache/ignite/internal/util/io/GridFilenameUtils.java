@@ -614,7 +614,8 @@ public class GridFilenameUtils {
             if (ch0 == '~')
                 return 2;  // return a length greater than the input
             return isSeparator(ch0) ? 1 : 0;
-        } else {
+        }
+        else {
             if (ch0 == '~') {
                 int posUnix = filename.indexOf(UNIX_SEPARATOR, 1);
                 int posWin = filename.indexOf(WINDOWS_SEPARATOR, 1);
@@ -634,7 +635,8 @@ public class GridFilenameUtils {
                 }
                 return -1;
 
-            } else if (isSeparator(ch0) && isSeparator(ch1)) {
+            }
+            else if (isSeparator(ch0) && isSeparator(ch1)) {
                 int posUnix = filename.indexOf(UNIX_SEPARATOR, 2);
                 int posWin = filename.indexOf(WINDOWS_SEPARATOR, 2);
                 if (posUnix == -1 && posWin == -1 || posUnix == 2 || posWin == 2)
@@ -642,7 +644,8 @@ public class GridFilenameUtils {
                 posUnix = posUnix == -1 ? posWin : posUnix;
                 posWin = posWin == -1 ? posUnix : posWin;
                 return Math.min(posUnix, posWin) + 1;
-            } else
+            }
+            else
                 return isSeparator(ch0) ? 1 : 0;
         }
     }
@@ -1252,13 +1255,15 @@ public class GridFilenameUtils {
                         break;
                     anyChars = false;
 
-                } else if (wcs[wcsIdx].equals("*")) {
+                }
+                else if (wcs[wcsIdx].equals("*")) {
                     // set any chars status
                     anyChars = true;
                     if (wcsIdx == wcs.length - 1)
                         textIdx = filename.length();
 
-                } else {
+                }
+                else {
                     // matching text token
                     if (anyChars) {
                         // any chars then try to locate text token
@@ -1270,7 +1275,8 @@ public class GridFilenameUtils {
                         int repeat = caseSensitivity.checkIndexOf(filename, textIdx + 1, wcs[wcsIdx]);
                         if (repeat >= 0)
                             backtrack.push(new int[] {wcsIdx, repeat});
-                    } else {
+                    }
+                    else {
                         // matching from current position
                         if (!caseSensitivity.checkRegionMatches(filename, textIdx, wcs[wcsIdx])) {
                             // couldnt match token
@@ -1324,7 +1330,8 @@ public class GridFilenameUtils {
                 else if (list.isEmpty() ||
                         i > 0 && !list.get(list.size() - 1).equals("*"))
                     list.add("*");
-            } else
+            }
+            else
                 buffer.append(array[i]);
         }
         if (buffer.length() != 0)

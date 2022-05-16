@@ -249,7 +249,8 @@ public class InlineIndexImpl extends AbstractIndex implements InlineIndex {
             if (!replaced && oldRow != null)
                 remove(oldRow);
 
-        } finally {
+        }
+        finally {
             ThreadLocalRowHandlerHolder.clearRowHandler();
         }
     }
@@ -269,7 +270,8 @@ public class InlineIndexImpl extends AbstractIndex implements InlineIndex {
 
             return replaced;
 
-        } catch (Throwable t) {
+        }
+        catch (Throwable t) {
             cctx.kernalContext().failure().process(new FailureContext(CRITICAL_ERROR, t));
 
             throw t;
@@ -287,7 +289,8 @@ public class InlineIndexImpl extends AbstractIndex implements InlineIndex {
 
             segments[segment].removex(idxRow);
 
-        } catch (Throwable t) {
+        }
+        catch (Throwable t) {
             cctx.kernalContext().failure().process(new FailureContext(CRITICAL_ERROR, t));
 
             throw t;

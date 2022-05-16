@@ -574,7 +574,8 @@ public class RunningQueryManager {
         if (err == null) {
             try {
                 runningQryInfo.cancel();
-            } catch (Exception e) {
+            }
+            catch (Exception e) {
                 U.warn(log, "Cancellation of query failed: [qryId=" + qryId + "]", e);
 
                 if (!msg.asyncResponse())

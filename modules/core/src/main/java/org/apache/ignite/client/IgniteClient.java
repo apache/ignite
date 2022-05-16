@@ -218,6 +218,29 @@ public interface IgniteClient extends AutoCloseable {
     public ClientServices services(ClientClusterGroup grp);
 
     /**
+     * Gets an atomic long from cache and creates one if it has not been created yet and {@code create} flag
+     * is {@code true}.
+     *
+     * @param name Name of atomic long.
+     * @param initVal Initial value for atomic long. Ignored if {@code create} flag is {@code false}.
+     * @param create Boolean flag indicating whether data structure should be created if it does not exist.
+     * @return Atomic long.
+     */
+    public ClientAtomicLong atomicLong(String name, long initVal, boolean create);
+
+    /**
+     * Gets an atomic long from cache and creates one if it has not been created yet and {@code create} flag
+     * is {@code true}.
+     *
+     * @param name Name of atomic long.
+     * @param cfg Configuration.
+     * @param initVal Initial value for atomic long. Ignored if {@code create} flag is {@code false}.
+     * @param create Boolean flag indicating whether data structure should be created if it does not exist.
+     * @return Atomic long.
+     */
+    public ClientAtomicLong atomicLong(String name, ClientAtomicConfiguration cfg, long initVal, boolean create);
+
+    /**
      * Closes this client's open connections and relinquishes all underlying resources.
      */
     @Override public void close();

@@ -2195,7 +2195,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                                 ctx.cache().metrics0().onReadOnlyInvoke(old != null);
 
                             continue;
-                        } else {
+                        }
+                        else {
                             updatedVal = ctx.unwrapTemporary(invokeEntry.getValue());
 
                             updated = ctx.toCacheObject(updatedVal);

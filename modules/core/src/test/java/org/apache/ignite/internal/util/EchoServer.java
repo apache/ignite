@@ -131,7 +131,8 @@ class EchoServer implements AutoCloseable {
                     }
                     os.write(ch);
                 }
-            } catch (IOException e) {
+            }
+            catch (IOException e) {
                 throw new UncheckedIOException(e);
             }
         }

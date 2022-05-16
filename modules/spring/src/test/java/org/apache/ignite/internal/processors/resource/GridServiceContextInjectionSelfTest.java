@@ -150,7 +150,8 @@ public class GridServiceContextInjectionSelfTest extends GridCommonAbstractTest 
 
             try {
                 GridTestUtils.waitForCondition(() -> ctxSetter.isCancelled(), GridTestUtils.DFLT_TEST_TIMEOUT);
-            } catch (IgniteInterruptedCheckedException ignore) {
+            }
+            catch (IgniteInterruptedCheckedException ignore) {
                 // Execution interrupted when service is cancelled.
             }
 

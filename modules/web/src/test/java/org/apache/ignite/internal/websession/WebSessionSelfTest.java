@@ -1275,7 +1275,8 @@ public class WebSessionSelfTest extends GridCommonAbstractTest {
 
                 res.getWriter().flush();
 
-            } else if (req.getPathInfo().equals("/simple")) {
+            }
+            else if (req.getPathInfo().equals("/simple")) {
                 HttpSession ses = req.getSession();
                 X.println(">>>", "Request session simple: " + ses.getId(), ">>>");
 
@@ -1291,7 +1292,8 @@ public class WebSessionSelfTest extends GridCommonAbstractTest {
             if (req.getPathInfo().equals("/login")) {
                 try {
                     req.login("admin", "admin");
-                } catch (Exception e) {
+                }
+                catch (Exception e) {
                     X.printerrln("Login failed due to exception.", e);
                 }
 

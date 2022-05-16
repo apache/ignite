@@ -135,12 +135,14 @@ public class DecisionTreeClassificationTrainerSQLTableExample {
                 }
 
                 System.out.println(">>> Example completed.");
-            } finally {
+            }
+            finally {
                 cache.query(new SqlFieldsQuery("DROP TABLE titanic_train"));
                 cache.query(new SqlFieldsQuery("DROP TABLE titanic_test"));
                 cache.destroy();
             }
-        } finally {
+        }
+        finally {
             System.out.flush();
         }
     }
@@ -210,7 +212,8 @@ public class DecisionTreeClassificationTrainerSQLTableExample {
     private static Integer parseInteger(String value) {
         try {
             return Integer.valueOf(value);
-        } catch (NumberFormatException e) {
+        }
+        catch (NumberFormatException e) {
             return 0;
         }
     }
@@ -219,7 +222,8 @@ public class DecisionTreeClassificationTrainerSQLTableExample {
     private static Double parseDouble(String value) {
         try {
             return Double.valueOf(value);
-        } catch (NumberFormatException e) {
+        }
+        catch (NumberFormatException e) {
             return 0.0;
         }
     }

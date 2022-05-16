@@ -52,7 +52,8 @@ public class H2OMojoModelParser implements ModelParser<NamedVector, Double, H2OM
                     .setModel(mojoMdl);
             EasyPredictModelWrapper easyPredict = new EasyPredictModelWrapper(cfg);
             return new H2OMojoModel(easyPredict);
-        } catch (IOException e) {
+        }
+        catch (IOException e) {
             throw new RuntimeException("Failed to parse MOJO", e);
         }
     }
