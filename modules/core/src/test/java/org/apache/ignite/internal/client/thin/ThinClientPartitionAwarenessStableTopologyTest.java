@@ -181,8 +181,7 @@ public class ThinClientPartitionAwarenessStableTopologyTest extends ThinClientAb
      * Test atomic long.
      */
     @Test
-    public void testAtomicLong()
-    {
+    public void testAtomicLong() {
         testAtomicLong("default-grp-partitioned", null, CacheMode.PARTITIONED);
         testAtomicLong("default-grp-replicated", null, CacheMode.REPLICATED);
         testAtomicLong("custom-grp-partitioned", "testAtomicLong", CacheMode.PARTITIONED);
@@ -192,14 +191,13 @@ public class ThinClientPartitionAwarenessStableTopologyTest extends ThinClientAb
     /**
      * Test atomic long.
      */
-    private void testAtomicLong(String name, String grpName, CacheMode cacheMode)
-    {
+    private void testAtomicLong(String name, String grpName, CacheMode cacheMode) {
         ClientAtomicConfiguration cfg = new ClientAtomicConfiguration()
                 .setGroupName(grpName)
                 .setCacheMode(cacheMode);
 
         ClientAtomicLong clientAtomicLong = client.atomicLong(name, cfg, 1, true);
-        GridCacheAtomicLongEx serverAtomicLong = (GridCacheAtomicLongEx) grid(0).atomicLong(
+        GridCacheAtomicLongEx serverAtomicLong = (GridCacheAtomicLongEx)grid(0).atomicLong(
                 name, new AtomicConfiguration().setGroupName(grpName), 0, false);
 
         String cacheName = "ignite-sys-atomic-cache@" + (grpName == null ? "default-ds-group" : grpName);

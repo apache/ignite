@@ -119,7 +119,8 @@ public class ClientAtomicLongImpl implements ClientAtomicLong {
 
     /** {@inheritDoc} */
     @Override public boolean removed() {
-        return ch.affinityService(cacheId, affinityKey(), ClientOperation.ATOMIC_LONG_EXISTS, this::writeName, in -> !in.in().readBoolean());
+        return ch.affinityService(cacheId, affinityKey(), ClientOperation.ATOMIC_LONG_EXISTS, this::writeName,
+                in -> !in.in().readBoolean());
     }
 
     /** {@inheritDoc} */
