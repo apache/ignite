@@ -173,6 +173,15 @@ public class ThinClientPartitionAwarenessStableTopologyTest extends ThinClientAb
     }
 
     /**
+     * Test atomic long.
+     */
+    @Test
+    public void testAtomicLong()
+    {
+        // TODO
+    }
+
+    /**
      * @param cacheName Cache name.
      */
     private void testNotApplicableCache(String cacheName) {
