@@ -216,9 +216,6 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
     /** Flag for enabling single-threaded append-only tree creation. */
     private boolean sequentialWriteOptsEnabled;
 
-    /** todo */
-    private final boolean debugMsg = false;
-
     /** */
     private final GridTreePrinter<Long> treePrinter = new GridTreePrinter<Long>() {
         /** */
@@ -6418,9 +6415,6 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
             // If the found row is lower than the upper bound, then we've found a new lower bound.
             completed = !(lowerBoundFound = idx != io.getCount(pageAddr) && compare(io, pageAddr, idx, upper) <= 0);
 
-            if (debugMsg && completed)
-                System.err.println(">xxx> finished on notFound " + lower + "-" + upper);
-
             return true;
         }
 
@@ -6488,8 +6482,11 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
             assert !isRemoved() : "already removed";
             assert remaining > 0 || remaining == -1 : remaining;
 
-            // It's just a marker.
+            // It's just a marker that we finished with this leaf-page.
             rmvd = (T)Boolean.TRUE;
+
+            if (highIdx < cnt - 1)
+                completed = true;
 
             // Store the current position of the end of the list.
             ListIterator<L> itr = needOld ? removedRows.listIterator(removedRows.size()) : null;
@@ -6514,14 +6511,9 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
 
         /** {@inheritDoc} */
         @Override protected boolean releaseForRetry(Tail<L> t) {
-            if (t.lvl <= 1) {
-                // todo
-                completed = false;
-
-                // todo
-                if (needReplaceInner != FALSE)
-                    row = lower;
-            }
+            // todo
+            if (t.lvl <= 1 && needReplaceInner != FALSE)
+                row = lower;
 
             return super.releaseForRetry(t);
         }
@@ -6547,48 +6539,30 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
 
             assert cnt <= Short.MAX_VALUE : cnt;
 
-            int lowIdx = findInsertionPoint(lvl, io, leafAddr, 0, cnt, r.lower, 0);
+            int idx = findInsertionPoint(lvl, io, leafAddr, 0, cnt, r.lower, 0);
 
-            if (lowIdx < 0) {
-                lowIdx = fix(lowIdx);
+            if (idx < 0) {
+                idx = fix(idx);
 
-                if (lowIdx == cnt || compare(io, leafAddr, lowIdx, r.upper) > 0)
+                if (idx == cnt || compare(io, leafAddr, idx, r.upper) > 0)
                     return RETRY; // We've found match on search but now it's gone.
             }
 
-            assert lowIdx >= 0 && lowIdx < cnt : lowIdx;
+            assert idx >= 0 && idx < cnt : idx;
 
-            int highIdx = findInsertionPoint(lvl, io, leafAddr, lowIdx, cnt, r.upper, 0);
+            int highIdx = findInsertionPoint(lvl, io, leafAddr, idx, cnt, r.upper, 0);
 
-            boolean finished = false;
+            if (highIdx < 0)
+                highIdx = fix(highIdx) - 1;
 
-            if (highIdx >= 0) {
-                finished = true;
+            if (r.remaining != -1 && highIdx - idx + 1 >= r.remaining)
+                highIdx = idx + r.remaining - 1;
 
-                if (debugMsg)
-                    System.err.println(">xxx> finished highIdx >= 0 " + r.lower + "-" + r.upper);
-            }
-            else {
-                highIdx = fix(highIdx);
-
-                if (highIdx != cnt) {
-                    finished = true;
-
-                    if (debugMsg)
-                        System.err.println(">xxx> finished highIdx != cnt " + r.lower + "-" + r.upper);
-                }
-
-                --highIdx;
-            }
-
-            if (r.remaining != -1 && highIdx - lowIdx + 1 >= r.remaining)
-                highIdx = lowIdx + r.remaining - 1;
-
-            assert highIdx >= lowIdx : "low=" + lowIdx + ", high=" + highIdx;
+            assert highIdx >= idx : "low=" + idx + ", high=" + highIdx;
 
             r.highIdx = highIdx;
 
-            int rmvCnt = highIdx - lowIdx + 1;
+            int rmvCnt = highIdx - idx + 1;
 
             // Need to do inner replace when we remove the rightmost element and the leaf have no forward page,
             // i.e. it is not the rightmost leaf of the tree.
@@ -6627,19 +6601,14 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
 
                 Tail<L> t = r.addTail(leafId, leafPage, leafAddr, io, 0, Tail.EXACT);
 
-                t.idx = (short)lowIdx;
-
-                r.completed = finished;
+                t.idx = (short)idx;
 
                 // We will do the actual remove only when we made sure that
                 // we've locked the whole needed branch correctly.
-
                 return FOUND;
             }
 
-            r.completed = finished;
-
-            r.removeDataRowFromLeaf(leafId, leafPage, leafAddr, null, io, cnt, lowIdx);
+            r.removeDataRowFromLeaf(leafId, leafPage, leafAddr, null, io, cnt, idx);
 
             return FOUND;
         }

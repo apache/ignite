@@ -1397,51 +1397,66 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
 
         assertEquals(0, tree.size());
 
-        for (long i = 0; i < 1_000; i++)
+        int batchSize = 5;
+        int keysCnt = 10_000;
+        int startKey = 1_000;
+        int endKey = startKey + keysCnt;
+        List<Long> expList = new ArrayList<>();
+
+        for (long i = startKey; i < endKey; i++) {
             tree.put(i);
+            expList.add(i);
+        }
 
-        T2<Long, Long> rmvRange = new T2<>(17L, 30L);
+        for (long i = 0; i < (endKey / batchSize); i++) {
+            long startIdx = i * batchSize;
+            long endIdx = startIdx + batchSize - 1;
+            int op = (int)(i % 4);
 
-        for (long i = rmvRange.get1(); i <= rmvRange.get2(); i++)
-            tree.remove(i);
+            List<Long> res;
 
-        long end = 50;
+            switch (op) {
+                case 0:
+                    res = tree.remove(startIdx, endIdx, 0);
 
-        List<Long> expRange =
-            LongStream.range(31L, end + 1).boxed().collect(Collectors.toList());
+                    break;
+                case 1:
+                    res = tree.remove(startIdx, endIdx, batchSize);
 
-        List<Long> res = tree.remove(rmvRange.get1(), end, 0);
+                    break;
+                case 2:
+                    if (startIdx >= startKey) {
+                        res = tree.remove(startIdx, Long.MAX_VALUE, batchSize);
+
+                        break;
+                    }
+                case 3:
+                    res = tree.remove(Long.MIN_VALUE, endIdx, batchSize);
+
+                    break;
+                default:
+                    throw new IllegalArgumentException("Unknown operation: " + op);
+            }
+
+            List<Long> expSubList = startIdx < startKey ?
+                Collections.emptyList() : expList.subList((int)startIdx - startKey, (int)endIdx - startKey + 1);
+
+            assertEquals("idx=" + startIdx + ", op=" + op, expSubList, res);
+        }
+
         assertNoLocks();
-        assertEquals(expRange, res);
+        assertEquals(0, tree.size());
 
-        res = tree.remove(rmvRange.get1(), end, 0);
+        // Check an empty range between the bounds.
+        tree.put(0L);
+        tree.put(10L);
+
+        assertTrue(tree.remove(1L, 9L, 0).isEmpty());
+        assertEquals(Collections.singletonList(0L), tree.remove(Long.MIN_VALUE, Long.MAX_VALUE, 1));
+        assertEquals(Collections.singletonList(10L), tree.remove(Long.MIN_VALUE, Long.MAX_VALUE, 1));
+
         assertNoLocks();
-        assertTrue(res.isEmpty());
-
-        res = tree.remove(rmvRange.get1(), end + 1, 0);
-        assertNoLocks();
-        assertEquals(1, res.size());
-
-        res = tree.remove(1000L, 10010L, 0);
-        assertNoLocks();
-        assertNotNull(res);
-        assertTrue(res.isEmpty());
-
-        res = tree.remove(999L, 10010L, 0);
-        assertNoLocks();
-        assertNotNull(res);
-        assertFalse(res.isEmpty());
-        assertEquals(Long.valueOf(999), res.get(0));
-
-        res = tree.remove(100L, 200L, 5);
-        assertNoLocks();
-        assertEquals(5, res.size());
-
-        res = tree.remove(100L, 200L, 95);
-        assertNoLocks();
-        assertEquals(95, res.size());
-
-        tree.validateTree();
+        assertEquals(0, tree.size());
     }
 
     /**
