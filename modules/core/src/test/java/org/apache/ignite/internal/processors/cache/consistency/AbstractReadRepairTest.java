@@ -312,7 +312,7 @@ public abstract class AbstractReadRepairTest extends GridCommonAbstractTest {
      */
     protected void generateAndCheck(
         Ignite initiator,
-        Integer cnt,
+        int cnt,
         boolean raw,
         boolean async,
         boolean misses,

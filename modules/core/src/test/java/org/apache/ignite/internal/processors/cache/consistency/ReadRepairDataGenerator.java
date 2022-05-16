@@ -124,7 +124,7 @@ public class ReadRepairDataGenerator {
      */
     public void generate(
         Ignite initiator,
-        Integer cnt,
+        int cnt,
         boolean raw,
         boolean async,
         boolean misses,

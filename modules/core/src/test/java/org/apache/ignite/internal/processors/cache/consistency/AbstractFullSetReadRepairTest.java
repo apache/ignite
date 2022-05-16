@@ -359,7 +359,7 @@ public abstract class AbstractFullSetReadRepairTest extends AbstractReadRepairTe
     /**
      *
      */
-    private void test(Ignite initiator, Integer cnt, boolean all) throws Exception {
+    private void test(Ignite initiator, int cnt, boolean all) throws Exception {
         testGet(initiator, cnt, all);
         testGetNull(initiator, cnt, all);
         testContains(initiator, cnt, all);
@@ -368,15 +368,15 @@ public abstract class AbstractFullSetReadRepairTest extends AbstractReadRepairTe
     /**
      *
      */
-    protected abstract void testGet(Ignite initiator, Integer cnt, boolean all) throws Exception;
+    protected abstract void testGet(Ignite initiator, int cnt, boolean all) throws Exception;
 
     /**
      *
      */
-    protected abstract void testGetNull(Ignite initiator, Integer cnt, boolean all) throws Exception;
+    protected abstract void testGetNull(Ignite initiator, int cnt, boolean all) throws Exception;
 
     /**
      *
      */
-    protected abstract void testContains(Ignite initiator, Integer cnt, boolean all) throws Exception;
+    protected abstract void testContains(Ignite initiator, int cnt, boolean all) throws Exception;
 }

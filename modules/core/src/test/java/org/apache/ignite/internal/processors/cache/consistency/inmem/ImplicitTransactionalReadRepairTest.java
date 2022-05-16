@@ -68,7 +68,7 @@ public class ImplicitTransactionalReadRepairTest extends AbstractFullSetReadRepa
     public boolean binary;
 
     /** {@inheritDoc} */
-    @Override protected void testGet(Ignite initiator, Integer cnt, boolean all) throws Exception {
+    @Override protected void testGet(Ignite initiator, int cnt, boolean all) throws Exception {
         generateAndCheck(
             initiator,
             cnt,
@@ -83,7 +83,7 @@ public class ImplicitTransactionalReadRepairTest extends AbstractFullSetReadRepa
     }
 
     /** {@inheritDoc} */
-    @Override protected void testContains(Ignite initiator, Integer cnt, boolean all) throws Exception {
+    @Override protected void testContains(Ignite initiator, int cnt, boolean all) throws Exception {
         generateAndCheck(
             initiator,
             cnt,
@@ -98,7 +98,7 @@ public class ImplicitTransactionalReadRepairTest extends AbstractFullSetReadRepa
     }
 
     /** {@inheritDoc} */
-    @Override protected void testGetNull(Ignite initiator, Integer cnt, boolean all) throws Exception {
+    @Override protected void testGetNull(Ignite initiator, int cnt, boolean all) throws Exception {
         generateAndCheck(
             initiator,
             cnt,
