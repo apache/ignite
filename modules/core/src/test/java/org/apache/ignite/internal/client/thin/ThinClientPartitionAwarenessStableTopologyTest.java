@@ -19,7 +19,6 @@ package org.apache.ignite.internal.client.thin;
 
 import java.util.function.Function;
 
-import org.apache.ignite.IgniteAtomicLong;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.client.ClientAtomicLong;
@@ -187,9 +186,13 @@ public class ThinClientPartitionAwarenessStableTopologyTest extends ThinClientAb
         ClientAtomicLong clientAtomicLong = client.atomicLong(name, 1, true);
         GridCacheAtomicLongEx serverAtomicLong = (GridCacheAtomicLongEx) grid(0).atomicLong(name, 0, false);
 
-        ClusterNode expectedNode = grid(0)
-                .affinity("ignite-sys-atomic-cache@default-ds-group")
-                .mapKeyToNode(serverAtomicLong.key());
+        String cacheName = "ignite-sys-atomic-cache@default-ds-group";
+        IgniteInternalCache<Object, Object> cache = grid(0).context().cache().cache(cacheName);
+
+        TestTcpClientChannel opCh = affinityChannel(serverAtomicLong.key(), cache);
+
+        clientAtomicLong.get();
+        assertOpOnChannel(opCh, ClientOperation.ATOMIC_LONG_VALUE_GET);
     }
 
     /**
