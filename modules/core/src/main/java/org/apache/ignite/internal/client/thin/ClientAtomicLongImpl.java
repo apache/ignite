@@ -21,6 +21,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.client.ClientAtomicLong;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
+import org.apache.ignite.internal.processors.datastructures.DataStructuresProcessor;
 import org.apache.ignite.internal.processors.datastructures.GridCacheInternalKeyImpl;
 import org.jetbrains.annotations.Nullable;
 
@@ -56,8 +57,9 @@ public class ClientAtomicLongImpl implements ClientAtomicLong {
         this.groupName = groupName;
         this.ch = ch;
 
-        key = new GridCacheInternalKeyImpl(name, groupName);
-        cacheId = ClientUtils.cacheId("ignite-sys-atomic-cache@" + (groupName == null ? "default-ds-group" : groupName));
+        String groupNameInternal = groupName == null ? DataStructuresProcessor.DEFAULT_DS_GROUP_NAME : groupName;
+        key = new GridCacheInternalKeyImpl(name, groupNameInternal);
+        cacheId = ClientUtils.cacheId(DataStructuresProcessor.ATOMICS_CACHE_NAME + "@" + groupNameInternal);
     }
 
     /** {@inheritDoc} */
