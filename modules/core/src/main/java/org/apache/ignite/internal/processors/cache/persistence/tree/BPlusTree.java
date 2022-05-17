@@ -4770,7 +4770,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
          * @param t Tail to release.
          * @return {@code true} If we need to retry or {@code false} to exit.
          */
-        protected boolean releaseForRetry(Tail<L> t) {
+        private boolean releaseForRetry(Tail<L> t) {
             // Try to simply release all first.
             if (t.lvl <= 1) {
                 // We've just locked leaf and did not do the remove, can safely release all and retry.
@@ -6400,26 +6400,26 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
 
     /** */
     protected class RemoveRange extends Remove {
+        /** Upper bound. */
+        private final L upper;
+
+        /** Lower bound. */
+        private final L lower;
+
         /** List of removed rows. */
         private final List<L> removedRows;
 
-        /** */
-        private final L upper;
-
-        /** */
-        private final L lower;
+        /** The number of remaining items to remove if a limit has been specified. */
+        private int remaining;
 
         /** */
         private int highIdx;
 
-        /** */
-        private boolean completed;
-
-        /** */
+        /** Indi */
         private boolean lowerBoundFound;
 
         /** */
-        private int remaining;
+        private boolean completed;
 
         /** */
         private boolean isDone() {
@@ -6435,7 +6435,10 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
             assert tail == null;
 
             // If the found row is lower than the upper bound, then we've found a new lower bound.
-            completed = !(lowerBoundFound = idx != io.getCount(pageAddr) && compare(io, pageAddr, idx, upper) <= 0);
+            if (idx != io.getCount(pageAddr) && compare(io, pageAddr, idx, upper) <= 0)
+                lowerBoundFound = true;
+            else // Not found.
+                completed = true;
 
             return true;
         }
@@ -6450,7 +6453,6 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
             assert tail == null;
             assert res != RETRY;
             assert res != RETRY_ROOT;
-//            assert lowerBoundFound || isDone();
 
             // isFinished marker.
             lowerBoundFound = false;
@@ -6505,11 +6507,11 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
             // It's just a marker that we finished with this leaf-page.
             rmvd = (T)Boolean.TRUE;
 
-            if (highIdx >= 0 || (highIdx = -highIdx - 1) < cnt - 1)
+            // We had an exact match of the upper bound on this page or the upper bound is lower than the last item.
+            if (highIdx >= 0 || (highIdx = fix(highIdx)) < cnt - 1)
                 completed = true;
 
-            assert highIdx < cnt : highIdx;
-            assert idx >= 0 && idx <= highIdx : idx;
+            assert idx >= 0 && idx <= highIdx && highIdx < cnt : "low=" + idx + ", high=" + highIdx + ", cnt=" + cnt;
 
             // Store the current position of the end of the list.
             ListIterator<L> itr = needOld ? removedRows.listIterator(removedRows.size()) : null;
@@ -6530,15 +6532,6 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
             }
 
             assert isRemoved();
-        }
-
-        /** {@inheritDoc} */
-        @Override protected boolean releaseForRetry(Tail<L> t) {
-            // todo
-            if (t.lvl <= 1 && needReplaceInner != FALSE)
-                row = lower;
-
-            return super.releaseForRetry(t);
         }
     }
 
