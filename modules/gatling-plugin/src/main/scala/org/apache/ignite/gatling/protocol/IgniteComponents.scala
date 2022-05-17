@@ -16,6 +16,7 @@ case class IgniteComponents(
     }
 
     override def onExit: Session => Unit = session => {
-        Option(session("igniteApi").as[IgniteApi]).foreach(_.close()(_ => (), _ => ()))
+        session("igniteApi").asOption[IgniteApi]
+          .foreach(_.close()(_ => (), _ => ()))
     }
 }

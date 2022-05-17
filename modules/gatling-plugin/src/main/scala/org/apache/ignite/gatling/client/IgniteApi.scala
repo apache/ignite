@@ -35,7 +35,7 @@ case class IgniteNodeApi(wrapped: Ignite)(implicit val ec: ExecutionContext) ext
     withCompletion(Future(wrapped.getOrCreateCache[K, V](name)).map(CacheNodeApi(_)))(s, f)
 
   override def close[U]()(s: Unit => U, f: Throwable => U): Unit =
-    withCompletion(Future(wrapped.close()))(s, f)
+    withCompletion(Future.successful(()))(s, f)
 }
 
 case class CacheNodeApi[K, V](wrapped: IgniteCache[K, V])(implicit val ec: ExecutionContext) extends CacheApi[K, V] with AsyncSupport {

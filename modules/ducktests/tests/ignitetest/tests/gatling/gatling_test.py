@@ -46,28 +46,21 @@ class GatlingTest(IgniteTest):
 
         ignite = IgniteService(self.test_context, server_config, 1)
 
-        # addresses = ignite.nodes[0].account.hostname + ":" + str(server_config.client_connector_configuration.port)
+        addresses = ignite.nodes[0].account.hostname + ":" + str(server_config.client_connector_configuration.port)
 
-        # thin_client_config = IgniteThinClientConfiguration(
+        # client_config = IgniteThinClientConfiguration(
         #     addresses=addresses,
         #     version=IgniteVersion(ignite_version))
-        #
-        # thin_gatling_clients = GatlingService(
-        #     self.test_context,
-        #     thin_client_config,
-        #     simulation_class_name="org.apache.ignite.internal.gatling.simulation.BasicSimulation",
-        #     num_nodes=3)
 
-        node_client_config = server_config._replace(client_mode=True,
-                                                    discovery_spi=from_ignite_cluster(ignite))
+        client_config = server_config._replace(client_mode=True,
+                                               discovery_spi=from_ignite_cluster(ignite))
 
-        node_gatling_clients = GatlingService(
+        gatling_clients = GatlingService(
             self.test_context,
-            node_client_config,
+            client_config,
             simulation_class_name="org.apache.ignite.internal.gatling.simulation.BasicSimulation",
             num_nodes=3)
 
         ignite.start()
-        # thin_gatling_clients.run()
-        node_gatling_clients.run()
+        gatling_clients.run()
         ignite.stop()
