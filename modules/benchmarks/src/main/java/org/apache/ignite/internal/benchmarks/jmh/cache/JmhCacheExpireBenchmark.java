@@ -66,9 +66,7 @@ public class JmhCacheExpireBenchmark {
     /** Cache with expire policy. */
     private IgniteCache<Integer, Integer> cacheExp;
 
-    /**
-     *
-     */
+    /** */
     @Benchmark
     public void putWithExpire() {
         int key = ThreadLocalRandom.current().nextInt(CNT);
@@ -76,9 +74,7 @@ public class JmhCacheExpireBenchmark {
         cacheExp.put(key, key);
     }
 
-    /**
-     *
-     */
+    /** */
     @Benchmark
     public void putWithoutExpire() {
         int key = ThreadLocalRandom.current().nextInt(CNT);

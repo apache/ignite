@@ -1363,6 +1363,9 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         IgniteInClosure2X<GridCacheEntryEx, GridCacheVersion> c,
         int amount
     ) throws IgniteCheckedException {
+        if (amount == 0)
+            return 0;
+
         GridCacheVersion obsoleteVer = null;
 
         cctx.shared().database().checkpointReadLock();
@@ -1393,77 +1396,6 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                 }
 
                 return rows.size();
-            }
-            finally {
-                busyLock.leaveBusy();
-            }
-        }
-        finally {
-            cctx.shared().database().checkpointReadUnlock();
-        }
-    }
-
-    /**
-     * @param cctx Cache context.
-     * @param c Closure.
-     * @param amount Limit of processed entries by single call, {@code -1} for no limit.
-     * @return cleared entries count.
-     * @throws IgniteCheckedException If failed.
-     */
-    private int expireInternalOld(
-        GridCacheContext cctx,
-        IgniteInClosure2X<GridCacheEntryEx, GridCacheVersion> c,
-        int amount
-    ) throws IgniteCheckedException {
-        long now = U.currentTimeMillis();
-
-        GridCacheVersion obsoleteVer = null;
-
-        GridCursor<PendingRow> cur;
-
-        cctx.shared().database().checkpointReadLock();
-
-        try {
-            if (grp.sharedGroup())
-                cur = pendingEntries.find(new PendingRow(cctx.cacheId()), new PendingRow(cctx.cacheId(), now, 0));
-            else
-                cur = pendingEntries.find(null, new PendingRow(CU.UNDEFINED_CACHE_ID, now, 0));
-
-            if (!cur.next())
-                return 0;
-
-            if (!busyLock.enterBusy())
-                return 0;
-
-            try {
-                int cleared = 0;
-
-                do {
-                    if (amount != -1 && cleared > amount)
-                        return cleared;
-
-                    PendingRow row = cur.get();
-
-                    if (row.key.partition() == -1)
-                        row.key.partition(cctx.affinity().partition(row.key));
-
-                    assert row.key != null && row.link != 0 && row.expireTime != 0 : row;
-
-                    if (pendingEntries.removex(row)) {
-                        if (obsoleteVer == null)
-                            obsoleteVer = cctx.cache().nextVersion();
-
-                        GridCacheEntryEx entry = cctx.cache().entryEx(row.key);
-
-                        if (entry != null)
-                            c.apply(entry, obsoleteVer);
-                    }
-
-                    cleared++;
-                }
-                while (cur.next());
-
-                return cleared;
             }
             finally {
                 busyLock.leaveBusy();
