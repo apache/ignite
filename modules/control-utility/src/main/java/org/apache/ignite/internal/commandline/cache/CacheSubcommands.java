@@ -19,7 +19,6 @@ package org.apache.ignite.internal.commandline.cache;
 
 import org.apache.ignite.internal.commandline.Command;
 import org.apache.ignite.internal.commandline.argument.CommandArg;
-import org.apache.ignite.internal.commandline.cache.argument.CacheMetricCommandArg;
 import org.apache.ignite.internal.commandline.cache.argument.DistributionCommandArg;
 import org.apache.ignite.internal.commandline.cache.argument.FindAndDeleteGarbageArg;
 import org.apache.ignite.internal.commandline.cache.argument.IdleVerifyCommandArg;
@@ -102,7 +101,7 @@ public enum CacheSubcommands {
     /**
      * Enable / disable cache metrics collection or show metrics collection status.
      */
-    METRIC("metric", CacheMetricCommandArg.class, new CacheMetric());
+    METRIC("metric", null, new CacheMetric());
 
     /** Enumerated values. */
     private static final CacheSubcommands[] VALS = values();
