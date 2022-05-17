@@ -3,7 +3,7 @@ package org.apache.ignite.gatling.examples
 import io.gatling.core.Predef._
 import io.gatling.core.feeder.Feeder
 import io.gatling.core.structure.ScenarioBuilder
-import org.apache.ignite.configuration.ClientConfiguration
+import org.apache.ignite.configuration.{ClientConfiguration, IgniteConfiguration}
 import org.apache.ignite.gatling.Predef._
 import org.apache.ignite.gatling.protocol.IgniteProtocol
 import org.apache.ignite.internal.IgnitionEx
@@ -18,6 +18,10 @@ class BasicSimulation extends Simulation {
         .getOrElse(new ClientConfiguration().setAddresses("localhost:10800"))
 
     val igniteP: IgniteProtocol = ignite.cfg(cfg)
+
+//    val node_cfg: IgniteConfiguration = new IgniteConfiguration()
+//    val igniteN: IgniteProtocol = ignite.cfg(node_cfg)
+
 
     val c = new AtomicInteger(0)
     val feeder: Feeder[Int] = Iterator.continually(Map(

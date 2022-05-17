@@ -3,6 +3,7 @@ package org.apache.ignite.gatling.protocol
 import io.gatling.core.CoreComponents
 import io.gatling.core.config.GatlingConfiguration
 import io.gatling.core.protocol.{Protocol, ProtocolKey}
+import org.apache.ignite.Ignite
 import org.apache.ignite.configuration.ClientConfiguration
 
 object IgniteProtocol {
@@ -21,10 +22,11 @@ object IgniteProtocol {
                 IgniteComponents(coreComponents, igniteProtocol)
             }
     }
+
+    def apply(cfg: ClientConfiguration): IgniteProtocol = new IgniteProtocol(Left(cfg))
+    def apply(ignite: Ignite): IgniteProtocol = new IgniteProtocol(Right(ignite))
 }
 
-case class IgniteProtocol(
-    cfg: ClientConfiguration
-) extends Protocol {
-    def cfg(cfg: ClientConfiguration): IgniteProtocol = copy(cfg = cfg)
+class IgniteProtocol(val cfg: Either[ClientConfiguration, Ignite]) extends Protocol {
+//    def cfg(cfg: ClientConfiguration): IgniteProtocol = copy(client_cfg = cfg)
 }
