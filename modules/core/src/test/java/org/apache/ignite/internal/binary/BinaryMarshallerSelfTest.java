@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.binary;
 
+import com.google.common.collect.ImmutableList;
 import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
@@ -56,7 +57,6 @@ import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-import com.google.common.collect.ImmutableList;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSystemProperties;
@@ -1195,6 +1195,17 @@ public class BinaryMarshallerSelfTest extends AbstractBinaryArraysTest {
         // Check that modified empty object and the new object with the sanme field are equals.
         assertEquals(o1.schemaId(), o2.schemaId());
         assertEquals(o1, o2);
+    }
+
+    /** */
+    @Test
+    public void emptyObjectBinarylizable() throws IgniteCheckedException {
+        BinaryMarshaller m = binaryMarshaller();
+
+        BinaryObjectBuilder bob = marshal(new EmptyBinarylizable(), m).toBuilder();
+
+        // Check any field is null at the empty object.
+        assertNull(bob.getField("a"));
     }
 
     /**
@@ -6195,6 +6206,24 @@ public class BinaryMarshallerSelfTest extends AbstractBinaryArraysTest {
             lst1 = new ArrayList<>(Arrays.asList("c", "d"));;
 
             v = new Value(127);
+        }
+    }
+
+    /** */
+    public static class EmptyBinarylizable implements Binarylizable {
+        /** */
+        public EmptyBinarylizable() {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Override public void writeBinary(BinaryWriter writer) throws BinaryObjectException {
+            writer.rawWriter().writeInt(0);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void readBinary(BinaryReader reader) throws BinaryObjectException {
+            reader.rawReader().readInt();
         }
     }
 }
