@@ -603,24 +603,94 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
             return FOUND;
         }
 
-        /** */
+        /**
+         * @param lvl Level.
+         * @param io IO.
+         * @param leafAddr Page address.
+         * @param cnt Number of rows.
+         * @param r Remove operation.
+         * @return Insertion point as in {@link Arrays#binarySearch(Object[], Object, Comparator)}.
+         */
         int insertionPoint(int lvl, BPlusIO<L> io, long leafAddr, int cnt, R r) throws IgniteCheckedException {
             return findInsertionPoint(lvl, io, leafAddr, 0, cnt, r.row, 0);
         }
 
-        /** */
+        /**
+         * @param r Remove operation.
+         * @param idx Row number.
+         * @param cnt Number of rows.
+         * @return {@code True} if the specified row is the rightmost item on the page.
+         */
         boolean isHighestOnLeaf(R r, int idx, int cnt) {
             return idx == cnt - 1;
         }
 
-        /** */
+        /**
+         * @param r Remove operation.
+         * @param idx Row number.
+         * @return Number of rows to remove.
+         */
         int rmvCnt(R r, int idx) {
             return 1;
         }
 
-        /** */
+        /**
+         * @param r Remove operation.
+         * @param leafAddr Page address.
+         * @param io IO.
+         * @throws IgniteCheckedException If failed.
+         */
         void afterLockForward(R r, long leafAddr, BPlusIO<L> io) throws IgniteCheckedException {
             // No-op.
+        }
+    }
+
+    /** */
+    private final PageHandler<Remove, Result> rmvRangeFromLeaf;
+
+    /**
+     *
+     */
+    private class RemoveRangeFromLeaf extends RemoveFromLeaf<RemoveRange> {
+        /** {@inheritDoc} */
+        @Override int insertionPoint(int lvl, BPlusIO<L> io, long leafAddr, int cnt, RemoveRange r) throws IgniteCheckedException {
+            int idx = findInsertionPoint(lvl, io, leafAddr, 0, cnt, r.lower, 0);
+
+            if (idx < 0) {
+                idx = fix(idx);
+
+                if (idx == cnt || compare(io, leafAddr, idx, r.upper) > 0)
+                    return -idx - 1;
+            }
+
+            r.highIdx = findInsertionPoint(lvl, io, leafAddr, idx, cnt, r.upper, 0);
+
+            int highIdx = r.highIdx >= 0 ? r.highIdx : fix(r.highIdx) - 1;
+
+            if (r.remaining != -1 && highIdx - idx + 1 >= r.remaining)
+                highIdx = idx + r.remaining - 1;
+
+            assert highIdx >= idx : "low=" + idx + ", high=" + highIdx;
+
+            r.highIdx = r.highIdx > 0 ? highIdx : -highIdx - 1;
+
+            return idx;
+        }
+
+        /** {@inheritDoc} */
+        @Override boolean isHighestOnLeaf(RemoveRange r, int idx, int cnt) {
+            return fix(r.highIdx) == cnt - 1;
+        }
+
+        /** {@inheritDoc} */
+        @Override int rmvCnt(RemoveRange r, int idx) {
+            return fix(r.highIdx) - idx + 1;
+        }
+
+        /** {@inheritDoc} */
+        @Override void afterLockForward(RemoveRange r, long leafAddr, BPlusIO<L> io) throws IgniteCheckedException {
+            if (r.needReplaceInner == TRUE)
+                r.row = getRow(io, leafAddr, fix(r.highIdx));
         }
     }
 
@@ -6415,9 +6485,6 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         /** */
         private int highIdx;
 
-        /** Indi */
-        private boolean lowerBoundFound;
-
         /** */
         private boolean completed;
 
@@ -6434,10 +6501,9 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
             assert !completed;
             assert tail == null;
 
-            // If the found row is lower than the upper bound, then we've found a new lower bound.
-            if (idx != io.getCount(pageAddr) && compare(io, pageAddr, idx, upper) <= 0)
-                lowerBoundFound = true;
-            else // Not found.
+            // If the lower bound is higher than the rightmost item, or if this item is outside the given range,
+            // then the search is completed - there are no items from the given range.
+            if (idx == io.getCount(pageAddr) || compare(io, pageAddr, idx, upper) > 0)
                 completed = true;
 
             return true;
@@ -6445,34 +6511,23 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
 
         /** {@inheritDoc} */
         @Override protected boolean exact() {
-            return !lowerBoundFound;
+            return completed;
         }
 
         /** {@inheritDoc} */
         @Override protected Result finish(Result res) {
-            assert tail == null;
-            assert res != RETRY;
-            assert res != RETRY_ROOT;
-
-            // isFinished marker.
-            lowerBoundFound = false;
-
             if (isDone())
                 return super.finish(res);
 
+            assert tail == null;
+
+            // Continue operation - restart from the root.
             row = lower;
             needReplaceInner = FALSE;
             needMergeEmptyBranch = FALSE;
             rmvd = null;
 
             return RETRY;
-        }
-
-        /** {@inheritDoc} */
-        @Override protected boolean isFinished() {
-            boolean res = super.isFinished();
-
-            return res ? !lowerBoundFound : res;
         }
 
         /**
@@ -6532,53 +6587,6 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
             }
 
             assert isRemoved();
-        }
-    }
-
-    /** */
-    private final PageHandler<Remove, Result> rmvRangeFromLeaf;
-
-    /** */
-    private class RemoveRangeFromLeaf extends RemoveFromLeaf<RemoveRange> {
-        /** {@inheritDoc} */
-        @Override int insertionPoint(int lvl, BPlusIO<L> io, long leafAddr, int cnt, RemoveRange r) throws IgniteCheckedException {
-            int idx = findInsertionPoint(lvl, io, leafAddr, 0, cnt, r.lower, 0);
-
-            if (idx < 0) {
-                idx = fix(idx);
-
-                if (idx == cnt || compare(io, leafAddr, idx, r.upper) > 0)
-                    return -idx - 1;
-            }
-
-            r.highIdx = findInsertionPoint(lvl, io, leafAddr, idx, cnt, r.upper, 0);
-
-            int highIdx = r.highIdx >= 0 ? r.highIdx : fix(r.highIdx) - 1;
-
-            if (r.remaining != -1 && highIdx - idx + 1 >= r.remaining)
-                highIdx = idx + r.remaining - 1;
-
-            assert highIdx >= idx : "low=" + idx + ", high=" + highIdx;
-
-            r.highIdx = r.highIdx > 0 ? highIdx : -highIdx - 1;
-
-            return idx;
-        }
-
-        /** {@inheritDoc} */
-        @Override boolean isHighestOnLeaf(RemoveRange r, int idx, int cnt) {
-            return fix(r.highIdx) == cnt - 1;
-        }
-
-        /** {@inheritDoc} */
-        @Override int rmvCnt(RemoveRange r, int idx) {
-            return fix(r.highIdx) - idx + 1;
-        }
-
-        /** {@inheritDoc} */
-        @Override void afterLockForward(RemoveRange r, long leafAddr, BPlusIO<L> io) throws IgniteCheckedException {
-            if (r.needReplaceInner == TRUE)
-                r.row = getRow(io, leafAddr, fix(r.highIdx));
         }
     }
 }
