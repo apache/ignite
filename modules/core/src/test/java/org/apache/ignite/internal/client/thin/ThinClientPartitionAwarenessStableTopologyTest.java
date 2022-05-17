@@ -20,9 +20,14 @@ package org.apache.ignite.internal.client.thin;
 import java.util.function.Function;
 
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.query.ScanQuery;
+import org.apache.ignite.client.ClientAtomicConfiguration;
+import org.apache.ignite.client.ClientAtomicLong;
 import org.apache.ignite.client.ClientCache;
+import org.apache.ignite.configuration.AtomicConfiguration;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
+import org.apache.ignite.internal.processors.datastructures.GridCacheAtomicLongEx;
 import org.junit.Test;
 
 /**
@@ -170,6 +175,43 @@ public class ThinClientPartitionAwarenessStableTopologyTest extends ThinClientAb
 
             assertOpOnChannel(dfltCh, ClientOperation.QUERY_SCAN);
         }
+    }
+
+    /**
+     * Test atomic long.
+     */
+    @Test
+    public void testAtomicLong() {
+        testAtomicLong("default-grp-partitioned", null, CacheMode.PARTITIONED);
+        testAtomicLong("default-grp-replicated", null, CacheMode.REPLICATED);
+        testAtomicLong("custom-grp-partitioned", "testAtomicLong", CacheMode.PARTITIONED);
+        testAtomicLong("custom-grp-replicated", "testAtomicLong", CacheMode.REPLICATED);
+    }
+
+    /**
+     * Test atomic long.
+     */
+    private void testAtomicLong(String name, String grpName, CacheMode cacheMode) {
+        ClientAtomicConfiguration cfg = new ClientAtomicConfiguration()
+                .setGroupName(grpName)
+                .setCacheMode(cacheMode);
+
+        ClientAtomicLong clientAtomicLong = client.atomicLong(name, cfg, 1, true);
+        GridCacheAtomicLongEx serverAtomicLong = (GridCacheAtomicLongEx)grid(0).atomicLong(
+                name, new AtomicConfiguration().setGroupName(grpName), 0, false);
+
+        String cacheName = "ignite-sys-atomic-cache@" + (grpName == null ? "default-ds-group" : grpName);
+        IgniteInternalCache<Object, Object> cache = grid(0).context().cache().cache(cacheName);
+
+        // Warm up.
+        clientAtomicLong.get();
+        opsQueue.clear();
+
+        // Test.
+        clientAtomicLong.get();
+        TestTcpClientChannel opCh = affinityChannel(serverAtomicLong.key(), cache);
+
+        assertOpOnChannel(opCh, ClientOperation.ATOMIC_LONG_VALUE_GET);
     }
 
     /**

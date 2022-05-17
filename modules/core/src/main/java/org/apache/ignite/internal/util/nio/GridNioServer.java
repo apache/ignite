@@ -2276,7 +2276,7 @@ public class GridNioServer<T> {
                         }
 
                         // select() call above doesn't throw on interruption; checking it here to propagate timely.
-                        if (!closed && !isCancelled && Thread.interrupted())
+                        if (!closed && !isCancelled.get() && Thread.interrupted())
                             throw new InterruptedException();
                     }
                     finally {
