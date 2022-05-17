@@ -67,7 +67,7 @@ import static org.junit.Assert.fail;
  */
 public class ReadRepairDataGenerator {
     /** Key. */
-    private final AtomicInteger iterableKey = new AtomicInteger();
+    private final AtomicInteger incrementalKey = new AtomicInteger();
 
     /** Cache name. */
     private final String cacheName;
@@ -142,7 +142,7 @@ public class ReadRepairDataGenerator {
 
             try {
                 for (int j = 0; j < cnt; j++) {
-                    int curKey = iterableKey.incrementAndGet();
+                    int curKey = incrementalKey.incrementAndGet();
 
                     InconsistentMapping res = setDifferentValuesForSameKey(curKey, misses, nulls, keyStrategy);
 
@@ -211,7 +211,7 @@ public class ReadRepairDataGenerator {
      * Generated entries count.
      */
     public int generated() {
-        return iterableKey.get();
+        return incrementalKey.get();
     }
 
     /**
