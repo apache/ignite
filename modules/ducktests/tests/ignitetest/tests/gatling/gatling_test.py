@@ -25,6 +25,7 @@ from ignitetest.utils.version import DEV_BRANCH, IgniteVersion
 from ignitetest.services.utils.ssl.client_connector_configuration import ClientConnectorConfiguration
 from ignitetest.services.utils.ignite_configuration.cache import CacheConfiguration
 from ignitetest.services.gatling.gatling import GatlingService
+from ignitetest.services.utils.ignite_configuration.discovery import from_ignite_cluster
 
 
 class GatlingTest(IgniteTest):
@@ -33,7 +34,7 @@ class GatlingTest(IgniteTest):
     """
     JAVA_CLIENT_CLASS_NAME = "org.apache.ignite.internal.ducktest.tests.gatling.GatlingRunnerApplication"
 
-    @cluster(num_nodes=3)
+    @cluster(num_nodes=4)
     @ignite_versions(str(DEV_BRANCH))
     def test_ignite_app_start_stop(self, ignite_version):
         """
@@ -45,14 +46,28 @@ class GatlingTest(IgniteTest):
 
         ignite = IgniteService(self.test_context, server_config, 1)
 
-        addresses = ignite.nodes[0].account.hostname + ":" + str(server_config.client_connector_configuration.port)
+        # addresses = ignite.nodes[0].account.hostname + ":" + str(server_config.client_connector_configuration.port)
 
-        gatling_clients = GatlingService(self.test_context, IgniteThinClientConfiguration(
-                                     addresses=addresses,
-                                     version=IgniteVersion(ignite_version)),
-                                 simulation_class_name="org.apache.ignite.internal.gatling.simulation.BasicSimulation",
-                                 num_nodes=2)
+        # thin_client_config = IgniteThinClientConfiguration(
+        #     addresses=addresses,
+        #     version=IgniteVersion(ignite_version))
+        #
+        # thin_gatling_clients = GatlingService(
+        #     self.test_context,
+        #     thin_client_config,
+        #     simulation_class_name="org.apache.ignite.internal.gatling.simulation.BasicSimulation",
+        #     num_nodes=3)
+
+        node_client_config = server_config._replace(client_mode=True,
+                                                    discovery_spi=from_ignite_cluster(ignite))
+
+        node_gatling_clients = GatlingService(
+            self.test_context,
+            node_client_config,
+            simulation_class_name="org.apache.ignite.internal.gatling.simulation.BasicSimulation",
+            num_nodes=3)
 
         ignite.start()
-        gatling_clients.run()
+        # thin_gatling_clients.run()
+        node_gatling_clients.run()
         ignite.stop()

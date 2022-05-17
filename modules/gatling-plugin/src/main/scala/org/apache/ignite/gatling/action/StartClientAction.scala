@@ -1,14 +1,14 @@
 package org.apache.ignite.gatling.action
 
 import io.gatling.commons.validation._
-import io.gatling.commons.stats.OK
+import io.gatling.commons.stats.{KO, OK}
 import io.gatling.core.action.{Action, ChainableAction}
 import io.gatling.core.session.{Expression, Session}
 import io.gatling.core.structure.ScenarioContext
 import io.gatling.core.util.NameGen
-import org.apache.ignite.Ignition
+import org.apache.ignite.gatling.client.IgniteApi
 
-case class StartClientAction[K, V](requestName: Expression[String],
+case class StartClientAction(requestName: Expression[String],
     next: Action,
     ctx: ScenarioContext
 ) extends ChainableAction with NameGen with ActionBase {
@@ -16,25 +16,22 @@ case class StartClientAction[K, V](requestName: Expression[String],
     override val name: String = genName("startClient")
 
     override protected def execute(session: Session): Unit = {
-        for {
+        (for {
             resolvedRequestName <- requestName(session)
             startTime           <- ctx.coreComponents.clock.nowMillis.success
-        } yield {
-            val client = Ignition.startClient(components.igniteProtocol.cfg)
-            val finishTime = ctx.coreComponents.clock.nowMillis
-
-            ctx.coreComponents.statsEngine.logResponse(
-                session.scenario,
-                session.groups,
-                resolvedRequestName,
-                startTime,
-                finishTime,
-                OK,
-                None,
-                None
-            )
-
-            next ! session.set("client", client)
-        }
+        } yield IgniteApi(components.igniteProtocol)(
+            igniteApi => executeNext(session.set("igniteApi", igniteApi), resolvedRequestName, startTime,
+                ctx.coreComponents.clock.nowMillis, OK, next, None, None),
+            ex => executeNext(session, resolvedRequestName, startTime,
+                ctx.coreComponents.clock.nowMillis, KO, next, Some("ERROR"), Some(ex.getMessage))
+        ))
+        .onFailure(ex =>
+          requestName(session).map { resolvedRequestName =>
+              ctx.coreComponents.statsEngine.logCrash(session.scenario, session.groups, resolvedRequestName, ex)
+              executeNext(session, resolvedRequestName, ctx.coreComponents.clock.nowMillis,
+                  ctx.coreComponents.clock.nowMillis, KO, next, Some("ERROR"), Some(ex),
+              )
+          },
+        )
     }
 }
