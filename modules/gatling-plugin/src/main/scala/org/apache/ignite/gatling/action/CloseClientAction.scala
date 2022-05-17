@@ -25,7 +25,7 @@ case class CloseClientAction(requestName: Expression[String],
             startTime           <- ctx.coreComponents.clock.nowMillis.success
         } yield igniteApi
           .close()(
-              _ => executeNext(session.set("igniteApi", None), resolvedRequestName, startTime,
+              igniteApi => executeNext(session.remove("igniteApi"), resolvedRequestName, startTime,
                   ctx.coreComponents.clock.nowMillis, OK, next, None, None),
               ex => executeNext(session, resolvedRequestName, startTime,
                   ctx.coreComponents.clock.nowMillis, KO, next, Some("ERROR"), Some(ex.getMessage))

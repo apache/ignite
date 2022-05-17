@@ -32,7 +32,8 @@ public class GatlingRunnerApplication extends IgniteAwareApplication {
     @Override protected void run(JsonNode jsonNode) throws Exception {
         markInitialized();
 
-        client.close();
+        if (client != null)
+            client.close();
 
         Properties sysProperties = System.getProperties();
         sysProperties.setProperty("config", cfgPath);

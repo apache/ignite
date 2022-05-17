@@ -41,4 +41,5 @@ class BasicSimulation extends IgniteSimulationBase {
         )
         .protocols(protocol)
         .maxDuration(10.seconds)
+        .assertions(global.failedRequests.count.is(0))
 }

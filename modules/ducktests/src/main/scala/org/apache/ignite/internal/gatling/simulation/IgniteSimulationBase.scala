@@ -13,7 +13,7 @@ class IgniteSimulationBase extends Simulation {
         .map(cfgPath =>
           Try(IgnitionEx.loadSpringBean[ClientConfiguration](cfgPath, "thin.client.cfg"))
             .map(IgniteProtocol(_))
-            .getOrElse(IgniteProtocol(Ignition.ignite()))
+            .getOrElse(IgniteProtocol(IgnitionEx.allGrids().get(0)))
         )
-        .getOrElse(IgniteProtocol(Ignition.ignite()))
+        .getOrElse(IgniteProtocol(IgnitionEx.allGrids().get(0)))
 }
