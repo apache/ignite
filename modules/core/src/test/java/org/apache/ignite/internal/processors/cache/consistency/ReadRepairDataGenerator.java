@@ -210,7 +210,7 @@ public class ReadRepairDataGenerator {
     /**
      * Generated entries count.
      */
-    public int generated(){
+    public int generated() {
         return iterableKey.get();
     }
 
@@ -221,8 +221,7 @@ public class ReadRepairDataGenerator {
         int key,
         boolean misses,
         boolean nulls,
-        ReadRepairStrategy strategy) throws Exception
-    {
+        ReadRepairStrategy strategy) throws Exception {
         List<Ignite> nodes = new ArrayList<>();
         Map<Ignite, T2<Object, GridCacheVersion>> mapping = new HashMap<>();
 
