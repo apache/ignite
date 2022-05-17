@@ -547,7 +547,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
 
             assert cnt <= Short.MAX_VALUE : cnt;
 
-            int idx = findInsertionPoint(lvl, io, leafAddr, 0, cnt, r.row, 0);
+            int idx = insertionPoint(lvl, io, leafAddr, cnt, r);
 
             if (idx < 0)
                 return RETRY; // We've found exact match on search but now it's gone.
@@ -556,14 +556,14 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
 
             // Need to do inner replace when we remove the rightmost element and the leaf have no forward page,
             // i.e. it is not the rightmost leaf of the tree.
-            boolean needReplaceInner = canGetRowFromInner && idx == cnt - 1 && io.getForward(leafAddr) != 0;
+            boolean needReplaceInner = canGetRowFromInner && isHighestOnLeaf(r, idx, cnt) && io.getForward(leafAddr) != 0;
 
             // !!! Before modifying state we have to make sure that we will not go for retry.
 
             // We may need to replace inner key or want to merge this leaf with sibling after the remove -> keep lock.
             if (needReplaceInner ||
                 // We need to make sure that we have back or forward to be able to merge.
-                ((r.fwdId != 0 || r.backId != 0) && mayMerge(cnt - 1, io.getMaxCount(leafAddr, pageSize())))) {
+                ((r.fwdId != 0 || r.backId != 0) && mayMerge(cnt - rmvCnt(r, idx), io.getMaxCount(leafAddr, pageSize())))) {
                 // If we have backId then we've already locked back page, nothing to do here.
                 if (r.fwdId != 0 && r.backId == 0) {
                     Result res = r.lockForward(0);
@@ -581,11 +581,13 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
                 assert r.needReplaceInner == FALSE : "needReplaceInner";
                 assert r.needMergeEmptyBranch == FALSE : "needMergeEmptyBranch";
 
-                if (cnt == 1) // It was the last element on the leaf.
+                if (cnt == rmvCnt(r, idx)) // It was the last element on the leaf.
                     r.needMergeEmptyBranch = TRUE;
 
                 if (needReplaceInner)
                     r.needReplaceInner = TRUE;
+
+                afterLockForward(r, leafAddr, io);
 
                 Tail<L> t = r.addTail(leafId, leafPage, leafAddr, io, 0, Tail.EXACT);
 
@@ -599,6 +601,26 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
             r.removeDataRowFromLeaf(leafId, leafPage, leafAddr, null, io, cnt, idx);
 
             return FOUND;
+        }
+
+        /** */
+        int insertionPoint(int lvl, BPlusIO<L> io, long leafAddr, int cnt, R r) throws IgniteCheckedException {
+            return findInsertionPoint(lvl, io, leafAddr, 0, cnt, r.row, 0);
+        }
+
+        /** */
+        boolean isHighestOnLeaf(R r, int idx, int cnt) {
+            return idx == cnt - 1;
+        }
+
+        /** */
+        int rmvCnt(R r, int idx) {
+            return 1;
+        }
+
+        /** */
+        void afterLockForward(R r, long leafAddr, BPlusIO<L> io) throws IgniteCheckedException {
+            // No-op.
         }
     }
 
@@ -6523,33 +6545,18 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
     /** */
     private final PageHandler<Remove, Result> rmvRangeFromLeaf;
 
-    /**
-     *
-     */
+    /** */
     private class RemoveRangeFromLeaf extends RemoveFromLeaf<RemoveRange> {
         /** {@inheritDoc} */
-        @Override public Result run0(long leafId, long leafPage, long leafAddr, BPlusIO<L> io, RemoveRange r, int lvl)
-            throws IgniteCheckedException {
-            assert lvl == 0 : lvl; // Leaf.
-
-            // Check the triangle invariant.
-            if (io.getForward(leafAddr) != r.fwdId)
-                return RETRY;
-
-            final int cnt = io.getCount(leafAddr);
-
-            assert cnt <= Short.MAX_VALUE : cnt;
-
+        @Override int insertionPoint(int lvl, BPlusIO<L> io, long leafAddr, int cnt, RemoveRange r) throws IgniteCheckedException {
             int idx = findInsertionPoint(lvl, io, leafAddr, 0, cnt, r.lower, 0);
 
             if (idx < 0) {
                 idx = fix(idx);
 
                 if (idx == cnt || compare(io, leafAddr, idx, r.upper) > 0)
-                    return RETRY; // We've found match on search but now it's gone.
+                    return -idx - 1;
             }
-
-            assert idx >= 0 && idx < cnt : idx;
 
             r.highIdx = findInsertionPoint(lvl, io, leafAddr, idx, cnt, r.upper, 0);
 
@@ -6562,55 +6569,23 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
 
             r.highIdx = r.highIdx > 0 ? highIdx : -highIdx - 1;
 
-            int rmvCnt = highIdx - idx + 1;
+            return idx;
+        }
 
-            // Need to do inner replace when we remove the rightmost element and the leaf have no forward page,
-            // i.e. it is not the rightmost leaf of the tree.
-            boolean needReplaceInner = canGetRowFromInner && highIdx == cnt - 1 && io.getForward(leafAddr) != 0;
+        /** {@inheritDoc} */
+        @Override boolean isHighestOnLeaf(RemoveRange r, int idx, int cnt) {
+            return fix(r.highIdx) == cnt - 1;
+        }
 
-            // !!! Before modifying state we have to make sure that we will not go for retry.
+        /** {@inheritDoc} */
+        @Override int rmvCnt(RemoveRange r, int idx) {
+            return fix(r.highIdx) - idx + 1;
+        }
 
-            // We may need to replace inner key or want to merge this leaf with sibling after the remove -> keep lock.
-            if (needReplaceInner ||
-                // We need to make sure that we have back or forward to be able to merge.
-                ((r.fwdId != 0 || r.backId != 0) && mayMerge(cnt - rmvCnt, io.getMaxCount(leafAddr, pageSize())))) {
-                // If we have backId then we've already locked back page, nothing to do here.
-                if (r.fwdId != 0 && r.backId == 0) {
-                    Result res = r.lockForward(0);
-
-                    if (res != FOUND) {
-                        assert r.tail == null;
-
-                        return res; // Retry.
-                    }
-
-                    assert r.tail != null; // We've just locked forward page.
-                }
-
-                // Retry must reset these fields when we release the whole branch without remove.
-                assert r.needReplaceInner == FALSE : "needReplaceInner";
-                assert r.needMergeEmptyBranch == FALSE : "needMergeEmptyBranch";
-
-                if (rmvCnt == cnt) // It was the last element on the leaf.
-                    r.needMergeEmptyBranch = TRUE;
-
-                if (needReplaceInner) {
-                    r.row = getRow(io, leafAddr, highIdx);
-                    r.needReplaceInner = TRUE;
-                }
-
-                Tail<L> t = r.addTail(leafId, leafPage, leafAddr, io, 0, Tail.EXACT);
-
-                t.idx = (short)idx;
-
-                // We will do the actual remove only when we made sure that
-                // we've locked the whole needed branch correctly.
-                return FOUND;
-            }
-
-            r.removeDataRowFromLeaf(leafId, leafPage, leafAddr, null, io, cnt, idx);
-
-            return FOUND;
+        /** {@inheritDoc} */
+        @Override void afterLockForward(RemoveRange r, long leafAddr, BPlusIO<L> io) throws IgniteCheckedException {
+            if (r.needReplaceInner == TRUE)
+                r.row = getRow(io, leafAddr, fix(r.highIdx));
         }
     }
 }
