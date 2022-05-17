@@ -127,8 +127,7 @@ namespace ignite
                     template<typename OutIter>
                     void GetAll(OutIter iter)
                     {
-                        impl::thin::ReadableContainerImpl<
-                            CacheEntry<K, V>, impl::thin::ReadableCacheEntryImpl<K, V>, OutIter> collection(iter);
+                        impl::thin::ReadableContainerImpl< CacheEntry<K, V>, OutIter > collection(iter);
 
                         impl.GetAll(collection);
                     }

@@ -99,7 +99,7 @@ namespace ignite
              * Implementation of the Readable class for the std::pair type.
              */
             template<typename T1, typename T2>
-            class ReadablePairImpl : public Readable
+            class ReadableImpl< std::pair<T1, T2> > : public Readable
             {
             public:
                 /** First value type. */
@@ -113,7 +113,7 @@ namespace ignite
                  *
                  * @param value Value.
                  */
-                ReadablePairImpl(std::pair<ValueType1, ValueType2>& pair) :
+                ReadableImpl(std::pair<ValueType1, ValueType2>& pair) :
                     pair(pair)
                 {
                     // No-op.
@@ -122,7 +122,7 @@ namespace ignite
                 /**
                  * Destructor.
                  */
-                virtual ~ReadablePairImpl()
+                virtual ~ReadableImpl()
                 {
                     // No-op.
                 }
@@ -147,7 +147,7 @@ namespace ignite
              * Implementation of the Readable class for the CacheEntry type.
              */
             template<typename K, typename V>
-            class ReadableCacheEntryImpl : public Readable
+            class ReadableImpl< ignite::thin::cache::CacheEntry<K, V> > : public Readable
             {
             public:
                 /** Key type. */
@@ -161,7 +161,7 @@ namespace ignite
                  *
                  * @param value Value.
                  */
-                ReadableCacheEntryImpl(ignite::thin::cache::CacheEntry<KeyType, ValueType>& entry) :
+                ReadableImpl(ignite::thin::cache::CacheEntry<KeyType, ValueType>& entry) :
                     entry(entry)
                 {
                     // No-op.
@@ -170,7 +170,7 @@ namespace ignite
                 /**
                  * Destructor.
                  */
-                virtual ~ReadableCacheEntryImpl()
+                virtual ~ReadableImpl()
                 {
                     // No-op.
                 }
@@ -195,21 +195,20 @@ namespace ignite
              * Implementation of Readable interface for map.
              *
              * @tparam T Type for the element in the container.
-             * @tparam RT Readable type for the element in the container.
              * @tparam I Out iterator.
              */
-            template<typename T, typename RT, typename I>
+            template<typename T, typename I>
             class ReadableContainerImpl : public Readable
             {
             public:
                 /** Type of the element in the containers. */
                 typedef T ValueType;
 
-                /** Readable type for the element in the containers. */
-                typedef RT ReadableType;
-
                 /** Type of the iterator. */
                 typedef I IteratorType;
+
+                /** Readable type for the element in the containers. */
+                typedef ReadableImpl<ValueType> ReadableType;
 
                 /**
                  * Constructor.

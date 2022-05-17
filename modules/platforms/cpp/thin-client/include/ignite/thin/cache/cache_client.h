@@ -183,8 +183,7 @@ namespace ignite
                 void GetAll(InIter begin, InIter end, OutIter dst)
                 {
                     impl::thin::WritableSetImpl<K, InIter> wrSeq(begin, end);
-                    impl::thin::ReadableContainerImpl<
-                        std::pair<K, V>, impl::thin::ReadablePairImpl<K, V>, OutIter> rdSeq(dst);
+                    impl::thin::ReadableContainerImpl< std::pair<K, V>, OutIter> rdSeq(dst);
 
                     proxy.GetAll(wrSeq, rdSeq);
                 }
