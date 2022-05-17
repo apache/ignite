@@ -18,7 +18,10 @@
 #ifndef _IGNITE_IMPL_THIN_READABLE
 #define _IGNITE_IMPL_THIN_READABLE
 
+#include <utility>
+
 #include <ignite/binary/binary_raw_reader.h>
+#include <ignite/thin/cache/cache_entry.h>
 
 namespace ignite
 {
@@ -88,27 +91,123 @@ namespace ignite
                 }
 
             private:
-                /** Data router. */
+                /** Value reference. */
                 ValueType& value;
+            };
+
+            /**
+             * Implementation of the Readable class for the std::pair type.
+             */
+            template<typename T1, typename T2>
+            class ReadablePairImpl : public Readable
+            {
+            public:
+                /** First value type. */
+                typedef T1 ValueType1;
+
+                /** Second value type. */
+                typedef T2 ValueType2;
+
+                /**
+                 * Constructor.
+                 *
+                 * @param value Value.
+                 */
+                ReadablePairImpl(std::pair<ValueType1, ValueType2>& pair) :
+                    pair(pair)
+                {
+                    // No-op.
+                }
+
+                /**
+                 * Destructor.
+                 */
+                virtual ~ReadablePairImpl()
+                {
+                    // No-op.
+                }
+
+                /**
+                 * Read value using reader.
+                 *
+                 * @param reader Reader to use.
+                 */
+                virtual void Read(binary::BinaryReaderImpl& reader)
+                {
+                    reader.ReadTopObject<ValueType1>(pair.first);
+                    reader.ReadTopObject<ValueType2>(pair.second);
+                }
+
+            private:
+                /** Pair reference. */
+                std::pair<ValueType1, ValueType2>& pair;
+            };
+
+            /**
+             * Implementation of the Readable class for the CacheEntry type.
+             */
+            template<typename K, typename V>
+            class ReadableCacheEntryImpl : public Readable
+            {
+            public:
+                /** Key type. */
+                typedef K KeyType;
+
+                /** Value type. */
+                typedef V ValueType;
+
+                /**
+                 * Constructor.
+                 *
+                 * @param value Value.
+                 */
+                ReadableCacheEntryImpl(ignite::thin::cache::CacheEntry<KeyType, ValueType>& entry) :
+                    entry(entry)
+                {
+                    // No-op.
+                }
+
+                /**
+                 * Destructor.
+                 */
+                virtual ~ReadableCacheEntryImpl()
+                {
+                    // No-op.
+                }
+
+                /**
+                 * Read value using reader.
+                 *
+                 * @param reader Reader to use.
+                 */
+                virtual void Read(binary::BinaryReaderImpl& reader)
+                {
+                    reader.ReadTopObject<KeyType>(entry.key);
+                    reader.ReadTopObject<ValueType>(entry.val);
+                }
+
+            private:
+                /** Entry reference. */
+                ignite::thin::cache::CacheEntry<KeyType, ValueType>& entry;
             };
 
             /**
              * Implementation of Readable interface for map.
              *
-             * @tparam T1 Type of the first element in the pair.
-             * @tparam T2 Type of the second element in the pair.
+             * @tparam T Type for the element in the container.
+             * @tparam RT Readable type for the element in the container.
              * @tparam I Out iterator.
              */
-            template<typename T1, typename T2, typename I>
-            class ReadableMapImpl : public Readable
+            template<typename T, typename RT, typename I>
+            class ReadableContainerImpl : public Readable
             {
             public:
-                /** Type of the first element in the pair. */
-                typedef T1 ElementType1;
+                /** Type of the element in the containers. */
+                typedef T ValueType;
 
-                /** Type of the second element in the pair. */
-                typedef T2 ElementType2;
-                
+                /** Readable type for the element in the containers. */
+                typedef RT ReadableType;
+
                 /** Type of the iterator. */
                 typedef I IteratorType;
 
@@ -117,7 +216,7 @@ namespace ignite
                  *
                  * @param iter Iterator.
                  */
-                ReadableMapImpl(IteratorType iter) :
+                ReadableContainerImpl(IteratorType iter) :
                     iter(iter)
                 {
                     // No-op.
@@ -126,7 +225,7 @@ namespace ignite
                 /**
                  * Destructor.
                  */
-                virtual ~ReadableMapImpl()
+                virtual ~ReadableContainerImpl()
                 {
                     // No-op.
                 }
@@ -144,13 +243,13 @@ namespace ignite
 
                     for (int32_t i = 0; i < cnt; ++i)
                     {
-                        std::pair<ElementType1, ElementType2> pair;
+                        ValueType value;
 
-                        reader.ReadTopObject<ElementType1>(pair.first);
-                        reader.ReadTopObject<ElementType2>(pair.second);
+                        ReadableType readable(value);
 
-                        iter = pair;
+                        readable.Read(reader);
 
+                        *iter = value;
                         ++iter;
                     }
                 }

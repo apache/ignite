@@ -25,7 +25,9 @@
 
 #include <ignite/common/concurrent.h>
 
+#include <ignite/thin/cache/query/query_cursor.h>
 #include <ignite/thin/cache/query/query_fields_cursor.h>
+#include <ignite/thin/cache/query/query_scan.h>
 #include <ignite/thin/cache/query/query_sql_fields.h>
 #include <ignite/thin/cache/query/continuous/continuous_query_client.h>
 #include <ignite/thin/cache/query/continuous/continuous_query_handle.h>
@@ -181,7 +183,8 @@ namespace ignite
                 void GetAll(InIter begin, InIter end, OutIter dst)
                 {
                     impl::thin::WritableSetImpl<K, InIter> wrSeq(begin, end);
-                    impl::thin::ReadableMapImpl<K, V, OutIter> rdSeq(dst);
+                    impl::thin::ReadableContainerImpl<
+                        std::pair<K, V>, impl::thin::ReadablePairImpl<K, V>, OutIter> rdSeq(dst);
 
                     proxy.GetAll(wrSeq, rdSeq);
                 }
@@ -595,6 +598,17 @@ namespace ignite
                  * @return Query fields cursor.
                  */
                 query::QueryFieldsCursor Query(const query::SqlFieldsQuery& qry)
+                {
+                    return proxy.Query(qry);
+                }
+
+                /**
+                 * Perform scan query.
+                 *
+                 * @param qry Query.
+                 * @return Query cursor.
+                 */
+                query::QueryCursor<KeyType, ValueType> Query(const query::ScanQuery& qry)
                 {
                     return proxy.Query(qry);
                 }
