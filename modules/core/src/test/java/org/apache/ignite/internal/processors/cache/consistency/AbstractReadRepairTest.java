@@ -205,11 +205,11 @@ public abstract class AbstractReadRepairTest extends GridCommonAbstractTest {
     /**
      *
      */
-    protected void checkEvent(ReadRepairData data, IgniteIrreparableConsistencyViolationException e) {
+    protected void checkEvent(ReadRepairData rrd, IgniteIrreparableConsistencyViolationException e) {
         Map<Object, Map<ClusterNode, CacheConsistencyViolationEvent.EntryInfo>> evtEntries = new HashMap<>();
         Map<Object, Object> evtRepaired = new HashMap<>();
 
-        Map<Integer, InconsistentMapping> inconsistent = data.data.entrySet().stream()
+        Map<Integer, InconsistentMapping> inconsistent = rrd.data.entrySet().stream()
             .filter(entry -> !entry.getValue().consistent)
             .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 
@@ -217,7 +217,7 @@ public abstract class AbstractReadRepairTest extends GridCommonAbstractTest {
             if (!evtDeq.isEmpty()) {
                 CacheConsistencyViolationEvent evt = evtDeq.remove();
 
-                assertEquals(data.strategy, evt.getStrategy());
+                assertEquals(rrd.strategy, evt.getStrategy());
 
                 // Optimistic and read committed transactions produce per key repair.
                 for (Map.Entry<Object, CacheConsistencyViolationEvent.EntriesInfo> entries : evt.getEntries().entrySet()) {

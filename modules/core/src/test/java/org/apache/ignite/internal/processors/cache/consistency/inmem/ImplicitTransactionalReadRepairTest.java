@@ -78,8 +78,8 @@ public class ImplicitTransactionalReadRepairTest extends AbstractFullSetReadRepa
             nulls,
             binary,
             null,
-            (ReadRepairData data) -> repairIfRepairable.accept(data,
-                () -> testReadRepair(data, all ? GETALL_CHECK_AND_REPAIR : GET_CHECK_AND_REPAIR, true)));
+            (ReadRepairData rrd) -> repairIfRepairable.accept(rrd,
+                () -> testReadRepair(rrd, all ? GETALL_CHECK_AND_REPAIR : GET_CHECK_AND_REPAIR, true)));
     }
 
     /** {@inheritDoc} */
@@ -93,8 +93,8 @@ public class ImplicitTransactionalReadRepairTest extends AbstractFullSetReadRepa
             nulls,
             binary,
             null,
-            (ReadRepairData data) -> repairIfRepairable.accept(data,
-                () -> testReadRepair(data, all ? CONTAINS_ALL_CHECK_AND_REPAIR : CONTAINS_CHECK_AND_REPAIR, true)));
+            (ReadRepairData rrd) -> repairIfRepairable.accept(rrd,
+                () -> testReadRepair(rrd, all ? CONTAINS_ALL_CHECK_AND_REPAIR : CONTAINS_CHECK_AND_REPAIR, true)));
     }
 
     /** {@inheritDoc} */
@@ -108,17 +108,17 @@ public class ImplicitTransactionalReadRepairTest extends AbstractFullSetReadRepa
             nulls,
             binary,
             null,
-            (ReadRepairData data) -> testReadRepair(data, all ? GET_ALL_NULL : GET_NULL, false));
+            (ReadRepairData rrd) -> testReadRepair(rrd, all ? GET_ALL_NULL : GET_NULL, false));
     }
 
     /**
      *
      */
-    private void testReadRepair(ReadRepairData data, Consumer<ReadRepairData> readOp, boolean hit) {
-        readOp.accept(data);
+    private void testReadRepair(ReadRepairData rrd, Consumer<ReadRepairData> readOp, boolean hit) {
+        readOp.accept(rrd);
 
         if (hit)
-            check(data, null, true); // Hit.
+            check(rrd, null, true); // Hit.
         else
             checkEventMissed(); // Miss.
     }

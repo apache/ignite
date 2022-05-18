@@ -577,7 +577,7 @@ public class ReadRepairDataGenerator {
             boolean async,
             ReadRepairStrategy strategy,
             boolean binary) {
-            this.cache = cache;
+            this.cache = binary ? cache.withKeepBinary() : cache;
             this.data = Collections.unmodifiableMap(data);
             this.raw = raw;
             this.async = async;

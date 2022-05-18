@@ -94,11 +94,11 @@ public class ExplicitTransactionalReadRepairTest extends AbstractFullSetReadRepa
             nulls,
             binary,
             null,
-            (ReadRepairData data) -> repairIfRepairable.accept(data, () -> {
+            (ReadRepairData rrd) -> repairIfRepairable.accept(rrd, () -> {
                 boolean repairByOtherTx = concurrency == TransactionConcurrency.OPTIMISTIC ||
                     isolation == TransactionIsolation.READ_COMMITTED;
 
-                testReadRepair(initiator, data, all ? GETALL_CHECK_AND_REPAIR : GET_CHECK_AND_REPAIR, repairByOtherTx, true);
+                testReadRepair(initiator, rrd, all ? GETALL_CHECK_AND_REPAIR : GET_CHECK_AND_REPAIR, repairByOtherTx, true);
             }));
     }
 
@@ -113,9 +113,9 @@ public class ExplicitTransactionalReadRepairTest extends AbstractFullSetReadRepa
             nulls,
             binary,
             null,
-            (ReadRepairData data) -> repairIfRepairable.accept(data, () -> {
+            (ReadRepairData rrd) -> repairIfRepairable.accept(rrd, () -> {
                 // "Contains" works like optimistic() || readCommitted() and always repaired by other tx.
-                testReadRepair(initiator, data, all ? CONTAINS_ALL_CHECK_AND_REPAIR : CONTAINS_CHECK_AND_REPAIR, true, true);
+                testReadRepair(initiator, rrd, all ? CONTAINS_ALL_CHECK_AND_REPAIR : CONTAINS_CHECK_AND_REPAIR, true, true);
             }));
     }
 
@@ -130,20 +130,20 @@ public class ExplicitTransactionalReadRepairTest extends AbstractFullSetReadRepa
             nulls,
             binary,
             null,
-            (ReadRepairData data) -> testReadRepair(initiator, data, all ? GET_ALL_NULL : GET_NULL, false, false));
+            (ReadRepairData rrd) -> testReadRepair(initiator, rrd, all ? GET_ALL_NULL : GET_NULL, false, false));
     }
 
     /**
      *
      */
-    private void testReadRepair(Ignite initiator, ReadRepairData data, Consumer<ReadRepairData> readOp,
+    private void testReadRepair(Ignite initiator, ReadRepairData rrd, Consumer<ReadRepairData> readOp,
         boolean repairByOtherTx, boolean hit) {
         try (Transaction tx = initiator.transactions().txStart(concurrency, isolation)) {
             // Recovery (inside tx).
-            readOp.accept(data);
+            readOp.accept(rrd);
 
             if (hit) // Checks (inside tx).
-                check(data, null, repairByOtherTx); // Hit.
+                check(rrd, null, repairByOtherTx); // Hit.
             else
                 checkEventMissed(); // Miss.
 
@@ -156,7 +156,7 @@ public class ExplicitTransactionalReadRepairTest extends AbstractFullSetReadRepa
         }
 
         if (hit) // Checks (outside tx).
-            check(data, null, !repairByOtherTx); // Hit.
+            check(rrd, null, !repairByOtherTx); // Hit.
         else
             checkEventMissed(); // Miss.
     }

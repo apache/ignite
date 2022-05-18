@@ -214,7 +214,7 @@ public class GridCommandHandlerConsistencyRepairCorrectnessTransactionalTest ext
     /**
      *
      */
-    protected final void repairAndCheck(ReadRepairData data) {
+    protected final void repairAndCheck(ReadRepairData rrd) {
         for (int i = 0; i < PARTITIONS; i++) {
             List<String> cmd = new ArrayList<>(Arrays.asList(
                 "--consistency", "repair",
@@ -228,9 +228,9 @@ public class GridCommandHandlerConsistencyRepairCorrectnessTransactionalTest ext
             assertEquals(EXIT_CODE_OK, execute(cmd));
         }
 
-        IgniteCache<Integer, Object> cache = data.cache;
+        IgniteCache<Integer, Object> cache = rrd.cache;
 
-        for (Map.Entry<Integer, InconsistentMapping> dataEntry : data.data.entrySet()) {
+        for (Map.Entry<Integer, InconsistentMapping> dataEntry : rrd.data.entrySet()) {
             Integer key = dataEntry.getKey();
             InconsistentMapping mapping = dataEntry.getValue();
 
