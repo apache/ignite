@@ -208,9 +208,10 @@ public interface GridQueryIndexing {
      *
      * @param cacheInfo Cache context info.
      * @param rmvIdx If {@code true}, will remove index.
+     * @param clearIdx If {@code true}, will clear the index.
      * @throws IgniteCheckedException If failed to drop cache schema.
      */
-    public void unregisterCache(GridCacheContextInfo cacheInfo, boolean rmvIdx) throws IgniteCheckedException;
+    public void unregisterCache(GridCacheContextInfo cacheInfo, boolean rmvIdx, boolean clearIdx) throws IgniteCheckedException;
 
     /**
      *
