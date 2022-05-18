@@ -313,7 +313,6 @@ public abstract class AbstractReadRepairTest extends GridCommonAbstractTest {
         boolean misses,
         boolean nulls,
         boolean binary,
-        ReadRepairStrategy strategy,
         Consumer<ReadRepairData> c) throws Exception {
         gen.generateAndCheck(
             initiator,
@@ -323,7 +322,7 @@ public abstract class AbstractReadRepairTest extends GridCommonAbstractTest {
             misses,
             nulls,
             binary,
-            strategy,
+            null,
             c);
     }
 }

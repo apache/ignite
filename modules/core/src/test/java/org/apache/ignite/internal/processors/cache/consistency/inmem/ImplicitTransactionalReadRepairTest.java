@@ -77,7 +77,6 @@ public class ImplicitTransactionalReadRepairTest extends AbstractFullSetReadRepa
             misses,
             nulls,
             binary,
-            null,
             (ReadRepairData rrd) -> repairIfRepairable.accept(rrd,
                 () -> testReadRepair(rrd, all ? GETALL_CHECK_AND_REPAIR : GET_CHECK_AND_REPAIR, true)));
     }
@@ -92,7 +91,6 @@ public class ImplicitTransactionalReadRepairTest extends AbstractFullSetReadRepa
             misses,
             nulls,
             binary,
-            null,
             (ReadRepairData rrd) -> repairIfRepairable.accept(rrd,
                 () -> testReadRepair(rrd, all ? CONTAINS_ALL_CHECK_AND_REPAIR : CONTAINS_CHECK_AND_REPAIR, true)));
     }
@@ -107,7 +105,6 @@ public class ImplicitTransactionalReadRepairTest extends AbstractFullSetReadRepa
             misses,
             nulls,
             binary,
-            null,
             (ReadRepairData rrd) -> testReadRepair(rrd, all ? GET_ALL_NULL : GET_NULL, false));
     }
 
