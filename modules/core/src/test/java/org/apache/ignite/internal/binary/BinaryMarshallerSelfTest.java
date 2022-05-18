@@ -1178,6 +1178,36 @@ public class BinaryMarshallerSelfTest extends AbstractBinaryArraysTest {
         }
     }
 
+    /** */
+    @Test
+    public void emptyObjectBuilder() throws IgniteCheckedException {
+        BinaryObject emptyBinObj = builder("test_type").build();
+
+        BinaryObjectBuilder bob2 = emptyBinObj.toBuilder();
+
+        // Check any field is null at the empty object.
+        assertNull(bob2.getField("a"));
+
+        // Modify empty object: add field.
+        BinaryObjectImpl o1 = (BinaryObjectImpl)bob2.setField("a", 1).build();
+        BinaryObjectImpl o2 = (BinaryObjectImpl)builder("test_type").setField("a", 1).build();
+
+        // Check that modified empty object and the new object with the sanme field are equals.
+        assertEquals(o1.schemaId(), o2.schemaId());
+        assertEquals(o1, o2);
+    }
+
+    /** */
+    @Test
+    public void emptyObjectBinarylizable() throws IgniteCheckedException {
+        BinaryMarshaller m = binaryMarshaller();
+
+        BinaryObjectBuilder bob = marshal(new ObjectRaw(), m).toBuilder();
+
+        // Check any field is null at the empty object.
+        assertNull(bob.getField("a"));
+    }
+
     /**
      *
      */
@@ -4153,6 +4183,66 @@ public class BinaryMarshallerSelfTest extends AbstractBinaryArraysTest {
         marsh.setBinaryContext(ctx, iCfg);
 
         return marsh;
+    }
+
+    /**
+     * @return Binary object builder.
+     */
+    protected BinaryObjectBuilder builder(
+        String typeName
+    ) throws IgniteCheckedException {
+        return builder(typeName, null, null, null, null, null);
+    }
+
+    /**
+     * @return Binary object builder.
+     */
+    protected BinaryObjectBuilder builder(
+        String typeName,
+        BinaryNameMapper nameMapper,
+        BinaryIdMapper mapper,
+        BinarySerializer serializer,
+        Collection<BinaryTypeConfiguration> cfgs,
+        Collection<String> excludedClasses
+    ) throws IgniteCheckedException {
+        IgniteConfiguration iCfg = new IgniteConfiguration();
+
+        BinaryConfiguration bCfg = new BinaryConfiguration();
+
+        bCfg.setNameMapper(nameMapper);
+        bCfg.setIdMapper(mapper);
+        bCfg.setSerializer(serializer);
+        bCfg.setCompactFooter(compactFooter());
+
+        bCfg.setTypeConfigurations(cfgs);
+
+        iCfg.setBinaryConfiguration(bCfg);
+        iCfg.setClientMode(false);
+        iCfg.setDiscoverySpi(new TcpDiscoverySpi() {
+            @Override public void sendCustomEvent(DiscoverySpiCustomMessage msg) throws IgniteException {
+                //No-op.
+            }
+        });
+        iCfg.setSystemViewExporterSpi(new JmxSystemViewExporterSpi());
+
+        BinaryContext ctx = new BinaryContext(BinaryCachingMetadataHandler.create(), iCfg, new NullLogger());
+
+        BinaryMarshaller marsh = new BinaryMarshaller();
+
+        MarshallerContextTestImpl marshCtx = new MarshallerContextTestImpl(null, excludedClasses);
+
+        GridTestKernalContext kernCtx = new GridTestKernalContext(log, iCfg);
+
+        kernCtx.add(new GridSystemViewManager(kernCtx));
+        kernCtx.add(new GridDiscoveryManager(kernCtx));
+
+        marshCtx.onMarshallerProcessorStarted(kernCtx, null);
+
+        marsh.setContext(marshCtx);
+
+        marsh.setBinaryContext(ctx, iCfg);
+
+        return new BinaryObjectBuilderImpl(ctx, typeName);
     }
 
     /**
