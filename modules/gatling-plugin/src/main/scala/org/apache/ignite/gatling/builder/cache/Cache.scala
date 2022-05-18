@@ -6,4 +6,6 @@ import org.apache.ignite.gatling.builder.cache
 final class Cache(requestName: Expression[String], cacheName: Expression[String]) {
     def put[K, V](key: Expression[K], value: Expression[V]): CachePutActionBuilder[K, V] =
         cache.CachePutActionBuilder(requestName, cacheName, key, value)
+    def get[K, V](key: Expression[K]): CacheGetActionBuilder[K, V] =
+        cache.CacheGetActionBuilder(requestName, cacheName, key)
 }

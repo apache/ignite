@@ -9,4 +9,7 @@ import scala.jdk.FutureConverters.CompletionStageOps
 case class CacheThinApi[K, V](wrapped: ClientCache[K, V])(implicit val ec: ExecutionContext) extends CacheApi[K, V] with CompletionSupport {
   override def put[U](key: K, value: V)(s: Void => U, f: Throwable => U): Unit =
     withCompletion(wrapped.putAsync(key, value).asScala)(s, f)
+
+  override def get[U](key: K)(s: Map[K, V] => U, f: Throwable => U): Unit =
+    withCompletion(wrapped.getAsync(key).asScala.map(v => Map((key, v))))(s, f)
 }

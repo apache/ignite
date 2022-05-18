@@ -22,6 +22,7 @@ trait IgniteApi {
 
 trait CacheApi[K, V] {
   def put[U](key: K, value: V)(s: Void => U, f: Throwable => U): Unit
+  def get[U](key: K)(s: Map[K, V] => U, f: Throwable => U): Unit
 }
 
 object IgniteApi extends CompletionSupport {
