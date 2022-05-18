@@ -2,6 +2,7 @@ package org.apache.ignite.gatling.examples
 
 import io.gatling.core.Predef._
 import io.gatling.core.feeder.Feeder
+import org.apache.ignite.gatling.Predef.allRecordsCheck
 //import io.gatling.core.session.StaticValueExpression
 //import io.gatling.core.session._
 import io.gatling.core.structure.ScenarioBuilder
@@ -32,19 +33,25 @@ class BasicSimulation extends Simulation {
       .get[Int, Int](100000)
       .check(
         simpleCheck(m => {
-          printf("m=%s\n", m.toString);
+//          printf("m=%s\n", m.toString)
           m.isEmpty
         })
     ))
-    .exec { session => println(session); session }
+//    .exec { session => println(session); session }
     .exec(ignite("Get present")
       .cache("TEST-CACHE")
       .get[Int, Int]("#{key}")
+//      .check(allResults[Int, Int].
       .check(
-        simpleCheck((m, s) => m.contains(s("key").as[Int])),
-        simpleCheck(m => m.contains(3))
+//        simpleCheck((m, s) => m.contains(s("key").as[Int])),
+//        simpleCheck(m => m.contains(3)),
+        allResults[Int, Int].saveAs("R"),
+//        allResults[Int, Int].name("aaa"),
+//        allRecordsCheck(responseTimeInMillis.lt(1))
       )
+
     )
+    .exec { session => println(session); session }
     .exec(ignite("Close client").close)
 
   before(Ignition.start())
