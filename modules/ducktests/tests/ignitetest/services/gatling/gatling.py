@@ -12,12 +12,17 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 import os
 import re
-
-from ignitetest.services.ignite_app import IgniteApplicationService
 import stat
 from typing import NamedTuple
+
+from ignitetest.services.ignite_app import IgniteApplicationService
+from ignitetest.services.utils import IgniteServiceType
+from ignitetest.services.utils.ignite_configuration import IgniteThinClientConfiguration
+from ignitetest.services.utils.ignite_configuration.discovery import from_ignite_cluster
+
 
 SERVICE_JAVA_CLASS_NAME = "org.apache.ignite.internal.ducktest.tests.gatling.GatlingRunnerApplication"
 
@@ -30,12 +35,13 @@ class GatlingConfiguration(NamedTuple):
 
 
 class GatlingService(IgniteApplicationService):
-    def __init__(self, context, config, simulation_class_name, num_nodes=1, startup_timeout_sec=60,
-                 shutdown_timeout_sec=60, modules=None, jvm_opts=None, merge_with_default=True):
+    def __init__(self, ignite, simulation_class_name, client_type=IgniteServiceType.THIN_CLIENT,
+                 num_nodes=1, startup_timeout_sec=60, shutdown_timeout_sec=60, modules=None,
+                 jvm_opts=None, merge_with_default=True):
         super().__init__(
-            context, config, SERVICE_JAVA_CLASS_NAME, num_nodes, {"simulation": simulation_class_name},
-            startup_timeout_sec, shutdown_timeout_sec, extend_with(modules, "gatling-plugin"),
-            jvm_opts=jvm_opts, merge_with_default=merge_with_default
+            ignite.context, client_config(ignite, client_type), SERVICE_JAVA_CLASS_NAME, num_nodes,
+            {"simulation": simulation_class_name}, startup_timeout_sec, shutdown_timeout_sec,
+            extend_with(modules, "gatling-plugin"), jvm_opts=jvm_opts, merge_with_default=merge_with_default
         )
         self.report_generated = False
 
@@ -74,11 +80,13 @@ class GatlingService(IgniteApplicationService):
         self.await_stopped()
 
 
-def extend_with(modules, new_module):
-    """
+def client_config(ignite, client_type):
+    if client_type == IgniteServiceType.THIN_CLIENT:
+        addresses = ignite.nodes[0].account.hostname + ":" + str(ignite.config.client_connector_configuration.port)
+        return IgniteThinClientConfiguration(addresses=addresses)
+    elif client_type == IgniteServiceType.NODE:
+        return ignite.config._replace(client_mode=True, discovery_spi=from_ignite_cluster(ignite))
 
-    :param modules:
-    :param new_module:
-    :return:
-    """
+
+def extend_with(modules, new_module):
     return [new_module] if modules is None else modules.append(new_module)

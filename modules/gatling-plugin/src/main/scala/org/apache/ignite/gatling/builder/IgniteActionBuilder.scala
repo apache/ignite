@@ -1,4 +1,4 @@
-package org.apache.ignite.gatling.action
+package org.apache.ignite.gatling.builder
 
 import io.gatling.core.action.builder.ActionBuilder
 import io.gatling.core.protocol.ProtocolComponentsRegistry

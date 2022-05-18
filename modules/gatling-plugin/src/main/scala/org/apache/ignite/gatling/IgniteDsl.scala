@@ -1,8 +1,8 @@
 package org.apache.ignite.gatling
 
 import io.gatling.core.session.Expression
+import org.apache.ignite.gatling.builder.ignite.Ignite
 import org.apache.ignite.gatling.protocol.{IgniteProtocol, IgniteProtocolBuilder, IgniteThinProtocolBuilder}
-import org.apache.ignite.gatling.request.builder.Ignite
 
 trait IgniteDsl {
     val ignite: IgniteProtocolBuilder.type = IgniteProtocolBuilder

@@ -30,10 +30,10 @@ class BasicSimulation extends Simulation {
 
     val scn: ScenarioBuilder = scenario("Basic")
         .feed(feeder)
-        .exec(ignite("Start client").startClient)
-        .exec(ignite("Create cache").create("TEST-CACHE"))
+        .exec(ignite("Start client").start)
+        .exec(ignite("Create cache").create("TEST-CACHE").backups(1))
         .exec(ignite("Put").cache("TEST-CACHE").put[Integer, Integer]("#{key}", "#{value}"))
-        .exec(ignite("Close client").closeClient)
+        .exec(ignite("Close client").close)
 
     setUp(scn
         .inject(
