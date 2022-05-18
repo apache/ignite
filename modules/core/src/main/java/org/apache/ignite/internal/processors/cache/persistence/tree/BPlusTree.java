@@ -2098,8 +2098,8 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
     }
 
     /**
-     * @param lower Lower bound.
-     * @param upper Upper bound.
+     * @param lower Lower bound (inclusive).
+     * @param upper Upper bound (inclusive).
      * @param limit Limit of processed entries by single call, {@code 0} for no limit.
      * @return Removed rows.
      * @throws IgniteCheckedException If failed.
