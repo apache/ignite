@@ -94,6 +94,15 @@ public class PendingEntriesTree extends BPlusTree<PendingRow, PendingRow> {
 
             if (cmp != 0)
                 return cmp;
+
+            if (row.expireTime == 0 && row.link == 0) {
+                // A search row with a cache ID only is used as a cache bound.
+                // The found position will be shifted until the exact cache bound is found;
+                // See for details:
+                // o.a.i.i.p.c.database.tree.BPlusTree.ForwardCursor.findLowerBound()
+                // o.a.i.i.p.c.database.tree.BPlusTree.ForwardCursor.findUpperBound()
+                return cmp;
+            }
         }
 
         long expireTime = io.getExpireTime(pageAddr, idx);

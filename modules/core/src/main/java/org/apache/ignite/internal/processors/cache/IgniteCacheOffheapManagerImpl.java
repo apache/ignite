@@ -1378,7 +1378,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
             try {
                 List<PendingRow> rows = pendingEntries.remove(
-                    new PendingRow(cacheId), new PendingRow(cacheId, U.currentTimeMillis(), 0), amount);
+                    new PendingRow(cacheId, Long.MIN_VALUE, 0), new PendingRow(cacheId, U.currentTimeMillis(), 0), amount);
 
                 for (PendingRow row : rows) {
                     if (row.key.partition() == -1)
