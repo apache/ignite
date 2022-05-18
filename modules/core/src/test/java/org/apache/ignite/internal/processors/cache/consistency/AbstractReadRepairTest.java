@@ -315,7 +315,7 @@ public abstract class AbstractReadRepairTest extends GridCommonAbstractTest {
         boolean binary,
         ReadRepairStrategy strategy,
         Consumer<ReadRepairData> c) throws Exception {
-        gen.generate(
+        gen.generateAndCheck(
             initiator,
             cnt,
             raw,

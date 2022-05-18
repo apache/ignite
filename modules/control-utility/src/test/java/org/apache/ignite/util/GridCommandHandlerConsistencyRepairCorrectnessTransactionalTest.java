@@ -198,7 +198,7 @@ public class GridCommandHandlerConsistencyRepairCorrectnessTransactionalTest ext
         assertFalse(clsAwareNodes.isEmpty());
 
         for (Ignite initiator : clsAwareNodes) {
-            gen.generate(
+            gen.generateAndCheck(
                 initiator,
                 50,
                 false,

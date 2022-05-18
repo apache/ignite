@@ -117,9 +117,19 @@ public class ReadRepairDataGenerator {
     }
 
     /**
+     * Generates inconsistent data and checks it repairs properly.
      *
+     * @param initiator Node used to perform the Read Repair operation during the check.
+     * @param cnt       Count of entries to be generated/checked.
+     * @param raw       Raw read flag. True means required GetEntry() instead of get().
+     * @param async     Async read flag.
+     * @param misses    Skiping entries generation on some owners.
+     * @param nulls     Removing entries after the generation on some nodes.
+     * @param binary    Read Repair will be performed with keeping data binary.
+     * @param strategy  Strategy to perform the Read Repair.
+     * @param c         Lambda consumes generated data and performs the Read Repair check.
      */
-    public void generate(
+    public void generateAndCheck(
         Ignite initiator,
         int cnt,
         boolean raw,
