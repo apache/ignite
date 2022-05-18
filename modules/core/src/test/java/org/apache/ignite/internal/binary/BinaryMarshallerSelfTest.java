@@ -1202,7 +1202,7 @@ public class BinaryMarshallerSelfTest extends AbstractBinaryArraysTest {
     public void emptyObjectBinarylizable() throws IgniteCheckedException {
         BinaryMarshaller m = binaryMarshaller();
 
-        BinaryObjectBuilder bob = marshal(new EmptyBinarylizable(), m).toBuilder();
+        BinaryObjectBuilder bob = marshal(new ObjectRaw(), m).toBuilder();
 
         // Check any field is null at the empty object.
         assertNull(bob.getField("a"));
@@ -6206,24 +6206,6 @@ public class BinaryMarshallerSelfTest extends AbstractBinaryArraysTest {
             lst1 = new ArrayList<>(Arrays.asList("c", "d"));;
 
             v = new Value(127);
-        }
-    }
-
-    /** */
-    public static class EmptyBinarylizable implements Binarylizable {
-        /** */
-        public EmptyBinarylizable() {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
-        @Override public void writeBinary(BinaryWriter writer) throws BinaryObjectException {
-            writer.rawWriter().writeInt(0);
-        }
-
-        /** {@inheritDoc} */
-        @Override public void readBinary(BinaryReader reader) throws BinaryObjectException {
-            reader.rawReader().readInt();
         }
     }
 }
