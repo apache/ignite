@@ -11,7 +11,7 @@ trait ActionBase {
     val ctx: ScenarioContext
     protected val components: Components = ctx.protocolComponentsRegistry.components(IgniteProtocol.igniteProtocolKey)
 
-    protected def executeNext(
+    protected def logAndExecuteNext(
                                session: Session,
                                requestName: String,
                                sent: Long,
@@ -33,6 +33,8 @@ trait ActionBase {
         )
         next ! session.logGroupRequestTimings(sent, received)
     }
+
+    protected def executeNext(session: Session, next: Action): Unit = next ! session
 }
 
 trait IgniteActionBase {}

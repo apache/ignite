@@ -1,7 +1,7 @@
 package org.apache.ignite.gatling.protocol
 
 import org.apache.ignite.Ignite
-import org.apache.ignite.configuration.{ClientConfiguration, IgniteConfiguration}
+import org.apache.ignite.configuration.ClientConfiguration
 
 case object IgniteProtocolBuilder {
     def cfg(cfg: ClientConfiguration): IgniteThinProtocolBuilder = IgniteThinProtocolBuilder(cfg)

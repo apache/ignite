@@ -3,7 +3,7 @@ package org.apache.ignite.gatling.protocol
 import io.gatling.core.CoreComponents
 import io.gatling.core.protocol.ProtocolComponents
 import io.gatling.core.session.Session
-import org.apache.ignite.gatling.client.IgniteApi
+import org.apache.ignite.gatling.api.IgniteApi
 
 case class IgniteComponents(
     coreComponents: CoreComponents,
