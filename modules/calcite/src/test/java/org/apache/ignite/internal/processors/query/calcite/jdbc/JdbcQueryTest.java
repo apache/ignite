@@ -37,9 +37,15 @@ import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cache.PartitionLossPolicy;
 import org.apache.ignite.calcite.CalciteQueryEngineConfiguration;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.DataRegionConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.SqlConfiguration;
+import org.apache.ignite.indexing.IndexingQueryEngineConfiguration;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -53,10 +59,10 @@ import org.junit.Test;
 @WithSystemProperty(key = "calcite.debug", value = "true")
 public class JdbcQueryTest extends GridCommonAbstractTest {
     /** URL. */
-    private final String url = "jdbc:ignite:thin://127.0.0.1?queryEngine=" + CalciteQueryEngineConfiguration.ENGINE_NAME;
+    private final String url = "jdbc:ignite:thin://127.0.0.1";
 
     /** Nodes count. */
-    private final int nodesCnt = 3;
+    private final int nodesCnt = 2;
 
     /** Connection. */
     private Connection conn;
@@ -66,8 +72,34 @@ public class JdbcQueryTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        return super.getConfiguration(igniteInstanceName).setSqlConfiguration(
-            new SqlConfiguration().setQueryEnginesConfiguration(new CalciteQueryEngineConfiguration()));
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
+
+        cfg.setCacheConfiguration(
+            new CacheConfiguration("cache-partitioned*")
+                .setCacheMode(CacheMode.PARTITIONED)
+                .setStatisticsEnabled(true)
+                .setQueryParallelism(8)
+                .setGroupName("group1")
+                .setPartitionLossPolicy(PartitionLossPolicy.READ_WRITE_SAFE)
+        );
+
+        long dsSize = 4L * 1024L * 1024L * 1024L;
+
+        cfg.setDataStorageConfiguration(new DataStorageConfiguration()
+            .setWalSegments(20)
+            .setMetricsEnabled(true)
+            .setDefaultDataRegionConfiguration(
+                new DataRegionConfiguration().setPersistenceEnabled(false).setMetricsEnabled(true)
+                    .setInitialSize(dsSize).setMaxSize(dsSize)
+            )
+        );
+
+        cfg.setSqlConfiguration(new SqlConfiguration().setQueryEnginesConfiguration(
+            new IndexingQueryEngineConfiguration().setDefault(true),
+            new CalciteQueryEngineConfiguration().setDefault(false)
+        ));
+
+        return cfg;
     }
 
     /** {@inheritDoc} */
@@ -95,6 +127,122 @@ public class JdbcQueryTest extends GridCommonAbstractTest {
         assert conn.isClosed();
 
         stopAllGrids();
+    }
+
+    /** {@inheritDoc} */
+    @Test
+    public void testSlowCalcite() throws Exception {
+        long records = 1_000;
+//        long records = 50_000;
+//        long records = 100_000;
+//        long records = 200_000;
+//        long records = 500_000;
+//        long records = 1_000_000;
+//        long records = 2_000_000;
+
+        ddl();
+        fillDb(records, 100);
+
+        long t;
+        ResultSet rs;
+
+        for (int i = 0; i < 10; ++i) {
+//            t = System.nanoTime();
+//            rs = stmt.executeQuery("select count(*) from PI_COM_DAY");
+//            t = System.nanoTime() -t;
+//
+//            assert rs.next();
+//            assert rs.getLong(1) == records;
+//
+//            log.error("TEST | default timing (mils): " + TimeUnit.NANOSECONDS.toMillis(t));
+//
+//            t = System.nanoTime();
+//            rs = stmt.executeQuery("select /*+ QUERY_ENGINE('h2')*/ count(*) from PI_COM_DAY");
+//            t = System.nanoTime() -t;
+//
+//            assert rs.next();
+//            assert rs.getLong(1) == records;
+//
+//            log.error("TEST | H2 timing: " + TimeUnit.NANOSECONDS.toMillis(t));
+
+            t = System.nanoTime();
+            rs = stmt.executeQuery("select /*+ QUERY_ENGINE('calcite')*/ count(KIND) from PI_COM_DAY");
+            t = System.nanoTime() -t;
+
+            assert rs.next();
+            assert rs.getLong(1) == records;
+
+            log.error("TEST | Calcite timing: " + TimeUnit.NANOSECONDS.toMillis(t));
+        }
+    }
+
+    private void ddl() throws SQLException {
+        stmt.execute("CREATE TABLE PI_COM_DAY (\n" +
+//            "COM_ID VARCHAR(30) NOT NULL ,\n" +
+            "    ITEM_ID VARCHAR(30) NOT NULL ,\n" +
+//            "    DATE1 VARCHAR(8) NOT NULL, \n" +
+            "    KIND VARCHAR(1) DEFAULT '',\n" +
+//            "    QTY_IOD DECIMAL(18, 6) DEFAULT 1.0 ,\n" +
+//            "    AMT_IOD DECIMAL(18, 6) DEFAULT 1.0,\n" +
+//            "    QTY_PURCH DECIMAL(18, 6) DEFAULT 1.0,\n" +
+//            "    AMT_PURCH DECIMAL(18,6) DEFAULT 1.0,\n" +
+//            "    QTY_SOLD DECIMAL(18,6) DEFAULT 1.0,\n" +
+//            "    AMT_SOLD DECIMAL(18, 6) DEFAULT 1.0,\n" +
+//            "    AMT_SOLD_NO_TAX DECIMAL(18, 6) DEFAULT 1.0,\n" +
+//            "    QTY_PROFIT DECIMAL(18, 6) DEFAULT 1.0,\n" +
+//            "    AMT_PROFIT DECIMAL(18, 6) DEFAULT 1.0,\n" +
+//            "    QTY_LOSS DECIMAL(18,6) DEFAULT 1.0,\n" +
+//            "    AMT_LOSS DECIMAL(18, 6) DEFAULT 1.0,\n" +
+//            "    QTY_EOD DECIMAL(18, 6) DEFAULT 1.0,\n" +
+//            "    AMT_EOD DECIMAL(18,6) DEFAULT 1.0,\n" +
+//            "    UNIT_COST DECIMAL(18,8) DEFAULT 1.0,\n" +
+//            "    SUMCOST_SOLD DECIMAL(18,6) DEFAULT 1.0,\n" +
+//            "    GROSS_PROFIT DECIMAL(18, 6) DEFAULT 1.0,\n" +
+//            "    QTY_ALLOCATION DECIMAL(18,6) DEFAULT 1.0,\n" +
+//            "    AMT_ALLOCATION DECIMAL(18,2) DEFAULT 1.0,\n" +
+//            "    AMT_ALLOCATION_NO_TAX DECIMAL(18, 2) DEFAULT 1.0,\n" +
+//            "    GROSS_PROFIT_ALLOCATION DECIMAL(18,6) DEFAULT 1.0,\n" +
+//            "    SUMCOST_SOLD_ALLOCATION DECIMAL(18,6) DEFAULT 1.0,\n" +
+//            "    PRIMARY KEY (COM_ID,ITEM_ID,DATE1)) WITH \"template=cache-partitioned,CACHE_NAME=PI_COM_DAY\";"
+            "    PRIMARY KEY (ITEM_ID)) WITH \"template=cache-partitioned,CACHE_NAME=PI_COM_DAY\";"
+        );
+
+//        stmt.execute("CREATE INDEX IDX_PI_COM_DAY_ITEM_DATE ON PI_COM_DAY(ITEM_ID,DATE1);");
+        stmt.execute("CREATE INDEX IDX_PI_COM_DAY_ITEM_DATE ON PI_COM_DAY(KIND);");
+    }
+
+    private void fillDb(long recordNum, int batchSize) throws SQLException {
+        boolean autoCommit = conn.getAutoCommit();
+
+//        try (PreparedStatement ps = conn.prepareStatement("INSERT INTO PI_COM_DAY(COM_ID, ITEM_ID, DATE1) values (?, ?, '01-2001')")){
+        try (PreparedStatement ps = conn.prepareStatement("INSERT INTO PI_COM_DAY(ITEM_ID) values (?)")){
+            conn.setAutoCommit(false);
+
+            for (long i = 0, batch = 0; i < recordNum; ++i) {
+                ps.setString(1, "ITEM_ID_" + i);
+
+//                ps.setString(1, "COM_ID_" + i);
+//                ps.setString(2, "ITEM_ID_" + i);
+
+                ps.addBatch();
+
+                if(++batch == batchSize) {
+                    ps.executeBatch();
+                    batch = 0;
+                    conn.commit();
+                }
+            }
+
+            ps.executeBatch();
+            conn.commit();
+        }
+        finally {
+            conn.setAutoCommit(autoCommit);
+        }
+    }
+
+    @Override protected long getTestTimeout() {
+        return 30 * 60 * 1000;
     }
 
     /**

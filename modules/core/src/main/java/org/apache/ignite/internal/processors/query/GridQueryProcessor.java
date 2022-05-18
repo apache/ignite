@@ -2997,6 +2997,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                         QueryEngine qryEngine = engineForQuery(cliCtx, qry);
 
                         if (qryEngine != null) {
+//                            System.err.println("TEST | quering engine " + qryEngine + " without index...");
+
                             if (qry instanceof SqlFieldsQueryEx && ((SqlFieldsQueryEx)qry).isBatched()) {
                                 res = qryEngine.queryBatched(
                                     QueryContext.of(qry, cliCtx, cancel),
@@ -3015,6 +3017,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                             }
                         }
                         else {
+//                            System.err.println("TEST | quering index");
+
                             res = idx.querySqlFields(
                                 schemaName,
                                 qry,
