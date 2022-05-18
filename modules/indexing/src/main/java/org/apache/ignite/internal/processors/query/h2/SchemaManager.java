@@ -346,8 +346,9 @@ public class SchemaManager implements GridQuerySchemaManager {
      *
      * @param cacheName Cache name.
      * @param rmvIdx Whether to remove indexes.
+     * @param clearIdx Whether to clear the index.
      */
-    public void onCacheDestroyed(String cacheName, boolean rmvIdx) {
+    public void onCacheDestroyed(String cacheName, boolean rmvIdx, boolean clearIdx) {
         String schemaName = schemaName(cacheName);
 
         H2Schema schema = schemas.get(schemaName);
@@ -361,7 +362,7 @@ public class SchemaManager implements GridQuerySchemaManager {
         for (H2TableDescriptor tbl : schema.tables()) {
             if (F.eq(tbl.cacheName(), cacheName)) {
                 try {
-                    tbl.table().setRemoveIndexOnDestroy(rmvIdx);
+                    tbl.table().setRemoveIndexOnDestroy(clearIdx);
 
                     dropTable(tbl, rmvIdx);
                     lsnr.onSqlTypeDropped(schemaName, tbl.type());
