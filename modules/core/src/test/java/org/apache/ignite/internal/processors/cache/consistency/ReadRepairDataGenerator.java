@@ -143,9 +143,9 @@ public class ReadRepairDataGenerator {
 
         ThreadLocalRandom rnd = ThreadLocalRandom.current();
 
-        for (int i = 0; i < rnd.nextInt(1, 10); i++) {
-            ReadRepairStrategy[] strategies = ReadRepairStrategy.values();
+        ReadRepairStrategy[] strategies = ReadRepairStrategy.values();
 
+        for (int i = 0; i < rnd.nextInt(1, 10); i++) {
             ReadRepairStrategy keyStrategy = strategy != null ? strategy : strategies[rnd.nextInt(strategies.length)];
 
             Map<Integer, InconsistentMapping> results = new TreeMap<>(); // Sorted to avoid warning.
