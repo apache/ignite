@@ -20,7 +20,10 @@ package org.apache.ignite.internal.visor.cache.metrics;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
+import java.util.Collections;
+import java.util.Map;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  * Result wrapper for {@link VisorCacheMetricTask}.
@@ -30,7 +33,7 @@ public class VisorCacheMetricTaskResult extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0L;
 
     /** Task result. */
-    private Object result;
+    private Map<String, Boolean> result;
 
     /** Task execution error. */
     private Exception error;
@@ -45,8 +48,8 @@ public class VisorCacheMetricTaskResult extends IgniteDataTransferObject {
     /**
      * @param result Task execution result.
      */
-    public VisorCacheMetricTaskResult(Object result) {
-        this.result = result;
+    public VisorCacheMetricTaskResult(Map<String, Boolean> result) {
+        this.result = Collections.unmodifiableMap(result);
     }
 
     /**
@@ -58,23 +61,23 @@ public class VisorCacheMetricTaskResult extends IgniteDataTransferObject {
 
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        out.writeObject(result);
+        U.writeMap(out, result);
         out.writeObject(error);
     }
 
     /** {@inheritDoc} */
     @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
-        result = in.readObject();
+        result = U.readMap(in);
         error = (Exception)in.readObject();
     }
 
     /**
      * Get task result or task execution error.
      */
-    public Object result() throws Exception {
+    public Map<String, Boolean> result() throws Exception {
         if (error != null)
             throw error;
 
-        return result;
+        return Collections.unmodifiableMap(result);
     }
 }

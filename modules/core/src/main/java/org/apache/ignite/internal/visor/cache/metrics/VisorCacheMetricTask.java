@@ -32,7 +32,7 @@ import org.jetbrains.annotations.Nullable;
 import static org.apache.ignite.internal.visor.cache.metrics.CacheMetricOperation.ENABLE;
 
 /**
- * Task for a cache metrics manage command.
+ * Task for a cache metric command.
  */
 @GridInternal
 @GridVisorManagementTask
@@ -46,14 +46,8 @@ public class VisorCacheMetricTask extends VisorOneNodeTask<VisorCacheMetricTaskA
     }
 
     /**
-     * Possible job results are described below:
-     * <ul>
-     * <li>For 'enable' or 'disable' subcommands - count of processed caches.</li>
-     * <li>For 'status' subcommand - {@link Map} with names of processed caches paired with corresponding
-     * metrics collection statuses.</li>
-     * <li>Exception, caught during execution of job.</li>
-     * </ul>
-     *
+     * Job returns {@link Map} with names of processed caches paired with corresponding metrics collection statuses or
+     * exception, caught during execution of job.
      * Results are passed into instance of wrapper class {@link VisorCacheMetricTaskResult}.
      */
     private static class VisorCacheMetricJob extends VisorJob<VisorCacheMetricTaskArg, VisorCacheMetricTaskResult> {
@@ -82,7 +76,7 @@ public class VisorCacheMetricTask extends VisorOneNodeTask<VisorCacheMetricTaskA
                         case DISABLE:
                             ignite.cluster().enableStatistics(cacheNames, ENABLE == arg.operation());
 
-                            return new VisorCacheMetricTaskResult(cacheNames.size());
+                            return new VisorCacheMetricTaskResult(cacheMetricsStatus(cacheNames));
 
                         case STATUS:
                             return new VisorCacheMetricTaskResult(cacheMetricsStatus(cacheNames));

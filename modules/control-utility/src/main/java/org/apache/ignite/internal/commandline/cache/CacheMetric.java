@@ -68,13 +68,6 @@ public class CacheMetric extends AbstractCommand<VisorCacheMetricTaskArg> {
     /** Expected caches list message. */
     public static final String EXPECTED_CACHES_LIST_MESSAGE = "comma-separated list of cache names.";
 
-    /** No caches processed message. */
-    public static final String NONE_CACHES_PROCESSED_MESSAGE = "None of caches have been processed. " +
-        "Are there any caches in cluster?";
-
-    /** Success message. */
-    public static final String SUCCESS_MESSAGE = "Command performed successfully.";
-
     /** Task argument. */
     private VisorCacheMetricTaskArg arg;
 
@@ -84,46 +77,17 @@ public class CacheMetric extends AbstractCommand<VisorCacheMetricTaskArg> {
             VisorCacheMetricTaskResult taskResult = TaskExecutor.executeTaskByNameOnNode(client,
                 VisorCacheMetricTask.class.getName(), arg, null, clientCfg);
 
-            return processTaskResult(log, taskResult.result());
+            Map<String, Boolean> resultMap = Objects.requireNonNull(taskResult.result(),
+                "Task execution result must not be null");
+
+            Collection<List<?>> values = F.viewReadOnly(resultMap.entrySet(),
+                e -> asList(e.getKey(), e.getValue() ? "enabled" : "disabled"));
+
+            SystemViewCommand.printTable(asList("Cache Name", "Metrics Enable Status"), asList(STRING, STRING),
+                values, log);
+
+            return null;
         }
-    }
-
-    /**
-     * @param log Logger.
-     * @param result Task result.
-     */
-    private String processTaskResult(Logger log, Object result) {
-        Objects.requireNonNull(result);
-
-        switch (arg.operation()) {
-            case ENABLE:
-            case DISABLE:
-                String resultMsg = ((Integer)result) > 0 ? SUCCESS_MESSAGE : NONE_CACHES_PROCESSED_MESSAGE;
-
-                log.info(resultMsg);
-
-                break;
-
-            case STATUS:
-                Map<String, Boolean> statusTaskResult = (Map<String, Boolean>)result;
-
-                if (statusTaskResult.isEmpty())
-                    log.info(NONE_CACHES_PROCESSED_MESSAGE);
-                else {
-                    Collection<List<?>> values = F.viewReadOnly(statusTaskResult.entrySet(),
-                        e -> asList(e.getKey(), e.getValue() ? "enabled" : "disabled"));
-
-                    SystemViewCommand.printTable(asList("Cache Name", "Metrics Enable Status"), asList(STRING, STRING),
-                        values, log);
-                }
-
-                break;
-
-            default:
-                throw new IllegalStateException("Unexpected value: " + arg.operation());
-        }
-
-        return null;
     }
 
     /** {@inheritDoc} */
