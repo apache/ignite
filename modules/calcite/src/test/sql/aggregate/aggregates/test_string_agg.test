@@ -126,102 +126,28 @@ statement ok
 INSERT INTO trades(id, amount, xkey, name, ts) VALUES (7, 10,   'key-4', 'name4', '2021-11-01 19:00:00');
 
 # Simple ordering
-query TT
-SELECT xkey, STRING_AGG(name ORDER BY name) AS names FROM trades GROUP BY xkey ORDER BY xkey
+query TTTTTTTT
+SELECT xkey, COUNT(*), COUNT(DISTINCT name), SUM(amount), STRING_AGG(name ORDER BY name), STRING_AGG(name ORDER BY name DESC), STRING_AGG(DISTINCT name ORDER BY name), STRING_AGG(DISTINCT name ORDER BY name DESC) FROM trades GROUP BY xkey ORDER BY xkey
 ----
-key-1	name1,name1
-key-2	name11,name2
-key-3	name1
-key-4	name3,name4
-
-query TT
-SELECT xkey, STRING_AGG(name ORDER BY name DESC) AS names FROM trades GROUP BY xkey ORDER BY xkey
-----
-key-1	name1,name1
-key-2	name2,name11
-key-3	name1
-key-4	name4,name3
-
-# Distinct ordering
-query TT
-SELECT xkey, STRING_AGG(DISTINCT name ORDER BY name) AS names FROM trades GROUP BY xkey ORDER BY xkey
-----
-key-1	name1
-key-2	name11,name2
-key-3	name1
-key-4	name3,name4
-
-query TT
-SELECT xkey, STRING_AGG(DISTINCT name ORDER BY name DESC) AS names FROM trades GROUP BY xkey ORDER BY xkey
-----
-key-1	name1
-key-2	name2,name11
-key-3	name1
-key-4	name4,name3
+key-1	2	1	160	name1,name1	name1,name1	name1	name1
+key-2	2	2	500	name11,name2	name2,name11	name11,name2	name2,name11
+key-3	1	1	900	name1	name1	name1	name1
+key-4	2	2	1010	name3,name4	name4,name3	name3,name4	name4,name3
 
 # Collation ordering
-query TT
-SELECT xkey, STRING_AGG(name ORDER BY amount) AS names FROM trades GROUP BY xkey ORDER BY xkey
+query TTTTTTTT
+SELECT xkey, COUNT(*), COUNT(DISTINCT name), SUM(amount), STRING_AGG(name ORDER BY amount), STRING_AGG(name ORDER BY amount DESC), STRING_AGG(name ORDER BY ts), STRING_AGG(name ORDER BY ts DESC) FROM trades GROUP BY xkey ORDER BY xkey
 ----
-key-1	name1,name1
-key-2	name11,name2
-key-3	name1
-key-4	name4,name3
-
-query TT
-SELECT xkey, STRING_AGG(name ORDER BY amount DESC) AS names FROM trades GROUP BY xkey ORDER BY xkey
-----
-key-1	name1,name1
-key-2	name2,name11
-key-3	name1
-key-4	name3,name4
-
-query TT
-SELECT xkey, STRING_AGG(name ORDER BY ts) AS names FROM trades GROUP BY xkey ORDER BY xkey
-----
-key-1	name1,name1
-key-2	name2,name11
-key-3	name1
-key-4	name3,name4
-
-query TT
-SELECT xkey, STRING_AGG(name ORDER BY ts DESC) AS names FROM trades GROUP BY xkey ORDER BY xkey
-----
-key-1	name1,name1
-key-2	name11,name2
-key-3	name1
-key-4	name4,name3
-
+key-1	2	1	160	name1,name1	name1,name1	name1,name1	name1,name1
+key-2	2	2	500	name11,name2	name2,name11	name2,name11	name11,name2
+key-3	1	1	900	name1	name1	name1	name1
+key-4	2	2	1010	name4,name3	name3,name4	name3,name4	name4,name3
 
 # Distinct collation ordering
-query TT
-SELECT xkey, STRING_AGG(DISTINCT name ORDER BY amount) AS names FROM trades GROUP BY xkey ORDER BY xkey
+query TTTTTTTT
+SELECT xkey, COUNT(*), COUNT(DISTINCT name), SUM(amount), STRING_AGG(DISTINCT name ORDER BY amount), STRING_AGG(DISTINCT name ORDER BY amount DESC), STRING_AGG(DISTINCT name ORDER BY ts), STRING_AGG(DISTINCT name ORDER BY ts DESC)  FROM trades GROUP BY xkey ORDER BY xkey
 ----
-key-1	name1
-key-2	name11,name2
-key-3	name1
-key-4	name4,name3
-
-query TT
-SELECT xkey, STRING_AGG(DISTINCT name ORDER BY amount DESC) AS names FROM trades GROUP BY xkey ORDER BY xkey
-----
-key-1	name1
-key-2	name2,name11
-key-3	name1
-key-4	name3,name4
-
-query TT
-SELECT xkey, STRING_AGG(DISTINCT name ORDER BY ts) AS names FROM trades GROUP BY xkey ORDER BY xkey
-----
-key-1	name1
-key-2	name2,name11
-key-3	name1
-key-4	name3,name4
-
-query TT
-SELECT xkey, STRING_AGG(DISTINCT name ORDER BY ts DESC) AS names FROM trades GROUP BY xkey ORDER BY xkey
-----
-key-1	name1
-key-2	name11,name2
-key-3	name1
-key-4	name4,name3
+key-1	2	1	160	name1	name1	name1	name1
+key-2	2	2	500	name11,name2	name2,name11	name2,name11	name11,name2
+key-3	1	1	900	name1	name1	name1	name1
+key-4	2	2	1010	name4,name3	name3,name4	name3,name4	name4,name3

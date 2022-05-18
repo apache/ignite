@@ -38,10 +38,10 @@ import org.apache.calcite.rel.rules.ProjectMergeRule;
 import org.apache.calcite.rel.rules.ProjectRemoveRule;
 import org.apache.calcite.rel.rules.PruneEmptyRules;
 import org.apache.calcite.rel.rules.SortRemoveRule;
-import org.apache.calcite.sql.SqlSyntax;
 import org.apache.calcite.tools.Program;
 import org.apache.calcite.tools.RuleSet;
 import org.apache.calcite.tools.RuleSets;
+import org.apache.calcite.util.Optionality;
 import org.apache.ignite.internal.processors.query.calcite.rule.CorrelateToNestedLoopRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.CorrelatedNestedLoopJoinRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.FilterConverterRule;
@@ -190,8 +190,8 @@ public enum PlannerPhase {
                     // leads to invalid projections (i.e. LISTAGG).
                     AggregateExpandDistinctAggregatesRule.Config.JOIN
                         .withOperandSupplier(op -> op.operand(LogicalAggregate.class)
-                            .predicate(agg -> agg.getAggCallList().stream().noneMatch(
-                                call -> call.getAggregation().getSyntax() == SqlSyntax.ORDERED_FUNCTION))
+                            .predicate(agg -> agg.getAggCallList().stream().noneMatch(call ->
+                                    call.getAggregation().requiresGroupOrder() != Optionality.FORBIDDEN))
                             .anyInputs())
                         .toRule(),
 

@@ -306,24 +306,20 @@ public class AccumulatorsFactory<Row> implements Supplier<List<AccumulatorWrappe
             if (filterArg >= 0 && Boolean.TRUE != handler.get(filterArg, row))
                 return;
 
-            Object[] args = new Object[argList.size() + collList.size()];
+            int argsCnt = argList.size();
+            int collArgsCnt = collList.size();
 
-            for (int i = 0; i < argList.size(); i++) {
+            Object[] args = new Object[argsCnt + collArgsCnt];
+
+            for (int i = 0; i < argsCnt; i++) {
                 args[i] = handler.get(argList.get(i), row);
 
                 if (ignoreNulls && args[i] == null)
                     return;
             }
 
-            for (int i = 0, collOffset = 0; i < collList.size(); i++) {
-                int idx = collList.get(i);
-
-                if (!argList.contains(idx)) {
-                    args[collOffset + argList.size()] = handler.get(idx, row);
-
-                    collOffset++;
-                }
-            }
+            for (int i = 0; i < collArgsCnt; i++)
+                args[i + argsCnt] = handler.get(collList.get(i), row);
 
             accumulator.add(inAdapter.apply(args));
         }
