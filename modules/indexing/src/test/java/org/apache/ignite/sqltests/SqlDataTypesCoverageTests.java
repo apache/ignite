@@ -17,10 +17,10 @@
 
 package org.apache.ignite.sqltests;
 
-import com.google.inject.internal.util.Objects;
 import java.math.BigDecimal;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 import java.util.Random;
 import java.util.UUID;
 import org.apache.ignite.cache.CacheMode;
@@ -427,7 +427,7 @@ public class SqlDataTypesCoverageTests extends AbstractDataTypesCoverageTest {
                                 return false;
                         }
                         else {
-                            if (!Objects.equal(expKey, res.get(0).get(0)))
+                            if (!Objects.equals(expKey, res.get(0).get(0)))
                                 return false;
                         }
 
@@ -439,7 +439,7 @@ public class SqlDataTypesCoverageTests extends AbstractDataTypesCoverageTest {
                                 return false;
                         }
                         else {
-                            if (!Objects.equal(expVal, res.get(0).get(1)))
+                            if (!Objects.equals(expVal, res.get(0).get(1)))
                                 return false;
                         }
 
