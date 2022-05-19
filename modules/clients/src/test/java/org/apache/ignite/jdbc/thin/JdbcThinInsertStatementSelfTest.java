@@ -213,4 +213,5 @@ public class JdbcThinInsertStatementSelfTest extends JdbcThinAbstractDmlStatemen
         assertFalse(lsnr.check(1000L));
 
         assertEquals(3, jcache(0).withKeepBinary().getAll(new HashSet<>(Arrays.asList("p1", "p2", "p3"))).size());
-    }}
+    }
+}
