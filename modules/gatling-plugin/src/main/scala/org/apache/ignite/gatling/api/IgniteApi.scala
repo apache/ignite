@@ -12,17 +12,26 @@ import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success}
 
 trait IgniteApi {
+  def cache[K, V, U](name: String)(s: CacheApi[K, V] => U, f: Throwable => U): Unit
+
   def getOrCreateCache[K, V, U](name: String)(s: CacheApi[K, V] => U, f: Throwable => U): Unit
   def getOrCreateCache[K, V, U](name: String, cfg: SimpleCacheConfiguration)(s: CacheApi[K, V] => U, f: Throwable => U): Unit
   def getOrCreateCache[K, V, U](cfg: ClientCacheConfiguration)(s: CacheApi[K, V] => U, f: Throwable => U): Unit
   def getOrCreateCache[K, V, U](cfg: CacheConfiguration[K,V])(s: CacheApi[K, V] => U, f: Throwable => U): Unit
 
   def close[U]()(s: Unit => U, f: Throwable => U): Unit
+
+  def txStart[U]()(s: TransactionApi => U, f: Throwable => U): Unit
 }
 
 trait CacheApi[K, V] {
   def put[U](key: K, value: V)(s: Void => U, f: Throwable => U): Unit
   def get[U](key: K)(s: Map[K, V] => U, f: Throwable => U): Unit
+}
+
+trait TransactionApi {
+  def commit[U]()(s: Unit => U, f: Throwable => U): Unit
+  def rollback[U]()(s: Unit => U, f: Throwable => U): Unit
 }
 
 object IgniteApi extends CompletionSupport {

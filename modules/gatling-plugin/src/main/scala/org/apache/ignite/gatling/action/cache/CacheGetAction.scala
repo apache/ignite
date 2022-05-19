@@ -1,5 +1,6 @@
 package org.apache.ignite.gatling.action.cache
 
+import com.typesafe.scalalogging.StrictLogging
 import io.gatling.commons.stats.{KO, OK}
 import io.gatling.commons.validation.SuccessWrapper
 import io.gatling.commons.validation.Failure
@@ -20,11 +21,12 @@ case class CacheGetAction[K, V](requestName: Expression[String],
                                 checks: Seq[IgniteCheck[K, V]],
                                 next: Action,
                                 ctx: ScenarioContext
-                               ) extends ChainableAction with NameGen with ActionBase {
+                               ) extends ChainableAction with NameGen with ActionBase with StrictLogging {
 
   override val name: String = genName("cacheGet")
 
   override protected def execute(session: Session): Unit = {
+    logger.debug(s"session user id: #${session.userId}, get")
 
     val client: IgniteApi = session("igniteApi").as[IgniteApi]
 
@@ -34,22 +36,26 @@ case class CacheGetAction[K, V](requestName: Expression[String],
       resolvedKey <- key(session)
       startTime <- ctx.coreComponents.clock.nowMillis.success
     } yield client
-      .getOrCreateCache[K, V, Unit](resolvedCacheName)(
-        cache => cache.get(resolvedKey)(
-          value => {
-            val finishTime          = ctx.coreComponents.clock.nowMillis
-            val (newSession, error) = Check.check(value, session, checks.toList, new JHashMap[Any, Any]())
-            error match {
-              case Some(Failure(errorMessage)) =>
-                logAndExecuteNext(newSession.markAsFailed, resolvedRequestName, startTime,
-                  finishTime, KO, next, Some("Check ERROR"), Some(errorMessage))
-              case _ => logAndExecuteNext(session, resolvedRequestName, startTime,
-                finishTime, OK, next, None, None)
-            }
-          },
-          ex => logAndExecuteNext(session, resolvedRequestName, startTime,
-            ctx.coreComponents.clock.nowMillis, KO, next, Some("ERROR"), Some(ex.getMessage))
-        ),
+      .cache[K, V, Unit](resolvedCacheName)(
+        cache => {
+          logger.debug(s"session user id: #${session.userId}, before cache.get")
+          cache.get(resolvedKey)(
+            value => {
+              logger.debug(s"session user id: #${session.userId}, after cache.get")
+              val finishTime          = ctx.coreComponents.clock.nowMillis
+              val (newSession, error) = Check.check(value, session, checks.toList, new JHashMap[Any, Any]())
+              error match {
+                case Some(Failure(errorMessage)) =>
+                  logAndExecuteNext(newSession.markAsFailed, resolvedRequestName, startTime,
+                    finishTime, KO, next, Some("Check ERROR"), Some(errorMessage))
+                case _ => logAndExecuteNext(newSession, resolvedRequestName, startTime,
+                  finishTime, OK, next, None, None)
+              }
+            },
+            ex => logAndExecuteNext(session, resolvedRequestName, startTime,
+              ctx.coreComponents.clock.nowMillis, KO, next, Some("ERROR"), Some(ex.getMessage))
+          )
+        },
         ex => logAndExecuteNext(session, resolvedRequestName, startTime,
           ctx.coreComponents.clock.nowMillis, KO, next, Some("ERROR"), Some(ex.getMessage))
       ))

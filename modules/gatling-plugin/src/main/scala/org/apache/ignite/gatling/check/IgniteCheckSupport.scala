@@ -56,7 +56,7 @@ trait IgniteCheckSupport {
 
     class AllKeyValueCheckMaterializer[K, V] extends
       CheckMaterializer[IgniteAllKeyValueCheckType, IgniteCheck[K, V], AllKeyValueResult[K, V], AllKeyValueResult[K, V]](identity) {
-      override protected def preparer: Preparer[AllKeyValueResult[K, V], AllKeyValueResult[K, V]] = identityPreparer//AllKeyValuePreparer
+      override protected def preparer: Preparer[AllKeyValueResult[K, V], AllKeyValueResult[K, V]] = identityPreparer
     }
 
     implicit def AllKeyValueCheckMaterializer[K, V]: AllKeyValueCheckMaterializer[K, V] = new AllKeyValueCheckMaterializer[K, V]
