@@ -160,6 +160,9 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
     @GridToStringExclude
     private byte flags;
 
+    /** */
+    private long curConsistentVer;
+
     /**
      * Required by {@link Externalizable}.
      */
@@ -187,7 +190,8 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
         boolean retVal,
         boolean last,
         boolean onePhaseCommit,
-        boolean addDepInfo
+        boolean addDepInfo,
+        long consistentVer
     ) {
         super(tx.xidVersion(), 0, addDepInfo);
 
@@ -197,6 +201,7 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
         isolation = tx.isolation();
         txSize = tx.size();
         plc = tx.ioPolicy();
+        curConsistentVer = consistentVer;
 
         this.timeout = timeout;
         this.reads = reads;
@@ -392,6 +397,11 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
         return isFlag(LAST_REQ_FLAG_MASK);
     }
 
+    /** */
+    public long curConsistentVer() {
+        return curConsistentVer;
+    }
+
     /** {@inheritDoc} */
     @Override public IgniteTxState txState() {
         return txState;
@@ -583,6 +593,12 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
 
                 writer.incrementState();
 
+            case 21:
+                if (!writer.writeLong("curConsistentVer", curConsistentVer))
+                    return false;
+
+                writer.incrementState();
+
         }
 
         return true;
@@ -711,6 +727,14 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
 
                 reader.incrementState();
 
+            case 21:
+                curConsistentVer = reader.readLong("curConsistentVer");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
         }
 
         return reader.afterMessageRead(GridDistributedTxPrepareRequest.class);
@@ -723,7 +747,7 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 21;
+        return 22;
     }
 
     /** {@inheritDoc} */

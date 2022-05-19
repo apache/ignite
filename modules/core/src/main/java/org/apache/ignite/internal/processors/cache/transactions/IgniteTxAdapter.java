@@ -1232,6 +1232,11 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
         }
 
         if (valid) {
+            if (state == COMMITTED && cctx.consistentCutMgr() != null) {
+                if (cctx.consistentCutMgr() != null)
+                    notifyConsistentCutOnCommit();
+            }
+
             if (ptr != null && (state == COMMITTED || state == ROLLED_BACK))
                 try {
                     cctx.wal().flush(ptr, false);
@@ -1253,6 +1258,11 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
         }
 
         return valid;
+    }
+
+    /** Notify Consistent Cut procedure on transaction commit. */
+    protected void notifyConsistentCutOnCommit() {
+        cctx.consistentCutMgr().cleanCommitting(this);
     }
 
     /** */

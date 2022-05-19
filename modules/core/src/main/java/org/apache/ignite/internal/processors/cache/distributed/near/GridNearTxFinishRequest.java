@@ -182,18 +182,17 @@ public class GridNearTxFinishRequest extends GridDistributedTxFinishRequest {
         }
 
         switch (writer.state()) {
-            case 21:
+            case 23:
                 if (!writer.writeInt("miniId", miniId))
                     return false;
 
                 writer.incrementState();
 
-            case 22:
+            case 24:
                 if (!writer.writeMessage("mvccSnapshot", mvccSnapshot))
                     return false;
 
                 writer.incrementState();
-
         }
 
         return true;
@@ -210,7 +209,7 @@ public class GridNearTxFinishRequest extends GridDistributedTxFinishRequest {
             return false;
 
         switch (reader.state()) {
-            case 21:
+            case 23:
                 miniId = reader.readInt("miniId");
 
                 if (!reader.isLastRead())
@@ -218,14 +217,13 @@ public class GridNearTxFinishRequest extends GridDistributedTxFinishRequest {
 
                 reader.incrementState();
 
-            case 22:
+            case 24:
                 mvccSnapshot = reader.readMessage("mvccSnapshot");
 
                 if (!reader.isLastRead())
                     return false;
 
                 reader.incrementState();
-
         }
 
         return reader.afterMessageRead(GridNearTxFinishRequest.class);
@@ -238,7 +236,7 @@ public class GridNearTxFinishRequest extends GridDistributedTxFinishRequest {
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 23;
+        return 25;
     }
 
     /** {@inheritDoc} */

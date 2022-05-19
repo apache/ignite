@@ -74,6 +74,7 @@ import org.apache.ignite.internal.processors.cache.mvcc.txlog.TxState;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
+import org.apache.ignite.internal.processors.cache.transactions.IgniteTxLocalAdapter;
 import org.apache.ignite.internal.processors.cache.transactions.TxCounters;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.dr.GridDrType;
@@ -232,6 +233,10 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
     @GridToStringExclude
     protected final IgniteUuid deploymentLdrId;
 
+    /** TODO: for one-phase-commit tx. Filled after getting response from backup with the CUT version on the backup. */
+    /** Version of Consistent Cut that */
+    private long commitCutVer;
+
     /**
      * @param cctx Context.
      * @param tx Transaction.
@@ -279,6 +284,16 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
 
         if (tx.onePhaseCommit())
             timeoutAddedLatch = new CountDownLatch(1);
+    }
+
+    /** */
+    public long commitCutVer() {
+        return commitCutVer;
+    }
+
+    /** */
+    public void commitCutVer(long commitCutVer) {
+        this.commitCutVer = commitCutVer;
     }
 
     /** {@inheritDoc} */
@@ -786,8 +801,17 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                                 if (res.error() == null && fut.error() != null)
                                     res.error(fut.error());
 
-                                if (REPLIED_UPD.compareAndSet(GridDhtTxPrepareFuture.this, 0, 1))
+                                if (REPLIED_UPD.compareAndSet(GridDhtTxPrepareFuture.this, 0, 1)) {
+                                    if (res.onePhaseCommit() && fut.result() != null) {
+                                        long v = ((IgniteTxLocalAdapter)fut.result()).commitCutVer();
+
+                                        res.txCutVer(v);
+                                    }
+
+                                    res.lastCutVer(cctx.consistentCutMgr().lastCutVer());
+
                                     sendPrepareResponse(res);
+                                }
                             }
                         };
 
@@ -838,6 +862,8 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
 
                     // Will call super.onDone().
                     onComplete(res);
+
+                    res.lastCutVer(cctx.consistentCutMgr().lastCutVer());
 
                     sendPrepareResponse(res);
 
@@ -1452,7 +1478,8 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                 tx.storeWriteThrough(),
                 retVal,
                 mvccSnapshot,
-                cctx.tm().txHandler().filterUpdateCountersForBackupNode(tx, n));
+                cctx.tm().txHandler().filterUpdateCountersForBackupNode(tx, n),
+                cctx.consistentCutMgr().lastCutVer());
 
             req.queryUpdate(dhtMapping.queryUpdate());
 
@@ -1566,7 +1593,8 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                     tx.storeWriteThrough(),
                     retVal,
                     mvccSnapshot,
-                    null);
+                    null,
+                    cctx.consistentCutMgr().lastCutVer());
 
                 for (IgniteTxEntry entry : nearMapping.entries()) {
                     if (CU.writes().apply(entry)) {
@@ -2037,6 +2065,9 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                         }
                     }
                 }
+
+                if (res.txCutVer() > 0)
+                    tx.commitCutVer(res.txCutVer());
 
                 // Finish mini future.
                 onDone(tx);

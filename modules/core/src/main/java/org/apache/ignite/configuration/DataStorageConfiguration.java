@@ -337,6 +337,10 @@ public class DataStorageConfiguration implements Serializable {
     /** Default memory allocator for all data regions. */
     @Nullable private MemoryAllocator memoryAllocator = null;
 
+    /** Flag to enable or disable PITR (Point In Time Recovery) feature. */
+    @IgniteExperimental
+    private boolean recoveryPointEnabled;
+
     /**
      * Creates valid durable memory configuration with all default values.
      */
@@ -1358,6 +1362,25 @@ public class DataStorageConfiguration implements Serializable {
      */
     public DataStorageConfiguration setMemoryAllocator(MemoryAllocator allocator) {
         memoryAllocator = allocator;
+
+        return this;
+    }
+
+    /**
+     * @return Whether the PITR feature is enabled.
+     */
+    public boolean isRecoveryPointEnabled() {
+        return recoveryPointEnabled;
+    }
+
+    /**
+     * Enables or disables PITR feature.
+     *
+     * @param recoveryPointEnabled Flag to enable or disable PITR.
+     * @return {@code this} for chaining.
+     */
+    public DataStorageConfiguration setRecoveryPointEnabled(boolean recoveryPointEnabled) {
+        this.recoveryPointEnabled = recoveryPointEnabled;
 
         return this;
     }

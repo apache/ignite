@@ -1608,9 +1608,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
                 ", tx=" + tx.getClass().getSimpleName() + ']');
         }
 
-        ConcurrentMap<GridCacheVersion, IgniteInternalTx> txIdMap = transactionMap(tx);
-
-        if (txIdMap.remove(tx.xidVersion(), tx)) {
+        if (activeTx(tx)) {
             // 2. Must process completed entries before unlocking!
             processCompletedEntries(tx);
 
@@ -1673,6 +1671,34 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
         }
         else if (log.isDebugEnabled())
             log.debug("Did not commit from TM (was already committed): " + tx);
+    }
+
+    /**
+     * Checks whether specified tx is active. Also syncs committing transactions with Consistent Cut.
+     *
+     * @return {@code true} if {@code tx} is active transaction, otherwise {@code false}.
+     */
+    private boolean activeTx(IgniteInternalTx tx) {
+        ConcurrentMap<GridCacheVersion, IgniteInternalTx> txIdMap = transactionMap(tx);
+
+        if (cctx.consistentCutMgr() == null)
+            return txIdMap.remove(tx.xidVersion(), tx);
+
+        if (txIdMap.containsKey(tx.xidVersion())) {
+            cctx.consistentCutMgr().beforeCommit(tx);
+
+            boolean active = txIdMap.remove(tx.xidVersion(), tx);
+
+            if (!active) {
+                log.warning("NOT ACTIVE " + tx.nearXidVersion());
+
+                cctx.consistentCutMgr().cleanCommitting(tx);
+            }
+
+            return active;
+        }
+
+        return false;
     }
 
     /**

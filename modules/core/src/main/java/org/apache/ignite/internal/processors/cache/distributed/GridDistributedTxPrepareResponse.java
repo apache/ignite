@@ -57,6 +57,12 @@ public class GridDistributedTxPrepareResponse extends GridDistributedBaseMessage
     /** */
     protected byte flags;
 
+    /** */
+    private long lastCutVer;
+
+    /** */
+    private long txCutVer;
+
     /**
      * Empty constructor (required by {@link Externalizable}).
      */
@@ -132,6 +138,26 @@ public class GridDistributedTxPrepareResponse extends GridDistributedBaseMessage
         return err != null;
     }
 
+    /** */
+    public long txCutVer() {
+        return txCutVer;
+    }
+
+    /** */
+    public void txCutVer(long ver) {
+        txCutVer = ver;
+    }
+
+    /** */
+    public long lastCutVer() {
+        return lastCutVer;
+    }
+
+    /** */
+    public void lastCutVer(long lastCutVer) {
+        this.lastCutVer = lastCutVer;
+    }
+
     /** {@inheritDoc} */
     @Override public IgniteTxState txState() {
         return txState;
@@ -196,6 +222,18 @@ public class GridDistributedTxPrepareResponse extends GridDistributedBaseMessage
 
                 writer.incrementState();
 
+            case 11:
+                if (!writer.writeLong("lastCutVer", lastCutVer))
+                    return false;
+
+                writer.incrementState();
+
+            case 12:
+                if (!writer.writeLong("txCutVer", txCutVer))
+                    return false;
+
+                writer.incrementState();
+
         }
 
         return true;
@@ -236,6 +274,22 @@ public class GridDistributedTxPrepareResponse extends GridDistributedBaseMessage
 
                 reader.incrementState();
 
+            case 11:
+                lastCutVer = reader.readLong("lastCutVer");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 12:
+                txCutVer = reader.readLong("txCutVer");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
         }
 
         return reader.afterMessageRead(GridDistributedTxPrepareResponse.class);
@@ -248,7 +302,7 @@ public class GridDistributedTxPrepareResponse extends GridDistributedBaseMessage
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 11;
+        return 13;
     }
 
     /** {@inheritDoc} */

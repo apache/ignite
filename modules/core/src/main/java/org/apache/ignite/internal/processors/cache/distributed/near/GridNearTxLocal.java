@@ -151,7 +151,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
     private static final AtomicReferenceFieldUpdater<GridNearTxLocal, IgniteInternalFuture> PREP_FUT_UPD =
         AtomicReferenceFieldUpdater.newUpdater(GridNearTxLocal.class, IgniteInternalFuture.class, "prepFut");
 
-    /** Prepare future updater. */
+    /** Finish future updater. */
     private static final AtomicReferenceFieldUpdater<GridNearTxLocal, NearTxFinishFuture> FINISH_FUT_UPD =
         AtomicReferenceFieldUpdater.newUpdater(GridNearTxLocal.class, NearTxFinishFuture.class, "finishFut");
 
@@ -4418,7 +4418,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
     /**
      * @return {@code True} if 'fast finish' path can be used for transaction completion.
      */
-    private boolean fastFinish() {
+    public boolean fastFinish() {
         return !queryEnlisted() && writeMap().isEmpty()
             && ((optimistic() && !serializable()) || readMap().isEmpty());
     }

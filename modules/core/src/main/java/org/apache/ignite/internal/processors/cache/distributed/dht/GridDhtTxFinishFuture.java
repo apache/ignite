@@ -35,6 +35,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheCompoundIdentityFutu
 import org.apache.ignite.internal.processors.cache.GridCacheFuture;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxMapping;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareFutureAdapter;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccFuture;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
@@ -239,7 +240,20 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
                     try {
                         boolean nodeStopping = X.hasCause(err, NodeStoppingException.class);
 
-                        this.tx.tmFinish(err == null, nodeStopping || cctx.kernalContext().failure().nodeStopping(), false);
+                        long commitCutVer = 0;
+
+                        if (this.tx.currentPrepareFuture() != null) {
+                            if (this.tx.near())
+                                commitCutVer = ((GridNearTxPrepareFutureAdapter)this.tx.currentPrepareFuture()).commitCutVer();
+                            else
+                                commitCutVer = ((GridDhtTxPrepareFuture)this.tx.currentPrepareFuture()).commitCutVer();
+                        }
+
+                        this.tx.tmFinish(
+                            err == null,
+                            nodeStopping || cctx.kernalContext().failure().nodeStopping(),
+                            false,
+                            commitCutVer);
                     }
                     catch (IgniteCheckedException finishErr) {
                         U.error(log, "Failed to finish tx: " + tx, e);
@@ -371,6 +385,7 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
                 fut.futureId(),
                 tx.topologyVersion(),
                 tx.xidVersion(),
+                tx.nearXidVersion(),
                 tx.commitVersion(),
                 tx.threadId(),
                 tx.isolation(),
@@ -391,6 +406,9 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
                 false,
                 tx.mvccSnapshot(),
                 cctx.tm().txHandler().filterUpdateCountersForBackupNode(tx, n));
+
+            req.lastCutVer(cctx.consistentCutMgr().lastCutVer());
+            req.txCutVer(tx.commitCutVer());
 
             try {
                 cctx.io().send(n, req, tx.ioPolicy());
@@ -455,6 +473,8 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
         if (mvccSnapshot != null)
             mvccSnapshot = mvccSnapshot.withoutActiveTransactions();
 
+        long txVer = tx.commitCutVer();
+
         // Create mini futures.
         for (GridDistributedTxMapping dhtMapping : dhtMap.values()) {
             ClusterNode n = dhtMapping.primary();
@@ -477,6 +497,7 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
                 fut.futureId(),
                 tx.topologyVersion(),
                 tx.xidVersion(),
+                tx.nearXidVersion(),
                 tx.commitVersion(),
                 tx.threadId(),
                 tx.isolation(),
@@ -499,6 +520,8 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
                 mvccSnapshot,
                 commit ? null : cctx.tm().txHandler().filterUpdateCountersForBackupNode(tx, n));
 
+            req.lastCutVer(cctx.consistentCutMgr().lastCutVer());
+            req.txCutVer(txVer);
             req.writeVersion(tx.writeVersion() != null ? tx.writeVersion() : tx.xidVersion());
 
             try {
@@ -556,6 +579,7 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
                     fut.futureId(),
                     tx.topologyVersion(),
                     tx.xidVersion(),
+                    tx.nearXidVersion(),
                     tx.commitVersion(),
                     tx.threadId(),
                     tx.isolation(),
@@ -577,6 +601,8 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
                     mvccSnapshot,
                     null);
 
+                req.lastCutVer(cctx.consistentCutMgr().lastCutVer());
+                req.txCutVer(txVer);
                 req.writeVersion(tx.writeVersion());
 
                 try {

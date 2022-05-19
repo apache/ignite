@@ -105,6 +105,12 @@ public class GridDistributedTxFinishRequest extends GridDistributedBaseMessage i
     @GridDirectTransient
     private IgniteTxState txState;
 
+    /** */
+    private long lastCutVer;
+
+    /** */
+    private long txCutVer;
+
     /**
      * Empty constructor required by {@link Externalizable}.
      */
@@ -272,6 +278,26 @@ public class GridDistributedTxFinishRequest extends GridDistributedBaseMessage i
         return txSize;
     }
 
+    /** */
+    public long lastCutVer() {
+        return lastCutVer;
+    }
+
+    /** */
+    public void lastCutVer(long lastCutVer) {
+        this.lastCutVer = lastCutVer;
+    }
+
+    /** */
+    public long txCutVer() {
+        return txCutVer;
+    }
+
+    /** */
+    public void txCutVer(long txCutVer) {
+        this.txCutVer = txCutVer;
+    }
+
     /**
      *
      * @return {@code True} if reply is required.
@@ -390,6 +416,17 @@ public class GridDistributedTxFinishRequest extends GridDistributedBaseMessage i
 
                 writer.incrementState();
 
+            case 21:
+                if (!writer.writeLong("curConsistentVer", lastCutVer))
+                    return false;
+
+                writer.incrementState();
+
+            case 22:
+                if (!writer.writeLong("txConsistentVer", txCutVer))
+                    return false;
+
+                writer.incrementState();
         }
 
         return true;
@@ -514,6 +551,21 @@ public class GridDistributedTxFinishRequest extends GridDistributedBaseMessage i
 
                 reader.incrementState();
 
+            case 21:
+                lastCutVer = reader.readLong("curConsistentVer");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 22:
+                txCutVer = reader.readLong("txConsistentVer");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
         }
 
         return reader.afterMessageRead(GridDistributedTxFinishRequest.class);
@@ -526,7 +578,7 @@ public class GridDistributedTxFinishRequest extends GridDistributedBaseMessage i
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 21;
+        return 22;
     }
 
     /** {@inheritDoc} */

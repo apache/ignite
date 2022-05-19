@@ -184,7 +184,8 @@ public class IgniteWalIteratorSwitchSegmentTest extends GridCommonAbstractTest {
                 null,
                 null,
                 null,
-                null)
+                null,
+                false)
         ).createSerializer(serVer);
 
         SwitchSegmentRecord switchSegmentRecord = new SwitchSegmentRecord();
@@ -480,7 +481,8 @@ public class IgniteWalIteratorSwitchSegmentTest extends GridCommonAbstractTest {
             null,
             null,
             null,
-            null
+            null,
+            false
         );
 
         walMgr.start(ctx);

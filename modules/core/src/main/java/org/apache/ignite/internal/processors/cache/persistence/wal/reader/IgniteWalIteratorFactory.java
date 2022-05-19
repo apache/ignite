@@ -405,7 +405,7 @@ public class IgniteWalIteratorFactory {
             kernalCtx, null, null, null,
             null, null, null, dbMgr, null, null,
             null, null, null, null, null,
-            null, null, null, null, null, null
+            null, null, null, null, null, null, false
         );
     }
 

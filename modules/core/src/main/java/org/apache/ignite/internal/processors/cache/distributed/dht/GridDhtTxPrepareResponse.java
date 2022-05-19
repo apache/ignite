@@ -68,6 +68,12 @@ public class GridDhtTxPrepareResponse extends GridDistributedTxPrepareResponse {
     @GridDirectCollection(GridCacheEntryInfo.class)
     private List<GridCacheEntryInfo> preloadEntries;
 
+    /** Near transaction ID. */
+    private GridCacheVersion nearXidVer;
+
+    /** */
+    private boolean onePhaseCommit;
+
     /**
      * Empty constructor required by {@link Externalizable}.
      */
@@ -85,16 +91,21 @@ public class GridDhtTxPrepareResponse extends GridDistributedTxPrepareResponse {
     public GridDhtTxPrepareResponse(
         int part,
         GridCacheVersion xid,
+        GridCacheVersion nearXidVer,
         IgniteUuid futId,
         int miniId,
-        boolean addDepInfo) {
+        boolean addDepInfo,
+        boolean onePhaseCommit
+    ) {
         super(part, xid, addDepInfo);
 
         assert futId != null;
         assert miniId != 0;
 
+        this.nearXidVer = nearXidVer;
         this.futId = futId;
         this.miniId = miniId;
+        this.onePhaseCommit = onePhaseCommit;
     }
 
     /**
@@ -108,17 +119,22 @@ public class GridDhtTxPrepareResponse extends GridDistributedTxPrepareResponse {
     public GridDhtTxPrepareResponse(
         int part,
         GridCacheVersion xid,
+        GridCacheVersion nearXidVer,
         IgniteUuid futId,
         int miniId,
         Throwable err,
-        boolean addDepInfo) {
+        boolean addDepInfo,
+        boolean onePhaseCommit
+    ) {
         super(part, xid, err, addDepInfo);
 
         assert futId != null;
         assert miniId != 0;
 
+        this.nearXidVer = nearXidVer;
         this.futId = futId;
         this.miniId = miniId;
+        this.onePhaseCommit = onePhaseCommit;
     }
 
     /**
@@ -186,6 +202,16 @@ public class GridDhtTxPrepareResponse extends GridDistributedTxPrepareResponse {
         preloadEntries.add(info);
     }
 
+    /** */
+    public GridCacheVersion nearXidVer() {
+        return nearXidVer;
+    }
+
+    /** */
+    public boolean onePhaseCommit() {
+        return onePhaseCommit;
+    }
+
     /** {@inheritDoc} */
     @Override public void prepareMarshal(GridCacheSharedContext ctx) throws IgniteCheckedException {
         super.prepareMarshal(ctx);
@@ -245,36 +271,47 @@ public class GridDhtTxPrepareResponse extends GridDistributedTxPrepareResponse {
         }
 
         switch (writer.state()) {
-            case 11:
+            case 13:
                 if (!writer.writeIgniteUuid("futId", futId))
                     return false;
 
                 writer.incrementState();
 
-            case 12:
+            case 14:
                 if (!writer.writeMap("invalidParts", invalidParts, MessageCollectionItemType.INT, MessageCollectionItemType.INT_ARR))
                     return false;
 
                 writer.incrementState();
 
-            case 13:
+            case 15:
                 if (!writer.writeInt("miniId", miniId))
                     return false;
 
                 writer.incrementState();
 
-            case 14:
+            case 16:
                 if (!writer.writeCollection("nearEvicted", nearEvicted, MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
 
-            case 15:
+            case 17:
                 if (!writer.writeCollection("preloadEntries", preloadEntries, MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
 
+            case 18:
+                if (!writer.writeMessage("nearXidVer", nearXidVer))
+                    return false;
+
+                writer.incrementState();
+
+            case 19:
+                if (!writer.writeBoolean("onePhaseCommit", onePhaseCommit))
+                    return false;
+
+                writer.incrementState();
         }
 
         return true;
@@ -291,7 +328,7 @@ public class GridDhtTxPrepareResponse extends GridDistributedTxPrepareResponse {
             return false;
 
         switch (reader.state()) {
-            case 11:
+            case 13:
                 futId = reader.readIgniteUuid("futId");
 
                 if (!reader.isLastRead())
@@ -299,7 +336,7 @@ public class GridDhtTxPrepareResponse extends GridDistributedTxPrepareResponse {
 
                 reader.incrementState();
 
-            case 12:
+            case 14:
                 invalidParts = reader.readMap("invalidParts", MessageCollectionItemType.INT, MessageCollectionItemType.INT_ARR, false);
 
                 if (!reader.isLastRead())
@@ -307,7 +344,7 @@ public class GridDhtTxPrepareResponse extends GridDistributedTxPrepareResponse {
 
                 reader.incrementState();
 
-            case 13:
+            case 15:
                 miniId = reader.readInt("miniId");
 
                 if (!reader.isLastRead())
@@ -315,7 +352,7 @@ public class GridDhtTxPrepareResponse extends GridDistributedTxPrepareResponse {
 
                 reader.incrementState();
 
-            case 14:
+            case 16:
                 nearEvicted = reader.readCollection("nearEvicted", MessageCollectionItemType.MSG);
 
                 if (!reader.isLastRead())
@@ -323,7 +360,7 @@ public class GridDhtTxPrepareResponse extends GridDistributedTxPrepareResponse {
 
                 reader.incrementState();
 
-            case 15:
+            case 17:
                 preloadEntries = reader.readCollection("preloadEntries", MessageCollectionItemType.MSG);
 
                 if (!reader.isLastRead())
@@ -331,6 +368,21 @@ public class GridDhtTxPrepareResponse extends GridDistributedTxPrepareResponse {
 
                 reader.incrementState();
 
+            case 18:
+                nearXidVer = reader.readMessage("nearXidVer");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 19:
+                onePhaseCommit = reader.readBoolean("onePhaseCommit");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
         }
 
         return reader.afterMessageRead(GridDhtTxPrepareResponse.class);
@@ -343,7 +395,7 @@ public class GridDhtTxPrepareResponse extends GridDistributedTxPrepareResponse {
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 16;
+        return 20;
     }
 
     /** {@inheritDoc} */

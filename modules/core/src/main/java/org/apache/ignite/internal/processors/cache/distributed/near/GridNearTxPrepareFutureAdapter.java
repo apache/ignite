@@ -94,11 +94,14 @@ public abstract class GridNearTxPrepareFutureAdapter extends
     /** Trackable flag. */
     protected boolean trackable = true;
 
+    /** */
+    private long commitCutVer;
+
     /**
      * @param cctx Context.
      * @param tx Transaction.
      */
-    public GridNearTxPrepareFutureAdapter(GridCacheSharedContext cctx, final GridNearTxLocal tx) {
+    protected GridNearTxPrepareFutureAdapter(GridCacheSharedContext cctx, final GridNearTxLocal tx) {
         super(REDUCER);
 
         assert cctx != null;
@@ -113,6 +116,16 @@ public abstract class GridNearTxPrepareFutureAdapter extends
             msgLog = cctx.txFinishMessageLogger();
             log = U.logger(cctx.kernalContext(), logRef, GridNearTxPrepareFutureAdapter.class);
         }
+    }
+
+    /** */
+    public long commitCutVer() {
+        return commitCutVer;
+    }
+
+    /** */
+    public void commitCutVer(long commitCutVer) {
+        this.commitCutVer = commitCutVer;
     }
 
     /** {@inheritDoc} */

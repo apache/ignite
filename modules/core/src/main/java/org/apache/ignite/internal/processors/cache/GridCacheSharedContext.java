@@ -44,6 +44,7 @@ import org.apache.ignite.internal.managers.systemview.ScanQuerySystemView;
 import org.apache.ignite.internal.pagemem.store.IgnitePageStoreManager;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.consistentcut.ConsistentCutManager;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.PartitionsEvictManager;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
@@ -92,6 +93,9 @@ public class GridCacheSharedContext<K, V> {
 
     /** Cache transaction manager. */
     private IgniteTxManager txMgr;
+
+    /** Consistent Cut manager. */
+    private ConsistentCutManager consistentCutMgr;
 
     /** JTA manager. */
     private CacheJtaManagerAdapter jtaMgr;
@@ -237,7 +241,8 @@ public class GridCacheSharedContext<K, V> {
         Collection<CacheStoreSessionListener> storeSesLsnrs,
         MvccCachingManager mvccCachingMgr,
         DeadlockDetectionManager deadlockDetectionMgr,
-        CacheDiagnosticManager diagnosticMgr
+        CacheDiagnosticManager diagnosticMgr,
+        boolean consistentCutEnabled
     ) {
         this.kernalCtx = kernalCtx;
 
@@ -264,6 +269,9 @@ public class GridCacheSharedContext<K, V> {
             deadlockDetectionMgr,
             diagnosticMgr
         );
+
+        if (consistentCutEnabled)
+            enableConsistentCut();
 
         this.storeSesLsnrs = storeSesLsnrs;
 
@@ -323,6 +331,14 @@ public class GridCacheSharedContext<K, V> {
     public void deactivate() {
         for (int i = stateAwareMgrs.size() - 1; i >= 0; i--)
             stateAwareMgrs.get(i).onDeActivate(kernalCtx);
+    }
+
+    /**
+     *
+     */
+    public void enableConsistentCut() {
+        if (consistentCutMgr == null)
+            consistentCutMgr = new ConsistentCutManager(this);
     }
 
     /**
@@ -702,6 +718,13 @@ public class GridCacheSharedContext<K, V> {
      */
     public IgniteTxManager tm() {
         return txMgr;
+    }
+
+    /**
+     * @return Cache transaction manager.
+     */
+    public ConsistentCutManager consistentCutMgr() {
+        return consistentCutMgr;
     }
 
     /**

@@ -768,10 +768,13 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
                 GridDhtTxPrepareResponse res = new GridDhtTxPrepareResponse(
                     req.partition(),
                     req.version(),
+                    req.nearXidVersion(),
                     req.futureId(),
                     req.miniId(),
-                    req.deployInfo() != null);
+                    req.deployInfo() != null,
+                    req.onePhaseCommit());
 
+                res.lastCutVer(cctx.consistentCutMgr().lastCutVer());
                 res.error(req.classError());
 
                 sendResponseOnFailedMessage(nodeId, res, cctx, req.policy());
@@ -915,6 +918,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
                     req.deployInfo() != null);
 
                 res.error(req.classError());
+                res.lastCutVer(cctx.consistentCutMgr().lastCutVer());
 
                 sendResponseOnFailedMessage(nodeId, res, cctx, req.policy());
             }

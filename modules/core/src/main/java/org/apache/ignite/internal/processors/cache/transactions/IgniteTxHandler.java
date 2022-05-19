@@ -134,7 +134,7 @@ import static org.apache.ignite.transactions.TransactionState.ROLLING_BACK;
  */
 public class IgniteTxHandler {
     /** Logger. */
-    private IgniteLogger log;
+    private final IgniteLogger log;
 
     /** */
     private final IgniteLogger txPrepareMsgLog;
@@ -146,7 +146,7 @@ public class IgniteTxHandler {
     private final IgniteLogger txRecoveryMsgLog;
 
     /** Shared cache context. */
-    private GridCacheSharedContext<?, ?> ctx;
+    private final GridCacheSharedContext<?, ?> ctx;
 
     /**
      * @param nearNodeId Sender node ID.
@@ -220,19 +220,36 @@ public class IgniteTxHandler {
 
         ctx.io().addCacheHandler(0, GridNearTxPrepareRequest.class, new CI2<UUID, GridCacheMessage>() {
             @Override public void apply(UUID nodeId, GridCacheMessage msg) {
-                processNearTxPrepareRequest(nodeId, (GridNearTxPrepareRequest)msg);
+                GridNearTxPrepareRequest r = (GridNearTxPrepareRequest)msg;
+
+                processConsistentVer(r.curConsistentVer());
+
+                processNearTxPrepareRequest(nodeId, r);
             }
         });
 
         ctx.io().addCacheHandler(0, GridNearTxPrepareResponse.class, new CI2<UUID, GridCacheMessage>() {
             @Override public void apply(UUID nodeId, GridCacheMessage msg) {
-                processNearTxPrepareResponse(nodeId, (GridNearTxPrepareResponse)msg);
+                GridNearTxPrepareResponse r = (GridNearTxPrepareResponse)msg;
+
+                processConsistentVer(r.lastCutVer());
+
+                if (r.onePhaseCommit())
+                    ctx.consistentCutMgr().handleRemoteTxCutVersion(r.version(), r.txCutVer(), true);
+
+                processNearTxPrepareResponse(nodeId, r);
             }
         });
 
         ctx.io().addCacheHandler(0, GridNearTxFinishRequest.class, new CI2<UUID, GridCacheMessage>() {
             @Override public void apply(UUID nodeId, GridCacheMessage msg) {
-                processNearTxFinishRequest(nodeId, (GridNearTxFinishRequest)msg);
+                GridNearTxFinishRequest r = (GridNearTxFinishRequest)msg;
+
+                processConsistentVer(r.lastCutVer());
+
+                ctx.consistentCutMgr().handleRemoteTxCutVersion(r.version(), r.txCutVer(), false);
+
+                processNearTxFinishRequest(nodeId, r);
             }
         });
 
@@ -244,18 +261,35 @@ public class IgniteTxHandler {
 
         ctx.io().addCacheHandler(0, GridDhtTxPrepareRequest.class, new CI2<UUID, GridCacheMessage>() {
             @Override public void apply(UUID nodeId, GridCacheMessage msg) {
-                processDhtTxPrepareRequest(nodeId, (GridDhtTxPrepareRequest)msg);
+                GridDhtTxPrepareRequest r = (GridDhtTxPrepareRequest)msg;
+
+                processConsistentVer(r.curConsistentVer());
+
+                processDhtTxPrepareRequest(nodeId, r);
             }
         });
 
         ctx.io().addCacheHandler(0, GridDhtTxPrepareResponse.class, new CI2<UUID, GridCacheMessage>() {
             @Override public void apply(UUID nodeId, GridCacheMessage msg) {
-                processDhtTxPrepareResponse(nodeId, (GridDhtTxPrepareResponse)msg);
+                GridDhtTxPrepareResponse r = (GridDhtTxPrepareResponse)msg;
+
+                processConsistentVer(r.lastCutVer());
+
+                if (r.onePhaseCommit())
+                    ctx.consistentCutMgr().handleRemoteTxCutVersion(r.nearXidVer(), r.txCutVer(), true);
+
+                processDhtTxPrepareResponse(nodeId, r);
             }
         });
 
         ctx.io().addCacheHandler(0, GridDhtTxFinishRequest.class, new CI2<UUID, GridCacheMessage>() {
             @Override public void apply(UUID nodeId, GridCacheMessage msg) {
+                GridDhtTxFinishRequest r = (GridDhtTxFinishRequest)msg;
+
+                processConsistentVer(r.lastCutVer());
+
+                ctx.consistentCutMgr().handleRemoteTxCutVersion(r.nearXidVer(), r.txCutVer(), false);
+
                 processDhtTxFinishRequest(nodeId, (GridDhtTxFinishRequest)msg);
             }
         });
@@ -285,6 +319,11 @@ public class IgniteTxHandler {
                     processCheckPreparedTxResponse(nodeId, res);
                 }
             });
+    }
+
+    /** */
+    private void processConsistentVer(long ver) {
+        ctx.consistentCutMgr().handleConsistentCutStart(ver);
     }
 
     /**
@@ -485,6 +524,8 @@ public class IgniteTxHandler {
                             top.lastTopologyChangeVersion(),
                             req.onePhaseCommit(),
                             req.deployInfo() != null);
+
+                        res.lastCutVer(ctx.consistentCutMgr().lastCutVer());
 
                         try {
                             ctx.io().send(nearNode, res, req.policy());
@@ -695,6 +736,8 @@ public class IgniteTxHandler {
             req.onePhaseCommit(),
             req.deployInfo() != null);
 
+        res.lastCutVer(ctx.consistentCutMgr().lastCutVer());
+
         try {
             ctx.io().send(node.id(), res, req.policy());
         }
@@ -778,6 +821,9 @@ public class IgniteTxHandler {
 
             res.txState(tx.txState());
 
+            if (res.onePhaseCommit())
+                fut.commitCutVer(res.txCutVer());
+
             fut.onResult(nodeId, res);
         }
     }
@@ -837,6 +883,8 @@ public class IgniteTxHandler {
             assert tx != null;
 
             res.txState(tx.txState());
+
+            fut.commitCutVer(res.txCutVer());
 
             fut.onResult(nodeId, res);
         }
@@ -951,8 +999,12 @@ public class IgniteTxHandler {
 
         IgniteInternalFuture<IgniteInternalTx> colocatedFinishFut = null;
 
-        if (locTx != null && locTx.colocatedLocallyMapped())
+        if (locTx != null && locTx.colocatedLocallyMapped()) {
+            if (req.txCutVer() > 0)
+                locTx.commitCutVer(req.txCutVer());
+
             colocatedFinishFut = finishColocatedLocal(req.commit(), locTx);
+        }
 
         IgniteInternalFuture<IgniteInternalTx> nearFinishFut = null;
 
@@ -1072,6 +1124,9 @@ public class IgniteTxHandler {
             tx.nearFinishFutureId(req.futureId());
             tx.nearFinishMiniId(req.miniId());
             tx.storeEnabled(req.storeEnabled());
+            // Commit primary node that equals to the near node.
+            if (req.txCutVer() > 0)
+                tx.commitCutVer(req.txCutVer());
 
             if (!tx.markFinalizing(USER_FINISH)) {
                 if (log.isDebugEnabled())
@@ -1201,9 +1256,11 @@ public class IgniteTxHandler {
                 res = new GridDhtTxPrepareResponse(
                     req.partition(),
                     req.version(),
+                    req.nearXidVersion(),
                     req.futureId(),
                     req.miniId(),
-                    req.deployInfo() != null);
+                    req.deployInfo() != null,
+                    req.onePhaseCommit());
 
                 // Start near transaction first.
                 nearTx = !F.isEmpty(req.nearWrites()) ? startNearRemoteTx(ctx.deploy().globalLoader(), nodeId, req) : null;
@@ -1270,10 +1327,12 @@ public class IgniteTxHandler {
                 res = new GridDhtTxPrepareResponse(
                     req.partition(),
                     req.version(),
+                    req.nearXidVersion(),
                     req.futureId(),
                     req.miniId(),
                     e,
-                    req.deployInfo() != null);
+                    req.deployInfo() != null,
+                    req.onePhaseCommit());
             }
 
             if (req.onePhaseCommit()) {
@@ -1309,11 +1368,18 @@ public class IgniteTxHandler {
                         }
                     });
                 }
-                else
+                else {
+                    res.txCutVer(dhtTx.commitCutVer());
+                    res.lastCutVer(ctx.consistentCutMgr().lastCutVer());
+
                     sendReply(nodeId, req, res, dhtTx, nearTx);
+                }
             }
-            else
+            else {
+                res.lastCutVer(ctx.consistentCutMgr().lastCutVer());
+
                 sendReply(nodeId, req, res, dhtTx, nearTx);
+            }
 
             assert req.txState() != null || res.error() != null || (dhtTx == null && nearTx == null) :
                 req + " tx=" + dhtTx + " nearTx=" + nearTx;

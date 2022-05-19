@@ -36,6 +36,7 @@ import org.apache.ignite.internal.managers.encryption.GroupKeyEncrypted;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.wal.record.CacheState;
 import org.apache.ignite.internal.pagemem.wal.record.CheckpointRecord;
+import org.apache.ignite.internal.pagemem.wal.record.ConsistentCutRecord;
 import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.EncryptedRecord;
@@ -158,6 +159,9 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
     /** Serializer of {@link TxRecord} records. */
     private TxRecordSerializer txRecordSerializer;
 
+    /** */
+    private ConsistentCutRecordSerializer cutRecordSerializer;
+
     /** Encryption SPI instance. */
     private final EncryptionSpi encSpi;
 
@@ -179,6 +183,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
     public RecordDataV1Serializer(GridCacheSharedContext cctx) {
         this.cctx = cctx;
         this.txRecordSerializer = new TxRecordSerializer();
+        this.cutRecordSerializer = new ConsistentCutRecordSerializer();
         this.co = cctx.kernalContext().cacheObjects();
         this.pageSize = cctx.database().pageSize();
         this.encSpi = cctx.gridConfig().getEncryptionSpi();
@@ -555,6 +560,9 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
 
             case CLUSTER_SNAPSHOT:
                 return 4 + ((ClusterSnapshotRecord)record).clusterSnapshotName().getBytes().length;
+
+            case CONSISTENT_CUT_RECORD:
+                return cutRecordSerializer.size((ConsistentCutRecord)record);
 
             default:
                 throw new UnsupportedOperationException("Type: " + record.type());
@@ -1293,6 +1301,11 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
 
                 break;
 
+            case CONSISTENT_CUT_RECORD:
+                res = cutRecordSerializer.read(in);
+
+                break;
+
             default:
                 throw new UnsupportedOperationException("Type: " + type);
         }
@@ -1935,6 +1948,11 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
                 buf.putInt(partitionClearingStartRecord.groupId());
 
                 buf.putLong(partitionClearingStartRecord.clearVersion());
+
+                break;
+
+            case CONSISTENT_CUT_RECORD:
+                cutRecordSerializer.write((ConsistentCutRecord)rec, buf);
 
                 break;
 

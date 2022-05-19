@@ -359,7 +359,12 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
                             finishOnePhase(commit);
 
                         try {
-                            tx.tmFinish(commit, nodeStop, true);
+                            long cutVer = 0;
+
+                            if (tx.currentPrepareFuture() != null)
+                                cutVer = ((GridNearTxPrepareFutureAdapter)tx.currentPrepareFuture()).commitCutVer();
+
+                            tx.tmFinish(commit, nodeStop, true, cutVer);
                         }
                         catch (IgniteCheckedException e) {
                             U.error(log, "Failed to finish tx: " + tx, e);
@@ -465,6 +470,8 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
      */
     private void doFinish(boolean commit, boolean clearThreadMap) {
         try {
+            long txVer = cctx.consistentCutMgr().txCommitCutVer(tx);
+
             if (tx.localFinish(commit, clearThreadMap) || (!commit && tx.state() == UNKNOWN)) {
                 // Cleanup transaction if heuristic failure.
                 if (tx.state() == UNKNOWN)
@@ -477,13 +484,13 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
                         if (mapping != null) {
                             assert !hasFutures() || isDone() : futures();
 
-                            finish(1, mapping, commit, !clearThreadMap);
+                            finish(1, mapping, commit, txVer);
                         }
                     }
                     else {
                         assert !hasFutures() || isDone() : futures();
 
-                        finish(mappings.mappings(), commit, !clearThreadMap);
+                        finish(mappings.mappings(), commit, txVer);
                     }
                 }
 
@@ -649,6 +656,9 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
                     else {
                         GridDhtTxFinishRequest finishReq = checkCommittedRequest(mini.futureId(), false);
 
+                        finishReq.lastCutVer(cctx.consistentCutMgr().lastCutVer());
+                        finishReq.txCutVer(tx.commitCutVer());
+
                         try {
                             cctx.io().send(backup, finishReq, tx.ioPolicy());
 
@@ -742,23 +752,21 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
     /**
      * @param mappings Mappings.
      * @param commit Commit flag.
-     * @param useCompletedVer {@code True} if need to add completed version on finish.
-     */
-    private void finish(Iterable<GridDistributedTxMapping> mappings, boolean commit, boolean useCompletedVer) {
+=     */
+    private void finish(Iterable<GridDistributedTxMapping> mappings, boolean commit, long txConsistentVer) {
         int miniId = 0;
 
         // Create mini futures.
         for (GridDistributedTxMapping m : mappings)
-            finish(++miniId, m, commit, useCompletedVer);
+            finish(++miniId, m, commit, txConsistentVer);
     }
 
     /**
      * @param miniId Mini future ID.
      * @param m Mapping.
      * @param commit Commit flag.
-     * @param useCompletedVer {@code True} if need to add completed version on finish.
      */
-    private void finish(int miniId, GridDistributedTxMapping m, boolean commit, boolean useCompletedVer) {
+    private void finish(int miniId, GridDistributedTxMapping m, boolean commit, long txConsistentVer) {
         ClusterNode n = m.primary();
 
         assert !m.empty() || m.queryUpdate() : m + " " + tx.state();
@@ -786,8 +794,10 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
             tx.size(),
             tx.taskNameHash(),
             tx.mvccSnapshot(),
-            tx.activeCachesDeploymentEnabled()
-        );
+            tx.activeCachesDeploymentEnabled());
+
+        req.lastCutVer(cctx.consistentCutMgr().lastCutVer());
+        req.txCutVer(txConsistentVer);
 
         // If this is the primary node for the keys.
         if (n.isLocal()) {
@@ -903,6 +913,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
             miniId,
             tx.topologyVersion(),
             tx.xidVersion(),
+            tx.nearXidVersion(),
             tx.commitVersion(),
             tx.threadId(),
             tx.isolation(),

@@ -155,6 +155,9 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
     /** */
     protected volatile boolean qryEnlisted;
 
+    /** TODO: For one-phase commit, for DHT finish request. */
+    private volatile long commitCutVer = -1;
+
     /**
      * @param cctx Cache registry.
      * @param xidVer Transaction ID.
@@ -375,6 +378,16 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
      */
     protected boolean commitAfterLock() {
         return implicit() && (!dht() || colocated());
+    }
+
+    /** */
+    public long commitCutVer() {
+        return commitCutVer;
+    }
+
+    /** */
+    public void commitCutVer(long commitCutVer) {
+        this.commitCutVer = commitCutVer;
     }
 
     /** {@inheritDoc} */
@@ -1022,9 +1035,10 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
      * @param commit If {@code true} commits transaction, otherwise rollbacks.
      * @param clearThreadMap If {@code true} removes {@link GridNearTxLocal} from thread map.
      * @param nodeStop If {@code true} tx is cancelled on node stop.
+     * @param commitCutVer If transaction committed with specific ConsistentCutVersion then use it.
      * @throws IgniteCheckedException If failed.
      */
-    public void tmFinish(boolean commit, boolean nodeStop, boolean clearThreadMap) throws IgniteCheckedException {
+    public void tmFinish(boolean commit, boolean nodeStop, boolean clearThreadMap, long commitCutVer) throws IgniteCheckedException {
         assert onePhaseCommit();
 
         if (DONE_FLAG_UPD.compareAndSet(this, 0, 1)) {
@@ -1035,6 +1049,10 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                 else
                     cctx.tm().rollbackTx(this, clearThreadMap, false);
             }
+
+            // commitCutVer != -1 here for 1PC case ((originated + primary) node + backup node).
+            if (this.commitCutVer == -1)
+                commitCutVer(commitCutVer);
 
             state(commit ? COMMITTED : ROLLED_BACK);
 
@@ -1048,6 +1066,14 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
 
             cctx.mvccCaching().onTxFinished(this, commit);
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void notifyConsistentCutOnCommit() {
+        super.notifyConsistentCutOnCommit();
+
+        if (commitCutVer == -1)
+            commitCutVer(cctx.consistentCutMgr().txCommitCutVer(this));
     }
 
     /** {@inheritDoc} */
