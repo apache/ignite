@@ -1,5 +1,6 @@
 package org.apache.ignite.gatling.action.cache
 
+import com.typesafe.scalalogging.StrictLogging
 import io.gatling.commons.stats.{KO, OK}
 import io.gatling.commons.validation.SuccessWrapper
 import io.gatling.core.action.{Action, ChainableAction}
@@ -15,12 +16,12 @@ case class CachePutAction[K, V](requestName: Expression[String],
                                 value: Expression[V],
                                 next: Action,
                                 ctx: ScenarioContext
-                               ) extends ChainableAction with NameGen with ActionBase {
+                               ) extends ChainableAction with NameGen with ActionBase with StrictLogging {
 
   override val name: String = genName("cachePut")
 
   override protected def execute(session: Session): Unit = {
-
+    logger.debug(s"session user id: #${session.userId}, put")
     val client: IgniteApi = session("igniteApi").as[IgniteApi]
 
     (for {
@@ -30,13 +31,19 @@ case class CachePutAction[K, V](requestName: Expression[String],
       resolvedValue <- value(session)
       startTime <- ctx.coreComponents.clock.nowMillis.success
     } yield client
-      .getOrCreateCache[K, V, Unit](resolvedCacheName)(
-        cache => cache.put(resolvedKey, resolvedValue)(
-          _ => logAndExecuteNext(session, resolvedRequestName, startTime,
-            ctx.coreComponents.clock.nowMillis, OK, next, None, None),
-          ex => logAndExecuteNext(session, resolvedRequestName, startTime,
-            ctx.coreComponents.clock.nowMillis, KO, next, Some("ERROR"), Some(ex.getMessage))
-        ),
+      .cache[K, V, Unit](resolvedCacheName)(
+        cache => {
+          logger.debug(s"session user id: #${session.userId}, before cache.put")
+          cache.put(resolvedKey, resolvedValue)(
+            _ => {
+              logger.debug(s"session user id: #${session.userId}, after cache.put")
+              logAndExecuteNext(session, resolvedRequestName, startTime,
+                ctx.coreComponents.clock.nowMillis, OK, next, None, None)
+            },
+            ex => logAndExecuteNext(session, resolvedRequestName, startTime,
+              ctx.coreComponents.clock.nowMillis, KO, next, Some("ERROR"), Some(ex.getMessage))
+          )
+        },
         ex => logAndExecuteNext(session, resolvedRequestName, startTime,
           ctx.coreComponents.clock.nowMillis, KO, next, Some("ERROR"), Some(ex.getMessage)
         )

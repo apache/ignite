@@ -40,14 +40,13 @@ class GatlingTest(IgniteTest):
         Test that GatlingService correctly start and stop both as node and thin client.
         """
         server_config = IgniteConfiguration(version=IgniteVersion(ignite_version),
-                                            caches=[CacheConfiguration(name='TEST-CACHE')],
                                             client_connector_configuration=ClientConnectorConfiguration())
 
         ignite = IgniteService(self.test_context, server_config, 1)
 
         gatling_clients = GatlingService(
             ignite,
-            simulation_class_name="org.apache.ignite.internal.gatling.simulation.BasicSimulation",
+            simulation_class_name="org.apache.ignite.internal.gatling.simulation.TransactionsSimulation",
             client_type=client_type,
             num_nodes=3)
 
