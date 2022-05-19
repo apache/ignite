@@ -547,7 +547,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
 
             assert cnt <= Short.MAX_VALUE : cnt;
 
-            int idx = insertionPoint(lvl, io, leafAddr, cnt, r);
+            int idx = insertionPoint(r, lvl, io, leafAddr, cnt);
 
             if (idx < 0)
                 return RETRY; // We've found exact match on search but now it's gone.
@@ -563,7 +563,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
             // We may need to replace inner key or want to merge this leaf with sibling after the remove -> keep lock.
             if (needReplaceInner ||
                 // We need to make sure that we have back or forward to be able to merge.
-                ((r.fwdId != 0 || r.backId != 0) && mayMerge(cnt - rmvCnt(r, idx), io.getMaxCount(leafAddr, pageSize())))) {
+                ((r.fwdId != 0 || r.backId != 0) && mayMerge(cnt - removeCount(r, idx), io.getMaxCount(leafAddr, pageSize())))) {
                 // If we have backId then we've already locked back page, nothing to do here.
                 if (r.fwdId != 0 && r.backId == 0) {
                     Result res = r.lockForward(0);
@@ -581,7 +581,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
                 assert r.needReplaceInner == FALSE : "needReplaceInner";
                 assert r.needMergeEmptyBranch == FALSE : "needMergeEmptyBranch";
 
-                if (cnt == rmvCnt(r, idx)) // It was the last element on the leaf.
+                if (cnt == removeCount(r, idx)) // It was the last element on the leaf.
                     r.needMergeEmptyBranch = TRUE;
 
                 if (needReplaceInner)
@@ -604,14 +604,14 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         }
 
         /**
+         * @param r Remove operation.
          * @param lvl Level.
          * @param io IO.
          * @param leafAddr Page address.
          * @param cnt Number of rows.
-         * @param r Remove operation.
          * @return Insertion point as in {@link Arrays#binarySearch(Object[], Object, Comparator)}.
          */
-        int insertionPoint(int lvl, BPlusIO<L> io, long leafAddr, int cnt, R r) throws IgniteCheckedException {
+        int insertionPoint(R r, int lvl, BPlusIO<L> io, long leafAddr, int cnt) throws IgniteCheckedException {
             return findInsertionPoint(lvl, io, leafAddr, 0, cnt, r.row, 0);
         }
 
@@ -630,7 +630,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
          * @param idx Row number.
          * @return Number of rows to remove.
          */
-        int rmvCnt(R r, int idx) {
+        int removeCount(R r, int idx) {
             return 1;
         }
 
@@ -653,12 +653,14 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
      */
     private class RemoveRangeFromLeaf extends RemoveFromLeaf<RemoveRange> {
         /** {@inheritDoc} */
-        @Override int insertionPoint(int lvl, BPlusIO<L> io, long leafAddr, int cnt, RemoveRange r) throws IgniteCheckedException {
+        @Override int insertionPoint(RemoveRange r, int lvl, BPlusIO<L> io, long leafAddr, int cnt) throws IgniteCheckedException {
             int idx = findInsertionPoint(lvl, io, leafAddr, 0, cnt, r.lower, 0);
 
             if (idx < 0) {
                 idx = fix(idx);
 
+                // Before the page was locked, its state could have changed, so you need to make sure that
+                // it has elements from the range, otherwise repeat the search.
                 if (idx == cnt || compare(io, leafAddr, idx, r.upper) > 0)
                     return -idx - 1;
             }
@@ -672,7 +674,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
 
             assert highIdx >= idx : "low=" + idx + ", high=" + highIdx;
 
-            r.highIdx = r.highIdx > 0 ? highIdx : -highIdx - 1;
+            r.highIdx = r.highIdx >= 0 ? highIdx : -highIdx - 1;
 
             return idx;
         }
@@ -683,12 +685,13 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         }
 
         /** {@inheritDoc} */
-        @Override int rmvCnt(RemoveRange r, int idx) {
+        @Override int removeCount(RemoveRange r, int idx) {
             return fix(r.highIdx) - idx + 1;
         }
 
         /** {@inheritDoc} */
         @Override void afterLockForward(RemoveRange r, long leafAddr, BPlusIO<L> io) throws IgniteCheckedException {
+            // Changing the search row to the rightmost element, otherwise we won't find it on the inner node.
             if (r.needReplaceInner == TRUE)
                 r.row = getRow(io, leafAddr, fix(r.highIdx));
         }
@@ -2105,9 +2108,10 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
      * @throws IgniteCheckedException If failed.
      */
     public List<L> remove(L lower, L upper, int limit) throws IgniteCheckedException {
-        // We can't find the lower bound if the inner node does not contain a row
-        // from a leaf node (without reading forward page). But removal from right to left
-        // does not meet the main purpose of this operation - remove the lower rows first.
+        // We can't find the lower bound if the inner node does not contain
+        // a row from a leaf node (without reading forward leaf).
+        // On the other hand, deleting from right to left does not meet
+        // the main purpose of this operation - remove the "lower" rows first.
         assert canGetRowFromInner : "Not supported";
         assert limit >= 0 : limit;
 
@@ -2397,7 +2401,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
                         // We are at the bottom.
                         assert lvl == 0 : lvl;
 
-                        if (r.exact())
+                        if (!r.ceil())
                             return r.finish(res);
 
                         // Intentional fallthrough to remove something from this page.
@@ -4667,14 +4671,28 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         /** */
         final boolean needOld;
 
+        /** */
+        final PageHandler<Remove, Result> rmvFromLeafHnd;
+
         /**
          * @param row Row.
          * @param needOld {@code True} If need return old value.
          */
         private Remove(L row, boolean needOld) {
+            this(row, needOld, rmvFromLeaf);
+        }
+
+        /**
+         * @param row Row.
+         * @param needOld {@code True} If need return old value.
+         * @param rmvFromLeaf Remove from leaf page handler.
+         */
+        private Remove(L row, boolean needOld, PageHandler<Remove, Result> rmvFromLeaf) {
             super(row);
 
             this.needOld = needOld;
+
+            rmvFromLeafHnd = rmvFromLeaf;
         }
 
         /** {@inheritDoc} */
@@ -4739,6 +4757,14 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
                 return true;
             }
 
+            return false;
+        }
+
+        /**
+         * @return Flag indicating that values are removed using an interval
+         * (i.e. {@link #row} specifies the start of the interval, not an exact match).
+         */
+        protected boolean ceil() {
             return false;
         }
 
@@ -4840,7 +4866,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
          * @param t Tail to release.
          * @return {@code true} If we need to retry or {@code false} to exit.
          */
-        private boolean releaseForRetry(Tail<L> t) {
+        protected boolean releaseForRetry(Tail<L> t) {
             // Try to simply release all first.
             if (t.lvl <= 1) {
                 // We've just locked leaf and did not do the remove, can safely release all and retry.
@@ -5029,7 +5055,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         protected Result doRemoveFromLeaf() throws IgniteCheckedException {
             assert page != 0L;
 
-            return write(pageId, page, rmvFromLeaf, this, 0, RETRY, statisticsHolder());
+            return write(pageId, page, rmvFromLeafHnd, this, 0, RETRY, statisticsHolder());
         }
 
         /**
@@ -5460,11 +5486,6 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
                 return finish(res);
 
             return res;
-        }
-
-        /** @return Flag indicating that we are searching exact value to delete. */
-        protected boolean exact() {
-            return true;
         }
     }
 
@@ -6468,7 +6489,11 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
             U.hexLong(metaPageId) + "].";
     }
 
-    /** */
+    /**
+     * The operation of deleting a range of values.
+     * <p>
+     * Performs the removal of several elements from the leaf at once.
+     */
     protected class RemoveRange extends Remove {
         /** Upper bound. */
         private final L upper;
@@ -6479,16 +6504,33 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         /** List of removed rows. */
         private final List<L> removedRows;
 
-        /** The number of remaining items to remove if a limit has been specified. */
+        /** The number of remaining rows to remove ({@code -1}, if the limit hasn't been specified). */
         private int remaining;
 
-        /** */
-        private int highIdx;
-
-        /** */
+        /** Flag indicating that no more rows were found from the specified range. */
         private boolean completed;
 
-        /** */
+        /** The index of the highest row found on the page from the specified range. */
+        private int highIdx;
+
+        /**
+         * @param lower Lower bound (inclusive).
+         * @param upper Upper bound (inclusive).
+         * @param needOld {@code True} If need return old value.
+         */
+        protected RemoveRange(L lower, L upper, boolean needOld, int limit) {
+            super(lower, needOld, rmvRangeFromLeaf);
+
+            this.lower = lower;
+            this.upper = upper;
+
+            remaining = limit <= 0 ? -1 : limit;
+            removedRows = needOld ? new LinkedList<>() : null;
+        }
+
+        /**
+         * @return {@code True} if operation is completed.
+         */
         private boolean isDone() {
             return completed || remaining == 0;
         }
@@ -6510,46 +6552,8 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         }
 
         /** {@inheritDoc} */
-        @Override protected boolean exact() {
-            return completed;
-        }
-
-        /** {@inheritDoc} */
-        @Override protected Result finish(Result res) {
-            if (isDone())
-                return super.finish(res);
-
-            assert tail == null;
-
-            // Continue operation - restart from the root.
-            row = lower;
-            needReplaceInner = FALSE;
-            needMergeEmptyBranch = FALSE;
-            rmvd = null;
-
-            return RETRY;
-        }
-
-        /**
-         * @param lower Lower bound (inclusive).
-         * @param upper Upper bound (inclusive).
-         * @param needOld {@code True} If need return old value.
-         */
-        protected RemoveRange(L lower, L upper, boolean needOld, int limit) {
-            super(lower, needOld);
-
-            this.lower = lower;
-            this.upper = upper;
-
-            remaining = limit <= 0 ? -1 : limit;
-            removedRows = needOld ? new LinkedList<>() : null;
-        }
-
-        /** {@inheritDoc} */
-        @Override protected Result doRemoveFromLeaf() throws IgniteCheckedException {
-            assert page != 0L;
-
-            return write(pageId, page, rmvRangeFromLeaf, this, 0, RETRY, statisticsHolder());
+        @Override protected boolean ceil() {
+            return !completed;
         }
 
         /** {@inheritDoc} */
@@ -6587,6 +6591,31 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
             }
 
             assert isRemoved();
+        }
+
+        /** {@inheritDoc} */
+        @Override protected boolean releaseForRetry(Tail<L> t) {
+            // Reset search row to lower bound.
+            if (t.lvl <= 1 && needReplaceInner != FALSE)
+                row = lower;
+
+            return super.releaseForRetry(t);
+        }
+
+        /** {@inheritDoc} */
+        @Override protected Result finish(Result res) {
+            if (isDone())
+                return super.finish(res);
+
+            assert tail == null;
+
+            // Continue operation - restart from the root.
+            row = lower;
+            needReplaceInner = FALSE;
+            needMergeEmptyBranch = FALSE;
+            rmvd = null;
+
+            return RETRY;
         }
     }
 }

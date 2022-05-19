@@ -1180,6 +1180,16 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
     }
 
     /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testMassiveRemove10_true_range() throws Exception {
+        MAX_PER_PAGE = 10;
+
+        doTestMassiveRemove(true, 50);
+    }
+
+    /**
      * @param canGetRow Can get row in inner page.
      * @throws Exception If failed.
      */
@@ -1189,11 +1199,12 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
 
     /**
      * @param canGetRow Can get row in inner page.
+     * @param batchSize Batch size.
      * @throws Exception If failed.
      */
     private void doTestMassiveRemove(final boolean canGetRow, int batchSize) throws Exception {
         final int threads = 64;
-        final int keys = 3000;
+        final int keys = 3000 * batchSize;
 
         final AtomicLongArray rmvd = new AtomicLongArray(keys / batchSize);
 
