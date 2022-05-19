@@ -113,24 +113,23 @@ namespace ignite
                     }
 
                     /**
-                     * Write query info to the stream.
+                     * Get local flag.
                      *
-                     * @param writer Writer.
+                     * @return Local flag.
                      */
-                    void Write(binary::BinaryRawWriter& writer) const
+                    bool IsLocal() const
                     {
-                        writer.WriteBool(loc);
-                        writer.WriteInt32(pageSize);
+                        return loc;
+                    }
 
-                        if (part < 0)
-                            writer.WriteBool(false);
-                        else
-                        {
-                            writer.WriteBool(true);
-                            writer.WriteInt32(part);
-                        }
-
-                        writer.WriteNull(); // Predicates are not supported yet.
+                    /**
+                     * Set local flag.
+                     *
+                     * @param localScan Local flag.
+                     */
+                    void SetLocal(bool localScan)
+                    {
+                        loc = localScan;
                     }
 
                 private:

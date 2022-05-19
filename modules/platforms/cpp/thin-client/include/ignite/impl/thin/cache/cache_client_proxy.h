@@ -61,7 +61,7 @@ namespace ignite
                     /**
                      * Constructor.
                      */
-                    CacheClientProxy(const common::concurrent::SharedPointer<void>& impl) :
+                    explicit CacheClientProxy(const common::concurrent::SharedPointer<void>& impl) :
                         impl(impl)
                     {
                         // No-op.

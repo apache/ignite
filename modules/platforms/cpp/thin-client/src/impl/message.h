@@ -22,6 +22,7 @@
 #include <string>
 #include <vector>
 
+#include <ignite/thin/cache/query/query_scan.h>
 #include <ignite/thin/cache/query/query_sql_fields.h>
 #include <ignite/thin/transactions/transaction_consts.h>
 
@@ -163,6 +164,12 @@ namespace ignite
 
                     /** Cache partitions request. */
                     CACHE_PARTITIONS = 1101,
+
+                    /** Scan query request. */
+                    QUERY_SCAN = 2000,
+
+                    /** Scan query get page request. */
+                    QUERY_SCAN_CURSOR_GET_PAGE = 2001,
 
                     /** SQL fields query request. */
                     QUERY_SQL_FIELDS = 2004,
@@ -998,6 +1005,40 @@ namespace ignite
             };
 
             /**
+             * Cache scan query request.
+             */
+            class ScanQueryRequest : public CacheRequest<MessageType::QUERY_SCAN>
+            {
+            public:
+                /**
+                 * Constructor.
+                 *
+                 * @param cacheId Cache ID.
+                 * @param qry SQL query.
+                 */
+                explicit ScanQueryRequest(int32_t cacheId, const ignite::thin::cache::query::ScanQuery &qry);
+
+                /**
+                 * Destructor.
+                 */
+                virtual ~ScanQueryRequest()
+                {
+                    // No-op.
+                }
+
+                /**
+                 * Write request using provided writer.
+                 * @param writer Writer.
+                 * @param ver Version.
+                 */
+                virtual void Write(binary::BinaryWriterImpl& writer, const ProtocolVersion& ver) const;
+
+            private:
+                /** Query. */
+                const ignite::thin::cache::query::ScanQuery &qry;
+            };
+
+            /**
              * Continuous query request.
              */
             class ContinuousQueryRequest : public CacheRequest<MessageType::QUERY_CONTINUOUS>
@@ -1479,6 +1520,64 @@ namespace ignite
             private:
                 /** Value. */
                 int32_t value;
+            };
+
+            /**
+             * Cache scan query response.
+             */
+            class ScanQueryResponse : public Response
+            {
+            public:
+                /**
+                 * Constructor.
+                 */
+                ScanQueryResponse() :
+                    cursorId(0),
+                    cursorPage(new cache::query::CursorPage())
+                {
+                    // No-op.
+                }
+
+                /**
+                 * Destructor.
+                 */
+                virtual ~ScanQueryResponse()
+                {
+                    // No-op.
+                }
+
+                /**
+                 * Get cursor ID.
+                 *
+                 * @return Cursor ID.
+                 */
+                int64_t GetCursorId() const
+                {
+                    return cursorId;
+                }
+
+                /**
+                 * Get cursor page.
+                 * @return Cursor page.
+                 */
+                cache::query::SP_CursorPage GetCursorPage() const
+                {
+                    return cursorPage;
+                }
+
+                /**
+                 * Read data if response status is ResponseStatus::SUCCESS.
+                 *
+                 * @param reader Reader.
+                 */
+                virtual void ReadOnSuccess(binary::BinaryReaderImpl& reader, const ProtocolVersion&);
+
+            private:
+                /** Cursor ID. */
+                int64_t cursorId;
+
+                /** Cursor Page. */
+                cache::query::SP_CursorPage cursorPage;
             };
 
             /**

@@ -22,6 +22,7 @@
 #include <string>
 
 #include <ignite/thin/cache/query/query_sql_fields.h>
+#include <ignite/thin/cache/query/query_scan.h>
 
 #include <ignite/impl/thin/cache/continuous/continuous_query_client_holder.h>
 
@@ -300,6 +301,14 @@ namespace ignite
                      * @return Query cursor.
                      */
                     query::SP_QueryFieldsCursorImpl Query(const ignite::thin::cache::query::SqlFieldsQuery &qry);
+
+                    /**
+                     * Perform scan query.
+                     *
+                     * @param qry Query.
+                     * @return Query cursor proxy.
+                     */
+                    query::SP_QueryCursorImpl Query(const ignite::thin::cache::query::ScanQuery& qry);
 
                     /**
                      * Starts the continuous query execution
