@@ -1363,9 +1363,6 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         IgniteInClosure2X<GridCacheEntryEx, GridCacheVersion> c,
         int amount
     ) throws IgniteCheckedException {
-        if (amount == 0)
-            return 0;
-
         GridCacheVersion obsoleteVer = null;
 
         cctx.shared().database().checkpointReadLock();
