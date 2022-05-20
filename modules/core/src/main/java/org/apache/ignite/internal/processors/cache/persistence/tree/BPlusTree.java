@@ -6618,6 +6618,9 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
             needMergeEmptyBranch = FALSE;
             rmvd = null;
 
+            // Reset retries counter.
+            lockRetriesCnt = getLockRetries();
+
             return RETRY;
         }
     }
