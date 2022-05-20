@@ -2,6 +2,9 @@ package org.apache.ignite.gatling
 
 
 object Predef extends IgniteDsl {
+  val REPLICATED = org.apache.ignite.cache.CacheMode.REPLICATED
+  val PARTITIONED = org.apache.ignite.cache.CacheMode.PARTITIONED
+
   val TRANSACTIONAL = org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL
   val ATOMIC = org.apache.ignite.cache.CacheAtomicityMode.ATOMIC
 

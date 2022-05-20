@@ -1,22 +1,18 @@
 package org.apache.ignite.internal.gatling.simulation
 
 import io.gatling.core.Predef._
-import io.gatling.core.feeder.Feeder
 import io.gatling.core.structure.{ChainBuilder, ScenarioBuilder}
 import org.apache.ignite.gatling.Predef._
+import org.apache.ignite.internal.gatling.feeder.IntPairsFeeder
 
-import java.util.concurrent.atomic.AtomicInteger
 import scala.concurrent.duration.DurationInt
 
-class TransactionsSimulation extends IgniteSimulationBase {
+class SimulationTransactions extends Simulation with DucktapeIgniteSupport {
 
-  val c = new AtomicInteger(0)
-  val feeder: Feeder[Int] = Iterator.continually(Map(
-    "key" -> c.incrementAndGet(),
-    "value" -> c.incrementAndGet()))
+  val feeder: IntPairsFeeder = IntPairsFeeder()
 
   val commitTx: ChainBuilder =
-    exec(ignite("txStart-1").tx)
+    exec(ignite("txStart-1").txStart (PESSIMISTIC, REPEATABLE_READ) timeout 100)
       .exec(ignite("put-1").cache("TEST-CACHE").put[Int, Int]("#{key}", "#{value}"))
       .exec(ignite("commit").commit)
       .exec(ignite("get after commit")
@@ -31,22 +27,22 @@ class TransactionsSimulation extends IgniteSimulationBase {
       )
 
   val rollbackTx: ChainBuilder =
-    exec(ignite("txStart-2").tx)
+    exec(ignite("txStart-2").txStart)
       .exec(ignite("put-2").cache("TEST-CACHE").put[Int, Int]("#{key}", "#{value}"))
       .exec(ignite("rollback").rollback)
       .exec(pause(1.seconds))
       .exec(ignite("get after rollback")
         .cache("TEST-CACHE")
-        .get[Int, Int]("#{key}")
+        .get[Int, Integer]("#{key}")
         .check(
           simpleCheck((m, session) => {
             m(session("key").as[Int]) == null
           }),
-          allResults[Int, Int].saveAs("R"),
+          allResults[Int, Integer].saveAs("R"),
         )
       )
 
-  val scn: ScenarioBuilder = scenario("Basic")
+  val scn: ScenarioBuilder = scenario("Get")
     .feed(feeder)
     .exec(
       ignite("Start client").start
@@ -60,16 +56,8 @@ class TransactionsSimulation extends IgniteSimulationBase {
       ignite("Close client").close
     )
 
-  setUp(scn
-    .inject(
-      atOnceUsers(2)
-      //  constantUsersPerSec(50) during 30,
-      //            nothingFor(5),
-      //            constantUsersPerSec(100) during 5,
-      //            incrementUsersPerSec(10).times(5).eachLevelLasting(2)
-    )
-  )
-    .protocols(protocol)
+  setUp(scn.inject(atOnceUsers(2)))
+    .protocols(ducktapeIgnite)
     .maxDuration(60.seconds)
     .assertions(global.failedRequests.count.is(0))
 }
