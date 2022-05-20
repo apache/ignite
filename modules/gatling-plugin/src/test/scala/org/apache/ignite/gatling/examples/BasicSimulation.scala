@@ -6,6 +6,7 @@ import io.gatling.core.structure.ChainBuilder
 import org.apache.ignite.Ignite
 import org.apache.ignite.gatling.Predef.allResults
 import org.apache.ignite.gatling.Predef.allRecordsCheck
+import org.apache.ignite.gatling.protocol.IgniteThinProtocolBuilder
 
 //import io.gatling.core.session.StaticValueExpression
 //import io.gatling.core.session._
@@ -80,23 +81,16 @@ class BasicSimulation extends Simulation {
     }
     .exec(ignite("Close client").close)
 
-  before(Ignition.start())
-  after({
-    val ignite: Ignite = Ignition.allGrids().get(0)
-    println(ignite.cache("TEST-CACHE").get(1))
-    ignite.close()
-  })
 
   val commitTx: ChainBuilder =
-    exec(ignite("txStart-1").tx)
-    .
-      exec(ignite("put-1").cache("TEST-CACHE").put[Int, Int]("#{key}", "#{value}"))
+    exec(ignite("txStart-1").txStart)
+    .exec(ignite("put-1").cache("TEST-CACHE").put[Int, Int]("#{key}", "#{value}"))
     .exec(ignite("commit").commit)
     .exec(ignite("get after commit")
       .cache("TEST-CACHE")
-      .get[Int, Int]("#{key}")
+      .get[Int, Any]("#{key}")
       .check(
-        allResults[Int, Int].saveAs("C"),
+        allResults[Int, Any].saveAs("C"),
         simpleCheck((m, session) => {
           m(session("key").as[Int]) == session("value").as[Int]
         })
@@ -105,22 +99,21 @@ class BasicSimulation extends Simulation {
     .exec { session => println(session); session }
 
   val rollbackTx: ChainBuilder =
-    exec(ignite("txStart-2").tx)
-    .
-      exec(ignite("put-2").cache("TEST-CACHE").put[Int, Int]("#{key}", "#{value}"))
+    exec(ignite("txStart-2").txStart)
+    .exec(ignite("put-2").cache("TEST-CACHE").put[Int, Int]("#{key}", "#{value}"))
 //  exec(ignite("put-2").cache("TEST-CACHE").put[Int, Int](3456, "#{value}"))
     .exec(ignite("rollback").rollback)
 //      .exec(pause(1000.milliseconds))
     .exec(ignite("get after rollback")
       .cache("TEST-CACHE")
-      .get[Int, Int]("#{key}")
+      .get[Int, Any]("#{key}")
       .check(
         simpleCheck((m, session) => {
           println(m)
 //          true
           m(session("key").as[Int]) == null
         }),
-          allResults[Int, Int].saveAs("R"),
+          allResults[Int, Any].saveAs("R"),
       )
     )
     .exec { session => println(session); session }
@@ -188,6 +181,14 @@ class BasicSimulation extends Simulation {
 
 
 
+  before {
+    Ignition.start()
+  }
+  after {
+    Ignition.allGrids().get(0).close()
+  }
+
+  val protocol: IgniteThinProtocolBuilder = ignite.cfg(new ClientConfiguration().setAddresses("localhost:10800"))
 
   setUp(
     longScn
@@ -203,7 +204,7 @@ class BasicSimulation extends Simulation {
 //        incrementUsersPerSec(1).times(2).eachLevelLasting(1)
 //      )
   )
-  .protocols(ignite.cfg(new ClientConfiguration().setAddresses("localhost:10800")))
+  .protocols(protocol)
   .maxDuration(600.seconds)
   .assertions(global.failedRequests.count.is(0))
 }

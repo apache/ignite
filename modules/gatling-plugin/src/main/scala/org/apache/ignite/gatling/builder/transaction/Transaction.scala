@@ -10,9 +10,9 @@ import org.apache.ignite.transactions.{TransactionConcurrency, TransactionIsolat
 trait TransactionSupport {
   def requestName: Expression[String]
 
-  def tx(concurrency: TransactionConcurrency, isolation: TransactionIsolation): TransactionStartBuilderTimeoutStep =
+  def txStart(concurrency: TransactionConcurrency, isolation: TransactionIsolation): TransactionStartBuilderTimeoutStep =
     TransactionStartBuilderTimeoutStep(requestName)
-  def tx: TransactionStartBuilder = TransactionStartBuilder(requestName)
+  def txStart: TransactionStartBuilder = TransactionStartBuilder(requestName)
 
   def commit: TransactionCommitActionBuilder = TransactionCommitActionBuilder(requestName)
   def rollback: TransactionRollbackActionBuilder = TransactionRollbackActionBuilder(requestName)

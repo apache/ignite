@@ -8,7 +8,7 @@ import org.apache.ignite.gatling.protocol.{IgniteProtocol, IgniteProtocolBuilder
 trait IgniteDsl extends IgniteCheckSupport {
     val ignite: IgniteProtocolBuilder.type = IgniteProtocolBuilder
 
-    def ignite(requestName: Expression[String]): Ignite = new Ignite(requestName)
+    def ignite(requestName: Expression[String]): Ignite = Ignite(requestName)
 
     implicit def igniteProtocolBuilder2igniteProtocol(builder: IgniteProtocolBuilder): IgniteProtocol = builder.build
     implicit def igniteThinProtocolBuilder2igniteProtocol(builder: IgniteThinProtocolBuilder): IgniteProtocol = builder.build

@@ -46,7 +46,7 @@ class GatlingTest(IgniteTest):
 
         gatling_clients = GatlingService(
             ignite,
-            simulation_class_name="org.apache.ignite.internal.gatling.simulation.TransactionsSimulation",
+            simulation_class_name="org.apache.ignite.internal.gatling.simulation.SimulationBasic",
             client_type=client_type,
             num_nodes=3)
 
