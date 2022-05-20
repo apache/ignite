@@ -148,15 +148,6 @@ public class JdbcQueryTest extends GridCommonAbstractTest {
 
         for (int i = 0; i < 10; ++i) {
 //            t = System.nanoTime();
-//            rs = stmt.executeQuery("select count(*) from PI_COM_DAY");
-//            t = System.nanoTime() -t;
-//
-//            assert rs.next();
-//            assert rs.getLong(1) == records;
-//
-//            log.error("TEST | default timing (mils): " + TimeUnit.NANOSECONDS.toMillis(t));
-//
-//            t = System.nanoTime();
 //            rs = stmt.executeQuery("select /*+ QUERY_ENGINE('h2')*/ count(*) from PI_COM_DAY");
 //            t = System.nanoTime() -t;
 //
@@ -178,51 +169,22 @@ public class JdbcQueryTest extends GridCommonAbstractTest {
 
     private void ddl() throws SQLException {
         stmt.execute("CREATE TABLE PI_COM_DAY (\n" +
-//            "COM_ID VARCHAR(30) NOT NULL ,\n" +
             "    ITEM_ID VARCHAR(30) NOT NULL ,\n" +
-//            "    DATE1 VARCHAR(8) NOT NULL, \n" +
             "    KIND VARCHAR(1) DEFAULT '',\n" +
-//            "    QTY_IOD DECIMAL(18, 6) DEFAULT 1.0 ,\n" +
-//            "    AMT_IOD DECIMAL(18, 6) DEFAULT 1.0,\n" +
-//            "    QTY_PURCH DECIMAL(18, 6) DEFAULT 1.0,\n" +
-//            "    AMT_PURCH DECIMAL(18,6) DEFAULT 1.0,\n" +
-//            "    QTY_SOLD DECIMAL(18,6) DEFAULT 1.0,\n" +
-//            "    AMT_SOLD DECIMAL(18, 6) DEFAULT 1.0,\n" +
-//            "    AMT_SOLD_NO_TAX DECIMAL(18, 6) DEFAULT 1.0,\n" +
-//            "    QTY_PROFIT DECIMAL(18, 6) DEFAULT 1.0,\n" +
-//            "    AMT_PROFIT DECIMAL(18, 6) DEFAULT 1.0,\n" +
-//            "    QTY_LOSS DECIMAL(18,6) DEFAULT 1.0,\n" +
-//            "    AMT_LOSS DECIMAL(18, 6) DEFAULT 1.0,\n" +
-//            "    QTY_EOD DECIMAL(18, 6) DEFAULT 1.0,\n" +
-//            "    AMT_EOD DECIMAL(18,6) DEFAULT 1.0,\n" +
-//            "    UNIT_COST DECIMAL(18,8) DEFAULT 1.0,\n" +
-//            "    SUMCOST_SOLD DECIMAL(18,6) DEFAULT 1.0,\n" +
-//            "    GROSS_PROFIT DECIMAL(18, 6) DEFAULT 1.0,\n" +
-//            "    QTY_ALLOCATION DECIMAL(18,6) DEFAULT 1.0,\n" +
-//            "    AMT_ALLOCATION DECIMAL(18,2) DEFAULT 1.0,\n" +
-//            "    AMT_ALLOCATION_NO_TAX DECIMAL(18, 2) DEFAULT 1.0,\n" +
-//            "    GROSS_PROFIT_ALLOCATION DECIMAL(18,6) DEFAULT 1.0,\n" +
-//            "    SUMCOST_SOLD_ALLOCATION DECIMAL(18,6) DEFAULT 1.0,\n" +
-//            "    PRIMARY KEY (COM_ID,ITEM_ID,DATE1)) WITH \"template=cache-partitioned,CACHE_NAME=PI_COM_DAY\";"
             "    PRIMARY KEY (ITEM_ID)) WITH \"template=cache-partitioned,CACHE_NAME=PI_COM_DAY\";"
         );
 
-//        stmt.execute("CREATE INDEX IDX_PI_COM_DAY_ITEM_DATE ON PI_COM_DAY(ITEM_ID,DATE1);");
         stmt.execute("CREATE INDEX IDX_PI_COM_DAY_ITEM_DATE ON PI_COM_DAY(KIND);");
     }
 
     private void fillDb(long recordNum, int batchSize) throws SQLException {
         boolean autoCommit = conn.getAutoCommit();
 
-//        try (PreparedStatement ps = conn.prepareStatement("INSERT INTO PI_COM_DAY(COM_ID, ITEM_ID, DATE1) values (?, ?, '01-2001')")){
         try (PreparedStatement ps = conn.prepareStatement("INSERT INTO PI_COM_DAY(ITEM_ID) values (?)")){
             conn.setAutoCommit(false);
 
             for (long i = 0, batch = 0; i < recordNum; ++i) {
                 ps.setString(1, "ITEM_ID_" + i);
-
-//                ps.setString(1, "COM_ID_" + i);
-//                ps.setString(2, "ITEM_ID_" + i);
 
                 ps.addBatch();
 
