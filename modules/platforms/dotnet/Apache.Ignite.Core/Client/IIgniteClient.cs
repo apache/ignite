@@ -28,7 +28,6 @@ namespace Apache.Ignite.Core.Client
     using Apache.Ignite.Core.Client.DataStructures;
     using Apache.Ignite.Core.Client.Services;
     using Apache.Ignite.Core.Client.Transactions;
-    using Apache.Ignite.Core.Common;
 
     /// <summary>
     /// Main entry point for Ignite Thin Client APIs.
@@ -203,6 +202,6 @@ namespace Apache.Ignite.Core.Client
         /// <param name="create">Flag indicating whether atomic long should be created if it does not exist.</param>
         /// <returns>Atomic long instance with the specified name,
         /// or null if it does not exist and <paramref name="create"/> is <c>false</c>.</returns>
-        IAtomicLongClient GetAtomicLong(string name, long initialValue, bool create);
+        IAtomicLongClient GetAtomicLong(string name, long initialValue, bool create); // TODO: Add overload with config.
     }
 }

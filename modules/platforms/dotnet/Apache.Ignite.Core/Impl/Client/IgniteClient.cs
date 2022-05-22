@@ -30,6 +30,7 @@ namespace Apache.Ignite.Core.Impl.Client
     using Apache.Ignite.Core.Client.Cache;
     using Apache.Ignite.Core.Client.Compute;
     using Apache.Ignite.Core.Client.Datastream;
+    using Apache.Ignite.Core.Client.DataStructures;
     using Apache.Ignite.Core.Client.Services;
     using Apache.Ignite.Core.Client.Transactions;
     using Apache.Ignite.Core.Datastream;
@@ -40,6 +41,7 @@ namespace Apache.Ignite.Core.Impl.Client
     using Apache.Ignite.Core.Impl.Client.Cluster;
     using Apache.Ignite.Core.Impl.Client.Compute;
     using Apache.Ignite.Core.Impl.Client.Datastream;
+    using Apache.Ignite.Core.Impl.Client.DataStructures;
     using Apache.Ignite.Core.Impl.Client.Services;
     using Apache.Ignite.Core.Impl.Client.Transactions;
     using Apache.Ignite.Core.Impl.Cluster;
@@ -305,6 +307,27 @@ namespace Apache.Ignite.Core.Impl.Client
             IgniteArgumentCheck.NotNullOrEmpty(cacheName, "cacheName");
 
             return new DataStreamerClient<TK, TV>(_socket, cacheName, options);
+        }
+
+        /** <inheritDoc /> */
+        public IAtomicLongClient GetAtomicLong(string name, long initialValue, bool create)
+        {
+            IgniteArgumentCheck.NotNullOrEmpty(name, "name");
+
+            if (create)
+            {
+                // TODO: Create
+            }
+
+            var res = new AtomicLongClient(_socket, name);
+
+            if (!create && res.IsClosed())
+            {
+                // Return null when specified atomic long does not exist to match thick API behavior.
+                return null;
+            }
+
+            return res;
         }
 
         /** <inheritDoc /> */
