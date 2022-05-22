@@ -316,7 +316,12 @@ namespace Apache.Ignite.Core.Impl.Client
 
             if (create)
             {
-                // TODO: Create
+                _socket.DoOutInOp<object>(ClientOp.AtomicLongCreate, ctx =>
+                {
+                    ctx.Writer.WriteString(name);
+                    ctx.Writer.WriteLong(initialValue);
+                    ctx.Writer.WriteBoolean(false); // TODO: Config overload.
+                }, null);
             }
 
             var res = new AtomicLongClient(_socket, name);
