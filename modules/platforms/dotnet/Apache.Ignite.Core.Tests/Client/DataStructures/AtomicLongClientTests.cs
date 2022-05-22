@@ -18,12 +18,21 @@
 namespace Apache.Ignite.Core.Tests.Client.DataStructures
 {
     using Apache.Ignite.Core.Client.DataStructures;
+    using NUnit.Framework;
 
     /// <summary>
     /// Tests for <see cref="IAtomicLongClient"/>.
     /// </summary>
-    public class AtomicLongClientTests
+    public class AtomicLongClientTests : ClientTestBase
     {
+        [Test]
+        public void TestCreateSetsInitialValue()
+        {
+            var atomicLongClient = Client.GetAtomicLong(TestUtils.TestName, 42, true);
+            var atomicLongServer = GetIgnite().GetAtomicLong(atomicLongClient.Name, 1, false);
 
+            Assert.AreEqual(42, atomicLongClient.Read());
+            Assert.AreEqual(42, atomicLongServer.Read());
+        }
     }
 }
