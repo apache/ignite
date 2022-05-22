@@ -68,43 +68,81 @@ namespace Apache.Ignite.Core.Impl.Client.DataStructures
         /** <inheritDoc /> */
         public long Increment()
         {
-            throw new System.NotImplementedException();
+            return Add(1);
         }
 
         /** <inheritDoc /> */
         public long Add(long value)
         {
-            throw new System.NotImplementedException();
+            return _socket.DoOutInOpAffinity(
+                ClientOp.AtomicLongValueAddAndGet,
+                ctx =>
+                {
+                    WriteName(ctx);
+                    ctx.Writer.WriteLong(value);
+                },
+                r => r.Reader.ReadLong(),
+                _cacheId,
+                AffinityKey);
         }
 
         /** <inheritDoc /> */
         public long Decrement()
         {
-            throw new System.NotImplementedException();
+            return Add(-1);
         }
 
         /** <inheritDoc /> */
         public long Exchange(long value)
         {
-            throw new System.NotImplementedException();
+            return _socket.DoOutInOpAffinity(
+                ClientOp.AtomicLongValueGetAndSet,
+                ctx =>
+                {
+                    WriteName(ctx);
+                    ctx.Writer.WriteLong(value);
+                },
+                r => r.Reader.ReadLong(),
+                _cacheId,
+                AffinityKey);
         }
 
         /** <inheritDoc /> */
         public long CompareExchange(long value, long comparand)
         {
-            throw new System.NotImplementedException();
+            return _socket.DoOutInOpAffinity(
+                ClientOp.AtomicLongValueCompareAndSet,
+                ctx =>
+                {
+                    WriteName(ctx);
+                    ctx.Writer.WriteLong(value);
+                    ctx.Writer.WriteLong(comparand);
+                },
+                r => r.Reader.ReadLong(),
+                _cacheId,
+                AffinityKey);
         }
 
         /** <inheritDoc /> */
         public bool IsClosed()
         {
-            throw new System.NotImplementedException();
+            return _socket.DoOutInOpAffinity(
+                ClientOp.AtomicLongExists,
+                ctx => WriteName(ctx),
+                r => r.Reader.ReadBoolean(),
+                _cacheId,
+                AffinityKey);
         }
 
         /** <inheritDoc /> */
         public void Close()
         {
-            throw new System.NotImplementedException();
+            _socket.DoOutInOpAffinity<object, string>(
+                ClientOp.AtomicLongRemove,
+                ctx => WriteName(ctx),
+                null,
+                _cacheId,
+                AffinityKey);
         }
 
         /// <summary>

@@ -108,6 +108,6 @@ namespace Apache.Ignite.Core.Impl.Client
         AtomicLongValueGet = 9003,
         AtomicLongValueAddAndGet = 9004,
         AtomicLongValueGetAndSet = 9005,
-        AtomicLongCompareAndSet = 9006
+        AtomicLongValueCompareAndSet = 9006
     }
 }
