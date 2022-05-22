@@ -17,6 +17,8 @@
 
 namespace Apache.Ignite.Core.Tests.Client.DataStructures
 {
+    using System;
+    using Apache.Ignite.Core.Client;
     using Apache.Ignite.Core.Client.DataStructures;
     using NUnit.Framework;
 
@@ -43,6 +45,30 @@ namespace Apache.Ignite.Core.Tests.Client.DataStructures
 
             Assert.AreEqual(42, atomicLong.Read());
             Assert.AreEqual(42, atomicLong2.Read());
+        }
+
+        [Test]
+        public void TestOperationsThrowExceptionWhenAtomicLongDoesNotExist()
+        {
+            var name = TestUtils.TestName;
+            var atomicLong = Client.GetAtomicLong(name, 42, true);
+            atomicLong.Close();
+
+            Action<Action> assertDoesNotExistError = act =>
+            {
+                var ex = Assert.Throws<IgniteClientException>(() => act());
+
+                StringAssert.Contains($"AtomicLong with name '{name}' does not exist.", ex.Message);
+            };
+
+            Assert.IsTrue(atomicLong.IsClosed());
+
+            assertDoesNotExistError(() => atomicLong.Read());
+            assertDoesNotExistError(() => atomicLong.Add(1));
+            assertDoesNotExistError(() => atomicLong.Increment());
+            assertDoesNotExistError(() => atomicLong.Decrement());
+            assertDoesNotExistError(() => atomicLong.Exchange(22));
+            assertDoesNotExistError(() => atomicLong.CompareExchange(22, 33));
         }
     }
 }
