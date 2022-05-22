@@ -70,5 +70,19 @@ namespace Apache.Ignite.Core.Tests.Client.DataStructures
             assertDoesNotExistError(() => atomicLong.Exchange(22));
             assertDoesNotExistError(() => atomicLong.CompareExchange(22, 33));
         }
+
+        [Test]
+        public void TestIsClosed()
+        {
+            var atomicLong = Client.GetAtomicLong(TestUtils.TestName, 0, false);
+            Assert.IsNull(atomicLong);
+
+            atomicLong = Client.GetAtomicLong(TestUtils.TestName, 1, true);
+            Assert.IsFalse(atomicLong.IsClosed());
+            Assert.AreEqual(1, atomicLong.Read());
+
+            atomicLong.Close();
+            Assert.IsTrue(atomicLong.IsClosed());
+        }
     }
 }
