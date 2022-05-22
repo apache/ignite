@@ -34,5 +34,15 @@ namespace Apache.Ignite.Core.Tests.Client.DataStructures
             Assert.AreEqual(42, atomicLongClient.Read());
             Assert.AreEqual(42, atomicLongServer.Read());
         }
+
+        [Test]
+        public void TestCreateIgnoresInitialValueWhenAlreadyExists()
+        {
+            var atomicLong = Client.GetAtomicLong(TestUtils.TestName, 42, true);
+            var atomicLong2 = Client.GetAtomicLong(TestUtils.TestName, 43, false);
+
+            Assert.AreEqual(42, atomicLong.Read());
+            Assert.AreEqual(42, atomicLong2.Read());
+        }
     }
 }

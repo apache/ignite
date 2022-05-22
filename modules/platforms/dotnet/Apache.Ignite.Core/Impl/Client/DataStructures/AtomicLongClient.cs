@@ -129,7 +129,7 @@ namespace Apache.Ignite.Core.Impl.Client.DataStructures
             return _socket.DoOutInOpAffinity(
                 ClientOp.AtomicLongExists,
                 ctx => WriteName(ctx),
-                r => r.Reader.ReadBoolean(),
+                r => !r.Reader.ReadBoolean(),
                 _cacheId,
                 AffinityKey);
         }
