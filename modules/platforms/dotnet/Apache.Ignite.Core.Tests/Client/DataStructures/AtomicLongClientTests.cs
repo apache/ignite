@@ -84,5 +84,20 @@ namespace Apache.Ignite.Core.Tests.Client.DataStructures
             atomicLong.Close();
             Assert.IsTrue(atomicLong.IsClosed());
         }
+
+        [Test]
+        public void TestIncrementDecrementAdd()
+        {
+            var atomicLong = Client.GetAtomicLong(TestUtils.TestName, 1, true);
+
+            Assert.AreEqual(2, atomicLong.Increment());
+            Assert.AreEqual(2, atomicLong.Read());
+
+            Assert.AreEqual(1, atomicLong.Decrement());
+            Assert.AreEqual(1, atomicLong.Read());
+
+            Assert.AreEqual(101, atomicLong.Add(100));
+            Assert.AreEqual(101, atomicLong.Read());
+        }
     }
 }
