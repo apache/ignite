@@ -118,7 +118,7 @@ namespace Apache.Ignite.Core.Impl.Client.DataStructures
                     ctx.Writer.WriteLong(value);
                     ctx.Writer.WriteLong(comparand);
                 },
-                r => r.Reader.ReadLong(),
+                r => r.Reader.ReadBoolean() ? comparand : value, // TODO: This is not correct - we should use OP_COMPARE_AND_SET_AND_GET
                 _cacheId,
                 AffinityKey);
         }
