@@ -108,5 +108,17 @@ namespace Apache.Ignite.Core.Tests.Client.DataStructures
             Assert.AreEqual(1, atomicLong.Exchange(100));
             Assert.AreEqual(100, atomicLong.Read());
         }
+
+        [Test]
+        public void TestCompareExchange()
+        {
+            var atomicLong = Client.GetAtomicLong(TestUtils.TestName, 1, true);
+
+            Assert.AreEqual(1, atomicLong.CompareExchange(3, 2));
+            Assert.AreEqual(1, atomicLong.Read());
+
+            Assert.AreEqual(1, atomicLong.CompareExchange(4, 1));
+            Assert.AreEqual(4, atomicLong.Read());
+        }
     }
 }
