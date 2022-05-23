@@ -120,5 +120,11 @@ namespace Apache.Ignite.Core.Tests.Client.DataStructures
             Assert.AreEqual(1, atomicLong.CompareExchange(4, 1));
             Assert.AreEqual(4, atomicLong.Read());
         }
+
+        [Test]
+        public void TestPartitionAwareness()
+        {
+            // TODO: Move this to another file?
+        }
     }
 }

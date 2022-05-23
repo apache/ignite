@@ -312,15 +312,39 @@ namespace Apache.Ignite.Core.Impl.Client
         /** <inheritDoc /> */
         public IAtomicLongClient GetAtomicLong(string name, long initialValue, bool create)
         {
+            return GetAtomicLong(name, null, initialValue, create);
+        }
+
+        /** <inheritDoc /> */
+        public IAtomicLongClient GetAtomicLong(
+            string name,
+            AtomicClientConfiguration configuration,
+            long initialValue,
+            bool create)
+        {
             IgniteArgumentCheck.NotNullOrEmpty(name, "name");
 
             if (create)
             {
                 _socket.DoOutInOp<object>(ClientOp.AtomicLongCreate, ctx =>
                 {
-                    ctx.Writer.WriteString(name);
-                    ctx.Writer.WriteLong(initialValue);
-                    ctx.Writer.WriteBoolean(false); // TODO: Config overload.
+                    var w = ctx.Writer;
+
+                    w.WriteString(name);
+                    w.WriteLong(initialValue);
+
+                    if (configuration != null)
+                    {
+                        w.WriteBoolean(true);
+                        w.WriteInt(configuration.AtomicSequenceReserveSize);
+                        w.WriteByte((byte)configuration.CacheMode);
+                        w.WriteInt(configuration.Backups);
+                        w.WriteString(configuration.GroupName);
+                    }
+                    else
+                    {
+                        w.WriteBoolean(false);
+                    }
                 }, null);
             }
 
