@@ -115,8 +115,8 @@ namespace Apache.Ignite.Core.Impl.Client.DataStructures
                 ctx =>
                 {
                     WriteName(ctx);
-                    ctx.Writer.WriteLong(value);
                     ctx.Writer.WriteLong(comparand);
+                    ctx.Writer.WriteLong(value);
                 },
                 r => r.Reader.ReadLong(),
                 _cacheId,
