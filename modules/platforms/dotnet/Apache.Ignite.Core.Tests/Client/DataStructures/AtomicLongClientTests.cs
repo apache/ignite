@@ -164,9 +164,7 @@ namespace Apache.Ignite.Core.Tests.Client.DataStructures
             var stream = new BinaryHeapStream(cacheConfigBytes);
             var reader = new BinaryReader(BinaryUtils.Marshaller, stream, BinaryMode.Deserialize, null);
 
-            var cnt = reader.ReadInt();
-
-            var caches = Enumerable.Range(0, cnt)
+            var caches = Enumerable.Range(0, reader.ReadInt())
                 .Select(_ => new CacheConfiguration(reader))
                 .ToDictionary(c => c.Name);
 
