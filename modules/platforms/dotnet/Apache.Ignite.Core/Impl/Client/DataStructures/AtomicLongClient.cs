@@ -42,12 +42,13 @@ namespace Apache.Ignite.Core.Impl.Client.DataStructures
         /// </summary>
         /// <param name="socket">Socket.</param>
         /// <param name="name">Name.</param>
-        public AtomicLongClient(ClientFailoverSocket socket, string name)
+        /// <param name="groupName">Group name.</param>
+        public AtomicLongClient(ClientFailoverSocket socket, string name, string groupName)
         {
             _socket = socket;
             Name = name;
 
-            var cacheName = AtomicsCacheName + "@" + DefaultDataStructuresCacheGroupName;
+            var cacheName = AtomicsCacheName + "@" + (groupName ?? DefaultDataStructuresCacheGroupName);
             _cacheId = BinaryUtils.GetCacheId(cacheName);
         }
 

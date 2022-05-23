@@ -348,7 +348,7 @@ namespace Apache.Ignite.Core.Impl.Client
                 }, null);
             }
 
-            var res = new AtomicLongClient(_socket, name);
+            var res = new AtomicLongClient(_socket, name, configuration?.GroupName);
 
             if (!create && res.IsClosed())
             {

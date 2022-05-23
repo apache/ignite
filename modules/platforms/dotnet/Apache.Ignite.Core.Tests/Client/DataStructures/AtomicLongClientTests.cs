@@ -126,12 +126,6 @@ namespace Apache.Ignite.Core.Tests.Client.DataStructures
         }
 
         [Test]
-        public void TestPartitionAwareness()
-        {
-            // TODO: Move this to another file?
-        }
-
-        [Test]
         public void TestCustomConfigurationPropagatesToServer()
         {
             var cfg1 = new AtomicClientConfiguration
