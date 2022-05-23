@@ -27,7 +27,7 @@
             - restart the Apache Karaf container.
             You may safely ignore the 'Resource has no uri' exception if you follow this method.
 
-            NOTE #2: This feature *does not* include components that depend on LGPL software (e.g. ignite-geospatial).]]>
+            NOTE #2: This feature *does not* include components that depend on LGPL software.]]>
         </details>
         <feature>ignite-core</feature>
         <feature>ignite-aop</feature>
