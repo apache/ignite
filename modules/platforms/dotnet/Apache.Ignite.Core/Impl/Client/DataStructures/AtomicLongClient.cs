@@ -37,6 +37,9 @@ namespace Apache.Ignite.Core.Impl.Client.DataStructures
         /** */
         private readonly int _cacheId;
 
+        /** */
+        private readonly string _groupName;
+
         /// <summary>
         /// Initializes a new instance of <see cref="AtomicLongClient"/> class.
         /// </summary>
@@ -47,6 +50,7 @@ namespace Apache.Ignite.Core.Impl.Client.DataStructures
         {
             _socket = socket;
             Name = name;
+            _groupName = groupName;
 
             var cacheName = AtomicsCacheName + "@" + (groupName ?? DefaultDataStructuresCacheGroupName);
             _cacheId = BinaryUtils.GetCacheId(cacheName);
@@ -158,7 +162,7 @@ namespace Apache.Ignite.Core.Impl.Client.DataStructures
         private void WriteName(ClientRequestContext ctx)
         {
             ctx.Writer.WriteString(Name);
-            ctx.Writer.WriteString(null); // Group name.
+            ctx.Writer.WriteString(_groupName);
         }
     }
 }

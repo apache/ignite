@@ -464,10 +464,10 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         }
 
         [Test]
-        [TestCase("default-grp-partitioned", null, CacheMode.Partitioned, 1)]
+        [TestCase("default-grp-partitioned", null, CacheMode.Partitioned, 0)]
         [TestCase("default-grp-replicated", null, CacheMode.Replicated, 2)]
-        [TestCase("custom-grp-partitioned", "testAtomicLong", CacheMode.Partitioned, 3)]
-        [TestCase("custom-grp-replicated", "testAtomicLong", CacheMode.Replicated, 4)]
+        [TestCase("custom-grp-partitioned", "testAtomicLong", CacheMode.Partitioned, 1)]
+        [TestCase("custom-grp-replicated", "testAtomicLong", CacheMode.Replicated, 0)]
         public void AtomicLong_RequestIsRoutedToPrimaryNode(
             string name, string groupName, CacheMode cacheMode, int gridIdx)
         {
