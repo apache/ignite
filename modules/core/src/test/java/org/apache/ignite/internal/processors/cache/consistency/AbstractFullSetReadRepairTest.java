@@ -97,12 +97,7 @@ public abstract class AbstractFullSetReadRepairTest extends AbstractReadRepairTe
             rrd.cache.withReadRepair(rrd.strategy).containsKeysAsync(keys).get() :
             rrd.cache.withReadRepair(rrd.strategy).containsKeys(keys);
 
-        boolean containsAll = true;
-
-        for (Integer key : keys) {
-            if (rrd.data.get(key).repairedBin == null)
-                containsAll = false;
-        }
+        boolean containsAll = rrd.data.values().stream().allMatch(mapping -> mapping.repairedBin != null);
 
         assertEquals(containsAll, res);
     };
@@ -161,15 +156,8 @@ public abstract class AbstractFullSetReadRepairTest extends AbstractReadRepairTe
                 rrd.cache.withReadRepair(rrd.strategy).getAll(keys);
         }
 
-        Map<Integer, Object> res = new HashMap<>();
-
-        for (Map.Entry<Integer, Object> entry : objs.entrySet()) {
-            Object obj = entry.getValue();
-
-            res.put(entry.getKey(), unwrapBinaryIfNeeded(obj));
-        }
-
-        return res;
+        return objs.entrySet().stream().collect(Collectors.toMap(
+            Map.Entry::getKey, entry -> unwrapBinaryIfNeeded(entry.getValue())));
     }
 
     /**
