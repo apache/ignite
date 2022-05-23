@@ -83,7 +83,7 @@ namespace ignite
                      *
                      * @throw IgniteError class instance in case of failure.
                      */
-                    bool HasNext()
+                    bool HasNext() const
                     {
                         return impl.HasNext();
                     }

@@ -609,7 +609,7 @@ namespace ignite
                  */
                 query::QueryCursor<KeyType, ValueType> Query(const query::ScanQuery& qry)
                 {
-                    return proxy.Query(qry);
+                    return query::QueryCursor<KeyType, ValueType>(proxy.Query(qry));
                 }
 
                 /**

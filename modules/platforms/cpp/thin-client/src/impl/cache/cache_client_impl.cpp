@@ -376,7 +376,15 @@ namespace ignite
 
                     SP_DataChannel channel = SyncMessageSql(req, rsp);
 
-                    // TODO
+                    query::SP_QueryCursorImpl cursor(
+                        new query::QueryCursorImpl(
+                            rsp.GetCursorId(),
+                            rsp.GetCursorPage(),
+                            channel,
+                            router.Get()->GetIoTimeout()
+                    ));
+
+                    return cursor;
                 }
 
                 query::continuous::SP_ContinuousQueryHandleClientImpl CacheClientImpl::QueryContinuous(

@@ -28,6 +28,7 @@
 
 #include "impl/data_router.h"
 #include "impl/transactions/transactions_impl.h"
+#include "impl/cache/query/query_cursor_impl.h"
 #include "impl/cache/query/query_fields_cursor_impl.h"
 #include "impl/cache/query/continuous/continuous_query_handle_impl.h"
 

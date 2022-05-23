@@ -15,15 +15,12 @@
  * limitations under the License.
  */
 
-#ifndef _IGNITE_IMPL_THIN_CACHE_QUERY_QUERY_FIELDS_CURSOR_IMPL
-#define _IGNITE_IMPL_THIN_CACHE_QUERY_QUERY_FIELDS_CURSOR_IMPL
+#ifndef _IGNITE_IMPL_THIN_CACHE_QUERY_QUERY_CURSOR_IMPL
+#define _IGNITE_IMPL_THIN_CACHE_QUERY_QUERY_CURSOR_IMPL
 
 #include <ignite/common/concurrent.h>
 
-#include <ignite/thin/cache/query/query_fields_row.h>
-
 #include "impl/cache/query/cursor_page.h"
-#include "impl/cache/query/query_fields_row_impl.h"
 #include "impl/data_router.h"
 #include "impl/message.h"
 
@@ -38,9 +35,9 @@ namespace ignite
                 namespace query
                 {
                     /**
-                     * Query Fields Cursor Implementation.
+                     * Query Cursor Implementation.
                      */
-                    class QueryFieldsCursorImpl
+                    class QueryCursorImpl
                     {
                     public:
                         /**
@@ -52,14 +49,12 @@ namespace ignite
                          * @param channel Data channel. Used to request new page.
                          * @param timeout Timeout.
                          */
-                        QueryFieldsCursorImpl(
+                        QueryCursorImpl(
                                 int64_t id,
-                                const std::vector<std::string>& columns,
                                 const SP_CursorPage &cursorPage,
                                 const SP_DataChannel& channel,
                                 int32_t timeout) :
                             id(id),
-                            columns(columns),
                             page(cursorPage),
                             channel(channel),
                             timeout(timeout),
@@ -76,7 +71,7 @@ namespace ignite
                         /**
                          * Destructor.
                          */
-                        virtual ~QueryFieldsCursorImpl()
+                        virtual ~QueryCursorImpl()
                         {
                             // No-op.
                         }
@@ -96,13 +91,11 @@ namespace ignite
                         /**
                          * Get next entry.
                          *
-                         * This method should only be used on the valid instance.
-                         *
-                         * @return Next entry.
+                         * @param entry Entry.
                          *
                          * @throw IgniteError class instance in case of failure.
                          */
-                        ignite::thin::cache::query::QueryFieldsRow GetNext()
+                        void GetNext(Readable& entry)
                         {
                             if (!HasNext())
                                 throw IgniteError(IgniteError::IGNITE_ERR_GENERIC, "The cursor is empty");
@@ -110,25 +103,19 @@ namespace ignite
                             if (IsUpdateNeeded())
                                 Update();
 
-                            SP_QueryFieldsRowImpl rowImpl(
-                                new QueryFieldsRowImpl(
-                                        static_cast<int32_t>(columns.size()),
-                                        page,
-                                        stream.Position()));
-
-                            SkipRow();
-
-                            return ignite::thin::cache::query::QueryFieldsRow(rowImpl);
+                            // TODO
                         }
 
                         /**
-                         * Get column names.
+                         * Get all entries.
                          *
-                         * @return Column names.
+                         * @param collection Output collection.
+                         *
+                         * @throw IgniteError class instance in case of failure.
                          */
-                        const std::vector<std::string>& GetColumns() const
+                        void GetAll(Readable& collection)
                         {
-                            return columns;
+                            // TODO
                         }
 
                     private:
@@ -147,34 +134,22 @@ namespace ignite
                          */
                         void Update()
                         {
-                            SqlFieldsCursorGetPageRequest req(id);
-                            SqlFieldsCursorGetPageResponse rsp;
-
-                            DataChannel* channel0 = channel.Get();
-
-                            if (!channel0)
-                                throw IgniteError(IgniteError::IGNITE_ERR_GENERIC, "Connection is not established");
-
-                            channel0->SyncMessage(req, rsp, timeout);
-
-                            page = rsp.GetCursorPage();
-                            currentRow = 0;
-
-                            stream = interop::InteropInputStream(page.Get()->GetMemory());
-                            stream.Position(page.Get()->GetStartPos());
-                        }
-
-                        /**
-                         * Skip position to the next row.
-                         */
-                        void SkipRow()
-                        {
-                            for (size_t i = 0; i < columns.size(); ++i)
-                                reader.Skip();
-
-                            ++currentRow;
-
-                            CheckEnd();
+//                            CursorGetPageRequest req(id);
+//                            CursorGetPageResponse rsp;
+//
+//                            DataChannel* channel0 = channel.Get();
+//
+//                            if (!channel0)
+//                                throw IgniteError(IgniteError::IGNITE_ERR_GENERIC,
+//                                    "Connection is not established");
+//
+//                            channel0->SyncMessage(req, rsp, timeout);
+//
+//                            page = rsp.GetCursorPage();
+//                            currentRow = 0;
+//
+//                            stream = interop::InteropInputStream(page.Get()->GetMemory());
+//                            stream.Position(page.Get()->GetStartPos());
                         }
 
                         /**
@@ -193,9 +168,6 @@ namespace ignite
 
                         /** Cursor ID. */
                         int64_t id;
-
-                        /** Column names. */
-                        std::vector<std::string> columns;
 
                         /** Cursor page. */
                         SP_CursorPage page;
@@ -219,11 +191,12 @@ namespace ignite
                         bool endReached;
                     };
 
-                    typedef common::concurrent::SharedPointer<QueryFieldsCursorImpl> SP_QueryFieldsCursorImpl;
+                    /** Shared pointer. */
+                    typedef common::concurrent::SharedPointer< QueryCursorImpl > SP_QueryCursorImpl;
                 }
             }
         }
     }
 }
 
-#endif // _IGNITE_IMPL_THIN_CACHE_QUERY_QUERY_FIELDS_CURSOR_IMPL
+#endif // _IGNITE_IMPL_THIN_CACHE_QUERY_QUERY_CURSOR_IMPL

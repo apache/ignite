@@ -24,6 +24,7 @@
 #include <ignite/ignite_error.h>
 
 #include <ignite/thin/cache/cache_entry.h>
+#include <ignite/impl/thin/readable.h>
 
 namespace ignite
 {
@@ -50,13 +51,20 @@ namespace ignite
                         }
 
                         /**
+                         * Constructor.
+                         *
+                         * @param impl Implementation.
+                         */
+                        explicit QueryCursorProxy(const common::concurrent::SharedPointer<void> &impl);
+
+                        /**
                          * Check whether next entry exists.
                          *
                          * @return True if next entry exists.
                          *
                          * @throw IgniteError class instance in case of failure.
                          */
-                        bool HasNext();
+                        bool HasNext() const;
 
                         /**
                          * Get next entry.
@@ -78,7 +86,7 @@ namespace ignite
 
                     private:
                         /** Implementation delegate. */
-                    ignite::common::concurrent::SharedPointer<void> impl;
+                        common::concurrent::SharedPointer<void> impl;
                     };
                 }
             }
