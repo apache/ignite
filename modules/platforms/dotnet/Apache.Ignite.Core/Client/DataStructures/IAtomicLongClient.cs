@@ -19,6 +19,8 @@ namespace Apache.Ignite.Core.Client.DataStructures
 {
     /// <summary>
     /// Represents a distributed atomic long value.
+    /// <para />
+    /// Use <see cref="IIgniteClient.GetAtomicLong"/> to get or create an instance.
     /// </summary>
     public interface IAtomicLongClient
     {
