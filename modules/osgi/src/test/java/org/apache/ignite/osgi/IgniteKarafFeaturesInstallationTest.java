@@ -80,9 +80,6 @@ public class IgniteKarafFeaturesInstallationTest extends AbstractIgniteKarafTest
         assertEquals(EXPECTED_FEATURES, features.length);
 
         for (Feature f : features) {
-            if (IGNORED_FEATURES.contains(f.getName()))
-                continue;
-
             boolean installed = featuresSvc.isInstalled(f);
 
             System.out.println(String.format("Checking if feature is installed [featureName=%s, installed=%s]",
