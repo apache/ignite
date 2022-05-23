@@ -111,14 +111,14 @@ namespace Apache.Ignite.Core.Impl.Client.DataStructures
         public long CompareExchange(long value, long comparand)
         {
             return _socket.DoOutInOpAffinity(
-                ClientOp.AtomicLongValueCompareAndSet,
+                ClientOp.AtomicLongValueCompareAndSetAndGet,
                 ctx =>
                 {
                     WriteName(ctx);
                     ctx.Writer.WriteLong(value);
                     ctx.Writer.WriteLong(comparand);
                 },
-                r => r.Reader.ReadBoolean() ? comparand : value, // TODO: This is not correct - we should use OP_COMPARE_AND_SET_AND_GET
+                r => r.Reader.ReadLong(),
                 _cacheId,
                 AffinityKey);
         }
