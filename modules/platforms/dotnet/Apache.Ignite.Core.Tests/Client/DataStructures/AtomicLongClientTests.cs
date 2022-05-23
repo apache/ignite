@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Core.Tests.Client.DataStructures
 {
     using System;
+    using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Client;
     using Apache.Ignite.Core.Client.DataStructures;
     using NUnit.Framework;
@@ -125,6 +126,32 @@ namespace Apache.Ignite.Core.Tests.Client.DataStructures
         public void TestPartitionAwareness()
         {
             // TODO: Move this to another file?
+        }
+
+        [Test]
+        public void TestCustomConfigurationPropagatesToServer()
+        {
+            var cfg1 = new AtomicClientConfiguration
+            {
+                AtomicSequenceReserveSize = 32,
+                Backups = 2,
+                CacheMode = CacheMode.Partitioned,
+                GroupName = "atomics-partitioned"
+            };
+
+            var cfg2 = new AtomicClientConfiguration
+            {
+                AtomicSequenceReserveSize = 33,
+                Backups = 3,
+                CacheMode = CacheMode.Replicated,
+                GroupName = "atomics-replicated"
+            };
+
+            var name = TestUtils.TestName;
+
+            Client.GetAtomicLong(name, cfg1, 1, true);
+            Client.GetAtomicLong(name, cfg2, 2, true);
+            Client.GetAtomicLong(name, 3, true);
         }
     }
 }
