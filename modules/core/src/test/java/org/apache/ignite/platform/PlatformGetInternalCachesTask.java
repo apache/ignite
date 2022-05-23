@@ -67,8 +67,7 @@ public class PlatformGetInternalCachesTask extends ComputeTaskAdapter<Object, by
 
         /** {@inheritDoc} */
         @Override public byte[] execute() {
-            IgniteEx ign = (IgniteEx) ignite;
-
+            IgniteEx ign = (IgniteEx)ignite;
 
             BinaryContext ctx = new BinaryContext(BinaryCachingMetadataHandler.create(), new IgniteConfiguration(), null);
 
