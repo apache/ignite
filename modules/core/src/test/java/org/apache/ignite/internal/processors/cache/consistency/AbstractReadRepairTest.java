@@ -232,7 +232,7 @@ public abstract class AbstractReadRepairTest extends GridCommonAbstractTest {
         for (Map.Entry<Integer, InconsistentMapping> mapping : inconsistent.entrySet()) {
             Integer key = mapping.getKey();
             Object repairedBin = mapping.getValue().repairedBin;
-            Object primary = mapping.getValue().primaryBin;
+            Object primary = mapping.getValue().primary;
             boolean repairable = mapping.getValue().repairable;
 
             if (!repairable)

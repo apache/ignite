@@ -174,7 +174,7 @@ public class ReadRepairDataGenerator {
                         if (valVer != null)
                             exp = valVer.get1(); // Should read from itself (backup or primary).
                         else
-                            exp = results.get(key).primaryBin; // Or read from primary (when not a partition owner).
+                            exp = results.get(key).primary; // Or read from primary (when not a partition owner).
 
                         assertEquals(exp, val);
                     }
@@ -499,7 +499,7 @@ public class ReadRepairDataGenerator {
                     return new T2<>(igniteBinary.toBinary(t2.getKey()), t2.getValue());
                 }));
 
-        return new InconsistentMapping(mapping, mappingBin, primVal, primValBin, repaired, repairedBin, repairable, consistent);
+        return new InconsistentMapping(mapping, mappingBin, primValBin, repaired, repairedBin, repairable, consistent);
     }
 
     /**
@@ -606,9 +606,6 @@ public class ReadRepairDataGenerator {
         /** Primary node's value. */
         public final Object primary;
 
-        /** Primary node's value, binary. */
-        public final Object primaryBin;
-
         /** Expected repaired result. */
         public final Object repaired;
 
@@ -625,7 +622,6 @@ public class ReadRepairDataGenerator {
          * @param mapping Mapping.
          * @param mappingBin Mapping bin.
          * @param primary Primary.
-         * @param primaryBin Primary bin.
          * @param repaired Repaired.
          * @param repairedBin Repaired bin.
          * @param repairable Repairable.
@@ -635,7 +631,6 @@ public class ReadRepairDataGenerator {
             Map<Ignite, T2<Object, GridCacheVersion>> mapping,
             Map<Ignite, T2<Object, GridCacheVersion>> mappingBin,
             Object primary,
-            Object primaryBin,
             Object repaired,
             Object repairedBin,
             boolean repairable,
@@ -643,7 +638,6 @@ public class ReadRepairDataGenerator {
             this.mapping = Collections.unmodifiableMap(mapping);
             this.mappingBin = Collections.unmodifiableMap(mappingBin);
             this.primary = primary;
-            this.primaryBin = primaryBin;
             this.repaired = repaired;
             this.repairedBin = repairedBin;
             this.repairable = repairable;
