@@ -18,9 +18,12 @@
 namespace Apache.Ignite.Core.Tests.Client.DataStructures
 {
     using System;
+    using System.Linq;
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Client;
     using Apache.Ignite.Core.Client.DataStructures;
+    using Apache.Ignite.Core.Impl.Binary;
+    using Apache.Ignite.Core.Impl.Binary.IO;
     using NUnit.Framework;
 
     /// <summary>
@@ -153,10 +156,23 @@ namespace Apache.Ignite.Core.Tests.Client.DataStructures
             Client.GetAtomicLong(name, cfg2, 2, true);
             Client.GetAtomicLong(name, 3, true);
 
-            var cacheConfigBytes = Client.GetCompute().ExecuteJavaTask<byte[]>(
+            var cacheConfigBytes = GetIgnite().GetCompute().ExecuteJavaTask<byte[]>(
                 "org.apache.ignite.platform.PlatformGetInternalCachesTask", null);
 
             Assert.IsNotNull(cacheConfigBytes);
+
+            var stream = new BinaryHeapStream(cacheConfigBytes);
+            var reader = new BinaryReader(BinaryUtils.Marshaller, stream, BinaryMode.Deserialize, null);
+
+            var cnt = reader.ReadInt();
+
+            var caches = Enumerable.Range(0, cnt)
+                .Select(_ => new CacheConfiguration(reader))
+                .ToDictionary(c => c.Name);
+
+            Assert.AreEqual(2, caches["ignite-sys-atomic-cache@atomics-partitioned"].Backups);
+            Assert.AreEqual(int.MaxValue, caches["ignite-sys-atomic-cache@atomics-replicated"].Backups);
+            Assert.AreEqual(1, caches["ignite-sys-atomic-cache@default-ds-group"].Backups);
         }
     }
 }
