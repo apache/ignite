@@ -793,8 +793,7 @@
                         </executions>
                     </plugin>
 
-                    <plugin>
-                        <!-- Check final list of orphaned tests. -->
+                    <!-- plugin>
                         <groupId>org.codehaus.mojo</groupId>
                         <artifactId>exec-maven-plugin</artifactId>
                         <executions>
@@ -809,7 +808,7 @@
                             <includePluginDependencies>true</includePluginDependencies>
                             <mainClass>org.apache.ignite.tools.surefire.testsuites.AssertOnOrphanedTests</mainClass>
                         </configuration>
-                    </plugin>
+                    </plugin -->
                 </plugins>
             </build>
         </profile>
