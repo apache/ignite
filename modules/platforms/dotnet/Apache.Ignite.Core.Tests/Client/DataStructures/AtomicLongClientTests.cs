@@ -152,6 +152,11 @@ namespace Apache.Ignite.Core.Tests.Client.DataStructures
             Client.GetAtomicLong(name, cfg1, 1, true);
             Client.GetAtomicLong(name, cfg2, 2, true);
             Client.GetAtomicLong(name, 3, true);
+
+            var cacheConfigBytes = Client.GetCompute().ExecuteJavaTask<byte[]>(
+                "org.apache.ignite.platform.PlatformGetInternalCachesTask", null);
+
+            Assert.IsNotNull(cacheConfigBytes);
         }
     }
 }
