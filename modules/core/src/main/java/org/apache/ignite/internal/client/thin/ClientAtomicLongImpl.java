@@ -21,6 +21,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.client.ClientAtomicLong;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
+import org.apache.ignite.internal.processors.datastructures.DataStructuresProcessor;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -36,6 +37,9 @@ public class ClientAtomicLongImpl implements ClientAtomicLong {
     /** */
     private final ReliableChannel ch;
 
+    /** Cache id. */
+    private final int cacheId;
+
     /**
      * Constructor.
      *
@@ -48,6 +52,9 @@ public class ClientAtomicLongImpl implements ClientAtomicLong {
         this.name = name;
         this.groupName = groupName;
         this.ch = ch;
+
+        String groupNameInternal = groupName == null ? DataStructuresProcessor.DEFAULT_DS_GROUP_NAME : groupName;
+        cacheId = ClientUtils.cacheId(DataStructuresProcessor.ATOMICS_CACHE_NAME + "@" + groupNameInternal);
     }
 
     /** {@inheritDoc} */
@@ -57,7 +64,7 @@ public class ClientAtomicLongImpl implements ClientAtomicLong {
 
     /** {@inheritDoc} */
     @Override public long get() throws IgniteException {
-        return ch.service(ClientOperation.ATOMIC_LONG_VALUE_GET, this::writeName, in -> in.in().readLong());
+        return ch.affinityService(cacheId, affinityKey(), ClientOperation.ATOMIC_LONG_VALUE_GET, this::writeName, in -> in.in().readLong());
     }
 
     /** {@inheritDoc} */
@@ -72,7 +79,7 @@ public class ClientAtomicLongImpl implements ClientAtomicLong {
 
     /** {@inheritDoc} */
     @Override public long addAndGet(long l) throws IgniteException {
-        return ch.service(ClientOperation.ATOMIC_LONG_VALUE_ADD_AND_GET, out -> {
+        return ch.affinityService(cacheId, affinityKey(), ClientOperation.ATOMIC_LONG_VALUE_ADD_AND_GET, out -> {
             writeName(out);
             out.out().writeLong(l);
         }, in -> in.in().readLong());
@@ -95,7 +102,7 @@ public class ClientAtomicLongImpl implements ClientAtomicLong {
 
     /** {@inheritDoc} */
     @Override public long getAndSet(long l) throws IgniteException {
-        return ch.service(ClientOperation.ATOMIC_LONG_VALUE_GET_AND_SET, out -> {
+        return ch.affinityService(cacheId, affinityKey(), ClientOperation.ATOMIC_LONG_VALUE_GET_AND_SET, out -> {
             writeName(out);
             out.out().writeLong(l);
         }, in -> in.in().readLong());
@@ -103,7 +110,7 @@ public class ClientAtomicLongImpl implements ClientAtomicLong {
 
     /** {@inheritDoc} */
     @Override public boolean compareAndSet(long expVal, long newVal) throws IgniteException {
-        return ch.service(ClientOperation.ATOMIC_LONG_VALUE_COMPARE_AND_SET, out -> {
+        return ch.affinityService(cacheId, affinityKey(), ClientOperation.ATOMIC_LONG_VALUE_COMPARE_AND_SET, out -> {
             writeName(out);
             out.out().writeLong(expVal);
             out.out().writeLong(newVal);
@@ -112,12 +119,13 @@ public class ClientAtomicLongImpl implements ClientAtomicLong {
 
     /** {@inheritDoc} */
     @Override public boolean removed() {
-        return ch.service(ClientOperation.ATOMIC_LONG_EXISTS, this::writeName, in -> !in.in().readBoolean());
+        return ch.affinityService(cacheId, affinityKey(), ClientOperation.ATOMIC_LONG_EXISTS, this::writeName,
+                in -> !in.in().readBoolean());
     }
 
     /** {@inheritDoc} */
     @Override public void close() {
-        ch.service(ClientOperation.ATOMIC_LONG_REMOVE, this::writeName, null);
+        ch.affinityService(cacheId, affinityKey(), ClientOperation.ATOMIC_LONG_REMOVE, this::writeName, null);
     }
 
     /**
@@ -130,5 +138,15 @@ public class ClientAtomicLongImpl implements ClientAtomicLong {
             w.writeString(name);
             w.writeString(groupName);
         }
+    }
+
+    /**
+     * Gets the affinity key for this data structure.
+     * 
+     * @return Affinity key.
+     */
+    private String affinityKey() {
+        // GridCacheInternalKeyImpl uses name as AffinityKeyMapped.
+        return name;
     }
 }

@@ -25,6 +25,7 @@ import org.apache.ignite.client.ClientAtomicConfiguration;
 import org.apache.ignite.client.ClientAtomicLong;
 import org.apache.ignite.client.ClientException;
 import org.apache.ignite.client.IgniteClient;
+import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.junit.Test;
 import static org.apache.ignite.testframework.GridTestUtils.assertContains;
@@ -39,6 +40,11 @@ public class AtomicLongTest extends AbstractThinClientTest {
         super.beforeTestsStarted();
 
         startGrids(1);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected ClientConfiguration getClientConfiguration() {
+        return super.getClientConfiguration().setPartitionAwarenessEnabled(true);
     }
 
     /** {@inheritDoc} */
@@ -209,19 +215,23 @@ public class AtomicLongTest extends AbstractThinClientTest {
         try (IgniteClient client = startClient(0)) {
             client.atomicLong(name, cfg1, 1, true);
             client.atomicLong(name, cfg2, 2, true);
+            client.atomicLong(name, 3, true);
         }
 
         List<IgniteInternalCache<?, ?>> caches = new ArrayList<>(grid(0).cachesx());
-        assertEquals(3, caches.size());
+        assertEquals(4, caches.size());
 
         IgniteInternalCache<?, ?> partitionedCache = caches.get(1);
         IgniteInternalCache<?, ?> replicatedCache = caches.get(2);
+        IgniteInternalCache<?, ?> defaultCache = caches.get(3);
 
         assertEquals("ignite-sys-atomic-cache@atomic-long-group-partitioned", partitionedCache.name());
         assertEquals("ignite-sys-atomic-cache@atomic-long-group-replicated", replicatedCache.name());
+        assertEquals("ignite-sys-atomic-cache@default-ds-group", defaultCache.name());
 
         assertEquals(2, partitionedCache.configuration().getBackups());
         assertEquals(Integer.MAX_VALUE, replicatedCache.configuration().getBackups());
+        assertEquals(1, defaultCache.configuration().getBackups());
     }
 
     /**

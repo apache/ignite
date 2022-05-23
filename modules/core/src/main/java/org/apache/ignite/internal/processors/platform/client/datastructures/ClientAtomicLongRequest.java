@@ -17,11 +17,11 @@
 
 package org.apache.ignite.internal.processors.platform.client.datastructures;
 
-import org.apache.ignite.IgniteAtomicLong;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.binary.BinaryRawReader;
 import org.apache.ignite.configuration.AtomicConfiguration;
+import org.apache.ignite.internal.processors.datastructures.GridCacheAtomicLongImpl;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientRequest;
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
@@ -54,11 +54,11 @@ public class ClientAtomicLongRequest extends ClientRequest {
      * @param ctx Context.
      * @return Atomic long or null.
      */
-    protected IgniteAtomicLong atomicLong(ClientConnectionContext ctx) {
+    protected GridCacheAtomicLongImpl atomicLong(ClientConnectionContext ctx) {
         AtomicConfiguration cfg = groupName == null ? null : new AtomicConfiguration().setGroupName(groupName);
 
         try {
-            return ctx.kernalContext().dataStructures().atomicLong(name, cfg, 0, false);
+            return (GridCacheAtomicLongImpl)ctx.kernalContext().dataStructures().atomicLong(name, cfg, 0, false);
         }
         catch (IgniteCheckedException e) {
             throw new IgniteException(e.getMessage(), e);

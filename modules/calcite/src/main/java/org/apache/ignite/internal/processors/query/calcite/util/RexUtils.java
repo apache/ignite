@@ -525,6 +525,21 @@ public class RexUtils {
         return keys;
     }
 
+    /** @return Double value of the literal expression. */
+    public static double doubleFromRex(RexNode n, double def) {
+        try {
+            if (n.isA(SqlKind.LITERAL))
+                return ((RexLiteral)n).getValueAs(Double.class);
+            else
+                return def;
+        }
+        catch (Exception e) {
+            assert false : "Unable to extract value: " + e.getMessage();
+
+            return def;
+        }
+    }
+
     /** */
     public static Set<CorrelationId> extractCorrelationIds(List<RexNode> nodes) {
         final Set<CorrelationId> cors = new HashSet<>();
