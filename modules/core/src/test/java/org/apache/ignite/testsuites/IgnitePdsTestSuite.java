@@ -73,7 +73,7 @@ public class IgnitePdsTestSuite {
         List<Class<?>> suite = new ArrayList<>();
 
         addRealPageStoreTests(suite, ignoredTests);
-        addRealPageStoreTestsLongRunning(suite, ignoredTests);
+//        addRealPageStoreTestsLongRunning(suite, ignoredTests);
 
         return suite;
     }
@@ -99,50 +99,52 @@ public class IgnitePdsTestSuite {
      * @param ignoredTests Ignored tests.
      */
     public static void addRealPageStoreTests(List<Class<?>> suite, Collection<Class> ignoredTests) {
+//
         // Checkpointing smoke-test.
-        GridTestUtils.addTestIfNeeded(suite, IgnitePdsCheckpointSimulationWithRealCpDisabledTest.class, ignoredTests);
-        GridTestUtils.addTestIfNeeded(suite, IgnitePdsCheckpointSimpleTest.class, ignoredTests);
-
-        // Basic API tests.
-        GridTestUtils.addTestIfNeeded(suite, IgniteDbSingleNodePutGetTest.class, ignoredTests);
-        GridTestUtils.addTestIfNeeded(suite, IgniteDbMultiNodePutGetTest.class, ignoredTests);
-        GridTestUtils.addTestIfNeeded(suite, IgniteDbSingleNodeTinyPutGetTest.class, ignoredTests);
-        GridTestUtils.addTestIfNeeded(suite, IgniteDbDynamicCacheSelfTest.class, ignoredTests);
-
-        // Persistence-enabled.
-        GridTestUtils.addTestIfNeeded(suite, IgnitePdsSingleNodePutGetPersistenceTest.class, ignoredTests);
-        GridTestUtils.addTestIfNeeded(suite, IgnitePdsDynamicCacheTest.class, ignoredTests);
-        GridTestUtils.addTestIfNeeded(suite, IgnitePdsClientNearCachePutGetTest.class, ignoredTests);
-        GridTestUtils.addTestIfNeeded(suite, IgniteDbPutGetWithCacheStoreTest.class, ignoredTests);
-        GridTestUtils.addTestIfNeeded(suite, IgnitePdsWithTtlTest.class, ignoredTests);
-        GridTestUtils.addTestIfNeeded(suite, IgnitePdsWithTtlTest2.class, ignoredTests);
-        GridTestUtils.addTestIfNeeded(suite, IgnitePdsSporadicDataRecordsOnBackupTest.class, ignoredTests);
-
-        GridTestUtils.addTestIfNeeded(suite, IgniteClusterActivateDeactivateTestWithPersistence.class, ignoredTests);
-
-        GridTestUtils.addTestIfNeeded(suite, IgnitePdsCacheRestoreTest.class, ignoredTests);
-        GridTestUtils.addTestIfNeeded(suite, IgnitePdsDataRegionMetricsTest.class, ignoredTests);
-        GridTestUtils.addTestIfNeeded(suite, IgnitePdsDataRegionMetricsTxTest.class, ignoredTests);
-
-        GridTestUtils.addTestIfNeeded(suite, IgnitePdsDestroyCacheTest.class, ignoredTests);
-        GridTestUtils.addTestIfNeeded(suite, IgnitePdsRemoveDuringRebalancingTest.class, ignoredTests);
-        GridTestUtils.addTestIfNeeded(suite, IgnitePdsDestroyCacheWithoutCheckpointsTest.class, ignoredTests);
-        GridTestUtils.addTestIfNeeded(suite, IgnitePdsCacheConfigurationFileConsistencyCheckTest.class, ignoredTests);
-
-        GridTestUtils.addTestIfNeeded(suite, DefaultPageSizeBackwardsCompatibilityTest.class, ignoredTests);
-
-        //MetaStorage
-        GridTestUtils.addTestIfNeeded(suite, IgniteMetaStorageBasicTest.class, ignoredTests);
-        GridTestUtils.addTestIfNeeded(suite, DistributedMetaStoragePersistentTest.class, ignoredTests);
-        GridTestUtils.addTestIfNeeded(suite, DistributedConfigurationPersistentTest.class, ignoredTests);
-
-        //Diagnostic
-        GridTestUtils.addTestIfNeeded(suite, DiagnosticProcessorTest.class, ignoredTests);
-
-        GridTestUtils.addTestIfNeeded(suite, ActiveOnStartPropertyTest.class, ignoredTests);
-        GridTestUtils.addTestIfNeeded(suite, AutoActivationPropertyTest.class, ignoredTests);
-        GridTestUtils.addTestIfNeeded(suite, ClusterStateOnStartPropertyTest.class, ignoredTests);
-
-        GridTestUtils.addTestIfNeeded(suite, DurableBackgroundTasksProcessorSelfTest.class, ignoredTests);
+//        GridTestUtils.addTestIfNeeded(suite, IgnitePdsCheckpointSimulationWithRealCpDisabledTest.class, ignoredTests);
+//        GridTestUtils.addTestIfNeeded(suite, IgnitePdsCheckpointSimpleTest.class, ignoredTests);
+//
+//        // Basic API tests.
+//        GridTestUtils.addTestIfNeeded(suite, IgniteDbSingleNodePutGetTest.class, ignoredTests);
+//        GridTestUtils.addTestIfNeeded(suite, IgniteDbMultiNodePutGetTest.class, ignoredTests);
+//        GridTestUtils.addTestIfNeeded(suite, IgniteDbSingleNodeTinyPutGetTest.class, ignoredTests);
+//        GridTestUtils.addTestIfNeeded(suite, IgniteDbDynamicCacheSelfTest.class, ignoredTests);
+//
+//        // Persistence-enabled.
+//        GridTestUtils.addTestIfNeeded(suite, IgnitePdsSingleNodePutGetPersistenceTest.class, ignoredTests);
+//        GridTestUtils.addTestIfNeeded(suite, IgnitePdsDynamicCacheTest.class, ignoredTests);
+//        GridTestUtils.addTestIfNeeded(suite, IgnitePdsClientNearCachePutGetTest.class, ignoredTests);
+//        GridTestUtils.addTestIfNeeded(suite, IgniteDbPutGetWithCacheStoreTest.class, ignoredTests);
+//        GridTestUtils.addTestIfNeeded(suite, IgnitePdsWithTtlTest.class, ignoredTests);
+//        GridTestUtils.addTestIfNeeded(suite, IgnitePdsWithTtlTest2.class, ignoredTests);
+//        GridTestUtils.addTestIfNeeded(suite, IgnitePdsSporadicDataRecordsOnBackupTest.class, ignoredTests);
+        for (int i = 0; i < 15; i++)
+            suite.add(IgniteClusterActivateDeactivateTestWithPersistence.class);
+//        GridTestUtils.addTestIfNeeded(suite, IgniteClusterActivateDeactivateTestWithPersistence.class, ignoredTests);
+//
+//        GridTestUtils.addTestIfNeeded(suite, IgnitePdsCacheRestoreTest.class, ignoredTests);
+//        GridTestUtils.addTestIfNeeded(suite, IgnitePdsDataRegionMetricsTest.class, ignoredTests);
+//        GridTestUtils.addTestIfNeeded(suite, IgnitePdsDataRegionMetricsTxTest.class, ignoredTests);
+//
+//        GridTestUtils.addTestIfNeeded(suite, IgnitePdsDestroyCacheTest.class, ignoredTests);
+//        GridTestUtils.addTestIfNeeded(suite, IgnitePdsRemoveDuringRebalancingTest.class, ignoredTests);
+//        GridTestUtils.addTestIfNeeded(suite, IgnitePdsDestroyCacheWithoutCheckpointsTest.class, ignoredTests);
+//        GridTestUtils.addTestIfNeeded(suite, IgnitePdsCacheConfigurationFileConsistencyCheckTest.class, ignoredTests);
+//
+//        GridTestUtils.addTestIfNeeded(suite, DefaultPageSizeBackwardsCompatibilityTest.class, ignoredTests);
+//
+//        //MetaStorage
+//        GridTestUtils.addTestIfNeeded(suite, IgniteMetaStorageBasicTest.class, ignoredTests);
+//        GridTestUtils.addTestIfNeeded(suite, DistributedMetaStoragePersistentTest.class, ignoredTests);
+//        GridTestUtils.addTestIfNeeded(suite, DistributedConfigurationPersistentTest.class, ignoredTests);
+//
+//        //Diagnostic
+//        GridTestUtils.addTestIfNeeded(suite, DiagnosticProcessorTest.class, ignoredTests);
+//
+//        GridTestUtils.addTestIfNeeded(suite, ActiveOnStartPropertyTest.class, ignoredTests);
+//        GridTestUtils.addTestIfNeeded(suite, AutoActivationPropertyTest.class, ignoredTests);
+//        GridTestUtils.addTestIfNeeded(suite, ClusterStateOnStartPropertyTest.class, ignoredTests);
+//
+//        GridTestUtils.addTestIfNeeded(suite, DurableBackgroundTasksProcessorSelfTest.class, ignoredTests);
     }
 }

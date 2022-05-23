@@ -1392,6 +1392,8 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                         c.apply(entry, obsoleteVer);
                 }
 
+                log.warning(">xxx> expireInternal [amount=" + amount + ", size=" + rows.size() + ']');
+
                 return rows.size();
             }
             finally {
