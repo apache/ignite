@@ -240,17 +240,16 @@ namespace Apache.Ignite.Core
         IServices GetServices();
 
         /// <summary>
-        /// Gets an atomic long with specified name from cache.
-        /// Creates new atomic long in cache if it does not exist and <c>create</c> is true.
+        /// Gets an atomic long with the specified name.
+        /// Creates a new atomic long if it does not exist and <paramref name="create"/> is true.
         /// </summary>
         /// <param name="name">Name of the atomic long.</param>
         /// <param name="initialValue">
-        /// Initial value for the atomic long. Ignored if <c>create</c> is false.
+        /// Initial value for the atomic long. Ignored if <paramref name="create"/> is false.
         /// </param>
         /// <param name="create">Flag indicating whether atomic long should be created if it does not exist.</param>
-        /// <returns>Atomic long instance with specified name,
-        /// or null if it does not exist and <c>create</c> flag is not set.</returns>
-        /// <exception cref="IgniteException">If atomic long could not be fetched or created.</exception>
+        /// <returns>Atomic long instance with the specified name,
+        /// or null if it does not exist and <paramref name="create"/> is <c>false</c>.</returns>
         IAtomicLong GetAtomicLong(string name, long initialValue, bool create);
 
         /// <summary>

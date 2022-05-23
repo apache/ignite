@@ -17,16 +17,16 @@
 
 package org.apache.ignite.internal.processors.platform.client.datastructures;
 
-import org.apache.ignite.IgniteAtomicLong;
 import org.apache.ignite.binary.BinaryRawReader;
-import org.apache.ignite.internal.processors.platform.client.ClientBooleanResponse;
+import org.apache.ignite.internal.processors.datastructures.GridCacheAtomicLongImpl;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
+import org.apache.ignite.internal.processors.platform.client.ClientLongResponse;
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
 
 /**
- * Atomic long compare and set request.
+ * Atomic long compare and set and get request.
  */
-public class ClientAtomicLongValueCompareAndSetRequest extends ClientAtomicLongRequest {
+public class ClientAtomicLongValueCompareAndSetAndGetRequest extends ClientAtomicLongRequest {
     /** */
     private final long expected;
 
@@ -38,7 +38,7 @@ public class ClientAtomicLongValueCompareAndSetRequest extends ClientAtomicLongR
      *
      * @param reader Reader.
      */
-    public ClientAtomicLongValueCompareAndSetRequest(BinaryRawReader reader) {
+    public ClientAtomicLongValueCompareAndSetAndGetRequest(BinaryRawReader reader) {
         super(reader);
 
         expected = reader.readLong();
@@ -47,11 +47,11 @@ public class ClientAtomicLongValueCompareAndSetRequest extends ClientAtomicLongR
 
     /** {@inheritDoc} */
     @Override public ClientResponse process(ClientConnectionContext ctx) {
-        IgniteAtomicLong atomicLong = atomicLong(ctx);
+        GridCacheAtomicLongImpl atomicLong = atomicLong(ctx);
 
         if (atomicLong == null)
             return notFoundResponse();
 
-        return new ClientBooleanResponse(requestId(), atomicLong.compareAndSet(expected, val));
+        return new ClientLongResponse(requestId(), atomicLong.compareAndSetAndGet(expected, val));
     }
 }
