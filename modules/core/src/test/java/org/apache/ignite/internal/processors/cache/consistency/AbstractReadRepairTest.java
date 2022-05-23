@@ -26,7 +26,6 @@ import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteEvents;
-import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
@@ -232,7 +231,7 @@ public abstract class AbstractReadRepairTest extends GridCommonAbstractTest {
         for (Map.Entry<Integer, InconsistentMapping> mapping : inconsistent.entrySet()) {
             Integer key = mapping.getKey();
             Object repairedBin = mapping.getValue().repairedBin;
-            Object primary = mapping.getValue().primary;
+            Object primaryBin = mapping.getValue().primaryBin;
             boolean repairable = mapping.getValue().repairable;
 
             if (!repairable)
@@ -261,7 +260,7 @@ public abstract class AbstractReadRepairTest extends GridCommonAbstractTest {
                         assertEquals(repairedBin, val);
 
                     if (info.isPrimary()) {
-                        assertEquals(primary, val);
+                        assertEquals(primaryBin, val);
                         assertEquals(node, primaryNode(key, DEFAULT_CACHE_NAME).cluster().localNode());
                     }
                 }
@@ -288,17 +287,10 @@ public abstract class AbstractReadRepairTest extends GridCommonAbstractTest {
     }
 
     /**
-     * @param binary With keep binary.
      * @param obj Object.
      */
-    protected static Object unwrapBinaryIfNeeded(boolean binary, Object obj) {
-        if (binary && obj instanceof BinaryObject /*Integer is still Integer at withKeepBinary read*/) {
-            BinaryObject valObj = (BinaryObject)obj;
-
-            return valObj != null ? valObj.deserialize() : null;
-        }
-        else
-            return obj;
+    protected static Object unwrapBinaryIfNeeded(Object obj) {
+        return ReadRepairDataGenerator.unwrapBinaryIfNeeded(obj);
     }
 
     /**

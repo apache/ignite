@@ -42,7 +42,7 @@ public abstract class AbstractFullSetReadRepairTest extends AbstractReadRepairTe
      */
     protected static final Consumer<ReadRepairData> GET_CHECK_AND_REPAIR = (rrd) -> {
         for (Integer key : rrd.data.keySet()) { // Once.
-            assertEquals(rrd.data.get(key).repaired, get(rrd));
+            assertEquals(unwrapBinaryIfNeeded(rrd.data.get(key).repairedBin), get(rrd));
         }
     };
 
@@ -53,7 +53,7 @@ public abstract class AbstractFullSetReadRepairTest extends AbstractReadRepairTe
         Map<Integer, Object> res = getAll(rrd);
 
         for (Integer key : rrd.data.keySet())
-            assertEquals(rrd.data.get(key).repaired, res.get(key));
+            assertEquals(unwrapBinaryIfNeeded(rrd.data.get(key).repairedBin), res.get(key));
     };
 
     /**
@@ -76,13 +76,12 @@ public abstract class AbstractFullSetReadRepairTest extends AbstractReadRepairTe
 
         for (Map.Entry<Integer, InconsistentMapping> entry : rrd.data.entrySet()) { // Once.
             Integer key = entry.getKey();
-            Object repaired = entry.getValue().repaired;
 
             boolean res = rrd.async ?
                 rrd.cache.withReadRepair(rrd.strategy).containsKeyAsync(key).get() :
                 rrd.cache.withReadRepair(rrd.strategy).containsKey(key);
 
-            assertEquals(repaired != null, res);
+            assertEquals(entry.getValue().repairedBin != null, res);
         }
     };
 
@@ -101,9 +100,7 @@ public abstract class AbstractFullSetReadRepairTest extends AbstractReadRepairTe
         boolean containsAll = true;
 
         for (Integer key : keys) {
-            Object repaired = rrd.data.get(key).repaired;
-
-            if (repaired == null)
+            if (rrd.data.get(key).repairedBin == null)
                 containsAll = false;
         }
 
@@ -134,7 +131,7 @@ public abstract class AbstractFullSetReadRepairTest extends AbstractReadRepairTe
                 rrd.cache.withReadRepair(rrd.strategy).getAsync(key).get() :
                 rrd.cache.withReadRepair(rrd.strategy).get(key);
 
-        return unwrapBinaryIfNeeded(rrd.binary, res);
+        return unwrapBinaryIfNeeded(res);
     }
 
     /**
@@ -169,7 +166,7 @@ public abstract class AbstractFullSetReadRepairTest extends AbstractReadRepairTe
         for (Map.Entry<Integer, Object> entry : objs.entrySet()) {
             Object obj = entry.getValue();
 
-            res.put(entry.getKey(), unwrapBinaryIfNeeded(rrd.binary, obj));
+            res.put(entry.getKey(), unwrapBinaryIfNeeded(obj));
         }
 
         return res;
@@ -210,8 +207,6 @@ public abstract class AbstractFullSetReadRepairTest extends AbstractReadRepairTe
                     (e.repairableKeys() != null && e.repairableKeys().contains(key))))
                     continue;
 
-                Object repaired = entry.getValue().repaired;
-
                 Object res;
 
                 if (raw) {
@@ -222,7 +217,7 @@ public abstract class AbstractFullSetReadRepairTest extends AbstractReadRepairTe
                 else
                     res = rrd.cache.get(key);
 
-                assertEquals(repaired, unwrapBinaryIfNeeded(rrd.binary, res));
+                assertEquals(unwrapBinaryIfNeeded(rrd.data.get(key).repairedBin), unwrapBinaryIfNeeded(res));
             }
         };
 

@@ -235,11 +235,13 @@ public class GridCommandHandlerConsistencyRepairCorrectnessTransactionalTest ext
             InconsistentMapping mapping = dataEntry.getValue();
 
             if (mapping.repairable) {
+                Object repaired = ReadRepairDataGenerator.unwrapBinaryIfNeeded(mapping.repairedBin);
+
                 // Regular get (form primary or backup or client node).
-                assertEquals("Checking key=" + key, mapping.repaired, cache.get(key));
+                assertEquals("Checking key=" + key, repaired, cache.get(key));
 
                 // All copies check.
-                assertEquals("Checking key=" + key, mapping.repaired,
+                assertEquals("Checking key=" + key, repaired,
                     cache.withReadRepair(ReadRepairStrategy.CHECK_ONLY).get(key));
             }
             else if (!mapping.consistent) {

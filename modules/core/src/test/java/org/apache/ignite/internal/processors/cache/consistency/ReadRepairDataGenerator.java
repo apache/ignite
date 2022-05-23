@@ -35,6 +35,7 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteBinary;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.ReadRepairStrategy;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
@@ -174,7 +175,7 @@ public class ReadRepairDataGenerator {
                         if (valVer != null)
                             exp = valVer.get1(); // Should read from itself (backup or primary).
                         else
-                            exp = results.get(key).primary; // Or read from primary (when not a partition owner).
+                            exp = results.get(key).primaryBin; // Or read from primary (when not a partition owner).
 
                         assertEquals(exp, val);
                     }
@@ -195,17 +196,17 @@ public class ReadRepairDataGenerator {
 
                     InconsistentMapping mapping = entry.getValue();
 
-                    sb.append(" Generated data [primary=").append(mapping.primary)
-                        .append(", repaired=").append(mapping.repaired)
+                    sb.append(" Generated data [primary=").append(unwrapBinaryIfNeeded(mapping.primaryBin))
+                        .append(", repaired=").append(unwrapBinaryIfNeeded(mapping.repairedBin))
                         .append(", repairable=").append(mapping.repairable)
                         .append(", consistent=").append(mapping.consistent)
                         .append("]\n");
 
                     sb.append("  Distribution: \n");
 
-                    for (Map.Entry<Ignite, T2<Object, GridCacheVersion>> dist : mapping.mapping.entrySet()) {
+                    for (Map.Entry<Ignite, T2<Object, GridCacheVersion>> dist : mapping.mappingBin.entrySet()) {
                         sb.append("   Node: ").append(dist.getKey().name()).append("\n");
-                        sb.append("    Value: ").append(dist.getValue().get1()).append("\n");
+                        sb.append("    Value: ").append(unwrapBinaryIfNeeded(dist.getValue().get1())).append("\n");
                         sb.append("    Version: ").append(dist.getValue().get2()).append("\n");
                     }
 
@@ -499,20 +500,14 @@ public class ReadRepairDataGenerator {
                     return new T2<>(igniteBinary.toBinary(t2.getKey()), t2.getValue());
                 }));
 
-        return new InconsistentMapping(mapping, mappingBin, primValBin, repaired, repairedBin, repairable, consistent);
+        return new InconsistentMapping(mappingBin, primValBin, repairedBin, repairable, consistent);
     }
 
     /**
      *
      */
     private Object incomparableTestValue() {
-        return new Object() {
-            @Override public boolean equals(Object obj) {
-                fail("Shound never be compared.");
-
-                return false;
-            }
-        };
+        return new IncomparableClass();
     }
 
     /**
@@ -533,6 +528,19 @@ public class ReadRepairDataGenerator {
         }
         else
             return val;
+    }
+
+    /**
+     * @param obj Object.
+     */
+    public static Object unwrapBinaryIfNeeded(Object obj) {
+        if (obj instanceof BinaryObject) {
+            BinaryObject valObj = (BinaryObject)obj;
+
+            return valObj.deserialize();
+        }
+        else
+            return obj;
     }
 
     /**
@@ -597,17 +605,11 @@ public class ReadRepairDataGenerator {
      *
      */
     public static final class InconsistentMapping {
-        /** Value per node. */
-        public final Map<Ignite, T2<Object, GridCacheVersion>> mapping;
-
         /** Value per node, binary. */
         public final Map<Ignite, T2<Object, GridCacheVersion>> mappingBin;
 
-        /** Primary node's value. */
-        public final Object primary;
-
-        /** Expected repaired result. */
-        public final Object repaired;
+        /** Primary node's value, binary. */
+        public final Object primaryBin;
 
         /** Expected repaired result, binary. */
         public final Object repairedBin;
@@ -619,30 +621,37 @@ public class ReadRepairDataGenerator {
         public final boolean consistent;
 
         /**
-         * @param mapping Mapping.
          * @param mappingBin Mapping bin.
-         * @param primary Primary.
-         * @param repaired Repaired.
+         * @param primaryBin Primary.
          * @param repairedBin Repaired bin.
          * @param repairable Repairable.
          * @param consistent Consistent.
          */
         public InconsistentMapping(
-            Map<Ignite, T2<Object, GridCacheVersion>> mapping,
             Map<Ignite, T2<Object, GridCacheVersion>> mappingBin,
-            Object primary,
-            Object repaired,
+            Object primaryBin,
             Object repairedBin,
             boolean repairable,
             boolean consistent) {
-            this.mapping = Collections.unmodifiableMap(mapping);
             this.mappingBin = Collections.unmodifiableMap(mappingBin);
-            this.primary = primary;
-            this.repaired = repaired;
+            this.primaryBin = primaryBin;
             this.repairedBin = repairedBin;
             this.repairable = repairable;
             this.consistent = consistent;
         }
     }
 
+    /**
+     *
+     */
+    private static class IncomparableClass {
+        /**
+         * {@inheritDoc}
+         */
+        @Override public boolean equals(Object obj) {
+            fail("Shound never be compared.");
+
+            return false;
+        }
+    }
 }
