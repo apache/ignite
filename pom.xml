@@ -270,31 +270,6 @@
         </profile>
 
         <profile>
-            <id>licenses</id>
-            <build>
-                <plugins>
-                    <plugin><!-- skipping generation of dependencies licenses
-                     to keep clean /maven-shared-archive-resources/META-INF
-                     to prevent license.txt moving to sources.zip -->
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-remote-resources-plugin</artifactId>
-                        <executions>
-                            <execution>
-                                <id>ignite-dependencies</id>
-                                <goals>
-                                    <goal>process</goal>
-                                </goals>
-                                <configuration>
-                                    <skip>true</skip>
-                                </configuration>
-                            </execution>
-                        </executions>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
-
-        <profile>
             <id>release</id>
             <build>
                 <plugins>
