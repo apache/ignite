@@ -146,9 +146,9 @@ namespace Apache.Ignite.Core.Tests.Client.DataStructures
 
             var name = TestUtils.TestName;
 
-            Client.GetAtomicLong(name, cfg1, 1, true);
-            Client.GetAtomicLong(name, cfg2, 2, true);
-            Client.GetAtomicLong(name, 3, true);
+            var atomicLong1 = Client.GetAtomicLong(name, cfg1, 1, true);
+            var atomicLong2 = Client.GetAtomicLong(name, cfg2, 2, true);
+            var atomicLong3 = Client.GetAtomicLong(name, 3, true);
 
             var cacheConfigBytes = GetIgnite().GetCompute().ExecuteJavaTask<byte[]>(
                 "org.apache.ignite.platform.PlatformGetInternalCachesTask", null);
@@ -165,6 +165,10 @@ namespace Apache.Ignite.Core.Tests.Client.DataStructures
             Assert.AreEqual(2, caches["ignite-sys-atomic-cache@atomics-partitioned"].Backups);
             Assert.AreEqual(int.MaxValue, caches["ignite-sys-atomic-cache@atomics-replicated"].Backups);
             Assert.AreEqual(1, caches["ignite-sys-atomic-cache@default-ds-group"].Backups);
+
+            Assert.AreEqual(1, atomicLong1.Read());
+            Assert.AreEqual(2, atomicLong2.Read());
+            Assert.AreEqual(3, atomicLong3.Read());
         }
     }
 }
