@@ -700,7 +700,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             /*force primary*/ !ctx.config().isReadFromBackup(),
             /*skip tx*/false,
             /*task name*/null,
-            !ctx.keepBinary(),
+            false,
             /*skip values*/true,
             false);
 
@@ -736,7 +736,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             /*force primary*/ !ctx.config().isReadFromBackup(),
             /*skip tx*/false,
             /*task name*/null,
-            !ctx.keepBinary(),
+            false,
             opCtx != null && opCtx.recovery(),
             opCtx != null ? opCtx.readRepairStrategy() : null,
             /*skip values*/true,
@@ -5120,7 +5120,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                 ctx.operationContextPerCall(opCtx);
 
                 try (Transaction tx = ctx.grid().transactions().txStart(PESSIMISTIC, SERIALIZABLE)) {
-                    get((K)key, null, !opCtx.isKeepBinary(), false); // Repair.
+                    get((K)key, null, false, false); // Repair.
 
                     final GridNearTxLocal tx0 = checkCurrentTx();
 
