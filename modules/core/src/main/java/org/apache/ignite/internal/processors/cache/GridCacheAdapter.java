@@ -5082,10 +5082,11 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         boolean skipVals) {
         GridCompoundReadRepairFuture fut = new GridCompoundReadRepairFuture();
 
-        for (KeyCacheObject key : ex.keys())
+        for (KeyCacheObject key : ex.keys()) {
             fut.add(ctx.transactional() ?
                 repairTxAsync(key, opCtx, skipVals) :
                 repairAtomicAsync(key, (IgniteAtomicConsistencyViolationException)ex, opCtx));
+        }
 
         fut.markInitialized();
 
