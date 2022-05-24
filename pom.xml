@@ -91,7 +91,6 @@
                 <module>modules/benchmarks</module>
                 <module>modules/compatibility</module>
                 <module>modules/ducktests</module>
-                <module>modules/geospatial</module>
                 <module>modules/numa-allocator</module>
                 <module>modules/schedule</module>
                 <module>modules/yardstick</module>
@@ -264,7 +263,6 @@
         <profile>
             <id>lgpl</id>
             <modules>
-                <module>modules/geospatial</module>
                 <module>modules/schedule</module>
             </modules>
         </profile>

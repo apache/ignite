@@ -181,19 +181,11 @@ your application.
 The following modules have LGPL dependencies and, therefore, can't be deployed on the Maven Central repository:
 
 * ignite-hibernate (Apache Ignite Extensions)
-* ignite-geospatial
-* ignite-schedule
+* ignite-geospatial (Apache Ignite Extensions)
+* ignite-schedule (deprecated)
 
 To use these modules, you will need to build them from sources and add to your project.
-For example, to install `ignite-geospatial` into your local repository, run this command in the Ignite source:
-
-
-[source, shell]
-----
-./mvnw clean install -DskipTests -Plgpl -pl modules/geospatial -am
-----
-
-To install the `ignite-hibernate` into your local repository and create distribution binaries,
+For example, to install the `ignite-hibernate` into your local repository and create distribution binaries,
 run the following command from the Ignite Extensions sources:
 
 [source, shell]
