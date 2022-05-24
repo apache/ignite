@@ -374,7 +374,7 @@ namespace ignite
                     ScanQueryRequest req(id, qry);
                     ScanQueryResponse rsp;
 
-                    SP_DataChannel channel = SyncMessageSql(req, rsp);
+                    SP_DataChannel channel = SyncMessage(req, rsp);
 
                     query::SP_QueryCursorImpl cursor(
                         new query::QueryCursorImpl(

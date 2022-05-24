@@ -413,7 +413,8 @@ BOOST_AUTO_TEST_CASE(TestScanQueryPartitioned)
 
     for (int32_t i = 0; i < partCnt; i++)
     {
-        ScanQuery qry(i);
+        ScanQuery qry;
+        qry.SetPartition(i);
 
         QueryCursor<int64_t, ignite::TestType> cur = cacheAllFields.Query(qry);
 

@@ -63,16 +63,6 @@ namespace ignite
                     }
 
                     /**
-                     * Constructor.
-                     *
-                     * @param part Partition.
-                     */
-                    ScanQuery(int32_t part) : part(part), pageSize(1024), loc(false)
-                    {
-                        // No-op.
-                    }
-
-                    /**
                      * Get partition to scan.
                      *
                      * @return Partition to scan.
@@ -103,7 +93,7 @@ namespace ignite
                     }
 
                     /**
-                     * Set the size of the resul page.
+                     * Set the size of the result page.
                      *
                      * @param resultPageSize Result page size.
                      */
@@ -115,7 +105,9 @@ namespace ignite
                     /**
                      * Get local flag.
                      *
-                     * @return Local flag.
+                     * @return Local flag. If true, query will be executed only on the single connected node,
+                     *     so only local entries will be returned as query result. Should be used with caution because
+                     *     if the client connected to multiple nodes, a single node will be selected randomly.
                      */
                     bool IsLocal() const
                     {
@@ -125,7 +117,9 @@ namespace ignite
                     /**
                      * Set local flag.
                      *
-                     * @param localScan Local flag.
+                     * @param localScan Local flag. If true, query will be executed only on the single connected node,
+                     *     so only local entries will be returned as query result. Should be used with caution because
+                     *     if the client connected to multiple nodes, a single node will be selected randomly.
                      */
                     void SetLocal(bool localScan)
                     {

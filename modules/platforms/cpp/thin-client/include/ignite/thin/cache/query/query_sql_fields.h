@@ -259,7 +259,9 @@ namespace ignite
                     /**
                      * Get local flag.
                      *
-                     * @return Local flag.
+                     * @return Local flag. If true, query will be executed only on the single connected node,
+                     *     so only local entries will be returned as query result. Should be used with caution because
+                     *     if the client connected to multiple nodes, a single node will be selected randomly.
                      */
                     bool IsLocal() const
                     {
@@ -269,7 +271,9 @@ namespace ignite
                     /**
                      * Set local flag.
                      *
-                     * @param loc Local flag.
+                     * @param loc Local flag. If true, query will be executed only on the single connected node,
+                     *     so only local entries will be returned as query result. Should be used with caution because
+                     *     if the client connected to multiple nodes, a single node will be selected randomly.
                      */
                     void SetLocal(bool loc)
                     {
