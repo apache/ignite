@@ -4,7 +4,6 @@ import io.gatling.core.action.Action
 import io.gatling.core.session.Expression
 import io.gatling.core.structure.ScenarioContext
 import org.apache.ignite.gatling.action.cache
-import org.apache.ignite.gatling.action.cache.CachePutAction
 import org.apache.ignite.gatling.builder.IgniteActionBuilder
 
 case class CachePutActionBuilder[K, V](requestName: Expression[String],
