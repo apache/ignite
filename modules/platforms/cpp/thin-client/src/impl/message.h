@@ -968,9 +968,10 @@ namespace ignite
             };
 
             /**
-             * Cache SQL fields cursor get page request.
+             * Cache query cursor get page request.
              */
-            class SqlFieldsCursorGetPageRequest : public RequestAdapter<MessageType::QUERY_SQL_FIELDS_CURSOR_GET_PAGE>
+            template<int16_t OpCode>
+            class QueryCursorGetPageRequest : public RequestAdapter<OpCode>
             {
             public:
                 /**
@@ -978,7 +979,7 @@ namespace ignite
                  *
                  * @param cursorId Cursor ID.
                  */
-                explicit SqlFieldsCursorGetPageRequest(int64_t cursorId) :
+                explicit QueryCursorGetPageRequest(int64_t cursorId) :
                     cursorId(cursorId)
                 {
                     // No-op.
@@ -987,7 +988,7 @@ namespace ignite
                 /**
                  * Destructor.
                  */
-                virtual ~SqlFieldsCursorGetPageRequest()
+                virtual ~QueryCursorGetPageRequest()
                 {
                     // No-op.
                 }
@@ -995,9 +996,11 @@ namespace ignite
                 /**
                  * Write request using provided writer.
                  * @param writer Writer.
-                 * @param ver Version.
                  */
-                virtual void Write(binary::BinaryWriterImpl& writer, const ProtocolVersion& ver) const;
+                virtual void Write(binary::BinaryWriterImpl& writer, const ProtocolVersion&) const
+                {
+                    writer.WriteInt64(cursorId);
+                }
 
             private:
                 /** Cursor ID. */
@@ -1652,15 +1655,15 @@ namespace ignite
             };
 
             /**
-             * Cache SQL fields cursor get page response.
+             * Query cursor get page response.
              */
-            class SqlFieldsCursorGetPageResponse : public Response
+            class QueryCursorGetPageResponse : public Response
             {
             public:
                 /**
                  * Constructor.
                  */
-                SqlFieldsCursorGetPageResponse() :
+                QueryCursorGetPageResponse() :
                     cursorPage(new cache::query::CursorPage())
                 {
                     // No-op.
@@ -1669,7 +1672,7 @@ namespace ignite
                 /**
                  * Destructor.
                  */
-                virtual ~SqlFieldsCursorGetPageResponse()
+                virtual ~QueryCursorGetPageResponse()
                 {
                     // No-op.
                 }

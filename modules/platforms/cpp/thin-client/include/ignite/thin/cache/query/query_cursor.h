@@ -98,10 +98,11 @@ namespace ignite
                     CacheEntry<K, V> GetNext()
                     {
                         CacheEntry<K, V> entry;
+                        impl::thin::ReadableImpl< CacheEntry<K, V> > readable(entry);
 
-                        impl::thin::ReadableCacheEntryImpl<K, V> readable(entry);
+                        impl.GetNext(readable);
 
-                        return impl.GetNext(readable);
+                        return entry;
                     }
 
                     /**
@@ -114,7 +115,7 @@ namespace ignite
                     void GetAll(std::vector<CacheEntry<K, V> >& res)
                     {
                         res.clear();
-                        return GetAll(std::inserter(res, res.end()));
+                        GetAll(std::inserter(res, res.end()));
                     }
 
                     /**
@@ -129,7 +130,11 @@ namespace ignite
                     {
                         impl::thin::ReadableContainerImpl< CacheEntry<K, V>, OutIter > collection(iter);
 
-                        impl.GetAll(collection);
+                        while (HasNext())
+                        {
+                            *iter = GetNext();
+                            ++iter;
+                        }
                     }
 
                 private:

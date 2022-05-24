@@ -50,15 +50,15 @@ namespace ignite
                          * @param timeout Timeout.
                          */
                         QueryCursorImpl(
-                                int64_t id,
-                                const SP_CursorPage &cursorPage,
-                                const SP_DataChannel& channel,
-                                int32_t timeout) :
+                            int64_t id,
+                            const SP_CursorPage &cursorPage,
+                            const SP_DataChannel& channel,
+                            int32_t timeout) :
                             id(id),
                             page(cursorPage),
                             channel(channel),
                             timeout(timeout),
-                            currentRow(0),
+                            currentElement(0),
                             stream(page.Get()->GetMemory()),
                             reader(&stream),
                             endReached(false)
@@ -103,19 +103,11 @@ namespace ignite
                             if (IsUpdateNeeded())
                                 Update();
 
-                            // TODO
-                        }
+                            entry.Read(reader);
 
-                        /**
-                         * Get all entries.
-                         *
-                         * @param collection Output collection.
-                         *
-                         * @throw IgniteError class instance in case of failure.
-                         */
-                        void GetAll(Readable& collection)
-                        {
-                            // TODO
+                            ++currentElement;
+
+                            CheckEnd();
                         }
 
                     private:
@@ -134,22 +126,22 @@ namespace ignite
                          */
                         void Update()
                         {
-//                            CursorGetPageRequest req(id);
-//                            CursorGetPageResponse rsp;
-//
-//                            DataChannel* channel0 = channel.Get();
-//
-//                            if (!channel0)
-//                                throw IgniteError(IgniteError::IGNITE_ERR_GENERIC,
-//                                    "Connection is not established");
-//
-//                            channel0->SyncMessage(req, rsp, timeout);
-//
-//                            page = rsp.GetCursorPage();
-//                            currentRow = 0;
-//
-//                            stream = interop::InteropInputStream(page.Get()->GetMemory());
-//                            stream.Position(page.Get()->GetStartPos());
+                            QueryCursorGetPageRequest<MessageType::QUERY_SCAN_CURSOR_GET_PAGE> req(id);
+                            QueryCursorGetPageResponse rsp;
+
+                            DataChannel* channel0 = channel.Get();
+
+                            if (!channel0)
+                                throw IgniteError(IgniteError::IGNITE_ERR_GENERIC,
+                                    "Connection is not established");
+
+                            channel0->SyncMessage(req, rsp, timeout);
+
+                            page = rsp.GetCursorPage();
+                            currentElement = 0;
+
+                            stream = interop::InteropInputStream(page.Get()->GetMemory());
+                            stream.Position(page.Get()->GetStartPos());
                         }
 
                         /**
@@ -157,7 +149,7 @@ namespace ignite
                          */
                         void CheckEnd()
                         {
-                            if (currentRow == page.Get()->GetRowNum())
+                            if (currentElement == page.Get()->GetRowNum())
                             {
                                 bool hasNextPage = reader.ReadBool();
                                 endReached = !hasNextPage;
@@ -178,8 +170,8 @@ namespace ignite
                         /** Timeout in milliseconds. */
                         int32_t timeout;
 
-                        /** Current row in page. */
-                        int32_t currentRow;
+                        /** Current element in page. */
+                        int32_t currentElement;
 
                         /** Stream. */
                         interop::InteropInputStream stream;

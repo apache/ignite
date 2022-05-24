@@ -401,12 +401,7 @@ namespace ignite
                 cursorPage.Get()->Read(reader);
             }
 
-            void SqlFieldsCursorGetPageRequest::Write(binary::BinaryWriterImpl& writer, const ProtocolVersion&) const
-            {
-                writer.WriteInt64(cursorId);
-            }
-
-            void SqlFieldsCursorGetPageResponse::ReadOnSuccess(binary::BinaryReaderImpl& reader, const ProtocolVersion&)
+            void QueryCursorGetPageResponse::ReadOnSuccess(binary::BinaryReaderImpl& reader, const ProtocolVersion&)
             {
                 cursorPage.Get()->Read(reader);
             }

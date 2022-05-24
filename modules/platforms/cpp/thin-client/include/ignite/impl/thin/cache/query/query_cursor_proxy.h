@@ -75,15 +75,6 @@ namespace ignite
                          */
                         void GetNext(Readable& entry);
 
-                        /**
-                         * Get all entries.
-                         *
-                         * @param collection Output collection.
-                         *
-                         * @throw IgniteError class instance in case of failure.
-                         */
-                        void GetAll(Readable& collection);
-
                     private:
                         /** Implementation delegate. */
                         common::concurrent::SharedPointer<void> impl;

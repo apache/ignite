@@ -60,11 +60,6 @@ namespace ignite
                     {
                         GetQueryCursorImpl(impl).GetNext(entry);
                     }
-
-                    void QueryCursorProxy::GetAll(Readable& collection)
-                    {
-                        GetQueryCursorImpl(impl).GetAll(collection);
-                    }
                 }
             }
         }
