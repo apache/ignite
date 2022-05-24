@@ -125,7 +125,9 @@ namespace ignite
                 /**
                  * Set local flag.
                  *
-                 * @param loc Local flag.
+                 * @param val Value of the flag. If true, query will be
+                 *     executed only on local node, so only local entries
+                 *     will be returned as query result.
                  */
                 void SetLocal(bool loc)
                 {
