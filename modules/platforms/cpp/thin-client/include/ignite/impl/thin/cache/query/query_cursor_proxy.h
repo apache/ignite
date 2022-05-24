@@ -39,7 +39,7 @@ namespace ignite
                     /**
                      * Query cursor class implementation.
                      */
-                    class QueryCursorProxy
+                    class IGNITE_IMPORT_EXPORT QueryCursorProxy
                     {
                     public:
                         /**
