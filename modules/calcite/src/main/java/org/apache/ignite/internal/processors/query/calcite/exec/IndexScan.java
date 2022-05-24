@@ -36,6 +36,7 @@ import org.apache.ignite.internal.cache.query.index.sorted.IndexSearchRowImpl;
 import org.apache.ignite.internal.cache.query.index.sorted.InlineIndexRowHandler;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.IndexQueryContext;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndex;
+import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexImpl;
 import org.apache.ignite.internal.cache.query.index.sorted.keys.IndexKey;
 import org.apache.ignite.internal.cache.query.index.sorted.keys.IndexKeyFactory;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -106,7 +107,7 @@ public class IndexScan<Row> extends AbstractIndexScan<Row, IndexRow> {
     public IndexScan(
         ExecutionContext<Row> ectx,
         CacheTableDescriptor desc,
-        InlineIndex idx,
+        InlineIndexImpl idx,
         ImmutableIntList idxFieldMapping,
         int[] parts,
         Predicate<Row> filters,
@@ -291,10 +292,10 @@ public class IndexScan<Row> extends AbstractIndexScan<Row, IndexRow> {
     /** */
     private static class TreeIndexWrapper implements TreeIndex<IndexRow> {
         /** Underlying index. */
-        private final InlineIndex idx;
+        private final InlineIndexImpl idx;
 
         /** */
-        private TreeIndexWrapper(InlineIndex idx) {
+        private TreeIndexWrapper(InlineIndexImpl idx) {
             this.idx = idx;
         }
 

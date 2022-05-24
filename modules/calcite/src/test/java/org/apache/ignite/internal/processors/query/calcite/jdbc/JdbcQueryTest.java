@@ -133,12 +133,6 @@ public class JdbcQueryTest extends GridCommonAbstractTest {
     @Test
     public void testSlowCalcite() throws Exception {
         long records = 1_000;
-//        long records = 50_000;
-//        long records = 100_000;
-//        long records = 200_000;
-//        long records = 500_000;
-//        long records = 1_000_000;
-//        long records = 2_000_000;
 
         ddl();
         fillDb(records, 100);
@@ -147,18 +141,9 @@ public class JdbcQueryTest extends GridCommonAbstractTest {
         ResultSet rs;
 
         for (int i = 0; i < 10; ++i) {
-//            t = System.nanoTime();
-//            rs = stmt.executeQuery("select /*+ QUERY_ENGINE('h2')*/ count(*) from PI_COM_DAY");
-//            t = System.nanoTime() -t;
-//
-//            assert rs.next();
-//            assert rs.getLong(1) == records;
-//
-//            log.error("TEST | H2 timing: " + TimeUnit.NANOSECONDS.toMillis(t));
-
             t = System.nanoTime();
-            rs = stmt.executeQuery("select /*+ QUERY_ENGINE('calcite')*/ count(KIND) from PI_COM_DAY");
-            t = System.nanoTime() -t;
+            rs = stmt.executeQuery("select /*+ QUERY_ENGINE('calcite')*/ count(*) from PI_COM_DAY");
+            t = System.nanoTime() - t;
 
             assert rs.next();
             assert rs.getLong(1) == records;

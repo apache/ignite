@@ -30,6 +30,7 @@ import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.ignite.internal.cache.query.index.Index;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndex;
+import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexImpl;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.processors.query.calcite.exec.IndexScan;
 import org.apache.ignite.internal.processors.query.calcite.metadata.ColocationGroup;
@@ -101,7 +102,7 @@ public class CacheIndexImpl implements IgniteIndex {
     ) {
         UUID localNodeId = execCtx.localNodeId();
         if (group.nodeIds().contains(localNodeId) && idx != null) {
-            return new IndexScan<>(execCtx, tbl.descriptor(), idx.unwrap(InlineIndex.class), collation.getKeys(),
+            return new IndexScan<>(execCtx, tbl.descriptor(), idx.unwrap(InlineIndexImpl.class), collation.getKeys(),
                 group.partitions(localNodeId), filters, lowerIdxConditions, upperIdxConditions, rowTransformer,
                 requiredColumns);
         }

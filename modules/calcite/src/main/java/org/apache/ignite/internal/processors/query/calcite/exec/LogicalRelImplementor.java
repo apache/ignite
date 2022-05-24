@@ -67,6 +67,7 @@ import org.apache.ignite.internal.processors.query.calcite.rel.IgniteCorrelatedN
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteExchange;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteFilter;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteHashIndexSpool;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexCount;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexScan;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteLimit;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteMergeJoin;
@@ -402,6 +403,10 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
 
             return node;
         }
+    }
+
+    @Override public Node<Row> visit(IgniteIndexCount rel) {
+        return null;
     }
 
     /** {@inheritDoc} */

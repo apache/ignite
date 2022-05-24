@@ -55,6 +55,7 @@ import org.apache.ignite.internal.processors.query.calcite.rule.SortAggregateCon
 import org.apache.ignite.internal.processors.query.calcite.rule.SortConverterRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.TableFunctionScanConverterRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.TableModifyConverterRule;
+import org.apache.ignite.internal.processors.query.calcite.rule.TestRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.UnionConverterRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.ValuesConverterRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.logical.ExposeIndexRule;
@@ -239,7 +240,8 @@ public enum PlannerPhase {
                     TableModifyConverterRule.INSTANCE,
                     UnionConverterRule.INSTANCE,
                     SortConverterRule.INSTANCE,
-                    TableFunctionScanConverterRule.INSTANCE
+                    TableFunctionScanConverterRule.INSTANCE,
+                    TestRule.INSTANCE
                 )
             );
         }
