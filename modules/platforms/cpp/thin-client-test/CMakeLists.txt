@@ -38,6 +38,7 @@ set(SOURCES
         src/test_utils.cpp
         src/ignite_client_test.cpp
         src/interop_test.cpp
+        src/scan_query_test.cpp
         src/sql_fields_query_test.cpp
         src/auth_test.cpp
         src/tx_test.cpp

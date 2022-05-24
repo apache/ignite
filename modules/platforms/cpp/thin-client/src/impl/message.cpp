@@ -313,6 +313,35 @@ namespace ignite
                 value = reader.ReadInt32();
             }
 
+
+            void ScanQueryResponse::ReadOnSuccess(binary::BinaryReaderImpl& reader, const ProtocolVersion&)
+            {
+                ignite::binary::BinaryRawReader rawReader(&reader);
+
+                cursorId = rawReader.ReadInt64();
+
+                cursorPage.Get()->Read(reader);
+            }
+
+            ScanQueryRequest::ScanQueryRequest(int32_t cacheId, const ignite::thin::cache::query::ScanQuery &qry) :
+                CacheRequest<MessageType::QUERY_SCAN>(cacheId, false),
+                qry(qry)
+            {
+                // No-op.
+            }
+
+            void ScanQueryRequest::Write(binary::BinaryWriterImpl &writer, const ProtocolVersion &ver) const
+            {
+                CacheRequest::Write(writer, ver);
+
+                // TODO: IGNITE-16995 Implement a RemoteFilter for ScanQuery
+                writer.WriteNull();
+
+                writer.WriteInt32(qry.GetPageSize());
+                writer.WriteInt32(qry.GetPartition());
+                writer.WriteBool(qry.IsLocal());
+            }
+
             SqlFieldsQueryRequest::SqlFieldsQueryRequest(
                 int32_t cacheId,
                 const ignite::thin::cache::query::SqlFieldsQuery &qry
@@ -372,12 +401,7 @@ namespace ignite
                 cursorPage.Get()->Read(reader);
             }
 
-            void SqlFieldsCursorGetPageRequest::Write(binary::BinaryWriterImpl& writer, const ProtocolVersion&) const
-            {
-                writer.WriteInt64(cursorId);
-            }
-
-            void SqlFieldsCursorGetPageResponse::ReadOnSuccess(binary::BinaryReaderImpl& reader, const ProtocolVersion&)
+            void QueryCursorGetPageResponse::ReadOnSuccess(binary::BinaryReaderImpl& reader, const ProtocolVersion&)
             {
                 cursorPage.Get()->Read(reader);
             }
