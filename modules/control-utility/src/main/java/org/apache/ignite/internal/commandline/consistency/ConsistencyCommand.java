@@ -218,9 +218,10 @@ public class ConsistencyCommand extends AbstractCommand<Object> {
                 throw new IllegalArgumentException("Strategy argument missed.");
 
             // see https://issues.apache.org/jira/browse/IGNITE-15316
-            if (parallel && strategy != ReadRepairStrategy.CHECK_ONLY)
+            if (parallel && strategy != ReadRepairStrategy.CHECK_ONLY) {
                 throw new UnsupportedOperationException(
                     "Parallel mode currently allowed only when CHECK_ONLY strategy is chosen.");
+            }
 
             cmdArg = new VisorConsistencyRepairTaskArg(cacheName, part, strategy);
         }
