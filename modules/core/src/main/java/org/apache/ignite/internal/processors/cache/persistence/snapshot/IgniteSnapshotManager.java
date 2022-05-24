@@ -259,9 +259,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     /** Error message to finalize snapshot tasks. */
     public static final String SNP_NODE_STOPPING_ERR_MSG = "The operation is cancelled due to the local node is stopping";
 
-    /** Metastorage key to save currently running snapshot. */
-    public static final String SNP_RUNNING_KEY = "snapshot-running";
-
     /** Snapshot metrics prefix. */
     public static final String SNAPSHOT_METRICS = "snapshot";
 
@@ -279,6 +276,17 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
     /** Maximum block size for limited snapshot transfer (64KB by default). */
     public static final int SNAPSHOT_LIMITED_TRANSFER_BLOCK_SIZE_BYTES = 64 * 1024;
+
+    /** Metastorage key to save currently running snapshot directory. */
+    private static final String SNP_RUNNING_DIR_KEY = "snapshot-running-dir";
+
+    /**
+     * Metastorage key to save currently running snapshot.
+     *
+     * @deprecated Use #SNP_RUNNING_DIR_KEY instead.
+     */
+    @Deprecated
+    private static final String SNP_RUNNING_KEY = "snapshot-running";
 
     /** Snapshot operation finish log message. */
     private static final String SNAPSHOT_FINISHED_MSG = "Cluster-wide snapshot operation finished successfully: ";
@@ -1546,20 +1554,22 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
         // Snapshot which has not been completed due to the local node crashed must be deleted.
         String snpName = (String)metaStorage.read(SNP_RUNNING_KEY);
+        String snpDirName = snpName == null ? (String)metaStorage.read(SNP_RUNNING_DIR_KEY) : null;
 
-        if (snpName == null)
-            return;
+        File snpDir = snpName != null ? snapshotLocalDir(snpName) : snpDirName != null ? new File(snpDirName) : null;
 
-        recovered = true;
+        if (snpDir != null) {
+            recovered = true;
 
-        for (File tmp : snapshotTmpDir().listFiles())
-            U.delete(tmp);
+            for (File tmp : snapshotTmpDir().listFiles())
+                U.delete(tmp);
 
-        deleteSnapshot(snapshotLocalDir(snpName), pdsSettings.folderName());
+            deleteSnapshot(snpDir, pdsSettings.folderName());
 
-        if (log.isInfoEnabled()) {
-            log.info("Previous attempt to create snapshot fail due to the local node crash. All resources " +
-                "related to snapshot operation have been deleted: " + snpName);
+            if (log.isInfoEnabled()) {
+                log.info("Previous attempt to create snapshot fail due to the local node crash. All resources " +
+                    "related to snapshot operation have been deleted: " + snpDir.getName());
+            }
         }
     }
 
@@ -1891,6 +1901,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         cctx.database().checkpointReadLock();
 
         try {
+            metaStorage.remove(SNP_RUNNING_DIR_KEY);
             metaStorage.remove(SNP_RUNNING_KEY);
         }
         finally {
@@ -3085,10 +3096,10 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             cctx.database().checkpointReadLock();
 
             try {
-                assert metaStorage != null && metaStorage.read(SNP_RUNNING_KEY) == null :
+                assert metaStorage != null && metaStorage.read(SNP_RUNNING_DIR_KEY) == null :
                     "The previous snapshot hasn't been completed correctly";
 
-                metaStorage.write(SNP_RUNNING_KEY, snpName);
+                metaStorage.write(SNP_RUNNING_DIR_KEY, snpLocDir.toString());
 
                 U.ensureDirectory(dbDir, "snapshot work directory for a local snapshot sender", log);
             }
