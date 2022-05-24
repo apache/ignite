@@ -354,7 +354,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     private volatile ReadWriteMetastorage metaStorage;
 
     /** Local snapshot sender factory. */
-    private Function<String, SnapshotSender> locSndrFactory = LocalSnapshotSender::new;
+    private BiFunction<String, File, SnapshotSender> locSndrFactory = LocalSnapshotSender::new;
 
     /** Remote snapshot sender factory. */
     private BiFunction<String, UUID, SnapshotSender> rmtSndrFactory = this::remoteSnapshotSenderFactory;
@@ -689,6 +689,15 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         }
     }
 
+    public File snapshotLocalDir(SnapshotOperationRequest req) {
+        assert locSnpDir != null;
+        assert U.alphanumericUnderscore(req.snapshotName()) : req.snapshotName();
+
+        File locSnpDir0 = req.snapshotPath();
+
+        return new File(locSnpDir0 == null ? locSnpDir : locSnpDir0, req.snapshotName());
+    }
+
     /**
      * @param snpName Snapshot name.
      * @return Local snapshot directory for snapshot with given name.
@@ -789,7 +798,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 req.operationalNodeId(),
                 parts,
                 withMetaStorage,
-                locSndrFactory.apply(req.snapshotName()));
+                locSndrFactory.apply(req.snapshotName(), req.snapshotPath()));
 
             if (withMetaStorage && task0 instanceof SnapshotFutureTask) {
                 ((DistributedMetaStorageImpl)cctx.kernalContext().distributedMetastorage())
@@ -808,7 +817,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                     .map(n -> cctx.discovery().node(n).consistentId().toString())
                     .collect(Collectors.toSet());
 
-                File smf = new File(snapshotLocalDir(req.snapshotName()), snapshotMetaFileName(cctx.localNode().consistentId().toString()));
+                File smf = new File(snapshotLocalDir(req), snapshotMetaFileName(cctx.localNode().consistentId().toString()));
 
                 if (smf.exists())
                     throw new GridClosureException(new IgniteException("Snapshot metafile must not exist: " + smf.getAbsolutePath()));
@@ -966,7 +975,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
         try {
             if (req.error() != null)
-                deleteSnapshot(snapshotLocalDir(req.snapshotName()), pdsSettings.folderName());
+                deleteSnapshot(snapshotLocalDir(req), pdsSettings.folderName());
 
             removeLastMetaStorageKey();
         }
@@ -1416,6 +1425,15 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
     /** {@inheritDoc} */
     @Override public IgniteFuture<Void> createSnapshot(String name) {
+        return createSnapshot(name, null);
+    }
+
+    /**
+     * @param name
+     * @param snpPath
+     * @return
+     */
+    public IgniteFuture<Void> createSnapshot(String name, @Nullable File snpPath) {
         A.notNullOrEmpty(name, "Snapshot name cannot be null or empty.");
         A.ensure(U.alphanumericUnderscore(name), "Snapshot name must satisfy the following name pattern: a-zA-Z0-9_");
 
@@ -1505,7 +1523,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 grps,
                 new HashSet<>(F.viewReadOnly(srvNodes,
                     F.node2id(),
-                    (node) -> CU.baselineNode(node, clusterState)))));
+                    (node) -> CU.baselineNode(node, clusterState))),
+                snpPath == null ? null : snpPath.toString()));
 
             String msg = "Cluster-wide snapshot operation started [snpName=" + name + ", grps=" + grps + ']';
 
@@ -1865,14 +1884,14 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     /**
      * @param factory Factory which produces {@link LocalSnapshotSender} implementation.
      */
-    void localSnapshotSenderFactory(Function<String, SnapshotSender> factory) {
+    void localSnapshotSenderFactory(BiFunction<String, File, SnapshotSender> factory) {
         locSndrFactory = factory;
     }
 
     /**
      * @return Factory which produces {@link LocalSnapshotSender} implementation.
      */
-    Function<String, SnapshotSender> localSnapshotSenderFactory() {
+    BiFunction<String, File, SnapshotSender> localSnapshotSenderFactory() {
         return locSndrFactory;
     }
 
@@ -3074,13 +3093,15 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         private final int pageSize;
 
         /**
+         * @param snpPath Snapshot name.
          * @param snpName Snapshot name.
          */
-        public LocalSnapshotSender(String snpName) {
+        public LocalSnapshotSender(String snpName, @Nullable File snpPath) {
             super(IgniteSnapshotManager.this.log, cctx.kernalContext().pools().getSnapshotExecutorService());
 
             this.snpName = snpName;
-            snpLocDir = snapshotLocalDir(snpName);
+
+            snpLocDir = snpPath == null ? snapshotLocalDir(snpName) : new File(snpPath, snpName);
             pageSize = cctx.kernalContext().config().getDataStorageConfiguration().getPageSize();
         }
 

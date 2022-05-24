@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
+import java.io.File;
 import java.io.Serializable;
 import java.util.Collection;
 import java.util.Set;
@@ -39,6 +40,9 @@ public class SnapshotOperationRequest implements Serializable {
 
     /** Snapshot name. */
     private final String snpName;
+
+    /** Snapshot path. */
+    private final String snpPath;
 
     /** Baseline node IDs that must be alive to complete the operation. */
     @GridToStringInclude
@@ -63,19 +67,22 @@ public class SnapshotOperationRequest implements Serializable {
      * @param snpName Snapshot name.
      * @param grps List of cache group names.
      * @param nodes Baseline node IDs that must be alive to complete the operation.
+     * @param snpPath Snapshot path.
      */
     public SnapshotOperationRequest(
         UUID reqId,
         UUID opNodeId,
         String snpName,
         @Nullable Collection<String> grps,
-        Set<UUID> nodes
+        Set<UUID> nodes,
+        @Nullable String snpPath
     ) {
         this.reqId = reqId;
         this.opNodeId = opNodeId;
         this.snpName = snpName;
         this.grps = grps;
         this.nodes = nodes;
+        this.snpPath = snpPath;
     }
 
     /**
@@ -90,6 +97,13 @@ public class SnapshotOperationRequest implements Serializable {
      */
     public String snapshotName() {
         return snpName;
+    }
+
+    /**
+     * @return Snapshot path.
+     */
+    public File snapshotPath() {
+        return snpPath == null ? null : new File(snpPath);
     }
 
     /**
