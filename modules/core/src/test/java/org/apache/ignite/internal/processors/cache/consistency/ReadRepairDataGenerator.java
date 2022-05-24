@@ -240,8 +240,6 @@ public class ReadRepairDataGenerator {
 
         ThreadLocalRandom rnd = ThreadLocalRandom.current();
 
-        boolean wrap = rnd.nextBoolean();
-
         if (rnd.nextBoolean()) { // Reversed order.
             nodes.addAll(backupNodes.apply(key, cacheName));
             nodes.add(primary);
@@ -287,6 +285,7 @@ public class ReadRepairDataGenerator {
 
         boolean rmvd = false;
 
+        boolean wrap = rnd.nextBoolean();
         boolean incVer = rnd.nextBoolean();
 
         GridCacheVersion ver = null;
