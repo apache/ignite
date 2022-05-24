@@ -37,11 +37,14 @@ public class ImplicitTransactionalReadRepairTest extends AbstractFullSetReadRepa
         List<Object[]> res = new ArrayList<>();
 
         for (boolean raw : new boolean[] {false, true}) {
-            for (boolean async : new boolean[] {false, true})
-                for (boolean misses : new boolean[] {false, true})
-                    for (boolean nulls : new boolean[] {false, true})
+            for (boolean async : new boolean[] {false, true}) {
+                for (boolean misses : new boolean[] {false, true}) {
+                    for (boolean nulls : new boolean[] {false, true}) {
                         for (boolean binary : new boolean[] {false, true})
                             res.add(new Object[] {raw, async, misses, nulls, binary});
+                    }
+                }
+            }
         }
 
         return res;

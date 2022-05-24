@@ -43,11 +43,14 @@ public class ExplicitTransactionalReadRepairTest extends AbstractFullSetReadRepa
         for (TransactionConcurrency concurrency : TransactionConcurrency.values()) {
             for (TransactionIsolation isolation : TransactionIsolation.values()) {
                 for (boolean raw : new boolean[] {false, true}) {
-                    for (boolean async : new boolean[] {false, true})
-                        for (boolean misses : new boolean[] {false, true})
-                            for (boolean nulls : new boolean[] {false, true})
+                    for (boolean async : new boolean[] {false, true}) {
+                        for (boolean misses : new boolean[] {false, true}) {
+                            for (boolean nulls : new boolean[] {false, true}) {
                                 for (boolean binary : new boolean[] {false, true})
                                     res.add(new Object[] {concurrency, isolation, raw, async, misses, nulls, binary});
+                            }
+                        }
+                    }
                 }
             }
         }

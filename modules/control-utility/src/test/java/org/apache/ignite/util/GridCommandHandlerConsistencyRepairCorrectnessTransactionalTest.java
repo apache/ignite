@@ -55,7 +55,7 @@ public class GridCommandHandlerConsistencyRepairCorrectnessTransactionalTest ext
         List<Object[]> res = new ArrayList<>();
 
         for (boolean misses : new boolean[] {false, true}) {
-            for (boolean nulls : new boolean[] {false, true})
+            for (boolean nulls : new boolean[] {false, true}) {
                 for (ReadRepairStrategy strategy : ReadRepairStrategy.values()) {
                     for (boolean parallel : new boolean[] {false, true}) {
                         if (parallel && strategy != ReadRepairStrategy.CHECK_ONLY)
@@ -64,6 +64,7 @@ public class GridCommandHandlerConsistencyRepairCorrectnessTransactionalTest ext
                         res.add(new Object[] {misses, nulls, strategy, parallel});
                     }
                 }
+            }
         }
 
         return res;
