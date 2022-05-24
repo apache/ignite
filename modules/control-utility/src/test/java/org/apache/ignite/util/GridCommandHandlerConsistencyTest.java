@@ -303,9 +303,10 @@ public class GridCommandHandlerConsistencyTest extends GridCommandHandlerCluster
                 else
                     assertContains(log, testOut.toString(), "no conflicts have been found");
             }
-            else
+            else {
                 assertContains(log, testOut.toString(),
                     "conflict partitions has been found: [counterConflicts=0, hashConflicts=" + brokenParts); // Nothing repaired.
+            }
         }
     }
 
