@@ -736,7 +736,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             /*force primary*/ !ctx.config().isReadFromBackup(),
             /*skip tx*/false,
             /*task name*/null,
-            false,
+            /*deserialize binary*/false,
             opCtx != null && opCtx.recovery(),
             opCtx != null ? opCtx.readRepairStrategy() : null,
             /*skip values*/true,
