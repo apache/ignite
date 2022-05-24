@@ -9,10 +9,10 @@ import org.apache.ignite.gatling.builder.ignite.SimpleCacheConfiguration
 import org.apache.ignite.gatling.protocol.IgniteProtocol
 
 import scala.concurrent.{ExecutionContext, Future}
-import scala.util.{Failure, Success}
+import scala.util.{Failure, Success, Try}
 
 trait IgniteApi {
-  def cache[K, V, U](name: String)(s: CacheApi[K, V] => U, f: Throwable => U): Unit
+  def cache[K, V](name: String): Try[CacheApi[K, V]]
 
   def getOrCreateCache[K, V, U](name: String)(s: CacheApi[K, V] => U, f: Throwable => U): Unit
   def getOrCreateCache[K, V, U](name: String, cfg: SimpleCacheConfiguration)(s: CacheApi[K, V] => U, f: Throwable => U): Unit
@@ -25,8 +25,12 @@ trait IgniteApi {
 }
 
 trait CacheApi[K, V] {
-  def put[U](key: K, value: V)(s: Void => U, f: Throwable => U): Unit
+  def put[U](key: K, value: V)(s: Unit => U, f: Throwable => U): Unit
+  def putAsync[U](key: K, value: V)(s: Unit => U, f: Throwable => U): Unit
+
   def get[U](key: K)(s: Map[K, V] => U, f: Throwable => U): Unit
+  //noinspection AccessorLikeMethodIsUnit
+  def getAsync[U](key: K)(s: Map[K, V] => U, f: Throwable => U): Unit
 }
 
 trait TransactionApi {
