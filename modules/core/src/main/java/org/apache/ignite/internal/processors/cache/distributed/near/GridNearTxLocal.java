@@ -3201,7 +3201,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                     readRepairStrategy,
                     readThrough,
                     taskName,
-                    !keepBinary,
+                    false,
                     recovery,
                     expiryPlc0,
                     skipVals,
