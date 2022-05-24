@@ -126,7 +126,7 @@ public abstract class AbstractFullSetReadRepairTest extends AbstractReadRepairTe
                 rrd.cache.withReadRepair(rrd.strategy).getAsync(key).get() :
                 rrd.cache.withReadRepair(rrd.strategy).get(key);
 
-        return unwrapBinaryIfNeeded(res);
+        return rrd.binary ? unwrapBinaryIfNeeded(res) : res;
     }
 
     /**
@@ -157,7 +157,7 @@ public abstract class AbstractFullSetReadRepairTest extends AbstractReadRepairTe
         }
 
         return objs.entrySet().stream().collect(Collectors.toMap(
-            Map.Entry::getKey, entry -> unwrapBinaryIfNeeded(entry.getValue())));
+            Map.Entry::getKey, entry -> rrd.binary ? unwrapBinaryIfNeeded(entry.getValue()) : entry.getValue()));
     }
 
     /**
