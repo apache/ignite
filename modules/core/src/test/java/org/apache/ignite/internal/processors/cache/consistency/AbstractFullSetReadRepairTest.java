@@ -27,6 +27,7 @@ import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.CacheEntry;
 import org.apache.ignite.internal.processors.cache.consistency.ReadRepairDataGenerator.InconsistentMapping;
 import org.apache.ignite.internal.processors.cache.consistency.ReadRepairDataGenerator.ReadRepairData;
@@ -126,7 +127,7 @@ public abstract class AbstractFullSetReadRepairTest extends AbstractReadRepairTe
                 rrd.cache.withReadRepair(rrd.strategy).getAsync(key).get() :
                 rrd.cache.withReadRepair(rrd.strategy).get(key);
 
-        return rrd.binary ? unwrapBinaryIfNeeded(res) : res;
+        return checkAndUnwrapBinaryIfNeeded(rrd, res);
     }
 
     /**
@@ -157,7 +158,23 @@ public abstract class AbstractFullSetReadRepairTest extends AbstractReadRepairTe
         }
 
         return objs.entrySet().stream().collect(Collectors.toMap(
-            Map.Entry::getKey, entry -> rrd.binary ? unwrapBinaryIfNeeded(entry.getValue()) : entry.getValue()));
+            Map.Entry::getKey, entry -> checkAndUnwrapBinaryIfNeeded(rrd, entry.getValue())));
+    }
+
+    /**
+     *
+     */
+    private static Object checkAndUnwrapBinaryIfNeeded(ReadRepairData rrd, Object res) {
+        if (rrd.binary) {
+            assert res == null || res instanceof Integer || res instanceof BinaryObject : res.getClass();
+
+            return unwrapBinaryIfNeeded(res);
+        }
+        else {
+            assert !(res instanceof BinaryObject) : res.getClass();
+
+            return res;
+        }
     }
 
     /**
