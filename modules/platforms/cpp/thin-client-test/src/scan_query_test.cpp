@@ -365,33 +365,35 @@ BOOST_AUTO_TEST_CASE(TestScanQuery)
     cursor = cacheAllFields.Query(qry);
     CheckEmptyGetAllIter(cursor);
 
+    int64_t key1 = 1;
     ignite::TestType val1 = MakeCustomTestValue(1);
 
     // Test simple query.
-    cacheAllFields.Put(1, val1);
+    cacheAllFields.Put(key1, val1);
 
     cursor = cacheAllFields.Query(qry);
-    CheckSingle(cursor, 1LL, val1);
+    CheckSingle(cursor, key1, val1);
 
     cursor = cacheAllFields.Query(qry);
-    CheckSingleGetAll(cursor, 1LL, val1);
+    CheckSingleGetAll(cursor, key1, val1);
 
     cursor = cacheAllFields.Query(qry);
-    CheckSingleGetAllIter(cursor, 1LL, val1);
+    CheckSingleGetAllIter(cursor, key1, val1);
 
+    int64_t key2 = 2;
     ignite::TestType val2 = MakeCustomTestValue(2);
 
     // Test query returning multiple entries.
-    cacheAllFields.Put(2, val2);
+    cacheAllFields.Put(key2, val2);
 
     cursor = cacheAllFields.Query(qry);
-    CheckMultiple(cursor, 1LL, val1, 2LL, val2);
+    CheckMultiple(cursor, key1, val1, key2, val2);
 
     cursor = cacheAllFields.Query(qry);
-    CheckMultipleGetAll(cursor, 1LL, val1, 2LL, val2);
+    CheckMultipleGetAll(cursor, key1, val1, key2, val2);
 
     cursor = cacheAllFields.Query(qry);
-    CheckMultipleGetAllIter(cursor, 1LL, val1, 2LL, val2);
+    CheckMultipleGetAllIter(cursor, key1, val1, key2, val2);
 }
 
 /**
