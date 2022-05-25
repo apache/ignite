@@ -38,6 +38,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicIntegerArray;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -140,6 +141,12 @@ class SnapshotFutureTask extends AbstractSnapshotFutureTask<Set<GroupPartitionId
 
     /** Flag indicates that task already scheduled on checkpoint. */
     private final AtomicBoolean started = new AtomicBoolean();
+
+    /** Estimated snapshot size in bytes. The value may grow during snapshotting. */
+    private final AtomicLong totalSize = new AtomicLong();
+
+    /** Processed snapshot size in bytes. */
+    private final AtomicLong processedSize = new AtomicLong();
 
     /**
      * @param cctx Shared context.
@@ -420,6 +427,8 @@ class SnapshotFutureTask extends AbstractSnapshotFutureTask<Set<GroupPartitionId
             cctx.cache().configManager().readConfigurationFiles(ccfgs,
                 (ccfg, ccfgFile) -> ccfgSndrs.add(new CacheConfigurationSender(ccfg.getName(),
                     FilePageStoreManager.cacheDirName(ccfg), ccfgFile)));
+
+            totalSize.set(partFileLengths.values().stream().mapToLong(v -> v).sum());
         }
         catch (IgniteCheckedException e) {
             acceptException(e);
@@ -494,6 +503,8 @@ class SnapshotFutureTask extends AbstractSnapshotFutureTask<Set<GroupPartitionId
 
                             // Stop partition writer.
                             partDeltaWriters.get(pair).markPartitionProcessed();
+
+                            processedSize.addAndGet(partLen);
                         }),
                         snpSndr.executor())
                         // Wait for the completion of both futures - checkpoint end, copy partition.
@@ -512,9 +523,13 @@ class SnapshotFutureTask extends AbstractSnapshotFutureTask<Set<GroupPartitionId
 
                                 snpSndr.sendDelta(delta, cacheDirName, pair);
 
+                                long deltaLen = delta.length();
+
                                 boolean deleted = delta.delete();
 
                                 assert deleted;
+
+                                processedSize.addAndGet(deltaLen);
                             }),
                             snpSndr.executor());
 
@@ -594,6 +609,16 @@ class SnapshotFutureTask extends AbstractSnapshotFutureTask<Set<GroupPartitionId
         }
 
         return closeFut;
+    }
+
+    /** @return Estimated snapshot size in bytes. The value may grow during snapshotting. */
+    public long totalSize() {
+        return totalSize.get();
+    }
+
+    /** @return Processed snapshot size in bytes. */
+    public long processedSize() {
+        return processedSize.get();
     }
 
     /** {@inheritDoc} */
@@ -930,7 +955,9 @@ class SnapshotFutureTask extends AbstractSnapshotFutureTask<Set<GroupPartitionId
             }
 
             // Write buffer to the end of the file.
-            deltaFileIo.writeFully(pageBuf);
+            int len = deltaFileIo.writeFully(pageBuf);
+
+            totalSize.addAndGet(len);
         }
 
         /** {@inheritDoc} */
