@@ -427,6 +427,7 @@ public class InlineIndexTree extends BPlusTree<IndexRow, IndexRow> {
      * @param keyDefs Index key definitions.
      * @param cfgInlineSize Inline size from index config.
      * @param maxInlineSize Max inline size from cache config.
+     * @param log Logger.
      * @return Inline size.
      */
     public static int computeInlineSize(

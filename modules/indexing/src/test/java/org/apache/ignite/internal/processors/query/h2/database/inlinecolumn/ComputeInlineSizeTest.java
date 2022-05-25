@@ -131,18 +131,18 @@ public class ComputeInlineSizeTest extends AbstractIndexingCommonTest {
 
         query(tbl.toString());
 
-        checkInlineSize("VARCHAR", 1000);
+        checkIndexInlineSize("VARCHAR", 1000);
 
         for (IgniteBiTuple<String, InlineIndexKeyType> type0 : fixLenTypes) {
-            checkInlineSize(type0.get1(), type0.get2().inlineSize() + idIdxType.inlineSize());
+            checkIndexInlineSize(type0.get1(), type0.get2().inlineSize() + idIdxType.inlineSize());
 
-            checkInlineSize(type0.get1() + ", _VARCHAR", 1000);
+            checkIndexInlineSize(type0.get1() + ", _VARCHAR", 1000);
 
             for (IgniteBiTuple<String, InlineIndexKeyType> type1 : fixLenTypes) {
                 if (type0 == type1)
                     continue;
 
-                checkInlineSize(
+                checkIndexInlineSize(
                     type0.get1() + ", _" + type1.get1(),
                     type0.get2().inlineSize() + type1.get2().inlineSize() + idIdxType.inlineSize()
                 );
@@ -151,7 +151,7 @@ public class ComputeInlineSizeTest extends AbstractIndexingCommonTest {
     }
 
     /** */
-    private void checkInlineSize(String cols, int expInlineSz) {
+    private void checkIndexInlineSize(String cols, int expInlineSz) {
         query(String.format("CREATE INDEX IDX1 ON T1(_%s) INLINE_SIZE 1000", cols));
 
         InlineIndexImpl idx = (InlineIndexImpl)
