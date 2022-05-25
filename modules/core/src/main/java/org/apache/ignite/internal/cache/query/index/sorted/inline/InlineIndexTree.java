@@ -443,7 +443,7 @@ public class InlineIndexTree extends BPlusTree<IndexRow, IndexRow> {
         if (F.isEmpty(keyTypes))
             return 0;
 
-        boolean fixSizeItem = true;
+        boolean fixedSize = true;
 
         int propSize = maxInlineSize == -1
             ? IgniteSystemProperties.getInteger(IgniteSystemProperties.IGNITE_MAX_INDEX_PAYLOAD_SIZE, IGNITE_MAX_INDEX_PAYLOAD_SIZE_DEFAULT)
@@ -454,7 +454,7 @@ public class InlineIndexTree extends BPlusTree<IndexRow, IndexRow> {
         for (int i = 0; i < keyTypes.size(); i++) {
             InlineIndexKeyType keyType = keyTypes.get(i);
 
-            fixSizeItem = fixSizeItem && (keyType.keySize() != -1);
+            fixedSize &= keyType.keySize() != -1;
 
             int sizeInc = keyType.inlineSize();
 
@@ -479,9 +479,9 @@ public class InlineIndexTree extends BPlusTree<IndexRow, IndexRow> {
         if (cfgInlineSize != -1) {
             cfgInlineSize = Math.min(PageIO.MAX_PAYLOAD_SIZE, cfgInlineSize);
 
-            if (fixSizeItem && size < cfgInlineSize) {
+            if (fixedSize && size < cfgInlineSize) {
                 log.warning("Explicit INLINE_SIZE for fixed size index item is too big. " +
-                    "This will lead to wasting of space inside index pages.Ignoring " +
+                    "This will lead to wasting of space inside index pages. Ignoring " +
                     "[index=" + name + ", explicitInlineSize=" + cfgInlineSize + ", realInlineSize=" + size + ']');
 
                 return size;
