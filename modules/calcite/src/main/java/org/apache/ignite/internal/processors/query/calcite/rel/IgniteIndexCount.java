@@ -17,24 +17,34 @@
 
 package org.apache.ignite.internal.processors.query.calcite.rel;
 
+import java.math.BigDecimal;
+import java.util.Collections;
 import java.util.List;
 import org.apache.calcite.plan.RelOptCluster;
+import org.apache.calcite.plan.RelOptCost;
+import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.AbstractRelNode;
 import org.apache.calcite.rel.RelInput;
+import org.apache.calcite.rel.RelNode;
+import org.apache.calcite.rel.RelWriter;
+import org.apache.calcite.rel.metadata.RelMetadataQuery;
+import org.apache.calcite.rel.type.RelDataType;
+import org.apache.calcite.rel.type.RelDataTypeFactory;
 
 /**
  * Relational operator that returns the contents of a table.
  */
-public class IgniteIndexCount extends AbstractRelNode implements IgniteRel {
-    private RelOptTable tbl;
-    private String idxName;
-//    /** */
-//    private final long sourceId;
+public class IgniteIndexCount extends AbstractRelNode implements SourceAwareIgniteRel {
+    /** */
+    private final RelOptTable tbl;
 
-//    /** Index collation. Required only for rewriting index scan to table scan + sort in case of index rebuild. */
-//    private final RelCollation collation;
+    /** */
+    private final String idxName;
+
+    /** */
+    private final long sourceId;
 
     /**
      * Constructor used for deserialization.
@@ -42,16 +52,19 @@ public class IgniteIndexCount extends AbstractRelNode implements IgniteRel {
      * @param input Serialized representation.
      */
     public IgniteIndexCount(RelInput input) {
-//        super(input.getCluster(), changeTraits(input, IgniteConvention.INSTANCE));
         super(input.getCluster(), input.getTraitSet());
 
-//        collation = input.getCollation();
-//
-//        Object srcIdObj = input.get("sourceId");
-//        if (srcIdObj != null)
-//            sourceId = ((Number)srcIdObj).longValue();
-//        else
-//            sourceId = -1;
+        idxName = input.getString("index");
+
+        Object srcIdObj = input.get("sourceId");
+        if (srcIdObj != null)
+            sourceId = ((Number)srcIdObj).longValue();
+        else
+            sourceId = -1;
+
+        rowType = deriveRowType();
+
+        tbl = input.getTable("table");
     }
 
     /**
@@ -60,86 +73,86 @@ public class IgniteIndexCount extends AbstractRelNode implements IgniteRel {
      * @param traits Traits of this relational expression
      * @param tbl Table definition.
      * @param idxName Index name.
-//     * @param proj Projects.
-//     * @param cond Filters.
-//     * @param requiredCols Participating columns.
-//     * @param collation Index collation.
      */
     public IgniteIndexCount(
         RelOptCluster cluster,
         RelTraitSet traits,
         RelOptTable tbl,
         String idxName
-//        @Nullable List<RexNode> proj,
-//        @Nullable RexNode cond,
-//        @Nullable IndexConditions idxCond,
-//        @Nullable ImmutableBitSet requiredCols,
-//        RelCollation collation
+    ) {
+        this(cluster, traits, tbl, idxName, -1L);
+    }
+
+    private IgniteIndexCount(
+        RelOptCluster cluster,
+        RelTraitSet traits,
+        RelOptTable tbl,
+        String idxName,
+        long sourceId
     ) {
         super(cluster, traits);
 
         this.idxName = idxName;
         this.tbl = tbl;
+        this.rowType = deriveRowType();
+        this.sourceId = sourceId;
     }
 
-    /**
-     * Creates a IndexScan.
-     * @param cluster Cluster that this relational expression belongs to
-     * @param traits Traits of this relational expression
-//     * @param tbl Table definition.
-//     * @param idxName Index name.
-//     * @param proj Projects.
-//     * @param cond Filters.
-//     * @param requiredCols Participating colunms.
-//     * @param collation Index collation.
-     */
-    private IgniteIndexCount(
-//        long sourceId,
-        RelOptCluster cluster,
-        RelTraitSet traits
-//        RelOptTable tbl,
-//        String idxName,
-//        @Nullable List<RexNode> proj,
-//        @Nullable RexNode cond,
-//        @Nullable IndexConditions idxCond,
-//        @Nullable ImmutableBitSet requiredCols,
-//        RelCollation collation
-    ) {
-        super(cluster, traits);
+    @Override protected RelDataType deriveRowType() {
+        RelDataTypeFactory tf = getCluster().getTypeFactory();
 
-//        this.sourceId = sourceId;
-//        this.collation = collation;
+        RelDataType type = tf.createJavaType(BigDecimal.class);
+
+        return tf.createStructType(Collections.singletonList(type), Collections.singletonList(type.toString()));
     }
 
-//    /** {@inheritDoc} */
-//    @Override public long sourceId() {
-//        return sourceId;
-//    }
+    /** {@inheritDoc} */
+    @Override public RelOptCost computeSelfCost(RelOptPlanner planner, RelMetadataQuery mq) {
+        return planner.getCostFactory().makeCost(1, 1.0d, 1.0f);
+    }
 
-//    /** {@inheritDoc} */
-//    @Override protected RelWriter explainTerms0(RelWriter pw) {
-//        return super.explainTerms0(pw)
-//            .itemIf("sourceId", sourceId, sourceId != -1)
-//            .item("collation", collation());
-//    }
+    /** {@inheritDoc} */
+    @Override public long sourceId() {
+        return sourceId;
+    }
+
+    /** {@inheritDoc} */
+    @Override public RelNode copy(RelTraitSet traitSet, List<RelNode> inputs) {
+        assert inputs.isEmpty();
+
+        return this;
+    }
+
+    /** {@inheritDoc} */
+    @Override public RelOptTable getTable() {
+        return tbl;
+    }
+
+    /** */
+    public String indexName() {
+        return idxName;
+    }
+
+    /** {@inheritDoc} */
+    @Override public RelWriter explainTerms(RelWriter pw) {
+        return super.explainTerms(pw)
+            .item("index", idxName)
+            .itemIf("sourceId", sourceId, sourceId != -1)
+            .item("table", tbl.getQualifiedName());
+    }
 
     /** {@inheritDoc} */
     @Override public <T> T accept(IgniteRelVisitor<T> visitor) {
         return visitor.visit(this);
     }
 
-//    /** {@inheritDoc} */
-//    @Override public IgniteRel clone() {
-//        return new IgniteIndexCount();
-//    }
-
     /** {@inheritDoc} */
     @Override public IgniteRel clone(RelOptCluster cluster, List<IgniteRel> inputs) {
         return new IgniteIndexCount(cluster, traitSet, tbl, idxName);
     }
 
-//    /** {@inheritDoc} */
-//    @Override public RelCollation collation() {
-//        return collation;
-//    }
+    /** {@inheritDoc} */
+    @Override public IgniteRel clone(long sourceId) {
+        return new IgniteIndexCount(getCluster(), traitSet, tbl, idxName, sourceId);
+    }
 }

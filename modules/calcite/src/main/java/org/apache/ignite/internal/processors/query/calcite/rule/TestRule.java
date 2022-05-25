@@ -1,12 +1,19 @@
 package org.apache.ignite.internal.processors.query.calcite.rule;
 
+import java.math.BigDecimal;
 import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.RelRule;
+import org.apache.calcite.rel.RelCollations;
+import org.apache.calcite.rel.core.AggregateCall;
 import org.apache.calcite.sql.SqlKind;
+import org.apache.calcite.sql.fun.SqlStdOperatorTable;
+import org.apache.calcite.util.ImmutableIntList;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexCount;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexScan;
 import org.apache.ignite.internal.processors.query.calcite.rel.agg.IgniteMapHashAggregate;
 import org.immutables.value.Value;
+
+import static java.util.Collections.singletonList;
 
 @Value.Enclosing
 public class TestRule extends RelRule<TestRule.Config> {
@@ -25,14 +32,33 @@ public class TestRule extends RelRule<TestRule.Config> {
 
         IgniteIndexScan idx = call.rel(1);
 
-        System.err.println("TEST | onMatch");
+        AggregateCall aggFun = AggregateCall.create(
+            SqlStdOperatorTable.SUM,
+            false,
+            false,
+            false,
+            ImmutableIntList.of(0),
+            -1,
+            RelCollations.EMPTY,
+            idx.getCluster().getTypeFactory().createJavaType(BigDecimal.class),
+            null);
 
-        call.transformTo(new IgniteIndexCount(idx.getCluster(), idx.getTraitSet(), idx.getTable(), idx.indexName()));
+        IgniteIndexCount idxCnt = new IgniteIndexCount(
+            idx.getCluster(),
+            idx.getTraitSet(),
+            idx.getTable(),
+            idx.indexName());
+
+        IgniteMapHashAggregate agg2 = new IgniteMapHashAggregate(
+            idx.getCluster(),
+            agg.getTraitSet(),
+            idxCnt,
+            agg.getGroupSet(),
+            agg.getGroupSets(),
+            singletonList(aggFun));
+
+        call.transformTo(agg2);
     }
-
-//    @Override protected PhysicalNode convert(RelOptPlanner planner, RelMetadataQuery mq, LogicalAggregate rel) {
-//        return null;
-//    }
 
     @Value.Immutable
     public interface Config extends RelRule.Config {
@@ -45,25 +71,5 @@ public class TestRule extends RelRule<TestRule.Config> {
         @Override default TestRule toRule() {
             return new TestRule(this);
         }
-
-//        /** Defines an operand tree for the given 2 classes. */
-//        default TestRule.Config withOperandFor(Class<? extends Filter> filterClass,
-//            Class<? extends Aggregate> aggregateClass) {
-//            return withOperandSupplier(b0 ->
-//                b0.operand(filterClass).oneInput(b1 ->
-//                    b1.operand(aggregateClass).anyInputs()))
-//                .as(FilterAggregateTransposeRule.Config.class);
-//        }
-//
-//        /** Defines an operand tree for the given 3 classes. */
-//        default TestRule.Config withOperandFor(Class<? extends Filter> filterClass,
-//            Class<? extends Aggregate> aggregateClass,
-//            Class<? extends RelNode> relClass) {
-//            return withOperandSupplier(b0 ->
-//                b0.operand(filterClass).oneInput(b1 ->
-//                    b1.operand(aggregateClass).oneInput(b2 ->
-//                        b2.operand(relClass).anyInputs())))
-//                .as(FilterAggregateTransposeRule.Config.class);
-//        }
     }
 }
