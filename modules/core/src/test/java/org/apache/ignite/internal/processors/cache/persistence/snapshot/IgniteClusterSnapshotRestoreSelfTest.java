@@ -66,6 +66,7 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
+import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.events.EventType.EVT_CLUSTER_SNAPSHOT_RESTORE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_CLUSTER_SNAPSHOT_RESTORE_FINISHED;
 import static org.apache.ignite.events.EventType.EVT_CLUSTER_SNAPSHOT_RESTORE_STARTED;
@@ -114,6 +115,61 @@ public class IgniteClusterSnapshotRestoreSelfTest extends IgniteClusterSnapshotR
         ignite.snapshot().restoreSnapshot(SNAPSHOT_NAME, null).get(TIMEOUT);
 
         assertCacheKeys(ignite.cache(DEFAULT_CACHE_NAME), keysCnt);
+    }
+
+    @Test
+    public void testClusterSnapshotRestoreWithExplicitPath() throws Exception {
+        File snpDir = U.resolveWorkDirectory(U.defaultWorkDirectory(), "ex_snapshots", true);
+
+        assert snpDir.list().length == 0 : "Target directory is not empty: " + Arrays.asList(snpDir.list());
+
+        try {
+            IgniteEx ignite = null;
+
+            for (int i = 0; i < 2; i++)
+                ignite = startGrid(i);
+//                IgniteConfiguration cfg = optimize(getConfiguration(getTestIgniteInstanceName(i)));
+//
+//                if (cfgPath)
+//                    cfg.setSnapshotPath(snpDir.getAbsolutePath());
+//
+//                ignite = startGrid(i);
+//            }
+
+//            ignite.cluster().baselineAutoAdjustEnabled(false);
+            ignite.cluster().state(ACTIVE);
+
+            for (int i = 0; i < CACHE_KEYS_RANGE; i++)
+                ignite.cache(DEFAULT_CACHE_NAME).put(i, i);
+
+            IgniteSnapshotManager snpMgr = ignite.context().cache().context().snapshotMgr();
+
+            snpMgr.createSnapshot(SNAPSHOT_NAME, snpDir).get();
+
+//            snpMgr.checkSnapshot(SNAPSHOT_NAME).get();
+
+            ignite.destroyCache(DEFAULT_CACHE_NAME);
+
+            awaitPartitionMapExchange();
+
+            snpMgr.restoreSnapshot(SNAPSHOT_NAME, null, snpDir).get();
+
+//            stopAllGrids();
+
+//            IgniteEx snp = startGridsFromSnapshot(2, cfg -> snpDir.getAbsolutePath(), SNAPSHOT_NAME, true);
+
+            IgniteCache<Object, Object> cache = ignite.cache(SNAPSHOT_NAME);
+
+            assert cache != null;
+
+            assertSnapshotCacheKeys(cache);
+        }
+        finally {
+            stopAllGrids();
+
+            U.delete(snpDir);
+        }
+
     }
 
     /**

@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
+import java.io.File;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -33,6 +34,7 @@ import org.apache.ignite.compute.ComputeTaskAdapter;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.resources.IgniteInstanceResource;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * The task for checking the consistency of snapshots in the cluster.
@@ -80,7 +82,7 @@ public abstract class AbstractSnapshotVerificationTask extends
                 if (meta == null)
                     continue;
 
-                jobs.put(createJob(meta.snapshotName(), meta.consistentId(), arg.cacheGroupNames()),
+                jobs.put(createJob(meta.snapshotName(), arg.snapshotPath(), meta.consistentId(), arg.cacheGroupNames()),
                     e.getKey());
 
                 if (allMetas.isEmpty())
@@ -122,9 +124,10 @@ public abstract class AbstractSnapshotVerificationTask extends
 
     /**
      * @param name Snapshot name.
+     * @param snpPath todo
      * @param constId Snapshot metadata file name.
      * @param groups Cache groups to be restored from the snapshot. May be empty if all cache groups are being restored.
      * @return Compute job.
      */
-    protected abstract ComputeJob createJob(String name, String constId, Collection<String> groups);
+    protected abstract ComputeJob createJob(String name, @Nullable File snpPath, String constId, Collection<String> groups);
 }

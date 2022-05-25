@@ -478,7 +478,7 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
         IdleVerifyResultV2 snpVerifyRes = ignite.compute().execute(new TestSnapshotPartitionsVerifyTask(),
             new SnapshotPartitionsVerifyTaskArg(new HashSet<>(), Collections.singletonMap(ignite.cluster().localNode(),
                 Collections.singletonList(snp(ignite).readSnapshotMetadata(SNAPSHOT_NAME,
-                    (String)ignite.configuration().getConsistentId())))))
+                    (String)ignite.configuration().getConsistentId()))), null))
             .idleVerifyResult();
 
         Map<PartitionKeyV2, List<PartitionHashRecordV2>> idleVerifyHashes = jobResults.get(TestVisorBackupPartitionsTask.class);
@@ -599,7 +599,7 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
 
         corruptPartitionFile(ignite, SNAPSHOT_NAME, ccfg1, PART_ID);
 
-        return snp(ignite).checkSnapshot(SNAPSHOT_NAME, cachesToCheck, false).get(TIMEOUT);
+        return snp(ignite).checkSnapshot(SNAPSHOT_NAME, null, cachesToCheck, false).get(TIMEOUT);
     }
 
     /**

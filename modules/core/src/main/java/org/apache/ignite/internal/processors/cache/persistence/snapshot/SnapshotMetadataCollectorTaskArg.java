@@ -20,62 +20,42 @@ import java.io.File;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
-import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorDataTransferObject;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * Input parameters for checking snapshot partitions consistency task.
  */
-public class SnapshotPartitionsVerifyTaskArg extends VisorDataTransferObject {
+public class SnapshotMetadataCollectorTaskArg extends VisorDataTransferObject {
     /** Serial version UID. */
     private static final long serialVersionUID = 0L;
 
-    /** Cache group names to be verified. */
-    private Collection<String> grpNames;
+    /** Snapshot name. */
+    private String snpName;
 
-    /** The map of distribution of snapshot metadata pieces across the cluster. */
-    private Map<ClusterNode, List<SnapshotMetadata>> clusterMetas;
-
+    /** Snapshot directory path. */
     private File snpPath;
 
     /** Default constructor. */
-    public SnapshotPartitionsVerifyTaskArg() {
+    public SnapshotMetadataCollectorTaskArg() {
         // No-op.
     }
 
     /**
-     * @param grpNames Cache group names to be verified.
-     * @param clusterMetas The map of distribution of snapshot metadata pieces across the cluster.
-     * @param snpPath todo
+     * @param snpName Snapshot name.
+     * @param snpPath SNapshot directory path.
      */
-    public SnapshotPartitionsVerifyTaskArg(
-        Collection<String> grpNames,
-        Map<ClusterNode, List<SnapshotMetadata>> clusterMetas,
-        @Nullable File snpPath
-    ) {
-        this.grpNames = grpNames;
-        this.clusterMetas = clusterMetas;
+    public SnapshotMetadataCollectorTaskArg(String snpName, File snpPath) {
+        this.snpName = snpName;
         this.snpPath = snpPath;
     }
 
     /**
-     * @return Cache group names to be verified.
+     * @return Snapshot name.
      */
-    public Collection<String> cacheGroupNames() {
-        return grpNames;
-    }
-
-    /**
-     * @return The map of distribution of snapshot metadata pieces across the cluster.
-     */
-    public Map<ClusterNode, List<SnapshotMetadata>> clusterMetadata() {
-        return clusterMetas;
+    public String snapshotName() {
+        return snpName;
     }
 
     /**
@@ -87,24 +67,22 @@ public class SnapshotPartitionsVerifyTaskArg extends VisorDataTransferObject {
 
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        U.writeCollection(out, grpNames);
-        U.writeMap(out, clusterMetas);
+        U.writeString(out, snpName);
         U.writeString(out, snpPath == null ? null : snpPath.toString());
     }
 
     /** {@inheritDoc} */
     @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
-        grpNames = U.readCollection(in);
-        clusterMetas = U.readMap(in);
+        snpName = U.readString(in);
 
-        String snpPathname = U.readString(in);
+        String path = U.readString(in);
 
-        if (snpPathname != null)
-            snpPath = new File(snpPathname);
+        if (path != null)
+            snpPath = new File(path);
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(SnapshotPartitionsVerifyTaskArg.class, this);
+        return S.toString(SnapshotMetadataCollectorTaskArg.class, this);
     }
 }

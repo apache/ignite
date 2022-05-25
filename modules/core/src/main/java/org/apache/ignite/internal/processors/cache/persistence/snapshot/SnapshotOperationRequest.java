@@ -75,14 +75,14 @@ public class SnapshotOperationRequest implements Serializable {
         String snpName,
         @Nullable Collection<String> grps,
         Set<UUID> nodes,
-        @Nullable String snpPath
+        @Nullable File snpPath
     ) {
         this.reqId = reqId;
         this.opNodeId = opNodeId;
         this.snpName = snpName;
         this.grps = grps;
         this.nodes = nodes;
-        this.snpPath = snpPath;
+        this.snpPath = snpPath == null ? null : snpPath.toString();
     }
 
     /**

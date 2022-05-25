@@ -211,7 +211,7 @@ public class SnapshotRestoreProcess {
      * @param cacheGrpNames Cache groups to be restored or {@code null} to restore all cache groups from the snapshot.
      * @return Future that will be completed when the restore operation is complete and the cache groups are started.
      */
-    public IgniteFuture<Void> start(String snpName, @Nullable Collection<String> cacheGrpNames) {
+    public IgniteFuture<Void> start(String snpName, @Nullable Collection<String> cacheGrpNames, @Nullable File snpPath) {
         IgniteSnapshotManager snpMgr = ctx.cache().context().snapshotMgr();
         ClusterSnapshotFuture fut0;
 
@@ -277,7 +277,7 @@ public class SnapshotRestoreProcess {
 
         snpMgr.recordSnapshotEvent(snpName, msg, EventType.EVT_CLUSTER_SNAPSHOT_RESTORE_STARTED);
 
-        snpMgr.checkSnapshot(snpName, cacheGrpNames, true).listen(f -> {
+        snpMgr.checkSnapshot(snpName, snpPath, cacheGrpNames, true).listen(f -> {
             if (f.error() != null) {
                 finishProcess(fut0.rqId, f.error());
 
@@ -332,7 +332,7 @@ public class SnapshotRestoreProcess {
             Collection<UUID> bltNodes = F.viewReadOnly(ctx.discovery().discoCache().aliveBaselineNodes(), F.node2id());
 
             SnapshotOperationRequest req = new SnapshotOperationRequest(
-                fut0.rqId, F.first(dataNodes), snpName, cacheGrpNames, new HashSet<>(bltNodes), null);
+                fut0.rqId, F.first(dataNodes), snpName, cacheGrpNames, new HashSet<>(bltNodes), snpPath);
 
             prepareRestoreProc.start(req.requestId(), req);
         });
@@ -582,7 +582,7 @@ public class SnapshotRestoreProcess {
                     ", caches=" + req.groups() + ']');
             }
 
-            List<SnapshotMetadata> locMetas = snpMgr.readSnapshotMetadatas(req.snapshotName());
+            List<SnapshotMetadata> locMetas = snpMgr.readSnapshotMetadatas(req.snapshotName(), req.snapshotPath());
 
             SnapshotRestoreContext opCtx0 = prepareContext(req, locMetas);
 
@@ -666,7 +666,7 @@ public class SnapshotRestoreProcess {
         // Collect the cache configurations and prepare a temporary directory for copying files.
         // Metastorage can be restored only manually by directly copying files.
         for (SnapshotMetadata meta : metas) {
-            for (File snpCacheDir : cctx.snapshotMgr().snapshotCacheDirectories(req.snapshotName(), meta.folderName(),
+            for (File snpCacheDir : cctx.snapshotMgr().snapshotCacheDirectories(req.snapshotName(), req.snapshotPath(), meta.folderName(),
                 name -> !METASTORAGE_CACHE_NAME.equals(name))) {
                 String grpName = FilePageStoreManager.cacheGroupName(snpCacheDir);
 
@@ -916,7 +916,10 @@ public class SnapshotRestoreProcess {
                     if (leftParts.isEmpty())
                         break;
 
-                    File snpCacheDir = new File(ctx.cache().context().snapshotMgr().snapshotLocalDir(opCtx0.snpName),
+                    File snpDir = opCtx0.snpPath != null ? new File(opCtx0.snpPath, opCtx0.snpName) :
+                        ctx.cache().context().snapshotMgr().snapshotLocalDir(opCtx0.snpName);
+
+                    File snpCacheDir = new File(snpDir,
                         Paths.get(databaseRelativePath(meta.folderName()), dir.getName()).toString());
 
                     leftParts.removeIf(partFut -> {
@@ -1383,6 +1386,8 @@ public class SnapshotRestoreProcess {
         /** Snapshot name. */
         private final String snpName;
 
+        private final File snpPath;
+
         /** Baseline discovery cache for node IDs that must be alive to complete the operation.*/
         private final DiscoCache discoCache;
 
@@ -1432,6 +1437,7 @@ public class SnapshotRestoreProcess {
             startTime = 0;
             opNodeId = null;
             discoCache = null;
+            snpPath = null;
         }
 
         /**
@@ -1442,6 +1448,7 @@ public class SnapshotRestoreProcess {
         protected SnapshotRestoreContext(SnapshotOperationRequest req, DiscoCache discoCache, Map<Integer, StoredCacheData> cfgs) {
             reqId = req.requestId();
             snpName = req.snapshotName();
+            snpPath = req.snapshotPath();
             opNodeId = req.operationalNodeId();
             startTime = U.currentTimeMillis();
 

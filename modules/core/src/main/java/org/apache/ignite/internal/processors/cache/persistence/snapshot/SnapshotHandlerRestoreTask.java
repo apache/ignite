@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -47,8 +48,13 @@ public class SnapshotHandlerRestoreTask extends AbstractSnapshotVerificationTask
     private IgniteLogger log;
 
     /** {@inheritDoc} */
-    @Override protected ComputeJob createJob(String snpName, String constId, Collection<String> groups) {
-        return new SnapshotHandlerRestoreJob(snpName, constId, groups);
+    @Override protected ComputeJob createJob(
+        String snpName,
+        @Nullable File snpPath,
+        String constId,
+        Collection<String> groups
+    ) {
+        return new SnapshotHandlerRestoreJob(snpName, snpPath, constId, groups);
     }
 
     /** {@inheritDoc} */
@@ -112,23 +118,29 @@ public class SnapshotHandlerRestoreTask extends AbstractSnapshotVerificationTask
         /** Cache group names. */
         private final Collection<String> grps;
 
+        private final File snpPath;
+
         /**
          * @param snpName Snapshot name.
+         * @param snpPath todo
          * @param consistentId String representation of the consistent node ID.
          * @param grps Cache group names.
          */
-        public SnapshotHandlerRestoreJob(String snpName, String consistentId, Collection<String> grps) {
+        public SnapshotHandlerRestoreJob(String snpName, @Nullable File snpPath, String consistentId, Collection<String> grps) {
             this.snpName = snpName;
             this.consistentId = consistentId;
             this.grps = grps;
+            this.snpPath = snpPath;
         }
 
         /** {@inheritDoc} */
         @Override public Map<String, SnapshotHandlerResult<Object>> execute() {
             try {
                 IgniteSnapshotManager snpMgr = ignite.context().cache().context().snapshotMgr();
-                SnapshotMetadata meta = snpMgr.readSnapshotMetadata(snpName, consistentId);
-                SnapshotHandlerContext ctx = new SnapshotHandlerContext(meta, grps, ignite.localNode());
+                File snpDir = snpPath == null ? snpMgr.snapshotLocalDir(snpName) : new File(snpPath, snpName);
+                SnapshotMetadata meta = snpMgr.readSnapshotMetadata(snpName, snpDir, consistentId);
+
+                SnapshotHandlerContext ctx = new SnapshotHandlerContext(meta, grps, ignite.localNode(), snpDir.getParentFile());
 
                 return snpMgr.handlers().invokeAll(SnapshotHandlerType.RESTORE, ctx);
             }

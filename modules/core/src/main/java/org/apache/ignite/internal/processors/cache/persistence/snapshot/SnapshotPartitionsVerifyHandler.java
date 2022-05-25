@@ -109,7 +109,7 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
 
         IgniteSnapshotManager snpMgr = cctx.snapshotMgr();
 
-        for (File dir : snpMgr.snapshotCacheDirectories(meta.snapshotName(), meta.folderName())) {
+        for (File dir : snpMgr.snapshotCacheDirectories(meta.snapshotName(), opCtx.snapshotPath(), meta.folderName(), name -> true)) {
             int grpId = CU.cacheId(cacheGroupName(dir));
 
             if (!grps.remove(grpId))
@@ -146,7 +146,7 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
         ThreadLocal<ByteBuffer> buff = ThreadLocal.withInitial(() -> ByteBuffer.allocateDirect(meta.pageSize())
             .order(ByteOrder.nativeOrder()));
 
-        GridKernalContext snpCtx = snpMgr.createStandaloneKernalContext(meta.snapshotName(), meta.folderName());
+        GridKernalContext snpCtx = snpMgr.createStandaloneKernalContext(meta.snapshotName(), opCtx.snapshotPath(), meta.folderName());
 
         FilePageStoreManager storeMgr = (FilePageStoreManager)cctx.pageStore();
 

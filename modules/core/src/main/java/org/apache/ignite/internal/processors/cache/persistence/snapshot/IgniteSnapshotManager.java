@@ -714,8 +714,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @return Local snapshot directory for snapshot with given name.
      * @throws IgniteCheckedException If directory doesn't exist.
      */
-    private File resolveSnapshotDir(String snpName) throws IgniteCheckedException {
-        File snpDir = snapshotLocalDir(snpName);
+    private File resolveSnapshotDir(String snpName, @Nullable File snpPath) throws IgniteCheckedException {
+        File snpDir = snpPath == null ? snapshotLocalDir(snpName) : snpPath;
 
         if (!snpDir.exists())
             throw new IgniteCheckedException("Snapshot directory doesn't exists: " + snpDir.getAbsolutePath());
@@ -817,12 +817,14 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                     .map(n -> cctx.discovery().node(n).consistentId().toString())
                     .collect(Collectors.toSet());
 
-                File smf = new File(snapshotLocalDir(req), snapshotMetaFileName(cctx.localNode().consistentId().toString()));
+                File snpPath = snapshotLocalDir(req);
+
+                File smf = new File(snpPath, snapshotMetaFileName(cctx.localNode().consistentId().toString()));
 
                 if (smf.exists())
                     throw new GridClosureException(new IgniteException("Snapshot metafile must not exist: " + smf.getAbsolutePath()));
 
-                smf.getParentFile().mkdirs();
+                snpPath.mkdirs();
 
                 SnapshotMetadata meta = new SnapshotMetadata(req.requestId(),
                     req.snapshotName(),
@@ -841,7 +843,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                     log.info("Snapshot metafile has been created: " + smf.getAbsolutePath());
                 }
 
-                SnapshotHandlerContext ctx = new SnapshotHandlerContext(meta, req.groups(), cctx.localNode());
+                SnapshotHandlerContext ctx =
+                    new SnapshotHandlerContext(meta, req.groups(), cctx.localNode(), snpPath.getParentFile());
 
                 return new SnapshotOperationResponse(handlers.invokeAll(SnapshotHandlerType.CREATE, ctx));
             }
@@ -1188,7 +1191,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
         cctx.kernalContext().security().authorize(ADMIN_SNAPSHOT);
 
-        return checkSnapshot(name, null, false).chain(f -> {
+        return checkSnapshot(name, null, null, false).chain(f -> {
             try {
                 return f.get().idleVerifyResult();
             }
@@ -1212,6 +1215,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      */
     public IgniteInternalFuture<SnapshotPartitionsVerifyTaskResult> checkSnapshot(
         String name,
+        @Nullable File snpPath,
         @Nullable Collection<String> grps,
         boolean includeCustomHandlers
     ) {
@@ -1230,7 +1234,9 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         kctx0.task().setThreadContext(TC_SKIP_AUTH, true);
         kctx0.task().setThreadContext(TC_SUBGRID, bltNodes);
 
-        kctx0.task().execute(SnapshotMetadataCollectorTask.class, name).listen(f0 -> {
+        SnapshotMetadataCollectorTaskArg taskArg = new SnapshotMetadataCollectorTaskArg(name, snpPath);
+
+        kctx0.task().execute(SnapshotMetadataCollectorTask.class, taskArg).listen(f0 -> {
             if (f0.error() == null) {
                 Map<ClusterNode, List<SnapshotMetadata>> metas = f0.result();
 
@@ -1275,13 +1281,22 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                     return;
                 }
 
+                if (metas.isEmpty()) {
+                    res.onDone(new SnapshotPartitionsVerifyTaskResult(metas,
+                        new IdleVerifyResultV2(Collections.singletonMap(cctx.localNode(),
+                            new IllegalArgumentException("Snapshot does not exists [snapshot=" + name +
+                                (snpPath != null ? ", baseDir=" + snpPath : "") + ']')))));
+
+                    return;
+                }
+
                 kctx0.task().setThreadContext(TC_SKIP_AUTH, true);
                 kctx0.task().setThreadContext(TC_SUBGRID, new ArrayList<>(metas.keySet()));
 
                 Class<? extends AbstractSnapshotVerificationTask> cls =
                     includeCustomHandlers ? SnapshotHandlerRestoreTask.class : SnapshotPartitionsVerifyTask.class;
 
-                kctx0.task().execute(cls, new SnapshotPartitionsVerifyTaskArg(grps, metas))
+                kctx0.task().execute(cls, new SnapshotPartitionsVerifyTaskArg(grps, metas, snpPath))
                     .listen(f1 -> {
                         if (f1.error() == null)
                             res.onDone(f1.result());
@@ -1310,8 +1325,12 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @return The list of cache or cache group names in given snapshot on local node.
      */
     public List<File> snapshotCacheDirectories(String snpName, String folderName) {
-        return snapshotCacheDirectories(snpName, folderName, name -> true);
+        return snapshotCacheDirectories(snpName, null, folderName, name -> true);
     }
+
+//    public List<File> snapshotCacheDirectories(String snpName, @Nullable File snpPath, String folderName) {
+//        return snapshotCacheDirectories(snpName, snpPath, folderName, name -> true);
+//    }
 
     /**
      * @param snpName Snapshot name.
@@ -1319,8 +1338,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @param names Cache group names to filter.
      * @return The list of cache or cache group names in given snapshot on local node.
      */
-    public List<File> snapshotCacheDirectories(String snpName, String folderName, Predicate<String> names) {
-        File snpDir = snapshotLocalDir(snpName);
+    public List<File> snapshotCacheDirectories(String snpName, @Nullable File snpPath, String folderName, Predicate<String> names) {
+        File snpDir = snpPath == null ? snapshotLocalDir(snpName) : new File(snpPath, snpName);
 
         if (!snpDir.exists())
             return Collections.emptyList();
@@ -1334,7 +1353,11 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @return Snapshot metadata instance.
      */
     public SnapshotMetadata readSnapshotMetadata(String snpName, String consId) {
-        return readSnapshotMetadata(new File(snapshotLocalDir(snpName), snapshotMetaFileName(consId)));
+        return readSnapshotMetadata(snpName, null, consId);
+    }
+
+    public SnapshotMetadata readSnapshotMetadata(String snpName, @Nullable File snpDir, String consId) {
+        return readSnapshotMetadata(new File(snpDir == null ? snapshotLocalDir(snpName) : snpDir, snapshotMetaFileName(consId)));
     }
 
     /**
@@ -1371,10 +1394,14 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * local node will be placed on the first place.
      */
     public List<SnapshotMetadata> readSnapshotMetadatas(String snpName) {
+        return readSnapshotMetadatas(snpName, null);
+    }
+
+    public List<SnapshotMetadata> readSnapshotMetadatas(String snpName, @Nullable File snpPath) {
         A.notNullOrEmpty(snpName, "Snapshot name cannot be null or empty.");
         A.ensure(U.alphanumericUnderscore(snpName), "Snapshot name must satisfy the following name pattern: a-zA-Z0-9_");
 
-        File snpDir = snapshotLocalDir(snpName);
+        File snpDir = snpPath == null ? snapshotLocalDir(snpName) : new File(snpPath, snpName);
 
         if (!(snpDir.exists() && snpDir.isDirectory()))
             return Collections.emptyList();
@@ -1524,7 +1551,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 new HashSet<>(F.viewReadOnly(srvNodes,
                     F.node2id(),
                     (node) -> CU.baselineNode(node, clusterState))),
-                snpPath == null ? null : snpPath.toString()));
+                snpPath));
 
             String msg = "Cluster-wide snapshot operation started [snpName=" + name + ", grps=" + grps + ']';
 
@@ -1548,11 +1575,15 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
     /** {@inheritDoc} */
     @Override public IgniteFuture<Void> restoreSnapshot(String name, @Nullable Collection<String> grpNames) {
+        return restoreSnapshot(name, grpNames, null);
+    }
+
+    public IgniteFuture<Void> restoreSnapshot(String name, @Nullable Collection<String> grpNames, @Nullable File snpPath) {
         A.notNullOrEmpty(name, "Snapshot name cannot be null or empty.");
         A.ensure(U.alphanumericUnderscore(name), "Snapshot name must satisfy the following name pattern: a-zA-Z0-9_");
         A.ensure(grpNames == null || !grpNames.isEmpty(), "List of cache group names cannot be empty.");
 
-        return restoreCacheGrpProc.start(name, grpNames);
+        return restoreCacheGrpProc.start(name, grpNames, snpPath);
     }
 
     /** {@inheritDoc} */
@@ -1696,8 +1727,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @return Standalone kernal context related to the snapshot.
      * @throws IgniteCheckedException If fails.
      */
-    public StandaloneGridKernalContext createStandaloneKernalContext(String snpName, String folderName) throws IgniteCheckedException {
-        File snpDir = resolveSnapshotDir(snpName);
+    public StandaloneGridKernalContext createStandaloneKernalContext(String snpName, File snpPath, String folderName) throws IgniteCheckedException {
+        File snpDir = resolveSnapshotDir(snpName, snpPath);
 
         return new StandaloneGridKernalContext(log,
             resolveBinaryWorkDir(snpDir.getAbsolutePath(), folderName),
@@ -1742,7 +1773,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         int partId,
         @Nullable EncryptionCacheKeyProvider encrKeyProvider
     ) throws IgniteCheckedException {
-        File snpDir = resolveSnapshotDir(snpName);
+        File snpDir = resolveSnapshotDir(snpName, null);
 
         File nodePath = new File(snpDir, databaseRelativePath(folderName));
 
