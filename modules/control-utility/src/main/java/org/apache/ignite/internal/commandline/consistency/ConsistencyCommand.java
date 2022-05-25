@@ -110,7 +110,8 @@ public class ConsistencyCommand extends AbstractCommand<Object> {
                 if (failed)
                     sb.append("[EXECUTION FAILED OR CANCELLED, RESULTS MAY BE INCOMPLETE OR INCONSISTENT]\n\n");
 
-                sb.append(res.message());
+                if (res.message() != null)
+                    sb.append(res.message());
 
                 if (failed)
                     break;
