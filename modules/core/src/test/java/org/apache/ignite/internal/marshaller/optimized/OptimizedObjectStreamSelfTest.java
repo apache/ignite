@@ -404,11 +404,11 @@ public class OptimizedObjectStreamSelfTest extends GridCommonAbstractTest {
 
         TestObject[] arr = {obj1, obj2};
 
-        assertArrayEquals(arr, (Object[])marshalUnmarshal(arr));
+        assertArrayEquals(arr, marshalUnmarshal(arr));
 
         String[] strArr = {"str1", "str2"};
 
-        assertArrayEquals(strArr, (String[])marshalUnmarshal(strArr));
+        assertArrayEquals(strArr, marshalUnmarshal(strArr));
     }
 
     /**
@@ -462,7 +462,7 @@ public class OptimizedObjectStreamSelfTest extends GridCommonAbstractTest {
 
             LinkTestObject2[] arr = new LinkTestObject2[] {obj2, obj3};
 
-            assertArrayEquals(arr, (Object[])marshalUnmarshal(arr));
+            assertArrayEquals(arr, marshalUnmarshal(arr));
         }
     }
 
@@ -500,7 +500,7 @@ public class OptimizedObjectStreamSelfTest extends GridCommonAbstractTest {
 
         TestEnum[] arr = new TestEnum[] {TestEnum.C, TestEnum.A, TestEnum.B, TestEnum.A};
 
-        assertArrayEquals(arr, (Object[])marshalUnmarshal(arr));
+        assertArrayEquals(arr, marshalUnmarshal(arr));
     }
 
     /**

@@ -86,7 +86,7 @@ public class VisorTxTask extends VisorMultiNodeTask<VisorTxTaskArg, Map<ClusterN
         if (taskArg.getConsistentIds() != null) {
             return F.transform(ignite.cluster().forPredicate(new IgnitePredicate<ClusterNode>() {
                 @Override public boolean apply(ClusterNode node) {
-                    return taskArg.getConsistentIds().contains((String)node.consistentId().toString());
+                    return taskArg.getConsistentIds().contains(node.consistentId().toString());
                 }
             }).nodes(), new IgniteClosure<ClusterNode, UUID>() {
                 @Override public UUID apply(ClusterNode node) {

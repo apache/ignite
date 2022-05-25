@@ -529,7 +529,7 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
 
             info.cacheId(cctx.cacheId());
             info.key(entry.getKey());
-            info.value(skipVals ? null : (CacheObject)val.value());
+            info.value(skipVals ? null : val.value());
             info.version(val.version());
             info.expireTime(val.expireTime());
             info.ttl(val.ttl());

@@ -54,7 +54,7 @@ public class QueryParserMetricsHolderSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testParserCacheHits() {
-        LongMetric hits = (LongMetric)ignite.context().metric().registry(QUERY_PARSER_METRIC_GROUP_NAME).findMetric("hits");
+        LongMetric hits = ignite.context().metric().registry(QUERY_PARSER_METRIC_GROUP_NAME).findMetric("hits");
 
         Assert.assertNotNull("Unable to find metric with name " + QUERY_PARSER_METRIC_GROUP_NAME + ".hits", hits);
 

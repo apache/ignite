@@ -72,7 +72,7 @@ public class JobStealingTask extends ComputeTaskAdapter<Object, Map<UUID, Intege
             if (log.isInfoEnabled())
                 log.info("Job result: " + res.getData());
 
-            UUID resUuid = (UUID)res.getData();
+            UUID resUuid = res.getData();
 
             ret.put(resUuid,
                 ret.containsKey(resUuid) ? ret.get(resUuid) + 1 : 1);

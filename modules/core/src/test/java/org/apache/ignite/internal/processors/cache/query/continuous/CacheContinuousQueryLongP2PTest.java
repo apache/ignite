@@ -109,7 +109,7 @@ public class CacheContinuousQueryLongP2PTest extends CacheContinuousQueryOperati
         qry.setLocalListener((evt) -> {});
 
         qry.setRemoteFilterFactory(
-            (Factory<? extends CacheEntryEventFilter<Integer, Integer>>)(Object)evtFilterFactoryCls.newInstance());
+            (Factory<? extends CacheEntryEventFilter<Integer, Integer>>)evtFilterFactoryCls.newInstance());
 
         return qry;
     }

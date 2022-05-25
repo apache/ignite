@@ -68,7 +68,7 @@ public abstract class JdbcAbstractDmlStatementSelfTest extends GridCommonAbstrac
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        ((IgniteEx)ignite(0)).context().cache().dynamicStartSqlCache(cacheConfig());
+        ignite(0).context().cache().dynamicStartSqlCache(cacheConfig());
 
         conn = DriverManager.getConnection(getCfgUrl());
     }
@@ -134,7 +134,7 @@ public abstract class JdbcAbstractDmlStatementSelfTest extends GridCommonAbstrac
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        ((IgniteEx)ignite(0)).context().cache().dynamicDestroyCache(DEFAULT_CACHE_NAME, true, true, false, null);
+        ignite(0).context().cache().dynamicDestroyCache(DEFAULT_CACHE_NAME, true, true, false, null);
 
         if (conn != null) {
             conn.close();

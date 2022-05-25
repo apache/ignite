@@ -146,7 +146,7 @@ public class GridFailoverTaskWithPredicateSelfTest extends GridCommonAbstractTes
             assert ignite2 != null;
             assert ignite3 != null;
 
-            Integer res = (Integer)compute(ignite1.cluster().forPredicate(p)).withTimeout(10000).
+            Integer res = compute(ignite1.cluster().forPredicate(p)).withTimeout(10000).
                 execute(JobFailTask.class.getName(), "1");
 
             assert res == 1;
@@ -190,7 +190,7 @@ public class GridFailoverTaskWithPredicateSelfTest extends GridCommonAbstractTes
                 ignite2.cluster().localNode().id()));
 
             // On failover NODE3 shouldn't be taken into account.
-            Integer res = (Integer)compute(nodes.forPredicate(p)).withTimeout(10000).
+            Integer res = compute(nodes.forPredicate(p)).withTimeout(10000).
                 execute(JobFailTask.class.getName(), "1");
 
             assert res == 1;

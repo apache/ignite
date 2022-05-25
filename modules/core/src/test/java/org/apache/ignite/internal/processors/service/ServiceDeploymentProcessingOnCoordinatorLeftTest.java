@@ -37,7 +37,7 @@ public class ServiceDeploymentProcessingOnCoordinatorLeftTest extends ServiceDep
     @Test
     public void testDeploymentProcessingOnCoordinatorLeaveTopology() throws Exception {
         try {
-            IgniteEx ignite0 = (IgniteEx)startGrids(4);
+            IgniteEx ignite0 = startGrids(4);
 
             ((BlockingTcpDiscoverySpi)ignite0.context().discovery().getInjectedDiscoverySpi()).block();
 
@@ -75,7 +75,7 @@ public class ServiceDeploymentProcessingOnCoordinatorLeftTest extends ServiceDep
     @Test
     public void testDeploymentProcessingOnCoordinatorLeaveTopology2() throws Exception {
         try {
-            IgniteEx ignite0 = (IgniteEx)startGrids(5);
+            IgniteEx ignite0 = startGrids(5);
 
             ((BlockingTcpDiscoverySpi)ignite0.context().discovery().getInjectedDiscoverySpi()).block();
 

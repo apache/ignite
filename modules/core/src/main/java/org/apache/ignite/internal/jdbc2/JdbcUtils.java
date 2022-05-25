@@ -222,21 +222,21 @@ public class JdbcUtils {
         row.add(colMeta.dataType());            // 5. DATA_TYPE
         row.add(colMeta.dataTypeName());        // 6. TYPE_NAME
         row.add(colMeta.precision() == -1 ? null : colMeta.precision()); // 7. COLUMN_SIZE
-        row.add((Integer)null);                 // 8. BUFFER_LENGTH
+        row.add(null);                 // 8. BUFFER_LENGTH
         row.add(colMeta.scale() == -1 ? null : colMeta.scale());           // 9. DECIMAL_DIGITS
         row.add(10);                            // 10. NUM_PREC_RADIX
         row.add(colMeta.isNullable() ? columnNullable : columnNoNulls);  // 11. NULLABLE
-        row.add((String)null);                  // 12. REMARKS
+        row.add(null);                  // 12. REMARKS
         row.add(colMeta.defaultValue());        // 13. COLUMN_DEF
         row.add(colMeta.dataType());            // 14. SQL_DATA_TYPE
-        row.add((Integer)null);                 // 15. SQL_DATETIME_SUB
+        row.add(null);                 // 15. SQL_DATETIME_SUB
         row.add(Integer.MAX_VALUE);             // 16. CHAR_OCTET_LENGTH
         row.add(pos);                           // 17. ORDINAL_POSITION
         row.add(colMeta.isNullable() ? "YES" : "NO"); // 18. IS_NULLABLE
-        row.add((String)null);                  // 19. SCOPE_CATALOG
-        row.add((String)null);                  // 20. SCOPE_SCHEMA
-        row.add((String)null);                  // 21. SCOPE_TABLE
-        row.add((Short)null);                   // 22. SOURCE_DATA_TYPE
+        row.add(null);                  // 19. SCOPE_CATALOG
+        row.add(null);                  // 20. SCOPE_SCHEMA
+        row.add(null);                  // 21. SCOPE_TABLE
+        row.add(null);                   // 22. SOURCE_DATA_TYPE
         row.add("NO");                          // 23. IS_AUTOINCREMENT
         row.add("NO");                          // 23. IS_GENERATEDCOLUMN
 
@@ -263,9 +263,9 @@ public class JdbcUtils {
             row.add(i + 1);                     // ORDINAL_POSITION
             row.add(idxMeta.fields().get(i));   // COLUMN_NAME
             row.add(idxMeta.fieldsAsc().get(i) ? "A" : "D");  // ASC_OR_DESC
-            row.add((Integer)0);                // CARDINALITY
-            row.add((Integer)0);                // PAGES
-            row.add((String)null);              // FILTER_CONDITION
+            row.add(0);                // CARDINALITY
+            row.add(0);                // PAGES
+            row.add(null);              // FILTER_CONDITION
 
             rows.add(row);
         }

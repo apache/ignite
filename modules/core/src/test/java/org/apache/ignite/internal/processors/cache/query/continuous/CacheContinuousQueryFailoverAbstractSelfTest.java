@@ -605,17 +605,17 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
                 if (t == null) {
                     // Check filtered.
                     if (!filtered) {
-                        updates.put(key, new T2<>((Object)val, null));
+                        updates.put(key, new T2<>(val, null));
 
-                        expEvts.add(new T3<>((Object)key, (Object)val, null));
+                        expEvts.add(new T3<>(key, val, null));
                     }
                 }
                 else {
                     // Check filtered.
                     if (!filtered) {
-                        updates.put(key, new T2<>((Object)val, (Object)t.get1()));
+                        updates.put(key, new T2<>(val, t.get1()));
 
-                        expEvts.add(new T3<>((Object)key, (Object)val, (Object)t.get1()));
+                        expEvts.add(new T3<>(key, val, t.get1()));
                     }
                 }
 
@@ -695,16 +695,16 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
                 key * 2;
 
             if (t == null) {
-                updates.put(key, new T2<>((Object)val, null));
+                updates.put(key, new T2<>(val, null));
 
                 if (!filtered)
-                    expEvts.add(new T3<>((Object)key, (Object)val, null));
+                    expEvts.add(new T3<>(key, val, null));
             }
             else {
-                updates.put(key, new T2<>((Object)val, (Object)key));
+                updates.put(key, new T2<>(val, key));
 
                 if (!filtered)
-                    expEvts.add(new T3<>((Object)key, (Object)val, (Object)key));
+                    expEvts.add(new T3<>(key, val, key));
             }
 
             srvCache.put(key, val);
@@ -764,16 +764,16 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
                 key * 2;
 
             if (t == null) {
-                updates.put(key, new T2<>((Object)val, null));
+                updates.put(key, new T2<>(val, null));
 
                 if (!filtered)
-                    expEvts.add(new T3<>((Object)key, (Object)val, null));
+                    expEvts.add(new T3<>(key, val, null));
             }
             else {
-                updates.put(key, new T2<>((Object)val, (Object)key));
+                updates.put(key, new T2<>(val, key));
 
                 if (!filtered)
-                    expEvts.add(new T3<>((Object)key, (Object)val, (Object)key));
+                    expEvts.add(new T3<>(key, val, key));
             }
 
             boolean updated = false;
@@ -859,16 +859,16 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
                     key * 2;
 
                 if (t == null) {
-                    updates.put(key, new T2<>((Object)val, null));
+                    updates.put(key, new T2<>(val, null));
 
                     if (!filtered)
-                        expEvts.add(new T3<>((Object)key, (Object)val, null));
+                        expEvts.add(new T3<>(key, val, null));
                 }
                 else {
-                    updates.put(key, new T2<>((Object)val, (Object)key));
+                    updates.put(key, new T2<>(val, key));
 
                     if (!filtered)
-                        expEvts.add(new T3<>((Object)key, (Object)val, (Object)key));
+                        expEvts.add(new T3<>(key, val, key));
                 }
 
                 cache.put(key, val);
@@ -1007,14 +1007,14 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
                 }
 
                 if (t == null) {
-                    updates.put(key, new T2<>((Object)key, null));
+                    updates.put(key, new T2<>(key, null));
 
-                    expEvts.add(new T3<>((Object)key, (Object)key, null));
+                    expEvts.add(new T3<>(key, key, null));
                 }
                 else {
-                    updates.put(key, new T2<>((Object)key, (Object)key));
+                    updates.put(key, new T2<>(key, key));
 
-                    expEvts.add(new T3<>((Object)key, (Object)key, (Object)key));
+                    expEvts.add(new T3<>(key, key, key));
                 }
 
                 if (first) {
@@ -1058,14 +1058,14 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
                 T2<Object, Object> t = updates.get(key);
 
                 if (t == null) {
-                    updates.put(key, new T2<>((Object)key, null));
+                    updates.put(key, new T2<>(key, null));
 
-                    expEvts.add(new T3<>((Object)key, (Object)key, null));
+                    expEvts.add(new T3<>(key, key, null));
                 }
                 else {
-                    updates.put(key, new T2<>((Object)key, (Object)key));
+                    updates.put(key, new T2<>(key, key));
 
-                    expEvts.add(new T3<>((Object)key, (Object)key, (Object)key));
+                    expEvts.add(new T3<>(key, key, key));
                 }
 
                 if (updateFromClient)
@@ -1600,7 +1600,7 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
 
                 qryClnCache.put(j, i);
 
-                afterRestEvts.add(new T3<>((Object)j, (Object)i, (Object)oldVal));
+                afterRestEvts.add(new T3<>(j, i, oldVal));
             }
 
             checkEvents(new ArrayList<>(afterRestEvts), lsnr, false);
@@ -1796,7 +1796,7 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
 
                     keyEvts.add(new T2<>(val, prevVal));
 
-                    T3<Object, Object, Object> tupVal = new T3<>((Object)key, (Object)val, (Object)prevVal);
+                    T3<Object, Object, Object> tupVal = new T3<>(key, val, prevVal);
 
                     expEvtsLsnr.add(tupVal);
 
@@ -1864,7 +1864,7 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
 
             qryClnCache.put(i, i);
 
-            afterRestEvts.add(new T3<>((Object)i, (Object)i, (Object)oldVal));
+            afterRestEvts.add(new T3<>(i, i, oldVal));
         }
 
         checkEvents(new ArrayList<>(afterRestEvts), lsnr, false);
@@ -2046,7 +2046,7 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
                             }
                         }
 
-                        expEvts.get(threadId).add(new T3<>((Object)key, (Object)val, (Object)prevVal));
+                        expEvts.get(threadId).add(new T3<>(key, val, prevVal));
 
                         CyclicBarrier bar = checkBarrier.get();
 

@@ -3252,7 +3252,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
 
             configureChannel(channel, netTimeoutMs);
 
-            this.channel = (WritableByteChannel)channel;
+            this.channel = channel;
             out = new ObjectOutputStream(channel.socket().getOutputStream());
             in = new ObjectInputStream(channel.socket().getInputStream());
 

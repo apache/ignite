@@ -370,7 +370,7 @@ public class WeightedRandomLoadBalancingSpi extends IgniteSpiAdapter implements 
      * @return Node weight
      */
     private int getWeight(ClusterNode node) {
-        Integer weight = (Integer)node.attribute(createSpiAttributeName(NODE_WEIGHT_ATTR_NAME));
+        Integer weight = node.attribute(createSpiAttributeName(NODE_WEIGHT_ATTR_NAME));
 
         if (weight != null && weight == 0)
             throw new IllegalStateException("Node weight cannot be zero: " + node);

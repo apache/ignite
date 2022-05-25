@@ -53,7 +53,7 @@ public class VectorizerTest {
             final int filteredId = i;
             double[] expFeatures = Arrays.stream(features).filter(f -> Math.abs(f - features[filteredId]) > 0.01).toArray();
             assertArrayEquals(res.features().asArray(), expFeatures, 0.);
-            assertEquals((double)i, res.label(), 0.);
+            assertEquals(i, res.label(), 0.);
         }
     }
 

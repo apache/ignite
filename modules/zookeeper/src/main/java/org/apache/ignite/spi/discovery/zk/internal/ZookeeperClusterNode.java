@@ -313,7 +313,7 @@ public class ZookeeperClusterNode implements IgniteClusterNode, Externalizable, 
     /** {@inheritDoc} */
     @Override public boolean isDaemon() {
         if (!daemonInit) {
-            daemon = "true".equalsIgnoreCase((String)attribute(ATTR_DAEMON));
+            daemon = "true".equalsIgnoreCase(attribute(ATTR_DAEMON));
 
             daemonInit = true;
         }

@@ -1916,7 +1916,7 @@ public class CacheContinuousQueryRandomOperationsTest extends GridCommonAbstract
             };
 
         ContinuousQueryWithTransformer<K, V, CacheEntryEvent> qry0 =
-            (ContinuousQueryWithTransformer<K, V, CacheEntryEvent>)qry;
+            qry;
 
         qry0.setRemoteTransformerFactory(FactoryBuilder.factoryOf(transformer));
 

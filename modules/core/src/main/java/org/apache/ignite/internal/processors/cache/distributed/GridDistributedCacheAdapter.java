@@ -440,7 +440,7 @@ public abstract class GridDistributedCacheAdapter<K, V> extends GridCacheAdapter
                 }
             }
 
-            GridCacheAdapter<K, V> cache = ((IgniteEx)ignite).context().cache().internalCache(cacheName);
+            GridCacheAdapter<K, V> cache = ignite.context().cache().internalCache(cacheName);
 
             if (cache == null)
                 return completeWithResult(true);

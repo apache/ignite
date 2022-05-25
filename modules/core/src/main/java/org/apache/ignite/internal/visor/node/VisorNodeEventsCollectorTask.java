@@ -60,7 +60,7 @@ public class VisorNodeEventsCollectorTask extends VisorMultiNodeTask<VisorNodeEv
 
         for (ComputeJobResult r : results) {
             if (r.getException() == null)
-                allEvts.addAll((Collection<VisorGridEvent>)r.getData());
+                allEvts.addAll(r.getData());
         }
 
         return allEvts.isEmpty() ? Collections.<VisorGridEvent>emptyList() : allEvts;

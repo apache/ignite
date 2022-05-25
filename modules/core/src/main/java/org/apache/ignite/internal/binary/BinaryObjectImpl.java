@@ -193,7 +193,7 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
         if (detached())
             return this;
 
-        return (BinaryObjectImpl)detach();
+        return detach();
     }
 
     /** {@inheritDoc} */

@@ -96,7 +96,7 @@ public class SingleSplitTestTask extends ComputeTaskAdapter<Integer, Integer> {
         for (ComputeJobResult res : results) {
             assert res.getException() == null : "Load test jobs can never fail: " + res;
 
-            retVal += (Integer)res.getData();
+            retVal += res.getData();
         }
 
         return retVal;

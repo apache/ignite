@@ -1080,7 +1080,7 @@ public class IgnitePdsCheckpointSimulationWithRealCpDisabledTest extends GridCom
             }
         }
 
-        return F.t((Map<FullPageId, Integer>)resMap, start);
+        return F.t(resMap, start);
     }
 
     /**

@@ -2358,7 +2358,7 @@ public class ZookeeperDiscoveryImpl {
 
         rtState.top.addNode(locNode);
 
-        final List<ClusterNode> topSnapshot = Collections.singletonList((ClusterNode)locNode);
+        final List<ClusterNode> topSnapshot = Collections.singletonList(locNode);
 
         try {
             lsnr.onDiscovery(

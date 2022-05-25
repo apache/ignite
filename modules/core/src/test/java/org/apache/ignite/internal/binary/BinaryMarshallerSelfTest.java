@@ -781,7 +781,7 @@ public class BinaryMarshallerSelfTest extends AbstractBinaryArraysTest {
         assertEquals(Timestamp.class, po1.field("ts").getClass());
         assertEquals(time, po1.field("time"));
         assertEquals(Time.class, po1.field("time").getClass());
-        assertArrayEquals(timeArr, (Object[])po1.field("timeArr"));
+        assertArrayEquals(timeArr, po1.field("timeArr"));
         assertEquals(Time[].class, po1.field("timeArr").getClass());
 
         obj1 = po1.deserialize();
@@ -810,8 +810,8 @@ public class BinaryMarshallerSelfTest extends AbstractBinaryArraysTest {
         assertEquals(obj.s, (short)po.field("s"));
         assertEquals(obj.i, (int)po.field("i"));
         assertEquals(obj.l, (long)po.field("l"));
-        assertEquals(obj.f, (float)po.field("f"), 0);
-        assertEquals(obj.d, (double)po.field("d"), 0);
+        assertEquals(obj.f, po.field("f"), 0);
+        assertEquals(obj.d, po.field("d"), 0);
         assertEquals(obj.c, (char)po.field("c"));
         assertEquals(obj.bool, (boolean)po.field("bool"));
         assertEquals(obj.str, po.field("str"));
@@ -819,17 +819,17 @@ public class BinaryMarshallerSelfTest extends AbstractBinaryArraysTest {
         assertEquals(obj.date, po.field("date"));
         assertEquals(Date.class, obj.date.getClass());
         assertEquals(obj.ts, po.field("ts"));
-        assertArrayEquals(obj.bArr, (byte[])po.field("bArr"));
-        assertArrayEquals(obj.sArr, (short[])po.field("sArr"));
-        assertArrayEquals(obj.iArr, (int[])po.field("iArr"));
-        assertArrayEquals(obj.lArr, (long[])po.field("lArr"));
-        assertArrayEquals(obj.fArr, (float[])po.field("fArr"), 0);
-        assertArrayEquals(obj.dArr, (double[])po.field("dArr"), 0);
-        assertArrayEquals(obj.cArr, (char[])po.field("cArr"));
-        assertBooleanArrayEquals(obj.boolArr, (boolean[])po.field("boolArr"));
-        assertArrayEquals(obj.strArr, (String[])po.field("strArr"));
-        assertArrayEquals(obj.uuidArr, (UUID[])po.field("uuidArr"));
-        assertArrayEquals(obj.dateArr, (Date[])po.field("dateArr"));
+        assertArrayEquals(obj.bArr, po.field("bArr"));
+        assertArrayEquals(obj.sArr, po.field("sArr"));
+        assertArrayEquals(obj.iArr, po.field("iArr"));
+        assertArrayEquals(obj.lArr, po.field("lArr"));
+        assertArrayEquals(obj.fArr, po.field("fArr"), 0);
+        assertArrayEquals(obj.dArr, po.field("dArr"), 0);
+        assertArrayEquals(obj.cArr, po.field("cArr"));
+        assertBooleanArrayEquals(obj.boolArr, po.field("boolArr"));
+        assertArrayEquals(obj.strArr, po.field("strArr"));
+        assertArrayEquals(obj.uuidArr, po.field("uuidArr"));
+        assertArrayEquals(obj.dateArr, po.field("dateArr"));
         assertArrayEquals(
             obj.objArr,
             useBinaryArrays ? po.<BinaryArray>field("objArr").array() : po.field("objArr")
@@ -848,8 +848,8 @@ public class BinaryMarshallerSelfTest extends AbstractBinaryArraysTest {
         assertEquals(obj.inner.s, (short)innerPo.field("s"));
         assertEquals(obj.inner.i, (int)innerPo.field("i"));
         assertEquals(obj.inner.l, (long)innerPo.field("l"));
-        assertEquals(obj.inner.f, (float)innerPo.field("f"), 0);
-        assertEquals(obj.inner.d, (double)innerPo.field("d"), 0);
+        assertEquals(obj.inner.f, innerPo.field("f"), 0);
+        assertEquals(obj.inner.d, innerPo.field("d"), 0);
         assertEquals(obj.inner.c, (char)innerPo.field("c"));
         assertEquals(obj.inner.bool, (boolean)innerPo.field("bool"));
         assertEquals(obj.inner.str, innerPo.field("str"));
@@ -857,17 +857,17 @@ public class BinaryMarshallerSelfTest extends AbstractBinaryArraysTest {
         assertEquals(obj.inner.date, innerPo.field("date"));
         assertEquals(Date.class, obj.inner.date.getClass());
         assertEquals(obj.inner.ts, innerPo.field("ts"));
-        assertArrayEquals(obj.inner.bArr, (byte[])innerPo.field("bArr"));
-        assertArrayEquals(obj.inner.sArr, (short[])innerPo.field("sArr"));
-        assertArrayEquals(obj.inner.iArr, (int[])innerPo.field("iArr"));
-        assertArrayEquals(obj.inner.lArr, (long[])innerPo.field("lArr"));
-        assertArrayEquals(obj.inner.fArr, (float[])innerPo.field("fArr"), 0);
-        assertArrayEquals(obj.inner.dArr, (double[])innerPo.field("dArr"), 0);
-        assertArrayEquals(obj.inner.cArr, (char[])innerPo.field("cArr"));
-        assertBooleanArrayEquals(obj.inner.boolArr, (boolean[])innerPo.field("boolArr"));
-        assertArrayEquals(obj.inner.strArr, (String[])innerPo.field("strArr"));
-        assertArrayEquals(obj.inner.uuidArr, (UUID[])innerPo.field("uuidArr"));
-        assertArrayEquals(obj.inner.dateArr, (Date[])innerPo.field("dateArr"));
+        assertArrayEquals(obj.inner.bArr, innerPo.field("bArr"));
+        assertArrayEquals(obj.inner.sArr, innerPo.field("sArr"));
+        assertArrayEquals(obj.inner.iArr, innerPo.field("iArr"));
+        assertArrayEquals(obj.inner.lArr, innerPo.field("lArr"));
+        assertArrayEquals(obj.inner.fArr, innerPo.field("fArr"), 0);
+        assertArrayEquals(obj.inner.dArr, innerPo.field("dArr"), 0);
+        assertArrayEquals(obj.inner.cArr, innerPo.field("cArr"));
+        assertBooleanArrayEquals(obj.inner.boolArr, innerPo.field("boolArr"));
+        assertArrayEquals(obj.inner.strArr, innerPo.field("strArr"));
+        assertArrayEquals(obj.inner.uuidArr, innerPo.field("uuidArr"));
+        assertArrayEquals(obj.inner.dateArr, innerPo.field("dateArr"));
         assertArrayEquals(
             obj.inner.objArr,
             useBinaryArrays ? innerPo.<BinaryArray>field("objArr").array() : innerPo.field("objArr")
@@ -901,25 +901,25 @@ public class BinaryMarshallerSelfTest extends AbstractBinaryArraysTest {
         assertEquals(obj.s, (short)po.field("_s"));
         assertEquals(obj.i, (int)po.field("_i"));
         assertEquals(obj.l, (long)po.field("_l"));
-        assertEquals(obj.f, (float)po.field("_f"), 0);
-        assertEquals(obj.d, (double)po.field("_d"), 0);
+        assertEquals(obj.f, po.field("_f"), 0);
+        assertEquals(obj.d, po.field("_d"), 0);
         assertEquals(obj.c, (char)po.field("_c"));
         assertEquals(obj.bool, (boolean)po.field("_bool"));
         assertEquals(obj.str, po.field("_str"));
         assertEquals(obj.uuid, po.field("_uuid"));
         assertEquals(obj.date, po.field("_date"));
         assertEquals(obj.ts, po.field("_ts"));
-        assertArrayEquals(obj.bArr, (byte[])po.field("_bArr"));
-        assertArrayEquals(obj.sArr, (short[])po.field("_sArr"));
-        assertArrayEquals(obj.iArr, (int[])po.field("_iArr"));
-        assertArrayEquals(obj.lArr, (long[])po.field("_lArr"));
-        assertArrayEquals(obj.fArr, (float[])po.field("_fArr"), 0);
-        assertArrayEquals(obj.dArr, (double[])po.field("_dArr"), 0);
-        assertArrayEquals(obj.cArr, (char[])po.field("_cArr"));
-        assertBooleanArrayEquals(obj.boolArr, (boolean[])po.field("_boolArr"));
-        assertArrayEquals(obj.strArr, (String[])po.field("_strArr"));
-        assertArrayEquals(obj.uuidArr, (UUID[])po.field("_uuidArr"));
-        assertArrayEquals(obj.dateArr, (Date[])po.field("_dateArr"));
+        assertArrayEquals(obj.bArr, po.field("_bArr"));
+        assertArrayEquals(obj.sArr, po.field("_sArr"));
+        assertArrayEquals(obj.iArr, po.field("_iArr"));
+        assertArrayEquals(obj.lArr, po.field("_lArr"));
+        assertArrayEquals(obj.fArr, po.field("_fArr"), 0);
+        assertArrayEquals(obj.dArr, po.field("_dArr"), 0);
+        assertArrayEquals(obj.cArr, po.field("_cArr"));
+        assertBooleanArrayEquals(obj.boolArr, po.field("_boolArr"));
+        assertArrayEquals(obj.strArr, po.field("_strArr"));
+        assertArrayEquals(obj.uuidArr, po.field("_uuidArr"));
+        assertArrayEquals(obj.dateArr, po.field("_dateArr"));
         assertArrayEquals(
             obj.objArr,
             useBinaryArrays ? po.<BinaryArray>field("_objArr").array() : po.field("_objArr")
@@ -938,8 +938,8 @@ public class BinaryMarshallerSelfTest extends AbstractBinaryArraysTest {
         assertEquals(obj.simple.s, (short)simplePo.field("s"));
         assertEquals(obj.simple.i, (int)simplePo.field("i"));
         assertEquals(obj.simple.l, (long)simplePo.field("l"));
-        assertEquals(obj.simple.f, (float)simplePo.field("f"), 0);
-        assertEquals(obj.simple.d, (double)simplePo.field("d"), 0);
+        assertEquals(obj.simple.f, simplePo.field("f"), 0);
+        assertEquals(obj.simple.d, simplePo.field("d"), 0);
         assertEquals(obj.simple.c, (char)simplePo.field("c"));
         assertEquals(obj.simple.bool, (boolean)simplePo.field("bool"));
         assertEquals(obj.simple.str, simplePo.field("str"));
@@ -947,17 +947,17 @@ public class BinaryMarshallerSelfTest extends AbstractBinaryArraysTest {
         assertEquals(obj.simple.date, simplePo.field("date"));
         assertEquals(Date.class, obj.simple.date.getClass());
         assertEquals(obj.simple.ts, simplePo.field("ts"));
-        assertArrayEquals(obj.simple.bArr, (byte[])simplePo.field("bArr"));
-        assertArrayEquals(obj.simple.sArr, (short[])simplePo.field("sArr"));
-        assertArrayEquals(obj.simple.iArr, (int[])simplePo.field("iArr"));
-        assertArrayEquals(obj.simple.lArr, (long[])simplePo.field("lArr"));
-        assertArrayEquals(obj.simple.fArr, (float[])simplePo.field("fArr"), 0);
-        assertArrayEquals(obj.simple.dArr, (double[])simplePo.field("dArr"), 0);
-        assertArrayEquals(obj.simple.cArr, (char[])simplePo.field("cArr"));
-        assertBooleanArrayEquals(obj.simple.boolArr, (boolean[])simplePo.field("boolArr"));
-        assertArrayEquals(obj.simple.strArr, (String[])simplePo.field("strArr"));
-        assertArrayEquals(obj.simple.uuidArr, (UUID[])simplePo.field("uuidArr"));
-        assertArrayEquals(obj.simple.dateArr, (Date[])simplePo.field("dateArr"));
+        assertArrayEquals(obj.simple.bArr, simplePo.field("bArr"));
+        assertArrayEquals(obj.simple.sArr, simplePo.field("sArr"));
+        assertArrayEquals(obj.simple.iArr, simplePo.field("iArr"));
+        assertArrayEquals(obj.simple.lArr, simplePo.field("lArr"));
+        assertArrayEquals(obj.simple.fArr, simplePo.field("fArr"), 0);
+        assertArrayEquals(obj.simple.dArr, simplePo.field("dArr"), 0);
+        assertArrayEquals(obj.simple.cArr, simplePo.field("cArr"));
+        assertBooleanArrayEquals(obj.simple.boolArr, simplePo.field("boolArr"));
+        assertArrayEquals(obj.simple.strArr, simplePo.field("strArr"));
+        assertArrayEquals(obj.simple.uuidArr, simplePo.field("uuidArr"));
+        assertArrayEquals(obj.simple.dateArr, simplePo.field("dateArr"));
         assertArrayEquals(
             obj.simple.objArr,
             useBinaryArrays ? simplePo.<BinaryArray>field("objArr").array() : simplePo.field("objArr")
@@ -979,25 +979,25 @@ public class BinaryMarshallerSelfTest extends AbstractBinaryArraysTest {
         assertEquals(obj.binary.s, (short)binaryPo.field("_s"));
         assertEquals(obj.binary.i, (int)binaryPo.field("_i"));
         assertEquals(obj.binary.l, (long)binaryPo.field("_l"));
-        assertEquals(obj.binary.f, (float)binaryPo.field("_f"), 0);
-        assertEquals(obj.binary.d, (double)binaryPo.field("_d"), 0);
+        assertEquals(obj.binary.f, binaryPo.field("_f"), 0);
+        assertEquals(obj.binary.d, binaryPo.field("_d"), 0);
         assertEquals(obj.binary.c, (char)binaryPo.field("_c"));
         assertEquals(obj.binary.bool, (boolean)binaryPo.field("_bool"));
         assertEquals(obj.binary.str, binaryPo.field("_str"));
         assertEquals(obj.binary.uuid, binaryPo.field("_uuid"));
         assertEquals(obj.binary.date, binaryPo.field("_date"));
         assertEquals(obj.binary.ts, binaryPo.field("_ts"));
-        assertArrayEquals(obj.binary.bArr, (byte[])binaryPo.field("_bArr"));
-        assertArrayEquals(obj.binary.sArr, (short[])binaryPo.field("_sArr"));
-        assertArrayEquals(obj.binary.iArr, (int[])binaryPo.field("_iArr"));
-        assertArrayEquals(obj.binary.lArr, (long[])binaryPo.field("_lArr"));
-        assertArrayEquals(obj.binary.fArr, (float[])binaryPo.field("_fArr"), 0);
-        assertArrayEquals(obj.binary.dArr, (double[])binaryPo.field("_dArr"), 0);
-        assertArrayEquals(obj.binary.cArr, (char[])binaryPo.field("_cArr"));
-        assertBooleanArrayEquals(obj.binary.boolArr, (boolean[])binaryPo.field("_boolArr"));
-        assertArrayEquals(obj.binary.strArr, (String[])binaryPo.field("_strArr"));
-        assertArrayEquals(obj.binary.uuidArr, (UUID[])binaryPo.field("_uuidArr"));
-        assertArrayEquals(obj.binary.dateArr, (Date[])binaryPo.field("_dateArr"));
+        assertArrayEquals(obj.binary.bArr, binaryPo.field("_bArr"));
+        assertArrayEquals(obj.binary.sArr, binaryPo.field("_sArr"));
+        assertArrayEquals(obj.binary.iArr, binaryPo.field("_iArr"));
+        assertArrayEquals(obj.binary.lArr, binaryPo.field("_lArr"));
+        assertArrayEquals(obj.binary.fArr, binaryPo.field("_fArr"), 0);
+        assertArrayEquals(obj.binary.dArr, binaryPo.field("_dArr"), 0);
+        assertArrayEquals(obj.binary.cArr, binaryPo.field("_cArr"));
+        assertBooleanArrayEquals(obj.binary.boolArr, binaryPo.field("_boolArr"));
+        assertArrayEquals(obj.binary.strArr, binaryPo.field("_strArr"));
+        assertArrayEquals(obj.binary.uuidArr, binaryPo.field("_uuidArr"));
+        assertArrayEquals(obj.binary.dateArr, binaryPo.field("_dateArr"));
         assertArrayEquals(
             obj.binary.objArr,
             useBinaryArrays ? binaryPo.<BinaryArray>field("_objArr").array() : binaryPo.field("_objArr")
@@ -1318,8 +1318,8 @@ public class BinaryMarshallerSelfTest extends AbstractBinaryArraysTest {
         assertEquals(obj.s, (short)po.field("s"));
         assertEquals(obj.i, (int)po.field("i"));
         assertEquals(obj.l, (long)po.field("l"));
-        assertEquals(obj.f, (float)po.field("f"), 0);
-        assertEquals(obj.d, (double)po.field("d"), 0);
+        assertEquals(obj.f, po.field("f"), 0);
+        assertEquals(obj.d, po.field("d"), 0);
         assertEquals(obj.c, (char)po.field("c"));
         assertEquals(obj.bool, (boolean)po.field("bool"));
         assertEquals(obj.str, po.field("str"));
@@ -1327,17 +1327,17 @@ public class BinaryMarshallerSelfTest extends AbstractBinaryArraysTest {
         assertEquals(obj.date, po.field("date"));
         assertEquals(Date.class, obj.date.getClass());
         assertEquals(obj.ts, po.field("ts"));
-        assertArrayEquals(obj.bArr, (byte[])po.field("bArr"));
-        assertArrayEquals(obj.sArr, (short[])po.field("sArr"));
-        assertArrayEquals(obj.iArr, (int[])po.field("iArr"));
-        assertArrayEquals(obj.lArr, (long[])po.field("lArr"));
-        assertArrayEquals(obj.fArr, (float[])po.field("fArr"), 0);
-        assertArrayEquals(obj.dArr, (double[])po.field("dArr"), 0);
-        assertArrayEquals(obj.cArr, (char[])po.field("cArr"));
-        assertBooleanArrayEquals(obj.boolArr, (boolean[])po.field("boolArr"));
-        assertArrayEquals(obj.strArr, (String[])po.field("strArr"));
-        assertArrayEquals(obj.uuidArr, (UUID[])po.field("uuidArr"));
-        assertArrayEquals(obj.dateArr, (Date[])po.field("dateArr"));
+        assertArrayEquals(obj.bArr, po.field("bArr"));
+        assertArrayEquals(obj.sArr, po.field("sArr"));
+        assertArrayEquals(obj.iArr, po.field("iArr"));
+        assertArrayEquals(obj.lArr, po.field("lArr"));
+        assertArrayEquals(obj.fArr, po.field("fArr"), 0);
+        assertArrayEquals(obj.dArr, po.field("dArr"), 0);
+        assertArrayEquals(obj.cArr, po.field("cArr"));
+        assertBooleanArrayEquals(obj.boolArr, po.field("boolArr"));
+        assertArrayEquals(obj.strArr, po.field("strArr"));
+        assertArrayEquals(obj.uuidArr, po.field("uuidArr"));
+        assertArrayEquals(obj.dateArr, po.field("dateArr"));
         assertArrayEquals(
             obj.objArr,
             useBinaryArrays ? po.<BinaryArray>field("objArr").array() : po.field("objArr")
@@ -1688,7 +1688,7 @@ public class BinaryMarshallerSelfTest extends AbstractBinaryArraysTest {
 
         assertEquals(id, inner.id);
 
-        BinaryObjectImpl detachedPo = (BinaryObjectImpl)innerPo.detach();
+        BinaryObjectImpl detachedPo = innerPo.detach();
 
         assert detachedPo.detached();
 
@@ -1705,7 +1705,7 @@ public class BinaryMarshallerSelfTest extends AbstractBinaryArraysTest {
         assertEquals(id, inner.id);
         assertNotNull(inner.inner);
 
-        detachedPo = (BinaryObjectImpl)innerPo.detach();
+        detachedPo = innerPo.detach();
 
         assert detachedPo.detached();
 
@@ -2949,7 +2949,7 @@ public class BinaryMarshallerSelfTest extends AbstractBinaryArraysTest {
 
         assertArrayEquals(obj1.valArr, portObj.<BigDecimal[]>field("valArr"));
         assertArrayEquals(obj1.valArr, portObj.<DecimalReflective>deserialize().valArr);
-        assertArrayEquals(obj1.valArr, (BigDecimal[])portObj.type().field("valArr").value(portObj));
+        assertArrayEquals(obj1.valArr, portObj.type().field("valArr").value(portObj));
 
         obj1.valArr = null;
 
@@ -2982,7 +2982,7 @@ public class BinaryMarshallerSelfTest extends AbstractBinaryArraysTest {
         assertArrayEquals(obj2.rawValArr, portObj.<DecimalMarshalAware>deserialize().rawValArr);
 
         assertEquals(obj2.val, portObj.type().field("val").value(portObj));
-        assertArrayEquals(obj2.valArr, (BigDecimal[])portObj.type().field("valArr").value(portObj));
+        assertArrayEquals(obj2.valArr, portObj.type().field("valArr").value(portObj));
 
         for (BigDecimal v: valArr) {
             obj2.val = v;
@@ -5388,10 +5388,10 @@ public class BinaryMarshallerSelfTest extends AbstractBinaryArraysTest {
         @Override public void readBinary(BinaryReader reader) throws BinaryObjectException {
             BinaryRawReaderEx raw = (BinaryRawReaderEx)reader.rawReader();
 
-            inner1 = (DetachedInnerTestObject)raw.readObject();
+            inner1 = raw.readObject();
             inner2 = raw.readObjectDetached();
             inner3 = raw.readObjectDetached();
-            inner4 = (DetachedInnerTestObject)raw.readObject();
+            inner4 = raw.readObject();
         }
     }
 

@@ -66,7 +66,7 @@ public class GridifyLoadTestTask extends ComputeTaskSplitAdapter<GridifyArgument
                     res.getException());
             }
 
-            retVal += (Integer)res.getData();
+            retVal += res.getData();
         }
 
         return retVal;

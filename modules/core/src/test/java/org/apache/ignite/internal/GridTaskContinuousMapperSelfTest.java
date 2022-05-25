@@ -271,7 +271,7 @@ public class GridTaskContinuousMapperSelfTest extends GridCommonAbstractTest {
             }
 
             try {
-                mapper.send(Collections.singletonMap(new TestJob(), (ClusterNode)null));
+                mapper.send(Collections.singletonMap(new TestJob(), null));
 
                 assert false;
             }
@@ -301,7 +301,7 @@ public class GridTaskContinuousMapperSelfTest extends GridCommonAbstractTest {
             }
 
             try {
-                mapper.send(Collections.singleton((ComputeJob)null));
+                mapper.send(Collections.singleton(null));
 
                 assert false;
             }

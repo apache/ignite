@@ -893,7 +893,7 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
         if (crd.disconnected() || crd.version() != updateVer.coordinatorVersion())
             return;
 
-        MvccAckRequestTx msg = new MvccAckRequestTx((long)-1, updateVer.counter());
+        MvccAckRequestTx msg = new MvccAckRequestTx(-1, updateVer.counter());
 
         msg.skipResponse(true);
 

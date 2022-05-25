@@ -37,7 +37,7 @@ public interface IgniteFunction<T, R> extends Function<T, R>, Serializable {
      */
     // TODO: IGNITE-10653 Maybe we should add toString description to identity and constant.
     public static <T, R> IgniteFunction<T, R> constant(R r) {
-        return (IgniteFunction<T, R>)t -> r;
+        return t -> r;
     }
 
     /**
@@ -59,6 +59,6 @@ public interface IgniteFunction<T, R> extends Function<T, R>, Serializable {
      * @return Identity function.
      */
     public static <T> IgniteFunction<T, T> identity() {
-        return (IgniteFunction<T, T>)t -> t;
+        return t -> t;
     }
 }

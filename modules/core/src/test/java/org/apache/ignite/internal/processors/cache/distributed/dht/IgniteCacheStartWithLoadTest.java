@@ -80,7 +80,7 @@ public class IgniteCacheStartWithLoadTest extends GridCommonAbstractTest {
      */
     @Test
     public void testNoRebalanceDuringCacheStart() throws Exception {
-        IgniteEx crd = (IgniteEx)startGrids(4);
+        IgniteEx crd = startGrids(4);
 
         crd.cluster().active(true);
 

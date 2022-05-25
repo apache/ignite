@@ -78,7 +78,7 @@ import org.h2.table.Column;
 public final class UpdatePlanBuilder {
     /** Converter from GridSqlColumn to Column. */
     private static final IgniteClosure<GridSqlColumn, Column> TO_H2_COL =
-        (IgniteClosure<GridSqlColumn, Column>)GridSqlColumn::column;
+        GridSqlColumn::column;
 
     /** Allow hidden key value columns at the INSERT/UPDATE/MERGE statements (not final for tests). */
     private static boolean ALLOW_KEY_VAL_UPDATES = IgniteSystemProperties.getBoolean(

@@ -177,7 +177,7 @@ public class CacheCheckpointSpi extends IgniteSpiAdapter implements CheckpointSp
                     CheckpointListener tmp = lsnr;
 
                     if (tmp != null)
-                        tmp.onCheckpointRemoved((String)e.key());
+                        tmp.onCheckpointRemoved(e.key());
                 }
             }
         }, EVT_CACHE_OBJECT_REMOVED, EVT_CACHE_OBJECT_EXPIRED);

@@ -112,7 +112,7 @@ public class IgniteCacheTxPreloadNoWriteTest extends GridCommonAbstractTest {
                 tx.commit();
         }
 
-        GridCacheAdapter cacheAdapter = ((IgniteKernal)ignite(0)).context().cache().internalCache(DEFAULT_CACHE_NAME);
+        GridCacheAdapter cacheAdapter = ignite(0).context().cache().internalCache(DEFAULT_CACHE_NAME);
 
         // Check all transactions are finished.
         assertEquals(0, cacheAdapter.context().tm().idMapSize());

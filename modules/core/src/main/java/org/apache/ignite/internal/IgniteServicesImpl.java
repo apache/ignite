@@ -378,7 +378,7 @@ public class IgniteServicesImpl extends AsyncSupportAdapter implements IgniteSer
     /** {@inheritDoc} */
     @Override public <T> T serviceProxy(String name, Class<? super T> svcItf, boolean sticky)
         throws IgniteException {
-        return (T)serviceProxy(name, svcItf, sticky, DFLT_TIMEOUT);
+        return serviceProxy(name, svcItf, sticky, DFLT_TIMEOUT);
     }
 
     /** {@inheritDoc} */
@@ -388,7 +388,7 @@ public class IgniteServicesImpl extends AsyncSupportAdapter implements IgniteSer
         final boolean sticky,
         final long timeout
     ) throws IgniteException {
-        return (T)serviceProxy(name, svcItf, sticky, (Supplier<Map<String, Object>>)null, timeout);
+        return serviceProxy(name, svcItf, sticky, (Supplier<Map<String, Object>>)null, timeout);
     }
 
     /** */
@@ -399,7 +399,7 @@ public class IgniteServicesImpl extends AsyncSupportAdapter implements IgniteSer
         final long timeout,
         final boolean keepBinary
     ) throws IgniteException {
-        return (T)serviceProxy(name, svcItf, sticky, null, timeout, keepBinary);
+        return serviceProxy(name, svcItf, sticky, null, timeout, keepBinary);
     }
 
     /** {@inheritDoc} */
@@ -409,7 +409,7 @@ public class IgniteServicesImpl extends AsyncSupportAdapter implements IgniteSer
         final boolean sticky,
         @Nullable ServiceCallContext callCtx
     ) throws IgniteException {
-        return (T)serviceProxy(name, svcItf, sticky, callCtx, DFLT_TIMEOUT);
+        return serviceProxy(name, svcItf, sticky, callCtx, DFLT_TIMEOUT);
     }
 
     /** {@inheritDoc} */
@@ -424,7 +424,7 @@ public class IgniteServicesImpl extends AsyncSupportAdapter implements IgniteSer
             "\"callCtx\" has an invalid type. Custom implementation of " + ServiceCallContext.class.getSimpleName() +
                 " is not supported. Please use " + ServiceCallContextBuilder.class.getSimpleName() + " to create it.");
 
-        return (T)serviceProxy(name, svcItf, sticky, callCtx != null ? ((ServiceCallContextImpl)callCtx)::values : null, timeout);
+        return serviceProxy(name, svcItf, sticky, callCtx != null ? ((ServiceCallContextImpl)callCtx)::values : null, timeout);
     }
 
     /** {@inheritDoc} */
@@ -455,7 +455,7 @@ public class IgniteServicesImpl extends AsyncSupportAdapter implements IgniteSer
         guard();
 
         try {
-            return (T)ctx.service().serviceProxy(prj, name, svcItf, sticky, callAttrsProvider, timeout, keepBinary);
+            return ctx.service().serviceProxy(prj, name, svcItf, sticky, callAttrsProvider, timeout, keepBinary);
         }
         finally {
             unguard();

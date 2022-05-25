@@ -239,7 +239,7 @@ public class GridMetadataAwareAdapter {
         assert val != null;
 
         synchronized (this) {
-            V v = (V)meta(key);
+            V v = meta(key);
 
             if (v == null)
                 return addMeta(key, val);
@@ -261,7 +261,7 @@ public class GridMetadataAwareAdapter {
         assert val != null;
 
         synchronized (this) {
-            V v = (V)meta(key);
+            V v = meta(key);
 
             if (v == null)
                 addMeta(key, v = val);
@@ -285,7 +285,7 @@ public class GridMetadataAwareAdapter {
         assert c != null;
 
         synchronized (this) {
-            V v = (V)meta(key);
+            V v = meta(key);
 
             if (v == null && c != null)
                 try {

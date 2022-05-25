@@ -160,7 +160,7 @@ public class WalCompactionTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     private void testApplyingUpdatesFromCompactedWal(boolean switchOffCompressor) throws Exception {
-        IgniteEx ig = (IgniteEx)startGrids(3);
+        IgniteEx ig = startGrids(3);
 
         ig.cluster().baselineAutoAdjustEnabled(false);
         ig.cluster().active(true);
@@ -227,7 +227,7 @@ public class WalCompactionTest extends GridCommonAbstractTest {
 
         compactionEnabled = !switchOffCompressor;
 
-        ig = (IgniteEx)startGrids(3);
+        ig = startGrids(3);
 
         awaitPartitionMapExchange();
 

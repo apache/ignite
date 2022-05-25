@@ -33,7 +33,7 @@ import org.jetbrains.annotations.NotNull;
 class MatrixStorageFixtures {
     /** */
     private static final List<Supplier<Iterable<MatrixStorage>>> suppliers = Collections.singletonList(
-        (Supplier<Iterable<MatrixStorage>>)SparseLocalMatrixStorageFixture::new
+        SparseLocalMatrixStorageFixture::new
     );
 
     /** */

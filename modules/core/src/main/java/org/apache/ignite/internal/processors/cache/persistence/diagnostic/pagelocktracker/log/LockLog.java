@@ -151,7 +151,7 @@ public class LockLog extends PageLockTracker<PageLockLogSnapshot> {
 
             assert metaOnLock != 0;
 
-            int heldLocks = (int)(metaOnLock & LOCK_IDX_MASK) >> OP_OFFSET;
+            int heldLocks = (metaOnLock & LOCK_IDX_MASK) >> OP_OFFSET;
 
             assert heldLocks >= 0;
 

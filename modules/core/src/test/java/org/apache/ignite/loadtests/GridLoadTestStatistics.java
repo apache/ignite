@@ -99,7 +99,7 @@ public class GridLoadTestStatistics {
             minJobTime = jobTime;
 
         if (fut != null) {
-            Iterable<UUID> nodeIds = (Iterable<UUID>)fut.getTaskSession().getAttribute("nodes");
+            Iterable<UUID> nodeIds = fut.getTaskSession().getAttribute("nodes");
 
             if (nodeIds != null) {
                 for (UUID id : nodeIds) {

@@ -385,7 +385,7 @@ public class PartitionsExchangeCoordinatorFailoverTest extends GridCommonAbstrac
         awaitPartitionMapExchange();
 
         // Check that affinity are equal on all nodes.
-        AffinityTopologyVersion affVer = ((IgniteEx)ignite(1)).cachex(CACHE_NAME)
+        AffinityTopologyVersion affVer = ignite(1).cachex(CACHE_NAME)
             .context().shared().exchange().readyAffinityVersion();
 
         List<List<ClusterNode>> expAssignment = null;

@@ -1032,7 +1032,7 @@ public class ZookeeperDiscoveryCommunicationFailureTest extends ZookeeperDiscove
     private static class NoOpCommunicationFailureResolver implements CommunicationFailureResolver {
         /** */
         static final IgniteOutClosure<CommunicationFailureResolver> FACTORY
-            = (IgniteOutClosure<CommunicationFailureResolver>)NoOpCommunicationFailureResolver::new;
+            = NoOpCommunicationFailureResolver::new;
 
         /** {@inheritDoc} */
         @Override public void resolve(CommunicationFailureContext ctx) {
@@ -1044,7 +1044,7 @@ public class ZookeeperDiscoveryCommunicationFailureTest extends ZookeeperDiscove
     private static class KillCoordinatorCommunicationFailureResolver implements CommunicationFailureResolver {
         /** */
         static final IgniteOutClosure<CommunicationFailureResolver> FACTORY
-            = (IgniteOutClosure<CommunicationFailureResolver>)KillCoordinatorCommunicationFailureResolver::new;
+            = KillCoordinatorCommunicationFailureResolver::new;
 
         /** */
         @LoggerResource
@@ -1066,7 +1066,7 @@ public class ZookeeperDiscoveryCommunicationFailureTest extends ZookeeperDiscove
     private static class KillRandomCommunicationFailureResolver implements CommunicationFailureResolver {
         /** */
         static final IgniteOutClosure<CommunicationFailureResolver> FACTORY
-            = (IgniteOutClosure<CommunicationFailureResolver>)KillRandomCommunicationFailureResolver::new;
+            = KillRandomCommunicationFailureResolver::new;
 
         /** Last killed nodes. */
         static final Set<ClusterNode> LAST_KILLED_NODES = new HashSet<>();

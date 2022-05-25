@@ -157,7 +157,7 @@ public abstract class BinaryFooterOffsetsAbstractSelfTest extends GridCommonAbst
         assert field1Desc.exists(portObj);
         assert field2Desc.exists(portObj);
 
-        assert Arrays.equals(obj.field1, (byte[])field1Desc.value(portObj));
+        assert Arrays.equals(obj.field1, field1Desc.value(portObj));
         assert obj.field2 == (Integer)field2Desc.value(portObj);
 
         // 3. Test deserialize.

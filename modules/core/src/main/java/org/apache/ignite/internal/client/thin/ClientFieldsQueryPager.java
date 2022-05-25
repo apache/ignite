@@ -57,7 +57,7 @@ class ClientFieldsQueryPager extends GenericQueryPager<List<?>> implements Field
         BinaryInputStream in = payloadCh.in();
 
         if (!hasFirstPage())
-            fieldNames = new ArrayList<>(ClientUtils.collection(in, ignored -> (String)serDes.readObject(in, keepBinary)));
+            fieldNames = new ArrayList<>(ClientUtils.collection(in, ignored -> serDes.readObject(in, keepBinary)));
 
         int rowCnt = in.readInt();
 

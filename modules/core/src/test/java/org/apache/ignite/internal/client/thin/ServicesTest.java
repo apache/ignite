@@ -127,7 +127,7 @@ public class ServicesTest extends AbstractThinClientTest {
 
         assertEquals("testMethod(Object val): test", svc.testMethod(new StringBuilder("test")));
 
-        assertEquals("testMethod(String val): null", svc.testMethod((String)null));
+        assertEquals("testMethod(String val): null", svc.testMethod(null));
 
         assertEquals("testMethod(Object val): null", svc.testMethod((Object)null));
 

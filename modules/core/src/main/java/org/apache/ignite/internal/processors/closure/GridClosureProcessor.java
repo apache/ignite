@@ -1273,7 +1273,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
         @Override public ComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> rcvd) {
             ComputeJobResultPolicy resPlc = super.result(res, rcvd);
 
-            if (res.getException() == null && resPlc != FAILOVER && !t.get3().collect((R1)res.getData()))
+            if (res.getException() == null && resPlc != FAILOVER && !t.get3().collect(res.getData()))
                 resPlc = REDUCE; // If reducer returned false - reduce right away.
 
             return resPlc;
@@ -1660,7 +1660,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
         @Override public ComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> rcvd) {
             ComputeJobResultPolicy resPlc = super.result(res, rcvd);
 
-            if (res.getException() == null && resPlc != FAILOVER && !rdc.collect((R1)res.getData()))
+            if (res.getException() == null && resPlc != FAILOVER && !rdc.collect(res.getData()))
                 resPlc = REDUCE; // If reducer returned false - reduce right away.
 
             return resPlc;

@@ -271,7 +271,7 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
                 }
                 else if (qry.query().type() != GridCacheQueryType.INDEX) {
                     // For IndexQuery BinaryObjects are used for sorting algorithm.
-                    data = cctx.unwrapBinariesIfNeeded((Collection<Object>)data, qry.query().keepBinary());
+                    data = cctx.unwrapBinariesIfNeeded(data, qry.query().keepBinary());
                 }
 
                 if (query().query().type() == GridCacheQueryType.INDEX)

@@ -105,7 +105,7 @@ public class DistributedConfigurationPersistentTest extends DistributedConfigura
     public void testPropagateValueOnInactiveGridShouldNotThrowException() throws Exception {
         assumeTrue(isPersistent());
 
-        IgniteEx ignite0 = (IgniteEx)startGrids(2);
+        IgniteEx ignite0 = startGrids(2);
 
         DistributedProperty<Long> long0 = distr(ignite0).registerProperty(detachedLongProperty(TEST_PROP));
 

@@ -142,7 +142,7 @@ public abstract class AffinityFunctionExcludeNeighborsAbstractSelfTest extends G
                 Set<String> macs = new HashSet<>();
 
                 for (ClusterNode node : affNodes)
-                    macs.add((String)node.attribute(IgniteNodeAttributes.ATTR_MACS));
+                    macs.add(node.attribute(IgniteNodeAttributes.ATTR_MACS));
 
                 assertEquals(copies, macs.size());
             }

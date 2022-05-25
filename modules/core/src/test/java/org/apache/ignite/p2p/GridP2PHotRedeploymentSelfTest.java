@@ -82,7 +82,7 @@ public class GridP2PHotRedeploymentSelfTest extends GridCommonAbstractTest {
 
             ignite1.compute().localDeployTask(taskCls, taskCls.getClassLoader());
 
-            Integer res2 = (Integer)ignite1.compute().execute(taskCls.getName(),
+            Integer res2 = ignite1.compute().execute(taskCls.getName(),
                 Collections.singletonList(ignite2.cluster().localNode().id()));
 
             info("Result2: " + res2);

@@ -137,7 +137,7 @@ public class IoStatisticsCacheSelfTest extends GridCommonAbstractTest {
 
         cleanPersistenceDir();
 
-        ignite = (IgniteEx)startGrid();
+        ignite = startGrid();
 
         if (persist())
             ignite.active(true);

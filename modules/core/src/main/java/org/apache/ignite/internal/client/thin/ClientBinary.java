@@ -61,7 +61,7 @@ class ClientBinary implements IgniteBinary {
 
         byte[] objBytes = marsh.marshal(obj);
 
-        return (T)marsh.unmarshal(new BinaryHeapInputStream(objBytes));
+        return marsh.unmarshal(new BinaryHeapInputStream(objBytes));
     }
 
     /** {@inheritDoc} */

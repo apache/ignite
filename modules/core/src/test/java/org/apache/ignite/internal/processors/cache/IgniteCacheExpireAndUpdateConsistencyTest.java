@@ -217,7 +217,7 @@ public class IgniteCacheExpireAndUpdateConsistencyTest extends GridCommonAbstrac
 
                     List<T2<TestValue, TestValue>> keyUpdates = new ArrayList<>();
 
-                    keyUpdates.add(new T2<>(new TestValue(0), (TestValue)null));
+                    keyUpdates.add(new T2<>(new TestValue(0), null));
 
                     updates.put(key, keyUpdates);
                 }

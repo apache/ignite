@@ -85,7 +85,7 @@ public class GridLoadTestTask extends ComputeTaskAdapter<Integer, Integer> {
             assert res.getException() == null : "Load test jobs can never fail: " + ctx;
             assert res.getData() != null;
 
-            retVal += (Integer)res.getData();
+            retVal += res.getData();
         }
 
         return retVal;

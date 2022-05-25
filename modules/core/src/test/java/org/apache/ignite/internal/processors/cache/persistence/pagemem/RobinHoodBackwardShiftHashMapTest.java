@@ -200,7 +200,7 @@ public class RobinHoodBackwardShiftHashMapTest {
                 int grpId = i + 1;
                 int pageId = findPageIdForCollision(grpId, baseId, cap);
                 ctrl.put(new FullPageId(pageId, grpId), (long)grpId);
-                map.put(grpId, pageId, (long)grpId, 1);
+                map.put(grpId, pageId, grpId, 1);
             }
             for (FullPageId next : ctrl.keySet()) {
                 assertTrue(map.remove(next.groupId(), next.pageId()));

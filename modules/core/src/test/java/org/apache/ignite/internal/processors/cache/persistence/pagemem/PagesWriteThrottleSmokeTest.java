@@ -184,10 +184,10 @@ public class PagesWriteThrottleSmokeTest extends GridCommonAbstractTest {
             if (zeroDropdown.get()) {
                 slowCheckpointEnabled.set(false);
 
-                IgniteInternalFuture cpFut1 = ((IgniteEx)ignite(0)).context().cache().context().database()
+                IgniteInternalFuture cpFut1 = ignite(0).context().cache().context().database()
                     .wakeupForCheckpoint("test");
 
-                IgniteInternalFuture cpFut2 = ((IgniteEx)ignite(1)).context().cache().context().database()
+                IgniteInternalFuture cpFut2 = ignite(1).context().cache().context().database()
                     .wakeupForCheckpoint("test");
 
                 cpFut1.get();

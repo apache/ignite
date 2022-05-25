@@ -57,7 +57,7 @@ public class GridAdaptiveLoadBalancingSpiSelfTest extends GridSpiAbstractTest<Ad
 
                 assert isFirstTime ? jobsSentSinceLastUpdate == 0 : jobsSentSinceLastUpdate > 0;
 
-                return (Double)node.attribute("load");
+                return node.attribute("load");
             }
         };
     }
@@ -72,7 +72,7 @@ public class GridAdaptiveLoadBalancingSpiSelfTest extends GridSpiAbstractTest<Ad
 
         node.addAttribute("load", 0d);
 
-        List<ClusterNode> nodes = Collections.singletonList((ClusterNode)node);
+        List<ClusterNode> nodes = Collections.singletonList(node);
 
         ComputeTaskSession ses = new GridTestTaskSession(IgniteUuid.randomUuid());
 
@@ -98,7 +98,7 @@ public class GridAdaptiveLoadBalancingSpiSelfTest extends GridSpiAbstractTest<Ad
 
         node.addAttribute("load", 1d);
 
-        List<ClusterNode> nodes = Collections.singletonList((ClusterNode)node);
+        List<ClusterNode> nodes = Collections.singletonList(node);
 
         ComputeTaskSession ses = new GridTestTaskSession(IgniteUuid.randomUuid());
 
@@ -124,7 +124,7 @@ public class GridAdaptiveLoadBalancingSpiSelfTest extends GridSpiAbstractTest<Ad
 
         node.addAttribute("load", 2d);
 
-        List<ClusterNode> nodes = Collections.singletonList((ClusterNode)node);
+        List<ClusterNode> nodes = Collections.singletonList(node);
 
         GridTestNode pick1 = (GridTestNode)getSpi().getBalancedNode(new GridTestTaskSession(IgniteUuid.randomUuid()),
             nodes, new GridTestJob());

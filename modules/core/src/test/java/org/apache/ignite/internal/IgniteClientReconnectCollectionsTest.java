@@ -79,7 +79,7 @@ public class IgniteClientReconnectCollectionsTest extends IgniteClientReconnectA
 
         reconnectServersRestart(log, client, Collections.singleton(srv), new Callable<Collection<Ignite>>() {
             @Override public Collection<Ignite> call() throws Exception {
-                return Collections.singleton((Ignite)startGrid(0));
+                return Collections.singleton(startGrid(0));
             }
         });
 

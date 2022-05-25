@@ -503,7 +503,7 @@ public class TcpCommunicationSpi extends TcpCommunicationConfigInitializer {
         if (nioSrvr != null) {
             sb.append("NIO sessions statistics:");
 
-            IgnitePredicate<GridNioSession> p = (IgnitePredicate<GridNioSession>)ses -> {
+            IgnitePredicate<GridNioSession> p = ses -> {
                 ConnectionKey connId = ses.meta(CONN_IDX_META);
 
                 return connId != null && nodeId.equals(connId.nodeId());

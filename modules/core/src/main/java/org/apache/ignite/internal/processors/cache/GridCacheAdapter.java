@@ -1664,7 +1664,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             res = interceptGetEntries(keys, map);
         else
             for (Map.Entry<K, EntryGetResult> e : map.entrySet())
-                res.add(new CacheEntryImplEx<>(e.getKey(), (V)e.getValue().value(), e.getValue().version()));
+                res.add(new CacheEntryImplEx<>(e.getKey(), e.getValue().value(), e.getValue().version()));
 
         if (statsEnabled)
             metrics0().addGetAllTimeNanos(System.nanoTime() - start);
@@ -1754,7 +1754,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
                         for (Map.Entry<K, EntryGetResult> e : f.get().entrySet())
                             res.put(e.getKey(),
-                                new CacheEntryImplEx<>(e.getKey(), (V)e.getValue().value(), e.getValue().version()));
+                                new CacheEntryImplEx<>(e.getKey(), e.getValue().value(), e.getValue().version()));
 
                         return res.values();
                     }
@@ -1832,7 +1832,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         assert interceptor != null;
 
         for (Map.Entry<K, EntryGetResult> e : map.entrySet()) {
-            V val = interceptor.onGet(e.getKey(), (V)e.getValue().value());
+            V val = interceptor.onGet(e.getKey(), e.getValue().value());
 
             if (val != null)
                 res.put(e.getKey(), new CacheEntryImplEx<>(e.getKey(), val, e.getValue().version()));
@@ -2474,7 +2474,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         throws IgniteCheckedException {
         return syncOp(new SyncOp<V>(true) {
             @Override public V op(GridNearTxLocal tx) throws IgniteCheckedException {
-                return (V)tx.putAsync(ctx, null, key, val, true, filter).get().value();
+                return tx.putAsync(ctx, null, key, val, true, filter).get().value();
             }
 
             @Override public String toString() {
@@ -5708,7 +5708,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             AffinityTopologyVersion txTopVer = tx.topologyVersionSnapshot();
 
             if (txTopVer != null)
-                return op(tx, (AffinityTopologyVersion)null);
+                return op(tx, null);
 
             // Tx needs affinity for entry creation, wait when affinity is ready to avoid blocking inside async operation.
             final AffinityTopologyVersion topVer = ctx.shared().exchange().readyAffinityVersion();

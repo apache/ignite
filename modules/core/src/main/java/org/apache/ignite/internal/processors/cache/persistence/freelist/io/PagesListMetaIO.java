@@ -159,7 +159,7 @@ public class PagesListMetaIO extends PageIO {
         int off = offset(0);
 
         for (int i = 0; i < cnt; i++) {
-            int bucket = (int)PageUtils.getShort(pageAddr, off);
+            int bucket = PageUtils.getShort(pageAddr, off);
             assert bucket >= 0 && bucket <= Short.MAX_VALUE : bucket;
 
             long tailId = PageUtils.getLong(pageAddr, off + 2);

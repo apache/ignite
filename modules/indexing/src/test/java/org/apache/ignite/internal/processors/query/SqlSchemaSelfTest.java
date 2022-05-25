@@ -51,7 +51,7 @@ public class SqlSchemaSelfTest extends AbstractIndexingCommonTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        node = (IgniteEx)startGrid();
+        node = startGrid();
 
         startGrid(2);
     }

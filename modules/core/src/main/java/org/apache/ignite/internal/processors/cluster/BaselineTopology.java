@@ -185,7 +185,7 @@ public class BaselineTopology implements Serializable {
         Set<Object> consistentIds = new TreeSet<>(CONSISTENT_ID_COMPARATOR);
 
         for (Object o : nodeMap.keySet()) {
-            branchingPntHash += (long)o.hashCode();
+            branchingPntHash += o.hashCode();
 
             consistentIds.add(o);
         }
@@ -476,7 +476,7 @@ public class BaselineTopology implements Serializable {
 
         for (BaselineNode node : nodes) {
             if (bltConsIds.contains(node.consistentId()))
-                res += (long)node.consistentId().hashCode();
+                res += node.consistentId().hashCode();
         }
 
         return res;

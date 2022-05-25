@@ -271,7 +271,7 @@ public class CacheContinuousQueryOperationP2PTest extends GridCommonAbstractTest
             (Class<Factory<CacheEntryEventFilter>>)getExternalClassLoader().
                 loadClass("org.apache.ignite.tests.p2p.CacheDeploymentEntryEventFilterFactory");
         qry.setRemoteFilterFactory(
-            (Factory<? extends CacheEntryEventFilter<Object, Object>>)(Object)evtFilterFactoryCls.newInstance());
+            (Factory<? extends CacheEntryEventFilter<Object, Object>>)evtFilterFactoryCls.newInstance());
 
         qry.setLocalListener((evts) -> {
             for (CacheEntryEvent<?, ?> ignored : evts)
@@ -357,13 +357,13 @@ public class CacheContinuousQueryOperationP2PTest extends GridCommonAbstractTest
         qry.setLocalListener(locLsnr);
 
         qry.setRemoteFilterFactory(
-            (Factory<? extends CacheEntryEventFilter<Integer, Integer>>)(Object)evtFilterFactoryCls.newInstance());
+            (Factory<? extends CacheEntryEventFilter<Integer, Integer>>)evtFilterFactoryCls.newInstance());
 
         MutableCacheEntryListenerConfiguration<Integer, Integer> lsnrCfg =
             new MutableCacheEntryListenerConfiguration<>(
                 new FactoryBuilder.SingletonFactory<>(locLsnr),
                 (Factory<? extends CacheEntryEventFilter<? super Integer, ? super Integer>>)
-                    (Object)evtFilterFactoryCls.newInstance(),
+                    evtFilterFactoryCls.newInstance(),
                 true,
                 true
             );

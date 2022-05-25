@@ -41,7 +41,7 @@ public class GridWeightedRandomLoadBalancingSpiSelfTest extends
     @SuppressWarnings({"ObjectEquality"})
     @Test
     public void testSingleNode() throws Exception {
-        List<ClusterNode> nodes = Collections.singletonList((ClusterNode)new GridTestNode(UUID.randomUUID()));
+        List<ClusterNode> nodes = Collections.singletonList(new GridTestNode(UUID.randomUUID()));
 
         ClusterNode node = getSpi().getBalancedNode(new GridTestTaskSession(), nodes, new GridTestJob());
 

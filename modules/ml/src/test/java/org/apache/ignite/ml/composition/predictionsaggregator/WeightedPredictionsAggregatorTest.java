@@ -51,7 +51,7 @@ public class WeightedPredictionsAggregatorTest {
     /** */
     @Test
     public void testToString() {
-        PredictionsAggregator aggr = (PredictionsAggregator)doubles -> null;
+        PredictionsAggregator aggr = doubles -> null;
         assertTrue(!aggr.toString().isEmpty());
         assertTrue(!aggr.toString(true).isEmpty());
         assertTrue(!aggr.toString(false).isEmpty());

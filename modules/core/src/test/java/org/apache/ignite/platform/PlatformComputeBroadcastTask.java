@@ -52,7 +52,7 @@ public class PlatformComputeBroadcastTask extends ComputeTaskAdapter<Object, Col
         List<UUID> ids = new ArrayList<>();
 
         for (ComputeJobResult res : results)
-            ids.add((UUID)res.getData());
+            ids.add(res.getData());
 
         return ids;
     }

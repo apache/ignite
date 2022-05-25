@@ -328,7 +328,7 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
 
         testAffinitySimpleSequentialStart();
 
-        assertNull(((IgniteKernal)ignite(0)).context().cache().internalCache(CACHE_NAME1));
+        assertNull(ignite(0).context().cache().internalCache(CACHE_NAME1));
     }
 
     /**
@@ -368,7 +368,7 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
         if (primaryChanged)
             checkAffinity(3, topVer(5, 1), true);
 
-        assertNull(((IgniteKernal)ignite(1)).context().cache().internalCache(CACHE_NAME1));
+        assertNull(ignite(1).context().cache().internalCache(CACHE_NAME1));
     }
 
     /**
@@ -413,8 +413,8 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
 
             checkAffinity(2, topVer(6, 0), true);
 
-            assertNull(((IgniteKernal)ignite(2)).context().cache().internalCache(CACHE_NAME1));
-            assertNotNull(((IgniteKernal)ignite(3)).context().cache().internalCache(CACHE_NAME1));
+            assertNull(ignite(2).context().cache().internalCache(CACHE_NAME1));
+            assertNotNull(ignite(3).context().cache().internalCache(CACHE_NAME1));
 
             assertNotNull(ignite(2).cache(CACHE_NAME1));
 

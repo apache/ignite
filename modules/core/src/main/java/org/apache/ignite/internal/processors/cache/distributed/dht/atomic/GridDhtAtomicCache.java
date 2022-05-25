@@ -1076,7 +1076,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                 conflictPutMap.keySet() : conflictRmvMap.keySet(),
             map != null ? map.values() : invokeMap != null ? invokeMap.values() : null,
             invokeArgs,
-            (Collection)(conflictPutMap != null ? conflictPutMap.values() : null),
+            conflictPutMap != null ? conflictPutMap.values() : null,
             conflictRmvMap != null ? conflictRmvMap.values() : null,
             retval,
             rawRetval,

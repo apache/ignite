@@ -66,7 +66,7 @@ public class GridAdaptiveLoadBalancingSpiMultipleNodeSelfTest extends GridSpiAbs
 
                 assert isFirstTime ? jobsSentSinceLastUpdate == 0 : jobsSentSinceLastUpdate > 0;
 
-                return (Double)node.attribute("load");
+                return node.attribute("load");
             }
         };
     }

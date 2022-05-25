@@ -137,7 +137,7 @@ public class IgnitePdsCorruptedIndexTest extends GridCommonAbstractTest {
         additionalArgs.add("-D" + "TEST_CHECKPOINT_ON_EVICTION=true");
         additionalArgs.add("-D" + "IGNITE_QUIET=false");
 
-        IgniteEx corruptedNode = (IgniteEx)startGrid(corruptedNodeName);
+        IgniteEx corruptedNode = startGrid(corruptedNodeName);
 
         additionalArgs.clear();
 
@@ -175,7 +175,7 @@ public class IgnitePdsCorruptedIndexTest extends GridCommonAbstractTest {
 
         startGrid(0);
 
-        corruptedNode = (IgniteEx)startGrid(corruptedNodeName);
+        corruptedNode = startGrid(corruptedNodeName);
 
         corruptedNode.cluster().active(true);
 

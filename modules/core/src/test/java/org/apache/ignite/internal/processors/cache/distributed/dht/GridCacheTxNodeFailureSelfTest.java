@@ -219,7 +219,7 @@ public class GridCacheTxNodeFailureSelfTest extends GridCommonAbstractTest {
 
             stopGrid(0, true);
 
-            ((IgniteKernal)ignite(1)).context().discovery().topologyFuture(gridCount() + 1).get();
+            ignite(1).context().discovery().topologyFuture(gridCount() + 1).get();
 
             tx.resume();
 
@@ -263,7 +263,7 @@ public class GridCacheTxNodeFailureSelfTest extends GridCommonAbstractTest {
 
             stopGrid(1, true);
 
-            ((IgniteKernal)ignite(0)).context().discovery().topologyFuture(gridCount() + 1).get();
+            ignite(0).context().discovery().topologyFuture(gridCount() + 1).get();
 
             awaitPartitionMapExchange();
 
@@ -390,14 +390,14 @@ public class GridCacheTxNodeFailureSelfTest extends GridCommonAbstractTest {
             // Check that thread successfully finished.
             fut.get();
 
-            ((IgniteKernal)ignite(0)).context().discovery().topologyFuture(gridCount() + 1).get();
+            ignite(0).context().discovery().topologyFuture(gridCount() + 1).get();
 
             awaitPartitionMapExchange();
 
             // Check there are no hanging transactions.
-            assertEquals(0, ((IgniteEx)ignite(0)).context().cache().context().tm().idMapSize());
-            assertEquals(0, ((IgniteEx)ignite(2)).context().cache().context().tm().idMapSize());
-            assertEquals(0, ((IgniteEx)ignite(3)).context().cache().context().tm().idMapSize());
+            assertEquals(0, ignite(0).context().cache().context().tm().idMapSize());
+            assertEquals(0, ignite(2).context().cache().context().tm().idMapSize());
+            assertEquals(0, ignite(3).context().cache().context().tm().idMapSize());
 
             dataCheck((IgniteKernal)ignite(0), (IgniteKernal)backupNode, key, commit);
         }

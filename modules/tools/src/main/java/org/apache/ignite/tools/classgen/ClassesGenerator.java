@@ -301,7 +301,7 @@ public class ClassesGenerator {
                     }
                 }
 
-                classes.add((Class)cls);
+                classes.add(cls);
             }
         }
     }

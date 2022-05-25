@@ -66,7 +66,7 @@ public class IgnitePdsCacheObjectBinaryProcessorOnDiscoveryTest extends GridComm
      */
     @Test
     public void testJoiningNodeBinaryMetaOnClient() throws Exception {
-        IgniteEx ig0 = (IgniteEx)startGrids(2);
+        IgniteEx ig0 = startGrids(2);
 
         ig0.cluster().active(true);
 

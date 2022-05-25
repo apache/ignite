@@ -151,7 +151,7 @@ public class IntHashMapTest extends AbstractBaseIntMapTest {
 
         assertThat(actualKeys, arrayContainingInAnyOrder(expectedKeys));
 
-        expected.forEach((key, expectedVal) -> assertThat(actual.get(key), is((Object)expectedVal)));
+        expected.forEach((key, expectedVal) -> assertThat(actual.get(key), is(expectedVal)));
     }
 
     /**

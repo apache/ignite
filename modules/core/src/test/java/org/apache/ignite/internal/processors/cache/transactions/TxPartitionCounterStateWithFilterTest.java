@@ -158,6 +158,6 @@ public class TxPartitionCounterStateWithFilterTest extends GridCommonAbstractTes
         if (cacheMode == PARTITIONED)
             ccfg.setBackups(backups);
 
-        return (CacheConfiguration)ccfg;
+        return ccfg;
     }
 }

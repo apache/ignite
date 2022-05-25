@@ -413,7 +413,7 @@ public class GridContinuousTaskSelfTest extends GridCommonAbstractTest {
             for (ComputeJobResult result : results) {
                 assert result.getData() != null : "Unexpected result data (null): " + result;
 
-                res += (Integer)result.getData();
+                res += result.getData();
             }
 
             return res;

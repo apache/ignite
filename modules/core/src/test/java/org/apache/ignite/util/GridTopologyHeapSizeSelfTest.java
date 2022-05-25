@@ -62,7 +62,7 @@ public class GridTopologyHeapSizeSelfTest extends GridCommonAbstractTest {
         double size1 = U.heapSize(node1, 10);
         double size2 = U.heapSize(node2, 10);
 
-        double allSize = U.heapSize(F.asList((ClusterNode)node1, node2), 10);
+        double allSize = U.heapSize(F.asList(node1, node2), 10);
 
         assertEquals(size1 + size2, allSize, 1E-5);
     }
@@ -76,7 +76,7 @@ public class GridTopologyHeapSizeSelfTest extends GridCommonAbstractTest {
         double size1 = U.heapSize(node1, 10);
         double size2 = U.heapSize(node2, 10);
 
-        double allSize = U.heapSize(F.asList((ClusterNode)node1, node2), 10);
+        double allSize = U.heapSize(F.asList(node1, node2), 10);
 
         assertEquals(size1 + size2, allSize, 1E-5);
     }

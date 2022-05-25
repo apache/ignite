@@ -237,7 +237,7 @@ public abstract class GridH2IndexBase extends H2IndexCostedBase {
 
     /** {@inheritDoc} */
     @Override public long getRowCountApproximation() {
-        return ((GridH2Table)table).getRowCountApproximation();
+        return table.getRowCountApproximation();
     }
 
     /**

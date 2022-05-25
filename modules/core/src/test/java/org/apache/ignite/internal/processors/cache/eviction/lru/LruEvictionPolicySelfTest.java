@@ -343,9 +343,9 @@ public class LruEvictionPolicySelfTest extends
                 int size = 0;
 
                 for (EvictableEntry<String, String> entry : policy(i).queue())
-                    size += ((CacheEvictableEntryImpl)entry).size();
+                    size += entry.size();
 
-                assertEquals(size, ((LruEvictionPolicy)policy(i)).getCurrentMemorySize());
+                assertEquals(size, policy(i).getCurrentMemorySize());
             }
             else
                 assertTrue(policy(i).queue().size() <= plcMax + plcBatchSize);

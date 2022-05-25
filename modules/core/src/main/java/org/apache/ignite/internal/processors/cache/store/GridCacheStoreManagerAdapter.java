@@ -621,7 +621,7 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
 
         if (map.size() == 1) {
             Map.Entry<? extends KeyCacheObject, IgniteBiTuple<? extends CacheObject, GridCacheVersion>> e =
-                ((Map<? extends KeyCacheObject, IgniteBiTuple<? extends CacheObject, GridCacheVersion>>)map).entrySet().iterator().next();
+                map.entrySet().iterator().next();
 
             return put(tx, e.getKey(), e.getValue().get1(), e.getValue().get2());
         }

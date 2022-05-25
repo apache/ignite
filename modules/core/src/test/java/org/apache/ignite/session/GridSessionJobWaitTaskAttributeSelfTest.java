@@ -162,7 +162,7 @@ public class GridSessionJobWaitTaskAttributeSelfTest extends GridCommonAbstractT
 
                         if (this.<Integer>argument(0) != 1) {
                             try {
-                                String val = (String)taskSes.waitForAttribute("testName", 20000);
+                                String val = taskSes.waitForAttribute("testName", 20000);
 
                                 if (log.isInfoEnabled())
                                     log.info("Received attribute 'testName': " + val);
@@ -217,7 +217,7 @@ public class GridSessionJobWaitTaskAttributeSelfTest extends GridCommonAbstractT
                 else
                     log.info("Reducing result: " + res.getData());
 
-                sum += (Integer)res.getData();
+                sum += res.getData();
             }
 
             return sum;

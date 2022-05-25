@@ -188,7 +188,7 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
                 List<Object> results = ignite.compute().execute(
                     TestTask.class,
                     new T2<>((Factory<ComputeJobAdapter>)factory,
-                        (Factory<Object>)new Factory<Object>() {
+                        new Factory<Object>() {
                             @Override public Object create() {
                                 return value(i[0]++);
                             }
@@ -213,7 +213,7 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
                 ComputeTaskFuture<List<Object>> fut = ignite.compute().executeAsync(
                     TestTask.class,
                     new T2<>((Factory<ComputeJobAdapter>)factory,
-                        (Factory<Object>)new Factory<Object>() {
+                        new Factory<Object>() {
                             @Override public Object create() {
                                 return value(i[0]++);
                             }
@@ -237,7 +237,7 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
 
                 List<Object> results = ignite.compute().execute(new TestTask(),
                     new T2<>((Factory<ComputeJobAdapter>)factory,
-                        (Factory<Object>)new Factory<Object>() {
+                        new Factory<Object>() {
                             @Override public Object create() {
                                 return value(i[0]++);
                             }
@@ -261,7 +261,7 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
 
                 ComputeTaskFuture<List<Object>> fut = ignite.compute().executeAsync(new TestTask(),
                     new T2<>((Factory<ComputeJobAdapter>)factory,
-                        (Factory<Object>)new Factory<Object>() {
+                        new Factory<Object>() {
                             @Override public Object create() {
                                 return value(i[0]++);
                             }

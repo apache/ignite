@@ -198,7 +198,7 @@ public abstract class GridCacheEmptyEntriesAbstractSelfTest extends GridCommonAb
 
         assertTrue(cache.getAll(F.asSet("key3", "key4")).isEmpty());
 
-        assertTrue(((Map)cache.getAllAsync(F.asSet("key5", "key6")).get()).isEmpty());
+        assertTrue(cache.getAllAsync(F.asSet("key5", "key6")).get().isEmpty());
 
         cache.put("key7", "key7");
         cache.remove("key7", "key7");
@@ -251,7 +251,7 @@ public abstract class GridCacheEmptyEntriesAbstractSelfTest extends GridCommonAb
         tx = ignite.transactions().txStart();
 
         try {
-            assertTrue(((Map)cache.getAllAsync(F.asSet("key5", "key6")).get()).isEmpty());
+            assertTrue(cache.getAllAsync(F.asSet("key5", "key6")).get().isEmpty());
 
             tx.commit();
         }

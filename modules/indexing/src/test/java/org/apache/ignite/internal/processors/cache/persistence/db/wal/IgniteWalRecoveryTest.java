@@ -620,7 +620,7 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
                 @Override public void beforeJoin(ClusterNode locNode, IgniteLogger log) {
                     String nodeName = locNode.attribute(ATTR_IGNITE_INSTANCE_NAME);
 
-                    GridCacheSharedContext sharedCtx = ((IgniteEx)ignite(getTestIgniteInstanceIndex(nodeName)))
+                    GridCacheSharedContext sharedCtx = ignite(getTestIgniteInstanceIndex(nodeName))
                         .context()
                         .cache()
                         .context();
@@ -1075,8 +1075,8 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
     public void testMetastorage() throws Exception {
         int cnt = 5000;
 
-        IgniteEx ignite0 = (IgniteEx)startGrid("node1");
-        IgniteEx ignite1 = (IgniteEx)startGrid("node2");
+        IgniteEx ignite0 = startGrid("node1");
+        IgniteEx ignite1 = startGrid("node2");
 
         ignite1.cluster().active(true);
 
@@ -1136,7 +1136,7 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
         int cnt = 5000;
         int arraySize = 32_768;
 
-        IgniteEx ignite = (IgniteEx)startGrid("node1");
+        IgniteEx ignite = startGrid("node1");
 
         ignite.cluster().active(true);
 
@@ -1177,7 +1177,7 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
     public void testMetastorageRemove() throws Exception {
         int cnt = 400;
 
-        IgniteEx ignite0 = (IgniteEx)startGrid("node1");
+        IgniteEx ignite0 = startGrid("node1");
 
         ignite0.cluster().active(true);
 
@@ -1226,7 +1226,7 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
         try {
             int cnt = 2000;
 
-            IgniteEx ignite0 = (IgniteEx)startGrid("node1");
+            IgniteEx ignite0 = startGrid("node1");
 
             ignite0.cluster().active(true);
 
@@ -1332,7 +1332,7 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
 
         walSegmentSize = 512 * 1024;
 
-        IgniteEx ignite0 = (IgniteEx)startGrid("node0");
+        IgniteEx ignite0 = startGrid("node0");
 
         ignite0.active(true);
 
@@ -1392,7 +1392,7 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
      */
     @Test
     public void testApplyDeltaRecords() throws Exception {
-        IgniteEx ignite0 = (IgniteEx)startGrid("node0");
+        IgniteEx ignite0 = startGrid("node0");
 
         ignite0.cluster().active(true);
 

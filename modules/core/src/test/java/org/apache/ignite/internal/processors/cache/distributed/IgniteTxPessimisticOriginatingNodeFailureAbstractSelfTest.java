@@ -191,7 +191,7 @@ public abstract class IgniteTxPessimisticOriginatingNodeFailureAbstractSelfTest 
         }
 
         info("Starting tx [values=" + map + ", topVer=" +
-            ((IgniteKernal)grid(1)).context().discovery().topologyVersion() + ']');
+            grid(1).context().discovery().topologyVersion() + ']');
 
         if (fullFailure)
             ignoreMessages(ignoreMessageClasses(), F.asList(grid(1).localNode().id()));

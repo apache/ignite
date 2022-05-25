@@ -116,7 +116,7 @@ public class GridTaskFailoverSelfTest extends GridCommonAbstractTest {
             int res = 0;
 
             for (ComputeJobResult result : results)
-                res += (Integer)result.getData();
+                res += result.getData();
 
             return res;
         }

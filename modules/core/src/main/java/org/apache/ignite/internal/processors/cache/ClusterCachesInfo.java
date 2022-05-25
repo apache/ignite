@@ -1967,7 +1967,7 @@ public class ClusterCachesInfo {
                 exchangeActions.addCacheToStop(req, desc);
 
                 if (ctx.discovery().cacheClientNode(ctx.discovery().localNode(), desc.cacheName()))
-                    locCfgsForActivation.put(desc.cacheName(), new T2<>((CacheConfiguration)null, (NearCacheConfiguration)null));
+                    locCfgsForActivation.put(desc.cacheName(), new T2<>(null, null));
             }
 
             for (CacheGroupDescriptor grpDesc : registeredCacheGroups().values())
@@ -2649,7 +2649,7 @@ public class ClusterCachesInfo {
 
                 for (IgniteInternalCache cache : ctx.cache().caches()) {
                     locCfgsForActivation.put(cache.name(),
-                        new T2<>((CacheConfiguration)null, cache.configuration().getNearConfiguration()));
+                        new T2<>(null, cache.configuration().getNearConfiguration()));
                 }
             }
 

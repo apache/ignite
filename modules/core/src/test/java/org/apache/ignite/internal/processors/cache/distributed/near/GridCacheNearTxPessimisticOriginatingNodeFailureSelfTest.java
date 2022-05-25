@@ -32,7 +32,7 @@ public class GridCacheNearTxPessimisticOriginatingNodeFailureSelfTest extends
     IgniteTxPessimisticOriginatingNodeFailureAbstractSelfTest {
     /** {@inheritDoc} */
     @Override protected Collection<Class<?>> ignoreMessageClasses() {
-        return F.asList((Class<?>)GridNearTxPrepareRequest.class, GridDhtTxPrepareRequest.class);
+        return F.asList(GridNearTxPrepareRequest.class, GridDhtTxPrepareRequest.class);
     }
 
     /** {@inheritDoc} */

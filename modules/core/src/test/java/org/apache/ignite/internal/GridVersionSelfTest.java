@@ -37,7 +37,7 @@ public class GridVersionSelfTest extends GridCommonAbstractTest {
     @WithSystemProperty(key = IGNITE_UPDATE_NOTIFIER, value = "true")
     public void testVersions() throws Exception {
         try {
-            final IgniteEx ignite = (IgniteEx)startGrid();
+            final IgniteEx ignite = startGrid();
 
             IgniteProductVersion currVer = ignite.version();
 

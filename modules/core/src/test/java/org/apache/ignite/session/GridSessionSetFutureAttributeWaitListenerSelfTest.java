@@ -207,7 +207,7 @@ public class GridSessionSetFutureAttributeWaitListenerSelfTest extends GridCommo
 
             for (ComputeJobResult result : results) {
                 if (result.getData() != null)
-                    sum += (Integer)result.getData();
+                    sum += result.getData();
             }
 
             return sum;

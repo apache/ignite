@@ -402,7 +402,7 @@ public class JdbcResultSet implements ResultSet {
         if (val instanceof Number)
             return ((Number)val).longValue();
         else if (cls == Boolean.class)
-            return (long)((Boolean)val ? 1 : 0);
+            return (Boolean)val ? 1 : 0;
         else if (cls == String.class || cls == Character.class) {
             try {
                 return Long.parseLong(val.toString());
@@ -452,7 +452,7 @@ public class JdbcResultSet implements ResultSet {
         if (val instanceof Number)
             return ((Number)val).doubleValue();
         else if (cls == Boolean.class)
-            return (double)((Boolean)val ? 1 : 0);
+            return (Boolean)val ? 1 : 0;
         else if (cls == String.class || cls == Character.class) {
             try {
                 return Double.parseDouble(val.toString());

@@ -218,7 +218,7 @@ public class GridServiceProcessorStopSelfTest extends GridCommonAbstractTest {
         try {
             final IgniteEx ignite = startGrid(0);
 
-            final IgniteServiceProcessor srvcProc = (IgniteServiceProcessor)(ignite.context().service());
+            final IgniteServiceProcessor srvcProc = ignite.context().service();
 
             final IgniteInternalFuture c1Fut = GridTestUtils.runAsync(() -> {
                 c1.apply(srvcProc);

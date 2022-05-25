@@ -74,7 +74,7 @@ public class GridWeightedRandomLoadBalancingSpiWeightedSelfTest
             ClusterNode node = getSpi().getBalancedNode(new GridTestTaskSession(IgniteUuid.randomUuid()), nodes,
                 new GridTestJob());
 
-            int weight = (Integer)node.attribute(U.spiAttribute(getSpi(), NODE_WEIGHT_ATTR_NAME));
+            int weight = node.attribute(U.spiAttribute(getSpi(), NODE_WEIGHT_ATTR_NAME));
 
             // Increment number of times a node was picked.
             cnts[weight - 1]++;

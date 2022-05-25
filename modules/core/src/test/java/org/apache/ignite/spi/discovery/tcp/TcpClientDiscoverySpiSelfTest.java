@@ -1544,7 +1544,7 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
 
         final TcpDiscoveryNode srvNode = (TcpDiscoveryNode)srv.cluster().localNode();
 
-        assertEquals((long)connectTo, srvNode.order());
+        assertEquals(connectTo, srvNode.order());
 
         TestTcpDiscoverySpi srvSpi = ((TestTcpDiscoverySpi)srv.configuration().getDiscoverySpi());
 

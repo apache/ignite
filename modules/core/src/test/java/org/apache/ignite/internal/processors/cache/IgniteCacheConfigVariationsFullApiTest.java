@@ -236,7 +236,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
             assertEquals(globalPrimarySize, (int)jcache(i).sizeAsync(PRIMARY).get());
 
         for (int i = 0; i < gridCount(); i++)
-            assertEquals((long)globalPrimarySize, (long)jcache(i).sizeLongAsync(PRIMARY).get());
+            assertEquals(globalPrimarySize, (long)jcache(i).sizeLongAsync(PRIMARY).get());
 
         for (int i = 0; i < gridCount(); i++) {
             IgniteCacheProxy cache = (IgniteCacheProxy)jcache(i);
@@ -248,7 +248,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
             for (int part = 0; part < parts; ++part)
                 cacheSize += jcache(i).sizeLong(part, PRIMARY);
 
-            assertEquals((long)globalPrimarySize, cacheSize);
+            assertEquals(globalPrimarySize, cacheSize);
         }
 
         for (int i = 0; i < gridCount(); i++) {
@@ -261,7 +261,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
             for (int part = 0; part < parts; ++part)
                 cacheSize += jcache(i).sizeLongAsync(part, PRIMARY).get();
 
-            assertEquals((long)globalPrimarySize, cacheSize);
+            assertEquals(globalPrimarySize, cacheSize);
         }
 
         int times = 1;

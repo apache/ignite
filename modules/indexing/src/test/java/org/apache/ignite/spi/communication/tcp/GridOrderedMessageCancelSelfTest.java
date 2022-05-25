@@ -97,7 +97,7 @@ public class GridOrderedMessageCancelSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testTask() throws Exception {
-        Map map = U.field(((IgniteKernal)grid(0)).context().io(), "msgSetMap");
+        Map map = U.field(grid(0).context().io(), "msgSetMap");
 
         int initSize = map.size();
 
@@ -111,7 +111,7 @@ public class GridOrderedMessageCancelSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testTaskException() throws Exception {
-        Map map = U.field(((IgniteKernal)grid(0)).context().io(), "msgSetMap");
+        Map map = U.field(grid(0).context().io(), "msgSetMap");
 
         int initSize = map.size();
 
@@ -151,7 +151,7 @@ public class GridOrderedMessageCancelSelfTest extends GridCommonAbstractTest {
 
         assertTrue(U.await(finishLatch, 5000, MILLISECONDS));
 
-        Map map = U.field(((IgniteKernal)grid(0)).context().io(), "msgSetMap");
+        Map map = U.field(grid(0).context().io(), "msgSetMap");
 
         info("Map: " + map);
 

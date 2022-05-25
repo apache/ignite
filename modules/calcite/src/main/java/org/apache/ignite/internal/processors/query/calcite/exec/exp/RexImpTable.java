@@ -1834,7 +1834,7 @@ public class RexImpTable {
                             TimeUnit toUnit = TimeUnit.MILLISECOND;
                             return multiplyDivide(
                                 Expressions.convert_(Expressions.subtract(trop0, trop1),
-                                    (Class)long.class),
+                                    long.class),
                                 fromUnit.multiplier, toUnit.multiplier);
                         default:
                             throw new AssertionError(call);

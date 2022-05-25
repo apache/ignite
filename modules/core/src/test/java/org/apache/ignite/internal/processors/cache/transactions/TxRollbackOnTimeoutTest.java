@@ -797,7 +797,7 @@ public class TxRollbackOnTimeoutTest extends GridCommonAbstractTest {
         spi(crd).stopBlock();
 
         // FIXME: If using awaitPartitionMapExchange for waiting it some times fail while waiting for owners.
-        IgniteInternalFuture<?> topFut = ((IgniteEx)client).context().cache().context().exchange().
+        IgniteInternalFuture<?> topFut = client.context().cache().context().exchange().
             affinityReadyFuture(new AffinityTopologyVersion(GRID_CNT + 2, 1));
 
         assertNotNull(topFut);

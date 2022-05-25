@@ -158,8 +158,8 @@ public abstract class ClientAbstractConnectivitySelfTest extends GridCommonAbstr
     public void testOneNodeLoopbackHost() throws Exception {
         startRestNode("grid1", LOOPBACK_IP, defaultRestPort());
 
-        checkConnectivityByIp(LOOPBACK_IP, F.t((Collection<String>)Collections.singleton(LOOPBACK_IP),
-            (Collection<String>)Collections.<String>emptySet()));
+        checkConnectivityByIp(LOOPBACK_IP, F.t(Collections.singleton(LOOPBACK_IP),
+            Collections.<String>emptySet()));
     }
 
     /**
@@ -317,8 +317,8 @@ public abstract class ClientAbstractConnectivitySelfTest extends GridCommonAbstr
      * @return {@code True} if addresses are equal, {@code false} otherwise.
      */
     private boolean eqAddresses(IgniteBiTuple<Collection<String>, Collection<String>> nodeIp, GridClientNode node) {
-        return F.eqOrdered(nodeIp.get1(), (Collection<String>)(node.attribute(restAddressAttributeName()))) &&
-            F.eqOrdered(nodeIp.get2(), (Collection<String>)(node.attribute(restHostNameAttributeName())));
+        return F.eqOrdered(nodeIp.get1(), node.attribute(restAddressAttributeName())) &&
+            F.eqOrdered(nodeIp.get2(), node.attribute(restHostNameAttributeName()));
     }
 
     /**

@@ -2342,7 +2342,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
         if (!(ignite.context().service() instanceof IgniteServiceProcessor))
             return;
 
-        final IgniteServiceProcessor srvcProc = (IgniteServiceProcessor)ignite.context().service();
+        final IgniteServiceProcessor srvcProc = ignite.context().service();
 
         GridTestUtils.waitForCondition(() -> {
             AffinityTopologyVersion readyTopVer = srvcProc.deployment().readyTopologyVersion();

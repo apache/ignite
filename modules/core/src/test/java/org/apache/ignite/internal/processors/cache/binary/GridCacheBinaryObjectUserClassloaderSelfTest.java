@@ -160,7 +160,7 @@ public class GridCacheBinaryObjectUserClassloaderSelfTest extends GridCommonAbst
             IgniteCache<Integer, Object> cache2 = i2.cache(DEFAULT_CACHE_NAME);
 
             ClassLoader ldr = useWrappingLoader ?
-                ((WrappingClassLoader)i1.configuration().getClassLoader()).getParent() :
+                i1.configuration().getClassLoader().getParent() :
                 i1.configuration().getClassLoader();
 
             Object v1 = ldr.loadClass("org.apache.ignite.tests.p2p.CacheDeploymentTestValue").newInstance();

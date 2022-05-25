@@ -101,7 +101,7 @@ public class GridSessionCollisionSpiSelfTest extends GridCommonAbstractTest {
                     @Override public Serializable execute() {
                         IgniteUuid jobId = jobCtx.getJobId();
 
-                        String attr = (String)taskSes.getAttribute(jobId);
+                        String attr = taskSes.getAttribute(jobId);
 
                         assert attr != null : "Attribute is null.";
                         assert attr.equals("test-" + jobId) : "Attribute has incorrect value: " + attr;

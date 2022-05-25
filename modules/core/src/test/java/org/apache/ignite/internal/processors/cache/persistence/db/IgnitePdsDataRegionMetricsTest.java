@@ -121,7 +121,7 @@ public class IgnitePdsDataRegionMetricsTest extends GridCommonAbstractTest {
      * @return Ignite cache configuration.
      */
     protected CacheConfiguration<Object, Object> cacheConfiguration() {
-        return (CacheConfiguration<Object, Object>)new CacheConfiguration<>(DEFAULT_CACHE_NAME)
+        return new CacheConfiguration<>(DEFAULT_CACHE_NAME)
                 .setCacheMode(CacheMode.PARTITIONED)
                 .setBackups(1);
     }

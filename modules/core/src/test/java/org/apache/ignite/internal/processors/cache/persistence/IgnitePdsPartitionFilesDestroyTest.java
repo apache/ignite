@@ -146,7 +146,7 @@ public class IgnitePdsPartitionFilesDestroyTest extends GridCommonAbstractTest {
      */
     @Test
     public void testPartitionFileDestroyAfterCheckpoint() throws Exception {
-        IgniteEx crd = (IgniteEx)startGrids(2);
+        IgniteEx crd = startGrids(2);
 
         crd.cluster().baselineAutoAdjustEnabled(false);
         crd.cluster().active(true);
@@ -358,7 +358,7 @@ public class IgnitePdsPartitionFilesDestroyTest extends GridCommonAbstractTest {
      */
     @Test
     public void testDestroyWhenPartitionsAreEmpty() throws Exception {
-        IgniteEx crd = (IgniteEx)startGrids(2);
+        IgniteEx crd = startGrids(2);
 
         crd.cluster().active(true);
 

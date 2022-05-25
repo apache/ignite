@@ -45,10 +45,10 @@ import static org.junit.Assert.assertNotNull;
 class VectorImplementationsFixtures {
     /** */
     private static final List<Supplier<Iterable<Vector>>> suppliers = Arrays.asList(
-        (Supplier<Iterable<Vector>>)DenseLocalOnHeapVectorFixture::new,
-        (Supplier<Iterable<Vector>>)SparseLocalVectorFixture::new,
-        (Supplier<Iterable<Vector>>)DelegatingVectorFixture::new,
-        (Supplier<Iterable<Vector>>)MatrixVectorViewFixture::new
+        DenseLocalOnHeapVectorFixture::new,
+        SparseLocalVectorFixture::new,
+        DelegatingVectorFixture::new,
+        MatrixVectorViewFixture::new
     );
 
     /** */

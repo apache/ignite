@@ -124,7 +124,7 @@ public class BigEndianAscendingWordDeserializer implements IWordDeserializer {
         // First byte
         final int bitsRemainingInFirstByte = (BITS_PER_BYTE - firstByteSkipBits);
         final int bitsToConsumeInFirstByte = Math.min(bitsRemainingInFirstByte, wordLength);
-        long firstByte = (long)bytes[firstByteIndex];
+        long firstByte = bytes[firstByteIndex];
 
         // Mask off the bits to skip in the first byte.
         final long firstByteMask = ((1L << bitsRemainingInFirstByte) - 1L);

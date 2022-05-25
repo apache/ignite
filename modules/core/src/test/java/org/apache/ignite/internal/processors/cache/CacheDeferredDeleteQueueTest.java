@@ -122,7 +122,7 @@ public class CacheDeferredDeleteQueueTest extends GridCommonAbstractTest {
                 @Override public boolean apply() {
                     for (int i = 0; i < NODES; i++) {
                         final GridDhtPartitionTopology top =
-                            ((IgniteKernal)ignite(i)).context().cache().cache(DEFAULT_CACHE_NAME).context().topology();
+                            ignite(i).context().cache().cache(DEFAULT_CACHE_NAME).context().topology();
 
                         for (GridDhtLocalPartition p : top.currentLocalPartitions()) {
                             Collection<Object> rmvQueue = GridTestUtils.getFieldValue(p, "rmvQueue");

@@ -105,7 +105,7 @@ public class GridCacheRebalancingPartitionCountersTest extends GridCommonAbstrac
      */
     @Test
     public void test() throws Exception {
-        IgniteEx ignite = (IgniteEx)startGrids(3);
+        IgniteEx ignite = startGrids(3);
 
         ignite.cluster().active(true);
 
@@ -116,7 +116,7 @@ public class GridCacheRebalancingPartitionCountersTest extends GridCommonAbstrac
 
         final int problemNode = 2;
 
-        IgniteEx node = (IgniteEx)ignite(problemNode);
+        IgniteEx node = ignite(problemNode);
         int[] primaryPartitions = node.affinity(CACHE_NAME).primaryPartitions(node.cluster().localNode());
 
         ignite.cluster().active(false);
@@ -159,7 +159,7 @@ public class GridCacheRebalancingPartitionCountersTest extends GridCommonAbstrac
         HashMap<Integer, Long> partMap = new HashMap<>();
 
         for (int i = 0; i < 3; i++)
-            checkUpdCounter((IgniteEx)ignite(i), issues, partMap);
+            checkUpdCounter(ignite(i), issues, partMap);
 
         for (String issue : issues)
             error(issue);

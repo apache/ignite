@@ -2225,7 +2225,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                                         applyError.compareAndSet(
                                             null,
                                             (t instanceof IgniteCheckedException) ?
-                                                (IgniteCheckedException)t :
+                                                t :
                                                 new IgniteCheckedException("Failed to apply page snapshot", t));
                                     }
                                 }, groupId, partId, exec, semaphore
@@ -2256,7 +2256,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                                     applyError.compareAndSet(
                                         null,
                                         (t instanceof IgniteCheckedException) ?
-                                            (IgniteCheckedException)t :
+                                            t :
                                             new IgniteCheckedException("Failed to cancel or wait partition destroy", t));
                                 }
                             }
@@ -2303,7 +2303,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                                     applyError.compareAndSet(
                                         null,
                                         (t instanceof IgniteCheckedException) ?
-                                            (IgniteCheckedException)t :
+                                            t :
                                             new IgniteCheckedException("Failed to apply page delta", t));
                                 }
                             }, groupId, partId, exec, semaphore);

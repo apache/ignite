@@ -77,7 +77,7 @@ public class TcpDiscoverySegmentationPolicyTest extends GridCommonAbstractTest {
         Collection<ClusterNode> nodes = ignite1.cluster().forServers().nodes();
 
         assertEquals(2, nodes.size());
-        assertTrue(nodes.containsAll(Arrays.asList(((IgniteKernal)ignite(0)).localNode(), ((IgniteKernal)ignite(1)).localNode())));
+        assertTrue(nodes.containsAll(Arrays.asList(ignite(0).localNode(), ignite(1).localNode())));
 
         System.out.println();
     }

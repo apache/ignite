@@ -251,7 +251,7 @@ public final class IgniteModelStorageUtil {
                 byte[] serializedInput = Utils.serialize(input);
                 byte[] serializedOutput = mdl.predict(serializedInput);
 
-                return (O)Utils.deserialize(serializedOutput);
+                return Utils.deserialize(serializedOutput);
             }
 
             /** {@inheritDoc} */
@@ -320,13 +320,13 @@ public final class IgniteModelStorageUtil {
 
         /** {@inheritDoc} */
         @Override public T get() throws InterruptedException, ExecutionException {
-            return (T)Utils.deserialize(delegate.get());
+            return Utils.deserialize(delegate.get());
         }
 
         /** {@inheritDoc} */
         @Override public T get(long timeout, @NotNull TimeUnit unit) throws InterruptedException, ExecutionException,
             TimeoutException {
-            return (T)Utils.deserialize(delegate.get(timeout, unit));
+            return Utils.deserialize(delegate.get(timeout, unit));
         }
     }
 }

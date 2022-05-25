@@ -129,7 +129,7 @@ public class TracerTest {
 
         Matrix mtx2 = new DenseMatrix(100, 100);
 
-        double MAX = (double)(mtx2.rowSize() * mtx2.columnSize());
+        double MAX = mtx2.rowSize() * mtx2.columnSize();
 
         mtx2.assign((x, y) -> (double)(x * y) / MAX);
 
@@ -161,7 +161,7 @@ public class TracerTest {
 
         Matrix mtx2 = new DenseMatrix(100, 100);
 
-        double MAX = (double)(mtx2.rowSize() * mtx2.columnSize());
+        double MAX = mtx2.rowSize() * mtx2.columnSize();
 
         mtx2.assign((x, y) -> (double)(x * y) / MAX);
 

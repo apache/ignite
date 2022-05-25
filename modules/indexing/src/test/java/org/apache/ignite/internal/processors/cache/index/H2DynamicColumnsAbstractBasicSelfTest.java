@@ -286,8 +286,8 @@ public abstract class H2DynamicColumnsAbstractBasicSelfTest extends DynamicColum
             BinaryObject city = (BinaryObject)cache.withKeepBinary().get(1);
 
             assertEquals(1, (int)city.field("id"));
-            assertEquals("Washington", (String)city.field("name"));
-            assertEquals("DC", (String)city.field("state"));
+            assertEquals("Washington", city.field("name"));
+            assertEquals("DC", city.field("state"));
             assertEquals(2500000, (int)city.field("population"));
         }
 
@@ -724,14 +724,14 @@ public abstract class H2DynamicColumnsAbstractBasicSelfTest extends DynamicColum
             BinaryObject city = (BinaryObject)cache.withKeepBinary().get(1);
 
             assertEquals(1, (int)city.field("id"));
-            assertEquals("Washington", (String)city.field("name"));
-            assertEquals("DC", (String)city.field("state"));
+            assertEquals("Washington", city.field("name"));
+            assertEquals("DC", city.field("state"));
 
             city = (BinaryObject)cache.withKeepBinary().get(2);
 
             assertEquals(2, (int)city.field("id"));
-            assertEquals("New York", (String)city.field("name"));
-            assertEquals(null, (String)city.field("state"));
+            assertEquals("New York", city.field("name"));
+            assertEquals(null, city.field("state"));
         }
 
         cache.destroy();

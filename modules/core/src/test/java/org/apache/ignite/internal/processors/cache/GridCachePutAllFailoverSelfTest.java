@@ -111,7 +111,7 @@ public class GridCachePutAllFailoverSelfTest extends GridCommonAbstractTest {
     private final BlockingQueue<ComputeTaskFuture<?>> resQueue = new LinkedBlockingQueue<>(50);
 
     /** Test failover SPI. */
-    private MasterFailoverSpi failoverSpi = new MasterFailoverSpi((IgnitePredicate)workerNodesFilter);
+    private MasterFailoverSpi failoverSpi = new MasterFailoverSpi(workerNodesFilter);
 
     /**
      * @throws Exception If failed.

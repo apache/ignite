@@ -40,7 +40,7 @@ public class ServiceDeploymentOnActivationTest extends GridCommonAbstractTest {
     private static final String SERVICE_NAME = "test-service";
 
     /** */
-    private static final IgnitePredicate<ClusterNode> CLIENT_FILTER = (IgnitePredicate<ClusterNode>)ClusterNode::isClient;
+    private static final IgnitePredicate<ClusterNode> CLIENT_FILTER = ClusterNode::isClient;
 
     /** */
     private static ServiceConfiguration srvcCfg;

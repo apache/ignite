@@ -116,7 +116,7 @@ public class GridSessionLoadTestTask extends ComputeTaskAdapter<Integer, Boolean
             for (Map.Entry<String, Integer> entry : params.entrySet()) {
                 assert taskSes.getAttribute(entry.getKey()) != null;
 
-                Integer newVal = (Integer)taskSes.getAttribute(entry.getKey());
+                Integer newVal = taskSes.getAttribute(entry.getKey());
 
                 assert newVal != null;
 

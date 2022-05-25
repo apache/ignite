@@ -238,7 +238,7 @@ public class GridMapQueryExecutor {
 
             final int timeout = req.timeout() > 0 || req.explicitTimeout()
                 ? req.timeout()
-                : (int)h2.distributedConfiguration().defaultQueryTimeout();
+                : h2.distributedConfiguration().defaultQueryTimeout();
 
             int firstSegment = segments.nextSetBit(0);
             int segment = firstSegment;

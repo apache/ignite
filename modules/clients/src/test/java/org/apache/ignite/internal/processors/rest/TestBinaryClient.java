@@ -379,7 +379,7 @@ final class TestBinaryClient {
 
         req.requestId(idCntr.getAndIncrement());
         req.cacheName(cacheName);
-        req.keys((Iterable<Object>)Arrays.asList(keys));
+        req.keys(Arrays.asList(keys));
 
         return makeRequest(req).getObject();
     }
@@ -417,7 +417,7 @@ final class TestBinaryClient {
 
         req.requestId(idCntr.getAndIncrement());
         req.cacheName(cacheName);
-        req.keys((Iterable<Object>)Arrays.asList(keys));
+        req.keys(Arrays.asList(keys));
 
         return makeRequest(req).isSuccess();
     }

@@ -730,7 +730,7 @@ public class IgniteBaselineAffinityTopologyActivationTest extends GridCommonAbst
      */
     @Test
     public void testActivationHashIsNotUpdatedOnMultipleActivationRequests() throws Exception {
-        final long expectedActivationHash = (long)"A".hashCode();
+        final long expectedActivationHash = "A".hashCode();
 
         BaselineTopologyVerifier verifier = new BaselineTopologyVerifier() {
             @Override public void verify(BaselineTopology blt) {

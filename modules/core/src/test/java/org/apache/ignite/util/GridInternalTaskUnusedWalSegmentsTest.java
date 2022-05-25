@@ -91,7 +91,7 @@ public class GridInternalTaskUnusedWalSegmentsTest extends GridCommonAbstractTes
     @WithSystemProperty(key = IGNITE_PDS_MAX_CHECKPOINT_MEMORY_HISTORY_SIZE, value = "2")
     public void testCorrectnessOfDeletionTaskSegments() throws Exception {
         try {
-            IgniteEx ig0 = (IgniteEx)startGrids(4);
+            IgniteEx ig0 = startGrids(4);
 
             ig0.cluster().active(true);
 

@@ -183,7 +183,7 @@ public class GridCacheCommandHandlerSelfTest extends GridCommonAbstractTest {
      * @throws IgniteCheckedException In case of any grid exception.
      */
     private <T> T testAppend(T curVal, T newVal, boolean append) throws IgniteCheckedException, EntryProcessorException {
-        GridRestCommandHandler hnd = new GridCacheCommandHandler(((IgniteKernal)grid()).context());
+        GridRestCommandHandler hnd = new GridCacheCommandHandler(grid().context());
 
         String key = UUID.randomUUID().toString();
 

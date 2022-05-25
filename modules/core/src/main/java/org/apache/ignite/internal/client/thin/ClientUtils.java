@@ -572,7 +572,7 @@ public final class ClientUtils {
     /** Read Ignite binary object from input stream. */
     <T> T readObject(BinaryInputStream in, boolean keepBinary, Class<T> clazz) {
         if (keepBinary)
-            return (T)marsh.unmarshal(in);
+            return marsh.unmarshal(in);
         else {
             BinaryReaderHandles hnds = new BinaryReaderHandles();
 

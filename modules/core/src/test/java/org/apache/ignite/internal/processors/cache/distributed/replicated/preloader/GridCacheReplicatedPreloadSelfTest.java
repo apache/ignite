@@ -502,7 +502,7 @@ public class GridCacheReplicatedPreloadSelfTest extends GridCommonAbstractTest {
             useExtClassLoader = true;
             disableP2p = true;
 
-            final Class cls = (Class)getExternalClassLoader().
+            final Class cls = getExternalClassLoader().
                 loadClass("org.apache.ignite.tests.p2p.CacheDeploymentExternalizableTestValue");
 
             Ignite g1 = startGrid(1);
@@ -525,7 +525,7 @@ public class GridCacheReplicatedPreloadSelfTest extends GridCommonAbstractTest {
 
             // Custom topic.
 
-            final Class cls2 = (Class)getExternalClassLoader().
+            final Class cls2 = getExternalClassLoader().
                 loadClass("org.apache.ignite.tests.p2p.CacheDeploymentTestEnumValue");
 
             Object topic = cls2.getEnumConstants()[0];
@@ -577,9 +577,9 @@ public class GridCacheReplicatedPreloadSelfTest extends GridCommonAbstractTest {
             if (p2p)
                 disableP2p = true;
 
-            final Class cls = (Class)getExternalClassLoader().
+            final Class cls = getExternalClassLoader().
                 loadClass("org.apache.ignite.tests.p2p.CacheDeploymentExternalizableTestValue");
-            final Class cls2 = (Class)getExternalClassLoader().
+            final Class cls2 = getExternalClassLoader().
                 loadClass("org.apache.ignite.tests.p2p.GridEventConsumeFilter");
 
             Ignite g1 = startGrid(1);

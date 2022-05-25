@@ -419,7 +419,7 @@ public class H2RowCacheSelfTest extends AbstractIndexingCommonTest {
      * @return H2RowCache for checks.
      */
     private IndexRowCache rowCache(IgniteEx ig, int grpId) {
-        return (IndexRowCache)ig.context().indexProcessor().rowCacheCleaner(grpId);
+        return ig.context().indexProcessor().rowCacheCleaner(grpId);
     }
 
     /**

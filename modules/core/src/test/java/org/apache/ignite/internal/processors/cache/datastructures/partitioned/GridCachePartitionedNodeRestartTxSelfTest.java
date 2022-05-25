@@ -187,7 +187,7 @@ public class GridCachePartitionedNodeRestartTxSelfTest extends GridCommonAbstrac
 
                 assertNotNull(atomicVal);
 
-                assertEquals("Custom check failed for node: " + i, (long)i, atomicVal.get());
+                assertEquals("Custom check failed for node: " + i, i, atomicVal.get());
 
                 atomicVal.set(i + 1);
 
@@ -215,7 +215,7 @@ public class GridCachePartitionedNodeRestartTxSelfTest extends GridCommonAbstrac
 
             long val = atomic.get();
 
-            assertEquals("Atomic check failed for node: " + i, (long)i, val);
+            assertEquals("Atomic check failed for node: " + i, i, val);
 
             atomic.incrementAndGet();
 

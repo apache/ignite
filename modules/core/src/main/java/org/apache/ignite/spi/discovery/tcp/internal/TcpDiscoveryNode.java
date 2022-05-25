@@ -384,7 +384,7 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Ignite
     /** {@inheritDoc} */
     @Override public boolean isDaemon() {
         if (!daemonInit) {
-            daemon = "true".equalsIgnoreCase((String)attribute(ATTR_DAEMON));
+            daemon = "true".equalsIgnoreCase(attribute(ATTR_DAEMON));
 
             daemonInit = true;
         }

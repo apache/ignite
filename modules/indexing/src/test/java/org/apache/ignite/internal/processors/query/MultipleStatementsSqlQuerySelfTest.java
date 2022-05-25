@@ -36,7 +36,7 @@ public class MultipleStatementsSqlQuerySelfTest extends AbstractIndexingCommonTe
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        node = (IgniteEx)startGrid();
+        node = startGrid();
 
         startGrid(2);
     }

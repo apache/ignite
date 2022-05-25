@@ -229,7 +229,7 @@ public class GridJobStealingFailoverSpiSelfTest extends GridSpiAbstractTest<JobS
         assert (Integer)ctx.getAttribute(FAILOVER_ATTEMPT_COUNT_ATTR) == failCnt;
 
         if (failed != null) {
-            Collection<UUID> failedSet = (Collection<UUID>)ctx.getAttribute(FAILED_NODE_LIST_ATTR);
+            Collection<UUID> failedSet = ctx.getAttribute(FAILED_NODE_LIST_ATTR);
 
             assert failedSet.contains(failed.id());
         }

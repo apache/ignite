@@ -134,7 +134,7 @@ public class PlatformJavaObjectFactoryProxySelfTest extends GridCommonAbstractTe
     @Test
     public void testCustomFactoryBoxedProperty() {
         PlatformJavaObjectFactoryProxy proxy = proxyForCustom(NO_DFLT_CTOR_FACTORY_CLS_NAME,
-            Collections.singletonMap("fIntBoxed", (Object)1));
+            Collections.singletonMap("fIntBoxed", 1));
 
         Object val = proxy.factory(ctx).create();
 
@@ -160,7 +160,7 @@ public class PlatformJavaObjectFactoryProxySelfTest extends GridCommonAbstractTe
     @Test
     public void testCustomFactoryInvalidPropertyName() {
         final PlatformJavaObjectFactoryProxy proxy = proxyForCustom(NO_DFLT_CTOR_FACTORY_CLS_NAME,
-            Collections.singletonMap("invalid", (Object)1));
+            Collections.singletonMap("invalid", 1));
 
         GridTestUtils.assertThrows(null, new Callable<Object>() {
             @Override public Object call() throws Exception {
@@ -175,7 +175,7 @@ public class PlatformJavaObjectFactoryProxySelfTest extends GridCommonAbstractTe
     @Test
     public void testCustomFactoryInvalidPropertyValue() {
         final PlatformJavaObjectFactoryProxy proxy = proxyForCustom(NO_DFLT_CTOR_FACTORY_CLS_NAME,
-            Collections.singletonMap("fInt", (Object)1L));
+            Collections.singletonMap("fInt", 1L));
 
         GridTestUtils.assertThrows(null, new Callable<Object>() {
             @Override public Object call() throws Exception {

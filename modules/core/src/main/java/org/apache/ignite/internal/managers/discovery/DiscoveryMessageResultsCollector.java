@@ -82,7 +82,7 @@ public abstract class DiscoveryMessageResultsCollector<M, R> {
 
             for (ClusterNode node : discoCache.allNodes()) {
                 if (ctx.discovery().alive(node) && waitForNode(discoCache, node) && !rcvd.containsKey(node.id())) {
-                    rcvd.put(node.id(), new NodeMessage<>((M)null));
+                    rcvd.put(node.id(), new NodeMessage<>(null));
 
                     leftMsgs++;
                 }

@@ -271,7 +271,7 @@ public class ClientAffinityAssignmentWithBaselineTest extends GridCommonAbstract
      * Tests that changing baseline down under load won't break cache.
      */
     private void testChangingBaselineDown(String cacheName, boolean lateActivation) throws Exception {
-        IgniteEx ig0 = (IgniteEx)startGrids(DEFAULT_NODES_COUNT);
+        IgniteEx ig0 = startGrids(DEFAULT_NODES_COUNT);
 
         ig0.cluster().baselineAutoAdjustEnabled(false);
         IgniteEx client1 = null;
@@ -341,7 +341,7 @@ public class ClientAffinityAssignmentWithBaselineTest extends GridCommonAbstract
      */
     @Test
     public void testRejoinWithCleanLfs() throws Exception {
-        IgniteEx ig0 = (IgniteEx)startGrids(DEFAULT_NODES_COUNT - 1);
+        IgniteEx ig0 = startGrids(DEFAULT_NODES_COUNT - 1);
         startGrid("flaky");
 
         ig0.cluster().active(true);
@@ -408,7 +408,7 @@ public class ClientAffinityAssignmentWithBaselineTest extends GridCommonAbstract
      */
     @Test
     public void testCrossCacheTxs() throws Exception {
-        IgniteEx ig0 = (IgniteEx)startGrids(DEFAULT_NODES_COUNT);
+        IgniteEx ig0 = startGrids(DEFAULT_NODES_COUNT);
 
         ig0.cluster().baselineAutoAdjustEnabled(false);
         ig0.cluster().active(true);
@@ -471,7 +471,7 @@ public class ClientAffinityAssignmentWithBaselineTest extends GridCommonAbstract
      */
     @Test
     public void testDynamicCacheLongTransactionNodeStart() throws Exception {
-        IgniteEx ig0 = (IgniteEx)startGrids(4);
+        IgniteEx ig0 = startGrids(4);
 
         ig0.cluster().active(true);
 
@@ -625,7 +625,7 @@ public class ClientAffinityAssignmentWithBaselineTest extends GridCommonAbstract
      */
     @Test
     public void testClientJoinCacheLongTransactionNodeStart() throws Exception {
-        IgniteEx ig0 = (IgniteEx)startGrids(4);
+        IgniteEx ig0 = startGrids(4);
 
         ig0.cluster().active(true);
 

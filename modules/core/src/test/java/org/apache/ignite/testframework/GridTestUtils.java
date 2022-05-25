@@ -1501,7 +1501,7 @@ public final class GridTestUtils {
     public static <K, V> void waitTopologyUpdate(@Nullable String cacheName, int backups, IgniteLogger log)
         throws Exception {
         for (Ignite g : Ignition.allGrids()) {
-            IgniteCache<K, V> cache = ((IgniteEx)g).cache(cacheName);
+            IgniteCache<K, V> cache = g.cache(cacheName);
 
             GridDhtPartitionTopology top = dht(cache).topology();
 

@@ -95,7 +95,7 @@ public class CacheEventWithTxLabelTest extends GridCommonAbstractTest {
     private static List<CacheEvent> wrongEvts = Collections.synchronizedList(new ArrayList<>());
 
     /** Simple entry processor to use for tests */
-    private static CacheEntryProcessor entryProcessor = (CacheEntryProcessor)(entry, objects) -> entry.getValue();
+    private static CacheEntryProcessor entryProcessor = (entry, objects) -> entry.getValue();
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {

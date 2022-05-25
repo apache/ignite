@@ -98,7 +98,7 @@ public class GridCachePartitionsStateValidationTest extends GridCommonAbstractTe
      */
     @Test
     public void testValidationIfPartitionCountersAreInconsistent() throws Exception {
-        IgniteEx ignite = (IgniteEx)startGrids(2);
+        IgniteEx ignite = startGrids(2);
         ignite.cluster().active(true);
 
         awaitPartitionMapExchange();

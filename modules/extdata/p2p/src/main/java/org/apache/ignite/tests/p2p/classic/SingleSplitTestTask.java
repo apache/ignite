@@ -54,7 +54,7 @@ public class SingleSplitTestTask extends ComputeTaskSplitAdapter<Integer, Intege
         for (ComputeJobResult res : results) {
             assert res.getException() == null : "Load test jobs can never fail: " + res;
 
-            retVal += (Integer)res.getData();
+            retVal += res.getData();
         }
 
         return retVal;
@@ -74,7 +74,7 @@ public class SingleSplitTestTask extends ComputeTaskSplitAdapter<Integer, Intege
 
         /** {@inheritDoc} */
         @Override public Serializable execute() {
-            return new GridSingleSplitTestJobTarget().executeLoadTestJob((Integer)argument(0));
+            return new GridSingleSplitTestJobTarget().executeLoadTestJob(argument(0));
         }
     }
 }

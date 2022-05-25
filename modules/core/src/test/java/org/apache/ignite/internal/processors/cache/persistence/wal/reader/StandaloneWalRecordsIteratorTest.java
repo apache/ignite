@@ -103,7 +103,7 @@ public class StandaloneWalRecordsIteratorTest extends GridCommonAbstractTest {
 
     /** */
     private String createWalFiles(int segRecCnt) throws Exception {
-        IgniteEx ig = (IgniteEx)startGrid();
+        IgniteEx ig = startGrid();
 
         String archiveWalDir = getArchiveWalDirPath(ig);
 

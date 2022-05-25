@@ -321,7 +321,7 @@ public class IgnitePageMemReplaceDelayedWriteUnitTest {
         Object[] stripes = U.field(tracker, "stripes");
 
         Stream<Collection<FullPageId>> locked = Arrays.asList(stripes).stream().map(stripe ->
-            (Collection<FullPageId>)U.field(stripe, "locked"));
+            U.field(stripe, "locked"));
 
         return locked.collect(Collectors.toList());
     }

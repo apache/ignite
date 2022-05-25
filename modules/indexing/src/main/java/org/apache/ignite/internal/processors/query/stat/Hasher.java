@@ -143,7 +143,7 @@ public class Hasher {
             case 10:
                 k2 ^= (long)toInt(bb.get(9)) << 8; // fall through
             case 9:
-                k2 ^= (long)toInt(bb.get(8)); // fall through
+                k2 ^= toInt(bb.get(8)); // fall through
             case 8:
                 k1 ^= bb.getLong();
                 break;
@@ -160,7 +160,7 @@ public class Hasher {
             case 2:
                 k1 ^= (long)toInt(bb.get(1)) << 8; // fall through
             case 1:
-                k1 ^= (long)toInt(bb.get(0));
+                k1 ^= toInt(bb.get(0));
                 break;
             default:
                 throw new AssertionError("Should never get here.");

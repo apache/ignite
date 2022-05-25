@@ -266,7 +266,7 @@ public abstract class IgniteCachePeekModesAbstractTest extends IgniteCacheAbstra
             while (it.hasNext()) {
                 KeyCacheObject next = it.next();
 
-                assertTrue(swapKeys.add((Integer)next.value(coctx, false)));
+                assertTrue(swapKeys.add(next.value(coctx, false)));
             }
 
             assertFalse(swapKeys.isEmpty());
@@ -943,7 +943,7 @@ public abstract class IgniteCachePeekModesAbstractTest extends IgniteCacheAbstra
         List<Integer> primary = new ArrayList<>();
         List<Integer> backups = new ArrayList<>();
 
-        CacheObjectContext coctx = ((IgniteEx)ignite(nodeIdx)).context().cache().internalCache(DEFAULT_CACHE_NAME)
+        CacheObjectContext coctx = ignite(nodeIdx).context().cache().internalCache(DEFAULT_CACHE_NAME)
             .context().cacheObjectContext();
 
         while (it.hasNext()) {
@@ -977,7 +977,7 @@ public abstract class IgniteCachePeekModesAbstractTest extends IgniteCacheAbstra
      */
     private T2<List<Integer>, List<Integer>> offheapKeys(int nodeIdx) {
         GridCacheAdapter<Integer, String> internalCache =
-            ((IgniteKernal)ignite(nodeIdx)).context().cache().internalCache(DEFAULT_CACHE_NAME);
+            ignite(nodeIdx).context().cache().internalCache(DEFAULT_CACHE_NAME);
 
 // TODO GG-11148.
         Iterator<Map.Entry<Integer, String>> offheapIt = Collections.EMPTY_MAP.entrySet().iterator();
@@ -1024,7 +1024,7 @@ public abstract class IgniteCachePeekModesAbstractTest extends IgniteCacheAbstra
      * @return Tuple with number of primary and backup keys (one or both will be zero).
      */
     private T2<Integer, Integer> offheapKeysCount(int nodeIdx, int part) throws IgniteCheckedException {
-        GridCacheContext ctx = ((IgniteEx)ignite(nodeIdx)).context().cache().internalCache(DEFAULT_CACHE_NAME).context();
+        GridCacheContext ctx = ignite(nodeIdx).context().cache().internalCache(DEFAULT_CACHE_NAME).context();
         // Swap and offheap are disabled for near cache.
         IgniteCacheOffheapManager offheapManager = ctx.isNear() ? ctx.near().dht().context().offheap() : ctx.offheap();
         //First count entries...

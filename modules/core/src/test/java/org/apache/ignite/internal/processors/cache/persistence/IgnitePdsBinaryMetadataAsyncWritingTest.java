@@ -227,7 +227,7 @@ public class IgnitePdsBinaryMetadataAsyncWritingTest extends GridCommonAbstractT
         assertEquals(0, cache.size(CachePeekMode.PRIMARY));
 
         Map locCache = GridTestUtils.getFieldValue(
-            (CacheObjectBinaryProcessorImpl)ig.context().cacheObjects(), "metadataLocCache");
+            ig.context().cacheObjects(), "metadataLocCache");
 
         assertTrue(GridTestUtils.waitForCondition(() -> locCache.size() == 3, 5_000));
 

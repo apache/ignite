@@ -147,7 +147,7 @@ public abstract class DistributionFunction {
             return true;
 
         return f0 instanceof AffinityDistribution && f1 instanceof AffinityDistribution &&
-            Objects.equals(((AffinityDistribution)f0).identity(), ((AffinityDistribution)f1).identity());
+            Objects.equals(f0.identity(), f1.identity());
     }
 
     /** */

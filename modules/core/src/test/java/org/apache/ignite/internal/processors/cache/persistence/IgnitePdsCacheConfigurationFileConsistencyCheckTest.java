@@ -98,7 +98,7 @@ public class IgnitePdsCacheConfigurationFileConsistencyCheckTest extends GridCom
      */
     @Test
     public void testStartDuplicatedCacheConfigurations() throws Exception {
-        IgniteEx ig0 = (IgniteEx)startGrids(NODES);
+        IgniteEx ig0 = startGrids(NODES);
 
         ig0.cluster().active(true);
 
@@ -126,7 +126,7 @@ public class IgnitePdsCacheConfigurationFileConsistencyCheckTest extends GridCom
      */
     @Test
     public void testTmpCacheConfigurationsDelete() throws Exception {
-        IgniteEx ig0 = (IgniteEx)startGrids(NODES);
+        IgniteEx ig0 = startGrids(NODES);
 
         ig0.cluster().active(true);
 
@@ -166,7 +166,7 @@ public class IgnitePdsCacheConfigurationFileConsistencyCheckTest extends GridCom
      */
     @Test
     public void testCorruptedCacheConfigurationsValidation() throws Exception {
-        IgniteEx ig0 = (IgniteEx)startGrids(NODES);
+        IgniteEx ig0 = startGrids(NODES);
 
         ig0.cluster().active(true);
 

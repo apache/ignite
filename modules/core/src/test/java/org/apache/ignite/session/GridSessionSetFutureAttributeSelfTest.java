@@ -213,7 +213,7 @@ public class GridSessionSetFutureAttributeSelfTest extends GridCommonAbstractTes
                             if (!startSignal[taskNum].await(WAIT_TIME, TimeUnit.MILLISECONDS))
                                 fail();
 
-                            String val = (String)taskSes.waitForAttribute("testName", 100000);
+                            String val = taskSes.waitForAttribute("testName", 100000);
 
                             if (log.isDebugEnabled())
                                 log.info("Received attribute 'testName': " + val);
@@ -253,7 +253,7 @@ public class GridSessionSetFutureAttributeSelfTest extends GridCommonAbstractTes
 
             for (ComputeJobResult result : results) {
                 if (result.getData() != null)
-                    sum += (Integer)result.getData();
+                    sum += result.getData();
             }
 
             return sum;

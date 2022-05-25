@@ -693,7 +693,7 @@ public class GridCacheRebalancingOrderingTest extends GridCommonAbstractTest {
         private final ConcurrentMap<Integer, Set<IntegerKey>> loadingMap = new ConcurrentHashMap<>();
 
         /** */
-        private final IgnitePredicate<Event> pred = (IgnitePredicate<Event>)new IgnitePredicate<Event>() {
+        private final IgnitePredicate<Event> pred = new IgnitePredicate<Event>() {
             @Override public boolean apply(Event evt) {
                 // Handle:
                 // EVT_CACHE_OBJECT_PUT

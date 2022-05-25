@@ -553,7 +553,7 @@ public abstract class CacheContinuousQueryCounterAbstractTest extends GridCommon
 
             for (int i = 0; i < 10; i++) {
                 assertEquals(i, (int)map.get(i).get1());
-                assertEquals((long)1, (long)map.get(i).get2());
+                assertEquals(1, (long)map.get(i).get2());
             }
         }
     }

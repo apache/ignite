@@ -134,7 +134,7 @@ public class IgniteWalHistoryReservationsTest extends GridCommonAbstractTest {
         final int entryCnt = 10_000;
         final int initGridCnt = 4;
 
-        final IgniteEx ig0 = (IgniteEx)startGrids(initGridCnt + 1);
+        final IgniteEx ig0 = startGrids(initGridCnt + 1);
 
         ig0.cluster().active(true);
 
@@ -290,7 +290,7 @@ public class IgniteWalHistoryReservationsTest extends GridCommonAbstractTest {
 
         int entryCnt = 10_000;
 
-        IgniteEx ig0 = (IgniteEx)startGrids(2);
+        IgniteEx ig0 = startGrids(2);
 
         ig0.cluster().active(true);
 
@@ -342,7 +342,7 @@ public class IgniteWalHistoryReservationsTest extends GridCommonAbstractTest {
 
         int entryCnt = 10_000;
 
-        IgniteEx ig0 = (IgniteEx)startGrids(2);
+        IgniteEx ig0 = startGrids(2);
 
         ig0.cluster().active(true);
 

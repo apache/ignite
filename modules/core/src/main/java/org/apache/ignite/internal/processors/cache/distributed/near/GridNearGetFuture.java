@@ -581,8 +581,8 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
             K key0 = (K)cctx.unwrapBinaryIfNeeded(key, !deserializeBinary, false, null);
             V val0 = needVer ?
                 (V)new EntryGetResult(!skipVals ?
-                    (V)cctx.unwrapBinaryIfNeeded(v, !deserializeBinary, false, null) :
-                    (V)Boolean.TRUE, ver) :
+                    cctx.unwrapBinaryIfNeeded(v, !deserializeBinary, false, null) :
+                    Boolean.TRUE, ver) :
                 !skipVals ?
                     (V)cctx.unwrapBinaryIfNeeded(v, !deserializeBinary, false, null) :
                     (V)Boolean.TRUE;

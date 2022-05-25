@@ -205,7 +205,7 @@ public class JdbcThinPartitionAwarenessTransactionsSelfTest extends JdbcThinAbst
 
         // Reset query history.
         for (int i = 0; i < NODES_CNT; i++) {
-            ((IgniteH2Indexing)grid(i).context().query().getIndexing())
+            grid(i).context().query().getIndexing()
                 .runningQueryManager().resetQueryHistoryMetrics();
         }
 
@@ -242,7 +242,7 @@ public class JdbcThinPartitionAwarenessTransactionsSelfTest extends JdbcThinAbst
         int qryExecutionsCntr = 0;
 
         for (int i = 0; i < NODES_CNT; i++) {
-            Collection<QueryHistory> metrics = ((IgniteH2Indexing)grid(i).context().query().getIndexing())
+            Collection<QueryHistory> metrics = grid(i).context().query().getIndexing()
                 .runningQueryManager().queryHistoryMetrics().values();
 
             if (!metrics.isEmpty()) {

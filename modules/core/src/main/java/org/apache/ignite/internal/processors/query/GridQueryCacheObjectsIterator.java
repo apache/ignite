@@ -64,7 +64,7 @@ public class GridQueryCacheObjectsIterator implements Iterator<List<?>>, AutoClo
     /** {@inheritDoc} */
     @Override public List<?> next() {
         return ((List<?>)CacheObjectUtils.unwrapBinariesIfNeeded(
-            cacheObjValCtx, (Collection<Object>)iter.next(), keepBinary));
+            cacheObjValCtx, iter.next(), keepBinary));
     }
 
     /** {@inheritDoc} */

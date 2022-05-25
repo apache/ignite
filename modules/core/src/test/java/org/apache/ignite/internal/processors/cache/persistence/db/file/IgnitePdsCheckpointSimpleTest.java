@@ -108,7 +108,7 @@ public class IgnitePdsCheckpointSimpleTest extends GridCommonAbstractTest {
 
         ignite0.cluster().state(ClusterState.ACTIVE);
 
-        SimpleDistributedProperty<Integer> cpFreqDeviation = U.field(((IgniteEx)ignite0).context().cache().context().database(),
+        SimpleDistributedProperty<Integer> cpFreqDeviation = U.field(ignite0.context().cache().context().database(),
             "cpFreqDeviation");
 
         cpFreqDeviation.propagate(25);

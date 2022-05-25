@@ -444,7 +444,7 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
                 finished, /*fields*/false, cctx.deploymentEnabled());
 
             if (qryInfo.query().type() == INDEX)
-                res.idxQryMetadata((IndexQueryResultMeta)idxQryMetadata);
+                res.idxQryMetadata(idxQryMetadata);
 
             res.data(data);
 

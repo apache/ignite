@@ -107,7 +107,7 @@ public class BinaryArray implements BinaryObjectEx, Externalizable, Comparable<B
 
     /** {@inheritDoc} */
     @Override public <T> T deserialize() throws BinaryObjectException {
-        return (T)deserialize(null);
+        return deserialize(null);
     }
 
     /** {@inheritDoc} */

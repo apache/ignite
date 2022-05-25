@@ -613,7 +613,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
                     qry = new SqlFieldsQueryEx(sql, false);
 
                     if (cliCtx.isSkipReducerOnUpdate())
-                        ((SqlFieldsQueryEx)qry).setSkipReducerOnUpdate(true);
+                        qry.setSkipReducerOnUpdate(true);
             }
 
             setupQuery(qry, prepareSchemaName(req.schemaName()));
@@ -725,7 +725,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
                         }
                     }
                     else
-                        jdbcRes = new JdbcResultInfo(false, (Long)((List<?>)qryCur.getAll().get(0)).get(0), -1);
+                        jdbcRes = new JdbcResultInfo(false, (Long)qryCur.getAll().get(0).get(0), -1);
 
                     jdbcResults.add(jdbcRes);
                 }

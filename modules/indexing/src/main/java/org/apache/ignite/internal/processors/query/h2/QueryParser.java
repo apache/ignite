@@ -171,7 +171,7 @@ public class QueryParser {
         int timeout = qry.getTimeout();
 
         if (timeout < 0)
-            timeout = (int)idx.distributedConfiguration().defaultQueryTimeout();
+            timeout = idx.distributedConfiguration().defaultQueryTimeout();
 
         return new QueryParameters(
             qry.getArgs(),

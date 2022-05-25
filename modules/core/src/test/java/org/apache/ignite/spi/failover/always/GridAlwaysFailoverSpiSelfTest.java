@@ -116,7 +116,7 @@ public class GridAlwaysFailoverSpiSelfTest extends GridSpiAbstractTest<AlwaysFai
      */
     private void checkFailedNodes(ComputeJobResult res, int cnt) {
         Collection<UUID> failedNodes =
-            (Collection<UUID>)res.getJobContext().getAttribute(FAILED_NODE_LIST_ATTR);
+            res.getJobContext().getAttribute(FAILED_NODE_LIST_ATTR);
 
         assert failedNodes != null;
         assert failedNodes.size() == cnt;

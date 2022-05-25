@@ -1709,7 +1709,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
             LocalRoutineInfo routine = locInfos.get(routineId);
 
             if (routine != null)
-                routine.hnd.notifyCallback(nodeId, routineId, (Collection<?>)msg.data(), ctx);
+                routine.hnd.notifyCallback(nodeId, routineId, msg.data(), ctx);
         }
         finally {
             if (msg.futureId() != null) {

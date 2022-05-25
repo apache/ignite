@@ -137,7 +137,7 @@ public final class GridTestIoUtils {
         // Sleep to make sure that clock advances (necessary for some tests)
         Thread.sleep(10);
 
-        return (T)marshaller.unmarshal(buf, obj.getClass().getClassLoader());
+        return marshaller.unmarshal(buf, obj.getClass().getClassLoader());
     }
 
     /**

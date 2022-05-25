@@ -655,7 +655,7 @@ public class IgnitionEx {
 
         T2<IgniteNamedInstance, Boolean> res = start0(new GridStartContext(cfg, null, springCtx), failIfStarted);
 
-        return new T2<>((Ignite)res.get1().grid(), res.get2());
+        return new T2<>(res.get1().grid(), res.get2());
     }
 
     /**

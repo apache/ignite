@@ -146,7 +146,7 @@ public class GridSessionSetTaskAttributeSelfTest extends GridCommonAbstractTest 
                             log.info("Computing job [job=" + this + ", arg=" + argument(0) + ']');
 
                         try {
-                            String val = (String)taskSes.waitForAttribute("testName", 20000);
+                            String val = taskSes.waitForAttribute("testName", 20000);
 
                             if (log.isInfoEnabled())
                                 log.info("Received attribute 'testName': " + val);
@@ -196,7 +196,7 @@ public class GridSessionSetTaskAttributeSelfTest extends GridCommonAbstractTest 
 
             for (ComputeJobResult result : results) {
                 if (result.getData() != null)
-                    sum += (Integer)result.getData();
+                    sum += result.getData();
             }
 
             return sum;

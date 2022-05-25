@@ -123,7 +123,7 @@ public class RunningQueriesTest extends AbstractIndexingCommonTest {
 
         GridQueryProcessor.idxCls = BlockingIndexing.class;
 
-        ignite = (IgniteEx)startGrids(NODE_CNT);
+        ignite = startGrids(NODE_CNT);
     }
 
     /** {@inheritDoc} */

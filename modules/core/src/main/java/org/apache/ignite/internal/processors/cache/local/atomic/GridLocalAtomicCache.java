@@ -613,7 +613,7 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
         final long start = statsEnabled ? System.nanoTime() : 0L;
 
         Map<? extends K, EntryProcessor> invokeMap =
-            Collections.singletonMap(key, (EntryProcessor)entryProcessor);
+            Collections.singletonMap(key, entryProcessor);
 
         IgniteInternalFuture<Map<K, EntryProcessorResult<T>>> fut = updateAllAsync0(null,
             invokeMap,
@@ -1131,7 +1131,7 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
                             updated = old;
 
                             if (validation) {
-                                invokeResMap.put((K)entry.key().value(ctx.cacheObjectContext(), false), invokeRes);
+                                invokeResMap.put(entry.key().value(ctx.cacheObjectContext(), false), invokeRes);
 
                                 continue;
                             }
@@ -1141,7 +1141,7 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
                         }
 
                         if (invokeRes != null)
-                            invokeResMap.put((K)entry.key().value(ctx.cacheObjectContext(), false), invokeRes);
+                            invokeResMap.put(entry.key().value(ctx.cacheObjectContext(), false), invokeRes);
 
                         if (updated == null) {
                             if (intercept) {
