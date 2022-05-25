@@ -26,14 +26,14 @@ import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
- * Task argument for {@link VisorCacheMetricTask}.
+ * Task argument for {@link VisorCacheMetricsTask}.
  */
-public class VisorCacheMetricTaskArg extends IgniteDataTransferObject {
+public class VisorCacheMetricsTaskArg extends IgniteDataTransferObject {
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;
 
-    /** Metric command operation. */
-    private CacheMetricOperation operation;
+    /** Metrics command operation. */
+    private CacheMetricsOperation operation;
 
     /** Caches which will be processed. If not set, operation will affect all caches. */
     private Set<String> cacheNames;
@@ -41,15 +41,15 @@ public class VisorCacheMetricTaskArg extends IgniteDataTransferObject {
     /**
      * Default constructor.
      */
-    public VisorCacheMetricTaskArg() {
+    public VisorCacheMetricsTaskArg() {
         // No-op.
     }
 
     /**
-     * @param operation Metric command operation.
+     * @param operation Metrics command operation.
      * @param cacheNames Names of the caches, which should be processed.
      */
-    public VisorCacheMetricTaskArg(CacheMetricOperation operation, Set<String> cacheNames) {
+    public VisorCacheMetricsTaskArg(CacheMetricsOperation operation, Set<String> cacheNames) {
         this.operation = operation;
         this.cacheNames = cacheNames == null ? null : Collections.unmodifiableSet(cacheNames);
     }
@@ -63,19 +63,19 @@ public class VisorCacheMetricTaskArg extends IgniteDataTransferObject {
     /** {@inheritDoc} */
     @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException,
         ClassNotFoundException {
-        operation = U.readEnum(in, CacheMetricOperation.class);
+        operation = U.readEnum(in, CacheMetricsOperation.class);
         cacheNames = U.readSet(in);
     }
 
     /**
-     * @return Metric command operation.
+     * @return Metrics command operation.
      */
-    public CacheMetricOperation operation() {
+    public CacheMetricsOperation operation() {
         return operation;
     }
 
     /**
-     * @return Names of a caches which will be affected by task when <tt>applyToAllCaches</tt> is <code>false</code>.
+     * @return Caches which will be processed. If not set, operation will affect all caches.
      */
     public Set<String> cacheNames() {
         return Collections.unmodifiableSet(cacheNames);

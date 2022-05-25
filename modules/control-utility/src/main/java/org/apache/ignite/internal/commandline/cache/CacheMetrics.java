@@ -33,32 +33,32 @@ import org.apache.ignite.internal.commandline.CommandArgIterator;
 import org.apache.ignite.internal.commandline.TaskExecutor;
 import org.apache.ignite.internal.commandline.systemview.SystemViewCommand;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.visor.cache.metrics.CacheMetricOperation;
-import org.apache.ignite.internal.visor.cache.metrics.VisorCacheMetricTask;
-import org.apache.ignite.internal.visor.cache.metrics.VisorCacheMetricTaskArg;
-import org.apache.ignite.internal.visor.cache.metrics.VisorCacheMetricTaskResult;
+import org.apache.ignite.internal.visor.cache.metrics.CacheMetricsOperation;
+import org.apache.ignite.internal.visor.cache.metrics.VisorCacheMetricsTask;
+import org.apache.ignite.internal.visor.cache.metrics.VisorCacheMetricsTaskArg;
+import org.apache.ignite.internal.visor.cache.metrics.VisorCacheMetricsTaskResult;
 
 import static java.util.Arrays.asList;
 import static org.apache.ignite.internal.commandline.CommandLogger.optional;
 import static org.apache.ignite.internal.commandline.CommandLogger.or;
-import static org.apache.ignite.internal.commandline.cache.CacheSubcommands.METRIC;
-import static org.apache.ignite.internal.visor.cache.metrics.CacheMetricOperation.DISABLE;
-import static org.apache.ignite.internal.visor.cache.metrics.CacheMetricOperation.ENABLE;
-import static org.apache.ignite.internal.visor.cache.metrics.CacheMetricOperation.STATUS;
+import static org.apache.ignite.internal.commandline.cache.CacheSubcommands.METRICS;
+import static org.apache.ignite.internal.visor.cache.metrics.CacheMetricsOperation.DISABLE;
+import static org.apache.ignite.internal.visor.cache.metrics.CacheMetricsOperation.ENABLE;
+import static org.apache.ignite.internal.visor.cache.metrics.CacheMetricsOperation.STATUS;
 import static org.apache.ignite.internal.visor.systemview.VisorSystemViewTask.SimpleType.STRING;
 
 /**
  * Cache sub-command for a cache metrics collection management. It provides an ability to enable, disable or show status.
  */
-public class CacheMetric extends AbstractCommand<VisorCacheMetricTaskArg> {
-    /** Argument for applying metric command operation to explicitly specified caches. */
+public class CacheMetrics extends AbstractCommand<VisorCacheMetricsTaskArg> {
+    /** Argument for applying metrics command operation to explicitly specified caches. */
     public static final String CACHES_ARGUMENT = "--caches";
 
-    /** Argument for applying metric command operation to all user caches. */
+    /** Argument for applying metrics command operation to all user caches. */
     public static final String ALL_CACHES_ARGUMENT = "--all-caches";
 
-    /** Incorrect metric operation message. */
-    public static final String INCORRECT_METRIC_OPERATION_MESSAGE = "Expected correct metric command operation.";
+    /** Incorrect metrics operation message. */
+    public static final String INCORRECT_METRICS_OPERATION_MESSAGE = "Expected correct metrics command operation.";
 
     /** Incorrect cache argument message. */
     public static final String INCORRECT_CACHE_ARGUMENT_MESSAGE =
@@ -69,13 +69,13 @@ public class CacheMetric extends AbstractCommand<VisorCacheMetricTaskArg> {
     public static final String EXPECTED_CACHES_LIST_MESSAGE = "comma-separated list of cache names.";
 
     /** Task argument. */
-    private VisorCacheMetricTaskArg arg;
+    private VisorCacheMetricsTaskArg arg;
 
     /** {@inheritDoc} */
     @Override public Object execute(GridClientConfiguration clientCfg, Logger log) throws Exception {
         try (GridClient client = Command.startClient(clientCfg)) {
-            VisorCacheMetricTaskResult taskResult = TaskExecutor.executeTaskByNameOnNode(client,
-                VisorCacheMetricTask.class.getName(), arg, null, clientCfg);
+            VisorCacheMetricsTaskResult taskResult = TaskExecutor.executeTaskByNameOnNode(client,
+                VisorCacheMetricsTask.class.getName(), arg, null, clientCfg);
 
             Map<String, Boolean> resultMap = Objects.requireNonNull(taskResult.result(),
                 "Task execution result must not be null");
@@ -83,7 +83,7 @@ public class CacheMetric extends AbstractCommand<VisorCacheMetricTaskArg> {
             Collection<List<?>> values = F.viewReadOnly(resultMap.entrySet(),
                 e -> asList(e.getKey(), e.getValue() ? "enabled" : "disabled"));
 
-            SystemViewCommand.printTable(asList("Cache Name", "Metrics Enable Status"), asList(STRING, STRING),
+            SystemViewCommand.printTable(asList("Cache Name", "Metrics Status"), asList(STRING, STRING),
                 values, log);
 
             return null;
@@ -100,20 +100,20 @@ public class CacheMetric extends AbstractCommand<VisorCacheMetricTaskArg> {
             cachesArgDesc, "specifies a comma-separated list of cache names to which sub-command should be applied.",
             ALL_CACHES_ARGUMENT, "applies sub-command to all user caches.");
 
-        usageCache(log, METRIC, desc, paramsDesc, or(ENABLE, DISABLE, STATUS), or(cachesArgDesc, ALL_CACHES_ARGUMENT));
+        usageCache(log, METRICS, desc, paramsDesc, or(ENABLE, DISABLE, STATUS), or(cachesArgDesc, ALL_CACHES_ARGUMENT));
     }
 
     /** {@inheritDoc} */
-    @Override public VisorCacheMetricTaskArg arg() {
+    @Override public VisorCacheMetricsTaskArg arg() {
         return arg;
     }
 
     /** {@inheritDoc} */
     @Override public void parseArguments(CommandArgIterator argIter) {
-        CacheMetricOperation operation = CacheMetricOperation.of(argIter.nextArg(INCORRECT_METRIC_OPERATION_MESSAGE));
+        CacheMetricsOperation operation = CacheMetricsOperation.of(argIter.nextArg(INCORRECT_METRICS_OPERATION_MESSAGE));
 
         if (operation == null)
-            throw new IllegalArgumentException(INCORRECT_METRIC_OPERATION_MESSAGE);
+            throw new IllegalArgumentException(INCORRECT_METRICS_OPERATION_MESSAGE);
 
         Set<String> cacheNames;
 
@@ -126,11 +126,11 @@ public class CacheMetric extends AbstractCommand<VisorCacheMetricTaskArg> {
         else
             throw new IllegalArgumentException(INCORRECT_CACHE_ARGUMENT_MESSAGE);
 
-        this.arg = new VisorCacheMetricTaskArg(operation, cacheNames);
+        this.arg = new VisorCacheMetricsTaskArg(operation, cacheNames);
     }
 
     /** {@inheritDoc} */
     @Override public String name() {
-        return METRIC.text().toUpperCase();
+        return METRICS.text().toUpperCase();
     }
 }

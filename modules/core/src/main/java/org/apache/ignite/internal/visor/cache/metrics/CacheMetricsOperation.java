@@ -20,9 +20,9 @@ package org.apache.ignite.internal.visor.cache.metrics;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Enum for cache metric command operations.
+ * Enum for cache metrics command operations.
  */
-public enum CacheMetricOperation {
+public enum CacheMetricsOperation {
     /** Enable operation. */
     ENABLE,
 
@@ -37,8 +37,8 @@ public enum CacheMetricOperation {
      *
      * @return Operation corresponding to the specified string representation.
      */
-    public static @Nullable CacheMetricOperation of(String strRep) {
-        for (CacheMetricOperation operation : values()) {
+    public static @Nullable CacheMetricsOperation of(String strRep) {
+        for (CacheMetricsOperation operation : values()) {
             if (operation.name().equalsIgnoreCase(strRep))
                 return operation;
         }

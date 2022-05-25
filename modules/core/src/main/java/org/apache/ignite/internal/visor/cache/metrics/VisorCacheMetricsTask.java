@@ -29,28 +29,28 @@ import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorOneNodeTask;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.internal.visor.cache.metrics.CacheMetricOperation.ENABLE;
+import static org.apache.ignite.internal.visor.cache.metrics.CacheMetricsOperation.ENABLE;
 
 /**
- * Task for a cache metric command.
+ * Task for a cache metrics command.
  */
 @GridInternal
 @GridVisorManagementTask
-public class VisorCacheMetricTask extends VisorOneNodeTask<VisorCacheMetricTaskArg, VisorCacheMetricTaskResult> {
+public class VisorCacheMetricsTask extends VisorOneNodeTask<VisorCacheMetricsTaskArg, VisorCacheMetricsTaskResult> {
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Override protected VisorCacheMetricJob job(VisorCacheMetricTaskArg arg) {
-        return new VisorCacheMetricJob(arg, false);
+    @Override protected VisorCacheMetricsJob job(VisorCacheMetricsTaskArg arg) {
+        return new VisorCacheMetricsJob(arg, false);
     }
 
     /**
      * Job returns {@link Map} with names of processed caches paired with corresponding metrics collection statuses or
      * exception, caught during execution of job.
-     * Results are passed into instance of wrapper class {@link VisorCacheMetricTaskResult}.
+     * Results are passed into instance of wrapper class {@link VisorCacheMetricsTaskResult}.
      */
-    private static class VisorCacheMetricJob extends VisorJob<VisorCacheMetricTaskArg, VisorCacheMetricTaskResult> {
+    private static class VisorCacheMetricsJob extends VisorJob<VisorCacheMetricsTaskArg, VisorCacheMetricsTaskResult> {
         /** Serial version uid. */
         private static final long serialVersionUID = 0L;
 
@@ -60,12 +60,12 @@ public class VisorCacheMetricTask extends VisorOneNodeTask<VisorCacheMetricTaskA
          * @param arg   Job argument.
          * @param debug Flag indicating whether debug information should be printed into node log.
          */
-        protected VisorCacheMetricJob(@Nullable VisorCacheMetricTaskArg arg, boolean debug) {
+        protected VisorCacheMetricsJob(@Nullable VisorCacheMetricsTaskArg arg, boolean debug) {
             super(arg, debug);
         }
 
         /** {@inheritDoc} */
-        @Override protected VisorCacheMetricTaskResult run(@Nullable VisorCacheMetricTaskArg arg)
+        @Override protected VisorCacheMetricsTaskResult run(@Nullable VisorCacheMetricsTaskArg arg)
             throws IgniteException {
             if (arg != null) {
                 Collection<String> cacheNames = F.isEmpty(arg.cacheNames()) ? ignite.cacheNames() : arg.cacheNames();
@@ -76,17 +76,17 @@ public class VisorCacheMetricTask extends VisorOneNodeTask<VisorCacheMetricTaskA
                         case DISABLE:
                             ignite.cluster().enableStatistics(cacheNames, ENABLE == arg.operation());
 
-                            return new VisorCacheMetricTaskResult(cacheMetricsStatus(cacheNames));
+                            return new VisorCacheMetricsTaskResult(cacheMetricsStatus(cacheNames));
 
                         case STATUS:
-                            return new VisorCacheMetricTaskResult(cacheMetricsStatus(cacheNames));
+                            return new VisorCacheMetricsTaskResult(cacheMetricsStatus(cacheNames));
 
                         default:
                             throw new IllegalStateException("Unexpected value: " + arg.operation());
                     }
                 }
                 catch (Exception e) {
-                    return new VisorCacheMetricTaskResult(e);
+                    return new VisorCacheMetricsTaskResult(e);
                 }
             }
 

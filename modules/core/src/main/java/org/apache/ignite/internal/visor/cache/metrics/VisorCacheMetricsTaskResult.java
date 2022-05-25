@@ -26,10 +26,10 @@ import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
- * Result wrapper for {@link VisorCacheMetricTask}.
+ * Result wrapper for {@link VisorCacheMetricsTask}.
  */
-public class VisorCacheMetricTaskResult extends IgniteDataTransferObject {
-    /** Serial version uid.*/
+public class VisorCacheMetricsTaskResult extends IgniteDataTransferObject {
+    /** Serial version uid. */
     private static final long serialVersionUID = 0L;
 
     /** Task result. */
@@ -41,21 +41,21 @@ public class VisorCacheMetricTaskResult extends IgniteDataTransferObject {
     /**
      * Default constructor.
      */
-    public VisorCacheMetricTaskResult() {
+    public VisorCacheMetricsTaskResult() {
         // No-op.
     }
 
     /**
      * @param result Task execution result.
      */
-    public VisorCacheMetricTaskResult(Map<String, Boolean> result) {
+    public VisorCacheMetricsTaskResult(Map<String, Boolean> result) {
         this.result = Collections.unmodifiableMap(result);
     }
 
     /**
      * @param error Task execution error.
      */
-    public VisorCacheMetricTaskResult(Exception error) {
+    public VisorCacheMetricsTaskResult(Exception error) {
         this.error = error;
     }
 
