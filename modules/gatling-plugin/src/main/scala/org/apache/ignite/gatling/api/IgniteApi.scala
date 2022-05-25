@@ -1,6 +1,7 @@
 package org.apache.ignite.gatling.api
 
 import org.apache.ignite.Ignition
+import org.apache.ignite.cache.CacheEntryProcessor
 import org.apache.ignite.client.ClientCacheConfiguration
 import org.apache.ignite.configuration.CacheConfiguration
 import org.apache.ignite.gatling.api.node.IgniteNodeApi
@@ -24,13 +25,30 @@ trait IgniteApi {
   def txStart[U]()(s: TransactionApi => U, f: Throwable => U): Unit
 }
 
+//noinspection AccessorLikeMethodIsUnit
 trait CacheApi[K, V] {
   def put[U](key: K, value: V)(s: Unit => U, f: Throwable => U): Unit
   def putAsync[U](key: K, value: V)(s: Unit => U, f: Throwable => U): Unit
 
+  def putAll[U](map: Map[K, V])(s: Unit => U, f: Throwable => U): Unit
+  def putAllAsync[U](map: Map[K, V])(s: Unit => U, f: Throwable => U): Unit
+
   def get[U](key: K)(s: Map[K, V] => U, f: Throwable => U): Unit
-  //noinspection AccessorLikeMethodIsUnit
   def getAsync[U](key: K)(s: Map[K, V] => U, f: Throwable => U): Unit
+
+  def getAll[U](keys: Set[K])(s: Map[K, V] => U, f: Throwable => U): Unit
+  def getAllAsync[U](keys: Set[K])(s: Map[K, V] => U, f: Throwable => U): Unit
+
+  def remove[U](key: K)(s: Unit => U, f: Throwable => U): Unit
+  def removeAsync[U](key: K)(s: Unit => U, f: Throwable => U): Unit
+
+  def removeAll[U](keys: Set[K])(s: Unit => U, f: Throwable => U): Unit
+  def removeAllAsync[U](keys: Set[K])(s: Unit => U, f: Throwable => U): Unit
+
+  def invoke[T, U](key: K, entryProcessor: CacheEntryProcessor[K, V, T], arguments: Any*)
+                  (s: Map[K, T] => U, f: Throwable => U): Unit
+  def invokeAsync[T, U](key: K, entryProcessor: CacheEntryProcessor[K, V, T], arguments: Any*)
+                       (s: Map[K, T] => U, f: Throwable => U): Unit
 }
 
 trait TransactionApi {

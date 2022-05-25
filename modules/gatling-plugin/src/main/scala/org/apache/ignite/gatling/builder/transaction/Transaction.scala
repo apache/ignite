@@ -23,7 +23,7 @@ case class TransactionStartBuilderTimeoutStep(requestName: Expression[String]) e
   def txSize(txSize: Int): TransactionStartBuilderTimeoutStep = TransactionStartBuilderTimeoutStep(requestName)
 
   override def build(ctx: ScenarioContext, next: Action): Action =
-    TransactionCommitAction(requestName, next, ctx)
+    TransactionStartAction(requestName, next, ctx)
 }
 
 case class TransactionStartBuilder(requestName: Expression[String]) extends IgniteActionBuilder {
