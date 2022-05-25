@@ -19,14 +19,12 @@ import stat
 from typing import NamedTuple
 
 from ignitetest.services.ignite_app import IgniteApplicationService
-from ignitetest.services.utils import IgniteServiceType
-from ignitetest.services.utils.ignite_configuration import IgniteThinClientConfiguration
-from ignitetest.services.utils.ignite_configuration.discovery import from_ignite_cluster
 
 
 SERVICE_JAVA_CLASS_NAME = "org.apache.ignite.internal.ducktest.tests.gatling.GatlingRunnerApplication"
 
 DEFAULT_GATLING_CONF = "gatling.conf.j2"
+DEFAULT_GATLING_LOG_CONF = "logback.xml.j2"
 DEFAULT_GATLING_AKKA_CONF = "gatling-akka.conf.j2"
 
 
@@ -35,11 +33,11 @@ class GatlingConfiguration(NamedTuple):
 
 
 class GatlingService(IgniteApplicationService):
-    def __init__(self, ignite, simulation_class_name, client_type=IgniteServiceType.THIN_CLIENT,
+    def __init__(self, context, client_config, simulation_class_name,
                  num_nodes=1, startup_timeout_sec=60, shutdown_timeout_sec=60, modules=None,
                  jvm_opts=None, merge_with_default=True):
         super().__init__(
-            ignite.context, client_config(ignite, client_type), SERVICE_JAVA_CLASS_NAME, num_nodes,
+            context, client_config, SERVICE_JAVA_CLASS_NAME, num_nodes,
             {"simulation": simulation_class_name}, startup_timeout_sec, shutdown_timeout_sec,
             extend_with(modules, "gatling-plugin"), jvm_opts=jvm_opts, merge_with_default=merge_with_default
         )
@@ -55,6 +53,9 @@ class GatlingService(IgniteApplicationService):
 
         config_file = self.render(DEFAULT_GATLING_AKKA_CONF, settings=config, data_dir=self.work_dir)
         node.account.create_file(os.path.join(self.config_dir, "gatling-akka.conf"), config_file)
+
+        config_file = self.render(DEFAULT_GATLING_LOG_CONF, service=self, settings=config, data_dir=self.work_dir)
+        node.account.create_file(os.path.join(self.config_dir, "logback.xml"), config_file)
 
     def stop(self, force_stop=False, **kwargs):
         super(GatlingService, self).stop(force_stop, **kwargs)
@@ -78,14 +79,6 @@ class GatlingService(IgniteApplicationService):
         self.params = {"reportsOnly": os.path.join(self.log_dir, "gatling-full-report")}
         self.start_node(main_node)
         self.await_stopped()
-
-
-def client_config(ignite, client_type):
-    if client_type == IgniteServiceType.THIN_CLIENT:
-        addresses = ignite.nodes[0].account.hostname + ":" + str(ignite.config.client_connector_configuration.port)
-        return IgniteThinClientConfiguration(addresses=addresses)
-    elif client_type == IgniteServiceType.NODE:
-        return ignite.config._replace(client_mode=True, discovery_spi=from_ignite_cluster(ignite))
 
 
 def extend_with(modules, new_module):
