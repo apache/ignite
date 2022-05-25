@@ -112,6 +112,8 @@ public class ConsistencyCommand extends AbstractCommand<Object> {
 
                 if (res.message() != null)
                     sb.append(res.message());
+                else
+                    assert !parallel;
 
                 if (failed)
                     break;
