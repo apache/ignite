@@ -164,9 +164,9 @@ public class ConsistencyCommand extends AbstractCommand<Object> {
 
     /** {@inheritDoc} */
     @Override public void parseArguments(CommandArgIterator argIter) {
-        parallel = false;
-
         cmd = of(argIter.nextArg("Expected consistency action."));
+
+        parallel = cmd != REPAIR; // REPAIR is sequential by default.
 
         if (cmd == REPAIR) {
             String cacheName = null;
