@@ -140,7 +140,6 @@
                 <exclude>${project.groupId}:ignite-compatibility</exclude>
                 <exclude>${project.groupId}:ignite-sqlline</exclude>
                 <!-- Removed from slim packaging are: -->
-                <exclude>${project.groupId}:ignite-aop</exclude>
                 <exclude>${project.groupId}:ignite-cassandra-serializers</exclude>
                 <exclude>${project.groupId}:ignite-cassandra-store</exclude>
                 <exclude>${project.groupId}:ignite-cloud</exclude>

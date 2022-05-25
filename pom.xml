@@ -130,38 +130,6 @@
         </profile>
 
         <profile>
-            <id>test</id>
-            <build>
-                <plugins>
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-assembly-plugin</artifactId>
-                        <version>2.4</version>
-                        <inherited>false</inherited>
-                        <executions>
-                            <execution>
-                                <id>test</id>
-                                <phase>prepare-package</phase>
-                                <goals>
-                                    <goal>single</goal>
-                                </goals>
-                                <configuration>
-                                    <descriptors>
-                                        <descriptor>assembly/test.xml</descriptor>
-                                    </descriptors>
-                                    <outputDirectory>${basedir}</outputDirectory>
-                                    <finalName>libs</finalName>
-                                    <appendAssemblyId>false</appendAssemblyId>
-                                    <runOnlyAtExecutionRoot>true</runOnlyAtExecutionRoot>
-                                </configuration>
-                            </execution>
-                        </executions>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
-
-        <profile>
             <id>compatibility</id>
             <modules>
                 <module>modules/compatibility</module>

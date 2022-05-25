@@ -206,9 +206,6 @@ The following modules are available:
 [width="100%",cols="1,2",options="header",]
 |=======================================================================
 |Module’s artifactId |Description
-|ignite-aop | Ignite AOP module provides capability to turn any Java method to a distributed closure by
-adding @Gridify annotation to it.
-
 |ignite-cassandra-serializers | The Ignite Cassandra Serializers module provides additional serializers to store objects as BLOBs in Cassandra. The module could be used as in conjunction with the Ignite Cassandra Store module.
 
 |ignite-cassandra-store | Ignite Cassandra Store provides a CacheStore implementation backed by the  Cassandra database.
@@ -275,6 +272,8 @@ The following extensions are available:
 [width="100%",cols="1,2",options="header",]
 |=======================================================================
 |Extension’s artifactId |Description
+|ignite-aop-ext | Ignite AOP module provides capability to turn any Java method to a distributed closure by adding @Gridify annotation to it.
+
 |ignite-aws-ext|Cluster discovery on AWS S3. Refer to link:clustering/discovery-in-the-cloud#amazon-s3-ip-finder[Amazon S3 IP Finder] for details.
 
 |ignite-azure-ext| Ignite Azure provides Azure Blob Storage-based implementation of IP finder for TCP discovery.
