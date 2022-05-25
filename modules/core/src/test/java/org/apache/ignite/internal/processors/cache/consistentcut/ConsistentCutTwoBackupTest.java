@@ -17,12 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.consistentcut;
 
-import java.util.ArrayList;
-import java.util.List;
-import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.T2;
-import org.junit.Test;
-
 /** */
 public class ConsistentCutTwoBackupTest extends ConsistentCutSingleBackupTest {
     /** {@inheritDoc} */
@@ -33,17 +27,5 @@ public class ConsistentCutTwoBackupTest extends ConsistentCutSingleBackupTest {
     /** {@inheritDoc} */
     @Override protected int backups() {
         return 2;
-    }
-
-    /** */
-    @Test
-    public void testSingleCase() throws Exception {
-        List<T2<Integer, Integer>> c = new ArrayList<>();
-
-        c.add(new T2<>(0, 1));
-
-        runCases(F.asList(c));
-
-        checkWals(txOrigNode, caseCnt, caseCnt);
     }
 }

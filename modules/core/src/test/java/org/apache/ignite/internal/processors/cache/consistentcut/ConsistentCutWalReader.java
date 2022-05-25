@@ -114,6 +114,8 @@ public class ConsistentCutWalReader {
 
                 cuts.add(curCut);
 
+                it.close();
+
                 return;
             }
 
@@ -128,6 +130,8 @@ public class ConsistentCutWalReader {
             }
 
             from = startCutPtr.next();
+
+            it.close();
 
             it = walIter(from);
 
