@@ -156,7 +156,6 @@ public class GridCommandHandlerIndexingUtils {
     ) {
         requireNonNull(ignite);
         requireNonNull(cacheName);
-        requireNonNull(grpName);
         requireNonNull(qryEntities);
 
         ignite.createCache(new CacheConfiguration<>()
