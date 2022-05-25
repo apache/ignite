@@ -31,7 +31,7 @@ import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexTre
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 
 /**
- * Factory fot client index.
+ * Factory for client index.
  */
 public class ClientIndexFactory implements IndexFactory {
     /** Instance. */
@@ -51,8 +51,14 @@ public class ClientIndexFactory implements IndexFactory {
 
         List<InlineIndexKeyType> keyTypes = InlineIndexKeyTypeRegistry.types(keyDefs.values(), DUMMY_SETTINGS);
 
-        int inlineSize = InlineIndexTree.computeInlineSize(keyTypes, new ArrayList<>(keyDefs.values()),
-            def.getCfgInlineSize(), def.getMaxInlineSize());
+        int inlineSize = InlineIndexTree.computeInlineSize(
+            definition.idxName().fullName(),
+            keyTypes,
+            new ArrayList<>(keyDefs.values()),
+            def.getCfgInlineSize(),
+            def.getMaxInlineSize(),
+            null
+        );
 
         return new ClientInlineIndex(def.idxName().idxName(), inlineSize);
     }
