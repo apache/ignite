@@ -18,21 +18,21 @@ This module contains gatling tests
 """
 from ducktape.mark import matrix
 from ignitetest.services.ignite import IgniteService
-from ignitetest.services.utils.ignite_configuration import IgniteConfiguration
+from ignitetest.services.utils.ignite_configuration import IgniteConfiguration, IgniteThinClientConfiguration
 from ignitetest.utils import ignite_versions, cluster
 from ignitetest.utils.ignite_test import IgniteTest
 from ignitetest.utils.version import DEV_BRANCH, IgniteVersion
 from ignitetest.services.utils.ssl.client_connector_configuration import ClientConnectorConfiguration
-from ignitetest.services.utils.ignite_configuration.cache import CacheConfiguration
 from ignitetest.services.gatling.gatling import GatlingService
 from ignitetest.services.utils import IgniteServiceType
+from ignitetest.services.utils.ignite_configuration.discovery import from_ignite_cluster
 
 
 class GatlingTest(IgniteTest):
     """
     Test gatling service implementation
     """
-    @cluster(num_nodes=4)
+    @cluster(num_nodes=6)
     @ignite_versions(str(DEV_BRANCH))
     @matrix(client_type=[IgniteServiceType.THIN_CLIENT, IgniteServiceType.NODE])
     def test_gatling_app_start_stop(self, ignite_version, client_type):
@@ -42,12 +42,19 @@ class GatlingTest(IgniteTest):
         server_config = IgniteConfiguration(version=IgniteVersion(ignite_version),
                                             client_connector_configuration=ClientConnectorConfiguration())
 
-        ignite = IgniteService(self.test_context, server_config, 1)
+        ignite = IgniteService(self.test_context, server_config, 3)
+
+        if client_type == IgniteServiceType.THIN_CLIENT:
+            addresses = ignite.nodes[0].account.hostname + ":" + str(ignite.config.client_connector_configuration.port)
+            client_config = IgniteThinClientConfiguration(addresses=addresses)
+        else:
+            client_config = ignite.config._replace(client_mode=True, discovery_spi=from_ignite_cluster(ignite))
 
         gatling_clients = GatlingService(
-            ignite,
-            simulation_class_name="org.apache.ignite.internal.gatling.simulation.SimulationBasic",
-            client_type=client_type,
+            self.test_context,
+            client_config,
+            # simulation_class_name="org.apache.ignite.gatling.examples.TransactionSimulation",
+            simulation_class_name="org.apache.ignite.internal.gatling.simulation.SimulationTransactions",
             num_nodes=3)
 
         ignite.start()
