@@ -533,7 +533,7 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
                     txMapping.transactionNodes().size() == 1,
                     tx.activeCachesDeploymentEnabled(),
                     tx.txState().recovery(),
-                    cctx.consistentCutMgr().lastCutVer());
+                    cctx.consistentCutMgr() != null ? cctx.consistentCutMgr().lastCutVer() : 0);
 
                 for (IgniteTxEntry txEntry : m.entries()) {
                     if (txEntry.op() == TRANSFORM)

@@ -2135,6 +2135,19 @@ public class GridCacheUtils {
     }
 
     /**
+     * @param cfg Ignite configuration.
+     * @return {@code true} if PITR enabled.
+     */
+    public static boolean isPitrEnabled(IgniteConfiguration cfg) {
+        DataStorageConfiguration dsCfg = cfg.getDataStorageConfiguration();
+
+        if (dsCfg == null)
+            return false;
+
+        return dsCfg.isRecoveryPointEnabled();
+    }
+
+    /**
      * @param pageSize Page size.
      * @param encSpi Encryption spi.
      * @return Page size without encryption overhead.

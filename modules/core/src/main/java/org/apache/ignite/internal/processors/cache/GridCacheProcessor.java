@@ -3129,7 +3129,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         boolean enableConsistentCut = false;
 
-        if (kernalCtx.config().getDataStorageConfiguration().isRecoveryPointEnabled()) {
+        if (CU.isPitrEnabled(kernalCtx.config())) {
             if (!CU.isPersistenceEnabled(kernalCtx.config())) {
                 throw new IgniteCheckedException("PITR can be enabled only for cluster with enabled persistence."
                     + " Check the DataRegionConfiguration");

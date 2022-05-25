@@ -116,7 +116,7 @@ public class ConsistentCutManager {
         cutGuard.readLock().lock();
 
         try {
-            ConsistentCutState s = lastCutState();
+            ConsistentCutState s = lastCutState;
 
             if (s == null || s.completed())
                 return;
@@ -159,20 +159,6 @@ public class ConsistentCutManager {
     }
 
     /**
-     * @return Last CutVersion.
-     */
-    private ConsistentCutState lastCutState() {
-//        cutGuard.readLock().lock();
-
-        try {
-            return lastCutState;
-        }
-        finally {
-//            cutGuard.readLock().unlock();
-        }
-    }
-
-    /**
      * Checks local CutVersion and run ConsistentCut if version has changed.
      *
      * @param cutVer Received CutVersion from different node.
@@ -207,7 +193,7 @@ public class ConsistentCutManager {
      * @param txLastCutVer Received last CutVersion in momemnt the tx committed on remote node.
      */
     public void handleRemoteTxCutVersion(GridCacheVersion nearTxId, long txLastCutVer, boolean onePhaseCommit) {
-        ConsistentCutState s = lastCutState();
+        ConsistentCutState s = lastCutState;
 
         if (s == null || s.completed())
             return;
@@ -244,7 +230,7 @@ public class ConsistentCutManager {
         cutGuard.readLock().lock();
 
         try {
-            ConsistentCutState s = lastCutState();
+            ConsistentCutState s = lastCutState;
 
             if (s == null)
                 return 0L;
@@ -321,7 +307,7 @@ public class ConsistentCutManager {
 
     /** */
     private boolean skipConsistentCut() {
-        ConsistentCutState s = lastCutState();
+        ConsistentCutState s = lastCutState;
 
         if (s != null && !s.completed()) {
             Set<IgniteUuid> w1 = s.cutAwait().keySet().stream().map(GridCacheVersion::asIgniteUuid).collect(Collectors.toSet());
