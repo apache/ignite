@@ -217,7 +217,7 @@ public class CacheEntryProcessorNonSerializableTest extends GridCommonAbstractTe
     /**
      */
     @Test
-    public void testMvccPessimisticOnePhaseCommit() {
+    public void testMvccPessimisticOnePhaseCommit() throws Exception {
         CacheConfiguration ccfg = cacheConfiguration(PRIMARY_SYNC, 1).setAtomicityMode(TRANSACTIONAL_SNAPSHOT);
 
         doTestInvokeTest(ccfg, PESSIMISTIC, REPEATABLE_READ);
@@ -227,7 +227,7 @@ public class CacheEntryProcessorNonSerializableTest extends GridCommonAbstractTe
      */
     @Ignore("https://issues.apache.org/jira/browse/IGNITE-7187")
     @Test
-    public void testMvccPessimisticOnePhaseCommitWithNearCache() {
+    public void testMvccPessimisticOnePhaseCommitWithNearCache() throws Exception {
         CacheConfiguration ccfg = cacheConfiguration(PRIMARY_SYNC, 1).setAtomicityMode(TRANSACTIONAL_SNAPSHOT)
             .setNearConfiguration(new NearCacheConfiguration<>());
 
@@ -237,7 +237,7 @@ public class CacheEntryProcessorNonSerializableTest extends GridCommonAbstractTe
     /**
      */
     @Test
-    public void testMvccPessimisticOnePhaseCommitFullSync() {
+    public void testMvccPessimisticOnePhaseCommitFullSync() throws Exception {
         CacheConfiguration ccfg = cacheConfiguration(FULL_SYNC, 1).setAtomicityMode(TRANSACTIONAL_SNAPSHOT);
 
         doTestInvokeTest(ccfg, PESSIMISTIC, REPEATABLE_READ);
@@ -247,7 +247,7 @@ public class CacheEntryProcessorNonSerializableTest extends GridCommonAbstractTe
      */
     @Ignore("https://issues.apache.org/jira/browse/IGNITE-7187")
     @Test
-    public void testMvccPessimisticOnePhaseCommitFullSyncWithNearCache() {
+    public void testMvccPessimisticOnePhaseCommitFullSyncWithNearCache() throws Exception {
         CacheConfiguration ccfg = cacheConfiguration(FULL_SYNC, 1).setAtomicityMode(TRANSACTIONAL_SNAPSHOT)
             .setNearConfiguration(new NearCacheConfiguration<>());
 
@@ -257,7 +257,7 @@ public class CacheEntryProcessorNonSerializableTest extends GridCommonAbstractTe
     /**
      */
     @Test
-    public void testMvccPessimistic() {
+    public void testMvccPessimistic() throws Exception {
         CacheConfiguration ccfg = cacheConfiguration(PRIMARY_SYNC, 2).setAtomicityMode(TRANSACTIONAL_SNAPSHOT);
 
         doTestInvokeTest(ccfg, PESSIMISTIC, REPEATABLE_READ);
@@ -267,7 +267,7 @@ public class CacheEntryProcessorNonSerializableTest extends GridCommonAbstractTe
      */
     @Ignore("https://issues.apache.org/jira/browse/IGNITE-7187")
     @Test
-    public void testMvccPessimisticWithNearCache() {
+    public void testMvccPessimisticWithNearCache() throws Exception {
         CacheConfiguration ccfg = cacheConfiguration(PRIMARY_SYNC, 2).setAtomicityMode(TRANSACTIONAL_SNAPSHOT)
             .setNearConfiguration(new NearCacheConfiguration<>());
 
@@ -277,7 +277,7 @@ public class CacheEntryProcessorNonSerializableTest extends GridCommonAbstractTe
     /**
      */
     @Test
-    public void testMvccPessimisticFullSync() {
+    public void testMvccPessimisticFullSync() throws Exception {
         CacheConfiguration ccfg = cacheConfiguration(FULL_SYNC, 2).setAtomicityMode(TRANSACTIONAL_SNAPSHOT);
 
         doTestInvokeTest(ccfg, PESSIMISTIC, REPEATABLE_READ);
@@ -419,13 +419,15 @@ public class CacheEntryProcessorNonSerializableTest extends GridCommonAbstractTe
      */
     @SuppressWarnings({"unchecked", "ThrowableNotThrown"})
     private void doTestInvokeTest(CacheConfiguration ccfg, TransactionConcurrency txConcurrency,
-        TransactionIsolation txIsolation) {
+        TransactionIsolation txIsolation) throws Exception {
         if (ccfg.getNearConfiguration() != null)
             MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.NEAR_CACHE);
 
         IgniteEx cln = grid(getServerNodeCount());
 
         grid(0).createCache(ccfg);
+
+        GridTestUtils.waitForCondition(() -> cln.cacheNames().contains(ccfg.getName()), getTestTimeout());
 
         IgniteCache clnCache;
 

@@ -50,6 +50,7 @@ import org.apache.ignite.internal.GridCachePluginContext;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteFeatures;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.managers.discovery.DiscoCache;
@@ -1165,6 +1166,14 @@ public class ClusterCachesInfo {
             req.schema(),
             req.cacheConfigurationEnrichment()
         );
+
+        try {
+            if (ctx.clientNode())
+                U.sleep(200);
+        }
+        catch (IgniteInterruptedCheckedException e) {
+            e.printStackTrace();
+        }
 
         DynamicCacheDescriptor old = registeredCaches.put(ccfg.getName(), startDesc);
 
