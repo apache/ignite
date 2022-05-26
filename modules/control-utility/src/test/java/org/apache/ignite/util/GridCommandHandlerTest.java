@@ -133,6 +133,8 @@ import org.apache.ignite.transactions.TransactionTimeoutException;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
 import static java.io.File.separatorChar;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_CLUSTER_NAME;
@@ -181,7 +183,13 @@ import static org.apache.ignite.util.TestStorageUtils.corruptDataEntry;
  * You can use this class if you need create nodes for each test.
  * If you not necessary create nodes for each test you can try use {@link GridCommandHandlerClusterByClassTest}
  */
+@RunWith(Parameterized.class)
 public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAbstractTest {
+    @Parameterized.Parameters
+    public static Object[][] data() {
+        return new Object[300][0];
+    }
+
     /** Partitioned cache name. */
     protected static final String PARTITIONED_CACHE_NAME = "part_cache";
 
@@ -201,6 +209,8 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         initDiagnosticDir();
 
         cleanDiagnosticDir();
+
+        cleanPersistenceDir();
     }
 
     /** {@inheritDoc} */
@@ -234,7 +244,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
      *
      * @throws Exception If failed.
      */
-    @Test
+//    @Test
     public void testActivate() throws Exception {
         Ignite ignite = startGrids(1);
 
@@ -254,7 +264,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
      *
      * @throws Exception If failed.
      */
-    @Test
+//    @Test
     public void testClientsLeakage() throws Exception {
         startGrids(1);
 
@@ -352,7 +362,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
      *
      * @throws Exception If failed.
      */
-    @Test
+//    @Test
     public void testPersistenceCleanSpecifiedCachesCommand() throws Exception {
         String cacheName0 = DEFAULT_CACHE_NAME + "0";
         String cacheName1 = DEFAULT_CACHE_NAME + "1";
@@ -418,7 +428,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
      *
      * @throws Exception If failed.
      */
-    @Test
+//    @Test
     public void testPersistenceCleanCorruptedCachesCommand() throws Exception {
         String cacheName0 = DEFAULT_CACHE_NAME + "0";
         String cacheName1 = DEFAULT_CACHE_NAME + "1";
@@ -464,7 +474,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
      *
      * @throws Exception
      */
-    @Test
+//    @Test
     public void testPersistenceCleanAllCachesCommand() throws Exception {
         String cacheName0 = DEFAULT_CACHE_NAME + "0";
         String cacheName1 = DEFAULT_CACHE_NAME + "1";
@@ -503,7 +513,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
      *
      * @throws Exception If failed.
      */
-    @Test
+//    @Test
     public void testPersistenceBackupAllCachesCommand() throws Exception {
         String cacheName0 = DEFAULT_CACHE_NAME + "0";
         String cacheName1 = DEFAULT_CACHE_NAME + "1";
@@ -545,7 +555,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
      *
      * @throws Exception If failed.
      */
-    @Test
+//    @Test
     public void testPersistenceBackupCorruptedCachesCommand() throws Exception {
         String cacheName0 = DEFAULT_CACHE_NAME + "0";
         String cacheName1 = DEFAULT_CACHE_NAME + "1";
@@ -581,7 +591,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
      *
      * @throws Exception If failed.
      */
-    @Test
+//    @Test
     public void testPersistenceBackupSpecifiedCachesCommand() throws Exception {
         String cacheName0 = DEFAULT_CACHE_NAME + "0";
         String cacheName1 = DEFAULT_CACHE_NAME + "1";
@@ -642,7 +652,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
      *
      * @throws Exception If failed.
      */
-    @Test
+//    @Test
     public void testReadOnlyEnableDisable() throws Exception {
         Ignite ignite = startGrids(1);
 
@@ -670,7 +680,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
      *
      * @throws Exception If failed.
      */
-    @Test
+//    @Test
     public void testClusterChangeTag() throws Exception {
         final String newTag = "new_tag";
 
@@ -701,7 +711,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
      *
      * @throws Exception If failed.
      */
-    @Test
+//    @Test
     public void testDeactivate() throws Exception {
         Ignite ignite = startGrids(1);
 
@@ -728,7 +738,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
      *
      * @throws Exception If failed.
      */
-    @Test
+//    @Test
     public void testDeactivateNonPersistent() throws Exception {
         checkDeactivateNonPersistent("--deactivate");
     }
@@ -738,7 +748,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
      *
      * @throws Exception If failed.
      */
-    @Test
+//    @Test
     public void testSetInactiveNonPersistent() throws Exception {
         checkDeactivateNonPersistent("--set-state", "inactive");
     }
@@ -787,7 +797,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
      *
      * @throws Exception If failed.
      * */
-    @Test
+//    @Test
     @WithSystemProperty(key = IGNITE_CLUSTER_NAME, value = "TEST_CLUSTER_NAME")
     public void testDeactivateWithCheckClusterNameInConfirmationBySystemProperty() throws Exception {
         IgniteEx igniteEx = startGrid(0);
@@ -802,7 +812,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
      *
      * @throws Exception If failed.
      * */
-    @Test
+//    @Test
     public void testDeactivateWithCheckClusterNameInConfirmationByDefault() throws Exception {
         IgniteEx igniteEx = startGrid(0);
         assertFalse(igniteEx.cluster().active());
@@ -859,7 +869,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
      *
      * @throws Exception If failed.
      */
-    @Test
+//    @Test
     public void testState() throws Exception {
         final String newTag = "new_tag";
 
@@ -924,7 +934,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
      *
      * @throws Exception If failed.
      */
-    @Test
+//    @Test
     public void testSetState() throws Exception {
         Ignite ignite = startGrids(2);
 
@@ -1017,7 +1027,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
      *
      * @throws Exception If failed.
      */
-    @Test
+//    @Test
     public void testBaselineCollect() throws Exception {
         Ignite ignite = startGrid(
             optimize(getConfiguration(getTestIgniteInstanceName(0))).setLocalHost("0.0.0.0"));
@@ -1075,7 +1085,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
      *
      * @throws Exception If failed.
      */
-    @Test
+//    @Test
     public void testBaselineCollectCrd() throws Exception {
         Ignite ignite = startGrids(2);
 
@@ -1183,7 +1193,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
      *
      * @throws Exception If failed.
      */
-    @Test
+//    @Test
     public void testBaselineAdd() throws Exception {
         Ignite ignite = startGrids(1);
 
@@ -1207,7 +1217,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
     /**
      * Test connectivity command works via control.sh.
      */
-    @Test
+//    @Test
     public void testConnectivityCommandWithoutFailedNodes() throws Exception {
         IgniteEx ignite = startGrids(5);
 
@@ -1233,7 +1243,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
      *
      * @throws Exception If failed.
      */
-    @Test
+//    @Test
     public void testConnectivityCommandWithNodeExit() throws Exception {
         IgniteEx[] node3 = new IgniteEx[1];
 
@@ -1292,7 +1302,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
     /**
      * Test connectivity command works via control.sh with one node failing.
      */
-    @Test
+//    @Test
     public void testConnectivityCommandWithFailedNodes() throws Exception {
         UUID okId = UUID.randomUUID();
         UUID failingId = UUID.randomUUID();
@@ -1353,7 +1363,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
      *
      * @throws Exception If failed.
      */
-    @Test
+//    @Test
     public void testBaselineRemove() throws Exception {
         Ignite ignite = startGrids(1);
 
@@ -1380,7 +1390,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
      *
      * @throws Exception If failed.
      */
-    @Test
+//    @Test
     public void testShutdownPolicy() throws Exception {
         Ignite ignite = startGrids(1);
 
@@ -1404,7 +1414,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
      *
      * @throws Exception If failed.
      */
-    @Test
+//    @Test
     public void testShutdownPolicyChange() throws Exception {
         Ignite ignite = startGrids(1);
 
@@ -1437,7 +1447,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
      *
      * @throws Exception If failed.
      */
-    @Test
+//    @Test
     public void testBaselineRemoveOnNotActiveCluster() throws Exception {
         Ignite ignite = startGrids(1);
         Ignite other = startGrid("nodeToStop");
@@ -1470,7 +1480,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
      *
      * @throws Exception If failed.
      */
-    @Test
+//    @Test
     public void testBaselineSet() throws Exception {
         Ignite ignite = startGrids(1);
 
@@ -1494,7 +1504,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
      *
      * @throws Exception If failed.
      */
-    @Test
+//    @Test
     public void testBaselineSetWithOfflineNode() throws Exception {
         Ignite ignite0 = startGrid(0);
         //It is important to set consistent id to null for force autogeneration.
@@ -1520,7 +1530,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
      *
      * @throws Exception If failed.
      */
-    @Test
+//    @Test
     public void testBaselineVersion() throws Exception {
         Ignite ignite = startGrids(1);
 
@@ -1544,7 +1554,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
      *
      * @throws Exception If failed.
      */
-    @Test
+//    @Test
     public void testBaselineAutoAdjustmentAutoRemoveNode() throws Exception {
         Ignite ignite = startGrids(3);
 
@@ -1607,7 +1617,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
      *
      * @throws Exception If failed.
      */
-    @Test
+//    @Test
     public void testBaselineAutoAdjustmentAutoAddNode() throws Exception {
         Ignite ignite = startGrids(1);
 
@@ -1646,7 +1656,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
      *
      * @throws Exception If failed.
      */
-    @Test
+//    @Test
     public void testActiveTransactions() throws Exception {
         Ignite ignite = startGridsMultiThreaded(2);
 
@@ -1804,7 +1814,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
     /**
      * Simulate uncommitted backup transactions and test rolling back using utility.
      */
-    @Test
+//    @Test
     public void testKillHangingRemoteTransactions() throws Exception {
         final int cnt = 3;
 
@@ -1992,7 +2002,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
      *
      * @throws Exception If failed.
      */
-    @Test
+//    @Test
     public void testBaselineAddOnNotActiveCluster() throws Exception {
         Ignite ignite = startGrid(1);
 
@@ -2025,7 +2035,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
     }
 
     /** */
-    @Test
+//    @Test
     public void testIdleVerifyCheckCrcFailsOnNotIdleCluster() throws Exception {
         checkpointFreq = 1000L;
 
@@ -2079,7 +2089,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
      *
      * @throws Exception If failed.
      */
-    @Test
+//    @Test
     public void testCacheIdleVerifyDumpWhenNodeFailing() throws Exception {
         Ignite ignite = startGrids(3);
 
@@ -2115,7 +2125,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
      *
      * @throws Exception If failed.
      */
-    @Test
+//    @Test
     public void testCacheIdleVerifyDumpWhenSeveralNodesFailing() throws Exception {
         int nodes = 6;
 
@@ -2162,7 +2172,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
     }
 
     /** */
-    @Test
+//    @Test
     public void testCacheIdleVerifyCrcWithCorruptedPartition() throws Exception {
         testCacheIdleVerifyWithCorruptedPartition("--cache", "idle_verify", "--check-crc");
 
@@ -2173,7 +2183,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
     }
 
     /** */
-    @Test
+//    @Test
     public void testCacheIdleVerifyDumpCrcWithCorruptedPartition() throws Exception {
         testCacheIdleVerifyWithCorruptedPartition("--cache", "idle_verify", "--dump", "--check-crc");
 
@@ -2264,7 +2274,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
      *
      * @throws Exception If failed.
      */
-    @Test
+//    @Test
     public void testCacheIdleVerifyDumpForCorruptedDataOnNonePersistenceClientCache() throws Exception {
         int parts = 32;
 
@@ -2322,7 +2332,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
     /**
      * @throws Exception If failed.
      */
-    @Test
+//    @Test
     public void testCacheIdleVerifyMovingParts() throws Exception {
         IgniteEx ignite = startGrids(2);
 
@@ -2357,7 +2367,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
     }
 
     /** */
-    @Test
+//    @Test
     public void testCacheSequence() throws Exception {
         Ignite ignite = startGrid();
 
@@ -2411,7 +2421,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
      *
      * @throws Exception if failed.
      */
-    @Test
+//    @Test
     public void testDiagnosticPageLocksTracker() throws Exception {
         Ignite ignite = startGrid(0, (UnaryOperator<IgniteConfiguration>)cfg -> cfg.setConsistentId("node0/dump"));
         startGrid(1, (UnaryOperator<IgniteConfiguration>)cfg -> cfg.setConsistentId("node1/dump"));
@@ -2632,7 +2642,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
     }
 
     /** */
-    @Test
+//    @Test
     public void testKillHangingLocalTransactions() throws Exception {
         Ignite ignite = startGridsMultiThreaded(2);
 
@@ -2705,7 +2715,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
      *
      * @throws Exception If failed.
      */
-    @Test
+//    @Test
     @SuppressWarnings("unchecked")
     public void setConsistenceIdsWithOfflineBaselineNode() throws Exception {
         Ignite ignite = startGrids(2);
@@ -2722,7 +2732,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
     /**
      * @throws Exception If failed.
      */
-    @Test
+//    @Test
     public void testCacheIdleVerifyPrintLostPartitions() throws Exception {
         IgniteEx ignite = startGrids(3);
 
@@ -2759,7 +2769,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
     }
 
     /** @throws Exception If failed. */
-    @Test
+//    @Test
     public void testMasterKeyChange() throws Exception {
         encryptionEnabled = true;
 
@@ -2797,7 +2807,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
     }
 
     /** @throws Exception If failed. */
-    @Test
+//    @Test
     public void testCacheGroupKeyChange() throws Exception {
         encryptionEnabled = true;
 
@@ -2854,7 +2864,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
     }
 
     /** @throws Exception If failed. */
-    @Test
+//    @Test
     public void testChangeReencryptionRate() throws Exception {
         int srvNodes = 2;
 
@@ -2890,7 +2900,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
     }
 
     /** @throws Exception If failed. */
-    @Test
+//    @Test
     public void testReencryptionSuspendAndResume() throws Exception {
         encryptionEnabled = true;
         reencryptSpeed = 0.01;
@@ -2976,7 +2986,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
     }
 
     /** @throws Exception If failed. */
-    @Test
+//    @Test
     public void testMasterKeyChangeOnInactiveCluster() throws Exception {
         encryptionEnabled = true;
 
@@ -3045,13 +3055,13 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
     }
 
     /** @throws Exception If failed. */
-    @Test
+//    @Test
     public void testClusterSnapshotCreate() throws Exception {
         doClusterSnapshotCreate(false);
     }
 
     /** @throws Exception If failed. */
-    @Test
+//    @Test
     public void testClusterSnapshotCreateSynchronously() throws Exception {
         doClusterSnapshotCreate(true);
     }
@@ -3114,7 +3124,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
     }
 
     /** @throws Exception If failed. */
-    @Test
+//    @Test
     public void testClusterSnapshotOnInactive() throws Exception {
         injectTestSystemOut();
 
@@ -3127,7 +3137,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
     }
 
     /** @throws Exception If fails. */
-    @Test
+//    @Test
     public void testCancelSnapshot() throws Exception {
         IgniteEx srv = startGrid(0);
         IgniteEx startCli = startClientGrid(CLIENT_NODE_NAME_PREFIX);
@@ -3143,7 +3153,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
     }
 
     /** @throws Exception If fails. */
-    @Test
+//    @Test
     public void testCheckSnapshot() throws Exception {
         String snpName = "snapshot_02052020";
 
@@ -3167,7 +3177,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
     }
 
     /** @throws Exception If fails. */
-    @Test
+//    @Test
     public void testSnapshotRestoreSynchronously() throws Exception {
         String snpName = "snapshot_02052020";
         int keysCnt = 100;
@@ -3229,7 +3239,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
     }
 
     /** @throws Exception If fails. */
-    @Test
+//    @Test
     public void testSnapshotRestore() throws Exception {
         autoConfirmation = false;
 
@@ -3349,7 +3359,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
     }
 
     /** @throws Exception If fails. */
-    @Test
+//    @Test
     public void testSnapshotRestoreCancelAndStatus() throws Exception {
         int keysCnt = 2048;
         String snpName = "snapshot_25052021";
@@ -3421,7 +3431,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
     /**
      * @throws Exception If failed.
      */
-    @Test
+//    @Test
     @WithSystemProperty(key = IGNITE_PDS_SKIP_CHECKPOINT_ON_NODE_STOP, value = "true")
     public void testCleaningGarbageAfterCacheDestroyedAndNodeStop_ControlConsoleUtil() throws Exception {
         new IgniteCacheGroupsWithRestartsTest().testFindAndDeleteGarbage(this::executeTaskViaControlConsoleUtil);
@@ -3437,7 +3447,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
      *
      * @throws Exception If failed.
      */
-    @Test
+//    @Test
     public void testSuccessStopWarmUp() throws Exception {
         WarmUpTestPluginProvider provider = new WarmUpTestPluginProvider();
 
@@ -3475,7 +3485,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
      *
      * @throws Exception If failed.
      */
-    @Test
+//    @Test
     public void testFailStopWarmUp() throws Exception {
         startGrid(0);
 
