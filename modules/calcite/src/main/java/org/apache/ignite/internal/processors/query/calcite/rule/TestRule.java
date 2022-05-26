@@ -1,12 +1,14 @@
 package org.apache.ignite.internal.processors.query.calcite.rule;
 
 import java.math.BigDecimal;
+import java.math.BigInteger;
 import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.RelRule;
 import org.apache.calcite.rel.RelCollations;
 import org.apache.calcite.rel.core.AggregateCall;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
+import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.util.ImmutableIntList;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexCount;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexScan;
@@ -33,14 +35,17 @@ public class TestRule extends RelRule<TestRule.Config> {
         IgniteIndexScan idx = call.rel(1);
 
         AggregateCall aggFun = AggregateCall.create(
-            SqlStdOperatorTable.SUM,
+//            SqlStdOperatorTable.SUM,
+            SqlStdOperatorTable.COUNT,
             false,
             false,
             false,
             ImmutableIntList.of(0),
             -1,
             RelCollations.EMPTY,
-            idx.getCluster().getTypeFactory().createJavaType(BigDecimal.class),
+//            idx.getCluster().getTypeFactory().createJavaType(long.class),
+//            idx.getCluster().getTypeFactory().createJavaType(BigDecimal.class),
+            idx.getCluster().getTypeFactory().createSqlType(SqlTypeName.BIGINT),
             null);
 
         IgniteIndexCount idxCnt = new IgniteIndexCount(

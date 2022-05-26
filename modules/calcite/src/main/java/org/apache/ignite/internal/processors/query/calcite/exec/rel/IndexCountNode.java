@@ -1,5 +1,6 @@
 package org.apache.ignite.internal.processors.query.calcite.exec.rel;
 
+import java.math.BigDecimal;
 import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexImpl;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
@@ -22,16 +23,20 @@ public class IndexCountNode extends AbstractNode implements Downstream<Long> {
     }
 
     @Override public void request(int rowsCnt) throws Exception {
-        downstream().push(new Long[]{idx.totalCount()});
+        if (rowsCnt > 1) {
+            System.err.println("TEST | IndexCount: totalCnt=" + idx.totalCount());
 
-        downstream().end();
+            downstream().push(new Object[] {BigDecimal.valueOf(idx.totalCount())});
+
+            downstream().end();
+        }
     }
 
     @Override public void push(Long aLong) throws Exception {
-        System.err.println("TEST | push()");
+        throw new UnsupportedOperationException("IndexCount cannot accept any rows.");
     }
 
     @Override public void end() throws Exception {
-        System.err.println("TEST | end()");
+        throw new UnsupportedOperationException("IndexCount cannot accept any rows.");
     }
 }

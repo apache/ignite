@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.query.calcite.rel;
 
 import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.util.Collections;
 import java.util.List;
 import org.apache.calcite.plan.RelOptCluster;
@@ -32,6 +33,7 @@ import org.apache.calcite.rel.RelWriter;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
+import org.apache.calcite.sql.type.SqlTypeName;
 
 /**
  * Relational operator that returns the contents of a table.
@@ -101,7 +103,9 @@ public class IgniteIndexCount extends AbstractRelNode implements SourceAwareIgni
     @Override protected RelDataType deriveRowType() {
         RelDataTypeFactory tf = getCluster().getTypeFactory();
 
-        RelDataType type = tf.createJavaType(BigDecimal.class);
+//        RelDataType type = tf.createJavaType(BigDecimal.class);
+        RelDataType type = tf.createSqlType(SqlTypeName.BIGINT);
+//        RelDataType type = tf.createJavaType(long.class);
 
         return tf.createStructType(Collections.singletonList(type), Collections.singletonList(type.toString()));
     }
