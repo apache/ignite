@@ -89,4 +89,9 @@ public interface InlineIndexKeyType {
      * than given respectively, or -2 if inlined part is not enough to compare.
      */
     public int compare(long pageAddr, int off, int maxSize, IndexKey v);
+
+    /**
+     * @return Size of key, in bytes. {@code -1} means variable length of key.
+     */
+    public short keySize();
 }
