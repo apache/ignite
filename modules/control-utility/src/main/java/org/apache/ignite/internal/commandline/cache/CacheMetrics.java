@@ -97,8 +97,8 @@ public class CacheMetrics extends AbstractCommand<VisorCacheMetricsTaskArg> {
         String cachesArgDesc = CACHES_ARGUMENT + " cache1" + optional(",...,cacheN");
 
         Map<String, String> paramsDesc = F.asMap(
-            cachesArgDesc, "specifies a comma-separated list of cache names to which sub-command should be applied.",
-            ALL_CACHES_ARGUMENT, "applies sub-command to all user caches.");
+            cachesArgDesc, "specifies a comma-separated list of cache names to which operation should be applied.",
+            ALL_CACHES_ARGUMENT, "applies operation to all user caches.");
 
         usageCache(log, METRICS, desc, paramsDesc, or(ENABLE, DISABLE, STATUS), or(cachesArgDesc, ALL_CACHES_ARGUMENT));
     }
