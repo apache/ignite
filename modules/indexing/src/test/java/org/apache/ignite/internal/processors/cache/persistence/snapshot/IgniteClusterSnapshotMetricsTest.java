@@ -272,23 +272,20 @@ public class IgniteClusterSnapshotMetricsTest extends IgniteClusterSnapshotResto
         List<Long> processedVals = new ArrayList<>();
 
         // Store metrics values during cluster snapshot.
-        IgniteInternalFuture<?> metricFut = GridTestUtils.runAsync(() -> {
-            while (!fut.isDone()) {
-                long total = totalSize.value();
-                long processed = processedSize.value();
+        while (!fut.isDone()) {
+            long total = totalSize.value();
+            long processed = processedSize.value();
 
-                if (total != -1 && processed != -1) {
-                    totalVals.add(totalSize.value());
-                    processedVals.add(processedSize.value());
-                }
-
-                U.sleep(500);
+            if (total != -1 && processed != -1) {
+                totalVals.add(totalSize.value());
+                processedVals.add(processedSize.value());
             }
-        });
+
+            U.sleep(500);
+        }
 
         fut.get(getTestTimeout());
 
-        metricFut.get();
         loadFut.get();
 
         assertTrue("Expected distinct values: " + totalVals,
