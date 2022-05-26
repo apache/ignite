@@ -121,8 +121,8 @@ CREATE TABLE IF NOT EXISTS Person (
 === CREATE TABLE Using non-UpperCase Columns Example
 
 Both of Ignite’s SQL engines (H2 and Calcite) all unquoted identifiers, names of a table columns convert to upper case
-during the `CREATE TABLE` command execution which, in turn, makes the command with explicitly defined key and value types
-a bit more challenging.
+during the `CREATE TABLE` command execution parse phase which, in turn, makes the command with explicitly defined key
+and value types a bit more challenging.
 
 There are a few options that might help you to deal with such a case:
 
