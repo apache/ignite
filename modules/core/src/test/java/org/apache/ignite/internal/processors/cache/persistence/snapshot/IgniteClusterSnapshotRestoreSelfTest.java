@@ -56,8 +56,10 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
+import org.apache.ignite.internal.processors.cache.verify.IdleVerifyResultV2;
 import org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType;
 import org.apache.ignite.internal.util.distributed.SingleNodeMessage;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
@@ -78,6 +80,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.snapshot.S
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.RESTORE_CACHE_GROUP_SNAPSHOT_PRELOAD;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.RESTORE_CACHE_GROUP_SNAPSHOT_PREPARE;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.RESTORE_CACHE_GROUP_SNAPSHOT_START;
+import static org.apache.ignite.testframework.GridTestUtils.assertContains;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsAnyCause;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 
@@ -126,15 +129,21 @@ public class IgniteClusterSnapshotRestoreSelfTest extends IgniteClusterSnapshotR
         try {
             IgniteEx ignite = null;
 
-            for (int i = 0; i < 2; i++)
-                ignite = startGrid(i);
+//            dfltCacheCfg.setBackups(0);
+            dfltCacheCfg.setCacheMode(CacheMode.REPLICATED);
+            dfltCacheCfg.setAffinity(new RendezvousAffinityFunction(false, 8));
+
+            for (int i = 0; i < 2; i++) {
 //                IgniteConfiguration cfg = optimize(getConfiguration(getTestIgniteInstanceName(i)));
-//
+
+//                cfg.setCacheConfiguration((CacheConfiguration[])null);
+//                ignite = startGrid(i);
+
 //                if (cfgPath)
 //                    cfg.setSnapshotPath(snpDir.getAbsolutePath());
-//
-//                ignite = startGrid(i);
-//            }
+
+                ignite = startGrid(i);
+            }
 
 //            ignite.cluster().baselineAutoAdjustEnabled(false);
             ignite.cluster().state(ACTIVE);
@@ -142,23 +151,36 @@ public class IgniteClusterSnapshotRestoreSelfTest extends IgniteClusterSnapshotR
             for (int i = 0; i < CACHE_KEYS_RANGE; i++)
                 ignite.cache(DEFAULT_CACHE_NAME).put(i, i);
 
-            IgniteSnapshotManager snpMgr = ignite.context().cache().context().snapshotMgr();
+//            IgniteSnapshotManager snpMgr = ;
 
-            snpMgr.createSnapshot(SNAPSHOT_NAME, snpDir).get();
+            ignite.context().cache().context().snapshotMgr().createSnapshot(SNAPSHOT_NAME, snpDir).get(TIMEOUT);
 
-//            snpMgr.checkSnapshot(SNAPSHOT_NAME).get();
+//            IdleVerifyResultV2 res = snp(ignite).checkSnapshot(SNAPSHOT_NAME, snpDir, null, false).get(TIMEOUT);
+//
+//            StringBuilder sb = new StringBuilder();
+//            res.print(sb::append, true);
+//
+//            assertTrue(F.isEmpty(res.exceptions()));
+//            assertPartitionsSame(res);
+//            assertContains(log, sb.toString(), "The check procedure has finished, no conflicts have been found");
 
-            ignite.destroyCache(DEFAULT_CACHE_NAME);
+            ignite = startGrid(2);
+            ignite.cluster().state(ACTIVE);
+            resetBaselineTopology();
 
             awaitPartitionMapExchange();
 
-            snpMgr.restoreSnapshot(SNAPSHOT_NAME, null, snpDir).get();
+
+            ignite.destroyCache(DEFAULT_CACHE_NAME);
+            awaitPartitionMapExchange();
+
+            ignite.context().cache().context().snapshotMgr().restoreSnapshot(SNAPSHOT_NAME, null, snpDir).get();
 
 //            stopAllGrids();
 
 //            IgniteEx snp = startGridsFromSnapshot(2, cfg -> snpDir.getAbsolutePath(), SNAPSHOT_NAME, true);
 
-            IgniteCache<Object, Object> cache = ignite.cache(SNAPSHOT_NAME);
+            IgniteCache<Object, Object> cache = ignite.cache(DEFAULT_CACHE_NAME);
 
             assert cache != null;
 

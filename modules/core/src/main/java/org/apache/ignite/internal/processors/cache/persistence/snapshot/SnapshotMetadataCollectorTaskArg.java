@@ -44,7 +44,7 @@ public class SnapshotMetadataCollectorTaskArg extends VisorDataTransferObject {
 
     /**
      * @param snpName Snapshot name.
-     * @param snpPath SNapshot directory path.
+     * @param snpPath Snapshot directory path.
      */
     public SnapshotMetadataCollectorTaskArg(String snpName, File snpPath) {
         this.snpName = snpName;

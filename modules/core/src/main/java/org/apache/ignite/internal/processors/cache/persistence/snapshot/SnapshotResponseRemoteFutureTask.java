@@ -39,10 +39,14 @@ import static org.apache.ignite.internal.processors.cache.persistence.snapshot.I
 
 /** */
 public class SnapshotResponseRemoteFutureTask extends AbstractSnapshotFutureTask<Void> {
+    /** */
+    private final File snpDir;
+
     /**
      * @param cctx Shared context.
      * @param srcNodeId Node id which cause snapshot task creation.
      * @param snpName Unique identifier of snapshot process.
+     * @param snpDir
      * @param tmpWorkDir Working directory for intermediate snapshot results.
      * @param ioFactory Factory to working with snapshot files.
      * @param snpSndr Factory which produces snapshot receiver instance.
@@ -51,12 +55,15 @@ public class SnapshotResponseRemoteFutureTask extends AbstractSnapshotFutureTask
         GridCacheSharedContext<?, ?> cctx,
         UUID srcNodeId,
         String snpName,
+        File snpDir,
         File tmpWorkDir,
         FileIOFactory ioFactory,
         SnapshotSender snpSndr,
         Map<Integer, Set<Integer>> parts
     ) {
         super(cctx, srcNodeId, snpName, tmpWorkDir, ioFactory, snpSndr, parts);
+
+        this.snpDir = snpDir;
     }
 
     /** {@inheritDoc} */
@@ -74,10 +81,9 @@ public class SnapshotResponseRemoteFutureTask extends AbstractSnapshotFutureTask
 
             snpSndr.init(handled.size());
 
-            File snpDir = cctx.snapshotMgr().snapshotLocalDir(snpName);
-
             List<CompletableFuture<Void>> futs = new ArrayList<>();
-            List<SnapshotMetadata> metas = cctx.snapshotMgr().readSnapshotMetadatas(snpName);
+            // todo
+            List<SnapshotMetadata> metas = cctx.snapshotMgr().readSnapshotMetadatas(snpName, snpDir.getParentFile());
 
             for (SnapshotMetadata meta : metas) {
                 Map<Integer, Set<Integer>> parts0 = meta.partitions();

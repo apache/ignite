@@ -1673,6 +1673,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     public IgniteInternalFuture<Void> requestRemoteSnapshotFiles(
         UUID rmtNodeId,
         String snpName,
+        String snpPath,
         Map<Integer, Set<Integer>> parts,
         BooleanSupplier stopChecker,
         BiConsumer<@Nullable File, @Nullable Throwable> partHnd
@@ -1690,7 +1691,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         if (!nodeSupports(rmtNode, PERSISTENCE_CACHE_SNAPSHOT))
             throw new IgniteCheckedException("Snapshot on remote node is not supported: " + rmtNode.id());
 
-        RemoteSnapshotFilesRecevier fut = new RemoteSnapshotFilesRecevier(this, rmtNodeId, snpName, parts, stopChecker, partHnd);
+        RemoteSnapshotFilesRecevier fut =
+            new RemoteSnapshotFilesRecevier(this, rmtNodeId, snpName, snpPath, parts, stopChecker, partHnd);
 
         snpRmtMgr.submit(fut);
 
@@ -2501,6 +2503,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
          * @param snpMgr Ignite snapshot manager.
          * @param rmtNodeId Remote node to request snapshot from.
          * @param snpName Snapshot name to request.
+         * @param rmptSnpPath Snapshot directory path.
          * @param parts Cache group and partitions to request.
          * @param stopChecker Process interrupt checker.
          * @param partHnd Partition handler.
@@ -2509,12 +2512,13 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             IgniteSnapshotManager snpMgr,
             UUID rmtNodeId,
             String snpName,
+            String rmtSnpPath,
             Map<Integer, Set<Integer>> parts,
             BooleanSupplier stopChecker,
             BiConsumer<@Nullable File, @Nullable Throwable> partHnd
         ) {
             dir = Paths.get(snpMgr.tmpWorkDir.getAbsolutePath(), reqId);
-            initMsg = new SnapshotFilesRequestMessage(reqId, snpName, parts);
+            initMsg = new SnapshotFilesRequestMessage(reqId, snpName, rmtSnpPath, parts);
 
             this.snpMgr = snpMgr;
             this.rmtNodeId = rmtNodeId;
@@ -2748,10 +2752,14 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                             }
                         }
 
+                        File snpDir = reqMsg0.snapshotPath() == null ?
+                            cctx.snapshotMgr().snapshotLocalDir(snpName) : new File(reqMsg0.snapshotPath(), snpName);
+
                         AbstractSnapshotFutureTask<?> task = registerTask(rqId,
                             new SnapshotResponseRemoteFutureTask(cctx,
                                 nodeId,
                                 snpName,
+                                snpDir,
                                 tmpWorkDir,
                                 ioFactory,
                                 rmtSndrFactory.apply(rqId, nodeId),
@@ -3046,6 +3054,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 assert part.exists();
                 assert len > 0 : "Requested partitions has incorrect file length " +
                     "[pair=" + pair + ", cacheDirName=" + cacheDirName + ']';
+
+                System.out.println(">xxx> send " + part);
 
                 sndr.send(part, 0, len, transmissionParams(rqId, cacheDirName, pair), TransmissionPolicy.FILE);
 

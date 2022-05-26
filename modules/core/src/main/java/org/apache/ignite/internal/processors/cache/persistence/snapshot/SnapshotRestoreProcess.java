@@ -303,6 +303,10 @@ public class SnapshotRestoreProcess {
                 cacheGrpNames.stream().collect(Collectors.toMap(CU::cacheId, v -> v));
 
             for (Map.Entry<ClusterNode, List<SnapshotMetadata>> entry : metas.entrySet()) {
+                // todo remove
+                if (entry.getKey().id().toString().endsWith("2"))
+                    continue;
+
                 dataNodes.add(entry.getKey().id());
 
                 for (SnapshotMetadata meta : entry.getValue()) {
@@ -582,7 +586,9 @@ public class SnapshotRestoreProcess {
                     ", caches=" + req.groups() + ']');
             }
 
-            List<SnapshotMetadata> locMetas = snpMgr.readSnapshotMetadatas(req.snapshotName(), req.snapshotPath());
+            List<SnapshotMetadata> locMetas = snpMgr.readSnapshotMetadatas(req.snapshotName(), !ctx.localNodeId().toString().endsWith("2") ? req.snapshotPath() : null);
+
+//                !ctx.localNodeId().toString().endsWith("2") ? req.snapshotPath() : null);
 
             SnapshotRestoreContext opCtx0 = prepareContext(req, locMetas);
 
@@ -826,6 +832,9 @@ public class SnapshotRestoreProcess {
             if (ctx.isStopping())
                 throw new NodeStoppingException("Node is stopping: " + ctx.localNodeId());
 
+            File snpDir = opCtx0.snpPath != null ? new File(opCtx0.snpPath, opCtx0.snpName) :
+                ctx.cache().context().snapshotMgr().snapshotLocalDir(opCtx0.snpName);
+
             Set<SnapshotMetadata> allMetas =
                 opCtx0.metasPerNode.values().stream().flatMap(List::stream).collect(Collectors.toSet());
 
@@ -850,8 +859,7 @@ public class SnapshotRestoreProcess {
                         try {
                             SnapshotMetadata meta = F.first(opCtx0.metasPerNode.get(opCtx0.opNodeId));
 
-                            File binDir = binaryWorkDir(snpMgr.snapshotLocalDir(opCtx0.snpName).getAbsolutePath(),
-                                meta.folderName());
+                            File binDir = binaryWorkDir(snpDir.getAbsolutePath(), meta.folderName());
 
                             ctx.cacheObjects().updateMetadata(binDir, opCtx0.stopChecker);
                         }
@@ -872,6 +880,7 @@ public class SnapshotRestoreProcess {
             Map<Integer, Set<PartitionRestoreFuture>> allParts = new HashMap<>();
             Map<Integer, Set<PartitionRestoreFuture>> rmtLoadParts = new HashMap<>();
             ClusterNode locNode = ctx.cache().context().localNode();
+            //ctx.localNodeId().toString().endsWith("2") ? Collections.emptyList() :
             List<SnapshotMetadata> locMetas = opCtx0.metasPerNode.get(locNode.id());
 
             // First preload everything from the local node.
@@ -894,7 +903,14 @@ public class SnapshotRestoreProcess {
                         availParts.addAll(parts);
                 }
 
+                if (ctx.localNodeId().toString().endsWith("2"))
+                    System.out.println(">xxx> Cache = " + cacheOrGrpName + ", availParts =" + availParts);
+
                 List<List<ClusterNode>> assignment = affCache.get(cacheOrGrpName).idealAssignment().assignment();
+
+//                if (ctx.localNodeId().toString().endsWith("2"))
+//                    System.out.println(">xxx> assignment " + assignment);
+
                 Set<PartitionRestoreFuture> partFuts = availParts
                     .stream()
                     .filter(p -> p != INDEX_PARTITION && assignment.get(p).contains(locNode))
@@ -902,6 +918,9 @@ public class SnapshotRestoreProcess {
                     .collect(Collectors.toSet());
 
                 allParts.put(grpId, partFuts);
+
+                if (ctx.localNodeId().toString().endsWith("2"))
+                    System.out.println(">xxx> partFuts =" + partFuts);
 
                 rmtLoadParts.put(grpId, leftParts = new HashSet<>(partFuts));
 
@@ -915,9 +934,6 @@ public class SnapshotRestoreProcess {
                 for (SnapshotMetadata meta : full == null ? locMetas : Collections.singleton(full)) {
                     if (leftParts.isEmpty())
                         break;
-
-                    File snpDir = opCtx0.snpPath != null ? new File(opCtx0.snpPath, opCtx0.snpName) :
-                        ctx.cache().context().snapshotMgr().snapshotLocalDir(opCtx0.snpName);
 
                     File snpCacheDir = new File(snpDir,
                         Paths.get(databaseRelativePath(meta.folderName()), dir.getName()).toString());
@@ -965,6 +981,8 @@ public class SnapshotRestoreProcess {
                 }
             }
 
+            System.out.println(">xxx> rmtLoadParts " + rmtLoadParts);
+
             // Load other partitions from remote nodes.
             List<PartitionRestoreFuture> rmtAwaitParts = rmtLoadParts.values().stream()
                 .flatMap(Collection::stream)
@@ -996,6 +1014,8 @@ public class SnapshotRestoreProcess {
                     ctx.cache().context().snapshotMgr()
                         .requestRemoteSnapshotFiles(m.getKey(),
                             opCtx0.snpName,
+                            // todo
+                            opCtx0.snpPath == null ? null : opCtx0.snpPath.toString(),
                             m.getValue(),
                             opCtx0.stopChecker,
                             (snpFile, t) -> {
