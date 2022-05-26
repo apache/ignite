@@ -245,13 +245,13 @@ public class IgniteClusterSnapshotMetricsTest extends IgniteClusterSnapshotResto
         PdsFolderSettings<?> folderSettings = ignite.context().pdsFolderResolver().resolveFolders();
         File storeWorkDir = new File(folderSettings.persistentStoreRootPath(), folderSettings.folderName());
 
-        long limit = FileUtils.sizeOfDirectory(storeWorkDir) / 10;
+        long rate = FileUtils.sizeOfDirectory(storeWorkDir) / 5;
 
         // Limit snapshot transfer rate.
         DistributedChangeableProperty<Serializable> rateProp =
             ignite.context().distributedConfiguration().property(SNAPSHOT_TRANSFER_RATE_DMS_KEY);
 
-        rateProp.propagate(limit);
+        rateProp.propagate(rate);
 
         // Start cluster snapshot.
         IgniteFuture<Void> fut = ignite.snapshot().createSnapshot(SNAPSHOT_NAME);
@@ -300,6 +300,11 @@ public class IgniteClusterSnapshotMetricsTest extends IgniteClusterSnapshotResto
             F.isSorted(totalVals.stream().mapToLong(v -> v).toArray()));
         assertTrue("Expected sorted values: " + processedVals,
             F.isSorted(processedVals.stream().mapToLong(v -> v).toArray()));
+
+        for (int i = 0; i < totalVals.size(); i++) {
+            assertTrue("Total size less than processed [total=" + totalVals + ", processed=" + processedVals + ']',
+                processedVals.get(i) <= totalVals.get(i));
+        }
 
         assertEquals(-1, totalSize.value());
         assertEquals(-1, processedSize.value());

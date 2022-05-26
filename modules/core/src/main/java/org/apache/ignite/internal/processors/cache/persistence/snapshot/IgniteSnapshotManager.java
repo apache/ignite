@@ -512,19 +512,13 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         mreg.register("CurrentSnapshotTotalSize", () -> {
             SnapshotFutureTask task = currentSnapshotTask();
 
-            if (task == null)
-                return -1;
-
-            return task.totalSize();
-        }, "Estimated size of current cluster snapshot in bytes on this node. The value may grow during snapshotting.");
+            return task == null ? -1 : task.totalSize();
+        }, "Estimated size of current cluster snapshot in bytes on this node. The value may grow during snapshot creation.");
 
         mreg.register("CurrentSnapshotProcessedSize", () -> {
             SnapshotFutureTask task = currentSnapshotTask();
 
-            if (task == null)
-                return -1;
-
-            return task.processedSize();
+            return task == null ? -1 : task.processedSize();
         }, "Processed size of current cluster snapshot in bytes on this node.");
 
         restoreCacheGrpProc.registerMetrics();

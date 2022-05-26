@@ -142,7 +142,7 @@ class SnapshotFutureTask extends AbstractSnapshotFutureTask<Set<GroupPartitionId
     /** Flag indicates that task already scheduled on checkpoint. */
     private final AtomicBoolean started = new AtomicBoolean();
 
-    /** Estimated snapshot size in bytes. The value may grow during snapshotting. */
+    /** Estimated snapshot size in bytes. The value may grow during snapshot creation. */
     private final AtomicLong totalSize = new AtomicLong();
 
     /** Processed snapshot size in bytes. */
@@ -428,7 +428,6 @@ class SnapshotFutureTask extends AbstractSnapshotFutureTask<Set<GroupPartitionId
                 (ccfg, ccfgFile) -> ccfgSndrs.add(new CacheConfigurationSender(ccfg.getName(),
                     FilePageStoreManager.cacheDirName(ccfg), ccfgFile)));
 
-            totalSize.set(partFileLengths.values().stream().mapToLong(v -> v).sum());
         }
         catch (IgniteCheckedException e) {
             acceptException(e);
@@ -492,6 +491,8 @@ class SnapshotFutureTask extends AbstractSnapshotFutureTask<Set<GroupPartitionId
                     GroupPartitionId pair = new GroupPartitionId(grpId, partId);
 
                     Long partLen = partFileLengths.get(pair);
+
+                    totalSize.addAndGet(partLen);
 
                     CompletableFuture<Void> fut0 = CompletableFuture.runAsync(
                         wrapExceptionIfStarted(() -> {
@@ -611,7 +612,7 @@ class SnapshotFutureTask extends AbstractSnapshotFutureTask<Set<GroupPartitionId
         return closeFut;
     }
 
-    /** @return Estimated snapshot size in bytes. The value may grow during snapshotting. */
+    /** @return Estimated snapshot size in bytes. The value may grow during snapshot creation. */
     public long totalSize() {
         return totalSize.get();
     }
