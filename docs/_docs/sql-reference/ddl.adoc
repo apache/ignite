@@ -118,21 +118,21 @@ CREATE TABLE IF NOT EXISTS Person (
 ----
 
 
-=== CREATE TABLE Using CamelCase Columns Example
+=== CREATE TABLE Using non-UpperCase Columns Example
 
-Ignite’s SQL engine uses H2 Database to parse and optimize queries DML and DDL statements. This engine all unquoted identifiers
-and name of table columns will convert to upper case during the command execution which, in turn, makes the `CREATE TABLE` command
-with explicitly defined key and value types a bit more challenging.
+Both of Ignite’s SQL engines (H2 and Calcite) all unquoted identifiers, names of a table columns convert to upper case
+during the `CREATE TABLE` command execution which, in turn, makes the command with explicitly defined key and value types
+a bit more challenging.
 
 There are a few options that might help you to deal with such a case:
 
-* Use link:SQL/sql-api[QuerySqlField] annotation. This will prevent checking the field camelCase each time because of
-an camelCase alias for the column is created each time the `CREATE TABLE` command being executed.
+* Use link:SQL/sql-api[QuerySqlField] annotation. This will prevent checking the field non-UpperCase each time because of
+an alias for the column is created each time the `CREATE TABLE` command being executed.
 * Keeping in mind that column names converted each time to the upper case by default, you have to be sure that DDL fields
 and cache type fields are always match the letters case.
 
-In the example below you must use the quotes for the `affKey` field in the `CREATE TABLE` command to match the same field in the
-`PersonKey` cache key type.
+In the example below you can see the usage of quotes for the `affKey` CamelCase field in the `CREATE TABLE` command with
+matching of the same field in the `PersonKey` cache key type.
 
 [source,sql]
 ----
