@@ -501,7 +501,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 tbl.cacheInfo().config().getSqlIndexMaxInlineSize());
 
             org.apache.ignite.internal.cache.query.index.Index index =
-                ctx.indexProcessor().createIndex(tbl.cacheContext(), ClientIndexFactory.INSTANCE, d);
+                ctx.indexProcessor().createIndex(tbl.cacheContext(), new ClientIndexFactory(log), d);
 
             InlineIndex idx = index.unwrap(InlineIndex.class);
 
