@@ -523,13 +523,11 @@ class SnapshotFutureTask extends AbstractSnapshotFutureTask<Set<GroupPartitionId
 
                                 snpSndr.sendDelta(delta, cacheDirName, pair);
 
-                                long deltaLen = delta.length();
+                                processedSize.addAndGet(delta.length());
 
                                 boolean deleted = delta.delete();
 
                                 assert deleted;
-
-                                processedSize.addAndGet(deltaLen);
                             }),
                             snpSndr.executor());
 
