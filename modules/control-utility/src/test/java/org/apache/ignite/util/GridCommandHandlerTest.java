@@ -185,6 +185,7 @@ import static org.apache.ignite.util.TestStorageUtils.corruptDataEntry;
  */
 @RunWith(Parameterized.class)
 public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAbstractTest {
+    /** */
     @Parameterized.Parameters
     public static Object[][] data() {
         return new Object[300][0];
