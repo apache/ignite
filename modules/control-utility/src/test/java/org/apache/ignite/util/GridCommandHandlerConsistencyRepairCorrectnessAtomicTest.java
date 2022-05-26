@@ -15,18 +15,17 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.distributed.near.consistency;
+package org.apache.ignite.util;
 
-import java.util.Set;
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.cache.CacheAtomicityMode;
 
 /**
- * Consistency violation exception.
+ *
  */
-public abstract class IgniteConsistencyViolationException extends IgniteCheckedException {
-    /**
-     * Inconsistent entries keys.
-     */
-    public abstract Set<KeyCacheObject> keys();
+public class GridCommandHandlerConsistencyRepairCorrectnessAtomicTest extends
+    GridCommandHandlerConsistencyRepairCorrectnessTransactionalTest {
+    /** {@inheritDoc} */
+    @Override protected CacheAtomicityMode atomicityMode() {
+        return CacheAtomicityMode.ATOMIC;
+    }
 }

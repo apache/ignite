@@ -2260,6 +2260,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         final boolean metrics,
         final boolean primary,
         final boolean verCheck,
+        final boolean readRepairRecovery,
         final AffinityTopologyVersion topVer,
         @Nullable final CacheEntryPredicate[] filter,
         final GridDrType drType,
@@ -2310,6 +2311,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 expiryPlc,
                 primary,
                 verCheck,
+                readRepairRecovery,
                 filter,
                 explicitTtl,
                 explicitExpireTime,
@@ -5994,6 +5996,9 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         private final boolean verCheck;
 
         /** */
+        private final boolean readRepairRecovery;
+
+        /** */
         private final CacheEntryPredicate[] filter;
 
         /** */
@@ -6049,6 +6054,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             @Nullable IgniteCacheExpiryPolicy expiryPlc,
             boolean primary,
             boolean verCheck,
+            boolean readRepairRecovery,
             @Nullable CacheEntryPredicate[] filter,
             long explicitTtl,
             long explicitExpireTime,
@@ -6071,6 +6077,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             this.expiryPlc = expiryPlc;
             this.primary = primary;
             this.verCheck = verCheck;
+            this.readRepairRecovery = readRepairRecovery;
             this.filter = filter;
             this.explicitTtl = explicitTtl;
             this.explicitExpireTime = explicitExpireTime;
@@ -6186,7 +6193,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 }
             }
 
-            if (conflictCtx == null) {
+            if (conflictCtx == null && !readRepairRecovery) {
                 // Perform version check only in case there was no explicit conflict resolution.
                 versionCheck(invokeRes);
 

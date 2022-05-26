@@ -17,16 +17,31 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.near.consistency;
 
+import java.util.Collections;
 import java.util.Set;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 
 /**
  * Consistency violation exception.
  */
-public abstract class IgniteConsistencyViolationException extends IgniteCheckedException {
+public class IgniteTransactionalConsistencyViolationException extends IgniteConsistencyViolationException {
+    /** */
+    private static final long serialVersionUID = 0L;
+
+    /** Inconsistent entries keys. */
+    private final Set<KeyCacheObject> keys;
+
     /**
-     * Inconsistent entries keys.
+     * @param keys Keys.
      */
-    public abstract Set<KeyCacheObject> keys();
+    public IgniteTransactionalConsistencyViolationException(Set<KeyCacheObject> keys) {
+        assert keys != null && !keys.isEmpty();
+
+        this.keys = Collections.unmodifiableSet(keys);
+    }
+
+    /** {@inheritDoc} */
+    @Override public Set<KeyCacheObject> keys() {
+        return keys;
+    }
 }
