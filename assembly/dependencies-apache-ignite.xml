@@ -129,7 +129,6 @@
                 <exclude>${project.groupId}:ignite-visor-plugins</exclude>
                 <exclude>${project.groupId}:ignite-codegen</exclude>
                 <exclude>${project.groupId}:ignite-schedule</exclude>
-                <exclude>${project.groupId}:ignite-geospatial</exclude>
                 <exclude>${project.groupId}:ignite-appserver-test</exclude>
                 <exclude>${project.groupId}:ignite-websphere-test</exclude>
                 <exclude>${project.groupId}:ignite-cassandra</exclude>
