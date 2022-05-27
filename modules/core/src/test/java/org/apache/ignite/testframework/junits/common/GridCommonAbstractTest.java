@@ -2395,9 +2395,9 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
     }
 
     /**
-     * Awaits cache creation on a client node.
+     * Awaits for the cache to be available on the client node.
      * <p/>
-     * Client nodes receives created cache descriptor asynchronously:
+     * Client nodes receive the created cache descriptor asynchronously:
      * <pre name="code" class="java">
      *      server.createCache("cache");
      *      ...
