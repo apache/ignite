@@ -191,16 +191,7 @@ public class GridHandleTable {
      * @return {@code true} if shrinked the table, {@code false} otherwise.
      */
     private boolean shrink() {
-        int newLen = objs.length;
-
-        if (newLen > initCap) {
-            int shrinked = (newLen - 1) / 2;
-
-            if (shrinked >= size)
-                newLen = shrinked;
-        }
-
-        newLen = Math.max(newLen, initCap);
+        int newLen = Math.max((objs.length - 1) / 2, initCap);
 
         if (newLen >= size && newLen < objs.length) {
             init(newLen);
