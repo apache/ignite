@@ -24,7 +24,6 @@ import java.util.Comparator;
 import java.util.Deque;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.ListIterator;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Supplier;
@@ -6512,7 +6511,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
             this.upper = upper;
 
             remaining = limit <= 0 ? -1 : limit;
-            removedRows = needOld ? new LinkedList<>() : null;
+            removedRows = needOld ? new ArrayList<>() : null;
         }
 
         /**
@@ -6566,23 +6565,19 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
 
             assert idx >= 0 && idx <= highIdx && highIdx < cnt : "low=" + idx + ", high=" + highIdx + ", cnt=" + cnt;
 
-            // Store the current position of the end of the list.
-            ListIterator<L> itr = needOld ? removedRows.listIterator(removedRows.size()) : null;
-
             // Delete from right to left to reduce the number of items moved during the delete operation.
             for (int i = highIdx; i >= idx; i--) {
-                if (itr != null) {
-                    itr.add(getRow(io, pageAddr, i));
-
-                    // Setting the previous position to add rows in reverse order (for predictability of the result).
-                    itr.previous();
-                }
+                if (needOld)
+                    removedRows.add(getRow(io, pageAddr, i));
 
                 doRemove(pageId, page, pageAddr, walPlc, io, cnt - highIdx + i, i);
 
                 if (remaining != -1)
                     --remaining;
             }
+
+            if (needOld)
+                Collections.reverse(removedRows.subList(removedRows.size() - (highIdx - idx + 1), removedRows.size()));
 
             assert isRemoved();
         }
