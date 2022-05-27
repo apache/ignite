@@ -17,11 +17,10 @@
 
 package org.apache.ignite.internal.commandline.cache;
 
-import java.util.Collection;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.logging.Logger;
@@ -74,17 +73,15 @@ public class CacheMetrics extends AbstractCommand<VisorCacheMetricsTaskArg> {
     /** {@inheritDoc} */
     @Override public Object execute(GridClientConfiguration clientCfg, Logger log) throws Exception {
         try (GridClient client = Command.startClient(clientCfg)) {
-            VisorCacheMetricsTaskResult taskResult = TaskExecutor.executeTaskByNameOnNode(client,
+            VisorCacheMetricsTaskResult res = TaskExecutor.executeTaskByNameOnNode(client,
                 VisorCacheMetricsTask.class.getName(), arg, null, clientCfg);
 
-            Map<String, Boolean> resultMap = Objects.requireNonNull(taskResult.result(),
-                "Task execution result must not be null");
+            List<List<?>> values = new ArrayList<>();
 
-            Collection<List<?>> values = F.viewReadOnly(resultMap.entrySet(),
-                e -> asList(e.getKey(), e.getValue() ? "enabled" : "disabled"));
+            for (Map.Entry<String, Boolean> e : res.result().entrySet())
+                values.add(asList(e.getKey(), e.getValue() ? "enabled" : "disabled"));
 
-            SystemViewCommand.printTable(asList("Cache Name", "Metrics Status"), asList(STRING, STRING),
-                values, log);
+            SystemViewCommand.printTable(asList("Cache Name", "Metrics Status"), asList(STRING, STRING), values, log);
 
             return null;
         }
@@ -110,9 +107,9 @@ public class CacheMetrics extends AbstractCommand<VisorCacheMetricsTaskArg> {
 
     /** {@inheritDoc} */
     @Override public void parseArguments(CommandArgIterator argIter) {
-        CacheMetricsOperation operation = CacheMetricsOperation.of(argIter.nextArg(INCORRECT_METRICS_OPERATION_MESSAGE));
+        CacheMetricsOperation op = CacheMetricsOperation.of(argIter.nextArg(INCORRECT_METRICS_OPERATION_MESSAGE));
 
-        if (operation == null)
+        if (op == null)
             throw new IllegalArgumentException(INCORRECT_METRICS_OPERATION_MESSAGE);
 
         Set<String> cacheNames;
@@ -126,7 +123,7 @@ public class CacheMetrics extends AbstractCommand<VisorCacheMetricsTaskArg> {
         else
             throw new IllegalArgumentException(INCORRECT_CACHE_ARGUMENT_MESSAGE);
 
-        this.arg = new VisorCacheMetricsTaskArg(operation, cacheNames);
+        this.arg = new VisorCacheMetricsTaskArg(op, cacheNames);
     }
 
     /** {@inheritDoc} */

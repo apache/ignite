@@ -96,12 +96,12 @@ public class CacheMetricsCommandTest extends GridCommandHandlerAbstractTest {
      */
     @Test
     public void testEnableDisable() {
-        createCachesWithMetricsStatuses(asMap(CACHE_ONE, false, NON_METRIC_CACHE, false));
+        createCachesWithMetrics(asMap(CACHE_ONE, false, NON_METRIC_CACHE, false));
 
         checkExecutionSuccess(asMap(CACHE_ONE, true), ENABLE_COMMAND, CACHES_ARGUMENT, CACHE_ONE);
         checkClusterMetrics(asMap(NON_METRIC_CACHE, false));
 
-        createCachesWithMetricsStatuses(asMap(CACHE_TWO, true));
+        createCachesWithMetrics(asMap(CACHE_TWO, true));
 
         checkExecutionSuccess(asMap(CACHE_TWO, false), DISABLE_COMMAND, CACHES_ARGUMENT, CACHE_TWO);
         checkClusterMetrics(asMap(NON_METRIC_CACHE, false));
@@ -122,25 +122,25 @@ public class CacheMetricsCommandTest extends GridCommandHandlerAbstractTest {
      */
     @Test
     public void testEnableDisableAll() {
-        createCachesWithMetricsStatuses(asMap(CACHE_ONE, false));
+        createCachesWithMetrics(asMap(CACHE_ONE, false));
 
         checkExecutionSuccess(asMap(CACHE_ONE, true), ENABLE_COMMAND, ALL_CACHES_ARGUMENT);
 
-        createCachesWithMetricsStatuses(asMap(CACHE_TWO, true, CACHE_THREE, false));
+        createCachesWithMetrics(asMap(CACHE_TWO, true, CACHE_THREE, false));
 
-        Map<String, Boolean> expectedMetricsStatuses = new HashMap<>();
+        Map<String, Boolean> expStatuses = new HashMap<>();
 
-        expectedMetricsStatuses.put(CACHE_ONE, false);
-        expectedMetricsStatuses.put(CACHE_TWO, false);
-        expectedMetricsStatuses.put(CACHE_THREE, false);
+        expStatuses.put(CACHE_ONE, false);
+        expStatuses.put(CACHE_TWO, false);
+        expStatuses.put(CACHE_THREE, false);
 
-        checkExecutionSuccess(expectedMetricsStatuses, DISABLE_COMMAND, ALL_CACHES_ARGUMENT);
+        checkExecutionSuccess(expStatuses, DISABLE_COMMAND, ALL_CACHES_ARGUMENT);
 
-        expectedMetricsStatuses.put(CACHE_ONE, true);
-        expectedMetricsStatuses.put(CACHE_TWO, true);
-        expectedMetricsStatuses.put(CACHE_THREE, true);
+        expStatuses.put(CACHE_ONE, true);
+        expStatuses.put(CACHE_TWO, true);
+        expStatuses.put(CACHE_THREE, true);
 
-        checkExecutionSuccess(expectedMetricsStatuses, ENABLE_COMMAND, ALL_CACHES_ARGUMENT);
+        checkExecutionSuccess(expStatuses, ENABLE_COMMAND, ALL_CACHES_ARGUMENT);
     }
 
     /**
@@ -148,7 +148,7 @@ public class CacheMetricsCommandTest extends GridCommandHandlerAbstractTest {
      */
     @Test
     public void testNotFoundCacheEnableDisable() {
-        createCachesWithMetricsStatuses(asMap(CACHE_ONE, false));
+        createCachesWithMetrics(asMap(CACHE_ONE, false));
 
         String cacheArg = String.join(",", CACHE_ONE, CACHE_TWO, NON_EXISTENT_CACHE);
 
@@ -158,7 +158,7 @@ public class CacheMetricsCommandTest extends GridCommandHandlerAbstractTest {
         // Check that metrics statuses was not changed
         checkClusterMetrics(asMap(CACHE_ONE, false));
 
-        createCachesWithMetricsStatuses(asMap(CACHE_TWO, true));
+        createCachesWithMetrics(asMap(CACHE_TWO, true));
 
         checkExecutionError(descriptorsNotFound(CACHE_ONE, CACHE_TWO, NON_EXISTENT_CACHE), DISABLE_COMMAND,
             CACHES_ARGUMENT, cacheArg);
@@ -172,11 +172,11 @@ public class CacheMetricsCommandTest extends GridCommandHandlerAbstractTest {
      */
     @Test
     public void testStatus() {
-        createCachesWithMetricsStatuses(asMap(CACHE_ONE, false, NON_METRIC_CACHE, false));
+        createCachesWithMetrics(asMap(CACHE_ONE, false, NON_METRIC_CACHE, false));
 
         checkExecutionSuccess(asMap(CACHE_ONE, false), STATUS_COMMAND, CACHES_ARGUMENT, CACHE_ONE);
 
-        createCachesWithMetricsStatuses(asMap(CACHE_TWO, true));
+        createCachesWithMetrics(asMap(CACHE_TWO, true));
 
         checkExecutionSuccess(asMap(CACHE_TWO, true), STATUS_COMMAND, CACHES_ARGUMENT, CACHE_TWO);
 
@@ -206,11 +206,11 @@ public class CacheMetricsCommandTest extends GridCommandHandlerAbstractTest {
      */
     @Test
     public void testStatusAll() {
-        createCachesWithMetricsStatuses(asMap(CACHE_ONE, false));
+        createCachesWithMetrics(asMap(CACHE_ONE, false));
 
         checkExecutionSuccess(asMap(CACHE_ONE, false), STATUS_COMMAND, ALL_CACHES_ARGUMENT);
 
-        createCachesWithMetricsStatuses(asMap(CACHE_TWO, true, NON_METRIC_CACHE, false));
+        createCachesWithMetrics(asMap(CACHE_TWO, true, NON_METRIC_CACHE, false));
 
         Map<String, Boolean> expectedMetricsStatuses = new HashMap<>();
 
@@ -235,13 +235,13 @@ public class CacheMetricsCommandTest extends GridCommandHandlerAbstractTest {
      */
     @Test
     public void testNotFoundCacheStatus() {
-        createCachesWithMetricsStatuses(asMap(CACHE_ONE, false));
+        createCachesWithMetrics(asMap(CACHE_ONE, false));
 
         String cacheArg = String.join(",", CACHE_ONE, CACHE_TWO, NON_EXISTENT_CACHE);
 
         checkExecutionError(doesNotExist(CACHE_TWO), STATUS_COMMAND, CACHES_ARGUMENT, cacheArg);
 
-        createCachesWithMetricsStatuses(asMap(CACHE_TWO, true));
+        createCachesWithMetrics(asMap(CACHE_TWO, true));
 
         checkExecutionError(doesNotExist(NON_EXISTENT_CACHE), STATUS_COMMAND, CACHES_ARGUMENT, cacheArg);
     }
@@ -327,26 +327,26 @@ public class CacheMetricsCommandTest extends GridCommandHandlerAbstractTest {
     }
 
     /** */
-    private void checkInvalidArguments(String expectedOutput, String... args) {
-        checkExecutionAndOutput(EXIT_CODE_INVALID_ARGUMENTS, expectedOutput, args);
+    private void checkInvalidArguments(String expOut, String... args) {
+        checkExecutionAndOutput(EXIT_CODE_INVALID_ARGUMENTS, expOut, args);
     }
 
     /** */
-    private void checkExecutionError(String expectedOutput, String... args) {
-        checkExecutionAndOutput(EXIT_CODE_UNEXPECTED_ERROR, expectedOutput, args);
+    private void checkExecutionError(String expOut, String... args) {
+        checkExecutionAndOutput(EXIT_CODE_UNEXPECTED_ERROR, expOut, args);
     }
 
     /**
      * Check command execution and results.
      *
      * @param expExitCode Expected exit code.
-     * @param expectedOutput Expected command output.
+     * @param expOut Expected command output.
      * @param args Command arguments.
      */
-    private void checkExecutionAndOutput(int expExitCode, String expectedOutput, String... args) {
+    private void checkExecutionAndOutput(int expExitCode, String expOut, String... args) {
         exec(expExitCode, args);
 
-        GridTestUtils.assertContains(log, testOut.toString(), expectedOutput);
+        GridTestUtils.assertContains(log, testOut.toString(), expOut);
     }
 
     /**
@@ -370,7 +370,7 @@ public class CacheMetricsCommandTest extends GridCommandHandlerAbstractTest {
     /**
      * @param cacheMetricsModes Metrics modes.
      */
-    private void createCachesWithMetricsStatuses(Map<String, Boolean> cacheMetricsModes) {
+    private void createCachesWithMetrics(Map<String, Boolean> cacheMetricsModes) {
         for (Map.Entry<String, Boolean> nameAndState : cacheMetricsModes.entrySet()) {
             grid(0).getOrCreateCache(new CacheConfiguration<>()
                 .setName(nameAndState.getKey())
