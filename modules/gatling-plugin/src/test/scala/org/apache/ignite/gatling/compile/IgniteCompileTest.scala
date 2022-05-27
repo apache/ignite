@@ -8,6 +8,7 @@ import org.apache.ignite.client.ClientCacheConfiguration
 import org.apache.ignite.configuration.{CacheConfiguration, ClientConfiguration}
 import org.apache.ignite.gatling.protocol.IgniteProtocol
 
+import java.util.concurrent.locks.Lock
 import javax.cache.processor.MutableEntry
 
 class IgniteCompileTest extends Simulation {
@@ -47,10 +48,10 @@ class IgniteCompileTest extends Simulation {
     .exec(ignite("ign").cache("cache").invoke[Int, Int, String](1).args(Seq("", 2, 3))
       { (_, _: Seq[Any]) =>  "" } )
     .exec(ignite("ign").cache("cache").invoke[Int, Int, String](1).args("", 2, Map(1 -> 3)) {
-      (_, args: Seq[Any]) => ""
+      (_, _: Seq[Any]) => ""
     })
     .exec(ignite("ign").cache("cache").invoke[Int, Int, String](1) {
-      (_, _: Seq[Any]) =>  ""
+      _: MutableEntry[Int, Int] => ""
     })
     .exec(ignite("ign").cache("cache").invoke[Int, Int, String](1)((_, _: Seq[Any]) =>  "")
       .check(
@@ -64,7 +65,7 @@ class IgniteCompileTest extends Simulation {
     .exec(ignite("ign").cache("cache")
       .get[Int, Any](1)
       .check(
-        allResults[Int, Any].saveAs("R")
+        allResults[Int, Any].transform(a => a.values.head).saveAs("R")
       )
     )
     .exec(ignite("ign").cache("cache")
@@ -79,6 +80,13 @@ class IgniteCompileTest extends Simulation {
         simpleCheck(result => result(1) == 2)
       )
     )
+    .exec(ignite("ign").cache("cache")
+      .lock[Int](1)
+      .check(
+        allResults[Int, Lock].transform(a => a.values.head).saveAs("lock")
+      )
+    )
+    .exec(ignite("ign").cache("cache").unlock("#{lock}"))
 
   setUp(scn.inject(atOnceUsers(1)))
     .protocols(thinProtocol, nodeProtocol)
