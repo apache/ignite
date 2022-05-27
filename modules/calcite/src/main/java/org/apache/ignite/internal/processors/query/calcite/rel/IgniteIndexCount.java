@@ -32,6 +32,7 @@ import org.apache.calcite.rel.type.RelDataType;
 
 /**
  * Relational operator that returns the contents of a table.
+ * // TODO: process index rebulding.
  */
 public class IgniteIndexCount extends AbstractRelNode implements SourceAwareIgniteRel {
     /** */

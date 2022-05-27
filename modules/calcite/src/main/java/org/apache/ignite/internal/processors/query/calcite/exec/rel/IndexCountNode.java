@@ -42,7 +42,7 @@ public class IndexCountNode<Row> extends AbstractNode<Row> implements Downstream
     }
 
     /** {@inheritDoc} */
-    @Override public void push(Row aLong) throws Exception {
+    @Override public void push(Row row) throws Exception {
         // Throw 'unsupported'.
         end();
     }

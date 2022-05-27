@@ -44,8 +44,8 @@ public class IndexCountRule extends RelRule<IndexCountRule.Config> {
     @Value.Immutable
     public interface Config extends RelRule.Config {
         /** */
-        IndexCountRule.Config DEFAULT = ImmutableTestRule.Config.of()
-            .withDescription("TestRule")
+        IndexCountRule.Config DEFAULT = ImmutableIndexCountRule.Config.of()
+            .withDescription("IndexCountRule")
             .withOperandSupplier(r -> r.operand(IgniteMapHashAggregate.class)
                 .oneInput(i -> i.operand(IgniteIndexScan.class).anyInputs()));
 
