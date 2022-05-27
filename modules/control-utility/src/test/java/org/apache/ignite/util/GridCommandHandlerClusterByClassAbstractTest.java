@@ -25,6 +25,8 @@ import org.apache.ignite.internal.IgniteEx;
 
 import static java.util.stream.Collectors.toSet;
 import static java.util.stream.Stream.of;
+import static org.apache.ignite.testframework.GridTestUtils.DFLT_TEST_TIMEOUT;
+import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /**
  * It is recommended to extends from this class in case of creating a cluster
@@ -76,6 +78,8 @@ public abstract class GridCommandHandlerClusterByClassAbstractTest extends GridC
         rmvCacheNames.removeAll(cfgCacheNames);
 
         crd.destroyCaches(rmvCacheNames);
+
+        waitForCondition(() -> client.cacheNames().stream().noneMatch(rmvCacheNames::contains), DFLT_TEST_TIMEOUT);
 
         cfgCacheNames.stream()
             .map(crd::cache)

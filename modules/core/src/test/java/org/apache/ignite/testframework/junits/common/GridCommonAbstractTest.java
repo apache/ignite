@@ -153,6 +153,7 @@ import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
 import static org.apache.ignite.cache.CacheMode.LOCAL;
 import static org.apache.ignite.cache.CacheRebalanceMode.NONE;
+import static org.apache.ignite.configuration.IgniteConfiguration.DFLT_NETWORK_TIMEOUT;
 import static org.apache.ignite.configuration.IgniteConfiguration.DFLT_SNAPSHOT_DIRECTORY;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isNearEnabled;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.OWNING;
@@ -2407,12 +2408,12 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @param client Client node.
      * @param cacheName Cache name.
      */
-    protected void awaitCacheOnClient(Ignite client, String cacheName) {
+    public static void awaitCacheOnClient(Ignite client, String cacheName) {
         if (!client.cluster().localNode().isClient())
             return;
 
         try {
-            assertTrue(waitForCondition(() -> client.cacheNames().contains(cacheName), 10_000));
+            assertTrue(waitForCondition(() -> client.cacheNames().contains(cacheName), DFLT_NETWORK_TIMEOUT));
         }
         catch (IgniteInterruptedCheckedException e) {
             throw U.convertException(e);
