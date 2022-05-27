@@ -370,6 +370,8 @@ public class CacheContinuousQueryOperationP2PTest extends GridCommonAbstractTest
 
         IgniteCache<Integer, Integer> cache;
 
+        awaitCacheOnClient(grid(NODES - 1), ccfg.getName());
+
         cache = isClient
             ? grid(NODES - 1).cache(ccfg.getName())
             : grid(rnd.nextInt(NODES - 1)).cache(ccfg.getName());

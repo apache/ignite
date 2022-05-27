@@ -5047,6 +5047,8 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
             if (skipFirst && i == 0)
                 continue;
 
+            awaitCacheOnClient(ignite(i), cacheName);
+
             IgniteCache<Object, Object> cache = ignite(i).cache(cacheName);
 
             assertEquals(expVal, cache.get(key));

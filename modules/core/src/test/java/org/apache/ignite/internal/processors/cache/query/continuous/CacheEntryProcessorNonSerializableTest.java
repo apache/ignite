@@ -217,7 +217,7 @@ public class CacheEntryProcessorNonSerializableTest extends GridCommonAbstractTe
     /**
      */
     @Test
-    public void testMvccPessimisticOnePhaseCommit() throws Exception {
+    public void testMvccPessimisticOnePhaseCommit() {
         CacheConfiguration ccfg = cacheConfiguration(PRIMARY_SYNC, 1).setAtomicityMode(TRANSACTIONAL_SNAPSHOT);
 
         doTestInvokeTest(ccfg, PESSIMISTIC, REPEATABLE_READ);
@@ -227,7 +227,7 @@ public class CacheEntryProcessorNonSerializableTest extends GridCommonAbstractTe
      */
     @Ignore("https://issues.apache.org/jira/browse/IGNITE-7187")
     @Test
-    public void testMvccPessimisticOnePhaseCommitWithNearCache() throws Exception {
+    public void testMvccPessimisticOnePhaseCommitWithNearCache() {
         CacheConfiguration ccfg = cacheConfiguration(PRIMARY_SYNC, 1).setAtomicityMode(TRANSACTIONAL_SNAPSHOT)
             .setNearConfiguration(new NearCacheConfiguration<>());
 
@@ -237,7 +237,7 @@ public class CacheEntryProcessorNonSerializableTest extends GridCommonAbstractTe
     /**
      */
     @Test
-    public void testMvccPessimisticOnePhaseCommitFullSync() throws Exception {
+    public void testMvccPessimisticOnePhaseCommitFullSync() {
         CacheConfiguration ccfg = cacheConfiguration(FULL_SYNC, 1).setAtomicityMode(TRANSACTIONAL_SNAPSHOT);
 
         doTestInvokeTest(ccfg, PESSIMISTIC, REPEATABLE_READ);
@@ -247,7 +247,7 @@ public class CacheEntryProcessorNonSerializableTest extends GridCommonAbstractTe
      */
     @Ignore("https://issues.apache.org/jira/browse/IGNITE-7187")
     @Test
-    public void testMvccPessimisticOnePhaseCommitFullSyncWithNearCache() throws Exception {
+    public void testMvccPessimisticOnePhaseCommitFullSyncWithNearCache() {
         CacheConfiguration ccfg = cacheConfiguration(FULL_SYNC, 1).setAtomicityMode(TRANSACTIONAL_SNAPSHOT)
             .setNearConfiguration(new NearCacheConfiguration<>());
 
@@ -257,7 +257,7 @@ public class CacheEntryProcessorNonSerializableTest extends GridCommonAbstractTe
     /**
      */
     @Test
-    public void testMvccPessimistic() throws Exception {
+    public void testMvccPessimistic() {
         CacheConfiguration ccfg = cacheConfiguration(PRIMARY_SYNC, 2).setAtomicityMode(TRANSACTIONAL_SNAPSHOT);
 
         doTestInvokeTest(ccfg, PESSIMISTIC, REPEATABLE_READ);
@@ -267,7 +267,7 @@ public class CacheEntryProcessorNonSerializableTest extends GridCommonAbstractTe
      */
     @Ignore("https://issues.apache.org/jira/browse/IGNITE-7187")
     @Test
-    public void testMvccPessimisticWithNearCache() throws Exception {
+    public void testMvccPessimisticWithNearCache() {
         CacheConfiguration ccfg = cacheConfiguration(PRIMARY_SYNC, 2).setAtomicityMode(TRANSACTIONAL_SNAPSHOT)
             .setNearConfiguration(new NearCacheConfiguration<>());
 
@@ -277,7 +277,7 @@ public class CacheEntryProcessorNonSerializableTest extends GridCommonAbstractTe
     /**
      */
     @Test
-    public void testMvccPessimisticFullSync() throws Exception {
+    public void testMvccPessimisticFullSync() {
         CacheConfiguration ccfg = cacheConfiguration(FULL_SYNC, 2).setAtomicityMode(TRANSACTIONAL_SNAPSHOT);
 
         doTestInvokeTest(ccfg, PESSIMISTIC, REPEATABLE_READ);
@@ -419,7 +419,7 @@ public class CacheEntryProcessorNonSerializableTest extends GridCommonAbstractTe
      */
     @SuppressWarnings({"unchecked", "ThrowableNotThrown"})
     private void doTestInvokeTest(CacheConfiguration ccfg, TransactionConcurrency txConcurrency,
-        TransactionIsolation txIsolation) throws Exception {
+        TransactionIsolation txIsolation) {
         if (ccfg.getNearConfiguration() != null)
             MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.NEAR_CACHE);
 
@@ -427,7 +427,7 @@ public class CacheEntryProcessorNonSerializableTest extends GridCommonAbstractTe
 
         grid(0).createCache(ccfg);
 
-        GridTestUtils.waitForCondition(() -> cln.cacheNames().contains(ccfg.getName()), getTestTimeout());
+        awaitCacheOnClient(cln, ccfg.getName());
 
         IgniteCache clnCache;
 
