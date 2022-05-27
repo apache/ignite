@@ -33,7 +33,7 @@
 
     <dependencies>
         <dependency>
-            <groupId>org.apache.ignite</groupId>
+            <groupId>com.sbt.ignite</groupId>
             <artifactId>ignite-core</artifactId>
             <version>2.4.0</version>
         </dependency>
