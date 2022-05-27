@@ -2144,7 +2144,19 @@ public class GridCacheUtils {
         if (dsCfg == null)
             return false;
 
-        return dsCfg.isRecoveryPointEnabled();
+        return dsCfg.isPointInTimeRecoveryEnabled();
+    }
+
+    /**
+     * @param cfg Ignite configuration.
+     * @return {@code true} if PITR enabled.
+     */
+    public static long getPitrPointsFrequency(IgniteConfiguration cfg) {
+        DataStorageConfiguration dsCfg = cfg.getDataStorageConfiguration();
+
+        assert isPitrEnabled(cfg);
+
+        return dsCfg.getPointInTimeRecoveryFreq();
     }
 
     /**

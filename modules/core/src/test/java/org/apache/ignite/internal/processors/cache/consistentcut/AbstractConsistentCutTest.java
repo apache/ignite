@@ -75,7 +75,7 @@ public abstract class AbstractConsistentCutTest extends GridCommonAbstractTest {
         cfg.setDataStorageConfiguration(new DataStorageConfiguration()
             .setWalForceArchiveTimeout(ARCHIVE_TIMEOUT)
             .setWalAutoArchiveAfterInactivity(ARCHIVE_TIMEOUT)
-            .setRecoveryPointEnabled(true)
+            .setPointInTimeRecoveryEnabled(true)
             .setDataRegionConfigurations(new DataRegionConfiguration()
                 .setName("consistent-cut-persist")
                 .setPersistenceEnabled(true)));

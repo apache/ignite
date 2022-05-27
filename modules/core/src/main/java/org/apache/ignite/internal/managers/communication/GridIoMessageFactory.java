@@ -45,6 +45,7 @@ import org.apache.ignite.internal.processors.cache.CacheEvictionEntry;
 import org.apache.ignite.internal.processors.cache.CacheInvokeDirectResult;
 import org.apache.ignite.internal.processors.cache.CacheObjectByteArrayImpl;
 import org.apache.ignite.internal.processors.cache.CacheObjectImpl;
+import org.apache.ignite.internal.processors.cache.ConsistentCutFinishResponse;
 import org.apache.ignite.internal.processors.cache.ConsistentCutStartRequest;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryInfo;
 import org.apache.ignite.internal.processors.cache.GridCacheMvccEntryInfo;
@@ -377,6 +378,7 @@ public class GridIoMessageFactory implements MessageFactoryProvider {
         factory.register(SnapshotFilesRequestMessage.TYPE_CODE, SnapshotFilesRequestMessage::new);
         factory.register(SnapshotFilesFailureMessage.TYPE_CODE, SnapshotFilesFailureMessage::new);
         factory.register(ConsistentCutStartRequest.TYPE_CODE, ConsistentCutStartRequest::new);
+        factory.register(ConsistentCutFinishResponse.TYPE_CODE, ConsistentCutFinishResponse::new);
 
         // [-3..119] [124..129] [-23..-28] [-36..-55] - this
         // [120..123] - DR

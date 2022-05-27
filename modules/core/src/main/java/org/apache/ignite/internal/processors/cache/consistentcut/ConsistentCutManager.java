@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.consistentcut;
 
 import java.util.Collection;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.stream.Collectors;
@@ -27,17 +28,17 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
-import org.apache.ignite.internal.processors.cache.ConsistentCutCheckDiscoveryMessage;
-import org.apache.ignite.internal.processors.cache.ConsistentCutStartDiscoveryMessage;
+import org.apache.ignite.internal.processors.cache.ConsistentCutFinishResponse;
 import org.apache.ignite.internal.processors.cache.ConsistentCutStartRequest;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxAdapter;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.processors.timeout.GridTimeoutObjectAdapter;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.transactions.TransactionState;
 
@@ -79,6 +80,9 @@ public class ConsistentCutManager {
     private final IgniteLogger log;
 
     /** */
+    private volatile Set<UUID> nodes;
+
+    /** */
     public ConsistentCutManager(GridCacheSharedContext<?, ?> cctx) {
         this.cctx = cctx;
 
@@ -86,19 +90,61 @@ public class ConsistentCutManager {
 
         latestCutState = new InitialConsistentCutState();
 
-        cctx.discovery().setCustomEventListener(ConsistentCutCheckDiscoveryMessage.class, (topVer, snd, m) ->
-            handleConsistentCutCheckEvent(m)
-        );
+        long cutFreq = CU.getPitrPointsFrequency(cctx.gridConfig());
 
-        cctx.discovery().setCustomEventListener(ConsistentCutStartDiscoveryMessage.class, (topVer, snd, m) ->
-            handleConsistentCutStartEvent()
-        );
+        scheduleConsistentCut(cutFreq, cutFreq);
 
         cctx.kernalContext().io().addMessageListener(TOPIC_CONSISTENT_CUT, (nodeId, msg, plc) ->
-            cctx.kernalContext().pools().consistentCutExecutorService().execute(() ->
-                cctx.consistentCutMgr().handleConsistentCutStart(((ConsistentCutStartRequest)msg).version())
-            )
+            cctx.kernalContext().pools().consistentCutExecutorService().execute(() -> {
+                if (msg instanceof ConsistentCutStartRequest)
+                    handleConsistentCutVersion(((ConsistentCutStartRequest)msg).version());
+
+                else if (msg instanceof ConsistentCutFinishResponse) {
+                    if (U.isLocalNodeCoordinator(cctx.discovery()))
+                        handleConsistentCutFinishResponse(nodeId, ((ConsistentCutFinishResponse)msg).version());
+                }
+            })
         );
+    }
+
+    /** */
+    private void scheduleConsistentCut(long delay, long freq) {
+        // Coordinator inits the Consistent Cut procedure on every node in a cluster (by Communication SPI).
+        if (!U.isLocalNodeCoordinator(cctx.discovery()))
+            return;
+
+        GridTimeoutObjectAdapter o = new GridTimeoutObjectAdapter(delay) {
+            /** {@inheritDoc} */
+            @Override public void onTimeout() {
+                if (nodes != null && !nodes.isEmpty()) {
+                    log.warning("Skip Consistent Cut procedure. Some nodes hasn't finished yet previous one. " +
+                        "Consistent Cut may require more time that it configured. Consider to increase param " +
+                        "`DataStorageConfiguration#setPointInTimeRecoveryEnabled`. " +
+                        "Nodes that hasn't finished their job: " + nodes);
+
+                    scheduleConsistentCut(delay, freq);
+
+                    return;
+                }
+
+                triggerConsistentCutOnCluster();
+
+                long d = (latestCutVersion() + freq) - System.currentTimeMillis();
+
+                if (d < 0) {
+                    long run = -d + delay;
+
+                    log.warning("Consistent Cut may require more time that it configured: " + run + " ms." +
+                        " Consider to increase param `DataStorageConfiguration#setPointInTimeRecoveryEnabled`.");
+
+                    d = freq;
+                }
+
+                scheduleConsistentCut(d, freq);
+            }
+        };
+
+        cctx.time().addTimeoutObject(o);
     }
 
     /**
@@ -149,11 +195,11 @@ public class ConsistentCutManager {
     }
 
     /**
-     * Checks local CutVersion and run ConsistentCut if version has changed.
+     * Checks local CutVersion and start Consistent Cut if version has changed.
      *
      * @param cutVer Received CutVersion from different node.
      */
-    public void handleConsistentCutStart(long cutVer) {
+    public void handleConsistentCutVersion(long cutVer) {
         // Already handled this version.
         if (latestCutVersion() >= cutVer)
             return;
@@ -173,6 +219,48 @@ public class ConsistentCutManager {
 
             cutGuard.readLock().unlock();
         }
+    }
+
+    /**
+     * Handles Consistent Cut Start event sent over discovery.
+     */
+    private void triggerConsistentCutOnCluster() {
+        long commitVer = System.currentTimeMillis();
+
+        log.info("Start Consistent Cut, version = " + commitVer);
+
+        try {
+            Collection<ClusterNode> nodes = cctx.kernalContext().discovery().aliveServerNodes();
+
+            this.nodes = nodes.stream().map(ClusterNode::id).collect(Collectors.toSet());
+
+            Message msg = new ConsistentCutStartRequest(commitVer);
+
+            cctx.kernalContext().io().sendToGridTopic(nodes, TOPIC_CONSISTENT_CUT, msg, SYSTEM_POOL);
+        }
+        catch (IgniteCheckedException e) {
+            U.error(log, "Failed to trigger Consistent Cut on remote node.", e);
+        }
+    }
+
+    /** */
+    public void handleConsistentCutFinishResponse(UUID nodeId, long cutVer) {
+        long ver = latestCutVersion();
+
+        if (cutVer != ver) {
+            log.error("Unexpected Consistent Cut version=" + cutVer + " from node " + nodeId + ". Expect=" + ver);
+
+            return;
+        }
+
+        if (!nodes.remove(nodeId)) {
+            log.error("Unexpected message from node " + nodeId + ". It finishes Consistent Cut with version " + cutVer
+                + ". Latest local version=" + ver);
+            return;
+        }
+
+        if (nodes.isEmpty())
+            nodes = null;
     }
 
     /**
@@ -230,69 +318,6 @@ public class ConsistentCutManager {
         finally {
             cutGuard.readLock().unlock();
         }
-    }
-
-    /**
-     * Handles a Consistent Cut Check event sent over discovery.
-     */
-    private void handleConsistentCutCheckEvent(ConsistentCutCheckDiscoveryMessage m) {
-        if (m.progress()) {
-            log.warning("Skip Consistent Cut procedure. Some nodes hasn't finished yet previous one.");
-
-            return;
-        }
-
-        if (skipConsistentCut())
-            m.inProgress();
-    }
-
-    /**
-     * Handles Consistent Cut Start event sent over discovery.
-     */
-    private void handleConsistentCutStartEvent() {
-        // Coordinator inits the Consistent Cut procedure on every node in a cluster (by Communication SPI).
-        // Then other nodes just skip the message.
-        if (!U.isLocalNodeCoordinator(cctx.discovery()))
-            return;
-
-        cctx.kernalContext().pools().consistentCutExecutorService().execute(() -> {
-            long commitVer;
-
-            if (skipConsistentCut())
-                return;
-
-            commitVer = System.currentTimeMillis();
-
-            log.info("Start Consistent Cut for timestamp " + commitVer);
-
-            try {
-                Collection<ClusterNode> nodes = cctx.kernalContext().discovery().aliveServerNodes();
-
-                Message msg = new ConsistentCutStartRequest(commitVer);
-
-                cctx.kernalContext().io().sendToGridTopic(nodes, TOPIC_CONSISTENT_CUT, msg, SYSTEM_POOL);
-            }
-            catch (IgniteCheckedException e) {
-                U.error(log, "Failed to trigger Consistent Cut on remote node.", e);
-            }
-        });
-    }
-
-    /** */
-    private boolean skipConsistentCut() {
-        ConsistentCutState s = latestCutState;
-
-        if (!s.finished() || !includeNext.isEmpty()) {
-            Set<IgniteUuid> w1 = s.checkList().stream().map(GridCacheVersion::asIgniteUuid).collect(Collectors.toSet());
-            Set<IgniteUuid> w2 = includeNext.stream().map(GridCacheVersion::asIgniteUuid).collect(Collectors.toSet());
-
-            log.warning("Skip Consistent Cut procedure. This node hasn't finished yet previous one. " +
-                "Await=" + w1 + "; Next=" + w2);
-
-            return true;
-        }
-
-        return false;
     }
 
     /**

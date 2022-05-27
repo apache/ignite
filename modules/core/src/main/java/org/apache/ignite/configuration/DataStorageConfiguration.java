@@ -339,7 +339,11 @@ public class DataStorageConfiguration implements Serializable {
 
     /** Flag to enable or disable PITR (Point In Time Recovery) feature. */
     @IgniteExperimental
-    private boolean recoveryPointEnabled;
+    private boolean pointInTimeRecoveryEnabled;
+
+    /** Frequency of preparing points to recovery for PITR feature, in milliseconds. */
+    @IgniteExperimental
+    private long pointInTimeRecoveryFreq;
 
     /**
      * Creates valid durable memory configuration with all default values.
@@ -1369,18 +1373,41 @@ public class DataStorageConfiguration implements Serializable {
     /**
      * @return Whether the PITR feature is enabled.
      */
-    public boolean isRecoveryPointEnabled() {
-        return recoveryPointEnabled;
+    @IgniteExperimental
+    public boolean isPointInTimeRecoveryEnabled() {
+        return pointInTimeRecoveryEnabled;
     }
 
     /**
      * Enables or disables PITR feature.
      *
-     * @param recoveryPointEnabled Flag to enable or disable PITR.
+     * @param pointInTimeRecoveryEnabled Flag to enable or disable PITR.
      * @return {@code this} for chaining.
      */
-    public DataStorageConfiguration setRecoveryPointEnabled(boolean recoveryPointEnabled) {
-        this.recoveryPointEnabled = recoveryPointEnabled;
+    @IgniteExperimental
+    public DataStorageConfiguration setPointInTimeRecoveryEnabled(boolean pointInTimeRecoveryEnabled) {
+        this.pointInTimeRecoveryEnabled = pointInTimeRecoveryEnabled;
+
+        return this;
+    }
+
+    /**
+     * @return Whether the PITR feature is enabled.
+     */
+    @IgniteExperimental
+    public long getPointInTimeRecoveryFreq() {
+        return pointInTimeRecoveryFreq;
+    }
+
+    /**
+     * Sets frequency of points for recovery for PITR feature.
+     *
+     * @param pointInTimeRecoveryFreq Frequency of points for recovery for PITR feature.
+     * @return {@code this} for chaining.
+     */
+    @IgniteExperimental
+    public DataStorageConfiguration setPointInTimeRecoveryFreq(long pointInTimeRecoveryFreq) {
+        this.pointInTimeRecoveryFreq = pointInTimeRecoveryFreq;
 
         return this;
     }

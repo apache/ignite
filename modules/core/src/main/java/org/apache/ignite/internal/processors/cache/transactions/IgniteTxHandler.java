@@ -293,7 +293,7 @@ public class IgniteTxHandler {
     /** */
     private void processConsistentVer(ConsistentCutVersionAware msg) {
         if (ctx.consistentCutMgr() != null) {
-            ctx.consistentCutMgr().handleConsistentCutStart(msg.latestCutVersion());
+            ctx.consistentCutMgr().handleConsistentCutVersion(msg.latestCutVersion());
 
             if (msg.txCutVersion() > 0)
                 ctx.consistentCutMgr().handleRemoteTxCutVersion(msg.nearTxVersion(), msg.txCutVersion());
