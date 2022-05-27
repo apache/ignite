@@ -46,7 +46,7 @@ import static org.apache.calcite.sql.type.SqlTypeName.VARCHAR;
  */
 public class Accumulators {
     /** */
-    public static Supplier<Accumulator> accumulatorFactory(AggregateCall call) {
+    static Supplier<Accumulator> accumulatorFactory(AggregateCall call) {
         if (!call.isDistinct())
             return accumulatorFunctionFactory(call);
 
@@ -228,7 +228,7 @@ public class Accumulators {
     }
 
     /** */
-    private static class AnyVal implements Accumulator {
+    public static class AnyVal implements Accumulator {
         /** */
         private Object holder;
 
@@ -365,30 +365,17 @@ public class Accumulators {
         /** */
         private long cnt;
 
-        private final boolean adding;
-
-        public LongCount(boolean adding) {
-            this.adding = adding;
-        }
-
-        public LongCount() {
-            adding = false;
-        }
-
         /** {@inheritDoc} */
         @Override public void add(Object... args) {
             assert F.isEmpty(args) || args.length == 1;
 
             if (F.isEmpty(args) || args[0] != null)
-                cnt += adding ? (long)args[0] : 1;
+                cnt++;
         }
 
         /** {@inheritDoc} */
         @Override public void apply(Accumulator other) {
-            Object val = other.end();
-
-            if (val != null)
-                cnt += ((Number)val).longValue();
+            cnt += ((Number)other.end()).longValue();
         }
 
         /** {@inheritDoc} */
@@ -404,10 +391,6 @@ public class Accumulators {
         /** {@inheritDoc} */
         @Override public RelDataType returnType(IgniteTypeFactory typeFactory) {
             return typeFactory.createSqlType(BIGINT);
-        }
-
-        public static final LongCount adding(){
-            return new LongCount(true);
         }
     }
 

@@ -124,10 +124,8 @@ public abstract class AbstractIndexScan extends ProjectableFilterableTableScan {
 
         double cost;
 
-        if (condition == null) {
+        if (condition == null)
             cost = rows * IgniteCost.ROW_PASS_THROUGH_COST;
-            cost = 0;
-        }
         else {
             RexBuilder builder = getCluster().getRexBuilder();
 

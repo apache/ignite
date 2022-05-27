@@ -49,15 +49,6 @@ public class IndexRebuildPlannerTest extends AbstractPlannerTest {
 
     /** */
     @Test
-    public void testCount() throws Exception {
-        String sql = "SELECT count(*) FROM TBL";
-//        String sql = "SELECT count(*) FROM TBL WHERE id = 0";
-
-        assertPlan(sql, publicSchema, isInstanceOf(IgniteIndexScan.class));
-    }
-
-    /** */
-    @Test
     public void testIndexRebuild() throws Exception {
         String sql = "SELECT * FROM TBL WHERE id = 0";
 

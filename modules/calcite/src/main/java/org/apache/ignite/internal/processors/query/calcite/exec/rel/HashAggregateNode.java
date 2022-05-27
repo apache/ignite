@@ -296,7 +296,7 @@ public class HashAggregateNode<Row> extends AbstractNode<Row> implements SingleN
 
         /** */
         private void addOnReducer(Row row) {
-            byte targetGrpId = (byte)handler.get(0, row);
+            byte targetGrpId = ((Number)handler.get(0, row)).byteValue();
 
             if (targetGrpId != grpId)
                 return;

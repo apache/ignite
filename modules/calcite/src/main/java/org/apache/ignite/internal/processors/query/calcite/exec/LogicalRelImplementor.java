@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.query.calcite.exec;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
@@ -40,8 +41,11 @@ import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexImp
 import org.apache.ignite.internal.processors.failure.FailureProcessor;
 import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler.RowFactory;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.ExpressionFactory;
+import org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.Accumulator;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.AccumulatorWrapper;
+import org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.Accumulators;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.AggregateType;
+import org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.GroupKey;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.AbstractSetOpNode;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.CorrelatedNestedLoopJoinNode;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.FilterNode;
@@ -408,13 +412,32 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
         }
     }
 
+    /** {@inheritDoc} */
     @Override public Node<Row> visit(IgniteIndexCount rel) {
         IgniteTable tbl = rel.getTable().unwrap(IgniteTable.class);
         CacheIndexImpl idx = (CacheIndexImpl)tbl.getIndex(rel.indexName());
 
-        RowFactory<Row> rowFactory = ctx.rowHandler().factory(ctx.getTypeFactory(), rel.getRowType());
+        return new IndexCountNode(idx.index().unwrap(InlineIndexImpl.class), new RowFactory() {
+            /** {@inheritDoc} */
+            @Override public RowHandler<Row> handler() {
+                return ctx.rowHandler();
+            }
 
-        return new IndexCountNode(idx.index().unwrap(InlineIndexImpl.class), ctx);
+            /** {@inheritDoc} */
+            @Override public Object create() {
+                return new Object[2];
+            }
+
+            /** {@inheritDoc} */
+            @Override public Object create(Object... fields) {
+                // TODO: get from related grouping/acc/reducing.
+                Accumulator acc = Accumulators.AnyVal.FACTORY.get();
+
+                acc.add(fields);
+
+                return new Object[] {0, GroupKey.EMPTY_GRP_KEY, Collections.singletonList(acc)};
+            }
+        }, ctx);
     }
 
     /** {@inheritDoc} */
