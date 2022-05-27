@@ -24,14 +24,17 @@ import java.util.Arrays;
  * assigned in ascending order.
  */
 public class GridHandleTable {
+    /** Initial size. */
+    private final int initCap;
+
+    /** Factor for computing size threshold. */
+    private final float loadFactor;
+
     /** Number of mappings in table/next available handle. */
     private int size;
 
     /** Size threshold determining when to expand hash spine. */
     private int threshold;
-
-    /** Factor for computing size threshold. */
-    private final float loadFactor;
 
     /** Maps hash value -> candidate handle value. */
     private int[] spine;
@@ -55,20 +58,30 @@ public class GridHandleTable {
      * @param loadFactor Load factor.
      */
     public GridHandleTable(int initCap, float loadFactor) {
+        this.initCap = initCap;
         this.loadFactor = loadFactor;
 
-        spine = new int[initCap];
-        next = new int[initCap];
-        objs = new Object[initCap];
-        spineEmpty = new int[initCap];
-        nextEmpty = new int[initCap];
+        init(initCap);
+
+        clear();
+    }
+
+    /**
+     * Initialize hash table.
+     *
+     * @param len Hash table length.
+     */
+    private void init(int len) {
+        spine = new int[len];
+        next = new int[len];
+        objs = new Object[len];
+        spineEmpty = new int[len];
+        nextEmpty = new int[len];
 
         Arrays.fill(spineEmpty, -1);
         Arrays.fill(nextEmpty, -1);
 
-        threshold = (int)(initCap * loadFactor);
-
-        clear();
+        threshold = (int)(len * loadFactor);
     }
 
     /**
@@ -107,6 +120,10 @@ public class GridHandleTable {
      * Resets table to its initial (empty) state.
      */
     public void clear() {
+        if (size < objs.length) {
+            shrink();
+        }
+
         System.arraycopy(spineEmpty, 0, spine, 0, spineEmpty.length);
         System.arraycopy(nextEmpty, 0, next, 0, nextEmpty.length);
 
@@ -179,6 +196,24 @@ public class GridHandleTable {
         System.arraycopy(objs, 0, newObjs, 0, size);
 
         objs = newObjs;
+    }
+
+    /**
+     * Tries to gradually shrink hash table by factor of two when it's cleared.
+     */
+    private void shrink() {
+        int newLen = objs.length;
+
+        if (newLen > initCap) {
+            int shrinked = (newLen - 1) / 2;
+            if (shrinked >= size)
+                newLen = shrinked;
+        }
+
+        newLen = Math.max(newLen, initCap);
+
+        if (newLen >= size && newLen < objs.length)
+            init(newLen);
     }
 
     /**

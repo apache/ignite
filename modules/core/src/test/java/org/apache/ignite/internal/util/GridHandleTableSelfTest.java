@@ -24,11 +24,9 @@ import org.junit.Test;
  * Test for {@link GridHandleTable}.
  */
 public class GridHandleTableSelfTest extends GridCommonAbstractTest {
-    /**
-     * @throws Exception If failed.
-     */
+    /** */
     @Test
-    public void testGrow() throws Exception {
+    public void testGrow() {
         GridHandleTable table = new GridHandleTable(8, 2);
 
         for (int i = 0; i < 16; i++)
@@ -48,5 +46,28 @@ public class GridHandleTableSelfTest extends GridCommonAbstractTest {
         }
 
         assertEquals(1, cnt);
+    }
+
+    /** */
+    @Test
+    public void testShrink() {
+        GridHandleTable table = new GridHandleTable(8, 2);
+
+        assertEquals(8, table.objects().length);
+
+        for (int i = 0; i < 16; i++)
+            assertEquals(-1, table.lookup(i));
+
+        assertEquals(17, table.objects().length);
+
+        table.clear();
+
+        table.clear();
+
+        assertEquals(8, table.objects().length);
+
+        table.clear();
+
+        assertEquals(8, table.objects().length);
     }
 }
