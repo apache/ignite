@@ -17,9 +17,6 @@
 
 package org.apache.ignite.internal.processors.query.calcite.rel;
 
-import java.math.BigDecimal;
-import java.math.BigInteger;
-import java.util.Collections;
 import java.util.List;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptCost;
@@ -32,11 +29,10 @@ import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelWriter;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rel.type.RelDataType;
-import org.apache.calcite.rel.type.RelDataTypeFactory;
-import org.apache.calcite.sql.type.SqlTypeName;
 
 /**
  * Relational operator that returns the contents of a table.
+ * // TODO: process index rebulding.
  */
 public class IgniteIndexCount extends AbstractRelNode implements SourceAwareIgniteRel {
     /** */
@@ -44,9 +40,6 @@ public class IgniteIndexCount extends AbstractRelNode implements SourceAwareIgni
 
     /** */
     private final String idxName;
-
-    /** */
-    private final long sourceId;
 
     /**
      * Constructor used for deserialization.
@@ -57,16 +50,8 @@ public class IgniteIndexCount extends AbstractRelNode implements SourceAwareIgni
         super(input.getCluster(), input.getTraitSet());
 
         idxName = input.getString("index");
-
-        Object srcIdObj = input.get("sourceId");
-        if (srcIdObj != null)
-            sourceId = ((Number)srcIdObj).longValue();
-        else
-            sourceId = -1;
-
-        rowType = deriveRowType();
-
         tbl = input.getTable("table");
+        rowType = input.getRowType("type");
     }
 
     /**
@@ -80,35 +65,14 @@ public class IgniteIndexCount extends AbstractRelNode implements SourceAwareIgni
         RelOptCluster cluster,
         RelTraitSet traits,
         RelOptTable tbl,
-        String idxName
-    ) {
-        this(cluster, traits, tbl, idxName, -1L);
-    }
-
-    private IgniteIndexCount(
-        RelOptCluster cluster,
-        RelTraitSet traits,
-        RelOptTable tbl,
         String idxName,
-        long sourceId
+        RelDataType rowType
     ) {
         super(cluster, traits);
 
         this.idxName = idxName;
         this.tbl = tbl;
-        this.rowType = deriveRowType();
-        this.sourceId = sourceId;
-    }
-
-    @Override protected RelDataType deriveRowType() {
-        RelDataTypeFactory tf = getCluster().getTypeFactory();
-
-        RelDataType type = tf.createJavaType(BigDecimal.class);
-//        RelDataType type = tf.createSqlType(SqlTypeName.BIGINT);
-//        RelDataType type = tf.createJavaType(long.class);
-//        RelDataType type = tf.createJavaType(BigInteger.class);
-
-        return tf.createStructType(Collections.singletonList(type), Collections.singletonList(type.toString()));
+        this.rowType = rowType;
     }
 
     /** {@inheritDoc} */
@@ -118,7 +82,7 @@ public class IgniteIndexCount extends AbstractRelNode implements SourceAwareIgni
 
     /** {@inheritDoc} */
     @Override public long sourceId() {
-        return sourceId;
+        return -1L;
     }
 
     /** {@inheritDoc} */
@@ -142,7 +106,7 @@ public class IgniteIndexCount extends AbstractRelNode implements SourceAwareIgni
     @Override public RelWriter explainTerms(RelWriter pw) {
         return super.explainTerms(pw)
             .item("index", idxName)
-            .itemIf("sourceId", sourceId, sourceId != -1)
+            .item("type", rowType)
             .item("table", tbl.getQualifiedName());
     }
 
@@ -153,11 +117,11 @@ public class IgniteIndexCount extends AbstractRelNode implements SourceAwareIgni
 
     /** {@inheritDoc} */
     @Override public IgniteRel clone(RelOptCluster cluster, List<IgniteRel> inputs) {
-        return new IgniteIndexCount(cluster, traitSet, tbl, idxName);
+        return new IgniteIndexCount(cluster, traitSet, tbl, idxName, rowType);
     }
 
     /** {@inheritDoc} */
     @Override public IgniteRel clone(long sourceId) {
-        return new IgniteIndexCount(getCluster(), traitSet, tbl, idxName, sourceId);
+        return new IgniteIndexCount(getCluster(), traitSet, tbl, idxName, rowType);
     }
 }

@@ -408,6 +408,7 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
         }
     }
 
+    /** {@inheritDoc} */
     @Override public Node<Row> visit(IgniteIndexCount rel) {
         IgniteTable tbl = rel.getTable().unwrap(IgniteTable.class);
         CacheIndexImpl idx = (CacheIndexImpl)tbl.getIndex(rel.indexName());

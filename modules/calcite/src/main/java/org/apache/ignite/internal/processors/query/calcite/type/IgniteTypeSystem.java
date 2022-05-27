@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.query.calcite.type;
 
 import java.io.Serializable;
 import java.math.BigDecimal;
-import java.math.BigInteger;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rel.type.RelDataTypeSystem;
@@ -82,8 +81,8 @@ public class IgniteTypeSystem extends RelDataTypeSystemImpl implements Serializa
 
                     break;
 
-                case DECIMAL:
                 case BIGINT:
+                case DECIMAL:
                     sumType = typeFactory.createJavaType(BigDecimal.class);
 
                     break;

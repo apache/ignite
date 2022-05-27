@@ -59,10 +59,10 @@ import org.junit.Test;
 @WithSystemProperty(key = "calcite.debug", value = "true")
 public class JdbcQueryTest extends GridCommonAbstractTest {
     /** URL. */
-    private final String url = "jdbc:ignite:thin://127.0.0.1";
+    private final String url = "jdbc:ignite:thin://127.0.0.1?queryEngine=" + CalciteQueryEngineConfiguration.ENGINE_NAME;
 
     /** Nodes count. */
-    private final int nodesCnt = 1;
+    private final int nodesCnt = 2;
 
     /** Connection. */
     private Connection conn;
@@ -80,7 +80,7 @@ public class JdbcQueryTest extends GridCommonAbstractTest {
                 .setPartitionLossPolicy(PartitionLossPolicy.READ_WRITE_SAFE)
         );
 
-        long dsSize = 4L * 1024L * 1024L * 1024L;
+        long dsSize = 3L * 1024L * 1024L * 1024L;
 
         cfg.setDataStorageConfiguration(new DataStorageConfiguration()
             .setWalSegments(20)
@@ -126,15 +126,15 @@ public class JdbcQueryTest extends GridCommonAbstractTest {
         stopAllGrids();
     }
 
-    /** {@inheritDoc} */
+    /** Tests usage of index count on 'COUNT(*)'. */
     @Test
-    public void testSlowCalcite() throws Exception {
-//        long records = 1_000;
+    public void testCalciteIndexCount() throws Exception {
+//        long records = 1;
+//        long records = 50_000;
 //        long records = 100_000;
 //        long records = 200_000;
-//        long records = 500_000;
-        long records = 1_000_000;
-//        long records = 2_000_000;
+        long records = 500_000;
+//        long records = 1_000_000;
 
         ddl();
         fillDb(records, 100);
@@ -163,6 +163,7 @@ public class JdbcQueryTest extends GridCommonAbstractTest {
         }
     }
 
+    /** */
     private void ddl() throws SQLException {
         stmt.execute("CREATE TABLE PI_COM_DAY (\n" +
             "    ITEM_ID VARCHAR(30) NOT NULL ,\n" +
@@ -173,10 +174,11 @@ public class JdbcQueryTest extends GridCommonAbstractTest {
         stmt.execute("CREATE INDEX IDX_PI_COM_DAY_ITEM_DATE ON PI_COM_DAY(KIND);");
     }
 
+    /** */
     private void fillDb(long recordNum, int batchSize) throws SQLException {
         boolean autoCommit = conn.getAutoCommit();
 
-        try (PreparedStatement ps = conn.prepareStatement("INSERT INTO PI_COM_DAY(ITEM_ID) values (?)")){
+        try (PreparedStatement ps = conn.prepareStatement("INSERT INTO PI_COM_DAY(ITEM_ID) values (?)")) {
             conn.setAutoCommit(false);
 
             for (long i = 0, batch = 0; i < recordNum; ++i) {
@@ -184,7 +186,7 @@ public class JdbcQueryTest extends GridCommonAbstractTest {
 
                 ps.addBatch();
 
-                if(++batch == batchSize) {
+                if (++batch == batchSize) {
                     ps.executeBatch();
                     batch = 0;
                     conn.commit();
@@ -199,6 +201,7 @@ public class JdbcQueryTest extends GridCommonAbstractTest {
         }
     }
 
+    /** */
     @Override protected long getTestTimeout() {
         return 30 * 60 * 1000;
     }
