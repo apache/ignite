@@ -2089,7 +2089,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
      */
     public List<L> remove(L lower, L upper, int limit) throws IgniteCheckedException {
         // We may not find the lower bound if the inner node
-        // does not contain a key that is not present on the leaf page.
+        // contain a key that is not present on the leaf page.
         assert canGetRowFromInner : "Not supported";
         assert limit >= 0 : limit;
 
