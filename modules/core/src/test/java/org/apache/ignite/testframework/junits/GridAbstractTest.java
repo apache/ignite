@@ -220,8 +220,8 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
         .outerRule(new SystemPropertiesRule())
         .around(new BeforeFirstAndAfterLastTestRule());
 
-    @Rule
-    public Timeout timeout = new Timeout(getTestTimeout(), TimeUnit.MILLISECONDS);
+    /** */
+    @Rule public Timeout timeout = new Timeout(getTestTimeout(), TimeUnit.MILLISECONDS);
 
     /** Manages test execution and reporting. */
     private transient TestRule runRule = (base, desc) -> new Statement() {
