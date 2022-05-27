@@ -389,18 +389,6 @@ public class Accumulators {
 
             if (val != null)
                 cnt += ((Number)val).longValue();
-
-
-           // cnt += (long)other.end();
-//            if(other instanceof Sum){
-//                Sum sum = (Sum)other;
-//
-//                apply(sum.acc);
-//            } else {
-//                LongCount other0 = (LongCount)other;
-//
-//                cnt += other0.cnt;
-//            }
         }
 
         /** {@inheritDoc} */

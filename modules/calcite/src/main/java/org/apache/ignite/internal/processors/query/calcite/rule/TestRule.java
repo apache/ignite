@@ -47,7 +47,6 @@ public class TestRule extends RelRule<TestRule.Config> {
 
         AggregateCall aggFun = AggregateCall.create(
             SqlStdOperatorTable.SUM,
-//            new SqlCountAggFunction("COUNT_SUM"),
             false,
             false,
             false,
