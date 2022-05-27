@@ -23,43 +23,30 @@ import java.util.stream.Collectors;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.lang.IgniteUuid;
 
-/** */
-public class ConsistentCutRecord extends WALRecord {
-    /** */
-    private final long consistentCutVer;
-
+/**
+ * This WAL record contains set of transaction committed AFTER {@link ConsistentCutStartRecord} that are part of
+ * Consistent Cut State related to the {@link #version()}.
+ */
+public class ConsistentCutFinishRecord extends WALRecord {
     /**
-     * Exclusion flag, it marks the second CutRecord for closing ConsistentCut. It contains list of TXs to exclude
-     * from the first CutRecord.
+     * Consistent Cut Version. It's timestamp of start Consistent Cut on the Ignite coordinator node.
      */
-    private final boolean finish;
+    private final long ver;
 
     /**
-     * List of TXs to include to ConsistentCut that should be parsed after the first CutRecord.
+     * Set of transactions (committed AFTER this record) to include to the Consistent Cut State.
      */
     private final Set<GridCacheVersion> include;
 
-    /**
-     * List of TXs to include to ConsistentCut that should be parsed after the first CutRecord.
-     */
-    private final Set<GridCacheVersion> check;
-
     /** */
-    public ConsistentCutRecord(
-        long consistentCutVer,
-        Set<GridCacheVersion> include,
-        Set<GridCacheVersion> check,
-        boolean finish
-    ) {
-        this.consistentCutVer = consistentCutVer;
+    public ConsistentCutFinishRecord(long ver, Set<GridCacheVersion> include) {
+        this.ver = ver;
         this.include = include;
-        this.check = check;
-        this.finish = finish;
     }
 
     /** */
-    public long ver() {
-        return consistentCutVer;
+    public long version() {
+        return ver;
     }
 
     /** */
@@ -67,19 +54,9 @@ public class ConsistentCutRecord extends WALRecord {
         return include;
     }
 
-    /** */
-    public Set<GridCacheVersion> check() {
-        return check;
-    }
-
-    /** */
-    public boolean finish() {
-        return finish;
-    }
-
     /** {@inheritDoc} */
     @Override public RecordType type() {
-        return RecordType.CONSISTENT_CUT_RECORD;
+        return RecordType.CONSISTENT_CUT_FINISH_RECORD;
     }
 
     /** {@inheritDoc} */
@@ -88,10 +65,6 @@ public class ConsistentCutRecord extends WALRecord {
             .map(GridCacheVersion::asIgniteUuid)
             .collect(Collectors.toList());
 
-        List<IgniteUuid> chk = check.stream()
-            .map(GridCacheVersion::asIgniteUuid)
-            .collect(Collectors.toList());
-
-        return "ConsistentCutRecord [ver=" + ver() + "; finish=" + finish + ";  include=" + incl + "; check=" + chk + "]";
+        return "ConsistentCutRecord [ver=" + ver + ";  include=" + incl + "]";
     }
 }

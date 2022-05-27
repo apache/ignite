@@ -529,7 +529,7 @@ public class IgniteTxHandler {
                             req.deployInfo() != null);
 
                         if (ctx.consistentCutMgr() != null)
-                            res.lastCutVer(ctx.consistentCutMgr().lastCutVer());
+                            res.lastCutVer(ctx.consistentCutMgr().latestCutVer());
 
                         try {
                             ctx.io().send(nearNode, res, req.policy());
@@ -741,7 +741,7 @@ public class IgniteTxHandler {
             req.deployInfo() != null);
 
         if (ctx.consistentCutMgr() != null)
-            res.lastCutVer(ctx.consistentCutMgr().lastCutVer());
+            res.lastCutVer(ctx.consistentCutMgr().latestCutVer());
 
         try {
             ctx.io().send(node.id(), res, req.policy());
@@ -1376,7 +1376,7 @@ public class IgniteTxHandler {
                 else {
                     if (ctx.consistentCutMgr() != null) {
                         res.txCutVer(dhtTx.commitCutVer());
-                        res.lastCutVer(ctx.consistentCutMgr().lastCutVer());
+                        res.lastCutVer(ctx.consistentCutMgr().latestCutVer());
                     }
 
                     sendReply(nodeId, req, res, dhtTx, nearTx);
@@ -1384,7 +1384,7 @@ public class IgniteTxHandler {
             }
             else {
                 if (ctx.consistentCutMgr() != null)
-                    res.lastCutVer(ctx.consistentCutMgr().lastCutVer());
+                    res.lastCutVer(ctx.consistentCutMgr().latestCutVer());
 
                 sendReply(nodeId, req, res, dhtTx, nearTx);
             }

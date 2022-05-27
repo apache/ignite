@@ -1685,12 +1685,12 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
             return txIdMap.remove(tx.xidVersion(), tx);
 
         if (txIdMap.containsKey(tx.xidVersion())) {
-            cctx.consistentCutMgr().beforeCommit(tx);
+            cctx.consistentCutMgr().registerBeforeCommit(tx);
 
             boolean active = txIdMap.remove(tx.xidVersion(), tx);
 
             if (!active)
-                cctx.consistentCutMgr().cleanCommitting(tx);
+                cctx.consistentCutMgr().unregisterAfterCommit(tx);
 
             return active;
         }

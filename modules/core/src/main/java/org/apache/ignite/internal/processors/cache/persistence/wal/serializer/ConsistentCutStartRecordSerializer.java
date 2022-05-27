@@ -21,8 +21,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.HashSet;
 import java.util.Set;
-import org.apache.ignite.internal.pagemem.wal.record.ConsistentCutRecord;
-import org.apache.ignite.internal.pagemem.wal.record.TxRecord;
+import org.apache.ignite.internal.pagemem.wal.record.ConsistentCutStartRecord;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.CacheVersionIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.ByteBufferBackedDataInput;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -31,23 +30,15 @@ import static org.apache.ignite.internal.processors.cache.persistence.wal.serial
 import static org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordV1Serializer.readVersion;
 
 /** */
-public class ConsistentCutRecordSerializer {
-    /** */
-    private static final byte TRUE = 1;
-
-    /** */
-    private static final byte FALSE = 0;
-
+public class ConsistentCutStartRecordSerializer {
     /**
-     * Writes {@link ConsistentCutRecord} to given buffer.
+     * Writes {@link ConsistentCutStartRecord} to given buffer.
      *
      * @param rec Consistent cut record.
      * @param buf Byte buffer.
      */
-    public void write(ConsistentCutRecord rec, ByteBuffer buf) {
-        buf.putLong(rec.ver());
-
-        buf.put(rec.finish() ? TRUE : FALSE);
+    public void write(ConsistentCutStartRecord rec, ByteBuffer buf) {
+        buf.putLong(rec.version());
 
         buf.putInt(rec.include().size());
 
@@ -58,20 +49,17 @@ public class ConsistentCutRecordSerializer {
 
         for (GridCacheVersion tx: rec.check())
             putVersion(buf, tx, false);
-
     }
 
     /**
-     * Reads {@link TxRecord} from given input.
+     * Reads {@link ConsistentCutStartRecord} from given input.
      *
      * @param in Input
-     * @return TxRecord.
+     * @return ConsistentCutStartRecord.
      * @throws IOException In case of fail.
      */
-    public ConsistentCutRecord read(ByteBufferBackedDataInput in) throws IOException {
+    public ConsistentCutStartRecord read(ByteBufferBackedDataInput in) throws IOException {
         long ver = in.readLong();
-
-        boolean finish = in.readByte() == TRUE;
 
         int inclSize = in.readInt();
 
@@ -93,18 +81,17 @@ public class ConsistentCutRecordSerializer {
             check.add(v);
         }
 
-        return new ConsistentCutRecord(ver, include, check, finish);
+        return new ConsistentCutStartRecord(ver, include, check);
     }
 
     /**
-     * Returns size of marshalled {@link TxRecord} in bytes.
+     * Returns size of marshalled {@link ConsistentCutStartRecord} in bytes.
      *
-     * @param rec TxRecord.
-     * @return Size of TxRecord in bytes.
+     * @param rec ConsistentCutStartRecord.
+     * @return Size of ConsistentCutStartRecord in bytes.
      */
-    public int size(ConsistentCutRecord rec) {
+    public int size(ConsistentCutStartRecord rec) {
         int size = 8;  // ver.
-        size += 1;  // finish flag.
         size += 4;  // include tx count.
         size += 4;  // check tx count.
 

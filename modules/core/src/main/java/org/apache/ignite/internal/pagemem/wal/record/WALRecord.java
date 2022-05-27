@@ -284,8 +284,11 @@ public abstract class WALRecord {
         /** ClusterSnapshot start. */
         CLUSTER_SNAPSHOT(75, LOGICAL),
 
-        /** Partition clearing start. */
-        CONSISTENT_CUT_RECORD(76, LOGICAL);
+        /** Consistent Cut record. */
+        CONSISTENT_CUT_START_RECORD(76, LOGICAL),
+
+        /** Consistent Cut record. */
+        CONSISTENT_CUT_FINISH_RECORD(77, LOGICAL);
 
         /** Index for serialization. Should be consistent throughout all versions. */
         private final int idx;

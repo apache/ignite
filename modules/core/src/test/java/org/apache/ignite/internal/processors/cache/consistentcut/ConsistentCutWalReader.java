@@ -30,7 +30,8 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
-import org.apache.ignite.internal.pagemem.wal.record.ConsistentCutRecord;
+import org.apache.ignite.internal.pagemem.wal.record.ConsistentCutFinishRecord;
+import org.apache.ignite.internal.pagemem.wal.record.ConsistentCutStartRecord;
 import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.TxRecord;
@@ -44,7 +45,8 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.transactions.TransactionState;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.CONSISTENT_CUT_RECORD;
+import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.CONSISTENT_CUT_FINISH_RECORD;
+import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.CONSISTENT_CUT_START_RECORD;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.TX_RECORD;
 import static org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderResolver.genNewStyleSubfolderName;
 
@@ -107,7 +109,7 @@ public class ConsistentCutWalReader {
         while (true) {
             WALIterator it = walIter(from);
 
-            ConsistentCutRecord startCutRecord = readBeforeCut(it, curCut);
+            ConsistentCutStartRecord startCutRecord = readBeforeCut(it, curCut);
 
             if (startCutRecord == null) {
                 curCut.ver = NodeConsistentCutState.INCOMPLETE;
@@ -147,7 +149,7 @@ public class ConsistentCutWalReader {
      * @param it WAL iterator to read.
      * @param cut Current ConsistencyCut state.
      */
-    private ConsistentCutRecord readBeforeCut(WALIterator it, NodeConsistentCutState cut) {
+    private ConsistentCutStartRecord readBeforeCut(WALIterator it, NodeConsistentCutState cut) {
         while (it.hasNext()) {
             WALRecord rec = it.next().getValue();
 
@@ -155,8 +157,8 @@ public class ConsistentCutWalReader {
                 handleDataRecord((DataRecord)rec, cut);
             else if (rec.type() == WALRecord.RecordType.TX_RECORD)
                 handleTxRecord((TxRecord)rec, cut, false);
-            else if (rec.type() == CONSISTENT_CUT_RECORD) {
-                ConsistentCutRecord r = (ConsistentCutRecord)rec;
+            else if (rec.type() == CONSISTENT_CUT_START_RECORD) {
+                ConsistentCutStartRecord r = (ConsistentCutStartRecord)rec;
 
                 r = handleStartConsistentCutRecord(r, cut);
 
@@ -165,6 +167,12 @@ public class ConsistentCutWalReader {
                     continue;
 
                 return r;
+            }
+            else if (rec.type() == CONSISTENT_CUT_FINISH_RECORD) {
+                ConsistentCutFinishRecord r = (ConsistentCutFinishRecord)rec;
+
+                // Re-read exclusion, as it starts new CUT immediately affter start of the previous CUT.
+                assert cutVers.containsKey(curCutVer - 1) && r.version() == cutVers.get(curCutVer - 1);
             }
         }
 
@@ -177,8 +185,8 @@ public class ConsistentCutWalReader {
         while (it.hasNext()) {
             WALRecord rec = it.next().getValue();
 
-            if (rec.type() == CONSISTENT_CUT_RECORD) {
-                handleFinishConsistentCutRecord((ConsistentCutRecord)rec, cut);
+            if (rec.type() == CONSISTENT_CUT_FINISH_RECORD) {
+                handleFinishConsistentCutRecord((ConsistentCutFinishRecord)rec, cut);
 
                 return;
             }
@@ -226,10 +234,10 @@ public class ConsistentCutWalReader {
                 else
                     System.out.println("SKIP EXCLUDED TX[" + tx + "]");
             }
-            else if (rec.type() == CONSISTENT_CUT_RECORD) {
-                ConsistentCutRecord r = (ConsistentCutRecord)rec;
+            else if (rec.type() == CONSISTENT_CUT_START_RECORD) {
+                ConsistentCutStartRecord r = (ConsistentCutStartRecord)rec;
 
-                assert cut.ver == r.ver() && r.finish() : r;
+                assert cut.ver == r.version();
 
                 System.out.println("SKIP CUT[" + r + "]");
             }
@@ -323,23 +331,16 @@ public class ConsistentCutWalReader {
     }
 
     /** */
-    private ConsistentCutRecord handleStartConsistentCutRecord(ConsistentCutRecord rec, NodeConsistentCutState cut) {
+    private ConsistentCutStartRecord handleStartConsistentCutRecord(ConsistentCutStartRecord rec, NodeConsistentCutState cut) {
         System.out.println("START " + curCutVer + " CUT[" + rec + "]");
 
-        cutVers.put(curCutVer, rec.ver());
+        cutVers.put(curCutVer, rec.version());
 
-        // Re-read exclusion, as it starts new CUT immediately affter start of the previous CUT.
-        if (cutVers.containsKey(curCutVer - 1) && rec.ver() == cutVers.get(curCutVer - 1)) {
-            assert rec.finish();
-
-            return null;
-        }
-        else
-            assert !cut.awaitingCheckTxs && !rec.finish();
+        assert !cut.awaitingCheckTxs;
 
         ++curCutVer;
 
-        cut.ver = rec.ver();
+        cut.ver = rec.version();
 
         Set<IgniteUuid> include = rec.include().stream()
             .map(GridCacheVersion::asIgniteUuid)
@@ -367,10 +368,10 @@ public class ConsistentCutWalReader {
     }
 
     /** */
-    private void handleFinishConsistentCutRecord(ConsistentCutRecord rec, NodeConsistentCutState cut) {
+    private void handleFinishConsistentCutRecord(ConsistentCutFinishRecord rec, NodeConsistentCutState cut) {
         System.out.println("FINISH CUT[" + rec + "]");
 
-        assert cutVers.containsKey(curCutVer - 1) && rec.ver() == cutVers.get(curCutVer - 1) && rec.finish() : rec + " " + cut;
+        assert cutVers.containsKey(curCutVer - 1) && rec.version() == cutVers.get(curCutVer - 1) : rec + " " + cut;
 
         for (GridCacheVersion includedTx: rec.include()) {
             IgniteUuid tx = includedTx.asIgniteUuid();

@@ -22,40 +22,38 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
+import org.apache.ignite.internal.pagemem.wal.record.ConsistentCutFinishRecord;
+import org.apache.ignite.internal.pagemem.wal.record.ConsistentCutStartRecord;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxFinishRequest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxFinishRequest;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 
 /**
- * Describes current Consistent Cut status.
+ * Describes current Consistent Cut state.
  */
 public class ConsistentCutState {
     /**
-     * Version, actually it's a timestamp of started Consistent Cut.
+     * Consistent Cut Version. It's a timestamp of start Consistent Cut algorithm on Ignite coordinator node.
      */
     private final long ver;
 
     /**
-     * Whether local Consistent Cut procedure is fully completed.
+     * Whether local Consistent Cut procedure is finished. It means that all transactions in {@link #check}
+     * analyzed, and it's known which transactions are part of this Consistent Cut.
      */
-    private final AtomicBoolean completed = new AtomicBoolean();
+    private final AtomicBoolean finished = new AtomicBoolean();
 
     /**
-     * Set of transactions to include into this CutVersion.
+     * Set of transactions to include into this Consistent Cut.
      */
     private final Set<GridCacheVersion> include = ConcurrentHashMap.newKeySet();
 
     /**
-     * Set of transactions to include into next CutVersion.
-     */
-    private final Set<GridCacheVersion> includeNext = ConcurrentHashMap.newKeySet();
-
-    /**
-     * Map of transactions that were prepared on local node.
+     * Map of transactions that are originated and prepared on local node.
      *
-     * Key is transaction version on near node.
-     * Value is CutVersion that used to notify remote nodes whether to include those transactions to specific CutVersion
-     * or not. Notification is sent with `GridTxFinishRequest`.
+     * Key is a transaction version. Value is the latest Consistent Cut Version that doesn't include this transaction.
+     * It is used to notify remote nodes whether to include those transactions to this Consistent Cut or not.
+     * The notification is sent with finish requests.
      *
      * @see GridNearTxFinishRequest
      * @see GridDhtTxFinishRequest
@@ -63,15 +61,15 @@ public class ConsistentCutState {
     private final Map<GridCacheVersion, Long> nearPrepare = new ConcurrentHashMap<>();
 
     /**
-     * Map of transactions that was included in CutVersion but still waiting for check.
+     * Map of transactions that are required to be checked whether to include them to this Consistent Cut. Such transactions
+     * are waiting for notifications from other nodes.
      *
-     * Key is transaction version on near node.
-     * Value is CutVersion of this Consistent Cut.
+     * Key is a transaction version. Value is Consistent Cut Version.
      */
-    private final Map<GridCacheVersion, Long> cutAwait = new ConcurrentHashMap<>();
+    private final Map<GridCacheVersion, Long> check = new ConcurrentHashMap<>();
 
     /**
-     * Set of transactions from {@link #cutAwait} to include to this CutVersion.
+     * Set of transactions from {@link #check} to include to this CutVersion.
      */
     private final Set<GridCacheVersion> checkInclude = new HashSet<>();
 
@@ -80,95 +78,134 @@ public class ConsistentCutState {
         this.ver = ver;
     }
 
-    /** Excludes specified transaction from this CutVersion. */
-    public void exclude(GridCacheVersion txId) {
-        checkInclude.remove(txId);
-
-        includeNext.add(txId);
-    }
-
     /**
-     * Collection of 2PC transactions that originated on local node.
-     */
-    public Map<GridCacheVersion, Long> nearPrepare() {
-        return nearPrepare;
-    }
-
-    /** */
-    public void nearPrepare(GridCacheVersion txId, long lastVer) {
-        nearPrepare.put(txId, lastVer);
-    }
-
-    /**
-     * Collection of transactions to await to decide which CutVersion they belong to.
-     */
-    public Map<GridCacheVersion, Long> cutAwait() {
-        return cutAwait;
-    }
-
-    /** */
-    public void cutAwait(GridCacheVersion txId, long lastVer) {
-        cutAwait.put(txId, lastVer);
-        checkInclude.add(txId);
-    }
-
-    /**
-     * Set of transactions to include to CutVersion (incl. {@link #cutAwait()}).
-     */
-    public Set<GridCacheVersion> include() {
-        return include;
-    }
-
-    /** */
-    public void include(GridCacheVersion txId) {
-        include.add(txId);
-    }
-
-    /**
-     * Set of transactions to include to next CutVersion.
-     */
-    public Set<GridCacheVersion> includeNext() {
-        return includeNext;
-    }
-
-    /** */
-    public void includeNext(GridCacheVersion txId) {
-        includeNext.add(txId);
-    }
-
-    /**
-     * Set of transactions to include to CutVersion (after checking them).
-     */
-    public Set<GridCacheVersion> checkInclude() {
-        return checkInclude;
-    }
-
-    /**
-     * Consistent Cut Version.
+     * @return Consistent Cut Version.
      */
     public long ver() {
         return ver;
     }
 
     /**
-     * Complete local Consistent Cut procedure.
+     * Includes a transaction (optionally committed AFTER) to Consistent Cut.
+     *
+     * @param nearTxVer Transaction version on an originated node.
      */
-    public boolean complete() {
-        return completed.compareAndSet(false, true);
+    public void include(GridCacheVersion nearTxVer) {
+        include.add(nearTxVer);
     }
 
     /**
-     * Complete local Consistent Cut procedure.
+     * @param nearTxVer Transaction version on an originated node.
+     * @return {@code true} whether specified transaction included to Consistent Cut.
      */
-    public boolean complete(GridCacheVersion tx) {
-        return includeNext.remove(tx);
+    public boolean includes(GridCacheVersion nearTxVer) {
+        return include.contains(nearTxVer);
     }
 
     /**
-     * Whether local Consistent Cut procedure is completed.
+     * Sets the latest Consistent Cut Version that doesn't include specified transaction.
+     *
+     * @param nearTxVer Transaction version on an originated node.
+     * @param cutVer Consistent Cut Version.
      */
-    public boolean completed() {
-        return completed.get() && includeNext.isEmpty();
+    public void txCutVer(GridCacheVersion nearTxVer, long cutVer) {
+        nearPrepare.put(nearTxVer, cutVer);
+    }
+
+    /**
+     * Gets the latest Consistent Cut Version that doesn't include specified transaction.
+     *
+     * @param nearTxVer Transaction version on an originated node.
+     * @return Consistent Cut Version.
+     */
+    public Long txCutVer(GridCacheVersion nearTxVer) {
+        return nearPrepare.remove(nearTxVer);
+    }
+
+    /**
+     * Adds transaction to the check-list that awaits notifications from other nodes to decide whether to include specified
+     * transaction to this Consistent Cut, or not.
+     *
+     * @param nearTxVer Transaction version on an originated node.
+     * @param cutVer Consistent Cut Version.
+     */
+    public void addForCheck(GridCacheVersion nearTxVer, long cutVer) {
+        check.put(nearTxVer, cutVer);
+
+        checkInclude.add(nearTxVer);
+    }
+
+    /**
+     * Verifies whether specified transaction in the check-list.
+     *
+     * @param nearTxVer Transaction version on an originated node.
+     * @return Consistent Cut Version.
+     */
+    public Long needCheck(GridCacheVersion nearTxVer) {
+        return check.get(nearTxVer);
+    }
+
+    /**
+     * @return Actual check-list of transactions that are awaited notifications from remote nodes.
+     */
+    public Set<GridCacheVersion> checkList() {
+        return new HashSet<>(check.keySet());
+    }
+
+    /**
+     * Excludes specified transaction from this Consistent Cut.
+     *
+     * @param nearTxVer Transaction version on an originated node.
+     */
+    public void exclude(GridCacheVersion nearTxVer) {
+        checkInclude.remove(nearTxVer);
+    }
+
+    /**
+     * Tries to finish Consistent Cut after checking specified transaction.
+     *
+     * @param nearTxVer Transaction version on an originated node.
+     * @return Whether Consistent Cut finished.
+     */
+    public boolean tryFinish(GridCacheVersion nearTxVer) {
+        return check.remove(nearTxVer) != null && check.isEmpty() && finish();
+    }
+
+    /**
+     * Tries to finish Consistent Cut after crossing sets of included and awaited transactions. For cases when node
+     * has multiple participations (e.g. near and backup) it's possible to remove some transactions from the check-list.
+     */
+    public void tryFinish() {
+        if (check.isEmpty())
+            finish();
+        else {
+            for (GridCacheVersion inclTx: include)
+                tryFinish(inclTx);
+        }
+    }
+
+    /**
+     * Finish local Consistent Cut.
+     */
+    protected boolean finish() {
+        return finished.compareAndSet(false, true);
+    }
+
+    /**
+     * Whether local Consistent Cut finished.
+     */
+    public boolean finished() {
+        return finished.get();
+    }
+
+    /** */
+    public ConsistentCutStartRecord buildStartRecord() {
+        return new ConsistentCutStartRecord(ver, include, check.keySet());
+    }
+
+    /** */
+    public ConsistentCutFinishRecord buildFinishRecord() {
+        return new ConsistentCutFinishRecord(ver, checkInclude);
     }
 
     /** {@inheritDoc} */
@@ -177,11 +214,10 @@ public class ConsistentCutState {
 
         bld.append("ver=").append(ver).append(", ");
 
-        mapAppend(bld, "nearPrepare", nearPrepare);
-        mapAppend(bld, "cutAwait", cutAwait);
         setAppend(bld, "include", include);
+        mapAppend(bld, "check", check);
         setAppend(bld, "checkInclude", checkInclude);
-        setAppend(bld, "includeNext", includeNext);
+        mapAppend(bld, "nearPrepare", nearPrepare);
 
         return bld.toString();
     }

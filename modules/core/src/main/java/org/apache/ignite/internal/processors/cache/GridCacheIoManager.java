@@ -777,7 +777,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
                 res.error(req.classError());
 
                 if (cctx.consistentCutMgr() != null)
-                    res.lastCutVer(cctx.consistentCutMgr().lastCutVer());
+                    res.lastCutVer(cctx.consistentCutMgr().latestCutVer());
 
                 sendResponseOnFailedMessage(nodeId, res, cctx, req.policy());
             }
@@ -922,7 +922,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
                 res.error(req.classError());
 
                 if (cctx.consistentCutMgr() != null)
-                    res.lastCutVer(cctx.consistentCutMgr().lastCutVer());
+                    res.lastCutVer(cctx.consistentCutMgr().latestCutVer());
 
                 sendResponseOnFailedMessage(nodeId, res, cctx, req.policy());
             }

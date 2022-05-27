@@ -39,22 +39,22 @@ public class ConsistentCutStartRequest implements Message {
      * Consistent Cut Version, timestamp of Consistent Cut.
      */
     @GridToStringInclude
-    private long cutVer;
+    private long ver;
 
     /** */
     public ConsistentCutStartRequest() {
     }
 
     /** */
-    public ConsistentCutStartRequest(long cutVer) {
-        this.cutVer = cutVer;
+    public ConsistentCutStartRequest(long ver) {
+        this.ver = ver;
     }
 
     /**
      * @return Consistent Cut Version.
      */
-    public long cutVer() {
-        return cutVer;
+    public long version() {
+        return ver;
     }
 
     /** {@inheritDoc} */
@@ -69,7 +69,7 @@ public class ConsistentCutStartRequest implements Message {
         }
 
         if (writer.state() == 0) {
-            if (!writer.writeLong("cutVer", cutVer))
+            if (!writer.writeLong("ver", ver))
                 return false;
 
             writer.incrementState();
@@ -86,7 +86,7 @@ public class ConsistentCutStartRequest implements Message {
             return false;
 
         if (reader.state() == 0) {
-            cutVer = reader.readLong("cutVer");
+            ver = reader.readLong("ver");
 
             if (!reader.isLastRead())
                 return false;

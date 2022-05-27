@@ -1262,7 +1262,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
 
     /** Notify Consistent Cut procedure on transaction commit. */
     protected void notifyConsistentCutOnCommit() {
-        cctx.consistentCutMgr().cleanCommitting(this);
+        cctx.consistentCutMgr().unregisterAfterCommit(this);
     }
 
     /** */

@@ -159,7 +159,7 @@ public abstract class AbstractConsistentCutTest extends GridCommonAbstractTest {
                 if (!nodes.contains(n))
                     continue;
 
-                long ver = grid(n).context().cache().context().consistentCutMgr().lastCutVer();
+                long ver = grid(n).context().cache().context().consistentCutMgr().latestCutVer();
 
                 if (ver >= beforeCut) {
                     nodes.remove(n);
