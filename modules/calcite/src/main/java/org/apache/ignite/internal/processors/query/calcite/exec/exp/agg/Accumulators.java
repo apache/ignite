@@ -20,9 +20,7 @@ package org.apache.ignite.internal.processors.query.calcite.exec.exp.agg;
 import java.math.BigDecimal;
 import java.math.MathContext;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -31,11 +29,8 @@ import java.util.UUID;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import org.apache.calcite.avatica.util.ByteString;
-import org.apache.calcite.rel.RelCollation;
-import org.apache.calcite.rel.RelFieldCollation;
 import org.apache.calcite.rel.core.AggregateCall;
 import org.apache.calcite.rel.type.RelDataType;
-import org.apache.calcite.util.mapping.Mappings;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
@@ -60,7 +55,7 @@ public class Accumulators {
         Supplier<Accumulator<Row>> supplier = accumulatorFunctionFactory(call, ctx);
 
         if (call.isDistinct())
-            return () -> new DistinctAccumulator<>(supplier, ctx.rowHandler());
+            return () -> new DistinctAccumulator<>(call, ctx.rowHandler(), supplier);
 
         return supplier;
     }
@@ -74,7 +69,7 @@ public class Accumulators {
 
         switch (call.getAggregation().getName()) {
             case "COUNT":
-                return () -> new LongCount<>(hnd);
+                return () -> new LongCount<>(call, hnd);
             case "AVG":
                 return avgFactory(call, hnd);
             case "SUM":
@@ -86,9 +81,9 @@ public class Accumulators {
             case "MAX":
                 return maxFactory(call, hnd);
             case "SINGLE_VALUE":
-                return () -> new SingleVal<>(hnd);
+                return () -> new SingleVal<>(call, hnd);
             case "ANY_VALUE":
-                return () -> new AnyVal<>(hnd);
+                return () -> new AnyVal<>(call, hnd);
             case "LISTAGG":
                 return listAggregateSupplier(call, ctx);
             default:
@@ -105,49 +100,13 @@ public class Accumulators {
 
         Supplier<Accumulator<Row>> accSup = () -> new ListAggAccumulator<>(call, hnd);
 
-        RelCollation mapColl = getMappedCollation(call);
-
-        Comparator<Row> cmp;
-        if (mapColl != null) {
-            cmp = ctx.expressionFactory().comparator(getMappedCollation(call));
+        if (call.getCollation() != null && !call.getCollation().getFieldCollations().isEmpty()) {
+            Comparator<Row> cmp = ctx.expressionFactory().comparator(call.getCollation());
 
             return () -> new SortingAccumulator<>(accSup, cmp);
         }
 
         return accSup;
-    }
-
-    /** */
-    private static RelCollation getMappedCollation(AggregateCall call) {
-        if (call.getCollation() == null || call.getCollation().getFieldCollations().isEmpty())
-            return null;
-
-        List<RelFieldCollation> collations = call.getCollation().getFieldCollations();
-        List<Integer> argList = call.getArgList();
-
-        // The target value will be accessed by field index in mapping array (targets[fieldIndex]),
-        // so srcCnt should be "max_field_index + 1" to prevent IndexOutOfBoundsException.
-        int srcCnt = Collections.max(collations, Comparator.comparingInt(RelFieldCollation::getFieldIndex))
-            .getFieldIndex() + 1;
-
-        Map<Integer, Integer> mapping = new HashMap<>();
-
-        int collOff = 0;
-        for (int i = 0; i < collations.size(); i++) {
-            int idx = collations.get(i).getFieldIndex();
-
-            int mapIdx = argList.indexOf(idx);
-            if (mapIdx == -1) { //collation not found in arglist
-                mapIdx = argList.size() + collOff;
-
-                collOff++;
-            }
-
-            mapping.put(idx, mapIdx);
-        }
-
-        return mapping.isEmpty() ? call.getCollation() : call.getCollation()
-            .apply(Mappings.target(mapping, srcCnt, srcCnt));
     }
 
     /** */
@@ -157,13 +116,13 @@ public class Accumulators {
                 throw new UnsupportedOperationException("AVG() is not supported for type '" + call.type + "'.");
             case BIGINT:
             case DECIMAL:
-                return () -> new DecimalAvg<>(hnd);
+                return () -> new DecimalAvg<>(call, hnd);
             case DOUBLE:
             case REAL:
             case FLOAT:
             case INTEGER:
             default:
-                return () -> new DoubleAvg<>(hnd);
+                return () -> new DoubleAvg<>(call, hnd);
         }
     }
 
@@ -175,18 +134,18 @@ public class Accumulators {
 
             case BIGINT:
             case DECIMAL:
-                return () -> new Sum<>(new DecimalSumEmptyIsZero<>(hnd), hnd);
+                return () -> new Sum<>(call, new DecimalSumEmptyIsZero<>(call, hnd), hnd);
 
             case DOUBLE:
             case REAL:
             case FLOAT:
-                return () -> new Sum<>(new DoubleSumEmptyIsZero<>(hnd), hnd);
+                return () -> new Sum<>(call, new DoubleSumEmptyIsZero<>(call, hnd), hnd);
 
             case TINYINT:
             case SMALLINT:
             case INTEGER:
             default:
-                return () -> new Sum<>(new LongSumEmptyIsZero<>(hnd), hnd);
+                return () -> new Sum<>(call, new LongSumEmptyIsZero<>(call, hnd), hnd);
         }
     }
 
@@ -198,18 +157,18 @@ public class Accumulators {
 
             case BIGINT:
             case DECIMAL:
-                return () -> new DecimalSumEmptyIsZero<>(hnd);
+                return () -> new DecimalSumEmptyIsZero<>(call, hnd);
 
             case DOUBLE:
             case REAL:
             case FLOAT:
-                return () -> new DoubleSumEmptyIsZero<>(hnd);
+                return () -> new DoubleSumEmptyIsZero<>(call, hnd);
 
             case TINYINT:
             case SMALLINT:
             case INTEGER:
             default:
-                return () -> new LongSumEmptyIsZero<>(hnd);
+                return () -> new LongSumEmptyIsZero<>(call, hnd);
         }
     }
 
@@ -219,27 +178,27 @@ public class Accumulators {
             case DOUBLE:
             case REAL:
             case FLOAT:
-                return () -> new DoubleMinMax<>(true, hnd);
+                return () -> new DoubleMinMax<>(call, hnd, true);
             case DECIMAL:
-                return () -> new DecimalMinMax<>(true, hnd);
+                return () -> new DecimalMinMax<>(call, hnd, true);
             case INTEGER:
-                return () -> new IntMinMax<>(true, hnd);
+                return () -> new IntMinMax<>(call, hnd, true);
             case CHAR:
             case VARCHAR:
-                return () -> new VarCharMinMax<>(true, hnd);
+                return () -> new VarCharMinMax<>(call, hnd, true);
             case BINARY:
             case VARBINARY:
-                return () -> new ComparableMinMax<Row, ByteString>(true,
-                    tf -> tf.createTypeWithNullability(tf.createSqlType(VARBINARY), true), hnd);
+                return () -> new ComparableMinMax<Row, ByteString>(call, hnd, true,
+                    tf -> tf.createTypeWithNullability(tf.createSqlType(VARBINARY), true));
             case ANY:
                 if (call.type instanceof UuidType) {
-                    return () -> new ComparableMinMax<Row, UUID>(true,
-                        tf -> tf.createTypeWithNullability(tf.createCustomType(UUID.class), true), hnd);
+                    return () -> new ComparableMinMax<Row, UUID>(call, hnd, true,
+                        tf -> tf.createTypeWithNullability(tf.createCustomType(UUID.class), true));
                 }
                 throw new UnsupportedOperationException("MIN() is not supported for type '" + call.type + "'.");
             case BIGINT:
             default:
-                return () -> new LongMinMax<>(true, hnd);
+                return () -> new LongMinMax<>(call, hnd, true);
         }
     }
 
@@ -249,27 +208,27 @@ public class Accumulators {
             case DOUBLE:
             case REAL:
             case FLOAT:
-                return () -> new DoubleMinMax<>(false, hnd);
+                return () -> new DoubleMinMax<>(call, hnd, false);
             case DECIMAL:
-                return () -> new DecimalMinMax<>(false, hnd);
+                return () -> new DecimalMinMax<>(call, hnd, false);
             case INTEGER:
-                return () -> new IntMinMax<>(false, hnd);
+                return () -> new IntMinMax<>(call, hnd, false);
             case CHAR:
             case VARCHAR:
-                return () -> new VarCharMinMax<>(false, hnd);
+                return () -> new VarCharMinMax<>(call, hnd, false);
             case BINARY:
             case VARBINARY:
-                return () -> new ComparableMinMax<Row, ByteString>(false,
-                    tf -> tf.createTypeWithNullability(tf.createSqlType(VARBINARY), true), hnd);
+                return () -> new ComparableMinMax<Row, ByteString>(call, hnd, false,
+                    tf -> tf.createTypeWithNullability(tf.createSqlType(VARBINARY), true));
             case ANY:
                 if (call.type instanceof UuidType) {
-                    return () -> new ComparableMinMax<Row, UUID>(false,
-                        tf -> tf.createTypeWithNullability(tf.createCustomType(UUID.class), true), hnd);
+                    return () -> new ComparableMinMax<Row, UUID>(call, hnd, false,
+                        tf -> tf.createTypeWithNullability(tf.createCustomType(UUID.class), true));
                 }
                 throw new UnsupportedOperationException("MAX() is not supported for type '" + call.type + "'.");
             case BIGINT:
             default:
-                return () -> new LongMinMax<>(false, hnd);
+                return () -> new LongMinMax<>(call, hnd, false);
         }
     }
 
@@ -279,28 +238,31 @@ public class Accumulators {
         private final RowHandler<Row> hnd;
 
         /** */
-        AbstractAccumulator(RowHandler<Row> hnd) {
+        private final transient AggregateCall aggCall;
+
+        /** */
+        AbstractAccumulator(AggregateCall aggCall, RowHandler<Row> hnd) {
+            this.aggCall = aggCall;
             this.hnd = hnd;
         }
 
         /** */
         <T> T get(int idx, Row row) {
-            return (T)hnd.get(idx, row);
+            List<Integer> argList = aggCall.getArgList();
+
+            assert idx < argList.size() : "idx=" + idx + "; arglist=" + argList;
+
+            return (T)hnd.get(argList.get(idx), row);
         }
 
         /** */
-        <T> void set(int idx, Row row, T val) {
-            hnd.set(idx, row, val);
+        protected AggregateCall aggregateCall() {
+            return aggCall;
         }
 
         /** */
         int columnCount(Row row) {
             return hnd.columnCount(row);
-        }
-
-        /** */
-        Row createRow(IgniteTypeFactory typeFactory, List<RelDataType> fieldTypes) {
-            return hnd.factory(typeFactory, fieldTypes).create();
         }
     }
 
@@ -310,11 +272,11 @@ public class Accumulators {
         private boolean touched;
 
         /** */
-        SingleVal(RowHandler<Row> hnd) {
-            super(hnd);
+        SingleVal(AggregateCall aggCall, RowHandler<Row> hnd) {
+            super(aggCall, hnd);
         }
 
-        /** */
+        /** {@inheritDoc}  */
         @Override public void add(Row row) {
             if (touched)
                 throw new IllegalArgumentException("Subquery returned more than 1 value.");
@@ -324,7 +286,7 @@ public class Accumulators {
             super.add(row);
         }
 
-        /** */
+        /** {@inheritDoc}  */
         @Override public void apply(Accumulator<Row> other) {
             if (((SingleVal<Row>)other).touched) {
                 if (touched)
@@ -343,35 +305,33 @@ public class Accumulators {
         private Object holder;
 
         /** */
-        AnyVal(RowHandler<Row> hnd) {
-            super(hnd);
+        AnyVal(AggregateCall aggCall, RowHandler<Row> hnd) {
+            super(aggCall, hnd);
         }
 
-        /** */
+        /** {@inheritDoc}  */
         @Override public void add(Row row) {
-            assert columnCount(row) == 1 : "Column count " + columnCount(row);
-
             if (holder == null)
                 holder = get(0, row);
         }
 
-        /** */
+        /** {@inheritDoc} */
         @Override public void apply(Accumulator<Row> other) {
             if (holder == null)
                 holder = ((AnyVal<Row>)other).holder;
         }
 
-        /** */
+        /** {@inheritDoc}  */
         @Override public Object end() {
             return holder;
         }
 
-        /** */
+        /** {@inheritDoc}  */
         @Override public List<RelDataType> argumentTypes(IgniteTypeFactory typeFactory) {
             return F.asList(typeFactory.createTypeWithNullability(typeFactory.createSqlType(ANY), true));
         }
 
-        /** */
+        /** {@inheritDoc}  */
         @Override public RelDataType returnType(IgniteTypeFactory typeFactory) {
             return typeFactory.createSqlType(ANY);
         }
@@ -386,8 +346,8 @@ public class Accumulators {
         private BigDecimal cnt = BigDecimal.ZERO;
 
         /** */
-        DecimalAvg(RowHandler<Row> hnd) {
-            super(hnd);
+        DecimalAvg(AggregateCall aggCall, RowHandler<Row> hnd) {
+            super(aggCall, hnd);
         }
 
         /** {@inheritDoc} */
@@ -434,8 +394,8 @@ public class Accumulators {
         private long cnt;
 
         /** */
-        DoubleAvg(RowHandler<Row> hnd) {
-            super(hnd);
+        DoubleAvg(AggregateCall aggCall, RowHandler<Row> hnd) {
+            super(aggCall, hnd);
         }
 
         /** {@inheritDoc} */
@@ -479,17 +439,17 @@ public class Accumulators {
         private long cnt;
 
         /** */
-        LongCount(RowHandler<Row> hnd) {
-            super(hnd);
+        LongCount(AggregateCall aggCall, RowHandler<Row> hnd) {
+            super(aggCall, hnd);
         }
 
         /** {@inheritDoc} */
         @Override public void add(Row row) {
-            int colCnt = columnCount(row);
+            int argsCount = aggregateCall().getArgList().size();
 
-            assert colCnt == 0 || colCnt == 1;
+            assert argsCount == 0 || argsCount == 1;
 
-            if (colCnt == 0 || get(0, row) != null)
+            if (argsCount == 0 || get(0, row) != null)
                 cnt++;
         }
 
@@ -524,8 +484,8 @@ public class Accumulators {
         private boolean empty = true;
 
         /** */
-        public Sum(Accumulator<Row> acc, RowHandler<Row> hnd) {
-            super(hnd);
+        public Sum(AggregateCall aggCall, Accumulator<Row> acc, RowHandler<Row> hnd) {
+            super(aggCall, hnd);
 
             this.acc = acc;
         }
@@ -574,8 +534,8 @@ public class Accumulators {
         private double sum;
 
         /** */
-        DoubleSumEmptyIsZero(RowHandler<Row> hnd) {
-            super(hnd);
+        DoubleSumEmptyIsZero(AggregateCall aggCall, RowHandler<Row> hnd) {
+            super(aggCall, hnd);
         }
 
         /** {@inheritDoc} */
@@ -617,8 +577,8 @@ public class Accumulators {
         private long sum;
 
         /** */
-        LongSumEmptyIsZero(RowHandler<Row> hnd) {
-            super(hnd);
+        LongSumEmptyIsZero(AggregateCall aggCall, RowHandler<Row> hnd) {
+            super(aggCall, hnd);
         }
 
         /** {@inheritDoc} */
@@ -660,8 +620,8 @@ public class Accumulators {
         private BigDecimal sum;
 
         /** */
-        DecimalSumEmptyIsZero(RowHandler<Row> hnd) {
-            super(hnd);
+        DecimalSumEmptyIsZero(AggregateCall aggCall, RowHandler<Row> hnd) {
+            super(aggCall, hnd);
         }
 
         /** {@inheritDoc} */
@@ -709,8 +669,8 @@ public class Accumulators {
         private boolean empty = true;
 
         /** */
-        private DoubleMinMax(boolean min, RowHandler<Row> hnd) {
-            super(hnd);
+        private DoubleMinMax(AggregateCall aggCall, RowHandler<Row> hnd, boolean min) {
+            super(aggCall, hnd);
             this.min = min;
         }
 
@@ -764,8 +724,8 @@ public class Accumulators {
         private boolean empty = true;
 
         /** */
-        VarCharMinMax(boolean min, RowHandler<Row> hnd) {
-            super(hnd);
+        VarCharMinMax(AggregateCall aggCall, RowHandler<Row> hnd, boolean min) {
+            super(aggCall, hnd);
             this.min = min;
         }
 
@@ -847,8 +807,8 @@ public class Accumulators {
         private boolean empty = true;
 
         /** */
-        private IntMinMax(boolean min, RowHandler<Row> hnd) {
-            super(hnd);
+        private IntMinMax(AggregateCall aggCall, RowHandler<Row> hnd, boolean min) {
+            super(aggCall, hnd);
             this.min = min;
         }
 
@@ -902,8 +862,8 @@ public class Accumulators {
         private boolean empty = true;
 
         /** */
-        private LongMinMax(boolean min, RowHandler<Row> hnd) {
-            super(hnd);
+        private LongMinMax(AggregateCall aggCall, RowHandler<Row> hnd, boolean min) {
+            super(aggCall, hnd);
 
             this.min = min;
         }
@@ -955,8 +915,8 @@ public class Accumulators {
         private BigDecimal val;
 
         /** */
-        private DecimalMinMax(boolean min, RowHandler<Row> hnd) {
-            super(hnd);
+        private DecimalMinMax(AggregateCall aggCall, RowHandler<Row> hnd, boolean min) {
+            super(aggCall, hnd);
             this.min = min;
         }
 
@@ -1011,8 +971,13 @@ public class Accumulators {
         private boolean empty = true;
 
         /** */
-        private ComparableMinMax(boolean min, Function<IgniteTypeFactory, RelDataType> typeSupplier, RowHandler<Row> hnd) {
-            super(hnd);
+        private ComparableMinMax(
+            AggregateCall aggCall,
+            RowHandler<Row> hnd,
+            boolean min,
+            Function<IgniteTypeFactory, RelDataType> typeSupplier
+        ) {
+            super(aggCall, hnd);
             this.min = min;
             this.typeSupplier = typeSupplier;
         }
@@ -1073,7 +1038,7 @@ public class Accumulators {
         private final Accumulator<Row> acc;
 
         /**
-         * @param accSup Acc support.
+         * @param accSup Accumulator supplier.
          * @param cmp Comparator.
          */
         private SortingAccumulator(Supplier<Accumulator<Row>> accSup, Comparator<Row> cmp) {
@@ -1125,13 +1090,13 @@ public class Accumulators {
         private final List<Row> list;
 
         /** */
-        private final int sepIdx;
+        private final boolean isDfltSep;
 
         /** */
-        public ListAggAccumulator(AggregateCall call, RowHandler<Row> hnd) {
-            super(hnd);
+        public ListAggAccumulator(AggregateCall aggCall, RowHandler<Row> hnd) {
+            super(aggCall, hnd);
 
-            sepIdx = call.getArgList().size() > 1 ? 1 : 0;
+            isDfltSep = aggCall.getArgList().size() <= 1;
 
             list = new ArrayList<>();
         }
@@ -1170,10 +1135,10 @@ public class Accumulators {
 
         /** */
         private String extractSeparator(Row row) {
-            if (sepIdx < 1 || columnCount(row) <= sepIdx)
+            if (isDfltSep || columnCount(row) <= 1)
                 return DEFAULT_SEPARATOR;
 
-            Object rawSep = get(sepIdx, row);
+            Object rawSep = get(1, row);
 
             if (rawSep == null)
                 return DEFAULT_SEPARATOR;
@@ -1202,17 +1167,21 @@ public class Accumulators {
         private final Map<Object, Row> rows = new LinkedHashMap<>();
 
         /** */
-        private DistinctAccumulator(Supplier<Accumulator<Row>> accSup, RowHandler<Row> hnd) {
-            super(hnd);
+        private DistinctAccumulator(AggregateCall aggCall, RowHandler<Row> hnd, Supplier<Accumulator<Row>> accSup) {
+            super(aggCall, hnd);
             acc = accSup.get();
         }
 
         /** {@inheritDoc} */
         @Override public void add(Row row) {
-            if (row == null || columnCount(row) == 0)
+            if (row == null || columnCount(row) == 0 || get(0, row) == null)
                 return;
 
-            rows.put(get(0, row), row);
+            Object key = get(0, row);
+            if (key == null)
+                return;
+
+            rows.put(key, row);
         }
 
         /** {@inheritDoc} */

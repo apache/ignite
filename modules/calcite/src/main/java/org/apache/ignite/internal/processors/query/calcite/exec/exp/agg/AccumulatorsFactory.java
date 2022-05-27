@@ -70,7 +70,7 @@ public class AccumulatorsFactory<Row> implements Supplier<List<AccumulatorWrappe
     }
 
     /** */
-    private static Function<Object, Object> cast(RelDataType from, RelDataType to) {
+    static Function<Object, Object> cast(RelDataType from, RelDataType to) {
         assert !from.isStruct();
         assert !to.isStruct();
 
@@ -78,7 +78,7 @@ public class AccumulatorsFactory<Row> implements Supplier<List<AccumulatorWrappe
     }
 
     /** */
-    private static Function<Object, Object> cast(Pair<RelDataType, RelDataType> types) {
+    static Function<Object, Object> cast(Pair<RelDataType, RelDataType> types) {
         try {
             return CACHE.get(types);
         }
@@ -175,7 +175,7 @@ public class AccumulatorsFactory<Row> implements Supplier<List<AccumulatorWrappe
         private final AggregateCall call;
 
         /** */
-        private Function<Object[], Object[]> inAdapter;
+        private Function<Row, Row> inAdapter;
 
         /** */
         private Function<Object, Object> outAdapter;
@@ -208,7 +208,7 @@ public class AccumulatorsFactory<Row> implements Supplier<List<AccumulatorWrappe
         }
 
         /** */
-        @NotNull private Function<Object[], Object[]> createInAdapter(Accumulator<Row> accumulator) {
+        @NotNull private Function<Row, Row> createInAdapter(Accumulator<Row> accumulator) {
             if (type == AggregateType.REDUCE || F.isEmpty(call.getArgList()))
                 return Function.identity();
 
@@ -226,13 +226,26 @@ public class AccumulatorsFactory<Row> implements Supplier<List<AccumulatorWrappe
             List<Function<Object, Object>> casts =
                 Commons.transform(Pair.zip(inTypes, outTypes), AccumulatorsFactory::cast);
 
-            return new Function<Object[], Object[]>() {
-                @Override public Object[] apply(Object[] args) {
-                    for (int i = 0; i < args.length; i++) {
-                        // Casting is not needed for collations.
-                        args[i] = i < casts.size() ? casts.get(i).apply(args[i]) : args[i];
+            return new Function<Row, Row>() {
+                final RowHandler<Row> hnd = ctx.rowHandler();
+
+                final RowHandler.RowFactory<Row> rowFac = hnd.factory(ctx.getTypeFactory(), inputRowType);
+
+                @Override public Row apply(Row in) {
+                    Row out = rowFac.create();
+
+                    List<Integer> argList = call.getArgList();
+                    for (int i = 0; i < hnd.columnCount(in); ++i) {
+                        Object val = hnd.get(i, in);
+
+                        int idx = argList.indexOf(i);
+                        if (idx != -1)
+                            val = casts.get(idx).apply(val);
+
+                        hnd.set(i, out, val);
                     }
-                    return args;
+
+                    return out;
                 }
             };
         }
@@ -257,25 +270,16 @@ public class AccumulatorsFactory<Row> implements Supplier<List<AccumulatorWrappe
     /** */
     private final class AccumulatorWrapperImpl implements AccumulatorWrapper<Row> {
         /** */
-        private final Accumulator accumulator;
+        private final Accumulator<Row> accumulator;
 
         /** */
-        private final Function<Object[], Object[]> inAdapter;
+        private final Function<Row, Row> inAdapter;
 
         /** */
         private final Function<Object, Object> outAdapter;
 
         /** */
-        private final List<Integer> argList;
-
-        /** */
-        private final List<Integer> collList;
-
-        /** */
         private final int filterArg;
-
-        /** */
-        private final boolean ignoreNulls;
 
         /** */
         private final RowHandler<Row> handler;
@@ -284,17 +288,14 @@ public class AccumulatorsFactory<Row> implements Supplier<List<AccumulatorWrappe
         AccumulatorWrapperImpl(
             Accumulator<Row> accumulator,
             AggregateCall call,
-            Function<Object[], Object[]> inAdapter,
+            Function<Row, Row> inAdapter,
             Function<Object, Object> outAdapter
         ) {
             this.accumulator = accumulator;
             this.inAdapter = inAdapter;
             this.outAdapter = outAdapter;
 
-            argList = call.getArgList();
-            ignoreNulls = call.ignoreNulls();
             filterArg = call.hasFilter() ? call.filterArg : -1;
-            collList = call.getCollation().getKeys();
 
             handler = ctx.rowHandler();
         }
@@ -306,22 +307,7 @@ public class AccumulatorsFactory<Row> implements Supplier<List<AccumulatorWrappe
             if (filterArg >= 0 && Boolean.TRUE != handler.get(filterArg, row))
                 return;
 
-            int argsCnt = argList.size();
-            int collArgsCnt = collList.size();
-
-            Object[] args = new Object[argsCnt + collArgsCnt];
-
-            for (int i = 0; i < argsCnt; i++) {
-                args[i] = handler.get(argList.get(i), row);
-
-                if (ignoreNulls && args[i] == null)
-                    return;
-            }
-
-            for (int i = 0; i < collArgsCnt; i++)
-                args[i + argsCnt] = handler.get(collList.get(i), row);
-
-            accumulator.add(inAdapter.apply(args));
+            accumulator.add(inAdapter.apply(row));
         }
 
         /** {@inheritDoc} */
@@ -332,14 +318,14 @@ public class AccumulatorsFactory<Row> implements Supplier<List<AccumulatorWrappe
         }
 
         /** {@inheritDoc} */
-        @Override public void apply(Accumulator accumulator) {
+        @Override public void apply(Accumulator<Row> accumulator) {
             assert type == AggregateType.REDUCE;
 
             this.accumulator.apply(accumulator);
         }
 
         /** {@inheritDoc} */
-        @Override public Accumulator accumulator() {
+        @Override public Accumulator<Row> accumulator() {
             assert type == AggregateType.MAP;
 
             return accumulator;
