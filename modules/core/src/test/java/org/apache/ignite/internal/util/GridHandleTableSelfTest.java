@@ -51,20 +51,20 @@ public class GridHandleTableSelfTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void testShrink() {
-        GridHandleTable table = new GridHandleTable(8, 2);
+        GridHandleTable table = new GridHandleTable(8, 3);
 
         assertEquals(8, table.objects().length);
 
-        for (int i = 0; i < 16; i++)
+        for (int i = 0; i < 32; i++)
             assertEquals(-1, table.lookup(i));
 
+        assertEquals(35, table.objects().length);
+
+        table.clear();
+
+        table.clear();
+
         assertEquals(17, table.objects().length);
-
-        table.clear();
-
-        table.clear();
-
-        assertEquals(8, table.objects().length);
 
         table.clear();
 

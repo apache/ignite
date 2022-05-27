@@ -55,23 +55,23 @@ public class GridHandleTable {
         this.initCap = initCap;
         this.loadFactor = loadFactor;
 
-        init(initCap);
+        init(initCap, initCap);
     }
 
     /**
      * Initialize hash table.
      *
-     * @param len Hash table length.
+     * @param spineLen Spine array length.
+     * @param size Hash table length.
      */
-    private void init(int len) {
-        spine = new int[len];
-        next = new int[len];
-        objs = new Object[len];
+    private void init(int spineLen, int size) {
+        spine = new int[spineLen];
+        next = new int[size];
+        objs = new Object[size];
 
         Arrays.fill(spine, -1);
-        Arrays.fill(next, -1);
 
-        threshold = (int)(len * loadFactor);
+        threshold = (int)(spineLen * loadFactor);
     }
 
     /**
@@ -119,8 +119,7 @@ public class GridHandleTable {
         }
 
         Arrays.fill(spine, -1);
-        Arrays.fill(next, 0, size, -1);
-        Arrays.fill(objs, 0, size, null);
+        Arrays.fill(objs, null);
 
         size = 0;
     }
@@ -191,10 +190,20 @@ public class GridHandleTable {
      * @return {@code true} if shrinked the table, {@code false} otherwise.
      */
     private boolean shrink() {
-        int newLen = Math.max((objs.length - 1) / 2, initCap);
+        int newSize = Math.max((objs.length - 1) / 2, initCap);
 
-        if (newLen >= size && newLen < objs.length) {
-            init(newLen);
+        if (newSize >= size && newSize < objs.length) {
+            int newSpine = spine.length;
+
+            if (spine.length > initCap) {
+                int prevSpine = (spine.length - 1) / 2;
+                int prevThreshold = (int) (prevSpine * loadFactor);
+
+                if (newSize < prevThreshold)
+                    newSpine = prevSpine;
+            }
+
+            init(newSpine, newSize);
 
             return true;
         }
