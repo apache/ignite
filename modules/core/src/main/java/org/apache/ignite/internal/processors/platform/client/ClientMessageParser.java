@@ -82,6 +82,7 @@ import org.apache.ignite.internal.processors.platform.client.datastructures.Clie
 import org.apache.ignite.internal.processors.platform.client.datastructures.ClientAtomicLongExistsRequest;
 import org.apache.ignite.internal.processors.platform.client.datastructures.ClientAtomicLongRemoveRequest;
 import org.apache.ignite.internal.processors.platform.client.datastructures.ClientAtomicLongValueAddAndGetRequest;
+import org.apache.ignite.internal.processors.platform.client.datastructures.ClientAtomicLongValueCompareAndSetAndGetRequest;
 import org.apache.ignite.internal.processors.platform.client.datastructures.ClientAtomicLongValueCompareAndSetRequest;
 import org.apache.ignite.internal.processors.platform.client.datastructures.ClientAtomicLongValueGetAndSetRequest;
 import org.apache.ignite.internal.processors.platform.client.datastructures.ClientAtomicLongValueGetRequest;
@@ -317,6 +318,9 @@ public class ClientMessageParser implements ClientListenerMessageParser {
 
     /** AtomicLong.compareAndSet. */
     private static final short OP_ATOMIC_LONG_VALUE_COMPARE_AND_SET = 9006;
+
+    /** AtomicLong.compareAndSetAndGet. */
+    private static final short OP_ATOMIC_LONG_VALUE_COMPARE_AND_SET_AND_GET = 9007;
 
     /** Marshaller. */
     private final GridBinaryMarshaller marsh;
@@ -566,6 +570,9 @@ public class ClientMessageParser implements ClientListenerMessageParser {
 
             case OP_ATOMIC_LONG_VALUE_COMPARE_AND_SET:
                 return new ClientAtomicLongValueCompareAndSetRequest(reader);
+
+            case OP_ATOMIC_LONG_VALUE_COMPARE_AND_SET_AND_GET:
+                return new ClientAtomicLongValueCompareAndSetAndGetRequest(reader);
         }
 
         return new ClientRawRequest(reader.readLong(), ClientStatus.INVALID_OP_CODE,

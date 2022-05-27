@@ -119,7 +119,7 @@
         <log4j.version>1.2.17</log4j.version>
         <lucene.bundle.version>7.4.0_1</lucene.bundle.version>
         <lucene.version>7.4.0</lucene.version>
-        <lz4.version>1.5.0</lz4.version>
+        <lz4.version>1.8.0</lz4.version>
         <maven.bundle.plugin.version>3.5.0</maven.bundle.plugin.version>
         <maven.checkstyle.plugin.version>3.1.1</maven.checkstyle.plugin.version>
         <maven.flatten.plugin.version>1.2.7</maven.flatten.plugin.version>

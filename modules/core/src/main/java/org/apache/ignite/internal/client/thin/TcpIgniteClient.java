@@ -357,7 +357,6 @@ public class TcpIgniteClient implements IgniteClient {
                     else
                         w.writeBoolean(false);
                 }
-
             }, null);
         }
 
