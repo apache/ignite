@@ -26,4 +26,10 @@ object Predef extends IgniteDsl {
       override def process(mutableEntry: MutableEntry[K, V], objects: Object*): T =
         f.apply(mutableEntry, Seq(objects))
     }
+
+  implicit def toCacheEntryProcessor[K, V, T](f: MutableEntry[K, V] => T): CacheEntryProcessor[K, V, T] =
+    new CacheEntryProcessor[K, V, T] {
+      override def process(mutableEntry: MutableEntry[K, V], objects: Object*): T =
+        f.apply(mutableEntry)
+    }
 }

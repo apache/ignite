@@ -5,6 +5,7 @@ import org.apache.ignite.cache.CacheEntryProcessor
 import org.apache.ignite.client.ClientCache
 import org.apache.ignite.gatling.api.{CacheApi, CompletionSupport}
 
+import java.util.concurrent.locks.Lock
 import scala.concurrent.ExecutionContext
 import scala.jdk.FutureConverters.CompletionStageOps
 import scala.jdk.CollectionConverters._
@@ -94,4 +95,10 @@ case class CacheThinApi[K, V](wrapped: ClientCache[K, V])(implicit val ec: Execu
   override def invokeAsync[T, U](key: K, entryProcessor: CacheEntryProcessor[K, V, T], arguments: Any*)
                                 (s: Map[K, T] => U, f: Throwable => U): Unit =
     throw new NotImplementedError("invokeAsync is not supported in thin client API")
+
+  override def lock[U](key: K)(s: Lock => U, f: Throwable => U): Unit =
+    throw new NotImplementedError("lock is not supported in thin client API")
+
+  override def unlock[U](lock: Lock)(s: Unit => U, f: Throwable => U): Unit =
+    throw new NotImplementedError("unlock is not supported in thin client API")
 }

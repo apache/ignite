@@ -5,6 +5,7 @@ import org.apache.ignite.IgniteCache
 import org.apache.ignite.cache.CacheEntryProcessor
 import org.apache.ignite.gatling.api.CacheApi
 
+import java.util.concurrent.locks.Lock
 import scala.concurrent.ExecutionContext
 import scala.jdk.CollectionConverters._
 import scala.util.Try
@@ -131,5 +132,21 @@ case class CacheNodeApi[K, V](wrapped: IgniteCache[K, V])(implicit val ec: Execu
           .map(value => Map((key, value)))
           .fold(f, s)
       )
+  }
+
+  override def lock[U](key: K)(s: Lock => U, f: Throwable => U): Unit = {
+    logger.debug("sync lock")
+    Try {
+      val lock = wrapped.lock(key)
+      lock.lock()
+      lock
+    }.fold(f, s)
+  }
+
+  override def unlock[U](lock: Lock)(s: Unit => U, f: Throwable => U): Unit = {
+    logger.debug("sync unlock")
+    Try {
+      lock.unlock()
+    }.fold(f, s)
   }
 }

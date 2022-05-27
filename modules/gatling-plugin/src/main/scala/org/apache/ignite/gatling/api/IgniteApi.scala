@@ -9,6 +9,7 @@ import org.apache.ignite.gatling.api.thin.IgniteThinApi
 import org.apache.ignite.gatling.builder.ignite.SimpleCacheConfiguration
 import org.apache.ignite.gatling.protocol.IgniteProtocol
 
+import java.util.concurrent.locks.Lock
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success, Try}
 
@@ -49,6 +50,9 @@ trait CacheApi[K, V] {
                   (s: Map[K, T] => U, f: Throwable => U): Unit
   def invokeAsync[T, U](key: K, entryProcessor: CacheEntryProcessor[K, V, T], arguments: Any*)
                        (s: Map[K, T] => U, f: Throwable => U): Unit
+
+  def lock[U](key: K)(s: Lock => U, f: Throwable => U): Unit
+  def unlock[U](lock: Lock)(s: Unit => U, f: Throwable => U): Unit
 }
 
 trait TransactionApi {
