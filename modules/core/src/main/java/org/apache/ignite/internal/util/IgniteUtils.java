@@ -8975,20 +8975,22 @@ public abstract class IgniteUtils {
 
         try {
             // Add no-op logger to remove no-appender warning.
-            Class<?> logCls = Class.forName("org.apache.log4j.Logger");
+            Class<?> logCls = Class.forName("org.apache.logging.log4j.LogManager");
 
             rootLog = logCls.getMethod("getRootLogger").invoke(logCls);
 
             try {
-                nullApp = Class.forName("org.apache.log4j.varia.NullAppender").newInstance();
+                Class<?> nullAppCls = Class.forName("org.apache.logging.log4j.core.appender.NullAppender");
+
+                nullApp = nullAppCls.getMethod("createAppender", String.class).invoke(nullAppCls, "aNull");
             }
             catch (ClassNotFoundException ignore) {
-                // Can't found log4j no-op appender in classpath (for example, log4j was added through
+                // Can't found log4j2 no-op appender in classpath (for example, log4j was added through
                 // log4j-over-slf4j library. No-appender warning will not be suppressed.
                 return new IgniteBiTuple<>(rootLog, null);
             }
 
-            Class appCls = Class.forName("org.apache.log4j.Appender");
+            Class appCls = Class.forName("org.apache.logging.log4j.core.Appender");
 
             rootLog.getClass().getMethod("addAppender", appCls).invoke(rootLog, nullApp);
         }
@@ -9013,7 +9015,7 @@ public abstract class IgniteUtils {
             return;
 
         try {
-            Class appenderCls = Class.forName("org.apache.log4j.Appender");
+            Class appenderCls = Class.forName("org.apache.logging.log4j.core.Appender");
 
             rootLog.getClass().getMethod("removeAppender", appenderCls).invoke(rootLog, nullApp);
         }

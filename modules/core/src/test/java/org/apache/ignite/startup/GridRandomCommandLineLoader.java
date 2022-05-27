@@ -41,9 +41,9 @@ import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.logger.GridTestLog4jLogger;
-import org.apache.log4j.Appender;
-import org.apache.log4j.Logger;
-import org.apache.log4j.varia.NullAppender;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.core.Logger;
+import org.apache.logging.log4j.core.appender.NullAppender;
 import org.jetbrains.annotations.Nullable;
 import org.springframework.beans.BeansException;
 import org.springframework.context.ApplicationContext;
@@ -166,7 +166,6 @@ public final class GridRandomCommandLineLoader {
      *
      * @param args Command line arguments.
      */
-    @SuppressWarnings({"BusyWait"})
     public static void main(String[] args) {
         System.setProperty(IgniteSystemProperties.IGNITE_UPDATE_NOTIFIER, "false");
 
@@ -314,9 +313,9 @@ public final class GridRandomCommandLineLoader {
             throw new IgniteCheckedException("Provided file path is not a file: " + path);
 
         // Add no-op logger to remove no-appender warning.
-        Appender app = new NullAppender();
+        NullAppender aNull = NullAppender.createAppender("aNull");
 
-        Logger.getRootLogger().addAppender(app);
+        ((Logger)LogManager.getRootLogger()).addAppender(aNull);
 
         ApplicationContext springCtx;
 
@@ -342,7 +341,7 @@ public final class GridRandomCommandLineLoader {
             throw new IgniteCheckedException("Failed to find a single grid factory configuration in: " + path);
 
         // Remove previously added no-op logger.
-        Logger.getRootLogger().removeAppender(app);
+        ((Logger)LogManager.getRootLogger()).removeAppender(aNull);
 
         if (cfgMap.size() != 1)
             throw new IgniteCheckedException("Spring configuration file should contain exactly 1 grid configuration: " + path);

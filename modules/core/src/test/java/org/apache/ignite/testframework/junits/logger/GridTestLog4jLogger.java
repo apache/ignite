@@ -18,10 +18,11 @@
 package org.apache.ignite.testframework.junits.logger;
 
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Enumeration;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
@@ -34,15 +35,18 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.logger.LoggerNodeIdAndApplicationAware;
-import org.apache.log4j.Appender;
-import org.apache.log4j.Category;
-import org.apache.log4j.ConsoleAppender;
-import org.apache.log4j.FileAppender;
-import org.apache.log4j.Level;
-import org.apache.log4j.Logger;
-import org.apache.log4j.PatternLayout;
-import org.apache.log4j.varia.LevelRangeFilter;
-import org.apache.log4j.xml.DOMConfigurator;
+import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.core.Appender;
+import org.apache.logging.log4j.core.Filter;
+import org.apache.logging.log4j.core.Logger;
+import org.apache.logging.log4j.core.appender.ConsoleAppender;
+import org.apache.logging.log4j.core.appender.FileAppender;
+import org.apache.logging.log4j.core.config.ConfigurationSource;
+import org.apache.logging.log4j.core.config.Configurator;
+import org.apache.logging.log4j.core.filter.LevelRangeFilter;
+import org.apache.logging.log4j.core.filter.ThresholdFilter;
+import org.apache.logging.log4j.core.layout.PatternLayout;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_CONSOLE_APPENDER;
@@ -131,7 +135,7 @@ public class GridTestLog4jLogger implements IgniteLogger, LoggerNodeIdAndApplica
      *      constructor.
      */
     public GridTestLog4jLogger(boolean init) {
-        impl = Logger.getRootLogger();
+        impl = (Logger)LogManager.getRootLogger();
 
         if (init) {
             // Implementation has already been inited, passing NULL.
@@ -183,9 +187,13 @@ public class GridTestLog4jLogger implements IgniteLogger, LoggerNodeIdAndApplica
         addConsoleAppenderIfNeeded(null, new C1<Boolean, Logger>() {
             @Override public Logger apply(Boolean init) {
                 if (init)
-                    DOMConfigurator.configure(cfgUrl);
+                    try {
+                        Configurator.initialize(null, new ConfigurationSource(new FileInputStream(cfgUrl.toString())));
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
 
-                return Logger.getRootLogger();
+                return (Logger)LogManager.getRootLogger();
             }
         });
 
@@ -210,9 +218,13 @@ public class GridTestLog4jLogger implements IgniteLogger, LoggerNodeIdAndApplica
         addConsoleAppenderIfNeeded(null, new C1<Boolean, Logger>() {
             @Override public Logger apply(Boolean init) {
                 if (init)
-                    DOMConfigurator.configure(cfg);
+                    try {
+                        Configurator.initialize(null, new ConfigurationSource(new FileInputStream(cfg)));
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
 
-                return Logger.getRootLogger();
+                return (Logger)LogManager.getRootLogger();
             }
         });
 
@@ -234,9 +246,13 @@ public class GridTestLog4jLogger implements IgniteLogger, LoggerNodeIdAndApplica
         addConsoleAppenderIfNeeded(null, new C1<Boolean, Logger>() {
             @Override public Logger apply(Boolean init) {
                 if (init)
-                    DOMConfigurator.configure(cfgUrl);
+                    try {
+                        Configurator.initialize(null, new ConfigurationSource(new FileInputStream(cfgUrl.toString())));
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
 
-                return Logger.getRootLogger();
+                return (Logger)LogManager.getRootLogger();
             }
         });
 
@@ -249,7 +265,7 @@ public class GridTestLog4jLogger implements IgniteLogger, LoggerNodeIdAndApplica
      * @return {@code True} if log4j was already configured, {@code false} otherwise.
      */
     public static boolean isConfigured() {
-        return Logger.getRootLogger().getAllAppenders().hasMoreElements();
+        return !((Logger)LogManager.getRootLogger()).getAppenders().isEmpty();
     }
 
     /**
@@ -265,7 +281,7 @@ public class GridTestLog4jLogger implements IgniteLogger, LoggerNodeIdAndApplica
     @Nullable @Override public String fileName() {
         FileAppender fapp = F.first(fileAppenders);
 
-        return fapp != null ? fapp.getFile() : null;
+        return fapp != null ? fapp.getFileName() : null;
     }
 
     /**
@@ -300,14 +316,12 @@ public class GridTestLog4jLogger implements IgniteLogger, LoggerNodeIdAndApplica
             boolean quiet = Boolean.valueOf(System.getProperty(IGNITE_QUIET, "true"));
 
             boolean consoleAppenderFound = false;
-            Category rootCategory = null;
+            Logger rootLogger = null;
             ConsoleAppender errAppender = null;
 
-            for (Category l = impl; l != null; ) {
+            for (Logger l = impl; l != null; ) {
                 if (!consoleAppenderFound) {
-                    for (Enumeration appenders = l.getAllAppenders(); appenders.hasMoreElements(); ) {
-                        Appender appender = (Appender)appenders.nextElement();
-
+                    for (Appender appender : l.getAppenders().values()) {
                         if (appender instanceof ConsoleAppender) {
                             if ("CONSOLE_ERR".equals(appender.getName())) {
                                 // Treat CONSOLE_ERR appender as a system one and don't count it.
@@ -324,7 +338,7 @@ public class GridTestLog4jLogger implements IgniteLogger, LoggerNodeIdAndApplica
                 }
 
                 if (l.getParent() == null) {
-                    rootCategory = l;
+                    rootLogger = l;
 
                     break;
                 }
@@ -338,19 +352,19 @@ public class GridTestLog4jLogger implements IgniteLogger, LoggerNodeIdAndApplica
 
             if (!consoleAppenderFound && !quiet && Boolean.valueOf(System.getProperty(IGNITE_CONSOLE_APPENDER, "true"))) {
                 // Console appender not found => we've looked through all categories up to root.
-                assert rootCategory != null;
+                assert rootLogger != null;
 
                 // User launched ignite in verbose mode and did not add console appender with INFO level
                 // to configuration and did not set IGNITE_CONSOLE_APPENDER to false.
                 if (errAppender != null) {
-                    rootCategory.addAppender(createConsoleAppender(Level.INFO));
+                    rootLogger.addAppender(createAndStartConsoleAppender(Level.INFO));
 
-                    if (errAppender.getThreshold() == Level.ERROR)
-                        errAppender.setThreshold(Level.WARN);
+                    if (errAppender.getFilter().filter(null, Level.ERROR, null, null) == Filter.Result.ACCEPT)
+                        errAppender.addFilter(ThresholdFilter.createFilter(Level.WARN, null, null));
                 }
                 else
                     // No error console appender => create console appender with no level limit.
-                    rootCategory.addAppender(createConsoleAppender(Level.OFF));
+                    rootLogger.addAppender(createAndStartConsoleAppender(Level.OFF));
 
                 if (logLevel != null)
                     impl.setLevel(logLevel);
@@ -362,25 +376,22 @@ public class GridTestLog4jLogger implements IgniteLogger, LoggerNodeIdAndApplica
     }
 
     /**
-     * Creates console appender with some reasonable default logging settings.
+     * Creates and start console appender with some reasonable default logging settings.
      *
      * @param maxLevel Max logging level.
      * @return New console appender.
      */
-    private Appender createConsoleAppender(Level maxLevel) {
-        String fmt = "[%d{ISO8601}][%-5p][%t][%c{1}] %m%n";
+    private Appender createAndStartConsoleAppender(Level maxLevel) {
+        ConsoleAppender cnslAppndr = ConsoleAppender.newBuilder()
+                .setName("CONSOLE")
+                .setTarget(ConsoleAppender.Target.SYSTEM_OUT)
+                .setLayout(PatternLayout.newBuilder().withPattern("[%d{ISO8601}][%-5p][%t][%c{1}] %m%n").build())
+                .setFilter(LevelRangeFilter.createFilter(Level.TRACE, maxLevel, null, null))
+                .build();
 
-        // Configure output that should go to System.out
-        Appender app = new ConsoleAppender(new PatternLayout(fmt), ConsoleAppender.SYSTEM_OUT);
+        cnslAppndr.start();
 
-        LevelRangeFilter lvlFilter = new LevelRangeFilter();
-
-        lvlFilter.setLevelMin(Level.TRACE);
-        lvlFilter.setLevelMax(maxLevel);
-
-        app.addFilter(lvlFilter);
-
-        return app;
+        return cnslAppndr;
     }
 
     /**
@@ -410,14 +421,14 @@ public class GridTestLog4jLogger implements IgniteLogger, LoggerNodeIdAndApplica
         A.notNull(nodeId, "nodeId");
 
         this.nodeId = nodeId;
-
-        for (FileAppender a : fileAppenders) {
-            if (a instanceof LoggerNodeIdAndApplicationAware) {
-                ((LoggerNodeIdAndApplicationAware)a).setApplicationAndNode(application, nodeId);
-
-                a.activateOptions();
-            }
-        }
+//
+//        for (FileAppender a : fileAppenders) {
+//            if (a instanceof LoggerNodeIdAndApplicationAware) {
+//                ((LoggerNodeIdAndApplicationAware)a).setApplicationAndNode(application, nodeId);
+//
+//                a.activateOptions();
+//            }
+//        }
     }
 
     /** {@inheritDoc} */
@@ -434,7 +445,7 @@ public class GridTestLog4jLogger implements IgniteLogger, LoggerNodeIdAndApplica
         Collection<String> res = new ArrayList<>(fileAppenders.size());
 
         for (FileAppender a : fileAppenders)
-            res.add(a.getFile());
+            res.add(a.getFileName());
 
         return res;
     }
@@ -449,9 +460,9 @@ public class GridTestLog4jLogger implements IgniteLogger, LoggerNodeIdAndApplica
      * @return {@link org.apache.ignite.IgniteLogger} wrapper around log4j logger.
      */
     @Override public GridTestLog4jLogger getLogger(Object ctgr) {
-        return new GridTestLog4jLogger(ctgr == null ? Logger.getRootLogger() :
-            ctgr instanceof Class ? Logger.getLogger(((Class<?>)ctgr).getName()) :
-                Logger.getLogger(ctgr.toString()));
+        return new GridTestLog4jLogger((Logger)(ctgr == null ? LogManager.getRootLogger() :
+                    ctgr instanceof Class ? LogManager.getLogger(((Class<?>)ctgr).getName()) :
+                        LogManager.getLogger(ctgr.toString())));
     }
 
     /** {@inheritDoc} */

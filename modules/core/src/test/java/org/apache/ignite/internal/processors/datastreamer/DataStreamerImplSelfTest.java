@@ -52,10 +52,10 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.apache.log4j.Appender;
-import org.apache.log4j.Logger;
-import org.apache.log4j.SimpleLayout;
-import org.apache.log4j.WriterAppender;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.core.Appender;
+import org.apache.logging.log4j.core.Logger;
+import org.apache.logging.log4j.core.appender.WriterAppender;
 import org.junit.Ignore;
 import org.junit.Test;
 
@@ -437,9 +437,9 @@ public class DataStreamerImplSelfTest extends GridCommonAbstractTest {
         cnt = 0;
 
         StringWriter logWriter = new StringWriter();
-        Appender logAppender = new WriterAppender(new SimpleLayout(), logWriter);
+        Appender logAppender = WriterAppender.newBuilder().setTarget(logWriter).build();
 
-        Logger.getRootLogger().addAppender(logAppender);
+        ((Logger)LogManager.getRootLogger()).addAppender(logAppender);
 
         startGrids(MAX_CACHE_COUNT - 1); // cache-enabled nodes
 
@@ -455,9 +455,9 @@ public class DataStreamerImplSelfTest extends GridCommonAbstractTest {
 
             logWriter.flush();
 
-            Logger.getRootLogger().removeAppender(logAppender);
+            ((Logger)LogManager.getRootLogger()).removeAppender(logAppender);
 
-            logAppender.close();
+            logAppender.stop();
         }
 
         assertFalse(logWriter.toString().contains("DataStreamer will retry data transfer at stable topology"));

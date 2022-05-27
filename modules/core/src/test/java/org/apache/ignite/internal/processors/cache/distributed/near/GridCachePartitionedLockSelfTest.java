@@ -21,7 +21,7 @@ import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
 import org.apache.ignite.internal.processors.cache.distributed.GridCacheLockAbstractTest;
-import org.apache.log4j.Level;
+import org.apache.logging.log4j.Level;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 

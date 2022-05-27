@@ -22,8 +22,8 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
 import org.apache.ignite.internal.processors.cache.IgniteTxSingleThreadedAbstractTest;
 import org.apache.ignite.testframework.MvccFeatureChecker;
-import org.apache.log4j.Level;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.core.config.Configurator;
 import org.junit.Before;
 
 import static org.apache.ignite.cache.CacheMode.LOCAL;
@@ -58,9 +58,7 @@ public class GridCacheLocalTxSingleThreadedSelfTest extends IgniteTxSingleThread
         c.setCacheConfiguration(cc);
 
         // Disable log4j debug by default.
-        Logger log4j = Logger.getLogger(GridCacheProcessor.class.getPackage().getName());
-
-        log4j.setLevel(CACHE_DEBUG ? Level.DEBUG : Level.INFO);
+        Configurator.setLevel(GridCacheProcessor.class.getPackage().getName(), CACHE_DEBUG ? Level.DEBUG : Level.INFO);
 
         return c;
     }

@@ -126,13 +126,17 @@ import org.apache.ignite.testframework.junits.multijvm.IgniteCacheProcessProxy;
 import org.apache.ignite.testframework.junits.multijvm.IgniteNodeRunner;
 import org.apache.ignite.testframework.junits.multijvm.IgniteProcessProxy;
 import org.apache.ignite.thread.IgniteThread;
-import org.apache.log4j.ConsoleAppender;
-import org.apache.log4j.Level;
-import org.apache.log4j.LogManager;
-import org.apache.log4j.Logger;
-import org.apache.log4j.PatternLayout;
-import org.apache.log4j.Priority;
-import org.apache.log4j.RollingFileAppender;
+import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.core.Appender;
+import org.apache.logging.log4j.core.Logger;
+import org.apache.logging.log4j.core.appender.ConsoleAppender;
+import org.apache.logging.log4j.core.appender.RollingFileAppender;
+import org.apache.logging.log4j.core.appender.rolling.DefaultRolloverStrategy;
+import org.apache.logging.log4j.core.appender.rolling.SizeBasedTriggeringPolicy;
+import org.apache.logging.log4j.core.config.Configurator;
+import org.apache.logging.log4j.core.filter.ThresholdFilter;
+import org.apache.logging.log4j.core.layout.PatternLayout;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.junit.After;
@@ -346,7 +350,7 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
     protected void afterTest() throws Exception {
         try {
             for (Logger logger : changedLevels.keySet())
-                logger.setLevel(changedLevels.get(logger));
+                Configurator.setLevel(logger.getName(), changedLevels.get(logger));
         }
         finally {
             changedLevels.clear();
@@ -468,52 +472,53 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
 
         assertNull(logger + " level: " + Level.DEBUG, changedLevels.put(logger, lvl));
 
-        logger.setLevel(Level.DEBUG);
+        Configurator.setLevel(logger.getName(), Level.DEBUG);
     }
 
     /**
-     * Resets log4j programmatically.
+     * Resets log4j2 programmatically.
      *
-     * @param log4jLevel Level.
+     * @param log4j2Level Level.
      * @param logToFile If {@code true}, then log to file under "work/log" folder.
      * @param cat Category.
      * @param cats Additional categories.
      */
-    @SuppressWarnings({"deprecation"})
-    protected void resetLog4j(Level log4jLevel, boolean logToFile, String cat, String... cats)
+    protected void resetLog4j(Level log4j2Level, boolean logToFile, String cat, String... cats)
         throws IgniteCheckedException {
         for (String c : F.concat(false, cat, F.asList(cats)))
-            Logger.getLogger(c).setLevel(log4jLevel);
+            Configurator.setLevel(c, log4jLevel);
 
         if (logToFile) {
-            Logger log4j = Logger.getRootLogger();
+            Logger log4j = (Logger)LogManager.getRootLogger();
 
-            log4j.removeAllAppenders();
+            for (Appender appndr : log4j.getAppenders().values())
+                log4j.removeAppender(appndr);
+
+            PatternLayout p = PatternLayout.newBuilder().withPattern("[%d{ISO8601}][%-5p][%t][%c{1}] %m%n").build();
 
             // Console appender.
-            ConsoleAppender c = new ConsoleAppender();
+            ConsoleAppender console_err = ConsoleAppender.newBuilder()
+                    .setName("CONSOLE_ERR")
+                    .setTarget(ConsoleAppender.Target.SYSTEM_ERR)
+                    .setFilter(ThresholdFilter.createFilter(Level.WARN, null, null))
+                    .setLayout(p)
+                    .build();
 
-            c.setName("CONSOLE_ERR");
-            c.setTarget("System.err");
-            c.setThreshold(Priority.WARN);
-            c.setLayout(new PatternLayout("[%d{ISO8601}][%-5p][%t][%c{1}] %m%n"));
+            console_err.start();
 
-            c.activateOptions();
-
-            log4j.addAppender(c);
+            log4j.addAppender(console_err);
 
             // File appender.
-            RollingFileAppender file = new RollingFileAppender();
+            RollingFileAppender file = RollingFileAppender.newBuilder()
+                    .setName("FILE")
+                    .withFileName(home() + "/work/log/ignite.log")
+                    .withAppend(false)
+                    .withPolicy(SizeBasedTriggeringPolicy.createPolicy("10MB"))
+                    .withStrategy(DefaultRolloverStrategy.newBuilder().withMax("10").build())
+                    .setLayout(p)
+                    .build();
 
-            file.setName("FILE");
-            file.setThreshold(log4jLevel);
-            file.setFile(home() + "/work/log/ignite.log");
-            file.setAppend(false);
-            file.setMaxFileSize("10MB");
-            file.setMaxBackupIndex(10);
-            file.setLayout(new PatternLayout("[%d{ISO8601}][%-5p][%t][%c{1}] %m%n"));
-
-            file.activateOptions();
+            file.start();
 
             log4j.addAppender(file);
         }
