@@ -2151,6 +2151,8 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
 
         srv0.createCache(cacheConfiguration(null, "cache-3", cacheMode, atomicityMode, backups, heapCache));
 
+        awaitCacheOnClient(ignite(4), "cache-3");
+
         if (nearClient) {
             Ignite clientNode = ignite(4);
 
