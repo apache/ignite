@@ -365,18 +365,42 @@ public class Accumulators {
         /** */
         private long cnt;
 
+        private final boolean adding;
+
+        public LongCount(boolean adding) {
+            this.adding = adding;
+        }
+
+        public LongCount() {
+            adding = false;
+        }
+
         /** {@inheritDoc} */
         @Override public void add(Object... args) {
             assert F.isEmpty(args) || args.length == 1;
 
             if (F.isEmpty(args) || args[0] != null)
-                cnt++;
+                cnt += adding ? (long)args[0] : 1;
         }
 
         /** {@inheritDoc} */
         @Override public void apply(Accumulator other) {
-            LongCount other0 = (LongCount)other;
-            cnt += other0.cnt;
+            Object val = other.end();
+
+            if (val != null)
+                cnt += ((Number)val).longValue();
+
+
+           // cnt += (long)other.end();
+//            if(other instanceof Sum){
+//                Sum sum = (Sum)other;
+//
+//                apply(sum.acc);
+//            } else {
+//                LongCount other0 = (LongCount)other;
+//
+//                cnt += other0.cnt;
+//            }
         }
 
         /** {@inheritDoc} */
@@ -392,6 +416,10 @@ public class Accumulators {
         /** {@inheritDoc} */
         @Override public RelDataType returnType(IgniteTypeFactory typeFactory) {
             return typeFactory.createSqlType(BIGINT);
+        }
+
+        public static final LongCount adding(){
+            return new LongCount(true);
         }
     }
 

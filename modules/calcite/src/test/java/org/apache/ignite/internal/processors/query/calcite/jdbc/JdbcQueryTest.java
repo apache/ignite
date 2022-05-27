@@ -62,7 +62,7 @@ public class JdbcQueryTest extends GridCommonAbstractTest {
     private final String url = "jdbc:ignite:thin://127.0.0.1";
 
     /** Nodes count. */
-    private final int nodesCnt = 2;
+    private final int nodesCnt = 1;
 
     /** Connection. */
     private Connection conn;

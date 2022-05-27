@@ -103,9 +103,10 @@ public class IgniteIndexCount extends AbstractRelNode implements SourceAwareIgni
     @Override protected RelDataType deriveRowType() {
         RelDataTypeFactory tf = getCluster().getTypeFactory();
 
-//        RelDataType type = tf.createJavaType(BigDecimal.class);
-        RelDataType type = tf.createSqlType(SqlTypeName.BIGINT);
+        RelDataType type = tf.createJavaType(BigDecimal.class);
+//        RelDataType type = tf.createSqlType(SqlTypeName.BIGINT);
 //        RelDataType type = tf.createJavaType(long.class);
+//        RelDataType type = tf.createJavaType(BigInteger.class);
 
         return tf.createStructType(Collections.singletonList(type), Collections.singletonList(type.toString()));
     }
