@@ -33,7 +33,7 @@ public class VisorCacheMetricsTaskArg extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0L;
 
     /** Metrics command operation. */
-    private CacheMetricsOperation operation;
+    private CacheMetricsOperation op;
 
     /** Caches which will be processed. If not set, operation will affect all caches. */
     private Set<String> cacheNames;
@@ -46,24 +46,24 @@ public class VisorCacheMetricsTaskArg extends IgniteDataTransferObject {
     }
 
     /**
-     * @param operation Metrics command operation.
+     * @param op Metrics command operation.
      * @param cacheNames Names of the caches, which should be processed.
      */
-    public VisorCacheMetricsTaskArg(CacheMetricsOperation operation, Set<String> cacheNames) {
-        this.operation = operation;
+    public VisorCacheMetricsTaskArg(CacheMetricsOperation op, Set<String> cacheNames) {
+        this.op = op;
         this.cacheNames = cacheNames == null ? null : Collections.unmodifiableSet(cacheNames);
     }
 
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        U.writeEnum(out, operation);
+        U.writeEnum(out, op);
         U.writeCollection(out, cacheNames);
     }
 
     /** {@inheritDoc} */
     @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException,
         ClassNotFoundException {
-        operation = U.readEnum(in, CacheMetricsOperation.class);
+        op = U.readEnum(in, CacheMetricsOperation.class);
         cacheNames = U.readSet(in);
     }
 
@@ -71,7 +71,7 @@ public class VisorCacheMetricsTaskArg extends IgniteDataTransferObject {
      * @return Metrics command operation.
      */
     public CacheMetricsOperation operation() {
-        return operation;
+        return op;
     }
 
     /**

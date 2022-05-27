@@ -38,9 +38,9 @@ public enum CacheMetricsOperation {
      * @return Operation corresponding to the specified string representation.
      */
     public static @Nullable CacheMetricsOperation of(String strRep) {
-        for (CacheMetricsOperation operation : values()) {
-            if (operation.name().equalsIgnoreCase(strRep))
-                return operation;
+        for (CacheMetricsOperation op : values()) {
+            if (op.name().equalsIgnoreCase(strRep))
+                return op;
         }
 
         return null;

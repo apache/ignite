@@ -181,15 +181,15 @@ public class CacheMetricsCommandTest extends GridCommandHandlerAbstractTest {
     /**
      * Check execution of metric operation and parse resulting table.
      *
-     * @param expectedMetricsStatuses Expected table entries in command output.
+     * @param expMetricsStatuses Expected table entries in command output.
      * @param args Command arguments.
      */
-    private void checkExecutionSuccess(Map<String, Boolean> expectedMetricsStatuses, String... args) {
+    private void checkExecutionSuccess(Map<String, Boolean> expMetricsStatuses, String... args) {
         exec(EXIT_CODE_OK, args);
 
-        checkOutput(expectedMetricsStatuses, testOut.toString());
+        checkOutput(expMetricsStatuses, testOut.toString());
 
-        checkClusterMetrics(expectedMetricsStatuses);
+        checkClusterMetrics(expMetricsStatuses);
     }
 
     /**
@@ -227,18 +227,18 @@ public class CacheMetricsCommandTest extends GridCommandHandlerAbstractTest {
     }
 
     /**
-     * @param expectedMetricsStatuses Expected metrics statuses.
+     * @param expMetricsStatuses Expected metrics statuses.
      * @param testOutStr Test output.
      */
-    private void checkOutput(Map<String, Boolean> expectedMetricsStatuses, String testOutStr) {
-        for (Map.Entry<String, Boolean> entry : expectedMetricsStatuses.entrySet()) {
+    private void checkOutput(Map<String, Boolean> expMetricsStatuses, String testOutStr) {
+        for (Map.Entry<String, Boolean> entry : expMetricsStatuses.entrySet()) {
             String cacheName = entry.getKey();
-            String metricStatus = entry.getValue() ? "enabled" : "disabled";
+            String metricsStatus = entry.getValue() ? "enabled" : "disabled";
 
-            Matcher cacheStatusMatcher = Pattern.compile(cacheName + "\\s+" + metricStatus).matcher(testOutStr);
+            Matcher cacheStatusMatcher = Pattern.compile(cacheName + "\\s+" + metricsStatus).matcher(testOutStr);
 
             String msg = String.format("Unexpected count of table entries for metrics: [cacheName=%s, metricsStatus=%s]",
-                cacheName, metricStatus);
+                cacheName, metricsStatus);
 
             int cnt = 0;
 
@@ -250,27 +250,27 @@ public class CacheMetricsCommandTest extends GridCommandHandlerAbstractTest {
     }
 
     /**
-     * @param cacheMetricsModes Metrics modes.
+     * @param cacheMetricsStatuses Metrics statuses.
      */
-    private void createCachesWithMetrics(Map<String, Boolean> cacheMetricsModes) {
-        for (Map.Entry<String, Boolean> nameAndState : cacheMetricsModes.entrySet()) {
+    private void createCachesWithMetrics(Map<String, Boolean> cacheMetricsStatuses) {
+        for (Map.Entry<String, Boolean> nameAndState : cacheMetricsStatuses.entrySet()) {
             grid(0).getOrCreateCache(new CacheConfiguration<>()
                 .setName(nameAndState.getKey())
                 .setStatisticsEnabled(nameAndState.getValue()));
         }
 
-        checkClusterMetrics(cacheMetricsModes);
+        checkClusterMetrics(cacheMetricsStatuses);
     }
 
     /**
-     * @param expectedMetricsModes Expected cache metrics modes.
+     * @param expMetricsStatuses Expected cache metrics statuses.
      */
-    private void checkClusterMetrics(Map<String, Boolean> expectedMetricsModes) {
+    private void checkClusterMetrics(Map<String, Boolean> expMetricsStatuses) {
         for (Ignite ignite : G.allGrids()) {
-            for (String cacheName : expectedMetricsModes.keySet()) {
+            for (String cacheName : expMetricsStatuses.keySet()) {
                 Boolean cacheMetricsEnabled = ignite.cache(cacheName).metrics().isStatisticsEnabled();
 
-                assertEquals("Unexpected metrics mode for cache: " + cacheName, expectedMetricsModes.get(cacheName),
+                assertEquals("Unexpected metrics mode for cache: " + cacheName, expMetricsStatuses.get(cacheName),
                     cacheMetricsEnabled);
             }
         }
