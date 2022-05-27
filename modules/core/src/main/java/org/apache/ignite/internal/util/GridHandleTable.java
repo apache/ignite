@@ -119,8 +119,8 @@ public class GridHandleTable {
         }
 
         Arrays.fill(spine, -1);
-        Arrays.fill(next, -1);
-        Arrays.fill(objs, null);
+        Arrays.fill(next, 0, size, -1);
+        Arrays.fill(objs, 0, size, null);
 
         size = 0;
     }
