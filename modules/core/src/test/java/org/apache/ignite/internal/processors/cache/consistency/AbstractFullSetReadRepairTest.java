@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.consistency;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
@@ -166,7 +167,13 @@ public abstract class AbstractFullSetReadRepairTest extends AbstractReadRepairTe
      */
     private static Object checkAndUnwrapBinaryIfNeeded(ReadRepairData rrd, Object res) {
         if (rrd.binary) {
-            assert res == null || res instanceof Integer || res instanceof BinaryObject : res.getClass();
+            assert res == null ||
+                res instanceof Integer ||
+                res instanceof Map ||
+                res instanceof List ||
+                res instanceof Set ||
+                res instanceof Object[] ||
+                res instanceof BinaryObject : res.getClass();
 
             return unwrapBinaryIfNeeded(res);
         }

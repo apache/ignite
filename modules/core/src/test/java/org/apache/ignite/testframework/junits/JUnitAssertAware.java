@@ -56,7 +56,10 @@ class JUnitAssertAware {
 
     /** See {@link Assert#assertEquals(Object, Object)} javadocs. */
     protected static void assertEquals(Object exp, Object actual) {
-        Assert.assertEquals(exp, actual);
+        if (exp instanceof Object[] && actual instanceof Object[])
+            Assert.assertArrayEquals((Object[])exp, (Object[])actual);
+        else
+            Assert.assertEquals(exp, actual);
     }
 
     /** See {@link Assert#assertEquals(Object, Object)} javadocs. */

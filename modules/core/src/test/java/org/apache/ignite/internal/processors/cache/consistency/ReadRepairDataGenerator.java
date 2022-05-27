@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.consistency;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
@@ -57,6 +58,7 @@ import org.apache.ignite.testframework.GridTestUtils;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
@@ -177,7 +179,10 @@ public class ReadRepairDataGenerator {
                         else
                             exp = results.get(key).primaryBin; // Or read from primary (when not a partition owner).
 
-                        assertEquals(exp, val);
+                        if (exp instanceof Object[] && val instanceof Object[])
+                            assertArrayEquals((Object[])exp, (Object[])val);
+                        else
+                            assertEquals(exp, val);
                     }
                 }
 
@@ -206,7 +211,13 @@ public class ReadRepairDataGenerator {
 
                     for (Map.Entry<Ignite, T2<Object, GridCacheVersion>> dist : mapping.mappingBin.entrySet()) {
                         sb.append("   Node: ").append(dist.getKey().name()).append("\n");
-                        sb.append("    Value: ").append(unwrapBinaryIfNeeded(dist.getValue().get1())).append("\n");
+
+                        Object val = unwrapBinaryIfNeeded(dist.getValue().get1());
+
+                        if (val instanceof Object[])
+                            val = Arrays.toString((Object[])val); // Allows to log array content.
+
+                        sb.append("    Value: ").append(val).append("\n");
                         sb.append("    Version: ").append(dist.getValue().get2()).append("\n");
                     }
 
@@ -306,7 +317,10 @@ public class ReadRepairDataGenerator {
                 null :
                 wrapTestValueIfNeeded(wrap, rnd.nextBoolean()/*increment or same as previously*/ ? ++incVal : incVal);
 
-            T2<Object, GridCacheVersion> valVer = new T2<>(val, val != null ? ver : null);
+            T2<Object, GridCacheVersion> valVer =
+                new T2<>(
+                    val instanceof Object[] ? new ArrayWrapper((Object[])val) : val,
+                    val != null ? ver : null);
 
             vals.add(valVer);
             mapping.put(node, valVer);
@@ -488,7 +502,8 @@ public class ReadRepairDataGenerator {
         IgniteBinary igniteBinary = clsAwareNodes.get(0).binary();
 
         Object primValBin = igniteBinary.toBinary(primVal);
-        Object repairedBin = igniteBinary.toBinary(repaired);
+        Object repairedBin = igniteBinary.toBinary(
+            repaired instanceof ArrayWrapper ? ((ArrayWrapper)repaired).arr : repaired);
 
         Map<Ignite, T2<Object, GridCacheVersion>> mappingBin = mapping.entrySet().stream().collect(
             Collectors.toMap(
@@ -496,10 +511,45 @@ public class ReadRepairDataGenerator {
                 (entry) -> {
                     T2<Object, GridCacheVersion> t2 = entry.getValue();
 
-                    return new T2<>(igniteBinary.toBinary(t2.getKey()), t2.getValue());
+                    Object obj = t2.getKey();
+
+                    return new T2<>(igniteBinary.toBinary(
+                        obj instanceof ArrayWrapper ? ((ArrayWrapper)obj).arr : obj),
+                        t2.getValue());
                 }));
 
         return new InconsistentMapping(mappingBin, primValBin, repairedBin, repairable, consistent);
+    }
+
+    /**
+     *
+     */
+    private static final class ArrayWrapper {
+        /** Array. */
+        final Object[] arr;
+
+        /** */
+        public ArrayWrapper(Object[] arr) {
+            this.arr = arr;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean equals(Object o) {
+            if (this == o)
+                return true;
+
+            if (o == null || getClass() != o.getClass())
+                return false;
+
+            ArrayWrapper wrapper = (ArrayWrapper)o;
+
+            return Arrays.equals(arr, wrapper.arr);
+        }
+
+        /** {@inheritDoc} */
+        @Override public int hashCode() {
+            return Arrays.hashCode(arr);
+        }
     }
 
     /**
@@ -515,15 +565,35 @@ public class ReadRepairDataGenerator {
      */
     private Object wrapTestValueIfNeeded(boolean wrap, Integer val) throws ReflectiveOperationException {
         if (wrap) {
-            // Some nodes will be unable to deserialize this object.
-            // Checking that Read Repair feature cause no `class not found` problems.
-            Class<?> clazz = extClsLdr.loadClass("org.apache.ignite.tests.p2p.cache.PersonKey");
+            int type = val % 5;
 
-            Object obj = clazz.newInstance();
+            switch (type) {
+                case 0:
+                    // Some nodes will be unable to deserialize this object.
+                    // Checking that Read Repair feature cause no `class not found` problems.
+                    Class<?> clazz = extClsLdr.loadClass("org.apache.ignite.tests.p2p.cache.PersonKey");
 
-            GridTestUtils.setFieldValue(obj, "id", val);
+                    Object obj = clazz.newInstance();
 
-            return obj;
+                    GridTestUtils.setFieldValue(obj, "id", val);
+
+                    return obj;
+
+                case 1:
+                    return new Object[] {val};
+
+                case 2:
+                    return Collections.singletonMap(val, val);
+
+                case 3:
+                    return Collections.singletonList(val);
+
+                case 4:
+                    return Collections.singleton(val);
+
+                default:
+                    throw new IllegalStateException();
+            }
         }
         else
             return val;
