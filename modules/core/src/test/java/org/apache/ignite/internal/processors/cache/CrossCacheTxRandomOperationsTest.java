@@ -180,7 +180,7 @@ public class CrossCacheTxRandomOperationsTest extends GridCommonAbstractTest {
         String name) {
         ignite.createCache(cacheConfiguration(name, cacheMode, writeSync, nearCache));
 
-        awaitCacheOnClient(ignite, name);
+        awaitCacheOnClient(ignite(GRID_CNT - 1), name);
     }
 
     /**

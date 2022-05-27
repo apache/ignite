@@ -2668,6 +2668,9 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
 
             ignite0.createCache(ccfg);
 
+            F.view(G.allGrids(), ignite -> ignite.cluster().localNode().isClient())
+                .forEach(ignite -> awaitCacheOnClient(ignite, ccfg.getName()));
+
             try {
                 final int THREADS = 64;
 
@@ -3094,6 +3097,9 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
         try {
             Ignite client1 = ignite(SRVS);
             Ignite client2 = ignite(SRVS + 1);
+
+            awaitCacheOnClient(client1, cacheName);
+            awaitCacheOnClient(client2, cacheName);
 
             IgniteCache<Integer, Integer> cache1 = client1.createNearCache(cacheName,
                 new NearCacheConfiguration<Integer, Integer>());
@@ -3730,6 +3736,8 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
             final List<IgniteCache<Integer, Integer>> caches = new ArrayList<>();
 
             for (Ignite client : clients) {
+                awaitCacheOnClient(client, cacheName);
+
                 if (nearCache)
                     caches.add(client.createNearCache(cacheName, new NearCacheConfiguration<Integer, Integer>()));
                 else
@@ -3981,6 +3989,8 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
             final List<IgniteCache<Integer, Integer>> caches = new ArrayList<>();
 
             for (Ignite client : clients) {
+                awaitCacheOnClient(client, cacheName);
+
                 if (nearCache)
                     caches.add(client.createNearCache(cacheName, new NearCacheConfiguration<Integer, Integer>()));
                 else
@@ -4769,6 +4779,9 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
 
         final String cacheName =
             srv.createCache(cacheConfiguration(PARTITIONED, FULL_SYNC, 1, false, false)).getName();
+
+        F.view(G.allGrids(), ignite -> ignite.cluster().localNode().isClient())
+            .forEach(ignite -> awaitCacheOnClient(ignite, cacheName));
 
         try {
             final int KEYS = SF.apply(20);
