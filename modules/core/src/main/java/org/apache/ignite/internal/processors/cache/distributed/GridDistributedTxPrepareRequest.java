@@ -32,6 +32,7 @@ import org.apache.ignite.internal.GridDirectMap;
 import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
+import org.apache.ignite.internal.processors.cache.consistentcut.ConsistentCutVersionAware;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
@@ -56,7 +57,7 @@ import org.jetbrains.annotations.Nullable;
  * Transaction prepare request for optimistic and eventually consistent
  * transactions.
  */
-public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage implements IgniteTxStateAware {
+public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage implements IgniteTxStateAware, ConsistentCutVersionAware {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -160,8 +161,8 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
     @GridToStringExclude
     private byte flags;
 
-    /** */
-    private long curConsistentVer;
+    /** Version of the latest observable Consistent Cut on local node. */
+    private long latestCutVer;
 
     /**
      * Required by {@link Externalizable}.
@@ -180,6 +181,7 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
      * @param last Last request flag.
      * @param onePhaseCommit One phase commit flag.
      * @param addDepInfo Deployment info flag.
+     * @param latestCutVer Version of the latest observable Consistent Cut.
      */
     public GridDistributedTxPrepareRequest(
         IgniteInternalTx tx,
@@ -191,7 +193,7 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
         boolean last,
         boolean onePhaseCommit,
         boolean addDepInfo,
-        long consistentVer
+        long latestCutVer
     ) {
         super(tx.xidVersion(), 0, addDepInfo);
 
@@ -201,12 +203,13 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
         isolation = tx.isolation();
         txSize = tx.size();
         plc = tx.ioPolicy();
-        curConsistentVer = consistentVer;
 
         this.timeout = timeout;
         this.reads = reads;
         this.writes = writes;
         this.txNodes = txNodes;
+
+        this.latestCutVer = latestCutVer;
 
         setFlag(tx.system(), SYSTEM_TX_FLAG_MASK);
         setFlag(retVal, NEED_RETURN_VALUE_FLAG_MASK);
@@ -397,11 +400,6 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
         return isFlag(LAST_REQ_FLAG_MASK);
     }
 
-    /** */
-    public long curConsistentVer() {
-        return curConsistentVer;
-    }
-
     /** {@inheritDoc} */
     @Override public IgniteTxState txState() {
         return txState;
@@ -410,6 +408,11 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
     /** {@inheritDoc} */
     @Override public void txState(IgniteTxState txState) {
         this.txState = txState;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long latestCutVersion() {
+        return latestCutVer;
     }
 
     /** {@inheritDoc}
@@ -594,7 +597,7 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
                 writer.incrementState();
 
             case 21:
-                if (!writer.writeLong("curConsistentVer", curConsistentVer))
+                if (!writer.writeLong("latestCutVer", latestCutVer))
                     return false;
 
                 writer.incrementState();
@@ -728,7 +731,7 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
                 reader.incrementState();
 
             case 21:
-                curConsistentVer = reader.readLong("curConsistentVer");
+                latestCutVer = reader.readLong("latestCutVer");
 
                 if (!reader.isLastRead())
                     return false;

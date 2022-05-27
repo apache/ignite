@@ -844,7 +844,7 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
         super.notifyConsistentCutOnCommit();
 
         if (onePhaseCommit && dht() && !local())
-            commitCutVer = cctx.consistentCutMgr().txCutVer(this);
+            commitCutVer = cctx.consistentCutMgr().txCutVersion(this);
     }
 
     /** {@inheritDoc} */

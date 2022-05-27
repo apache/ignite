@@ -23,6 +23,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
+import org.apache.ignite.internal.processors.cache.consistentcut.ConsistentCutVersionAware;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxState;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxStateAware;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -35,7 +36,7 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 /**
  * Response to prepare request.
  */
-public class GridDistributedTxPrepareResponse extends GridDistributedBaseMessage implements IgniteTxStateAware {
+public class GridDistributedTxPrepareResponse extends GridDistributedBaseMessage implements IgniteTxStateAware, ConsistentCutVersionAware {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -57,10 +58,13 @@ public class GridDistributedTxPrepareResponse extends GridDistributedBaseMessage
     /** */
     protected byte flags;
 
-    /** */
+    /** Version of the latest observable Consistent Cut on local node. */
     private long latestCutVer;
 
-    /** */
+    /**
+     * Version of the latest Consistent Cut that doesn't include this transaction.
+     * Sets on backup (or primary) node to notify other nodes in 1PC algorithm.
+     */
     private long txCutVer;
 
     /**
@@ -138,26 +142,6 @@ public class GridDistributedTxPrepareResponse extends GridDistributedBaseMessage
         return err != null;
     }
 
-    /** */
-    public long txCutVer() {
-        return txCutVer;
-    }
-
-    /** */
-    public void txCutVer(long ver) {
-        txCutVer = ver;
-    }
-
-    /** */
-    public long latestCutVer() {
-        return latestCutVer;
-    }
-
-    /** */
-    public void latestCutVer(long latestCutVer) {
-        this.latestCutVer = latestCutVer;
-    }
-
     /** {@inheritDoc} */
     @Override public IgniteTxState txState() {
         return txState;
@@ -166,6 +150,31 @@ public class GridDistributedTxPrepareResponse extends GridDistributedBaseMessage
     /** {@inheritDoc} */
     @Override public void txState(IgniteTxState txState) {
         this.txState = txState;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long latestCutVersion() {
+        return latestCutVer;
+    }
+
+    /** */
+    public void latestCutVersion(long latestCutVer) {
+        this.latestCutVer = latestCutVer;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long txCutVersion() {
+        return txCutVer;
+    }
+
+    /** */
+    public void txCutVersion(long ver) {
+        txCutVer = ver;
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridCacheVersion nearTxVersion() {
+        return version();
     }
 
     /** {@inheritDoc} */

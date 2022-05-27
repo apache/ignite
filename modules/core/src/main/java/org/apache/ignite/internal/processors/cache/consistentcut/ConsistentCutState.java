@@ -87,14 +87,14 @@ public class ConsistentCutState {
     /**
      * @return Consistent Cut Version.
      */
-    public long ver() {
+    public long version() {
         return ver;
     }
 
     /**
      * @return Previous Consistent Cut Version.
      */
-    public long prevVer() {
+    public long prevVersion() {
         return prevVer;
     }
 
@@ -121,7 +121,7 @@ public class ConsistentCutState {
      * @param nearTxVer Transaction version on an originated node.
      * @param cutVer Consistent Cut Version.
      */
-    public void txCutVer(GridCacheVersion nearTxVer, long cutVer) {
+    public void txCutVersion(GridCacheVersion nearTxVer, long cutVer) {
         nearPrepare.put(nearTxVer, cutVer);
     }
 
@@ -131,7 +131,7 @@ public class ConsistentCutState {
      * @param nearTxVer Transaction version on an originated node.
      * @return Consistent Cut Version.
      */
-    public Long txCutVer(GridCacheVersion nearTxVer) {
+    public Long txCutVersion(GridCacheVersion nearTxVer) {
         return nearPrepare.remove(nearTxVer);
     }
 

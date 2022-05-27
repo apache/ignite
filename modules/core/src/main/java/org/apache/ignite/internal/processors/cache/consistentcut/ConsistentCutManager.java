@@ -133,14 +133,8 @@ public class ConsistentCutManager {
 
             // In some cases transaction includes to the check-list and concurrently is notifying about actual cut version.
             // Then it requires checking transactions twice - on receiving notification, and after actual committing.
-            if ((tx.onePhaseCommit() && tx.local()) || (!tx.onePhaseCommit() && tx.dht())) {
-                if (s.tryFinish(txVer)) {
-                    if (log.isDebugEnabled())
-                        log.debug("Log " + s + " on `unregisterAfterCommit `" + txVer.asIgniteUuid());
-
-                    walLog(s.buildFinishRecord());
-                }
-            }
+            if ((tx.onePhaseCommit() && tx.local()) || (!tx.onePhaseCommit() && tx.dht()))
+                tryFinish(s, txVer);
         }
         finally {
             cutGuard.readLock().unlock();
@@ -150,8 +144,8 @@ public class ConsistentCutManager {
     /**
      * @return Latest Consistent Cut Version.
      */
-    public long latestCutVer() {
-        return latestCutState.ver();
+    public long latestCutVersion() {
+        return latestCutState.version();
     }
 
     /**
@@ -161,7 +155,7 @@ public class ConsistentCutManager {
      */
     public void handleConsistentCutStart(long cutVer) {
         // Already handled this version.
-        if (latestCutVer() >= cutVer)
+        if (latestCutVersion() >= cutVer)
             return;
 
         // Try handle new version.
@@ -186,30 +180,25 @@ public class ConsistentCutManager {
      * transaction. Local node verifies the check-list of transactions that are waiting for the notification, and make
      * a decision whether to include the transaction to the latest Consistent Cut State.
      *
-     * @param nearTxId Transaction ID on near node.
+     * @param txVer Transaction ID on near node.
      * @param rmtTxCutVer Consistent Cut Version after which the specified transaction was committed on remote node.
      */
-    public void handleRemoteTxCutVersion(GridCacheVersion nearTxId, long rmtTxCutVer, boolean onePhaseCommit) {
-        ConsistentCutState s = latestCutState;
+    public void handleRemoteTxCutVersion(GridCacheVersion txVer, long rmtTxCutVer) {
+        ConsistentCutState cutState = latestCutState;
 
         if (log.isDebugEnabled())
-            log.debug("`handleRemoteTxCutVersion` " + nearTxId.asIgniteUuid() + " " + s);
+            log.debug("`handleRemoteTxCutVersion` " + txVer.asIgniteUuid() + " " + cutState);
 
-        Long locTxCutVer = s.needCheck(nearTxId);
+        Long locTxCutVer = cutState.needCheck(txVer);
 
         if (locTxCutVer != null) {
-            if (rmtTxCutVer == s.ver() && rmtTxCutVer > locTxCutVer) {
-                s.exclude(nearTxId);
+            if (rmtTxCutVer == cutState.version() && rmtTxCutVer > locTxCutVer) {
+                cutState.exclude(txVer);
 
-                includeNext.add(nearTxId);
+                includeNext.add(txVer);
             }
 
-            if (s.tryFinish(nearTxId)) {
-                if (log.isDebugEnabled())
-                    log.debug("Log " + s + " on `handleRemoteTxCutVersion` " + nearTxId.asIgniteUuid());
-
-                walLog(s.buildFinishRecord());
-            }
+            tryFinish(cutState, txVer);
         }
     }
 
@@ -219,7 +208,7 @@ public class ConsistentCutManager {
      * @param tx Transaction.
      * @return the latest Consistent Cut Version that doesn't include specified transaction.
      */
-    public long txCutVer(IgniteTxAdapter tx) {
+    public long txCutVersion(IgniteTxAdapter tx) {
         // Need lock here to avoid concurrent threads - that prepare FinishRequest and making ConsistentCut.
         cutGuard.readLock().lock();
 
@@ -229,14 +218,14 @@ public class ConsistentCutManager {
             GridCacheVersion txVer = tx.nearXidVersion();
 
             if (includeNext.contains(txVer))
-                return cutState.ver();
+                return cutState.version();
 
             if (cutState.includes(txVer))
-                return cutState.prevVer();
+                return cutState.prevVersion();
 
-            Long v = cutState.txCutVer(txVer);
+            Long v = cutState.txCutVersion(txVer);
 
-            return v != null ? v : cutState.ver();
+            return v != null ? v : cutState.version();
         }
         finally {
             cutGuard.readLock().unlock();
@@ -312,7 +301,7 @@ public class ConsistentCutManager {
      * @param cutVer Consistent Cut Version.
      */
     private void consistentCut(long cutVer) {
-        long prevCutVer = latestCutVer();
+        long prevCutVer = latestCutVersion();
 
         // Check for duplicated Consistent Cut.
         if (prevCutVer >= cutVer)
@@ -353,7 +342,7 @@ public class ConsistentCutManager {
                     //           /       CUT
                     // Prim ----Ping------|-----
                     if (txState == PREPARING) {
-                        cutState.txCutVer(txVer, cutVer);
+                        cutState.txCutVersion(txVer, cutVer);
 
                         includeNext.add(txVer);
                     }
@@ -364,7 +353,7 @@ public class ConsistentCutManager {
                     //           /   \     CUT
                     // Prim ----Ping--Ped---|---
                     else if (txState == PREPARED) {
-                        cutState.txCutVer(txVer, prevCutVer);
+                        cutState.txCutVersion(txVer, prevCutVer);
 
                         cutState.include(txVer);
                     }
@@ -397,7 +386,7 @@ public class ConsistentCutManager {
                 else if (tx.dht() && !tx.local() && (txState == PREPARING || txState == PREPARED)) {
                     cutState.include(txVer);
 
-                    cutState.txCutVer(txVer, prevCutVer);
+                    cutState.txCutVersion(txVer, prevCutVer);
                 }
 
                 // Include all transactions on near and primary nodes that are committing.
@@ -416,6 +405,12 @@ public class ConsistentCutManager {
             log.debug("Prepare Consistent Cut State: " + cutState);
 
         latestCutState = cutState;
+    }
+
+    /** */
+    private void tryFinish(ConsistentCutState cutState, GridCacheVersion txVer) {
+        if (cutState.tryFinish(txVer))
+            walLog(cutState.buildFinishRecord());
     }
 
     /**

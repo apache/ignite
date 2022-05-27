@@ -470,7 +470,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
      */
     private void doFinish(boolean commit, boolean clearThreadMap) {
         try {
-            long txVer = cctx.consistentCutMgr() != null ? cctx.consistentCutMgr().txCutVer(tx) : 0;
+            long txVer = cctx.consistentCutMgr() != null ? cctx.consistentCutMgr().txCutVersion(tx) : 0;
 
             if (tx.localFinish(commit, clearThreadMap) || (!commit && tx.state() == UNKNOWN)) {
                 // Cleanup transaction if heuristic failure.
@@ -657,8 +657,8 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
                         GridDhtTxFinishRequest finishReq = checkCommittedRequest(mini.futureId(), false);
 
                         if (cctx.consistentCutMgr() != null) {
-                            finishReq.latestCutVer(cctx.consistentCutMgr().latestCutVer());
-                            finishReq.txCutVer(tx.commitCutVer());
+                            finishReq.latestCutVersion(cctx.consistentCutMgr().latestCutVersion());
+                            finishReq.txCutVersion(tx.commitCutVer());
                         }
 
                         try {
@@ -799,8 +799,8 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
             tx.activeCachesDeploymentEnabled());
 
         if (cctx.consistentCutMgr() != null) {
-            req.latestCutVer(cctx.consistentCutMgr().latestCutVer());
-            req.txCutVer(txConsistentVer);
+            req.latestCutVersion(cctx.consistentCutMgr().latestCutVersion());
+            req.txCutVersion(txConsistentVer);
         }
 
         // If this is the primary node for the keys.

@@ -25,6 +25,7 @@ import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
+import org.apache.ignite.internal.processors.cache.consistentcut.ConsistentCutVersionAware;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxState;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxStateAware;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -40,7 +41,7 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 /**
  * Transaction completion message.
  */
-public class GridDistributedTxFinishRequest extends GridDistributedBaseMessage implements IgniteTxStateAware {
+public class GridDistributedTxFinishRequest extends GridDistributedBaseMessage implements IgniteTxStateAware, ConsistentCutVersionAware {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -105,10 +106,13 @@ public class GridDistributedTxFinishRequest extends GridDistributedBaseMessage i
     @GridDirectTransient
     private IgniteTxState txState;
 
-    /** */
+    /** Version of the latest observable Consistent Cut on local node. */
     private long latestCutVer;
 
-    /** */
+    /**
+     * Version of the latest Consistent Cut that doesn't include this transaction.
+     * Sets on near node to notify other nodes in 2PC algorithm.
+     */
     private long txCutVer;
 
     /**
@@ -278,26 +282,6 @@ public class GridDistributedTxFinishRequest extends GridDistributedBaseMessage i
         return txSize;
     }
 
-    /** */
-    public long latestCutVer() {
-        return latestCutVer;
-    }
-
-    /** */
-    public void latestCutVer(long latestCutVer) {
-        this.latestCutVer = latestCutVer;
-    }
-
-    /** */
-    public long txCutVer() {
-        return txCutVer;
-    }
-
-    /** */
-    public void txCutVer(long txCutVer) {
-        this.txCutVer = txCutVer;
-    }
-
     /**
      *
      * @return {@code True} if reply is required.
@@ -316,6 +300,31 @@ public class GridDistributedTxFinishRequest extends GridDistributedBaseMessage i
     /** {@inheritDoc} */
     @Override public void txState(IgniteTxState txState) {
         this.txState = txState;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long latestCutVersion() {
+        return latestCutVer;
+    }
+
+    /** */
+    public void latestCutVersion(long latestCutVer) {
+        this.latestCutVer = latestCutVer;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long txCutVersion() {
+        return txCutVer;
+    }
+
+    /** */
+    public void txCutVersion(long txCutVer) {
+        this.txCutVer = txCutVer;
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridCacheVersion nearTxVersion() {
+        return version();
     }
 
     /** {@inheritDoc} */
