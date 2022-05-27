@@ -30,13 +30,13 @@ public class GridHandleTableSelfTest extends GridCommonAbstractTest {
         GridHandleTable table = new GridHandleTable(8, 2);
 
         for (int i = 0; i < 16; i++)
-            assertEquals(-1, table.lookup(i));
+            assertEquals(-1, table.putIfAbsent(i));
 
         Object testObj = new Object();
 
-        assertEquals(-1, table.lookup(testObj));
+        assertEquals(-1, table.putIfAbsent(testObj));
 
-        assertEquals(16, table.lookup(testObj));
+        assertEquals(16, table.putIfAbsent(testObj));
 
         int cnt = 0;
 
@@ -56,7 +56,7 @@ public class GridHandleTableSelfTest extends GridCommonAbstractTest {
         assertEquals(8, table.objects().length);
 
         for (int i = 0; i < 32; i++)
-            assertEquals(-1, table.lookup(i));
+            assertEquals(-1, table.putIfAbsent(i));
 
         assertEquals(35, table.objects().length);
 

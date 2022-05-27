@@ -75,13 +75,13 @@ public class GridHandleTable {
     }
 
     /**
-     * Looks up and returns handle associated with given object, or -1 if
-     * no mapping found.
+     * Looks up and returns handle associated with the given object. If the given object was not found,
+     * puts it into the table and returns {@code -1}.
      *
      * @param obj Object.
-     * @return Handle.
+     * @return Object's handle or {@code -1} if it was not in the table.
      */
-    public int lookup(Object obj) {
+    public int putIfAbsent(Object obj) {
         int idx = hash(obj) % spine.length;
 
         if (size > 0) {
