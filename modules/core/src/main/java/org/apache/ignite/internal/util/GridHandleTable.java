@@ -45,12 +45,6 @@ public class GridHandleTable {
     /** Maps handle value -> associated object. */
     private Object[] objs;
 
-    /** */
-    private int[] spineEmpty;
-
-    /** */
-    private int[] nextEmpty;
-
     /**
      * Creates new HandleTable with given capacity and load factor.
      *
@@ -73,16 +67,11 @@ public class GridHandleTable {
         spine = new int[len];
         next = new int[len];
         objs = new Object[len];
-        spineEmpty = new int[len];
-        nextEmpty = new int[len];
 
-        Arrays.fill(spineEmpty, -1);
-        Arrays.fill(nextEmpty, -1);
+        Arrays.fill(spine, -1);
+        Arrays.fill(next, -1);
 
         threshold = (int)(len * loadFactor);
-
-        System.arraycopy(spineEmpty, 0, spine, 0, spineEmpty.length);
-        System.arraycopy(nextEmpty, 0, next, 0, nextEmpty.length);
     }
 
     /**
@@ -129,9 +118,8 @@ public class GridHandleTable {
             }
         }
 
-        System.arraycopy(spineEmpty, 0, spine, 0, spineEmpty.length);
-        System.arraycopy(nextEmpty, 0, next, 0, nextEmpty.length);
-
+        Arrays.fill(spine, -1);
+        Arrays.fill(next, -1);
         Arrays.fill(objs, null);
 
         size = 0;
@@ -166,12 +154,9 @@ public class GridHandleTable {
         int size = (spine.length << 1) + 1;
 
         spine = new int[size];
-        spineEmpty = new int[size];
         threshold = (int)(spine.length * loadFactor);
 
-        Arrays.fill(spineEmpty, -1);
-
-        System.arraycopy(spineEmpty, 0, spine, 0, spineEmpty.length);
+        Arrays.fill(spine, -1);
 
         for (int i = 0; i < this.size; i++) {
             Object obj = objs[i];
@@ -192,9 +177,6 @@ public class GridHandleTable {
         System.arraycopy(next, 0, newNext, 0, size);
 
         next = newNext;
-        nextEmpty = new int[newLen];
-
-        Arrays.fill(nextEmpty, -1);
 
         Object[] newObjs = new Object[newLen];
 
