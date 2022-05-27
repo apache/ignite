@@ -465,6 +465,19 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
      * @throws IgniteCheckedException If failed.
      */
     @Test
+    public void testPutRemove_1_20_pp_0() throws IgniteCheckedException {
+        MAX_PER_PAGE = 1;
+        CNT = 20;
+        PUT_INC = 1;
+        RMV_INC = 1;
+
+        doTestPutRemove(false);
+    }
+
+    /**
+     * @throws IgniteCheckedException If failed.
+     */
+    @Test
     public void testPutRemove_1_20_pp2_1() throws IgniteCheckedException {
         MAX_PER_PAGE = 1;
         CNT = 20;

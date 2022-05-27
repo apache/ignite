@@ -566,8 +566,16 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
          * @param r Remove operation.
          * @throws IgniteCheckedException If failed.
          */
-        protected Result finishRemoveOrLockTail(int idx, int cnt, int rmvCnt, long leafId, long leafPage, long leafAddr,
-            BPlusIO<L> io, R r) throws IgniteCheckedException {
+        protected Result finishRemoveOrLockTail(
+            int idx,
+            int cnt,
+            int rmvCnt,
+            long leafId,
+            long leafPage,
+            long leafAddr,
+            BPlusIO<L> io,
+            R r
+        ) throws IgniteCheckedException {
             assert idx >= 0 && idx < cnt : idx;
 
             // Need to do inner replace when we remove the rightmost element and the leaf have no forward page,
@@ -5107,9 +5115,15 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
          * @param idx Index to remove.
          * @throws IgniteCheckedException If failed.
          */
-        protected void removeDataRowFromLeaf(long pageId, long page, long pageAddr, Boolean walPlc, BPlusIO<L> io, int cnt,
-            int idx)
-            throws IgniteCheckedException {
+        protected void removeDataRowFromLeaf(
+            long pageId,
+            long page,
+            long pageAddr,
+            Boolean walPlc,
+            BPlusIO<L> io,
+            int cnt,
+            int idx
+        ) throws IgniteCheckedException {
             assert idx >= 0 && idx < cnt : idx;
             assert io.isLeaf() : "inner";
             assert !isRemoved() : "already removed";
@@ -6530,8 +6544,15 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         }
 
         /** {@inheritDoc} */
-        @Override protected void removeDataRowFromLeaf(long pageId, long page, long pageAddr, Boolean walPlc, BPlusIO<L> io,
-            int cnt, int idx) throws IgniteCheckedException {
+        @Override protected void removeDataRowFromLeaf(
+            long pageId,
+            long page,
+            long pageAddr,
+            Boolean walPlc,
+            BPlusIO<L> io,
+            int cnt,
+            int idx
+        ) throws IgniteCheckedException {
             assert io.isLeaf() : "inner";
             assert !isRemoved() : "already removed";
             assert remaining > 0 || remaining == -1 : remaining;
