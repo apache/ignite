@@ -62,8 +62,6 @@ public class GridHandleTable {
         this.loadFactor = loadFactor;
 
         init(initCap);
-
-        clear();
     }
 
     /**
@@ -82,6 +80,9 @@ public class GridHandleTable {
         Arrays.fill(nextEmpty, -1);
 
         threshold = (int)(len * loadFactor);
+
+        System.arraycopy(spineEmpty, 0, spine, 0, spineEmpty.length);
+        System.arraycopy(nextEmpty, 0, next, 0, nextEmpty.length);
     }
 
     /**
@@ -120,8 +121,13 @@ public class GridHandleTable {
      * Resets table to its initial (empty) state.
      */
     public void clear() {
-        if (size < objs.length)
-            shrink();
+        if (size < objs.length) {
+            if (shrink()) {
+                size = 0;
+
+                return;
+            }
+        }
 
         System.arraycopy(spineEmpty, 0, spine, 0, spineEmpty.length);
         System.arraycopy(nextEmpty, 0, next, 0, nextEmpty.length);
@@ -199,8 +205,10 @@ public class GridHandleTable {
 
     /**
      * Tries to gradually shrink hash table by factor of two when it's cleared.
+     *
+     * @return {@code true} if shrinked the table, {@code false} otherwise.
      */
-    private void shrink() {
+    private boolean shrink() {
         int newLen = objs.length;
 
         if (newLen > initCap) {
@@ -212,8 +220,13 @@ public class GridHandleTable {
 
         newLen = Math.max(newLen, initCap);
 
-        if (newLen >= size && newLen < objs.length)
+        if (newLen >= size && newLen < objs.length) {
             init(newLen);
+
+            return true;
+        }
+
+        return false;
     }
 
     /**
