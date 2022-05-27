@@ -42,7 +42,7 @@ public class SnapshotPartitionsVerifyTaskArg extends VisorDataTransferObject {
     /** The map of distribution of snapshot metadata pieces across the cluster. */
     private Map<ClusterNode, List<SnapshotMetadata>> clusterMetas;
 
-    private File snpPath;
+    private String snpPath;
 
     /** Default constructor. */
     public SnapshotPartitionsVerifyTaskArg() {
@@ -57,7 +57,7 @@ public class SnapshotPartitionsVerifyTaskArg extends VisorDataTransferObject {
     public SnapshotPartitionsVerifyTaskArg(
         Collection<String> grpNames,
         Map<ClusterNode, List<SnapshotMetadata>> clusterMetas,
-        @Nullable File snpPath
+        @Nullable String snpPath
     ) {
         this.grpNames = grpNames;
         this.clusterMetas = clusterMetas;
@@ -81,7 +81,7 @@ public class SnapshotPartitionsVerifyTaskArg extends VisorDataTransferObject {
     /**
      * @return Snapshot directory path.
      */
-    public File snapshotPath() {
+    public String snapshotPath() {
         return snpPath;
     }
 
@@ -89,18 +89,14 @@ public class SnapshotPartitionsVerifyTaskArg extends VisorDataTransferObject {
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
         U.writeCollection(out, grpNames);
         U.writeMap(out, clusterMetas);
-        U.writeString(out, snpPath == null ? null : snpPath.toString());
+        U.writeString(out, snpPath);
     }
 
     /** {@inheritDoc} */
     @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
         grpNames = U.readCollection(in);
         clusterMetas = U.readMap(in);
-
-        String snpPathname = U.readString(in);
-
-        if (snpPathname != null)
-            snpPath = new File(snpPathname);
+        snpPath = U.readString(in);
     }
 
     /** {@inheritDoc} */

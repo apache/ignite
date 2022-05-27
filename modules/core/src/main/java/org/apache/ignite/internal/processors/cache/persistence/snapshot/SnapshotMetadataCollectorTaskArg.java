@@ -16,13 +16,13 @@
  */
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorDataTransferObject;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Input parameters for checking snapshot partitions consistency task.
@@ -35,7 +35,7 @@ public class SnapshotMetadataCollectorTaskArg extends VisorDataTransferObject {
     private String snpName;
 
     /** Snapshot directory path. */
-    private File snpPath;
+    private String snpPath;
 
     /** Default constructor. */
     public SnapshotMetadataCollectorTaskArg() {
@@ -46,7 +46,7 @@ public class SnapshotMetadataCollectorTaskArg extends VisorDataTransferObject {
      * @param snpName Snapshot name.
      * @param snpPath Snapshot directory path.
      */
-    public SnapshotMetadataCollectorTaskArg(String snpName, File snpPath) {
+    public SnapshotMetadataCollectorTaskArg(String snpName, @Nullable String snpPath) {
         this.snpName = snpName;
         this.snpPath = snpPath;
     }
@@ -61,24 +61,20 @@ public class SnapshotMetadataCollectorTaskArg extends VisorDataTransferObject {
     /**
      * @return Snapshot directory path.
      */
-    public File snapshotPath() {
+    public String snapshotPath() {
         return snpPath;
     }
 
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
         U.writeString(out, snpName);
-        U.writeString(out, snpPath == null ? null : snpPath.toString());
+        U.writeString(out, snpPath);
     }
 
     /** {@inheritDoc} */
     @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
         snpName = U.readString(in);
-
-        String path = U.readString(in);
-
-        if (path != null)
-            snpPath = new File(path);
+        snpPath = U.readString(in);
     }
 
     /** {@inheritDoc} */

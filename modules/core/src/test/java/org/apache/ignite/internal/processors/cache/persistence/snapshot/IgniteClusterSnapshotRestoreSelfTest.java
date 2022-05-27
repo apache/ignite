@@ -153,7 +153,7 @@ public class IgniteClusterSnapshotRestoreSelfTest extends IgniteClusterSnapshotR
 
 //            IgniteSnapshotManager snpMgr = ;
 
-            ignite.context().cache().context().snapshotMgr().createSnapshot(SNAPSHOT_NAME, snpDir).get(TIMEOUT);
+            ignite.context().cache().context().snapshotMgr().createSnapshot(SNAPSHOT_NAME, snpDir.toString()).get(TIMEOUT);
 
 //            IdleVerifyResultV2 res = snp(ignite).checkSnapshot(SNAPSHOT_NAME, snpDir, null, false).get(TIMEOUT);
 //
@@ -165,7 +165,7 @@ public class IgniteClusterSnapshotRestoreSelfTest extends IgniteClusterSnapshotR
 //            assertContains(log, sb.toString(), "The check procedure has finished, no conflicts have been found");
 
             ignite = startGrid(2);
-            ignite.cluster().state(ACTIVE);
+//            ignite.cluster().state(ACTIVE);
             resetBaselineTopology();
 
             awaitPartitionMapExchange();
@@ -174,7 +174,7 @@ public class IgniteClusterSnapshotRestoreSelfTest extends IgniteClusterSnapshotR
             ignite.destroyCache(DEFAULT_CACHE_NAME);
             awaitPartitionMapExchange();
 
-            ignite.context().cache().context().snapshotMgr().restoreSnapshot(SNAPSHOT_NAME, null, snpDir).get();
+            ignite.context().cache().context().snapshotMgr().restoreSnapshot(SNAPSHOT_NAME, snpDir.toString(), null).get();
 
 //            stopAllGrids();
 

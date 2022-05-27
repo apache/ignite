@@ -208,10 +208,11 @@ public class SnapshotRestoreProcess {
      * Start cache group restore operation.
      *
      * @param snpName Snapshot name.
+     * @param snpPath Snapshot directory path.
      * @param cacheGrpNames Cache groups to be restored or {@code null} to restore all cache groups from the snapshot.
      * @return Future that will be completed when the restore operation is complete and the cache groups are started.
      */
-    public IgniteFuture<Void> start(String snpName, @Nullable Collection<String> cacheGrpNames, @Nullable File snpPath) {
+    public IgniteFuture<Void> start(String snpName, @Nullable String snpPath, @Nullable Collection<String> cacheGrpNames) {
         IgniteSnapshotManager snpMgr = ctx.cache().context().snapshotMgr();
         ClusterSnapshotFuture fut0;
 
@@ -336,7 +337,7 @@ public class SnapshotRestoreProcess {
             Collection<UUID> bltNodes = F.viewReadOnly(ctx.discovery().discoCache().aliveBaselineNodes(), F.node2id());
 
             SnapshotOperationRequest req = new SnapshotOperationRequest(
-                fut0.rqId, F.first(dataNodes), snpName, cacheGrpNames, new HashSet<>(bltNodes), snpPath);
+                fut0.rqId, F.first(dataNodes), snpName, snpPath, cacheGrpNames, new HashSet<>(bltNodes));
 
             prepareRestoreProc.start(req.requestId(), req);
         });
@@ -1014,7 +1015,6 @@ public class SnapshotRestoreProcess {
                     ctx.cache().context().snapshotMgr()
                         .requestRemoteSnapshotFiles(m.getKey(),
                             opCtx0.snpName,
-                            // todo
                             opCtx0.snpPath == null ? null : opCtx0.snpPath.toString(),
                             m.getValue(),
                             opCtx0.stopChecker,
@@ -1406,7 +1406,7 @@ public class SnapshotRestoreProcess {
         /** Snapshot name. */
         private final String snpName;
 
-        private final File snpPath;
+        private final String snpPath;
 
         /** Baseline discovery cache for node IDs that must be alive to complete the operation.*/
         private final DiscoCache discoCache;

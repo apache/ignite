@@ -150,9 +150,10 @@ public class IgniteClusterSnapshotHandlerTest extends IgniteClusterSnapshotResto
         for (Ignite grid : G.allGrids()) {
             IgniteSnapshotManager snpMgr = ((IgniteEx)grid).context().cache().context().snapshotMgr();
             String constId = grid.cluster().localNode().consistentId().toString();
+            File snpDir = snpMgr.snapshotLocalDir(SNAPSHOT_NAME);
 
-            SnapshotMetadata metadata = snpMgr.readSnapshotMetadata(SNAPSHOT_NAME, constId);
-            File smf = new File(snpMgr.snapshotLocalDir(SNAPSHOT_NAME), U.maskForFileName(constId) + SNAPSHOT_METAFILE_EXT);
+            SnapshotMetadata metadata = snpMgr.readSnapshotMetadata(snpDir, constId);
+            File smf = new File(snpDir, U.maskForFileName(constId) + SNAPSHOT_METAFILE_EXT);
 
             try (OutputStream out = new BufferedOutputStream(new FileOutputStream(smf))) {
                 GridTestUtils.setFieldValue(metadata, "rqId", newReqId);

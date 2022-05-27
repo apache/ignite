@@ -29,8 +29,8 @@ public class SnapshotHandlerContext {
     /** Snapshot metadata. */
     private final SnapshotMetadata metadata;
 
-    /** Snapshot directory path. */
-    private final String snpBasePath;
+    /** The full path to the snapshot files. */
+    private final File snpDir;
 
     /** The names of the cache groups on which the operation is performed. */
     private final Collection<String> grps;
@@ -42,13 +42,13 @@ public class SnapshotHandlerContext {
      * @param metadata Snapshot metadata.
      * @param grps The names of the cache groups on which the operation is performed.
      * @param locNode Local node.
-     * @param snpBasePath Snapshot directory path.
+     * @param snpDir The full path to the snapshot files.
      */
-    public SnapshotHandlerContext(SnapshotMetadata metadata, @Nullable Collection<String> grps, ClusterNode locNode, File snpBasePath) {
+    public SnapshotHandlerContext(SnapshotMetadata metadata, @Nullable Collection<String> grps, ClusterNode locNode, File snpDir) {
         this.metadata = metadata;
         this.grps = grps;
         this.locNode = locNode;
-        this.snpBasePath = snpBasePath.toString();
+        this.snpDir = snpDir;
     }
 
     /**
@@ -59,10 +59,10 @@ public class SnapshotHandlerContext {
     }
 
     /**
-     * @return Snapshot directory path.
+     * @return The full path to the snapshot files.
      */
-    public File snapshotPath() {
-        return new File(snpBasePath);
+    public File snapshotDirectory() {
+        return snpDir;
     }
 
     /**

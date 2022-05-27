@@ -743,7 +743,8 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
             for (int i = 0; i < CACHE_KEYS_RANGE; i++)
                 ignite.cache(DEFAULT_CACHE_NAME).put(i, i);
 
-            ignite.context().cache().context().snapshotMgr().createSnapshot(SNAPSHOT_NAME, cfgPath ? null : snpDir).get();
+            ignite.context().cache().context().snapshotMgr()
+                .createSnapshot(SNAPSHOT_NAME, cfgPath ? null : snpDir.getAbsolutePath()).get();
 
             stopAllGrids();
 
@@ -1106,7 +1107,7 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
         IgniteEx clnt = startClientGrid(2);
 
         IgniteSnapshotManager mgr = snp(grid);
-        BiFunction<String, File, SnapshotSender> old = mgr.localSnapshotSenderFactory();
+        BiFunction<String, String, SnapshotSender> old = mgr.localSnapshotSenderFactory();
 
         BlockingExecutor block = new BlockingExecutor(mgr.snapshotExecutorService());
 
@@ -1172,11 +1173,11 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
      * @param blocked Latch to await delta partition processing.
      * @return Factory which produces local snapshot senders.
      */
-    private BiFunction<String, File, SnapshotSender> blockingLocalSnapshotSender(IgniteEx ignite,
+    private BiFunction<String, String, SnapshotSender> blockingLocalSnapshotSender(IgniteEx ignite,
         CountDownLatch started,
         CountDownLatch blocked
     ) {
-        BiFunction<String, File, SnapshotSender> old = snp(ignite).localSnapshotSenderFactory();
+        BiFunction<String, String, SnapshotSender> old = snp(ignite).localSnapshotSenderFactory();
 
         return (snpName, snpPath) -> new DelegateSnapshotSender(log, snp(ignite).snapshotExecutorService(), old.apply(snpName, null)) {
             @Override public void sendDelta0(File delta, String cacheDirName, GroupPartitionId pair) {

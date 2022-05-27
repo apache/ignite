@@ -65,24 +65,24 @@ public class SnapshotOperationRequest implements Serializable {
      * @param reqId Request ID.
      * @param opNodeId Operational node ID.
      * @param snpName Snapshot name.
+     * @param snpPath Snapshot directory path.
      * @param grps List of cache group names.
      * @param nodes Baseline node IDs that must be alive to complete the operation.
-     * @param snpPath Snapshot path.
      */
     public SnapshotOperationRequest(
         UUID reqId,
         UUID opNodeId,
         String snpName,
+        String snpPath,
         @Nullable Collection<String> grps,
-        Set<UUID> nodes,
-        @Nullable File snpPath
+        Set<UUID> nodes
     ) {
         this.reqId = reqId;
         this.opNodeId = opNodeId;
         this.snpName = snpName;
         this.grps = grps;
         this.nodes = nodes;
-        this.snpPath = snpPath == null ? null : snpPath.toString();
+        this.snpPath = snpPath;
     }
 
     /**
@@ -102,8 +102,8 @@ public class SnapshotOperationRequest implements Serializable {
     /**
      * @return Snapshot path.
      */
-    public File snapshotPath() {
-        return snpPath == null ? null : new File(snpPath);
+    public String snapshotPath() {
+        return snpPath;
     }
 
     /**

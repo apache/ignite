@@ -55,7 +55,7 @@ public class SnapshotPartitionsVerifyTask extends AbstractSnapshotVerificationTa
     private IgniteEx ignite;
 
     /** {@inheritDoc} */
-    @Override protected ComputeJob createJob(String name, File snpPath, String constId, Collection<String> groups) {
+    @Override protected ComputeJob createJob(String name, String snpPath, String constId, Collection<String> groups) {
         return new VisorVerifySnapshotPartitionsJob(name, snpPath, constId, groups);
     }
 
@@ -87,7 +87,7 @@ public class SnapshotPartitionsVerifyTask extends AbstractSnapshotVerificationTa
         private final Collection<String> rqGrps;
 
         /** Snapshot directory path. */
-        private final File snpPath;
+        private final String snpPath;
 
         /**
          * @param snpName Snapshot name to validate.
@@ -95,7 +95,7 @@ public class SnapshotPartitionsVerifyTask extends AbstractSnapshotVerificationTa
          * @param rqGrps Set of cache groups to be checked in the snapshot or {@code empty} to check everything.
          * @param snpPath Snapshot directory path.
          */
-        public VisorVerifySnapshotPartitionsJob(String snpName, @Nullable File snpPath, String consId, Collection<String> rqGrps) {
+        public VisorVerifySnapshotPartitionsJob(String snpName, @Nullable String snpPath, String consId, Collection<String> rqGrps) {
             this.snpName = snpName;
             this.consId = consId;
             this.rqGrps = rqGrps;
@@ -112,11 +112,11 @@ public class SnapshotPartitionsVerifyTask extends AbstractSnapshotVerificationTa
             }
 
             try {
-                SnapshotMetadata meta = cctx.snapshotMgr().readSnapshotMetadata(snpName, consId);
-                File snpDir = snpPath == null ? cctx.snapshotMgr().snapshotLocalDir(snpName) : new File(snpPath, snpName);
+                File snpDir = cctx.snapshotMgr().snapshotLocalDir(snpName, snpPath);
+                SnapshotMetadata meta = cctx.snapshotMgr().readSnapshotMetadata(snpDir, consId);
 
                 return new SnapshotPartitionsVerifyHandler(cctx)
-                    .invoke(new SnapshotHandlerContext(meta, rqGrps, ignite.localNode(), snpDir.getParentFile()));
+                    .invoke(new SnapshotHandlerContext(meta, rqGrps, ignite.localNode(), snpDir));
             }
             catch (IgniteCheckedException e) {
                 throw new IgniteException(e);
@@ -132,7 +132,7 @@ public class SnapshotPartitionsVerifyTask extends AbstractSnapshotVerificationTa
                 return false;
 
             VisorVerifySnapshotPartitionsJob job = (VisorVerifySnapshotPartitionsJob)o;
-
+            // todo rqGrps snpPath
             return snpName.equals(job.snpName) && consId.equals(job.consId);
         }
 

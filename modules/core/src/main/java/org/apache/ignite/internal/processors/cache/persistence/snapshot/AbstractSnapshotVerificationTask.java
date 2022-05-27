@@ -129,5 +129,5 @@ public abstract class AbstractSnapshotVerificationTask extends
      * @param groups Cache groups to be restored from the snapshot. May be empty if all cache groups are being restored.
      * @return Compute job.
      */
-    protected abstract ComputeJob createJob(String name, @Nullable File snpPath, String constId, Collection<String> groups);
+    protected abstract ComputeJob createJob(String name, @Nullable String snpPath, String constId, Collection<String> groups);
 }
