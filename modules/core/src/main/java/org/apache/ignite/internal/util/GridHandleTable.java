@@ -120,9 +120,8 @@ public class GridHandleTable {
      * Resets table to its initial (empty) state.
      */
     public void clear() {
-        if (size < objs.length) {
+        if (size < objs.length)
             shrink();
-        }
 
         System.arraycopy(spineEmpty, 0, spine, 0, spineEmpty.length);
         System.arraycopy(nextEmpty, 0, next, 0, nextEmpty.length);
@@ -206,6 +205,7 @@ public class GridHandleTable {
 
         if (newLen > initCap) {
             int shrinked = (newLen - 1) / 2;
+
             if (shrinked >= size)
                 newLen = shrinked;
         }
