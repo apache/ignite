@@ -17,9 +17,6 @@
 
 package org.apache.ignite.internal.processors.query.calcite.rel;
 
-import java.math.BigDecimal;
-import java.math.BigInteger;
-import java.util.Collections;
 import java.util.List;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptCost;
@@ -32,8 +29,6 @@ import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelWriter;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rel.type.RelDataType;
-import org.apache.calcite.rel.type.RelDataTypeFactory;
-import org.apache.calcite.sql.type.SqlTypeName;
 
 /**
  * Relational operator that returns the contents of a table.
@@ -64,9 +59,9 @@ public class IgniteIndexCount extends AbstractRelNode implements SourceAwareIgni
         else
             sourceId = -1;
 
-        rowType = deriveRowType();
-
         tbl = input.getTable("table");
+
+        rowType = input.getRowType("type");
     }
 
     /**
@@ -80,9 +75,10 @@ public class IgniteIndexCount extends AbstractRelNode implements SourceAwareIgni
         RelOptCluster cluster,
         RelTraitSet traits,
         RelOptTable tbl,
-        String idxName
+        String idxName,
+        RelDataType rowType
     ) {
-        this(cluster, traits, tbl, idxName, -1L);
+        this(cluster, traits, tbl, idxName, rowType, -1L);
     }
 
     private IgniteIndexCount(
@@ -90,26 +86,27 @@ public class IgniteIndexCount extends AbstractRelNode implements SourceAwareIgni
         RelTraitSet traits,
         RelOptTable tbl,
         String idxName,
+        RelDataType rowType,
         long sourceId
     ) {
         super(cluster, traits);
 
         this.idxName = idxName;
         this.tbl = tbl;
-        this.rowType = deriveRowType();
         this.sourceId = sourceId;
+        this.rowType = rowType;
     }
 
-    @Override protected RelDataType deriveRowType() {
-        RelDataTypeFactory tf = getCluster().getTypeFactory();
-
-        RelDataType type = tf.createJavaType(BigDecimal.class);
-//        RelDataType type = tf.createSqlType(SqlTypeName.BIGINT);
-//        RelDataType type = tf.createJavaType(long.class);
-//        RelDataType type = tf.createJavaType(BigInteger.class);
-
-        return tf.createStructType(Collections.singletonList(type), Collections.singletonList(type.toString()));
-    }
+//    @Override protected RelDataType deriveRowType() {
+//        RelDataTypeFactory tf = getCluster().getTypeFactory();
+//
+//        RelDataType type = tf.createJavaType(BigDecimal.class);
+////        RelDataType type = tf.createSqlType(SqlTypeName.BIGINT);
+////        RelDataType type = tf.createJavaType(long.class);
+////        RelDataType type = tf.createJavaType(BigInteger.class);
+//
+//        return tf.createStructType(Collections.singletonList(type), Collections.singletonList(type.toString()));
+//    }
 
     /** {@inheritDoc} */
     @Override public RelOptCost computeSelfCost(RelOptPlanner planner, RelMetadataQuery mq) {
@@ -143,6 +140,7 @@ public class IgniteIndexCount extends AbstractRelNode implements SourceAwareIgni
         return super.explainTerms(pw)
             .item("index", idxName)
             .itemIf("sourceId", sourceId, sourceId != -1)
+            .item("type", rowType)
             .item("table", tbl.getQualifiedName());
     }
 
@@ -153,11 +151,11 @@ public class IgniteIndexCount extends AbstractRelNode implements SourceAwareIgni
 
     /** {@inheritDoc} */
     @Override public IgniteRel clone(RelOptCluster cluster, List<IgniteRel> inputs) {
-        return new IgniteIndexCount(cluster, traitSet, tbl, idxName);
+        return new IgniteIndexCount(cluster, traitSet, tbl, idxName, rowType);
     }
 
     /** {@inheritDoc} */
     @Override public IgniteRel clone(long sourceId) {
-        return new IgniteIndexCount(getCluster(), traitSet, tbl, idxName, sourceId);
+        return new IgniteIndexCount(getCluster(), traitSet, tbl, idxName, rowType, sourceId);
     }
 }

@@ -1,5 +1,6 @@
 package org.apache.ignite.internal.processors.query.calcite.rule;
 
+import com.google.common.collect.ImmutableMap;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import com.google.common.collect.ImmutableSet;
@@ -16,6 +17,7 @@ import org.apache.calcite.util.ImmutableIntList;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteExchange;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexCount;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexScan;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteLimit;
 import org.apache.ignite.internal.processors.query.calcite.rel.agg.IgniteMapHashAggregate;
 import org.apache.ignite.internal.processors.query.calcite.rel.agg.IgniteReduceHashAggregate;
 import org.immutables.value.Value;
@@ -39,39 +41,48 @@ public class TestRule extends RelRule<TestRule.Config> {
 
         IgniteIndexScan idx = call.rel(1);
 
+//        IgniteIndexCount idxCnt = new IgniteIndexCount(
+//            idx.getCluster(),
+//            idx.getTraitSet(),
+//            idx.getTable(),
+//            idx.indexName());
+
+//        AggregateCall aggFun = AggregateCall.create(
+//            SqlStdOperatorTable.SUM,
+//            false,
+//            false,
+//            false,
+//            ImmutableIntList.of(0),
+//            -1,
+//            ImmutableBitSet.of(),
+//            RelCollations.EMPTY,
+//             0,
+//            idxCnt,
+//        null,
+////            idx.getCluster().getTypeFactory().createJavaType(long.class),
+////            idx.getCluster().getTypeFactory().createJavaType(BigDecimal.class),
+////            idx.getCluster().getTypeFactory().createJavaType(BigInteger.class),
+////            idx.getCluster().getTypeFactory().createSqlType(SqlTypeName.BIGINT),
+//            null);
+//
+//        IgniteMapHashAggregate agg2 = new IgniteMapHashAggregate(
+//            idx.getCluster(),
+//            agg.getTraitSet(),
+//            idxCnt,
+//            agg.getGroupSet(),
+//            agg.getGroupSets(),
+//            singletonList(aggFun));
+//
+//        call.transformTo(agg2);
+
         IgniteIndexCount idxCnt = new IgniteIndexCount(
-            idx.getCluster(),
-            idx.getTraitSet(),
-            idx.getTable(),
-            idx.indexName());
-
-        AggregateCall aggFun = AggregateCall.create(
-            SqlStdOperatorTable.SUM,
-            false,
-            false,
-            false,
-            ImmutableIntList.of(0),
-            -1,
-            ImmutableBitSet.of(),
-            RelCollations.EMPTY,
-             0,
-            idxCnt,
-        null,
-//            idx.getCluster().getTypeFactory().createJavaType(long.class),
-//            idx.getCluster().getTypeFactory().createJavaType(BigDecimal.class),
-//            idx.getCluster().getTypeFactory().createJavaType(BigInteger.class),
-//            idx.getCluster().getTypeFactory().createSqlType(SqlTypeName.BIGINT),
-            null);
-
-        IgniteMapHashAggregate agg2 = new IgniteMapHashAggregate(
-            idx.getCluster(),
+            agg.getCluster(),
             agg.getTraitSet(),
-            idxCnt,
-            agg.getGroupSet(),
-            agg.getGroupSets(),
-            singletonList(aggFun));
+            idx.getTable(),
+            idx.indexName(),
+            agg.getRowType());
 
-        call.transformTo(agg2);
+        call.transformTo(idxCnt, ImmutableMap.of(idxCnt, agg));
     }
 
     @Value.Immutable

@@ -412,6 +412,8 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
         IgniteTable tbl = rel.getTable().unwrap(IgniteTable.class);
         CacheIndexImpl idx = (CacheIndexImpl)tbl.getIndex(rel.indexName());
 
+        RowFactory<Row> rowFactory = ctx.rowHandler().factory(ctx.getTypeFactory(), rel.getRowType());
+
         return new IndexCountNode(idx.index().unwrap(InlineIndexImpl.class), ctx);
     }
 
