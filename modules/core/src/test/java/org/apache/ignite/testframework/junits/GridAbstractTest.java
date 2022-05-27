@@ -42,7 +42,6 @@ import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
@@ -146,7 +145,6 @@ import org.junit.Rule;
 import org.junit.rules.RuleChain;
 import org.junit.rules.TestName;
 import org.junit.rules.TestRule;
-import org.junit.rules.Timeout;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
 import org.springframework.beans.BeansException;
@@ -219,9 +217,6 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
     @ClassRule public static final TestRule firstLastTestRule = RuleChain
         .outerRule(new SystemPropertiesRule())
         .around(new BeforeFirstAndAfterLastTestRule());
-
-    /** */
-    @Rule public Timeout timeout = new Timeout(getTestTimeout(), TimeUnit.MILLISECONDS);
 
     /** Manages test execution and reporting. */
     private transient TestRule runRule = (base, desc) -> new Statement() {
