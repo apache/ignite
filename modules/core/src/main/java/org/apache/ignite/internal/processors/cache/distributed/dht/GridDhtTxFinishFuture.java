@@ -408,7 +408,7 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
                 cctx.tm().txHandler().filterUpdateCountersForBackupNode(tx, n));
 
             if (cctx.consistentCutMgr() != null) {
-                req.lastCutVer(cctx.consistentCutMgr().latestCutVer());
+                req.latestCutVer(cctx.consistentCutMgr().latestCutVer());
                 req.txCutVer(tx.commitCutVer());
             }
 
@@ -525,7 +525,7 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
             req.writeVersion(tx.writeVersion() != null ? tx.writeVersion() : tx.xidVersion());
 
             if (cctx.consistentCutMgr() != null) {
-                req.lastCutVer(cctx.consistentCutMgr().latestCutVer());
+                req.latestCutVer(cctx.consistentCutMgr().latestCutVer());
                 req.txCutVer(txVer);
             }
 
@@ -609,7 +609,7 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
                 req.writeVersion(tx.writeVersion());
 
                 if (cctx.consistentCutMgr() != null) {
-                    req.lastCutVer(cctx.consistentCutMgr().latestCutVer());
+                    req.latestCutVer(cctx.consistentCutMgr().latestCutVer());
                     req.txCutVer(txVer);
                 }
 

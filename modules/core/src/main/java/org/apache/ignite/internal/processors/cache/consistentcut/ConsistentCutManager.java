@@ -35,7 +35,6 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLo
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxAdapter;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
-import org.apache.ignite.internal.processors.cluster.BaselineTopology;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
@@ -54,17 +53,17 @@ import static org.apache.ignite.transactions.TransactionState.PREPARING;
  */
 public class ConsistentCutManager {
     /**
-     * Mutable state of the latest Consistent Cut.
+     * Mutable local state of the latest observable Consistent Cut.
      */
     private volatile ConsistentCutState latestCutState;
 
     /**
-     * Collection of transactions in COMMITTING state.
+     * Collection of transactions in COMMITTING / COMMTTED state.
      */
     private final Set<IgniteInternalTx> committingTxs = ConcurrentHashMap.newKeySet();
 
     /**
-     * Set of transactions to exclude from {@link #latestCutState} and include them into next Consistent Cut.
+     * Set of transactions to exclude from the {@link #latestCutState} and include them into next Consistent Cut.
      */
     private final Set<GridCacheVersion> includeNext = ConcurrentHashMap.newKeySet();
 
@@ -132,17 +131,14 @@ public class ConsistentCutManager {
 
             includeNext.remove(tx.nearXidVersion());
 
-            // In some cases there is a concurrency between TX states and the ConsistentCut procedure.
-            // Transaction was included to `cutAwait` (CC procedure) but already had received message that allows to commit it.
-            // Then we just verify transactions in moment of commit.
-            // - 1PC + (near or primary node).
-            // - 2PC + (primary or backup).
+            // In some cases transaction includes to the check-list and concurrently is notifying about actual cut version.
+            // Then it requires checking transactions twice - on receiving notification, and after actual committing.
             if ((tx.onePhaseCommit() && tx.local()) || (!tx.onePhaseCommit() && tx.dht())) {
                 if (s.tryFinish(txVer)) {
                     if (log.isDebugEnabled())
-                        log.debug("Log " + s + ") on `unregisterAfterCommit `" + txVer.asIgniteUuid());
+                        log.debug("Log " + s + " on `unregisterAfterCommit `" + txVer.asIgniteUuid());
 
-                    logConsistentCutFinish(s);
+                    walLog(s.buildFinishRecord());
                 }
             }
         }
@@ -152,7 +148,7 @@ public class ConsistentCutManager {
     }
 
     /**
-     * @return Last CutVersion.
+     * @return Latest Consistent Cut Version.
      */
     public long latestCutVer() {
         return latestCutState.ver();
@@ -186,66 +182,61 @@ public class ConsistentCutManager {
     }
 
     /**
-     * Handles GridTxFinishRequest for 2PC and GridTxPrepareResponse for 1PC. Local node verifies list of transactions
-     * that are waiting for the check and make a decision to include transaction to CutVersion.
+     * Handles notifications from remote node with the latest Consistent Cut Version that doesn't include specified
+     * transaction. Local node verifies the check-list of transactions that are waiting for the notification, and make
+     * a decision whether to include the transaction to the latest Consistent Cut State.
      *
      * @param nearTxId Transaction ID on near node.
-     * @param txLastCutVer Received last CutVersion in momemnt the tx committed on remote node.
+     * @param rmtTxCutVer Consistent Cut Version after which the specified transaction was committed on remote node.
      */
-    public void handleRemoteTxCutVersion(GridCacheVersion nearTxId, long txLastCutVer, boolean onePhaseCommit) {
+    public void handleRemoteTxCutVersion(GridCacheVersion nearTxId, long rmtTxCutVer, boolean onePhaseCommit) {
         ConsistentCutState s = latestCutState;
-
-        if (s.finished())
-            return;
 
         if (log.isDebugEnabled())
             log.debug("`handleRemoteTxCutVersion` " + nearTxId.asIgniteUuid() + " " + s);
 
-        Long prepVer = s.needCheck(nearTxId);
+        Long locTxCutVer = s.needCheck(nearTxId);
 
-        if (prepVer != null) {
-            if (txLastCutVer >= s.ver() && txLastCutVer > prepVer) {
+        if (locTxCutVer != null) {
+            if (rmtTxCutVer == s.ver() && rmtTxCutVer > locTxCutVer) {
                 s.exclude(nearTxId);
 
                 includeNext.add(nearTxId);
             }
 
             if (s.tryFinish(nearTxId)) {
-                if (log.isDebugEnabled()) {
-                    log.debug("Log ConsistentCutFinish(ver=" + s.ver() + ") on `handleRemoteTxCutVersion`" +
-                        " for tx " + nearTxId.asIgniteUuid());
-                }
+                if (log.isDebugEnabled())
+                    log.debug("Log " + s + " on `handleRemoteTxCutVersion` " + nearTxId.asIgniteUuid());
 
-                logConsistentCutFinish(s);
+                walLog(s.buildFinishRecord());
             }
         }
     }
 
     /**
-     * @return CutVersion for specified transaction.
+     * Finds the latest Consistent Cut Version that doesn't include specified transaction.
+     *
+     * @param tx Transaction.
+     * @return the latest Consistent Cut Version that doesn't include specified transaction.
      */
-    public long txCommitCutVer(IgniteTxAdapter tx) {
+    public long txCutVer(IgniteTxAdapter tx) {
         // Need lock here to avoid concurrent threads - that prepare FinishRequest and making ConsistentCut.
         cutGuard.readLock().lock();
 
         try {
-            ConsistentCutState s = latestCutState;
+            ConsistentCutState cutState = latestCutState;
 
-            if (tx.near() && !tx.onePhaseCommit()) {
-                if (s.includes(tx.nearXidVersion()))
-                    return s.ver() - 1;
+            GridCacheVersion txVer = tx.nearXidVersion();
 
-                Long v = s.txCutVer(tx.nearXidVersion());
+            if (includeNext.contains(txVer))
+                return cutState.ver();
 
-                if (v != null)
-                    return v;
-            }
-            // Shows that this 1PC will be included to PREVIOUS cut (decrement lastCutVer to show that we need prev one).
-            else if (tx.dht() && !tx.local() && tx.onePhaseCommit() && s.includes(tx.nearXidVersion()))
-                return s.ver() - 1;
+            if (cutState.includes(txVer))
+                return cutState.prevVer();
 
-            // Commit after Cut.
-            return s.ver();
+            Long v = cutState.txCutVer(txVer);
+
+            return v != null ? v : cutState.ver();
         }
         finally {
             cutGuard.readLock().unlock();
@@ -316,14 +307,18 @@ public class ConsistentCutManager {
     }
 
     /**
-     * @param cutVer CutVersion to commit with this ConsistentCut.
+     * Performs the Consistent Cut procedure: updates local Consistent Cut Version, prepares local Consistent Cut State.
+     *
+     * @param cutVer Consistent Cut Version.
      */
     private void consistentCut(long cutVer) {
+        long prevCutVer = latestCutVer();
+
         // Check for duplicated Consistent Cut.
-        if (latestCutVer() >= cutVer)
+        if (prevCutVer >= cutVer)
             return;
 
-        ConsistentCutState cutState = new ConsistentCutState(cutVer);
+        ConsistentCutState cutState = new ConsistentCutState(cutVer, prevCutVer);
 
         // Committing transactions aren't part of active transactions.
         Collection<IgniteInternalTx> txs = F.concat(true, cctx.tm().activeTransactions(), committingTxs);
@@ -336,67 +331,78 @@ public class ConsistentCutManager {
             if (tx.near() && ((GridNearTxLocal)tx).fastFinish())
                 continue;
 
-            long prevCutVer = latestCutVer();
-
             if (!tx.onePhaseCommit()) {
+                // Include to new Consistent Cut all transactions that are committing.
+                //
+                // Back ---Ced----------------
+                //             \
+                //              \    CUT
+                // Prim --Ped---Cing--|--Ced--
+                if (txState == COMMITTING || txState == COMMITTED) {
+                    cutState.include(txVer);
+
+                    continue;
+                }
+
                 if (tx.near()) {
-                    // Prepare request may not achieve primary or backup nodes to the moment of local Cut.
-                    // Consistent events order is broken. Exclude this tx from this CutVersion.
-                    // Back --|----P------------
+                    // Prepare request may not achieve primary or backup nodes to the moment of local Consistent Cut.
+                    // This case is inconsistent, then exclude such transactions from new Consistent Cut.
+                    //
+                    // Back --|----Ped----------
                     //       CUT  /
                     //           /       CUT
-                    // Prim ----P---------|-----
+                    // Prim ----Ping------|-----
                     if (txState == PREPARING) {
                         cutState.txCutVer(txVer, cutVer);
 
                         includeNext.add(txVer);
                     }
                     // Transaction prepared on all participated nodes. Every node can track events order.
+                    //
+                    // Back -------Ped---|------
+                    //            / \   CUT
+                    //           /   \     CUT
+                    // Prim ----Ping--Ped---|---
                     else if (txState == PREPARED) {
                         cutState.txCutVer(txVer, prevCutVer);
 
                         cutState.include(txVer);
                     }
-                    // Transaction is a part of LocalState of CutVer.
-                    else if (txState == COMMITTING || txState == COMMITTED)
-                        cutState.include(txVer);
                 }
-                // Primary or Backup nodes.
-                else {
-                    // To check consistent events order this node requires finish message from near node with CutVer.
-                    if (txState == PREPARED)
-                        cutState.addForCheck(txVer, prevCutVer);
-
-                    // Transaction is a part of LocalState of CutVer.
-                    else if (txState == COMMITTING || txState == COMMITTED)
-                        cutState.include(txVer);
-                }
+                // Primary or Backup nodes need to check PREPARED transactions and wait for FinishRequest.
+                //
+                // Back ------Ped---|-----------
+                //            / \  CUT   /
+                //           /   \      /
+                // Prim ---Ping--Ped-----Cing---
+                else if (txState == PREPARED)
+                    cutState.addForCheck(txVer, prevCutVer);
             }
-            // One phase commit.
+            // One phase commit. For 1PC it is used a reverse order for the notifications (backup -> prim -> near).
             else {
-                // For 1PC it uses reverse events order for definition CutVersion (from backup to near).
+                // Near node is waiting for notification from primary.
                 if (tx.near() && (txState == PREPARING || txState == PREPARED))
                     cutState.addForCheck(txVer, prevCutVer);
 
-                // Near version uses the same version as primary in this case, otherwise Cut started earlier.
-                else if (tx.near() && (txState == COMMITTING || txState == COMMITTED))
-                    cutState.include(txVer);
-
-                // Primary node waites for notification from backup node commit CutVersion.
+                // Primary node is waiting for notification from backup.
                 else if (tx.dht() && tx.local() && (txState == PREPARING || txState == PREPARED))
                     cutState.addForCheck(txVer, prevCutVer);
 
-                // Primary version uses the same version as backup in this case, otherwise Cut started earlier.
-                else if (tx.dht() && tx.local() && (txState == COMMITTING || txState == COMMITTED))
+                // Include all transactions on backup, and include them to next one.
+                //
+                // Back ------Ped---|---Ced-------
+                //            /    CUT      \
+                //           /               \
+                // Prim ---Ping----------------
+                else if (tx.dht() && !tx.local() && (txState == PREPARING || txState == PREPARED)) {
                     cutState.include(txVer);
 
-                // Include to LocalState (concurrency: tx state --> WAL cut --> WAL tx state).
-                else if (tx.dht() && !tx.local() && txState == COMMITTED)
-                    cutState.include(tx.nearXidVersion());
+                    cutState.txCutVer(txVer, prevCutVer);
+                }
 
-                // Exclude from this CutVersion transactions on backup node of 1PC, and move it to next CutVersion.
-                else if (tx.dht() && !tx.local())
-                    includeNext.add(tx.nearXidVersion());
+                // Include all transactions on near and primary nodes that are committing.
+                else if (txState == COMMITTING || txState == COMMITTED)
+                    cutState.include(txVer);
             }
         }
 
@@ -407,36 +413,24 @@ public class ConsistentCutManager {
         walLog(cutState.buildStartRecord());
 
         if (log.isDebugEnabled())
-            log.debug("PREPARE CUT " + cutState);
+            log.debug("Prepare Consistent Cut State: " + cutState);
 
         latestCutState = cutState;
-    }
-
-    /**
-     * Logs ConsistentCut Finish event.
-     */
-    private void logConsistentCutFinish(ConsistentCutState s) {
-        walLog(s.buildFinishRecord());
     }
 
     /**
      * Logs ConsistentCutRecord to WAL.
      */
     private void walLog(WALRecord record) {
-        BaselineTopology baselineTop;
+        if (cctx.wal() != null) {
+            try {
+                cctx.wal().log(record);
+            }
+            catch (IgniteCheckedException e) {
+                U.error(log, "Failed to log ConsistentCutRecord: " + record, e);
 
-        if (cctx.wal() == null
-            || (baselineTop = cctx.kernalContext().state().clusterState().baselineTopology()) == null
-            || !baselineTop.consistentIds().contains(cctx.localNode().consistentId()))
-            return;
-
-        try {
-            cctx.wal().log(record);
-        }
-        catch (IgniteCheckedException e) {
-            U.error(log, "Failed to log ConsistentCutRecord: " + record, e);
-
-            throw new IgniteException("Failed to log ConsistentCutRecord: " + record, e);
+                throw new IgniteException("Failed to log ConsistentCutRecord: " + record, e);
+            }
         }
     }
 
@@ -446,7 +440,7 @@ public class ConsistentCutManager {
     private static class InitialConsistentCutState extends ConsistentCutState {
         /** */
         private InitialConsistentCutState() {
-            super(0);
+            super(0, 0);
 
             finish();
         }

@@ -58,7 +58,7 @@ public class GridDistributedTxPrepareResponse extends GridDistributedBaseMessage
     protected byte flags;
 
     /** */
-    private long lastCutVer;
+    private long latestCutVer;
 
     /** */
     private long txCutVer;
@@ -149,13 +149,13 @@ public class GridDistributedTxPrepareResponse extends GridDistributedBaseMessage
     }
 
     /** */
-    public long lastCutVer() {
-        return lastCutVer;
+    public long latestCutVer() {
+        return latestCutVer;
     }
 
     /** */
-    public void lastCutVer(long lastCutVer) {
-        this.lastCutVer = lastCutVer;
+    public void latestCutVer(long latestCutVer) {
+        this.latestCutVer = latestCutVer;
     }
 
     /** {@inheritDoc} */
@@ -223,7 +223,7 @@ public class GridDistributedTxPrepareResponse extends GridDistributedBaseMessage
                 writer.incrementState();
 
             case 11:
-                if (!writer.writeLong("lastCutVer", lastCutVer))
+                if (!writer.writeLong("latestCutVer", latestCutVer))
                     return false;
 
                 writer.incrementState();
@@ -275,7 +275,7 @@ public class GridDistributedTxPrepareResponse extends GridDistributedBaseMessage
                 reader.incrementState();
 
             case 11:
-                lastCutVer = reader.readLong("lastCutVer");
+                latestCutVer = reader.readLong("latestCutVer");
 
                 if (!reader.isLastRead())
                     return false;

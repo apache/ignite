@@ -106,7 +106,7 @@ public class GridDistributedTxFinishRequest extends GridDistributedBaseMessage i
     private IgniteTxState txState;
 
     /** */
-    private long lastCutVer;
+    private long latestCutVer;
 
     /** */
     private long txCutVer;
@@ -279,13 +279,13 @@ public class GridDistributedTxFinishRequest extends GridDistributedBaseMessage i
     }
 
     /** */
-    public long lastCutVer() {
-        return lastCutVer;
+    public long latestCutVer() {
+        return latestCutVer;
     }
 
     /** */
-    public void lastCutVer(long lastCutVer) {
-        this.lastCutVer = lastCutVer;
+    public void latestCutVer(long latestCutVer) {
+        this.latestCutVer = latestCutVer;
     }
 
     /** */
@@ -417,13 +417,13 @@ public class GridDistributedTxFinishRequest extends GridDistributedBaseMessage i
                 writer.incrementState();
 
             case 21:
-                if (!writer.writeLong("curConsistentVer", lastCutVer))
+                if (!writer.writeLong("latestCutVer", latestCutVer))
                     return false;
 
                 writer.incrementState();
 
             case 22:
-                if (!writer.writeLong("txConsistentVer", txCutVer))
+                if (!writer.writeLong("txCutVer", txCutVer))
                     return false;
 
                 writer.incrementState();
@@ -552,7 +552,7 @@ public class GridDistributedTxFinishRequest extends GridDistributedBaseMessage i
                 reader.incrementState();
 
             case 21:
-                lastCutVer = reader.readLong("curConsistentVer");
+                latestCutVer = reader.readLong("latestCutVer");
 
                 if (!reader.isLastRead())
                     return false;
@@ -560,7 +560,7 @@ public class GridDistributedTxFinishRequest extends GridDistributedBaseMessage i
                 reader.incrementState();
 
             case 22:
-                txCutVer = reader.readLong("txConsistentVer");
+                txCutVer = reader.readLong("txCutVer");
 
                 if (!reader.isLastRead())
                     return false;

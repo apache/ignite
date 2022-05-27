@@ -1073,7 +1073,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
         super.notifyConsistentCutOnCommit();
 
         if (commitCutVer == -1)
-            commitCutVer(cctx.consistentCutMgr().txCommitCutVer(this));
+            commitCutVer(cctx.consistentCutMgr().txCutVer(this));
     }
 
     /** {@inheritDoc} */

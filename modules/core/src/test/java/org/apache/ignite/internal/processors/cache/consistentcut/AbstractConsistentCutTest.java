@@ -336,7 +336,7 @@ public abstract class AbstractConsistentCutTest extends GridCommonAbstractTest {
                 GridDhtTxFinishRequest m = (GridDhtTxFinishRequest)msg;
 
                 bld
-                    .append("; lastCutVer=").append(m.lastCutVer())
+                    .append("; lastCutVer=").append(m.latestCutVer())
                     .append("; tx=").append(m.version().asIgniteUuid())
                     .append("; txCutVer=").append(m.txCutVer());
             }
@@ -344,7 +344,7 @@ public abstract class AbstractConsistentCutTest extends GridCommonAbstractTest {
                 GridNearTxFinishRequest m = (GridNearTxFinishRequest)msg;
 
                 bld
-                    .append("; lastCutVer=").append(m.lastCutVer())
+                    .append("; lastCutVer=").append(m.latestCutVer())
                     .append("; tx=").append(m.version().asIgniteUuid())
                     .append("; txCutVer=").append(m.txCutVer());
             }
@@ -369,7 +369,7 @@ public abstract class AbstractConsistentCutTest extends GridCommonAbstractTest {
                 GridDhtTxPrepareResponse m = (GridDhtTxPrepareResponse)msg;
 
                 bld
-                    .append("; lastCutVer=").append(m.lastCutVer())
+                    .append("; lastCutVer=").append(m.latestCutVer())
                     .append("; tx=").append((m.nearXidVer()).asIgniteUuid())
                     .append("; txCutVer=").append((m.txCutVer()))
                     .append("; 1PC=").append((m.onePhaseCommit()));
@@ -378,7 +378,7 @@ public abstract class AbstractConsistentCutTest extends GridCommonAbstractTest {
                 GridNearTxPrepareResponse m = (GridNearTxPrepareResponse)msg;
 
                 bld
-                    .append("; lastCutVer=").append(m.lastCutVer())
+                    .append("; lastCutVer=").append(m.latestCutVer())
                     .append("; tx=").append((m.version().asIgniteUuid()))
                     .append("; txCutVer=").append((m.txCutVer()))
                     .append("; 1PC=").append((m.onePhaseCommit()));

@@ -38,6 +38,11 @@ public class ConsistentCutState {
     private final long ver;
 
     /**
+     * Previous Consistent Cut Version.
+     */
+    private final long prevVer;
+
+    /**
      * Whether local Consistent Cut procedure is finished. It means that all transactions in {@link #check}
      * analyzed, and it's known which transactions are part of this Consistent Cut.
      */
@@ -74,8 +79,9 @@ public class ConsistentCutState {
     private final Set<GridCacheVersion> checkInclude = new HashSet<>();
 
     /** */
-    public ConsistentCutState(long ver) {
+    public ConsistentCutState(long ver, long prevVer) {
         this.ver = ver;
+        this.prevVer = prevVer;
     }
 
     /**
@@ -83,6 +89,13 @@ public class ConsistentCutState {
      */
     public long ver() {
         return ver;
+    }
+
+    /**
+     * @return Previous Consistent Cut Version.
+     */
+    public long prevVer() {
+        return prevVer;
     }
 
     /**
