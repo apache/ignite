@@ -2088,10 +2088,8 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
      * @throws IgniteCheckedException If failed.
      */
     public List<L> remove(L lower, L upper, int limit) throws IgniteCheckedException {
-        // We can't find the lower bound if the inner node does not contain
-        // a row from a leaf node (without reading forward leaf).
-        // On the other hand, deleting from right to left does not meet
-        // the main purpose of this operation - remove the "lower" rows first.
+        // We may not find the lower bound if the inner node
+        // does not contain a key that is not present on the leaf page.
         assert canGetRowFromInner : "Not supported";
         assert limit >= 0 : limit;
 
