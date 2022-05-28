@@ -71,7 +71,7 @@ link:data-modeling/data-modeling#binary-object-format[BinaryObjects] is used ins
 Read more about the database architecture on the link:SQL/sql-introduction[SQL Introduction] page.
 
 
-=== CREATE TABLE Example
+=== CREATE TABLE Using Primary Key
 
 The example below shows how to create a table with `PRIMARY KEY` specified in the column definition and override cache
 related parameters. A new distributed cache `SQL_PUBLIC_PERSON` will be created (the `SQL_{SCHEMA_NAME}_{TABLE}` format
@@ -92,7 +92,7 @@ CREATE TABLE Person (
 ----
 
 
-=== CREATE TABLE With Usage non-SQL API Example
+=== CREATE TABLE Using non-SQL API
 
 If you wish to access the table data by the key-value or other non-SQL API, then you might be need to set the `CACHE_NAME` and
 `KEY_TYPE`, `VALUE_TYPE` parameters corresponding to your business model objects to make non-SQL APIs usage more convenient.
@@ -118,10 +118,10 @@ CREATE TABLE IF NOT EXISTS Person (
 ----
 
 
-=== CREATE TABLE Using non-UpperCase Columns Example
+=== CREATE TABLE Using non-Upper Case Columns
 
-Both of Ignite’s SQL engines (H2 and Calcite) all unquoted identifiers, names of a table columns convert to upper case
-during the `CREATE TABLE` command execution parse phase which, in turn, makes the command with explicitly defined key
+Ignite’s SQL parser all unquoted identifiers, names of a table columns convert to the upper case
+during the `CREATE TABLE` command execution which, in turn, makes the command with explicitly defined key
 and value types a bit more challenging.
 
 There are a few options that might help you to deal with such a case:
