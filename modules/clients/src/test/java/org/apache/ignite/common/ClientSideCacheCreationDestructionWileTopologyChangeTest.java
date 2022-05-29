@@ -50,7 +50,7 @@ public class ClientSideCacheCreationDestructionWileTopologyChangeTest extends Cl
      */
     private IgniteInternalFuture asyncTopologyChanges() {
         return GridTestUtils.runAsync(() -> {
-            while (Thread.interrupted()) {
+            while (!Thread.interrupted()) {
                 try {
                     if (srv.cluster().nodes().size() < MAX_NODES_CNT)
                         startGrid(UUID.randomUUID().toString());
