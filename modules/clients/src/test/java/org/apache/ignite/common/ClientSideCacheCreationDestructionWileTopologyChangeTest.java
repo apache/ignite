@@ -19,6 +19,8 @@ package org.apache.ignite.common;
 
 import java.util.UUID;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.testframework.GridTestUtils;
 
 /**
@@ -56,6 +58,9 @@ public class ClientSideCacheCreationDestructionWileTopologyChangeTest extends Cl
                         startGrid(UUID.randomUUID().toString());
                 }
                 catch (Exception e) {
+                    if (X.hasCause(e, InterruptedException.class, IgniteInterruptedCheckedException.class))
+                        return;
+
                     fail("Unable to add or remove node: " + e);
                 }
             }
