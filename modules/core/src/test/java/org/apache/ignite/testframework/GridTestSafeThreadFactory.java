@@ -180,7 +180,13 @@ public final class GridTestSafeThreadFactory implements ThreadFactory {
         List<Thread> all;
 
         try {
-            all = new ArrayList<>(startedThreads.size());
+            int size = startedThreads.size();
+
+            if (size == 0)
+                return;
+
+            all = new ArrayList<>(size);
+
             startedThreads.drainTo(all);
         }
         finally {

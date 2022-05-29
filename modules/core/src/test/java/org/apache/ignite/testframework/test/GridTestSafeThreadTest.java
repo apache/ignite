@@ -20,12 +20,13 @@ package org.apache.ignite.testframework.test;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.testframework.GridTestSafeThreadFactory;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
 /**
- *
+ * Tests {@link GridTestSafeThreadFactory}.
  */
 public class GridTestSafeThreadTest extends GridCommonAbstractTest {
     /** */
@@ -38,13 +39,13 @@ public class GridTestSafeThreadTest extends GridCommonAbstractTest {
         assertTrue(fut.error() instanceof IgniteInterruptedCheckedException);
     }
 
-    /** */
+    /** Tests that hang threads will be closed after test. */
     @Test
     @SuppressWarnings("InfiniteLoopStatement")
-    public void testHangThread() {
+    public void testThreadHang() {
         fut = GridTestUtils.runAsync(() -> {
             while (true)
-                U.sleep(10_000);
+                U.sleep(1_000);
         });
     }
 }
