@@ -26,6 +26,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCacheUtils;
@@ -225,7 +226,7 @@ public class GracefulShutdownTest extends GridCacheDhtPreloadWaitForBackupsWithP
      * @throws Exception If failed.
      */
     @Test
-    public void tesStartCacheWhenNodeStopping() throws Exception {
+    public void testStartCacheWhenNodeStopping() throws Exception {
         backups = 2;
 
         Ignite ignite0 = startGrid(0);
@@ -297,5 +298,9 @@ public class GracefulShutdownTest extends GridCacheDhtPreloadWaitForBackupsWithP
         listeningLog.registerListener(lnsr);
 
         assertTrue(GridTestUtils.waitForCondition(lnsr::check, 30_000));
+
+        IgnitionEx.stop(ignite1.name(), true, ShutdownPolicy.IMMEDIATE, true);
+
+        fut.get(getTestTimeout());
     }
 }
