@@ -197,7 +197,7 @@ public class GridHandleTable {
 
             if (spine.length > initCap) {
                 int prevSpine = (spine.length - 1) / 2;
-                int prevThreshold = (int) (prevSpine * loadFactor);
+                int prevThreshold = (int)(prevSpine * loadFactor);
 
                 if (newSize < prevThreshold)
                     newSpine = prevSpine;
