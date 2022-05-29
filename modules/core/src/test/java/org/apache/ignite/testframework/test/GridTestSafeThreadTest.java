@@ -39,7 +39,7 @@ public class GridTestSafeThreadTest extends GridCommonAbstractTest {
         assertTrue(fut.error() instanceof IgniteInterruptedCheckedException);
     }
 
-    /** Tests that hang threads will be closed after test. */
+    /** Tests that hang threads will be stopped after test. */
     @Test
     @SuppressWarnings("InfiniteLoopStatement")
     public void testThreadHang() {
