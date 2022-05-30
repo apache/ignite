@@ -189,7 +189,8 @@ public class GridTestLog4jLogger implements IgniteLogger, LoggerNodeIdAndApplica
                 if (init)
                     try {
                         Configurator.initialize(null, new ConfigurationSource(new FileInputStream(cfgUrl.toString())));
-                    } catch (IOException e) {
+                    }
+                    catch (IOException e) {
                         e.printStackTrace();
                     }
 
@@ -220,7 +221,8 @@ public class GridTestLog4jLogger implements IgniteLogger, LoggerNodeIdAndApplica
                 if (init)
                     try {
                         Configurator.initialize(null, new ConfigurationSource(new FileInputStream(cfg)));
-                    } catch (IOException e) {
+                    }
+                    catch (IOException e) {
                         e.printStackTrace();
                     }
 
@@ -248,7 +250,8 @@ public class GridTestLog4jLogger implements IgniteLogger, LoggerNodeIdAndApplica
                 if (init)
                     try {
                         Configurator.initialize(null, new ConfigurationSource(new FileInputStream(cfgUrl.toString())));
-                    } catch (IOException e) {
+                    }
+                    catch (IOException e) {
                         e.printStackTrace();
                     }
 

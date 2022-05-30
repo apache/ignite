@@ -137,7 +137,8 @@ public final class GridTestProperties {
 
         try {
             Configurator.initialize(null, new ConfigurationSource(new FileInputStream(log4j2File)));
-        } catch (IOException e) {
+        }
+        catch (IOException e) {
             e.printStackTrace();
         }
 
