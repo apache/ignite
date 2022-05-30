@@ -94,8 +94,8 @@ public abstract class GridNearTxPrepareFutureAdapter extends
     /** Trackable flag. */
     protected boolean trackable = true;
 
-    /** */
-    private long commitCutVer;
+    /** The Latest Consistent Cut Version that doesn't include this transaction. */
+    private long txCutVer;
 
     /**
      * @param cctx Context.
@@ -119,13 +119,13 @@ public abstract class GridNearTxPrepareFutureAdapter extends
     }
 
     /** */
-    public long commitCutVer() {
-        return commitCutVer;
+    public long txCutVer() {
+        return txCutVer;
     }
 
     /** */
-    public void commitCutVer(long commitCutVer) {
-        this.commitCutVer = commitCutVer;
+    public void txCutVer(long txCutVer) {
+        this.txCutVer = txCutVer;
     }
 
     /** {@inheritDoc} */

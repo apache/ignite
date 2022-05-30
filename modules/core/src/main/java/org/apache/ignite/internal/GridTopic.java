@@ -160,7 +160,7 @@ public enum GridTopic {
     /** Statistics related messages topic. */
     TOPIC_STATISTICS,
 
-    /** Processing Consistent Cut start messages. */
+    /** Processing Consistent Cut messages. */
     TOPIC_CONSISTENT_CUT;
 
     /** Enum values. */

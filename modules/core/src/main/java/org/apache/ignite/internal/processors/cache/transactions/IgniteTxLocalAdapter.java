@@ -155,8 +155,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
     /** */
     protected volatile boolean qryEnlisted;
 
-    /** TODO: For one-phase commit, for DHT finish request. */
-    private volatile long commitCutVer = -1;
+    /** The latest Consistent Cut Version that doesn't include this transaction. */
+    private volatile long txCutVer = -1;
 
     /**
      * @param cctx Cache registry.
@@ -381,13 +381,13 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
     }
 
     /** */
-    public long commitCutVer() {
-        return commitCutVer;
+    public long txCutVer() {
+        return txCutVer;
     }
 
     /** */
-    public void commitCutVer(long commitCutVer) {
-        this.commitCutVer = commitCutVer;
+    public void txCutVer(long txCutVer) {
+        this.txCutVer = txCutVer;
     }
 
     /** {@inheritDoc} */
@@ -1051,8 +1051,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
             }
 
             // commitCutVer != -1 here for 1PC case ((originated + primary) node + backup node).
-            if (this.commitCutVer == -1)
-                commitCutVer(commitCutVer);
+            if (this.txCutVer == -1)
+                txCutVer(commitCutVer);
 
             state(commit ? COMMITTED : ROLLED_BACK);
 
@@ -1072,8 +1072,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
     @Override protected void notifyConsistentCutOnCommit() {
         super.notifyConsistentCutOnCommit();
 
-        if (commitCutVer == -1)
-            commitCutVer(cctx.consistentCutMgr().txCutVersion(this));
+        if (txCutVer == -1)
+            txCutVer(cctx.consistentCutMgr().txCutVersion(this));
     }
 
     /** {@inheritDoc} */

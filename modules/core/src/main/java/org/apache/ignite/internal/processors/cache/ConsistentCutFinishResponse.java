@@ -26,7 +26,7 @@ import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
 /**
- *
+ * This message is sent by every node to Consistent Cut coordinator after finishing Consistent Cut locally.
  */
 public class ConsistentCutFinishResponse implements Message {
     /** */
@@ -36,13 +36,13 @@ public class ConsistentCutFinishResponse implements Message {
     public static final short TYPE_CODE = 181;
 
     /**
-     * Consistent Cut Version, timestamp of Consistent Cut.
+     * Consistent Cut Version.
      */
     @GridToStringInclude
     private long ver;
 
     /**
-     * Whether local Consistent Cut procedure finished with an error.
+     * Whether local Consistent Cut procedure was finished with an error.
      */
     @GridToStringInclude
     private boolean err;

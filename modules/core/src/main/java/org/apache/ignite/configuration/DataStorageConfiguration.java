@@ -340,11 +340,11 @@ public class DataStorageConfiguration implements Serializable {
     /** Default memory allocator for all data regions. */
     @Nullable private MemoryAllocator memoryAllocator = null;
 
-    /** Flag to enable or disable PITR (Point In Time Recovery) feature. */
+    /** Flag to enable or disable the PITR feature. */
     @IgniteExperimental
-    private boolean pointInTimeRecoveryEnabled;
+    private boolean pitrEnabled;
 
-    /** Frequency of preparing points to recovery for PITR feature, in milliseconds. */
+    /** Period of preparing recovery points for the PITR feature, in milliseconds. */
     @IgniteExperimental
     private long pointInTimeRecoveryPeriod = DFLT_PITR_CONSISTENT_CUT_PERIOD;
 
@@ -1378,18 +1378,18 @@ public class DataStorageConfiguration implements Serializable {
      */
     @IgniteExperimental
     public boolean isPointInTimeRecoveryEnabled() {
-        return pointInTimeRecoveryEnabled;
+        return pitrEnabled;
     }
 
     /**
-     * Enables or disables PITR feature.
+     * Enables or disables the PITR feature.
      *
-     * @param pointInTimeRecoveryEnabled Flag to enable or disable PITR.
+     * @param pitrEnabled Flag to enable or disable PITR.
      * @return {@code this} for chaining.
      */
     @IgniteExperimental
-    public DataStorageConfiguration setPointInTimeRecoveryEnabled(boolean pointInTimeRecoveryEnabled) {
-        this.pointInTimeRecoveryEnabled = pointInTimeRecoveryEnabled;
+    public DataStorageConfiguration setPointInTimeRecoveryEnabled(boolean pitrEnabled) {
+        this.pitrEnabled = pitrEnabled;
 
         return this;
     }
@@ -1403,7 +1403,7 @@ public class DataStorageConfiguration implements Serializable {
     }
 
     /**
-     * Sets frequency of points for recovery for PITR feature.
+     * Sets period of preparing recovery points for the PITR feature, in milliseconds.
      *
      * @param pointInTimeRecoveryPeriod Frequency of points for recovery for PITR feature.
      * @return {@code this} for chaining.

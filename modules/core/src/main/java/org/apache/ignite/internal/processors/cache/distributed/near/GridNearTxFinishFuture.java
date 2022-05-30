@@ -362,7 +362,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
                             long cutVer = 0;
 
                             if (tx.currentPrepareFuture() != null)
-                                cutVer = ((GridNearTxPrepareFutureAdapter)tx.currentPrepareFuture()).commitCutVer();
+                                cutVer = ((GridNearTxPrepareFutureAdapter)tx.currentPrepareFuture()).txCutVer();
 
                             tx.tmFinish(commit, nodeStop, true, cutVer);
                         }
@@ -658,7 +658,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
 
                         if (cctx.consistentCutMgr() != null) {
                             finishReq.latestCutVersion(cctx.consistentCutMgr().latestCutVersion());
-                            finishReq.txCutVersion(tx.commitCutVer());
+                            finishReq.txCutVersion(tx.txCutVer());
                         }
 
                         try {

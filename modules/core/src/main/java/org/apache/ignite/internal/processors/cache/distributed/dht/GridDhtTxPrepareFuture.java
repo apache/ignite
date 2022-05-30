@@ -233,9 +233,8 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
     @GridToStringExclude
     protected final IgniteUuid deploymentLdrId;
 
-    /** TODO: for one-phase-commit tx. Filled after getting response from backup with the CUT version on the backup. */
-    /** Version of Consistent Cut that */
-    private long commitCutVer;
+    /** The Latest Consistent Cut Version that doesn't include this transaction. */
+    private long txCutVer;
 
     /**
      * @param cctx Context.
@@ -287,13 +286,13 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
     }
 
     /** */
-    public long commitCutVer() {
-        return commitCutVer;
+    public long txCutVer() {
+        return txCutVer;
     }
 
     /** */
-    public void commitCutVer(long commitCutVer) {
-        this.commitCutVer = commitCutVer;
+    public void txCutVer(long txCutVer) {
+        this.txCutVer = txCutVer;
     }
 
     /** {@inheritDoc} */
@@ -803,7 +802,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
 
                                 if (REPLIED_UPD.compareAndSet(GridDhtTxPrepareFuture.this, 0, 1)) {
                                     if (res.onePhaseCommit() && fut.result() != null) {
-                                        long v = ((IgniteTxLocalAdapter)fut.result()).commitCutVer();
+                                        long v = ((IgniteTxLocalAdapter)fut.result()).txCutVer();
 
                                         res.txCutVersion(v);
                                     }
@@ -2069,7 +2068,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                 }
 
                 if (res.txCutVersion() > 0)
-                    tx.commitCutVer(res.txCutVersion());
+                    tx.txCutVer(res.txCutVersion());
 
                 // Finish mini future.
                 onDone(tx);

@@ -50,7 +50,7 @@ public interface ConsistentCutVersionAware {
     }
 
     /**
-     * Topology version on th moment of starting {@link #latestCutVersion()} on coordinator node.
+     * Topology version in the moment of starting {@link #latestCutVersion()} on coordinator node.
      */
     public AffinityTopologyVersion topologyVersion();
 }

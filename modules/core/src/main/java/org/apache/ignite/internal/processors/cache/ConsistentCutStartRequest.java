@@ -36,7 +36,7 @@ public class ConsistentCutStartRequest implements Message {
     public static final short TYPE_CODE = 180;
 
     /**
-     * Consistent Cut Version, timestamp of Consistent Cut.
+     * Consistent Cut Version.
      */
     @GridToStringInclude
     private long ver;

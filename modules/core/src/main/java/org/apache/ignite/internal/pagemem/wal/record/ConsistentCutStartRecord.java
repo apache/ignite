@@ -30,9 +30,9 @@ import org.apache.ignite.lang.IgniteUuid;
  * without any coordination with other nodes.
  *
  * Some of incomplete transactions (committed AFTER) could be a part of Global Consistent State. It means that those
- * transactions could be committed on other Ignite nodes. Set of such transactions is prepared in moment of taken
+ * transactions could be committed BEFORE on other Ignite nodes. Set of such transactions is prepared in moment of taken
  * Consistent Cut. Ignite analyzes such transactions and decided whether to include them to the state or not.
- * Information about that is writted to WAL with {@link ConsistentCutFinishRecord}.
+ * Information about that is written to WAL with {@link ConsistentCutFinishRecord}.
  */
 public class ConsistentCutStartRecord extends WALRecord {
     /**

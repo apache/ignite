@@ -38,8 +38,6 @@ public class ConsistentCutFinishRecordSerializer {
      * @param buf Byte buffer.
      */
     public void write(ConsistentCutFinishRecord rec, ByteBuffer buf) {
-        buf.putLong(rec.version());
-
         buf.putInt(rec.include().size());
 
         for (GridCacheVersion tx: rec.include())
@@ -54,8 +52,6 @@ public class ConsistentCutFinishRecordSerializer {
      * @throws IOException In case of fail.
      */
     public ConsistentCutFinishRecord read(ByteBufferBackedDataInput in) throws IOException {
-        long ver = in.readLong();
-
         int inclSize = in.readInt();
 
         Set<GridCacheVersion> include = new HashSet<>();
@@ -66,7 +62,7 @@ public class ConsistentCutFinishRecordSerializer {
             include.add(v);
         }
 
-        return new ConsistentCutFinishRecord(ver, include);
+        return new ConsistentCutFinishRecord(include);
     }
 
     /**
@@ -76,8 +72,7 @@ public class ConsistentCutFinishRecordSerializer {
      * @return Size of ConsistentCutFinishRecord in bytes.
      */
     public int size(ConsistentCutFinishRecord rec) {
-        int size = 8;  // ver.
-        size += 4;  // include tx count.
+        int size = 4;  // include tx count.
 
         for (GridCacheVersion v: rec.include())
             size += CacheVersionIO.size(v, false);

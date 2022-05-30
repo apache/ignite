@@ -74,7 +74,7 @@ public class ConsistentCutManager extends GridCacheSharedManagerAdapter {
     private final Set<GridCacheVersion> includeNext = ConcurrentHashMap.newKeySet();
 
     /**
-     * Guards {@link #latestCutState}. When one thread updates the state, other threads with messages may change it.
+     * Guards {@link #latestCutState}. When one thread updates the state, other threads handle messages that can change it.
      */
     private final ReentrantReadWriteLock cutGuard = new ReentrantReadWriteLock();
 
@@ -89,7 +89,7 @@ public class ConsistentCutManager extends GridCacheSharedManagerAdapter {
      */
     private volatile GridTimeoutObject cutTimer;
 
-    /** */
+    /** Whether coordinator disabled to schedule Consistent Cuts. */
     private volatile boolean disabled;
 
     /** {@inheritDoc} */
@@ -135,8 +135,6 @@ public class ConsistentCutManager extends GridCacheSharedManagerAdapter {
      * @param period Configured period to start Consistent Cuts.
      */
     private synchronized void scheduleConsistentCut(long delay, long period) {
-        log.info("Schedule Consistent Cut after " + delay + " ms. Configured period = " + period + " ms.");
-
         cutTimer = new GridTimeoutObjectAdapter(delay) {
             /** {@inheritDoc} */
             @Override public void onTimeout() {
@@ -146,7 +144,7 @@ public class ConsistentCutManager extends GridCacheSharedManagerAdapter {
                 if (notCompletedNodes != null && !notCompletedNodes.isEmpty()) {
                     log.warning("Skip Consistent Cut procedure. Some nodes hasn't finished yet previous one. " +
                         "Consistent Cut may require more time that it configured. Consider to increase param " +
-                        "`DataStorageConfiguration#setPointInTimeRecoveryEnabled`. " +
+                        "`DataStorageConfiguration#setPointInTimeRecoveryPeriod`. " +
                         "Nodes that hasn't finished their job: " + notCompletedNodes);
 
                     scheduleConsistentCut(delay, period);
@@ -162,7 +160,7 @@ public class ConsistentCutManager extends GridCacheSharedManagerAdapter {
                     long run = -d + delay;
 
                     log.warning("Consistent Cut may require more time that it configured: " + run + " ms." +
-                        " Consider to increase param `DataStorageConfiguration#setPointInTimeRecoveryEnabled`.");
+                        " Consider to increase param `DataStorageConfiguration#setPointInTimeRecoveryPeriod`.");
 
                     d = period;
                 }
@@ -187,8 +185,7 @@ public class ConsistentCutManager extends GridCacheSharedManagerAdapter {
     public void unregisterAfterCommit(IgniteInternalTx tx) {
         committingTxs.remove(tx);
 
-        // Nead lock here due to cases when tx is in PREPARED and there is concurrency between CUT and rcv FinishRequest.
-        // We have to wait here finishing of ConsistentCut to avoid cases when tx holds in `cutAwait`.
+        // Lock for case: tx is PREPARED, CUT is concurrently processing while it's receiving FinishRequest.
         cutGuard.readLock().lock();
 
         try {
@@ -204,8 +201,8 @@ public class ConsistentCutManager extends GridCacheSharedManagerAdapter {
 
             includeNext.remove(txVer);
 
-            // In some cases transaction includes to the check-list and concurrently is notifying about actual cut version.
-            // Then it requires checking transactions twice - on receiving notification, and after actual committing.
+            // In some cases transaction was included int the check-list after it's notified with txCutVer.
+            // Then it's required to check such transactions twice: on commit, on receive notification.
             tryFinish(s, txVer);
         }
         finally {
@@ -284,7 +281,9 @@ public class ConsistentCutManager extends GridCacheSharedManagerAdapter {
         return cutVer;
     }
 
-    /** */
+    /**
+     * Coordinator handles finish responses from remote nodes.
+     */
     public void handleConsistentCutFinishResponse(UUID nodeId, ConsistentCutFinishResponse msg) {
         long ver = latestCutVersion();
 
@@ -454,7 +453,7 @@ public class ConsistentCutManager extends GridCacheSharedManagerAdapter {
                 else if (tx.dht() && tx.local() && (txState == PREPARING || txState == PREPARED))
                     cutState.addForCheck(txVer, prevCutVer);
 
-                // Include all transactions on backup, and include them to next one.
+                // Include all transactions on backup.
                 //
                 // Back ------Ped---|---Ced-------
                 //            /    CUT      \
@@ -466,7 +465,7 @@ public class ConsistentCutManager extends GridCacheSharedManagerAdapter {
                     cutState.txCutVersion(txVer, prevCutVer);
                 }
 
-                // Include all transactions on near and primary nodes that are committing.
+                // Include all transactions that are committing.
                 else if (txState == COMMITTING || txState == COMMITTED)
                     cutState.include(txVer);
             }

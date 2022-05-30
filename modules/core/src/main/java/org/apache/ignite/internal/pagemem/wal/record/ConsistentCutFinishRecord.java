@@ -24,29 +24,17 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.lang.IgniteUuid;
 
 /**
- * This WAL record contains set of transaction committed AFTER {@link ConsistentCutStartRecord} that are part of
- * Consistent Cut State related to the {@link #version()}.
+ * This WAL record contains a set of transactions to be included after checking {@link ConsistentCutStartRecord#check()}.
  */
 public class ConsistentCutFinishRecord extends WALRecord {
-    /**
-     * Consistent Cut Version. It's timestamp of start Consistent Cut on the Ignite coordinator node.
-     */
-    private final long ver;
-
     /**
      * Set of transactions (committed AFTER this record) to include to the Consistent Cut State.
      */
     private final Set<GridCacheVersion> include;
 
     /** */
-    public ConsistentCutFinishRecord(long ver, Set<GridCacheVersion> include) {
-        this.ver = ver;
+    public ConsistentCutFinishRecord(Set<GridCacheVersion> include) {
         this.include = include;
-    }
-
-    /** */
-    public long version() {
-        return ver;
     }
 
     /** */
@@ -65,6 +53,6 @@ public class ConsistentCutFinishRecord extends WALRecord {
             .map(GridCacheVersion::asIgniteUuid)
             .collect(Collectors.toList());
 
-        return "ConsistentCutRecord [ver=" + ver + ";  include=" + incl + "]";
+        return "ConsistentCutRecord [include=" + incl + "]";
     }
 }

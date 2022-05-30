@@ -34,7 +34,7 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
  */
 public class ConsistentCutState {
     /**
-     * Consistent Cut Version. It's a timestamp of start Consistent Cut algorithm on Ignite coordinator node.
+     * Consistent Cut Version. It's a timestamp of starting the Consistent Cut algorithm on Ignite coordinator node.
      */
     private final long ver;
 
@@ -60,7 +60,7 @@ public class ConsistentCutState {
     private final Set<GridCacheVersion> include = ConcurrentHashMap.newKeySet();
 
     /**
-     * Map of transactions that are originated and prepared on local node.
+     * Map of transactions that bound to specific Consistent Cut Version.
      *
      * Key is a transaction version. Value is the latest Consistent Cut Version that doesn't include this transaction.
      * It is used to notify remote nodes whether to include those transactions to this Consistent Cut or not.
@@ -69,7 +69,7 @@ public class ConsistentCutState {
      * @see GridNearTxFinishRequest
      * @see GridDhtTxFinishRequest
      */
-    private final Map<GridCacheVersion, Long> nearPrepare = new ConcurrentHashMap<>();
+    private final Map<GridCacheVersion, Long> txCutVers = new ConcurrentHashMap<>();
 
     /**
      * Map of transactions that are required to be checked whether to include them to this Consistent Cut. Such transactions
@@ -136,7 +136,7 @@ public class ConsistentCutState {
      * @param cutVer Consistent Cut Version.
      */
     public void txCutVersion(GridCacheVersion nearTxVer, long cutVer) {
-        nearPrepare.put(nearTxVer, cutVer);
+        txCutVers.put(nearTxVer, cutVer);
     }
 
     /**
@@ -146,7 +146,7 @@ public class ConsistentCutState {
      * @return Consistent Cut Version.
      */
     public Long txCutVersion(GridCacheVersion nearTxVer) {
-        return nearPrepare.remove(nearTxVer);
+        return txCutVers.remove(nearTxVer);
     }
 
     /**
@@ -173,13 +173,6 @@ public class ConsistentCutState {
     }
 
     /**
-     * @return Actual check-list of transactions that are awaited notifications from remote nodes.
-     */
-    public Set<GridCacheVersion> checkList() {
-        return new HashSet<>(check.keySet());
-    }
-
-    /**
      * Excludes specified transaction from this Consistent Cut.
      *
      * @param nearTxVer Transaction version on an originated node.
@@ -189,7 +182,7 @@ public class ConsistentCutState {
     }
 
     /**
-     * Tries to finish Consistent Cut after checking specified transaction.
+     * Tries finishing Consistent Cut after checking specified transaction.
      *
      * @param nearTxVer Transaction version on an originated node.
      * @return Whether Consistent Cut finished.
@@ -199,7 +192,7 @@ public class ConsistentCutState {
     }
 
     /**
-     * Tries to finish Consistent Cut after crossing sets of included and awaited transactions. For cases when node
+     * Tries finishing Consistent Cut. It crosses sets of included and awaited transactions. For cases when node
      * has multiple participations (e.g. near and backup) it's possible to remove some transactions from the check-list.
      */
     public void tryFinish() {
@@ -219,7 +212,7 @@ public class ConsistentCutState {
     }
 
     /**
-     * Whether local Consistent Cut finished.
+     * Whether local Consistent Cut is finished.
      */
     public boolean finished() {
         return finished.get();
@@ -232,7 +225,7 @@ public class ConsistentCutState {
 
     /** */
     public ConsistentCutFinishRecord buildFinishRecord() {
-        return new ConsistentCutFinishRecord(ver, checkInclude);
+        return new ConsistentCutFinishRecord(checkInclude);
     }
 
     /** {@inheritDoc} */
@@ -245,7 +238,7 @@ public class ConsistentCutState {
         setAppend(bld, "include", include);
         mapAppend(bld, "check", check);
         setAppend(bld, "checkInclude", checkInclude);
-        mapAppend(bld, "nearPrepare", nearPrepare);
+        mapAppend(bld, "txCutVers", txCutVers);
 
         return bld.toString();
     }

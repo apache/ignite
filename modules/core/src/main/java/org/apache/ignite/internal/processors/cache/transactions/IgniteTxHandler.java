@@ -802,7 +802,7 @@ public class IgniteTxHandler {
             res.txState(tx.txState());
 
             if (res.onePhaseCommit())
-                fut.commitCutVer(res.txCutVersion());
+                fut.txCutVer(res.txCutVersion());
 
             fut.onResult(nodeId, res);
         }
@@ -867,7 +867,7 @@ public class IgniteTxHandler {
 
             res.txState(tx.txState());
 
-            fut.commitCutVer(res.txCutVersion());
+            fut.txCutVer(res.txCutVersion());
 
             fut.onResult(nodeId, res);
         }
@@ -986,7 +986,7 @@ public class IgniteTxHandler {
 
         if (locTx != null && locTx.colocatedLocallyMapped()) {
             if (req.txCutVersion() > 0)
-                locTx.commitCutVer(req.txCutVersion());
+                locTx.txCutVer(req.txCutVersion());
 
             colocatedFinishFut = finishColocatedLocal(req.commit(), locTx);
         }
@@ -1111,7 +1111,7 @@ public class IgniteTxHandler {
             tx.storeEnabled(req.storeEnabled());
             // Commit primary node that equals to the near node.
             if (req.txCutVersion() > 0)
-                tx.commitCutVer(req.txCutVersion());
+                tx.txCutVer(req.txCutVersion());
 
             if (!tx.markFinalizing(USER_FINISH)) {
                 if (log.isDebugEnabled())
@@ -1357,7 +1357,7 @@ public class IgniteTxHandler {
                 }
                 else {
                     if (ctx.consistentCutMgr() != null) {
-                        res.txCutVersion(dhtTx.commitCutVer());
+                        res.txCutVersion(dhtTx.txCutVer());
                         res.latestCutVersion(ctx.consistentCutMgr().latestCutVersion());
                     }
 

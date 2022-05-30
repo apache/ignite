@@ -3133,7 +3133,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         if (CU.isPitrEnabled(kernalCtx.config())) {
             if (!CU.isPersistenceEnabled(kernalCtx.config())) {
                 throw new IgniteCheckedException("PITR can be enabled only for cluster with enabled persistence."
-                    + " Check the DataRegionConfiguration");
+                    + " Check the DataRegionConfiguration.");
             }
 
             consistentCutMgr = new ConsistentCutManager();

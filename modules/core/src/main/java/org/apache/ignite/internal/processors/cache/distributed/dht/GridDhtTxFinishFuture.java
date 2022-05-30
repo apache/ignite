@@ -240,20 +240,20 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
                     try {
                         boolean nodeStopping = X.hasCause(err, NodeStoppingException.class);
 
-                        long commitCutVer = 0;
+                        long txCutVer = 0;
 
                         if (this.tx.currentPrepareFuture() != null) {
                             if (this.tx.near())
-                                commitCutVer = ((GridNearTxPrepareFutureAdapter)this.tx.currentPrepareFuture()).commitCutVer();
+                                txCutVer = ((GridNearTxPrepareFutureAdapter)this.tx.currentPrepareFuture()).txCutVer();
                             else
-                                commitCutVer = ((GridDhtTxPrepareFuture)this.tx.currentPrepareFuture()).commitCutVer();
+                                txCutVer = ((GridDhtTxPrepareFuture)this.tx.currentPrepareFuture()).txCutVer();
                         }
 
                         this.tx.tmFinish(
                             err == null,
                             nodeStopping || cctx.kernalContext().failure().nodeStopping(),
                             false,
-                            commitCutVer);
+                            txCutVer);
                     }
                     catch (IgniteCheckedException finishErr) {
                         U.error(log, "Failed to finish tx: " + tx, e);
@@ -409,7 +409,7 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
 
             if (cctx.consistentCutMgr() != null) {
                 req.latestCutVersion(cctx.consistentCutMgr().latestCutVersion());
-                req.txCutVersion(tx.commitCutVer());
+                req.txCutVersion(tx.txCutVer());
             }
 
             try {
@@ -475,7 +475,7 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
         if (mvccSnapshot != null)
             mvccSnapshot = mvccSnapshot.withoutActiveTransactions();
 
-        long txVer = tx.commitCutVer();
+        long txVer = tx.txCutVer();
 
         // Create mini futures.
         for (GridDistributedTxMapping dhtMapping : dhtMap.values()) {

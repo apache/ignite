@@ -716,7 +716,7 @@ public class GridCacheSharedContext<K, V> {
     }
 
     /**
-     * @return Cache transaction manager.
+     * @return Consistent Cut manager.
      */
     public ConsistentCutManager consistentCutMgr() {
         return consistentCutMgr;
