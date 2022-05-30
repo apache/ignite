@@ -23,4 +23,6 @@ final class Cache(requestName: Expression[String], cacheName: Expression[String]
         CacheLockActionBuilder(requestName, cacheName, key)
     def unlock(lock: Expression[Lock]): CacheUnlockActionBuilder =
         CacheUnlockActionBuilder(requestName, cacheName, lock)
+    def sql(sql: Expression[String]): CacheSqlActionBuilder =
+        CacheSqlActionBuilder(requestName, cacheName, sql)
 }

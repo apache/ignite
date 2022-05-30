@@ -2,6 +2,7 @@ package org.apache.ignite.gatling.api
 
 import org.apache.ignite.Ignition
 import org.apache.ignite.cache.CacheEntryProcessor
+import org.apache.ignite.cache.query.SqlFieldsQuery
 import org.apache.ignite.client.ClientCacheConfiguration
 import org.apache.ignite.configuration.CacheConfiguration
 import org.apache.ignite.gatling.api.node.IgniteNodeApi
@@ -55,6 +56,8 @@ trait CacheApi[K, V] {
 
   def lock(key: K)(s: Lock => Unit, f: Throwable => Unit = _ => ()): Unit
   def unlock(lock: Lock)(s: Unit => Unit, f: Throwable => Unit = _ => ()): Unit
+
+  def sql(query: SqlFieldsQuery)(s: List[List[Any]] => Unit, f: Throwable => Unit = _ => ()): Unit
 }
 
 trait TransactionApi {

@@ -4,4 +4,5 @@ import io.gatling.core.check.Check
 
 package object gatling {
   type IgniteCheck[K, V] = Check[Map[K, V]]
+  type SqlCheck = Check[List[List[Any]]]
 }
