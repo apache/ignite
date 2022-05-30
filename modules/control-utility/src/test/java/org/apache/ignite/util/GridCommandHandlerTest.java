@@ -3075,7 +3075,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         // Invalid command syntax check.
         assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute(h, "--snapshot", "create", snpName, "blah"));
-        assertContains(log, testOut.toString(), "Invalid argument: blah. Possible options: --sync.");
+        assertContains(log, testOut.toString(), "Invalid argument: blah. Possible options: --sync, --dest.");
 
         assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute(h, "--snapshot", "create", snpName, "--sync", "blah"));
         assertContains(log, testOut.toString(), "Invalid argument: blah.");
@@ -3205,7 +3205,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         assertContains(log, testOut.toString(), "Invalid argument: --sync.");
 
         assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute(h, "--snapshot", "restore", snpName, "--start", "blah"));
-        assertContains(log, testOut.toString(), "Invalid argument: blah. Possible options: --groups, --sync.");
+        assertContains(log, testOut.toString(), "Invalid argument: blah. Possible options: --groups, --src, --sync.");
 
         autoConfirmation = true;
 
@@ -3269,7 +3269,8 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         CommandHandler h = new CommandHandler();
 
         assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute(h, "--snapshot", "restore", snpName, "--start", cacheName1));
-        assertContains(log, testOut.toString(), "Invalid argument: " + cacheName1 + ". Possible options: --groups, --sync.");
+        assertContains(log, testOut.toString(),
+            "Invalid argument: " + cacheName1 + ". Possible options: --groups, --src, --sync.");
 
         // Restore single cache group.
         assertEquals(EXIT_CODE_OK, execute(h, "--snapshot", "restore", snpName, "--start", "--groups", cacheName1));
@@ -3352,12 +3353,10 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
     @Test
     public void testSnapshotCreateCheckAndRestoreCustomDir() throws Exception {
         int keysCnt = 100;
-
+        String snpName = "snapshot_30052022";
         File snpDir = U.resolveWorkDirectory(U.defaultWorkDirectory(), "ex_snapshots", true);
 
         assert snpDir.list().length == 0 : "Target directory is not empty: " + Arrays.asList(snpDir.list());
-
-        String snpName = "snapshot_30052022";
 
         try {
             Ignite ignite = startGrids(2);
@@ -3366,7 +3365,6 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
             createCacheAndPreload(ignite, keysCnt);
 
             injectTestSystemOut();
-
             CommandHandler h = new CommandHandler();
 
             assertEquals(EXIT_CODE_OK,

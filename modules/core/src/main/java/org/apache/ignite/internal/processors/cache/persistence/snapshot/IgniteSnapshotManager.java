@@ -698,14 +698,14 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
     /**
      * @param snpName Snapshot name.
-     * @param snpLocation Snapshot directory path.
+     * @param snpPath Snapshot directory path.
      * @return Local snapshot directory for snapshot with given name.
      */
-    public File snapshotLocalDir(String snpName, @Nullable String snpLocation) {
+    public File snapshotLocalDir(String snpName, @Nullable String snpPath) {
         assert locSnpDir != null;
         assert U.alphanumericUnderscore(snpName) : snpName;
 
-        return snpLocation == null ? new File(locSnpDir, snpName) : new File(snpLocation, snpName);
+        return snpPath == null ? new File(locSnpDir, snpName) : new File(snpPath, snpName);
     }
 
     /**
@@ -1372,16 +1372,16 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
     /**
      * @param snpName Snapshot name.
-     * @param snpLocation Snapshot directory path.
+     * @param snpPath Snapshot directory path.
      * @return List of snapshot metadata for the given snapshot name on local node.
      * If snapshot has been taken from local node the snapshot metadata for given
      * local node will be placed on the first place.
      */
-    public List<SnapshotMetadata> readSnapshotMetadatas(String snpName, @Nullable String snpLocation) {
+    public List<SnapshotMetadata> readSnapshotMetadatas(String snpName, @Nullable String snpPath) {
         A.notNullOrEmpty(snpName, "Snapshot name cannot be null or empty.");
         A.ensure(U.alphanumericUnderscore(snpName), "Snapshot name must satisfy the following name pattern: a-zA-Z0-9_");
 
-        File snpDir = snapshotLocalDir(snpName, snpLocation);
+        File snpDir = snapshotLocalDir(snpName, snpPath);
 
         if (!(snpDir.exists() && snpDir.isDirectory()))
             return Collections.emptyList();
