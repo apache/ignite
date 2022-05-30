@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.consistentcut;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.internal.pagemem.wal.record.ConsistentCutFinishRecord;
@@ -41,6 +42,11 @@ public class ConsistentCutState {
      * Previous Consistent Cut Version.
      */
     private final long prevVer;
+
+    /**
+     * ID of node that coordinates Consistent Cut procedure.
+     */
+    private final UUID crdNodeId;
 
     /**
      * Whether local Consistent Cut procedure is finished. It means that all transactions in {@link #check}
@@ -79,9 +85,17 @@ public class ConsistentCutState {
     private final Set<GridCacheVersion> checkInclude = new HashSet<>();
 
     /** */
-    public ConsistentCutState(long ver, long prevVer) {
+    public ConsistentCutState(UUID crdNodeId, long ver, long prevVer) {
+        this.crdNodeId = crdNodeId;
         this.ver = ver;
         this.prevVer = prevVer;
+    }
+
+    /**
+     * @return Consistent Cut coordinator node ID.
+     */
+    public UUID crdNodeId() {
+        return crdNodeId;
     }
 
     /**
@@ -226,6 +240,7 @@ public class ConsistentCutState {
         StringBuilder bld = new StringBuilder();
 
         bld.append("ver=").append(ver).append(", ");
+        bld.append("crd=").append(crdNodeId).append(", ");
 
         setAppend(bld, "include", include);
         mapAppend(bld, "check", check);

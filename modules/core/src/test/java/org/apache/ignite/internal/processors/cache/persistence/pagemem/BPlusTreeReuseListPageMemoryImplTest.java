@@ -99,7 +99,7 @@ public class BPlusTreeReuseListPageMemoryImplTest extends BPlusTreeReuseSelfTest
             null,
             null,
             null,
-            false
+            null
         );
 
         IgniteOutClosure<CheckpointProgress> clo = new IgniteOutClosure<CheckpointProgress>() {

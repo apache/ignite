@@ -54,6 +54,13 @@ public abstract class AbstractConsistentCutBlockingTest extends AbstractConsiste
         return cfg;
     }
 
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        super.beforeTest();
+
+        grid(0).context().cache().context().consistentCutMgr().disable();
+    }
+
     /** */
     protected void runCase(Runnable tx) throws Exception {
         runCase(tx, null, null);
@@ -74,12 +81,10 @@ public abstract class AbstractConsistentCutBlockingTest extends AbstractConsiste
 
         IgniteInternalFuture<?> txFut = multithreadedAsync(tx, 1);
 
-        // Timestamp of Consistent Cut will be greater than that.
-        long beforeCut = System.currentTimeMillis();
+        long cutVer = grid(0).context().cache().context().consistentCutMgr().triggerConsistentCutOnCluster();
 
-        asyncTriggerConsistentCut(1);
-
-        awaitCut(beforeCut);
+        // Await Consistent Cut with cutVer. Set previous cutVer to `cutVer - 1`.
+        awaitConsistentCuts(1, cutVer - 1);
 
         latch.countDown();
 

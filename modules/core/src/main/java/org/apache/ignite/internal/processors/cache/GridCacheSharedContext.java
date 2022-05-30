@@ -219,6 +219,8 @@ public class GridCacheSharedContext<K, V> {
      * @param storeSesLsnrs Store session listeners.
      * @param mvccCachingMgr Mvcc caching manager.
      * @param deadlockDetectionMgr Deadlock detection manager.
+     * @param diagnosticMgr Diagnostic manager.
+     * @param consistentCutMgr Consistent Cut manager.
      */
     public GridCacheSharedContext(
         GridKernalContext kernalCtx,
@@ -242,7 +244,7 @@ public class GridCacheSharedContext<K, V> {
         MvccCachingManager mvccCachingMgr,
         DeadlockDetectionManager deadlockDetectionMgr,
         CacheDiagnosticManager diagnosticMgr,
-        boolean consistentCutEnabled
+        ConsistentCutManager consistentCutMgr
     ) {
         this.kernalCtx = kernalCtx;
 
@@ -267,11 +269,9 @@ public class GridCacheSharedContext<K, V> {
             evictMgr,
             mvccCachingMgr,
             deadlockDetectionMgr,
-            diagnosticMgr
+            diagnosticMgr,
+            consistentCutMgr
         );
-
-        if (consistentCutEnabled)
-            enableConsistentCut();
 
         this.storeSesLsnrs = storeSesLsnrs;
 
@@ -331,14 +331,6 @@ public class GridCacheSharedContext<K, V> {
     public void deactivate() {
         for (int i = stateAwareMgrs.size() - 1; i >= 0; i--)
             stateAwareMgrs.get(i).onDeActivate(kernalCtx);
-    }
-
-    /**
-     *
-     */
-    public void enableConsistentCut() {
-        if (consistentCutMgr == null)
-            consistentCutMgr = new ConsistentCutManager(this);
     }
 
     /**
@@ -460,7 +452,8 @@ public class GridCacheSharedContext<K, V> {
             evictMgr,
             mvccCachingMgr,
             deadlockDetectionMgr,
-            diagnosticMgr
+            diagnosticMgr,
+            consistentCutMgr
         );
 
         this.mgrs = mgrs;
@@ -511,7 +504,8 @@ public class GridCacheSharedContext<K, V> {
         PartitionsEvictManager evictMgr,
         MvccCachingManager mvccCachingMgr,
         DeadlockDetectionManager deadlockDetectionMgr,
-        CacheDiagnosticManager diagnosticMgr
+        CacheDiagnosticManager diagnosticMgr,
+        ConsistentCutManager consistentCutMgr
     ) {
         this.diagnosticMgr = add(mgrs, diagnosticMgr);
         this.mvccMgr = add(mgrs, mvccMgr);
@@ -536,6 +530,7 @@ public class GridCacheSharedContext<K, V> {
         this.evictMgr = add(mgrs, evictMgr);
         this.mvccCachingMgr = add(mgrs, mvccCachingMgr);
         this.deadlockDetectionMgr = add(mgrs, deadlockDetectionMgr);
+        this.consistentCutMgr = add(mgrs, consistentCutMgr);
     }
 
     /**

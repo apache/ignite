@@ -634,7 +634,7 @@ public class PageMemoryImplTest extends GridCommonAbstractTest {
             null,
             null,
             null,
-            false
+            null
         );
 
         CheckpointProgressImpl cl0 = Mockito.mock(CheckpointProgressImpl.class);

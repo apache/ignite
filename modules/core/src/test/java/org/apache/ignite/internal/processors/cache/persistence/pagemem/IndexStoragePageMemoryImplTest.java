@@ -115,7 +115,7 @@ public class IndexStoragePageMemoryImplTest extends IndexStorageSelfTest {
             null,
             null,
             new CacheDiagnosticManager(),
-            false
+            null
         );
 
         IgniteOutClosure<CheckpointProgress> clo = () -> Mockito.mock(CheckpointProgressImpl.class);

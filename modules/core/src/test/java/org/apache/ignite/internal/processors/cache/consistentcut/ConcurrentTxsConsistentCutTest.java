@@ -92,7 +92,10 @@ public class ConcurrentTxsConsistentCutTest extends AbstractConsistentCutTest {
 
         IgniteInternalFuture<Long> f = asyncLoadData(latch, 1);
 
-        asyncTriggerConsistentCut(CUTS);
+        awaitConsistentCuts(CUTS, 0);
+
+        // Disable new Consistent Cuts.
+        grid(0).context().cache().context().consistentCutMgr().disable();
 
         latch.countDown();
 

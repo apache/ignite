@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.consistentcut;
 
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 
 /**
@@ -48,4 +49,8 @@ public interface ConsistentCutVersionAware {
         return null;
     }
 
+    /**
+     * Topology version on th moment of starting {@link #latestCutVersion()} on coordinator node.
+     */
+    public AffinityTopologyVersion topologyVersion();
 }

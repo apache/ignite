@@ -41,13 +41,20 @@ public class ConsistentCutFinishResponse implements Message {
     @GridToStringInclude
     private long ver;
 
+    /**
+     * Whether local Consistent Cut procedure finished with an error.
+     */
+    @GridToStringInclude
+    private boolean err;
+
     /** */
     public ConsistentCutFinishResponse() {
     }
 
     /** */
-    public ConsistentCutFinishResponse(long ver) {
+    public ConsistentCutFinishResponse(long ver, boolean err) {
         this.ver = ver;
+        this.err = err;
     }
 
     /**
@@ -55,6 +62,13 @@ public class ConsistentCutFinishResponse implements Message {
      */
     public long version() {
         return ver;
+    }
+
+    /**
+     * @return {@code true} if local Consistent Cut procedure failed.
+     */
+    public boolean error() {
+        return err;
     }
 
     /** {@inheritDoc} */
@@ -68,11 +82,18 @@ public class ConsistentCutFinishResponse implements Message {
             writer.onHeaderWritten();
         }
 
-        if (writer.state() == 0) {
-            if (!writer.writeLong("ver", ver))
-                return false;
+        switch (writer.state()) {
+            case 0:
+                if (!writer.writeLong("ver", ver))
+                    return false;
 
-            writer.incrementState();
+                writer.incrementState();
+
+            case 1:
+                if (!writer.writeBoolean("err", err))
+                    return false;
+
+                writer.incrementState();
         }
 
         return true;
@@ -85,13 +106,22 @@ public class ConsistentCutFinishResponse implements Message {
         if (!reader.beforeMessageRead())
             return false;
 
-        if (reader.state() == 0) {
-            ver = reader.readLong("ver");
+        switch (reader.state()) {
+            case 0:
+                ver = reader.readLong("ver");
 
-            if (!reader.isLastRead())
-                return false;
+                if (!reader.isLastRead())
+                    return false;
 
-            reader.incrementState();
+                reader.incrementState();
+
+            case 1:
+                err = reader.readBoolean("err");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
         }
 
         return reader.afterMessageRead(GridDeploymentRequest.class);
@@ -104,7 +134,7 @@ public class ConsistentCutFinishResponse implements Message {
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 1;
+        return 2;
     }
 
     /** {@inheritDoc} */

@@ -38,9 +38,7 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
-import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
-import org.apache.ignite.internal.processors.cache.ConsistentCutCheckDiscoveryMessage;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxFinishResponse;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxFinishRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxPrepareRequest;
@@ -63,7 +61,10 @@ public abstract class AbstractConsistentCutTest extends GridCommonAbstractTest {
     protected static final String CACHE = "CACHE";
 
     /** */
-    private static final int ARCHIVE_TIMEOUT = 2_000;
+    private static final int WAL_ARCHIVE_TIMEOUT = 2_000;
+
+    /** */
+    private static final int CONSISTENT_CUT_PERIOD = 500;
 
     /** */
     private final Random rnd = new Random();
@@ -73,9 +74,10 @@ public abstract class AbstractConsistentCutTest extends GridCommonAbstractTest {
         IgniteConfiguration cfg = super.getConfiguration(instanceName);
 
         cfg.setDataStorageConfiguration(new DataStorageConfiguration()
-            .setWalForceArchiveTimeout(ARCHIVE_TIMEOUT)
-            .setWalAutoArchiveAfterInactivity(ARCHIVE_TIMEOUT)
+            .setWalForceArchiveTimeout(WAL_ARCHIVE_TIMEOUT)
+            .setWalAutoArchiveAfterInactivity(WAL_ARCHIVE_TIMEOUT)
             .setPointInTimeRecoveryEnabled(true)
+            .setPointInTimeRecoveryPeriod(CONSISTENT_CUT_PERIOD)
             .setDataRegionConfigurations(new DataRegionConfiguration()
                 .setName("consistent-cut-persist")
                 .setPersistenceEnabled(true)));
@@ -144,35 +146,57 @@ public abstract class AbstractConsistentCutTest extends GridCommonAbstractTest {
     }
 
     /**
+     * @param cuts Amount of Consistent Cut to await.
+     * @param prevCutVer Previous Consistent Cut version (timestamp).
+     */
+    protected void awaitConsistentCuts(int cuts, long prevCutVer) throws Exception {
+        for (int i = 0; i < cuts; i++) {
+            Thread.sleep(CONSISTENT_CUT_PERIOD);
+
+            prevCutVer = awaitCut(prevCutVer);
+
+            log.info("Consistent Cut finished: " + prevCutVer);
+        }
+    }
+
+    /**
      * Await cut on all server nodes.
      *
-     * @param beforeCut Timestamp to compare with CutVersion. If CutVersion is greater than this ts then Cut has started.
+     * @param prevCutVer Previous Consistent Cut version.
+     * @return Version of the latest Consistent Cut version.
      */
-    protected void awaitCut(long beforeCut) throws Exception {
+    private long awaitCut(long prevCutVer) throws Exception {
         Set<Integer> nodes = new HashSet<>();
 
         for (int i = 0; i < nodes(); i++)
             nodes.add(i);
 
-        for (int i = 0; i < 50; i++) {
+        long newCutVer = -1L;
+
+        for (int i = 0; i < 100; i++) {
             for (int n = 0; n < nodes(); n++) {
                 if (!nodes.contains(n))
                     continue;
 
                 long ver = grid(n).context().cache().context().consistentCutMgr().latestCutVersion();
 
-                if (ver >= beforeCut) {
+                assert ver >= prevCutVer : ver + " " + prevCutVer;
+
+                if (ver > prevCutVer) {
+                    if (newCutVer < 0)
+                        newCutVer = ver;
+                    else
+                        assert newCutVer == ver : newCutVer + " " + ver + " " + n;
+
                     nodes.remove(n);
 
                     if (nodes.isEmpty())
-                        return;
+                        return ver;
                 }
             }
-
-            Thread.sleep(10);
         }
 
-        throw new Exception("Failed to wait Consitent Cut. BeforeTs=" + beforeCut + "; nodes=" + nodes);
+        throw new Exception("Failed to wait Consitent Cut. Prev cutVer=" + prevCutVer + "; nodes=" + nodes);
     }
 
     /**
@@ -259,7 +283,7 @@ public abstract class AbstractConsistentCutTest extends GridCommonAbstractTest {
 
             int attempts = 0;
 
-            while (walMgr.lastArchivedSegment() == lastArchived || attempts != 2 * ARCHIVE_TIMEOUT / 50) {
+            while (walMgr.lastArchivedSegment() == lastArchived || attempts != 2 * WAL_ARCHIVE_TIMEOUT / 50) {
                 try {
                     Thread.sleep(50);
 
@@ -273,21 +297,6 @@ public abstract class AbstractConsistentCutTest extends GridCommonAbstractTest {
             log.info("WAL flushed for node " + idx);
 
         }, nodes()).get();
-    }
-
-    /** */
-    protected void asyncTriggerConsistentCut(int cuts) throws Exception {
-        for (int i = 0; i < cuts; i++) {
-            DiscoveryCustomMessage msg = new ConsistentCutCheckDiscoveryMessage();
-
-            grid(i % nodes()).context().discovery().sendCustomEvent(msg);
-
-            System.out.println("Trigger ConsistentCut " + i);
-
-            // Make a delay between cuts.
-            if (i + 1 < cuts)
-                Thread.sleep(500);
-        }
     }
 
     /** */

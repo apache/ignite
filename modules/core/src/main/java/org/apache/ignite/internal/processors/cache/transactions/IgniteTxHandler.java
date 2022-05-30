@@ -293,7 +293,9 @@ public class IgniteTxHandler {
     /** */
     private void processConsistentVer(ConsistentCutVersionAware msg) {
         if (ctx.consistentCutMgr() != null) {
-            ctx.consistentCutMgr().handleConsistentCutVersion(msg.latestCutVersion());
+            UUID crdNodeId = ctx.discovery().serverNodes(msg.topologyVersion()).get(0).id();
+
+            ctx.consistentCutMgr().handleConsistentCutVersion(crdNodeId, msg.latestCutVersion());
 
             if (msg.txCutVersion() > 0)
                 ctx.consistentCutMgr().handleRemoteTxCutVersion(msg.nearTxVersion(), msg.txCutVersion());
