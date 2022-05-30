@@ -3350,6 +3350,49 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
     /** @throws Exception If fails. */
     @Test
+    public void testSnapshotCreateRestoreCustomDir() throws Exception {
+        int keysCnt = 100;
+
+        File snpDir = U.resolveWorkDirectory(U.defaultWorkDirectory(), "ex_snapshots", true);
+
+        assert snpDir.list().length == 0 : "Target directory is not empty: " + Arrays.asList(snpDir.list());
+
+        String snpName = "snapshot_30052022";
+
+        try {
+            Ignite ignite = startGrids(2);
+            ignite.cluster().state(ACTIVE);
+
+            createCacheAndPreload(ignite, keysCnt);
+
+            injectTestSystemOut();
+
+            CommandHandler h = new CommandHandler();
+
+            assertEquals(EXIT_CODE_OK,
+                execute(h, "--snapshot", "create", snpName, "--sync", "--dest", snpDir.getAbsolutePath()));
+
+            ignite.destroyCache(DEFAULT_CACHE_NAME);
+
+            assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute(h, "--snapshot", "restore", snpName, "--start", "--sync"));
+            assertContains(log, testOut.toString(), "Snapshot does not exists [snapshot=" + snpName);
+
+            assertEquals(EXIT_CODE_OK,
+                execute(h, "--snapshot", "restore", snpName, "--start", "--sync", "--src", snpDir.getAbsolutePath()));
+
+            IgniteCache<Integer, Integer> cache = ignite.cache(DEFAULT_CACHE_NAME);
+
+            assertEquals(keysCnt, cache.size());
+
+            for (int i = 0; i < keysCnt; i++)
+                assertEquals(Integer.valueOf(i), cache.get(i));
+        } finally {
+            U.delete(snpDir);
+        }
+    }
+
+    /** @throws Exception If fails. */
+    @Test
     public void testSnapshotRestoreCancelAndStatus() throws Exception {
         int keysCnt = 2048;
         String snpName = "snapshot_25052021";

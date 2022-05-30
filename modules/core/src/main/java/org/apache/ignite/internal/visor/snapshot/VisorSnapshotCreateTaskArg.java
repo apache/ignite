@@ -34,6 +34,9 @@ public class VisorSnapshotCreateTaskArg extends IgniteDataTransferObject {
     /** Snapshot name. */
     private String snpName;
 
+    /** Snapshot directory path. */
+    private String snpPath;
+
     /** Synchronous execution flag. */
     private boolean sync;
 
@@ -44,16 +47,23 @@ public class VisorSnapshotCreateTaskArg extends IgniteDataTransferObject {
 
     /**
      * @param snpName Snapshot name.
+     * @param snpPath Snapshot directory path.
      * @param sync Synchronous execution flag.
      */
-    public VisorSnapshotCreateTaskArg(String snpName, boolean sync) {
+    public VisorSnapshotCreateTaskArg(String snpName, String snpPath, boolean sync) {
         this.snpName = snpName;
+        this.snpPath = snpPath;
         this.sync = sync;
     }
 
     /** @return Snapshot name. */
     public String snapshotName() {
         return snpName;
+    }
+
+    /** @return Snapshot directory path. */
+    public String snapshotPath() {
+        return snpPath;
     }
 
     /** @return Synchronous execution flag. */
@@ -64,12 +74,14 @@ public class VisorSnapshotCreateTaskArg extends IgniteDataTransferObject {
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
         U.writeString(out, snpName);
+        U.writeString(out, snpPath);
         out.writeBoolean(sync);
     }
 
     /** {@inheritDoc} */
     @Override protected void readExternalData(byte ver, ObjectInput in) throws IOException, ClassNotFoundException {
         snpName = U.readString(in);
+        snpPath = U.readString(in);
         sync = in.readBoolean();
     }
 

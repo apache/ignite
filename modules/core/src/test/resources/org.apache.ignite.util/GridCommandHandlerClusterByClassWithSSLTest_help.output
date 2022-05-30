@@ -140,10 +140,11 @@ This utility can do the following commands:
       snapshot_name  - Snapshot name.
 
   Create cluster snapshot:
-    control.(sh|bat) --snapshot create snapshot_name [--sync]
+    control.(sh|bat) --snapshot create snapshot_name [--dest path] [--sync]
 
     Parameters:
       snapshot_name  - Snapshot name.
+      path           - The path to directory where the snapshot will be saved. If not specified, the default snapshot directory will be used.
       sync           - Run the operation synchronously, the command will wait for the entire operation to complete. Otherwise, it will be performed in the background, and the command will immediately return control.
 
   Cancel running snapshot:
@@ -159,11 +160,12 @@ This utility can do the following commands:
       snapshot_name  - Snapshot name.
 
   Restore snapshot:
-    control.(sh|bat) --snapshot restore snapshot_name --start [--groups group1,...groupN] [--sync]
+    control.(sh|bat) --snapshot restore snapshot_name --start [--groups group1,...groupN] [--src path] [--sync]
 
     Parameters:
       snapshot_name     - Snapshot name.
       group1,...groupN  - Cache group names.
+      path              - The path to the directory where the snapshot files are located. If not specified, the default snapshot directory will be used.
       sync              - Run the operation synchronously, the command will wait for the entire operation to complete. Otherwise, it will be performed in the background, and the command will immediately return control.
 
   Snapshot restore operation status:

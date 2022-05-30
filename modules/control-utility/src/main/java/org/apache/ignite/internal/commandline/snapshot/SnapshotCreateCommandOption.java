@@ -24,32 +24,40 @@ import org.apache.ignite.internal.commandline.argument.CommandArg;
  */
 public enum SnapshotCreateCommandOption implements CommandArg {
     /** Synchronous execution flag. */
-    SYNC("sync", "Run the operation synchronously, the command will wait for the entire operation to complete. " +
-        "Otherwise, it will be performed in the background, and the command will immediately return control.");
+    SYNC("--sync", "sync", "Run the operation synchronously, the command will wait for the entire operation to complete. " +
+        "Otherwise, it will be performed in the background, and the command will immediately return control."),
+
+    /** Snapshot directory path. */
+    DESTINATION("--dest", "path", "The path to directory where the snapshot will be saved. If not specified, " +
+        "the default snapshot directory will be used.");
 
     /** Option name. */
-    private final String name;
+    private final String argName;
+
+    /** Option name. */
+    private final String optionName;
 
     /** Option description. */
     private final String desc;
 
     /**
-     * @param name Option name.
+     * @param argName Option name.
      * @param desc Option description.
      */
-    SnapshotCreateCommandOption(String name, String desc) {
-        this.name = name;
+    SnapshotCreateCommandOption(String argName, String optionName, String desc) {
+        this.argName = argName;
+        this.optionName = optionName;
         this.desc = desc;
     }
 
     /** {@inheritDoc} */
     @Override public String argName() {
-        return "--" + name;
+        return argName;
     }
 
     /** @return Option name. */
     public String optionName() {
-        return name;
+        return optionName;
     }
 
     /** @return Option description. */

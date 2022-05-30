@@ -26,6 +26,10 @@ public enum SnapshotRestoreCommandOption implements CommandArg {
     /** Cache group names. */
     GROUPS("--groups", "group1,...groupN", "Cache group names."),
 
+    /** Snapshot directory location. */
+    SOURCE("--src", "path", "The path to the directory where the snapshot files are located. If not specified, " +
+        "the default snapshot directory will be used."),
+
     /** Synchronous execution flag. */
     SYNC(SnapshotCreateCommandOption.SYNC.argName(), SnapshotCreateCommandOption.SYNC.optionName(),
         SnapshotCreateCommandOption.SYNC.description());
