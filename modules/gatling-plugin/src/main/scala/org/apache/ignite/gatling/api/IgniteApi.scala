@@ -16,48 +16,50 @@ import scala.util.{Failure, Success, Try}
 trait IgniteApi {
   def cache[K, V](name: String): Try[CacheApi[K, V]]
 
-  def getOrCreateCache[K, V, U](name: String)(s: CacheApi[K, V] => U, f: Throwable => U): Unit
-  def getOrCreateCache[K, V, U](name: String, cfg: SimpleCacheConfiguration)(s: CacheApi[K, V] => U, f: Throwable => U): Unit
-  def getOrCreateCache[K, V, U](cfg: ClientCacheConfiguration)(s: CacheApi[K, V] => U, f: Throwable => U): Unit
-  def getOrCreateCache[K, V, U](cfg: CacheConfiguration[K,V])(s: CacheApi[K, V] => U, f: Throwable => U): Unit
+  def getOrCreateCache[K, V](name: String)(s: CacheApi[K, V] => Unit, f: Throwable => Unit = _ => ()): Unit
+  def getOrCreateCacheBySimpleConfig[K, V](name: String, cfg: SimpleCacheConfiguration)(s: CacheApi[K, V] => Unit, f: Throwable => Unit = _ => ()): Unit
+  def getOrCreateCacheByClientConfiguration[K, V](cfg: ClientCacheConfiguration)(s: CacheApi[K, V] => Unit, f: Throwable => Unit = _ => ()): Unit
+  def getOrCreateCacheByConfiguration[K, V](cfg: CacheConfiguration[K,V])(s: CacheApi[K, V] => Unit, f: Throwable => Unit = _ => ()): Unit
 
-  def close[U]()(s: Unit => U, f: Throwable => U): Unit
+  def close()(s: Unit => Unit, f: Throwable => Unit = _ => ()): Unit
 
-  def txStart[U]()(s: TransactionApi => U, f: Throwable => U): Unit
+  def txStart()(s: TransactionApi => Unit, f: Throwable => Unit = _ => ()): Unit
+
+  def wrapped[API]: API
 }
 
 //noinspection AccessorLikeMethodIsUnit
 trait CacheApi[K, V] {
-  def put[U](key: K, value: V)(s: Unit => U, f: Throwable => U): Unit
-  def putAsync[U](key: K, value: V)(s: Unit => U, f: Throwable => U): Unit
+  def put(key: K, value: V)(s: Unit => Unit, f: Throwable => Unit = _ => ()): Unit
+  def putAsync(key: K, value: V)(s: Unit => Unit, f: Throwable => Unit = _ => ()): Unit
 
-  def putAll[U](map: Map[K, V])(s: Unit => U, f: Throwable => U): Unit
-  def putAllAsync[U](map: Map[K, V])(s: Unit => U, f: Throwable => U): Unit
+  def putAll(map: Map[K, V])(s: Unit => Unit, f: Throwable => Unit = _ => ()): Unit
+  def putAllAsync(map: Map[K, V])(s: Unit => Unit, f: Throwable => Unit = _ => ()): Unit
 
-  def get[U](key: K)(s: Map[K, V] => U, f: Throwable => U): Unit
-  def getAsync[U](key: K)(s: Map[K, V] => U, f: Throwable => U): Unit
+  def get(key: K)(s: Map[K, V] => Unit, f: Throwable => Unit = _ => ()): Unit
+  def getAsync(key: K)(s: Map[K, V] => Unit, f: Throwable => Unit = _ => ()): Unit
 
-  def getAll[U](keys: Set[K])(s: Map[K, V] => U, f: Throwable => U): Unit
-  def getAllAsync[U](keys: Set[K])(s: Map[K, V] => U, f: Throwable => U): Unit
+  def getAll(keys: Set[K])(s: Map[K, V] => Unit, f: Throwable => Unit = _ => ()): Unit
+  def getAllAsync(keys: Set[K])(s: Map[K, V] => Unit, f: Throwable => Unit = _ => ()): Unit
 
-  def remove[U](key: K)(s: Unit => U, f: Throwable => U): Unit
-  def removeAsync[U](key: K)(s: Unit => U, f: Throwable => U): Unit
+  def remove(key: K)(s: Unit => Unit, f: Throwable => Unit = _ => ()): Unit
+  def removeAsync(key: K)(s: Unit => Unit, f: Throwable => Unit = _ => ()): Unit
 
-  def removeAll[U](keys: Set[K])(s: Unit => U, f: Throwable => U): Unit
-  def removeAllAsync[U](keys: Set[K])(s: Unit => U, f: Throwable => U): Unit
+  def removeAll(keys: Set[K])(s: Unit => Unit, f: Throwable => Unit = _ => ()): Unit
+  def removeAllAsync(keys: Set[K])(s: Unit => Unit, f: Throwable => Unit = _ => ()): Unit
 
-  def invoke[T, U](key: K, entryProcessor: CacheEntryProcessor[K, V, T], arguments: Any*)
-                  (s: Map[K, T] => U, f: Throwable => U): Unit
-  def invokeAsync[T, U](key: K, entryProcessor: CacheEntryProcessor[K, V, T], arguments: Any*)
-                       (s: Map[K, T] => U, f: Throwable => U): Unit
+  def invoke[T](key: K, entryProcessor: CacheEntryProcessor[K, V, T], arguments: Any*)
+                  (s: Map[K, T] => Unit, f: Throwable => Unit = _ => ()): Unit
+  def invokeAsync[T](key: K, entryProcessor: CacheEntryProcessor[K, V, T], arguments: Any*)
+                       (s: Map[K, T] => Unit, f: Throwable => Unit = _ => ()): Unit
 
-  def lock[U](key: K)(s: Lock => U, f: Throwable => U): Unit
-  def unlock[U](lock: Lock)(s: Unit => U, f: Throwable => U): Unit
+  def lock(key: K)(s: Lock => Unit, f: Throwable => Unit = _ => ()): Unit
+  def unlock(lock: Lock)(s: Unit => Unit, f: Throwable => Unit = _ => ()): Unit
 }
 
 trait TransactionApi {
-  def commit[U]()(s: Unit => U, f: Throwable => U): Unit
-  def rollback[U]()(s: Unit => U, f: Throwable => U): Unit
+  def commit()(s: Unit => Unit, f: Throwable => Unit = _ => ()): Unit
+  def rollback()(s: Unit => Unit, f: Throwable => Unit = _ => ()): Unit
 }
 
 object IgniteApi extends CompletionSupport {

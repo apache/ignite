@@ -53,10 +53,10 @@ case class CreateCacheAction[K, V](requestName: Expression[String],
     if (config == null)
       igniteApi.getOrCreateCache(cacheName)
     else if (config.cacheCfg != null)
-      igniteApi.getOrCreateCache(config.cacheCfg)
+      igniteApi.getOrCreateCacheByConfiguration(config.cacheCfg)
     else if (config.clientCacheCfg != null)
-      igniteApi.getOrCreateCache(config.clientCacheCfg)
+      igniteApi.getOrCreateCacheByClientConfiguration(config.clientCacheCfg)
     else
-      igniteApi.getOrCreateCache(cacheName, config.simpleCfg)
+      igniteApi.getOrCreateCacheBySimpleConfig(cacheName, config.simpleCfg)
   }
 }
