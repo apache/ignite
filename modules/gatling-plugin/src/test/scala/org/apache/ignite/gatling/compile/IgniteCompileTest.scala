@@ -2,10 +2,11 @@ package org.apache.ignite.gatling.compile
 
 import org.apache.ignite.gatling.Predef.{simpleCheck, _}
 import io.gatling.core.Predef._
-import org.apache.ignite.Ignition
+import org.apache.ignite.{Ignite, Ignition}
 import org.apache.ignite.cache.CacheEntryProcessor
-import org.apache.ignite.client.ClientCacheConfiguration
+import org.apache.ignite.client.{ClientCacheConfiguration, IgniteClient}
 import org.apache.ignite.configuration.{CacheConfiguration, ClientConfiguration}
+import org.apache.ignite.gatling.api.IgniteApi
 import org.apache.ignite.gatling.protocol.IgniteProtocol
 
 import java.util.concurrent.locks.Lock
@@ -87,6 +88,30 @@ class IgniteCompileTest extends Simulation {
       )
     )
     .exec(ignite("ign").cache("cache").unlock("#{lock}"))
+
+    .exec(session => {
+      val client: IgniteApi = session("igniteApi").as[IgniteApi]
+
+      val ignite: Ignite = client.wrapped
+      ignite.close()
+      val igniteClient: IgniteClient = client.wrapped
+      igniteClient.close()
+
+      session
+    })
+    .exec(session => {
+      val client: IgniteApi = session("igniteApi").as[IgniteApi]
+      val cache = client.cache[Int, Int]("test-cache").get
+      cache.get(session("key").as[Int])(
+        value => print(value)
+      )
+      client.close() {
+        _ => client.txStart() {
+          _ =>
+        }
+      }
+      session
+    })
 
   setUp(scn.inject(atOnceUsers(1)))
     .protocols(thinProtocol, nodeProtocol)

@@ -15,26 +15,28 @@ case class IgniteThinApi(wrapped: IgniteClient)(implicit val ec: ExecutionContex
     Try{ wrapped.cache[K, V](name) }
       .map(CacheThinApi(_))
 
-  override def getOrCreateCache[K, V, U](name: String)(s: CacheApi[K, V] => U, f: Throwable => U): Unit =
+  override def getOrCreateCache[K, V](name: String)(s: CacheApi[K, V] => Unit, f: Throwable => Unit): Unit =
     withCompletion(wrapped.getOrCreateCacheAsync[K, V](name).asScala.map(CacheThinApi(_)))(s, f)
 
-  override def getOrCreateCache[K, V, U](cfg: ClientCacheConfiguration)(s: CacheApi[K, V] => U, f: Throwable => U): Unit =
+  override def getOrCreateCacheByClientConfiguration[K, V](cfg: ClientCacheConfiguration)(s: CacheApi[K, V] => Unit, f: Throwable => Unit): Unit =
     withCompletion(wrapped.getOrCreateCacheAsync[K, V](cfg).asScala.map(CacheThinApi(_)))(s, f)
 
-  override def getOrCreateCache[K, V, U](cfg: CacheConfiguration[K, V])(s: CacheApi[K, V] => U, f: Throwable => U): Unit =
+  override def getOrCreateCacheByConfiguration[K, V](cfg: CacheConfiguration[K, V])(s: CacheApi[K, V] => Unit, f: Throwable => Unit): Unit =
     throw new NotImplementedError("Node client cache configuration was used to create cache via thin client API")
 
-  override def getOrCreateCache[K, V, U](name: String, cfg: SimpleCacheConfiguration)(s: CacheApi[K, V] => U, f: Throwable => U): Unit =
-    getOrCreateCache(cacheConfiguration(name, cfg))(s, f)
+  override def getOrCreateCacheBySimpleConfig[K, V](name: String, cfg: SimpleCacheConfiguration)(s: CacheApi[K, V] => Unit, f: Throwable => Unit): Unit =
+    getOrCreateCacheByClientConfiguration(cacheConfiguration(name, cfg))(s, f)
 
-  override def close[U]()(s: Unit => U, f: Throwable => U): Unit =
+  override def close()(s: Unit => Unit, f: Throwable => Unit): Unit =
     withCompletion(Future(wrapped.close()))(s, f)
 
-  override def txStart[U]()(s: TransactionApi => U, f: Throwable => U): Unit =
+  override def txStart()(s: TransactionApi => Unit, f: Throwable => Unit): Unit =
     Try { wrapped.transactions().txStart() }.fold(
       f,
       tx => s(TransactionThinApi(tx))
     )
+
+  override def wrapped[API]: API = wrapped.asInstanceOf[API]
 
   private def cacheConfiguration(name: String, simpleCacheConfiguration: SimpleCacheConfiguration): ClientCacheConfiguration =
     new ClientCacheConfiguration()

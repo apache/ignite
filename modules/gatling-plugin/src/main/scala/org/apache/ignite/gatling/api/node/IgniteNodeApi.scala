@@ -14,19 +14,19 @@ case class IgniteNodeApi(wrapped: Ignite)(implicit val ec: ExecutionContext) ext
   override def cache[K, V](name: String): Try[CacheApi[K, V]] =
     Try(wrapped.cache[K, V](name)).map(CacheNodeApi(_))
 
-  override def getOrCreateCache[K, V, U](name: String)(s: CacheApi[K, V] => U, f: Throwable => U): Unit =
+  override def getOrCreateCache[K, V](name: String)(s: CacheApi[K, V] => Unit, f: Throwable => Unit): Unit =
     withCompletion(Future(wrapped.getOrCreateCache[K, V](name)).map(CacheNodeApi(_)))(s, f)
 
-  override def getOrCreateCache[K, V, U](cfg: ClientCacheConfiguration)(s: CacheApi[K, V] => U, f: Throwable => U): Unit =
+  override def getOrCreateCacheByClientConfiguration[K, V](cfg: ClientCacheConfiguration)(s: CacheApi[K, V] => Unit, f: Throwable => Unit): Unit =
     throw new NotImplementedError("Thin client cache configuration was used to create cache via node API")
 
-  override def getOrCreateCache[K, V, U](cfg: CacheConfiguration[K, V])(s: CacheApi[K, V] => U, f: Throwable => U): Unit =
+  override def getOrCreateCacheByConfiguration[K, V](cfg: CacheConfiguration[K, V])(s: CacheApi[K, V] => Unit, f: Throwable => Unit): Unit =
     withCompletion(Future(wrapped.getOrCreateCache(cfg)).map(CacheNodeApi(_)))(s, f)
 
-  override def getOrCreateCache[K, V, U](name: String, cfg: SimpleCacheConfiguration)(s: CacheApi[K, V] => U, f: Throwable => U): Unit =
-    getOrCreateCache(cacheConfiguration[K, V](name, cfg))(s, f)
+  override def getOrCreateCacheBySimpleConfig[K, V](name: String, cfg: SimpleCacheConfiguration)(s: CacheApi[K, V] => Unit, f: Throwable => Unit): Unit =
+    getOrCreateCacheByConfiguration(cacheConfiguration[K, V](name, cfg))(s, f)
 
-  override def close[U]()(s: Unit => U, f: Throwable => U): Unit =
+  override def close()(s: Unit => Unit, f: Throwable => Unit): Unit =
     withCompletion(Future.successful(()))(s, f)
 
   private def cacheConfiguration[K, V](name: String, simpleCacheConfiguration: SimpleCacheConfiguration): CacheConfiguration[K, V] =
@@ -36,7 +36,7 @@ case class IgniteNodeApi(wrapped: Ignite)(implicit val ec: ExecutionContext) ext
       .setAtomicityMode(simpleCacheConfiguration.atomicity)
       .setBackups(simpleCacheConfiguration.backups)
 
-  override def txStart[U]()(s: TransactionApi => U, f: Throwable => U): Unit = {
+  override def txStart()(s: TransactionApi => Unit, f: Throwable => Unit): Unit = {
     Try {
       wrapped.transactions().txStart()
     }.fold(
@@ -44,4 +44,6 @@ case class IgniteNodeApi(wrapped: Ignite)(implicit val ec: ExecutionContext) ext
       tx => TransactionNodeApi(tx)
     )
   }
+
+  override def wrapped[API]: API = wrapped.asInstanceOf[API]
 }

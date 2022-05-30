@@ -3,9 +3,8 @@ package org.apache.ignite.gatling.api.node
 import org.apache.ignite.gatling.api.TransactionApi
 import org.apache.ignite.transactions.Transaction
 
-
 case class TransactionNodeApi(wrapped: Transaction) extends TransactionApi {
-  override def commit[U]()(s: Unit => U, f: Throwable => U): Unit = {
+  override def commit()(s: Unit => Unit, f: Throwable => Unit): Unit = {
     try {
       s(wrapped.commit())
     } catch  {
@@ -15,7 +14,7 @@ case class TransactionNodeApi(wrapped: Transaction) extends TransactionApi {
     }
   }
 
-  override def rollback[U]()(s: Unit => U, f: Throwable => U): Unit = {
+  override def rollback()(s: Unit => Unit, f: Throwable => Unit): Unit = {
     try {
       s(wrapped.rollback())
     } catch {
