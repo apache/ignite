@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.cache.query.index.sorted.keys;
 
 import java.time.LocalDate;
-import java.util.Date;
+import java.sql.Date;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypes;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.types.DateValueUtils;
@@ -38,8 +38,10 @@ public class DateIndexKey implements IndexKey {
             LocalDate locDate = (LocalDate)obj;
             dateVal = DateValueUtils.dateValue(locDate.getYear(), locDate.getMonthValue(), locDate.getDayOfMonth());
         }
-        else
-            throw new IgniteException("Failed to convert object to date value.");
+        else {
+            throw new IgniteException("Failed to convert object to date value, unexpected class " +
+                obj.getClass().getName());
+        }
     }
 
     /** */
@@ -62,7 +64,7 @@ public class DateIndexKey implements IndexKey {
         long millis = DateValueUtils.millisFromDateValue(dateVal);
         millis = DateValueUtils.defaultTzMillisFromUtc(millis);
 
-        return new java.sql.Date(millis);
+        return new Date(millis);
     }
 
     /** {@inheritDoc} */

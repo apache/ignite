@@ -45,8 +45,10 @@ public class TimeIndexKey implements IndexKey {
             LocalTime locTime = (LocalTime)obj;
             nanos = locTime.toNanoOfDay();
         }
-        else
-            throw new IgniteException("Failed to convert object to time value.");
+        else {
+            throw new IgniteException("Failed to convert object to time value, unexpected class " +
+                obj.getClass().getName());
+        }
     }
 
     /** */

@@ -58,8 +58,11 @@ public class TimestampIndexKey implements IndexKey {
             dateVal = DateValueUtils.dateValue(locDate.getYear(), locDate.getMonthValue(), locDate.getDayOfMonth());
             nanos = locTime.toNanoOfDay();
         }
-        else
-            throw new IgniteException("Failed to convert object to timestamp value.");
+        else {
+            throw new IgniteException("Failed to convert object to timestamp value, unexpected class " +
+                obj.getClass().getName());
+        }
+
     }
 
     /** */
