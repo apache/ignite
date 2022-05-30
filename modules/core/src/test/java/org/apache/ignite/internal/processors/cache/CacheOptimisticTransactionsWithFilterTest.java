@@ -373,6 +373,8 @@ public class CacheOptimisticTransactionsWithFilterTest extends GridCommonAbstrac
                 ", backups=" + ccfg.getBackups() +
                 ", near=" + (ccfg.getNearConfiguration() != null) + "]");
 
+            awaitCacheOnClient(ignite(serversNumber() + 1), ccfg.getName());
+
             ignite(serversNumber() + 1).createNearCache(ccfg.getName(), new NearCacheConfiguration<>());
 
             try {

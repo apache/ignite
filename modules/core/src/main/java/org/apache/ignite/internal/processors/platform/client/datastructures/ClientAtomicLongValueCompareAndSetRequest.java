@@ -24,7 +24,7 @@ import org.apache.ignite.internal.processors.platform.client.ClientConnectionCon
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
 
 /**
- * Atomic long get and set request.
+ * Atomic long compare and set request.
  */
 public class ClientAtomicLongValueCompareAndSetRequest extends ClientAtomicLongRequest {
     /** */

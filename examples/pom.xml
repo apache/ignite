@@ -318,11 +318,6 @@
                     <groupId>${project.groupId}</groupId>
                     <artifactId>ignite-schedule</artifactId>
                 </dependency>
-
-                <dependency>
-                    <groupId>${project.groupId}</groupId>
-                    <artifactId>ignite-geospatial</artifactId>
-                </dependency>
             </dependencies>
 
             <build>

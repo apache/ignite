@@ -1138,6 +1138,8 @@ public class CacheContinuousQueryRandomOperationsTest extends GridCommonAbstract
 
                     evtsQueues.add(evtsQueue);
 
+                    awaitCacheOnClient(ignite(i), ccfg.getName());
+
                     QueryCursor<?> cur = ignite(i).cache(ccfg.getName()).query(qry);
 
                     curs.add(cur);

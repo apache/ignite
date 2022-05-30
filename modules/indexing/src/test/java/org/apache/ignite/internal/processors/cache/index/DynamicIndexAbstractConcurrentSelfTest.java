@@ -216,6 +216,8 @@ public abstract class DynamicIndexAbstractConcurrentSelfTest extends DynamicInde
 
         createSqlCache(srv1);
 
+        awaitCacheOnClient(grid(4), cacheConfiguration().getName());
+
         CountDownLatch idxLatch = blockIndexing(srv1);
 
         QueryIndex idx1 = index(IDX_NAME_1, field(FIELD_NAME_1));

@@ -40,6 +40,8 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiInClosure;
@@ -383,6 +385,9 @@ public class IgniteTxCacheWriteSynchronizationModesMultithreadedTest extends Gri
     private <K, V> IgniteCache<K, V> createCache(Ignite ignite, CacheConfiguration<K, V> ccfg,
         boolean nearCache) {
         IgniteCache<K, V> cache = ignite.createCache(ccfg);
+
+        F.view(G.allGrids(), node -> node.cluster().localNode().isClient())
+            .forEach(node -> awaitCacheOnClient(node, ccfg.getName()));
 
         if (nearCache)
             ignite(NODES - 1).createNearCache(ccfg.getName(), new NearCacheConfiguration<>());
