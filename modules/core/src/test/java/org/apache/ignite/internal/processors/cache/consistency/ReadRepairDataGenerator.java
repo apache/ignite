@@ -309,10 +309,7 @@ public class ReadRepairDataGenerator extends JUnitAssertAware {
                 null :
                 wrapTestValueIfNeeded(wrap, rnd.nextBoolean()/*increment or same as previously*/ ? ++incVal : incVal);
 
-            T2<Object, GridCacheVersion> valVer =
-                new T2<>(
-                    val instanceof Object[] ? new ArrayWrapper((Object[])val) : val,
-                    val != null ? ver : null);
+            T2<Object, GridCacheVersion> valVer = new T2<>(wrapArrayIfNeeded(val), val != null ? ver : null);
 
             vals.add(valVer);
             mapping.put(node, valVer);
@@ -494,8 +491,7 @@ public class ReadRepairDataGenerator extends JUnitAssertAware {
         IgniteBinary igniteBinary = clsAwareNodes.get(0).binary();
 
         Object primValBin = igniteBinary.toBinary(primVal);
-        Object repairedBin = igniteBinary.toBinary(
-            repaired instanceof ArrayWrapper ? ((ArrayWrapper)repaired).arr : repaired);
+        Object repairedBin = igniteBinary.toBinary(unwrapArrayIfNeeded(repaired));
 
         Map<Ignite, T2<Object, GridCacheVersion>> mappingBin = mapping.entrySet().stream().collect(
             Collectors.toMap(
@@ -503,11 +499,7 @@ public class ReadRepairDataGenerator extends JUnitAssertAware {
                 (entry) -> {
                     T2<Object, GridCacheVersion> t2 = entry.getValue();
 
-                    Object obj = t2.getKey();
-
-                    return new T2<>(igniteBinary.toBinary(
-                        obj instanceof ArrayWrapper ? ((ArrayWrapper)obj).arr : obj),
-                        t2.getValue());
+                    return new T2<>(igniteBinary.toBinary(unwrapArrayIfNeeded(t2.getKey())), t2.getValue());
                 }));
 
         return new InconsistentMapping(mappingBin, primValBin, repairedBin, repairable, consistent);
@@ -516,39 +508,22 @@ public class ReadRepairDataGenerator extends JUnitAssertAware {
     /**
      *
      */
-    private static final class ArrayWrapper {
-        /** Array. */
-        final Object[] arr;
-
-        /** */
-        public ArrayWrapper(Object[] arr) {
-            this.arr = arr;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean equals(Object o) {
-            if (this == o)
-                return true;
-
-            if (o == null || getClass() != o.getClass())
-                return false;
-
-            ArrayWrapper wrapper = (ArrayWrapper)o;
-
-            return Arrays.equals(arr, wrapper.arr);
-        }
-
-        /** {@inheritDoc} */
-        @Override public int hashCode() {
-            return Arrays.hashCode(arr);
-        }
+    private Object incomparableTestValue() {
+        return new IncomparableClass();
     }
 
     /**
      *
      */
-    private Object incomparableTestValue() {
-        return new IncomparableClass();
+    private Object wrapArrayIfNeeded(Object obj) {
+        return obj instanceof Object[] ? new ArrayWrapper((Object[])obj) : obj;
+    }
+
+    /**
+     *
+     */
+    private Object unwrapArrayIfNeeded(Object obj) {
+        return obj instanceof ArrayWrapper ? ((ArrayWrapper)obj).arr : obj;
     }
 
     /**
@@ -713,6 +688,37 @@ public class ReadRepairDataGenerator extends JUnitAssertAware {
             fail("Shound never be compared.");
 
             return false;
+        }
+    }
+
+    /**
+     *
+     */
+    private static final class ArrayWrapper {
+        /** Array. */
+        final Object[] arr;
+
+        /** */
+        public ArrayWrapper(Object[] arr) {
+            this.arr = arr;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean equals(Object o) {
+            if (this == o)
+                return true;
+
+            if (o == null || getClass() != o.getClass())
+                return false;
+
+            ArrayWrapper wrapper = (ArrayWrapper)o;
+
+            return Arrays.equals(arr, wrapper.arr);
+        }
+
+        /** {@inheritDoc} */
+        @Override public int hashCode() {
+            return Arrays.hashCode(arr);
         }
     }
 }
