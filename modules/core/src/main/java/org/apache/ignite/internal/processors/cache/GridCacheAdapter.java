@@ -5223,7 +5223,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                     // No updates since consistency violation has been found.
                     ((primVal != null &&
                         (primVal instanceof Object[] && entryVal instanceof Object[] ?
-                            Arrays.equals((Object[])primVal, (Object[])entryVal) :
+                            Arrays.deepEquals((Object[])primVal, (Object[])entryVal) :
                             primVal.equals(entryVal))) &&
                         (primVer.equals(((CacheInvokeEntry<Object, Object>)entry).entry().version())))) {
 
