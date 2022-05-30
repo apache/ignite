@@ -349,4 +349,60 @@ public class IgniteClusterSnapshotHandlerTest extends IgniteClusterSnapshotResto
         startGrid(0);
         grid(0).snapshot().createSnapshot(SNAPSHOT_NAME);
     }
+
+    /**
+     * Test ensures that the location of the snapshot is valid.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testHandlerSnapshotLocation() throws Exception {
+        String snpName = "snapshot_30052022";
+        File snpDir = U.resolveWorkDirectory(U.defaultWorkDirectory(), "ex_snapshots", true);
+        String expFullPath = new File(snpDir, snpName).getAbsolutePath();
+
+        SnapshotHandler<Void> createHnd = new SnapshotHandler<Void>() {
+            @Override public SnapshotHandlerType type() {
+                return SnapshotHandlerType.CREATE;
+            }
+
+            @Override public Void invoke(SnapshotHandlerContext ctx) {
+                if (!expFullPath.equals(ctx.snapshotDirectory().getAbsolutePath()))
+                    throw new IllegalStateException("Expected " + expFullPath + ", actual " + ctx.snapshotDirectory());
+
+                return null;
+            }
+        };
+
+        SnapshotHandler<Void> restoreHnd = new SnapshotHandler<Void>() {
+            @Override public SnapshotHandlerType type() {
+                return SnapshotHandlerType.RESTORE;
+            }
+
+            @Override public Void invoke(SnapshotHandlerContext ctx) throws Exception {
+                createHnd.invoke(ctx);
+
+                return null;
+            }
+        };
+
+        handlers.add(createHnd);
+        handlers.add(restoreHnd);
+
+        try {
+            IgniteEx ignite = startGridsWithCache(1, CACHE_KEYS_RANGE, valueBuilder(), dfltCacheCfg);
+
+            IgniteSnapshotManager snpMgr = ignite.context().cache().context().snapshotMgr();
+
+            snpMgr.createSnapshot(snpName, snpDir.getAbsolutePath()).get(TIMEOUT);
+
+            ignite.destroyCache(DEFAULT_CACHE_NAME);
+            awaitPartitionMapExchange();
+
+            snpMgr.restoreSnapshot(snpName, snpDir.getAbsolutePath(), null).get(TIMEOUT);
+        }
+        finally {
+            U.delete(snpDir);
+        }
+    }
 }
