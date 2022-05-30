@@ -87,7 +87,7 @@ public class SnapshotRestoreCommand extends SnapshotSubcommand {
                     throw new IllegalArgumentException("Expected " + argDesc);
             }
             else if (option == SOURCE) {
-                String errMsg = "Expected path to snapshot directory.";
+                String errMsg = "Expected path to the snapshot directory.";
 
                 if (CommandArgIterator.isCommandOrOption(argIter.peekNextArg()))
                     throw new IllegalArgumentException(errMsg);

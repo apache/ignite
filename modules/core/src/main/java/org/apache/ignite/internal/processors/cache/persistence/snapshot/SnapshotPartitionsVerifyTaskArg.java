@@ -16,7 +16,6 @@
  */
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
@@ -42,6 +41,7 @@ public class SnapshotPartitionsVerifyTaskArg extends VisorDataTransferObject {
     /** The map of distribution of snapshot metadata pieces across the cluster. */
     private Map<ClusterNode, List<SnapshotMetadata>> clusterMetas;
 
+    /** Snapshot directory path. */
     private String snpPath;
 
     /** Default constructor. */
@@ -52,7 +52,7 @@ public class SnapshotPartitionsVerifyTaskArg extends VisorDataTransferObject {
     /**
      * @param grpNames Cache group names to be verified.
      * @param clusterMetas The map of distribution of snapshot metadata pieces across the cluster.
-     * @param snpPath todo
+     * @param snpPath Snapshot directory path.
      */
     public SnapshotPartitionsVerifyTaskArg(
         Collection<String> grpNames,

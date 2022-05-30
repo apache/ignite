@@ -304,10 +304,6 @@ public class SnapshotRestoreProcess {
                 cacheGrpNames.stream().collect(Collectors.toMap(CU::cacheId, v -> v));
 
             for (Map.Entry<ClusterNode, List<SnapshotMetadata>> entry : metas.entrySet()) {
-                // todo remove
-                if (entry.getKey().id().toString().endsWith("2"))
-                    continue;
-
                 dataNodes.add(entry.getKey().id());
 
                 for (SnapshotMetadata meta : entry.getValue()) {
@@ -587,9 +583,7 @@ public class SnapshotRestoreProcess {
                     ", caches=" + req.groups() + ']');
             }
 
-            List<SnapshotMetadata> locMetas = snpMgr.readSnapshotMetadatas(req.snapshotName(), !ctx.localNodeId().toString().endsWith("2") ? req.snapshotPath() : null);
-
-//                !ctx.localNodeId().toString().endsWith("2") ? req.snapshotPath() : null);
+            List<SnapshotMetadata> locMetas = snpMgr.readSnapshotMetadatas(req.snapshotName(), req.snapshotPath());
 
             SnapshotRestoreContext opCtx0 = prepareContext(req, locMetas);
 
@@ -881,7 +875,6 @@ public class SnapshotRestoreProcess {
             Map<Integer, Set<PartitionRestoreFuture>> allParts = new HashMap<>();
             Map<Integer, Set<PartitionRestoreFuture>> rmtLoadParts = new HashMap<>();
             ClusterNode locNode = ctx.cache().context().localNode();
-            //ctx.localNodeId().toString().endsWith("2") ? Collections.emptyList() :
             List<SnapshotMetadata> locMetas = opCtx0.metasPerNode.get(locNode.id());
 
             // First preload everything from the local node.
@@ -904,13 +897,7 @@ public class SnapshotRestoreProcess {
                         availParts.addAll(parts);
                 }
 
-                if (ctx.localNodeId().toString().endsWith("2"))
-                    System.out.println(">xxx> Cache = " + cacheOrGrpName + ", availParts =" + availParts);
-
                 List<List<ClusterNode>> assignment = affCache.get(cacheOrGrpName).idealAssignment().assignment();
-
-//                if (ctx.localNodeId().toString().endsWith("2"))
-//                    System.out.println(">xxx> assignment " + assignment);
 
                 Set<PartitionRestoreFuture> partFuts = availParts
                     .stream()
@@ -919,10 +906,6 @@ public class SnapshotRestoreProcess {
                     .collect(Collectors.toSet());
 
                 allParts.put(grpId, partFuts);
-
-                if (ctx.localNodeId().toString().endsWith("2"))
-                    System.out.println(">xxx> partFuts =" + partFuts);
-
                 rmtLoadParts.put(grpId, leftParts = new HashSet<>(partFuts));
 
                 if (leftParts.isEmpty())
@@ -981,8 +964,6 @@ public class SnapshotRestoreProcess {
                     }
                 }
             }
-
-            System.out.println(">xxx> rmtLoadParts " + rmtLoadParts);
 
             // Load other partitions from remote nodes.
             List<PartitionRestoreFuture> rmtAwaitParts = rmtLoadParts.values().stream()
@@ -1406,6 +1387,7 @@ public class SnapshotRestoreProcess {
         /** Snapshot name. */
         private final String snpName;
 
+        /** Snapshot directory path. */
         private final String snpPath;
 
         /** Baseline discovery cache for node IDs that must be alive to complete the operation.*/

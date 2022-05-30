@@ -20,55 +20,61 @@ package org.apache.ignite.internal.visor.snapshot;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
+import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
- * Argument for the task to create snapshot.
+ * Argument for the task to check snapshot.
  */
-public class VisorSnapshotCreateTaskArg extends VisorSnapshotCheckTaskArg {
+public class VisorSnapshotCheckTaskArg extends IgniteDataTransferObject {
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;
 
-    /** Synchronous execution flag. */
-    private boolean sync;
+    /** Snapshot name. */
+    private String snpName;
+
+    /** Snapshot directory path. */
+    private String snpPath;
 
     /** Default constructor. */
-    public VisorSnapshotCreateTaskArg() {
+    public VisorSnapshotCheckTaskArg() {
         // No-op.
     }
 
     /**
      * @param snpName Snapshot name.
      * @param snpPath Snapshot directory path.
-     * @param sync Synchronous execution flag.
      */
-    public VisorSnapshotCreateTaskArg(String snpName, String snpPath, boolean sync) {
-        super(snpName, snpPath);
-
-        this.sync = sync;
+    public VisorSnapshotCheckTaskArg(String snpName, String snpPath) {
+        this.snpName = snpName;
+        this.snpPath = snpPath;
     }
 
-    /** @return Synchronous execution flag. */
-    public boolean sync() {
-        return sync;
+    /** @return Snapshot name. */
+    public String snapshotName() {
+        return snpName;
+    }
+
+    /** @return Snapshot directory path. */
+    public String snapshotPath() {
+        return snpPath;
     }
 
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        super.writeExternalData(out);
-
-        out.writeBoolean(sync);
+        U.writeString(out, snpName);
+        U.writeString(out, snpPath);
     }
 
     /** {@inheritDoc} */
     @Override protected void readExternalData(byte ver, ObjectInput in) throws IOException, ClassNotFoundException {
-        super.readExternalData(ver, in);
-
-        sync = in.readBoolean();
+        snpName = U.readString(in);
+        snpPath = U.readString(in);
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(VisorSnapshotCreateTaskArg.class, this);
+        return S.toString(VisorSnapshotCheckTaskArg.class, this);
     }
 }

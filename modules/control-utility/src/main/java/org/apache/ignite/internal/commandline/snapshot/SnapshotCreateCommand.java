@@ -56,7 +56,7 @@ public class SnapshotCreateCommand extends SnapshotSubcommand {
                     "Possible options: " + F.concat(F.asList(SnapshotCreateCommandOption.values()), ", ") + '.');
             }
             else if (option == DESTINATION) {
-                String errMsg = "Expected path to snapshot directory.";
+                String errMsg = "Expected path to the snapshot directory.";
 
                 if (CommandArgIterator.isCommandOrOption(argIter.peekNextArg()))
                     throw new IllegalArgumentException(errMsg);

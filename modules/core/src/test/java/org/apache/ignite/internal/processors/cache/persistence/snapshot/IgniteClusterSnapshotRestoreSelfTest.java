@@ -120,65 +120,39 @@ public class IgniteClusterSnapshotRestoreSelfTest extends IgniteClusterSnapshotR
         assertCacheKeys(ignite.cache(DEFAULT_CACHE_NAME), keysCnt);
     }
 
+    /**
+     * @throws Exception If failed.
+     */
     @Test
-    public void testClusterSnapshotRestoreWithExplicitPath() throws Exception {
+    public void testClusterSnapshotRestoreFromCustomDir() throws Exception {
         File snpDir = U.resolveWorkDirectory(U.defaultWorkDirectory(), "ex_snapshots", true);
 
         assert snpDir.list().length == 0 : "Target directory is not empty: " + Arrays.asList(snpDir.list());
 
         try {
-            IgniteEx ignite = null;
-
-//            dfltCacheCfg.setBackups(0);
-            dfltCacheCfg.setCacheMode(CacheMode.REPLICATED);
-            dfltCacheCfg.setAffinity(new RendezvousAffinityFunction(false, 8));
-
-            for (int i = 0; i < 2; i++) {
-//                IgniteConfiguration cfg = optimize(getConfiguration(getTestIgniteInstanceName(i)));
-
-//                cfg.setCacheConfiguration((CacheConfiguration[])null);
-//                ignite = startGrid(i);
-
-//                if (cfgPath)
-//                    cfg.setSnapshotPath(snpDir.getAbsolutePath());
-
-                ignite = startGrid(i);
-            }
-
-//            ignite.cluster().baselineAutoAdjustEnabled(false);
+            IgniteEx ignite = startGrids(2);
             ignite.cluster().state(ACTIVE);
 
             for (int i = 0; i < CACHE_KEYS_RANGE; i++)
                 ignite.cache(DEFAULT_CACHE_NAME).put(i, i);
 
-//            IgniteSnapshotManager snpMgr = ;
-
             ignite.context().cache().context().snapshotMgr().createSnapshot(SNAPSHOT_NAME, snpDir.toString()).get(TIMEOUT);
 
-//            IdleVerifyResultV2 res = snp(ignite).checkSnapshot(SNAPSHOT_NAME, snpDir, null, false).get(TIMEOUT);
-//
-//            StringBuilder sb = new StringBuilder();
-//            res.print(sb::append, true);
-//
-//            assertTrue(F.isEmpty(res.exceptions()));
-//            assertPartitionsSame(res);
-//            assertContains(log, sb.toString(), "The check procedure has finished, no conflicts have been found");
+            // Check snapshot.
+            IdleVerifyResultV2 res = snp(ignite).checkSnapshot(SNAPSHOT_NAME, snpDir.getAbsolutePath()).get(TIMEOUT);
 
-            ignite = startGrid(2);
-//            ignite.cluster().state(ACTIVE);
-            resetBaselineTopology();
+            StringBuilder sb = new StringBuilder();
+            res.print(sb::append, true);
 
-            awaitPartitionMapExchange();
-
+            assertTrue(F.isEmpty(res.exceptions()));
+            assertPartitionsSame(res);
+            assertContains(log, sb.toString(), "The check procedure has finished, no conflicts have been found");
 
             ignite.destroyCache(DEFAULT_CACHE_NAME);
             awaitPartitionMapExchange();
 
-            ignite.context().cache().context().snapshotMgr().restoreSnapshot(SNAPSHOT_NAME, snpDir.toString(), null).get();
-
-//            stopAllGrids();
-
-//            IgniteEx snp = startGridsFromSnapshot(2, cfg -> snpDir.getAbsolutePath(), SNAPSHOT_NAME, true);
+            ignite.context().cache().context().snapshotMgr().restoreSnapshot(SNAPSHOT_NAME, snpDir.getAbsolutePath(), null)
+                .get();
 
             IgniteCache<Object, Object> cache = ignite.cache(DEFAULT_CACHE_NAME);
 
@@ -191,7 +165,6 @@ public class IgniteClusterSnapshotRestoreSelfTest extends IgniteClusterSnapshotR
 
             U.delete(snpDir);
         }
-
     }
 
     /**

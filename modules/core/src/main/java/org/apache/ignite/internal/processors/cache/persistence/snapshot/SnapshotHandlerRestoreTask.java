@@ -118,11 +118,12 @@ public class SnapshotHandlerRestoreTask extends AbstractSnapshotVerificationTask
         /** Cache group names. */
         private final Collection<String> grps;
 
+        /** Snapshot directory path. */
         private final String snpPath;
 
         /**
          * @param snpName Snapshot name.
-         * @param snpPath todo
+         * @param snpPath Snapshot directory path.
          * @param consistentId String representation of the consistent node ID.
          * @param grps Cache group names.
          */

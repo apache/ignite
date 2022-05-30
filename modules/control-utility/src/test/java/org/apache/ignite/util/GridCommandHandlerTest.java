@@ -3350,7 +3350,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
     /** @throws Exception If fails. */
     @Test
-    public void testSnapshotCreateRestoreCustomDir() throws Exception {
+    public void testSnapshotCreateCheckAndRestoreCustomDir() throws Exception {
         int keysCnt = 100;
 
         File snpDir = U.resolveWorkDirectory(U.defaultWorkDirectory(), "ex_snapshots", true);
@@ -3377,6 +3377,13 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
             assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute(h, "--snapshot", "restore", snpName, "--start", "--sync"));
             assertContains(log, testOut.toString(), "Snapshot does not exists [snapshot=" + snpName);
 
+            // The check command simply prints the results of the check, it always ends with a zero exit code.
+            assertEquals(EXIT_CODE_OK, execute(h, "--snapshot", "check", snpName));
+            assertContains(log, testOut.toString(), "Snapshot does not exists [snapshot=" + snpName);
+
+            assertEquals(EXIT_CODE_OK, execute(h, "--snapshot", "check", snpName, "--src", snpDir.getAbsolutePath()));
+            assertContains(log, testOut.toString(), "The check procedure has finished, no conflicts have been found.");
+
             assertEquals(EXIT_CODE_OK,
                 execute(h, "--snapshot", "restore", snpName, "--start", "--sync", "--src", snpDir.getAbsolutePath()));
 
@@ -3386,7 +3393,8 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
             for (int i = 0; i < keysCnt; i++)
                 assertEquals(Integer.valueOf(i), cache.get(i));
-        } finally {
+        }
+        finally {
             U.delete(snpDir);
         }
     }

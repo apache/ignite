@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
-import java.io.File;
 import java.io.Serializable;
 import java.util.Collection;
 import java.util.Set;
@@ -41,7 +40,7 @@ public class SnapshotOperationRequest implements Serializable {
     /** Snapshot name. */
     private final String snpName;
 
-    /** Snapshot path. */
+    /** Snapshot directory path. */
     private final String snpPath;
 
     /** Baseline node IDs that must be alive to complete the operation. */
@@ -100,7 +99,7 @@ public class SnapshotOperationRequest implements Serializable {
     }
 
     /**
-     * @return Snapshot path.
+     * @return Snapshot directory path.
      */
     public String snapshotPath() {
         return snpPath;
