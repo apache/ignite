@@ -126,11 +126,9 @@ public class DateIndexKeyTypeTest extends GridCommonAbstractTest {
 
             long seconds = TimeUnit.MILLISECONDS.toSeconds(millis);
 
-            for (int nanos : new int[] {0, 1, 1_000_000}) {
-                checkLocalDate(seconds, nanos);
-                checkLocalDateTime(seconds, nanos);
-                checkLocalTime(seconds, nanos);
-            }
+            checkLocalDate(seconds, 0);
+            checkLocalDateTime(seconds, 0);
+            checkLocalTime(seconds, 0);
         }
     }
 
@@ -150,5 +148,15 @@ public class DateIndexKeyTypeTest extends GridCommonAbstractTest {
             dateFormat.parse("2023-01-01").getTime(),
             TimeUnit.MINUTES.toMillis(30)
         );
+
+        // Check local date types with nanoseconds.
+        for (String date : new String[] {"-1000-01-01", "1960-01-01", "2023-01-01"}) {
+            long seconds = TimeUnit.MILLISECONDS.toSeconds(dateFormat.parse(date).getTime());
+            for (int nanos : new int[] {1, 1_000, 1_000_000}) {
+                checkLocalDate(seconds, nanos);
+                checkLocalDateTime(seconds, nanos);
+                checkLocalTime(seconds, nanos);
+            }
+        }
     }
 }
