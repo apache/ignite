@@ -87,8 +87,8 @@ Arguments: --cache help --yes
     Manages user cache metrics collection: enables, disables it or shows status.
 
     Parameters:
-      --caches cache1[,...,cacheN]  - specifies a comma-separated list of cache names to which sub-command should be applied.
-      --all-caches                  - applies sub-command to all user caches.
+      --caches cache1[,...,cacheN]  - specifies a comma-separated list of cache names to which operation should be applied.
+      --all-caches                  - applies operation to all user caches.
 
 Command [CACHE] finished with code: 0
 Control utility has completed execution at: <!any!>
