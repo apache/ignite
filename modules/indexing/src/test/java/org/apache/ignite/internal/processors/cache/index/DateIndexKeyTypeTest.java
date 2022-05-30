@@ -59,10 +59,11 @@ public class DateIndexKeyTypeTest extends GridCommonAbstractTest {
         assertEquals(v.getDateValue(), key.dateValue());
 
         assertEquals(dateFormat.format(date), dateFormat.format((java.util.Date)key.key()));
+    }
 
-        // Check construction from LocalDate.
-        long seconds = TimeUnit.MILLISECONDS.toSeconds(millis);
-        LocalDate locDate = LocalDateTime.ofEpochSecond(seconds, 0, ZoneOffset.UTC).toLocalDate();
+    /** */
+    private void checkLocalDate(long seconds, int nanos) {
+        LocalDate locDate = LocalDateTime.ofEpochSecond(seconds, nanos, ZoneOffset.UTC).toLocalDate();
 
         ValueDate locV = (ValueDate)LocalDateTimeUtils.localDateToDateValue(locDate);
         DateIndexKey locKey = new DateIndexKey(locDate);
@@ -71,8 +72,9 @@ public class DateIndexKeyTypeTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private void checkTimestamp(long millis) {
+    private void checkTimestamp(long millis, int nanos) {
         Timestamp ts = new Timestamp(millis);
+        ts.setNanos(nanos);
         TimestampIndexKey key = new TimestampIndexKey(ts);
         ValueTimestamp v = ValueTimestamp.get(ts);
 
@@ -80,10 +82,11 @@ public class DateIndexKeyTypeTest extends GridCommonAbstractTest {
         assertEquals(v.getTimeNanos(), key.nanos());
 
         assertEquals(tsFormat.format(ts), tsFormat.format((java.util.Date)key.key()));
+    }
 
-        // Check construction from LocalDateTime.
-        long seconds = TimeUnit.MILLISECONDS.toSeconds(millis);
-        LocalDateTime locDateTime = LocalDateTime.ofEpochSecond(seconds, 0, ZoneOffset.UTC);
+    /** */
+    private void checkLocalDateTime(long seconds, int nanos) {
+        LocalDateTime locDateTime = LocalDateTime.ofEpochSecond(seconds, nanos, ZoneOffset.UTC);
 
         ValueTimestamp locV = (ValueTimestamp)LocalDateTimeUtils.localDateTimeToValue(locDateTime);
         TimestampIndexKey locKey = new TimestampIndexKey(locDateTime);
@@ -101,10 +104,11 @@ public class DateIndexKeyTypeTest extends GridCommonAbstractTest {
         assertEquals(v.getNanos(), key.nanos());
 
         assertEquals(timeFormat.format(t), timeFormat.format((java.util.Date)key.key()));
+    }
 
-        // Check construction from LocalTime.
-        long seconds = TimeUnit.MILLISECONDS.toSeconds(millis);
-        LocalTime locTime = LocalDateTime.ofEpochSecond(seconds, 0, ZoneOffset.UTC).toLocalTime();
+    /** */
+    private void checkLocalTime(long seconds, int nanos) {
+        LocalTime locTime = LocalDateTime.ofEpochSecond(seconds, nanos, ZoneOffset.UTC).toLocalTime();
 
         ValueTime locV = (ValueTime)LocalDateTimeUtils.localTimeToTimeValue(locTime);
         TimeIndexKey locKey = new TimeIndexKey(locTime);
@@ -116,8 +120,17 @@ public class DateIndexKeyTypeTest extends GridCommonAbstractTest {
     private void checkAllTypes(long tsStart, long tsEnd, long increment) {
         for (long millis = tsStart; millis <= tsEnd; millis += increment) {
             checkDate(millis);
-            checkTimestamp(millis);
+            checkTimestamp(millis, 0);
+            checkTimestamp(millis, 1);
             checkTime(millis);
+
+            long seconds = TimeUnit.MILLISECONDS.toSeconds(millis);
+
+            for (int nanos : new int[] {0, 1, 1_000_000}) {
+                checkLocalDate(seconds, nanos);
+                checkLocalDateTime(seconds, nanos);
+                checkLocalTime(seconds, nanos);
+            }
         }
     }
 
