@@ -55,20 +55,15 @@ import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.junits.JUnitAssertAware;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 
 /**
  *
  */
-public class ReadRepairDataGenerator {
+public class ReadRepairDataGenerator extends JUnitAssertAware {
     /** Key. */
     private final AtomicInteger incrementalKey = new AtomicInteger();
 
@@ -179,10 +174,7 @@ public class ReadRepairDataGenerator {
                         else
                             exp = results.get(key).primaryBin; // Or read from primary (when not a partition owner).
 
-                        if (exp instanceof Object[] && val instanceof Object[])
-                            assertArrayEquals((Object[])exp, (Object[])val);
-                        else
-                            assertEquals(exp, val);
+                        assertEquals(exp, val);
                     }
                 }
 

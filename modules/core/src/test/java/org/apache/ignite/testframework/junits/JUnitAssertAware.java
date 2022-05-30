@@ -23,7 +23,7 @@ import org.junit.Assert;
  * Provides the basic functionality of {@link Assert} methods in org.junit package.
  * Corresponding methods must be used in all ignite tests where necessary.
  */
-class JUnitAssertAware {
+public class JUnitAssertAware {
     /** See {@link Assert#assertTrue(String, boolean)} javadocs. */
     protected static void assertTrue(String msg, boolean cond) {
         Assert.assertTrue(msg, cond);
