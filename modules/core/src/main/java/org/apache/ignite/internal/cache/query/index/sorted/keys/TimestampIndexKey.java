@@ -46,7 +46,10 @@ public class TimestampIndexKey implements IndexKey {
             if (millis < 0)
                 millis += DateValueUtils.MILLIS_PER_DAY;
 
-            nanos = TimeUnit.MILLISECONDS.toNanos(millis);
+            if (obj instanceof Timestamp)
+                nanos = TimeUnit.MILLISECONDS.toNanos(millis) + ((Timestamp)obj).getNanos() % 1_000_000L;
+            else
+                nanos = TimeUnit.MILLISECONDS.toNanos(millis);
         }
         else if (obj instanceof LocalDateTime) {
             LocalDateTime locDateTime = ((LocalDateTime)obj);
