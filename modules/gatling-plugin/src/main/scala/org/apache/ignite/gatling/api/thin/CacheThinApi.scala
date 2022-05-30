@@ -2,6 +2,7 @@ package org.apache.ignite.gatling.api.thin
 
 import com.typesafe.scalalogging.StrictLogging
 import org.apache.ignite.cache.CacheEntryProcessor
+import org.apache.ignite.cache.query.SqlFieldsQuery
 import org.apache.ignite.client.ClientCache
 import org.apache.ignite.gatling.api.{CacheApi, CompletionSupport}
 
@@ -101,4 +102,12 @@ case class CacheThinApi[K, V](wrapped: ClientCache[K, V])(implicit val ec: Execu
 
   override def unlock(lock: Lock)(s: Unit => Unit, f: Throwable => Unit): Unit =
     throw new NotImplementedError("unlock is not supported in thin client API")
+
+  override def sql(query: SqlFieldsQuery)(s: List[List[Any]] => Unit, f: Throwable => Unit): Unit = {
+    logger.debug("sync sql")
+    Try { wrapped.query(query)
+      .getAll.asScala.toList
+      .map(_.asScala.toList)
+    }.fold(f, s)
+  }
 }

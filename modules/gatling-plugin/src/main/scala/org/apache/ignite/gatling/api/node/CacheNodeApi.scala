@@ -3,6 +3,7 @@ package org.apache.ignite.gatling.api.node
 import com.typesafe.scalalogging.StrictLogging
 import org.apache.ignite.IgniteCache
 import org.apache.ignite.cache.CacheEntryProcessor
+import org.apache.ignite.cache.query.SqlFieldsQuery
 import org.apache.ignite.gatling.api.CacheApi
 
 import java.util.concurrent.locks.Lock
@@ -147,6 +148,14 @@ case class CacheNodeApi[K, V](wrapped: IgniteCache[K, V])(implicit val ec: Execu
     logger.debug("sync unlock")
     Try {
       lock.unlock()
+    }.fold(f, s)
+  }
+
+  override def sql(query: SqlFieldsQuery)(s: List[List[Any]] => Unit, f: Throwable => Unit): Unit = {
+    logger.debug("sync sql")
+    Try { wrapped.query(query)
+      .getAll.asScala.toList
+      .map(_.asScala.toList)
     }.fold(f, s)
   }
 }

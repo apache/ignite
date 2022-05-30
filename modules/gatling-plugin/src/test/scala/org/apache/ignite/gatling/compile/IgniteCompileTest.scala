@@ -1,6 +1,6 @@
 package org.apache.ignite.gatling.compile
 
-import org.apache.ignite.gatling.Predef.{simpleCheck, _}
+import org.apache.ignite.gatling.Predef._
 import io.gatling.core.Predef._
 import org.apache.ignite.{Ignite, Ignition}
 import org.apache.ignite.cache.CacheEntryProcessor
@@ -89,6 +89,19 @@ class IgniteCompileTest extends Simulation {
     )
     .exec(ignite("ign").cache("cache").unlock("#{lock}"))
 
+    .exec(ignite("ign").cache("cache").sql("CREATE TABLE TEST_TABLE"))
+    .exec(ignite("ign").cache("cache").sql("SELECT * FROM TEST_TABLE WHERE id = ?")
+      .args("#{id}"))
+    .exec(ignite("ign").cache("cache")
+      .sql("SELECT * FROM TEST_TABLE WHERE id = ? AND affinity_id = ?")
+      .args("#{id}", "#{affinity_id}"))
+    .exec(ignite("ign").cache("cache")
+      .sql("SELECT * FROM TEST_TABLE WHERE id = ? AND affinity_id = ?")
+      .partitions("#{partitions}"))
+    .exec(ignite("ign").cache("cache")
+      .sql("SELECT * FROM TEST_TABLE WHERE id = ? AND affinity_id = ?")
+      .check(allSqlResults.transformWithSession((r, s) => s("value").as[Int] :: r.head).saveAs("firstRow"))
+    )
     .exec(session => {
       val client: IgniteApi = session("igniteApi").as[IgniteApi]
 
