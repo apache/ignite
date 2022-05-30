@@ -18,6 +18,8 @@
 package org.apache.ignite.internal.processors.query.calcite.exec.exp.agg;
 
 import java.lang.reflect.Modifier;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.function.Function;
@@ -226,6 +228,14 @@ public class AccumulatorsFactory<Row> implements Supplier<List<AccumulatorWrappe
             List<Function<Object, Object>> casts =
                 Commons.transform(Pair.zip(inTypes, outTypes), AccumulatorsFactory::cast);
 
+            final boolean ignoreNulls = call.ignoreNulls();
+
+            final int[] argMapping = new int[Collections.max(call.getArgList()) + 1];
+            Arrays.fill(argMapping, -1);
+
+            for (int i = 0; i < call.getArgList().size(); ++i)
+                argMapping[call.getArgList().get(i)] = i;
+
             return new Function<Row, Row>() {
                 final RowHandler<Row> hnd = ctx.rowHandler();
 
@@ -234,11 +244,13 @@ public class AccumulatorsFactory<Row> implements Supplier<List<AccumulatorWrappe
                 @Override public Row apply(Row in) {
                     Row out = rowFac.create();
 
-                    List<Integer> argList = call.getArgList();
                     for (int i = 0; i < hnd.columnCount(in); ++i) {
                         Object val = hnd.get(i, in);
 
-                        int idx = argList.indexOf(i);
+                        if (ignoreNulls && val == null)
+                            return null;
+
+                        int idx = i < argMapping.length ? argMapping[i] : -1;
                         if (idx != -1)
                             val = casts.get(idx).apply(val);
 
@@ -307,7 +319,11 @@ public class AccumulatorsFactory<Row> implements Supplier<List<AccumulatorWrappe
             if (filterArg >= 0 && Boolean.TRUE != handler.get(filterArg, row))
                 return;
 
-            accumulator.add(inAdapter.apply(row));
+            Row newRow = inAdapter.apply(row);
+            if (newRow == null)
+                return;
+
+            accumulator.add(newRow);
         }
 
         /** {@inheritDoc} */

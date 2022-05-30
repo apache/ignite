@@ -21,7 +21,7 @@ import java.math.BigDecimal;
 import java.math.MathContext;
 import java.util.ArrayList;
 import java.util.Comparator;
-import java.util.LinkedHashMap;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -1164,7 +1164,7 @@ public class Accumulators {
         private final Accumulator<Row> acc;
 
         /** */
-        private final Map<Object, Row> rows = new LinkedHashMap<>();
+        private final Map<Object, Row> rows = new HashMap<>();
 
         /** */
         private DistinctAccumulator(AggregateCall aggCall, RowHandler<Row> hnd, Supplier<Accumulator<Row>> accSup) {
