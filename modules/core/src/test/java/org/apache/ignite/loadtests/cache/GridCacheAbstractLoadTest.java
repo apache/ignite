@@ -45,6 +45,7 @@ import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.core.Appender;
 import org.apache.logging.log4j.core.Logger;
+import org.apache.logging.log4j.core.LoggerContext;
 import org.apache.logging.log4j.core.appender.ConsoleAppender;
 import org.apache.logging.log4j.core.appender.NullAppender;
 import org.apache.logging.log4j.core.appender.RollingFileAppender;
@@ -339,7 +340,9 @@ abstract class GridCacheAbstractLoadTest {
         // Add no-op logger to remove no-appender warning.
         NullAppender aNull = NullAppender.createAppender("aNull");
 
-        ((Logger)LogManager.getRootLogger()).addAppender(aNull);
+        aNull.start();
+
+        LoggerContext.getContext().getRootLogger().addAppender(aNull);
 
         ApplicationContext springCtx;
 
@@ -365,7 +368,9 @@ abstract class GridCacheAbstractLoadTest {
             throw new IgniteCheckedException("Failed to find a single grid factory configuration in: " + path);
 
         // Remove previously added no-op logger.
-        ((Logger)LogManager.getRootLogger()).removeAppender(aNull);
+        LoggerContext.getContext().getRootLogger().removeAppender(aNull);
+
+        aNull.stop();
 
         if (cfgMap.isEmpty())
             throw new IgniteCheckedException("Can't find grid factory configuration in: " + path);

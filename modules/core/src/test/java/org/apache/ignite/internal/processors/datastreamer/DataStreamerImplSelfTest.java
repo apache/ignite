@@ -55,6 +55,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.core.Appender;
 import org.apache.logging.log4j.core.Logger;
+import org.apache.logging.log4j.core.LoggerContext;
 import org.apache.logging.log4j.core.appender.WriterAppender;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -439,7 +440,9 @@ public class DataStreamerImplSelfTest extends GridCommonAbstractTest {
         StringWriter logWriter = new StringWriter();
         Appender logAppender = WriterAppender.newBuilder().setTarget(logWriter).build();
 
-        ((Logger)LogManager.getRootLogger()).addAppender(logAppender);
+        logAppender.start();
+
+        LoggerContext.getContext().getRootLogger().addAppender(logAppender);
 
         startGrids(MAX_CACHE_COUNT - 1); // cache-enabled nodes
 

@@ -130,6 +130,7 @@ import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.core.Appender;
 import org.apache.logging.log4j.core.Logger;
+import org.apache.logging.log4j.core.LoggerContext;
 import org.apache.logging.log4j.core.appender.ConsoleAppender;
 import org.apache.logging.log4j.core.appender.RollingFileAppender;
 import org.apache.logging.log4j.core.appender.rolling.DefaultRolloverStrategy;
@@ -466,7 +467,7 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
      * default in {@link #afterTest()}.
      */
     protected final void setLoggerDebugLevel() {
-        Logger logger = LogManager.getLogger("org.apache.ignite");
+        Logger logger = LoggerContext.getContext().getLogger("org.apache.ignite");
 
         Level lvl = logger.getLevel() == null ? LogManager.getRootLogger().getLevel() : logger.getLevel();
 
@@ -486,10 +487,10 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
     protected void resetLog4j(Level log4j2Level, boolean logToFile, String cat, String... cats)
         throws IgniteCheckedException {
         for (String c : F.concat(false, cat, F.asList(cats)))
-            Configurator.setLevel(c, log4jLevel);
+            Configurator.setLevel(c, log4j2Level);
 
         if (logToFile) {
-            Logger log4j = (Logger)LogManager.getRootLogger();
+            Logger log4j = LoggerContext.getContext().getRootLogger();
 
             for (Appender appndr : log4j.getAppenders().values())
                 log4j.removeAppender(appndr);

@@ -38,6 +38,7 @@ import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.core.Logger;
+import org.apache.logging.log4j.core.LoggerContext;
 import org.apache.logging.log4j.core.appender.NullAppender;
 import org.springframework.beans.BeansException;
 import org.springframework.context.ApplicationContext;
@@ -206,7 +207,9 @@ public final class GridVmNodesStarter {
         // Add no-op logger to remove no-appender warning.
         NullAppender aNull = NullAppender.createAppender("aNull");
 
-        ((Logger)LogManager.getRootLogger()).addAppender(aNull);
+        aNull.start();
+
+        LoggerContext.getContext().getRootLogger().addAppender(aNull);
 
         ApplicationContext springCtx;
 
@@ -232,7 +235,9 @@ public final class GridVmNodesStarter {
             throw new IgniteCheckedException("Failed to find a single grid factory configuration in: " + path);
 
         // Remove previously added no-op logger.
-        ((Logger)LogManager.getRootLogger()).removeAppender(aNull);
+        LoggerContext.getContext().getRootLogger().removeAppender(aNull);
+
+        aNull.stop();
 
         if (cfgMap.isEmpty())
             throw new IgniteCheckedException("Can't find grid factory configuration in: " + path);

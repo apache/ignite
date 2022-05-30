@@ -143,6 +143,15 @@ public class Log4J2Logger implements IgniteLogger, LoggerNodeIdAndApplicationAwa
     }
 
     /**
+     * Creates new logger with given implementation.
+     *
+     * @param impl Log4j implementation to use.
+     */
+    public Log4J2Logger(final org.apache.logging.log4j.Logger impl) {
+        this((Logger)impl, null);
+    }
+
+    /**
      * Creates new logger with given configuration {@code path}.
      *
      * @param path Path to log4j2 configuration XML file.

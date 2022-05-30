@@ -25,7 +25,7 @@ import org.apache.ignite.cache.store.cassandra.datasource.DataSource;
 import org.apache.ignite.cache.store.cassandra.persistence.KeyValuePersistenceSettings;
 import org.apache.ignite.logger.log4j2.Log4J2Logger;
 import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.core.Logger;
+import org.apache.logging.log4j.Logger;
 import org.springframework.core.io.Resource;
 
 /**
@@ -33,7 +33,7 @@ import org.springframework.core.io.Resource;
  */
 public class CacheStoreHelper {
     /** */
-    private static final Logger LOGGER = (Logger)LogManager.getLogger(CacheStoreHelper.class.getName());
+    private static final Logger LOGGER = LogManager.getLogger(CacheStoreHelper.class.getName());
 
     /** */
     public static CacheStore createCacheStore(String cacheName, Resource persistenceSettings, DataSource conn) {
