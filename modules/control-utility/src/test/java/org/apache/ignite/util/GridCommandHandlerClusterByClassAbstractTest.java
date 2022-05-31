@@ -75,7 +75,7 @@ public abstract class GridCommandHandlerClusterByClassAbstractTest extends GridC
         Set<String> rmvCacheNames = new HashSet<>(crd.cacheNames());
         rmvCacheNames.removeAll(cfgCacheNames);
 
-        crd.destroyCaches(rmvCacheNames);
+        client.destroyCaches(rmvCacheNames);
 
         cfgCacheNames.stream()
             .map(crd::cache)

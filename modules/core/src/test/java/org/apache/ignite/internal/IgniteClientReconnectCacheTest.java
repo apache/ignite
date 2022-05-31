@@ -1053,6 +1053,8 @@ public class IgniteClientReconnectCacheTest extends IgniteClientReconnectAbstrac
         srvCache.put(1, new TestClass1());
         srvCache.put(2, new TestClass2());
 
+        awaitCacheOnClient(client, DEFAULT_CACHE_NAME);
+
         IgniteCache<Object, Object> clientCache2 = client.cache(DEFAULT_CACHE_NAME);
 
         assertNotNull(clientCache2);
@@ -1256,6 +1258,8 @@ public class IgniteClientReconnectCacheTest extends IgniteClientReconnectAbstrac
 
         srv.createCache(ccfg1);
         srv.createCache(ccfg2).put(1, 1);
+
+        awaitCacheOnClient(client, "cache2");
 
         IgniteCache<Integer, Integer> cache = client.cache("cache2");
 
