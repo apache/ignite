@@ -27,7 +27,7 @@ class TransactionSimulation extends Simulation {
     .exec(ignite("Get").cache("TEST-CACHE").get[Int, Any]("#{key}"))
 
   val commitTx: ChainBuilder =
-    exec(ignite("txStart-commit").txStart)
+    exec(ignite("txStart-commit").txStart (PESSIMISTIC, READ_COMMITTED) timeout 3000L txSize 8)
       .exec(ignite("put-commit").cache("TEST-CACHE").put[Int, Int]("#{key}", "#{value}"))
       .exec(ignite("commit").commit)
       .exec(ignite("get-commit")
@@ -43,7 +43,7 @@ class TransactionSimulation extends Simulation {
       .exec { session => println(session); session }
 
   val rollbackTx: ChainBuilder =
-    exec(ignite("txStart-rollback").txStart)
+    exec(ignite("txStart-rollback").txStart (OPTIMISTIC, REPEATABLE_READ))
       .exec(ignite("put-rollback").cache("TEST-CACHE").put[Int, Int]("#{key}", "#{value}"))
       .exec(ignite("rollback").rollback)
       .exec(ignite("get-rollback")

@@ -11,28 +11,35 @@ trait TransactionSupport {
   def requestName: Expression[String]
 
   def txStart(concurrency: TransactionConcurrency, isolation: TransactionIsolation): TransactionStartBuilderTimeoutStep =
-    TransactionStartBuilderTimeoutStep(requestName)
-  def txStart: TransactionStartBuilder = TransactionStartBuilder(requestName)
+    TransactionStartBuilderTimeoutStep(requestName,
+      TransactionParameters(concurrency = Some(concurrency), isolation = Some(isolation)))
+  def txStart: TransactionStartBuilder = TransactionStartBuilder(requestName, TransactionParameters())
 
   def commit: TransactionCommitActionBuilder = TransactionCommitActionBuilder(requestName)
   def rollback: TransactionRollbackActionBuilder = TransactionRollbackActionBuilder(requestName)
 }
 
-case class TransactionStartBuilderTimeoutStep(requestName: Expression[String]) extends IgniteActionBuilder {
-  def timeout(timeout: Long): TransactionStartBuilderTimeoutStep = TransactionStartBuilderTimeoutStep(requestName)
-  def txSize(txSize: Int): TransactionStartBuilderTimeoutStep = TransactionStartBuilderTimeoutStep(requestName)
+case class TransactionStartBuilderTimeoutStep(requestName: Expression[String],
+                                              params: TransactionParameters) extends IgniteActionBuilder {
+  def timeout(timeout: Expression[Long]): TransactionStartBuilderTimeoutStep =
+    TransactionStartBuilderTimeoutStep(requestName, params.copy(timeout = Some(timeout)))
+  def txSize(txSize: Expression[Int]): TransactionStartBuilderTimeoutStep =
+    TransactionStartBuilderTimeoutStep(requestName, params.copy(txSize = Some(txSize)))
 
   override def build(ctx: ScenarioContext, next: Action): Action =
-    TransactionStartAction(requestName, next, ctx)
+    TransactionStartAction(requestName, params, next, ctx)
 }
 
-case class TransactionStartBuilder(requestName: Expression[String]) extends IgniteActionBuilder {
+case class TransactionStartBuilder(requestName: Expression[String],
+                                              params: TransactionParameters) extends IgniteActionBuilder {
   override def build(ctx: ScenarioContext, next: Action): Action =
-    TransactionStartAction(requestName, next, ctx)
+    TransactionStartAction(requestName, TransactionParameters(), next, ctx)
 }
 
-case class TransactionParameters(concurrency: TransactionConcurrency, isolation: TransactionIsolation,
-                                 timeout: Long, txSize: Int)
+case class TransactionParameters(concurrency: Option[TransactionConcurrency] = None,
+                                 isolation: Option[TransactionIsolation] = None,
+                                 timeout: Option[Expression[Long]] = None,
+                                 txSize: Option[Expression[Int]] = None)
 
 case class TransactionCommitActionBuilder(requestName: Expression[String]) extends IgniteActionBuilder {
   override def build(ctx: ScenarioContext, next: Action): TransactionCommitAction =
