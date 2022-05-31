@@ -6574,8 +6574,14 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
                     --remaining;
             }
 
-            if (needOld)
-                Collections.reverse(removedRows.subList(removedRows.size() - (highIdx - idx + 1), removedRows.size()));
+            if (needOld) {
+                // Reverse the order of added elements.
+                int len = highIdx - idx + 1;
+                int off = removedRows.size() - len;
+
+                for (int i = off, j = removedRows.size() - 1; i < j; i++, j--)
+                    removedRows.set(i, removedRows.set(j, removedRows.get(i)));
+            }
 
             assert isRemoved();
         }
