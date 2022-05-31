@@ -41,7 +41,8 @@ public enum SnapshotCreateCommandOption implements CommandArg {
     private final String desc;
 
     /**
-     * @param argName Option name.
+     * @param argName Argument name.
+     * @param optionName Option name.
      * @param desc Option description.
      */
     SnapshotCreateCommandOption(String argName, String optionName, String desc) {

@@ -276,14 +276,10 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     /** Maximum block size for limited snapshot transfer (64KB by default). */
     public static final int SNAPSHOT_LIMITED_TRANSFER_BLOCK_SIZE_BYTES = 64 * 1024;
 
-    /** Metastorage key to save currently running snapshot directory. */
+    /** Metastorage key to save currently running snapshot directory path. */
     private static final String SNP_RUNNING_DIR_KEY = "snapshot-running-dir";
 
-    /**
-     * Metastorage key to save currently running snapshot.
-     *
-     * @deprecated Use #SNP_RUNNING_DIR_KEY instead.
-     */
+    /** @deprecated Use #SNP_RUNNING_DIR_KEY instead. */
     @Deprecated
     private static final String SNP_RUNNING_KEY = "snapshot-running";
 
@@ -699,7 +695,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     /**
      * @param snpName Snapshot name.
      * @param snpPath Snapshot directory path.
-     * @return Local snapshot directory for snapshot with given name.
+     * @return Local snapshot directory where snapshot files are located.
      */
     public File snapshotLocalDir(String snpName, @Nullable String snpPath) {
         assert locSnpDir != null;

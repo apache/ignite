@@ -123,7 +123,7 @@ public abstract class AbstractSnapshotVerificationTask extends
 
     /**
      * @param name Snapshot name.
-     * @param snpPath todo
+     * @param snpPath Snapshot directory path.
      * @param constId Snapshot metadata file name.
      * @param groups Cache groups to be restored from the snapshot. May be empty if all cache groups are being restored.
      * @return Compute job.
