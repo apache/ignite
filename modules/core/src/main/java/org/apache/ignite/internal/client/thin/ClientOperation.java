@@ -214,7 +214,10 @@ public enum ClientOperation {
     ATOMIC_LONG_VALUE_GET_AND_SET(9005),
 
     /** AtomicLong.compareAndSet. */
-    ATOMIC_LONG_VALUE_COMPARE_AND_SET(9006);
+    ATOMIC_LONG_VALUE_COMPARE_AND_SET(9006),
+
+    /** AtomicLong.compareAndSetAndGet. */
+    ATOMIC_LONG_VALUE_COMPARE_AND_SET_AND_GET(9007);
 
     /** Code. */
     private final int code;
@@ -391,6 +394,7 @@ public enum ClientOperation {
                 return ClientOperationType.ATOMIC_LONG_VALUE_GET_AND_SET;
 
             case ATOMIC_LONG_VALUE_COMPARE_AND_SET:
+            case ATOMIC_LONG_VALUE_COMPARE_AND_SET_AND_GET:
                 return ClientOperationType.ATOMIC_LONG_VALUE_COMPARE_AND_SET;
 
             default:

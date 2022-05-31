@@ -105,6 +105,7 @@ import org.apache.ignite.internal.processors.cache.warmup.BlockedWarmUpStrategy;
 import org.apache.ignite.internal.processors.cache.warmup.WarmUpTestPluginProvider;
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateFinishMessage;
 import org.apache.ignite.internal.processors.cluster.GridClusterStateProcessor;
+import org.apache.ignite.internal.util.BasicRateLimiter;
 import org.apache.ignite.internal.util.future.IgniteFinishedFutureImpl;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.lang.GridFunc;
@@ -3020,8 +3021,10 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         Function<Integer, Integer> propFunc =
             (num) -> execute("--property", "set", "--name", SNAPSHOT_TRANSFER_RATE_DMS_KEY, "--val", String.valueOf(num));
 
+        int rate = SNAPSHOT_LIMITED_TRANSFER_BLOCK_SIZE_BYTES;
+
         // Limit the transfer rate.
-        assertEquals(EXIT_CODE_OK, (int)propFunc.apply(SNAPSHOT_LIMITED_TRANSFER_BLOCK_SIZE_BYTES));
+        assertEquals(EXIT_CODE_OK, (int)propFunc.apply(rate));
 
         IgniteFuture<Void> snpFut = ignite.snapshot().createSnapshot("snapshot2");
 
@@ -3031,6 +3034,12 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         // Set transfer rate to unlimited.
         assertEquals(EXIT_CODE_OK, (int)propFunc.apply(0));
+
+        // Add release time of BasicRateLimiter#acquire() for the given rate.
+        BasicRateLimiter limiter = new BasicRateLimiter(rate);
+
+        limiter.acquire(SNAPSHOT_LIMITED_TRANSFER_BLOCK_SIZE_BYTES);
+        limiter.acquire(SNAPSHOT_LIMITED_TRANSFER_BLOCK_SIZE_BYTES);
 
         snpFut.get(maxOpTime);
     }

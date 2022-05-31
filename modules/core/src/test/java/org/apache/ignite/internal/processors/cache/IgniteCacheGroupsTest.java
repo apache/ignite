@@ -87,6 +87,7 @@ import org.apache.ignite.internal.util.lang.GridIterator;
 import org.apache.ignite.internal.util.lang.GridPlainCallable;
 import org.apache.ignite.internal.util.lang.gridfunc.ContainsPredicate;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.PA;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -2151,6 +2152,8 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
 
         srv0.createCache(cacheConfiguration(null, "cache-3", cacheMode, atomicityMode, backups, heapCache));
 
+        awaitCacheOnClient(ignite(4), "cache-3");
+
         if (nearClient) {
             Ignite clientNode = ignite(4);
 
@@ -2992,6 +2995,9 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
         srv0.createCache(cacheConfiguration(GROUP1, "t0", PARTITIONED, TRANSACTIONAL, 1, false));
         srv0.createCache(cacheConfiguration(GROUP1, "t1", PARTITIONED, TRANSACTIONAL, 1, false));
 
+        F.view(G.allGrids(), ignite -> ignite.cluster().localNode().isClient())
+            .forEach(ignite -> awaitCacheOnClient(ignite, "t1"));
+
         final List<Integer> keys = new ArrayList<>();
 
         for (int i = 0; i < 50; i++)
@@ -3106,6 +3112,9 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
 
             // TODO IGNITE-7164: add Mvcc cache to test.
         }
+
+        F.view(G.allGrids(), ignite -> ignite.cluster().localNode().isClient())
+            .forEach(ignite -> awaitCacheOnClient(ignite, GROUP2 + "-" + (CACHES - 1)));
 
         final AtomicInteger idx = new AtomicInteger();
 

@@ -58,6 +58,7 @@ import org.apache.ignite.cache.store.CacheStore;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.events.CacheConsistencyViolationEvent;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.lang.IgniteAsyncSupport;
 import org.apache.ignite.lang.IgniteAsyncSupported;
@@ -147,32 +148,39 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * <p>
      * Gets an instance of {@code IgniteCache} that will perform backup nodes check on each get attempt.
      * <p>
-     * Read Repair means that each backup node will be checked to have the same entry as primary node has,
-     * and in case consistency violation found:
+     * Read Repair means that each backup node will be checked to have the same entry as the primary node has.
+     * <p>
+     * In case consistency violations were found, the values across the topology will be replaced by repaired values
+     * according to the chosen strategy, see {@link ReadRepairStrategy} for the details.
+     * <p>
+     * A consistency violation exception will be thrown when the repair is impossible.
+     * <p>
+     * {@link CacheConsistencyViolationEvent} will be recorded for each violation in case it's configured as recordable.
      * <ul>
-     *  <li>for transactional caches:
-     *  <p>Values across the topology will be replaced by latest versioned value:
+     *  <li>For transactional caches, values will be repaired:
      *  <ul>
      *      <li>automatically for transactions that have {@link TransactionConcurrency#OPTIMISTIC} concurrency mode
      *          or {@link TransactionIsolation#READ_COMMITTED} isolation level</li>
      *      <li>at commit() phase for transactions that have {@link TransactionConcurrency#PESSIMISTIC} concurrency mode
      *          and isolation level other than {@link TransactionIsolation#READ_COMMITTED}</li>
      *  </ul>
-     *  <p>Consistency violation event will be recorded in case it's configured as recordable.</li>
-     *  <li>for atomic caches: consistency violation exception will be thrown.
-     *  <p>Consistency violation event will be recorded in case it's configured as recordable.</li>
+     *  Warning:
+     *  <p>
+     *  This proxy usage does not guarantee "all copies check" in case the value is already cached inside the transaction.
+     *  In case you use not a READ_COMMITTED isolation mode and already have a cached value, for example already read the
+     *  value or performed a write, you'll just gain the cached value.
+     *  </li>
+     *  <li>For atomic caches, values will be repaired automatically.
+     *  <p>
+     *  Warning:
+     *  <p>
+     *  Due to the nature of the atomic cache, false-positive results can be observed. For example, an attempt to check
+     *  consistency under cache loading may lead to a consistency violation exception. By default, the implementation tries
+     *  to check the given key three times. The number of attempts can be changed using
+     *  {@link IgniteSystemProperties#IGNITE_NEAR_GET_MAX_REMAPS} property.
+     *  </li>
      * </ul>
-     * <p>
-     * One more important thing is that this proxy usage does not guarantee "all copies check" in case value
-     * already cached inside the transaction. In case you use !READ_COMMITTED isolation mode and already have
-     * cached value, for example already read the value or performed a write, you'll gain the cached value.
-     * <p>
-     * Due to the nature of the atomic cache, false-positive results can be observed. For example, an attempt to check
-     * consistency under cache loading may lead to consistency violation exception. By default, the implementation tries
-     * to check the given key three times. The number of attempts can be changed using
-     * {@link IgniteSystemProperties#IGNITE_NEAR_GET_MAX_REMAPS} property.
-     * <p>
-     * Consistency check is incompatible with the following cache configurations:
+     * A consistency check is incompatible with the following cache configurations:
      * <ul>
      *     <li>Caches without backups.</li>
      *     <li>Local caches.</li>

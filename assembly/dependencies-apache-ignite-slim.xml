@@ -129,7 +129,6 @@
                 <exclude>${project.groupId}:ignite-hadoop</exclude>
                 <exclude>${project.groupId}:ignite-codegen</exclude>
                 <exclude>${project.groupId}:ignite-schedule</exclude>
-                <exclude>${project.groupId}:ignite-geospatial</exclude>
                 <exclude>${project.groupId}:ignite-appserver-test</exclude>
                 <exclude>${project.groupId}:ignite-websphere-test</exclude>
                 <exclude>${project.groupId}:ignite-cassandra</exclude>
@@ -140,7 +139,6 @@
                 <exclude>${project.groupId}:ignite-compatibility</exclude>
                 <exclude>${project.groupId}:ignite-sqlline</exclude>
                 <!-- Removed from slim packaging are: -->
-                <exclude>${project.groupId}:ignite-aop</exclude>
                 <exclude>${project.groupId}:ignite-cassandra-serializers</exclude>
                 <exclude>${project.groupId}:ignite-cassandra-store</exclude>
                 <exclude>${project.groupId}:ignite-cloud</exclude>

@@ -501,7 +501,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 tbl.cacheInfo().config().getSqlIndexMaxInlineSize());
 
             org.apache.ignite.internal.cache.query.index.Index index =
-                ctx.indexProcessor().createIndex(tbl.cacheContext(), ClientIndexFactory.INSTANCE, d);
+                ctx.indexProcessor().createIndex(tbl.cacheContext(), new ClientIndexFactory(log), d);
 
             InlineIndex idx = index.unwrap(InlineIndex.class);
 
@@ -2429,7 +2429,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     }
 
     /** {@inheritDoc} */
-    @Override public void unregisterCache(GridCacheContextInfo cacheInfo, boolean rmvIdx) {
+    @Override public void unregisterCache(GridCacheContextInfo cacheInfo, boolean rmvIdx, boolean clearIdx) {
         ctx.indexProcessor().unregisterCache(cacheInfo);
 
         String cacheName = cacheInfo.name();
@@ -2437,7 +2437,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         partReservationMgr.onCacheStop(cacheName);
 
         // Drop schema (needs to be called after callback to DML processor because the latter depends on schema).
-        schemaMgr.onCacheDestroyed(cacheName, rmvIdx);
+        schemaMgr.onCacheDestroyed(cacheName, rmvIdx, clearIdx);
 
         // Unregister connection.
         connMgr.onCacheDestroyed();

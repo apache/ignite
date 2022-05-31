@@ -144,6 +144,11 @@ public abstract class NullableInlineIndexKeyType<T extends IndexKey> implements 
         return put0(pageAddr, off, (T)key, maxSize);
     }
 
+    /** {@inheritDoc} */
+    @Override public short keySize() {
+        return keySize;
+    }
+
     /**
      * Puts given value into inline index tree.
      *

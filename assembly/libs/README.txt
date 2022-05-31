@@ -71,7 +71,6 @@ Here is how it can be imported into your POM file:
 All optional modules can be imported just like the core module, but with different artifact IDs.
 
 The following modules are available:
-- ignite-aop (for AOP-based grid-enabling)
 - ignite-cassandra (for Apache Cassandra integration)
 - ignite-cloud (for Apache JClouds integration) 
 - ignite-indexing (for SQL querying and indexing)
