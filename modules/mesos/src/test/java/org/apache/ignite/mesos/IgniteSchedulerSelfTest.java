@@ -186,8 +186,8 @@ public class IgniteSchedulerSelfTest {
             mock.clear();
         }
 
-        assertEquals(2.0, totalCpu);
-        assertEquals(2000.0, totalMem);
+        assertEquals(2.0, totalCpu, 0.001);
+        assertEquals(2000.0, totalMem, 0.001);
 
         scheduler.resourceOffers(mock, Collections.singletonList(offer));
 
