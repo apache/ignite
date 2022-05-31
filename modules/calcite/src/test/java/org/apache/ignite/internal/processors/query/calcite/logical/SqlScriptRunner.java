@@ -39,7 +39,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
+import java.util.stream.Collectors;
 import com.google.common.collect.ImmutableSet;
 import org.apache.calcite.avatica.util.ByteString;
 import org.apache.ignite.IgniteException;
@@ -174,8 +174,22 @@ public class SqlScriptRunner {
     private static String toString(Object res) {
         if (res instanceof byte[])
             return ByteString.toString((byte[])res, 16);
+        else if (res instanceof Map)
+            return mapToString((Map<? extends Comparable, ?>)res);
         else
             return String.valueOf(res);
+    }
+
+    /** */
+    private static String mapToString(Map<? extends Comparable, ?> map) {
+        if (map == null)
+            return "null";
+
+        List<String> entries = map.entrySet().stream()
+            .sorted((e1, e2) -> e1.getKey().compareTo(e2.getKey())).map(e -> e.getKey() + ":" + e.getValue())
+            .collect(Collectors.toList());
+
+        return "{" + String.join(", ", entries) + "}";
     }
 
     /** */
@@ -677,6 +691,12 @@ public class SqlScriptRunner {
                     if (actDec.compareTo(expDec) != 0)
                         throw new AssertionError(msg);
                 }
+            }
+            else if (actual instanceof Map) {
+                String actualStr = mapToString((Map<? extends Comparable, ?>)actual);
+
+                if (!expectedStr.equals(actualStr))
+                    throw new AssertionError(msg);
             }
             else {
                 if (!String.valueOf(expectedStr).equals(SqlScriptRunner.toString(actual)) &&

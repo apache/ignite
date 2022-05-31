@@ -23,9 +23,12 @@ import java.sql.Timestamp;
 import java.time.Period;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import org.apache.ignite.internal.processors.query.calcite.QueryChecker;
 import org.apache.ignite.internal.processors.query.calcite.sql.fun.IgniteStdSqlOperatorTable;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.junit.Ignore;
 import org.junit.Test;
 
@@ -101,6 +104,21 @@ public class StdSqlOperatorsTest extends AbstractBasicIntegrationTest {
         assertExpression("LISTAGG(val, ',') WITHIN GROUP (ORDER BY val DESC)").returns("1").check();
         assertExpression("GROUP_CONCAT(val, ',' ORDER BY val DESC)").returns("1").check();
         assertExpression("STRING_AGG(val, ',' ORDER BY val DESC)").returns("1").check();
+        assertExpression("ARRAY_AGG(val ORDER BY val DESC)").returns(Collections.singletonList(1)).check();
+        assertQuery("SELECT ARRAY_CONCAT_AGG(a ORDER BY CARDINALITY(a)) FROM " +
+            "(SELECT 1 as id, ARRAY[3, 4, 5, 6] as a UNION SELECT 1 as id, ARRAY[1, 2] as a) GROUP BY id")
+            .returns((IntStream.range(1, 7).boxed().collect(Collectors.toList()))).check();
+    }
+
+    /** */
+    @Test
+    public void testCollect() {
+        assertExpression("ARRAY(SELECT * FROM (SELECT 1 UNION SELECT 2 UNION SELECT 3))")
+            .returns(IntStream.range(1, 4).boxed().collect(Collectors.toList())).check();
+
+        assertExpression("MAP(SELECT * FROM (SELECT 1, 'test1' UNION SELECT 2, 'test2' UNION SELECT 3, 'test3'))")
+            .returns(IntStream.range(1, 4).mapToObj(i -> new T2<>(i, "test" + i))
+                .collect(Collectors.toMap(T2::getKey, T2::getValue))).check();
     }
 
     /** */
