@@ -172,6 +172,7 @@ public abstract class AbstractFullSetReadRepairTest extends AbstractReadRepairTe
                 res instanceof Map ||
                 res instanceof List ||
                 res instanceof Set ||
+                res instanceof int[] ||
                 res instanceof Object[] ||
                 res instanceof BinaryObject : res.getClass();
 

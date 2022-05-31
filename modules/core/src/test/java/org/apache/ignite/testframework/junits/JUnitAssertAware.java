@@ -73,6 +73,22 @@ public class JUnitAssertAware {
     protected static void assertEquals(String msg, Object exp, Object actual) {
         if (exp instanceof Object[] && actual instanceof Object[])
             Assert.assertArrayEquals(msg, (Object[])exp, (Object[])actual);
+        else if (exp instanceof byte[] && actual instanceof byte[])
+            Assert.assertArrayEquals(msg, (byte[])exp, (byte[])actual);
+        else if (exp instanceof int[] && actual instanceof int[])
+            Assert.assertArrayEquals(msg, (int[])exp, (int[])actual);
+        else if (exp instanceof long[] && actual instanceof long[])
+            Assert.assertArrayEquals(msg, (long[])exp, (long[])actual);
+        else if (exp instanceof short[] && actual instanceof short[])
+            Assert.assertArrayEquals(msg, (short[])exp, (short[])actual);
+        else if (exp instanceof char[] && actual instanceof char[])
+            Assert.assertArrayEquals(msg, (char[])exp, (char[])actual);
+        else if (exp instanceof double[] && actual instanceof double[])
+            Assert.assertArrayEquals(msg, (double[])exp, (double[])actual, 0);
+        else if (exp instanceof float[] && actual instanceof Object[])
+            Assert.assertArrayEquals(msg, (float[])exp, (float[])actual, 0);
+        else if (exp instanceof boolean[] && actual instanceof boolean[])
+            Assert.assertArrayEquals(msg, (boolean[])exp, (boolean[])actual);
         else
             Assert.assertEquals(msg, exp, actual);
     }

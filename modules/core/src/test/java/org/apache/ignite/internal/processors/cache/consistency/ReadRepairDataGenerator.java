@@ -193,7 +193,8 @@ public class ReadRepairDataGenerator extends JUnitAssertAware {
 
                     InconsistentMapping mapping = entry.getValue();
 
-                    sb.append(" Generated data [primary=").append(unwrapBinaryIfNeeded(mapping.primaryBin))
+                    sb.append(" Generated data [primary=").append(
+                            describeArrayIfNeeded(unwrapBinaryIfNeeded(mapping.primaryBin)))
                         .append(", repaired=").append(unwrapBinaryIfNeeded(mapping.repairedBin))
                         .append(", repairable=").append(mapping.repairable)
                         .append(", consistent=").append(mapping.consistent)
@@ -203,13 +204,8 @@ public class ReadRepairDataGenerator extends JUnitAssertAware {
 
                     for (Map.Entry<Ignite, T2<Object, GridCacheVersion>> dist : mapping.mappingBin.entrySet()) {
                         sb.append("   Node: ").append(dist.getKey().name()).append("\n");
-
-                        Object val = unwrapBinaryIfNeeded(dist.getValue().get1());
-
-                        if (val instanceof Object[])
-                            val = Arrays.toString((Object[])val); // Allows to log array content.
-
-                        sb.append("    Value: ").append(val).append("\n");
+                        sb.append("    Value: ").append(
+                            describeArrayIfNeeded(unwrapBinaryIfNeeded(dist.getValue().get1()))).append("\n");
                         sb.append("    Version: ").append(dist.getValue().get2()).append("\n");
                     }
 
@@ -221,6 +217,16 @@ public class ReadRepairDataGenerator extends JUnitAssertAware {
         }
     }
 
+    /**
+     * @param obj Object.
+     */
+    private Object describeArrayIfNeeded(Object obj){
+        if (obj instanceof Object[])
+            return Arrays.deepToString((Object[])obj);
+        else if (obj instanceof int[])
+            return Arrays.toString((int[])obj);
+        else return obj;
+    }
     /**
      * Generated entries count.
      */
@@ -516,14 +522,24 @@ public class ReadRepairDataGenerator extends JUnitAssertAware {
      *
      */
     private Object wrapArrayIfNeeded(Object obj) {
-        return obj instanceof Object[] ? new ArrayWrapper((Object[])obj) : obj;
+        if (obj instanceof Object[])
+            return new ObjectArrayWrapper((Object[])obj);
+        else if (obj instanceof int[])
+            return new IntArrayWrapper((int[])obj);
+        else
+            return obj;
     }
 
     /**
      *
      */
     private Object unwrapArrayIfNeeded(Object obj) {
-        return obj instanceof ArrayWrapper ? ((ArrayWrapper)obj).arr : obj;
+        if (obj instanceof ObjectArrayWrapper)
+            return ((ObjectArrayWrapper)obj).arr;
+        else if (obj instanceof IntArrayWrapper)
+            return ((IntArrayWrapper)obj).arr;
+        else
+            return obj;
     }
 
     /**
@@ -532,7 +548,7 @@ public class ReadRepairDataGenerator extends JUnitAssertAware {
      */
     private Object wrapTestValueIfNeeded(boolean wrap, Integer val) throws ReflectiveOperationException {
         if (wrap) {
-            int type = val % 5;
+            int type = val % 7;
 
             switch (type) {
                 case 0:
@@ -550,12 +566,18 @@ public class ReadRepairDataGenerator extends JUnitAssertAware {
                     return new Object[] {val};
 
                 case 2:
-                    return Collections.singletonMap(val, val);
+                    return new Object[][] {{val}, {val}};
 
                 case 3:
-                    return Collections.singletonList(val);
+                    return new int[] {val};
 
                 case 4:
+                    return Collections.singletonMap(val, val);
+
+                case 5:
+                    return Collections.singletonList(val);
+
+                case 6:
                     return Collections.singleton(val);
 
                 default:
@@ -694,12 +716,12 @@ public class ReadRepairDataGenerator extends JUnitAssertAware {
     /**
      *
      */
-    private static final class ArrayWrapper {
+    private static final class ObjectArrayWrapper {
         /** Array. */
         final Object[] arr;
 
         /** */
-        public ArrayWrapper(Object[] arr) {
+        public ObjectArrayWrapper(Object[] arr) {
             this.arr = arr;
         }
 
@@ -711,7 +733,38 @@ public class ReadRepairDataGenerator extends JUnitAssertAware {
             if (o == null || getClass() != o.getClass())
                 return false;
 
-            ArrayWrapper wrapper = (ArrayWrapper)o;
+            ObjectArrayWrapper wrapper = (ObjectArrayWrapper)o;
+
+            return Arrays.deepEquals(arr, wrapper.arr);
+        }
+
+        /** {@inheritDoc} */
+        @Override public int hashCode() {
+            return Arrays.deepHashCode(arr);
+        }
+    }
+
+    /**
+     *
+     */
+    private static final class IntArrayWrapper{
+        /** Array. */
+        final int[] arr;
+
+        /** */
+        public IntArrayWrapper(int[] arr) {
+            this.arr = arr;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean equals(Object o) {
+            if (this == o)
+                return true;
+
+            if (o == null || getClass() != o.getClass())
+                return false;
+
+            IntArrayWrapper wrapper = (IntArrayWrapper)o;
 
             return Arrays.equals(arr, wrapper.arr);
         }
