@@ -5211,7 +5211,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             try {
                 if ((primVer == null && entry.getValue() == null) || // Still null at primary.
                     // No updates since consistency violation has been found.
-                    (primVer.equals(((CacheInvokeEntry<Object, Object>)entry).entry().version()))) {
+                    primVer.equals(((CacheInvokeEntry<Object, Object>)entry).entry().version())) {
 
                     if (correctedVal != null)
                         entry.setValue(correctedVal);
