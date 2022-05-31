@@ -39,14 +39,14 @@ import static org.apache.ignite.internal.processors.cache.persistence.snapshot.I
 
 /** */
 public class SnapshotResponseRemoteFutureTask extends AbstractSnapshotFutureTask<Void> {
-    /** */
+    /** Snapshot directory path. */
     private final String snpPath;
 
     /**
      * @param cctx Shared context.
      * @param srcNodeId Node id which cause snapshot task creation.
      * @param snpName Unique identifier of snapshot process.
-     * @param snpPath
+     * @param snpPath Snapshot directory path.
      * @param tmpWorkDir Working directory for intermediate snapshot results.
      * @param ioFactory Factory to working with snapshot files.
      * @param snpSndr Factory which produces snapshot receiver instance.

@@ -3356,7 +3356,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         String snpName = "snapshot_30052022";
         File snpDir = U.resolveWorkDirectory(U.defaultWorkDirectory(), "ex_snapshots", true);
 
-        assert snpDir.list().length == 0 : "Target directory is not empty: " + Arrays.asList(snpDir.list());
+        assert snpDir.list().length == 0 : "Target directory is not empty: " + snpDir;
 
         try {
             Ignite ignite = startGrids(2);

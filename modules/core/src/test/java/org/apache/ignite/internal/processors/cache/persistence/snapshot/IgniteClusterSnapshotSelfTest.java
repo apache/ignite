@@ -722,7 +722,7 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
     private void doTestClusterSnapshotWithExplicitPath(boolean cfgPath) throws Exception {
         File snpDir = U.resolveWorkDirectory(U.defaultWorkDirectory(), "ex_snapshots", true);
 
-        assert snpDir.list().length == 0 : "Target directory is not empty: " + Arrays.asList(snpDir.list());
+        assert snpDir.list().length == 0 : "Target directory is not empty: " + snpDir;
 
         try {
             IgniteEx ignite = null;

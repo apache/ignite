@@ -62,7 +62,7 @@ public class SnapshotFilesRequestMessage extends AbstractSnapshotMessage {
 
     /**
      * @param reqId Unique request id.
-     * @param snpName Snapshot name.
+     * @param snpName Snapshot name to request.
      * @param snpPath Snapshot directory path.
      * @param parts Map of cache group ids and corresponding set of its partition ids to be snapshot.
      */

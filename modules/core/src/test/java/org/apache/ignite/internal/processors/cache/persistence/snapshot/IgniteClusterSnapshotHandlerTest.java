@@ -351,7 +351,7 @@ public class IgniteClusterSnapshotHandlerTest extends IgniteClusterSnapshotResto
     }
 
     /**
-     * Test ensures that the location of the snapshot is valid.
+     * Test ensures that the snapshot path is set correctly in the handler context.
      *
      * @throws Exception If failed.
      */

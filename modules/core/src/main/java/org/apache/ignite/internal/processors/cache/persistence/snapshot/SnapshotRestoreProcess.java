@@ -827,9 +827,6 @@ public class SnapshotRestoreProcess {
             if (ctx.isStopping())
                 throw new NodeStoppingException("Node is stopping: " + ctx.localNodeId());
 
-            File snpDir = opCtx0.snpPath != null ? new File(opCtx0.snpPath, opCtx0.snpName) :
-                ctx.cache().context().snapshotMgr().snapshotLocalDir(opCtx0.snpName);
-
             Set<SnapshotMetadata> allMetas =
                 opCtx0.metasPerNode.values().stream().flatMap(List::stream).collect(Collectors.toSet());
 
@@ -847,6 +844,8 @@ public class SnapshotRestoreProcess {
                     ", snapshot=" + opCtx0.snpName +
                     ", caches=" + F.transform(opCtx0.dirs, FilePageStoreManager::cacheGroupName) + ']');
             }
+
+            File snpDir = snpMgr.snapshotLocalDir(opCtx0.snpName, opCtx0.snpPath);
 
             CompletableFuture<Void> metaFut = ctx.localNodeId().equals(opCtx0.opNodeId) ?
                 CompletableFuture.runAsync(
@@ -996,7 +995,7 @@ public class SnapshotRestoreProcess {
                     ctx.cache().context().snapshotMgr()
                         .requestRemoteSnapshotFiles(m.getKey(),
                             opCtx0.snpName,
-                            opCtx0.snpPath == null ? null : opCtx0.snpPath.toString(),
+                            opCtx0.snpPath,
                             m.getValue(),
                             opCtx0.stopChecker,
                             (snpFile, t) -> {

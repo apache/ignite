@@ -50,13 +50,9 @@ public class SnapshotPartitionsVerifyTask extends AbstractSnapshotVerificationTa
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;
 
-    /** Ignite instance. */
-    @IgniteInstanceResource
-    private IgniteEx ignite;
-
     /** {@inheritDoc} */
-    @Override protected ComputeJob createJob(String name, String snpPath, String constId, Collection<String> groups) {
-        return new VisorVerifySnapshotPartitionsJob(name, snpPath, constId, groups);
+    @Override protected ComputeJob createJob(String name, String path, String constId, Collection<String> groups) {
+        return new VisorVerifySnapshotPartitionsJob(name, path, constId, groups);
     }
 
     /** {@inheritDoc} */
@@ -80,14 +76,14 @@ public class SnapshotPartitionsVerifyTask extends AbstractSnapshotVerificationTa
         /** Snapshot name to validate. */
         private final String snpName;
 
+        /** Snapshot directory path. */
+        private final String snpPath;
+
         /** Consistent snapshot metadata file name. */
         private final String consId;
 
         /** Set of cache groups to be checked in the snapshot or {@code empty} to check everything. */
         private final Collection<String> rqGrps;
-
-        /** Snapshot directory path. */
-        private final String snpPath;
 
         /**
          * @param snpName Snapshot name to validate.
@@ -95,7 +91,12 @@ public class SnapshotPartitionsVerifyTask extends AbstractSnapshotVerificationTa
          * @param rqGrps Set of cache groups to be checked in the snapshot or {@code empty} to check everything.
          * @param snpPath Snapshot directory path.
          */
-        public VisorVerifySnapshotPartitionsJob(String snpName, @Nullable String snpPath, String consId, Collection<String> rqGrps) {
+        public VisorVerifySnapshotPartitionsJob(
+            String snpName,
+            @Nullable String snpPath,
+            String consId,
+            Collection<String> rqGrps
+        ) {
             this.snpName = snpName;
             this.consId = consId;
             this.rqGrps = rqGrps;
@@ -132,13 +133,14 @@ public class SnapshotPartitionsVerifyTask extends AbstractSnapshotVerificationTa
                 return false;
 
             VisorVerifySnapshotPartitionsJob job = (VisorVerifySnapshotPartitionsJob)o;
-            // todo rqGrps snpPath
-            return snpName.equals(job.snpName) && consId.equals(job.consId);
+
+            return snpName.equals(job.snpName) && consId.equals(job.consId) &&
+                Objects.equals(rqGrps, job.rqGrps) && Objects.equals(snpPath, job.snpPath);
         }
 
         /** {@inheritDoc} */
         @Override public int hashCode() {
-            return Objects.hash(snpName, consId);
+            return Objects.hash(snpName, consId, rqGrps, snpPath);
         }
     }
 }

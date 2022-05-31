@@ -49,12 +49,12 @@ public class SnapshotHandlerRestoreTask extends AbstractSnapshotVerificationTask
 
     /** {@inheritDoc} */
     @Override protected ComputeJob createJob(
-        String snpName,
-        @Nullable String snpPath,
+        String name,
+        @Nullable String path,
         String constId,
         Collection<String> groups
     ) {
-        return new SnapshotHandlerRestoreJob(snpName, snpPath, constId, groups);
+        return new SnapshotHandlerRestoreJob(name, path, constId, groups);
     }
 
     /** {@inheritDoc} */
@@ -129,9 +129,9 @@ public class SnapshotHandlerRestoreTask extends AbstractSnapshotVerificationTask
          */
         public SnapshotHandlerRestoreJob(String snpName, @Nullable String snpPath, String consistentId, Collection<String> grps) {
             this.snpName = snpName;
+            this.snpPath = snpPath;
             this.consistentId = consistentId;
             this.grps = grps;
-            this.snpPath = snpPath;
         }
 
         /** {@inheritDoc} */
