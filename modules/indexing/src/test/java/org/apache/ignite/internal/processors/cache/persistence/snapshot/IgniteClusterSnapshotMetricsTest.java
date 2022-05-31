@@ -19,29 +19,41 @@ package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
 import java.io.File;
 import java.io.FilenameFilter;
+import java.io.Serializable;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Set;
+import java.util.concurrent.ThreadLocalRandom;
 import javax.management.AttributeNotFoundException;
 import javax.management.DynamicMBean;
 import javax.management.MBeanException;
 import javax.management.ReflectionException;
+import org.apache.commons.io.FileUtils;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
+import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderSettings;
+import org.apache.ignite.internal.processors.configuration.distributed.DistributedChangeableProperty;
+import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteFuture;
+import org.apache.ignite.spi.metric.LongMetric;
 import org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.After;
@@ -50,12 +62,14 @@ import org.junit.Test;
 
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.FILE_SUFFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.PART_FILE_PREFIX;
+import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.SNAPSHOT_METRICS;
+import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.SNAPSHOT_TRANSFER_RATE_DMS_KEY;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotRestoreProcess.SNAPSHOT_RESTORE_METRICS;
 
 /**
- * Tests snapshot restore metrics.
+ * Tests snapshot create/restore metrics.
  */
-public class IgniteClusterSnapshotRestoreMetricsTest extends IgniteClusterSnapshotRestoreBaseTest {
+public class IgniteClusterSnapshotMetricsTest extends IgniteClusterSnapshotRestoreBaseTest {
     /** Separate working directory prefix. */
     private static final String DEDICATED_DIR_PREFIX = "dedicated-";
 
@@ -99,7 +113,7 @@ public class IgniteClusterSnapshotRestoreMetricsTest extends IgniteClusterSnapsh
     @Override public void beforeTestSnapshot() throws Exception {
         super.beforeTestSnapshot();
 
-        cleanuo();
+        cleanup();
     }
 
     /** {@inheritDoc} */
@@ -107,13 +121,13 @@ public class IgniteClusterSnapshotRestoreMetricsTest extends IgniteClusterSnapsh
     @Override public void afterTestSnapshot() throws Exception {
         super.afterTestSnapshot();
 
-        cleanuo();
+        cleanup();
     }
 
     /** @throws Exception If fails. */
     @Test
     public void testRestoreSnapshotProgress() throws Exception {
-        // Caches with differebt partition distribution.
+        // Caches with different partition distribution.
         CacheConfiguration<Integer, Object> ccfg1 = cacheConfig("cache1").setBackups(0);
         CacheConfiguration<Integer, Object> ccfg2 = cacheConfig("cache2").setCacheMode(CacheMode.REPLICATED);
 
@@ -212,6 +226,87 @@ public class IgniteClusterSnapshotRestoreMetricsTest extends IgniteClusterSnapsh
         }
     }
 
+    /** @throws Exception If fails. */
+    @Test
+    public void testCreateSnapshotProgress() throws Exception {
+        CacheConfiguration<Integer, Object> ccfg1 = cacheConfig("cache1");
+
+        IgniteEx ignite = startGridsWithCache(DEDICATED_CNT, CACHE_KEYS_RANGE, key -> new Account(key, key), ccfg1);
+
+        MetricRegistry mreg = ignite.context().metric().registry(SNAPSHOT_METRICS);
+
+        LongMetric totalSize = mreg.findMetric("CurrentSnapshotTotalSize");
+        LongMetric processedSize = mreg.findMetric("CurrentSnapshotProcessedSize");
+
+        assertEquals(-1, totalSize.value());
+        assertEquals(-1, processedSize.value());
+
+        // Calculate transfer rate limit.
+        PdsFolderSettings<?> folderSettings = ignite.context().pdsFolderResolver().resolveFolders();
+        File storeWorkDir = new File(folderSettings.persistentStoreRootPath(), folderSettings.folderName());
+
+        long rate = FileUtils.sizeOfDirectory(storeWorkDir) / 5;
+
+        // Limit snapshot transfer rate.
+        DistributedChangeableProperty<Serializable> rateProp =
+            ignite.context().distributedConfiguration().property(SNAPSHOT_TRANSFER_RATE_DMS_KEY);
+
+        rateProp.propagate(rate);
+
+        // Start cluster snapshot.
+        IgniteFuture<Void> fut = ignite.snapshot().createSnapshot(SNAPSHOT_NAME);
+
+        // Run load.
+        IgniteInternalFuture<?> loadFut = GridTestUtils.runAsync(() -> {
+            IgniteCache<Integer, Object> cache = ignite.getOrCreateCache(ccfg1);
+
+            while (!fut.isDone()) {
+                Integer key = ThreadLocalRandom.current().nextInt(CACHE_KEYS_RANGE);
+                Account val = new Account(ThreadLocalRandom.current().nextInt(), ThreadLocalRandom.current().nextInt());
+
+                cache.put(key, val);
+            }
+        });
+
+        List<Long> totalVals = new ArrayList<>();
+        List<Long> processedVals = new ArrayList<>();
+
+        // Store metrics values during cluster snapshot.
+        while (!fut.isDone()) {
+            long total = totalSize.value();
+            long processed = processedSize.value();
+
+            if (total != -1 && processed != -1) {
+                totalVals.add(totalSize.value());
+                processedVals.add(processedSize.value());
+            }
+
+            U.sleep(500);
+        }
+
+        fut.get(getTestTimeout());
+
+        loadFut.get();
+
+        assertTrue("Expected distinct values: " + totalVals,
+            totalVals.stream().mapToLong(v -> v).distinct().count() > 1);
+        assertTrue("Expected distinct values: " + processedVals,
+            processedVals.stream().mapToLong(v -> v).distinct().count() > 1);
+
+        assertTrue("Expected sorted values: " + totalVals,
+            F.isSorted(totalVals.stream().mapToLong(v -> v).toArray()));
+        assertTrue("Expected sorted values: " + processedVals,
+            F.isSorted(processedVals.stream().mapToLong(v -> v).toArray()));
+
+        for (int i = 0; i < totalVals.size(); i++) {
+            assertTrue("Total size less than processed [total=" + totalVals + ", processed=" + processedVals + ']',
+                processedVals.get(i) <= totalVals.get(i));
+        }
+
+        assertEquals(-1, totalSize.value());
+        assertEquals(-1, processedSize.value());
+    }
+
     /**
      * @throws Exception If failed.
      */
@@ -245,7 +340,7 @@ public class IgniteClusterSnapshotRestoreMetricsTest extends IgniteClusterSnapsh
     /**
      * @throws Exception If failed.
      */
-    private void cleanuo() throws Exception {
+    private void cleanup() throws Exception {
         FilenameFilter filter = (file, name) -> file.isDirectory() && name.startsWith(DEDICATED_DIR_PREFIX);
 
         for (File file : new File(U.defaultWorkDirectory()).listFiles(filter))
