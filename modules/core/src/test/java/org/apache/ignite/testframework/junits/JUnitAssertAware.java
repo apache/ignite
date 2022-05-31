@@ -54,7 +54,7 @@ public class JUnitAssertAware {
         Assert.fail();
     }
 
-    /** See {@link Assert#assertEquals(Object, Object)} javadocs. */
+    /** Check arrays equality as well as objects equality. */
     protected static void assertEquals(Object exp, Object actual) {
         assertEquals(null, exp, actual);
     }
@@ -69,7 +69,7 @@ public class JUnitAssertAware {
         Assert.assertEquals(exp, actual);
     }
 
-    /** See {@link Assert#assertEquals(String, Object, Object)} javadocs. */
+    /** Check arrays equality as well as objects equality. */
     protected static void assertEquals(String msg, Object exp, Object actual) {
         if (exp instanceof Object[] && actual instanceof Object[])
             Assert.assertArrayEquals(msg, (Object[])exp, (Object[])actual);
