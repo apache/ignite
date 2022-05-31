@@ -551,7 +551,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
             if (idx < 0)
                 return RETRY; // We've found exact match on search but now it's gone.
 
-            return finishRemoveOrLockTail(idx, cnt, 1, leafId, leafPage, leafAddr, io, r);
+            return doRemoveOrLockTail(idx, cnt, 1, leafId, leafPage, leafAddr, io, r);
         }
 
         /**
@@ -565,7 +565,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
          * @param r Remove operation.
          * @throws IgniteCheckedException If failed.
          */
-        protected Result finishRemoveOrLockTail(
+        protected Result doRemoveOrLockTail(
             int idx,
             int cnt,
             int rmvCnt,
@@ -667,7 +667,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
 
             r.highIdx = r.highIdx >= 0 ? highIdx : -highIdx - 1;
 
-            Result res = finishRemoveOrLockTail(idx, cnt, highIdx - idx + 1, leafId, leafPage, leafAddr, io, r);
+            Result res = doRemoveOrLockTail(idx, cnt, highIdx - idx + 1, leafId, leafPage, leafAddr, io, r);
 
             // Search row should point to the rightmost element, otherwise we won't find it on the inner node.
             if (res == FOUND && r.needReplaceInner == TRUE)
