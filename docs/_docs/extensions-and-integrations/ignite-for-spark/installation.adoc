@@ -94,16 +94,6 @@ Ignite's Spark artifact is link:http://search.maven.org/#search%7Cga%7C1%7Cg%3A%
 </dependency>
 ----
 
-.Scala 2.10
-[source, scala]
-----
-<dependency>
-  <groupId>org.apache.ignite</groupId>
-  <artifactId>ignite-spark_2.10</artifactId>
-  <version>${ignite.version}</version>
-</dependency>
-----
-
 == SBT
 
 If SBT is used as a build tool for a Scala application, then Ignite's Spark artifact can be added into `build.sbt` with one of the commands below:
@@ -112,13 +102,6 @@ If SBT is used as a build tool for a Scala application, then Ignite's Spark arti
 [source, scala]
 ----
 libraryDependencies += "org.apache.ignite" % "ignite-spark-ext" % "2.0.0"
-----
-
-
-.Scala 2.10
-[source, scala]
-----
-libraryDependencies += "org.apache.ignite" % "ignite-spark_2.10" % "ignite.version"
 ----
 
 
