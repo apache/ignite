@@ -25,12 +25,13 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.internal.pagemem.wal.record.ConsistentCutFinishRecord;
 import org.apache.ignite.internal.pagemem.wal.record.ConsistentCutStartRecord;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxFinishRequest;
-import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxFinishRequest;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 
 /**
  * Describes current Consistent Cut state.
+ *
+ * @see ConsistentCutStartRecord
+ * @see ConsistentCutFinishRecord
  */
 class ConsistentCutState {
     /**
@@ -66,19 +67,13 @@ class ConsistentCutState {
     private final Set<GridCacheVersion> includeBefore = ConcurrentHashMap.newKeySet();
 
     /**
-     * Set of transactions to exclude from this Consistent Cut (to include to еру AFTER state).
+     * Set of transactions to exclude from this Consistent Cut (to include to the global AFTER state).
      */
     private final Set<GridCacheVersion> includeAfter = ConcurrentHashMap.newKeySet();
 
     /**
      * Map of transactions that bound to specific Consistent Cut Version.
-     *
-     * Key is a transaction version. Value is the latest Consistent Cut Version that doesn't include this transaction.
-     * It is used to notify remote nodes whether to include those transactions to this Consistent Cut or not.
-     * The notification is sent with finish requests.
-     *
-     * @see GridNearTxFinishRequest
-     * @see GridDhtTxFinishRequest
+     * Key is a transaction version. Value is the latest Consistent Cut Version AFTER which this transaction committed.
      */
     private final Map<GridCacheVersion, Long> txCutVers = new ConcurrentHashMap<>();
 
@@ -158,7 +153,7 @@ class ConsistentCutState {
     }
 
     /**
-     * Sets the latest Consistent Cut Version that doesn't include specified transaction.
+     * Sets the latest Consistent Cut Version AFTER which specified transaction committed.
      *
      * @param nearTxVer Transaction version on an originated node.
      * @param cutVer Consistent Cut Version.
@@ -168,7 +163,7 @@ class ConsistentCutState {
     }
 
     /**
-     * Gets the latest Consistent Cut Version that doesn't include specified transaction.
+     * Gets the latest Consistent Cut Version AFTER which specified transaction committed.
      *
      * @param nearTxVer Transaction version on an originated node.
      * @return Consistent Cut Version.
@@ -212,7 +207,7 @@ class ConsistentCutState {
     }
 
     /**
-     * Tries finishing Consistent Cut after checking specified transaction.
+     * Tries finishing local Consistent Cut after checking specified transaction.
      *
      * @param nearTxVer Transaction version on an originated node.
      * @return Whether local Consistent Cut has finished.
@@ -289,6 +284,7 @@ class ConsistentCutState {
 
         bld.append("ver=").append(ver).append(", ");
         bld.append("finished=").append(finished).append(", ");
+        bld.append("ready=").append(ready).append(", ");
         bld.append("crd=").append(crdNodeId).append(", ");
 
         setAppend(bld, "includeBefore", includeBefore);

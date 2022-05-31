@@ -110,7 +110,7 @@ public class GridDistributedTxFinishRequest extends GridDistributedBaseMessage i
     private long latestCutVer;
 
     /**
-     * Version of the latest Consistent Cut that doesn't include this transaction.
+     * Version of the latest Consistent Cut AFTER which this transaction committed.
      * Sets on near node to notify other nodes in 2PC algorithm.
      */
     private long txCutVer;

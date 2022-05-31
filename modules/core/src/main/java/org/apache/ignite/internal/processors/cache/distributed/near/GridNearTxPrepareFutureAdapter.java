@@ -94,7 +94,7 @@ public abstract class GridNearTxPrepareFutureAdapter extends
     /** Trackable flag. */
     protected boolean trackable = true;
 
-    /** The Latest Consistent Cut Version that doesn't include this transaction. */
+    /** The Latest Consistent Cut Version AFTER which this transaction committed. */
     private long txCutVer;
 
     /**

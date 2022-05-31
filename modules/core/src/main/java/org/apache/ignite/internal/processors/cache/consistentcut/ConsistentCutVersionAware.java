@@ -32,7 +32,7 @@ public interface ConsistentCutVersionAware {
     public long latestCutVersion();
 
     /**
-     * Version of the latest Consistent Cut that doesn't include specified committed transaction.
+     * Version of the latest Consistent Cut AFTER which the specified transaction committed.
      *
      * It is used to notify a transaction in the check-list whether to include it to this Consistent Cut.
      */

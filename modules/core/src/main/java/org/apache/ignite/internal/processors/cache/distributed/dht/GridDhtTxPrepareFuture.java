@@ -233,7 +233,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
     @GridToStringExclude
     protected final IgniteUuid deploymentLdrId;
 
-    /** The Latest Consistent Cut Version that doesn't include this transaction. */
+    /** The Latest Consistent Cut Version AFTER which this transaction committed. */
     private long txCutVer;
 
     /**

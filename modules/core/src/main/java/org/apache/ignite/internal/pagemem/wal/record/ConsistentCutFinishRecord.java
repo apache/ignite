@@ -24,11 +24,20 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.lang.IgniteUuid;
 
 /**
- * This WAL record contains a set of transactions to be included after checking {@link ConsistentCutStartRecord#check()}.
+ * Consistent Cut splits timeline on 2 global areas - BEFORE and AFTER. It guarantees that every transaction committed BEFORE
+ * also will be committed BEFORE on every other node. It means that an Ignite node can safely recover itself to this
+ * point without any coordination with other nodes.
+ *
+ * This record is written to WAL in moment when Consistent Cut stops analyzing transactions from {@link ConsistentCutStartRecord#check()}.
+ * It guarantees that every transaction included to {@link #include()} are part of the global BEFORE state, and every
+ * committed transaction since {@link ConsistentCutStartRecord} and that aren't included into {@link #include()} are
+ * part of the global AFTER state.
+ *
+ * @see ConsistentCutStartRecord
  */
 public class ConsistentCutFinishRecord extends WALRecord {
     /**
-     * Set of transactions (committed AFTER this record) to include to the Consistent Cut State.
+     * Set of transactions (optionally committed after this record) to include to the Consistent Cut State.
      */
     private final Set<GridCacheVersion> include;
 

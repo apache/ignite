@@ -62,7 +62,7 @@ public class GridDistributedTxPrepareResponse extends GridDistributedBaseMessage
     private long latestCutVer;
 
     /**
-     * Version of the latest Consistent Cut that doesn't include this transaction.
+     * Version of the latest Consistent Cut AFTER which this transaction committed.
      * Sets on backup (or primary) node to notify other nodes in 1PC algorithm.
      */
     private long txCutVer;

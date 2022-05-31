@@ -24,15 +24,17 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.lang.IgniteUuid;
 
 /**
- * This WAL record represents moment when Consistent Cut was taken on a local node. This record splits whole WAL on
- * two areas (BEFORE and AFTER). It's guaranteed that every transaction committed BEFORE will be committed by the same
- * Consistent Cut version on every other node. It means that an Ignite node can safely recover itself to this point
- * without any coordination with other nodes.
+ * Consistent Cut splits timeline on 2 global areas - BEFORE and AFTER. It guarantees that every transaction committed BEFORE
+ * also will be committed BEFORE on every other node. It means that an Ignite node can safely recover itself to this
+ * point without any coordination with other nodes.
  *
- * Some of incomplete transactions (committed AFTER) could be a part of Global Consistent State. It means that those
- * transactions could be committed BEFORE on other Ignite nodes. Set of such transactions is prepared in moment of taken
- * Consistent Cut. Ignite analyzes such transactions and decided whether to include them to the state or not.
- * Information about that is written to WAL with {@link ConsistentCutFinishRecord}.
+ * This record is written to WAL in moment when Consistent Cut starts on a local node. All transactions committed before
+ * this WAL record are part of the global area BEFORE. But it's possible then some transactions committed after this
+ * record are also part of the BEFORE state. Set of such transactions is prepared in moment of taken Consistent Cut.
+ * Ignite analyzes such transactions and decided whether to include them to the state or not. Information about that is
+ * written to WAL with {@link ConsistentCutFinishRecord}.
+ *
+ * @see ConsistentCutFinishRecord
  */
 public class ConsistentCutStartRecord extends WALRecord {
     /**

@@ -222,14 +222,7 @@ public class ConsistentCutManager extends GridCacheSharedManagerAdapter {
      * @return {@code true} if it's safe to run new Consistent Cut procedure.
      */
     public boolean latestGlobalCutReady() {
-        return latestLocalCutCompleted() && F.isEmpty(notReadyNodes);
-    }
-
-    /**
-     * @return {@code true} if the latest local Consistent Cut is ready.
-     */
-    public boolean latestLocalCutCompleted() {
-        return latestCutState.ready();
+        return F.isEmpty(notReadyNodes);
     }
 
     /**
@@ -322,9 +315,8 @@ public class ConsistentCutManager extends GridCacheSharedManagerAdapter {
     }
 
     /**
-     * Handles notifications from remote node with the latest Consistent Cut Version that doesn't include specified
-     * transaction. Local node verifies the check-list of transactions that are waiting for the notification, and make
-     * a decision whether to include the transaction to the latest Consistent Cut State.
+     * Handles notifications from remote nodes. Local node verifies the check-list of transactions that are waiting for
+     * the notification, and make a decision whether to include the transaction to the latest Consistent Cut State.
      *
      * @param txVer Transaction ID on near node.
      * @param rmtTxCutVer Consistent Cut Version after which the specified transaction was committed on remote node.
@@ -348,10 +340,10 @@ public class ConsistentCutManager extends GridCacheSharedManagerAdapter {
     }
 
     /**
-     * Finds the latest Consistent Cut Version that doesn't include specified transaction.
+     * Finds the latest Consistent Cut Version AFTER which the specified transaction committed.
      *
      * @param tx Transaction.
-     * @return the latest Consistent Cut Version that doesn't include specified transaction.
+     * @return the latest Consistent Cut Version AFTER which the specified transaction committed.
      */
     public long txCutVersion(IgniteTxAdapter tx) {
         // Need lock here to avoid concurrent threads - that prepare FinishRequest and making ConsistentCut.

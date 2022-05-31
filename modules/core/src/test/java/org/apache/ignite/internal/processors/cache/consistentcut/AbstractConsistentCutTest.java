@@ -77,7 +77,7 @@ public abstract class AbstractConsistentCutTest extends GridCommonAbstractTest {
             .setWalForceArchiveTimeout(WAL_ARCHIVE_TIMEOUT)
             .setWalAutoArchiveAfterInactivity(WAL_ARCHIVE_TIMEOUT)
             .setPointInTimeRecoveryEnabled(true)
-            .setPointInTimeRecoveryPeriod(CONSISTENT_CUT_PERIOD)
+            .setPitrPeriod(CONSISTENT_CUT_PERIOD)
             .setDataRegionConfigurations(new DataRegionConfiguration()
                 .setName("consistent-cut-persist")
                 .setPersistenceEnabled(true)));
@@ -192,10 +192,7 @@ public abstract class AbstractConsistentCutTest extends GridCommonAbstractTest {
         for (int i = 0; i < nodes(); i++) {
             ConsistentCutManager cutMgr = grid(i).context().cache().context().consistentCutMgr();
 
-            bld
-                .append("\nNode").append(i).append( ": ")
-                .append("locFinished=").append(cutMgr.latestLocalCutCompleted())
-                .append(", state").append(cutMgr.latestCutState());
+            bld.append("\nNode").append(i).append( ": ").append(cutMgr.latestCutState());
         }
 
         throw new Exception(bld.toString());

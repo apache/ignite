@@ -346,7 +346,7 @@ public class DataStorageConfiguration implements Serializable {
 
     /** Period of preparing recovery points for the PITR feature, in milliseconds. */
     @IgniteExperimental
-    private long pointInTimeRecoveryPeriod = DFLT_PITR_CONSISTENT_CUT_PERIOD;
+    private long pitrPeriod = DFLT_PITR_CONSISTENT_CUT_PERIOD;
 
     /**
      * Creates valid durable memory configuration with all default values.
@@ -1398,19 +1398,19 @@ public class DataStorageConfiguration implements Serializable {
      * @return Whether the PITR feature is enabled.
      */
     @IgniteExperimental
-    public long getPointInTimeRecoveryPeriod() {
-        return pointInTimeRecoveryPeriod;
+    public long getPitrPeriod() {
+        return pitrPeriod;
     }
 
     /**
      * Sets period of preparing recovery points for the PITR feature, in milliseconds.
      *
-     * @param pointInTimeRecoveryPeriod Frequency of points for recovery for PITR feature.
+     * @param pitrPeriod Frequency of points for recovery for PITR feature.
      * @return {@code this} for chaining.
      */
     @IgniteExperimental
-    public DataStorageConfiguration setPointInTimeRecoveryPeriod(long pointInTimeRecoveryPeriod) {
-        this.pointInTimeRecoveryPeriod = pointInTimeRecoveryPeriod;
+    public DataStorageConfiguration setPitrPeriod(long pitrPeriod) {
+        this.pitrPeriod = pitrPeriod;
 
         return this;
     }

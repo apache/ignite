@@ -2156,7 +2156,7 @@ public class GridCacheUtils {
 
         assert isPitrEnabled(cfg);
 
-        return dsCfg.getPointInTimeRecoveryPeriod();
+        return dsCfg.getPitrPeriod();
     }
 
     /**
