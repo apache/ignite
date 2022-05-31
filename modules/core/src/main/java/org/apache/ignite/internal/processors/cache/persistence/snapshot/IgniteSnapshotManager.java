@@ -2104,7 +2104,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @return Snapshot view.
      */
     private SnapshotView snapshotViewSupplier(SnapshotMetadata meta) {
-        List<File> dirs = snapshotCacheDirectories(meta.snapshotName(), meta.folderName(), null, name -> true);
+        List<File> dirs = snapshotCacheDirectories(meta.snapshotName(), null, meta.folderName(), name -> true);
         Collection<String> cacheGrps = F.viewReadOnly(dirs, FilePageStoreManager::cacheGroupName);
 
         return new SnapshotView(meta.snapshotName(), meta.consistentId(), F.concat(meta.baselineNodes(), ","), F.concat(cacheGrps, ","));
