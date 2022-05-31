@@ -9,6 +9,7 @@ object GatlingRunner {
 
         // this is where you specify the class you want to run
         val simulationClass = classOf[TransactionSimulation].getName
+//        val simulationClass = classOf[SqlSimulation].getName
 
         val props = new GatlingPropertiesBuilder
         props.simulationClass(simulationClass)

@@ -16,7 +16,7 @@
 """
 This module contains gatling tests
 """
-from ducktape.mark import matrix
+from ducktape.mark import matrix, parametrize
 from ignitetest.services.ignite import IgniteService
 from ignitetest.services.utils.ignite_configuration import IgniteConfiguration, IgniteThinClientConfiguration
 from ignitetest.utils import ignite_versions, cluster
@@ -34,8 +34,14 @@ class GatlingTest(IgniteTest):
     """
     @cluster(num_nodes=6)
     @ignite_versions(str(DEV_BRANCH))
-    @matrix(client_type=[IgniteServiceType.THIN_CLIENT, IgniteServiceType.NODE])
-    def test_gatling_app_start_stop(self, ignite_version, client_type):
+    @matrix(client_type=[IgniteServiceType.NODE],
+            simulation=["org.apache.ignite.internal.gatling.simulation.SimulationInvoke"])
+    # @matrix(client_type=[
+    #     IgniteServiceType.THIN_CLIENT,
+    #     IgniteServiceType.NODE
+    # ],
+    #     simulation=["org.apache.ignite.internal.gatling.simulation.SimulationTransactions"])
+    def test_gatling_app_start_stop(self, ignite_version, client_type, simulation):
         """
         Test that GatlingService correctly start and stop both as node and thin client.
         """
@@ -54,7 +60,7 @@ class GatlingTest(IgniteTest):
             self.test_context,
             client_config,
             # simulation_class_name="org.apache.ignite.gatling.examples.TransactionSimulation",
-            simulation_class_name="org.apache.ignite.internal.gatling.simulation.SimulationTransactions",
+            simulation_class_name=simulation,
             num_nodes=3)
 
         ignite.start()

@@ -27,11 +27,25 @@ class SimulationBasic extends Simulation with DucktapeIgniteSupport {
                                           allResults[Int, Int].saveAs("savedInSession")
                                         )
       )
+      .exec(  ignite("create cache 2")  create "TEST-CACHE-2" backups 1  atomicity ATOMIC mode PARTITIONED)
+      .exec(  ignite("put 2")           cache  "TEST-CACHE-2"
+                                        put[Int, Any] ("#{key}", "#{savedInSession}"))
       .exec( ignite("close client")     close)
 
-    setUp(
+  val twoScenario = scenario("Basic 2")
+    .feed(feeder)
+    .exec(  ignite("start client")    start)
+    .exec(  ignite("create cache 2")  create "TEST-CACHE-2" backups 1  atomicity ATOMIC mode PARTITIONED)
+    .exec(  ignite("put 2")           cache  "TEST-CACHE-2"
+      put[Int, Int] ("#{key}", "#{value}"))
+    .exec( ignite("close client")     close)
+
+  setUp(
       basicScenario
-        .inject(constantUsersPerSec(10) during 30.seconds))
-        .protocols(protocol)
-        .assertions(global.failedRequests.count.is(0))
+        .inject(constantUsersPerSec(10) during 30.seconds),
+      twoScenario
+        .inject(constantUsersPerSec(5) during 30.seconds)
+  )
+    .protocols(protocol)
+    .assertions(global.failedRequests.count.is(0))
 }

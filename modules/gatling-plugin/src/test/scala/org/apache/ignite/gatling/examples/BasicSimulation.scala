@@ -5,7 +5,7 @@ import io.gatling.core.feeder.Feeder
 import io.gatling.core.structure.ChainBuilder
 import org.apache.ignite.Ignite
 import org.apache.ignite.gatling.Predef.allResults
-import org.apache.ignite.gatling.Predef.allRecordsCheck
+//import org.apache.ignite.gatling.Predef.allRecordsCheck
 import org.apache.ignite.gatling.protocol.IgniteThinProtocolBuilder
 
 //import io.gatling.core.session.StaticValueExpression

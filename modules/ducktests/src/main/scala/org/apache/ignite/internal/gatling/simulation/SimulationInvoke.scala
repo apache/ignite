@@ -3,6 +3,7 @@ package org.apache.ignite.internal.gatling.simulation
 import io.gatling.core.Predef.{rampUsersPerSec, _}
 import io.gatling.core.structure.ScenarioBuilder
 import org.apache.ignite.gatling.Predef._
+import org.apache.ignite.gatling.api.IgniteApi
 import org.apache.ignite.internal.gatling.feeder.IntPairsFeeder
 
 import java.util.concurrent.locks.Lock
@@ -29,9 +30,7 @@ class SimulationInvoke extends Simulation with DucktapeIgniteSupport {
     )
     .exec(ignite("put").cache("TEST-CACHE").put[Int, Int]("#{key}", "#{value}"))
     .exec(ignite("invoke").cache("TEST-CACHE").invoke[Int, Int, Unit]("#{key}") {
-      e: MutableEntry[Int, Int] => {
-        e.setValue(-e.getValue)
-      }
+      e: MutableEntry[Int, Int] => e.setValue(-e.getValue)
     })
     .exec(ignite("get")
       .cache("TEST-CACHE")
@@ -44,6 +43,14 @@ class SimulationInvoke extends Simulation with DucktapeIgniteSupport {
       )
     )
     .exec(ignite("unlock").cache("TEST-CACHE").unlock("#{lock}"))
+    .exec(session => {
+      val client: IgniteApi = session("igniteApi").as[IgniteApi]
+      val cache = client.cache[Int, Int]("TEST-CACHE").get
+      cache.get(session("key").as[Int])(
+        value => print(value)
+      )
+      session
+    })
     .exec(
       ignite("Close client").close
     )
