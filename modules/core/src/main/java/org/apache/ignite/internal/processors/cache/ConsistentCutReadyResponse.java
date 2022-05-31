@@ -26,9 +26,9 @@ import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
 /**
- * This message is sent by every node to Consistent Cut coordinator after finishing Consistent Cut locally.
+ * This message is sent by every node to Consistent Cut coordinator after node is ready to run new Consistent Cut.
  */
-public class ConsistentCutFinishResponse implements Message {
+public class ConsistentCutReadyResponse implements Message {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -48,11 +48,11 @@ public class ConsistentCutFinishResponse implements Message {
     private boolean err;
 
     /** */
-    public ConsistentCutFinishResponse() {
+    public ConsistentCutReadyResponse() {
     }
 
     /** */
-    public ConsistentCutFinishResponse(long ver, boolean err) {
+    public ConsistentCutReadyResponse(long ver, boolean err) {
         this.ver = ver;
         this.err = err;
     }
@@ -144,6 +144,6 @@ public class ConsistentCutFinishResponse implements Message {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(ConsistentCutFinishResponse.class, this);
+        return S.toString(ConsistentCutReadyResponse.class, this);
     }
 }

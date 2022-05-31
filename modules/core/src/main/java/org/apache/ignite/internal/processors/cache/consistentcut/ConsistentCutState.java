@@ -32,7 +32,7 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 /**
  * Describes current Consistent Cut state.
  */
-public class ConsistentCutState {
+class ConsistentCutState {
     /**
      * Consistent Cut Version. It's a timestamp of starting the Consistent Cut algorithm on Ignite coordinator node.
      */
@@ -55,9 +55,20 @@ public class ConsistentCutState {
     private final AtomicBoolean finished = new AtomicBoolean();
 
     /**
+     * Whether it's safe to start new Consistent Cut procedure. It means that it's {@link #finished()} and all
+     * transactions in {@link #includeAfter} committed.
+     */
+    private final AtomicBoolean ready = new AtomicBoolean();
+
+    /**
      * Set of transactions to include into this Consistent Cut.
      */
-    private final Set<GridCacheVersion> include = ConcurrentHashMap.newKeySet();
+    private final Set<GridCacheVersion> includeBefore = ConcurrentHashMap.newKeySet();
+
+    /**
+     * Set of transactions to exclude from this Consistent Cut (to include to еру AFTER state).
+     */
+    private final Set<GridCacheVersion> includeAfter = ConcurrentHashMap.newKeySet();
 
     /**
      * Map of transactions that bound to specific Consistent Cut Version.
@@ -80,9 +91,9 @@ public class ConsistentCutState {
     private final Map<GridCacheVersion, Long> check = new ConcurrentHashMap<>();
 
     /**
-     * Set of transactions from {@link #check} to include to this CutVersion.
+     * Set of transactions from {@link #check} to include into this Consistent Cut.
      */
-    private final Set<GridCacheVersion> checkInclude = new HashSet<>();
+    private final Set<GridCacheVersion> checkIncludeBefore = new HashSet<>();
 
     /** */
     public ConsistentCutState(UUID crdNodeId, long ver, long prevVer) {
@@ -113,20 +124,37 @@ public class ConsistentCutState {
     }
 
     /**
-     * Includes a transaction (optionally committed AFTER) to Consistent Cut.
+     * Includes a transaction (optionally committed after Consistent Cut WAL records) to Consistent Cut.
      *
      * @param nearTxVer Transaction version on an originated node.
      */
-    public void include(GridCacheVersion nearTxVer) {
-        include.add(nearTxVer);
+    public void includeBeforeCut(GridCacheVersion nearTxVer) {
+        includeBefore.add(nearTxVer);
+    }
+
+    /**
+     * Excludes a transaction from Consistent Cut.
+     *
+     * @param nearTxVer Transaction version on an originated node.
+     */
+    public void includeAfterCut(GridCacheVersion nearTxVer) {
+        includeAfter.add(nearTxVer);
     }
 
     /**
      * @param nearTxVer Transaction version on an originated node.
-     * @return {@code true} whether specified transaction included to Consistent Cut.
+     * @return {@code true} whether specified transaction is included to Consistent Cut.
      */
-    public boolean includes(GridCacheVersion nearTxVer) {
-        return include.contains(nearTxVer);
+    public boolean beforeCut(GridCacheVersion nearTxVer) {
+        return includeBefore.contains(nearTxVer);
+    }
+
+    /**
+     * @param nearTxVer Transaction version on an originated node.
+     * @return {@code true} whether specified transaction is excluded from Consistent Cut.
+     */
+    public boolean afterCut(GridCacheVersion nearTxVer) {
+        return includeAfter.contains(nearTxVer);
     }
 
     /**
@@ -159,7 +187,7 @@ public class ConsistentCutState {
     public void addForCheck(GridCacheVersion nearTxVer, long cutVer) {
         check.put(nearTxVer, cutVer);
 
-        checkInclude.add(nearTxVer);
+        checkIncludeBefore.add(nearTxVer);
     }
 
     /**
@@ -178,28 +206,30 @@ public class ConsistentCutState {
      * @param nearTxVer Transaction version on an originated node.
      */
     public void exclude(GridCacheVersion nearTxVer) {
-        checkInclude.remove(nearTxVer);
+        checkIncludeBefore.remove(nearTxVer);
+
+        includeAfter.add(nearTxVer);
     }
 
     /**
      * Tries finishing Consistent Cut after checking specified transaction.
      *
      * @param nearTxVer Transaction version on an originated node.
-     * @return Whether Consistent Cut finished.
+     * @return Whether local Consistent Cut has finished.
      */
     public boolean tryFinish(GridCacheVersion nearTxVer) {
         return check.remove(nearTxVer) != null && check.isEmpty() && finish();
     }
 
     /**
-     * Tries finishing Consistent Cut. It crosses sets of included and awaited transactions. For cases when node
+     * Tries finishing local Consistent Cut. It crosses sets of included and awaited transactions. For cases when node
      * has multiple participations (e.g. near and backup) it's possible to remove some transactions from the check-list.
      */
     public void tryFinish() {
         if (check.isEmpty())
             finish();
         else {
-            for (GridCacheVersion inclTx: include)
+            for (GridCacheVersion inclTx: includeBefore)
                 tryFinish(inclTx);
         }
     }
@@ -218,29 +248,56 @@ public class ConsistentCutState {
         return finished.get();
     }
 
+    /**
+     * Notifies about specified transaction committed.
+     *
+     * @param nearTxVer Transaction version on an originated node.
+     */
+    public void onCommit(GridCacheVersion nearTxVer) {
+        includeAfter.remove(nearTxVer);
+    }
+
+    /**
+     * Checks whether it's safe to start new Consistent Cut procedure.
+     *
+     * @return {@code true} if it's safe to start new Consistent Cut procedure.
+     */
+    public boolean checkReady() {
+        return finished.get() && includeAfter.isEmpty() && ready.compareAndSet(false, true);
+    }
+
+    /**
+     * @return {@code true} if it's safe to start new Consistent Cut procedure.
+     */
+    public boolean ready() {
+        return ready.get();
+    }
+
     /** */
     public ConsistentCutStartRecord buildStartRecord() {
-        return new ConsistentCutStartRecord(ver, include, check.keySet());
+        return new ConsistentCutStartRecord(ver, includeBefore, check.keySet());
     }
 
     /** */
     public ConsistentCutFinishRecord buildFinishRecord() {
-        return new ConsistentCutFinishRecord(checkInclude);
+        return new ConsistentCutFinishRecord(checkIncludeBefore);
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        StringBuilder bld = new StringBuilder();
+        StringBuilder bld = new StringBuilder("ConsistentCutState[");
 
         bld.append("ver=").append(ver).append(", ");
+        bld.append("finished=").append(finished).append(", ");
         bld.append("crd=").append(crdNodeId).append(", ");
 
-        setAppend(bld, "include", include);
+        setAppend(bld, "includeBefore", includeBefore);
+        setAppend(bld, "includeAfter", includeAfter);
         mapAppend(bld, "check", check);
-        setAppend(bld, "checkInclude", checkInclude);
+        setAppend(bld, "checkInclude", checkIncludeBefore);
         mapAppend(bld, "txCutVers", txCutVers);
 
-        return bld.toString();
+        return bld.append("]").toString();
     }
 
     /** */

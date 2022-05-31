@@ -202,8 +202,8 @@ public class GridDhtTxPrepareResponse extends GridDistributedTxPrepareResponse {
         preloadEntries.add(info);
     }
 
-    /** */
-    public GridCacheVersion nearXidVer() {
+    /** {@inheritDoc} */
+    @Override public GridCacheVersion nearTxVersion() {
         return nearXidVer;
     }
 

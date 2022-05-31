@@ -151,8 +151,6 @@ public abstract class AbstractConsistentCutTest extends GridCommonAbstractTest {
      */
     protected void awaitConsistentCuts(int cuts, long prevCutVer) throws Exception {
         for (int i = 0; i < cuts; i++) {
-            Thread.sleep(CONSISTENT_CUT_PERIOD);
-
             prevCutVer = awaitCut(prevCutVer);
 
             log.info("Consistent Cut finished: " + prevCutVer);
@@ -166,37 +164,41 @@ public abstract class AbstractConsistentCutTest extends GridCommonAbstractTest {
      * @return Version of the latest Consistent Cut version.
      */
     private long awaitCut(long prevCutVer) throws Exception {
-        Set<Integer> nodes = new HashSet<>();
-
-        for (int i = 0; i < nodes(); i++)
-            nodes.add(i);
-
         long newCutVer = -1L;
 
-        for (int i = 0; i < 100; i++) {
-            for (int n = 0; n < nodes(); n++) {
-                if (!nodes.contains(n))
-                    continue;
+        ConsistentCutManager crdCutMgr = grid(0).context().cache().context().consistentCutMgr();
 
-                long ver = grid(n).context().cache().context().consistentCutMgr().latestCutVersion();
+        for (int i = 0; i < 60; i++) {
+            long ver = crdCutMgr.latestCutVersion();
 
-                assert ver >= prevCutVer : ver + " " + prevCutVer;
+            if (ver > prevCutVer) {
+                if (newCutVer < 0)
+                    newCutVer = ver;
+                else
+                    assert newCutVer == ver : "new=" + newCutVer + ", rcv=" + ver + ", prev=" + prevCutVer;
 
-                if (ver > prevCutVer) {
-                    if (newCutVer < 0)
-                        newCutVer = ver;
-                    else
-                        assert newCutVer == ver : newCutVer + " " + ver + " " + n;
-
-                    nodes.remove(n);
-
-                    if (nodes.isEmpty())
-                        return ver;
-                }
+                if (crdCutMgr.latestGlobalCutReady())
+                    return newCutVer;
             }
+
+            Thread.sleep(10);
         }
 
-        throw new Exception("Failed to wait Consitent Cut. Prev cutVer=" + prevCutVer + "; nodes=" + nodes);
+        StringBuilder bld = new StringBuilder()
+            .append("Failed to wait Consitent Cut")
+            .append(" newCutVer ").append(newCutVer)
+            .append(", prevCutVer ").append(prevCutVer);
+
+        for (int i = 0; i < nodes(); i++) {
+            ConsistentCutManager cutMgr = grid(i).context().cache().context().consistentCutMgr();
+
+            bld
+                .append("\nNode").append(i).append( ": ")
+                .append("locFinished=").append(cutMgr.latestLocalCutCompleted())
+                .append(", state").append(cutMgr.latestCutState());
+        }
+
+        throw new Exception(bld.toString());
     }
 
     /**
@@ -308,7 +310,10 @@ public abstract class AbstractConsistentCutTest extends GridCommonAbstractTest {
     protected static class LogCommunicationSpi extends TcpCommunicationSpi {
         /** {@inheritDoc} */
         @Override public void sendMessage(
-            ClusterNode node, Message msg, IgniteInClosure<IgniteException> ackC) throws IgniteSpiException {
+            ClusterNode node,
+            Message msg,
+            IgniteInClosure<IgniteException> ackC
+        ) throws IgniteSpiException {
             if (txMessage(msg))
                 logTxMessage(node, msg);
 
@@ -379,7 +384,7 @@ public abstract class AbstractConsistentCutTest extends GridCommonAbstractTest {
 
                 bld
                     .append("; lastCutVer=").append(m.latestCutVersion())
-                    .append("; tx=").append((m.nearXidVer()).asIgniteUuid())
+                    .append("; tx=").append((m.nearTxVersion()).asIgniteUuid())
                     .append("; txCutVer=").append((m.txCutVersion()))
                     .append("; 1PC=").append((m.onePhaseCommit()));
             }

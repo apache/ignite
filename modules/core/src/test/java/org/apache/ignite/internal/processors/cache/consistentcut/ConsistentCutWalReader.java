@@ -168,12 +168,6 @@ public class ConsistentCutWalReader {
 
                 return r;
             }
-            else if (rec.type() == CONSISTENT_CUT_FINISH_RECORD) {
-                ConsistentCutFinishRecord r = (ConsistentCutFinishRecord)rec;
-
-                // Re-read exclusion, as it starts new CUT immediately affter start of the previous CUT.
-                assert cutVers.containsKey(curCutVer - 1) && r.version() == cutVers.get(curCutVer - 1);
-            }
         }
 
         // Reach end of WAL here. No ConsistentCut more.
@@ -369,9 +363,7 @@ public class ConsistentCutWalReader {
 
     /** */
     private void handleFinishConsistentCutRecord(ConsistentCutFinishRecord rec, NodeConsistentCutState cut) {
-        System.out.println("FINISH CUT[" + rec + "]");
-
-        assert cutVers.containsKey(curCutVer - 1) && rec.version() == cutVers.get(curCutVer - 1) : rec + " " + cut;
+        System.out.println("FINISH " + curCutVer + " CUT[" + rec + "]");
 
         for (GridCacheVersion includedTx: rec.include()) {
             IgniteUuid tx = includedTx.asIgniteUuid();
