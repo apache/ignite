@@ -17,10 +17,13 @@
 
 package org.apache.ignite.gatling.action.ignite
 
-import io.gatling.commons.stats.{KO, OK}
+import io.gatling.commons.stats.KO
+import io.gatling.commons.stats.OK
 import io.gatling.commons.validation.SuccessWrapper
-import io.gatling.core.action.{Action, ChainableAction}
-import io.gatling.core.session.{Expression, Session}
+import io.gatling.core.action.Action
+import io.gatling.core.action.ChainableAction
+import io.gatling.core.session.Expression
+import io.gatling.core.session.Session
 import io.gatling.core.structure.ScenarioContext
 import io.gatling.core.util.NameGen
 import org.apache.ignite.gatling.action.ActionBase
@@ -47,7 +50,7 @@ case class StartClientAction(requestName: Expression[String],
         requestName(session).map { resolvedRequestName =>
           ctx.coreComponents.statsEngine.logCrash(session.scenario, session.groups, resolvedRequestName, ex)
           executeNext(session, next)
-        },
+        }
       )
   }
 }

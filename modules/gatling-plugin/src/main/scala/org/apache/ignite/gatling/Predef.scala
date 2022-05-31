@@ -17,11 +17,11 @@
 
 package org.apache.ignite.gatling
 
+import javax.cache.processor.MutableEntry
+
 import scala.language.implicitConversions
 
 import org.apache.ignite.cache.CacheEntryProcessor
-
-import javax.cache.processor.MutableEntry
 
 
 object Predef extends IgniteDsl {

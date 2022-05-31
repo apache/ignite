@@ -18,10 +18,13 @@
 package org.apache.ignite.gatling.action.ignite
 
 import com.typesafe.scalalogging.StrictLogging
-import io.gatling.commons.stats.{KO, OK}
+import io.gatling.commons.stats.KO
+import io.gatling.commons.stats.OK
 import io.gatling.commons.validation.SuccessWrapper
-import io.gatling.core.action.{Action, ChainableAction}
-import io.gatling.core.session.{Expression, Session}
+import io.gatling.core.action.Action
+import io.gatling.core.action.ChainableAction
+import io.gatling.core.session.Expression
+import io.gatling.core.session.Session
 import io.gatling.core.structure.ScenarioContext
 import io.gatling.core.util.NameGen
 import org.apache.ignite.gatling.action.ActionBase
@@ -30,7 +33,7 @@ import org.apache.ignite.gatling.api.TransactionApi
 case class TransactionRollbackAction(requestName: Expression[String],
                                      next: Action,
                                      ctx: ScenarioContext
-                            ) extends ChainableAction with NameGen with ActionBase with StrictLogging {
+                                    ) extends ChainableAction with NameGen with ActionBase with StrictLogging {
 
   override val name: String = genName("rollback")
 
@@ -59,7 +62,7 @@ case class TransactionRollbackAction(requestName: Expression[String],
         requestName(session).map { resolvedRequestName =>
           ctx.coreComponents.statsEngine.logCrash(session.scenario, session.groups, resolvedRequestName, ex)
           executeNext(session, next)
-        },
+        }
       )
   }
 }

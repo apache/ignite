@@ -17,16 +17,21 @@
 
 package org.apache.ignite.gatling
 
+import scala.language.implicitConversions
+
 import io.gatling.core.session.Expression
 import org.apache.ignite.gatling.builder.ignite.Ignite
 import org.apache.ignite.gatling.check.IgniteCheckSupport
-import org.apache.ignite.gatling.protocol.{IgniteProtocol, IgniteProtocolBuilder, IgniteThinProtocolBuilder}
+import org.apache.ignite.gatling.protocol.IgniteProtocol
+import org.apache.ignite.gatling.protocol.IgniteProtocolBuilder
+import org.apache.ignite.gatling.protocol.IgniteThinProtocolBuilder
 
 trait IgniteDsl extends IgniteCheckSupport {
-    val ignite: IgniteProtocolBuilder.type = IgniteProtocolBuilder
+  val ignite: IgniteProtocolBuilder.type = IgniteProtocolBuilder
 
-    def ignite(requestName: Expression[String]): Ignite = Ignite(requestName)
+  def ignite(requestName: Expression[String]): Ignite = Ignite(requestName)
 
-    implicit def igniteProtocolBuilder2igniteProtocol(builder: IgniteProtocolBuilder): IgniteProtocol = builder.build
-    implicit def igniteThinProtocolBuilder2igniteProtocol(builder: IgniteThinProtocolBuilder): IgniteProtocol = builder.build
+  implicit def igniteProtocolBuilder2igniteProtocol(builder: IgniteProtocolBuilder): IgniteProtocol = builder.build
+
+  implicit def igniteThinProtocolBuilder2igniteProtocol(builder: IgniteThinProtocolBuilder): IgniteProtocol = builder.build
 }

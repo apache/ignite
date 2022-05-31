@@ -28,23 +28,22 @@ import org.apache.ignite.gatling.builder.IgniteActionBuilder
 
 case class CacheInvokeActionBuilderBase[K, V, T](requestName: Expression[String],
                                                  cacheName: Expression[String],
-                                                 key: Expression[K],
-                                                 args: Seq[Any] = null) {
+                                                 key: Expression[K]) {
 
-    def apply(entryProcessor: CacheEntryProcessor[K, V, T]): CacheInvokeActionBuilder[K, V, T] =
-      CacheInvokeActionBuilder[K, V, T](requestName, cacheName, key, entryProcessor, null)
+  def apply(entryProcessor: CacheEntryProcessor[K, V, T]): CacheInvokeActionBuilder[K, V, T] =
+    CacheInvokeActionBuilder[K, V, T](requestName, cacheName, key, entryProcessor, Seq.empty)
 
-    def args(args: Any*): CacheInvokeActionBuilderProcessorStep[K, V, T] =
-      CacheInvokeActionBuilderProcessorStep[K, V, T](requestName, cacheName, key, args)
+  def args(args: Any*): CacheInvokeActionBuilderProcessorStep[K, V, T] =
+    CacheInvokeActionBuilderProcessorStep[K, V, T](requestName, cacheName, key, args)
 }
 
 case class CacheInvokeActionBuilderProcessorStep[K, V, T](requestName: Expression[String],
-                                             cacheName: Expression[String],
-                                             key: Expression[K],
-                                             arguments: Seq[Any]) {
+                                                          cacheName: Expression[String],
+                                                          key: Expression[K],
+                                                          arguments: Seq[Any]) {
 
-    def apply(entryProcessor: CacheEntryProcessor[K, V, T]): CacheInvokeActionBuilder[K, V, T] =
-      CacheInvokeActionBuilder[K, V, T](requestName, cacheName, key, entryProcessor, arguments)
+  def apply(entryProcessor: CacheEntryProcessor[K, V, T]): CacheInvokeActionBuilder[K, V, T] =
+    CacheInvokeActionBuilder[K, V, T](requestName, cacheName, key, entryProcessor, arguments)
 }
 
 case class CacheInvokeActionBuilder[K, V, T](requestName: Expression[String],

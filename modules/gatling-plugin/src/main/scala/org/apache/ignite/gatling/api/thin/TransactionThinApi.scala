@@ -24,7 +24,7 @@ case class TransactionThinApi(wrapped: ClientTransaction) extends TransactionApi
   override def commit()(s: Unit => Unit, f: Throwable => Unit): Unit = {
     try {
       s(wrapped.commit())
-    } catch  {
+    } catch {
       case ex: Throwable => f(ex)
     } finally {
       wrapped.close()

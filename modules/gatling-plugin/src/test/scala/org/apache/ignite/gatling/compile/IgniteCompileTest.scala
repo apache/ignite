@@ -17,17 +17,21 @@
 
 package org.apache.ignite.gatling.compile
 
-import org.apache.ignite.gatling.Predef._
+import java.util.concurrent.locks.Lock
+
+import javax.cache.processor.MutableEntry
+
 import io.gatling.core.Predef._
-import org.apache.ignite.{Ignite, Ignition}
+import org.apache.ignite.Ignite
+import org.apache.ignite.Ignition
 import org.apache.ignite.cache.CacheEntryProcessor
-import org.apache.ignite.client.{ClientCacheConfiguration, IgniteClient}
-import org.apache.ignite.configuration.{CacheConfiguration, ClientConfiguration}
+import org.apache.ignite.client.ClientCacheConfiguration
+import org.apache.ignite.client.IgniteClient
+import org.apache.ignite.configuration.CacheConfiguration
+import org.apache.ignite.configuration.ClientConfiguration
+import org.apache.ignite.gatling.Predef._
 import org.apache.ignite.gatling.api.IgniteApi
 import org.apache.ignite.gatling.protocol.IgniteProtocol
-
-import java.util.concurrent.locks.Lock
-import javax.cache.processor.MutableEntry
 
 class IgniteCompileTest extends Simulation {
   private val thinProtocol: IgniteProtocol = ignite.cfg(new ClientConfiguration().setAddresses("localhost:10800"))
@@ -54,7 +58,7 @@ class IgniteCompileTest extends Simulation {
     .exec(ignite("ign").commit)
     .exec(ignite("ign").rollback)
 
-    .exec(ignite("ign").cache("cache").put(1,2))
+    .exec(ignite("ign").cache("cache").put(1, 2))
     .exec(ignite("ign").cache("cache").putAll(Map(1 -> 2, 3 -> 4)))
     .exec(ignite("ign").cache("cache").remove(1))
     .exec(ignite("ign").cache("cache").removeAll(Set(1)))
@@ -63,15 +67,14 @@ class IgniteCompileTest extends Simulation {
         override def process(mutableEntry: MutableEntry[Int, Int], objects: Object*): String = ""
       })
     )
-    .exec(ignite("ign").cache("cache").invoke[Int, Int, String](1).args(Seq("", 2, 3))
-      { (_, _: Seq[Any]) =>  "" } )
+    .exec(ignite("ign").cache("cache").invoke[Int, Int, String](1).args(Seq("", 2, 3)) { (_, _: Seq[Any]) => "" })
     .exec(ignite("ign").cache("cache").invoke[Int, Int, String](1).args("", 2, Map(1 -> 3)) {
       (_, _: Seq[Any]) => ""
     })
     .exec(ignite("ign").cache("cache").invoke[Int, Int, String](1) {
       _: MutableEntry[Int, Int] => ""
     })
-    .exec(ignite("ign").cache("cache").invoke[Int, Int, String](1)((_, _: Seq[Any]) =>  "")
+    .exec(ignite("ign").cache("cache").invoke[Int, Int, String](1)((_, _: Seq[Any]) => "")
       .check(
         allResults[Int, String].saveAs("R"),
         simpleCheck(result => result(1) == "")
@@ -136,9 +139,10 @@ class IgniteCompileTest extends Simulation {
         value => print(value)
       )
       client.close() {
-        _ => client.txStart() {
-          _ =>
-        }
+        _ =>
+          client.txStart() {
+            _ =>
+          }
       }
       session
     })

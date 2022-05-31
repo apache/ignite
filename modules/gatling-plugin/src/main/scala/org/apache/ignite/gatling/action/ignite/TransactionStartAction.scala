@@ -18,16 +18,22 @@
 package org.apache.ignite.gatling.action.ignite
 
 import com.typesafe.scalalogging.StrictLogging
-import io.gatling.commons.stats.{KO, OK}
-import io.gatling.commons.validation.{Success, SuccessWrapper}
-import io.gatling.core.action.{Action, ChainableAction}
-import io.gatling.core.session.{Expression, Session}
+import io.gatling.commons.stats.KO
+import io.gatling.commons.stats.OK
+import io.gatling.commons.validation.Success
+import io.gatling.commons.validation.SuccessWrapper
+import io.gatling.core.action.Action
+import io.gatling.core.action.ChainableAction
+import io.gatling.core.session.Expression
+import io.gatling.core.session.Session
 import io.gatling.core.structure.ScenarioContext
 import io.gatling.core.util.NameGen
 import org.apache.ignite.gatling.action.ActionBase
-import org.apache.ignite.gatling.api.{IgniteApi, TransactionApi}
+import org.apache.ignite.gatling.api.IgniteApi
+import org.apache.ignite.gatling.api.TransactionApi
 import org.apache.ignite.gatling.builder.transaction.TransactionParameters
-import org.apache.ignite.transactions.{TransactionConcurrency, TransactionIsolation}
+import org.apache.ignite.transactions.TransactionConcurrency
+import org.apache.ignite.transactions.TransactionIsolation
 
 case class TransactionStartAction(requestName: Expression[String],
                                   params: TransactionParameters,
@@ -60,7 +66,7 @@ case class TransactionStartAction(requestName: Expression[String],
         requestName(session).map { resolvedRequestName =>
           ctx.coreComponents.statsEngine.logCrash(session.scenario, session.groups, resolvedRequestName, ex)
           executeNext(session, next)
-        },
+        }
       )
   }
 
@@ -69,12 +75,14 @@ case class TransactionStartAction(requestName: Expression[String],
                       isolation: Option[TransactionIsolation],
                       timeout: Option[Long],
                       txSize: Option[Int]): (TransactionApi => Unit, Throwable => Unit) => Unit = {
-    if (isolation.isDefined && concurrency.isDefined)
-      if (timeout.isDefined)
+    if (isolation.isDefined && concurrency.isDefined) {
+      if (timeout.isDefined) {
         igniteApi.txStartEx2(params.concurrency.get, params.isolation.get, timeout.get, txSize.getOrElse(0))
-      else
+      } else {
         igniteApi.txStartEx(params.concurrency.get, params.isolation.get)
-    else
+      }
+    } else {
       igniteApi.txStart()
+    }
   }
 }

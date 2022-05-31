@@ -17,4 +17,4 @@
 
 package org.apache.ignite.gatling.check
 
-trait IgniteCheckSupport extends IgniteKeyValueCheckSupport with IgniteSqlCheckSupport {}
+trait IgniteCheckSupport extends IgniteKeyValueCheckSupport with IgniteSqlCheckSupport

@@ -17,20 +17,25 @@
 
 package org.apache.ignite.gatling.action.cache
 
+import java.util.{HashMap => JHashMap}
+
 import com.typesafe.scalalogging.StrictLogging
-import io.gatling.commons.stats.{KO, OK}
-import io.gatling.commons.validation.{Failure, SuccessWrapper}
-import io.gatling.core.action.{Action, ChainableAction}
+import io.gatling.commons.stats.KO
+import io.gatling.commons.stats.OK
+import io.gatling.commons.validation.Failure
+import io.gatling.commons.validation.SuccessWrapper
+import io.gatling.core.action.Action
+import io.gatling.core.action.ChainableAction
 import io.gatling.core.check.Check
-import io.gatling.core.session.{Expression, Session}
+import io.gatling.core.session.Expression
+import io.gatling.core.session.Session
 import io.gatling.core.structure.ScenarioContext
 import io.gatling.core.util.NameGen
 import org.apache.ignite.cache.CacheEntryProcessor
 import org.apache.ignite.gatling.IgniteCheck
 import org.apache.ignite.gatling.action.ActionBase
-import org.apache.ignite.gatling.api.{IgniteApi, TransactionApi}
-
-import java.util.{HashMap => JHashMap}
+import org.apache.ignite.gatling.api.IgniteApi
+import org.apache.ignite.gatling.api.TransactionApi
 
 case class CacheInvokeAction[K, V, T](requestName: Expression[String],
                                       cacheName: Expression[String],
@@ -67,7 +72,7 @@ case class CacheInvokeAction[K, V, T](requestName: Expression[String],
             invokeCall(
               value => {
                 logger.debug(s"session user id: #${session.userId}, after cache.invoke")
-                val finishTime          = ctx.coreComponents.clock.nowMillis
+                val finishTime = ctx.coreComponents.clock.nowMillis
                 val (newSession, error) = Check.check(value, session, checks.toList, new JHashMap[Any, Any]())
                 error match {
                   case Some(Failure(errorMessage)) =>
@@ -78,7 +83,7 @@ case class CacheInvokeAction[K, V, T](requestName: Expression[String],
                 }
               },
               ex => logAndExecuteNext(session, resolvedRequestName, startTime,
-                ctx.coreComponents.clock.nowMillis, KO, next, Some("ERROR"), Some(ex.getMessage)),
+                ctx.coreComponents.clock.nowMillis, KO, next, Some("ERROR"), Some(ex.getMessage))
             )
           })
         .fold(
@@ -94,7 +99,7 @@ case class CacheInvokeAction[K, V, T](requestName: Expression[String],
         requestName(session).map { resolvedRequestName =>
           ctx.coreComponents.statsEngine.logCrash(session.scenario, session.groups, resolvedRequestName, ex)
           executeNext(session, next)
-        },
+        }
       )
   }
 }

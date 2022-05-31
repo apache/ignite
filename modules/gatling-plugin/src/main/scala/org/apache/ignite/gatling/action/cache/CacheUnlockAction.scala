@@ -17,24 +17,27 @@
 
 package org.apache.ignite.gatling.action.cache
 
+import java.util.concurrent.locks.Lock
+
 import com.typesafe.scalalogging.StrictLogging
-import io.gatling.commons.stats.{KO, OK}
+import io.gatling.commons.stats.KO
+import io.gatling.commons.stats.OK
 import io.gatling.commons.validation.SuccessWrapper
-import io.gatling.core.action.{Action, ChainableAction}
-import io.gatling.core.session.{Expression, Session}
+import io.gatling.core.action.Action
+import io.gatling.core.action.ChainableAction
+import io.gatling.core.session.Expression
+import io.gatling.core.session.Session
 import io.gatling.core.structure.ScenarioContext
 import io.gatling.core.util.NameGen
 import org.apache.ignite.gatling.action.ActionBase
 import org.apache.ignite.gatling.api.IgniteApi
-
-import java.util.concurrent.locks.Lock
 
 case class CacheUnlockAction[K, V](requestName: Expression[String],
                                    cacheName: Expression[String],
                                    lock: Expression[Lock],
                                    next: Action,
                                    ctx: ScenarioContext
-                               ) extends ChainableAction with NameGen with ActionBase with StrictLogging {
+                                  ) extends ChainableAction with NameGen with ActionBase with StrictLogging {
 
   override val name: String = genName("cacheUnlock")
 
@@ -59,12 +62,12 @@ case class CacheUnlockAction[K, V](requestName: Expression[String],
             unlockCall(
               _ => {
                 logger.debug(s"session user id: #${session.userId}, after cache.unlock")
-                val finishTime          = ctx.coreComponents.clock.nowMillis
+                val finishTime = ctx.coreComponents.clock.nowMillis
                 logAndExecuteNext(session, resolvedRequestName, startTime,
                   finishTime, OK, next, None, None)
               },
               ex => logAndExecuteNext(session, resolvedRequestName, startTime,
-                ctx.coreComponents.clock.nowMillis, KO, next, Some("ERROR"), Some(ex.getMessage)),
+                ctx.coreComponents.clock.nowMillis, KO, next, Some("ERROR"), Some(ex.getMessage))
             )
           })
         .fold(
@@ -80,7 +83,7 @@ case class CacheUnlockAction[K, V](requestName: Expression[String],
         requestName(session).map { resolvedRequestName =>
           ctx.coreComponents.statsEngine.logCrash(session.scenario, session.groups, resolvedRequestName, ex)
           executeNext(session, next)
-        },
+        }
       )
   }
 }

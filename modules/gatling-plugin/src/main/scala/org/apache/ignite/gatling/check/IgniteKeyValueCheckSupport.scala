@@ -17,13 +17,23 @@
 
 package org.apache.ignite.gatling.check
 
-import io.gatling.commons.validation.{FailureWrapper, SuccessWrapper, Validation}
-import io.gatling.core.check.Check.PreparedCache
-import io.gatling.core.check.{Check, CheckBuilder, CheckMaterializer, CheckResult, Extractor, Preparer, identityPreparer}
-import io.gatling.core.session.{Expression, ExpressionSuccessWrapper, Session}
-import org.apache.ignite.gatling.IgniteCheck
-
 import scala.annotation.implicitNotFound
+
+import io.gatling.commons.validation.FailureWrapper
+import io.gatling.commons.validation.SuccessWrapper
+import io.gatling.commons.validation.Validation
+import io.gatling.core.check.Check
+import io.gatling.core.check.Check.PreparedCache
+import io.gatling.core.check.CheckBuilder
+import io.gatling.core.check.CheckMaterializer
+import io.gatling.core.check.CheckResult
+import io.gatling.core.check.Extractor
+import io.gatling.core.check.Preparer
+import io.gatling.core.check.identityPreparer
+import io.gatling.core.session.Expression
+import io.gatling.core.session.ExpressionSuccessWrapper
+import io.gatling.core.session.Session
+import org.apache.ignite.gatling.IgniteCheck
 
 class IgniteKeyValueCheckSupport {
 
@@ -54,21 +64,21 @@ class IgniteKeyValueCheckSupport {
     )
 
   @implicitNotFound("Could not find a CheckMaterializer. This check might not be valid for Ignite.")
-  implicit def checkBuilder2IgniteCheck[T, P, K, V](
-                                                     checkBuilder: CheckBuilder[T, P]
-                                                   )(implicit materializer: CheckMaterializer[T, IgniteCheck[K, V], AllKeyValueResult[K, V], P]): IgniteCheck[K, V] =
+  implicit def checkBuilder2IgniteCheck[T, P, K, V](checkBuilder: CheckBuilder[T, P])
+                                                   (implicit materializer:
+                                                   CheckMaterializer[T, IgniteCheck[K, V], AllKeyValueResult[K, V], P]): IgniteCheck[K, V] =
     checkBuilder.build(materializer)
 
   @implicitNotFound("Could not find a CheckMaterializer. This check might not be valid for Ignite.")
-  implicit def validate2IgniteCheck[T, P, X, K, V](
-                                                    validate: CheckBuilder.Validate[T, P, X]
-                                                  )(implicit materializer: CheckMaterializer[T, IgniteCheck[K, V], AllKeyValueResult[K, V], P]): IgniteCheck[K, V] =
+  implicit def validate2IgniteCheck[T, P, X, K, V](validate: CheckBuilder.Validate[T, P, X])
+                                                  (implicit materializer:
+                                                  CheckMaterializer[T, IgniteCheck[K, V], AllKeyValueResult[K, V], P]): IgniteCheck[K, V] =
     validate.exists
 
   @implicitNotFound("Could not find a CheckMaterializer. This check might not be valid for Ignite.")
-  implicit def find2IgniteCheck[T, P, X, K, V](
-                                                find: CheckBuilder.Find[T, P, X]
-                                              )(implicit materializer: CheckMaterializer[T, IgniteCheck[K, V], AllKeyValueResult[K, V], P]): IgniteCheck[K, V] =
+  implicit def find2IgniteCheck[T, P, X, K, V](find: CheckBuilder.Find[T, P, X])
+                                              (implicit materializer:
+                                              CheckMaterializer[T, IgniteCheck[K, V], AllKeyValueResult[K, V], P]): IgniteCheck[K, V] =
     find.find.exists
 
   class AllKeyValueCheckMaterializer[K, V] extends
@@ -76,9 +86,9 @@ class IgniteKeyValueCheckSupport {
     override protected def preparer: Preparer[AllKeyValueResult[K, V], AllKeyValueResult[K, V]] = identityPreparer
   }
 
-  implicit def AllKeyValueCheckMaterializer[K, V]: AllKeyValueCheckMaterializer[K, V] = new AllKeyValueCheckMaterializer[K, V]
+  implicit def allKeyValueCheckMaterializer[K, V]: AllKeyValueCheckMaterializer[K, V] = new AllKeyValueCheckMaterializer[K, V]
 
-  def AllKeyValueExtractor[K, V]: Expression[Extractor[AllKeyValueResult[K, V], AllKeyValueResult[K, V]]] =
+  def allKeyValueExtractor[K, V]: Expression[Extractor[AllKeyValueResult[K, V], AllKeyValueResult[K, V]]] =
     new Extractor[AllKeyValueResult[K, V], AllKeyValueResult[K, V]] {
       override def name: String = "allRecords"
 
@@ -87,12 +97,12 @@ class IgniteKeyValueCheckSupport {
       override def arity: String = "find"
     }.expressionSuccess
 
-  def AllKeyValueResults[K, V] =
+  private def allKeyValueResults[K, V] =
     new CheckBuilder.Find.Default[IgniteAllKeyValueCheckType, AllKeyValueResult[K, V], AllKeyValueResult[K, V]](
-      AllKeyValueExtractor,
-      displayActualValue = true,
+      allKeyValueExtractor,
+      displayActualValue = true
     )
 
   def allResults[K, V]: CheckBuilder.Find.Default[IgniteAllKeyValueCheckType, AllKeyValueResult[K, V], AllKeyValueResult[K, V]] =
-    AllKeyValueResults
+    allKeyValueResults
 }

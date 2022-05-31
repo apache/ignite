@@ -17,24 +17,28 @@
 
 package org.apache.ignite.gatling.api.thin
 
+import java.util.concurrent.locks.Lock
+
+import scala.concurrent.ExecutionContext
+import scala.jdk.CollectionConverters._
+import scala.jdk.FutureConverters.CompletionStageOps
+import scala.util.Try
+
 import com.typesafe.scalalogging.StrictLogging
 import org.apache.ignite.cache.CacheEntryProcessor
 import org.apache.ignite.cache.query.SqlFieldsQuery
 import org.apache.ignite.client.ClientCache
-import org.apache.ignite.gatling.api.{CacheApi, CompletionSupport}
-
-import java.util.concurrent.locks.Lock
-import scala.concurrent.ExecutionContext
-import scala.jdk.FutureConverters.CompletionStageOps
-import scala.jdk.CollectionConverters._
-import scala.util.Try
+import org.apache.ignite.gatling.api.CacheApi
+import org.apache.ignite.gatling.api.CompletionSupport
 
 case class CacheThinApi[K, V](wrapped: ClientCache[K, V])(implicit val ec: ExecutionContext)
   extends CacheApi[K, V] with CompletionSupport with StrictLogging {
 
   override def put(key: K, value: V)(s: Unit => Unit, f: Throwable => Unit): Unit = {
     logger.debug("sync put")
-    Try { wrapped.put(key, value) }
+    Try {
+      wrapped.put(key, value)
+    }
       .map(_ => ())
       .fold(f, s)
   }
@@ -46,7 +50,9 @@ case class CacheThinApi[K, V](wrapped: ClientCache[K, V])(implicit val ec: Execu
 
   override def putAll(map: Map[K, V])(s: Unit => Unit, f: Throwable => Unit): Unit = {
     logger.debug("sync putAll")
-    Try { wrapped.putAll(map.asJava) }
+    Try {
+      wrapped.putAll(map.asJava)
+    }
       .map(_ => ())
       .fold(f, s)
   }
@@ -58,7 +64,9 @@ case class CacheThinApi[K, V](wrapped: ClientCache[K, V])(implicit val ec: Execu
 
   override def get(key: K)(s: Map[K, V] => Unit, f: Throwable => Unit): Unit = {
     logger.debug("sync get")
-    Try { wrapped.get(key) }
+    Try {
+      wrapped.get(key)
+    }
       .fold(
         f,
         v => s(Map((key, v)))
@@ -72,7 +80,9 @@ case class CacheThinApi[K, V](wrapped: ClientCache[K, V])(implicit val ec: Execu
 
   override def getAll(keys: Set[K])(s: Map[K, V] => Unit, f: Throwable => Unit): Unit = {
     logger.debug("sync getAll")
-    Try { wrapped.getAll(keys.asJava) }
+    Try {
+      wrapped.getAll(keys.asJava)
+    }
       .map(_.asScala.toMap)
       .fold(f, s)
   }
@@ -84,7 +94,9 @@ case class CacheThinApi[K, V](wrapped: ClientCache[K, V])(implicit val ec: Execu
 
   override def remove(key: K)(s: Unit => Unit, f: Throwable => Unit): Unit = {
     logger.debug("sync remove")
-    Try { wrapped.remove(key) }
+    Try {
+      wrapped.remove(key)
+    }
       .map(_ => ())
       .fold(f, s)
   }
@@ -96,7 +108,9 @@ case class CacheThinApi[K, V](wrapped: ClientCache[K, V])(implicit val ec: Execu
 
   override def removeAll(keys: Set[K])(s: Unit => Unit, f: Throwable => Unit): Unit = {
     logger.debug("sync removeAll")
-    Try { wrapped.removeAll(keys.asJava) }
+    Try {
+      wrapped.removeAll(keys.asJava)
+    }
       .map(_ => ())
       .fold(f, s)
   }
@@ -107,11 +121,11 @@ case class CacheThinApi[K, V](wrapped: ClientCache[K, V])(implicit val ec: Execu
   }
 
   override def invoke[T](key: K, entryProcessor: CacheEntryProcessor[K, V, T], arguments: Any*)
-                           (s: Map[K, T] => Unit, f: Throwable => Unit): Unit =
+                        (s: Map[K, T] => Unit, f: Throwable => Unit): Unit =
     throw new NotImplementedError("invoke is not supported in thin client API")
 
   override def invokeAsync[T](key: K, entryProcessor: CacheEntryProcessor[K, V, T], arguments: Any*)
-                                (s: Map[K, T] => Unit, f: Throwable => Unit): Unit =
+                             (s: Map[K, T] => Unit, f: Throwable => Unit): Unit =
     throw new NotImplementedError("invokeAsync is not supported in thin client API")
 
   override def lock(key: K)(s: Lock => Unit, f: Throwable => Unit): Unit =
@@ -122,9 +136,10 @@ case class CacheThinApi[K, V](wrapped: ClientCache[K, V])(implicit val ec: Execu
 
   override def sql(query: SqlFieldsQuery)(s: List[List[Any]] => Unit, f: Throwable => Unit): Unit = {
     logger.debug("sync sql")
-    Try { wrapped.query(query)
-      .getAll.asScala.toList
-      .map(_.asScala.toList)
+    Try {
+      wrapped.query(query)
+        .getAll.asScala.toList
+        .map(_.asScala.toList)
     }.fold(f, s)
   }
 }

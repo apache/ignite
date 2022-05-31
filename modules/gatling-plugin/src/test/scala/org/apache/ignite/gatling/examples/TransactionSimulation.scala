@@ -71,7 +71,7 @@ class TransactionSimulation extends Simulation {
           simpleCheck((m, session) => {
             println(m)
             m(session("key").as[Int]) == null
-          }),
+          })
         )
       )
       .exec { session => println(session); session }
@@ -100,7 +100,7 @@ class TransactionSimulation extends Simulation {
   setUp(
     scn.inject(
       rampUsersPerSec(0).to(100).during(5.seconds),
-      constantUsersPerSec(100) during 10,
+      constantUsersPerSec(100) during 10
     )
   )
   .protocols(protocol)

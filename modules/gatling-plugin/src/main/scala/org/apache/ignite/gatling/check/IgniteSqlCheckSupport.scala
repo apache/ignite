@@ -17,13 +17,23 @@
 
 package org.apache.ignite.gatling.check
 
-import io.gatling.commons.validation.{FailureWrapper, SuccessWrapper, Validation}
-import io.gatling.core.check.Check.PreparedCache
-import io.gatling.core.check.{Check, CheckBuilder, CheckMaterializer, CheckResult, Extractor, Preparer, identityPreparer}
-import io.gatling.core.session.{Expression, ExpressionSuccessWrapper, Session}
-import org.apache.ignite.gatling.SqlCheck
-
 import scala.annotation.implicitNotFound
+
+import io.gatling.commons.validation.FailureWrapper
+import io.gatling.commons.validation.SuccessWrapper
+import io.gatling.commons.validation.Validation
+import io.gatling.core.check.Check
+import io.gatling.core.check.Check.PreparedCache
+import io.gatling.core.check.CheckBuilder
+import io.gatling.core.check.CheckMaterializer
+import io.gatling.core.check.CheckResult
+import io.gatling.core.check.Extractor
+import io.gatling.core.check.Preparer
+import io.gatling.core.check.identityPreparer
+import io.gatling.core.session.Expression
+import io.gatling.core.session.ExpressionSuccessWrapper
+import io.gatling.core.session.Session
+import org.apache.ignite.gatling.SqlCheck
 
 trait IgniteSqlCheckSupport {
 
@@ -73,9 +83,9 @@ trait IgniteSqlCheckSupport {
     override protected def preparer: Preparer[AllSqlResult, AllSqlResult] = identityPreparer
   }
 
-  implicit def AllSqlCheckMaterializer: AllSqlCheckMaterializer = new AllSqlCheckMaterializer
+  implicit val AllSqlCheckMaterializer: AllSqlCheckMaterializer = new AllSqlCheckMaterializer
 
-  def AllSqlExtractor: Expression[Extractor[AllSqlResult, AllSqlResult]] =
+  val AllSqlExtractor: Expression[Extractor[AllSqlResult, AllSqlResult]] =
     new Extractor[AllSqlResult, AllSqlResult] {
       override def name: String = "allRecords"
 
@@ -84,12 +94,12 @@ trait IgniteSqlCheckSupport {
       override def arity: String = "find"
     }.expressionSuccess
 
-  def AllSqlResults =
+  val AllSqlResults =
     new CheckBuilder.Find.Default[IgniteAllSqlCheckType, AllSqlResult, AllSqlResult](
       AllSqlExtractor,
-      displayActualValue = true,
+      displayActualValue = true
     )
 
-  def allSqlResults: CheckBuilder.Find.Default[IgniteAllSqlCheckType, AllSqlResult, AllSqlResult] =
+  val allSqlResults: CheckBuilder.Find.Default[IgniteAllSqlCheckType, AllSqlResult, AllSqlResult] =
     AllSqlResults
 }

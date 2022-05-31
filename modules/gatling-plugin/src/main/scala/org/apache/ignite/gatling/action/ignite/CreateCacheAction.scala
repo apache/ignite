@@ -17,17 +17,21 @@
 
 package org.apache.ignite.gatling.action.ignite
 
-import io.gatling.commons.stats.{KO, OK}
+import scala.util.Try
+
+import io.gatling.commons.stats.KO
+import io.gatling.commons.stats.OK
 import io.gatling.commons.validation.SuccessWrapper
-import io.gatling.core.action.{Action, ChainableAction}
-import io.gatling.core.session.{Expression, Session}
+import io.gatling.core.action.Action
+import io.gatling.core.action.ChainableAction
+import io.gatling.core.session.Expression
+import io.gatling.core.session.Session
 import io.gatling.core.structure.ScenarioContext
 import io.gatling.core.util.NameGen
 import org.apache.ignite.gatling.action.ActionBase
-import org.apache.ignite.gatling.api.{CacheApi, IgniteApi}
+import org.apache.ignite.gatling.api.CacheApi
+import org.apache.ignite.gatling.api.IgniteApi
 import org.apache.ignite.gatling.builder.ignite.Configuration
-
-import scala.util.Try
 
 case class CreateCacheAction[K, V](requestName: Expression[String],
                                    cacheName: Expression[String],
@@ -62,18 +66,19 @@ case class CreateCacheAction[K, V](requestName: Expression[String],
         requestName(session).map { resolvedRequestName =>
           ctx.coreComponents.statsEngine.logCrash(session.scenario, session.groups, resolvedRequestName, ex)
           executeNext(session, next)
-        },
+        }
       )
   }
 
   private def getOrCreateCache(igniteApi: IgniteApi, cacheName: String, config: Configuration[K, V]): (CacheApi[K, V] => Unit, Throwable => Unit) => Unit = {
-    if (config == null)
+    if (config == null) {
       igniteApi.getOrCreateCache(cacheName)
-    else if (config.cacheCfg != null)
-      igniteApi.getOrCreateCacheByConfiguration(config.cacheCfg)
-    else if (config.clientCacheCfg != null)
-      igniteApi.getOrCreateCacheByClientConfiguration(config.clientCacheCfg)
-    else
-      igniteApi.getOrCreateCacheBySimpleConfig(cacheName, config.simpleCfg)
+    } else if (config.cacheCfg.isDefined) {
+      igniteApi.getOrCreateCacheByConfiguration(config.cacheCfg.get)
+    } else if (config.clientCacheCfg.isDefined) {
+      igniteApi.getOrCreateCacheByClientConfiguration(config.clientCacheCfg.get)
+    } else {
+      igniteApi.getOrCreateCacheBySimpleConfig(cacheName, config.simpleCfg.get)
+    }
   }
 }

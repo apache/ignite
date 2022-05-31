@@ -17,20 +17,28 @@
 
 package org.apache.ignite.gatling.api.thin
 
-import org.apache.ignite.client.{ClientCacheConfiguration, IgniteClient}
-import org.apache.ignite.configuration.CacheConfiguration
-import org.apache.ignite.gatling.api.{CacheApi, CompletionSupport, IgniteApi, TransactionApi}
-import org.apache.ignite.gatling.builder.ignite.SimpleCacheConfiguration
-import org.apache.ignite.transactions.{TransactionConcurrency, TransactionIsolation}
-
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.ExecutionContext
+import scala.concurrent.Future
 import scala.jdk.FutureConverters.CompletionStageOps
 import scala.util.Try
+
+import org.apache.ignite.client.ClientCacheConfiguration
+import org.apache.ignite.client.IgniteClient
+import org.apache.ignite.configuration.CacheConfiguration
+import org.apache.ignite.gatling.api.CacheApi
+import org.apache.ignite.gatling.api.CompletionSupport
+import org.apache.ignite.gatling.api.IgniteApi
+import org.apache.ignite.gatling.api.TransactionApi
+import org.apache.ignite.gatling.builder.ignite.SimpleCacheConfiguration
+import org.apache.ignite.transactions.TransactionConcurrency
+import org.apache.ignite.transactions.TransactionIsolation
 
 case class IgniteThinApi(wrapped: IgniteClient)(implicit val ec: ExecutionContext) extends IgniteApi with CompletionSupport {
 
   override def cache[K, V](name: String): Try[CacheApi[K, V]] =
-    Try{ wrapped.cache[K, V](name) }
+    Try {
+      wrapped.cache[K, V](name)
+    }
       .map(CacheThinApi(_))
 
   override def getOrCreateCache[K, V](name: String)(s: CacheApi[K, V] => Unit, f: Throwable => Unit): Unit =
@@ -49,21 +57,27 @@ case class IgniteThinApi(wrapped: IgniteClient)(implicit val ec: ExecutionContex
     withCompletion(Future(wrapped.close()))(s, f)
 
   override def txStart()(s: TransactionApi => Unit, f: Throwable => Unit): Unit =
-    Try { wrapped.transactions().txStart() }.fold(
+    Try {
+      wrapped.transactions().txStart()
+    }.fold(
       f,
       tx => s(TransactionThinApi(tx))
     )
 
   override def txStartEx(concurrency: TransactionConcurrency, isolation: TransactionIsolation)
-                      (s: TransactionApi => Unit, f: Throwable => Unit): Unit =
-    Try { wrapped.transactions().txStart(concurrency, isolation) }.fold(
+                        (s: TransactionApi => Unit, f: Throwable => Unit): Unit =
+    Try {
+      wrapped.transactions().txStart(concurrency, isolation)
+    }.fold(
       f,
       tx => s(TransactionThinApi(tx))
     )
 
   override def txStartEx2(concurrency: TransactionConcurrency, isolation: TransactionIsolation, timeout: Long, txSize: Int)
-                      (s: TransactionApi => Unit, f: Throwable => Unit): Unit =
-    Try { wrapped.transactions().txStart(concurrency, isolation, timeout) }.fold(
+                         (s: TransactionApi => Unit, f: Throwable => Unit): Unit =
+    Try {
+      wrapped.transactions().txStart(concurrency, isolation, timeout)
+    }.fold(
       f,
       tx => s(TransactionThinApi(tx))
     )

@@ -23,6 +23,6 @@ import org.apache.ignite.gatling.protocol.IgniteComponents
 import org.apache.ignite.gatling.protocol.IgniteProtocol.igniteProtocolKey
 
 abstract class IgniteActionBuilder() extends ActionBuilder {
-    protected def components(protocolComponentsRegistry: ProtocolComponentsRegistry): IgniteComponents =
-        protocolComponentsRegistry.components(igniteProtocolKey)
+  protected def components(protocolComponentsRegistry: ProtocolComponentsRegistry): IgniteComponents =
+    protocolComponentsRegistry.components(igniteProtocolKey)
 }

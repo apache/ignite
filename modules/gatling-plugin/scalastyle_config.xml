@@ -131,7 +131,6 @@
    <parameter name="regex"><![CDATA[^[A-Z_]$]]></parameter>
   </parameters>
  </check>
- <check level="warning" class="org.scalastyle.scalariform.UnderscoreImportChecker" enabled="true"></check>
  <check level="warning" class="org.scalastyle.scalariform.LowercasePatternMatchChecker" enabled="true"></check>
  <check level="warning" class="org.scalastyle.scalariform.MultipleStringLiteralsChecker" enabled="true">
   <parameters>
@@ -140,4 +139,22 @@
   </parameters>
  </check>
  <check level="warning" class="org.scalastyle.scalariform.ImportGroupingChecker" enabled="true"></check>
+ <!-- Below are custom checks -->
+ <check enabled="true" class="org.scalastyle.scalariform.ImportOrderChecker" level="warning">
+  <parameters>
+   <parameter name="groups">java,javax,scala,others</parameter>
+   <parameter name="group.java">java\..+</parameter>
+   <parameter name="group.javax">javax\..+</parameter>
+   <parameter name="group.scala">scala\..+</parameter>
+   <parameter name="group.others">.+</parameter>
+   <parameter name="maxBlankLines">0</parameter>
+   <parameter name="lexicographic">true</parameter>
+  </parameters>
+ </check>
+ <check enabled="true" class="org.scalastyle.scalariform.BlockImportChecker" level="warning"/>
+ <check level="warning" class="org.scalastyle.scalariform.UnderscoreImportChecker" enabled="true">
+  <parameters>
+   <parameter name="ignoreRegex">scala\.jdk\.CollectionConverters\._|io\.gatling\.core\.Predef\._|org\.apache\.ignite\.gatling\.Predef\._</parameter>
+  </parameters>
+ </check>
 </scalastyle>

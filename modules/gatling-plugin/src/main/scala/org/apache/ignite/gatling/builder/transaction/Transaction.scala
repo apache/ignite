@@ -20,9 +20,12 @@ package org.apache.ignite.gatling.builder.transaction
 import io.gatling.core.action.Action
 import io.gatling.core.session.Expression
 import io.gatling.core.structure.ScenarioContext
-import org.apache.ignite.gatling.action.ignite.{TransactionCommitAction, TransactionRollbackAction, TransactionStartAction}
+import org.apache.ignite.gatling.action.ignite.TransactionCommitAction
+import org.apache.ignite.gatling.action.ignite.TransactionRollbackAction
+import org.apache.ignite.gatling.action.ignite.TransactionStartAction
 import org.apache.ignite.gatling.builder.IgniteActionBuilder
-import org.apache.ignite.transactions.{TransactionConcurrency, TransactionIsolation}
+import org.apache.ignite.transactions.TransactionConcurrency
+import org.apache.ignite.transactions.TransactionIsolation
 
 trait TransactionSupport {
   def requestName: Expression[String]
@@ -30,9 +33,11 @@ trait TransactionSupport {
   def txStart(concurrency: TransactionConcurrency, isolation: TransactionIsolation): TransactionStartBuilderTimeoutStep =
     TransactionStartBuilderTimeoutStep(requestName,
       TransactionParameters(concurrency = Some(concurrency), isolation = Some(isolation)))
+
   def txStart: TransactionStartBuilder = TransactionStartBuilder(requestName, TransactionParameters())
 
   def commit: TransactionCommitActionBuilder = TransactionCommitActionBuilder(requestName)
+
   def rollback: TransactionRollbackActionBuilder = TransactionRollbackActionBuilder(requestName)
 }
 
@@ -40,6 +45,7 @@ case class TransactionStartBuilderTimeoutStep(requestName: Expression[String],
                                               params: TransactionParameters) extends IgniteActionBuilder {
   def timeout(timeout: Expression[Long]): TransactionStartBuilderTimeoutStep =
     TransactionStartBuilderTimeoutStep(requestName, params.copy(timeout = Some(timeout)))
+
   def txSize(txSize: Expression[Int]): TransactionStartBuilderTimeoutStep =
     TransactionStartBuilderTimeoutStep(requestName, params.copy(txSize = Some(txSize)))
 
@@ -48,7 +54,7 @@ case class TransactionStartBuilderTimeoutStep(requestName: Expression[String],
 }
 
 case class TransactionStartBuilder(requestName: Expression[String],
-                                              params: TransactionParameters) extends IgniteActionBuilder {
+                                   params: TransactionParameters) extends IgniteActionBuilder {
   override def build(ctx: ScenarioContext, next: Action): Action =
     TransactionStartAction(requestName, TransactionParameters(), next, ctx)
 }
