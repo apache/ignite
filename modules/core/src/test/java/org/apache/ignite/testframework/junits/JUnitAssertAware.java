@@ -54,9 +54,9 @@ public class JUnitAssertAware {
         Assert.fail();
     }
 
-    /** Check arrays equality as well as objects equality. */
+    /** See {@link Assert#assertEquals(Object, Object)} javadocs. */
     protected static void assertEquals(Object exp, Object actual) {
-        assertEquals(null, exp, actual);
+        Assert.assertEquals(exp, actual);
     }
 
     /** See {@link Assert#assertEquals(Object, Object)} javadocs. */
@@ -69,28 +69,9 @@ public class JUnitAssertAware {
         Assert.assertEquals(exp, actual);
     }
 
-    /** Check arrays equality as well as objects equality. */
+    /** See {@link Assert#assertEquals(String, Object, Object)} javadocs. */
     protected static void assertEquals(String msg, Object exp, Object actual) {
-        if (exp instanceof Object[] && actual instanceof Object[])
-            Assert.assertArrayEquals(msg, (Object[])exp, (Object[])actual);
-        else if (exp instanceof byte[] && actual instanceof byte[])
-            Assert.assertArrayEquals(msg, (byte[])exp, (byte[])actual);
-        else if (exp instanceof int[] && actual instanceof int[])
-            Assert.assertArrayEquals(msg, (int[])exp, (int[])actual);
-        else if (exp instanceof long[] && actual instanceof long[])
-            Assert.assertArrayEquals(msg, (long[])exp, (long[])actual);
-        else if (exp instanceof short[] && actual instanceof short[])
-            Assert.assertArrayEquals(msg, (short[])exp, (short[])actual);
-        else if (exp instanceof char[] && actual instanceof char[])
-            Assert.assertArrayEquals(msg, (char[])exp, (char[])actual);
-        else if (exp instanceof double[] && actual instanceof double[])
-            Assert.assertArrayEquals(msg, (double[])exp, (double[])actual, 0);
-        else if (exp instanceof float[] && actual instanceof Object[])
-            Assert.assertArrayEquals(msg, (float[])exp, (float[])actual, 0);
-        else if (exp instanceof boolean[] && actual instanceof boolean[])
-            Assert.assertArrayEquals(msg, (boolean[])exp, (boolean[])actual);
-        else
-            Assert.assertEquals(msg, exp, actual);
+        Assert.assertEquals(msg, exp, actual);
     }
 
     /** See {@link Assert#assertEquals(String, Object, Object)} javadocs. */
@@ -221,5 +202,34 @@ public class JUnitAssertAware {
     /** See {@link Assert#assertNotSame(String, Object, Object)} javadocs. */
     protected static void assertNotSame(String msg, Object exp, Object actual) {
         Assert.assertNotSame(msg, exp, actual);
+    }
+
+    /** Check arrays equality as well as objects equality. */
+    protected static void assertEqualsArraysOrObjects(Object exp, Object actual) {
+        assertEqualsArraysOrObjects(null, exp, actual);
+    }
+
+    /** Check arrays equality as well as objects equality. */
+    protected static void assertEqualsArraysOrObjects(String msg, Object exp, Object actual) {
+        if (exp instanceof Object[] && actual instanceof Object[])
+            Assert.assertArrayEquals(msg, (Object[])exp, (Object[])actual);
+        else if (exp instanceof byte[] && actual instanceof byte[])
+            Assert.assertArrayEquals(msg, (byte[])exp, (byte[])actual);
+        else if (exp instanceof int[] && actual instanceof int[])
+            Assert.assertArrayEquals(msg, (int[])exp, (int[])actual);
+        else if (exp instanceof long[] && actual instanceof long[])
+            Assert.assertArrayEquals(msg, (long[])exp, (long[])actual);
+        else if (exp instanceof short[] && actual instanceof short[])
+            Assert.assertArrayEquals(msg, (short[])exp, (short[])actual);
+        else if (exp instanceof char[] && actual instanceof char[])
+            Assert.assertArrayEquals(msg, (char[])exp, (char[])actual);
+        else if (exp instanceof double[] && actual instanceof double[])
+            Assert.assertArrayEquals(msg, (double[])exp, (double[])actual, 0);
+        else if (exp instanceof float[] && actual instanceof Object[])
+            Assert.assertArrayEquals(msg, (float[])exp, (float[])actual, 0);
+        else if (exp instanceof boolean[] && actual instanceof boolean[])
+            Assert.assertArrayEquals(msg, (boolean[])exp, (boolean[])actual);
+        else
+            Assert.assertEquals(msg, exp, actual);
     }
 }

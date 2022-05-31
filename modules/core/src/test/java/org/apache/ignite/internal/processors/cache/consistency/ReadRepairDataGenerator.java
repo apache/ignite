@@ -174,7 +174,7 @@ public class ReadRepairDataGenerator extends JUnitAssertAware {
                         else
                             exp = results.get(key).primaryBin; // Or read from primary (when not a partition owner).
 
-                        assertEquals(exp, val);
+                        assertEqualsArraysOrObjects(exp, val);
                     }
                 }
 
@@ -220,13 +220,14 @@ public class ReadRepairDataGenerator extends JUnitAssertAware {
     /**
      * @param obj Object.
      */
-    private Object describeArrayIfNeeded(Object obj){
+    private Object describeArrayIfNeeded(Object obj) {
         if (obj instanceof Object[])
             return Arrays.deepToString((Object[])obj);
         else if (obj instanceof int[])
             return Arrays.toString((int[])obj);
         else return obj;
     }
+
     /**
      * Generated entries count.
      */
@@ -747,7 +748,7 @@ public class ReadRepairDataGenerator extends JUnitAssertAware {
     /**
      *
      */
-    private static final class IntArrayWrapper{
+    private static final class IntArrayWrapper {
         /** Array. */
         final int[] arr;
 
