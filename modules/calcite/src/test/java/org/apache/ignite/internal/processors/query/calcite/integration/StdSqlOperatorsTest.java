@@ -98,6 +98,9 @@ public class StdSqlOperatorsTest extends AbstractBasicIntegrationTest {
         assertExpression("MAX(val)").returns(1).check();
         assertExpression("ANY_VALUE(val)").returns(1).check();
         assertExpression("COUNT(*) FILTER(WHERE val <> 1)").returns(0L).check();
+        assertExpression("LISTAGG(val, ',') WITHIN GROUP (ORDER BY val DESC)").returns("1").check();
+        assertExpression("GROUP_CONCAT(val, ',' ORDER BY val DESC)").returns("1").check();
+        assertExpression("STRING_AGG(val, ',' ORDER BY val DESC)").returns("1").check();
     }
 
     /** */

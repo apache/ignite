@@ -26,12 +26,12 @@ import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactor
 /**
  *
  */
-public interface Accumulator extends Serializable {
+public interface Accumulator<Row> extends Serializable {
     /** */
-    void add(Object... args);
+    void add(Row row);
 
     /** */
-    void apply(Accumulator other);
+    void apply(Accumulator<Row> other);
 
     /** */
     Object end();
