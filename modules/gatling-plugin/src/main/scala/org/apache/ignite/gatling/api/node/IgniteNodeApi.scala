@@ -5,6 +5,7 @@ import org.apache.ignite.client.ClientCacheConfiguration
 import org.apache.ignite.configuration.CacheConfiguration
 import org.apache.ignite.gatling.api.{CacheApi, CompletionSupport, IgniteApi, TransactionApi}
 import org.apache.ignite.gatling.builder.ignite.SimpleCacheConfiguration
+import org.apache.ignite.transactions.{TransactionConcurrency, TransactionIsolation}
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.Try
@@ -44,6 +45,20 @@ case class IgniteNodeApi(wrapped: Ignite)(implicit val ec: ExecutionContext) ext
       tx => TransactionNodeApi(tx)
     )
   }
+
+  override def txStartEx(concurrency: TransactionConcurrency, isolation: TransactionIsolation)
+                      (s: TransactionApi => Unit, f: Throwable => Unit): Unit =
+    Try { wrapped.transactions().txStart(concurrency, isolation) }.fold(
+      f,
+      tx => s(TransactionNodeApi(tx))
+    )
+
+  override def txStartEx2(concurrency: TransactionConcurrency, isolation: TransactionIsolation, timeout: Long, txSize: Int)
+                      (s: TransactionApi => Unit, f: Throwable => Unit): Unit =
+    Try { wrapped.transactions().txStart(concurrency, isolation, timeout, txSize) }.fold(
+      f,
+      tx => s(TransactionNodeApi(tx))
+    )
 
   override def wrapped[API]: API = wrapped.asInstanceOf[API]
 }

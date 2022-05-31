@@ -4,6 +4,7 @@ import org.apache.ignite.client.{ClientCacheConfiguration, IgniteClient}
 import org.apache.ignite.configuration.CacheConfiguration
 import org.apache.ignite.gatling.api.{CacheApi, CompletionSupport, IgniteApi, TransactionApi}
 import org.apache.ignite.gatling.builder.ignite.SimpleCacheConfiguration
+import org.apache.ignite.transactions.{TransactionConcurrency, TransactionIsolation}
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.jdk.FutureConverters.CompletionStageOps
@@ -32,6 +33,20 @@ case class IgniteThinApi(wrapped: IgniteClient)(implicit val ec: ExecutionContex
 
   override def txStart()(s: TransactionApi => Unit, f: Throwable => Unit): Unit =
     Try { wrapped.transactions().txStart() }.fold(
+      f,
+      tx => s(TransactionThinApi(tx))
+    )
+
+  override def txStartEx(concurrency: TransactionConcurrency, isolation: TransactionIsolation)
+                      (s: TransactionApi => Unit, f: Throwable => Unit): Unit =
+    Try { wrapped.transactions().txStart(concurrency, isolation) }.fold(
+      f,
+      tx => s(TransactionThinApi(tx))
+    )
+
+  override def txStartEx2(concurrency: TransactionConcurrency, isolation: TransactionIsolation, timeout: Long, txSize: Int)
+                      (s: TransactionApi => Unit, f: Throwable => Unit): Unit =
+    Try { wrapped.transactions().txStart(concurrency, isolation, timeout) }.fold(
       f,
       tx => s(TransactionThinApi(tx))
     )

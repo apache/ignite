@@ -9,6 +9,7 @@ import org.apache.ignite.gatling.api.node.IgniteNodeApi
 import org.apache.ignite.gatling.api.thin.IgniteThinApi
 import org.apache.ignite.gatling.builder.ignite.SimpleCacheConfiguration
 import org.apache.ignite.gatling.protocol.IgniteProtocol
+import org.apache.ignite.transactions.{TransactionConcurrency, TransactionIsolation}
 
 import java.util.concurrent.locks.Lock
 import scala.concurrent.{ExecutionContext, Future}
@@ -25,6 +26,10 @@ trait IgniteApi {
   def close()(s: Unit => Unit, f: Throwable => Unit = _ => ()): Unit
 
   def txStart()(s: TransactionApi => Unit, f: Throwable => Unit = _ => ()): Unit
+  def txStartEx(concurrency: TransactionConcurrency, isolation: TransactionIsolation)
+               (s: TransactionApi => Unit, f: Throwable => Unit = _ => ()): Unit
+  def txStartEx2(concurrency: TransactionConcurrency, isolation: TransactionIsolation, timeout: Long, txSize: Int)
+                (s: TransactionApi => Unit, f: Throwable => Unit = _ => ()): Unit
 
   def wrapped[API]: API
 }

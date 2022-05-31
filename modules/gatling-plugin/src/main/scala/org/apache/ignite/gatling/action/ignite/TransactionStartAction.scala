@@ -2,18 +2,21 @@ package org.apache.ignite.gatling.action.ignite
 
 import com.typesafe.scalalogging.StrictLogging
 import io.gatling.commons.stats.{KO, OK}
-import io.gatling.commons.validation.SuccessWrapper
+import io.gatling.commons.validation.{Success, SuccessWrapper}
 import io.gatling.core.action.{Action, ChainableAction}
 import io.gatling.core.session.{Expression, Session}
 import io.gatling.core.structure.ScenarioContext
 import io.gatling.core.util.NameGen
 import org.apache.ignite.gatling.action.ActionBase
-import org.apache.ignite.gatling.api.IgniteApi
+import org.apache.ignite.gatling.api.{IgniteApi, TransactionApi}
+import org.apache.ignite.gatling.builder.transaction.TransactionParameters
+import org.apache.ignite.transactions.{TransactionConcurrency, TransactionIsolation}
 
 case class TransactionStartAction(requestName: Expression[String],
+                                  params: TransactionParameters,
                                   next: Action,
                                   ctx: ScenarioContext
-                            ) extends ChainableAction with NameGen with ActionBase with StrictLogging {
+                                 ) extends ChainableAction with NameGen with ActionBase with StrictLogging {
 
   override val name: String = genName("txStart")
 
@@ -24,8 +27,10 @@ case class TransactionStartAction(requestName: Expression[String],
 
     (for {
       resolvedRequestName <- requestName(session)
+      resolvedTimeout <- params.timeout.map(e => e(session).map(l => Some(l))).getOrElse(Success(Option.empty[Long]))
+      resolvedTxSize <- params.txSize.map(e => e(session).map(l => Some(l))).getOrElse(Success(Option.empty[Int]))
       startTime <- ctx.coreComponents.clock.nowMillis.success
-    } yield igniteApi.txStart()(
+    } yield txStart(igniteApi, params.concurrency, params.isolation, resolvedTimeout, resolvedTxSize)(
       transactionApi => logAndExecuteNext(session.set("transactionApi", transactionApi), resolvedRequestName, startTime,
         ctx.coreComponents.clock.nowMillis, OK, next, None, None),
       ex => {
@@ -40,5 +45,19 @@ case class TransactionStartAction(requestName: Expression[String],
           executeNext(session, next)
         },
       )
+  }
+
+  private def txStart(igniteApi: IgniteApi,
+                      concurrency: Option[TransactionConcurrency],
+                      isolation: Option[TransactionIsolation],
+                      timeout: Option[Long],
+                      txSize: Option[Int]): (TransactionApi => Unit, Throwable => Unit) => Unit = {
+    if (isolation.isDefined && concurrency.isDefined)
+      if (timeout.isDefined)
+        igniteApi.txStartEx2(params.concurrency.get, params.isolation.get, timeout.get, txSize.getOrElse(0))
+      else
+        igniteApi.txStartEx(params.concurrency.get, params.isolation.get)
+    else
+      igniteApi.txStart()
   }
 }

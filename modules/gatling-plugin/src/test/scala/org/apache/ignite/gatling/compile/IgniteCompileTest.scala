@@ -30,9 +30,9 @@ class IgniteCompileTest extends Simulation {
 
     .exec(ignite("ign").txStart)
     .exec(ignite("ign").txStart(OPTIMISTIC, READ_COMMITTED))
-    .exec(ignite("ign").txStart(OPTIMISTIC, READ_COMMITTED).timeout(1))
+    .exec(ignite("ign").txStart(OPTIMISTIC, READ_COMMITTED).timeout(1L))
     .exec(ignite("ign").txStart(OPTIMISTIC, READ_COMMITTED).txSize(1))
-    .exec(ignite("ign").txStart(OPTIMISTIC, READ_COMMITTED).timeout(1).txSize(1))
+    .exec(ignite("ign").txStart(OPTIMISTIC, READ_COMMITTED).timeout(1L).txSize(1))
 
     .exec(ignite("ign").commit)
     .exec(ignite("ign").rollback)
