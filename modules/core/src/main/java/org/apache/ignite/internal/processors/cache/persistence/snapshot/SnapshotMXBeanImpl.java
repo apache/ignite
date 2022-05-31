@@ -40,8 +40,8 @@ public class SnapshotMXBeanImpl implements SnapshotMXBean {
     }
 
     /** {@inheritDoc} */
-    @Override public void createSnapshot(String snpName) {
-        IgniteFuture<Void> fut = mgr.createSnapshot(snpName);
+    @Override public void createSnapshot(String snpName, String snpPath) {
+        IgniteFuture<Void> fut = mgr.createSnapshot(snpName, F.isEmpty(snpPath) ? null : snpPath);
 
         if (fut.isDone())
             fut.get();
@@ -53,11 +53,11 @@ public class SnapshotMXBeanImpl implements SnapshotMXBean {
     }
 
     /** {@inheritDoc} */
-    @Override public void restoreSnapshot(String name, String grpNames) {
+    @Override public void restoreSnapshot(String name, String path, String grpNames) {
         Set<String> grpNamesSet = F.isEmpty(grpNames) ? null :
             Arrays.stream(grpNames.split(",")).map(String::trim).filter(s -> !s.isEmpty()).collect(Collectors.toSet());
 
-        IgniteFuture<Void> fut = mgr.restoreSnapshot(name, grpNamesSet);
+        IgniteFuture<Void> fut = mgr.restoreSnapshot(name, F.isEmpty(path) ? null : path, grpNamesSet);
 
         if (fut.isDone())
             fut.get();
