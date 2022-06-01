@@ -106,12 +106,12 @@ public class SnapshotRestoreCommand extends SnapshotSubcommand {
         Map<String, String> params = generalUsageOptions();
         Map<String, String> startParams = new LinkedHashMap<>(params);
 
-        startParams.put(GROUPS.argName() + " " + GROUPS.optionName(), GROUPS.description());
-        startParams.put(SOURCE.argName() + " " + SOURCE.optionName(), SOURCE.description());
+        startParams.put(GROUPS.argName() + " " + GROUPS.arg(), GROUPS.description());
+        startParams.put(SOURCE.argName() + " " + SOURCE.arg(), SOURCE.description());
         startParams.put(SYNC.argName(), SYNC.description());
 
         usage(log, "Restore snapshot:", SNAPSHOT, startParams, RESTORE.toString(), SNAPSHOT_NAME_ARG, "--start",
-            optional(GROUPS.argName(), GROUPS.optionName()), optional(SOURCE.argName(), SOURCE.optionName()), optional(SYNC.argName()));
+            optional(GROUPS.argName(), GROUPS.arg()), optional(SOURCE.argName(), SOURCE.arg()), optional(SYNC.argName()));
         usage(log, "Snapshot restore operation status:", SNAPSHOT, params, RESTORE.toString(), SNAPSHOT_NAME_ARG, "--status");
         usage(log, "Cancel snapshot restore operation:", SNAPSHOT, params, RESTORE.toString(), SNAPSHOT_NAME_ARG, "--cancel");
     }

@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.commandline.snapshot;
 
 import org.apache.ignite.internal.commandline.argument.CommandArg;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Snapshot create command options.
@@ -31,37 +32,37 @@ public enum SnapshotCreateCommandOption implements CommandArg {
     DESTINATION("--dest", "path", "Path to the directory where the snapshot will be saved. If not specified, " +
         "the default snapshot directory will be used.");
 
-    /** Option name. */
-    private final String argName;
+    /** Name. */
+    private final String name;
 
-    /** Option name. */
-    private final String optionName;
+    /** Argument. */
+    private final String arg;
 
-    /** Option description. */
+    /** Description. */
     private final String desc;
 
     /**
-     * @param argName Argument name.
-     * @param optionName Option name.
-     * @param desc Option description.
+     * @param name Name.
+     * @param arg Argument.
+     * @param desc Description.
      */
-    SnapshotCreateCommandOption(String argName, String optionName, String desc) {
-        this.argName = argName;
-        this.optionName = optionName;
+    SnapshotCreateCommandOption(String name, @Nullable String arg, String desc) {
+        this.name = name;
+        this.arg = arg;
         this.desc = desc;
     }
 
     /** {@inheritDoc} */
     @Override public String argName() {
-        return argName;
+        return name;
     }
 
-    /** @return Option name. */
-    public String optionName() {
-        return optionName;
+    /** @return Argument. */
+    public String arg() {
+        return arg;
     }
 
-    /** @return Option description. */
+    /** @return Description. */
     public String description() {
         return desc;
     }
