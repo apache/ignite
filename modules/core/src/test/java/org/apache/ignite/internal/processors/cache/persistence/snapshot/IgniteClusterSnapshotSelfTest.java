@@ -72,6 +72,7 @@ import org.apache.ignite.internal.processors.metric.impl.ObjectGauge;
 import org.apache.ignite.internal.util.distributed.DistributedProcess;
 import org.apache.ignite.internal.util.distributed.FullMessage;
 import org.apache.ignite.internal.util.distributed.SingleNodeMessage;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -722,7 +723,7 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
     private void doTestClusterSnapshotWithExplicitPath(boolean cfgPath) throws Exception {
         File snpDir = U.resolveWorkDirectory(U.defaultWorkDirectory(), "ex_snapshots", true);
 
-        assert snpDir.list().length == 0 : "Target directory is not empty: " + snpDir;
+        assertTrue("Target directory is not empty: " + snpDir, F.isEmpty(snpDir.list()));
 
         try {
             IgniteEx ignite = null;

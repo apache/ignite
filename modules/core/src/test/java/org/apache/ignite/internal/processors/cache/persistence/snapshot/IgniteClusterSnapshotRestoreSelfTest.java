@@ -127,7 +127,7 @@ public class IgniteClusterSnapshotRestoreSelfTest extends IgniteClusterSnapshotR
     public void testClusterSnapshotRestoreFromCustomDir() throws Exception {
         File snpDir = U.resolveWorkDirectory(U.defaultWorkDirectory(), "ex_snapshots", true);
 
-        assert snpDir.list().length == 0 : "Target directory is not empty: " + snpDir;
+        assertTrue("Target directory is not empty: " + snpDir, F.isEmpty(snpDir.list()));
 
         try {
             IgniteEx ignite = startGrids(2);
