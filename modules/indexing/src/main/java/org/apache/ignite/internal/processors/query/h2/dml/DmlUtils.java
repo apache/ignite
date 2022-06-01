@@ -133,7 +133,7 @@ public class DmlUtils {
                 return newArr;
             }
 
-            Object res = H2Utils.convert(val, desc.indexing(), type);
+            Object res = H2Utils.convert(val, desc.context().kernalContext().query().objectContext(), type);
 
             // We can get a Timestamp instead of Date when converting a String to Date
             // without query - let's handle this

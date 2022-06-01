@@ -123,6 +123,9 @@ public class GridH2Table extends TableBase {
     private final GridH2RowDescriptor desc;
 
     /** */
+    private final H2TableDescriptor tblDesc;
+
+    /** */
     private volatile ArrayList<Index> idxs;
 
     /** */
@@ -209,6 +212,7 @@ public class GridH2Table extends TableBase {
         assert tblDesc != null;
 
         this.desc = desc;
+        this.tblDesc = tblDesc;
         this.cacheInfo = cacheInfo;
         this.idxProc = idxProc;
 
@@ -457,6 +461,13 @@ public class GridH2Table extends TableBase {
      */
     public GridH2RowDescriptor rowDescriptor() {
         return desc;
+    }
+
+    /**
+     * @return Table descriptor.
+     */
+    public H2TableDescriptor tableDescriptor() {
+        return tblDesc;
     }
 
     /**
@@ -1228,7 +1239,7 @@ public class GridH2Table extends TableBase {
      * @return Backup filter for the current topology.
      */
     @Nullable private IndexingQueryCacheFilter backupFilter() {
-        IgniteH2Indexing indexing = rowDescriptor().indexing();
+        IgniteH2Indexing indexing = (IgniteH2Indexing)cacheContext().kernalContext().query().getIndexing();
 
         AffinityTopologyVersion topVer = indexing.readyTopologyVersion();
 

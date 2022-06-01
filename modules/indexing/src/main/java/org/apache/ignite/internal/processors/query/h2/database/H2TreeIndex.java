@@ -108,19 +108,19 @@ import static org.h2.result.Row.MEMORY_CALCULATE;
 @SuppressWarnings({"unchecked"})
 public class H2TreeIndex extends H2TreeIndexBase {
     /** Underlying Ignite index. */
-    private InlineIndexImpl queryIndex;
+    private final InlineIndexImpl queryIndex;
 
     /** Kernal context. */
-    private GridKernalContext ctx;
+    private final GridKernalContext ctx;
 
     /** Cache context. */
-    private GridCacheContext<?, ?> cctx;
+    private final GridCacheContext<?, ?> cctx;
 
     /** Table name. */
-    private String tblName;
+    private final String tblName;
 
     /** Index name. */
-    private String idxName;
+    private final String idxName;
 
     /** */
     private final IgniteLogger log;
@@ -164,7 +164,7 @@ public class H2TreeIndex extends H2TreeIndexBase {
 
         msgLsnr = new GridMessageListener() {
             @Override public void onMessage(UUID nodeId, Object msg, byte plc) {
-                GridSpinBusyLock l = tbl.rowDescriptor().indexing().busyLock();
+                GridSpinBusyLock l = tbl.tableDescriptor().indexing().busyLock();
 
                 if (!l.enterBusy())
                     return;
@@ -404,7 +404,7 @@ public class H2TreeIndex extends H2TreeIndexBase {
      * @param msg Message.
      */
     public void send(Collection<ClusterNode> nodes, Message msg) {
-        boolean res = getTable().rowDescriptor().indexing().send(msgTopic,
+        boolean res = getTable().tableDescriptor().indexing().send(msgTopic,
             -1,
             nodes,
             msg,

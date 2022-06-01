@@ -57,7 +57,7 @@ public class H2RowComparator extends IndexRowCompartorImpl {
         this.table = table;
 
         coctx = table.rowDescriptor().context().cacheObjectContext();
-        ses = table.rowDescriptor().indexing().connections().jdbcConnection().getSession();
+        ses = table.tableDescriptor().indexing().connections().jdbcConnection().getSession();
     }
 
     /** {@inheritDoc} */

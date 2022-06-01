@@ -32,7 +32,6 @@ import org.apache.ignite.internal.processors.query.GridQueryProperty;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.h2.H2TableDescriptor;
-import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.h2.message.DbException;
 import org.h2.result.SearchRow;
 import org.h2.value.DataType;
@@ -95,15 +94,6 @@ public class GridH2RowDescriptor {
     }
 
     /**
-     * Gets table descriptor.
-     *
-     * @return Table descriptor.
-     */
-    public H2TableDescriptor tableDescriptor() {
-        return tbl;
-    }
-
-    /**
      * Update metadata of this row descriptor according to current state of type descriptor.
      */
     @SuppressWarnings({"WeakerAccess", "ToArrayCallWithZeroLengthArrayArgument"})
@@ -141,15 +131,6 @@ public class GridH2RowDescriptor {
         rowKeyColumnNames = Arrays.stream(props).filter(GridQueryProperty::key)
                 .map(GridQueryProperty::name)
                 .collect(Collectors.toSet());
-    }
-
-    /**
-     * Gets indexing.
-     *
-     * @return indexing.
-     */
-    public IgniteH2Indexing indexing() {
-        return tbl.indexing();
     }
 
     /**
