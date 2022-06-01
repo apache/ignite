@@ -61,7 +61,7 @@ public abstract class AbstractConsistentCutTest extends GridCommonAbstractTest {
     protected static final String CACHE = "CACHE";
 
     /** */
-    private static final int WAL_ARCHIVE_TIMEOUT = 2_000;
+    private static final int WAL_ARCHIVE_TIMEOUT = 500;
 
     /** */
     private static final int CONSISTENT_CUT_PERIOD = 500;
@@ -74,7 +74,6 @@ public abstract class AbstractConsistentCutTest extends GridCommonAbstractTest {
         IgniteConfiguration cfg = super.getConfiguration(instanceName);
 
         cfg.setDataStorageConfiguration(new DataStorageConfiguration()
-            .setWalForceArchiveTimeout(WAL_ARCHIVE_TIMEOUT)
             .setWalAutoArchiveAfterInactivity(WAL_ARCHIVE_TIMEOUT)
             .setPointInTimeRecoveryEnabled(true)
             .setPitrPeriod(CONSISTENT_CUT_PERIOD)
@@ -143,59 +142,6 @@ public abstract class AbstractConsistentCutTest extends GridCommonAbstractTest {
 
             key++;
         }
-    }
-
-    /**
-     * @param cuts Amount of Consistent Cut to await.
-     * @param prevCutVer Previous Consistent Cut version (timestamp).
-     */
-    protected void awaitConsistentCuts(int cuts, long prevCutVer) throws Exception {
-        for (int i = 0; i < cuts; i++) {
-            prevCutVer = awaitCut(prevCutVer);
-
-            log.info("Consistent Cut finished: " + prevCutVer);
-        }
-    }
-
-    /**
-     * Await cut on all server nodes.
-     *
-     * @param prevCutVer Previous Consistent Cut version.
-     * @return Version of the latest Consistent Cut version.
-     */
-    private long awaitCut(long prevCutVer) throws Exception {
-        long newCutVer = -1L;
-
-        ConsistentCutManager crdCutMgr = grid(0).context().cache().context().consistentCutMgr();
-
-        for (int i = 0; i < 60; i++) {
-            long ver = crdCutMgr.latestCutVersion();
-
-            if (ver > prevCutVer) {
-                if (newCutVer < 0)
-                    newCutVer = ver;
-                else
-                    assert newCutVer == ver : "new=" + newCutVer + ", rcv=" + ver + ", prev=" + prevCutVer;
-
-                if (crdCutMgr.latestGlobalCutReady())
-                    return newCutVer;
-            }
-
-            Thread.sleep(10);
-        }
-
-        StringBuilder bld = new StringBuilder()
-            .append("Failed to wait Consitent Cut")
-            .append(" newCutVer ").append(newCutVer)
-            .append(", prevCutVer ").append(prevCutVer);
-
-        for (int i = 0; i < nodes(); i++) {
-            ConsistentCutManager cutMgr = grid(i).context().cache().context().consistentCutMgr();
-
-            bld.append("\nNode").append(i).append( ": ").append(cutMgr.latestCutState());
-        }
-
-        throw new Exception(bld.toString());
     }
 
     /**
@@ -356,7 +302,7 @@ public abstract class AbstractConsistentCutTest extends GridCommonAbstractTest {
 
                 bld
                     .append("; lastCutVer=").append(m.latestCutVersion())
-                    .append("; tx=").append(m.version().asIgniteUuid())
+                    .append("; tx=").append(m.nearTxVersion().asIgniteUuid())
                     .append("; txCutVer=").append(m.txCutVersion());
             }
             else if (msg instanceof GridDhtTxPrepareRequest) {

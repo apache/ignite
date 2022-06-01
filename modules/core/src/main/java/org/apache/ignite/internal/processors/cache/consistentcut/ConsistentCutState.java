@@ -224,8 +224,18 @@ class ConsistentCutState {
         if (check.isEmpty())
             finish();
         else {
-            for (GridCacheVersion inclTx: includeBefore)
-                tryFinish(inclTx);
+            for (GridCacheVersion tx: includeBefore) {
+                if (check.containsKey(tx))
+                    tryFinish(tx);
+            }
+
+            for (GridCacheVersion tx: includeAfter) {
+                if (check.containsKey(tx)) {
+                    tryFinish(tx);
+
+                    checkIncludeBefore.remove(tx);
+                }
+            }
         }
     }
 
@@ -275,7 +285,11 @@ class ConsistentCutState {
 
     /** */
     public ConsistentCutFinishRecord buildFinishRecord() {
-        return new ConsistentCutFinishRecord(checkIncludeBefore);
+        ConsistentCutFinishRecord rec = new ConsistentCutFinishRecord(checkIncludeBefore);
+
+        checkIncludeBefore.clear();
+
+        return rec;
     }
 
     /** {@inheritDoc} */
@@ -283,6 +297,7 @@ class ConsistentCutState {
         StringBuilder bld = new StringBuilder("ConsistentCutState[");
 
         bld.append("ver=").append(ver).append(", ");
+        bld.append("prevVer=").append(prevVer).append(", ");
         bld.append("finished=").append(finished).append(", ");
         bld.append("ready=").append(ready).append(", ");
         bld.append("crd=").append(crdNodeId).append(", ");

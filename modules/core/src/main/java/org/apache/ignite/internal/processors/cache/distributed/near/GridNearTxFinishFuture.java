@@ -470,7 +470,10 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
      */
     private void doFinish(boolean commit, boolean clearThreadMap) {
         try {
-            long txVer = cctx.consistentCutMgr() != null ? cctx.consistentCutMgr().txCutVersion(tx) : 0;
+            long txVer = 0;
+
+            if (cctx.consistentCutMgr() != null)
+                txVer = tx.txCutVer() >= 0 ? tx.txCutVer() : cctx.consistentCutMgr().txCutVersion(tx);
 
             if (tx.localFinish(commit, clearThreadMap) || (!commit && tx.state() == UNKNOWN)) {
                 // Cleanup transaction if heuristic failure.

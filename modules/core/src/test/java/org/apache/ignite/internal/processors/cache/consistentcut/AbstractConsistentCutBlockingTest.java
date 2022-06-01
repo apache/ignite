@@ -18,9 +18,9 @@
 package org.apache.ignite.internal.processors.cache.consistentcut;
 
 import java.util.List;
-import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -37,10 +37,10 @@ public abstract class AbstractConsistentCutBlockingTest extends AbstractConsiste
     protected int caseCnt;
 
     /** */
-    protected static volatile UUID blkMsgNode;
+    private static volatile CountDownLatch txLatch;
 
     /** */
-    private static volatile CountDownLatch latch;
+    private static volatile CountDownLatch cutLatch;
 
     /** */
     protected static volatile String blkMsgCls;
@@ -61,37 +61,86 @@ public abstract class AbstractConsistentCutBlockingTest extends AbstractConsiste
         grid(0).context().cache().context().consistentCutMgr().disable();
     }
 
-    /** */
-    protected void runCase(Runnable tx) throws Exception {
-        runCase(tx, null, null);
-    }
-
-    /** */
-    protected void runCase(Runnable tx, List<T2<Integer, Integer>> c) throws Exception {
-        runCase(tx, null, c);
-    }
-
-    /** */
+    /**
+     * @param tx Function that performs transaction.
+     * @param nearNodeId ID of near node.
+     * @param c Test case - list of tuples (prim, backup) to be written.
+     */
     protected void runCase(Runnable tx, Integer nearNodeId, List<T2<Integer, Integer>> c) throws Exception {
-        latch = new CountDownLatch(1);
+        cutLatch = new CountDownLatch(1);
+        txLatch = new CountDownLatch(1);
 
         caseCnt++;
 
         log.info("START CASE " + caseCnt + ". Data=" + c + ", nearNodeId=" + nearNodeId);
 
-        IgniteInternalFuture<?> txFut = multithreadedAsync(tx, 1);
+        IgniteInternalFuture<?> txFut = multithreadedAsync(() -> {
+            tx.run();
+
+            // Some cases don't block on blkMsgCls. Then no need to await txLatch for such cases.
+            txLatch.countDown();
+        }, 1);
+
+        txLatch.await(1_000, TimeUnit.MILLISECONDS);
 
         long cutVer = grid(0).context().cache().context().consistentCutMgr().triggerConsistentCutOnCluster();
 
         // Await Consistent Cut with cutVer. Set previous cutVer to `cutVer - 1`.
-        awaitConsistentCuts(1, cutVer - 1);
+        awaitCutStarted(cutVer - 1);
 
-        latch.countDown();
+        cutLatch.countDown();
 
         txFut.get(getTestTimeout());
 
         // Await while all async operations completed.
         Thread.sleep(10);
+    }
+
+    /**
+     * Await Consistent Cut started on every node.
+     *
+     * @param prevCutVer Previous Consistent Cut version.
+     * @return Version of the latest Consistent Cut version.
+     */
+    private long awaitCutStarted(long prevCutVer) throws Exception {
+        long newCutVer = -1L;
+
+        Function<Integer, ConsistentCutManager> cutMgr = (n) -> grid(n).context().cache().context().consistentCutMgr();
+
+        int starts = 0;
+
+        // Wait Consistent Cut locally started on every node (prepared the check-list).
+        for (int n = 0; n < nodes(); n++) {
+            for (int i = 0; i < 50; i++) {
+                ConsistentCutState cutState = cutMgr.apply(n).latestCutState();
+
+                long ver = cutState.version();
+
+                if (ver > prevCutVer) {
+                    if (newCutVer < 0)
+                        newCutVer = ver;
+                    else
+                        assert newCutVer == ver : "new=" + newCutVer + ", rcv=" + ver + ", prev=" + prevCutVer;
+
+                    if (++starts == nodes())
+                        return newCutVer;
+
+                    break;
+                }
+
+                Thread.sleep(10);
+            }
+        }
+
+        StringBuilder bld = new StringBuilder()
+            .append("Failed to wait Consitent Cut")
+            .append(" newCutVer ").append(newCutVer)
+            .append(", prevCutVer ").append(prevCutVer);
+
+        for (int n = 0; n < nodes(); n++)
+            bld.append("\nNode").append(n).append( ": ").append(cutMgr.apply(n).latestCutState());
+
+        throw new Exception(bld.toString());
     }
 
     /** */
@@ -101,7 +150,9 @@ public abstract class AbstractConsistentCutBlockingTest extends AbstractConsiste
             ClusterNode node, Message msg, IgniteInClosure<IgniteException> ackC) throws IgniteSpiException {
             if (blkMessage(msg)) {
                 try {
-                    latch.await(5_000, TimeUnit.MILLISECONDS);
+                    txLatch.countDown();
+
+                    cutLatch.await(1_000, TimeUnit.MILLISECONDS);
                 }
                 catch (InterruptedException e) {
                     e.printStackTrace();
@@ -116,9 +167,7 @@ public abstract class AbstractConsistentCutBlockingTest extends AbstractConsiste
             if (msg instanceof GridIoMessage) {
                 msg = ((GridIoMessage)msg).message();
 
-                UUID nodeId = getSpiContext().localNode().id();
-
-                return nodeId.equals(blkMsgNode) && msg.getClass().getSimpleName().equals(blkMsgCls);
+                return msg.getClass().getSimpleName().equals(blkMsgCls);
             }
 
             return false;

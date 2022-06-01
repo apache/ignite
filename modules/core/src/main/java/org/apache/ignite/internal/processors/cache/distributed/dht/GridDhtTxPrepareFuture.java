@@ -2067,7 +2067,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                     }
                 }
 
-                if (res.txCutVersion() > 0)
+                if (res.txCutVersion() >= 0)
                     tx.txCutVer(res.txCutVersion());
 
                 // Finish mini future.

@@ -195,7 +195,23 @@ public class ConsistentCutWalReader {
     private void readCutInclusions(WALIterator it, NodeConsistentCutState cut) {
         Set<IgniteUuid> include = new HashSet<>(cut.txInclude);
 
-        System.out.println("AWAIT INCLUDED " + include + " for CUT=" + cut.ver);
+        StringBuilder bld = new StringBuilder("AWAIT INCLUDED " + include + " for CUT=" + cut.ver);
+
+        for (IgniteUuid tx: cut.txInclude) {
+            bld.append("\n\tAwait ").append(tx).append(" ").append(cut.txParticipations.get(tx));
+
+            // Skip inclusions that don't participate on this node at all.
+            if (cut.txParticipations.get(tx) != null && cut.txParticipations.get(tx).get2() < 0) {
+                include.remove(tx);
+                cut.txParticipations.remove(tx);
+            }
+
+            // Skip inclusions that already committed.
+            if (cut.txParticipations.get(tx) == null && cut.committedTx.contains(tx))
+                include.remove(tx);
+        }
+
+        System.out.println(bld);
 
         while (it.hasNext() && !include.isEmpty()) {
             WALRecord rec = it.next().getValue();
@@ -214,8 +230,15 @@ public class ConsistentCutWalReader {
                 IgniteUuid uid = txId(tx);
 
                 if (include.contains(uid)) {
-                    if (tx.state() == TransactionState.PREPARED)
+                    if (tx.state() == TransactionState.PREPARED) {
                         handlePreparedTx(uid, tx, cut, false);
+
+                        // Skip inclusions that don't participate on this node at all.
+                        if (cut.txParticipations.get(uid).get2() < 0) {
+                            include.remove(uid);
+                            cut.txParticipations.remove(uid);
+                        }
+                    }
                     else {
                         assert tx.state() == TransactionState.COMMITTED : uid + " " + tx.state();
 
@@ -226,7 +249,7 @@ public class ConsistentCutWalReader {
                     }
                 }
                 else
-                    System.out.println("SKIP EXCLUDED TX[" + tx + "]");
+                    System.out.println("SKIP EXCLUDED TX[" + tx.nearXidVersion().asIgniteUuid() + " " + tx.state() + "]");
             }
             else if (rec.type() == CONSISTENT_CUT_START_RECORD) {
                 ConsistentCutStartRecord r = (ConsistentCutStartRecord)rec;

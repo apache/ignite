@@ -240,7 +240,7 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
                     try {
                         boolean nodeStopping = X.hasCause(err, NodeStoppingException.class);
 
-                        long txCutVer = 0;
+                        long txCutVer = -1;
 
                         if (this.tx.currentPrepareFuture() != null) {
                             if (this.tx.near())

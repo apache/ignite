@@ -22,61 +22,49 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxFinishRequest;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxFinishResponse;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareRequest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareResponse;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.transactions.Transaction;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
 
 /** */
-@RunWith(Parameterized.class)
 public class ConsistentCutBlockingNoBackupsTest extends AbstractConsistentCutBlockingTest {
     /** Count of server nodes to start. */
     private static final int SRV_NODES = 3;
-
-    /** */
-    @Parameterized.Parameter()
-    public int blkNodeId;
-
-    /** */
-    @Parameterized.Parameters(name = "nodeId={0}")
-    public static List<Object[]> params() {
-        List<Object[]> p = new ArrayList<>();
-
-        // +1 - client node.
-        for (int i = 0; i < SRV_NODES + 1; i++)
-            p.add(new Object[] { i });
-
-        return p;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
-        super.beforeTest();
-
-        blkMsgNode = grid(blkNodeId).localNode().id();
-    }
 
     /** */
     private final Map<IgniteUuid, Integer> txOrigNode = new ConcurrentHashMap<>();
 
     /** */
     @Test
-    public void testMultipleCases() throws Exception {
-        for (String msg: messages()) {
+    public void testOnePhaseCommitCases() throws Exception {
+        for (String msg: messages(true)) {
             blkMsgCls = msg;
 
             caseClientSingleKey();
             caseClientMultipleKey();
-            caseClientMultipleNodes();
-            caseClientAllNodes();
             caseCoordinatorOnly();
             caseCoordinatorOtherNode();
-            caseCoordinatorAllNodes();
             caseNonCoordinatorOnly();
             caseNonCoordinatorOtherNode();
+        }
+
+        checkWals(txOrigNode, caseCnt, caseCnt);
+    }
+
+    /** */
+    @Test
+    public void testTwoPhaseCommitCases() throws Exception {
+        for (String msg: messages(false)) {
+            blkMsgCls = msg;
+
+            caseClientMultipleNodes();
+            caseClientAllNodes();
+            caseCoordinatorAllNodes();
             caseNonCoordinatorAllNodes();
         }
 
@@ -84,13 +72,19 @@ public class ConsistentCutBlockingNoBackupsTest extends AbstractConsistentCutBlo
     }
 
     /** No backups then skip Dht messages. */
-    public List<String> messages() {
+    public List<String> messages(boolean onePhaseCommit) {
         List<String> msgCls = new ArrayList<>();
 
-        msgCls.add(GridNearTxPrepareRequest.class.getSimpleName());
-        msgCls.add(GridNearTxPrepareResponse.class.getSimpleName());
-        msgCls.add(GridNearTxFinishRequest.class.getSimpleName());
-        msgCls.add(GridNearTxPrepareResponse.class.getSimpleName());
+        if (onePhaseCommit) {
+            msgCls.add(GridNearTxPrepareRequest.class.getSimpleName());
+            msgCls.add(GridNearTxPrepareResponse.class.getSimpleName());
+        }
+        else {
+            msgCls.add(GridNearTxPrepareRequest.class.getSimpleName());
+            msgCls.add(GridNearTxPrepareResponse.class.getSimpleName());
+            msgCls.add(GridNearTxFinishRequest.class.getSimpleName());
+            msgCls.add(GridNearTxFinishResponse.class.getSimpleName());
+        }
 
         return msgCls;
     }
@@ -110,7 +104,7 @@ public class ConsistentCutBlockingNoBackupsTest extends AbstractConsistentCutBlo
 
                 tx.commit();
             }
-        });
+        }, nodes(), F.asList(new T2<>(0, null)));
     }
 
     /**
@@ -130,7 +124,7 @@ public class ConsistentCutBlockingNoBackupsTest extends AbstractConsistentCutBlo
 
                 tx.commit();
             }
-        });
+        }, nodes(), F.asList(new T2<>(0, null), new T2<>(0, null)));
     }
 
     /**
@@ -150,7 +144,7 @@ public class ConsistentCutBlockingNoBackupsTest extends AbstractConsistentCutBlo
 
                 tx.commit();
             }
-        });
+        }, nodes(), F.asList(new T2<>(0, null), new T2<>(1, null)));
     }
 
     /**
@@ -172,7 +166,7 @@ public class ConsistentCutBlockingNoBackupsTest extends AbstractConsistentCutBlo
 
                 tx.commit();
             }
-        });
+        }, nodes(), F.asList(new T2<>(0, null), new T2<>(1, null), new T2<>(2, null)));
     }
 
     /**
@@ -190,7 +184,7 @@ public class ConsistentCutBlockingNoBackupsTest extends AbstractConsistentCutBlo
 
                 tx.commit();
             }
-        });
+        }, 0, F.asList(new T2<>(0, null)));
     }
 
     /**
@@ -208,7 +202,7 @@ public class ConsistentCutBlockingNoBackupsTest extends AbstractConsistentCutBlo
 
                 tx.commit();
             }
-        });
+        }, 0, F.asList(new T2<>(1, null)));
     }
 
     /**
@@ -230,7 +224,7 @@ public class ConsistentCutBlockingNoBackupsTest extends AbstractConsistentCutBlo
 
                 tx.commit();
             }
-        });
+        }, 0, F.asList(new T2<>(0, null), new T2<>(1, null), new T2<>(2, null)));
     }
 
     /**
@@ -248,7 +242,7 @@ public class ConsistentCutBlockingNoBackupsTest extends AbstractConsistentCutBlo
 
                 tx.commit();
             }
-        });
+        }, 1, F.asList(new T2<>(1, null)));
     }
 
     /**
@@ -266,7 +260,7 @@ public class ConsistentCutBlockingNoBackupsTest extends AbstractConsistentCutBlo
 
                 tx.commit();
             }
-        });
+        }, 1, F.asList(new T2<>(2, null)));
     }
 
     /**
@@ -288,7 +282,7 @@ public class ConsistentCutBlockingNoBackupsTest extends AbstractConsistentCutBlo
 
                 tx.commit();
             }
-        });
+        }, 1, F.asList(new T2<>(0, null), new T2<>(1, null), new T2<>(2, null)));
     }
 
     /** {@inheritDoc} */

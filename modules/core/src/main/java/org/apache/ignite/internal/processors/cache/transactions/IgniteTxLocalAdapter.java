@@ -387,7 +387,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
 
     /** */
     public void txCutVer(long txCutVer) {
-        this.txCutVer = txCutVer;
+        if (this.txCutVer < 0)
+            this.txCutVer = txCutVer;
     }
 
     /** {@inheritDoc} */
@@ -1066,14 +1067,6 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
 
             cctx.mvccCaching().onTxFinished(this, commit);
         }
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void notifyConsistentCutOnCommit() {
-        super.notifyConsistentCutOnCommit();
-
-        if (txCutVer == -1)
-            txCutVer(cctx.consistentCutMgr().txCutVersion(this));
     }
 
     /** {@inheritDoc} */

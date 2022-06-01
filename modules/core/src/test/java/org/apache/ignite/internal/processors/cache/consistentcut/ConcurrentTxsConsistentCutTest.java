@@ -144,6 +144,59 @@ public class ConcurrentTxsConsistentCutTest extends AbstractConsistentCutTest {
         return asyncLoad.chain((f) -> adder.sum());
     }
 
+    /**
+     * @param cuts Amount of Consistent Cut to await.
+     * @param prevCutVer Previous Consistent Cut version (timestamp).
+     */
+    protected void awaitConsistentCuts(int cuts, long prevCutVer) throws Exception {
+        for (int i = 0; i < cuts; i++) {
+            prevCutVer = awaitGlobalCutReady(prevCutVer);
+
+            log.info("Consistent Cut finished: " + prevCutVer);
+        }
+    }
+
+    /**
+     * Await global Consistent Cut is completed, and Ignite is ready for new Consistent Cut.
+     *
+     * @param prevCutVer Previous Consistent Cut version.
+     * @return Version of the latest Consistent Cut version.
+     */
+    private long awaitGlobalCutReady(long prevCutVer) throws Exception {
+        long newCutVer = -1L;
+
+        ConsistentCutManager crdCutMgr = grid(0).context().cache().context().consistentCutMgr();
+
+        for (int i = 0; i < 60; i++) {
+            long ver = crdCutMgr.latestCutVersion();
+
+            if (ver > prevCutVer) {
+                if (newCutVer < 0)
+                    newCutVer = ver;
+                else
+                    assert newCutVer == ver : "new=" + newCutVer + ", rcv=" + ver + ", prev=" + prevCutVer;
+
+                if (crdCutMgr.latestGlobalCutReady())
+                    return newCutVer;
+            }
+
+            Thread.sleep(10);
+        }
+
+        StringBuilder bld = new StringBuilder()
+            .append("Failed to wait Consitent Cut")
+            .append(" newCutVer ").append(newCutVer)
+            .append(", prevCutVer ").append(prevCutVer);
+
+        for (int i = 0; i < nodes(); i++) {
+            ConsistentCutManager cutMgr = grid(i).context().cache().context().consistentCutMgr();
+
+            bld.append("\nNode").append(i).append( ": ").append(cutMgr.latestCutState());
+        }
+
+        throw new Exception(bld.toString());
+    }
+
     /** */
     private IgniteCache<Integer, Integer> cache(Ignite g) {
         return g.cache(CACHE);

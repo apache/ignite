@@ -59,13 +59,13 @@ public class GridDistributedTxPrepareResponse extends GridDistributedBaseMessage
     protected byte flags;
 
     /** Version of the latest observable Consistent Cut on local node. */
-    private long latestCutVer;
+    private long latestCutVer = -1;
 
     /**
      * Version of the latest Consistent Cut AFTER which this transaction committed.
      * Sets on backup (or primary) node to notify other nodes in 1PC algorithm.
      */
-    private long txCutVer;
+    private long txCutVer = -1;
 
     /**
      * Empty constructor (required by {@link Externalizable}).

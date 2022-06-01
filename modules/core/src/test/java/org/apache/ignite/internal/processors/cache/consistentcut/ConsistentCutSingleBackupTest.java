@@ -46,27 +46,12 @@ public class ConsistentCutSingleBackupTest extends AbstractConsistentCutBlocking
 
     /** */
     @Parameterized.Parameter()
-    public int blkNodeId;
-
-    /** */
-    @Parameterized.Parameter(1)
     public static String blkMsgCls;
 
     /** */
-    @Parameterized.Parameters(name = "nodeId={0}, m={1}")
-    public static List<Object[]> params() {
-        List<Object[]> p = new ArrayList<>();
-
-        // Coordinator, ordinary server node, client node.
-        Set<Integer> nodes = F.asSet(0, SRV_NODES - 1, SRV_NODES);
-
-        // +1 - client node.
-        for (int i: nodes) {
-            for (String m: messages())
-                p.add(new Object[] { i, m });
-        }
-
-        return p;
+    @Parameterized.Parameters(name = "blkMsg={0}")
+    public static List<String> params() {
+        return messages();
     }
 
     /** */
@@ -87,13 +72,6 @@ public class ConsistentCutSingleBackupTest extends AbstractConsistentCutBlocking
 
     /** */
     protected final Map<IgniteUuid, Integer> txOrigNode = new ConcurrentHashMap<>();
-
-    /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
-        super.beforeTest();
-
-        blkMsgNode = grid(blkNodeId).localNode().id();
-    }
 
     /** */
     @Test
@@ -147,7 +125,7 @@ public class ConsistentCutSingleBackupTest extends AbstractConsistentCutBlocking
                 final int n = near;
                 final int c = cs;
 
-                runCase(() -> tx(n, cases.get(c)), cases.get(c));
+                runCase(() -> tx(n, cases.get(c)), near, cases.get(c));
             }
         }
     }
