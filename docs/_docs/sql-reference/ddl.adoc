@@ -119,7 +119,7 @@ CREATE TABLE IF NOT EXISTS Person (
 
 === Use non-Upper Case Columns
 
-Ignite's SQL parses all unquoted identifiers, names of a table columns and converts them to uppercase
+Ignite parses all unquoted identifiers, names of a table columns and converts them to uppercase
 during the `CREATE TABLE` command execution which, in turn, makes the command with explicitly defined key
 and value types a bit more challenging.
 
