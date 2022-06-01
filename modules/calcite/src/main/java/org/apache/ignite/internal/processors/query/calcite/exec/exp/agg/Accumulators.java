@@ -375,7 +375,8 @@ public class Accumulators {
 
         /** {@inheritDoc} */
         @Override public void apply(Accumulator other) {
-            cnt += ((Number)other.end()).longValue();
+            LongCount other0 = (LongCount)other;
+            cnt += other0.cnt;
         }
 
         /** {@inheritDoc} */

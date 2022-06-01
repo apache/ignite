@@ -29,6 +29,7 @@ import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelWriter;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rel.type.RelDataType;
+import org.apache.calcite.sql.type.SqlTypeName;
 
 /**
  * Relational operator that returns the contents of a table.
@@ -73,6 +74,16 @@ public class IgniteIndexCount extends AbstractRelNode implements SourceAwareIgni
         this.idxName = idxName;
         this.tbl = tbl;
         this.rowType = rowType;
+
+//        RelDataType type = cluster.getTypeFactory().createSqlType(SqlTypeName.BIGINT);
+
+//        this.rowType = cluster.getTypeFactory().createStructType(Collections.singletonList(type),
+//            Collections.singletonList(type.toString()));
+    }
+
+    /** {@inheritDoc} */
+    @Override public double estimateRowCount(RelMetadataQuery mq) {
+        return 0;
     }
 
     /** {@inheritDoc} */
@@ -86,7 +97,7 @@ public class IgniteIndexCount extends AbstractRelNode implements SourceAwareIgni
     }
 
     /** {@inheritDoc} */
-    @Override public RelNode copy(RelTraitSet traitSet, List<RelNode> inputs) {
+    @Override public IgniteRel copy(RelTraitSet traitSet, List<RelNode> inputs) {
         assert inputs.isEmpty();
 
         return this;

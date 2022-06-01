@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.query.calcite.planner;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexCount;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexScan;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableScan;
@@ -61,6 +62,22 @@ public class IndexRebuildPlannerTest extends AbstractPlannerTest {
         tbl.markIndexRebuildInProgress(false);
 
         assertPlan(sql, publicSchema, isInstanceOf(IgniteIndexScan.class));
+    }
+
+    /** */
+    @Test
+    public void testCountAtIndexRebuild() throws Exception {
+        String sql = "SELECT COUNT(*) FROM TBL";
+
+        assertPlan(sql, publicSchema, isInstanceOf(IgniteIndexCount.class));
+
+        tbl.markIndexRebuildInProgress(true);
+
+        assertPlan(sql, publicSchema, isInstanceOf(IgniteTableScan.class));
+
+        tbl.markIndexRebuildInProgress(false);
+
+        assertPlan(sql, publicSchema, isInstanceOf(IgniteIndexCount.class));
     }
 
     /** */
