@@ -79,6 +79,9 @@ public class SnapshotRestoreCommand extends SnapshotSubcommand {
                     "Possible options: " + F.concat(F.asList(SnapshotRestoreCommandOption.values()), ", ") + '.');
             }
             else if (option == GROUPS) {
+                if (grpNames != null)
+                    throw new IllegalArgumentException(GROUPS.argName() + " arg specified twice.");
+
                 String argDesc = "a comma-separated list of cache group names.";
 
                 grpNames = argIter.nextStringSet(argDesc);
@@ -87,6 +90,9 @@ public class SnapshotRestoreCommand extends SnapshotSubcommand {
                     throw new IllegalArgumentException("Expected " + argDesc);
             }
             else if (option == SOURCE) {
+                if (snpPath != null)
+                    throw new IllegalArgumentException(SOURCE.argName() + " arg specified twice.");
+
                 String errMsg = "Expected path to the snapshot directory.";
 
                 if (CommandArgIterator.isCommandOrOption(argIter.peekNextArg()))
@@ -94,8 +100,12 @@ public class SnapshotRestoreCommand extends SnapshotSubcommand {
 
                 snpPath = argIter.nextArg(errMsg);
             }
-            else if (option == SYNC)
+            else if (option == SYNC) {
+                if (sync)
+                    throw new IllegalArgumentException(SYNC.argName() + " arg specified twice.");
+
                 sync = true;
+            }
         }
 
         cmdArg = new VisorSnapshotRestoreTaskArg(snpName, snpPath, sync, restoreAction, grpNames);

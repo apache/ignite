@@ -56,6 +56,9 @@ public class SnapshotCreateCommand extends SnapshotSubcommand {
                     "Possible options: " + F.concat(F.asList(SnapshotCreateCommandOption.values()), ", ") + '.');
             }
             else if (option == DESTINATION) {
+                if (snpPath != null)
+                    throw new IllegalArgumentException(DESTINATION.argName() + " arg specified twice.");
+
                 String errMsg = "Expected path to the snapshot directory.";
 
                 if (CommandArgIterator.isCommandOrOption(argIter.peekNextArg()))
@@ -63,8 +66,12 @@ public class SnapshotCreateCommand extends SnapshotSubcommand {
 
                 snpPath = argIter.nextArg(errMsg);
             }
-            else if (option == SYNC)
+            else if (option == SYNC) {
+                if (sync)
+                    throw new IllegalArgumentException(SYNC.argName() + " arg specified twice.");
+
                 sync = true;
+            }
 
         }
 

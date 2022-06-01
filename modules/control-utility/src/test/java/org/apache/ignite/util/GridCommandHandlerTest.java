@@ -3367,6 +3367,9 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
             injectTestSystemOut();
             CommandHandler h = new CommandHandler();
 
+            assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute(h, "--snapshot", "create", snpName, "--dest", "A", "--dest", "B"));
+            assertContains(log, testOut.toString(), "--dest arg specified twice.");
+
             assertEquals(EXIT_CODE_OK,
                 execute(h, "--snapshot", "create", snpName, "--sync", "--dest", snpDir.getAbsolutePath()));
 
@@ -3374,6 +3377,10 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
             assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute(h, "--snapshot", "restore", snpName, "--start", "--sync"));
             assertContains(log, testOut.toString(), "Snapshot does not exists [snapshot=" + snpName);
+
+            assertEquals(EXIT_CODE_INVALID_ARGUMENTS,
+                execute(h, "--snapshot", "restore", snpName, "--start", "--src", "A", "--src", "B"));
+            assertContains(log, testOut.toString(), "--src arg specified twice.");
 
             // The check command simply prints the results of the check, it always ends with a zero exit code.
             assertEquals(EXIT_CODE_OK, execute(h, "--snapshot", "check", snpName));

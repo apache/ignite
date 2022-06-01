@@ -55,6 +55,9 @@ public class SnapshotCheckCommand extends SnapshotSubcommand {
                     "Possible options: " + F.concat(F.asList(SnapshotCheckCommandOption.values()), ", ") + '.');
             }
             else if (option == SOURCE) {
+                if (snpPath != null)
+                    throw new IllegalArgumentException(SOURCE.argName() + " arg specified twice.");
+
                 String errMsg = "Expected path to the snapshot directory.";
 
                 if (CommandArgIterator.isCommandOrOption(argIter.peekNextArg()))
