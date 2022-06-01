@@ -19,18 +19,14 @@ package org.apache.ignite.internal.cache.query.index;
 
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
-import java.util.PriorityQueue;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.query.IndexQuery;
 import org.apache.ignite.cache.query.IndexQueryCriterion;
 import org.apache.ignite.internal.cache.query.RangeIndexQueryCriterion;
