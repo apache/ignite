@@ -21,6 +21,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
+import org.apache.ignite.internal.processors.cache.consistentcut.ConsistentCutState;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.lang.IgniteUuid;
 
@@ -29,12 +30,13 @@ import org.apache.ignite.lang.IgniteUuid;
  * also will be committed BEFORE on every other node. It means that an Ignite node can safely recover itself to this
  * point without any coordination with other nodes.
  *
- * This record is written to WAL in moment when Consistent Cut stops analyzing transactions from {@link ConsistentCutStartRecord#check()}.
+ * This record is written to WAL in moment when Consistent Cut stops analyzing transactions from {@link ConsistentCutState#checkList()}.
  * It guarantees that every transaction included to {@link #include()} are part of the global BEFORE state, and every
  * committed transaction since {@link ConsistentCutStartRecord} and that aren't included into {@link #include()} are
  * part of the global AFTER state.
  *
  * @see ConsistentCutStartRecord
+ * @see ConsistentCutState
  */
 public class ConsistentCutFinishRecord extends WALRecord {
     /**

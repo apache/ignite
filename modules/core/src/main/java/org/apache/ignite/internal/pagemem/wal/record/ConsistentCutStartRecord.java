@@ -20,6 +20,7 @@ package org.apache.ignite.internal.pagemem.wal.record;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
+import org.apache.ignite.internal.processors.cache.consistentcut.ConsistentCutState;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.lang.IgniteUuid;
 
@@ -30,11 +31,12 @@ import org.apache.ignite.lang.IgniteUuid;
  *
  * This record is written to WAL in moment when Consistent Cut starts on a local node. All transactions committed before
  * this WAL record are part of the global area BEFORE. But it's possible then some transactions committed after this
- * record are also part of the BEFORE state. Set of such transactions is prepared in moment of taken Consistent Cut.
- * Ignite analyzes such transactions and decided whether to include them to the state or not. Information about that is
- * written to WAL with {@link ConsistentCutFinishRecord}.
+ * record are also part of the BEFORE state. Set of such transactions is prepared in moment of taken Consistent Cut and
+ * stored within {@link ConsistentCutState#checkList()}. Ignite analyzes such transactions and decided whether to include
+ * them to the state or not. Information about that is written to WAL with {@link ConsistentCutFinishRecord}.
  *
  * @see ConsistentCutFinishRecord
+ * @see ConsistentCutState
  */
 public class ConsistentCutStartRecord extends WALRecord {
     /**
@@ -47,16 +49,10 @@ public class ConsistentCutStartRecord extends WALRecord {
      */
     private final Set<GridCacheVersion> include;
 
-    /**
-     * Set of transactions (committed AFTER this record) to check whether they are part of the Consistent Cut State.
-     */
-    private final Set<GridCacheVersion> check;
-
     /** */
-    public ConsistentCutStartRecord(long ver, Set<GridCacheVersion> include, Set<GridCacheVersion> check) {
+    public ConsistentCutStartRecord(long ver, Set<GridCacheVersion> include) {
         this.ver = ver;
         this.include = include;
-        this.check = check;
     }
 
     /** */
@@ -67,11 +63,6 @@ public class ConsistentCutStartRecord extends WALRecord {
     /** */
     public Set<GridCacheVersion> include() {
         return include;
-    }
-
-    /** */
-    public Set<GridCacheVersion> check() {
-        return check;
     }
 
     /** {@inheritDoc} */
@@ -85,10 +76,6 @@ public class ConsistentCutStartRecord extends WALRecord {
             .map(GridCacheVersion::asIgniteUuid)
             .collect(Collectors.toList());
 
-        List<IgniteUuid> chk = check.stream()
-            .map(GridCacheVersion::asIgniteUuid)
-            .collect(Collectors.toList());
-
-        return "ConsistentCutRecord [ver=" + version() + ";  include=" + incl + "; check=" + chk + "]";
+        return "ConsistentCutRecord [ver=" + version() + ";  include=" + incl + "]";
     }
 }

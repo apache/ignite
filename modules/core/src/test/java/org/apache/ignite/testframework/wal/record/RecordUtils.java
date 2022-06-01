@@ -640,7 +640,6 @@ public class RecordUtils {
     public static ConsistentCutStartRecord buildConsistentCutStartRecord() {
         return new ConsistentCutStartRecord(
             System.currentTimeMillis(),
-            F.asSet(new GridCacheVersion()),
             F.asSet(new GridCacheVersion()));
     }
 

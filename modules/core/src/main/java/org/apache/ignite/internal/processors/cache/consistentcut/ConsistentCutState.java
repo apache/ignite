@@ -40,7 +40,7 @@ import org.apache.ignite.internal.util.typedef.T2;
  * @see ConsistentCutStartRecord
  * @see ConsistentCutFinishRecord
  */
-class ConsistentCutState {
+public class ConsistentCutState {
     /**
      * Consistent Cut Version. It's a timestamp of starting the Consistent Cut algorithm on Ignite coordinator node.
      */
@@ -313,7 +313,7 @@ class ConsistentCutState {
 
     /** */
     public ConsistentCutStartRecord buildStartRecord() {
-        return new ConsistentCutStartRecord(ver, includeBefore, check.keySet());
+        return new ConsistentCutStartRecord(ver, includeBefore);
     }
 
     /** */

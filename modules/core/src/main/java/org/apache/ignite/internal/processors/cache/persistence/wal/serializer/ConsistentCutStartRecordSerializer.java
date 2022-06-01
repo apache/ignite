@@ -44,11 +44,6 @@ public class ConsistentCutStartRecordSerializer {
 
         for (GridCacheVersion tx: rec.include())
             putVersion(buf, tx, false);
-
-        buf.putInt(rec.check().size());
-
-        for (GridCacheVersion tx: rec.check())
-            putVersion(buf, tx, false);
     }
 
     /**
@@ -71,17 +66,7 @@ public class ConsistentCutStartRecordSerializer {
             include.add(v);
         }
 
-        int chkSize = in.readInt();
-
-        Set<GridCacheVersion> check = new HashSet<>();
-
-        for (int i = 0; i < chkSize; i++) {
-            GridCacheVersion v = readVersion(in, false);
-
-            check.add(v);
-        }
-
-        return new ConsistentCutStartRecord(ver, include, check);
+        return new ConsistentCutStartRecord(ver, include);
     }
 
     /**
@@ -93,12 +78,8 @@ public class ConsistentCutStartRecordSerializer {
     public int size(ConsistentCutStartRecord rec) {
         int size = 8;  // ver.
         size += 4;  // include tx count.
-        size += 4;  // check tx count.
 
         for (GridCacheVersion v: rec.include())
-            size += CacheVersionIO.size(v, false);
-
-        for (GridCacheVersion v: rec.check())
             size += CacheVersionIO.size(v, false);
 
         return size;

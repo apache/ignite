@@ -187,8 +187,8 @@ public class ConsistentCutManager extends GridCacheSharedManagerAdapter {
             txAdapter.txCutVer(cutVer);
         }
 
-        if (log.isDebugEnabled())
-            log.debug("`registerBeforeCommit` " + tx.nearXidVersion().asIgniteUuid() + " , ver " + cutVer);
+        if (log.isInfoEnabled())
+            log.info("`registerBeforeCommit` " + tx.nearXidVersion().asIgniteUuid() + " , ver " + cutVer);
 
         committingTxs.add(tx);
     }
@@ -207,8 +207,8 @@ public class ConsistentCutManager extends GridCacheSharedManagerAdapter {
 
         GridCacheVersion txVer = tx.nearXidVersion();
 
-        if (log.isDebugEnabled())
-            log.debug("`unregisterAfterCommit` " + txVer.asIgniteUuid() + ", state " + cutState);
+        if (log.isInfoEnabled())
+            log.info("`unregisterAfterCommit` " + txVer.asIgniteUuid() + ", state " + cutState);
 
         // In some cases transaction was included into the check-list after it's notified with txCutVer.
         // Then it's required to check such transactions twice: on commit, on receive notification.
@@ -272,7 +272,13 @@ public class ConsistentCutManager extends GridCacheSharedManagerAdapter {
             return;
 
         if (latestCutVer.compareAndSet(locCutVer, cutVer)) {
-            consistentCut(crdNodeId, cutVer);
+            ConsistentCutState cutState = consistentCut(crdNodeId, cutVer);
+
+            if (log.isInfoEnabled())
+                log.info("Prepare Consistent Cut State: " + cutState);
+
+            if (cutState.finished())
+                walLog(cutState, cutState.buildFinishRecord());
 
             checkReady(latestCutState);
         }
@@ -284,8 +290,8 @@ public class ConsistentCutManager extends GridCacheSharedManagerAdapter {
     public long triggerConsistentCutOnCluster() {
         long cutVer = System.currentTimeMillis();
 
-        if (log.isDebugEnabled())
-            log.debug("Start Consistent Cut, version = " + cutVer);
+        if (log.isInfoEnabled())
+            log.info("Start Consistent Cut, version = " + cutVer);
 
         AffinityTopologyVersion topVer = cctx.kernalContext().discovery().topologyVersionEx();
 
@@ -335,8 +341,8 @@ public class ConsistentCutManager extends GridCacheSharedManagerAdapter {
     public void handleRemoteTxCutVersion(GridCacheVersion txVer, long rmtTxCutVer) {
         ConsistentCutState cutState = latestCutState;
 
-        if (log.isDebugEnabled())
-            log.debug("`handleRemoteTxCutVersion` " + txVer.asIgniteUuid() + ". Rmt=" + rmtTxCutVer + ", state " + cutState);
+        if (log.isInfoEnabled())
+            log.info("`handleRemoteTxCutVersion` " + txVer.asIgniteUuid() + ". Rmt=" + rmtTxCutVer + ", state " + cutState);
 
         Long locTxCutVer = cutState.needCheck(txVer);
 
@@ -385,7 +391,7 @@ public class ConsistentCutManager extends GridCacheSharedManagerAdapter {
      * @param crdNodeId Consistent Cut coordinator node ID.
      * @param cutVer Consistent Cut Version.
      */
-    private void consistentCut(UUID crdNodeId, long cutVer) {
+    private ConsistentCutState consistentCut(UUID crdNodeId, long cutVer) {
         long prevCutVer = latestCutState.version();
 
         ConsistentCutState cutState = new ConsistentCutState(crdNodeId, cutVer, prevCutVer);
@@ -482,10 +488,7 @@ public class ConsistentCutManager extends GridCacheSharedManagerAdapter {
         // Log Cut before publishing cut state (due to concurrancy with `handleRcvdTxFinishRequest`).
         walLog(cutState, cutState.buildStartRecord());
 
-        if (log.isDebugEnabled())
-            log.debug("Prepare Consistent Cut State: " + cutState);
-
-        latestCutState = cutState;
+        return (latestCutState = cutState);
     }
 
     /**

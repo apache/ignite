@@ -125,11 +125,9 @@ public class ConsistentCutWalReader {
 
             assert startCutPtr != null;
 
-            if (curCut.awaitingCheckTxs) {
-                awaitExclustionCut(it, curCut);
+            awaitFinishCut(it, curCut);
 
-                assert startCutPtr.compareTo(it.lastRead().orElse(null)) < 0;
-            }
+            assert startCutPtr.compareTo(it.lastRead().orElse(null)) < 0;
 
             from = startCutPtr.next();
 
@@ -175,7 +173,7 @@ public class ConsistentCutWalReader {
     }
 
     /** */
-    private void awaitExclustionCut(WALIterator it, NodeConsistentCutState cut) {
+    private void awaitFinishCut(WALIterator it, NodeConsistentCutState cut) {
         while (it.hasNext()) {
             WALRecord rec = it.next().getValue();
 
@@ -187,8 +185,6 @@ public class ConsistentCutWalReader {
             else if (rec.type() == TX_RECORD)
                 System.out.println("SKIP[" + ((TxRecord)rec).nearXidVersion().asIgniteUuid() + ", " + ((TxRecord)rec).state() + "]");
         }
-
-        cut.awaitingCheckTxs = false;
     }
 
     /** */
@@ -358,8 +354,6 @@ public class ConsistentCutWalReader {
 
         cutVers.put(curCutVer, rec.version());
 
-        assert !cut.awaitingCheckTxs;
-
         ++curCutVer;
 
         cut.ver = rec.version();
@@ -376,15 +370,9 @@ public class ConsistentCutWalReader {
             })
             .collect(Collectors.toSet());
 
-        Set<IgniteUuid> check = rec.check().stream().map(GridCacheVersion::asIgniteUuid).collect(Collectors.toSet());
-
-        assert cut.txInclude == null && cut.txCheck == null;
+        assert cut.txInclude == null;
 
         cut.txInclude(include);
-        cut.txCheck(check);
-
-        if (!check.isEmpty())
-            cut.awaitingCheckTxs = true;
 
         return rec;
     }
@@ -395,8 +383,6 @@ public class ConsistentCutWalReader {
 
         for (GridCacheVersion includedTx: rec.include()) {
             IgniteUuid tx = includedTx.asIgniteUuid();
-
-            assert cut.txCheck.contains(tx);
 
             cut.includeToCut(tx);
         }
@@ -446,14 +432,8 @@ public class ConsistentCutWalReader {
         private Set<IgniteUuid> txInclude;
 
         /** */
-        private Set<IgniteUuid> txCheck;
-
-        /** */
         // <Boolean, Integer> - whether commits started, and count of commits to await.
         private final Map<IgniteUuid, T2<Boolean, Integer>> txParticipations;
-
-        /** */
-        private boolean awaitingCheckTxs;
 
         /**
          * @param exclude List of TX to exclude from this CUT, because they are part of previous CUT.
@@ -487,15 +467,7 @@ public class ConsistentCutWalReader {
         }
 
         /** */
-        public void txCheck(Set<IgniteUuid> txs) {
-            txCheck = new HashSet<>(txs);
-        }
-
-        /** */
         public void includeToCut(IgniteUuid tx) {
-            assert txCheck.contains(tx);
-
-            txCheck.remove(tx);
             txInclude.add(tx);
         }
 
