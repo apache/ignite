@@ -106,9 +106,9 @@ public class SnapshotRestoreCommand extends SnapshotSubcommand {
         Map<String, String> params = generalUsageOptions();
         Map<String, String> startParams = new LinkedHashMap<>(params);
 
-        startParams.put(GROUPS.optionName(), GROUPS.description());
-        startParams.put(SOURCE.optionName(), SOURCE.description());
-        startParams.put(SYNC.optionName(), SYNC.description());
+        startParams.put(GROUPS.argName() + " " + GROUPS.optionName(), GROUPS.description());
+        startParams.put(SOURCE.argName() + " " + SOURCE.optionName(), SOURCE.description());
+        startParams.put(SYNC.argName(), SYNC.description());
 
         usage(log, "Restore snapshot:", SNAPSHOT, startParams, RESTORE.toString(), SNAPSHOT_NAME_ARG, "--start",
             optional(GROUPS.argName(), GROUPS.optionName()), optional(SOURCE.argName(), SOURCE.optionName()), optional(SYNC.argName()));

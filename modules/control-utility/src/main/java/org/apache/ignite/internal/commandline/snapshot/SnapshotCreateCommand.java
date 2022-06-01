@@ -75,8 +75,8 @@ public class SnapshotCreateCommand extends SnapshotSubcommand {
     @Override public void printUsage(Logger log) {
         Map<String, String> params = new LinkedHashMap<>(generalUsageOptions());
 
-        params.put(DESTINATION.optionName(), DESTINATION.description());
-        params.put(SYNC.optionName(), SYNC.description());
+        params.put(DESTINATION.argName() + " " + DESTINATION.optionName(), DESTINATION.description());
+        params.put(SYNC.argName(), SYNC.description());
 
         usage(log, "Create cluster snapshot:", SNAPSHOT, params, name(), SNAPSHOT_NAME_ARG,
             optional(DESTINATION.argName(), DESTINATION.optionName()), optional(SYNC.argName()));

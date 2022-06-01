@@ -71,7 +71,7 @@ public class SnapshotCheckCommand extends SnapshotSubcommand {
     @Override public void printUsage(Logger log) {
         Map<String, String> params = new LinkedHashMap<>(generalUsageOptions());
 
-        params.put(SOURCE.optionName(), SOURCE.description());
+        params.put(SOURCE.argName() + " " + SOURCE.optionName(), SOURCE.description());
 
         usage(log, "Check snapshot:", SNAPSHOT, params, name(), SNAPSHOT_NAME_ARG,
             optional(SOURCE.argName(), SOURCE.optionName()));

@@ -24,7 +24,7 @@ import org.apache.ignite.internal.commandline.argument.CommandArg;
  */
 public enum SnapshotCreateCommandOption implements CommandArg {
     /** Synchronous execution flag. */
-    SYNC("--sync", "sync", "Run the operation synchronously, the command will wait for the entire operation to complete. " +
+    SYNC("--sync", null, "Run the operation synchronously, the command will wait for the entire operation to complete. " +
         "Otherwise, it will be performed in the background, and the command will immediately return control."),
 
     /** Snapshot directory path. */
