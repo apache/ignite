@@ -15,23 +15,16 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.gatling.examples
+package org.apache.ignite.gatling.action.cache
 
-import io.gatling.app.Gatling
-import io.gatling.core.config.GatlingPropertiesBuilder
+import java.util.concurrent.atomic.AtomicInteger
 
-object GatlingRunner {
+import io.gatling.core.feeder.Feeder
+import io.gatling.core.feeder.Record
 
-    def main(args: Array[String]): Unit = {
+case class IntPairsFeeder(atomicInteger: AtomicInteger = new AtomicInteger(0)) extends Feeder[Int] {
+  override def hasNext: Boolean = true
 
-        // this is where you specify the class you want to run
-//        val simulationClass = classOf[TransactionSimulation].getName
-        val simulationClass = classOf[SqlSimulation].getName
-
-        val props = new GatlingPropertiesBuilder
-        props.simulationClass(simulationClass)
-
-        Gatling.fromMap(props.build)
-    }
-
+  override def next(): Record[Int] =
+    Map("key" -> atomicInteger.incrementAndGet(), "value" -> atomicInteger.incrementAndGet())
 }

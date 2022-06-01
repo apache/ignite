@@ -25,6 +25,9 @@ import scala.util.Failure
 import scala.util.Success
 import scala.util.Try
 
+import io.gatling.commons.validation.{ Failure => ValidationFailure }
+import io.gatling.commons.validation.{ Success => ValidationSuccess }
+import io.gatling.commons.validation.Validation
 import org.apache.ignite.Ignition
 import org.apache.ignite.cache.CacheEntryProcessor
 import org.apache.ignite.cache.query.SqlFieldsQuery
@@ -39,6 +42,9 @@ import org.apache.ignite.transactions.TransactionIsolation
 
 trait IgniteApi {
   def cache[K, V](name: String): Try[CacheApi[K, V]]
+
+  def cacheV[K, V](name: String): Validation[CacheApi[K, V]] =
+    cache[K, V](name).fold(ex => ValidationFailure(ex.getMessage), ValidationSuccess(_))
 
   def getOrCreateCache[K, V](name: String)(s: CacheApi[K, V] => Unit, f: Throwable => Unit = _ => ()): Unit
 

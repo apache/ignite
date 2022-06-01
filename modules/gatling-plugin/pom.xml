@@ -47,6 +47,25 @@
         </dependency>
 
         <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>ignite-core</artifactId>
+            <type>test-jar</type>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>ignite-tools</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>log4j</groupId>
+            <artifactId>log4j</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
             <groupId>io.gatling</groupId>
             <artifactId>gatling-core</artifactId>
             <version>${gatling.version}</version>
@@ -71,24 +90,25 @@
 <!--            <version>4.12</version>-->
 <!--            <scope>test</scope>-->
 <!--        </dependency>-->
-        <dependency>
-            <groupId>org.scalatest</groupId>
-            <artifactId>scalatest_${scala.compat.version}</artifactId>
-            <version>3.0.9</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.specs2</groupId>
-            <artifactId>specs2-core_${scala.compat.version}</artifactId>
-            <version>${spec2.version}</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.specs2</groupId>
-            <artifactId>specs2-junit_${scala.compat.version}</artifactId>
-            <version>${spec2.version}</version>
-            <scope>test</scope>
-        </dependency>
+
+<!--        <dependency>-->
+<!--            <groupId>org.scalatest</groupId>-->
+<!--            <artifactId>scalatest_${scala.compat.version}</artifactId>-->
+<!--            <version>3.0.9</version>-->
+<!--            <scope>test</scope>-->
+<!--        </dependency>-->
+<!--        <dependency>-->
+<!--            <groupId>org.specs2</groupId>-->
+<!--            <artifactId>specs2-core_${scala.compat.version}</artifactId>-->
+<!--            <version>${spec2.version}</version>-->
+<!--            <scope>test</scope>-->
+<!--        </dependency>-->
+<!--        <dependency>-->
+<!--            <groupId>org.specs2</groupId>-->
+<!--            <artifactId>specs2-junit_${scala.compat.version}</artifactId>-->
+<!--            <version>${spec2.version}</version>-->
+<!--            <scope>test</scope>-->
+<!--        </dependency>-->
 
          <dependency>
             <groupId>io.gatling</groupId>
@@ -142,32 +162,32 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
-                <version>2.21.0</version>
-                <configuration>
-                    <!-- Tests will be run with scalatest-maven-plugin instead -->
-                    <skipTests>true</skipTests>
-                </configuration>
+<!--                <version>2.21.0</version>-->
+<!--                <configuration>-->
+<!--                    &lt;!&ndash; Tests will be run with scalatest-maven-plugin instead &ndash;&gt;-->
+<!--                    <skipTests>false</skipTests>-->
+<!--                </configuration>-->
             </plugin>
-            <plugin>
-                <groupId>org.scalatest</groupId>
-                <artifactId>scalatest-maven-plugin</artifactId>
-                <version>2.0.0</version>
-                <configuration>
-                    <reportsDirectory>${project.build.directory}/surefire-reports</reportsDirectory>
+<!--            <plugin>-->
+<!--                <groupId>org.scalatest</groupId>-->
+<!--                <artifactId>scalatest-maven-plugin</artifactId>-->
+<!--                <version>2.0.0</version>-->
+<!--                <configuration>-->
+<!--                    <reportsDirectory>${project.build.directory}/surefire-reports</reportsDirectory>-->
 <!--                    <junitxml>.</junitxml>-->
-                    <filereports>TestSuiteReport.txt</filereports>
-                    <!-- Comma separated list of JUnit test class names to execute -->
-<!--                    <jUnitClasses>samples.AppTest</jUnitClasses>-->
-                </configuration>
-                <executions>
-                    <execution>
-                        <id>test</id>
-                        <goals>
-                            <goal>test</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
+<!--                    <filereports>TestSuiteReport.txt</filereports>-->
+<!--                    &lt;!&ndash; Comma separated list of JUnit test class names to execute &ndash;&gt;-->
+<!--&lt;!&ndash;                    <jUnitClasses>samples.AppTest</jUnitClasses>&ndash;&gt;-->
+<!--                </configuration>-->
+<!--                <executions>-->
+<!--                    <execution>-->
+<!--                        <id>test</id>-->
+<!--                        <goals>-->
+<!--                            <goal>test</goal>-->
+<!--                        </goals>-->
+<!--                    </execution>-->
+<!--                </executions>-->
+<!--            </plugin>-->
             <plugin>
                 <groupId>org.scalastyle</groupId>
                 <artifactId>scalastyle-maven-plugin</artifactId>

@@ -17,18 +17,13 @@
 
 package org.apache.ignite.gatling.action.ignite
 
-import com.typesafe.scalalogging.StrictLogging
-import io.gatling.commons.stats.KO
-import io.gatling.commons.stats.OK
 import io.gatling.commons.validation.Success
-import io.gatling.commons.validation.SuccessWrapper
 import io.gatling.core.action.Action
-import io.gatling.core.action.ChainableAction
 import io.gatling.core.session.Expression
 import io.gatling.core.session.Session
 import io.gatling.core.structure.ScenarioContext
 import io.gatling.core.util.NameGen
-import org.apache.ignite.gatling.action.ActionBase
+import org.apache.ignite.gatling.action.IgniteAction
 import org.apache.ignite.gatling.api.IgniteApi
 import org.apache.ignite.gatling.api.TransactionApi
 import org.apache.ignite.gatling.builder.transaction.TransactionParameters
@@ -39,35 +34,26 @@ case class TransactionStartAction(requestName: Expression[String],
                                   params: TransactionParameters,
                                   next: Action,
                                   ctx: ScenarioContext
-                                 ) extends ChainableAction with NameGen with ActionBase with StrictLogging {
+                                 ) extends IgniteAction with NameGen {
 
   override val name: String = genName("txStart")
 
-  override protected def execute(session: Session): Unit = {
-    logger.debug(s"session user id: #${session.userId}, txStart")
-
-    val igniteApi: IgniteApi = session("igniteApi").as[IgniteApi]
-
-    (for {
-      resolvedRequestName <- requestName(session)
+  override protected def execute(session: Session): Unit = withSession(session) {
+    for {
+      (resolvedRequestName, igniteApi, _) <- igniteParameters(session)
       resolvedTimeout <- params.timeout.map(e => e(session).map(l => Some(l))).getOrElse(Success(Option.empty[Long]))
       resolvedTxSize <- params.txSize.map(e => e(session).map(l => Some(l))).getOrElse(Success(Option.empty[Int]))
-      startTime <- ctx.coreComponents.clock.nowMillis.success
-    } yield txStart(igniteApi, params.concurrency, params.isolation, resolvedTimeout, resolvedTxSize)(
-      transactionApi => logAndExecuteNext(session.set("transactionApi", transactionApi), resolvedRequestName, startTime,
-        ctx.coreComponents.clock.nowMillis, OK, next, None, None),
-      ex => {
-        logger.error(s"session user id: #${session.userId}, txStart failed", ex)
-        logAndExecuteNext(session, resolvedRequestName, startTime,
-          ctx.coreComponents.clock.nowMillis, KO, next, Some("ERROR"), Some(ex.getMessage))
-      }
-    ))
-      .onFailure(ex =>
-        requestName(session).map { resolvedRequestName =>
-          ctx.coreComponents.statsEngine.logCrash(session.scenario, session.groups, resolvedRequestName, ex)
-          executeNext(session, next)
+    } yield {
+      logger.debug(s"session user id: #${session.userId}, before $name")
+
+      val func = txStart(igniteApi, params.concurrency, params.isolation, resolvedTimeout, resolvedTxSize)
+
+      call(func, resolvedRequestName, session, (session, transactionApi: Option[TransactionApi]) => {
+        transactionApi match {
+          case Some(transactionApi) => session.set(TRANSACTION_API_SESSION_KEY, transactionApi)
         }
-      )
+      })
+    }
   }
 
   private def txStart(igniteApi: IgniteApi,
