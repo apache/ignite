@@ -17,15 +17,22 @@
 
 package org.apache.ignite.internal.processors.cache.consistentcut;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Collectors;
 import org.apache.ignite.internal.pagemem.wal.record.ConsistentCutFinishRecord;
 import org.apache.ignite.internal.pagemem.wal.record.ConsistentCutStartRecord;
+import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.util.typedef.T2;
 
 /**
  * Describes current Consistent Cut state.
@@ -69,7 +76,7 @@ class ConsistentCutState {
     /**
      * Set of transactions to exclude from this Consistent Cut (to include to the global AFTER state).
      */
-    private final Set<GridCacheVersion> includeAfter = ConcurrentHashMap.newKeySet();
+    private final Map<GridCacheVersion, IgniteInternalTx> includeAfter = new ConcurrentHashMap<>();
 
     /**
      * Map of transactions that bound to specific Consistent Cut Version.
@@ -83,7 +90,7 @@ class ConsistentCutState {
      *
      * Key is a transaction version. Value is Consistent Cut Version.
      */
-    private final Map<GridCacheVersion, Long> check = new ConcurrentHashMap<>();
+    private final Map<GridCacheVersion, T2<IgniteInternalTx, Long>> check = new ConcurrentHashMap<>();
 
     /**
      * Set of transactions from {@link #check} to include into this Consistent Cut.
@@ -119,6 +126,26 @@ class ConsistentCutState {
     }
 
     /**
+     * @return Collection of transactions awaited for check.
+     */
+    public Collection<IgniteInternalTx> checkList() {
+        if (check.isEmpty())
+            return Collections.emptyList();
+
+        return check.values().stream().map(T2::get1).collect(Collectors.toSet());
+    }
+
+    /**
+     * @return Collection of transactions to be excluded from this Consistent Cut.
+     */
+    public Collection<IgniteInternalTx> afterList() {
+        if (includeAfter.isEmpty())
+            return Collections.emptyList();
+
+        return new ArrayList<>(includeAfter.values());
+    }
+
+    /**
      * Includes a transaction (optionally committed after Consistent Cut WAL records) to Consistent Cut.
      *
      * @param nearTxVer Transaction version on an originated node.
@@ -130,10 +157,10 @@ class ConsistentCutState {
     /**
      * Excludes a transaction from Consistent Cut.
      *
-     * @param nearTxVer Transaction version on an originated node.
+     * @param tx Local transaction.
      */
-    public void includeAfterCut(GridCacheVersion nearTxVer) {
-        includeAfter.add(nearTxVer);
+    public void includeAfterCut(IgniteInternalTx tx) {
+        includeAfter.put(tx.nearXidVersion(), tx);
     }
 
     /**
@@ -149,7 +176,7 @@ class ConsistentCutState {
      * @return {@code true} whether specified transaction is excluded from Consistent Cut.
      */
     public boolean afterCut(GridCacheVersion nearTxVer) {
-        return includeAfter.contains(nearTxVer);
+        return includeAfter.containsKey(nearTxVer);
     }
 
     /**
@@ -176,11 +203,13 @@ class ConsistentCutState {
      * Adds transaction to the check-list that awaits notifications from other nodes to decide whether to include specified
      * transaction to this Consistent Cut, or not.
      *
-     * @param nearTxVer Transaction version on an originated node.
+     * @param tx Local transaction.
      * @param cutVer Consistent Cut Version.
      */
-    public void addForCheck(GridCacheVersion nearTxVer, long cutVer) {
-        check.put(nearTxVer, cutVer);
+    public void addForCheck(IgniteInternalTx tx, long cutVer) {
+        GridCacheVersion nearTxVer = tx.nearXidVersion();
+
+        check.put(nearTxVer, new T2<>(tx, cutVer));
 
         checkIncludeBefore.add(nearTxVer);
     }
@@ -192,7 +221,9 @@ class ConsistentCutState {
      * @return Consistent Cut Version.
      */
     public Long needCheck(GridCacheVersion nearTxVer) {
-        return check.get(nearTxVer);
+        T2<IgniteInternalTx, Long> tx = check.get(nearTxVer);
+
+        return tx == null ? null : tx.get2();
     }
 
     /**
@@ -203,7 +234,9 @@ class ConsistentCutState {
     public void exclude(GridCacheVersion nearTxVer) {
         checkIncludeBefore.remove(nearTxVer);
 
-        includeAfter.add(nearTxVer);
+        IgniteInternalTx tx = check.get(nearTxVer).get1();
+
+        includeAfter.put(tx.nearXidVersion(), tx);
     }
 
     /**
@@ -229,7 +262,7 @@ class ConsistentCutState {
                     tryFinish(tx);
             }
 
-            for (GridCacheVersion tx: includeAfter) {
+            for (GridCacheVersion tx: includeAfter.keySet()) {
                 if (check.containsKey(tx)) {
                     tryFinish(tx);
 
@@ -303,8 +336,13 @@ class ConsistentCutState {
         bld.append("crd=").append(crdNodeId).append(", ");
 
         setAppend(bld, "includeBefore", includeBefore);
-        setAppend(bld, "includeAfter", includeAfter);
-        mapAppend(bld, "check", check);
+        setAppend(bld, "includeAfter", includeAfter.keySet());
+
+        Map<GridCacheVersion, Long> chk = new HashMap<>();
+        for (Map.Entry<GridCacheVersion, T2<IgniteInternalTx, Long>> e: check.entrySet())
+            chk.put(e.getKey(), e.getValue().get2());
+
+        mapAppend(bld, "check", chk);
         setAppend(bld, "checkInclude", checkIncludeBefore);
         mapAppend(bld, "txCutVers", txCutVers);
 

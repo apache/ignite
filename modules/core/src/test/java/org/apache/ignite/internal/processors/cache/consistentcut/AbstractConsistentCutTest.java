@@ -44,6 +44,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxFini
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxPrepareRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxPrepareResponse;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxFinishRequest;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxFinishResponse;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareRequest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareResponse;
 import org.apache.ignite.internal.util.typedef.T2;
@@ -294,7 +295,7 @@ public abstract class AbstractConsistentCutTest extends GridCommonAbstractTest {
 
                 bld
                     .append("; lastCutVer=").append(m.latestCutVersion())
-                    .append("; tx=").append(m.version().asIgniteUuid())
+                    .append("; tx=").append(m.nearTxVersion().asIgniteUuid())
                     .append("; txCutVer=").append(m.txCutVersion());
             }
             else if (msg instanceof GridNearTxFinishRequest) {
@@ -304,6 +305,12 @@ public abstract class AbstractConsistentCutTest extends GridCommonAbstractTest {
                     .append("; lastCutVer=").append(m.latestCutVersion())
                     .append("; tx=").append(m.nearTxVersion().asIgniteUuid())
                     .append("; txCutVer=").append(m.txCutVersion());
+            }
+            else if (msg instanceof GridNearTxFinishResponse) {
+                GridNearTxFinishResponse m = (GridNearTxFinishResponse)msg;
+
+                bld
+                    .append("; tx=").append(m.xid().asIgniteUuid());
             }
             else if (msg instanceof GridDhtTxPrepareRequest) {
                 GridDhtTxPrepareRequest m = (GridDhtTxPrepareRequest)msg;

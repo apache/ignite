@@ -204,11 +204,16 @@ public class ConsistentCutWalReader {
             if (cut.txParticipations.get(tx) != null && cut.txParticipations.get(tx).get2() < 0) {
                 include.remove(tx);
                 cut.txParticipations.remove(tx);
+
+                bld.append(" SKIP AWAIT");
             }
 
             // Skip inclusions that already committed.
-            if (cut.txParticipations.get(tx) == null && cut.committedTx.contains(tx))
+            if (cut.txParticipations.get(tx) == null && cut.committedTx.contains(tx)) {
                 include.remove(tx);
+
+                bld.append(" SKIP AWAIT");
+            }
         }
 
         System.out.println(bld);

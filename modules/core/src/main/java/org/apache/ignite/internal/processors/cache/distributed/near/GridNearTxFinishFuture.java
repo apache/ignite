@@ -470,11 +470,6 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
      */
     private void doFinish(boolean commit, boolean clearThreadMap) {
         try {
-            long txVer = 0;
-
-            if (cctx.consistentCutMgr() != null)
-                txVer = tx.txCutVer() >= 0 ? tx.txCutVer() : cctx.consistentCutMgr().txCutVersion(tx);
-
             if (tx.localFinish(commit, clearThreadMap) || (!commit && tx.state() == UNKNOWN)) {
                 // Cleanup transaction if heuristic failure.
                 if (tx.state() == UNKNOWN)
@@ -487,13 +482,13 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
                         if (mapping != null) {
                             assert !hasFutures() || isDone() : futures();
 
-                            finish(1, mapping, commit, txVer);
+                            finish(1, mapping, commit);
                         }
                     }
                     else {
                         assert !hasFutures() || isDone() : futures();
 
-                        finish(mappings.mappings(), commit, txVer);
+                        finish(mappings.mappings(), commit);
                     }
                 }
 
@@ -758,12 +753,12 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
      * @param mappings Mappings.
      * @param commit Commit flag.
 =     */
-    private void finish(Iterable<GridDistributedTxMapping> mappings, boolean commit, long txConsistentVer) {
+    private void finish(Iterable<GridDistributedTxMapping> mappings, boolean commit) {
         int miniId = 0;
 
         // Create mini futures.
         for (GridDistributedTxMapping m : mappings)
-            finish(++miniId, m, commit, txConsistentVer);
+            finish(++miniId, m, commit);
     }
 
     /**
@@ -771,7 +766,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
      * @param m Mapping.
      * @param commit Commit flag.
      */
-    private void finish(int miniId, GridDistributedTxMapping m, boolean commit, long txConsistentVer) {
+    private void finish(int miniId, GridDistributedTxMapping m, boolean commit) {
         ClusterNode n = m.primary();
 
         assert !m.empty() || m.queryUpdate() : m + " " + tx.state();
@@ -803,7 +798,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
 
         if (cctx.consistentCutMgr() != null) {
             req.latestCutVersion(cctx.consistentCutMgr().latestCutVersion());
-            req.txCutVersion(txConsistentVer);
+            req.txCutVersion(tx.txCutVer());
         }
 
         // If this is the primary node for the keys.
