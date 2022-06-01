@@ -143,11 +143,6 @@
             </dependency>
             <dependency>
                 <groupId>${project.groupId}</groupId>
-                <artifactId>ignite-spark</artifactId>
-                <version>${revision}</version>
-            </dependency>
-            <dependency>
-                <groupId>${project.groupId}</groupId>
                 <artifactId>ignite-tools</artifactId>
                 <version>${revision}</version>
             </dependency>
