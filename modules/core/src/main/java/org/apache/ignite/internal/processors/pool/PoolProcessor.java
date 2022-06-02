@@ -223,10 +223,6 @@ public class PoolProcessor extends GridProcessorAdapter {
     @GridToStringExclude
     private ThreadPoolExecutor reencryptExecSvc;
 
-    /** Executor to perform the Consistent Cut procedure. */
-    @GridToStringExclude
-    private ThreadPoolExecutor consistentCutExecSvc;
-
     /** Map of {@link IoPool}-s injected by Ignite plugins. */
     private final IoPool[] extPools = new IoPool[128];
 
@@ -548,16 +544,6 @@ public class PoolProcessor extends GridProcessorAdapter {
 
             reencryptExecSvc.allowCoreThreadTimeOut(true);
         }
-
-        consistentCutExecSvc = createExecutorService(
-            "consistent-cut",
-            ctx.igniteInstanceName(),
-            1,
-            1,
-            DFLT_THREAD_KEEP_ALIVE_TIME,
-            new LinkedBlockingQueue<>(),
-            GridIoPolicy.UNDEFINED,
-            oomeHnd);
 
         if (cfg.getClientConnectorConfiguration() != null) {
             thinClientExec = new IgniteThreadPoolExecutor(
@@ -938,13 +924,6 @@ public class PoolProcessor extends GridProcessorAdapter {
      */
     public ExecutorService getReencryptionExecutorService() {
         return reencryptExecSvc;
-    }
-
-    /**
-     * @return Executor to perform the Consistent Cut procedure.
-     */
-    public ExecutorService consistentCutExecutorService() {
-        return consistentCutExecSvc;
     }
 
     /**

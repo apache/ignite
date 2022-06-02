@@ -28,9 +28,9 @@ import org.apache.ignite.internal.processors.cache.consistency.persistence.PdsAt
 import org.apache.ignite.internal.processors.cache.consistency.persistence.PdsExplicitTransactionalReadRepairTest;
 import org.apache.ignite.internal.processors.cache.consistency.persistence.PdsImplicitTransactionalReadRepairTest;
 import org.apache.ignite.internal.processors.cache.consistentcut.ConcurrentTxsConsistentCutTest;
-import org.apache.ignite.internal.processors.cache.consistentcut.ConsistentCutBlockingNoBackupsTest;
-import org.apache.ignite.internal.processors.cache.consistentcut.ConsistentCutSingleBackupTest;
-import org.apache.ignite.internal.processors.cache.consistentcut.ConsistentCutTwoBackupTest;
+import org.apache.ignite.internal.processors.cache.consistentcut.ConsistentCutNoBackupMessagesBlockingTest;
+import org.apache.ignite.internal.processors.cache.consistentcut.ConsistentCutSingleBackupMessagesBlockingTest;
+import org.apache.ignite.internal.processors.cache.consistentcut.ConsistentCutTwoBackupMessagesBlockingTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
@@ -56,9 +56,9 @@ import org.junit.runners.Suite;
     SingleBackupImplicitTransactionalReadRepairTest.class,
 
     // Consistent Cut
-    ConsistentCutBlockingNoBackupsTest.class,
-    ConsistentCutSingleBackupTest.class,
-    ConsistentCutTwoBackupTest.class,
+    ConsistentCutNoBackupMessagesBlockingTest.class,
+    ConsistentCutSingleBackupMessagesBlockingTest.class,
+    ConsistentCutTwoBackupMessagesBlockingTest.class,
     ConcurrentTxsConsistentCutTest.class
 })
 public class IgniteCacheConsistencySelfTestSuite {

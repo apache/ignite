@@ -3136,7 +3136,10 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                     + " Check the DataRegionConfiguration.");
             }
 
-            consistentCutMgr = new ConsistentCutManager();
+            consistentCutMgr = ctx.plugins().createComponent(ConsistentCutManager.class);
+
+            if (consistentCutMgr == null)
+                consistentCutMgr = new ConsistentCutManager();
         }
 
         return new GridCacheSharedContext(

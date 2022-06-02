@@ -43,7 +43,7 @@ public class ConcurrentTxsConsistentCutTest extends AbstractConsistentCutTest {
     private static final int CUTS = 10;
 
     /** */
-    private static final int REPEAT = 1;
+    private static final int REPEAT = 20;
 
     /** */
     private final Map<IgniteUuid, Integer> txOrigNode = new ConcurrentHashMap<>();
@@ -59,6 +59,13 @@ public class ConcurrentTxsConsistentCutTest extends AbstractConsistentCutTest {
     /** */
     @Parameterized.Parameter(2)
     public int repeat;
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        super.beforeTest();
+
+        grid(0).context().cache().context().consistentCutMgr().enable();
+    }
 
     /** */
     @Parameterized.Parameters(name = "nodes={0} backups={1} repeat={2}")
@@ -154,47 +161,6 @@ public class ConcurrentTxsConsistentCutTest extends AbstractConsistentCutTest {
 
             log.info("Consistent Cut finished: " + prevCutVer);
         }
-    }
-
-    /**
-     * Await global Consistent Cut is completed, and Ignite is ready for new Consistent Cut.
-     *
-     * @param prevCutVer Previous Consistent Cut version.
-     * @return Version of the latest Consistent Cut version.
-     */
-    private long awaitGlobalCutReady(long prevCutVer) throws Exception {
-        long newCutVer = -1L;
-
-        ConsistentCutManager crdCutMgr = grid(0).context().cache().context().consistentCutMgr();
-
-        for (int i = 0; i < 60; i++) {
-            long ver = crdCutMgr.latestCutVersion();
-
-            if (ver > prevCutVer) {
-                if (newCutVer < 0)
-                    newCutVer = ver;
-                else
-                    assert newCutVer == ver : "new=" + newCutVer + ", rcv=" + ver + ", prev=" + prevCutVer;
-
-                if (crdCutMgr.latestGlobalCutReady())
-                    return newCutVer;
-            }
-
-            Thread.sleep(10);
-        }
-
-        StringBuilder bld = new StringBuilder()
-            .append("Failed to wait Consitent Cut")
-            .append(" newCutVer ").append(newCutVer)
-            .append(", prevCutVer ").append(prevCutVer);
-
-        for (int i = 0; i < nodes(); i++) {
-            ConsistentCutManager cutMgr = grid(i).context().cache().context().consistentCutMgr();
-
-            bld.append("\nNode").append(i).append( ": ").append(cutMgr.latestCutState());
-        }
-
-        throw new Exception(bld.toString());
     }
 
     /** */

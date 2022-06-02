@@ -48,6 +48,7 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxFi
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareRequest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareResponse;
 import org.apache.ignite.internal.util.typedef.T2;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
@@ -55,6 +56,8 @@ import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
+
+import static org.apache.ignite.internal.processors.cache.consistentcut.ConsistentCutWalReader.NodeConsistentCutState.INCOMPLETE;
 
 /** */
 public abstract class AbstractConsistentCutTest extends GridCommonAbstractTest {
@@ -101,6 +104,8 @@ public abstract class AbstractConsistentCutTest extends GridCommonAbstractTest {
 
         startGrids(nodes());
 
+        grid(0).context().cache().context().consistentCutMgr().disable();
+
         grid(0).cluster().state(ClusterState.ACTIVE);
 
         startClientGrid(nodes());
@@ -122,6 +127,51 @@ public abstract class AbstractConsistentCutTest extends GridCommonAbstractTest {
      * @return Number of backups for cache.
      */
     protected abstract int backups();
+
+    /**
+     * Await global Consistent Cut is completed, and Ignite is ready for new Consistent Cut.
+     *
+     * @param prevCutVer Previous Consistent Cut version.
+     * @return Version of the latest Consistent Cut version.
+     */
+    protected long awaitGlobalCutReady(long prevCutVer) throws Exception {
+        long newCutVer = -1L;
+
+        ConsistentCutManager crdCutMgr = grid(0).context().cache().context().consistentCutMgr();
+
+        for (int i = 0; i < 100; i++) {
+            long ver = crdCutMgr.latestCutVersion();
+
+            if (ver > prevCutVer) {
+                if (newCutVer < 0)
+                    newCutVer = ver;
+                else
+                    assert newCutVer == ver : "new=" + newCutVer + ", rcv=" + ver + ", prev=" + prevCutVer;
+
+                if (crdCutMgr.latestGlobalCutReady())
+                    return newCutVer;
+            }
+
+            Thread.sleep(10);
+        }
+
+        StringBuilder bld = new StringBuilder()
+            .append("Failed to wait Consitent Cut")
+            .append(" newCutVer ").append(newCutVer)
+            .append(", prevCutVer ").append(prevCutVer);
+
+        bld.append("\n\tCoordinator node0 = ").append(U.isLocalNodeCoordinator(grid(0).context().discovery()));
+        bld.append(", latestCutVersion = ").append(crdCutMgr.latestCutVersion());
+        bld.append(", latestGlobalCutReady = ").append(crdCutMgr.latestGlobalCutReady());
+
+        for (int i = 0; i < nodes(); i++) {
+            ConsistentCutManager cutMgr = grid(i).context().cache().context().consistentCutMgr();
+
+            bld.append("\n\tNode").append(i).append( ": ").append(cutMgr.latestCutState());
+        }
+
+        throw new Exception(bld.toString());
+    }
 
     /**
      * Provides a key that for an existing partitioning schema match specified primary and backup node.
@@ -188,16 +238,22 @@ public abstract class AbstractConsistentCutTest extends GridCommonAbstractTest {
 
             reader.read();
 
-            // Includes incomplete state also.
-            assertEquals(cuts + 1, reader.cuts.size());
+            int expCuts = reader.cuts.get(reader.cuts.size() - 1).ver == INCOMPLETE ? cuts + 1 : cuts;
+
+            assertEquals(expCuts, reader.cuts.size());
         }
 
         Map<IgniteUuid, T2<Long, Integer>> txMap = new HashMap<>();
 
         Set<IgniteUuid> txSet = new HashSet<>();
 
+        // Includes incomplete state also.
         for (int cutId = 0; cutId < cuts + 1; cutId++) {
             for (int nodeId = 0; nodeId < nodes(); nodeId++) {
+                // Skip if the latest cut wasn't INCOMPLETE.
+                if (states.get(nodeId).cuts.size() == cutId)
+                    continue;
+
                 ConsistentCutWalReader.NodeConsistentCutState state = states.get(nodeId).cuts.get(cutId);
 
                 for (IgniteUuid uid : state.committedTx) {

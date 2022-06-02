@@ -21,13 +21,17 @@ import java.io.File;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
 import org.apache.ignite.internal.pagemem.wal.record.ConsistentCutFinishRecord;
@@ -41,8 +45,10 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.reader.Ignite
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.transactions.TransactionState;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.CONSISTENT_CUT_FINISH_RECORD;
@@ -102,40 +108,47 @@ public class ConsistentCutWalReader {
 
     /** */
     public void read() throws Exception {
-        WALPointer from = null;
-
         NodeConsistentCutState curCut = new NodeConsistentCutState(null, null);
 
-        while (true) {
-            WALIterator it = walIter(from);
+        // Use buffer to avoid offset WAL multiple times (before cut, await finish cut, apply inclusions).
+        BufferWALIterator it = new BufferWALIterator(new ArrayList<>(), walIter(null));
 
+        while (true) {
             ConsistentCutStartRecord startCutRecord = readBeforeCut(it, curCut);
 
+            // Drop all entries in buffer related to previous cuts.
+            it.cleanBuffer();
+
+            // INCOMPLETE - State between the latest completed Consistent Cut and WAL finish.
             if (startCutRecord == null) {
                 curCut.ver = NodeConsistentCutState.INCOMPLETE;
 
-                cuts.add(curCut);
+                // Skip if there is no committed transaction after the latest Consistent Cut.
+                if (!curCut.committedTx.isEmpty())
+                    cuts.add(curCut);
 
                 it.close();
 
                 return;
             }
 
-            WALPointer startCutPtr = it.lastRead().orElse(null);
+            // Buffer collects records between Start and Finish records.
+            List<IgniteBiTuple<WALPointer, WALRecord>> buf = new ArrayList<>();
 
-            assert startCutPtr != null;
+            awaitFinishCut(it, curCut, buf);
 
-            awaitFinishCut(it, curCut);
+            // Reset to record after Start record and read again to track transactions that aren't part of this cut.
+            it.resetBuffer();
+            it.appendBuffer(buf);
 
-            assert startCutPtr.compareTo(it.lastRead().orElse(null)) < 0;
+            // Buffer collects records between Finish record and last included transaction.
+            buf = new ArrayList<>();
 
-            from = startCutPtr.next();
+            readCutInclusions(it, curCut, buf);
 
-            it.close();
-
-            it = walIter(from);
-
-            readCutInclusions(it, curCut);
+            // Reset to record after Start record and read again to track transactions that aren't part of this cut.
+            it.resetBuffer();
+            it.appendBuffer(buf);
 
             cuts.add(curCut);
 
@@ -173,22 +186,28 @@ public class ConsistentCutWalReader {
     }
 
     /** */
-    private void awaitFinishCut(WALIterator it, NodeConsistentCutState cut) {
+    private void awaitFinishCut(WALIterator it, NodeConsistentCutState cut, List<IgniteBiTuple<WALPointer, WALRecord>> walRecordsBuf) {
         while (it.hasNext()) {
-            WALRecord rec = it.next().getValue();
+            IgniteBiTuple<WALPointer, WALRecord> next = it.next();
+
+            WALRecord rec = next.getValue();
 
             if (rec.type() == CONSISTENT_CUT_FINISH_RECORD) {
                 handleFinishConsistentCutRecord((ConsistentCutFinishRecord)rec, cut);
 
                 return;
             }
-            else if (rec.type() == TX_RECORD)
-                System.out.println("SKIP[" + ((TxRecord)rec).nearXidVersion().asIgniteUuid() + ", " + ((TxRecord)rec).state() + "]");
+            else {
+                walRecordsBuf.add(next);
+
+                if (rec.type() == TX_RECORD)
+                    System.out.println("SKIP[" + ((TxRecord)rec).nearXidVersion().asIgniteUuid() + ", " + ((TxRecord)rec).state() + "]");
+            }
         }
     }
 
     /** */
-    private void readCutInclusions(WALIterator it, NodeConsistentCutState cut) {
+    private void readCutInclusions(WALIterator it, NodeConsistentCutState cut, List<IgniteBiTuple<WALPointer, WALRecord>> buf) {
         Set<IgniteUuid> include = new HashSet<>(cut.txInclude);
 
         StringBuilder bld = new StringBuilder("AWAIT INCLUDED " + include + " for CUT=" + cut.ver);
@@ -205,17 +224,27 @@ public class ConsistentCutWalReader {
             }
 
             // Skip inclusions that already committed.
-            if (cut.txParticipations.get(tx) == null && cut.committedTx.contains(tx)) {
-                include.remove(tx);
+            if (cut.txParticipations.get(tx) == null) {
+                if (cut.committedTx.contains(tx) || (cuts.size() > 1 && cuts.get(cuts.size() - 1).committedTx.contains(tx))) {
+                    include.remove(tx);
 
-                bld.append(" SKIP AWAIT");
+                    bld.append(" SKIP AWAIT");
+                }
             }
         }
 
         System.out.println(bld);
 
         while (it.hasNext() && !include.isEmpty()) {
-            WALRecord rec = it.next().getValue();
+            WALPointer before = it.lastRead().get();
+
+            IgniteBiTuple<WALPointer, WALRecord> next = it.next();
+
+            // Internal buffer is empty and read from WAL.
+            if (next.getKey().compareTo(before) > 0)
+                buf.add(next);
+
+            WALRecord rec = next.getValue();
 
             if (rec.type() == WALRecord.RecordType.DATA_RECORD_V2) {
                 DataRecord r = (DataRecord)rec;
@@ -255,9 +284,7 @@ public class ConsistentCutWalReader {
             else if (rec.type() == CONSISTENT_CUT_START_RECORD) {
                 ConsistentCutStartRecord r = (ConsistentCutStartRecord)rec;
 
-                assert cut.ver == r.version();
-
-                System.out.println("SKIP CUT[" + r + "]");
+                System.out.println("SKIP START CUT[" + r + "]");
             }
         }
     }
@@ -350,6 +377,12 @@ public class ConsistentCutWalReader {
 
     /** */
     private ConsistentCutStartRecord handleStartConsistentCutRecord(ConsistentCutStartRecord rec, NodeConsistentCutState cut) {
+        if (cutVers.get(curCutVer) != null) {
+            System.out.println("SKIP START " + curCutVer + " CUT[" + rec + "]");
+
+            return null;
+        }
+
         System.out.println("START " + curCutVer + " CUT[" + rec + "]");
 
         cutVers.put(curCutVer, rec.version());
@@ -379,7 +412,7 @@ public class ConsistentCutWalReader {
 
     /** */
     private void handleFinishConsistentCutRecord(ConsistentCutFinishRecord rec, NodeConsistentCutState cut) {
-        System.out.println("FINISH " + curCutVer + " CUT[" + rec + "]");
+        System.out.println("FINISH " + (curCutVer - 1) + " CUT[" + rec + "]");
 
         for (GridCacheVersion includedTx: rec.include()) {
             IgniteUuid tx = includedTx.asIgniteUuid();
@@ -413,8 +446,124 @@ public class ConsistentCutWalReader {
     }
 
     /** */
-    public static class NodeConsistentCutState {
+    private static class BufferWALIterator implements WALIterator {
         /** */
+        private List<IgniteBiTuple<WALPointer, WALRecord>> buf;
+
+        /** */
+        private Iterator<IgniteBiTuple<WALPointer, WALRecord>> bufIt;
+
+        /** */
+        private final WALIterator walIt;
+
+        /** */
+        BufferWALIterator(List<IgniteBiTuple<WALPointer, WALRecord>> buf, WALIterator walIt) {
+            this.walIt = walIt;
+            this.buf = buf;
+            this.bufIt = buf.iterator();
+        }
+
+        /** */
+        void appendBuffer(List<IgniteBiTuple<WALPointer, WALRecord>> tail) {
+            buf = new ArrayList<>();
+
+            while (bufIt.hasNext())
+                buf.add(bufIt.next());
+
+            buf.addAll(tail);
+
+            bufIt = buf.iterator();
+
+            dumpBuf();
+        }
+
+        /** */
+        void cleanBuffer() {
+            appendBuffer(Collections.emptyList());
+        }
+
+        /** */
+        void resetBuffer() {
+            bufIt = buf.iterator();
+        }
+
+        /** {@inheritDoc} */
+        @Override public Optional<WALPointer> lastRead() {
+            return walIt.lastRead();
+        }
+
+        /** {@inheritDoc} */
+        @Override public void close() throws IgniteCheckedException {
+            walIt.close();
+
+            buf = null;
+            bufIt = null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean isClosed() {
+            return !bufIt.hasNext() && walIt.isClosed();
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean hasNextX() throws IgniteCheckedException {
+            return bufIt.hasNext() || walIt.hasNextX();
+        }
+
+        /** {@inheritDoc} */
+        @Override public IgniteBiTuple<WALPointer, WALRecord> nextX() throws IgniteCheckedException {
+            return bufIt.hasNext() ? bufIt.next() : walIt.nextX();
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean hasNext() {
+            return bufIt.hasNext() || walIt.hasNext();
+        }
+
+        /** {@inheritDoc} */
+        @Override public IgniteBiTuple<WALPointer, WALRecord> next() {
+            return bufIt.hasNext() ? bufIt.next() : walIt.next();
+        }
+
+        /** {@inheritDoc} */
+        @Override public void removeX() {
+            assert false : "Should not be invoked";
+        }
+
+        /** {@inheritDoc} */
+        @NotNull @Override public Iterator<IgniteBiTuple<WALPointer, WALRecord>> iterator() {
+            assert false : "Should not be invoked";
+
+            return null;
+        }
+
+        /** */
+        private void dumpBuf() {
+            for (IgniteBiTuple<WALPointer, WALRecord> r: buf) {
+                WALRecord rec = r.getValue();
+
+                if (rec instanceof TxRecord) {
+                    TxRecord tx = (TxRecord)rec;
+
+                    System.out.println("\tBUFF TX: " + tx.nearXidVersion().asIgniteUuid() + " " + tx.state());
+                }
+                else if (rec instanceof ConsistentCutStartRecord) {
+                    ConsistentCutStartRecord cut = (ConsistentCutStartRecord)rec;
+
+                    System.out.println("\tBUFF CUT: " + cut);
+                }
+                else if (rec instanceof ConsistentCutFinishRecord) {
+                    ConsistentCutFinishRecord cut = (ConsistentCutFinishRecord)rec;
+
+                    System.out.println("\tBUFF CUT: " + cut);
+                }
+            }
+        }
+    }
+
+    /** */
+    public static class NodeConsistentCutState {
+        /** State between the latest completed Consistent Cut and WAL finish. */
         public static final int INCOMPLETE = Integer.MAX_VALUE;
 
         /** */
@@ -493,7 +642,7 @@ public class ConsistentCutWalReader {
             // Found how many times this transaction will be committed on this node (due to backups).
             // Set the flag to `false` because it has prepared only.
 
-            assert txParticipations.containsKey(txId);
+            assert txParticipations.containsKey(txId) : txId;
 
             T2<Boolean, Integer> p = txParticipations.get(txId);
 

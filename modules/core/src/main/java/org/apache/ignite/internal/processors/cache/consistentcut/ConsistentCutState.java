@@ -234,9 +234,13 @@ public class ConsistentCutState {
     public void exclude(GridCacheVersion nearTxVer) {
         checkIncludeBefore.remove(nearTxVer);
 
-        IgniteInternalTx tx = check.get(nearTxVer).get1();
+        T2<IgniteInternalTx, Long> pair = check.get(nearTxVer);
 
-        includeAfter.put(tx.nearXidVersion(), tx);
+        if (pair != null) {
+            IgniteInternalTx tx = pair.get1();
+
+            includeAfter.put(tx.nearXidVersion(), tx);
+        }
     }
 
     /**

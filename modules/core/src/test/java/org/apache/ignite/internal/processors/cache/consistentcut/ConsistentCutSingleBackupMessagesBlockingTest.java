@@ -17,15 +17,44 @@
 
 package org.apache.ignite.internal.processors.cache.consistentcut;
 
+import java.util.List;
+import org.apache.ignite.internal.util.typedef.T2;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+
 /** */
-public class ConsistentCutTwoBackupTest extends ConsistentCutSingleBackupTest {
+@RunWith(Parameterized.class)
+public class ConsistentCutSingleBackupMessagesBlockingTest extends AbstractConsistentCutMessagesBlockingTest {
+    /** */
+    @Parameterized.Parameter()
+    public static String paramMsg;
+
+    /** */
+    @Parameterized.Parameters(name = "blkMsg={0}")
+    public static List<String> params() {
+        return messages();
+    }
+
+    /** */
+    @Test
+    public void testMultipleCases() throws Exception {
+        List<List<T2<Integer, Integer>>> cases = ConsistentCutBlockingCases.casesWithBackup(nodes());
+
+        blkMsgCls = paramMsg;
+
+        runCases(cases);
+
+        checkWals(txOrigNode, caseNum, caseNum);
+    }
+
     /** {@inheritDoc} */
     @Override protected int nodes() {
-        return 3;
+        return 2;
     }
 
     /** {@inheritDoc} */
     @Override protected int backups() {
-        return 2;
+        return 1;
     }
 }
