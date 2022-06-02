@@ -161,11 +161,12 @@ public class CacheExchangeMergeTest extends GridCommonAbstractTest {
                 cacheConfiguration("c18", TRANSACTIONAL, PARTITIONED, 2),
                 cacheConfiguration("c19", TRANSACTIONAL, PARTITIONED, 10),
                 cacheConfiguration("c20", TRANSACTIONAL, REPLICATED, 0),
-                cacheConfiguration("c21", TRANSACTIONAL_SNAPSHOT, PARTITIONED, 0),
-                cacheConfiguration("c22", TRANSACTIONAL_SNAPSHOT, PARTITIONED, 1),
-                cacheConfiguration("c23", TRANSACTIONAL_SNAPSHOT, PARTITIONED, 2),
-                cacheConfiguration("c24", TRANSACTIONAL_SNAPSHOT, PARTITIONED, 10),
-                cacheConfiguration("c25", TRANSACTIONAL_SNAPSHOT, REPLICATED, 0)
+                //There were MVCC caches, but now Ignite does not support them.
+                cacheConfiguration("c21", TRANSACTIONAL, PARTITIONED, 0),
+                cacheConfiguration("c22", TRANSACTIONAL, PARTITIONED, 1),
+                cacheConfiguration("c23", TRANSACTIONAL, PARTITIONED, 2),
+                cacheConfiguration("c24", TRANSACTIONAL, PARTITIONED, 10),
+                cacheConfiguration("c25", TRANSACTIONAL, REPLICATED, 0)
             );
         }
 
@@ -984,6 +985,7 @@ public class CacheExchangeMergeTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @Test
+    @Ignore
     public void testJoinExchangeCoordinatorChange_NoMerge_2() throws Exception {
         for (CoordinatorChangeMode mode : CoordinatorChangeMode.values()) {
             exchangeCoordinatorChangeNoMerge(8, true, mode);
