@@ -1,7 +1,6 @@
 # name: test/sql/aggregate/aggregates/test_perfect_ht.test
 # description: Test aggregates that can trigger a perfect HT
 # group: [aggregates]
-# Ignored: https://issues.apache.org/jira/browse/IGNITE-14636
 # Ignored: https://issues.apache.org/jira/browse/IGNITE-14730
 # Ignored: https://issues.apache.org/jira/browse/IGNITE-14885
 

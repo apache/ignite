@@ -730,6 +730,8 @@ public class OpenCensusSqlNativeTracingTest extends AbstractTracingTest {
                 .setSqlSchema(TEST_SCHEMA)
         );
 
+        awaitCacheOnClient(grid(GRID_CNT), cache.getName());
+
         for (int i = 0; i < TEST_TABLE_POPULATION; i++)
             cache.put(keyCntr.getAndIncrement(), cls == Organization.class ? new Organization(i, i) : new Person(i, i));
 

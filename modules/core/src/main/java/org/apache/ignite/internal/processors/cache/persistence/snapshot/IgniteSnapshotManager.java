@@ -509,6 +509,18 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             "The list of names of all snapshots currently saved on the local node with respect to " +
                 "the configured via IgniteConfiguration snapshot working path.");
 
+        mreg.register("CurrentSnapshotTotalSize", () -> {
+            SnapshotFutureTask task = currentSnapshotTask();
+
+            return task == null ? -1 : task.totalSize();
+        }, "Estimated size of current cluster snapshot in bytes on this node. The value may grow during snapshot creation.");
+
+        mreg.register("CurrentSnapshotProcessedSize", () -> {
+            SnapshotFutureTask task = currentSnapshotTask();
+
+            return task == null ? -1 : task.processedSize();
+        }, "Processed size of current cluster snapshot in bytes on this node.");
+
         restoreCacheGrpProc.registerMetrics();
 
         cctx.exchange().registerExchangeAwareComponent(this);
@@ -1823,6 +1835,21 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         finally {
             busyLock.leaveBusy();
         }
+    }
+
+    /** @return Current snapshot task. */
+    private SnapshotFutureTask currentSnapshotTask() {
+        SnapshotOperationRequest req = clusterSnpReq;
+
+        if (req == null)
+            return null;
+
+        AbstractSnapshotFutureTask<?> task = locSnpTasks.get(req.snapshotName());
+
+        if (!(task instanceof SnapshotFutureTask))
+            return null;
+
+        return (SnapshotFutureTask)task;
     }
 
     /**

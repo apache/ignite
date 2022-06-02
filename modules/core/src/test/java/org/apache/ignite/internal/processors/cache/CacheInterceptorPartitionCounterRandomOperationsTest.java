@@ -398,6 +398,8 @@ public class CacheInterceptorPartitionCounterRandomOperationsTest extends GridCo
 
         ignite(0).createCache(ccfg);
 
+        awaitCacheOnClient(grid(NODES - 1), ccfg.getName());
+
         try {
             long seed = System.currentTimeMillis();
 

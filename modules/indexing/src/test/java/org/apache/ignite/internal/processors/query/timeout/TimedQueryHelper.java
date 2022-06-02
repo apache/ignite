@@ -27,6 +27,10 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.query.annotations.QuerySqlFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.G;
+
+import static org.apache.ignite.testframework.junits.common.GridCommonAbstractTest.awaitCacheOnClient;
 
 /**
  * This class helps to prepare a query which will run for a specific amount of time
@@ -61,6 +65,9 @@ public class TimedQueryHelper {
             .setQueryEntities(Collections.singleton(
                 new QueryEntity(Integer.class, Integer.class).setTableName(cacheName)))
             .setSqlFunctionClasses(TimedQueryHelper.class));
+
+        F.view(G.allGrids(), ignite -> ignite.cluster().localNode().isClient())
+            .forEach(ignite -> awaitCacheOnClient(ignite, cacheName));
 
         Map<Integer, Integer> entries = IntStream.range(0, ROW_COUNT).boxed()
             .collect(Collectors.toMap(Function.identity(), Function.identity()));
