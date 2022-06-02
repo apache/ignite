@@ -18,11 +18,7 @@
 package org.apache.ignite.internal.cache.query.index.sorted.keys;
 
 import java.math.BigDecimal;
-import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.BiFunction;
-import java.util.function.Function;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.binary.BinaryObjectImpl;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypeSettings;
@@ -34,27 +30,6 @@ import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
  * Factory for creating IndexKey objects.
  */
 public class IndexKeyFactory {
-    /** Registry for non-default key types factory methods (e.g., Geometry, date/time types). */
-    private static final Map<Integer, Function<Object, IndexKey>> registry = new ConcurrentHashMap<>();
-
-    /** Registry for date time key types factory methods. */
-    private static final Map<Integer, BiFunction<Long, Long, IndexKey>> dateTimeRegistry = new ConcurrentHashMap<>();
-
-    /** Register wrapper for custom IndexKey type. */
-    public static void register(int keyType, Function<Object, IndexKey> wrapper) {
-        registry.put(keyType, wrapper);
-    }
-
-    /** Register factory for date/time index key types. */
-    public static void registerDateValueFactory(int keyType, BiFunction<Long, Long, IndexKey> factory) {
-        dateTimeRegistry.put(keyType, factory);
-    }
-
-    /** Wraps a date value and nanos to related date/time IndexKey. */
-    public static IndexKey wrapDateValue(int keyType, long dateVal, long nanos) {
-        return dateTimeRegistry.get(keyType).apply(dateVal, nanos);
-    }
-
     /** Wraps user object to {@code IndexKey} object.  */
     public static IndexKey wrap(Object o, int keyType, CacheObjectValueContext coctx, IndexKeyTypeSettings keyTypeSettings) {
         if (o == null || keyType == IndexKeyTypes.NULL)
@@ -89,10 +64,13 @@ public class IndexKeyFactory {
                     return new CacheJavaObjectIndexKey((CacheObject)o, coctx);
 
                 return new PlainJavaObjectIndexKey(o, null);
+            case IndexKeyTypes.DATE:
+                return new DateIndexKey(o);
+            case IndexKeyTypes.TIME:
+                return new TimeIndexKey(o);
+            case IndexKeyTypes.TIMESTAMP:
+                return new TimestampIndexKey(o);
         }
-
-        if (registry.containsKey(keyType))
-            return registry.get(keyType).apply(o);
 
         throw new IgniteException("Failed to wrap value[type=" + keyType + ", value=" + o + "]");
     }
