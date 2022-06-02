@@ -144,7 +144,7 @@ This utility can do the following commands:
 
     Parameters:
       snapshot_name  - Snapshot name.
-      --dest path    - Path to the directory where the snapshot will be saved. If not specified, the default snapshot directory will be used.
+      --dest path    - Path to the directory where the snapshot will be saved. If not specified, the default configured snapshot directory will be used.
       --sync         - Run the operation synchronously, the command will wait for the entire operation to complete. Otherwise, it will be performed in the background, and the command will immediately return control.
 
   Cancel running snapshot:
@@ -158,7 +158,7 @@ This utility can do the following commands:
 
     Parameters:
       snapshot_name  - Snapshot name.
-      --src path     - Path to the directory where the snapshot files are located. If not specified, the default snapshot directory will be used.
+      --src path     - Path to the directory where the snapshot files are located. If not specified, the default configured snapshot directory will be used.
 
   Restore snapshot:
     control.(sh|bat) --snapshot restore snapshot_name --start [--groups group1,...groupN] [--src path] [--sync]
@@ -166,7 +166,7 @@ This utility can do the following commands:
     Parameters:
       snapshot_name              - Snapshot name.
       --groups group1,...groupN  - Cache group names.
-      --src path                 - Path to the directory where the snapshot files are located. If not specified, the default snapshot directory will be used.
+      --src path                 - Path to the directory where the snapshot files are located. If not specified, the default configured snapshot directory will be used.
       --sync                     - Run the operation synchronously, the command will wait for the entire operation to complete. Otherwise, it will be performed in the background, and the command will immediately return control.
 
   Snapshot restore operation status:

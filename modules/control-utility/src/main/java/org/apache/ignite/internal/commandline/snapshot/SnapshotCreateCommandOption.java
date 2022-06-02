@@ -30,7 +30,7 @@ public enum SnapshotCreateCommandOption implements CommandArg {
 
     /** Snapshot directory path. */
     DESTINATION("--dest", "path", "Path to the directory where the snapshot will be saved. If not specified, " +
-        "the default snapshot directory will be used.");
+        "the default configured snapshot directory will be used.");
 
     /** Name. */
     private final String name;
