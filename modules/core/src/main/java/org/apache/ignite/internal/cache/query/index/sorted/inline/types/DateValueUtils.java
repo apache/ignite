@@ -95,7 +95,7 @@ public class DateValueUtils {
     public static long millisFromDateValue(long dateVal) {
         Calendar cal = UTC_CALENDAR.get();
 
-        cal.setTimeInMillis(0); // Reset time.
+        cal.clear();
 
         cal.set(yearFromDateValue(dateVal), monthFromDateValue(dateVal) - 1, dayFromDateValue(dateVal));
 

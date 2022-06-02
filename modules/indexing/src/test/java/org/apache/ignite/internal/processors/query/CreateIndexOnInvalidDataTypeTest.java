@@ -156,8 +156,6 @@ public class CreateIndexOnInvalidDataTypeTest extends AbstractIndexingCommonTest
         bob.setField("VAL_INT", 10);
         bob.setField("VAL_DATE", new java.util.Date());
 
-        //grid().cache("test").put(0, bob.build());
-
         assertThrowsWithCause(() -> grid().cache("test").put(0, bob.build()), IgniteSQLException.class);
 
         assertNull(grid().cache("test").get(0));
