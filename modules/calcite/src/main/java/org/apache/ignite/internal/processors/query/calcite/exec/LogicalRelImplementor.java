@@ -36,7 +36,10 @@ import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.util.ImmutableBitSet;
-import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexImpl;
+import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.cache.query.index.IndexName;
+import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndex;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.failure.FailureProcessor;
 import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler.RowFactory;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.ExpressionFactory;
@@ -96,9 +99,7 @@ import org.apache.ignite.internal.processors.query.calcite.rel.agg.IgniteReduceH
 import org.apache.ignite.internal.processors.query.calcite.rel.agg.IgniteReduceSortAggregate;
 import org.apache.ignite.internal.processors.query.calcite.rel.set.IgniteSetOp;
 import org.apache.ignite.internal.processors.query.calcite.rule.LogicalScanConverterRule;
-import org.apache.ignite.internal.processors.query.calcite.schema.CacheIndexImpl;
 import org.apache.ignite.internal.processors.query.calcite.schema.CacheTableDescriptor;
-import org.apache.ignite.internal.processors.query.calcite.schema.CacheTableImpl;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteIndex;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
 import org.apache.ignite.internal.processors.query.calcite.trait.Destination;
@@ -411,10 +412,15 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
 
     /** {@inheritDoc} */
     @Override public Node<Row> visit(IgniteIndexCount rel) {
-        CacheTableImpl tbl = rel.getTable().unwrap(CacheTableImpl.class);
-        CacheIndexImpl idx = (CacheIndexImpl)tbl.getIndex(rel.indexName());
+        CacheTableDescriptor tbl = rel.getTable().unwrap(CacheTableDescriptor.class);
 
-        return new IndexCountNode(idx.index().unwrap(InlineIndexImpl.class), ctx);
+        GridCacheContext<?, ?> cctx = tbl.cacheContext();
+        GridKernalContext kctx = cctx.kernalContext();
+
+        IndexName idxName = new IndexName(cctx.name(), kctx.query().schemaName(cctx), tbl.typeDescription().tableName(),
+            rel.indexName());
+
+        return new IndexCountNode(kctx.indexProcessor().index(idxName).unwrap(InlineIndex.class), ctx);
     }
 
     /** {@inheritDoc} */

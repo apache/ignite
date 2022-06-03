@@ -72,8 +72,31 @@ public class JdbcQueryTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        return super.getConfiguration(igniteInstanceName).setSqlConfiguration(
-            new SqlConfiguration().setQueryEnginesConfiguration(new CalciteQueryEngineConfiguration()));
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
+
+        cfg.setCacheConfiguration(
+            new CacheConfiguration("cache-partitioned*")
+                .setCacheMode(CacheMode.PARTITIONED)
+                .setPartitionLossPolicy(PartitionLossPolicy.READ_WRITE_SAFE)
+        );
+
+        long dsSize = 3L * 1024L * 1024L * 1024L;
+
+        cfg.setDataStorageConfiguration(new DataStorageConfiguration()
+            .setWalSegments(20)
+            .setMetricsEnabled(true)
+            .setDefaultDataRegionConfiguration(
+                new DataRegionConfiguration().setPersistenceEnabled(false).setMetricsEnabled(true)
+                    .setInitialSize(dsSize).setMaxSize(dsSize)
+            )
+        );
+
+        cfg.setSqlConfiguration(new SqlConfiguration().setQueryEnginesConfiguration(
+            new IndexingQueryEngineConfiguration().setDefault(true),
+            new CalciteQueryEngineConfiguration().setDefault(false)
+        ));
+
+        return cfg;
     }
 
     /** {@inheritDoc} */

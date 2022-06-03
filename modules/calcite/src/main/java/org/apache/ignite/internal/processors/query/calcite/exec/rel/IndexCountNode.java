@@ -2,16 +2,16 @@ package org.apache.ignite.internal.processors.query.calcite.exec.rel;
 
 import java.math.BigDecimal;
 import org.apache.calcite.sql.type.SqlTypeName;
-import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexImpl;
+import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndex;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 
 /** Extracts number of index records. */
-public class IndexCountNode<Row> extends AbstractNode implements Downstream<Row> {
+public class IndexCountNode<Row> extends AbstractNode<Object[]> implements Downstream<Object[]> {
     /** The index. */
-    private final InlineIndexImpl idx;
+    private final InlineIndex idx;
 
     /** Ctor. */
-    public IndexCountNode(InlineIndexImpl idx, ExecutionContext ctx) {
+    public IndexCountNode(InlineIndex idx, ExecutionContext ctx) {
         super(ctx, ctx.getTypeFactory().createSqlType(SqlTypeName.BIGINT));
 
         this.idx = idx;
@@ -23,7 +23,7 @@ public class IndexCountNode<Row> extends AbstractNode implements Downstream<Row>
     }
 
     /** {@inheritDoc} */
-    @Override protected Downstream requestDownstream(int idx) {
+    @Override protected Downstream<Object[]> requestDownstream(int idx) {
         return this;
     }
 
@@ -37,7 +37,7 @@ public class IndexCountNode<Row> extends AbstractNode implements Downstream<Row>
     }
 
     /** {@inheritDoc} */
-    @Override public void push(Row row) throws Exception {
+    @Override public void push(Object[] row) throws Exception {
         // Throw 'unsupported'.
         end();
     }
