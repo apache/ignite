@@ -3138,7 +3138,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 assert metaStorage != null && metaStorage.read(SNP_RUNNING_DIR_KEY) == null :
                     "The previous snapshot hasn't been completed correctly";
 
-                metaStorage.write(SNP_RUNNING_DIR_KEY, snpLocDir.toString());
+                metaStorage.write(SNP_RUNNING_DIR_KEY, snpLocDir.getAbsolutePath());
 
                 U.ensureDirectory(dbDir, "snapshot work directory for a local snapshot sender", log);
             }
