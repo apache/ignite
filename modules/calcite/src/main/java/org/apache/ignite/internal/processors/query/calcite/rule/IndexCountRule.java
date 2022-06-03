@@ -10,12 +10,11 @@ import org.apache.calcite.rel.core.AggregateCall;
 import org.apache.calcite.rel.logical.LogicalAggregate;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
-import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.calcite.util.ImmutableIntList;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteConvention;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexCount;
 import org.apache.ignite.internal.processors.query.calcite.rel.logical.IgniteLogicalTableScan;
-import org.apache.ignite.internal.processors.query.calcite.schema.CacheIndexImpl;
+import org.apache.ignite.internal.processors.query.calcite.schema.IgniteIndex;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
 import org.apache.ignite.internal.processors.query.calcite.trait.RewindabilityTrait;
@@ -37,12 +36,14 @@ public class IndexCountRule extends RelRule<IndexCountRule.Config> {
         LogicalAggregate aggr = call.rel(0);
         IgniteLogicalTableScan scan = call.rel(1);
         IgniteTable table = scan.getTable().unwrap(IgniteTable.class);
-        //TODO: const name
-        String idxName = "_key_PK";
-        //TODO: remove cast
-        CacheIndexImpl idx = (CacheIndexImpl)table.getIndex(idxName);
 
-        if (idx == null || scan.condition() != null || aggr.getGroupCount() > 0
+        //TODO: const name
+        IgniteIndex idx = table.indexes().get("_key_PK");
+
+        if (idx == null)
+            idx = table.indexes().values().stream().findFirst().get();
+
+        if (idx == null || scan.condition() != null || aggr.getGroupCount() > 0 || table.isIndexRebuildInProgress()
             || aggr.getAggCallList().stream().anyMatch(a -> a.getAggregation().getKind() != SqlKind.COUNT))
             return;
 
@@ -55,10 +56,10 @@ public class IndexCountRule extends RelRule<IndexCountRule.Config> {
             scan.getCluster(),
             traits,
             scan.getTable(),
-            idxName
+            idx.name()
         );
 
-        //TODO: several caount(*)
+        //TODO: several count(*)
         AggregateCall aggFun = AggregateCall.create(
             SqlStdOperatorTable.SUM0,
             false,
@@ -66,7 +67,7 @@ public class IndexCountRule extends RelRule<IndexCountRule.Config> {
             false,
             ImmutableIntList.of(0),
             -1,
-            ImmutableBitSet.of(),
+            null,
             RelCollations.EMPTY,
             0,
             idxCnt,

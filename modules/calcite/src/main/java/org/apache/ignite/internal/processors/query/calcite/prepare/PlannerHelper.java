@@ -21,7 +21,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.google.common.collect.ImmutableSet;
-import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelCollations;
 import org.apache.calcite.rel.RelNode;
@@ -103,6 +102,9 @@ public class PlannerHelper {
 
             if (sqlNode.isA(ImmutableSet.of(SqlKind.INSERT, SqlKind.UPDATE, SqlKind.MERGE)))
                 igniteRel = new FixDependentModifyNodeShuttle().visit(igniteRel);
+
+            // TODO
+            System.err.println("TEST | plan: " + igniteRel.explain());
 
             return igniteRel;
         }

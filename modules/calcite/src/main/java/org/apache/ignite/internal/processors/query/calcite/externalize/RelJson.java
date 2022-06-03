@@ -700,6 +700,7 @@ class RelJson {
         map.put("filter", node.filterArg);
         map.put("name", node.getName());
         map.put("coll", toJson(node.getCollation()));
+//        map.put("class", toJson(node.getAggregation().getClass().getName()));
         return map;
     }
 
@@ -948,6 +949,7 @@ class RelJson {
         map.put("name", operator.getName());
         map.put("kind", toJson(operator.kind));
         map.put("syntax", toJson(operator.getSyntax()));
+        map.put("class", toJson(operator.getClass().getName()));
         return map;
     }
 
