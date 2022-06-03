@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.calcite.rel;
 
+import java.util.Collections;
 import java.util.List;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptCost;
@@ -25,7 +26,6 @@ import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.AbstractRelNode;
 import org.apache.calcite.rel.RelInput;
-import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelWriter;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rel.type.RelDataType;
@@ -43,7 +43,7 @@ public class IgniteIndexCount extends AbstractRelNode implements SourceAwareIgni
     private final String idxName;
 
     /**
-     * Constructor used for deserialization.
+     * Constructor for deserialization.
      *
      * @param input Serialized representation.
      */
@@ -66,24 +66,27 @@ public class IgniteIndexCount extends AbstractRelNode implements SourceAwareIgni
         RelOptCluster cluster,
         RelTraitSet traits,
         RelOptTable tbl,
-        String idxName,
-        RelDataType rowType
+        String idxName
     ) {
         super(cluster, traits);
 
         this.idxName = idxName;
         this.tbl = tbl;
-        this.rowType = rowType;
 
-//        RelDataType type = cluster.getTypeFactory().createSqlType(SqlTypeName.BIGINT);
+        RelDataType type = cluster.getTypeFactory().createSqlType(SqlTypeName.BIGINT);
 
-//        this.rowType = cluster.getTypeFactory().createStructType(Collections.singletonList(type),
-//            Collections.singletonList(type.toString()));
+        rowType = cluster.getTypeFactory().createStructType(Collections.singletonList(type),
+            Collections.singletonList(type.toString()));
+    }
+
+    /** */
+    public String indexName() {
+        return idxName;
     }
 
     /** {@inheritDoc} */
     @Override public double estimateRowCount(RelMetadataQuery mq) {
-        return 0;
+        return 1.0d;
     }
 
     /** {@inheritDoc} */
@@ -97,20 +100,8 @@ public class IgniteIndexCount extends AbstractRelNode implements SourceAwareIgni
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteRel copy(RelTraitSet traitSet, List<RelNode> inputs) {
-        assert inputs.isEmpty();
-
-        return this;
-    }
-
-    /** {@inheritDoc} */
     @Override public RelOptTable getTable() {
         return tbl;
-    }
-
-    /** */
-    public String indexName() {
-        return idxName;
     }
 
     /** {@inheritDoc} */
@@ -128,11 +119,11 @@ public class IgniteIndexCount extends AbstractRelNode implements SourceAwareIgni
 
     /** {@inheritDoc} */
     @Override public IgniteRel clone(RelOptCluster cluster, List<IgniteRel> inputs) {
-        return new IgniteIndexCount(cluster, traitSet, tbl, idxName, rowType);
+        return new IgniteIndexCount(cluster, traitSet, tbl, idxName);
     }
 
     /** {@inheritDoc} */
     @Override public IgniteRel clone(long sourceId) {
-        return new IgniteIndexCount(getCluster(), traitSet, tbl, idxName, rowType);
+        return new IgniteIndexCount(getCluster(), traitSet, tbl, idxName);
     }
 }

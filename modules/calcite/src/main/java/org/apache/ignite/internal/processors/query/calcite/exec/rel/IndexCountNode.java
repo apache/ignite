@@ -5,7 +5,7 @@ import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexImpl;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 
-/** Sums numbers of the index records. */
+/** Extracts number of index records. */
 public class IndexCountNode<Row> extends AbstractNode implements Downstream<Row> {
     /** The index. */
     private final InlineIndexImpl idx;

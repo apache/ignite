@@ -236,6 +236,7 @@ public enum PlannerPhase {
                     ValuesConverterRule.INSTANCE,
                     LogicalScanConverterRule.INDEX_SCAN,
                     LogicalScanConverterRule.TABLE_SCAN,
+                    IndexCountRule.INSTANCE,
                     HashAggregateConverterRule.COLOCATED,
                     HashAggregateConverterRule.MAP_REDUCE,
                     SortAggregateConverterRule.COLOCATED,
@@ -249,8 +250,7 @@ public enum PlannerPhase {
                     TableModifyConverterRule.INSTANCE,
                     UnionConverterRule.INSTANCE,
                     SortConverterRule.INSTANCE,
-                    TableFunctionScanConverterRule.INSTANCE,
-                    IndexCountRule.INSTANCE
+                    TableFunctionScanConverterRule.INSTANCE
                 )
             );
         }

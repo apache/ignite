@@ -98,6 +98,7 @@ import org.apache.ignite.internal.processors.query.calcite.rel.set.IgniteSetOp;
 import org.apache.ignite.internal.processors.query.calcite.rule.LogicalScanConverterRule;
 import org.apache.ignite.internal.processors.query.calcite.schema.CacheIndexImpl;
 import org.apache.ignite.internal.processors.query.calcite.schema.CacheTableDescriptor;
+import org.apache.ignite.internal.processors.query.calcite.schema.CacheTableImpl;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteIndex;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
 import org.apache.ignite.internal.processors.query.calcite.trait.Destination;
@@ -410,7 +411,7 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
 
     /** {@inheritDoc} */
     @Override public Node<Row> visit(IgniteIndexCount rel) {
-        IgniteTable tbl = rel.getTable().unwrap(IgniteTable.class);
+        CacheTableImpl tbl = rel.getTable().unwrap(CacheTableImpl.class);
         CacheIndexImpl idx = (CacheIndexImpl)tbl.getIndex(rel.indexName());
 
         return new IndexCountNode(idx.index().unwrap(InlineIndexImpl.class), ctx);

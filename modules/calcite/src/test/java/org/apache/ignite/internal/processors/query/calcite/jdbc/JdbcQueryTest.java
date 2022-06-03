@@ -62,7 +62,7 @@ public class JdbcQueryTest extends GridCommonAbstractTest {
     private final String url = "jdbc:ignite:thin://127.0.0.1?queryEngine=" + CalciteQueryEngineConfiguration.ENGINE_NAME;
 
     /** Nodes count. */
-    private final int nodesCnt = 2;
+    private final int nodesCnt = 3;
 
     /** Connection. */
     private Connection conn;
@@ -72,31 +72,8 @@ public class JdbcQueryTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        cfg.setCacheConfiguration(
-            new CacheConfiguration("cache-partitioned*")
-                .setCacheMode(CacheMode.PARTITIONED)
-                .setPartitionLossPolicy(PartitionLossPolicy.READ_WRITE_SAFE)
-        );
-
-        long dsSize = 3L * 1024L * 1024L * 1024L;
-
-        cfg.setDataStorageConfiguration(new DataStorageConfiguration()
-            .setWalSegments(20)
-            .setMetricsEnabled(true)
-            .setDefaultDataRegionConfiguration(
-                new DataRegionConfiguration().setPersistenceEnabled(false).setMetricsEnabled(true)
-                    .setInitialSize(dsSize).setMaxSize(dsSize)
-            )
-        );
-
-        cfg.setSqlConfiguration(new SqlConfiguration().setQueryEnginesConfiguration(
-            new IndexingQueryEngineConfiguration().setDefault(true),
-            new CalciteQueryEngineConfiguration().setDefault(false)
-        ));
-
-        return cfg;
+        return super.getConfiguration(igniteInstanceName).setSqlConfiguration(
+            new SqlConfiguration().setQueryEnginesConfiguration(new CalciteQueryEngineConfiguration()));
     }
 
     /** {@inheritDoc} */
@@ -133,10 +110,6 @@ public class JdbcQueryTest extends GridCommonAbstractTest {
         long records = 101;
 //        long records = 1000;
 //        long records = 50_000;
-//        long records = 100_000;
-//        long records = 200_000;
-//        long records = 500_000;
-//        long records = 1_000_000;
 
         ddl();
         fillDb(records, 100);

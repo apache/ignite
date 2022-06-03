@@ -66,7 +66,7 @@ public class IgniteMapHashAggregate extends IgniteMapAggregateBase implements Ig
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteMapHashAggregate clone(RelOptCluster cluster, List<IgniteRel> inputs) {
+    @Override public IgniteRel clone(RelOptCluster cluster, List<IgniteRel> inputs) {
         return new IgniteMapHashAggregate(cluster, getTraitSet(), sole(inputs),
             getGroupSet(), getGroupSets(), getAggCallList());
     }
