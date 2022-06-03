@@ -50,13 +50,13 @@ public class CacheIndexImpl implements IgniteIndex {
     private final String idxName;
 
     /** */
-    private final InlineIndex idx;
+    private final Index idx;
 
     /** */
     private final IgniteCacheTable tbl;
 
     /** */
-    public CacheIndexImpl(RelCollation collation, String name, InlineIndex idx, IgniteCacheTable tbl) {
+    public CacheIndexImpl(RelCollation collation, String name, Index idx, IgniteCacheTable tbl) {
         this.collation = collation;
         idxName = name;
         this.idx = idx;
@@ -133,10 +133,5 @@ public class CacheIndexImpl implements IgniteIndex {
 
         // Empty index find predicate.
         return new IndexConditions();
-    }
-
-    /** */
-    public InlineIndex index(){
-        return idx;
     }
 }

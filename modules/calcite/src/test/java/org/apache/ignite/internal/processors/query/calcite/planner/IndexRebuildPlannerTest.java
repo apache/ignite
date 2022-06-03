@@ -18,11 +18,15 @@
 package org.apache.ignite.internal.processors.query.calcite.planner;
 
 import java.util.concurrent.atomic.AtomicBoolean;
+import org.apache.calcite.rel.RelNode;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.processors.query.calcite.jdbc.JdbcQueryTest;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteExchange;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexCount;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexScan;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableScan;
+import org.apache.ignite.internal.processors.query.calcite.rel.agg.IgniteColocatedHashAggregate;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteSchema;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -64,20 +68,28 @@ public class IndexRebuildPlannerTest extends AbstractPlannerTest {
         assertPlan(sql, publicSchema, isInstanceOf(IgniteIndexScan.class));
     }
 
-    /** */
+    /**
+     * Test IndexCount is disabled when index is unavailable.
+     *
+     * @see HashAggregatePlannerTest#indexCount()
+     * @see JdbcQueryTest#testIndexCountWithUnavalableIndex()
+     */
     @Test
-    public void testCountAtIndexRebuild() throws Exception {
+    public void testIndexCountAtIndexRebuild() throws Exception {
         String sql = "SELECT COUNT(*) FROM TBL";
 
-        assertPlan(sql, publicSchema, isInstanceOf(IgniteIndexCount.class));
+        assertPlan(sql, publicSchema, isInstanceOf(IgniteColocatedHashAggregate.class)
+            .and(input(isInstanceOf(IgniteExchange.class).and(input(isInstanceOf(IgniteIndexCount.class))))));
 
         tbl.markIndexRebuildInProgress(true);
 
-        assertPlan(sql, publicSchema, isInstanceOf(IgniteTableScan.class));
+        assertPlan(sql, publicSchema, isInstanceOf(IgniteColocatedHashAggregate.class)
+            .and(input(isInstanceOf(IgniteTableScan.class))));
 
         tbl.markIndexRebuildInProgress(false);
 
-        assertPlan(sql, publicSchema, isInstanceOf(IgniteIndexCount.class));
+        assertPlan(sql, publicSchema, isInstanceOf(IgniteColocatedHashAggregate.class)
+            .and(input(isInstanceOf(IgniteExchange.class).and(input(isInstanceOf(IgniteIndexCount.class))))));
     }
 
     /** */
@@ -99,6 +111,44 @@ public class IndexRebuildPlannerTest extends AbstractPlannerTest {
                 IgniteRel rel = physicalPlan(sql, publicSchema);
 
                 assertTrue(rel instanceof IgniteTableScan || rel instanceof IgniteIndexScan);
+            }
+        }
+        finally {
+            stop.set(true);
+        }
+
+        fut.get();
+    }
+
+    /**
+     * Test IndexCount is disabled when index becomes unavailable.
+     *
+     * @see HashAggregatePlannerTest#indexCount()
+     * @see JdbcQueryTest#testIndexCountWithUnavalableIndex()
+     */
+    @Test
+    public void testIndexCountAtConcurrentIndexRebuild() throws Exception {
+        String sql = "SELECT COUNT(*) FROM TBL";
+
+        AtomicBoolean stop = new AtomicBoolean();
+
+        IgniteInternalFuture<?> fut = GridTestUtils.runAsync(() -> {
+            while (!stop.get()) {
+                tbl.markIndexRebuildInProgress(true);
+                tbl.markIndexRebuildInProgress(false);
+            }
+        });
+
+        try {
+            for (int i = 0; i < 1000; i++) {
+                IgniteRel rel = physicalPlan(sql, publicSchema);
+
+                assertTrue(rel instanceof IgniteColocatedHashAggregate);
+
+                RelNode input = rel.getInput(0);
+
+                assertTrue(input instanceof IgniteTableScan ||
+                    (input instanceof IgniteExchange && input.getInput(0) instanceof IgniteIndexCount));
             }
         }
         finally {

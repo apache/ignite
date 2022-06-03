@@ -27,7 +27,9 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import org.apache.calcite.rel.RelCollation;
+import org.apache.calcite.rel.RelCollations;
 import org.apache.calcite.rel.RelNode;
+import org.apache.calcite.rel.core.AggregateCall;
 import org.apache.calcite.rel.core.Intersect;
 import org.apache.calcite.rel.core.JoinRelType;
 import org.apache.calcite.rel.core.Minus;
@@ -35,7 +37,9 @@ import org.apache.calcite.rel.core.Spool;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.rex.RexNode;
+import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.util.ImmutableBitSet;
+import org.apache.calcite.util.ImmutableIntList;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.cache.query.index.IndexName;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndex;
@@ -110,6 +114,7 @@ import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.processors.query.calcite.util.RexUtils;
 import org.apache.ignite.internal.util.typedef.F;
 
+import static java.util.Collections.singletonList;
 import static org.apache.calcite.rel.RelDistribution.Type.HASH_DISTRIBUTED;
 import static org.apache.ignite.internal.processors.query.calcite.util.TypeUtils.combinedRowType;
 
@@ -412,15 +417,41 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
 
     /** {@inheritDoc} */
     @Override public Node<Row> visit(IgniteIndexCount rel) {
-        CacheTableDescriptor tbl = rel.getTable().unwrap(CacheTableDescriptor.class);
+        IgniteTable tbl = rel.getTable().unwrap(IgniteTable.class);
+        IgniteIndex idx = tbl.getIndex(rel.indexName());
 
-        GridCacheContext<?, ?> cctx = tbl.cacheContext();
-        GridKernalContext kctx = cctx.kernalContext();
+        if (idx != null && !tbl.isIndexRebuildInProgress()) {
+            CacheTableDescriptor descr = rel.getTable().unwrap(CacheTableDescriptor.class);
+            GridCacheContext<?, ?> cctx = descr.cacheContext();
+            GridKernalContext kctx = cctx.kernalContext();
 
-        IndexName idxName = new IndexName(cctx.name(), kctx.query().schemaName(cctx), tbl.typeDescription().tableName(),
-            rel.indexName());
+            IndexName idxName = new IndexName(cctx.name(), kctx.query().schemaName(cctx),
+                descr.typeDescription().tableName(), idx.name());
 
-        return new IndexCountNode(kctx.indexProcessor().index(idxName).unwrap(InlineIndex.class), ctx);
+            return new IndexCountNode<>(kctx.indexProcessor().index(idxName).unwrap(InlineIndex.class), ctx);
+        }
+        else {
+            RelNode relInput = new IgniteTableScan(rel.getCluster(), rel.getTraitSet(), rel.getTable());
+
+            AggregateCall aggFun = AggregateCall.create(
+                SqlStdOperatorTable.COUNT,
+                false,
+                false,
+                false,
+                ImmutableIntList.of(0),
+                -1,
+                null,
+                RelCollations.EMPTY,
+                0,
+                relInput,
+                null,
+                null);
+
+            IgniteColocatedHashAggregate relAggr = new IgniteColocatedHashAggregate(rel.getCluster(), rel.getTraitSet(), relInput,
+                ImmutableBitSet.of(), singletonList(ImmutableBitSet.of()), singletonList(aggFun));
+
+            return visit(relAggr);
+        }
     }
 
     /** {@inheritDoc} */

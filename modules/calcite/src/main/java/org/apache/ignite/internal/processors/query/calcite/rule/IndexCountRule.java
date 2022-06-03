@@ -1,6 +1,10 @@
 package org.apache.ignite.internal.processors.query.calcite.rule;
 
 import java.util.Collections;
+import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
 import com.google.common.collect.ImmutableMap;
 import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.RelRule;
@@ -10,18 +14,18 @@ import org.apache.calcite.rel.core.AggregateCall;
 import org.apache.calcite.rel.logical.LogicalAggregate;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
-import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.calcite.util.ImmutableIntList;
+import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteConvention;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexCount;
 import org.apache.ignite.internal.processors.query.calcite.rel.logical.IgniteLogicalTableScan;
-import org.apache.ignite.internal.processors.query.calcite.schema.CacheIndexImpl;
+import org.apache.ignite.internal.processors.query.calcite.schema.IgniteIndex;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
 import org.apache.ignite.internal.processors.query.calcite.trait.RewindabilityTrait;
 import org.immutables.value.Value;
 
-/** Tries to optimize count(*) using number of index records. */
+/** Tries to optimize 'COUNT(*)' to use number of index records. */
 @Value.Enclosing
 public class IndexCountRule extends RelRule<IndexCountRule.Config> {
     /** */
@@ -37,12 +41,13 @@ public class IndexCountRule extends RelRule<IndexCountRule.Config> {
         LogicalAggregate aggr = call.rel(0);
         IgniteLogicalTableScan scan = call.rel(1);
         IgniteTable table = scan.getTable().unwrap(IgniteTable.class);
-        //TODO: const name
-        String idxName = "_key_PK";
-        //TODO: remove cast
-        CacheIndexImpl idx = (CacheIndexImpl)table.getIndex(idxName);
 
-        if (idx == null || scan.condition() != null || aggr.getGroupCount() > 0
+        IgniteIndex idx = table.indexes().get(QueryUtils.PRIMARY_KEY_INDEX);
+
+        if (idx == null)
+            idx = table.indexes().values().stream().findFirst().orElse(null);
+
+        if (idx == null || scan.condition() != null || aggr.getGroupCount() > 0 || table.isIndexRebuildInProgress()
             || aggr.getAggCallList().stream().anyMatch(a -> a.getAggregation().getKind() != SqlKind.COUNT))
             return;
 
@@ -55,35 +60,38 @@ public class IndexCountRule extends RelRule<IndexCountRule.Config> {
             scan.getCluster(),
             traits,
             scan.getTable(),
-            idxName
+            idx.name(),
+            aggr.getRowType()
         );
 
-        //TODO: several caount(*)
-        AggregateCall aggFun = AggregateCall.create(
+        AggregateCall idxSumAggCall = AggregateCall.create(
             SqlStdOperatorTable.SUM0,
             false,
             false,
             false,
             ImmutableIntList.of(0),
             -1,
-            ImmutableBitSet.of(),
+            null,
             RelCollations.EMPTY,
             0,
             idxCnt,
             null,
             null);
 
-        LogicalAggregate aggr2 = new LogicalAggregate(
+        List<AggregateCall> indCntSumFunLst = Stream.generate(() -> idxSumAggCall).limit(aggr.getAggCallList().size())
+            .collect(Collectors.toList());
+
+        LogicalAggregate indxCntArrg = new LogicalAggregate(
             aggr.getCluster(),
             aggr.getTraitSet(),
             Collections.emptyList(),
             idxCnt,
             aggr.getGroupSet(),
             aggr.getGroupSets(),
-            Collections.singletonList(aggFun)
+            indCntSumFunLst
         );
 
-        call.transformTo(aggr2, ImmutableMap.of(aggr2, aggr));;
+        call.transformTo(indxCntArrg, ImmutableMap.of(indxCntArrg, aggr));
     }
 
     /** The rule config. */

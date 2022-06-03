@@ -189,6 +189,4 @@ public class CacheTableImpl extends AbstractTable implements IgniteCacheTable {
     @Override public boolean isModifiable() {
         return true;
     }
-
-
 }

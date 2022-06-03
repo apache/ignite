@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.query.calcite.rel;
 
-import java.util.Collections;
 import java.util.List;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptCost;
@@ -29,11 +28,9 @@ import org.apache.calcite.rel.RelInput;
 import org.apache.calcite.rel.RelWriter;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rel.type.RelDataType;
-import org.apache.calcite.sql.type.SqlTypeName;
 
 /**
- * Relational operator that returns the contents of a table.
- * // TODO: process index rebulding.
+ * Returns number of index records.
  */
 public class IgniteIndexCount extends AbstractRelNode implements SourceAwareIgniteRel {
     /** */
@@ -56,27 +53,26 @@ public class IgniteIndexCount extends AbstractRelNode implements SourceAwareIgni
     }
 
     /**
-     * Creates a IndexScan.
+     * Ctor.
+     *
      * @param cluster Cluster that this relational expression belongs to
      * @param traits Traits of this relational expression
      * @param tbl Table definition.
      * @param idxName Index name.
+     * @param type Data type.
      */
     public IgniteIndexCount(
         RelOptCluster cluster,
         RelTraitSet traits,
         RelOptTable tbl,
-        String idxName
+        String idxName,
+        RelDataType type
     ) {
         super(cluster, traits);
 
         this.idxName = idxName;
         this.tbl = tbl;
-
-        RelDataType type = cluster.getTypeFactory().createSqlType(SqlTypeName.BIGINT);
-
-        rowType = cluster.getTypeFactory().createStructType(Collections.singletonList(type),
-            Collections.singletonList(type.toString()));
+        this.rowType = type;
     }
 
     /** */
@@ -86,12 +82,14 @@ public class IgniteIndexCount extends AbstractRelNode implements SourceAwareIgni
 
     /** {@inheritDoc} */
     @Override public double estimateRowCount(RelMetadataQuery mq) {
+        // Requesting index count always produces just one record.
         return 1.0d;
     }
 
     /** {@inheritDoc} */
     @Override public RelOptCost computeSelfCost(RelOptPlanner planner, RelMetadataQuery mq) {
-        return planner.getCostFactory().makeCost(1, 1.0d, 1.0f);
+        // Requesting index count is realy quick.
+        return planner.getCostFactory().makeTinyCost();
     }
 
     /** {@inheritDoc} */
@@ -119,11 +117,11 @@ public class IgniteIndexCount extends AbstractRelNode implements SourceAwareIgni
 
     /** {@inheritDoc} */
     @Override public IgniteRel clone(RelOptCluster cluster, List<IgniteRel> inputs) {
-        return new IgniteIndexCount(cluster, traitSet, tbl, idxName);
+        return new IgniteIndexCount(cluster, traitSet, tbl, idxName, rowType);
     }
 
     /** {@inheritDoc} */
     @Override public IgniteRel clone(long sourceId) {
-        return new IgniteIndexCount(getCluster(), traitSet, tbl, idxName);
+        return new IgniteIndexCount(getCluster(), traitSet, tbl, idxName, rowType);
     }
 }

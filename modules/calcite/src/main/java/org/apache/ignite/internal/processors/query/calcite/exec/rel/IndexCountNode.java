@@ -6,12 +6,12 @@ import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndex;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 
 /** Extracts number of index records. */
-public class IndexCountNode<Row> extends AbstractNode<Object[]> implements Downstream<Object[]> {
+public class IndexCountNode<Row> extends AbstractNode<Row> implements Downstream<Row> {
     /** The index. */
     private final InlineIndex idx;
 
     /** Ctor. */
-    public IndexCountNode(InlineIndex idx, ExecutionContext ctx) {
+    public IndexCountNode(InlineIndex idx, ExecutionContext<Row> ctx) {
         super(ctx, ctx.getTypeFactory().createSqlType(SqlTypeName.BIGINT));
 
         this.idx = idx;
@@ -23,21 +23,22 @@ public class IndexCountNode<Row> extends AbstractNode<Object[]> implements Downs
     }
 
     /** {@inheritDoc} */
-    @Override protected Downstream<Object[]> requestDownstream(int idx) {
+    @Override protected Downstream<Row> requestDownstream(int idx) {
         return this;
     }
 
     /** {@inheritDoc} */
     @Override public void request(int rowsCnt) throws Exception {
         if (rowsCnt > 1) {
-            downstream().push(new Object[] {BigDecimal.valueOf(idx.totalCount())});
+            downstream().push(context().rowHandler().factory(context().getTypeFactory(), rowType())
+                .create(BigDecimal.valueOf(idx.totalCount())));
 
             downstream().end();
         }
     }
 
     /** {@inheritDoc} */
-    @Override public void push(Object[] row) throws Exception {
+    @Override public void push(Row row) throws Exception {
         // Throw 'unsupported'.
         end();
     }

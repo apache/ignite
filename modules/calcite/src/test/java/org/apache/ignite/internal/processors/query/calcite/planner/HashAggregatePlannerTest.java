@@ -22,9 +22,14 @@ import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.sql.fun.SqlAvgAggFunction;
 import org.apache.calcite.sql.fun.SqlCountAggFunction;
+import org.apache.ignite.internal.processors.query.QueryUtils;
+import org.apache.ignite.internal.processors.query.calcite.jdbc.JdbcQueryTest;
 import org.apache.ignite.internal.processors.query.calcite.metadata.ColocationGroup;
 import org.apache.ignite.internal.processors.query.calcite.prepare.MappingQueryContext;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteExchange;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexCount;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
+import org.apache.ignite.internal.processors.query.calcite.rel.agg.IgniteColocatedHashAggregate;
 import org.apache.ignite.internal.processors.query.calcite.rel.agg.IgniteMapHashAggregate;
 import org.apache.ignite.internal.processors.query.calcite.rel.agg.IgniteReduceHashAggregate;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteSchema;
@@ -42,6 +47,73 @@ import org.junit.Test;
  */
 @SuppressWarnings({"TooBroadScope", "FieldCanBeLocal", "TypeMayBeWeakened"})
 public class HashAggregatePlannerTest extends AbstractAggregatePlannerTest {
+    /**
+     * Tests COUNT(...) plan with and without IndexCount optimization.
+     *
+     * @see JdbcQueryTest#testIndexCount()
+     */
+    @Test
+    public void indexCount() throws Exception {
+        IgniteSchema publicSchema = new IgniteSchema("PUBLIC");
+        TestTable tbl = createBroadcastTable();
+        publicSchema.addTable("TEST", tbl);
+
+        assertPlan("SELECT COUNT(*) FROM TEST", publicSchema,
+            hasChildThat(isInstanceOf(IgniteIndexCount.class)).negate());
+
+        // Check with 'primary' index.
+        tbl.addIndex(QueryUtils.PRIMARY_KEY_INDEX, 0);
+
+        assertIndexCount("SELECT COUNT(*) FROM TEST", publicSchema);
+
+        // Check with other index.
+        tbl.removeIndex(QueryUtils.PRIMARY_KEY_INDEX);
+
+        tbl.addIndex("idx", 1);
+
+        assertIndexCount("SELECT COUNT(*) FROM TEST", publicSchema);
+
+        assertIndexCount("SELECT COUNT(*) FROM (SELECT * FROM TEST)", publicSchema);
+
+        // Check caount on certain field.
+        assertIndexCount("SELECT COUNT(VAL0) FROM TEST", publicSchema);
+
+        // Check with several 'count()'.
+        assertIndexCount("SELECT COUNT(*), COUNT(*) FROM TEST", publicSchema);
+        assertIndexCount("SELECT COUNT(VAL0), COUNT(VAL0) FROM TEST", publicSchema);
+        assertIndexCount("SELECT COUNT(VAL0), COUNT(VAL1) FROM TEST", publicSchema);
+        assertIndexCount("SELECT COUNT(*), COUNT(VAL0), COUNT(VAL1) FROM TEST", publicSchema);
+        assertIndexCount("SELECT COUNT(*), COUNT(VAL0), COUNT(VAL1) FROM (SELECT * FROM TEST)", publicSchema);
+
+        // IndexCount can't be used with a condition, groups or other aggregates.
+        assertPlan("SELECT COUNT(*) FROM TEST WHERE VAL0>1", publicSchema,
+            hasChildThat(isInstanceOf(IgniteIndexCount.class)).negate());
+
+        assertPlan("SELECT COUNT(*), SUM(VAL0) FROM TEST", publicSchema,
+            hasChildThat(isInstanceOf(IgniteIndexCount.class)).negate());
+
+        assertPlan("SELECT VAL0, COUNT(*) FROM TEST GROUP BY VAL0", publicSchema,
+            hasChildThat(isInstanceOf(IgniteIndexCount.class)).negate());
+
+        assertPlan("SELECT COUNT(*) FROM TEST GROUP BY VAL0", publicSchema,
+            hasChildThat(isInstanceOf(IgniteIndexCount.class)).negate());
+
+        publicSchema.addTable("TEST2", createBroadcastTable());
+
+        assertPlan("SELECT COUNT(*) FROM (SELECT T1.VAL0, T2.VAL1 FROM TEST T1, TEST2 T2 WHERE T1.GRP0 = T2.GRP0)",
+            publicSchema, hasChildThat(isInstanceOf(IgniteIndexCount.class)).negate());
+    }
+
+    /** */
+    private void assertIndexCount(String sql, IgniteSchema publicSchema) throws Exception {
+        assertPlan(
+            sql,
+            publicSchema,
+            nodeOrAnyChild(isInstanceOf(IgniteColocatedHashAggregate.class)
+                .and(input(isInstanceOf(IgniteExchange.class)
+                    .and(input(isInstanceOf(IgniteIndexCount.class)))))));
+    }
+
     /**
      * @throws Exception If failed.
      */
