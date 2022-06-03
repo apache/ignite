@@ -105,17 +105,20 @@ Ignite ships the link:tools/control-script[Control Script] that supports snapsho
 
 [source,shell]
 ----
-#Create a cluster snapshot in the background:
-control.(sh|bat) --snapshot create snapshot_name
+# Create a cluster snapshot named "snapshot_09062021" in the background:
+control.(sh|bat) --snapshot create snapshot_09062021
 
-#Create a cluster snapshot (wait for the entire operation to complete):
-control.(sh|bat) --snapshot create snapshot_name --sync
+# Create a cluster snapshot named "snapshot_09062021" and wait for the entire operation to complete:
+control.(sh|bat) --snapshot create snapshot_09062021 --sync
 
-#Cancel a running snapshot:
-control.(sh|bat) --snapshot cancel snapshot_name
+# Create a cluster snapshot named "snapshot_09062021" in the "/tmp/ignite/snapshots" folder (the full path to the snapshot files will be /tmp/ignite/snapshots/snapshot_09062021):
+control.(sh|bat) --snapshot create snapshot_09062021 -dest /tmp/ignite/snapshots
 
-#Kill a running snapshot:
-control.(sh|bat) --kill SNAPSHOT snapshot_name
+# Cancel a running snapshot named "snapshot_09062021":
+control.(sh|bat) --snapshot cancel snapshot_09062021
+
+# Kill a running snapshot named "snapshot_09062021":
+control.(sh|bat) --kill SNAPSHOT snapshot_09062021
 ----
 
 === Using JMX
@@ -224,6 +227,9 @@ control.(sh|bat) --snapshot restore snapshot_09062021 --start
 
 # Start restoring all user-created cache groups from the snapshot "snapshot_09062021" and wait for the entire operation to complete.
 control.(sh|bat) --snapshot restore snapshot_09062021 --start --sync
+
+# Start restoring all user-created cache groups from the snapshot "snapshot_09062021" located in the "/tmp/ignite/snapshots" folder (the full path to the snapshot files should be /tmp/ignite/snapshots/snapshot_09062021):
+control.(sh|bat) --snapshot restore snapshot_09062021 --src /tmp/ignite/snapshots
 
 # Start restoring only "cache-group1" and "cache-group2" from the snapshot "snapshot_09062021" in the background.
 control.(sh|bat) --snapshot restore snapshot_09062021 --start --groups cache-group1,cache-group2

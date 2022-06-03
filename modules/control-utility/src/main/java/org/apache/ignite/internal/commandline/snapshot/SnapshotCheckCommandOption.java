@@ -18,18 +18,13 @@
 package org.apache.ignite.internal.commandline.snapshot;
 
 import org.apache.ignite.internal.commandline.argument.CommandArg;
-import org.jetbrains.annotations.Nullable;
 
 /**
- * Snapshot create command options.
+ * Snapshot check command options.
  */
-public enum SnapshotCreateCommandOption implements CommandArg {
-    /** Synchronous execution flag. */
-    SYNC("--sync", null, "Run the operation synchronously, the command will wait for the entire operation to complete. " +
-        "Otherwise, it will be performed in the background, and the command will immediately return control."),
-
-    /** Snapshot directory path. */
-    DESTINATION("--dest", "path", "Path to the directory where the snapshot will be saved. If not specified, " +
+public enum SnapshotCheckCommandOption implements CommandArg {
+    /** Snapshot directory location. */
+    SOURCE("--src", "path", "Path to the directory where the snapshot files are located. If not specified, " +
         "the default configured snapshot directory will be used.");
 
     /** Name. */
@@ -46,7 +41,7 @@ public enum SnapshotCreateCommandOption implements CommandArg {
      * @param arg Argument.
      * @param desc Description.
      */
-    SnapshotCreateCommandOption(String name, @Nullable String arg, String desc) {
+    SnapshotCheckCommandOption(String name, String arg, String desc) {
         this.name = name;
         this.arg = arg;
         this.desc = desc;

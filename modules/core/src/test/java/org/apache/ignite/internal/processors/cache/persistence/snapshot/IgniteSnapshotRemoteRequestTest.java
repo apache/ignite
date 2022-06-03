@@ -79,10 +79,11 @@ public class IgniteSnapshotRemoteRequestTest extends IgniteClusterSnapshotRestor
                 for (Map.Entry<Integer, Set<Integer>> e : parts.entrySet())
                     parts0.computeIfAbsent(e.getKey(), k -> new HashSet<>()).addAll(e.getValue());
 
-                IgniteInternalFuture<Void> locFut = null;
+                IgniteInternalFuture<Void> locFut;
 
                 compFut.add(locFut = snp(ignite).requestRemoteSnapshotFiles(grid(1).localNode().id(),
                     SNAPSHOT_NAME,
+                    null,
                     parts,
                     () -> false,
                     defaultPartitionConsumer(parts0, latch)));
@@ -123,9 +124,9 @@ public class IgniteSnapshotRemoteRequestTest extends IgniteClusterSnapshotRestor
             fromNode0.values().stream().mapToInt(Set::size).sum());
 
         // Snapshot must be taken on node1 and transmitted to node0.
-        IgniteInternalFuture<?> futFrom1To0 = mgr0.requestRemoteSnapshotFiles(node1, SNAPSHOT_NAME, fromNode1, () -> false,
+        IgniteInternalFuture<?> futFrom1To0 = mgr0.requestRemoteSnapshotFiles(node1, SNAPSHOT_NAME, null, fromNode1, () -> false,
             defaultPartitionConsumer(fromNode1, latch));
-        IgniteInternalFuture<?> futFrom0To1 = mgr1.requestRemoteSnapshotFiles(node0, SNAPSHOT_NAME, fromNode0, () -> false,
+        IgniteInternalFuture<?> futFrom0To1 = mgr1.requestRemoteSnapshotFiles(node0, SNAPSHOT_NAME, null, fromNode0, () -> false,
             defaultPartitionConsumer(fromNode0, latch));
 
         G.allGrids().forEach(g -> TestRecordingCommunicationSpi.spi(g).stopBlock());
@@ -174,6 +175,7 @@ public class IgniteSnapshotRemoteRequestTest extends IgniteClusterSnapshotRestor
 
         snp(ignite).requestRemoteSnapshotFiles(grid(1).localNode().id(),
             SNAPSHOT_NAME,
+            null,
             parts,
             () -> false,
             (part, t) -> {
@@ -215,6 +217,7 @@ public class IgniteSnapshotRemoteRequestTest extends IgniteClusterSnapshotRestor
 
         IgniteInternalFuture<?> fut = snp(ignite).requestRemoteSnapshotFiles(grid(1).localNode().id(),
             SNAPSHOT_NAME,
+            null,
             parts,
             () -> false,
             (part, t) -> {
@@ -261,6 +264,7 @@ public class IgniteSnapshotRemoteRequestTest extends IgniteClusterSnapshotRestor
 
         IgniteInternalFuture<Void> fut = snp(ignite).requestRemoteSnapshotFiles(grid(1).localNode().id(),
             SNAPSHOT_NAME,
+            null,
             parts,
             stopChecker::get,
             (part, t) -> {

@@ -28,6 +28,7 @@ import org.apache.ignite.internal.visor.snapshot.VisorSnapshotCreateTaskArg;
 
 import static org.apache.ignite.internal.commandline.CommandList.SNAPSHOT;
 import static org.apache.ignite.internal.commandline.CommandLogger.optional;
+import static org.apache.ignite.internal.commandline.snapshot.SnapshotCreateCommandOption.DESTINATION;
 import static org.apache.ignite.internal.commandline.snapshot.SnapshotCreateCommandOption.SYNC;
 
 /**
@@ -42,6 +43,7 @@ public class SnapshotCreateCommand extends SnapshotSubcommand {
     /** {@inheritDoc} */
     @Override public void parseArguments(CommandArgIterator argIter) {
         String snpName = argIter.nextArg("Expected snapshot name.");
+        String snpPath = null;
         boolean sync = false;
 
         while (argIter.hasNextSubArg()) {
@@ -53,22 +55,37 @@ public class SnapshotCreateCommand extends SnapshotSubcommand {
                 throw new IllegalArgumentException("Invalid argument: " + arg + ". " +
                     "Possible options: " + F.concat(F.asList(SnapshotCreateCommandOption.values()), ", ") + '.');
             }
+            else if (option == DESTINATION) {
+                if (snpPath != null)
+                    throw new IllegalArgumentException(DESTINATION.argName() + " arg specified twice.");
 
-            // The snapshot create command currently supports only one optional argument.
-            assert option == SYNC;
+                String errMsg = "Expected path to the snapshot directory.";
 
-            sync = true;
+                if (CommandArgIterator.isCommandOrOption(argIter.peekNextArg()))
+                    throw new IllegalArgumentException(errMsg);
+
+                snpPath = argIter.nextArg(errMsg);
+            }
+            else if (option == SYNC) {
+                if (sync)
+                    throw new IllegalArgumentException(SYNC.argName() + " arg specified twice.");
+
+                sync = true;
+            }
+
         }
 
-        cmdArg = new VisorSnapshotCreateTaskArg(snpName, sync);
+        cmdArg = new VisorSnapshotCreateTaskArg(snpName, snpPath, sync);
     }
 
     /** {@inheritDoc} */
     @Override public void printUsage(Logger log) {
         Map<String, String> params = new LinkedHashMap<>(generalUsageOptions());
 
-        params.put(SYNC.optionName(), SYNC.description());
+        params.put(DESTINATION.argName() + " " + DESTINATION.arg(), DESTINATION.description());
+        params.put(SYNC.argName(), SYNC.description());
 
-        usage(log, "Create cluster snapshot:", SNAPSHOT, params, name(), SNAPSHOT_NAME_ARG, optional(SYNC.argName()));
+        usage(log, "Create cluster snapshot:", SNAPSHOT, params, name(), SNAPSHOT_NAME_ARG,
+            optional(DESTINATION.argName(), DESTINATION.arg()), optional(SYNC.argName()));
     }
 }
