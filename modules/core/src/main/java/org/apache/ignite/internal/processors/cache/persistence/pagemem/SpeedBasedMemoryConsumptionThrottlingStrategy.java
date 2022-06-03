@@ -183,7 +183,7 @@ class SpeedBasedMemoryConsumptionThrottlingStrategy {
      */
     private int cpDonePagesEstimation(int cpWrittenPages) {
         // TODO: IGNITE-16879 - this only works correctly if time-to-write a page is close to time-to-sync a page.
-        // In reality, this oes not seem to hold, which produces wrong estimations. We could measure the real times
+        // In reality, this does not seem to hold, which produces wrong estimations. We could measure the real times
         // in Checkpointer and make this estimation a lot more precise.
         return (cpWrittenPages + cpSyncedPages()) / 2;
     }
