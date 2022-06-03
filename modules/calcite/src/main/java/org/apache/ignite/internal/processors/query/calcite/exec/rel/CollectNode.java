@@ -178,7 +178,7 @@ public class CollectNode<Row> extends AbstractNode<Row> implements SingleNode<Ro
     /** */
     private static class MapCollector<Row> extends Collector<Row> {
         /** */
-        private final Map<Object, Object> outBuf;
+        private Map<Object, Object> outBuf;
 
         /** */
         private MapCollector(
@@ -202,14 +202,14 @@ public class CollectNode<Row> extends AbstractNode<Row> implements SingleNode<Ro
 
         /** {@inheritDoc} */
         @Override public void clear() {
-            outBuf.clear();
+            outBuf = new LinkedHashMap<>(cap);
         }
     }
 
     /** */
     private static class ArrayCollector<Row> extends Collector<Row> {
         /** */
-        private final List<Object> outBuf;
+        private List<Object> outBuf;
 
         /** */
         private ArrayCollector(
@@ -233,7 +233,7 @@ public class CollectNode<Row> extends AbstractNode<Row> implements SingleNode<Ro
 
         /** {@inheritDoc} */
         @Override public void clear() {
-            outBuf.clear();
+            outBuf = new ArrayList<>(cap);
         }
     }
 }

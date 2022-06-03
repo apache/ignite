@@ -219,7 +219,6 @@ public class IgniteStdSqlOperatorTable extends ReflectiveSqlOperatorTable {
         register(SqlStdOperatorTable.IS_EMPTY);
         register(SqlStdOperatorTable.IS_NOT_EMPTY);
 
-        // TODO https://issues.apache.org/jira/browse/IGNITE-15550
         register(SqlStdOperatorTable.MAP_QUERY);
         register(SqlStdOperatorTable.ARRAY_QUERY);
 

@@ -17,20 +17,26 @@
 package org.apache.ignite.internal.processors.query.calcite.rel;
 
 import java.util.List;
+import com.google.common.collect.ImmutableList;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelTraitSet;
+import org.apache.calcite.rel.RelCollations;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.Collect;
 import org.apache.calcite.rel.type.RelDataType;
+import org.apache.calcite.util.Pair;
+import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
+import org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils;
 
 /** */
 public class IgniteCollect extends Collect implements IgniteRel {
     /**
      * Creates a <code>SingleRel</code>.
      *
-     * @param cluster Cluster this relational expression belongs to
-     * @param traits
-     * @param input Input relational expression
+     * @param cluster Cluster this relational expression belongs to.
+     * @param traits Relation traits.
+     * @param input Input relational expression.
+     * @param rowType Row type.
      */
     public IgniteCollect(
         RelOptCluster cluster,
@@ -54,5 +60,32 @@ public class IgniteCollect extends Collect implements IgniteRel {
     /** {@inheritDoc} */
     @Override public RelNode copy(RelTraitSet traitSet, RelNode input) {
         return new IgniteCollect(getCluster(), traitSet, input, rowType());
+    }
+
+    /** {@inheritDoc} */
+    @Override public Pair<RelTraitSet, List<RelTraitSet>> passThroughTraits(RelTraitSet required) {
+        if (required.getConvention() != IgniteConvention.INSTANCE)
+            return null;
+
+        if (TraitUtils.distribution(required) != IgniteDistributions.single())
+            return null;
+
+        if (TraitUtils.collation(required) != RelCollations.EMPTY)
+            return null;
+
+        return Pair.of(required, ImmutableList.of(required));
+    }
+
+    /** {@inheritDoc} */
+    @Override public Pair<RelTraitSet, List<RelTraitSet>> deriveTraits(RelTraitSet childTraits, int childId) {
+        assert childId == 0;
+
+        if (childTraits.getConvention() != IgniteConvention.INSTANCE)
+            return null;
+
+        if (TraitUtils.distribution(childTraits) != IgniteDistributions.single())
+            return null;
+
+        return Pair.of(childTraits.replace(RelCollations.EMPTY), ImmutableList.of(childTraits));
     }
 }

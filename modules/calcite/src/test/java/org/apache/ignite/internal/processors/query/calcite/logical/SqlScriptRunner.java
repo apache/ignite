@@ -37,6 +37,7 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -174,22 +175,34 @@ public class SqlScriptRunner {
     private static String toString(Object res) {
         if (res instanceof byte[])
             return ByteString.toString((byte[])res, 16);
+        else if (res instanceof List)
+            return listToString((List<?>)res);
         else if (res instanceof Map)
-            return mapToString((Map<? extends Comparable, ?>)res);
+            return mapToString((Map<?, ?>)res);
         else
             return String.valueOf(res);
     }
 
     /** */
-    private static String mapToString(Map<? extends Comparable, ?> map) {
+    private static String mapToString(Map<?, ?> map) {
         if (map == null)
-            return "null";
+            return NULL;
 
-        List<String> entries = map.entrySet().stream()
-            .sorted((e1, e2) -> e1.getKey().compareTo(e2.getKey())).map(e -> e.getKey() + ":" + e.getValue())
+        List<String> entries = (new TreeMap<>(map)).entrySet().stream()
+            .map(e -> toString(e.getKey()) + ":" + toString(e.getValue()))
             .collect(Collectors.toList());
 
         return "{" + String.join(", ", entries) + "}";
+    }
+
+    /** */
+    private static String listToString(List<?> list) {
+        if (list == null)
+            return NULL;
+
+        List<String> entries = list.stream().map(SqlScriptRunner::toString).collect(Collectors.toList());
+
+        return "[" + String.join(", ", entries) + "]";
     }
 
     /** */

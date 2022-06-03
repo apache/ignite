@@ -25,7 +25,6 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.UUID;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -107,8 +106,10 @@ public class Accumulators {
             accSup = () -> new ListAggAccumulator<>(call, hnd);
         else if ("ARRAY_CONCAT_AGG".equals(aggName))
             accSup = () -> new ArrayConcatAggregateAccumulator<>(call, hnd);
-        else
+        else if ("ARRAY_AGG".equals(aggName))
             accSup = () -> new ArrayAggregateAccumulator<>(call, hnd);
+        else
+            throw new AssertionError(call.getAggregation().getName());
 
         if (call.getCollation() != null && !call.getCollation().getFieldCollations().isEmpty()) {
             Comparator<Row> cmp = ctx.expressionFactory().comparator(call.getCollation());
@@ -1105,7 +1106,7 @@ public class Accumulators {
 
         /** {@inheritDoc} */
         @Override public void add(Row row) {
-            if (row == null || get(0, row) == null)
+            if (row == null)
                 return;
 
             buf.add(row);
@@ -1154,16 +1155,23 @@ public class Accumulators {
             if (isEmpty())
                 return null;
 
-            StringBuilder builder = new StringBuilder();
+            StringBuilder builder = null;
 
             for (Row row: this) {
+                Object val = get(0, row);
+
+                if (val == null)
+                    continue;
+
+                if (builder == null)
+                    builder = new StringBuilder();
+
                 if (builder.length() != 0)
                     builder.append(extractSeparator(row));
-
-                builder.append(Objects.toString(get(0, row)));
+                builder.append(val);
             }
 
-            return builder.toString();
+            return builder != null ? builder.toString() : null;
         }
 
         /** */
@@ -1200,8 +1208,10 @@ public class Accumulators {
 
         /** {@inheritDoc} */
         @Override public Object end() {
-            List<Object> result = new ArrayList<>(size());
+            if (size() == 0)
+                return null;
 
+            List<Object> result = new ArrayList<>(size());
             for (Row row: this)
                 result.add(get(0, row));
 
@@ -1229,6 +1239,9 @@ public class Accumulators {
 
         /** {@inheritDoc} */
         @Override public Object end() {
+            if (size() == 0)
+                return null;
+
             List<Object> result = new ArrayList<>(size());
 
             for (Row row: this) {
@@ -1239,6 +1252,9 @@ public class Accumulators {
 
                 result.addAll(arr);
             }
+
+            if (result.isEmpty())
+                return null;
 
             return result;
         }

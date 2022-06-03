@@ -29,7 +29,6 @@ import org.apache.ignite.internal.processors.query.calcite.QueryChecker;
 import org.apache.ignite.internal.processors.query.calcite.sql.fun.IgniteStdSqlOperatorTable;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
-import org.junit.Ignore;
 import org.junit.Test;
 
 /**
@@ -271,21 +270,15 @@ public class StdSqlOperatorsTest extends AbstractBasicIntegrationTest {
 
     /** */
     @Test
-    public void testCollections() {
+    public void testQueryAsCollections() {
+        assertExpression("MAP(SELECT 'a', 1)").returns(F.asMap("a", 1)).check();
+        assertExpression("ARRAY(SELECT 1)").returns(Collections.singletonList(1)).check();
         assertExpression("MAP['a', 1, 'A', 2]").returns(F.asMap("a", 1, "A", 2)).check();
         assertExpression("ARRAY[1, 2, 3]").returns(Arrays.asList(1, 2, 3)).check();
         assertExpression("ARRAY[1, 2, 3][2]").returns(2).check();
         assertExpression("CARDINALITY(ARRAY[1, 2, 3])").returns(3).check();
         assertExpression("ARRAY[1, 2, 3] IS EMPTY").returns(false).check();
         assertExpression("ARRAY[1, 2, 3] IS NOT EMPTY").returns(true).check();
-    }
-
-    /** */
-    @Test
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-15550")
-    public void testQueryAsCollections() {
-        assertExpression("MAP(SELECT 'a', 1)").returns(F.asMap("a", 1)).check();
-        assertExpression("ARRAY(SELECT 1)").returns(Collections.singletonList(1)).check();
     }
 
     /** */
