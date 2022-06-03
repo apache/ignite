@@ -97,10 +97,11 @@ public class IgniteThrottlingUnitTest extends GridCommonAbstractTest {
     }
 
     /**
-     *
+     * Tests that the speed-based throttler throttles when writing faster than target speed, AND the dirty ratio
+     * is above the target ratio.
      */
     @Test
-    public void shouldThrottleWhenWritingFasterThanTargetSpeedAndDirtyRatioIsAboveTargetRatio() {
+    public void shouldThrottleWhenWritingTooFast() {
         PagesWriteSpeedBasedThrottle throttle = new PagesWriteSpeedBasedThrottle(pageMemory2g, null, stateChecker, log);
 
         long parkTime = throttle.getCleanPagesProtectionParkTime(0.67,
@@ -131,10 +132,11 @@ public class IgniteThrottlingUnitTest extends GridCommonAbstractTest {
     }
 
     /**
-     *
+     * Tests that the speed-based throttler does NOT throttle when there are plenty clean pages, even if writing
+     * faster than the current checkpoint speed.
      */
     @Test
-    public void shouldNotThrottleWhenWritingFasterThanCPSpeedButThereAreManyCleanPages() {
+    public void shouldNotThrottleWhenThereArePlentyCleanPages() {
         PagesWriteSpeedBasedThrottle throttle = new PagesWriteSpeedBasedThrottle(pageMemory2g, null, stateChecker, log);
 
         long parkTime = throttle.getCleanPagesProtectionParkTime(0.0,
