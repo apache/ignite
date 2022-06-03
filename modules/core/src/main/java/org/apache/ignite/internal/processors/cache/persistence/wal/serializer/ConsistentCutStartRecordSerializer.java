@@ -19,15 +19,9 @@ package org.apache.ignite.internal.processors.cache.persistence.wal.serializer;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.util.HashSet;
-import java.util.Set;
 import org.apache.ignite.internal.pagemem.wal.record.ConsistentCutStartRecord;
-import org.apache.ignite.internal.processors.cache.persistence.tree.io.CacheVersionIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.ByteBufferBackedDataInput;
-import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 
-import static org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordV1Serializer.putVersion;
-import static org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordV1Serializer.readVersion;
 
 /** */
 public class ConsistentCutStartRecordSerializer {
@@ -39,11 +33,6 @@ public class ConsistentCutStartRecordSerializer {
      */
     public void write(ConsistentCutStartRecord rec, ByteBuffer buf) {
         buf.putLong(rec.version());
-
-        buf.putInt(rec.include().size());
-
-        for (GridCacheVersion tx: rec.include())
-            putVersion(buf, tx, false);
     }
 
     /**
@@ -56,17 +45,7 @@ public class ConsistentCutStartRecordSerializer {
     public ConsistentCutStartRecord read(ByteBufferBackedDataInput in) throws IOException {
         long ver = in.readLong();
 
-        int inclSize = in.readInt();
-
-        Set<GridCacheVersion> include = new HashSet<>();
-
-        for (int i = 0; i < inclSize; i++) {
-            GridCacheVersion v = readVersion(in, false);
-
-            include.add(v);
-        }
-
-        return new ConsistentCutStartRecord(ver, include);
+        return new ConsistentCutStartRecord(ver);
     }
 
     /**
@@ -76,12 +55,6 @@ public class ConsistentCutStartRecordSerializer {
      * @return Size of ConsistentCutStartRecord in bytes.
      */
     public int size(ConsistentCutStartRecord rec) {
-        int size = 8;  // ver.
-        size += 4;  // include tx count.
-
-        for (GridCacheVersion v: rec.include())
-            size += CacheVersionIO.size(v, false);
-
-        return size;
+        return 8;  // Version size.
     }
 }

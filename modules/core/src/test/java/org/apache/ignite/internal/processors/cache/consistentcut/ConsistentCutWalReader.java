@@ -391,6 +391,13 @@ public class ConsistentCutWalReader {
 
         cut.ver = rec.version();
 
+        return rec;
+    }
+
+    /** */
+    private void handleFinishConsistentCutRecord(ConsistentCutFinishRecord rec, NodeConsistentCutState cut) {
+        System.out.println("FINISH " + (curCutVer - 1) + " CUT[" + rec + "]");
+
         Set<IgniteUuid> include = rec.include().stream()
             .map(GridCacheVersion::asIgniteUuid)
             // Some transactions that included to CUT may be already committed (partially or fully) before this CUT.
@@ -406,19 +413,6 @@ public class ConsistentCutWalReader {
         assert cut.txInclude == null;
 
         cut.txInclude(include);
-
-        return rec;
-    }
-
-    /** */
-    private void handleFinishConsistentCutRecord(ConsistentCutFinishRecord rec, NodeConsistentCutState cut) {
-        System.out.println("FINISH " + (curCutVer - 1) + " CUT[" + rec + "]");
-
-        for (GridCacheVersion includedTx: rec.include()) {
-            IgniteUuid tx = includedTx.asIgniteUuid();
-
-            cut.includeToCut(tx);
-        }
     }
 
     /** */

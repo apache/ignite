@@ -24,7 +24,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
@@ -50,11 +49,6 @@ public class ConsistentCutState {
      * Previous Consistent Cut Version.
      */
     private final long prevVer;
-
-    /**
-     * ID of node that coordinates Consistent Cut procedure.
-     */
-    private final UUID crdNodeId;
 
     /**
      * Whether local Consistent Cut procedure is finished. It means that all transactions in {@link #check}
@@ -98,17 +92,9 @@ public class ConsistentCutState {
     private final Set<GridCacheVersion> checkIncludeBefore = new HashSet<>();
 
     /** */
-    public ConsistentCutState(UUID crdNodeId, long ver, long prevVer) {
-        this.crdNodeId = crdNodeId;
+    public ConsistentCutState(long ver, long prevVer) {
         this.ver = ver;
         this.prevVer = prevVer;
-    }
-
-    /**
-     * @return Consistent Cut coordinator node ID.
-     */
-    public UUID crdNodeId() {
-        return crdNodeId;
     }
 
     /**
@@ -262,8 +248,11 @@ public class ConsistentCutState {
             finish();
         else {
             for (GridCacheVersion tx: includeBefore) {
-                if (check.containsKey(tx))
+                if (check.containsKey(tx)) {
                     tryFinish(tx);
+
+                    checkIncludeBefore.remove(tx);
+                }
             }
 
             for (GridCacheVersion tx: includeAfter.keySet()) {
@@ -316,13 +305,11 @@ public class ConsistentCutState {
     }
 
     /** */
-    public ConsistentCutStartRecord buildStartRecord() {
-        return new ConsistentCutStartRecord(ver, includeBefore);
-    }
-
-    /** */
     public ConsistentCutFinishRecord buildFinishRecord() {
-        ConsistentCutFinishRecord rec = new ConsistentCutFinishRecord(checkIncludeBefore);
+        Set<GridCacheVersion> incl = new HashSet<>(includeBefore);
+        incl.addAll(checkIncludeBefore);
+
+        ConsistentCutFinishRecord rec = new ConsistentCutFinishRecord(incl);
 
         checkIncludeBefore.clear();
 
@@ -337,7 +324,6 @@ public class ConsistentCutState {
         bld.append("prevVer=").append(prevVer).append(", ");
         bld.append("finished=").append(finished).append(", ");
         bld.append("ready=").append(ready).append(", ");
-        bld.append("crd=").append(crdNodeId).append(", ");
 
         setAppend(bld, "includeBefore", includeBefore);
         setAppend(bld, "includeAfter", includeAfter.keySet());

@@ -156,7 +156,7 @@ public abstract class AbstractConsistentCutPublishStateBlockingTest extends Abst
         }
 
         /** {@inheritDoc} */
-        @Override protected ConsistentCutState consistentCut(UUID crdNodeId, long cutVer) {
+        @Override protected ConsistentCutState consistentCut(long prevCutVer, long cutVer) {
             if (blkCut()) {
                 try {
                     cutPblLatch.await(1_000, TimeUnit.MILLISECONDS);
@@ -166,7 +166,7 @@ public abstract class AbstractConsistentCutPublishStateBlockingTest extends Abst
                 }
             }
 
-            return super.consistentCut(crdNodeId, cutVer);
+            return super.consistentCut(prevCutVer, cutVer);
         }
 
         /** */

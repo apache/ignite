@@ -17,12 +17,9 @@
 
 package org.apache.ignite.internal.pagemem.wal.record;
 
-import java.util.List;
-import java.util.Set;
-import java.util.stream.Collectors;
 import org.apache.ignite.internal.processors.cache.consistentcut.ConsistentCutState;
-import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
-import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * Consistent Cut splits timeline on 2 global areas - BEFORE and AFTER. It guarantees that every transaction committed BEFORE
@@ -42,27 +39,17 @@ public class ConsistentCutStartRecord extends WALRecord {
     /**
      * Consistent Cut Version. It's timestamp of start Consistent Cut on the Ignite coordinator node.
      */
+    @GridToStringInclude
     private final long ver;
 
-    /**
-     * Set of transactions (committed AFTER this record) to include to the Consistent Cut State.
-     */
-    private final Set<GridCacheVersion> include;
-
     /** */
-    public ConsistentCutStartRecord(long ver, Set<GridCacheVersion> include) {
+    public ConsistentCutStartRecord(long ver) {
         this.ver = ver;
-        this.include = include;
     }
 
     /** */
     public long version() {
         return ver;
-    }
-
-    /** */
-    public Set<GridCacheVersion> include() {
-        return include;
     }
 
     /** {@inheritDoc} */
@@ -72,10 +59,6 @@ public class ConsistentCutStartRecord extends WALRecord {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        List<IgniteUuid> incl = include.stream()
-            .map(GridCacheVersion::asIgniteUuid)
-            .collect(Collectors.toList());
-
-        return "ConsistentCutRecord [ver=" + version() + ";  include=" + incl + "]";
+        return S.toString(ConsistentCutStartRecord.class, this);
     }
 }
