@@ -3075,7 +3075,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         // Invalid command syntax check.
         assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute(h, "--snapshot", "create", snpName, "blah"));
-        assertContains(log, testOut.toString(), "Invalid argument: blah. Possible options: --sync.");
+        assertContains(log, testOut.toString(), "Invalid argument: blah. Possible options: --sync, --dest.");
 
         assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute(h, "--snapshot", "create", snpName, "--sync", "blah"));
         assertContains(log, testOut.toString(), "Invalid argument: blah.");
@@ -3205,7 +3205,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         assertContains(log, testOut.toString(), "Invalid argument: --sync.");
 
         assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute(h, "--snapshot", "restore", snpName, "--start", "blah"));
-        assertContains(log, testOut.toString(), "Invalid argument: blah. Possible options: --groups, --sync.");
+        assertContains(log, testOut.toString(), "Invalid argument: blah. Possible options: --groups, --src, --sync.");
 
         autoConfirmation = true;
 
@@ -3269,7 +3269,8 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         CommandHandler h = new CommandHandler();
 
         assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute(h, "--snapshot", "restore", snpName, "--start", cacheName1));
-        assertContains(log, testOut.toString(), "Invalid argument: " + cacheName1 + ". Possible options: --groups, --sync.");
+        assertContains(log, testOut.toString(),
+            "Invalid argument: " + cacheName1 + ". Possible options: --groups, --src, --sync.");
 
         // Restore single cache group.
         assertEquals(EXIT_CODE_OK, execute(h, "--snapshot", "restore", snpName, "--start", "--groups", cacheName1));
@@ -3345,6 +3346,61 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
             assertEquals(cacheName1, Integer.valueOf(i), cache1.get(i));
             assertEquals(cacheName2, Integer.valueOf(i), cache2.get(i));
             assertEquals(cacheName3, Integer.valueOf(i), cache2.get(i));
+        }
+    }
+
+    /** @throws Exception If fails. */
+    @Test
+    public void testSnapshotCreateCheckAndRestoreCustomDir() throws Exception {
+        int keysCnt = 100;
+        String snpName = "snapshot_30052022";
+        File snpDir = U.resolveWorkDirectory(U.defaultWorkDirectory(), "ex_snapshots", true);
+
+        assertTrue("Target directory is not empty: " + snpDir, F.isEmpty(snpDir.list()));
+
+        try {
+            Ignite ignite = startGrids(2);
+            ignite.cluster().state(ACTIVE);
+
+            createCacheAndPreload(ignite, keysCnt);
+
+            injectTestSystemOut();
+            CommandHandler h = new CommandHandler();
+
+            assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute(h, "--snapshot", "create", snpName, "--dest", "A", "--dest", "B"));
+            assertContains(log, testOut.toString(), "--dest arg specified twice.");
+
+            assertEquals(EXIT_CODE_OK,
+                execute(h, "--snapshot", "create", snpName, "--sync", "--dest", snpDir.getAbsolutePath()));
+
+            ignite.destroyCache(DEFAULT_CACHE_NAME);
+
+            assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute(h, "--snapshot", "restore", snpName, "--start", "--sync"));
+            assertContains(log, testOut.toString(), "Snapshot does not exists [snapshot=" + snpName);
+
+            assertEquals(EXIT_CODE_INVALID_ARGUMENTS,
+                execute(h, "--snapshot", "restore", snpName, "--start", "--src", "A", "--src", "B"));
+            assertContains(log, testOut.toString(), "--src arg specified twice.");
+
+            // The check command simply prints the results of the check, it always ends with a zero exit code.
+            assertEquals(EXIT_CODE_OK, execute(h, "--snapshot", "check", snpName));
+            assertContains(log, testOut.toString(), "Snapshot does not exists [snapshot=" + snpName);
+
+            assertEquals(EXIT_CODE_OK, execute(h, "--snapshot", "check", snpName, "--src", snpDir.getAbsolutePath()));
+            assertContains(log, testOut.toString(), "The check procedure has finished, no conflicts have been found.");
+
+            assertEquals(EXIT_CODE_OK,
+                execute(h, "--snapshot", "restore", snpName, "--start", "--sync", "--src", snpDir.getAbsolutePath()));
+
+            IgniteCache<Integer, Integer> cache = ignite.cache(DEFAULT_CACHE_NAME);
+
+            assertEquals(keysCnt, cache.size());
+
+            for (int i = 0; i < keysCnt; i++)
+                assertEquals(Integer.valueOf(i), cache.get(i));
+        }
+        finally {
+            U.delete(snpDir);
         }
     }
 
