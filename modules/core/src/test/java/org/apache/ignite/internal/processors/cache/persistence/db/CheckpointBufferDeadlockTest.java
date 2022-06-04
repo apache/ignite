@@ -88,7 +88,7 @@ public class CheckpointBufferDeadlockTest extends GridCommonAbstractTest {
 
         cfg.setDataStorageConfiguration(
             new DataStorageConfiguration()
-                .setFileIOFactory(new SlowCheckpointFileIOFactory(slowCheckpointEnabled, CHECKPOINT_PARK_NANOS))
+                .setFileIOFactory(new SlowCheckpointMetadataFileIOFactory(slowCheckpointEnabled, CHECKPOINT_PARK_NANOS))
                 .setCheckpointThreads(checkpointThreads)
                 .setDefaultDataRegionConfiguration(
                     new DataRegionConfiguration()

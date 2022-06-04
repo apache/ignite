@@ -29,9 +29,9 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactor
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
 
 /**
- * Create File I/O that emulates poor checkpoint write speed.
+ * File I/O that emulates poor checkpoint write speed.
  */
-public class SlowCheckpointFileIOFactory implements FileIOFactory {
+public abstract class AbstractSlowCheckpointFileIOFactory implements FileIOFactory {
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;
 
@@ -42,13 +42,13 @@ public class SlowCheckpointFileIOFactory implements FileIOFactory {
     private final AtomicBoolean slowCheckpointEnabled;
 
     /** Checkpoint park nanos. */
-    private final int checkpointParkNanos;
+    private final long checkpointParkNanos;
 
     /**
      * @param slowCheckpointEnabled Slow checkpoint enabled.
      * @param checkpointParkNanos Checkpoint park nanos.
      */
-    public SlowCheckpointFileIOFactory(AtomicBoolean slowCheckpointEnabled, int checkpointParkNanos) {
+    protected AbstractSlowCheckpointFileIOFactory(AtomicBoolean slowCheckpointEnabled, long checkpointParkNanos) {
         this.slowCheckpointEnabled = slowCheckpointEnabled;
         this.checkpointParkNanos = checkpointParkNanos;
     }
@@ -78,9 +78,16 @@ public class SlowCheckpointFileIOFactory implements FileIOFactory {
 
             /** Parks current checkpoint thread if slow mode is enabled. */
             private void parkIfNeeded() {
-                if (slowCheckpointEnabled.get() && Thread.currentThread().getName().contains("db-checkpoint-thread"))
+                if (slowCheckpointEnabled.get() && shouldSlowDownCurrentThread())
                     LockSupport.parkNanos(checkpointParkNanos);
             }
         };
     }
+
+    /**
+     * Returns {@code true} if the current thread should be slowed down.
+     *
+     * @return {@code true} if the current thread should be slowed down
+     */
+    protected abstract boolean shouldSlowDownCurrentThread();
 }
