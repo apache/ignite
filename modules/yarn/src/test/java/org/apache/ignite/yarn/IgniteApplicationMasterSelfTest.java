@@ -251,7 +251,6 @@ public class IgniteApplicationMasterSelfTest {
         assertEquals(1, nmClient.startedContainer().size());
     }
 
-
     /**
      * @throws Exception If failed.
      */
@@ -269,15 +268,45 @@ public class IgniteApplicationMasterSelfTest {
         props.cpusPerNode(8);
         props.memoryPerNode(5000);
         props.instances(3);
-        props.hostnameConstraint(Pattern.compile("ignoreHost"));
+        props.hostnameConstraint(Pattern.compile("constraintHost"));
 
         // Check that container resources
-        appMaster.onContainersAllocated(Collections.singletonList(createContainer("simple", 8, 5000)));
+        appMaster.onContainersAllocated(Collections.singletonList(createContainer("constraintHost", 8, 5000)));
         assertEquals(0, rmMock.releasedResources().size());
-        assertEquals(1, nmClient.startedContainer().size());
 
         appMaster.onContainersAllocated(Collections.singletonList(createContainer("ignoreHost", 8, 5000)));
         assertEquals(1, rmMock.releasedResources().size());
+        assertEquals(1, nmClient.startedContainer().size());
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testHostnameConstraintNegativeLookahead() throws Exception {
+        rmMock.availableRes(new MockResource(1024, 2));
+
+        NMMock nmClient = new NMMock();
+
+        appMaster.setRmClient(rmMock);
+        appMaster.setNmClient(nmClient);
+
+        appMaster.setFs(new MockFileSystem());
+
+        props.cpusPerNode(8);
+        props.memoryPerNode(5000);
+        props.instances(3);
+        props.hostnameConstraint(Pattern.compile("^(?!excludedPrefix).*"));
+
+        // Check that container resources
+        appMaster.onContainersAllocated(Collections.singletonList(createContainer("excludedPrefix", 8, 5000)));
+        assertEquals(1, rmMock.releasedResources().size());
+
+        appMaster.onContainersAllocated(Collections.singletonList(createContainer("excludedPrefixHost", 8, 5000)));
+        assertEquals(2, rmMock.releasedResources().size());
+
+        appMaster.onContainersAllocated(Collections.singletonList(createContainer("excluded", 8, 5000)));
+        assertEquals(2, rmMock.releasedResources().size());
         assertEquals(1, nmClient.startedContainer().size());
     }
 

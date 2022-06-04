@@ -199,7 +199,7 @@ public class ApplicationMaster implements AMRMClientAsync.CallbackHandler {
 
         // Check host name
         if (props.hostnameConstraint() != null
-                && props.hostnameConstraint().matcher(cont.getNodeId().getHost()).matches()) {
+                && !props.hostnameConstraint().matcher(cont.getNodeId().getHost()).matches()) {
             log.log(Level.WARNING, "Wrong host name '{0}'. It didn't match to '{1}' pattern.",
                 new Object[] {cont.getNodeId().getHost(), props.hostnameConstraint().toString()});
 
