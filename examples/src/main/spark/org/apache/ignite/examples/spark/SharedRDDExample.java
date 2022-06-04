@@ -23,6 +23,7 @@ import org.apache.ignite.spark.JavaIgniteContext;
 import org.apache.ignite.spark.JavaIgniteRDD;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.core.config.Configurator;
 import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaRDD;
@@ -59,8 +60,8 @@ public class SharedRDDExample {
         JavaSparkContext sparkContext = new JavaSparkContext(sparkConf);
 
         // Adjust the logger to exclude the logs of no interest.
-        LogManager.getRootLogger().atLevel(Level.ERROR);
-        LogManager.getLogger("org.apache.ignite").atLevel(Level.INFO);
+        Configurator.setLevel(LogManager.ROOT_LOGGER_NAME,  Level.ERROR);
+        Configurator.setLevel("org.apache.ignite",  Level.INFO);
 
         // Creates Ignite context with specific configuration and runs Ignite in the embedded mode.
         JavaIgniteContext<Integer, Integer> igniteContext = new JavaIgniteContext<Integer, Integer>(

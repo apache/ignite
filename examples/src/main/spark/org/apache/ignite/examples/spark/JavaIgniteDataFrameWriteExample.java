@@ -26,6 +26,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.spark.IgniteDataFrameSettings;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.core.config.Configurator;
 import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Row;
 import org.apache.spark.sql.SaveMode;
@@ -66,8 +67,8 @@ public class JavaIgniteDataFrameWriteExample {
                 .getOrCreate();
 
         // Adjust the logger to exclude the logs of no interest.
-        LogManager.getRootLogger().atLevel(Level.ERROR);
-        LogManager.getLogger("org.apache.ignite").atLevel(Level.INFO);
+        Configurator.setLevel(LogManager.ROOT_LOGGER_NAME,  Level.ERROR);
+        Configurator.setLevel("org.apache.ignite",  Level.INFO);
 
         // Executing examples.
         System.out.println("Example of writing json file to Ignite:");
