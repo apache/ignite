@@ -63,7 +63,7 @@ namespace Apache.Ignite.Core.Impl
                     var stdOut = process.StandardOutput.ReadToEnd();
                     var stdErr = process.StandardError.ReadToEnd();
 
-                    if (stdErr.Length > 0)
+                    if (!string.IsNullOrWhiteSpace(stdErr))
                     {
                         log?.Warn("Shell command '{0}' stderr: {1}", file, stdErr);
                     }

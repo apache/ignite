@@ -17,8 +17,12 @@
 
 namespace Apache.Ignite.Core.Tests
 {
+    using System;
+    using System.Linq;
     using Apache.Ignite.Core.Impl;
     using Apache.Ignite.Core.Impl.Unmanaged;
+    using Apache.Ignite.Core.Log;
+    using Apache.Ignite.Core.Tests.Client.Cache;
     using NUnit.Framework;
 
     /// <summary>
@@ -33,14 +37,48 @@ namespace Apache.Ignite.Core.Tests
         [Test]
         public void TestExecuteSafeReturnsStdout()
         {
-            var uname = Shell.ExecuteSafe("uname", string.Empty);
-            Assert.IsNotEmpty(uname, uname);
+            var log = GetLogger();
 
-            var readlink = Shell.ExecuteSafe("readlink", "-f /usr/bin/java");
-            Assert.IsNotEmpty(readlink, readlink);
-
+            var uname = Shell.ExecuteSafe("uname", string.Empty, log: log);
             Assert.AreEqual("Linux", uname.Trim());
-            Assert.IsEmpty(Shell.ExecuteSafe("foo_bar", "abc"));
+            Assert.IsEmpty(log.Entries);
+
+            var readlink = Shell.ExecuteSafe("readlink", "-f /usr/bin/java", log: log);
+            Assert.IsNotEmpty(readlink, readlink);
+            Assert.IsEmpty(log.Entries);
+        }
+
+        [Test]
+        public void TestExecuteSafeLogsNonZeroExitCode()
+        {
+            // TODO
+        }
+
+        [Test]
+        public void TestExecuteSafeLogsStderr()
+        {
+            // TODO
+        }
+
+        [Test]
+        public void TestExecuteSafeLogsException()
+        {
+            var log = GetLogger();
+            var res = Shell.ExecuteSafe("foo_bar", "abc", log: log);
+            var entries = log.Entries;
+
+            Assert.IsEmpty(res);
+            Assert.AreEqual(1, entries.Count);
+            Assert.AreEqual(LogLevel.Warn, entries[0].Level);
+            Assert.AreEqual("Shell command 'foo_bar' failed: No such file or directory", entries[0].Message);
+        }
+
+        private static ListLogger GetLogger()
+        {
+            return new ListLogger
+            {
+                EnabledLevels = Enum.GetValues(typeof(LogLevel)).Cast<LogLevel>().ToArray()
+            };
         }
     }
 }
