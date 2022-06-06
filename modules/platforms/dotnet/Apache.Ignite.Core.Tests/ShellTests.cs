@@ -24,30 +24,22 @@ namespace Apache.Ignite.Core.Tests
     /// <summary>
     /// Tests for <see cref="Shell"/> class.
     /// </summary>
+    [Platform("Linux")]
     public class ShellTests
     {
         /// <summary>
         /// Tests <see cref="Shell.ExecuteSafe"/> method.
         /// </summary>
         [Test]
-        public void TestExecuteSafe()
+        public void TestExecuteSafeReturnsStdout()
         {
-            if (Os.IsWindows)
-            {
-                return;
-            }
-            
             var uname = Shell.ExecuteSafe("uname", string.Empty);
             Assert.IsNotEmpty(uname, uname);
 
             var readlink = Shell.ExecuteSafe("readlink", "-f /usr/bin/java");
             Assert.IsNotEmpty(readlink, readlink);
-            
-            if (Os.IsLinux)
-            {
-                Assert.AreEqual("Linux", uname.Trim());
-            }
 
+            Assert.AreEqual("Linux", uname.Trim());
             Assert.IsEmpty(Shell.ExecuteSafe("foo_bar", "abc"));
         }
     }
