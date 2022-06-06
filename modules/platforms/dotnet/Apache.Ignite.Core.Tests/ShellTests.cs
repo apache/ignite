@@ -55,10 +55,12 @@ namespace Apache.Ignite.Core.Tests
         {
             var log = GetLogger();
             var res = Shell.ExecuteSafe("uname", "--badarg", log: log);
-            var entries = log.Entries;
 
-            Assert.IsEmpty(res);
-            Assert.AreEqual(2, entries.Count);
+            var entries = log.Entries;
+            var entriesString = string.Join(", ", entries.Select(e => e.ToString()));
+
+            Assert.IsEmpty(res, entriesString);
+            Assert.AreEqual(2, entries.Count, entriesString);
 
             Assert.AreEqual(LogLevel.Warn, entries[0].Level);
             StringAssert.StartsWith("Shell command 'uname' stderr: 'uname: unrecognized option", entries[0].Message);
