@@ -175,8 +175,6 @@ public class SqlScriptRunner {
     private static String toString(Object res) {
         if (res instanceof byte[])
             return ByteString.toString((byte[])res, 16);
-        else if (res instanceof List)
-            return listToString((List<?>)res);
         else if (res instanceof Map)
             return mapToString((Map<?, ?>)res);
         else
@@ -193,16 +191,6 @@ public class SqlScriptRunner {
             .collect(Collectors.toList());
 
         return "{" + String.join(", ", entries) + "}";
-    }
-
-    /** */
-    private static String listToString(List<?> list) {
-        if (list == null)
-            return NULL;
-
-        List<String> entries = list.stream().map(SqlScriptRunner::toString).collect(Collectors.toList());
-
-        return "[" + String.join(", ", entries) + "]";
     }
 
     /** */

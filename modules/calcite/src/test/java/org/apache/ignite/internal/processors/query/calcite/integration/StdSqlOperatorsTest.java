@@ -111,17 +111,6 @@ public class StdSqlOperatorsTest extends AbstractBasicIntegrationTest {
 
     /** */
     @Test
-    public void testCollect() {
-        assertExpression("ARRAY(SELECT * FROM (SELECT 1 UNION SELECT 2 UNION SELECT 3))")
-            .returns(IntStream.range(1, 4).boxed().collect(Collectors.toList())).check();
-
-        assertExpression("MAP(SELECT * FROM (SELECT 1, 'test1' UNION SELECT 2, 'test2' UNION SELECT 3, 'test3'))")
-            .returns(IntStream.range(1, 4).mapToObj(i -> new T2<>(i, "test" + i))
-                .collect(Collectors.toMap(T2::getKey, T2::getValue))).check();
-    }
-
-    /** */
-    @Test
     public void testIs() {
         assertExpression("'a' IS NULL").returns(false).check();
         assertExpression("'a' IS NOT NULL").returns(true).check();
@@ -270,7 +259,7 @@ public class StdSqlOperatorsTest extends AbstractBasicIntegrationTest {
 
     /** */
     @Test
-    public void testQueryAsCollections() {
+    public void testCollections() {
         assertExpression("MAP(SELECT 'a', 1)").returns(F.asMap("a", 1)).check();
         assertExpression("ARRAY(SELECT 1)").returns(Collections.singletonList(1)).check();
         assertExpression("MAP['a', 1, 'A', 2]").returns(F.asMap("a", 1, "A", 2)).check();
@@ -279,6 +268,13 @@ public class StdSqlOperatorsTest extends AbstractBasicIntegrationTest {
         assertExpression("CARDINALITY(ARRAY[1, 2, 3])").returns(3).check();
         assertExpression("ARRAY[1, 2, 3] IS EMPTY").returns(false).check();
         assertExpression("ARRAY[1, 2, 3] IS NOT EMPTY").returns(true).check();
+
+        assertExpression("ARRAY(SELECT * FROM (SELECT 1 UNION SELECT 2 UNION SELECT 3))")
+            .returns(IntStream.range(1, 4).boxed().collect(Collectors.toList())).check();
+
+        assertExpression("MAP(SELECT * FROM (SELECT 1, 'test1' UNION SELECT 2, 'test2' UNION SELECT 3, 'test3'))")
+            .returns(IntStream.range(1, 4).mapToObj(i -> new T2<>(i, "test" + i))
+                .collect(Collectors.toMap(T2::getKey, T2::getValue))).check();
     }
 
     /** */
