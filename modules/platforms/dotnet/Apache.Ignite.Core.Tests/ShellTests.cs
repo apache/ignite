@@ -39,11 +39,11 @@ namespace Apache.Ignite.Core.Tests
             var log = GetLogger();
 
             var uname = Shell.ExecuteSafe("uname", string.Empty, log: log);
-            Assert.AreEqual("Linux", uname.Trim());
+            Assert.AreEqual("Linux", uname.Trim(), string.Join(", ", log.Entries.Select(e => e.ToString())));
             Assert.IsEmpty(log.Entries);
 
             var readlink = Shell.ExecuteSafe("readlink", "-f /usr/bin/java", log: log);
-            Assert.IsNotEmpty(readlink, readlink);
+            Assert.IsNotEmpty(readlink, readlink, string.Join(", ", log.Entries.Select(e => e.ToString())));
             Assert.IsEmpty(log.Entries);
         }
 
