@@ -70,6 +70,7 @@ namespace ignite
                         enforceJoinOrder(false),
                         lazy(false),
                         collocated(false),
+                        parts(),
                         args()
                     {
                         // No-op.
@@ -91,6 +92,7 @@ namespace ignite
                         enforceJoinOrder(other.enforceJoinOrder),
                         lazy(other.lazy),
                         collocated(other.collocated),
+                        parts(other.parts),
                         args()
                     {
                         args.reserve(other.args.size());
@@ -147,6 +149,7 @@ namespace ignite
                             swap(enforceJoinOrder, other.enforceJoinOrder);
                             swap(lazy, other.lazy);
                             swap(collocated, other.collocated);
+                            swap(parts, other.parts);
                             swap(args, other.args);
                         }
                     }
@@ -388,6 +391,30 @@ namespace ignite
                     }
 
                     /**
+                     * Get partitions for the query.
+                     *
+                     * The query will be executed only on nodes which are primary for specified partitions.
+                     *
+                     * @return Partitions for the query.
+                     */
+                    const std::vector<int32_t>& GetPartitions() const
+                    {
+                        return parts;
+                    }
+
+                    /**
+                     * Set partitions for the query.
+                     *
+                     * The query will be executed only on nodes which are primary for specified partitions.
+                     *
+                     * @param partitions Partitions for the query.
+                     */
+                    void SetPartitions(const std::vector<int32_t>& partitions)
+                    {
+                        this->parts = partitions;
+                    }
+
+                    /**
                      * Add argument for the query.
                      *
                      * @tparam T Type of argument. Should be should be copy-constructable and assignable. BinaryType
@@ -457,6 +484,9 @@ namespace ignite
 
                     /** Collocated flag. */
                     bool collocated;
+
+                    /** Partitions. */
+                    std::vector<int32_t> parts;
 
                     /** Arguments. */
                     std::vector<impl::thin::CopyableWritable*> args;
