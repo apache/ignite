@@ -25,6 +25,7 @@ namespace Apache.Ignite.Core.Tests
     /// <summary>
     /// Tests for <see cref="Shell"/> class.
     /// </summary>
+    [Order(1)]
     public class ShellTests
     {
         /// <summary>
