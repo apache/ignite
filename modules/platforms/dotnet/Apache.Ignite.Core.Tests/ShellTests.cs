@@ -17,6 +17,7 @@
 
 namespace Apache.Ignite.Core.Tests
 {
+    using System;
     using Apache.Ignite.Core.Impl;
     using Apache.Ignite.Core.Impl.Unmanaged;
     using NUnit.Framework;
@@ -32,6 +33,9 @@ namespace Apache.Ignite.Core.Tests
         [Test]
         public void TestExecuteSafe()
         {
+            Console.WriteLine($"|||TestExecuteSafe: IsLinux='{Os.IsLinux}'");
+            Console.WriteLine($"|||TestExecuteSafe: IsWindows='{Os.IsWindows}'");
+
             if (Os.IsWindows)
             {
                 return;
@@ -39,9 +43,11 @@ namespace Apache.Ignite.Core.Tests
             
             var uname = Shell.ExecuteSafe("uname", string.Empty);
             Assert.IsNotEmpty(uname, uname);
+            Console.WriteLine($"|||TestExecuteSafe: uname='{uname}'");
 
             var readlink = Shell.ExecuteSafe("readlink", "-f /usr/bin/java");
             Assert.IsNotEmpty(readlink, readlink);
+            Console.WriteLine($"|||TestExecuteSafe: readlink='{readlink}'");
             
             if (Os.IsLinux)
             {
