@@ -78,7 +78,6 @@ The following modules are available:
 - ignite-jta (for XA integration)
 - ignite-logj4 (for Log4j logging)
 - ignite-log4j2 (for Log4j 2 logging)
-- ignite-mesos (for integration with Apache Mesos cluster resource manager)
 - ignite-osgi (to allow Ignite run seemlessly in OSGI containers)
 - ignite-osgi-karaf (to seemlessly intall ignite into Apache Karaf container)
 - ignite-osgi-paxlogging (to expose PAX Logging API to Log4j if needed)

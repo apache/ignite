@@ -144,7 +144,6 @@
                 <exclude>${project.groupId}:ignite-cloud</exclude>
                 <exclude>${project.groupId}:ignite-direct-io</exclude>
                 <exclude>${project.groupId}:ignite-jcl</exclude>
-                <exclude>${project.groupId}:ignite-mesos</exclude>
                 <exclude>${project.groupId}:ignite-ml</exclude>
                 <exclude>${project.groupId}:ignite-ml-h2o-model-parser</exclude>
                 <exclude>${project.groupId}:ignite-ml-spark-model-parser</exclude>
