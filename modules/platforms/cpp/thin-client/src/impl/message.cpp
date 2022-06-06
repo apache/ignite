@@ -366,10 +366,12 @@ namespace ignite
                 writer.WriteString(qry.sql);
                 writer.WriteInt32(static_cast<int32_t>(qry.args.size()));
 
-                std::vector<impl::thin::CopyableWritable*>::const_iterator it;
+                {
+                    std::vector<impl::thin::CopyableWritable*>::const_iterator it;
 
-                for (it = qry.args.begin(); it != qry.args.end(); ++it)
-                    (*it)->Write(writer);
+                    for (it = qry.args.begin(); it != qry.args.end(); ++it)
+                        (*it)->Write(writer);
+                }
 
                 writer.WriteInt8(0); // Statement type - Any
 
@@ -381,6 +383,19 @@ namespace ignite
                 writer.WriteBool(qry.lazy);
                 writer.WriteInt64(qry.timeout);
                 writer.WriteBool(true); // Include field names
+
+                // TODO: If protocolCtx.isFeatureSupported(ClientBitmaskFeature.QRY_PARTITIONS_BATCH_SIZE)
+                if (qry.parts.empty())
+                    writer.WriteInt32(-1);
+                else
+                {
+                    writer.WriteInt32(static_cast<int32_t>(qry.parts.size()));
+
+                    for (std::vector<int32_t>::const_iterator it = qry.parts.cbegin(); it != qry.parts.cend(); ++it)
+                        writer.WriteInt32(*it);
+                }
+
+                writer.WriteInt32(1); // Update batch size. 1 is the default value.
             }
 
             void SqlFieldsQueryResponse::ReadOnSuccess(binary::BinaryReaderImpl& reader, const ProtocolVersion&)

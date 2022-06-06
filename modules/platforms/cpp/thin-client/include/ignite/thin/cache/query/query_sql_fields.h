@@ -417,7 +417,7 @@ namespace ignite
                     /**
                      * Add argument for the query.
                      *
-                     * @tparam T Type of argument. Should be should be copy-constructable and assignable. BinaryType
+                     * @tparam T Type of argument. Should be copy-constructable and assignable. BinaryType
                      * class template should be specialized for this type.
                      *
                      * @param arg Argument.
