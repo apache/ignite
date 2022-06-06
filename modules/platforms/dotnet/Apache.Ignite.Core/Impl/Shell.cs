@@ -20,6 +20,8 @@ namespace Apache.Ignite.Core.Impl
     using System;
     using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
+    using System.Text;
+    using System.Threading;
     using Apache.Ignite.Core.Log;
 
     /// <summary>
@@ -47,9 +49,43 @@ namespace Apache.Ignite.Core.Impl
                     CreateNoWindow = true
                 };
 
+                var stdOut = new StringBuilder();
+                var stdErr = new StringBuilder();
+
+                using (var stdOutEvt = new ManualResetEventSlim())
+                using (var stdErrEvt = new ManualResetEventSlim())
                 using (var process = new Process {StartInfo = processStartInfo})
                 {
+                    process.OutputDataReceived += (_, e) =>
+                    {
+                        if (e.Data == null)
+                        {
+                            // ReSharper disable once AccessToDisposedClosure
+                            stdOutEvt.Set();
+                        }
+                        else
+                        {
+                            stdOut.AppendLine(e.Data);
+                        }
+                    };
+
+                    process.ErrorDataReceived += (_, e) =>
+                    {
+                        if (e.Data == null)
+                        {
+                            // ReSharper disable once AccessToDisposedClosure
+                            stdErrEvt.Set();
+                        }
+                        else
+                        {
+                            stdErr.AppendLine(e.Data);
+                        }
+                    };
+
                     process.Start();
+
+                    process.BeginOutputReadLine();
+                    process.BeginErrorReadLine();
 
                     if (!process.WaitForExit(timeoutMs))
                     {
@@ -58,10 +94,12 @@ namespace Apache.Ignite.Core.Impl
                         process.Kill();
                     }
 
-                    var stdOut = process.StandardOutput.ReadToEnd();
-                    var stdErr = process.StandardError.ReadToEnd();
+                    if (!stdOutEvt.Wait(timeoutMs) || !stdErrEvt.Wait(timeoutMs))
+                    {
+                        log?.Warn("Shell command '{0}' timed out when waiting for stdout/stderr.", file);
+                    }
 
-                    if (!string.IsNullOrWhiteSpace(stdErr))
+                    if (stdErr.Length > 0)
                     {
                         log?.Warn("Shell command '{0}' stderr: '{1}'", file, stdErr);
                     }
@@ -71,7 +109,7 @@ namespace Apache.Ignite.Core.Impl
                         log?.Warn("Shell command '{0}' exit code: {1}", file, process.ExitCode);
                     }
 
-                    return stdOut;
+                    return stdOut.ToString();
                 }
             }
             catch (Exception e)
