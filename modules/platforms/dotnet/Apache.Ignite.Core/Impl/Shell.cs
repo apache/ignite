@@ -21,6 +21,7 @@ namespace Apache.Ignite.Core.Impl
     using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
     using System.Text;
+    using System.Threading;
     using Apache.Ignite.Core.Log;
 
     /// <summary>
@@ -48,14 +49,8 @@ namespace Apache.Ignite.Core.Impl
                     CreateNoWindow = true
                 };
 
-                var stdOut = new StringBuilder();
-                var stdErr = new StringBuilder();
-
                 using (var process = new Process {StartInfo = processStartInfo})
                 {
-                    process.OutputDataReceived += (_, e) => stdOut.AppendLine(e.Data);
-                    process.ErrorDataReceived += (_, e) => stdErr.AppendLine(e.Data);
-
                     process.Start();
 
                     if (!process.WaitForExit(timeoutMs))
@@ -65,12 +60,20 @@ namespace Apache.Ignite.Core.Impl
                         process.Kill();
                     }
 
+                    var stdOut = process.StandardOutput.ReadToEnd();
+                    var stdErr = process.StandardError.ReadToEnd();
+
                     if (stdErr.Length > 0)
                     {
                         log?.Warn("Shell command '{0}' stderr: {1}", file, stdErr);
                     }
 
-                    return stdOut.ToString();
+                    if (process.ExitCode != 0)
+                    {
+                        log?.Warn("Shell command '{0}' exit code: {1}", file, process.ExitCode);
+                    }
+
+                    return stdOut;
                 }
             }
             catch (Exception e)
