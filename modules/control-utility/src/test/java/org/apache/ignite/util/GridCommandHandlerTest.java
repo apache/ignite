@@ -2374,7 +2374,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         assertNotNull(prim.getOrCreateCache(DEFAULT_CACHE_NAME).get(blockedKey));
         assertNotNull(prim.getOrCreateCache(DEFAULT_CACHE_NAME).get(committedKey));
 
-        assertNull(backup.getOrCreateCache(DEFAULT_CACHE_NAME).get(blockedKey)); // Commit blocked.
+        assertNull(backup.getOrCreateCache(DEFAULT_CACHE_NAME).get(blockedKey)); // Commit is blocked.
         assertNotNull(backup.getOrCreateCache(DEFAULT_CACHE_NAME).get(committedKey));
 
         G.restart(true);
