@@ -160,7 +160,7 @@ public class PartitionUpdateCounterVolatileImpl implements PartitionUpdateCounte
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return "Counter [init=" + initCntr + ", val=" + get() + ']';
+        return "Counter [val=" + get() + ']';
     }
 
     /** {@inheritDoc} */

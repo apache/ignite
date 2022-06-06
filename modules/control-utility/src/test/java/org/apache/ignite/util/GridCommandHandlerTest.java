@@ -139,6 +139,7 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_CLUSTER_NAME;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.PRIMARY_SYNC;
 import static org.apache.ignite.cache.PartitionLossPolicy.READ_ONLY_SAFE;
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.cluster.ClusterState.ACTIVE_READ_ONLY;
@@ -2308,6 +2309,86 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         }
         else
             fail("Should be found dump with conflicts");
+    }
+
+    /**
+     * Tests that idle verify checks gaps.
+     */
+    @Test
+    public void testCacheIdleVerifyChecksGaps() throws Exception {
+        int parts = 1;
+
+        IgniteEx ignite = startGrids(3);
+
+        ignite.cluster().active(true);
+
+        IgniteCache<Object, Object> cache = ignite.createCache(new CacheConfiguration<>()
+            .setAffinity(new RendezvousAffinityFunction(false, parts))
+            .setBackups(2)
+            .setName(DEFAULT_CACHE_NAME)
+            .setAtomicityMode(TRANSACTIONAL)
+            .setWriteSynchronizationMode(PRIMARY_SYNC)
+            .setReadFromBackup(true));
+
+        for (int i = 0; i < 100; i++)
+            cache.put(i, i);
+
+        Ignite prim = primaryNode(0L, DEFAULT_CACHE_NAME);
+        Ignite backup = backupNode(0L, DEFAULT_CACHE_NAME);
+
+        TestRecordingCommunicationSpi primSpi = TestRecordingCommunicationSpi.spi(prim);
+
+        CountDownLatch blockLatch = new CountDownLatch(2);
+
+        primSpi.blockMessages(new IgniteBiPredicate<ClusterNode, Message>() {
+            @Override public boolean apply(ClusterNode node, Message msg) {
+                if (msg instanceof GridDhtTxFinishRequest) {
+                    boolean block = blockLatch.getCount() > 0;
+
+                    blockLatch.countDown();
+
+                    return block;
+                }
+                else
+                    return false;
+            }
+        });
+
+        int blockedKey = 200;
+        int committedKey = 300;
+
+        try (Transaction tx = prim.transactions().txStart()) {
+            prim.cache(DEFAULT_CACHE_NAME).put(blockedKey, blockedKey);
+
+            tx.commit();
+        }
+
+        blockLatch.await();
+
+        try (Transaction tx = prim.transactions().txStart()) {
+            prim.cache(DEFAULT_CACHE_NAME).put(committedKey, committedKey);
+
+            tx.commit();
+        }
+
+        assertNotNull(prim.getOrCreateCache(DEFAULT_CACHE_NAME).get(blockedKey));
+        assertNotNull(prim.getOrCreateCache(DEFAULT_CACHE_NAME).get(committedKey));
+
+        assertNull(backup.getOrCreateCache(DEFAULT_CACHE_NAME).get(blockedKey)); // Commit blocked.
+        assertNotNull(backup.getOrCreateCache(DEFAULT_CACHE_NAME).get(committedKey));
+
+        G.restart(true);
+
+        ignite.cluster().active(true);
+
+        awaitPartitionMapExchange();
+
+        injectTestSystemOut();
+
+        assertEquals(EXIT_CODE_OK, execute("--cache", "idle_verify"));
+
+        assertContains(log, testOut.toString(), "conflict partitions has been found: [counterConflicts=1, " +
+            "hashConflicts=1]");
     }
 
     /**
