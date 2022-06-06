@@ -47,6 +47,9 @@ namespace Apache.Ignite.Core.Tests
             Assert.IsEmpty(log.Entries);
         }
 
+        /// <summary>
+        /// Tests that non-zero error code and stderr are logged.
+        /// </summary>
         [Test]
         public void TestExecuteSafeLogsNonZeroExitCodeAndStderr()
         {
@@ -64,6 +67,9 @@ namespace Apache.Ignite.Core.Tests
             Assert.AreEqual("Shell command 'uname' exit code: 1", entries[1].Message);
         }
 
+        /// <summary>
+        /// Tests that failure to execute a command is logged.
+        /// </summary>
         [Test]
         public void TestExecuteSafeLogsException()
         {
