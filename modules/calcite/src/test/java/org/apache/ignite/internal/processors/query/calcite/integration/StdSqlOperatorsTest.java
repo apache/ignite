@@ -28,7 +28,6 @@ import java.util.stream.IntStream;
 import org.apache.ignite.internal.processors.query.calcite.QueryChecker;
 import org.apache.ignite.internal.processors.query.calcite.sql.fun.IgniteStdSqlOperatorTable;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.T2;
 import org.junit.Test;
 
 /**
@@ -268,13 +267,6 @@ public class StdSqlOperatorsTest extends AbstractBasicIntegrationTest {
         assertExpression("CARDINALITY(ARRAY[1, 2, 3])").returns(3).check();
         assertExpression("ARRAY[1, 2, 3] IS EMPTY").returns(false).check();
         assertExpression("ARRAY[1, 2, 3] IS NOT EMPTY").returns(true).check();
-
-        assertExpression("ARRAY(SELECT * FROM (SELECT 1 UNION SELECT 2 UNION SELECT 3))")
-            .returns(IntStream.range(1, 4).boxed().collect(Collectors.toList())).check();
-
-        assertExpression("MAP(SELECT * FROM (SELECT 1, 'test1' UNION SELECT 2, 'test2' UNION SELECT 3, 'test3'))")
-            .returns(IntStream.range(1, 4).mapToObj(i -> new T2<>(i, "test" + i))
-                .collect(Collectors.toMap(T2::getKey, T2::getValue))).check();
     }
 
     /** */
