@@ -28,7 +28,7 @@ namespace Apache.Ignite.Core.Tests
     /// Tests for <see cref="Shell"/> class.
     /// </summary>
     [Platform("Linux")]
-    [Order(1)]
+    [Order(1)] // Execute first to avoid zombie processes (see https://issues.apache.org/jira/browse/IGNITE-13536).
     public class ShellTests
     {
         /// <summary>
