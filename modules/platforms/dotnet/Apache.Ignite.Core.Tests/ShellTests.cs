@@ -20,7 +20,6 @@ namespace Apache.Ignite.Core.Tests
     using System;
     using System.Linq;
     using Apache.Ignite.Core.Impl;
-    using Apache.Ignite.Core.Impl.Unmanaged;
     using Apache.Ignite.Core.Log;
     using Apache.Ignite.Core.Tests.Client.Cache;
     using NUnit.Framework;
@@ -49,15 +48,20 @@ namespace Apache.Ignite.Core.Tests
         }
 
         [Test]
-        public void TestExecuteSafeLogsNonZeroExitCode()
+        public void TestExecuteSafeLogsNonZeroExitCodeAndStderr()
         {
-            // TODO
-        }
+            var log = GetLogger();
+            var res = Shell.ExecuteSafe("uname", "--badarg", log: log);
+            var entries = log.Entries;
 
-        [Test]
-        public void TestExecuteSafeLogsStderr()
-        {
-            // TODO
+            Assert.IsEmpty(res);
+            Assert.AreEqual(2, entries.Count);
+
+            Assert.AreEqual(LogLevel.Warn, entries[0].Level);
+            StringAssert.StartsWith("Shell command 'uname' stderr: 'uname: unrecognized option", entries[0].Message);
+
+            Assert.AreEqual(LogLevel.Warn, entries[1].Level);
+            Assert.AreEqual("Shell command 'uname' exit code: 1", entries[1].Message);
         }
 
         [Test]
@@ -69,8 +73,9 @@ namespace Apache.Ignite.Core.Tests
 
             Assert.IsEmpty(res);
             Assert.AreEqual(1, entries.Count);
+
             Assert.AreEqual(LogLevel.Warn, entries[0].Level);
-            Assert.AreEqual("Shell command 'foo_bar' failed: No such file or directory", entries[0].Message);
+            Assert.AreEqual("Shell command 'foo_bar' failed: 'No such file or directory'", entries[0].Message);
         }
 
         private static ListLogger GetLogger()

@@ -65,7 +65,7 @@ namespace Apache.Ignite.Core.Impl
 
                     if (!string.IsNullOrWhiteSpace(stdErr))
                     {
-                        log?.Warn("Shell command '{0}' stderr: {1}", file, stdErr);
+                        log?.Warn("Shell command '{0}' stderr: '{1}'", file, stdErr);
                     }
 
                     if (process.ExitCode != 0)
@@ -78,7 +78,7 @@ namespace Apache.Ignite.Core.Impl
             }
             catch (Exception e)
             {
-                log?.Warn("Shell command '{0}' failed: {1}", file, e.Message, e);
+                log?.Warn("Shell command '{0}' failed: '{1}'", file, e.Message, e);
 
                 return string.Empty;
             }
