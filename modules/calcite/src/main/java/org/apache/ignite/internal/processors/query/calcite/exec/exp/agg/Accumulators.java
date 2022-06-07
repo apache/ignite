@@ -22,9 +22,9 @@ import java.math.MathContext;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.UUID;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -85,6 +85,8 @@ public class Accumulators {
             case "ANY_VALUE":
                 return () -> new AnyVal<>(call, hnd);
             case "LISTAGG":
+            case "ARRAY_AGG":
+            case "ARRAY_CONCAT_AGG":
                 return listAggregateSupplier(call, ctx);
             default:
                 throw new AssertionError(call.getAggregation().getName());
@@ -98,7 +100,16 @@ public class Accumulators {
     ) {
         RowHandler<Row> hnd = ctx.rowHandler();
 
-        Supplier<Accumulator<Row>> accSup = () -> new ListAggAccumulator<>(call, hnd);
+        Supplier<Accumulator<Row>> accSup;
+        String aggName = call.getAggregation().getName();
+        if ("LISTAGG".equals(aggName))
+            accSup = () -> new ListAggAccumulator<>(call, hnd);
+        else if ("ARRAY_CONCAT_AGG".equals(aggName))
+            accSup = () -> new ArrayConcatAggregateAccumulator<>(call, hnd);
+        else if ("ARRAY_AGG".equals(aggName))
+            accSup = () -> new ArrayAggregateAccumulator<>(call, hnd);
+        else
+            throw new AssertionError(call.getAggregation().getName());
 
         if (call.getCollation() != null && !call.getCollation().getFieldCollations().isEmpty()) {
             Comparator<Row> cmp = ctx.expressionFactory().comparator(call.getCollation());
@@ -1082,12 +1093,52 @@ public class Accumulators {
     }
 
     /** */
-    private static class ListAggAccumulator<Row> extends AbstractAccumulator<Row> {
-        /** Default separator. */
-        private static final String DEFAULT_SEPARATOR = ",";
+    private abstract static class AggAccumulator<Row> extends AbstractAccumulator<Row> implements Iterable<Row> {
+        /** */
+        private final List<Row> buf;
 
         /** */
-        private final List<Row> list;
+        protected AggAccumulator(AggregateCall aggCall, RowHandler<Row> hnd) {
+            super(aggCall, hnd);
+
+            buf = new ArrayList<>();
+        }
+
+        /** {@inheritDoc} */
+        @Override public void add(Row row) {
+            if (row == null)
+                return;
+
+            buf.add(row);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void apply(Accumulator<Row> other) {
+            AggAccumulator<Row> other0 = (AggAccumulator<Row>)other;
+
+            buf.addAll(other0.buf);
+        }
+
+        /** {@inheritDoc} */
+        @Override public Iterator<Row> iterator() {
+            return buf.iterator();
+        }
+
+        /** */
+        public boolean isEmpty() {
+            return buf.isEmpty();
+        }
+
+        /** */
+        public int size() {
+            return buf.size();
+        }
+    }
+
+    /** */
+    private static class ListAggAccumulator<Row> extends AggAccumulator<Row> {
+        /** Default separator. */
+        private static final String DEFAULT_SEPARATOR = ",";
 
         /** */
         private final boolean isDfltSep;
@@ -1097,40 +1148,30 @@ public class Accumulators {
             super(aggCall, hnd);
 
             isDfltSep = aggCall.getArgList().size() <= 1;
-
-            list = new ArrayList<>();
-        }
-
-        /** {@inheritDoc} */
-        @Override public void add(Row row) {
-            if (row == null || get(0, row) == null)
-                return;
-
-            list.add(row);
-        }
-
-        /** {@inheritDoc} */
-        @Override public void apply(Accumulator<Row> other) {
-            ListAggAccumulator<Row> other0 = (ListAggAccumulator<Row>)other;
-
-            list.addAll(other0.list);
         }
 
         /** {@inheritDoc} */
         @Override public Object end() {
-            if (list.isEmpty())
+            if (isEmpty())
                 return null;
 
-            StringBuilder builder = new StringBuilder();
+            StringBuilder builder = null;
 
-            for (Row row: list) {
+            for (Row row: this) {
+                Object val = get(0, row);
+
+                if (val == null)
+                    continue;
+
+                if (builder == null)
+                    builder = new StringBuilder();
+
                 if (builder.length() != 0)
                     builder.append(extractSeparator(row));
-
-                builder.append(Objects.toString(get(0, row)));
+                builder.append(val);
             }
 
-            return builder.toString();
+            return builder != null ? builder.toString() : null;
         }
 
         /** */
@@ -1155,6 +1196,79 @@ public class Accumulators {
         /** {@inheritDoc} */
         @Override public RelDataType returnType(IgniteTypeFactory typeFactory) {
             return typeFactory.createTypeWithNullability(typeFactory.createSqlType(VARCHAR), true);
+        }
+    }
+
+    /** */
+    private static class ArrayAggregateAccumulator<Row> extends AggAccumulator<Row> {
+        /** */
+        public ArrayAggregateAccumulator(AggregateCall aggCall, RowHandler<Row> hnd) {
+            super(aggCall, hnd);
+        }
+
+        /** {@inheritDoc} */
+        @Override public Object end() {
+            if (size() == 0)
+                return null;
+
+            List<Object> result = new ArrayList<>(size());
+            for (Row row: this)
+                result.add(get(0, row));
+
+            return result;
+        }
+
+        /** {@inheritDoc} */
+        @Override public List<RelDataType> argumentTypes(IgniteTypeFactory typeFactory) {
+            return F.asList(typeFactory.createTypeWithNullability(typeFactory.createSqlType(ANY), true));
+        }
+
+        /** {@inheritDoc} */
+        @Override public RelDataType returnType(IgniteTypeFactory typeFactory) {
+            return typeFactory.createTypeWithNullability(typeFactory.createArrayType(
+                typeFactory.createSqlType(ANY), -1), true);
+        }
+    }
+
+    /** */
+    private static class ArrayConcatAggregateAccumulator<Row> extends AggAccumulator<Row> {
+        /** */
+        public ArrayConcatAggregateAccumulator(AggregateCall aggCall, RowHandler<Row> hnd) {
+            super(aggCall, hnd);
+        }
+
+        /** {@inheritDoc} */
+        @Override public Object end() {
+            if (size() == 0)
+                return null;
+
+            List<Object> result = new ArrayList<>(size());
+
+            for (Row row: this) {
+                List<Object> arr = get(0, row);
+
+                if (F.isEmpty(arr))
+                    continue;
+
+                result.addAll(arr);
+            }
+
+            if (result.isEmpty())
+                return null;
+
+            return result;
+        }
+
+        /** {@inheritDoc} */
+        @Override public List<RelDataType> argumentTypes(IgniteTypeFactory typeFactory) {
+            return F.asList(typeFactory.createTypeWithNullability(typeFactory.createArrayType(
+                typeFactory.createSqlType(ANY), -1), true));
+        }
+
+        /** {@inheritDoc} */
+        @Override public RelDataType returnType(IgniteTypeFactory typeFactory) {
+            return typeFactory.createTypeWithNullability(typeFactory.createArrayType(
+                typeFactory.createSqlType(ANY), -1), true);
         }
     }
 
