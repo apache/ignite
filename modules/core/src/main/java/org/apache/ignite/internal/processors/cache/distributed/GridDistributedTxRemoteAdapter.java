@@ -291,19 +291,6 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
         }
     }
 
-    /** {@inheritDoc} */
-    @Override public void setPartitionUpdateCounters(long[] cntrs) {
-        if (writeMap() != null && !writeMap().isEmpty() && cntrs != null && cntrs.length > 0) {
-            int i = 0;
-
-            for (IgniteTxEntry txEntry : writeMap().values()) {
-                txEntry.updateCounter(cntrs[i]);
-
-                ++i;
-            }
-        }
-    }
-
     /**
      * Adds completed versions to an entry.
      *
