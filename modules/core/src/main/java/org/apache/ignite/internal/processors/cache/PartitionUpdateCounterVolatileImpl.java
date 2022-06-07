@@ -160,7 +160,7 @@ public class PartitionUpdateCounterVolatileImpl implements PartitionUpdateCounte
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return "Counter [val=" + get() + ']';
+        return "Counter [init=" + initCntr + ", val=" + get() + ']';
     }
 
     /** {@inheritDoc} */
@@ -176,5 +176,10 @@ public class PartitionUpdateCounterVolatileImpl implements PartitionUpdateCounte
         copy.initCntr = this.initCntr;
 
         return copy;
+    }
+
+    /** {@inheritDoc} */
+    @Override public Object comparableState() {
+        return get();
     }
 }
