@@ -72,7 +72,6 @@ import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.internal.client.thin.ProtocolBitmaskFeature.BINARY_CONFIGURATION;
 import static org.apache.ignite.internal.client.thin.ProtocolBitmaskFeature.HEARTBEAT;
 import static org.apache.ignite.internal.client.thin.ProtocolBitmaskFeature.USER_ATTRIBUTES;
 import static org.apache.ignite.internal.client.thin.ProtocolVersion.LATEST_VER;
@@ -161,9 +160,6 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
     /** Last send operation timestamp. */
     private volatile long lastSendMillis;
 
-    /** Binary configuration from server. */
-    private final ClientInternalBinaryConfiguration binaryConfiguration;
-
     /** Constructor. */
     TcpClientChannel(ClientChannelConfiguration cfg, ClientConnectionMultiplexer connMgr)
         throws ClientConnectionException, ClientAuthenticationException, ClientProtocolError {
@@ -185,10 +181,6 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
 
         heartbeatTimer = protocolCtx.isFeatureSupported(HEARTBEAT) && cfg.getHeartbeatEnabled()
                 ? initHeartbeat(cfg.getHeartbeatInterval())
-                : null;
-
-        binaryConfiguration = protocolCtx.isFeatureSupported(BINARY_CONFIGURATION) && cfg.isAutoBinaryConfigurationEnabled()
-                ? getBinaryConfiguration()
                 : null;
     }
 
@@ -770,16 +762,6 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
             recommendedHeartbeatInterval = MIN_RECOMMENDED_HEARTBEAT_INTERVAL;
 
         return Math.min(configuredInterval, recommendedHeartbeatInterval);
-    }
-
-    /**
-     * Gets the binary configuration from the server.
-     *
-     * @return Binary configuration from the server.
-     */
-    private ClientInternalBinaryConfiguration getBinaryConfiguration() {
-        return service(ClientOperation.GET_BINARY_CONFIGURATION, null,
-                in -> new ClientInternalBinaryConfiguration(in.in().readBoolean(), BinaryNameMapperMode.fromOrdinal(in.in().readByte())));
     }
 
     /**

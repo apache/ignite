@@ -128,6 +128,8 @@ public class TcpIgniteClient implements IgniteClient {
         try {
             ch.channelsInit();
 
+            retrieveBinaryConfiguration();
+
             // Metadata, binary descriptors and user types caches must be cleared so that the
             // client will register all the user types within the cluster once again in case this information
             // was lost during the cluster failover.
@@ -411,6 +413,18 @@ public class TcpIgniteClient implements IgniteClient {
             throw new BinaryObjectException(e);
         }
     }
+
+    /** Load cluster binary configration. */
+    private void retrieveBinaryConfiguration() {
+        ClientInternalBinaryConfiguration cfg = ch.applyOnDefaultChannel(
+                c -> c.protocolCtx().isFeatureSupported(ProtocolBitmaskFeature.BINARY_CONFIGURATION)
+                ? c.service(ClientOperation.GET_BINARY_CONFIGURATION, null, r -> new ClientInternalBinaryConfiguration(r.in()))
+                : null,
+                ClientOperation.GET_BINARY_CONFIGURATION);
+
+        // TODO
+    }
+
 
     /**
      * Thin client implementation of {@link BinaryMetadataHandler}.

@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.client.thin;
 
+import org.apache.ignite.internal.binary.streams.BinaryInputStream;
+
 /**
  * Cluster binary configuration.
  */
@@ -30,12 +32,11 @@ class ClientInternalBinaryConfiguration {
     /**
      * Constructor.
      *
-     * @param compactFooter Compact footer.
-     * @param binaryNameMapperMode Binary name mapper mode.
+     * @param stream Stream.
      */
-    public ClientInternalBinaryConfiguration(boolean compactFooter, BinaryNameMapperMode binaryNameMapperMode) {
-        this.compactFooter = compactFooter;
-        this.binaryNameMapperMode = binaryNameMapperMode;
+    public ClientInternalBinaryConfiguration(BinaryInputStream stream) {
+        compactFooter = stream.readBoolean();
+        binaryNameMapperMode = BinaryNameMapperMode.fromOrdinal(stream.readByte());
     }
 
     /**
