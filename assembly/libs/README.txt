@@ -88,7 +88,6 @@ The following modules are available:
 - ignite-ssh (for starting grid nodes on remote machines)
 - ignite-urideploy (for URI-based deployment)
 - ignite-web (for Web Sessions Clustering)
-- ignite-yarn (for integration with Apache Hadoop Yarn)
 - ignite-zookeeper (for cluster discovery based on Apache Zookeeper)
 
 For example, if you want to use Apache Ignite Spring-based configuration,
