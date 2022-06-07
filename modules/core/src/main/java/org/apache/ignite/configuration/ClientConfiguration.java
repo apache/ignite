@@ -41,7 +41,7 @@ public final class ClientConfiguration implements Serializable {
     private static final long serialVersionUID = 0L;
 
     /** @serial Server addresses. */
-    private String[] addrs = null;
+    private String[] addrs;
 
     /** Server addresses finder. */
     private transient ClientAddressFinder addrFinder;
@@ -122,7 +122,7 @@ public final class ClientConfiguration implements Serializable {
     private int reconnectThrottlingRetries = 3;
 
     /** Retry limit. */
-    private int retryLimit = 0;
+    private int retryLimit;
 
     /** Retry policy. */
     private ClientRetryPolicy retryPolicy = new ClientRetryAllPolicy();
@@ -135,6 +135,11 @@ public final class ClientConfiguration implements Serializable {
 
     /** Heartbeat interval, in milliseconds. */
     private long heartbeatInterval = 30_000L;
+
+    /**
+     * Whether automatic binary configuration should be enabled.
+     */
+    private boolean autoBinaryConfigurationEnabled = true;
 
     /**
      * @return Host addresses.
@@ -745,6 +750,39 @@ public final class ClientConfiguration implements Serializable {
      */
     public ClientConfiguration setHeartbeatInterval(long heartbeatInterval) {
         this.heartbeatInterval = heartbeatInterval;
+
+        return this;
+    }
+
+    /**
+     * Gets a value indicating whether automatic binary configuration retrieval should be enabled.
+     * <p />
+     * When enabled, compact footer ({@link BinaryConfiguration#isCompactFooter()})
+     * and name mapper ({@link BinaryConfiguration#getNameMapper()}) settings will be retrieved from the server
+     * to match the cluster configuration.
+     * <p />
+     * Default is {@code true}.
+     *
+     * @return Whether automatic binary configuration is enabled.
+     */
+    public boolean isAutoBinaryConfigurationEnabled() {
+        return autoBinaryConfigurationEnabled;
+    }
+
+    /**
+     * Sets a value indicating whether automatic binary configuration retrieval should be enabled.
+     * <p />
+     * When enabled, compact footer ({@link BinaryConfiguration#isCompactFooter()})
+     * and name mapper ({@link BinaryConfiguration#getNameMapper()}) settings will be retrieved from the server
+     * to match the cluster configuration.
+     * <p />
+     * Default is {@code true}.
+     *
+     * @param autoBinaryConfigurationEnabled Whether automatic binary configuration is enabled.
+     * @return {@code this} for chaining.
+     */
+    public ClientConfiguration setAutoBinaryConfigurationEnabled(boolean autoBinaryConfigurationEnabled) {
+        this.autoBinaryConfigurationEnabled = autoBinaryConfigurationEnabled;
 
         return this;
     }
