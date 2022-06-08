@@ -154,7 +154,6 @@
                 <exclude>${project.groupId}:ignite-osgi-paxlogging</exclude>
                 <exclude>${project.groupId}:ignite-ssh</exclude>
                 <exclude>${project.groupId}:ignite-web</exclude>
-                <exclude>${project.groupId}:ignite-yarn</exclude>
                 <exclude>${project.groupId}:ignite-zookeeper</exclude>
             </excludes>
             <sources>
