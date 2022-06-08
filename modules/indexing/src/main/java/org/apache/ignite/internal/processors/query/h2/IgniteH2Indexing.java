@@ -58,6 +58,10 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.cache.query.index.IndexName;
+import org.apache.ignite.internal.cache.query.index.NullsOrder;
+import org.apache.ignite.internal.cache.query.index.Order;
+import org.apache.ignite.internal.cache.query.index.SortOrder;
+import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyDefinition;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypeSettings;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndex;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexFactory;
@@ -127,7 +131,6 @@ import org.apache.ignite.internal.processors.query.h2.dml.UpdateMode;
 import org.apache.ignite.internal.processors.query.h2.dml.UpdatePlan;
 import org.apache.ignite.internal.processors.query.h2.index.H2RowComparator;
 import org.apache.ignite.internal.processors.query.h2.index.QueryIndexDefinition;
-import org.apache.ignite.internal.processors.query.h2.index.QueryIndexKeyDefinitionProvider;
 import org.apache.ignite.internal.processors.query.h2.index.client.ClientIndexDefinition;
 import org.apache.ignite.internal.processors.query.h2.index.client.ClientIndexFactory;
 import org.apache.ignite.internal.processors.query.h2.maintenance.RebuildIndexWorkflowCallback;
@@ -480,7 +483,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 ctx.indexProcessor().rowCacheCleaner(cacheInfo.groupId()),
                 pk,
                 affinityKey,
-                new QueryIndexKeyDefinitionProvider(tbl, cols).keyDefinitions(),
+                keyDefinitions(tbl, cols),
                 inlineSize,
                 keyTypeSettings
             );
@@ -500,7 +503,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         else {
             ClientIndexDefinition d = new ClientIndexDefinition(
                 new IndexName(tbl.cacheName(), tbl.getSchema().getName(), tbl.getName(), name),
-                new QueryIndexKeyDefinitionProvider(tbl, unwrappedCols).keyDefinitions(),
+                keyDefinitions(tbl, unwrappedCols),
                 inlineSize,
                 tbl.cacheInfo().config().getSqlIndexMaxInlineSize());
 
@@ -514,6 +517,23 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
             return new H2TreeClientIndex(idx, tbl, name, unwrappedCols.toArray(new IndexColumn[0]), idxType);
         }
+    }
+
+    /** Maps H2 columns to IndexKeyDefinition. */
+    private LinkedHashMap<String, IndexKeyDefinition> keyDefinitions(GridH2Table tbl, List<IndexColumn> cols) {
+        LinkedHashMap<String, IndexKeyDefinition> idxKeyDefinitions = new LinkedHashMap<>();
+
+        for (IndexColumn c: cols) {
+            Order sortOrder = new Order((c.sortType & 1) != 0 ? SortOrder.DESC : SortOrder.ASC,
+                (c.sortType & 2) != 0 ? NullsOrder.NULLS_FIRST : NullsOrder.NULLS_LAST);
+
+            idxKeyDefinitions.put(c.columnName,
+                new IndexKeyDefinition(c.column.getType(), sortOrder, c.column.getPrecision()));
+        }
+
+        IndexColumn.mapColumns(cols.toArray(new IndexColumn[0]), tbl);
+
+        return idxKeyDefinitions;
     }
 
     /** {@inheritDoc} */
