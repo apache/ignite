@@ -18,45 +18,30 @@
 package org.apache.ignite.internal.processors.query.h2.index;
 
 import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.stream.Collectors;
 import org.apache.ignite.internal.cache.query.index.IndexName;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyDefinition;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypeSettings;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexRowCache;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexRowComparator;
 import org.apache.ignite.internal.cache.query.index.sorted.InlineIndexRowHandlerFactory;
-import org.apache.ignite.internal.cache.query.index.sorted.MetaPageInfo;
 import org.apache.ignite.internal.cache.query.index.sorted.SortedIndexDefinition;
-import org.apache.ignite.internal.processors.cache.GridCacheContext;
-import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
-import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.GridQueryRowDescriptor;
-import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
-import org.h2.table.IndexColumn;
-import org.h2.value.CompareMode;
 
 /**
- * Define H2 query index.
+ * Define query index.
  */
 public class QueryIndexDefinition implements SortedIndexDefinition {
     /** Wrapped key definitions. */
-    private LinkedHashMap<String, IndexKeyDefinition> keyDefs;
+    private final LinkedHashMap<String, IndexKeyDefinition> keyDefs;
 
-    /** List of unwrapped index columns. */
-    private List<IndexColumn> h2UnwrappedCols;
-
-    /** List of wrapped index columns. */
-    private List<IndexColumn> h2WrappedCols;
-
-    /** Cache context. */
-    private final GridCacheContext cctx;
-
-    /** H2 table. */
-    private final GridH2Table table;
+    /** Table row descriptor. */
+    private final GridQueryRowDescriptor rowDescriptor;
 
     /** Index name. */
     private final IndexName idxName;
+
+    /** Index tree name. */
+    private final String treeName;
 
     /** Configured inline size. */
     private final int inlineSize;
@@ -71,7 +56,7 @@ public class QueryIndexDefinition implements SortedIndexDefinition {
     private final boolean isAffinity;
 
     /** Index row comparator. */
-    private final H2RowComparator rowComparator;
+    private final IndexRowComparator rowComparator;
 
     /** Index key type settings. */
     private final IndexKeyTypeSettings keyTypeSettings;
@@ -83,62 +68,43 @@ public class QueryIndexDefinition implements SortedIndexDefinition {
     private final QueryRowHandlerFactory rowHndFactory = new QueryRowHandlerFactory();
 
     /** */
-    public QueryIndexDefinition(GridH2Table tbl, String idxName, IndexRowCache idxRowCache,
-        boolean isPrimary, boolean isAffinity, List<IndexColumn> h2UnwrappedCols, List<IndexColumn> h2WrappedCols,
-        int cfgInlineSize) {
-
-        this.idxName = new IndexName(tbl.cacheName(), tbl.getSchema().getName(), tbl.getName(), idxName);
+    public QueryIndexDefinition(
+        GridQueryRowDescriptor rowDescriptor,
+        IndexRowComparator rowComparator,
+        IndexName idxName,
+        String treeName,
+        IndexRowCache idxRowCache,
+        boolean isPrimary,
+        boolean isAffinity,
+        LinkedHashMap<String, IndexKeyDefinition> keyDefs,
+        int cfgInlineSize,
+        IndexKeyTypeSettings keyTypeSettings
+    ) {
+        this.rowDescriptor = rowDescriptor;
+        this.idxName = idxName;
+        this.treeName = treeName;
         this.idxRowCache = idxRowCache;
-        this.segments = tbl.rowDescriptor().context().config().getQueryParallelism();
+        this.segments = rowDescriptor.context().config().getQueryParallelism();
         this.inlineSize = cfgInlineSize;
         this.isPrimary = isPrimary;
         this.isAffinity = isAffinity;
-
-        cctx = tbl.cacheContext();
-
-        table = tbl;
-
-        this.h2WrappedCols = h2WrappedCols;
-        this.h2UnwrappedCols = h2UnwrappedCols;
-
-        keyTypeSettings = new IndexKeyTypeSettings()
-            .stringOptimizedCompare(CompareMode.OFF.equals(table.getCompareMode().getName()))
-            .binaryUnsigned(table.getCompareMode().isBinaryUnsigned());
-
-        rowComparator = new H2RowComparator(table, keyTypeSettings);
+        this.keyDefs = keyDefs;
+        this.keyTypeSettings = keyTypeSettings;
+        this.rowComparator = rowComparator;
     }
 
     /** {@inheritDoc} */
     @Override public String treeName() {
-        GridQueryRowDescriptor rowDesc = table.rowDescriptor();
-
-        String typeIdStr = "";
-
-        if (rowDesc != null) {
-            GridQueryTypeDescriptor typeDesc = rowDesc.type();
-
-            int typeId = cctx.binaryMarshaller() ? typeDesc.typeId() : typeDesc.valueClass().hashCode();
-
-            typeIdStr = typeId + "_";
-        }
-
-        // Legacy in treeName from H2Tree.
-        return BPlusTree.treeName(typeIdStr + idxName().idxName(), "H2Tree");
+        return treeName;
     }
 
     /** {@inheritDoc} */
     @Override public LinkedHashMap<String, IndexKeyDefinition> indexKeyDefinitions() {
-        if (keyDefs == null)
-            throw new IllegalStateException("Index key definitions is not initialized yet.");
-
         return keyDefs;
     }
 
     /** {@inheritDoc} */
     @Override public IndexRowComparator rowComparator() {
-        if (rowComparator == null)
-            throw new IllegalStateException("Index key definitions is not initialized yet.");
-
         return rowComparator;
     }
 
@@ -163,20 +129,6 @@ public class QueryIndexDefinition implements SortedIndexDefinition {
     }
 
     /** {@inheritDoc} */
-    @Override public void initByMeta(boolean created, MetaPageInfo metaPageInfo) {
-        if (keyDefs == null) {
-            if (created || metaPageInfo.useUnwrappedPk()) {
-                h2WrappedCols = null;
-                keyDefs = new QueryIndexKeyDefinitionProvider(table, h2UnwrappedCols).keyDefinitions();
-            }
-            else {
-                h2UnwrappedCols = null;
-                keyDefs = new QueryIndexKeyDefinitionProvider(table, h2WrappedCols).keyDefinitions();
-            }
-        }
-    }
-
-    /** {@inheritDoc} */
     @Override public InlineIndexRowHandlerFactory rowHandlerFactory() {
         return rowHndFactory;
     }
@@ -196,19 +148,14 @@ public class QueryIndexDefinition implements SortedIndexDefinition {
         return idxName;
     }
 
-    /** */
-    public GridH2Table getTable() {
-        return table;
-    }
-
-    /** */
-    public List<IndexColumn> getColumns() {
-        return h2UnwrappedCols != null ? h2UnwrappedCols : h2WrappedCols;
+    /** {@inheritDoc} */
+    @Override public GridQueryRowDescriptor rowDescriptor() {
+        return rowDescriptor;
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        String flds = getColumns().stream().map(c -> c.columnName).collect(Collectors.joining(", "));
+        String flds = String.join(", ", indexKeyDefinitions().keySet());
 
         return "QueryIndex[name=" + idxName.idxName() + ", fields=" + flds + "]";
     }

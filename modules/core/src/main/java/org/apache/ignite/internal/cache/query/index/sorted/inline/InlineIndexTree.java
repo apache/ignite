@@ -163,9 +163,6 @@ public class InlineIndexTree extends BPlusTree<IndexRow, IndexRow> {
             // Page is ready - read meta information.
             MetaPageInfo metaInfo = metaInfo();
 
-            if (def != null)
-                def.initByMeta(initNew, metaInfo);
-
             inlineSize = metaInfo.inlineSize();
             setIos(inlineSize, mvccEnabled);
 
@@ -179,11 +176,8 @@ public class InlineIndexTree extends BPlusTree<IndexRow, IndexRow> {
 
             if (!metaInfo.flagsSupported())
                 upgradeMetaPage(inlineObjSupported);
-
         }
         else {
-            def.initByMeta(initNew, null);
-
             rowHnd = rowHndFactory.create(def, keyTypeSettings);
 
             inlineSize = computeInlineSize(

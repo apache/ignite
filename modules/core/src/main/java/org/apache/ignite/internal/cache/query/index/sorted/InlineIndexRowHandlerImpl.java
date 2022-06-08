@@ -52,16 +52,33 @@ public class InlineIndexRowHandlerImpl implements InlineIndexRowHandler {
     /** */
     public InlineIndexRowHandlerImpl(
         GridQueryRowDescriptor rowDescriptor,
-        List<Integer> keyColumns,
         LinkedHashMap<String, IndexKeyDefinition> keyDefs,
         List<InlineIndexKeyType> keyTypes,
         IndexKeyTypeSettings keyTypeSettings
     ) {
-        this.keyColumns = Collections.unmodifiableList(keyColumns);
         this.keyTypes = Collections.unmodifiableList(keyTypes);
         this.keyDefs = Collections.unmodifiableList(new ArrayList<>(keyDefs.values()));
         this.rowDescriptor = rowDescriptor;
         this.keyTypeSettings = keyTypeSettings;
+
+        List<Integer> keyColumns = new ArrayList<>(keyDefs.size());
+        List<String> fields = new ArrayList<>(rowDescriptor.type().fields().keySet());
+
+        for (String fieldName : keyDefs.keySet()) {
+            if (QueryUtils.KEY_FIELD_NAME.equals(fieldName))
+                keyColumns.add(QueryUtils.KEY_COL);
+            else if (QueryUtils.VAL_FIELD_NAME.equals(fieldName))
+                keyColumns.add(QueryUtils.VAL_COL);
+            else {
+                int fieldIdx = fields.indexOf(fieldName);
+
+                assert fieldIdx >= 0 : "Unexpected field name [fieldName=" + fieldName + ", keyDefs=" + keyDefs + ']';
+
+                keyColumns.add(QueryUtils.DEFAULT_COLUMNS_COUNT + fieldIdx);
+            }
+        }
+
+        this.keyColumns = Collections.unmodifiableList(keyColumns);
     }
 
     /** {@inheritDoc} */

@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.query.h2.index;
 
-import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyDefinition;
@@ -35,16 +34,10 @@ import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexKey
 public class QueryRowHandlerFactory implements InlineIndexRowHandlerFactory {
     /** {@inheritDoc} */
     @Override public InlineIndexRowHandler create(SortedIndexDefinition sdef, IndexKeyTypeSettings keyTypeSettings) {
-        QueryIndexDefinition def = (QueryIndexDefinition)sdef;
-
-        LinkedHashMap<String, IndexKeyDefinition> keyDefs = def.indexKeyDefinitions();
-
-        List<Integer> keyColumns = new ArrayList<>(keyDefs.size());
-
-        def.getColumns().forEach(col -> keyColumns.add(col.column.getColumnId()));
+        LinkedHashMap<String, IndexKeyDefinition> keyDefs = sdef.indexKeyDefinitions();
 
         List<InlineIndexKeyType> keyTypes = InlineIndexKeyTypeRegistry.types(keyDefs.values(), keyTypeSettings);
 
-        return new InlineIndexRowHandlerImpl(def.getTable().rowDescriptor(), keyColumns, keyDefs, keyTypes, keyTypeSettings);
+        return new InlineIndexRowHandlerImpl(sdef.rowDescriptor(), keyDefs, keyTypes, keyTypeSettings);
     }
 }
