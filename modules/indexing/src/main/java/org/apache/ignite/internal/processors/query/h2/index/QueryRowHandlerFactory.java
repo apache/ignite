@@ -24,6 +24,7 @@ import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyDefinition;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypeSettings;
 import org.apache.ignite.internal.cache.query.index.sorted.InlineIndexRowHandler;
 import org.apache.ignite.internal.cache.query.index.sorted.InlineIndexRowHandlerFactory;
+import org.apache.ignite.internal.cache.query.index.sorted.InlineIndexRowHandlerImpl;
 import org.apache.ignite.internal.cache.query.index.sorted.SortedIndexDefinition;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexKeyType;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexKeyTypeRegistry;
@@ -44,6 +45,6 @@ public class QueryRowHandlerFactory implements InlineIndexRowHandlerFactory {
 
         List<InlineIndexKeyType> keyTypes = InlineIndexKeyTypeRegistry.types(keyDefs.values(), keyTypeSettings);
 
-        return new QueryIndexRowHandler(def.getTable().rowDescriptor(), keyColumns, keyDefs, keyTypes, keyTypeSettings);
+        return new InlineIndexRowHandlerImpl(def.getTable().rowDescriptor(), keyColumns, keyDefs, keyTypes, keyTypeSettings);
     }
 }

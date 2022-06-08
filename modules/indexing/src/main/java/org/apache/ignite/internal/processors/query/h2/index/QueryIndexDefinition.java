@@ -31,7 +31,7 @@ import org.apache.ignite.internal.cache.query.index.sorted.SortedIndexDefinition
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
-import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor;
+import org.apache.ignite.internal.processors.query.GridQueryRowDescriptor;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.h2.table.IndexColumn;
 import org.h2.value.CompareMode;
@@ -110,7 +110,7 @@ public class QueryIndexDefinition implements SortedIndexDefinition {
 
     /** {@inheritDoc} */
     @Override public String treeName() {
-        GridH2RowDescriptor rowDesc = table.rowDescriptor();
+        GridQueryRowDescriptor rowDesc = table.rowDescriptor();
 
         String typeIdStr = "";
 

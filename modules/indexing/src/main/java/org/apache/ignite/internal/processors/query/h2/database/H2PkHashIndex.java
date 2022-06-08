@@ -33,7 +33,7 @@ import org.apache.ignite.internal.processors.cache.tree.CacheDataRowStore;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.h2.H2Utils;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2IndexBase;
-import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor;
+import org.apache.ignite.internal.processors.query.GridQueryRowDescriptor;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.processors.query.h2.opt.H2CacheRow;
 import org.apache.ignite.internal.processors.query.h2.opt.QueryContext;
@@ -238,7 +238,7 @@ public class H2PkHashIndex extends GridH2IndexBase {
      */
     private class H2PkHashIndexCursor implements Cursor {
         /** */
-        private final GridH2RowDescriptor desc;
+        private final GridQueryRowDescriptor desc;
 
         /** */
         private final Iterator<GridCursor<? extends CacheDataRow>> iter;
@@ -265,7 +265,7 @@ public class H2PkHashIndex extends GridH2IndexBase {
         /** {@inheritDoc} */
         @Override public Row get() {
             try {
-                return desc.createRow(curr.get());
+                return new H2CacheRow(desc, curr.get());
             }
             catch (IgniteCheckedException e) {
                 throw DbException.convert(e);

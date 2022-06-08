@@ -67,7 +67,7 @@ import org.apache.ignite.internal.processors.query.h2.ConnectionManager;
 import org.apache.ignite.internal.processors.query.h2.H2Utils;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.h2.database.H2TreeIndexBase;
-import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor;
+import org.apache.ignite.internal.processors.query.GridQueryRowDescriptor;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.processors.query.h2.opt.H2CacheRow;
 import org.apache.ignite.internal.processors.query.h2.opt.QueryContext;
@@ -699,9 +699,9 @@ public class ValidateIndexesClosure implements IgniteCallable<VisorValidateIndex
             if (gridH2Tbl == null)
                 continue; // Tolerate - (k, v) is just not indexed.
 
-            GridH2RowDescriptor gridH2RowDesc = gridH2Tbl.rowDescriptor();
+            GridQueryRowDescriptor gridH2RowDesc = gridH2Tbl.rowDescriptor();
 
-            H2CacheRow h2Row = gridH2RowDesc.createRow(row);
+            H2CacheRow h2Row = new H2CacheRow(gridH2RowDesc, row);
 
             ArrayList<Index> indexes = gridH2Tbl.getIndexes();
 

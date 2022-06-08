@@ -49,6 +49,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContextInfo;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.query.QueryTable;
+import org.apache.ignite.internal.processors.query.GridQueryRowDescriptor;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryField;
 import org.apache.ignite.internal.processors.query.QueryUtils;
@@ -120,7 +121,7 @@ public class GridH2Table extends TableBase {
     private final GridCacheContextInfo cacheInfo;
 
     /** */
-    private final GridH2RowDescriptor desc;
+    private final GridQueryRowDescriptor desc;
 
     /** */
     private final H2TableDescriptor tblDesc;
@@ -202,7 +203,7 @@ public class GridH2Table extends TableBase {
     @SuppressWarnings("ConstantConditions")
     public GridH2Table(
         CreateTableData createTblData,
-        GridH2RowDescriptor desc,
+        GridQueryRowDescriptor desc,
         H2TableDescriptor tblDesc,
         GridCacheContextInfo cacheInfo,
         IndexProcessor idxProc
@@ -355,7 +356,7 @@ public class GridH2Table extends TableBase {
      * @return {@code true} If this is a partitioned table.
      */
     public boolean isPartitioned() {
-        return desc != null && desc.cacheInfo().config().getCacheMode() == PARTITIONED;
+        return desc != null && cacheInfo.config().getCacheMode() == PARTITIONED;
     }
 
     /**
@@ -459,7 +460,7 @@ public class GridH2Table extends TableBase {
     /**
      * @return Row descriptor.
      */
-    public GridH2RowDescriptor rowDescriptor() {
+    public GridQueryRowDescriptor rowDescriptor() {
         return desc;
     }
 

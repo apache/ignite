@@ -69,7 +69,7 @@ import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2IndexBase;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2RetryException;
-import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor;
+import org.apache.ignite.internal.processors.query.GridQueryRowDescriptor;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2ValueCacheObject;
 import org.apache.ignite.internal.processors.query.h2.opt.QueryContext;
@@ -203,7 +203,7 @@ public class H2Utils {
      * @param cols Columns list.
      * @return Result.
      */
-    public static boolean containsKeyColumn(GridH2RowDescriptor desc, List<IndexColumn> cols) {
+    public static boolean containsKeyColumn(GridQueryRowDescriptor desc, List<IndexColumn> cols) {
         for (int i = cols.size() - 1; i >= 0; i--) {
             if (desc.isKeyColumn(cols.get(i).column.getColumnId()))
                 return true;
@@ -324,7 +324,7 @@ public class H2Utils {
      * @param affCol Affinity key column.
      * @return The same list back.
      */
-    public static List<IndexColumn> treeIndexColumns(GridH2RowDescriptor desc, List<IndexColumn> cols,
+    public static List<IndexColumn> treeIndexColumns(GridQueryRowDescriptor desc, List<IndexColumn> cols,
         IndexColumn keyCol, IndexColumn affCol) {
         assert keyCol != null;
 

@@ -22,10 +22,13 @@ import java.sql.Date;
 import java.sql.ResultSet;
 import java.sql.Time;
 import java.sql.Timestamp;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
-import java.util.UUID;
+import java.time.OffsetDateTime;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  * List of available types to use as index key.
@@ -144,73 +147,71 @@ public class IndexKeyTypes {
     /**
      *
      */
-/*
     public static int of(Class<?> cls) {
         Class<?> x = cls;
 
-        if (x == null || Void.TYPE == x) {
+        if (x == null)
             return NULL;
-        }
-        if (x.isPrimitive()) {
-            x = Utils.getNonPrimitiveClass(x);
-        }
-        if (String.class == x) {
+
+        x = U.box(x);
+
+        if (String.class == x)
             return STRING;
-        } else if (Integer.class == x) {
+        else if (Integer.class == x)
             return INT;
-        } else if (Long.class == x) {
+        else if (Long.class == x)
             return LONG;
-        } else if (Boolean.class == x) {
+        else if (Boolean.class == x)
             return BOOLEAN;
-        } else if (Double.class == x) {
+        else if (Double.class == x)
             return DOUBLE;
-        } else if (Byte.class == x) {
+        else if (Byte.class == x)
             return BYTE;
-        } else if (Short.class == x) {
+        else if (Short.class == x)
             return SHORT;
-        } else if (Character.class == x) {
-            throw DbException.get(
-                ErrorCode.DATA_CONVERSION_ERROR_1, "char (not supported)");
-        } else if (Float.class == x) {
+        else if (Character.class == x)
+            throw new IgniteException("Cannot convert class char (not supported)");
+        else if (Float.class == x)
             return FLOAT;
-        } else if (byte[].class == x) {
+        else if (byte[].class == x)
             return BYTES;
-        } else if (java.util.UUID.class == x) {
+        else if (java.util.UUID.class == x)
             return UUID;
-        } else if (Void.class == x) {
+        else if (Void.class == x)
             return NULL;
-        } else if (BigDecimal.class.isAssignableFrom(x)) {
+        else if (BigDecimal.class.isAssignableFrom(x))
             return DECIMAL;
-        } else if (ResultSet.class.isAssignableFrom(x)) {
+        else if (ResultSet.class.isAssignableFrom(x))
             return RESULT_SET;
-        } else if (Date.class.isAssignableFrom(x)) {
+        else if (Date.class.isAssignableFrom(x))
             return DATE;
-        } else if (Time.class.isAssignableFrom(x)) {
+        else if (Time.class.isAssignableFrom(x))
             return TIME;
-        } else if (Timestamp.class.isAssignableFrom(x)) {
+        else if (Timestamp.class.isAssignableFrom(x))
             return TIMESTAMP;
-        } else if (java.util.Date.class.isAssignableFrom(x)) {
+        else if (java.util.Date.class.isAssignableFrom(x))
             return TIMESTAMP;
-        } else if (java.sql.Clob.class.isAssignableFrom(x)) {
+        else if (java.sql.Clob.class.isAssignableFrom(x))
             return CLOB;
-        } else if (java.sql.Blob.class.isAssignableFrom(x)) {
+        else if (java.sql.Blob.class.isAssignableFrom(x))
             return BLOB;
-        } else if (Object[].class.isAssignableFrom(x)) {
+        else if (Object[].class.isAssignableFrom(x)) {
             // this includes String[] and so on
             return ARRAY;
-        } else if (isGeometryClass(x)) {
-            return GEOMETRY;
-        } else if (LocalDate.class == x) {
-            return DATE;
-        } else if (LocalTime.class == x) {
-            return TIME;
-        } else if (LocalDateTime.class == x) {
-            return TIMESTAMP;
-        } else if (LocalDateTimeUtils.OFFSET_DATE_TIME == x || LocalDateTimeUtils.INSTANT == x) {
-            return TIMESTAMP_TZ;
-        } else {
-            return JAVA_OBJECT;
         }
-    }
+/*
+        else if (isGeometryClass(x))
+            return GEOMETRY;
 */
+        else if (LocalDate.class == x)
+            return DATE;
+        else if (LocalTime.class == x)
+            return TIME;
+        else if (LocalDateTime.class == x)
+            return TIMESTAMP;
+        else if (OffsetDateTime.class == x || Instant.class == x)
+            return TIMESTAMP_TZ;
+        else
+            return JAVA_OBJECT;
+    }
 }

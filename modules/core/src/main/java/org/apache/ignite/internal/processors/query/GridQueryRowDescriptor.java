@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.h2.opt;
+package org.apache.ignite.internal.processors.query;
 
 import java.util.Arrays;
 import java.util.HashSet;
@@ -25,28 +25,21 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypes;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContextInfo;
-import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
-import org.apache.ignite.internal.processors.query.GridQueryProperty;
-import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
-import org.apache.ignite.internal.processors.query.QueryUtils;
-import org.apache.ignite.internal.processors.query.h2.H2TableDescriptor;
-import org.h2.message.DbException;
-import org.h2.result.SearchRow;
-import org.h2.value.DataType;
-import org.h2.value.Value;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Row descriptor.
  */
-public class GridH2RowDescriptor {
+public class GridQueryRowDescriptor {
     /** Non existent column. */
     public static final int COL_NOT_EXISTS = -1;
 
-    /** Table descriptor. */
-    private final H2TableDescriptor tbl;
+    /**  */
+    private final GridCacheContextInfo<?, ?> cacheInfo;
 
     /** */
     private final GridQueryTypeDescriptor type;
@@ -78,17 +71,17 @@ public class GridH2RowDescriptor {
     /**
      * Constructor.
      *
-     * @param tbl Table.
+     * @param cacheInfo Cache context.
      * @param type Type descriptor.
      */
-    public GridH2RowDescriptor(H2TableDescriptor tbl, GridQueryTypeDescriptor type) {
+    public GridQueryRowDescriptor(GridCacheContextInfo<?, ?> cacheInfo, GridQueryTypeDescriptor type) {
         assert type != null;
 
-        this.tbl = tbl;
+        this.cacheInfo = cacheInfo;
         this.type = type;
 
-        keyType = DataType.getTypeFromClass(type.keyClass());
-        valType = DataType.getTypeFromClass(type.valueClass());
+        keyType = IndexKeyTypes.of(type.keyClass());
+        valType = IndexKeyTypes.of(type.valueClass());
 
         refreshMetadataFromTypeDescriptor();
     }
@@ -108,7 +101,7 @@ public class GridH2RowDescriptor {
         Class[] classes = allFields.values().toArray(new Class[fields.length]);
 
         for (int i = 0; i < fieldTypes.length; i++)
-            fieldTypes[i] = DataType.getTypeFromClass(classes[i]);
+            fieldTypes[i] = IndexKeyTypes.of(classes[i]);
 
         props = new GridQueryProperty[fields.length];
 
@@ -143,43 +136,12 @@ public class GridH2RowDescriptor {
     }
 
     /**
-     * Gets cache context info for this row descriptor.
-     *
-     * @return Cache context info.
-     */
-    public GridCacheContextInfo<?, ?> cacheInfo() {
-        return tbl.cacheInfo();
-    }
-
-    /**
      * Gets cache context for this row descriptor.
      *
      * @return Cache context.
      */
     @Nullable public GridCacheContext<?, ?> context() {
-        return tbl.cache();
-    }
-
-    /**
-     * Create new row for update operation.
-     *
-     * @param dataRow Data row.
-     * @return Row.
-     * @throws IgniteCheckedException If failed.
-     */
-    public H2CacheRow createRow(CacheDataRow dataRow) throws IgniteCheckedException {
-        H2CacheRow row;
-
-        try {
-            row = new H2CacheRow(this, dataRow);
-        }
-        catch (ClassCastException e) {
-            throw new IgniteCheckedException("Failed to convert key to SQL type. " +
-                "Please make sure that you always store each value type with the same key type " +
-                "or configure key type as common super class for all actual keys for this value type.", e);
-        }
-
-        return row;
+        return cacheInfo.cacheContext();
     }
 
     /**
@@ -226,7 +188,7 @@ public class GridH2RowDescriptor {
             return props[col].value(key, val);
         }
         catch (IgniteCheckedException e) {
-            throw DbException.convert(e);
+            throw new IgniteException(e);
         }
     }
 
@@ -243,7 +205,7 @@ public class GridH2RowDescriptor {
             props[col].setValue(key, val, colVal);
         }
         catch (IgniteCheckedException e) {
-            throw DbException.convert(e);
+            throw new IgniteException(e);
         }
     }
 
@@ -340,46 +302,6 @@ public class GridH2RowDescriptor {
             return (masks[QueryUtils.KEY_COL] & mask) != 0;
         else
             return (masks[QueryUtils.KEY_COL] & mask) != 0 || (masks[keyAliasColId] & mask) != 0;
-    }
-
-    /**
-     * Clones provided row and copies values of alias key and val columns
-     * into respective key and val positions.
-     *
-     * @param row Source row.
-     * @return Result.
-     */
-    public SearchRow prepareProxyIndexRow(SearchRow row) {
-        if (row == null)
-            return null;
-
-        Value[] data = new Value[row.getColumnCount()];
-
-        for (int idx = 0; idx < data.length; idx++)
-            data[idx] = row.getValue(idx);
-
-        copyAliasColumnData(data, QueryUtils.KEY_COL, keyAliasColId);
-        copyAliasColumnData(data, QueryUtils.VAL_COL, valAliasColId);
-
-        return H2PlainRowFactory.create(data);
-    }
-
-    /**
-     * Copies data between original and alias columns
-     *
-     * @param data Array of values.
-     * @param colId Original column id.
-     * @param aliasColId Alias column id.
-     */
-    private void copyAliasColumnData(Value[] data, int colId, int aliasColId) {
-        if (aliasColId <= 0)
-            return;
-
-        if (data[aliasColId] == null && data[colId] != null)
-            data[aliasColId] = data[colId];
-
-        if (data[colId] == null && data[aliasColId] != null)
-            data[colId] = data[aliasColId];
     }
 
     /**

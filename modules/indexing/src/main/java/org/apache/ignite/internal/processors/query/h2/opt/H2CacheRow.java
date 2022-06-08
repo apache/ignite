@@ -24,6 +24,7 @@ import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.processors.query.GridQueryRowDescriptor;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryUtils;
@@ -40,7 +41,7 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_TO_STRING_INCLUDE_
  */
 public class H2CacheRow extends H2Row implements CacheDataRow {
     /** H2 row descriptor. */
-    private final GridH2RowDescriptor desc;
+    private final GridQueryRowDescriptor desc;
 
     /** Cache row. */
     private final CacheDataRow row;
@@ -54,7 +55,7 @@ public class H2CacheRow extends H2Row implements CacheDataRow {
      * @param desc Row descriptor.
      * @param row Row.
      */
-    public H2CacheRow(GridH2RowDescriptor desc, CacheDataRow row) {
+    public H2CacheRow(GridQueryRowDescriptor desc, CacheDataRow row) {
         this.desc = desc;
         this.row = row;
     }
@@ -356,7 +357,7 @@ public class H2CacheRow extends H2Row implements CacheDataRow {
     /**
      * @return H2 row descriptor.
      */
-    public GridH2RowDescriptor getDesc() {
+    public GridQueryRowDescriptor getDesc() {
         return desc;
     }
 }

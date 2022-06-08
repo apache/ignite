@@ -15,16 +15,13 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.h2.index;
+package org.apache.ignite.internal.cache.query.index.sorted;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import org.apache.ignite.internal.binary.BinaryObjectImpl;
-import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyDefinition;
-import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypeSettings;
-import org.apache.ignite.internal.cache.query.index.sorted.InlineIndexRowHandler;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexKeyType;
 import org.apache.ignite.internal.cache.query.index.sorted.keys.IndexKey;
 import org.apache.ignite.internal.cache.query.index.sorted.keys.IndexKeyFactory;
@@ -32,13 +29,13 @@ import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
+import org.apache.ignite.internal.processors.query.GridQueryRowDescriptor;
 import org.apache.ignite.internal.processors.query.QueryUtils;
-import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor;
 
-/** Maps CacheDataRow to IndexRow using H2 columns references. */
-public class QueryIndexRowHandler implements InlineIndexRowHandler {
+/** Maps CacheDataRow to IndexRow using columns references. */
+public class InlineIndexRowHandlerImpl implements InlineIndexRowHandler {
     /** Cache descriptor. */
-    private final GridH2RowDescriptor rowDescriptor;
+    private final GridQueryRowDescriptor rowDescriptor;
 
     /** H2 index columns. */
     private final List<Integer> keyColumns;
@@ -53,8 +50,8 @@ public class QueryIndexRowHandler implements InlineIndexRowHandler {
     private final IndexKeyTypeSettings keyTypeSettings;
 
     /** */
-    public QueryIndexRowHandler(
-        GridH2RowDescriptor rowDescriptor,
+    public InlineIndexRowHandlerImpl(
+        GridQueryRowDescriptor rowDescriptor,
         List<Integer> keyColumns,
         LinkedHashMap<String, IndexKeyDefinition> keyDefs,
         List<InlineIndexKeyType> keyTypes,

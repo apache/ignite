@@ -36,8 +36,9 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.topology.Grid
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
-import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor;
+import org.apache.ignite.internal.processors.query.GridQueryRowDescriptor;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
+import org.apache.ignite.internal.processors.query.h2.opt.H2CacheRow;
 import org.apache.ignite.internal.processors.query.h2.opt.H2Row;
 import org.apache.ignite.internal.processors.query.stat.ColumnStatistics;
 import org.apache.ignite.internal.processors.query.stat.ColumnStatisticsCollector;
@@ -249,7 +250,7 @@ public class GatherPartitionStatistics implements Callable<ObjectPartitionStatis
                 collectors[i] = new ColumnStatisticsCollector(cols[i], tbl::compareTypeSafe, colCfgVer);
             }
 
-            GridH2RowDescriptor rowDesc = tbl.rowDescriptor();
+            GridQueryRowDescriptor rowDesc = tbl.rowDescriptor();
             GridQueryTypeDescriptor typeDesc = rowDesc.type();
 
             try {
@@ -273,7 +274,7 @@ public class GatherPartitionStatistics implements Callable<ObjectPartitionStatis
                     if (!typeDesc.matchType(row.value()) || wasExpired(row))
                         continue;
 
-                    H2Row h2row = rowDesc.createRow(row);
+                    H2Row h2row = new H2CacheRow(rowDesc, row);
 
                     for (ColumnStatisticsCollector colStat : collectors)
                         colStat.add(h2row.getValue(colStat.col().getColumnId()));
