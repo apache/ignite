@@ -84,19 +84,16 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
     public static final GridCacheVersion GET_ENTRY_INVALID_VER_AFTER_GET = new GridCacheVersion(0, 0, 3);
 
     /** Skip store flag bit mask. */
-    private static final int TX_ENTRY_SKIP_STORE_FLAG_MASK = 1;
+    private static final int TX_ENTRY_SKIP_STORE_FLAG_MASK = 0x01;
 
     /** Keep binary flag. */
-    private static final int TX_ENTRY_KEEP_BINARY_FLAG_MASK = 1 << 1;
+    private static final int TX_ENTRY_KEEP_BINARY_FLAG_MASK = 0x02;
 
     /** Flag indicating that old value for 'invoke' operation was non null on primary node. */
-    private static final int TX_ENTRY_OLD_VAL_ON_PRIMARY = 1 << 2;
+    private static final int TX_ENTRY_OLD_VAL_ON_PRIMARY = 0x04;
 
     /** Flag indicating that near cache is enabled on originating node and it should be added as reader. */
-    private static final int TX_ENTRY_ADD_READER_FLAG_MASK = 1 << 3;
-
-    /** Flag indicating that 'invoke' operation was no-op on primary. */
-    private static final int TX_ENTRY_NOOP_ON_PRIMARY = 1 << 4;
+    private static final int TX_ENTRY_ADD_READER_FLAG_MASK = 0x08;
 
     /** Prepared flag updater. */
     private static final AtomicIntegerFieldUpdater<IgniteTxEntry> PREPARED_UPD =
@@ -560,20 +557,6 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
      */
     public boolean addReader() {
         return isFlag(TX_ENTRY_ADD_READER_FLAG_MASK);
-    }
-
-    /**
-     * @param noop Add no-op flag.
-     */
-    public void noop(boolean noop) {
-        setFlag(noop, TX_ENTRY_NOOP_ON_PRIMARY);
-    }
-
-    /**
-     * @return {@code true} if noop flag is set, {@code false} otherwise.
-     */
-    public boolean noop() {
-        return isFlag(TX_ENTRY_NOOP_ON_PRIMARY);
     }
 
     /**
