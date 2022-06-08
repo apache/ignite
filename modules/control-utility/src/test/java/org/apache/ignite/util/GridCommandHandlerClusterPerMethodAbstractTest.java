@@ -31,11 +31,4 @@ public abstract class GridCommandHandlerClusterPerMethodAbstractTest extends Gri
 
         cleanPersistenceDir();
     }
-
-    /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
-        super.beforeTest();
-
-        cleanPersistenceDir();
-    }
 }
