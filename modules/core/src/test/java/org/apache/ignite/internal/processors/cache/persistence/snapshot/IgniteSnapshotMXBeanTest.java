@@ -64,7 +64,7 @@ public class IgniteSnapshotMXBeanTest extends AbstractSnapshotSelfTest {
 
         SnapshotMXBean mxBean = getMxBean(ignite.name(), METRIC_GROUP, SnapshotMXBeanImpl.class, SnapshotMXBean.class);
 
-        mxBean.createSnapshot(SNAPSHOT_NAME);
+        mxBean.createSnapshot(SNAPSHOT_NAME, "");
 
         assertTrue("Waiting for snapshot operation failed.",
             GridTestUtils.waitForCondition(() -> (long)getMetric("LastSnapshotEndTime", snpMBean) > 0, TIMEOUT));
@@ -95,10 +95,6 @@ public class IgniteSnapshotMXBeanTest extends AbstractSnapshotSelfTest {
     /** @throws Exception If fails. */
     @Test
     public void testRestoreSnapshot() throws Exception {
-        // TODO IGNITE-14999 Support dynamic restoration of encrypted snapshots.
-        if (encryption)
-            return;
-
         IgniteEx ignite = startGridsWithSnapshot(2, CACHE_KEYS_RANGE, false);
 
         DynamicMBean mReg0 = metricRegistry(grid(0).name(), null, SNAPSHOT_RESTORE_METRICS);
@@ -108,7 +104,7 @@ public class IgniteSnapshotMXBeanTest extends AbstractSnapshotSelfTest {
         assertEquals(0, (long)getMetric("endTime", mReg1));
 
         getMxBean(ignite.name(), METRIC_GROUP, SnapshotMXBeanImpl.class, SnapshotMXBean.class)
-            .restoreSnapshot(SNAPSHOT_NAME, null);
+            .restoreSnapshot(SNAPSHOT_NAME, "", "");
 
         assertTrue(GridTestUtils.waitForCondition(() -> (long)getMetric("endTime", mReg0) > 0, TIMEOUT));
         assertTrue(GridTestUtils.waitForCondition(() -> (long)getMetric("endTime", mReg1) > 0, TIMEOUT));
@@ -119,10 +115,6 @@ public class IgniteSnapshotMXBeanTest extends AbstractSnapshotSelfTest {
     /** @throws Exception If fails. */
     @Test
     public void testCancelRestoreSnapshot() throws Exception {
-        // TODO IGNITE-14999 Support dynamic restoration of encrypted snapshots.
-        if (encryption)
-            return;
-
         IgniteEx ignite = startGridsWithSnapshot(2, CACHE_KEYS_RANGE, false);
         SnapshotMXBean mxBean = getMxBean(ignite.name(), METRIC_GROUP, SnapshotMXBeanImpl.class, SnapshotMXBean.class);
         DynamicMBean mReg0 = metricRegistry(grid(0).name(), null, SNAPSHOT_RESTORE_METRICS);

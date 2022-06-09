@@ -26,6 +26,7 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorDataTransferObject;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Input parameters for checking snapshot partitions consistency task.
@@ -40,6 +41,9 @@ public class SnapshotPartitionsVerifyTaskArg extends VisorDataTransferObject {
     /** The map of distribution of snapshot metadata pieces across the cluster. */
     private Map<ClusterNode, List<SnapshotMetadata>> clusterMetas;
 
+    /** Snapshot directory path. */
+    private String snpPath;
+
     /** Default constructor. */
     public SnapshotPartitionsVerifyTaskArg() {
         // No-op.
@@ -48,10 +52,16 @@ public class SnapshotPartitionsVerifyTaskArg extends VisorDataTransferObject {
     /**
      * @param grpNames Cache group names to be verified.
      * @param clusterMetas The map of distribution of snapshot metadata pieces across the cluster.
+     * @param snpPath Snapshot directory path.
      */
-    public SnapshotPartitionsVerifyTaskArg(Collection<String> grpNames, Map<ClusterNode, List<SnapshotMetadata>> clusterMetas) {
+    public SnapshotPartitionsVerifyTaskArg(
+        Collection<String> grpNames,
+        Map<ClusterNode, List<SnapshotMetadata>> clusterMetas,
+        @Nullable String snpPath
+    ) {
         this.grpNames = grpNames;
         this.clusterMetas = clusterMetas;
+        this.snpPath = snpPath;
     }
 
     /**
@@ -68,16 +78,25 @@ public class SnapshotPartitionsVerifyTaskArg extends VisorDataTransferObject {
         return clusterMetas;
     }
 
+    /**
+     * @return Snapshot directory path.
+     */
+    public String snapshotPath() {
+        return snpPath;
+    }
+
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
         U.writeCollection(out, grpNames);
         U.writeMap(out, clusterMetas);
+        U.writeString(out, snpPath);
     }
 
     /** {@inheritDoc} */
     @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
         grpNames = U.readCollection(in);
         clusterMetas = U.readMap(in);
+        snpPath = U.readString(in);
     }
 
     /** {@inheritDoc} */

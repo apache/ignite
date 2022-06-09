@@ -45,5 +45,5 @@ Ignite expands link:extensions-and-integrations/ignite-for-spark/ignite-datafram
 
 Apache Ignite comes with two modules that support different versions of Apache Spark:
 
-* ignite-spark — integration with Spark 2.3
-* ignite-spark-2.4 — integration with Spark 2.4
+* ignite-spark-ext 1.0.0 — integration with Spark 2.3
+* ignite-spark-ext 2.0.0 — integration with Spark 2.4

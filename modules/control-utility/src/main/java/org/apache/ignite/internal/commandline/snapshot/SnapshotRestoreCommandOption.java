@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.commandline.snapshot;
 
 import org.apache.ignite.internal.commandline.argument.CommandArg;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Snapshot restore command options.
@@ -26,41 +27,45 @@ public enum SnapshotRestoreCommandOption implements CommandArg {
     /** Cache group names. */
     GROUPS("--groups", "group1,...groupN", "Cache group names."),
 
+    /** Snapshot directory location. */
+    SOURCE(SnapshotCheckCommandOption.SOURCE.argName(), SnapshotCheckCommandOption.SOURCE.arg(),
+        SnapshotCheckCommandOption.SOURCE.description()),
+
     /** Synchronous execution flag. */
-    SYNC(SnapshotCreateCommandOption.SYNC.argName(), SnapshotCreateCommandOption.SYNC.optionName(),
+    SYNC(SnapshotCreateCommandOption.SYNC.argName(), SnapshotCreateCommandOption.SYNC.arg(),
         SnapshotCreateCommandOption.SYNC.description());
 
-    /** Argument name. */
-    private final String argName;
+    /** Name. */
+    private final String name;
 
-    /** Option name. */
-    private final String optionName;
+    /** Argument. */
+    private final String arg;
 
-    /** Option description. */
+    /** Description. */
     private final String desc;
 
     /**
-     * @param argName Argument name.
-     * @param optionName Option name.
-     * @param desc Option description.
+     * @param name Name.
+     * @param arg Argument.
+     * @param desc Description.
      */
-    SnapshotRestoreCommandOption(String argName, String optionName, String desc) {
-        this.argName = argName;
-        this.optionName = optionName;
+    SnapshotRestoreCommandOption(String name, @Nullable String arg, String desc) {
+        this.name = name;
+        this.arg = arg;
         this.desc = desc;
     }
 
     /** {@inheritDoc} */
     @Override public String argName() {
-        return argName;
+        return name;
     }
 
-    /** @return Option name. */
-    public String optionName() {
-        return optionName;
+    /** @return Argument. */
+    public String arg() {
+        return arg;
     }
 
-    /** @return Option description. */
+    /** @return Description. */
     public String description() {
         return desc;
     }
