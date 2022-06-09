@@ -35,7 +35,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 /**
- * Test partitions consistency in various scenarios.
+ * Test partitions consistency in case of noop operations.
  */
 @RunWith(Parameterized.class)
 public class TxPartitionCounterStateConsistencyNoopInvokeTest extends TxPartitionCounterStateAbstractTest {
@@ -58,11 +58,6 @@ public class TxPartitionCounterStateConsistencyNoopInvokeTest extends TxPartitio
             new Object[] {TransactionConcurrency.PESSIMISTIC, TransactionIsolation.READ_COMMITTED},
             new Object[] {TransactionConcurrency.PESSIMISTIC, TransactionIsolation.SERIALIZABLE}
         };
-    }
-
-    /**{@inheritDoc} */
-    @Override protected boolean persistenceEnabled() {
-        return true;
     }
 
     /**{@inheritDoc} */
