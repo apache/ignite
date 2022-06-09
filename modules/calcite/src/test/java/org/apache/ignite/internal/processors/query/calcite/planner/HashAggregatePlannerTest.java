@@ -23,7 +23,6 @@ import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.sql.fun.SqlAvgAggFunction;
 import org.apache.calcite.sql.fun.SqlCountAggFunction;
 import org.apache.ignite.internal.processors.query.QueryUtils;
-import org.apache.ignite.internal.processors.query.calcite.jdbc.JdbcQueryTest;
 import org.apache.ignite.internal.processors.query.calcite.metadata.ColocationGroup;
 import org.apache.ignite.internal.processors.query.calcite.prepare.MappingQueryContext;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteExchange;
@@ -49,8 +48,6 @@ import org.junit.Test;
 public class HashAggregatePlannerTest extends AbstractAggregatePlannerTest {
     /**
      * Tests COUNT(...) plan with and without IndexCount optimization.
-     *
-     * @see JdbcQueryTest#testIndexCount()
      */
     @Test
     public void indexCount() throws Exception {
@@ -72,36 +69,38 @@ public class HashAggregatePlannerTest extends AbstractAggregatePlannerTest {
         tbl.addIndex("idx", 1);
 
         assertIndexCount("SELECT COUNT(*) FROM TEST", publicSchema);
-
+        assertIndexCount("SELECT COUNT(1) FROM TEST", publicSchema);
         assertIndexCount("SELECT COUNT(*) FROM (SELECT * FROM TEST)", publicSchema);
+        assertIndexCount("SELECT COUNT(1) FROM (SELECT * FROM TEST)", publicSchema);
 
-        // Check caount on certain field.
-        assertIndexCount("SELECT COUNT(VAL0) FROM TEST", publicSchema);
+        assertIndexCount("SELECT COUNT(*), COUNT(*), COUNT(1) FROM TEST", publicSchema);
 
-        // Check with several 'count()'.
-        assertIndexCount("SELECT COUNT(*), COUNT(*) FROM TEST", publicSchema);
-        assertIndexCount("SELECT COUNT(VAL0), COUNT(VAL0) FROM TEST", publicSchema);
-        assertIndexCount("SELECT COUNT(VAL0), COUNT(VAL1) FROM TEST", publicSchema);
-        assertIndexCount("SELECT COUNT(*), COUNT(VAL0), COUNT(VAL1) FROM TEST", publicSchema);
-        assertIndexCount("SELECT COUNT(*), COUNT(VAL0), COUNT(VAL1) FROM (SELECT * FROM TEST)", publicSchema);
+        // Count on certain fields can't be optimized. Nulls are count included.
+        assertNoIndexCount("SELECT COUNT(VAL0) FROM TEST", publicSchema);
+
+        assertNoIndexCount("SELECT COUNT(*), COUNT(VAL0) FROM TEST", publicSchema);
+
+        assertNoIndexCount("SELECT COUNT(1), COUNT(VAL0) FROM TEST", publicSchema);
+
+        assertNoIndexCount("SELECT COUNT(*) FILTER (WHERE VAL0>1) FROM TEST", publicSchema);
 
         // IndexCount can't be used with a condition, groups or other aggregates.
-        assertPlan("SELECT COUNT(*) FROM TEST WHERE VAL0>1", publicSchema,
-            hasChildThat(isInstanceOf(IgniteIndexCount.class)).negate());
+        assertNoIndexCount("SELECT COUNT(*) FROM TEST WHERE VAL0>1", publicSchema);
 
-        assertPlan("SELECT COUNT(*), SUM(VAL0) FROM TEST", publicSchema,
-            hasChildThat(isInstanceOf(IgniteIndexCount.class)).negate());
+        assertNoIndexCount("SELECT COUNT(1) FROM TEST WHERE VAL0>1", publicSchema);
 
-        assertPlan("SELECT VAL0, COUNT(*) FROM TEST GROUP BY VAL0", publicSchema,
-            hasChildThat(isInstanceOf(IgniteIndexCount.class)).negate());
+        assertNoIndexCount("SELECT COUNT(*), SUM(VAL0) FROM TEST", publicSchema);
 
-        assertPlan("SELECT COUNT(*) FROM TEST GROUP BY VAL0", publicSchema,
-            hasChildThat(isInstanceOf(IgniteIndexCount.class)).negate());
+        assertNoIndexCount("SELECT VAL0, COUNT(*) FROM TEST GROUP BY VAL0", publicSchema);
+
+        assertNoIndexCount("SELECT COUNT(*) FROM TEST GROUP BY VAL0", publicSchema);
+
+        assertNoIndexCount("SELECT COUNT(*) FILTER (WHERE VAL0>1) FROM TEST", publicSchema);
 
         publicSchema.addTable("TEST2", createBroadcastTable());
 
-        assertPlan("SELECT COUNT(*) FROM (SELECT T1.VAL0, T2.VAL1 FROM TEST T1, TEST2 T2 WHERE T1.GRP0 = T2.GRP0)",
-            publicSchema, hasChildThat(isInstanceOf(IgniteIndexCount.class)).negate());
+        assertNoIndexCount("SELECT COUNT(*) FROM (SELECT T1.VAL0, T2.VAL1 FROM TEST T1, " +
+            "TEST2 T2 WHERE T1.GRP0 = T2.GRP0)", publicSchema);
     }
 
     /** */
@@ -112,6 +111,11 @@ public class HashAggregatePlannerTest extends AbstractAggregatePlannerTest {
             nodeOrAnyChild(isInstanceOf(IgniteColocatedHashAggregate.class)
                 .and(input(isInstanceOf(IgniteExchange.class)
                     .and(input(isInstanceOf(IgniteIndexCount.class)))))));
+    }
+
+    /** */
+    private void assertNoIndexCount(String sql, IgniteSchema publicSchema) throws Exception {
+        assertPlan(sql, publicSchema, hasChildThat(isInstanceOf(IgniteIndexCount.class)).negate());
     }
 
     /**
@@ -178,7 +182,7 @@ public class HashAggregatePlannerTest extends AbstractAggregatePlannerTest {
      */
     @Test
     public void noGroupByAggregate() throws Exception {
-        TestTable tbl = createAffinityTable().addIndex("val0_val1", 1, 2);
+        TestTable tbl = createAffinityTable();
 
         IgniteSchema publicSchema = new IgniteSchema("PUBLIC");
 

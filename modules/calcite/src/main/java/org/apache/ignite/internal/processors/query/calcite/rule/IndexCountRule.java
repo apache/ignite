@@ -47,18 +47,25 @@ public class IndexCountRule extends RelRule<IndexCountRule.Config> {
         if (idx == null)
             idx = table.indexes().values().stream().findFirst().orElse(null);
 
-        if (idx == null || scan.condition() != null || aggr.getGroupCount() > 0 || table.isIndexRebuildInProgress()
-            || aggr.getAggCallList().stream().anyMatch(a -> a.getAggregation().getKind() != SqlKind.COUNT))
+        if (
+            idx == null ||
+                scan.condition() != null ||
+                scan.projects() != null ||
+                aggr.getGroupCount() > 0 ||
+                table.isIndexRebuildInProgress() ||
+                aggr.getAggCallList().stream().anyMatch(a -> a.getAggregation().getKind() != SqlKind.COUNT ||
+                    !a.getArgList().isEmpty())
+        )
             return;
 
-        RelTraitSet traits = aggr.getTraitSet()
+        RelTraitSet idxTraits = aggr.getTraitSet()
             .replace(IgniteConvention.INSTANCE)
             .replace(IgniteDistributions.random())
             .replace(RewindabilityTrait.REWINDABLE);
 
         IgniteIndexCount idxCnt = new IgniteIndexCount(
             scan.getCluster(),
-            traits,
+            idxTraits,
             scan.getTable(),
             idx.name(),
             aggr.getRowType()

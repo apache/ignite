@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.query.calcite.planner;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.calcite.rel.RelNode;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.processors.query.calcite.jdbc.JdbcQueryTest;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteExchange;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexCount;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexScan;
@@ -70,9 +69,6 @@ public class IndexRebuildPlannerTest extends AbstractPlannerTest {
 
     /**
      * Test IndexCount is disabled when index is unavailable.
-     *
-     * @see HashAggregatePlannerTest#indexCount()
-     * @see JdbcQueryTest#testIndexCountWithUnavalableIndex()
      */
     @Test
     public void testIndexCountAtIndexRebuild() throws Exception {
@@ -92,7 +88,9 @@ public class IndexRebuildPlannerTest extends AbstractPlannerTest {
             .and(input(isInstanceOf(IgniteExchange.class).and(input(isInstanceOf(IgniteIndexCount.class))))));
     }
 
-    /** */
+    /**
+     * Test IndexCount is disabled when index concurrently becomes unavailable.
+     */
     @Test
     public void testConcurrentIndexRebuildStateChange() throws Exception {
         String sql = "SELECT * FROM TBL WHERE id = 0";
@@ -122,9 +120,6 @@ public class IndexRebuildPlannerTest extends AbstractPlannerTest {
 
     /**
      * Test IndexCount is disabled when index becomes unavailable.
-     *
-     * @see HashAggregatePlannerTest#indexCount()
-     * @see JdbcQueryTest#testIndexCountWithUnavalableIndex()
      */
     @Test
     public void testIndexCountAtConcurrentIndexRebuild() throws Exception {

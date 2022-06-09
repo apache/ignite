@@ -19,15 +19,21 @@ package org.apache.ignite.internal.processors.query.calcite.integration;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cache.query.index.IndexProcessor;
 import org.apache.ignite.internal.managers.indexing.IndexesRebuildTask;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor;
 import org.apache.ignite.internal.processors.query.calcite.QueryChecker;
+import org.apache.ignite.internal.processors.query.calcite.schema.IgniteCacheTable;
+import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.processors.query.schema.IndexRebuildCancelToken;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitorClosure;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -194,6 +200,42 @@ public class IndexRebuildIntegrationTest extends AbstractBasicIntegrationTest {
             .ordered();
 
         checkRebuildIndexQuery(grid(1), checker, checker);
+    }
+
+    /**
+     * Test IndexCount is disables at index rebuilding.
+     */
+    @Test
+    public void testIndexCountAtUnavailableIndex() throws IgniteCheckedException {
+        CalciteQueryProcessor srvEngine = Commons.lookupComponent(grid(0).context(), CalciteQueryProcessor.class);
+
+        IgniteCacheTable tbl = (IgniteCacheTable)srvEngine.schemaHolder().schema("PUBLIC").getTable("TBL");
+
+        tbl.markIndexRebuildInProgress(true);
+
+        assertQuery("select COUNT(*) from tbl").returns(100L).check();
+
+        // Check values with concurrently unavailable index.
+        tbl.markIndexRebuildInProgress(false);
+
+        AtomicBoolean stop = new AtomicBoolean();
+
+        IgniteInternalFuture<?> fut = GridTestUtils.runAsync(() -> {
+            boolean lever = true;
+
+            while (!stop.get())
+                tbl.markIndexRebuildInProgress(lever = !lever);
+        });
+
+        try {
+            for (int i = 0; i < 1000; i++)
+                assertQuery("select COUNT(*) from Tbl").returns(100L).check();
+        }
+        finally {
+            stop.set(true);
+        }
+
+        fut.get();
     }
 
     /** */

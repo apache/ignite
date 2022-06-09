@@ -35,18 +35,12 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.ignite.calcite.CalciteQueryEngineConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.SqlConfiguration;
-import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor;
-import org.apache.ignite.internal.processors.query.calcite.planner.IndexRebuildPlannerTest;
-import org.apache.ignite.internal.processors.query.calcite.schema.IgniteCacheTable;
-import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
@@ -185,113 +179,6 @@ public class JdbcQueryTest extends GridCommonAbstractTest {
         stmt.execute("drop table Person");
 
         stmt.close();
-    }
-
-    /**
-     * Tests COUNT(...) values with and without IndexCount optimization.
-     *
-     * @see org.apache.ignite.internal.processors.query.calcite.planner.HashAggregatePlannerTest#indexCount()
-     */
-    @Test
-    public void testIndexCount() throws Exception {
-        int records = 101;
-
-        createRecordsTable(records);
-
-        // Check values with IndexCount optimization.
-        try (ResultSet rs = stmt.executeQuery("select COUNT(*) from Record")) {
-            rs.next();
-            assertEquals(records, rs.getInt(1));
-        }
-
-        try (ResultSet rs = stmt.executeQuery("select COUNT(*), COUNT(\"name\"), COUNT(\"value\") from Record")) {
-            rs.next();
-            assertEquals(records, rs.getInt(1));
-            assertEquals(records, rs.getInt(2));
-            assertEquals(records, rs.getInt(3));
-        }
-
-        // Check values witout IndexCount optimization.
-        try (ResultSet rs = stmt.executeQuery("select COUNT(*) from Record WHERE \"value\" <> 0")) {
-            rs.next();
-            assertEquals(records - 1, rs.getInt(1));
-        }
-
-        try (ResultSet rs = stmt.executeQuery("select COUNT(*) from Record GROUP BY \"name\"")) {
-            rs.next();
-            assertEquals(records, rs.getInt(1));
-        }
-    }
-
-    /**
-     * Tests values of COUNT(...) when index is unavailable and IndexCount optimization switches off.
-     *
-     * @see IndexRebuildPlannerTest#testIndexCountAtIndexRebuild()
-     * @see IndexRebuildPlannerTest#testIndexCountAtConcurrentIndexRebuild()
-     */
-    @Test
-    public void testIndexCountWithUnavalableIndex() throws Exception {
-        int records = 101;
-
-        createRecordsTable(records);
-
-        CalciteQueryProcessor srvEngine = Commons.lookupComponent(grid(0).context(), CalciteQueryProcessor.class);
-        IgniteCacheTable tbl = (IgniteCacheTable)srvEngine.schemaHolder().schema("PUBLIC").getTable("RECORD");
-
-        tbl.markIndexRebuildInProgress(true);
-
-        try (ResultSet rs = stmt.executeQuery("select COUNT(*) from Record")) {
-            rs.next();
-            assertEquals(records, rs.getInt(1));
-        }
-
-        try (ResultSet rs = stmt.executeQuery("select COUNT(*), COUNT(\"name\"), COUNT(\"value\") from Record")) {
-            rs.next();
-            assertEquals(records, rs.getInt(1));
-        }
-
-        // Check values with concurrently unavailable index.
-        tbl.markIndexRebuildInProgress(false);
-
-        AtomicBoolean stop = new AtomicBoolean();
-
-        IgniteInternalFuture<?> fut = GridTestUtils.runAsync(() -> {
-            boolean lever = true;
-
-            while (!stop.get())
-                tbl.markIndexRebuildInProgress(lever = !lever);
-
-        });
-
-        try {
-            for (int i = 0; i < 1000; i++) {
-                try (ResultSet rs = stmt.executeQuery("select COUNT(*) from Record")) {
-                    rs.next();
-                    assertEquals(records, rs.getInt(1));
-                }
-
-                try (ResultSet rs = stmt.executeQuery("select COUNT(*), COUNT(*), COUNT(\"value\") from Record")) {
-                    rs.next();
-                    assertEquals(records, rs.getInt(1));
-                }
-            }
-        }
-        finally {
-            stop.set(true);
-        }
-
-        fut.get();
-    }
-
-    /** */
-    private void createRecordsTable(int records) throws SQLException {
-        stmt.execute("CREATE TABLE Record(\"id\" INT, \"name\" VARCHAR, \"value\" BIGINT, PRIMARY KEY(\"id\")) " +
-            "with \"template=partitioned\"");
-
-        for (int i = 0; i < records; ++i)
-            stmt.addBatch(String.format("INSERT INTO Record VALUES (%d, 'SameName', %d)", i, i));
-
-        stmt.executeBatch();
     }
 
     /** Test batched execution of statement. */

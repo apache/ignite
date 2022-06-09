@@ -42,7 +42,9 @@ import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.calcite.util.ImmutableIntList;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.cache.query.index.IndexName;
+import org.apache.ignite.internal.cache.query.index.sorted.inline.IndexQueryContext;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndex;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.failure.FailureProcessor;
 import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler.RowFactory;
@@ -115,6 +117,7 @@ import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactor
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.processors.query.calcite.util.RexUtils;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.spi.indexing.IndexingQueryFilterImpl;
 
 import static java.util.Collections.singletonList;
 import static org.apache.calcite.rel.RelDistribution.Type.HASH_DISTRIBUTED;
@@ -430,9 +433,18 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
             IndexName idxName = new IndexName(cctx.name(), kctx.query().schemaName(cctx),
                 descr.typeDescription().tableName(), idx.name());
 
-            return new IndexCountNode<>(kctx.indexProcessor().index(idxName).unwrap(InlineIndex.class), ctx);
+            IndexQueryContext qryCtx = null;
+
+            if (descr.cacheInfo().config().getBackups() > 0) {
+                IndexingQueryFilterImpl filter = new IndexingQueryFilterImpl(kctx, AffinityTopologyVersion.NONE, null);
+
+                qryCtx = new IndexQueryContext(filter, null, null);
+            }
+
+            return new IndexCountNode<>(kctx.indexProcessor().index(idxName).unwrap(InlineIndex.class), ctx, qryCtx);
         }
         else {
+            // Index is unavailable. Work with table scan.
             RelNode relInput = new IgniteTableScan(rel.getCluster(), rel.getTraitSet(), rel.getTable());
 
             AggregateCall aggFun = AggregateCall.create(
