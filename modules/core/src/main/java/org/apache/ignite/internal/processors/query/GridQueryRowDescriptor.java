@@ -26,7 +26,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypes;
+import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyType;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContextInfo;
 import org.jetbrains.annotations.Nullable;
@@ -48,13 +48,13 @@ public class GridQueryRowDescriptor {
     private volatile String[] fields;
 
     /** */
-    private volatile int[] fieldTypes;
+    private volatile IndexKeyType[] fieldTypes;
 
     /** */
-    private final int keyType;
+    private final IndexKeyType keyType;
 
     /** */
-    private final int valType;
+    private final IndexKeyType valType;
 
     /** */
     private volatile GridQueryProperty[] props;
@@ -80,8 +80,8 @@ public class GridQueryRowDescriptor {
         this.cacheInfo = cacheInfo;
         this.type = type;
 
-        keyType = IndexKeyTypes.of(type.keyClass());
-        valType = IndexKeyTypes.of(type.valueClass());
+        keyType = IndexKeyType.forClass(type.keyClass());
+        valType = IndexKeyType.forClass(type.valueClass());
 
         refreshMetadataFromTypeDescriptor();
     }
@@ -96,12 +96,12 @@ public class GridQueryRowDescriptor {
 
         fields = allFields.keySet().toArray(new String[allFields.size()]);
 
-        fieldTypes = new int[fields.length];
+        fieldTypes = new IndexKeyType[fields.length];
 
-        Class[] classes = allFields.values().toArray(new Class[fields.length]);
+        Class<?>[] classes = allFields.values().toArray(new Class[fields.length]);
 
         for (int i = 0; i < fieldTypes.length; i++)
-            fieldTypes[i] = IndexKeyTypes.of(classes[i]);
+            fieldTypes[i] = IndexKeyType.forClass(classes[i]);
 
         props = new GridQueryProperty[fields.length];
 
@@ -147,14 +147,14 @@ public class GridQueryRowDescriptor {
     /**
      * @return Key type.
      */
-    public int keyType() {
+    public IndexKeyType keyType() {
         return keyType;
     }
 
     /**
      * @return Value type.
      */
-    public int valueType() {
+    public IndexKeyType valueType() {
         return valType;
     }
 
@@ -171,7 +171,7 @@ public class GridQueryRowDescriptor {
      * @param col Column index.
      * @return Value type.
      */
-    public int fieldType(int col) {
+    public IndexKeyType fieldType(int col) {
         return fieldTypes[col];
     }
 

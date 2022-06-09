@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.query.h2.index;
 
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyType;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypeSettings;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexRow;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexRowCompartorImpl;
@@ -67,19 +68,20 @@ public class H2RowComparator extends IndexRowCompartorImpl {
         if (cmp != COMPARE_UNSUPPORTED)
             return cmp;
 
-        int objType = key == NullIndexKey.INSTANCE ? type.type() : key.type();
+        IndexKeyType objType = key == NullIndexKey.INSTANCE ? type.type() : key.type();
 
-        int highOrder = Value.getHigherOrder(type.type(), objType);
+        int highOrder = Value.getHigherOrder(type.type().code(), objType.code());
 
         // H2 supports comparison between different types after casting them to single type.
-        if (highOrder != objType && highOrder == type.type()) {
+        if (highOrder != objType.code() && highOrder == type.type().code()) {
             Value va = DataType.convertToValue(ses, key.key(), highOrder);
             va = va.convertTo(highOrder);
 
             IndexKey objHighOrder = IndexKeyFactory.wrap(
                 va.getObject(), highOrder, coctx, keyTypeSettings);
 
-            InlineIndexKeyType highType = InlineIndexKeyTypeRegistry.get(objHighOrder, highOrder, keyTypeSettings);
+            InlineIndexKeyType highType = InlineIndexKeyTypeRegistry.get(objHighOrder,
+                IndexKeyType.forCode(highOrder), keyTypeSettings);
 
             // The only way to invoke inline comparison again.
             if (highType != null)
@@ -105,12 +107,12 @@ public class H2RowComparator extends IndexRowCompartorImpl {
         if (left.indexSearchRow())
             ltype = DataType.getTypeFromClass(lobject.getClass());
         else
-            ltype = left.rowHandler().indexKeyDefinitions().get(idx).idxType();
+            ltype = left.rowHandler().indexKeyDefinitions().get(idx).idxType().code();
 
         if (right.indexSearchRow())
             rtype = DataType.getTypeFromClass(robject.getClass());
         else
-            rtype = right.rowHandler().indexKeyDefinitions().get(idx).idxType();
+            rtype = right.rowHandler().indexKeyDefinitions().get(idx).idxType().code();
 
         int c = compareValues(wrap(lobject, ltype), wrap(robject, rtype));
 

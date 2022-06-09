@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.cache.query.index.sorted.inline;
 
+import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyType;
 import org.apache.ignite.internal.cache.query.index.sorted.keys.IndexKey;
 import org.jetbrains.annotations.Nullable;
 
@@ -27,9 +28,9 @@ public interface InlineIndexKeyType {
     /**
      * Returns type of inlined column.
      *
-     * @return Integer code of the column's value type.
+     * @return Column's value type.
      */
-    public int type();
+    public IndexKeyType type();
 
     /**
      * Returns size of inlined key.

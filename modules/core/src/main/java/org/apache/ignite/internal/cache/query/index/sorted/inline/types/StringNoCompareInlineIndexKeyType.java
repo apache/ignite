@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.cache.query.index.sorted.inline.types;
 
-import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypes;
+import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyType;
 import org.apache.ignite.internal.cache.query.index.sorted.keys.StringIndexKey;
 import org.jetbrains.annotations.Nullable;
 
@@ -30,7 +30,7 @@ public class StringNoCompareInlineIndexKeyType extends NullableInlineIndexKeyTyp
 
     /** */
     public StringNoCompareInlineIndexKeyType() {
-        super(IndexKeyTypes.STRING, (short)-1);
+        super(IndexKeyType.STRING, (short)-1);
     }
 
     /** {@inheritDoc} */

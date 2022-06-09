@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.cache.query.index.sorted.inline.types;
 
-import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypes;
+import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyType;
 import org.apache.ignite.internal.cache.query.index.sorted.keys.ByteIndexKey;
 import org.apache.ignite.internal.pagemem.PageUtils;
 
@@ -27,7 +27,7 @@ import org.apache.ignite.internal.pagemem.PageUtils;
 public class ByteInlineIndexKeyType extends NullableInlineIndexKeyType<ByteIndexKey> {
     /** */
     public ByteInlineIndexKeyType() {
-        super(IndexKeyTypes.BYTE, (short)1);
+        super(IndexKeyType.BYTE, (short)1);
     }
 
     /** {@inheritDoc} */
@@ -39,7 +39,7 @@ public class ByteInlineIndexKeyType extends NullableInlineIndexKeyType<ByteIndex
 
     /** {@inheritDoc} */
     @Override protected int put0(long pageAddr, int off, ByteIndexKey key, int maxSize) {
-        PageUtils.putByte(pageAddr, off, (byte)type());
+        PageUtils.putByte(pageAddr, off, (byte)type().code());
         PageUtils.putByte(pageAddr, off + 1, (byte)key.key());
 
         return keySize + 1;

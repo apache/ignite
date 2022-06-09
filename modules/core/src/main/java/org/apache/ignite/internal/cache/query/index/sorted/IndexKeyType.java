@@ -27,189 +27,234 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.OffsetDateTime;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Comparator;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.processors.query.QueryUtils;
+import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  * List of available types to use as index key.
  */
-public class IndexKeyTypes {
+public enum IndexKeyType {
     /** The data type is unknown at this time. */
-    public static final int UNKNOWN = -1;
+    UNKNOWN(-1),
 
     /** The value type for NULL. */
-    public static final int NULL = 0;
+    NULL(0),
 
     /** The value type for BOOLEAN values. */
-    public static final int BOOLEAN = 1;
+    BOOLEAN(1),
 
     /** The value type for BYTE values. */
-    public static final int BYTE = 2;
+    BYTE(2),
 
     /** The value type for SHORT values. */
-    public static final int SHORT = 3;
+    SHORT(3),
 
     /** The value type for INT values. */
-    public static final int INT = 4;
+    INT(4),
 
-    /** The value type for INT values. */
-    public static final int LONG = 5;
+    /** The value type for LONG values. */
+    LONG(5),
 
     /** The value type for DECIMAL values. */
-    public static final int DECIMAL = 6;
+    DECIMAL(6),
 
     /** The value type for DOUBLE values. */
-    public static final int DOUBLE = 7;
+    DOUBLE(7),
 
     /** The value type for FLOAT values. */
-    public static final int FLOAT = 8;
+    FLOAT(8),
 
     /** The value type for TIME values. */
-    public static final int TIME = 9;
+    TIME(9),
 
     /**
      * The value type for DATE values.
      */
-    public static final int DATE = 10;
+    DATE(10),
 
     /**
      * The value type for TIMESTAMP values.
      */
-    public static final int TIMESTAMP = 11;
+    TIMESTAMP(11),
 
     /**
      * The value type for BYTES values.
      */
-    public static final int BYTES = 12;
+    BYTES(12),
 
     /**
      * The value type for STRING values.
      */
-    public static final int STRING = 13;
+    STRING(13),
 
     /**
      * The value type for case insensitive STRING values.
      */
-    public static final int STRING_IGNORECASE = 14;
+    STRING_IGNORECASE(14),
 
     /**
      * The value type for BLOB values.
      */
-    public static final int BLOB = 15;
+    BLOB(15),
 
     /**
      * The value type for CLOB values.
      */
-    public static final int CLOB = 16;
+    CLOB(16),
 
     /**
      * The value type for ARRAY values.
      */
-    public static final int ARRAY = 17;
+    ARRAY(17),
 
     /**
      * The value type for RESULT_SET values.
      */
-    public static final int RESULT_SET = 18;
+    RESULT_SET(18),
 
     /**
      * The value type for JAVA_OBJECT values.
      */
-    public static final int JAVA_OBJECT = 19;
+    JAVA_OBJECT(19),
 
     /**
      * The value type for UUID values.
      */
-    public static final int UUID = 20;
+    UUID(20),
 
     /**
      * The value type for string values with a fixed size.
      */
-    public static final int STRING_FIXED = 21;
+    STRING_FIXED(21),
 
     /**
      * The value type for string values with a fixed size.
      */
-    public static final int GEOMETRY = 22;
+    GEOMETRY(22),
 
     // 23 was a short-lived experiment "TIMESTAMP UTC" which has been removed.
 
     /**
      * The value type for TIMESTAMP WITH TIME ZONE values.
      */
-    public static final int TIMESTAMP_TZ = 24;
+    TIMESTAMP_TZ(24),
 
     /**
      * The value type for ENUM values.
      */
-    public static final int ENUM = 25;
+    ENUM(25);
 
     /**
-     *
+     * Code for value type. Should be compatible with H2 value types.
      */
-    public static int of(Class<?> cls) {
-        Class<?> x = cls;
+    private final int code;
 
-        if (x == null)
+    /** */
+    IndexKeyType(int code) {
+        this.code = code;
+    }
+
+    /** */
+    public int code() {
+        return code;
+    }
+
+    /** */
+    private static final IndexKeyType[] keyTypesByCode;
+
+    static {
+        int maxCode = Collections.max(Arrays.asList(values()), Comparator.comparing(IndexKeyType::code)).code;
+
+        keyTypesByCode = new IndexKeyType[maxCode + 1];
+
+        for (IndexKeyType type : values()) {
+            assert type.code >= 0 || type == UNKNOWN; // Only one negative value is allowed.
+
+            if (type.code > 0)
+                keyTypesByCode[type.code] = type;
+        }
+    }
+
+    /**
+     * Find type by code.
+     */
+    public static IndexKeyType forCode(int code) {
+        if (code == UNKNOWN.code)
+            return UNKNOWN;
+
+        A.ensure(code >= 0 && code < keyTypesByCode.length,
+            "code >= 0 && code < keyTypesByCode.length [code=" + code + ']');
+
+        return keyTypesByCode[code];
+    }
+
+    /**
+     * Find type by class.
+     */
+    public static IndexKeyType forClass(Class<?> cls) {
+        if (cls == null)
             return NULL;
 
-        x = U.box(x);
+        cls = U.box(cls);
 
-        if (String.class == x)
+        if (String.class == cls)
             return STRING;
-        else if (Integer.class == x)
+        else if (Integer.class == cls)
             return INT;
-        else if (Long.class == x)
+        else if (Long.class == cls)
             return LONG;
-        else if (Boolean.class == x)
+        else if (Boolean.class == cls)
             return BOOLEAN;
-        else if (Double.class == x)
+        else if (Double.class == cls)
             return DOUBLE;
-        else if (Byte.class == x)
+        else if (Byte.class == cls)
             return BYTE;
-        else if (Short.class == x)
+        else if (Short.class == cls)
             return SHORT;
-        else if (Character.class == x)
+        else if (Character.class == cls)
             throw new IgniteException("Cannot convert class char (not supported)");
-        else if (Float.class == x)
+        else if (Float.class == cls)
             return FLOAT;
-        else if (byte[].class == x)
+        else if (byte[].class == cls)
             return BYTES;
-        else if (java.util.UUID.class == x)
+        else if (java.util.UUID.class == cls)
             return UUID;
-        else if (Void.class == x)
+        else if (Void.class == cls)
             return NULL;
-        else if (BigDecimal.class.isAssignableFrom(x))
+        else if (BigDecimal.class.isAssignableFrom(cls))
             return DECIMAL;
-        else if (ResultSet.class.isAssignableFrom(x))
+        else if (ResultSet.class.isAssignableFrom(cls))
             return RESULT_SET;
-        else if (Date.class.isAssignableFrom(x))
+        else if (Date.class.isAssignableFrom(cls))
             return DATE;
-        else if (Time.class.isAssignableFrom(x))
+        else if (Time.class.isAssignableFrom(cls))
             return TIME;
-        else if (Timestamp.class.isAssignableFrom(x))
+        else if (Timestamp.class.isAssignableFrom(cls))
             return TIMESTAMP;
-        else if (java.util.Date.class.isAssignableFrom(x))
+        else if (java.util.Date.class.isAssignableFrom(cls))
             return TIMESTAMP;
-        else if (java.sql.Clob.class.isAssignableFrom(x))
+        else if (java.sql.Clob.class.isAssignableFrom(cls))
             return CLOB;
-        else if (java.sql.Blob.class.isAssignableFrom(x))
+        else if (java.sql.Blob.class.isAssignableFrom(cls))
             return BLOB;
-        else if (Object[].class.isAssignableFrom(x)) {
-            // this includes String[] and so on
+        else if (Object[].class.isAssignableFrom(cls)) {
+            // This includes String[] and so on.
             return ARRAY;
         }
-/*
-        else if (isGeometryClass(x))
+        else if (QueryUtils.isGeometryClass(cls))
             return GEOMETRY;
-*/
-        else if (LocalDate.class == x)
+        else if (LocalDate.class == cls)
             return DATE;
-        else if (LocalTime.class == x)
+        else if (LocalTime.class == cls)
             return TIME;
-        else if (LocalDateTime.class == x)
+        else if (LocalDateTime.class == cls)
             return TIMESTAMP;
-        else if (OffsetDateTime.class == x || Instant.class == x)
+        else if (OffsetDateTime.class == cls || Instant.class == cls)
             return TIMESTAMP_TZ;
         else
             return JAVA_OBJECT;

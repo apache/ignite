@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.cache.query.index.sorted.keys;
 
-import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypes;
+import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyType;
 
 /** */
 public class IntegerIndexKey implements IndexKey {
@@ -35,8 +35,8 @@ public class IntegerIndexKey implements IndexKey {
     }
 
     /** {@inheritDoc} */
-    @Override public int type() {
-        return IndexKeyTypes.INT;
+    @Override public IndexKeyType type() {
+        return IndexKeyType.INT;
     }
 
     /** {@inheritDoc} */

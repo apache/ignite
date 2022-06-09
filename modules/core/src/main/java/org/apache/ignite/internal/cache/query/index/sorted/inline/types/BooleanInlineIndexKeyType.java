@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.cache.query.index.sorted.inline.types;
 
-import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypes;
+import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyType;
 import org.apache.ignite.internal.cache.query.index.sorted.keys.BooleanIndexKey;
 import org.apache.ignite.internal.pagemem.PageUtils;
 
@@ -27,12 +27,12 @@ import org.apache.ignite.internal.pagemem.PageUtils;
 public class BooleanInlineIndexKeyType extends NullableInlineIndexKeyType<BooleanIndexKey> {
     /** */
     public BooleanInlineIndexKeyType() {
-        super(IndexKeyTypes.BOOLEAN, (short)1);
+        super(IndexKeyType.BOOLEAN, (short)1);
     }
 
     /** {@inheritDoc} */
     @Override protected int put0(long pageAddr, int off, BooleanIndexKey key, int maxSize) {
-        PageUtils.putByte(pageAddr, off, (byte)type());
+        PageUtils.putByte(pageAddr, off, (byte)type().code());
         PageUtils.putByte(pageAddr, off + 1, (byte)((boolean)key.key() ? 1 : 0));
 
         return keySize + 1;

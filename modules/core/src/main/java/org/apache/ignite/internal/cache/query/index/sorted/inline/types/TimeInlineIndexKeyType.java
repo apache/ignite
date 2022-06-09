@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.cache.query.index.sorted.inline.types;
 
-import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypes;
+import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyType;
 import org.apache.ignite.internal.cache.query.index.sorted.keys.TimeIndexKey;
 import org.apache.ignite.internal.pagemem.PageUtils;
 
@@ -27,7 +27,7 @@ import org.apache.ignite.internal.pagemem.PageUtils;
 public class TimeInlineIndexKeyType extends NullableInlineIndexKeyType<TimeIndexKey> {
     /** */
     public TimeInlineIndexKeyType() {
-        super(IndexKeyTypes.TIME, (short)8);
+        super(IndexKeyType.TIME, (short)8);
     }
 
     /** {@inheritDoc} */
@@ -40,7 +40,7 @@ public class TimeInlineIndexKeyType extends NullableInlineIndexKeyType<TimeIndex
 
     /** {@inheritDoc} */
     @Override protected int put0(long pageAddr, int off, TimeIndexKey key, int maxSize) {
-        PageUtils.putByte(pageAddr, off, (byte)type());
+        PageUtils.putByte(pageAddr, off, (byte)type().code());
         PageUtils.putLong(pageAddr, off + 1, key.nanos());
 
         return keySize + 1;

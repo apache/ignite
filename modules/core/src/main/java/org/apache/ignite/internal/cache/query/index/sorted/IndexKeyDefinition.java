@@ -32,8 +32,8 @@ public class IndexKeyDefinition implements Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** Index key type. {@link IndexKeyTypes}. */
-    private int idxType;
+    /** Index key type. {@link IndexKeyType}. */
+    private IndexKeyType idxType;
 
     /** Order. */
     private Order order;
@@ -47,8 +47,8 @@ public class IndexKeyDefinition implements Externalizable {
     }
 
     /** */
-    public IndexKeyDefinition(int idxType, Order order, long precision) {
-        this.idxType = idxType;
+    public IndexKeyDefinition(int idxTypeCode, Order order, long precision) {
+        idxType = IndexKeyType.forCode(idxTypeCode);
         this.order = order;
 
         // Workaround due to wrong type conversion (int -> long).
@@ -64,7 +64,7 @@ public class IndexKeyDefinition implements Externalizable {
     }
 
     /** */
-    public int idxType() {
+    public IndexKeyType idxType() {
         return idxType;
     }
 
@@ -76,13 +76,13 @@ public class IndexKeyDefinition implements Externalizable {
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         // Send only required info for using in MergeSort algorithm.
-        out.writeInt(idxType);
+        out.writeInt(idxType.code());
         U.writeEnum(out, order.sortOrder());
     }
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        idxType = in.readInt();
+        idxType = IndexKeyType.forCode(in.readInt());
         order = new Order(U.readEnum(in, SortOrder.class), null);
     }
 }

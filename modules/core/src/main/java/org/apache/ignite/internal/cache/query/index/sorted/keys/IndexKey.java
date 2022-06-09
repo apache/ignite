@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.cache.query.index.sorted.keys;
 
-import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypes;
+import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyType;
 
 /**
  * Class that represnts a single index key.
@@ -29,9 +29,9 @@ public interface IndexKey {
     public Object key();
 
     /**
-     * @return Index key type {@link IndexKeyTypes}.
+     * @return Index key type {@link IndexKeyType}.
      */
-    public int type();
+    public IndexKeyType type();
 
     /**
      * @return Comparison result with other IndexKey the same type.

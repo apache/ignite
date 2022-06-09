@@ -24,7 +24,7 @@ import java.time.LocalTime;
 import java.util.Date;
 import java.util.concurrent.TimeUnit;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypes;
+import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyType;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.types.DateValueUtils;
 
 /** */
@@ -89,8 +89,8 @@ public class TimestampIndexKey implements IndexKey {
     }
 
     /** {@inheritDoc} */
-    @Override public int type() {
-        return IndexKeyTypes.TIMESTAMP;
+    @Override public IndexKeyType type() {
+        return IndexKeyType.TIMESTAMP;
     }
 
     /** {@inheritDoc} */

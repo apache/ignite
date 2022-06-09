@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.cache.query.index.sorted.inline.types;
 
-import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypes;
+import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyType;
 import org.apache.ignite.internal.cache.query.index.sorted.keys.LongIndexKey;
 import org.apache.ignite.internal.pagemem.PageUtils;
 
@@ -27,12 +27,12 @@ import org.apache.ignite.internal.pagemem.PageUtils;
 public class LongInlineIndexKeyType extends NullableInlineIndexKeyType<LongIndexKey> {
     /** Constructor. */
     public LongInlineIndexKeyType() {
-        super(IndexKeyTypes.LONG, (short)8);
+        super(IndexKeyType.LONG, (short)8);
     }
 
     /** {@inheritDoc} */
     @Override protected int put0(long pageAddr, int off, LongIndexKey key, int maxSize) {
-        PageUtils.putByte(pageAddr, off, (byte)type());
+        PageUtils.putByte(pageAddr, off, (byte)type().code());
         // +1 shift after type
         PageUtils.putLong(pageAddr, off + 1, (long)key.key());
 

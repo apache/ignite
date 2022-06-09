@@ -20,12 +20,12 @@ package org.apache.ignite.internal.cache.query.index.sorted.inline;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyDefinition;
+import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyType;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypeSettings;
-import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypes;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.types.BooleanInlineIndexKeyType;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.types.ByteInlineIndexKeyType;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.types.BytesInlineIndexKeyType;
@@ -47,11 +47,11 @@ import org.apache.ignite.internal.cache.query.index.sorted.keys.IndexKey;
 import org.apache.ignite.internal.cache.query.index.sorted.keys.NullIndexKey;
 
 /**
- * Provide mapping for java types and {@link IndexKeyTypes} that supports inlining.
+ * Provide mapping for java types and {@link IndexKeyType} that supports inlining.
  */
 public class InlineIndexKeyTypeRegistry {
     /** Type mapping. */
-    private static final Map<Integer, InlineIndexKeyType> typeMapping = new ConcurrentHashMap<>();
+    private static final Map<IndexKeyType, InlineIndexKeyType> typeMapping = new EnumMap<>(IndexKeyType.class);
 
     /** Object key type that maps for custom POJO. Inline stores a hash of the object. */
     private static final ObjectHashInlineIndexKeyType hashObjectType = new ObjectHashInlineIndexKeyType();
@@ -70,32 +70,32 @@ public class InlineIndexKeyTypeRegistry {
 
     /** Object key type that maps for custom POJO. Inline stores a byte array representation of the object. */
     private static final ObjectByteArrayInlineIndexKeyType bytesObjectType =
-        new ObjectByteArrayInlineIndexKeyType(new BytesInlineIndexKeyType(IndexKeyTypes.JAVA_OBJECT));
+        new ObjectByteArrayInlineIndexKeyType(new BytesInlineIndexKeyType(IndexKeyType.JAVA_OBJECT));
 
     /** Object key type that maps for custom POJO. Inline stores a signed byte array representation of the object. */
     private static final ObjectByteArrayInlineIndexKeyType signedBytesObjectType =
-        new ObjectByteArrayInlineIndexKeyType(new SignedBytesInlineIndexKeyType(IndexKeyTypes.JAVA_OBJECT));
+        new ObjectByteArrayInlineIndexKeyType(new SignedBytesInlineIndexKeyType(IndexKeyType.JAVA_OBJECT));
 
     static {
-        register(IndexKeyTypes.BOOLEAN, new BooleanInlineIndexKeyType());
-        register(IndexKeyTypes.BYTE, new ByteInlineIndexKeyType());
-        register(IndexKeyTypes.DATE, new DateInlineIndexKeyType());
-        register(IndexKeyTypes.DOUBLE, new DoubleInlineIndexKeyType());
-        register(IndexKeyTypes.FLOAT, new FloatInlineIndexKeyType());
-        register(IndexKeyTypes.INT, new IntegerInlineIndexKeyType());
-        register(IndexKeyTypes.SHORT, new ShortInlineIndexKeyType());
-        register(IndexKeyTypes.LONG, new LongInlineIndexKeyType());
-        register(IndexKeyTypes.TIME, new TimeInlineIndexKeyType());
-        register(IndexKeyTypes.TIMESTAMP, new TimestampInlineIndexKeyType());
-        register(IndexKeyTypes.UUID, new UuidInlineIndexKeyType());
+        register(IndexKeyType.BOOLEAN, new BooleanInlineIndexKeyType());
+        register(IndexKeyType.BYTE, new ByteInlineIndexKeyType());
+        register(IndexKeyType.DATE, new DateInlineIndexKeyType());
+        register(IndexKeyType.DOUBLE, new DoubleInlineIndexKeyType());
+        register(IndexKeyType.FLOAT, new FloatInlineIndexKeyType());
+        register(IndexKeyType.INT, new IntegerInlineIndexKeyType());
+        register(IndexKeyType.SHORT, new ShortInlineIndexKeyType());
+        register(IndexKeyType.LONG, new LongInlineIndexKeyType());
+        register(IndexKeyType.TIME, new TimeInlineIndexKeyType());
+        register(IndexKeyType.TIMESTAMP, new TimestampInlineIndexKeyType());
+        register(IndexKeyType.UUID, new UuidInlineIndexKeyType());
         // Choice of those types actually depends on IndexKeyTypeSettings.
-        register(IndexKeyTypes.JAVA_OBJECT, hashObjectType);
-        register(IndexKeyTypes.STRING, optimizedCompareStringType);
-        register(IndexKeyTypes.BYTES, bytesType);
+        register(IndexKeyType.JAVA_OBJECT, hashObjectType);
+        register(IndexKeyType.STRING, optimizedCompareStringType);
+        register(IndexKeyType.BYTES, bytesType);
     }
 
     /** */
-    private static void register(int type, InlineIndexKeyType keyType) {
+    private static void register(IndexKeyType type, InlineIndexKeyType keyType) {
         typeMapping.put(type, keyType);
     }
 
@@ -105,7 +105,7 @@ public class InlineIndexKeyTypeRegistry {
      *
      * @param expType Expected type of a key.
      */
-    public static InlineIndexKeyType get(int expType, IndexKeyTypeSettings keyTypeSettings) {
+    public static InlineIndexKeyType get(IndexKeyType expType, IndexKeyTypeSettings keyTypeSettings) {
         return type(expType, keyTypeSettings);
     }
 
@@ -117,21 +117,21 @@ public class InlineIndexKeyTypeRegistry {
      * @param expType Expected type of a key.
      * @param keyTypeSettings Index key type settings.
      */
-    public static InlineIndexKeyType get(IndexKey key, int expType, IndexKeyTypeSettings keyTypeSettings) {
+    public static InlineIndexKeyType get(IndexKey key, IndexKeyType expType, IndexKeyTypeSettings keyTypeSettings) {
         return key == NullIndexKey.INSTANCE ?
             type(expType, keyTypeSettings) :
             type(key.type(), keyTypeSettings);
     }
 
     /** */
-    private static InlineIndexKeyType type(int type, IndexKeyTypeSettings keyTypeSettings) {
-        if (type == IndexKeyTypes.JAVA_OBJECT)
+    private static InlineIndexKeyType type(IndexKeyType type, IndexKeyTypeSettings keyTypeSettings) {
+        if (type == IndexKeyType.JAVA_OBJECT)
             return javaObjectType(keyTypeSettings);
 
-        else if (type == IndexKeyTypes.STRING)
+        else if (type == IndexKeyType.STRING)
             return stringType(keyTypeSettings);
 
-        else if (type == IndexKeyTypes.BYTES)
+        else if (type == IndexKeyType.BYTES)
             return bytesType(keyTypeSettings);
 
         return typeMapping.get(type);
@@ -140,8 +140,8 @@ public class InlineIndexKeyTypeRegistry {
     /**
      * Checks whether specified type support inlining.
      */
-    private static boolean supportInline(int type, IndexKeyTypeSettings keyTypeSettings) {
-        if (type == IndexKeyTypes.JAVA_OBJECT && !keyTypeSettings.inlineObjSupported())
+    private static boolean supportInline(IndexKeyType type, IndexKeyTypeSettings keyTypeSettings) {
+        if (type == IndexKeyType.JAVA_OBJECT && !keyTypeSettings.inlineObjSupported())
             return false;
 
         return typeMapping.containsKey(type);

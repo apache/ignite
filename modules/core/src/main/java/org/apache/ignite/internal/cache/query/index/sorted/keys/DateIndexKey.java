@@ -20,7 +20,7 @@ package org.apache.ignite.internal.cache.query.index.sorted.keys;
 import java.sql.Date;
 import java.time.LocalDate;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypes;
+import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyType;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.types.DateValueUtils;
 
 /** */
@@ -55,8 +55,8 @@ public class DateIndexKey implements IndexKey {
     }
 
     /** {@inheritDoc} */
-    @Override public int type() {
-        return IndexKeyTypes.DATE;
+    @Override public IndexKeyType type() {
+        return IndexKeyType.DATE;
     }
 
     /** {@inheritDoc} */

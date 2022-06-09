@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.cache.query.index.sorted.inline.types;
 
-import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypes;
+import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyType;
 import org.apache.ignite.internal.cache.query.index.sorted.keys.ShortIndexKey;
 import org.apache.ignite.internal.pagemem.PageUtils;
 
@@ -27,7 +27,7 @@ import org.apache.ignite.internal.pagemem.PageUtils;
 public class ShortInlineIndexKeyType extends NullableInlineIndexKeyType<ShortIndexKey> {
     /** */
     public ShortInlineIndexKeyType() {
-        super(IndexKeyTypes.SHORT, (short)2);
+        super(IndexKeyType.SHORT, (short)2);
     }
 
     /** {@inheritDoc} */
@@ -39,7 +39,7 @@ public class ShortInlineIndexKeyType extends NullableInlineIndexKeyType<ShortInd
 
     /** {@inheritDoc} */
     @Override protected int put0(long pageAddr, int off, ShortIndexKey key, int maxSize) {
-        PageUtils.putByte(pageAddr, off, (byte)type());
+        PageUtils.putByte(pageAddr, off, (byte)type().code());
         PageUtils.putShort(pageAddr, off + 1, (short)key.key());
 
         return keySize + 1;

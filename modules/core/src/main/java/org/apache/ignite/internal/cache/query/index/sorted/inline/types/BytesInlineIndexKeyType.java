@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.cache.query.index.sorted.inline.types;
 
 import java.util.Arrays;
-import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypes;
+import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyType;
 import org.apache.ignite.internal.cache.query.index.sorted.keys.BytesIndexKey;
 import org.apache.ignite.internal.cache.query.index.sorted.keys.SignedBytesIndexKey;
 import org.apache.ignite.internal.pagemem.PageUtils;
@@ -33,21 +33,21 @@ public class BytesInlineIndexKeyType extends NullableInlineIndexKeyType<BytesInd
 
     /** */
     public BytesInlineIndexKeyType() {
-        this(IndexKeyTypes.BYTES);
+        this(IndexKeyType.BYTES);
     }
 
     /** */
-    public BytesInlineIndexKeyType(int type) {
+    public BytesInlineIndexKeyType(IndexKeyType type) {
         this(type, true);
     }
 
     /** */
     public BytesInlineIndexKeyType(boolean compareBinaryUnsigned) {
-        this(IndexKeyTypes.BYTES, compareBinaryUnsigned);
+        this(IndexKeyType.BYTES, compareBinaryUnsigned);
     }
 
     /** */
-    public BytesInlineIndexKeyType(int type, boolean compareBinaryUnsigned) {
+    public BytesInlineIndexKeyType(IndexKeyType type, boolean compareBinaryUnsigned) {
         super(type, (short)-1);
 
         this.compareBinaryUnsigned = compareBinaryUnsigned;
@@ -104,7 +104,7 @@ public class BytesInlineIndexKeyType extends NullableInlineIndexKeyType<BytesInd
     @Override protected int put0(long pageAddr, int off, BytesIndexKey key, int maxSize) {
         short size;
 
-        PageUtils.putByte(pageAddr, off, (byte)type());
+        PageUtils.putByte(pageAddr, off, (byte)type().code());
 
         byte[] val = (byte[])key.key();
 

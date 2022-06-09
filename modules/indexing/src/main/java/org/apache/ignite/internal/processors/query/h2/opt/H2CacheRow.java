@@ -107,7 +107,7 @@ public class H2CacheRow extends H2Row implements CacheDataRow {
 
         Object res = desc.columnValue(row.key(), row.value(), col);
 
-        v = res == null ? ValueNull.INSTANCE : wrap(res, desc.fieldType(col));
+        v = res == null ? ValueNull.INSTANCE : wrap(res, desc.fieldType(col).code());
 
         setCached(col, v);
 
@@ -153,14 +153,14 @@ public class H2CacheRow extends H2Row implements CacheDataRow {
      * @return Wrapped key value.
      */
     private Value keyWrapped() {
-        return wrap(row.key(), desc.keyType());
+        return wrap(row.key(), desc.keyType().code());
     }
 
     /**
      * @return Wrapped value value.
      */
     private Value valueWrapped() {
-        return wrap(row.value(), desc.valueType());
+        return wrap(row.value(), desc.valueType().code());
     }
 
     /**

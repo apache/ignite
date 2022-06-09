@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.cache.query.index.sorted.inline.types;
 
 import java.util.UUID;
-import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypes;
+import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyType;
 import org.apache.ignite.internal.cache.query.index.sorted.keys.UuidIndexKey;
 import org.apache.ignite.internal.pagemem.PageUtils;
 
@@ -29,7 +29,7 @@ public class UuidInlineIndexKeyType extends NullableInlineIndexKeyType<UuidIndex
     /**
      */
     public UuidInlineIndexKeyType() {
-        super(IndexKeyTypes.UUID, (short)16);
+        super(IndexKeyType.UUID, (short)16);
     }
 
     /** {@inheritDoc} */
@@ -52,7 +52,7 @@ public class UuidInlineIndexKeyType extends NullableInlineIndexKeyType<UuidIndex
     @Override protected int put0(long pageAddr, int off, UuidIndexKey key, int maxSize) {
         UUID val = (UUID)key.key();
 
-        PageUtils.putByte(pageAddr, off, (byte)type());
+        PageUtils.putByte(pageAddr, off, (byte)type().code());
         PageUtils.putLong(pageAddr, off + 1, val.getMostSignificantBits());
         PageUtils.putLong(pageAddr, off + 9, val.getLeastSignificantBits());
 

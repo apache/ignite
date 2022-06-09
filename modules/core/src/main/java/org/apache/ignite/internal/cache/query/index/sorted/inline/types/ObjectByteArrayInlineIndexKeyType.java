@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.cache.query.index.sorted.inline.types;
 
-import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypes;
+import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyType;
 import org.apache.ignite.internal.cache.query.index.sorted.keys.BytesIndexKey;
 import org.apache.ignite.internal.cache.query.index.sorted.keys.JavaObjectIndexKey;
 import org.apache.ignite.internal.cache.query.index.sorted.keys.PlainJavaObjectIndexKey;
@@ -31,7 +31,7 @@ public class ObjectByteArrayInlineIndexKeyType extends NullableInlineIndexKeyTyp
 
     /** */
     public ObjectByteArrayInlineIndexKeyType(BytesInlineIndexKeyType delegate) {
-        super(IndexKeyTypes.JAVA_OBJECT, (short)-1);
+        super(IndexKeyType.JAVA_OBJECT, (short)-1);
 
         this.delegate = delegate;
     }

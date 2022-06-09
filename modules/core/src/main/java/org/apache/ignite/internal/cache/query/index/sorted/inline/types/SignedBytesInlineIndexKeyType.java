@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.cache.query.index.sorted.inline.types;
 
+import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyType;
+
 /**
  * Inline index key implementation for inlining byte arrays.
  */
@@ -27,7 +29,7 @@ public class SignedBytesInlineIndexKeyType extends BytesInlineIndexKeyType {
     }
 
     /** */
-    public SignedBytesInlineIndexKeyType(int type) {
+    public SignedBytesInlineIndexKeyType(IndexKeyType type) {
         super(type, false);
     }
 }

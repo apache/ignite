@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.cache.query.index.sorted.inline.types;
 
-import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypes;
+import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyType;
 import org.apache.ignite.internal.cache.query.index.sorted.keys.TimestampIndexKey;
 import org.apache.ignite.internal.pagemem.PageUtils;
 
@@ -31,7 +31,7 @@ import static org.apache.ignite.internal.cache.query.index.sorted.inline.types.D
 public class TimestampInlineIndexKeyType extends NullableInlineIndexKeyType<TimestampIndexKey> {
     /** */
     public TimestampInlineIndexKeyType() {
-        super(IndexKeyTypes.TIMESTAMP, (short)16);
+        super(IndexKeyType.TIMESTAMP, (short)16);
     }
 
     /** {@inheritDoc} */
@@ -50,7 +50,7 @@ public class TimestampInlineIndexKeyType extends NullableInlineIndexKeyType<Time
 
     /** {@inheritDoc} */
     @Override protected int put0(long pageAddr, int off, TimestampIndexKey key, int maxSize) {
-        PageUtils.putByte(pageAddr, off, (byte)type());
+        PageUtils.putByte(pageAddr, off, (byte)type().code());
 
         PageUtils.putLong(pageAddr, off + 1, key.dateValue());
         PageUtils.putLong(pageAddr, off + 9, key.nanos());

@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.cache.query.index.sorted.keys;
 
 import java.math.BigDecimal;
-import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypes;
+import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyType;
 
 /** */
 public class DecimalIndexKey implements IndexKey {
@@ -36,8 +36,8 @@ public class DecimalIndexKey implements IndexKey {
     }
 
     /** {@inheritDoc} */
-    @Override public int type() {
-        return IndexKeyTypes.DECIMAL;
+    @Override public IndexKeyType type() {
+        return IndexKeyType.DECIMAL;
     }
 
     /** {@inheritDoc} */

@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.cache.query.index.sorted.inline.types;
 
-import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypes;
+import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyType;
 import org.apache.ignite.internal.cache.query.index.sorted.keys.DateIndexKey;
 import org.apache.ignite.internal.pagemem.PageUtils;
 
@@ -30,7 +30,7 @@ import static org.apache.ignite.internal.cache.query.index.sorted.inline.types.D
 public class DateInlineIndexKeyType extends NullableInlineIndexKeyType<DateIndexKey> {
     /** */
     public DateInlineIndexKeyType() {
-        super(IndexKeyTypes.DATE, (short)8);
+        super(IndexKeyType.DATE, (short)8);
     }
 
     /** {@inheritDoc} */
@@ -43,7 +43,7 @@ public class DateInlineIndexKeyType extends NullableInlineIndexKeyType<DateIndex
 
     /** {@inheritDoc} */
     @Override protected int put0(long pageAddr, int off, DateIndexKey key, int maxSize) {
-        PageUtils.putByte(pageAddr, off, (byte)type());
+        PageUtils.putByte(pageAddr, off, (byte)type().code());
         PageUtils.putLong(pageAddr, off + 1, key.dateValue());
 
         return keySize + 1;

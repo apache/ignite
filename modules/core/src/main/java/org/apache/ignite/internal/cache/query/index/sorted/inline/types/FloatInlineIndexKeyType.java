@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.cache.query.index.sorted.inline.types;
 
-import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypes;
+import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyType;
 import org.apache.ignite.internal.cache.query.index.sorted.keys.FloatIndexKey;
 import org.apache.ignite.internal.pagemem.PageUtils;
 
@@ -27,7 +27,7 @@ import org.apache.ignite.internal.pagemem.PageUtils;
 public class FloatInlineIndexKeyType extends NullableInlineIndexKeyType<FloatIndexKey> {
     /** */
     public FloatInlineIndexKeyType() {
-        super(IndexKeyTypes.FLOAT, (short)4);
+        super(IndexKeyType.FLOAT, (short)4);
     }
 
     /** {@inheritDoc} */
@@ -39,7 +39,7 @@ public class FloatInlineIndexKeyType extends NullableInlineIndexKeyType<FloatInd
 
     /** {@inheritDoc} */
     @Override protected int put0(long pageAddr, int off, FloatIndexKey key, int maxSize) {
-        PageUtils.putByte(pageAddr, off, (byte)type());
+        PageUtils.putByte(pageAddr, off, (byte)type().code());
         PageUtils.putInt(pageAddr, off + 1, Float.floatToIntBits((float)key.key()));
 
         return keySize + 1;
