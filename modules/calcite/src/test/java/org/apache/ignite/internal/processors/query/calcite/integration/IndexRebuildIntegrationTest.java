@@ -203,7 +203,7 @@ public class IndexRebuildIntegrationTest extends AbstractBasicIntegrationTest {
     }
 
     /**
-     * Test IndexCount is disables at index rebuilding.
+     * Test IndexCount is disabled at index rebuilding.
      */
     @Test
     public void testIndexCountAtUnavailableIndex() throws IgniteCheckedException {

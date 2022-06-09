@@ -2514,6 +2514,8 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
 
             long curPage = acquirePage(curPageId);
 
+            long ccnt = 0;
+
             try {
                 long curPageAddr = readLock(curPageId, curPage);
 
@@ -2590,6 +2592,8 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
             finally {
                 if (curPage != 0)
                     releasePage(curPageId, curPage);
+
+                System.err.println("TEST | ccnt: " + ccnt);
             }
         }
     }

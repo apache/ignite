@@ -29,6 +29,8 @@ import org.apache.calcite.rel.RelWriter;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rel.type.RelDataType;
 
+import static org.apache.ignite.internal.processors.query.calcite.metadata.cost.IgniteCost.ROW_PASS_THROUGH_COST;
+
 /**
  * Returns number of index records.
  */
@@ -88,8 +90,7 @@ public class IgniteIndexCount extends AbstractRelNode implements SourceAwareIgni
 
     /** {@inheritDoc} */
     @Override public RelOptCost computeSelfCost(RelOptPlanner planner, RelMetadataQuery mq) {
-        // Requesting index count is realy quick.
-        return planner.getCostFactory().makeTinyCost();
+        return planner.getCostFactory().makeCost(1.0, 1.0, tbl.getRowCount() * ROW_PASS_THROUGH_COST);
     }
 
     /** {@inheritDoc} */
