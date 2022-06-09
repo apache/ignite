@@ -136,13 +136,14 @@ public class TxPartitionCounterStateConsistencyNoopInvokeTest extends TxPartitio
      * Entry processor for tests.
      */
     protected static class MyEntryProcessor implements EntryProcessor<Integer, Integer, Object> {
-        /**
-         * If {@code true} invert positives, otherwise invert negatives.
-         */
+        /** If {@code true} invert positives, otherwise invert negatives. */
         private final boolean invert;
 
+        /**
+         * Contructor
+         * @param invert If {@code true} invert positives, otherwise invert negatives.
+         */
         public MyEntryProcessor(boolean invert) {
-
             this.invert = invert;
         }
 
