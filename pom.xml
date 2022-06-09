@@ -61,8 +61,6 @@
         <module>modules/jcl</module>
         <module>modules/codegen</module>
         <module>modules/cloud</module>
-        <module>modules/mesos</module>
-        <module>modules/yarn</module>
         <module>modules/zookeeper</module>
         <module>modules/osgi-paxlogging</module>
         <module>modules/osgi-karaf</module>

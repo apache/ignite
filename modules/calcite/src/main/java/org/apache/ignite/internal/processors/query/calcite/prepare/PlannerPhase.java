@@ -42,6 +42,7 @@ import org.apache.calcite.tools.Program;
 import org.apache.calcite.tools.RuleSet;
 import org.apache.calcite.tools.RuleSets;
 import org.apache.calcite.util.Optionality;
+import org.apache.ignite.internal.processors.query.calcite.rule.CollectRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.CorrelateToNestedLoopRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.CorrelatedNestedLoopJoinRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.FilterConverterRule;
@@ -237,6 +238,7 @@ public enum PlannerPhase {
                     LogicalScanConverterRule.INDEX_SCAN,
                     LogicalScanConverterRule.TABLE_SCAN,
                     IndexCountRule.INSTANCE,
+                    CollectRule.INSTANCE,
                     HashAggregateConverterRule.COLOCATED,
                     HashAggregateConverterRule.MAP_REDUCE,
                     SortAggregateConverterRule.COLOCATED,

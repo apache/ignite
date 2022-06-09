@@ -124,7 +124,8 @@ data: {
 #     "ANY"
       "ARE"
       "ARRAY"
-#     "ARRAY_AGG" # not a keyword in Calcite
+      "ARRAY_AGG"
+      "ARRAY_CONCAT_AGG"
       "ARRAY_MAX_CARDINALITY"
       "AS"
       "ASC"

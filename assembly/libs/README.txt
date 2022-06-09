@@ -78,7 +78,6 @@ The following modules are available:
 - ignite-jta (for XA integration)
 - ignite-logj4 (for Log4j logging)
 - ignite-log4j2 (for Log4j 2 logging)
-- ignite-mesos (for integration with Apache Mesos cluster resource manager)
 - ignite-osgi (to allow Ignite run seemlessly in OSGI containers)
 - ignite-osgi-karaf (to seemlessly intall ignite into Apache Karaf container)
 - ignite-osgi-paxlogging (to expose PAX Logging API to Log4j if needed)
@@ -89,7 +88,6 @@ The following modules are available:
 - ignite-ssh (for starting grid nodes on remote machines)
 - ignite-urideploy (for URI-based deployment)
 - ignite-web (for Web Sessions Clustering)
-- ignite-yarn (for integration with Apache Hadoop Yarn)
 - ignite-zookeeper (for cluster discovery based on Apache Zookeeper)
 
 For example, if you want to use Apache Ignite Spring-based configuration,

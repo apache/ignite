@@ -122,7 +122,7 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
 
         ignite.snapshot().createSnapshot(SNAPSHOT_NAME).get();
 
-        IdleVerifyResultV2 res = snp(ignite).checkSnapshot(SNAPSHOT_NAME).get();
+        IdleVerifyResultV2 res = snp(ignite).checkSnapshot(SNAPSHOT_NAME, null).get();
 
         StringBuilder b = new StringBuilder();
         res.print(b::append, true);
@@ -147,7 +147,7 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
         assertTrue(part0.toString(), part0.toFile().exists());
         assertTrue(part0.toFile().delete());
 
-        IdleVerifyResultV2 res = snp(ignite).checkSnapshot(SNAPSHOT_NAME).get();
+        IdleVerifyResultV2 res = snp(ignite).checkSnapshot(SNAPSHOT_NAME, null).get();
 
         StringBuilder b = new StringBuilder();
         res.print(b::append, true);
@@ -172,7 +172,7 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
         assertTrue(dir.toString(), dir.toFile().exists());
         assertTrue(U.delete(dir));
 
-        IdleVerifyResultV2 res = snp(ignite).checkSnapshot(SNAPSHOT_NAME).get();
+        IdleVerifyResultV2 res = snp(ignite).checkSnapshot(SNAPSHOT_NAME, null).get();
 
         StringBuilder b = new StringBuilder();
         res.print(b::append, true);
@@ -196,7 +196,7 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
         assertTrue(smfs[0].toString(), smfs[0].exists());
         assertTrue(U.delete(smfs[0]));
 
-        IdleVerifyResultV2 res = snp(ignite).checkSnapshot(SNAPSHOT_NAME).get();
+        IdleVerifyResultV2 res = snp(ignite).checkSnapshot(SNAPSHOT_NAME, null).get();
 
         StringBuilder b = new StringBuilder();
         res.print(b::append, true);
@@ -217,7 +217,7 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
 
         ig0.snapshot().createSnapshot(SNAPSHOT_NAME).get();
 
-        IdleVerifyResultV2 res = snp(ig0).checkSnapshot(SNAPSHOT_NAME).get();
+        IdleVerifyResultV2 res = snp(ig0).checkSnapshot(SNAPSHOT_NAME, null).get();
 
         StringBuilder b = new StringBuilder();
         res.print(b::append, true);
@@ -270,7 +270,7 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
             pageStore.finishRecover();
         }
 
-        IdleVerifyResultV2 res = snp(ignite).checkSnapshot(SNAPSHOT_NAME).get();
+        IdleVerifyResultV2 res = snp(ignite).checkSnapshot(SNAPSHOT_NAME, null).get();
 
         StringBuilder b = new StringBuilder();
         res.print(b::append, true);
@@ -318,7 +318,7 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
         ignite.cluster().baselineAutoAdjustEnabled(false);
         ignite.cluster().state(ACTIVE);
 
-        IdleVerifyResultV2 res = snp(ignite).checkSnapshot(SNAPSHOT_NAME).get();
+        IdleVerifyResultV2 res = snp(ignite).checkSnapshot(SNAPSHOT_NAME, null).get();
 
         StringBuilder b = new StringBuilder();
         res.print(b::append, true);
@@ -342,7 +342,7 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
 
         corruptPartitionFile(ignite, SNAPSHOT_NAME, dfltCacheCfg, PART_ID);
 
-        IdleVerifyResultV2 res = snp(ignite).checkSnapshot(SNAPSHOT_NAME).get();
+        IdleVerifyResultV2 res = snp(ignite).checkSnapshot(SNAPSHOT_NAME, null).get();
 
         StringBuilder b = new StringBuilder();
         res.print(b::append, true);
@@ -448,7 +448,7 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
         assertNotNull(part0);
         assertTrue(part0.toString(), part0.toFile().exists());
 
-        IdleVerifyResultV2 res = snp(ignite).checkSnapshot(SNAPSHOT_NAME).get();
+        IdleVerifyResultV2 res = snp(ignite).checkSnapshot(SNAPSHOT_NAME, null).get();
 
         StringBuilder b = new StringBuilder();
         res.print(b::append, true);
@@ -477,8 +477,8 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
 
         IdleVerifyResultV2 snpVerifyRes = ignite.compute().execute(new TestSnapshotPartitionsVerifyTask(),
             new SnapshotPartitionsVerifyTaskArg(new HashSet<>(), Collections.singletonMap(ignite.cluster().localNode(),
-                Collections.singletonList(snp(ignite).readSnapshotMetadata(SNAPSHOT_NAME,
-                    (String)ignite.configuration().getConsistentId())))))
+                Collections.singletonList(snp(ignite).readSnapshotMetadata(snp(ignite).snapshotLocalDir(SNAPSHOT_NAME),
+                    (String)ignite.configuration().getConsistentId()))), null))
             .idleVerifyResult();
 
         Map<PartitionKeyV2, List<PartitionHashRecordV2>> idleVerifyHashes = jobResults.get(TestVisorBackupPartitionsTask.class);
@@ -548,12 +548,12 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
 
         // Warmup.
         for (int i = 0; i < iterations; i++)
-            snp(ignite).checkSnapshot(SNAPSHOT_NAME).get();
+            snp(ignite).checkSnapshot(SNAPSHOT_NAME, null).get();
 
         int activeThreadsCntBefore = Thread.activeCount();
 
         for (int i = 0; i < iterations; i++)
-            snp(ignite).checkSnapshot(SNAPSHOT_NAME).get();
+            snp(ignite).checkSnapshot(SNAPSHOT_NAME, null).get();
 
         int createdThreads = Thread.activeCount() - activeThreadsCntBefore;
 
@@ -599,7 +599,7 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
 
         corruptPartitionFile(ignite, SNAPSHOT_NAME, ccfg1, PART_ID);
 
-        return snp(ignite).checkSnapshot(SNAPSHOT_NAME, cachesToCheck, false).get(TIMEOUT);
+        return snp(ignite).checkSnapshot(SNAPSHOT_NAME, null, cachesToCheck, false).get(TIMEOUT);
     }
 
     /**
