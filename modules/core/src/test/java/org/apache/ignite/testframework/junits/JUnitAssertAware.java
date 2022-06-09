@@ -17,6 +17,7 @@
 
 package org.apache.ignite.testframework.junits;
 
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.junit.Assert;
 
 /**
@@ -205,31 +206,17 @@ public class JUnitAssertAware {
     }
 
     /** Check arrays equality as well as objects equality. */
-    protected static void assertEqualsArraysOrObjects(Object exp, Object actual) {
-        assertEqualsArraysOrObjects(null, exp, actual);
+    protected static void assertEqualsArraysAware(Object exp, Object actual) {
+        assertEqualsArraysAware(null, exp, actual);
     }
 
     /** Check arrays equality as well as objects equality. */
-    protected static void assertEqualsArraysOrObjects(String msg, Object exp, Object actual) {
-        if (exp instanceof Object[] && actual instanceof Object[])
-            Assert.assertArrayEquals(msg, (Object[])exp, (Object[])actual);
-        else if (exp instanceof byte[] && actual instanceof byte[])
-            Assert.assertArrayEquals(msg, (byte[])exp, (byte[])actual);
-        else if (exp instanceof int[] && actual instanceof int[])
-            Assert.assertArrayEquals(msg, (int[])exp, (int[])actual);
-        else if (exp instanceof long[] && actual instanceof long[])
-            Assert.assertArrayEquals(msg, (long[])exp, (long[])actual);
-        else if (exp instanceof short[] && actual instanceof short[])
-            Assert.assertArrayEquals(msg, (short[])exp, (short[])actual);
-        else if (exp instanceof char[] && actual instanceof char[])
-            Assert.assertArrayEquals(msg, (char[])exp, (char[])actual);
-        else if (exp instanceof double[] && actual instanceof double[])
-            Assert.assertArrayEquals(msg, (double[])exp, (double[])actual, 0);
-        else if (exp instanceof float[] && actual instanceof Object[])
-            Assert.assertArrayEquals(msg, (float[])exp, (float[])actual, 0);
-        else if (exp instanceof boolean[] && actual instanceof boolean[])
-            Assert.assertArrayEquals(msg, (boolean[])exp, (boolean[])actual);
+    protected static void assertEqualsArraysAware(String msg, Object exp, Object actual) {
+        if (exp instanceof Object[])
+            Assert.assertArrayEquals((Object[])exp, (Object[])actual);
+        else if (U.isPrimitiveArray(exp))
+            Assert.assertArrayEquals(new Object[] {exp}, new Object[] {actual}); // Hack to compare primitive arrays.
         else
-            Assert.assertEquals(msg, exp, actual);
+            Assert.assertEquals(exp, actual);
     }
 }

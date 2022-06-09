@@ -44,7 +44,7 @@ public abstract class AbstractFullSetReadRepairTest extends AbstractReadRepairTe
      */
     protected static final Consumer<ReadRepairData> GET_CHECK_AND_REPAIR = (rrd) -> {
         for (Integer key : rrd.data.keySet()) { // Once.
-            assertEqualsArraysOrObjects(unwrapBinaryIfNeeded(rrd.data.get(key).repairedBin), get(rrd));
+            assertEqualsArraysAware(unwrapBinaryIfNeeded(rrd.data.get(key).repairedBin), get(rrd));
         }
     };
 
@@ -55,7 +55,7 @@ public abstract class AbstractFullSetReadRepairTest extends AbstractReadRepairTe
         Map<Integer, Object> res = getAll(rrd);
 
         for (Integer key : rrd.data.keySet())
-            assertEqualsArraysOrObjects(unwrapBinaryIfNeeded(rrd.data.get(key).repairedBin), res.get(key));
+            assertEqualsArraysAware(unwrapBinaryIfNeeded(rrd.data.get(key).repairedBin), res.get(key));
     };
 
     /**
@@ -230,7 +230,7 @@ public abstract class AbstractFullSetReadRepairTest extends AbstractReadRepairTe
                 else
                     res = rrd.cache.get(key);
 
-                assertEqualsArraysOrObjects(unwrapBinaryIfNeeded(rrd.data.get(key).repairedBin), unwrapBinaryIfNeeded(res));
+                assertEqualsArraysAware(unwrapBinaryIfNeeded(rrd.data.get(key).repairedBin), unwrapBinaryIfNeeded(res));
             }
         };
 

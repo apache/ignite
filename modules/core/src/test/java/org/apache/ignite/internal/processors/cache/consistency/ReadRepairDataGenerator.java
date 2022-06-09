@@ -174,7 +174,7 @@ public class ReadRepairDataGenerator extends JUnitAssertAware {
                         else
                             exp = results.get(key).primaryBin; // Or read from primary (when not a partition owner).
 
-                        assertEqualsArraysOrObjects(exp, val);
+                        assertEqualsArraysAware(exp, val);
                     }
                 }
 
