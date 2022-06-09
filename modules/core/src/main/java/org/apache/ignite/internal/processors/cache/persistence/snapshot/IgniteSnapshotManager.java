@@ -209,6 +209,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.filename.P
 import static org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage.METASTORAGE_CACHE_ID;
 import static org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage.METASTORAGE_CACHE_NAME;
 import static org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId.getTypeByPartId;
+import static org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotRestoreProcess.formatTmpDirName;
 import static org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO.T_DATA;
 import static org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO.getPageIO;
 import static org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO.getType;
@@ -2803,6 +2804,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             catch (Throwable e) {
                 U.error(log, "Processing snapshot request from remote node fails with an error", e);
 
+                // TODO
                 cctx.kernalContext().failure().process(new FailureContext(FailureType.CRITICAL_ERROR, e));
             }
             finally {
@@ -2864,14 +2866,10 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             try {
                 task.partsLeft.compareAndSet(-1, partsCnt);
 
-                File cacheDir = U.resolveWorkDirectory(task.dir.toString(),
-                    Paths.get(rmtDbNodePath, cacheDirName).toString(),
-                    false);
-
-                return Paths.get(cacheDir.getAbsolutePath(), getPartitionFileName(partId)).toString();
-            }
-            catch (IgniteCheckedException e) {
-                throw new IgniteException(e);
+                return Paths.get(
+                    formatTmpDirName(new File(storeMgr.workDir().getAbsolutePath(), cacheDirName)).getAbsolutePath(),
+                    getPartitionFileName(partId))
+                    .toString();
             }
             finally {
                 busyLock.leaveBusy();

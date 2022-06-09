@@ -621,7 +621,7 @@ public class SnapshotRestoreProcess {
      * @param cacheDir Cache directory.
      * @return Temporary directory.
      */
-    private static File formatTmpDirName(File cacheDir) {
+    public static File formatTmpDirName(File cacheDir) {
         return new File(cacheDir.getParent(), TMP_CACHE_DIR_PREFIX + cacheDir.getName());
     }
 
@@ -1003,7 +1003,9 @@ public class SnapshotRestoreProcess {
                                     throw new IgniteInterruptedException("Snapshot remote operation request cancelled.");
 
                                 if (t == null) {
-                                    int grpId = CU.cacheId(cacheGroupName(snpFile.getParentFile()));
+                                    String fakeGrp = snpFile.getParentFile().getAbsolutePath().replace(TMP_CACHE_DIR_PREFIX, "");
+
+                                    int grpId = CU.cacheId(cacheGroupName(new File(fakeGrp)));
                                     int partId = partId(snpFile.getName());
 
                                     PartitionRestoreFuture partFut = F.find(allParts.get(grpId),
@@ -1016,14 +1018,8 @@ public class SnapshotRestoreProcess {
 
                                     assert partFut != null : snpFile.getAbsolutePath();
 
-                                    File tmpCacheDir = formatTmpDirName(grpToDir.get(grpId));
-
-                                    Path partFile = Paths.get(tmpCacheDir.getAbsolutePath(), snpFile.getName());
-
                                     try {
-                                        Files.move(snpFile.toPath(), partFile);
-
-                                        partFut.complete(partFile);
+                                        partFut.complete(snpFile.toPath());
                                     }
                                     catch (Exception e) {
                                         opCtx0.errHnd.accept(e);
