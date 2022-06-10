@@ -477,7 +477,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
             QueryIndexDefinition idxDef = new QueryIndexDefinition(
                 tbl.rowDescriptor(),
-                new IndexRowCompartorImpl(keyTypeSettings),
                 new IndexName(tbl.cacheName(), tbl.getSchema().getName(), tbl.getName(), name),
                 treeName,
                 ctx.indexProcessor().rowCacheCleaner(cacheInfo.groupId()),

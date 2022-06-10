@@ -23,6 +23,7 @@ import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyDefinition;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypeSettings;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexRowCache;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexRowComparator;
+import org.apache.ignite.internal.cache.query.index.sorted.IndexRowCompartorImpl;
 import org.apache.ignite.internal.cache.query.index.sorted.InlineIndexRowHandlerFactory;
 import org.apache.ignite.internal.cache.query.index.sorted.SortedIndexDefinition;
 import org.apache.ignite.internal.processors.query.GridQueryRowDescriptor;
@@ -70,7 +71,6 @@ public class QueryIndexDefinition implements SortedIndexDefinition {
     /** */
     public QueryIndexDefinition(
         GridQueryRowDescriptor rowDescriptor,
-        IndexRowComparator rowComparator,
         IndexName idxName,
         String treeName,
         IndexRowCache idxRowCache,
@@ -90,7 +90,7 @@ public class QueryIndexDefinition implements SortedIndexDefinition {
         this.isAffinity = isAffinity;
         this.keyDefs = keyDefs;
         this.keyTypeSettings = keyTypeSettings;
-        this.rowComparator = rowComparator;
+        this.rowComparator = new IndexRowCompartorImpl(keyTypeSettings);
     }
 
     /** {@inheritDoc} */
