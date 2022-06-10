@@ -626,6 +626,16 @@ public class SnapshotRestoreProcess {
     }
 
     /**
+     * @param tmpCacheDir Temporary cache directory.
+     * @return Cache or group id.
+     */
+    public static int tmpDirGroupId(File tmpCacheDir) {
+        String cacheGrpName = tmpCacheDir.getName().substring(TMP_CACHE_DIR_PREFIX.length());
+
+        return CU.cacheId(cacheGroupName(new File(tmpCacheDir.getParentFile(), cacheGrpName)));
+    }
+
+    /**
      * @param req Request to prepare cache group restore from the snapshot.
      * @param metas Local snapshot metadatas.
      * @return Snapshot restore operation context.
@@ -1003,9 +1013,7 @@ public class SnapshotRestoreProcess {
                                     throw new IgniteInterruptedException("Snapshot remote operation request cancelled.");
 
                                 if (t == null) {
-                                    String fakeGrp = snpFile.getParentFile().getAbsolutePath().replace(TMP_CACHE_DIR_PREFIX, "");
-
-                                    int grpId = CU.cacheId(cacheGroupName(new File(fakeGrp)));
+                                    int grpId = tmpDirGroupId(snpFile.getParentFile());
                                     int partId = partId(snpFile.getName());
 
                                     PartitionRestoreFuture partFut = F.find(allParts.get(grpId),
