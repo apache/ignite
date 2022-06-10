@@ -200,8 +200,6 @@ public class IgniteSqlFunctions {
                     return new Enumerator<Object[]>() {
                         long cur = rangeStart - increment;
 
-                        long cnt = 0;
-
                         @Override public Object[] current() {
                             return new Object[] { cur };
                         }
@@ -209,13 +207,7 @@ public class IgniteSqlFunctions {
                         @Override public boolean moveNext() {
                             cur += increment;
 
-                            System.err.println("TEST | cur="+cur);
-
-                            boolean next = increment > 0L ? cur <= rangeEnd : cur >= rangeEnd;
-
-                            ++cnt;
-
-                            return next;
+                            return increment > 0L ? cur <= rangeEnd : cur >= rangeEnd;
                         }
 
                         @Override public void reset() {

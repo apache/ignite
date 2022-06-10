@@ -320,7 +320,7 @@ public class AggregatePlannerTest extends AbstractAggregatePlannerTest {
         assertEquals(tf.createJavaType(Long.class), rowTypes.getFieldList().get(1).getType());
         assertEquals(tf.createJavaType(Long.class), rowTypes.getFieldList().get(2).getType());
         assertEquals(tf.createJavaType(Long.class), rowTypes.getFieldList().get(3).getType());
-        assertEquals(tf.createJavaType(Long.class), rowTypes.getFieldList().get(4).getType());
+        assertEquals(tf.createJavaType(BigDecimal.class), rowTypes.getFieldList().get(4).getType());
         assertEquals(tf.createJavaType(BigDecimal.class), rowTypes.getFieldList().get(5).getType());
         assertEquals(tf.createJavaType(Double.class), rowTypes.getFieldList().get(6).getType());
         assertEquals(tf.createJavaType(Double.class), rowTypes.getFieldList().get(7).getType());
@@ -375,7 +375,7 @@ public class AggregatePlannerTest extends AbstractAggregatePlannerTest {
         assertEquals(tf.createJavaType(Long.class), rowTypes.getFieldList().get(1).getType());
         assertEquals(tf.createJavaType(Long.class), rowTypes.getFieldList().get(2).getType());
         assertEquals(tf.createJavaType(Long.class), rowTypes.getFieldList().get(3).getType());
-        assertEquals(tf.createJavaType(Long.class), rowTypes.getFieldList().get(4).getType());
+        assertEquals(tf.createJavaType(BigDecimal.class), rowTypes.getFieldList().get(4).getType());
         assertEquals(tf.createJavaType(BigDecimal.class), rowTypes.getFieldList().get(5).getType());
         assertEquals(tf.createJavaType(Double.class), rowTypes.getFieldList().get(6).getType());
         assertEquals(tf.createJavaType(Double.class), rowTypes.getFieldList().get(7).getType());

@@ -84,9 +84,8 @@ public class HashAggregatePlannerTest extends AbstractAggregatePlannerTest {
 
         assertNoIndexCount("SELECT COUNT(*) FILTER (WHERE VAL0>1) FROM TEST", publicSchema);
 
-        // IndexCount can't be used with a condition, groups or other aggregates.
+        // IndexCount can't be used with a condition, groups, other aggregates or distincts.
         assertNoIndexCount("SELECT COUNT(*) FROM TEST WHERE VAL0>1", publicSchema);
-
         assertNoIndexCount("SELECT COUNT(1) FROM TEST WHERE VAL0>1", publicSchema);
 
         assertNoIndexCount("SELECT COUNT(*), SUM(VAL0) FROM TEST", publicSchema);

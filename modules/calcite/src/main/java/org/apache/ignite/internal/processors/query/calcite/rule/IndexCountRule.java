@@ -1,5 +1,6 @@
 package org.apache.ignite.internal.processors.query.calcite.rule;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -12,6 +13,8 @@ import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelCollations;
 import org.apache.calcite.rel.core.AggregateCall;
 import org.apache.calcite.rel.logical.LogicalAggregate;
+import org.apache.calcite.rex.RexBuilder;
+import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.util.ImmutableIntList;
@@ -89,7 +92,7 @@ public class IndexCountRule extends RelRule<IndexCountRule.Config> {
         List<AggregateCall> indCntSumFunLst = Stream.generate(() -> idxSumAggCall).limit(aggr.getAggCallList().size())
             .collect(Collectors.toList());
 
-        LogicalAggregate indxCntArrg = new LogicalAggregate(
+        LogicalAggregate newRel = new LogicalAggregate(
             aggr.getCluster(),
             aggr.getTraitSet(),
             Collections.emptyList(),
@@ -99,10 +102,20 @@ public class IndexCountRule extends RelRule<IndexCountRule.Config> {
             indCntSumFunLst
         );
 
-        IgniteProject castToLongNode = new IgniteProject(scan.getCluster(), indxCntArrg.getTraitSet(), indxCntArrg,
-            Collections.emptyList(), aggr.getRowType());
+        // SUM0/DECIMAL to COUNT()/Long converter.
+        List<RexNode> proj = new ArrayList<>();
+        RexBuilder rexBuilder = scan.getCluster().getRexBuilder();
 
-        call.transformTo(castToLongNode, ImmutableMap.of(indxCntArrg, aggr));
+        for (int i = 0; i < aggr.getAggCallList().size(); ++i)
+            proj.add(rexBuilder.makeCast(aggr.getAggCallList().get(i).getType(), rexBuilder.makeInputRef(newRel, i)));
+
+        IgniteProject castToLongNode = new IgniteProject(
+            newRel.getCluster(),
+            aggr.getTraitSet().replace(IgniteConvention.INSTANCE),
+            newRel,
+            proj, aggr.getRowType());
+
+        call.transformTo(castToLongNode, ImmutableMap.of(castToLongNode, aggr));
     }
 
     /** The rule config. */

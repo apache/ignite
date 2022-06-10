@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.query.calcite.planner;
 
 import java.util.concurrent.atomic.AtomicBoolean;
-import org.apache.calcite.rel.RelNode;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteExchange;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexCount;
@@ -74,8 +73,8 @@ public class IndexRebuildPlannerTest extends AbstractPlannerTest {
     public void testIndexCountAtIndexRebuild() throws Exception {
         String sql = "SELECT COUNT(*) FROM TBL";
 
-        assertPlan(sql, publicSchema, isInstanceOf(IgniteColocatedHashAggregate.class)
-            .and(input(isInstanceOf(IgniteExchange.class).and(input(isInstanceOf(IgniteIndexCount.class))))));
+        assertPlan(sql, publicSchema, nodeOrAnyChild(isInstanceOf(IgniteColocatedHashAggregate.class)
+            .and(input(isInstanceOf(IgniteExchange.class).and(input(isInstanceOf(IgniteIndexCount.class)))))));
 
         tbl.markIndexRebuildInProgress(true);
 
@@ -84,13 +83,11 @@ public class IndexRebuildPlannerTest extends AbstractPlannerTest {
 
         tbl.markIndexRebuildInProgress(false);
 
-        assertPlan(sql, publicSchema, isInstanceOf(IgniteColocatedHashAggregate.class)
-            .and(input(isInstanceOf(IgniteExchange.class).and(input(isInstanceOf(IgniteIndexCount.class))))));
+        assertPlan(sql, publicSchema, nodeOrAnyChild(isInstanceOf(IgniteColocatedHashAggregate.class)
+            .and(input(isInstanceOf(IgniteExchange.class).and(input(isInstanceOf(IgniteIndexCount.class)))))));
     }
 
-    /**
-     * Test IndexCount is disabled when index concurrently becomes unavailable.
-     */
+    /** */
     @Test
     public void testConcurrentIndexRebuildStateChange() throws Exception {
         String sql = "SELECT * FROM TBL WHERE id = 0";
@@ -135,16 +132,10 @@ public class IndexRebuildPlannerTest extends AbstractPlannerTest {
         });
 
         try {
-            for (int i = 0; i < 1000; i++) {
-                IgniteRel rel = physicalPlan(sql, publicSchema);
-
-                assertTrue(rel instanceof IgniteColocatedHashAggregate);
-
-                RelNode input = rel.getInput(0);
-
-                assertTrue(input instanceof IgniteTableScan ||
-                    (input instanceof IgniteExchange && input.getInput(0) instanceof IgniteIndexCount));
-            }
+            for (int i = 0; i < 1000; i++)
+                assertPlan(sql, publicSchema, nodeOrAnyChild(isInstanceOf(IgniteColocatedHashAggregate.class)
+                    .and(input(isInstanceOf(IgniteExchange.class).and(input(isInstanceOf(IgniteIndexCount.class))))
+                        .or(input(isInstanceOf(IgniteTableScan.class))))));
         }
         finally {
             stop.set(true);

@@ -233,6 +233,8 @@ public class IndexRebuildIntegrationTest extends AbstractBasicIntegrationTest {
         }
         finally {
             stop.set(true);
+
+            tbl.markIndexRebuildInProgress(false);
         }
 
         fut.get();
