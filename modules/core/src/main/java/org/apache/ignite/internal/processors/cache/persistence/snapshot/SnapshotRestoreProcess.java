@@ -620,7 +620,7 @@ public class SnapshotRestoreProcess {
      * @param cacheDir Cache directory.
      * @return Temporary directory.
      */
-    public static File formatTmpDirName(File cacheDir) {
+    static File formatTmpDirName(File cacheDir) {
         return new File(cacheDir.getParent(), TMP_CACHE_DIR_PREFIX + cacheDir.getName());
     }
 
@@ -628,7 +628,7 @@ public class SnapshotRestoreProcess {
      * @param tmpCacheDir Temporary cache directory.
      * @return Cache or group id.
      */
-    public static int tmpDirGroupId(File tmpCacheDir) {
+    static int tmpDirGroupId(File tmpCacheDir) {
         String cacheGrpName = tmpCacheDir.getName().substring(TMP_CACHE_DIR_PREFIX.length());
 
         return CU.cacheId(cacheGroupName(new File(tmpCacheDir.getParentFile(), cacheGrpName)));
