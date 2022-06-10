@@ -30,6 +30,14 @@ import org.junit.Test;
 public class AggregatesIntegrationTest extends AbstractBasicIntegrationTest {
     /** */
     @Test
+    public void testMinOptimization(){
+        createAndPopulateTable();
+
+        assertQuery("select min(salary) from Person where name <> 'dg'").returns(7.0).check();
+    }
+
+    /** */
+    @Test
     public void countOfNonNumericField() {
         createAndPopulateTable();
 

@@ -155,7 +155,7 @@ public class AbstractBasicIntegrationTest extends GridCommonAbstractTest {
         person.put(idx++, new Employer(null, 15d));
         person.put(idx++, new Employer("Ilya", 15d));
         person.put(idx++, new Employer("Roma", 10d));
-        person.put(idx++, new Employer("Roma", 10d));
+        person.put(idx++, new Employer("Roma", 7d));
 
         return person;
     }
@@ -246,7 +246,7 @@ public class AbstractBasicIntegrationTest extends GridCommonAbstractTest {
         public String name;
 
         /** */
-        @QuerySqlField
+        @QuerySqlField(index = true)
         public Double salary;
 
         /** */
