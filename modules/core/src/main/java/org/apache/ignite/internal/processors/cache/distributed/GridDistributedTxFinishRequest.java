@@ -317,8 +317,8 @@ public class GridDistributedTxFinishRequest extends GridDistributedBaseMessage i
         return txCutVer;
     }
 
-    /** */
-    public void txCutVersion(long txCutVer) {
+    /** {@inheritDoc} */
+    @Override public void txCutVersion(long txCutVer) {
         this.txCutVer = txCutVer;
     }
 

@@ -29,7 +29,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
  * This record is written to WAL in moment when Consistent Cut starts on a local node. All transactions committed before
  * this WAL record are part of the global area BEFORE. But it's possible then some transactions committed after this
  * record are also part of the BEFORE state. Set of such transactions is prepared in moment of taken Consistent Cut and
- * stored within {@link ConsistentCutState#checkList()}. Ignite analyzes such transactions and decided whether to include
+ * stored within {@link ConsistentCutState}. Ignite analyzes such transactions and decided whether to include
  * them to the state or not. Information about that is written to WAL with {@link ConsistentCutFinishRecord}.
  *
  * @see ConsistentCutFinishRecord

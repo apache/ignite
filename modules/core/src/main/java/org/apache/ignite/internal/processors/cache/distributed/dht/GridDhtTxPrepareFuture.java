@@ -294,7 +294,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
     public void txCutVer(long txCutVer) {
         this.txCutVer = txCutVer;
 
-        tx.txCutVer(txCutVer);
+        tx.txCutVersion(txCutVer);
     }
 
     /** {@inheritDoc} */
@@ -804,7 +804,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
 
                                 if (REPLIED_UPD.compareAndSet(GridDhtTxPrepareFuture.this, 0, 1)) {
                                     if (res.onePhaseCommit() && fut.result() != null) {
-                                        long v = ((IgniteTxLocalAdapter)fut.result()).txCutVer();
+                                        long v = ((IgniteTxLocalAdapter)fut.result()).txCutVersion();
 
                                         res.txCutVersion(v);
                                     }
@@ -2070,7 +2070,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                 }
 
                 if (res.txCutVersion() >= 0)
-                    tx.txCutVer(res.txCutVersion());
+                    tx.txCutVersion(res.txCutVersion());
 
                 // Finish mini future.
                 onDone(tx);

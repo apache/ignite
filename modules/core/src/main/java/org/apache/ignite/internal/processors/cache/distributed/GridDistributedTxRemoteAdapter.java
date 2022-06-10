@@ -48,7 +48,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheReturnCompletableWra
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.GridCacheUpdateTxResult;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
-import org.apache.ignite.internal.processors.cache.consistentcut.ConsistentCutVersionSource;
+import org.apache.ignite.internal.processors.cache.consistentcut.ConsistentCutVersionAware;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtInvalidPartitionException;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheEntry;
@@ -102,7 +102,7 @@ import static org.apache.ignite.transactions.TransactionState.UNKNOWN;
  * Transaction created by system implicitly on remote nodes.
  */
 public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
-    implements IgniteTxRemoteEx, ConsistentCutVersionSource {
+    implements IgniteTxRemoteEx, ConsistentCutVersionAware {
     /** Commit allowed field updater. */
     private static final AtomicIntegerFieldUpdater<GridDistributedTxRemoteAdapter> COMMIT_ALLOWED_UPD =
         AtomicIntegerFieldUpdater.newUpdater(GridDistributedTxRemoteAdapter.class, "commitAllowed");
@@ -189,12 +189,12 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
     }
 
     /** {@inheritDoc} */
-    @Override public long txCutVer() {
+    @Override public long txCutVersion() {
         return txCutVer;
     }
 
     /** {@inheritDoc} */
-    @Override public void txCutVer(long txCutVer) {
+    @Override public void txCutVersion(long txCutVer) {
         this.txCutVer = txCutVer;
     }
 

@@ -29,16 +29,25 @@ public interface ConsistentCutVersionAware {
      *
      * It is used to trigger Consistent Cut procedure on receiver.
      */
-    public long latestCutVersion();
+    public default long latestCutVersion() {
+        return 0L;
+    }
 
     /**
-     * Version of the latest Consistent Cut AFTER which the specified transaction committed.
+     * Version of the latest finished Consistent Cut AFTER which the specified transaction committed.
      *
      * It is used to notify a transaction in the check-list whether to include it to this Consistent Cut.
      */
     public default long txCutVersion() {
         return -1L;
     }
+
+    /**
+     * Version of the latest finished Consistent Cut AFTER which the specified transaction committed.
+     *
+     * It is used to notify a transaction in the check-list whether to include it to this Consistent Cut.
+     */
+    public default void txCutVersion(long txCutVer) {}
 
     /**
      * Transaction ID to notify with {@link #txCutVersion()}.
@@ -61,5 +70,7 @@ public interface ConsistentCutVersionAware {
     /**
      * Topology version in the moment of starting {@link #latestCutVersion()} on coordinator node.
      */
-    public AffinityTopologyVersion topologyVersion();
+    public default AffinityTopologyVersion topologyVersion() {
+        return null;
+    }
 }

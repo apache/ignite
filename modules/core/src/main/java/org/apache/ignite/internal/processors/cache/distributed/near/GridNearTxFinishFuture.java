@@ -656,7 +656,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
 
                         if (cctx.consistentCutMgr() != null) {
                             finishReq.latestCutVersion(cctx.consistentCutMgr().latestCutVersion());
-                            finishReq.txCutVersion(tx.txCutVer());
+                            finishReq.txCutVersion(tx.txCutVersion());
                         }
 
                         try {
@@ -798,7 +798,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
 
         if (cctx.consistentCutMgr() != null) {
             req.latestCutVersion(cctx.consistentCutMgr().latestCutVersion());
-            req.txCutVersion(tx.txCutVer());
+            req.txCutVersion(tx.txCutVersion());
         }
 
         // If this is the primary node for the keys.

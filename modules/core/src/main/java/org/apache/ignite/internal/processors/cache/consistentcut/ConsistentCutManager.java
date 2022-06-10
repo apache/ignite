@@ -79,7 +79,6 @@ public class ConsistentCutManager extends GridCacheSharedManagerAdapter {
     /**
      * Collections of local transactions IDs to be committed by specific Consistent Cut version.
      */
-    // TODO: is it possible to simplify it?
     private final Map<GridCacheVersion, T2<GridCacheVersion, Long>> committingTxs = new ConcurrentHashMap<>();
 
     /**
@@ -199,11 +198,11 @@ public class ConsistentCutManager extends GridCacheSharedManagerAdapter {
         ConsistentCutState cutState = latestPublishedCutState;
 
         if (!tx.onePhaseCommit() && tx.near())
-            setCutVersion(cutState, tx.nearXidVersion(), tx.xidVersion(), (ConsistentCutVersionSource)tx);
+            setCutVersion(cutState, tx.nearXidVersion(), tx.xidVersion(), (ConsistentCutVersionAware)tx);
         else if (tx.onePhaseCommit()) {
-            ConsistentCutVersionSource s = (ConsistentCutVersionSource)tx;
+            ConsistentCutVersionAware s = (ConsistentCutVersionAware)tx;
 
-            if (s.txCutVer() < 0)
+            if (s.txCutVersion() < 0)
                 setCutVersion(cutState, tx.nearXidVersion(), tx.xidVersion(), s);
         }
 
@@ -222,11 +221,11 @@ public class ConsistentCutManager extends GridCacheSharedManagerAdapter {
         ConsistentCutState cutState,
         GridCacheVersion nearTxVer,
         GridCacheVersion txVer,
-        ConsistentCutVersionSource tx
+        ConsistentCutVersionAware tx
     ) {
         long cutVer = txCutVersion(cutState, nearTxVer, txVer);
 
-        tx.txCutVer(cutVer);
+        tx.txCutVersion(cutVer);
 
         committingTxs.put(txVer, new T2<>(nearTxVer, cutVer));
 
@@ -485,6 +484,7 @@ public class ConsistentCutManager extends GridCacheSharedManagerAdapter {
             if (tx.near() && ((GridNearTxLocal)tx).fastFinish())
                 continue;
 
+            // Add all committing transactions to check list.
             if (txState == COMMITTING || txState == COMMITTED)
                 cutState.addForCheck(tx);
 

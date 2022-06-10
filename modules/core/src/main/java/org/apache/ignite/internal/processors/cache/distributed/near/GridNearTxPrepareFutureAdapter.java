@@ -127,7 +127,7 @@ public abstract class GridNearTxPrepareFutureAdapter extends
     public void txCutVer(long txCutVer) {
         this.txCutVer = txCutVer;
 
-        tx.txCutVer(txCutVer);
+        tx.txCutVersion(txCutVer);
     }
 
     /** {@inheritDoc} */

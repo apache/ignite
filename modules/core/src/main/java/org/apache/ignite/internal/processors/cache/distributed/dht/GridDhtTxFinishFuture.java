@@ -409,7 +409,7 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
 
             if (cctx.consistentCutMgr() != null) {
                 req.latestCutVersion(cctx.consistentCutMgr().latestCutVersion());
-                req.txCutVersion(tx.txCutVer());
+                req.txCutVersion(tx.txCutVersion());
             }
 
             try {
@@ -475,7 +475,7 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
         if (mvccSnapshot != null)
             mvccSnapshot = mvccSnapshot.withoutActiveTransactions();
 
-        long txVer = tx.txCutVer();
+        long txVer = tx.txCutVersion();
 
         // Create mini futures.
         for (GridDistributedTxMapping dhtMapping : dhtMap.values()) {
