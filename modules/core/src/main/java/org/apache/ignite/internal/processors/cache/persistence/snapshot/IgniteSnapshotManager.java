@@ -299,9 +299,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     /** File transmission parameter of cache partition id. */
     private static final String SNP_PART_ID_PARAM = "partId";
 
-    /** File transmission parameter of node-sender directory path with its consistentId (e.g. db/IgniteNode0). */
-    private static final String SNP_DB_NODE_PATH_PARAM = "dbNodePath";
-
     /** File transmission parameter of a cache directory with is currently sends its partitions. */
     private static final String SNP_CACHE_DIR_NAME_PARAM = "cacheDirName";
 
@@ -1931,7 +1928,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     RemoteSnapshotSender remoteSnapshotSenderFactory(String rqId, UUID nodeId) {
         return new RemoteSnapshotSender(log,
             cctx.kernalContext().pools().getSnapshotExecutorService(),
-            databaseRelativePath(pdsSettings.folderName()),
             cctx.gridIO().openTransmissionSender(nodeId, DFLT_INITIAL_SNAPSHOT_TOPIC),
             rqId);
     }
@@ -2804,7 +2800,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             catch (Throwable e) {
                 U.error(log, "Processing snapshot request from remote node fails with an error", e);
 
-                // TODO
                 cctx.kernalContext().failure().process(new FailureContext(FailureType.CRITICAL_ERROR, e));
             }
             finally {
@@ -2845,9 +2840,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         /** {@inheritDoc} */
         @Override public String filePath(UUID nodeId, TransmissionMeta fileMeta) {
             Integer partId = (Integer)fileMeta.params().get(SNP_PART_ID_PARAM);
-            String rmtDbNodePath = (String)fileMeta.params().get(SNP_DB_NODE_PATH_PARAM);
             String cacheDirName = (String)fileMeta.params().get(SNP_CACHE_DIR_NAME_PARAM);
-
             String rqId = (String)fileMeta.params().get(RQ_ID_NAME_PARAM);
             Integer partsCnt = (Integer)fileMeta.params().get(SNP_PARTITIONS_CNT);
 
@@ -2866,12 +2859,15 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             try {
                 task.partsLeft.compareAndSet(-1, partsCnt);
 
-                File tmpCacheDir = formatTmpDirName(new File(storeMgr.workDir().getAbsolutePath(), cacheDirName));
+                File cacheDir = new File(storeMgr.workDir(), cacheDirName);
 
-                if (!tmpCacheDir.exists())
-                    tmpCacheDir.mkdir();
+                File tmpCacheDir = U.resolveWorkDirectory(storeMgr.workDir().getAbsolutePath(),
+                    formatTmpDirName(cacheDir).getName(), false);
 
                 return Paths.get(tmpCacheDir.getAbsolutePath(), getPartitionFileName(partId)).toString();
+            }
+            catch (IgniteCheckedException e) {
+                throw new RuntimeException(e);
             }
             finally {
                 busyLock.leaveBusy();
@@ -2999,9 +2995,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         /** Snapshot name. */
         private final String rqId;
 
-        /** Local node persistent directory with consistent id. */
-        private final String relativeNodePath;
-
         /** The number of cache partition files expected to be processed. */
         private int partsCnt;
 
@@ -3013,7 +3006,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         public RemoteSnapshotSender(
             IgniteLogger log,
             Executor exec,
-            String relativeNodePath,
             GridIoManager.TransmissionSender sndr,
             String rqId
         ) {
@@ -3021,15 +3013,11 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
             this.sndr = sndr;
             this.rqId = rqId;
-            this.relativeNodePath = relativeNodePath;
         }
 
         /** {@inheritDoc} */
         @Override protected void init(int partsCnt) {
             this.partsCnt = partsCnt;
-
-            if (F.isEmpty(relativeNodePath))
-                throw new IgniteException("Relative node path cannot be empty.");
         }
 
         /** {@inheritDoc} */
@@ -3076,7 +3064,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
             params.put(SNP_GRP_ID_PARAM, pair.getGroupId());
             params.put(SNP_PART_ID_PARAM, pair.getPartitionId());
-            params.put(SNP_DB_NODE_PATH_PARAM, relativeNodePath);
             params.put(SNP_CACHE_DIR_NAME_PARAM, cacheDirName);
             params.put(RQ_ID_NAME_PARAM, rqId);
             params.put(SNP_PARTITIONS_CNT, partsCnt);

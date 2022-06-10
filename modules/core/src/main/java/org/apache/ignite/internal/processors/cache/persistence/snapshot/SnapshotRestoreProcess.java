@@ -77,7 +77,6 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
-import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
@@ -988,10 +987,6 @@ public class SnapshotRestoreProcess {
                 (grpId, partId) -> rmtLoadParts.get(grpId) != null &&
                     rmtLoadParts.get(grpId).remove(new PartitionRestoreFuture(partId, opCtx0.processedParts)));
 
-            Map<Integer, File> grpToDir = opCtx0.dirs.stream()
-                .collect(Collectors.toMap(d -> CU.cacheId(FilePageStoreManager.cacheGroupName(d)),
-                    d -> d));
-
             try {
                 if (log.isInfoEnabled() && !snpAff.isEmpty()) {
                     log.info("Trying to request partitions from remote nodes " +
@@ -1012,32 +1007,22 @@ public class SnapshotRestoreProcess {
                                 if (opCtx0.stopChecker.getAsBoolean())
                                     throw new IgniteInterruptedException("Snapshot remote operation request cancelled.");
 
-                                if (t == null) {
-                                    int grpId = tmpDirGroupId(snpFile.getParentFile());
-                                    int partId = partId(snpFile.getName());
-
-                                    PartitionRestoreFuture partFut = F.find(allParts.get(grpId),
-                                        null,
-                                        new IgnitePredicate<PartitionRestoreFuture>() {
-                                            @Override public boolean apply(PartitionRestoreFuture f) {
-                                                return f.partId == partId;
-                                            }
-                                        });
-
-                                    assert partFut != null : snpFile.getAbsolutePath();
-
-                                    try {
-                                        partFut.complete(snpFile.toPath());
-                                    }
-                                    catch (Exception e) {
-                                        opCtx0.errHnd.accept(e);
-                                        completeListExceptionally(rmtAwaitParts, e);
-                                    }
-                                }
-                                else {
+                                if (t != null) {
                                     opCtx0.errHnd.accept(t);
                                     completeListExceptionally(rmtAwaitParts, t);
+
+                                    return;
                                 }
+
+                                int grpId = tmpDirGroupId(snpFile.getParentFile());
+                                int partId = partId(snpFile.getName());
+
+                                PartitionRestoreFuture partFut = F.find(allParts.get(grpId), null,
+                                    fut -> fut.partId == partId);
+
+                                assert partFut != null : snpFile.getAbsolutePath();
+
+                                partFut.complete(snpFile.toPath());
                             });
                 }
             }
