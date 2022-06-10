@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.h2.index.client;
+package org.apache.ignite.internal.cache.query.index.sorted.client;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;

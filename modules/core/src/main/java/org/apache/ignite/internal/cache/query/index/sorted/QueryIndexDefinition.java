@@ -15,17 +15,10 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.h2.index;
+package org.apache.ignite.internal.cache.query.index.sorted;
 
 import java.util.LinkedHashMap;
 import org.apache.ignite.internal.cache.query.index.IndexName;
-import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyDefinition;
-import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypeSettings;
-import org.apache.ignite.internal.cache.query.index.sorted.IndexRowCache;
-import org.apache.ignite.internal.cache.query.index.sorted.IndexRowComparator;
-import org.apache.ignite.internal.cache.query.index.sorted.IndexRowCompartorImpl;
-import org.apache.ignite.internal.cache.query.index.sorted.InlineIndexRowHandlerFactory;
-import org.apache.ignite.internal.cache.query.index.sorted.SortedIndexDefinition;
 import org.apache.ignite.internal.processors.query.GridQueryRowDescriptor;
 
 /**
