@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.cache.query.index.sorted.inline.types;
 
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyType;
+import org.apache.ignite.internal.cache.query.index.sorted.keys.IndexKey;
 import org.apache.ignite.internal.cache.query.index.sorted.keys.JavaObjectIndexKey;
 import org.apache.ignite.internal.cache.query.index.sorted.keys.PlainJavaObjectIndexKey;
 import org.apache.ignite.internal.pagemem.PageUtils;
@@ -48,7 +49,7 @@ public class ObjectHashInlineIndexKeyType extends NullableInlineIndexKeyType<Jav
     }
 
     /** {@inheritDoc} */
-    @Override public int compare0(long pageAddr, int off, JavaObjectIndexKey v) {
+    @Override public int compare0(long pageAddr, int off, IndexKey v) {
         int val1 = PageUtils.getInt(pageAddr, off + 1);
         int val2 = v.hashCode();
 

@@ -175,7 +175,7 @@ public enum IndexKeyType {
         for (IndexKeyType type : values()) {
             assert type.code >= 0 || type == UNKNOWN; // Only one negative value is allowed.
 
-            if (type.code > 0)
+            if (type.code >= 0)
                 keyTypesByCode[type.code] = type;
         }
     }

@@ -17,31 +17,38 @@
 
 package org.apache.ignite.internal.cache.query.index.sorted.keys;
 
-import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyType;
+import java.math.BigDecimal;
 
 /**
- * Class that represnts a single index key.
+ * Class that represnts a numeric index key.
  */
-public interface IndexKey {
-    /**
-     * @return Value of this key.
-     */
-    public Object key();
+public abstract class NumericIndexKey implements IndexKey {
+    /** */
+    public abstract int compareTo(boolean val);
 
-    /**
-     * @return Index key type {@link IndexKeyType}.
-     */
-    public IndexKeyType type();
+    /** */
+    public abstract int compareTo(byte val);
 
-    /**
-     * @return Comparison result with other IndexKey the same type.
-     */
-    public int compare(IndexKey o);
+    /** */
+    public abstract int compareTo(short val);
 
-    /**
-     * @return {@code True} if index key can be compared to another index key.
-     */
-    public default boolean isComparableTo(IndexKey k) {
-        return type() == k.type();
+    /** */
+    public abstract int compareTo(int val);
+
+    /** */
+    public abstract int compareTo(long val);
+
+    /** */
+    public abstract int compareTo(float val);
+
+    /** */
+    public abstract int compareTo(double val);
+
+    /** */
+    public abstract int compareTo(BigDecimal val);
+
+    /** {@inheritDoc} */
+    @Override public boolean isComparableTo(IndexKey k) {
+        return k instanceof NumericIndexKey;
     }
 }

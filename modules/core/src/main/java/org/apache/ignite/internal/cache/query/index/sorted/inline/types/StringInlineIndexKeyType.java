@@ -20,6 +20,7 @@ package org.apache.ignite.internal.cache.query.index.sorted.inline.types;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyType;
+import org.apache.ignite.internal.cache.query.index.sorted.keys.IndexKey;
 import org.apache.ignite.internal.cache.query.index.sorted.keys.StringIndexKey;
 import org.apache.ignite.internal.pagemem.PageUtils;
 import org.apache.ignite.internal.util.GridUnsafe;
@@ -73,7 +74,7 @@ public class StringInlineIndexKeyType extends NullableInlineIndexKeyType<StringI
     }
 
     /** {@inheritDoc} */
-    @Override public int compare0(long pageAddr, int off, StringIndexKey key) {
+    @Override public int compare0(long pageAddr, int off, IndexKey key) {
         String s = (String)key.key();
 
         int len1 = PageUtils.getShort(pageAddr, off + 1) & 0x7FFF;

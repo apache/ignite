@@ -19,6 +19,7 @@ package org.apache.ignite.internal.cache.query.index.sorted.inline.types;
 
 import java.util.UUID;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyType;
+import org.apache.ignite.internal.cache.query.index.sorted.keys.IndexKey;
 import org.apache.ignite.internal.cache.query.index.sorted.keys.UuidIndexKey;
 import org.apache.ignite.internal.pagemem.PageUtils;
 
@@ -33,7 +34,7 @@ public class UuidInlineIndexKeyType extends NullableInlineIndexKeyType<UuidIndex
     }
 
     /** {@inheritDoc} */
-    @Override public int compare0(long pageAddr, int off, UuidIndexKey key) {
+    @Override public int compare0(long pageAddr, int off, IndexKey key) {
         UUID v = (UUID)key.key();
 
         long part1 = PageUtils.getLong(pageAddr, off + 1);

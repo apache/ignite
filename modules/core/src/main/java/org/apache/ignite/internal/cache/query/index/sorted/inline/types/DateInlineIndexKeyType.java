@@ -19,6 +19,8 @@ package org.apache.ignite.internal.cache.query.index.sorted.inline.types;
 
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyType;
 import org.apache.ignite.internal.cache.query.index.sorted.keys.DateIndexKey;
+import org.apache.ignite.internal.cache.query.index.sorted.keys.DateTimeIndexKey;
+import org.apache.ignite.internal.cache.query.index.sorted.keys.IndexKey;
 import org.apache.ignite.internal.pagemem.PageUtils;
 
 import static org.apache.ignite.internal.cache.query.index.sorted.inline.types.DateValueUtils.MAX_DATE_VALUE;
@@ -34,11 +36,13 @@ public class DateInlineIndexKeyType extends NullableInlineIndexKeyType<DateIndex
     }
 
     /** {@inheritDoc} */
-    @Override public int compare0(long pageAddr, int off, DateIndexKey key) {
-        long val1 = PageUtils.getLong(pageAddr, off + 1);
-        long val2 = key.dateValue();
+    @Override public boolean isComparableTo(IndexKey key) {
+        return key instanceof DateTimeIndexKey;
+    }
 
-        return Integer.signum(Long.compare(val1, val2));
+    /** {@inheritDoc} */
+    @Override public int compare0(long pageAddr, int off, IndexKey key) {
+        return -((DateTimeIndexKey)key).compareTo(PageUtils.getLong(pageAddr, off + 1), 0);
     }
 
     /** {@inheritDoc} */

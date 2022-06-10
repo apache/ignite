@@ -28,7 +28,7 @@ import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyType;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.types.DateValueUtils;
 
 /** */
-public class TimestampIndexKey implements IndexKey {
+public class TimestampIndexKey extends DateTimeIndexKey {
     /** */
     private final long dateVal;
 
@@ -94,9 +94,12 @@ public class TimestampIndexKey implements IndexKey {
     }
 
     /** {@inheritDoc} */
-    @Override public int compare(IndexKey o) {
-        TimestampIndexKey other = (TimestampIndexKey)o;
+    @Override public int compareTo(long dateVal, long nanos) {
+        return this.dateVal != dateVal ? Long.compare(this.dateVal, dateVal) : Long.compare(this.nanos, nanos);
+    }
 
-        return dateVal != other.dateVal ? Long.compare(dateVal, other.dateVal) : Long.compare(nanos, other.nanos);
+    /** {@inheritDoc} */
+    @Override public int compare(IndexKey o) {
+        return -((DateTimeIndexKey)o).compareTo(dateVal, nanos);
     }
 }

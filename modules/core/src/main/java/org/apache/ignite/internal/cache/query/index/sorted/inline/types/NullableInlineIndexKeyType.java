@@ -199,7 +199,7 @@ public abstract class NullableInlineIndexKeyType<T extends IndexKey> implements 
         if (key == NullIndexKey.INSTANCE)
             return 1;
 
-        return compare0(pageAddr, off, (T)key);
+        return compare0(pageAddr, off, key);
     }
 
     /**
@@ -230,7 +230,7 @@ public abstract class NullableInlineIndexKeyType<T extends IndexKey> implements 
      * is not enough to compare, or {@link #COMPARE_UNSUPPORTED} if given value
      * can't be compared with inlined part at all.
      */
-    public abstract int compare0(long pageAddr, int off, T v);
+    public abstract int compare0(long pageAddr, int off, IndexKey v);
 
     /** Return inlined size for specified key. */
     protected abstract int inlineSize0(T key);

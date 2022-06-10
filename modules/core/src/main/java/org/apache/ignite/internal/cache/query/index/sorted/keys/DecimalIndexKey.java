@@ -21,7 +21,7 @@ import java.math.BigDecimal;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyType;
 
 /** */
-public class DecimalIndexKey implements IndexKey {
+public class DecimalIndexKey extends NumericIndexKey {
     /** */
     private final BigDecimal key;
 
@@ -41,9 +41,47 @@ public class DecimalIndexKey implements IndexKey {
     }
 
     /** {@inheritDoc} */
-    @Override public int compare(IndexKey o) {
-        BigDecimal okey = (BigDecimal)o.key();
+    @Override public int compareTo(boolean val) {
+        return Boolean.compare(key.compareTo(BigDecimal.ZERO) != 0, val);
+    }
 
-        return key.compareTo(okey);
+    /** {@inheritDoc} */
+    @Override public int compareTo(byte val) {
+        return key.compareTo(BigDecimal.valueOf(val));
+    }
+
+    /** {@inheritDoc} */
+    @Override public int compareTo(short val) {
+        return key.compareTo(BigDecimal.valueOf(val));
+    }
+
+    /** {@inheritDoc} */
+    @Override public int compareTo(int val) {
+        return key.compareTo(BigDecimal.valueOf(val));
+    }
+
+    /** {@inheritDoc} */
+    @Override public int compareTo(long val) {
+        return key.compareTo(BigDecimal.valueOf(val));
+    }
+
+    /** {@inheritDoc} */
+    @Override public int compareTo(float val) {
+        return key.compareTo(BigDecimal.valueOf(val));
+    }
+
+    /** {@inheritDoc} */
+    @Override public int compareTo(double val) {
+        return key.compareTo(BigDecimal.valueOf(val));
+    }
+
+    /** {@inheritDoc} */
+    @Override public int compareTo(BigDecimal val) {
+        return key.compareTo(val);
+    }
+
+    /** {@inheritDoc} */
+    @Override public int compare(IndexKey o) {
+        return o.type() == type() ? key.compareTo((BigDecimal)o.key()) : -((NumericIndexKey)o).compareTo(key);
     }
 }

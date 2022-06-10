@@ -18,6 +18,8 @@
 package org.apache.ignite.internal.cache.query.index.sorted.inline.types;
 
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyType;
+import org.apache.ignite.internal.cache.query.index.sorted.keys.DateTimeIndexKey;
+import org.apache.ignite.internal.cache.query.index.sorted.keys.IndexKey;
 import org.apache.ignite.internal.cache.query.index.sorted.keys.TimestampIndexKey;
 import org.apache.ignite.internal.pagemem.PageUtils;
 
@@ -35,17 +37,14 @@ public class TimestampInlineIndexKeyType extends NullableInlineIndexKeyType<Time
     }
 
     /** {@inheritDoc} */
-    @Override public int compare0(long pageAddr, int off, TimestampIndexKey key) {
-        long val1 = PageUtils.getLong(pageAddr, off + 1);
+    @Override public boolean isComparableTo(IndexKey key) {
+        return key instanceof DateTimeIndexKey;
+    }
 
-        int c = Long.compare(val1, key.dateValue());
-
-        if (c != 0)
-            return Integer.signum(c);
-
-        long nanos1 = PageUtils.getLong(pageAddr, off + 9);
-
-        return Integer.signum(Long.compare(nanos1, key.nanos()));
+    /** {@inheritDoc} */
+    @Override public int compare0(long pageAddr, int off, IndexKey key) {
+        return -((DateTimeIndexKey)key).compareTo(PageUtils.getLong(pageAddr, off + 1),
+            PageUtils.getLong(pageAddr, off + 9));
     }
 
     /** {@inheritDoc} */

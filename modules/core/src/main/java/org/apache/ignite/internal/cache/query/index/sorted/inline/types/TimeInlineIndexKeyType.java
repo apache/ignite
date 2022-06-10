@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.cache.query.index.sorted.inline.types;
 
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyType;
+import org.apache.ignite.internal.cache.query.index.sorted.keys.IndexKey;
 import org.apache.ignite.internal.cache.query.index.sorted.keys.TimeIndexKey;
 import org.apache.ignite.internal.pagemem.PageUtils;
 
@@ -31,9 +32,9 @@ public class TimeInlineIndexKeyType extends NullableInlineIndexKeyType<TimeIndex
     }
 
     /** {@inheritDoc} */
-    @Override public int compare0(long pageAddr, int off, TimeIndexKey key) {
+    @Override public int compare0(long pageAddr, int off, IndexKey key) {
         long val1 = PageUtils.getLong(pageAddr, off + 1);
-        long val2 = key.nanos();
+        long val2 = ((TimeIndexKey)key).nanos();
 
         return Integer.signum(Long.compare(val1, val2));
     }

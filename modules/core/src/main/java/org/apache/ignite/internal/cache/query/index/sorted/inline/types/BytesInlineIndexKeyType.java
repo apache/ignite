@@ -20,6 +20,7 @@ package org.apache.ignite.internal.cache.query.index.sorted.inline.types;
 import java.util.Arrays;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyType;
 import org.apache.ignite.internal.cache.query.index.sorted.keys.BytesIndexKey;
+import org.apache.ignite.internal.cache.query.index.sorted.keys.IndexKey;
 import org.apache.ignite.internal.cache.query.index.sorted.keys.SignedBytesIndexKey;
 import org.apache.ignite.internal.pagemem.PageUtils;
 import org.apache.ignite.internal.util.GridUnsafe;
@@ -54,7 +55,7 @@ public class BytesInlineIndexKeyType extends NullableInlineIndexKeyType<BytesInd
     }
 
     /** {@inheritDoc} */
-    @Override public int compare0(long pageAddr, int off, BytesIndexKey bytes) {
+    @Override public int compare0(long pageAddr, int off, IndexKey bytes) {
         long addr = pageAddr + off + 1; // Skip type.
 
         int len1 = PageUtils.getShort(pageAddr, off + 1) & 0x7FFF;

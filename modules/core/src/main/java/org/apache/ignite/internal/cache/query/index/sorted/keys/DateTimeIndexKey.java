@@ -17,31 +17,15 @@
 
 package org.apache.ignite.internal.cache.query.index.sorted.keys;
 
-import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyType;
-
 /**
- * Class that represnts a single index key.
+ * Class that represnts a numeric index key.
  */
-public interface IndexKey {
-    /**
-     * @return Value of this key.
-     */
-    public Object key();
+public abstract class DateTimeIndexKey implements IndexKey {
+    /** */
+    public abstract int compareTo(long dateVal, long nanos);
 
-    /**
-     * @return Index key type {@link IndexKeyType}.
-     */
-    public IndexKeyType type();
-
-    /**
-     * @return Comparison result with other IndexKey the same type.
-     */
-    public int compare(IndexKey o);
-
-    /**
-     * @return {@code True} if index key can be compared to another index key.
-     */
-    public default boolean isComparableTo(IndexKey k) {
-        return type() == k.type();
+    /** {@inheritDoc} */
+    @Override public boolean isComparableTo(IndexKey k) {
+        return k instanceof DateTimeIndexKey;
     }
 }

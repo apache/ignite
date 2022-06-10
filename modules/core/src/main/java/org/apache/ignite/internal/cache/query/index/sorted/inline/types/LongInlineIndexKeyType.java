@@ -18,7 +18,9 @@
 package org.apache.ignite.internal.cache.query.index.sorted.inline.types;
 
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyType;
+import org.apache.ignite.internal.cache.query.index.sorted.keys.IndexKey;
 import org.apache.ignite.internal.cache.query.index.sorted.keys.LongIndexKey;
+import org.apache.ignite.internal.cache.query.index.sorted.keys.NumericIndexKey;
 import org.apache.ignite.internal.pagemem.PageUtils;
 
 /**
@@ -48,10 +50,15 @@ public class LongInlineIndexKeyType extends NullableInlineIndexKeyType<LongIndex
     }
 
     /** {@inheritDoc} */
-    @Override public int compare0(long pageAddr, int off, LongIndexKey key) {
+    @Override public boolean isComparableTo(IndexKey key) {
+        return key instanceof NumericIndexKey;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int compare0(long pageAddr, int off, IndexKey key) {
         long val1 = PageUtils.getLong(pageAddr, off + 1);
 
-        return Integer.signum(Long.compare(val1, (long)key.key()));
+        return -((NumericIndexKey)key).compareTo(val1);
     }
 
     /** {@inheritDoc} */

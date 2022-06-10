@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.cache.query.index.sorted.inline.types;
 
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyType;
+import org.apache.ignite.internal.cache.query.index.sorted.keys.IndexKey;
 import org.apache.ignite.internal.cache.query.index.sorted.keys.StringIndexKey;
 import org.jetbrains.annotations.Nullable;
 
@@ -44,7 +45,7 @@ public class StringNoCompareInlineIndexKeyType extends NullableInlineIndexKeyTyp
     }
 
     /** {@inheritDoc} */
-    @Override public int compare0(long pageAddr, int off, StringIndexKey key) {
+    @Override public int compare0(long pageAddr, int off, IndexKey key) {
         return COMPARE_UNSUPPORTED;
     }
 

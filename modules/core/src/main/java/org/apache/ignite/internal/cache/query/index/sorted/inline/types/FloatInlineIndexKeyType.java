@@ -19,6 +19,8 @@ package org.apache.ignite.internal.cache.query.index.sorted.inline.types;
 
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyType;
 import org.apache.ignite.internal.cache.query.index.sorted.keys.FloatIndexKey;
+import org.apache.ignite.internal.cache.query.index.sorted.keys.IndexKey;
+import org.apache.ignite.internal.cache.query.index.sorted.keys.NumericIndexKey;
 import org.apache.ignite.internal.pagemem.PageUtils;
 
 /**
@@ -31,10 +33,15 @@ public class FloatInlineIndexKeyType extends NullableInlineIndexKeyType<FloatInd
     }
 
     /** {@inheritDoc} */
-    @Override public int compare0(long pageAddr, int off, FloatIndexKey key) {
+    @Override public boolean isComparableTo(IndexKey key) {
+        return key instanceof NumericIndexKey;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int compare0(long pageAddr, int off, IndexKey key) {
         float val1 = Float.intBitsToFloat(PageUtils.getInt(pageAddr, off + 1));
 
-        return Integer.signum(Float.compare(val1, (float)key.key()));
+        return -((NumericIndexKey)key).compareTo(val1);
     }
 
     /** {@inheritDoc} */

@@ -19,6 +19,7 @@ package org.apache.ignite.internal.cache.query.index.sorted.inline.types;
 
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyType;
 import org.apache.ignite.internal.cache.query.index.sorted.keys.BytesIndexKey;
+import org.apache.ignite.internal.cache.query.index.sorted.keys.IndexKey;
 import org.apache.ignite.internal.cache.query.index.sorted.keys.JavaObjectIndexKey;
 import org.apache.ignite.internal.cache.query.index.sorted.keys.PlainJavaObjectIndexKey;
 
@@ -52,8 +53,8 @@ public class ObjectByteArrayInlineIndexKeyType extends NullableInlineIndexKeyTyp
     }
 
     /** {@inheritDoc} */
-    @Override public int compare0(long pageAddr, int off, JavaObjectIndexKey key) {
-        byte[] b = key.bytesNoCopy();
+    @Override public int compare0(long pageAddr, int off, IndexKey key) {
+        byte[] b = ((JavaObjectIndexKey)key).bytesNoCopy();
 
         // Signed or unsigned doesn't matter there.
         return delegate.compare0(pageAddr, off, new BytesIndexKey(b));

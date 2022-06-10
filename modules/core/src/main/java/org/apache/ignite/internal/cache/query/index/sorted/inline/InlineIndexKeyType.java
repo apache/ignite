@@ -92,6 +92,13 @@ public interface InlineIndexKeyType {
     public int compare(long pageAddr, int off, int maxSize, IndexKey v);
 
     /**
+     * @return {@code True} if inlined value can be compared to index key .
+     */
+    public default boolean isComparableTo(IndexKey key) {
+        return type() == key.type();
+    }
+
+    /**
      * @return Size of key, in bytes. {@code -1} means variable length of key.
      */
     public short keySize();

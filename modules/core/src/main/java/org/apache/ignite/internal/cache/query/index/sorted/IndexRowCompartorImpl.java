@@ -47,8 +47,8 @@ public class IndexRowCompartorImpl implements IndexRowComparator {
         if (type.type() == IndexKeyType.UNKNOWN)
             return CANT_BE_COMPARE;
 
-        // Value can be set up by user in query with different data type. Don't compare different types in this comparator.
-        if (sameType(key, type.type())) {
+        // Value can be set up by user in query with different data type. Don't compare uncomparable types in this comparator.
+        if (isInlineComparable(type, key)) {
             // If inlining of POJO is not supported then don't compare it here.
             if (type.type() != IndexKeyType.JAVA_OBJECT || keyTypeSettings.inlineObjSupported())
                 return type.compare(pageAddr, off, maxSize, key);
@@ -60,11 +60,11 @@ public class IndexRowCompartorImpl implements IndexRowComparator {
     }
 
     /** */
-    private boolean sameType(IndexKey key, IndexKeyType idxType) {
+    private boolean isInlineComparable(InlineIndexKeyType type, IndexKey key) {
         if (key == NullIndexKey.INSTANCE)
             return true;
 
-        return idxType == key.type();
+        return type.isComparableTo(key);
     }
 
     /** {@inheritDoc} */
@@ -87,7 +87,7 @@ public class IndexRowCompartorImpl implements IndexRowComparator {
         else if (rkey == NullIndexKey.INSTANCE)
             return 1;
 
-        if (lkey.type() == rkey.type())
+        if (lkey.isComparableTo(rkey))
             return lkey.compare(rkey);
 
         return COMPARE_UNSUPPORTED;

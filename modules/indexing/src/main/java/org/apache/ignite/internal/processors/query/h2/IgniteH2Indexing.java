@@ -63,6 +63,7 @@ import org.apache.ignite.internal.cache.query.index.Order;
 import org.apache.ignite.internal.cache.query.index.SortOrder;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyDefinition;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypeSettings;
+import org.apache.ignite.internal.cache.query.index.sorted.IndexRowCompartorImpl;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndex;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexFactory;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexImpl;
@@ -129,7 +130,6 @@ import org.apache.ignite.internal.processors.query.h2.dml.DmlUpdateSingleEntryIt
 import org.apache.ignite.internal.processors.query.h2.dml.DmlUtils;
 import org.apache.ignite.internal.processors.query.h2.dml.UpdateMode;
 import org.apache.ignite.internal.processors.query.h2.dml.UpdatePlan;
-import org.apache.ignite.internal.processors.query.h2.index.H2RowComparator;
 import org.apache.ignite.internal.processors.query.h2.index.QueryIndexDefinition;
 import org.apache.ignite.internal.processors.query.h2.index.client.ClientIndexDefinition;
 import org.apache.ignite.internal.processors.query.h2.index.client.ClientIndexFactory;
@@ -477,7 +477,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
             QueryIndexDefinition idxDef = new QueryIndexDefinition(
                 tbl.rowDescriptor(),
-                new H2RowComparator(tbl, keyTypeSettings),
+                new IndexRowCompartorImpl(keyTypeSettings),
                 new IndexName(tbl.cacheName(), tbl.getSchema().getName(), tbl.getName(), name),
                 treeName,
                 ctx.indexProcessor().rowCacheCleaner(cacheInfo.groupId()),

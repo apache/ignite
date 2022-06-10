@@ -17,7 +17,10 @@
 
 package org.apache.ignite.internal.processors.query.h2.index;
 
+import java.math.BigDecimal;
+import java.math.BigInteger;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyType;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypeSettings;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexRow;
@@ -147,10 +150,140 @@ public class H2RowComparator extends IndexRowCompartorImpl {
     public int compareValues(Value v1, Value v2) throws IgniteCheckedException {
         try {
             return table.compareTypeSafe(v1, v2);
-
         }
         catch (DbException ex) {
             throw new IgniteCheckedException("Rows cannot be compared", ex);
         }
+    }
+
+    /**
+     * Is value convertible from one class to another.
+     */
+    private boolean isConvertible(Class<?> from, Class<?> to) {
+        if (to == Byte.class)
+            return from == Boolean.class;
+        else if (to == Short.class)
+            return from == Boolean.class || from == Byte.class;
+        else if (to == Integer.class)
+            return from == Boolean.class || from == Byte.class || from == Short.class;
+        else if (to == Long.class)
+            return from == Boolean.class || from == Byte.class || from == Short.class || from == Integer.class;
+        else if (BigInteger.class.isAssignableFrom(to)) {
+            return from == Boolean.class || from == Byte.class || from == Short.class || from == Integer.class ||
+                from == Long.class;
+        }
+        else if (to == Float.class) {
+            return from == Boolean.class || from == Byte.class || from == Short.class || from == Integer.class ||
+                from == Long.class || BigInteger.class.isAssignableFrom(from);
+        }
+        else if (to == Double.class) {
+            return from == Boolean.class || from == Byte.class || from == Short.class || from == Integer.class ||
+                from == Long.class || BigInteger.class.isAssignableFrom(from) || from == Float.class;
+        }
+        else if (BigDecimal.class.isAssignableFrom(to)) {
+            return from == Boolean.class || from == Byte.class || from == Short.class || from == Integer.class ||
+                from == Long.class || BigInteger.class.isAssignableFrom(from) || from == Float.class ||
+                from == Double.class;
+        }
+
+        return false;
+    }
+
+    /**
+     * Converts value to class if possible.
+     */
+    private Object convert(Object val, Class<?> to) {
+        Class<?> from = val.getClass();
+
+        if (to == Byte.class) {
+            if (from == Boolean.class)
+                return (byte)(val == Boolean.TRUE ? 1 : 0);
+        }
+        else if (to == Short.class) {
+            if (from == Boolean.class)
+                return (short)(val == Boolean.TRUE ? 1 : 0);
+            else if (from == Byte.class)
+                return Short.valueOf((Byte)val);
+        }
+        else if (to == Integer.class) {
+            if (from == Boolean.class)
+                return val == Boolean.TRUE ? 1 : 0;
+            else if (from == Byte.class)
+                return Integer.valueOf((Byte)val);
+            else if (from == Short.class)
+                return Integer.valueOf((Short)val);
+        }
+        else if (to == Long.class) {
+            if (from == Boolean.class)
+                return val == Boolean.TRUE ? 1 : 0;
+            else if (from == Byte.class)
+                return Long.valueOf((Byte)val);
+            else if (from == Short.class)
+                return Long.valueOf((Short)val);
+            else if (from == Integer.class)
+                return Long.valueOf((Integer)val);
+        }
+        else if (BigInteger.class.isAssignableFrom(to)) {
+            if (from == Boolean.class)
+                return val == Boolean.TRUE ? BigInteger.ONE : BigInteger.ZERO;
+            else if (from == Byte.class)
+                return BigInteger.valueOf((Byte)val);
+            else if (from == Short.class)
+                return BigInteger.valueOf((Short)val);
+            else if (from == Integer.class)
+                return BigInteger.valueOf((Integer)val);
+            else if (from == Long.class)
+                return BigInteger.valueOf((Long)val);
+        }
+        else if (to == Float.class) {
+            if (from == Boolean.class)
+                return (float)(val == Boolean.TRUE ? 1 : 0);
+            else if (from == Byte.class)
+                return Float.valueOf((Byte)val);
+            else if (from == Short.class)
+                return Float.valueOf((Short)val);
+            else if (from == Integer.class)
+                return Float.valueOf((Integer)val);
+            else if (from == Long.class)
+                return Float.valueOf((Long)val);
+            else if (BigInteger.class.isAssignableFrom(from))
+                return ((Number)val).floatValue();
+        }
+        else if (to == Double.class) {
+            if (from == Boolean.class)
+                return (double)(val == Boolean.TRUE ? 1 : 0);
+            else if (from == Byte.class)
+                return Double.valueOf((Byte)val);
+            else if (from == Short.class)
+                return Double.valueOf((Short)val);
+            else if (from == Integer.class)
+                return Double.valueOf((Integer)val);
+            else if (from == Long.class)
+                return Double.valueOf((Long)val);
+            else if (BigInteger.class.isAssignableFrom(from))
+                return ((Number)val).doubleValue();
+            else if (from == Float.class)
+                return Double.valueOf((Float)val);
+        }
+        else if (BigDecimal.class.isAssignableFrom(to)) {
+            if (from == Boolean.class)
+                return val == Boolean.TRUE ? BigDecimal.ONE : BigDecimal.ZERO;
+            else if (from == Byte.class)
+                return BigDecimal.valueOf((Byte)val);
+            else if (from == Short.class)
+                return BigDecimal.valueOf((Short)val);
+            else if (from == Integer.class)
+                return BigDecimal.valueOf((Integer)val);
+            else if (from == Long.class)
+                return BigDecimal.valueOf((Long)val);
+            else if (BigInteger.class.isAssignableFrom(from))
+                return new BigDecimal((BigInteger)val);
+            else if (from == Float.class)
+                return BigDecimal.valueOf((Float)val);
+            else if (from == Double.class)
+                return BigDecimal.valueOf((Double)val);
+        }
+
+        throw new IgniteException("Can't convert value from type " + from.getName() + " to " + to.getName());
     }
 }
