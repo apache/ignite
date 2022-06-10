@@ -53,6 +53,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.GridCacheUpdateTxResult;
 import org.apache.ignite.internal.processors.cache.IgniteCacheExpiryPolicy;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.processors.cache.consistentcut.ConsistentCutVersionSource;
 import org.apache.ignite.internal.processors.cache.distributed.dht.PartitionUpdateCountersMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
@@ -109,7 +110,7 @@ import static org.apache.ignite.transactions.TransactionState.UNKNOWN;
 /**
  * Transaction adapter for cache transactions.
  */
-public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements IgniteTxLocalEx {
+public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements IgniteTxLocalEx, ConsistentCutVersionSource {
     /** Commit error updater. */
     protected static final AtomicReferenceFieldUpdater<IgniteTxLocalAdapter, Throwable> COMMIT_ERR_UPD =
         AtomicReferenceFieldUpdater.newUpdater(IgniteTxLocalAdapter.class, Throwable.class, "commitErr");
@@ -381,12 +382,12 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
     }
 
     /** */
-    public long txCutVer() {
+    @Override public long txCutVer() {
         return txCutVer;
     }
 
-    /** */
-    public void txCutVer(long txCutVer) {
+    /** {@inheritDoc} */
+    @Override public void txCutVer(long txCutVer) {
         if (this.txCutVer < 0)
             this.txCutVer = txCutVer;
     }

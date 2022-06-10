@@ -26,30 +26,42 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
-import static org.apache.ignite.internal.processors.cache.consistentcut.AbstractConsistentCutBlockingTest.NodeType.NEAR;
-import static org.apache.ignite.internal.processors.cache.consistentcut.AbstractConsistentCutBlockingTest.NodeType.PRIMARY;
+import static org.apache.ignite.internal.processors.cache.consistentcut.AbstractConsistentCutBlockingTest.BlkNodeType.NEAR;
+import static org.apache.ignite.internal.processors.cache.consistentcut.AbstractConsistentCutBlockingTest.BlkNodeType.PRIMARY;
 import static org.apache.ignite.transactions.TransactionState.COMMITTED;
 import static org.apache.ignite.transactions.TransactionState.PREPARED;
 
 /** */
 @RunWith(Parameterized.class)
-public class ConsistentCutNoBackupWALBlockingTest extends AbstractConsistentCutWALBlockingTest {
+public class ConsistentCutNoBackupWALBlockingTest extends AbstractConsistentCutBlockingTest {
     /** */
     @Parameterized.Parameter
-    public TransactionState txState;
+    public TransactionState txBlkState;
 
     /** */
     @Parameterized.Parameter(1)
-    public NodeType nodeType;
+    public BlkNodeType txBlkNode;
 
     /** */
-    @Parameterized.Parameters(name = "txBlkState={0}, blkNode={1}")
+    @Parameterized.Parameter(2)
+    public BlkCutType cutBlkType;
+
+    /** */
+    @Parameterized.Parameter(3)
+    public BlkNodeType cutBlkNode;
+
+    /** */
+    @Parameterized.Parameters(name = "txStateBlk={0}, txNodeBlk={1}, cutBlkType={2}, cutBlkNode={3}")
     public static List<Object[]> params() {
         List<Object[]> params = new ArrayList<>();
 
         Stream.of(PREPARED, COMMITTED).forEach((tx) ->
             Stream.of(NEAR, PRIMARY).forEach((nt) ->
-                params.add(new Object[] {tx, nt})
+                Stream.of(NEAR, PRIMARY).forEach(nc ->
+                    Stream.of(BlkCutType.NONE, BlkCutType.PUBLISH, BlkCutType.WAL_START).forEach(c ->
+                        params.add(new Object[] {tx, nt, c, nc})
+                    )
+                )
             )
         );
 
@@ -58,15 +70,17 @@ public class ConsistentCutNoBackupWALBlockingTest extends AbstractConsistentCutW
 
     /** */
     @Test
-    public void testOnePhaseCommitCases() throws Exception {
-        List<List<T2<Integer, Integer>>> cases = ConsistentCutBlockingCases.casesNoBackup(nodes());
+    public void testMultipleCases() throws Exception {
+        initWALCase(txBlkState, txBlkNode, cutBlkType, cutBlkNode);
 
-        blkNodeType = nodeType;
-        blkTxState = txState;
+        runCases(cases());
 
-        runCases(cases);
+        checkWalsConsistency();
+    }
 
-        checkWals(txOrigNode, caseNum, caseNum);
+    /** */
+    protected List<List<T2<Integer, Integer>>> cases() {
+        return ConsistentCutBlockingCases.casesNoBackup(nodes());
     }
 
     /** {@inheritDoc} */

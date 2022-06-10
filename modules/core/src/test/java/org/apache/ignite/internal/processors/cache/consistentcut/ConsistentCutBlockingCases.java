@@ -19,12 +19,18 @@ package org.apache.ignite.internal.processors.cache.consistentcut;
 
 import java.util.ArrayList;
 import java.util.List;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxFinishRequest;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxFinishResponse;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxPrepareRequest;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxPrepareResponse;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxFinishRequest;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxFinishResponse;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareRequest;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareResponse;
 import org.apache.ignite.internal.util.typedef.T2;
 
 /**
- * Prepares collection of cases to check:
- * - Case is a collection of entries to write within single transaction.
- * - Entry is described with a pair { primary -> backup }.
+ * Class provides test cases for checking Consistency Cut.
  */
 public class ConsistentCutBlockingCases {
     /**
@@ -46,9 +52,6 @@ public class ConsistentCutBlockingCases {
             List<T2<Integer, Integer>> c = new ArrayList<>();
 
             for (int n2 = 0; n2 < nodesCnt; n2++) {
-                if (n == n2)
-                    continue;
-
                 c.add(new T2<>(n, null));
                 c.add(new T2<>(n2, null));
             }
@@ -80,6 +83,7 @@ public class ConsistentCutBlockingCases {
         // One entry.
         for (int p = 0; p < pairs.size(); p++) {
             List<T2<Integer, Integer>> c = new ArrayList<>();
+
             c.add(pairs.get(p));
 
             cases.add(c);
@@ -98,5 +102,26 @@ public class ConsistentCutBlockingCases {
         }
 
         return cases;
+    }
+
+    /** */
+    public static List<String> messages(boolean backup) {
+        List<String> msgCls = new ArrayList<>();
+
+        msgCls.add(GridNearTxPrepareRequest.class.getSimpleName());
+        msgCls.add(GridNearTxPrepareResponse.class.getSimpleName());
+        msgCls.add(GridNearTxPrepareRequest.class.getSimpleName());
+        msgCls.add(GridNearTxPrepareResponse.class.getSimpleName());
+        msgCls.add(GridNearTxFinishRequest.class.getSimpleName());
+        msgCls.add(GridNearTxFinishResponse.class.getSimpleName());
+
+        if (backup) {
+            msgCls.add(GridDhtTxPrepareRequest.class.getSimpleName());
+            msgCls.add(GridDhtTxPrepareResponse.class.getSimpleName());
+            msgCls.add(GridDhtTxFinishRequest.class.getSimpleName());
+            msgCls.add(GridDhtTxFinishResponse.class.getSimpleName());
+        }
+
+        return msgCls;
     }
 }

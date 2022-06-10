@@ -29,8 +29,11 @@ import org.apache.ignite.internal.processors.cache.consistency.persistence.PdsEx
 import org.apache.ignite.internal.processors.cache.consistency.persistence.PdsImplicitTransactionalReadRepairTest;
 import org.apache.ignite.internal.processors.cache.consistentcut.ConcurrentTxsConsistentCutTest;
 import org.apache.ignite.internal.processors.cache.consistentcut.ConsistentCutNoBackupMessagesBlockingTest;
+import org.apache.ignite.internal.processors.cache.consistentcut.ConsistentCutNoBackupWALBlockingTest;
 import org.apache.ignite.internal.processors.cache.consistentcut.ConsistentCutSingleBackupMessagesBlockingTest;
+import org.apache.ignite.internal.processors.cache.consistentcut.ConsistentCutSingleBackupWALBlockingTest;
 import org.apache.ignite.internal.processors.cache.consistentcut.ConsistentCutTwoBackupMessagesBlockingTest;
+import org.apache.ignite.internal.processors.cache.consistentcut.ConsistentCutTwoBackupWALBlockingTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
@@ -59,6 +62,9 @@ import org.junit.runners.Suite;
     ConsistentCutNoBackupMessagesBlockingTest.class,
     ConsistentCutSingleBackupMessagesBlockingTest.class,
     ConsistentCutTwoBackupMessagesBlockingTest.class,
+    ConsistentCutNoBackupWALBlockingTest.class,
+    ConsistentCutSingleBackupWALBlockingTest.class,
+    ConsistentCutTwoBackupWALBlockingTest.class,
     ConcurrentTxsConsistentCutTest.class
 })
 public class IgniteCacheConsistencySelfTestSuite {

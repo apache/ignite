@@ -65,6 +65,6 @@ public class ConsistentCutFinishRecord extends WALRecord {
             .map(GridCacheVersion::asIgniteUuid)
             .collect(Collectors.toList());
 
-        return "ConsistentCutRecord [include=" + incl + "]";
+        return "ConsistentCutFinishRecord [include=" + incl + "]";
     }
 }

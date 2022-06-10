@@ -17,7 +17,9 @@
 
 package org.apache.ignite.internal.processors.cache.consistentcut;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Stream;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -25,15 +27,27 @@ import org.junit.runners.Parameterized;
 
 /** */
 @RunWith(Parameterized.class)
-public class ConsistentCutSingleBackupMessagesBlockingTest extends AbstractConsistentCutMessagesBlockingTest {
+public class ConsistentCutSingleBackupMessagesBlockingTest extends AbstractConsistentCutBlockingTest {
     /** */
-    @Parameterized.Parameter()
-    public static String paramMsg;
+    @Parameterized.Parameter
+    public BlkCutType cutBlkType;
 
     /** */
-    @Parameterized.Parameters(name = "blkMsg={0}")
-    public static List<String> params() {
-        return messages();
+    @Parameterized.Parameter(1)
+    public BlkNodeType cutNodeBlkType;
+
+    /** */
+    @Parameterized.Parameters(name = "cutBlkAt={0}, nodeBlk={1}")
+    public static List<Object[]> params() {
+        List<Object[]> p = new ArrayList<>();
+
+        Stream.of(BlkCutType.NONE, BlkCutType.PUBLISH, BlkCutType.WAL_START).forEach(c ->
+            Stream.of(BlkNodeType.NEAR, BlkNodeType.PRIMARY, BlkNodeType.BACKUP).forEach(n ->
+                p.add(new Object[] {c, n})
+            )
+        );
+
+        return p;
     }
 
     /** */
@@ -41,11 +55,15 @@ public class ConsistentCutSingleBackupMessagesBlockingTest extends AbstractConsi
     public void testMultipleCases() throws Exception {
         List<List<T2<Integer, Integer>>> cases = ConsistentCutBlockingCases.casesWithBackup(nodes());
 
-        blkMsgCls = paramMsg;
+        List<String> msgs = ConsistentCutBlockingCases.messages(true);
 
-        runCases(cases);
+        for (String msg: msgs) {
+            initMsgCase(msg, cutBlkType, cutNodeBlkType);
 
-        checkWals(txOrigNode, caseNum, caseNum);
+            runCases(cases);
+        }
+
+        checkWalsConsistency();
     }
 
     /** {@inheritDoc} */

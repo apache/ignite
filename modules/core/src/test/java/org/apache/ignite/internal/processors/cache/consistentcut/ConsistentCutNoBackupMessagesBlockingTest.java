@@ -17,50 +17,60 @@
 
 package org.apache.ignite.internal.processors.cache.consistentcut;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Stream;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+
+import static org.apache.ignite.internal.processors.cache.consistentcut.ConsistentCutBlockingCases.messages;
 
 /** */
-public class ConsistentCutNoBackupMessagesBlockingTest extends AbstractConsistentCutMessagesBlockingTest {
-    /** Count of server nodes to start. */
-    private static final int SRV_NODES = 3;
+@RunWith(Parameterized.class)
+public class ConsistentCutNoBackupMessagesBlockingTest extends AbstractConsistentCutBlockingTest {
+    /** */
+    @Parameterized.Parameter
+    public BlkCutType cutBlkType;
+
+    /** */
+    @Parameterized.Parameter(1)
+    public BlkNodeType cutNodeBlkType;
+
+    /** */
+    @Parameterized.Parameters(name = "cutBlkAt={0}, nodeBlk={1}")
+    public static List<Object[]> params() {
+        List<Object[]> p = new ArrayList<>();
+
+        Stream.of(BlkCutType.NONE, BlkCutType.PUBLISH, BlkCutType.WAL_START).forEach(c ->
+            Stream.of(BlkNodeType.NEAR, BlkNodeType.PRIMARY).forEach(n ->
+                p.add(new Object[] {c, n})
+            )
+        );
+
+        return p;
+    }
 
     /** */
     @Test
     public void testOnePhaseCommitCases() throws Exception {
-        List<List<T2<Integer, Integer>>> cases = ConsistentCutBlockingCases.casesNoBackup(2);
+        List<List<T2<Integer, Integer>>> cases = ConsistentCutBlockingCases.casesNoBackup(nodes());
 
-        List<String> msgs = messagesNoBackups(true);
+        List<String> msgs = messages(false);
 
         for (String msg: msgs) {
-            blkMsgCls = msg;
+            initMsgCase(msg, cutBlkType, cutNodeBlkType);
 
             runCases(cases);
         }
 
-        checkWals(txOrigNode, caseNum, caseNum);
-    }
-
-    /** */
-    @Test
-    public void testTwoPhaseCommitCases() throws Exception {
-        List<List<T2<Integer, Integer>>> cases = ConsistentCutBlockingCases.casesNoBackup(SRV_NODES);
-
-        List<String> msgs = messagesNoBackups(false);
-
-        for (String msg: msgs) {
-            blkMsgCls = msg;
-
-            runCases(cases);
-        }
-
-        checkWals(txOrigNode, caseNum, caseNum);
+        checkWalsConsistency();
     }
 
     /** {@inheritDoc} */
     @Override protected int nodes() {
-        return SRV_NODES;
+        return 3;
     }
 
     /** {@inheritDoc} */

@@ -23,11 +23,9 @@ import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.atomic.LongAdder;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.pagemem.wal.record.TxRecord;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.lang.IgniteUuid;
@@ -36,23 +34,23 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
-/** */
+/** Load Ignite with transactions and starts Consistent Cut concurrently. */
 @RunWith(Parameterized.class)
 public class ConcurrentTxsConsistentCutTest extends AbstractConsistentCutTest {
-    /** */
+    /** Amount of Consistent Cuts to await. */
     private static final int CUTS = 10;
 
-    /** */
-    private static final int REPEAT = 20;
+    /** How many times repeat the test. */
+    private static final int REPEAT = 1;
 
     /** */
     private final Map<IgniteUuid, Integer> txOrigNode = new ConcurrentHashMap<>();
 
-    /** */
+    /** Number of server nodes. */
     @Parameterized.Parameter
     public int nodes;
 
-    /** */
+    /** Number of backups. */
     @Parameterized.Parameter(1)
     public int backups;
 
@@ -64,6 +62,7 @@ public class ConcurrentTxsConsistentCutTest extends AbstractConsistentCutTest {
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 
+        // Enable scheduling Consistent Cut procedure.
         grid(0).context().cache().context().consistentCutMgr().enable();
     }
 
@@ -97,7 +96,7 @@ public class ConcurrentTxsConsistentCutTest extends AbstractConsistentCutTest {
     public void concurrentLoadAndCutTest() throws Exception {
         final CountDownLatch latch = new CountDownLatch(1);
 
-        IgniteInternalFuture<Long> f = asyncLoadData(latch, 1);
+        IgniteInternalFuture<?> f = asyncLoadData(latch, 2);
 
         awaitConsistentCuts(CUTS, 0);
 
@@ -106,9 +105,9 @@ public class ConcurrentTxsConsistentCutTest extends AbstractConsistentCutTest {
 
         latch.countDown();
 
-        long expectTxCnt = f.get();
+        f.get();
 
-        checkWals(txOrigNode, CUTS, expectTxCnt);
+        checkWalsConsistency(txOrigNode, CUTS);
     }
 
     /**
@@ -116,10 +115,8 @@ public class ConcurrentTxsConsistentCutTest extends AbstractConsistentCutTest {
      *
      * @return Future that completes with full amount of transactions.
      */
-    private IgniteInternalFuture<Long> asyncLoadData(CountDownLatch latch, int threads) throws Exception {
-        LongAdder adder = new LongAdder();
-
-        IgniteInternalFuture<?> asyncLoad = multithreadedAsync(() -> {
+    private IgniteInternalFuture<?> asyncLoadData(CountDownLatch latch, int threads) throws Exception {
+        return multithreadedAsync(() -> {
             Random r = new Random();
 
             while (latch.getCount() > 0) {
@@ -131,24 +128,18 @@ public class ConcurrentTxsConsistentCutTest extends AbstractConsistentCutTest {
                 try (Transaction tx = g.transactions().txStart()) {
                     txOrigNode.put(tx.xid(), n);
 
-                    int cnt = r.nextInt(nodes() + 1);
+                    int cnt = 1 + r.nextInt(nodes());
 
                     for (int j = 0; j < cnt; j++) {
-                        IgniteCache<Integer, Integer> cache = cache(g);
+                        IgniteCache<Integer, Integer> cache = g.cache(CACHE);
 
                         cache.put(r.nextInt(100), r.nextInt());
                     }
-
-                    // Skip fast txs on client node.
-                    if (!(n == nodes() && cnt == 0))
-                        adder.increment();
 
                     tx.commit();
                 }
             }
         }, threads);
-
-        return asyncLoad.chain((f) -> adder.sum());
     }
 
     /**
@@ -161,15 +152,5 @@ public class ConcurrentTxsConsistentCutTest extends AbstractConsistentCutTest {
 
             log.info("Consistent Cut finished: " + prevCutVer);
         }
-    }
-
-    /** */
-    private IgniteCache<Integer, Integer> cache(Ignite g) {
-        return g.cache(CACHE);
-    }
-
-    /** */
-    private IgniteUuid txId(TxRecord tx) {
-        return tx.nearXidVersion().asIgniteUuid();
     }
 }

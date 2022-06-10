@@ -33,6 +33,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.processors.cache.consistentcut.ConsistentCutVersionSource;
 import org.apache.ignite.internal.processors.cache.distributed.GridCacheMappedVersion;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxFinishResponse;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
@@ -66,7 +67,7 @@ import static org.apache.ignite.transactions.TransactionState.PREPARING;
 /**
  * Replicated user transaction.
  */
-public class GridDhtTxLocal extends GridDhtTxLocalAdapter implements GridCacheMappedVersion {
+public class GridDhtTxLocal extends GridDhtTxLocalAdapter implements GridCacheMappedVersion, ConsistentCutVersionSource {
     /** */
     private UUID nearNodeId;
 

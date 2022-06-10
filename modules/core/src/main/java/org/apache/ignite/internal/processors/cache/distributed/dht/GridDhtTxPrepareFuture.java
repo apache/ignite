@@ -293,6 +293,8 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
     /** */
     public void txCutVer(long txCutVer) {
         this.txCutVer = txCutVer;
+
+        tx.txCutVer(txCutVer);
     }
 
     /** {@inheritDoc} */

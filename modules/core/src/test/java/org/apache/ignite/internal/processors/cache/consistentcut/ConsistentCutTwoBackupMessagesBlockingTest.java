@@ -17,8 +17,58 @@
 
 package org.apache.ignite.internal.processors.cache.consistentcut;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Stream;
+import org.apache.ignite.internal.util.typedef.T2;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+
 /** */
-public class ConsistentCutTwoBackupMessagesBlockingTest extends ConsistentCutSingleBackupMessagesBlockingTest {
+@RunWith(Parameterized.class)
+public class ConsistentCutTwoBackupMessagesBlockingTest extends AbstractConsistentCutBlockingTest {
+    /** */
+    @Parameterized.Parameter
+    public BlkCutType cutBlkType;
+
+    /** */
+    @Parameterized.Parameter(1)
+    public BlkNodeType cutNodeBlkType;
+
+    /** */
+    @Parameterized.Parameter(2)
+    public String blkMsgCls;
+
+    /** */
+    @Parameterized.Parameters(name = "cutBlkAt={0}, nodeBlk={1}, blkMsgCls={2}")
+    public static List<Object[]> params() {
+        List<Object[]> p = new ArrayList<>();
+
+        List<String> msgs = ConsistentCutBlockingCases.messages(true);
+
+        Stream.of(BlkCutType.NONE, BlkCutType.PUBLISH, BlkCutType.WAL_START).forEach(c ->
+            Stream.of(BlkNodeType.NEAR, BlkNodeType.PRIMARY, BlkNodeType.BACKUP).forEach(n -> {
+                for (String m: msgs)
+                    p.add(new Object[] {c, n, m});
+            })
+        );
+
+        return p;
+    }
+
+    /** */
+    @Test
+    public void testMultipleCases() throws Exception {
+        List<List<T2<Integer, Integer>>> cases = ConsistentCutBlockingCases.casesWithBackup(nodes());
+
+        initMsgCase(blkMsgCls, cutBlkType, cutNodeBlkType);
+
+        runCases(cases);
+
+        checkWalsConsistency();
+    }
+
     /** {@inheritDoc} */
     @Override protected int nodes() {
         return 3;

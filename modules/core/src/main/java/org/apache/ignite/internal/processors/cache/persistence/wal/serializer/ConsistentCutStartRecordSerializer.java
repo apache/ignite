@@ -22,7 +22,6 @@ import java.nio.ByteBuffer;
 import org.apache.ignite.internal.pagemem.wal.record.ConsistentCutStartRecord;
 import org.apache.ignite.internal.processors.cache.persistence.wal.ByteBufferBackedDataInput;
 
-
 /** */
 public class ConsistentCutStartRecordSerializer {
     /**

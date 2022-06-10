@@ -50,6 +50,15 @@ public interface ConsistentCutVersionAware {
     }
 
     /**
+     * Transaction ID to notify with {@link #txCutVersion()}.
+     *
+     * @return Near transaction ID.
+     */
+    public default GridCacheVersion version() {
+        return null;
+    }
+
+    /**
      * Topology version in the moment of starting {@link #latestCutVersion()} on coordinator node.
      */
     public AffinityTopologyVersion topologyVersion();
