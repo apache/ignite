@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.consistency;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
@@ -54,19 +55,15 @@ import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.junits.JUnitAssertAware;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 
 /**
  *
  */
-public class ReadRepairDataGenerator {
+public class ReadRepairDataGenerator extends JUnitAssertAware {
     /** Key. */
     private final AtomicInteger incrementalKey = new AtomicInteger();
 
@@ -177,7 +174,7 @@ public class ReadRepairDataGenerator {
                         else
                             exp = results.get(key).primaryBin; // Or read from primary (when not a partition owner).
 
-                        assertEquals(exp, val);
+                        assertEqualsArraysAware(exp, val);
                     }
                 }
 
@@ -196,7 +193,8 @@ public class ReadRepairDataGenerator {
 
                     InconsistentMapping mapping = entry.getValue();
 
-                    sb.append(" Generated data [primary=").append(unwrapBinaryIfNeeded(mapping.primaryBin))
+                    sb.append(" Generated data [primary=").append(
+                            describeArrayIfNeeded(unwrapBinaryIfNeeded(mapping.primaryBin)))
                         .append(", repaired=").append(unwrapBinaryIfNeeded(mapping.repairedBin))
                         .append(", repairable=").append(mapping.repairable)
                         .append(", consistent=").append(mapping.consistent)
@@ -206,7 +204,8 @@ public class ReadRepairDataGenerator {
 
                     for (Map.Entry<Ignite, T2<Object, GridCacheVersion>> dist : mapping.mappingBin.entrySet()) {
                         sb.append("   Node: ").append(dist.getKey().name()).append("\n");
-                        sb.append("    Value: ").append(unwrapBinaryIfNeeded(dist.getValue().get1())).append("\n");
+                        sb.append("    Value: ").append(
+                            describeArrayIfNeeded(unwrapBinaryIfNeeded(dist.getValue().get1()))).append("\n");
                         sb.append("    Version: ").append(dist.getValue().get2()).append("\n");
                     }
 
@@ -216,6 +215,17 @@ public class ReadRepairDataGenerator {
                 throw new Exception(sb.toString(), th);
             }
         }
+    }
+
+    /**
+     * @param obj Object.
+     */
+    private Object describeArrayIfNeeded(Object obj) {
+        if (obj instanceof Object[])
+            return Arrays.deepToString((Object[])obj);
+        else if (obj instanceof int[])
+            return Arrays.toString((int[])obj);
+        else return obj;
     }
 
     /**
@@ -306,7 +316,7 @@ public class ReadRepairDataGenerator {
                 null :
                 wrapTestValueIfNeeded(wrap, rnd.nextBoolean()/*increment or same as previously*/ ? ++incVal : incVal);
 
-            T2<Object, GridCacheVersion> valVer = new T2<>(val, val != null ? ver : null);
+            T2<Object, GridCacheVersion> valVer = new T2<>(wrapArrayIfNeeded(val), val != null ? ver : null);
 
             vals.add(valVer);
             mapping.put(node, valVer);
@@ -488,7 +498,7 @@ public class ReadRepairDataGenerator {
         IgniteBinary igniteBinary = clsAwareNodes.get(0).binary();
 
         Object primValBin = igniteBinary.toBinary(primVal);
-        Object repairedBin = igniteBinary.toBinary(repaired);
+        Object repairedBin = igniteBinary.toBinary(unwrapArrayIfNeeded(repaired));
 
         Map<Ignite, T2<Object, GridCacheVersion>> mappingBin = mapping.entrySet().stream().collect(
             Collectors.toMap(
@@ -496,7 +506,7 @@ public class ReadRepairDataGenerator {
                 (entry) -> {
                     T2<Object, GridCacheVersion> t2 = entry.getValue();
 
-                    return new T2<>(igniteBinary.toBinary(t2.getKey()), t2.getValue());
+                    return new T2<>(igniteBinary.toBinary(unwrapArrayIfNeeded(t2.getKey())), t2.getValue());
                 }));
 
         return new InconsistentMapping(mappingBin, primValBin, repairedBin, repairable, consistent);
@@ -510,20 +520,70 @@ public class ReadRepairDataGenerator {
     }
 
     /**
+     *
+     */
+    private Object wrapArrayIfNeeded(Object obj) {
+        if (obj instanceof Object[])
+            return new ObjectArrayWrapper((Object[])obj);
+        else if (obj instanceof int[])
+            return new IntArrayWrapper((int[])obj);
+        else
+            return obj;
+    }
+
+    /**
+     *
+     */
+    private Object unwrapArrayIfNeeded(Object obj) {
+        if (obj instanceof ObjectArrayWrapper)
+            return ((ObjectArrayWrapper)obj).arr;
+        else if (obj instanceof IntArrayWrapper)
+            return ((IntArrayWrapper)obj).arr;
+        else
+            return obj;
+    }
+
+    /**
      * @param wrap Wrap.
      * @param val  Value.
      */
     private Object wrapTestValueIfNeeded(boolean wrap, Integer val) throws ReflectiveOperationException {
         if (wrap) {
-            // Some nodes will be unable to deserialize this object.
-            // Checking that Read Repair feature cause no `class not found` problems.
-            Class<?> clazz = extClsLdr.loadClass("org.apache.ignite.tests.p2p.cache.PersonKey");
+            int type = val % 7;
 
-            Object obj = clazz.newInstance();
+            switch (type) {
+                case 0:
+                    // Some nodes will be unable to deserialize this object.
+                    // Checking that Read Repair feature cause no `class not found` problems.
+                    Class<?> clazz = extClsLdr.loadClass("org.apache.ignite.tests.p2p.cache.PersonKey");
 
-            GridTestUtils.setFieldValue(obj, "id", val);
+                    Object obj = clazz.newInstance();
 
-            return obj;
+                    GridTestUtils.setFieldValue(obj, "id", val);
+
+                    return obj;
+
+                case 1:
+                    return new Object[] {val};
+
+                case 2:
+                    return new Object[][] {{val}, {val}};
+
+                case 3:
+                    return new int[] {val};
+
+                case 4:
+                    return Collections.singletonMap(val, val);
+
+                case 5:
+                    return Collections.singletonList(val);
+
+                case 6:
+                    return Collections.singleton(val);
+
+                default:
+                    throw new IllegalStateException();
+            }
         }
         else
             return val;
@@ -651,6 +711,68 @@ public class ReadRepairDataGenerator {
             fail("Shound never be compared.");
 
             return false;
+        }
+    }
+
+    /**
+     *
+     */
+    private static final class ObjectArrayWrapper {
+        /** Array. */
+        final Object[] arr;
+
+        /** */
+        public ObjectArrayWrapper(Object[] arr) {
+            this.arr = arr;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean equals(Object o) {
+            if (this == o)
+                return true;
+
+            if (o == null || getClass() != o.getClass())
+                return false;
+
+            ObjectArrayWrapper wrapper = (ObjectArrayWrapper)o;
+
+            return Arrays.deepEquals(arr, wrapper.arr);
+        }
+
+        /** {@inheritDoc} */
+        @Override public int hashCode() {
+            return Arrays.deepHashCode(arr);
+        }
+    }
+
+    /**
+     *
+     */
+    private static final class IntArrayWrapper {
+        /** Array. */
+        final int[] arr;
+
+        /** */
+        public IntArrayWrapper(int[] arr) {
+            this.arr = arr;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean equals(Object o) {
+            if (this == o)
+                return true;
+
+            if (o == null || getClass() != o.getClass())
+                return false;
+
+            IntArrayWrapper wrapper = (IntArrayWrapper)o;
+
+            return Arrays.equals(arr, wrapper.arr);
+        }
+
+        /** {@inheritDoc} */
+        @Override public int hashCode() {
+            return Arrays.hashCode(arr);
         }
     }
 }

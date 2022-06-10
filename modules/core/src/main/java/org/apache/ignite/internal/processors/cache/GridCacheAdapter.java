@@ -5158,10 +5158,8 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         EntryGetResult primRes = ex.primaryMap().get(key);
 
         CacheObject correctedObj = correctedRes != null ? correctedRes.value() : null;
-        CacheObject primValObj = primRes != null ? primRes.value() : null;
 
         V correctedVal = correctedObj != null ? (V)ctx.unwrapBinaryIfNeeded(correctedObj, true, false, null) : null;
-        V primVal = primValObj != null ? (V)ctx.unwrapBinaryIfNeeded(primValObj, true, false, null) : null;
 
         GridCacheVersion primVer = primRes != null ? primRes.version() : null;
 
@@ -5172,7 +5170,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                 ctx.operationContextPerCall(opCtx.keepBinary());
 
                 try {
-                    return invoke((K)key, new AtomicReadRepairEntryProcessor<>(correctedVal, primVal, primVer)).get();
+                    return invoke((K)key, new AtomicReadRepairEntryProcessor<>(correctedVal, primVer)).get();
                 }
                 finally {
                     ctx.operationContextPerCall(prevOpCtx);
@@ -5196,32 +5194,24 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         /** Corrected value. */
         private final V correctedVal;
 
-        /** Primary value.*/
-        private final V primVal;
-
         /** Primary version. */
         private final GridCacheVersion primVer;
 
         /**
          * @param correctedVal Corrected value.
-         * @param primVal Primary value.
          * @param primVer Primary version.
          */
-        public AtomicReadRepairEntryProcessor(V correctedVal, V primVal, GridCacheVersion primVer) {
+        public AtomicReadRepairEntryProcessor(V correctedVal, GridCacheVersion primVer) {
             this.correctedVal = correctedVal;
-            this.primVal = primVal;
             this.primVer = primVer;
         }
 
         /** {@inheritDoc} */
         @Override public Boolean process(MutableEntry<K, V> entry, Object... arguments) throws EntryProcessorException {
-            V entryVal = entry.getValue();
-
             try {
-                if ((primVal == null && entryVal == null) || // Still null at primary.
+                if ((primVer == null && entry.getValue() == null) || // Still null at primary.
                     // No updates since consistency violation has been found.
-                    ((primVal != null && primVal.equals(entryVal)) &&
-                        (primVer.equals(((CacheInvokeEntry<Object, Object>)entry).entry().version())))) {
+                    primVer.equals(((CacheInvokeEntry<Object, Object>)entry).entry().version())) {
 
                     if (correctedVal != null)
                         entry.setValue(correctedVal);

@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.consistency;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
@@ -43,7 +44,7 @@ public abstract class AbstractFullSetReadRepairTest extends AbstractReadRepairTe
      */
     protected static final Consumer<ReadRepairData> GET_CHECK_AND_REPAIR = (rrd) -> {
         for (Integer key : rrd.data.keySet()) { // Once.
-            assertEquals(unwrapBinaryIfNeeded(rrd.data.get(key).repairedBin), get(rrd));
+            assertEqualsArraysAware(unwrapBinaryIfNeeded(rrd.data.get(key).repairedBin), get(rrd));
         }
     };
 
@@ -54,7 +55,7 @@ public abstract class AbstractFullSetReadRepairTest extends AbstractReadRepairTe
         Map<Integer, Object> res = getAll(rrd);
 
         for (Integer key : rrd.data.keySet())
-            assertEquals(unwrapBinaryIfNeeded(rrd.data.get(key).repairedBin), res.get(key));
+            assertEqualsArraysAware(unwrapBinaryIfNeeded(rrd.data.get(key).repairedBin), res.get(key));
     };
 
     /**
@@ -166,7 +167,14 @@ public abstract class AbstractFullSetReadRepairTest extends AbstractReadRepairTe
      */
     private static Object checkAndUnwrapBinaryIfNeeded(ReadRepairData rrd, Object res) {
         if (rrd.binary) {
-            assert res == null || res instanceof Integer || res instanceof BinaryObject : res.getClass();
+            assert res == null ||
+                res instanceof Integer ||
+                res instanceof Map ||
+                res instanceof List ||
+                res instanceof Set ||
+                res instanceof int[] ||
+                res instanceof Object[] ||
+                res instanceof BinaryObject : res.getClass();
 
             return unwrapBinaryIfNeeded(res);
         }
@@ -222,7 +230,7 @@ public abstract class AbstractFullSetReadRepairTest extends AbstractReadRepairTe
                 else
                     res = rrd.cache.get(key);
 
-                assertEquals(unwrapBinaryIfNeeded(rrd.data.get(key).repairedBin), unwrapBinaryIfNeeded(res));
+                assertEqualsArraysAware(unwrapBinaryIfNeeded(rrd.data.get(key).repairedBin), unwrapBinaryIfNeeded(res));
             }
         };
 
