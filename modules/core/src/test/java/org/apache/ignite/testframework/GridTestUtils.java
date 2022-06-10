@@ -477,8 +477,8 @@ public final class GridTestUtils {
      *      and this message should be equal.
      * @return Thrown throwable.
      */
-    public static Throwable assertThrows(@Nullable IgniteLogger log, Callable<?> call,
-        Class<? extends Throwable> cls, @Nullable String msg) {
+    public static <T extends Throwable> T assertThrows(@Nullable IgniteLogger log, Callable<?> call,
+        Class<? extends T> cls, @Nullable String msg) {
         return assertThrows(log, call, cls, msg, null);
     }
 
@@ -493,8 +493,8 @@ public final class GridTestUtils {
      * @param notThrowsMsg Optional exception message if expected exception wasn't thrown.
      * @return Thrown throwable.
      */
-    public static Throwable assertThrows(@Nullable IgniteLogger log, Callable<?> call,
-        Class<? extends Throwable> cls, @Nullable String msg, @Nullable String notThrowsMsg) {
+    public static <T extends Throwable> T assertThrows(@Nullable IgniteLogger log, Callable<?> call,
+        Class<? extends T> cls, @Nullable String msg, @Nullable String notThrowsMsg) {
         assert call != null;
         assert cls != null;
 
@@ -525,7 +525,7 @@ public final class GridTestUtils {
             else
                 X.println("Caught expected exception: " + e.getMessage());
 
-            return e;
+            return (T)e;
         }
 
         String asrtMsg = notThrowsMsg == null ? "Exception has not been thrown." : notThrowsMsg;
