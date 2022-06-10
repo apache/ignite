@@ -33,6 +33,11 @@ public class AggregatesIntegrationTest extends AbstractBasicIntegrationTest {
     public void countOfNonNumericField() {
         createAndPopulateTable();
 
+//        assertQuery("CREATE TABLE integers(i INTEGER)").check();
+//        assertQuery("INSERT INTO integers SELECT * FROM table(system_range(0, 999, 1))").check();
+
+        assertQuery("SELECT * FROM table(system_range(4611686018427387904, 4611686018427388903, 1))").returns(4L).check();
+
         assertQuery("select count(name) from person").returns(4L).check();
         assertQuery("select count(*) from person").returns(5L).check();
         assertQuery("select count(1) from person").returns(5L).check();

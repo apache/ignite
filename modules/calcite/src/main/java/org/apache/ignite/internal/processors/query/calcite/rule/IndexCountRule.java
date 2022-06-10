@@ -18,6 +18,7 @@ import org.apache.calcite.util.ImmutableIntList;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteConvention;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexCount;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteProject;
 import org.apache.ignite.internal.processors.query.calcite.rel.logical.IgniteLogicalTableScan;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteIndex;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
@@ -98,7 +99,10 @@ public class IndexCountRule extends RelRule<IndexCountRule.Config> {
             indCntSumFunLst
         );
 
-        call.transformTo(indxCntArrg, ImmutableMap.of(indxCntArrg, aggr));
+        IgniteProject castToLongNode = new IgniteProject(scan.getCluster(), indxCntArrg.getTraitSet(), indxCntArrg,
+            Collections.emptyList(), aggr.getRowType());
+
+        call.transformTo(castToLongNode, ImmutableMap.of(indxCntArrg, aggr));
     }
 
     /** The rule config. */
