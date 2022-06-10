@@ -306,10 +306,8 @@ public class ConsistentCutState {
 
         setAppend(bld, "includeBefore", includeBefore);
         setAppend(bld, "includeAfter", includeAfter.keySet());
+        setAppend(bld, "check", check.keySet());
 
-        Set<GridCacheVersion> chk = check.keySet();
-
-        setAppend(bld, "check", chk);
         mapAppend(bld, "txCutVers", txCutVers);
 
         return bld.append("]").toString();

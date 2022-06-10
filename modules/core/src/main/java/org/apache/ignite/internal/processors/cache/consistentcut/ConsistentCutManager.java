@@ -27,6 +27,8 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.configuration.DataStorageConfiguration;
+import org.apache.ignite.internal.pagemem.wal.record.ConsistentCutFinishRecord;
 import org.apache.ignite.internal.pagemem.wal.record.ConsistentCutStartRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -57,6 +59,32 @@ import static org.apache.ignite.transactions.TransactionState.PREPARING;
 
 /**
  * Manages all stuff related to Consistent Cut.
+ *
+ * Consistent Cut splits timeline on 2 global areas - BEFORE and AFTER. It guarantees that every transaction committed BEFORE
+ * also will be committed BEFORE on every other node. It means that an Ignite node can safely recover itself to this
+ * point without any coordination with other nodes.
+ *
+ * The algorithm consist of steps:
+ * 1. On receiving new version it immediately updates {@link #latestKnownCutVer} to the newest one.
+ * 2. It writes {@link ConsistentCutStartRecord} before any transaction committed. It guarantees that every transaction
+ * committed before this record is part of the BEFORE state.
+ * 3. It prepares collection of transactions: to commit BEFORE, to commit AFTER and the check-list to verify. Those collections
+ * are stored in {@link ConsistentCutState}, and it publishes the state after preparing.
+ * 4. Published state is checked by every transaction after commit. If transaction is in the check-list or after-list,
+ * it notifies the state.
+ * 5. Prepared state might be incomplete due to receiving tx finish requests concurrently with the state preparing.
+ * Then it might be unsafe to finish Consistent Cut before analyzing such transactions. Committing transactions are stored
+ * in {@link #committingTxs}. It merges the prepared state with committing transactions. It guarantees that there is no
+ * any missed transactions that can affect the state. After the merge it enables finishing Consistent Cut.
+ * 6. After the check-list is empty it finishes Consistent Cut with writing {@link ConsistentCutFinishRecord} that contains
+ * collection of transactions to include BEFORE.
+ * 7. After the after-list is empty it notifies coordinator with {@link ConsistentCutReadyResponse} that local node is
+ * ready for next Consistent Cut process.
+ *
+ * The algorithm starts on Ignite coordinator node by timer. Period of starting Consistent Cut is defined in
+ * {@link DataStorageConfiguration#setPitrPeriod(long)}. Other nodes notifies with direct message from coordinator
+ * {@link ConsistentCutStartRequest} or by transaction messages {@link ConsistentCutVersionAware}. After node finishes
+ * Consistent Cut locally and becomes ready for new Consistent Cut it notifies coordinator with {@link ConsistentCutReadyResponse}.
  */
 public class ConsistentCutManager extends GridCacheSharedManagerAdapter {
     /**
@@ -292,16 +320,16 @@ public class ConsistentCutManager extends GridCacheSharedManagerAdapter {
         else
             assert this.crdNodeId.equals(crdNodeId);
 
-        long locCutVer = latestKnownCutVer.get();
+        long knwnCutVer = latestKnownCutVer.get();
 
-        if (cutVer > locCutVer) {
-            if (latestKnownCutVer.compareAndSet(locCutVer, cutVer)) {
+        if (cutVer > knwnCutVer) {
+            if (latestKnownCutVer.compareAndSet(knwnCutVer, cutVer)) {
                 walLog(cutVer, new ConsistentCutStartRecord(cutVer));
 
                 // Allow threads commit transaction and write it to WAL.
                 latestStartedCutVer.set(cutVer);
 
-                ConsistentCutState cutState = latestPublishedCutState = consistentCut(locCutVer, cutVer);
+                ConsistentCutState cutState = latestPublishedCutState = consistentCut(knwnCutVer, cutVer);
 
                 afterPublishState(cutState);
             }
