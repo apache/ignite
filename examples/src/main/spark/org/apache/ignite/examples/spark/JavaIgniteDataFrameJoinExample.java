@@ -54,8 +54,8 @@ public class JavaIgniteDataFrameJoinExample {
                 .getOrCreate();
 
         // Adjust the logger to exclude the logs of no interest.
-        Configurator.setLevel(LogManager.ROOT_LOGGER_NAME,  Level.ERROR);
-        Configurator.setLevel("org.apache.ignite",  Level.INFO);
+        Configurator.setLevel(LogManager.ROOT_LOGGER_NAME, Level.ERROR);
+        Configurator.setLevel("org.apache.ignite", Level.INFO);
 
         // Executing examples.
         sparkDSLJoinExample(spark);

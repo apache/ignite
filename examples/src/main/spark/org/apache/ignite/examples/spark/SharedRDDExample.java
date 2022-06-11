@@ -60,8 +60,8 @@ public class SharedRDDExample {
         JavaSparkContext sparkContext = new JavaSparkContext(sparkConf);
 
         // Adjust the logger to exclude the logs of no interest.
-        Configurator.setLevel(LogManager.ROOT_LOGGER_NAME,  Level.ERROR);
-        Configurator.setLevel("org.apache.ignite",  Level.INFO);
+        Configurator.setLevel(LogManager.ROOT_LOGGER_NAME, Level.ERROR);
+        Configurator.setLevel("org.apache.ignite", Level.INFO);
 
         // Creates Ignite context with specific configuration and runs Ignite in the embedded mode.
         JavaIgniteContext<Integer, Integer> igniteContext = new JavaIgniteContext<Integer, Integer>(
