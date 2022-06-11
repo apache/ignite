@@ -42,7 +42,6 @@ import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.apache.logging.log4j.Level;
-import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.core.Appender;
 import org.apache.logging.log4j.core.Logger;
 import org.apache.logging.log4j.core.LoggerContext;
@@ -264,7 +263,7 @@ abstract class GridCacheAbstractLoadTest {
      * @throws IgniteCheckedException If file initialization failed.
      */
     protected IgniteLogger initLogger(String log) throws IgniteCheckedException {
-        Logger impl = (Logger)LogManager.getRootLogger();
+        Logger impl = LoggerContext.getContext().getRootLogger();
 
         for (Appender appndr : impl.getAppenders().values()) {
             appndr.stop();

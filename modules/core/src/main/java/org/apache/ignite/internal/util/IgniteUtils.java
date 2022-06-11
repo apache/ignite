@@ -8983,6 +8983,9 @@ public abstract class IgniteUtils {
                 Class<?> nullAppCls = Class.forName("org.apache.logging.log4j.core.appender.NullAppender");
 
                 nullApp = nullAppCls.getMethod("createAppender", String.class).invoke(nullAppCls, "aNull");
+
+                nullAppCls.getMethod("start").invoke(nullApp);
+
             }
             catch (ClassNotFoundException ignore) {
                 // Can't found log4j2 no-op appender in classpath (for example, log4j was added through
@@ -9018,6 +9021,8 @@ public abstract class IgniteUtils {
             Class appenderCls = Class.forName("org.apache.logging.log4j.core.Appender");
 
             rootLog.getClass().getMethod("removeAppender", appenderCls).invoke(rootLog, nullApp);
+
+            nullApp.getClass().getMethod("stop").invoke(nullApp);
         }
         catch (Exception e) {
             throw new IgniteCheckedException("Failed to remove previously added no-op logger for Log4j.", e);

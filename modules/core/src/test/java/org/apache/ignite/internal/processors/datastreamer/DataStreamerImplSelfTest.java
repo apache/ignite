@@ -52,9 +52,7 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.core.Appender;
-import org.apache.logging.log4j.core.Logger;
 import org.apache.logging.log4j.core.LoggerContext;
 import org.apache.logging.log4j.core.appender.WriterAppender;
 import org.junit.Ignore;
@@ -458,7 +456,7 @@ public class DataStreamerImplSelfTest extends GridCommonAbstractTest {
 
             logWriter.flush();
 
-            ((Logger)LogManager.getRootLogger()).removeAppender(logAppender);
+            LoggerContext.getContext().getRootLogger().removeAppender(logAppender);
 
             logAppender.stop();
         }

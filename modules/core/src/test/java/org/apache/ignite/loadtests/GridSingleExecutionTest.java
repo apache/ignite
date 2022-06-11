@@ -48,6 +48,7 @@ import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.core.Appender;
 import org.apache.logging.log4j.core.Logger;
+import org.apache.logging.log4j.core.LoggerContext;
 import org.apache.logging.log4j.core.appender.ConsoleAppender;
 import org.apache.logging.log4j.core.appender.NullAppender;
 import org.apache.logging.log4j.core.appender.RollingFileAppender;
@@ -131,11 +132,13 @@ public final class GridSingleExecutionTest {
      * @throws IgniteCheckedException If file initialization failed.
      */
     private static IgniteLogger initLogger(String log) throws IgniteCheckedException {
+        Logger impl = LoggerContext.getContext().getRootLogger();
 
-        Logger impl = (Logger)LogManager.getRootLogger();
-
-        for (Appender appndr : impl.getAppenders().values())
+        for (Appender appndr : impl.getAppenders().values()) {
             impl.removeAppender(appndr);
+
+            appndr.stop();
+        }
 
         String fileName = U.getIgniteHome() + "/work/log/" + log;
 
@@ -205,7 +208,9 @@ public final class GridSingleExecutionTest {
         // Add no-op logger to remove no-appender warning.
         Appender app = NullAppender.createAppender("no-op");
 
-        ((Logger)LogManager.getRootLogger()).addAppender(app);
+        app.start();
+
+        LoggerContext.getContext().getRootLogger().addAppender(app);
 
         ApplicationContext springCtx;
 
@@ -231,7 +236,9 @@ public final class GridSingleExecutionTest {
             throw new IgniteCheckedException("Failed to find a single grid factory configuration in: " + path);
 
         // Remove previously added no-op logger.
-        ((Logger)LogManager.getRootLogger()).removeAppender(app);
+        LoggerContext.getContext().getRootLogger().removeAppender(app);
+
+        app.stop();
 
         if (cfgMap.isEmpty())
             throw new IgniteCheckedException("Can't find grid factory configuration in: " + path);

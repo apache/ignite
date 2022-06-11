@@ -492,8 +492,11 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
         if (logToFile) {
             Logger log4j = LoggerContext.getContext().getRootLogger();
 
-            for (Appender appndr : log4j.getAppenders().values())
+            for (Appender appndr : log4j.getAppenders().values()) {
                 log4j.removeAppender(appndr);
+
+                appndr.stop();
+            }
 
             PatternLayout p = PatternLayout.newBuilder().withPattern("[%d{ISO8601}][%-5p][%t][%c{1}] %m%n").build();
 
