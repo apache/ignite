@@ -17,8 +17,8 @@
 
 package org.apache.ignite.scalar.examples.spark
 
-import org.apache.logging.log4j.{Level, LogManager}
 import org.apache.ignite.spark.{IgniteContext, IgniteRDD}
+import org.apache.logging.log4j.{Level, LogManager}
 import org.apache.logging.log4j.core.config.Configurator
 import org.apache.spark.{SparkConf, SparkContext}
 

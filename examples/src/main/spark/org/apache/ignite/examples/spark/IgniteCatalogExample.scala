@@ -19,10 +19,10 @@ package org.apache.ignite.examples.spark
 
 import java.lang.{Long ⇒ JLong}
 
-import org.apache.logging.log4j.{Level, LogManager}
 import org.apache.ignite.cache.query.SqlFieldsQuery
 import org.apache.ignite.configuration.CacheConfiguration
 import org.apache.ignite.{Ignite, Ignition}
+import org.apache.logging.log4j.{Level, LogManager}
 import org.apache.logging.log4j.core.config.Configurator
 import org.apache.spark.sql.ignite.IgniteSparkSession
 
