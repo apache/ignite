@@ -23,6 +23,7 @@ import org.apache.logging.log4j.{Level, LogManager}
 import org.apache.ignite.cache.query.SqlFieldsQuery
 import org.apache.ignite.configuration.CacheConfiguration
 import org.apache.ignite.{Ignite, Ignition}
+import org.apache.logging.log4j.core.config.Configurator
 import org.apache.spark.sql.ignite.IgniteSparkSession
 
 /**
@@ -53,8 +54,8 @@ object IgniteCatalogExample extends App {
             .getOrCreate()
 
         //Adjust the logger to exclude the logs of no interest.
-        LogManager.getRootLogger.atLevel(Level.ERROR)
-        LogManager.getLogger("org.apache.ignite").atLevel(Level.INFO)
+        Configurator.setLevel(LogManager.ROOT_LOGGER_NAME, Level.ERROR)
+        Configurator.setLevel("org.apache.ignite", Level.INFO)
 
         println("List of available tables:")
 

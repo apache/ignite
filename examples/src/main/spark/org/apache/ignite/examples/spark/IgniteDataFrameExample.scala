@@ -26,6 +26,7 @@ import org.apache.ignite.{Ignite, Ignition}
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.functions._
 import org.apache.ignite.spark.IgniteDataFrameSettings._
+import org.apache.logging.log4j.core.config.Configurator
 
 /**
   * Example application showing use-cases for Ignite implementation of Spark DataFrame API.
@@ -53,8 +54,8 @@ object IgniteDataFrameExample extends App {
             .getOrCreate()
 
         // Adjust the logger to exclude the logs of no interest.
-        LogManager.getRootLogger.atLevel(Level.ERROR)
-        LogManager.getLogger("org.apache.ignite").atLevel(Level.INFO)
+        Configurator.setLevel(LogManager.ROOT_LOGGER_NAME, Level.ERROR)
+        Configurator.setLevel("org.apache.ignite", Level.INFO)
 
         // Executing examples.
 

@@ -19,6 +19,7 @@ package org.apache.ignite.scalar.examples.spark
 
 import org.apache.logging.log4j.{Level, LogManager}
 import org.apache.ignite.spark.{IgniteContext, IgniteRDD}
+import org.apache.logging.log4j.core.config.Configurator
 import org.apache.spark.{SparkConf, SparkContext}
 
 /**
@@ -43,8 +44,8 @@ object ScalarSharedRDDExample extends App {
     val sparkContext = new SparkContext(conf)
 
     // Adjust the logger to exclude the logs of no interest.
-    LogManager.getRootLogger.atLevel(Level.ERROR)
-    LogManager.getLogger("org.apache.ignite").atLevel(Level.INFO)
+    Configurator.setLevel(LogManager.ROOT_LOGGER_NAME, Level.ERROR)
+    Configurator.setLevel("org.apache.ignite", Level.INFO)
 
     // Defines spring cache Configuration path.
     private val CONFIG = "examples/config/spark/example-shared-rdd.xml"
