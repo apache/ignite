@@ -257,7 +257,8 @@ namespace ignite
 
                 writer.WriteInt8(ClientType::THIN_CLIENT);
 
-                if (propVer >= VERSION_1_7_0) {
+                if (propVer >= VERSION_1_7_0)
+                {
                     // Use features for any new changes in protocol.
                     int8_t features[] = {0};
 
