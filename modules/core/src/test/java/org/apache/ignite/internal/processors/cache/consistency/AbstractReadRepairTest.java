@@ -241,7 +241,7 @@ public abstract class AbstractReadRepairTest extends GridCommonAbstractTest {
                 assertTrue(repairable);
                 assertTrue(evtRepaired.containsKey(key));
 
-                assertEquals(repairedBin, evtRepaired.get(key));
+                assertEqualsArraysAware(repairedBin, evtRepaired.get(key));
             }
             // Repairable but not repaired (because of irreparable entry at the same tx) entries.
             else if (e.irreparableKeys().contains(key) || (e.repairableKeys() != null && e.repairableKeys().contains(key)))
@@ -257,10 +257,10 @@ public abstract class AbstractReadRepairTest extends GridCommonAbstractTest {
                     Object val = info.getValue();
 
                     if (info.isCorrect())
-                        assertEquals(repairedBin, val);
+                        assertEqualsArraysAware(repairedBin, val);
 
                     if (info.isPrimary()) {
-                        assertEquals(primaryBin, val);
+                        assertEqualsArraysAware(primaryBin, val);
                         assertEquals(node, primaryNode(key, DEFAULT_CACHE_NAME).cluster().localNode());
                     }
                 }

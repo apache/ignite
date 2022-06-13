@@ -18,8 +18,6 @@
 package org.apache.ignite.spi.discovery.tcp;
 
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.Arrays;
@@ -31,16 +29,13 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.ssl.SslContextFactory;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.junit.Before;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
 
 /**
  * Check a ssl socket configuration which used in discovery.
  */
-public class DiscoveryClientSocketTest {
+public class DiscoveryClientSocketTest extends GridCommonAbstractTest {
     /** Port to listen. */
     public static final int PORT_TO_LNSR = 12346;
 
@@ -56,11 +51,8 @@ public class DiscoveryClientSocketTest {
     /** Fake TCP discovery SPI. */
     private TcpDiscoverySpi fakeTcpDiscoverySpi;
 
-    /**
-     * Configure SSL and Discovery.
-     */
-    @Before
-    public void before() {
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
         SslContextFactory socketFactory = (SslContextFactory)GridTestUtils.sslTrustedFactory("node01", "trustone");
         SSLContext sslCtx = socketFactory.create();
 
@@ -79,7 +71,7 @@ public class DiscoveryClientSocketTest {
     @Test
     public void sslSocketTest() throws Exception {
         try (ServerSocket listen = sslSrvSockFactory.createServerSocket(PORT_TO_LNSR)) {
-            System.out.println("Server started.");
+            info("Server started.");
 
             IgniteInternalFuture clientFut = GridTestUtils.runAsync(this::startSslClient);
 
@@ -88,16 +80,15 @@ public class DiscoveryClientSocketTest {
             try {
                 fakeTcpDiscoverySpi.configureSocketOptions(connection);
 
-                InputStream in = connection.getInputStream();
-                OutputStream out = connection.getOutputStream();
-
-                readHadshake(connection);
+                readHandshake(connection);
 
                 connection.getOutputStream().write(U.IGNITE_HEADER);
 
-                clientFut.get(10_000);
+                clientFut.get(20_000);
             }
             catch (IgniteFutureTimeoutCheckedException e) {
+                U.dumpThreads(log);
+
                 U.closeQuiet(connection);
 
                 fail("Can't wait connection closed from client side.");
@@ -105,7 +96,7 @@ public class DiscoveryClientSocketTest {
             catch (Exception e) {
                 U.closeQuiet(connection);
 
-                System.out.println("Ex: " + e.getMessage() + " (Socket closed)");
+                info("Ex: " + e.getMessage() + " (Socket closed)");
             }
         }
     }
@@ -116,7 +107,7 @@ public class DiscoveryClientSocketTest {
      * @param connection Socket connection.
      * @throws IOException If have some issue happens in time read from socket.
      */
-    public void readHadshake(Socket connection) throws IOException {
+    private void readHandshake(Socket connection) throws IOException {
         byte[] buf = new byte[4];
         int read = 0;
 
@@ -129,7 +120,7 @@ public class DiscoveryClientSocketTest {
                 fail("Failed to read from socket.");
         }
 
-        assertEquals("Handshake did not pass, readed bytes: " + read, Arrays.asList(U.IGNITE_HEADER), Arrays.asList(U.IGNITE_HEADER));
+        assertEquals("Handshake did not pass, read bytes: " + read, Arrays.asList(U.IGNITE_HEADER), Arrays.asList(U.IGNITE_HEADER));
     }
 
     /**
@@ -137,8 +128,10 @@ public class DiscoveryClientSocketTest {
      * tries to close it.
      */
     public void startSslClient() {
-        try (Socket clientSocket = sslSockFactory.createSocket(HOST, PORT_TO_LNSR)) {
-            System.out.println("Client started.");
+        try {
+            Socket clientSocket = sslSockFactory.createSocket(HOST, PORT_TO_LNSR);
+
+            info("Client started.");
 
             fakeTcpDiscoverySpi.configureSocketOptions(clientSocket);
 
@@ -147,11 +140,11 @@ public class DiscoveryClientSocketTest {
             //need to send message in order to ssl handshake passed.
             clientSocket.getOutputStream().write(U.IGNITE_HEADER);
 
-            readHadshake(clientSocket);
+            readHandshake(clientSocket);
 
             long handshakeInterval = System.currentTimeMillis() - handshakeStartTime;
 
-            System.out.println("Handshake time: " + handshakeInterval + "ms");
+            info("Handshake time: " + handshakeInterval + "ms");
 
             int iter = 0;
 
@@ -168,14 +161,22 @@ public class DiscoveryClientSocketTest {
                         }
                     });
 
-                    writeFut.get(10 * handshakeInterval);
+                    writeFut.get(Math.min(10 * handshakeInterval, 3_000));
                 }
             }
             catch (IgniteFutureTimeoutCheckedException e) {
-                System.out.println("Socket stuck on write, when passed " + (iter * 4) + "KB through itself.");
+                info("Socket stuck on write, when passed too much through itself [kBytes=" + (iter * 4) +
+                    ", time=" + (System.currentTimeMillis() - handshakeStartTime) + ']');
             }
 
-            System.out.println("Try to close a socket."); //see in try-catch-resource
+            info("Try to close a socket.");
+
+            long startClose = System.currentTimeMillis();
+            // Do not use try-catch-resource here, because JVM has a bug on TLS implementation and requires to close
+            // socket streams explicitly.
+            U.closeQuiet(clientSocket);
+
+            info("Socket closed [time=" + (System.currentTimeMillis() - startClose) + ']');
         }
         catch (Exception e) {
             fail(e.getMessage());

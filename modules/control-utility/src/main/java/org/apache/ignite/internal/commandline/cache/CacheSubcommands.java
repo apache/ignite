@@ -96,7 +96,12 @@ public enum CacheSubcommands {
     /**
      * Destroy caches.
      */
-    DESTROY("destroy", null, new CacheDestroy());
+    DESTROY("destroy", null, new CacheDestroy()),
+
+    /**
+     * Enable / disable cache metrics collection or show metrics collection status.
+     */
+    METRICS("metrics", null, new CacheMetrics());
 
     /** Enumerated values. */
     private static final CacheSubcommands[] VALS = values();

@@ -208,10 +208,11 @@ public class SnapshotRestoreProcess {
      * Start cache group restore operation.
      *
      * @param snpName Snapshot name.
+     * @param snpPath Snapshot directory path.
      * @param cacheGrpNames Cache groups to be restored or {@code null} to restore all cache groups from the snapshot.
      * @return Future that will be completed when the restore operation is complete and the cache groups are started.
      */
-    public IgniteFuture<Void> start(String snpName, @Nullable Collection<String> cacheGrpNames) {
+    public IgniteFuture<Void> start(String snpName, @Nullable String snpPath, @Nullable Collection<String> cacheGrpNames) {
         IgniteSnapshotManager snpMgr = ctx.cache().context().snapshotMgr();
         ClusterSnapshotFuture fut0;
 
@@ -277,7 +278,7 @@ public class SnapshotRestoreProcess {
 
         snpMgr.recordSnapshotEvent(snpName, msg, EventType.EVT_CLUSTER_SNAPSHOT_RESTORE_STARTED);
 
-        snpMgr.checkSnapshot(snpName, cacheGrpNames, true).listen(f -> {
+        snpMgr.checkSnapshot(snpName, snpPath, cacheGrpNames, true).listen(f -> {
             if (f.error() != null) {
                 finishProcess(fut0.rqId, f.error());
 
@@ -331,8 +332,8 @@ public class SnapshotRestoreProcess {
 
             Collection<UUID> bltNodes = F.viewReadOnly(ctx.discovery().discoCache().aliveBaselineNodes(), F.node2id());
 
-            SnapshotOperationRequest req =
-                new SnapshotOperationRequest(fut0.rqId, F.first(dataNodes), snpName, cacheGrpNames, new HashSet<>(bltNodes));
+            SnapshotOperationRequest req = new SnapshotOperationRequest(
+                fut0.rqId, F.first(dataNodes), snpName, snpPath, cacheGrpNames, new HashSet<>(bltNodes));
 
             prepareRestoreProc.start(req.requestId(), req);
         });
@@ -582,7 +583,7 @@ public class SnapshotRestoreProcess {
                     ", caches=" + req.groups() + ']');
             }
 
-            List<SnapshotMetadata> locMetas = snpMgr.readSnapshotMetadatas(req.snapshotName());
+            List<SnapshotMetadata> locMetas = snpMgr.readSnapshotMetadatas(req.snapshotName(), req.snapshotPath());
 
             SnapshotRestoreContext opCtx0 = prepareContext(req, locMetas);
 
@@ -666,7 +667,7 @@ public class SnapshotRestoreProcess {
         // Collect the cache configurations and prepare a temporary directory for copying files.
         // Metastorage can be restored only manually by directly copying files.
         for (SnapshotMetadata meta : metas) {
-            for (File snpCacheDir : cctx.snapshotMgr().snapshotCacheDirectories(req.snapshotName(), meta.folderName(),
+            for (File snpCacheDir : cctx.snapshotMgr().snapshotCacheDirectories(req.snapshotName(), req.snapshotPath(), meta.folderName(),
                 name -> !METASTORAGE_CACHE_NAME.equals(name))) {
                 String grpName = FilePageStoreManager.cacheGroupName(snpCacheDir);
 
@@ -844,14 +845,15 @@ public class SnapshotRestoreProcess {
                     ", caches=" + F.transform(opCtx0.dirs, FilePageStoreManager::cacheGroupName) + ']');
             }
 
+            File snpDir = snpMgr.snapshotLocalDir(opCtx0.snpName, opCtx0.snpPath);
+
             CompletableFuture<Void> metaFut = ctx.localNodeId().equals(opCtx0.opNodeId) ?
                 CompletableFuture.runAsync(
                     () -> {
                         try {
                             SnapshotMetadata meta = F.first(opCtx0.metasPerNode.get(opCtx0.opNodeId));
 
-                            File binDir = binaryWorkDir(snpMgr.snapshotLocalDir(opCtx0.snpName).getAbsolutePath(),
-                                meta.folderName());
+                            File binDir = binaryWorkDir(snpDir.getAbsolutePath(), meta.folderName());
 
                             ctx.cacheObjects().updateMetadata(binDir, opCtx0.stopChecker);
                         }
@@ -895,6 +897,7 @@ public class SnapshotRestoreProcess {
                 }
 
                 List<List<ClusterNode>> assignment = affCache.get(cacheOrGrpName).idealAssignment().assignment();
+
                 Set<PartitionRestoreFuture> partFuts = availParts
                     .stream()
                     .filter(p -> p != INDEX_PARTITION && assignment.get(p).contains(locNode))
@@ -902,7 +905,6 @@ public class SnapshotRestoreProcess {
                     .collect(Collectors.toSet());
 
                 allParts.put(grpId, partFuts);
-
                 rmtLoadParts.put(grpId, leftParts = new HashSet<>(partFuts));
 
                 if (leftParts.isEmpty())
@@ -916,7 +918,7 @@ public class SnapshotRestoreProcess {
                     if (leftParts.isEmpty())
                         break;
 
-                    File snpCacheDir = new File(ctx.cache().context().snapshotMgr().snapshotLocalDir(opCtx0.snpName),
+                    File snpCacheDir = new File(snpDir,
                         Paths.get(databaseRelativePath(meta.folderName()), dir.getName()).toString());
 
                     leftParts.removeIf(partFut -> {
@@ -993,6 +995,7 @@ public class SnapshotRestoreProcess {
                     ctx.cache().context().snapshotMgr()
                         .requestRemoteSnapshotFiles(m.getKey(),
                             opCtx0.snpName,
+                            opCtx0.snpPath,
                             m.getValue(),
                             opCtx0.stopChecker,
                             (snpFile, t) -> {
@@ -1383,6 +1386,9 @@ public class SnapshotRestoreProcess {
         /** Snapshot name. */
         private final String snpName;
 
+        /** Snapshot directory path. */
+        private final String snpPath;
+
         /** Baseline discovery cache for node IDs that must be alive to complete the operation.*/
         private final DiscoCache discoCache;
 
@@ -1432,6 +1438,7 @@ public class SnapshotRestoreProcess {
             startTime = 0;
             opNodeId = null;
             discoCache = null;
+            snpPath = null;
         }
 
         /**
@@ -1442,6 +1449,7 @@ public class SnapshotRestoreProcess {
         protected SnapshotRestoreContext(SnapshotOperationRequest req, DiscoCache discoCache, Map<Integer, StoredCacheData> cfgs) {
             reqId = req.requestId();
             snpName = req.snapshotName();
+            snpPath = req.snapshotPath();
             opNodeId = req.operationalNodeId();
             startTime = U.currentTimeMillis();
 

@@ -60,8 +60,6 @@
         <module>modules/jcl</module>
         <module>modules/codegen</module>
         <module>modules/cloud</module>
-        <module>modules/mesos</module>
-        <module>modules/yarn</module>
         <module>modules/zookeeper</module>
         <module>modules/osgi-paxlogging</module>
         <module>modules/osgi-karaf</module>
@@ -98,8 +96,6 @@
         <profile>
             <id>all-scala</id><!-- used to update project versions and check all modules compilation -->
             <modules><!-- sorted alphabetically -->
-                <module>modules/spark</module>
-                <module>modules/spark-2.4</module>
                 <module>modules/visor-console-2.10</module>
                 <module>modules/visor-console</module>
                 <module>modules/visor-plugins</module>
@@ -519,18 +515,6 @@
             <modules>
                 <module>modules/visor-console</module>
                 <module>modules/visor-plugins</module>
-            </modules>
-        </profile>
-
-        <profile>
-            <id>spark-2.4</id>
-
-            <activation>
-                <property><name>!scala-2.10</name></property>
-            </activation>
-
-            <modules>
-                <module>modules/spark-2.4</module>
             </modules>
         </profile>
 

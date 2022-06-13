@@ -23,10 +23,11 @@ import java.sql.Timestamp;
 import java.time.Period;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import org.apache.ignite.internal.processors.query.calcite.QueryChecker;
 import org.apache.ignite.internal.processors.query.calcite.sql.fun.IgniteStdSqlOperatorTable;
 import org.apache.ignite.internal.util.typedef.F;
-import org.junit.Ignore;
 import org.junit.Test;
 
 /**
@@ -98,6 +99,13 @@ public class StdSqlOperatorsTest extends AbstractBasicIntegrationTest {
         assertExpression("MAX(val)").returns(1).check();
         assertExpression("ANY_VALUE(val)").returns(1).check();
         assertExpression("COUNT(*) FILTER(WHERE val <> 1)").returns(0L).check();
+        assertExpression("LISTAGG(val, ',') WITHIN GROUP (ORDER BY val DESC)").returns("1").check();
+        assertExpression("GROUP_CONCAT(val, ',' ORDER BY val DESC)").returns("1").check();
+        assertExpression("STRING_AGG(val, ',' ORDER BY val DESC)").returns("1").check();
+        assertExpression("ARRAY_AGG(val ORDER BY val DESC)").returns(Collections.singletonList(1)).check();
+        assertQuery("SELECT ARRAY_CONCAT_AGG(a ORDER BY CARDINALITY(a)) FROM " +
+            "(SELECT 1 as id, ARRAY[3, 4, 5, 6] as a UNION SELECT 1 as id, ARRAY[1, 2] as a) GROUP BY id")
+            .returns((IntStream.range(1, 7).boxed().collect(Collectors.toList()))).check();
     }
 
     /** */
@@ -251,20 +259,14 @@ public class StdSqlOperatorsTest extends AbstractBasicIntegrationTest {
     /** */
     @Test
     public void testCollections() {
+        assertExpression("MAP(SELECT 'a', 1)").returns(F.asMap("a", 1)).check();
+        assertExpression("ARRAY(SELECT 1)").returns(Collections.singletonList(1)).check();
         assertExpression("MAP['a', 1, 'A', 2]").returns(F.asMap("a", 1, "A", 2)).check();
         assertExpression("ARRAY[1, 2, 3]").returns(Arrays.asList(1, 2, 3)).check();
         assertExpression("ARRAY[1, 2, 3][2]").returns(2).check();
         assertExpression("CARDINALITY(ARRAY[1, 2, 3])").returns(3).check();
         assertExpression("ARRAY[1, 2, 3] IS EMPTY").returns(false).check();
         assertExpression("ARRAY[1, 2, 3] IS NOT EMPTY").returns(true).check();
-    }
-
-    /** */
-    @Test
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-15550")
-    public void testQueryAsCollections() {
-        assertExpression("MAP(SELECT 'a', 1)").returns(F.asMap("a", 1)).check();
-        assertExpression("ARRAY(SELECT 1)").returns(Collections.singletonList(1)).check();
     }
 
     /** */

@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
+import java.io.File;
 import java.util.Collection;
 import org.apache.ignite.cluster.ClusterNode;
 import org.jetbrains.annotations.Nullable;
@@ -28,6 +29,9 @@ public class SnapshotHandlerContext {
     /** Snapshot metadata. */
     private final SnapshotMetadata metadata;
 
+    /** The full path to the snapshot files. */
+    private final File snpDir;
+
     /** The names of the cache groups on which the operation is performed. */
     private final Collection<String> grps;
 
@@ -38,11 +42,13 @@ public class SnapshotHandlerContext {
      * @param metadata Snapshot metadata.
      * @param grps The names of the cache groups on which the operation is performed.
      * @param locNode Local node.
+     * @param snpDir The full path to the snapshot files.
      */
-    public SnapshotHandlerContext(SnapshotMetadata metadata, @Nullable Collection<String> grps, ClusterNode locNode) {
+    public SnapshotHandlerContext(SnapshotMetadata metadata, @Nullable Collection<String> grps, ClusterNode locNode, File snpDir) {
         this.metadata = metadata;
         this.grps = grps;
         this.locNode = locNode;
+        this.snpDir = snpDir;
     }
 
     /**
@@ -50,6 +56,13 @@ public class SnapshotHandlerContext {
      */
     public SnapshotMetadata metadata() {
         return metadata;
+    }
+
+    /**
+     * @return The full path to the snapshot files.
+     */
+    public File snapshotDirectory() {
+        return snpDir;
     }
 
     /**

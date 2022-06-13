@@ -6,7 +6,7 @@ statement ok
 CREATE TABLE strings(s VARCHAR, g INTEGER)
 
 statement ok
-INSERT INTO strings VALUES ('hello', 0), ('world', 1), (NULL, 0), ('r', 1)
+INSERT INTO strings VALUES ('hello', 0), ('world', 1), (NULL, 0), ('my', 1)
 
 # simple aggregates only
 query IITT
@@ -25,35 +25,48 @@ SELECT COUNT(*), COUNT(s), MIN(s), MAX(s) FROM strings WHERE s IS NULL
 NULL
 NULL
 
+# add string agg
+query TTTT
+SELECT STRING_AGG(s, ' ' ORDER BY s ASC), STRING_AGG(s, '' ORDER BY s ASC), STRING_AGG('', ''), STRING_AGG('hello', ' ') FROM strings
+----
+hello my world
+hellomyworld
+(empty)
+hello hello hello hello
+
 # more complex agg (groups)
-query IIITT
-SELECT g, COUNT(*), COUNT(s), MIN(s), MAX(s) FROM strings GROUP BY g ORDER BY g
+query IIITTT
+SELECT g, COUNT(*), COUNT(s), MIN(s), MAX(s), STRING_AGG(s, ' ' ORDER BY s ASC) FROM strings GROUP BY g ORDER BY g
 ----
 0
 2
 1
 hello
 hello
+hello
 1
 2
 2
-r
+my
 world
+my world
 
 # empty group
-query IIITT
-SELECT g, COUNT(*), COUNT(s), MIN(s), MAX(s) FROM strings WHERE s IS NULL OR s <> 'hello' GROUP BY g ORDER BY g
+query IIITTT
+SELECT g, COUNT(*), COUNT(s), MIN(s), MAX(s), STRING_AGG(s, ' ' ORDER BY s) FROM strings WHERE s IS NULL OR s <> 'hello' GROUP BY g ORDER BY g
 ----
 0
 1
 0
 NULL
 NULL
+NULL
 1
 2
 2
-r
+my
 world
+my world
 
 # unsupported aggregates
 statement error

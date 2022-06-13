@@ -1363,55 +1363,36 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         IgniteInClosure2X<GridCacheEntryEx, GridCacheVersion> c,
         int amount
     ) throws IgniteCheckedException {
-        long now = U.currentTimeMillis();
-
         GridCacheVersion obsoleteVer = null;
-
-        GridCursor<PendingRow> cur;
 
         cctx.shared().database().checkpointReadLock();
 
         try {
-            if (grp.sharedGroup())
-                cur = pendingEntries.find(new PendingRow(cctx.cacheId()), new PendingRow(cctx.cacheId(), now, 0));
-            else
-                cur = pendingEntries.find(null, new PendingRow(CU.UNDEFINED_CACHE_ID, now, 0));
-
-            if (!cur.next())
-                return 0;
+            int cacheId = grp.sharedGroup() ? cctx.cacheId() : CU.UNDEFINED_CACHE_ID;
 
             if (!busyLock.enterBusy())
                 return 0;
 
             try {
-                int cleared = 0;
+                List<PendingRow> rows = pendingEntries.remove(
+                    new PendingRow(cacheId, Long.MIN_VALUE, 0), new PendingRow(cacheId, U.currentTimeMillis(), 0), amount);
 
-                do {
-                    if (amount != -1 && cleared > amount)
-                        return cleared;
-
-                    PendingRow row = cur.get();
-
+                for (PendingRow row : rows) {
                     if (row.key.partition() == -1)
                         row.key.partition(cctx.affinity().partition(row.key));
 
                     assert row.key != null && row.link != 0 && row.expireTime != 0 : row;
 
-                    if (pendingEntries.removex(row)) {
-                        if (obsoleteVer == null)
-                            obsoleteVer = cctx.cache().nextVersion();
+                    if (obsoleteVer == null)
+                        obsoleteVer = cctx.cache().nextVersion();
 
-                        GridCacheEntryEx entry = cctx.cache().entryEx(row.key);
+                    GridCacheEntryEx entry = cctx.cache().entryEx(row.key);
 
-                        if (entry != null)
-                            c.apply(entry, obsoleteVer);
-                    }
-
-                    cleared++;
+                    if (entry != null)
+                        c.apply(entry, obsoleteVer);
                 }
-                while (cur.next());
 
-                return cleared;
+                return rows.size();
             }
             finally {
                 busyLock.leaveBusy();

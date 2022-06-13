@@ -241,8 +241,6 @@ by the Pax Logging API - the logging framework used by Apache Karaf.
 
 |ignite-slf4j | Support for link:logging#using-slf4j[SLF4J logging framework].
 
-|ignite-spark | This module provides an implementation of Spark RDD abstraction that enables easy access to Ignite caches.
-
 |ignite-ssh | The Ignite SSH module provides capabilities to start Ignite nodes on remote machines via SSH.
 
 |ignite-tensorflow | The Ignite TensorFlow Integration Module allows using TensorFlow with Ignite. In this scenario Ignite will be a datasource for any TensorFlow model training.
@@ -269,6 +267,8 @@ The following extensions are available:
 |ignite-azure-ext| Ignite Azure provides Azure Blob Storage-based implementation of IP finder for TCP discovery.
 
 |ignite-gce-ext | Ignite GCE provides Google Cloud Storage based implementations of IP finder for TCP discovery.
+
+|ignite-spark-ext | This module provides an implementation of Spark RDD abstraction that enables easy access to Ignite caches.
 
 |ignite-spring-data-ext | Ignite Spring Data provides an integration with Spring Data framework.
 

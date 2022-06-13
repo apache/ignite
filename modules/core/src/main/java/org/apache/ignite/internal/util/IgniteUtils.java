@@ -8005,6 +8005,9 @@ public abstract class IgniteUtils {
      * @return {@code True} if Object is primitive array.
      */
     public static boolean isPrimitiveArray(Object obj) {
+        if (obj == null)
+            return false;
+
         Class<?> cls = obj.getClass();
 
         return cls.isArray() && cls.getComponentType().isPrimitive();
