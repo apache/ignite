@@ -369,11 +369,10 @@ public class Log4J2Logger implements IgniteLogger, LoggerNodeIdAndApplicationAwa
 
         PatternLayout layout = builder.build();
 
-        ConsoleAppender.Builder consoleAppenderBuilder = ConsoleAppender.newBuilder()
-            .withName(CONSOLE_APPENDER)
-            .withLayout(layout);
-
-        ConsoleAppender consoleApp = consoleAppenderBuilder.build();
+        ConsoleAppender consoleApp = ConsoleAppender.newBuilder()
+            .setName(CONSOLE_APPENDER)
+            .setLayout(layout)
+            .build();
 
         consoleApp.start();
 

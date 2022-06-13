@@ -269,7 +269,7 @@ public class GridTestLog4jLogger implements IgniteLogger, LoggerNodeIdAndApplica
      * @return {@code True} if log4j was already configured, {@code false} otherwise.
      */
     public static boolean isConfigured() {
-        return !LoggerContext.getContext().getRootLogger().getAppenders().isEmpty();
+        return LoggerContext.getContext().getRootLogger().getAppenders().size() > 1;
     }
 
     /**
@@ -354,8 +354,7 @@ public class GridTestLog4jLogger implements IgniteLogger, LoggerNodeIdAndApplica
                 // User configured console appender, but log is quiet.
                 quiet = false;
 
-            if (!consoleAppenderFound && !quiet && Boolean.valueOf(System.getProperty(IGNITE_CONSOLE_APPENDER, "true"))) {
-                // Console appender not found => we've looked through all categories up to root.
+            if (!quiet && Boolean.valueOf(System.getProperty(IGNITE_CONSOLE_APPENDER, "true"))) {
                 assert rootLogger != null;
 
                 // User launched ignite in verbose mode and did not add console appender with INFO level
@@ -425,12 +424,13 @@ public class GridTestLog4jLogger implements IgniteLogger, LoggerNodeIdAndApplica
         A.notNull(nodeId, "nodeId");
 
         this.nodeId = nodeId;
-//
+
 //        for (FileAppender a : fileAppenders) {
 //            if (a instanceof LoggerNodeIdAndApplicationAware) {
 //                ((LoggerNodeIdAndApplicationAware)a).setApplicationAndNode(application, nodeId);
 //
-//                a.activateOptions();
+//                a.initialize();
+//                a.start();
 //            }
 //        }
     }
@@ -494,7 +494,8 @@ public class GridTestLog4jLogger implements IgniteLogger, LoggerNodeIdAndApplica
         if (!impl.isInfoEnabled())
             warning("Logging at INFO level without checking if INFO level is enabled: " + msg);
 
-        assert impl.isInfoEnabled() : "Logging at INFO level without checking if INFO level is enabled: " + msg;
+        assert impl.isInfoEnabled() : "Logging at INFO level without checking if INFO level is enabled: " + msg
+            + "\n Logger name: "  + impl.getName();
 
         impl.info(msg);
     }

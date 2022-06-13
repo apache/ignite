@@ -436,7 +436,10 @@ public class DataStreamerImplSelfTest extends GridCommonAbstractTest {
         cnt = 0;
 
         StringWriter logWriter = new StringWriter();
-        Appender logAppender = WriterAppender.newBuilder().setTarget(logWriter).build();
+        Appender logAppender = WriterAppender.newBuilder()
+            .setName("logWriter")
+            .setTarget(logWriter)
+            .build();
 
         logAppender.start();
 
