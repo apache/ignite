@@ -90,6 +90,17 @@ namespace ignite
             class ProtocolContext
             {
             public:
+                /** The latest supported version. */
+                static const ProtocolVersion VERSION_LATEST;
+
+                /**
+                 * Default constructor.
+                 *
+                 * Constructs a protocol context with the latest version and all features set. Basically, max number of
+                 * supported features context.
+                 */
+                ProtocolContext();
+
                 /**
                  * Constructor.
                  *
@@ -97,13 +108,7 @@ namespace ignite
                  *
                  * @param ver Version part.
                  */
-                explicit ProtocolContext(const ProtocolVersion& ver) :
-                    ver(ver),
-                    features()
-                {
-                    if (IsFeatureSupported(VersionFeature::BITMAP_FEATURES))
-                        features.set(BitmaskFeature::QRY_PARTITIONS_BATCH_SIZE);
-                }
+                explicit ProtocolContext(const ProtocolVersion& ver);
 
                 /**
                  * Get protocol version.
@@ -116,20 +121,10 @@ namespace ignite
                 }
 
                 /**
-                 * Get features bitmask
-                 *
-                 * @return Feature bitmask.
-                 */
-                const std::bitset<BitmaskFeature::MAX_SUPPORTED>& GetFeatures() const
-                {
-                    return features;
-                }
-
-                /**
                  * Check if the feature supported.
                  *
                  * @param feature Version feature to check.
-                 * @return @true if the feature is supported.
+                 * @return @c true if the feature is supported.
                  */
                 bool IsFeatureSupported(const VersionFeature::Type& feature) const
                 {
@@ -142,13 +137,14 @@ namespace ignite
                  * @param feature Bitmask feature to check.
                  * @return @true if the feature is supported.
                  */
-                bool IsFeatureSupported(BitmaskFeature::Type feature) const
-                {
-                    if (feature >= BitmaskFeature::MAX_SUPPORTED)
-                        return false;
+                bool IsFeatureSupported(BitmaskFeature::Type feature) const;
 
-                    return features.test(feature);
-                }
+                /**
+                 * Check wheather protocol version is supported by the current implementation of C++ client.
+                 * @param ver Protocol version to check.
+                 * @return @c true if supported.
+                 */
+                static bool IsVersionSupported(const ProtocolVersion& ver);
 
             private:
                 /** Protocol version. */

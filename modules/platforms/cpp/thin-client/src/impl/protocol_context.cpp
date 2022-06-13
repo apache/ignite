@@ -15,10 +15,6 @@
  * limitations under the License.
  */
 
-#include <sstream>
-
-#include <ignite/ignite_error.h>
-
 #include "impl/protocol_context.h"
 
 namespace ignite
@@ -27,8 +23,57 @@ namespace ignite
     {
         namespace thin
         {
-            VersionFeature::Type VersionFeature::PARTITION_AWARENESS(ProtocolVersion(1, 4, 0));
-            VersionFeature::Type VersionFeature::BITMAP_FEATURES(ProtocolVersion(1, 7, 0));
+            const ProtocolVersion VERSION_1_2_0(1, 2, 0);
+            const ProtocolVersion VERSION_1_3_0(1, 3, 0);
+            const ProtocolVersion VERSION_1_4_0(1, 4, 0);
+            const ProtocolVersion VERSION_1_5_0(1, 5, 0);
+            const ProtocolVersion VERSION_1_6_0(1, 6, 0);
+            const ProtocolVersion VERSION_1_7_0(1, 7, 0);
+
+            VersionSet::value_type supportedArray[] = {
+                VERSION_1_7_0,
+                VERSION_1_6_0,
+                VERSION_1_5_0,
+                VERSION_1_4_0,
+                VERSION_1_3_0,
+                VERSION_1_2_0,
+            };
+
+            const VersionSet supportedVersions(supportedArray,
+                supportedArray + (sizeof(supportedArray) / sizeof(supportedArray[0])));
+
+            VersionFeature::Type VersionFeature::PARTITION_AWARENESS(VERSION_1_4_0);
+            VersionFeature::Type VersionFeature::BITMAP_FEATURES(VERSION_1_7_0);
+
+            const ProtocolVersion ProtocolContext::VERSION_LATEST(VERSION_1_7_0);
+
+            ProtocolContext::ProtocolContext() :
+                ver(VERSION_LATEST),
+                features()
+            {
+                features.set(BitmaskFeature::QRY_PARTITIONS_BATCH_SIZE);
+            }
+
+            ProtocolContext::ProtocolContext(const ProtocolVersion& ver) :
+                ver(ver),
+                features()
+            {
+                if (IsFeatureSupported(VersionFeature::BITMAP_FEATURES))
+                    features.set(BitmaskFeature::QRY_PARTITIONS_BATCH_SIZE);
+            }
+
+            bool ProtocolContext::IsFeatureSupported(BitmaskFeature::Type feature) const
+            {
+                if (feature >= BitmaskFeature::MAX_SUPPORTED)
+                    return false;
+
+                return features.test(feature);
+            }
+
+            bool ProtocolContext::IsVersionSupported(const ProtocolVersion& ver)
+            {
+                return supportedVersions.find(ver) != supportedVersions.end();
+            }
         }
     }
 }
