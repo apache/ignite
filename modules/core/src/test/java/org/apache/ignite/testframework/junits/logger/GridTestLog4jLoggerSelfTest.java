@@ -22,6 +22,7 @@ import org.apache.ignite.testframework.GridTestUtils.RunnableX;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.core.Logger;
+import org.apache.logging.log4j.core.LoggerContext;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -52,13 +53,13 @@ public class GridTestLog4jLoggerSelfTest {
     /** */
     @BeforeClass
     public static void beforeTests() {
-        ((Logger)LogManager.getRootLogger()).setLevel(Level.WARN);
+        LoggerContext.getContext().getRootLogger().setLevel(Level.WARN);
     }
 
     /** */
     @AfterClass
     public static void afterTests() {
-        ((Logger)LogManager.getRootLogger()).setLevel(defaultRootLevel);
+        LoggerContext.getContext().getRootLogger().setLevel(defaultRootLevel);
 
         assertEquals(defaultRootLevel, LogManager.getRootLogger().getLevel());
     }

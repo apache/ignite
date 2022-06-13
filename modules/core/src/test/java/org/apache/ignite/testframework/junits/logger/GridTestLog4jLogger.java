@@ -40,6 +40,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.core.Appender;
 import org.apache.logging.log4j.core.Filter;
 import org.apache.logging.log4j.core.Logger;
+import org.apache.logging.log4j.core.LoggerContext;
 import org.apache.logging.log4j.core.appender.ConsoleAppender;
 import org.apache.logging.log4j.core.appender.FileAppender;
 import org.apache.logging.log4j.core.config.ConfigurationSource;
@@ -135,7 +136,7 @@ public class GridTestLog4jLogger implements IgniteLogger, LoggerNodeIdAndApplica
      *      constructor.
      */
     public GridTestLog4jLogger(boolean init) {
-        impl = (Logger)LogManager.getRootLogger();
+        impl = LoggerContext.getContext().getRootLogger();
 
         if (init) {
             // Implementation has already been inited, passing NULL.
@@ -194,7 +195,7 @@ public class GridTestLog4jLogger implements IgniteLogger, LoggerNodeIdAndApplica
                         e.printStackTrace();
                     }
 
-                return (Logger)LogManager.getRootLogger();
+                return LoggerContext.getContext().getRootLogger();
             }
         });
 
@@ -226,7 +227,7 @@ public class GridTestLog4jLogger implements IgniteLogger, LoggerNodeIdAndApplica
                         e.printStackTrace();
                     }
 
-                return (Logger)LogManager.getRootLogger();
+                return LoggerContext.getContext().getRootLogger();
             }
         });
 
@@ -255,7 +256,7 @@ public class GridTestLog4jLogger implements IgniteLogger, LoggerNodeIdAndApplica
                         e.printStackTrace();
                     }
 
-                return (Logger)LogManager.getRootLogger();
+                return LoggerContext.getContext().getRootLogger();
             }
         });
 
@@ -268,7 +269,7 @@ public class GridTestLog4jLogger implements IgniteLogger, LoggerNodeIdAndApplica
      * @return {@code True} if log4j was already configured, {@code false} otherwise.
      */
     public static boolean isConfigured() {
-        return !((Logger)LogManager.getRootLogger()).getAppenders().isEmpty();
+        return !LoggerContext.getContext().getRootLogger().getAppenders().isEmpty();
     }
 
     /**
@@ -463,7 +464,7 @@ public class GridTestLog4jLogger implements IgniteLogger, LoggerNodeIdAndApplica
      * @return {@link org.apache.ignite.IgniteLogger} wrapper around log4j logger.
      */
     @Override public GridTestLog4jLogger getLogger(Object ctgr) {
-        return new GridTestLog4jLogger((Logger)(ctgr == null ? LogManager.getRootLogger() :
+        return new GridTestLog4jLogger((Logger)(ctgr == null ? LoggerContext.getContext().getRootLogger() :
                     ctgr instanceof Class ? LogManager.getLogger(((Class<?>)ctgr).getName()) :
                         LogManager.getLogger(ctgr.toString())));
     }
