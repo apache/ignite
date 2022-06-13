@@ -52,8 +52,9 @@ public class PartitionHashRecordV2 extends VisorDataTransferObject {
     @GridToStringExclude
     private int partHash;
 
-    /** Update counter. */
-    private long updateCntr;
+    /** Update counter's state. */
+    @GridToStringInclude
+    private Object updateCntr;
 
     /** Size. */
     @GridToStringExclude
@@ -76,7 +77,7 @@ public class PartitionHashRecordV2 extends VisorDataTransferObject {
         boolean isPrimary,
         Object consistentId,
         int partHash,
-        long updateCntr,
+        Object updateCntr,
         long size,
         PartitionState partitionState
     ) {
@@ -87,6 +88,8 @@ public class PartitionHashRecordV2 extends VisorDataTransferObject {
         this.updateCntr = updateCntr;
         this.size = size;
         this.partitionState = partitionState;
+
+        assert updateCntr != null;
     }
 
     /**
@@ -126,7 +129,7 @@ public class PartitionHashRecordV2 extends VisorDataTransferObject {
     /**
      * @return Update counter.
      */
-    public long updateCounter() {
+    public Object updateCounter() {
         return updateCntr;
     }
 
@@ -150,7 +153,7 @@ public class PartitionHashRecordV2 extends VisorDataTransferObject {
         out.writeBoolean(isPrimary);
         out.writeObject(consistentId);
         out.writeInt(partHash);
-        out.writeLong(updateCntr);
+        out.writeObject(updateCntr);
         out.writeLong(size);
         U.writeEnum(out, partitionState);
     }
@@ -162,7 +165,7 @@ public class PartitionHashRecordV2 extends VisorDataTransferObject {
         isPrimary = in.readBoolean();
         consistentId = in.readObject();
         partHash = in.readInt();
-        updateCntr = in.readLong();
+        updateCntr = in.readObject();
         size = in.readLong();
 
         if (protoVer >= V2)
@@ -193,7 +196,7 @@ public class PartitionHashRecordV2 extends VisorDataTransferObject {
 
         PartitionHashRecordV2 v2 = (PartitionHashRecordV2)o;
 
-        return partHash == v2.partHash && updateCntr == v2.updateCntr && size == v2.size && partKey.equals(v2.partKey) &&
+        return partHash == v2.partHash && updateCntr.equals(v2.updateCntr) && size == v2.size && partKey.equals(v2.partKey) &&
             consistentId.equals(v2.consistentId) && partitionState == v2.partitionState;
     }
 
