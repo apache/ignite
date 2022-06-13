@@ -26,8 +26,8 @@ import org.apache.ignite.tests.load.ignite.ReadWorker;
 import org.apache.ignite.tests.load.ignite.WriteWorker;
 import org.apache.ignite.tests.utils.CassandraHelper;
 import org.apache.ignite.tests.utils.TestsHelper;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.core.Logger;
+import org.apache.logging.log4j.core.LoggerContext;
 
 /**
  * Load tests for Ignite caches which utilizing {@link org.apache.ignite.cache.store.cassandra.CassandraCacheStore}
@@ -35,7 +35,7 @@ import org.apache.logging.log4j.Logger;
  */
 public class IgnitePersistentStoreLoadTest extends LoadTestDriver {
     /** */
-    private static final Logger LOGGER = LogManager.getLogger("IgniteLoadTests");
+    private static final Logger LOGGER = LoggerContext.getContext().getLogger("IgniteLoadTests");
 
     /**
      * test starter.

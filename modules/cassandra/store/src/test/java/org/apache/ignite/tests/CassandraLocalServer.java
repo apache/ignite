@@ -18,15 +18,15 @@
 package org.apache.ignite.tests;
 
 import org.apache.ignite.tests.utils.CassandraHelper;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.core.Logger;
+import org.apache.logging.log4j.core.LoggerContext;
 
 /**
  * Simple helper class to run Cassandra on localhost
  */
 public class CassandraLocalServer {
     /** */
-    private static final Logger LOGGER = LogManager.getLogger(CassandraLocalServer.class.getName());
+    private static final Logger LOGGER = LoggerContext.getContext().getLogger(CassandraLocalServer.class.getName());
 
     /** */
     public static void main(String[] args) {

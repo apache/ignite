@@ -35,8 +35,8 @@ import org.apache.ignite.tests.utils.TestCacheSession;
 import org.apache.ignite.tests.utils.TestTransaction;
 import org.apache.ignite.tests.utils.TestsHelper;
 import org.apache.ignite.transactions.Transaction;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.core.Logger;
+import org.apache.logging.log4j.core.LoggerContext;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -48,7 +48,7 @@ import org.springframework.core.io.ClassPathResource;
  */
 public class CassandraDirectPersistenceTest {
     /** */
-    private static final Logger LOGGER = LogManager.getLogger(CassandraDirectPersistenceTest.class.getName());
+    private static final Logger LOGGER = LoggerContext.getContext().getLogger(CassandraDirectPersistenceTest.class.getName());
 
     /** */
     @BeforeClass
