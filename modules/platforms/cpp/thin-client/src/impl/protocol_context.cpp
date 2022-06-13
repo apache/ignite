@@ -51,7 +51,7 @@ namespace ignite
                 ver(VERSION_LATEST),
                 features()
             {
-                features.set(BitmaskFeature::QRY_PARTITIONS_BATCH_SIZE);
+                SetAllFeatures(features);
             }
 
             ProtocolContext::ProtocolContext(const ProtocolVersion& ver) :
@@ -59,20 +59,58 @@ namespace ignite
                 features()
             {
                 if (IsFeatureSupported(VersionFeature::BITMAP_FEATURES))
-                    features.set(BitmaskFeature::QRY_PARTITIONS_BATCH_SIZE);
+                    SetAllFeatures(features);
             }
 
             bool ProtocolContext::IsFeatureSupported(BitmaskFeature::Type feature) const
             {
-                if (feature >= BitmaskFeature::MAX_SUPPORTED)
-                    return false;
+                return TestFeature(features, feature);
+            }
 
-                return features.test(feature);
+            void ProtocolContext::SetFeatures(const std::vector<int8_t>& bitmask)
+            {
+                features = bitmask;
             }
 
             bool ProtocolContext::IsVersionSupported(const ProtocolVersion& ver)
             {
                 return supportedVersions.find(ver) != supportedVersions.end();
+            }
+
+            std::vector<int8_t> ProtocolContext::GetSupportedFeaturesMask()
+            {
+                std::vector<int8_t> features((BitmaskFeature::MAX_SUPPORTED + 7) / 8, 0);
+
+                SetAllFeatures(features);
+
+                return features;
+            }
+
+            void ProtocolContext::SetAllFeatures(std::vector<int8_t> &features)
+            {
+                SetFeature(features, BitmaskFeature::QRY_PARTITIONS_BATCH_SIZE);
+            }
+
+            void ProtocolContext::SetFeature(std::vector<int8_t>& features, BitmaskFeature::Type feature)
+            {
+                size_t byteN = (feature + 7) / 8;
+                size_t bitN = feature % 8;
+
+                if (features.size() <= byteN)
+                    features.resize(byteN + 1, 0);
+
+                features[byteN] |= static_cast<int8_t>(1U << bitN);
+            }
+
+            bool ProtocolContext::TestFeature(const std::vector<int8_t> &features, BitmaskFeature::Type feature)
+            {
+                size_t byteN = (feature + 7) / 8;
+                size_t bitN = feature % 8;
+
+                if (features.size() <= byteN)
+                    return false;
+
+                return (features[byteN] & static_cast<int8_t>(1U << bitN)) != 0;
             }
         }
     }

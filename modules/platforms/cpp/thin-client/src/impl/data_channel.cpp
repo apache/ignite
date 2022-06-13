@@ -241,10 +241,9 @@ namespace ignite
 
                 if (context.IsFeatureSupported(VersionFeature::BITMAP_FEATURES))
                 {
-                    // TODO: implement features for any new changes in protocol.
-                    int8_t features[] = {0};
+                    std::vector<int8_t> features = ProtocolContext::GetSupportedFeaturesMask();
 
-                    writer.WriteInt8Array(features, 0);
+                    writer.WriteInt8Array(&features[0], static_cast<int32_t>(features.size()));
                 }
 
                 writer.WriteString(config.GetUser());
@@ -312,6 +311,8 @@ namespace ignite
                         features.resize(static_cast<size_t>(len));
                         reader.ReadInt8Array(features.data(), len);
                     }
+
+                    protocolContext.SetFeatures(features);
                 }
 
                 if (protocolContext.IsFeatureSupported(VersionFeature::PARTITION_AWARENESS))

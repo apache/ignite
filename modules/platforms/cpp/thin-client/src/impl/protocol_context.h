@@ -20,7 +20,7 @@
 
 #include <stdint.h>
 
-#include <bitset>
+#include <vector>
 
 #include "impl/protocol_version.h"
 
@@ -140,18 +140,58 @@ namespace ignite
                 bool IsFeatureSupported(BitmaskFeature::Type feature) const;
 
                 /**
+                 * Set features bitmask.
+                 *
+                 * @param bitmask Features bitmask.
+                 */
+                void SetFeatures(const std::vector<int8_t>& bitmask);
+
+                /**
                  * Check wheather protocol version is supported by the current implementation of C++ client.
+                 *
                  * @param ver Protocol version to check.
                  * @return @c true if supported.
                  */
                 static bool IsVersionSupported(const ProtocolVersion& ver);
 
+                /**
+                 * Get supported features mask.
+                 *
+                 * @return Supported features mask.
+                 */
+                static std::vector<int8_t> GetSupportedFeaturesMask();
+
             private:
+                /**
+                 * Set feature in feature bitmask.
+                 *
+                 * @param features Features bitmask.
+                 * @param feature Feature to set.
+                 */
+                static void SetFeature(std::vector<int8_t>& features, BitmaskFeature::Type feature);
+
+                /**
+                 * Set all possible features in feature bitmask.
+                 *
+                 * @param features Features bitmask.
+                 */
+                static void SetAllFeatures(std::vector<int8_t>& features);
+
+                /**
+                 * Check if feature is in feature bitmask.
+                 *
+                 * @param features Features bitmask.
+                 * @param feature Feature to check.
+                 *
+                 * @return @c true if it is supported.
+                 */
+                static bool TestFeature(const std::vector<int8_t>& features, BitmaskFeature::Type feature);
+
                 /** Protocol version. */
                 const ProtocolVersion ver;
 
                 /** Features mask. */
-                std::bitset<BitmaskFeature::MAX_SUPPORTED> features;
+                std::vector<int8_t> features;
             };
         }
     }
