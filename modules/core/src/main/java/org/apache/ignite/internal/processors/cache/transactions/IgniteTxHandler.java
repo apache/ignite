@@ -298,9 +298,9 @@ public class IgniteTxHandler {
             ctx.consistentCutMgr().handleConsistentCutVersion(crdNodeId, msg.latestCutVersion());
 
             if (msg.txCutVersion() >= 0) {
-                GridCacheVersion v = map ? ctx.tm().mappedVersion(msg.version()) : msg.version();
+                GridCacheVersion v = map ? ctx.tm().mappedVersion(msg.nearXidVersion()) : msg.xidVersion();
 
-                ctx.consistentCutMgr().handleRemoteTxCutVersion(v, msg.nearTxVersion(), msg.txCutVersion());
+                ctx.consistentCutMgr().handleRemoteTxCutVersion(v, msg.nearXidVersion(), msg.txCutVersion());
             }
         }
     }

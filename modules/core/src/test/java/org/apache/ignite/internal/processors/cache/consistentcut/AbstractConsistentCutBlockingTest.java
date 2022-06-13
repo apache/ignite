@@ -171,8 +171,8 @@ public abstract class AbstractConsistentCutBlockingTest extends AbstractConsiste
      * 1. Start TX
      * 2. Block TX somewhere (on sending tx message or on writing tx state to WAL)
      * 3. Start Consistent Cut procedure
-     * 4. Optionally block consistent cut on single node
-     * 5. Await consistent cut started (excl blocking node)
+     * 4. Optionally block consistent cut on single node (Start WAL / Publishing)
+     * 5. Await consistent cut started on all nodes (excl blocking node)
      * 6. Resume transaction
      * 7. Await transaction committed
      * 8. Resume blocking consistent cut

@@ -381,7 +381,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
         return implicit() && (!dht() || colocated());
     }
 
-    /** */
+    /** {@inheritDoc} */
     @Override public long txCutVersion() {
         return txCutVer;
     }

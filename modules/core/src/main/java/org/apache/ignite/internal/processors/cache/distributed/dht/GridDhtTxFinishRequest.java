@@ -375,7 +375,7 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
     /**
      * @return Transaction ID on near node.
      */
-    @Override public GridCacheVersion nearTxVersion() {
+    @Override public GridCacheVersion nearXidVersion() {
         return nearXidVer;
     }
 

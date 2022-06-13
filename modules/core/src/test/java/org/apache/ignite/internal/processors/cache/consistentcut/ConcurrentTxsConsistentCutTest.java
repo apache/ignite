@@ -41,7 +41,7 @@ public class ConcurrentTxsConsistentCutTest extends AbstractConsistentCutTest {
     private static final int CUTS = 10;
 
     /** How many times repeat the test. */
-    private static final int REPEAT = 1;
+    private static final int REPEAT = 20;
 
     /** */
     private final Map<IgniteUuid, Integer> txOrigNode = new ConcurrentHashMap<>();

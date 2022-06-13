@@ -312,7 +312,7 @@ public abstract class AbstractConsistentCutTest extends GridCommonAbstractTest {
             Message msg,
             IgniteInClosure<IgniteException> ackC
         ) throws IgniteSpiException {
-            if (log.isInfoEnabled() && txMessage(msg))
+            if (log.isDebugEnabled() && txMessage(msg))
                 logTxMessage(node, msg);
 
             super.sendMessage(node, msg, ackC);
@@ -342,15 +342,15 @@ public abstract class AbstractConsistentCutTest extends GridCommonAbstractTest {
                 GridDistributedTxFinishResponse m = (GridDistributedTxFinishResponse)msg;
 
                 bld
-                    .append("; dhtTx=").append(m.xid().asIgniteUuid());
+                    .append("; txVer=").append(m.xid().asIgniteUuid());
             }
             else if (msg instanceof GridDhtTxFinishRequest) {
                 GridDhtTxFinishRequest m = (GridDhtTxFinishRequest)msg;
 
                 bld
                     .append("; lastCutVer=").append(m.latestCutVersion())
-                    .append("; nearTx=").append(m.nearTxVersion().asIgniteUuid())
-                    .append("; dhtTx=").append(m.version().asIgniteUuid())
+                    .append("; nearTxVer=").append(m.nearXidVersion().asIgniteUuid())
+                    .append("; txVer=").append(m.xidVersion().asIgniteUuid())
                     .append("; txCutVer=").append(m.txCutVersion());
             }
             else if (msg instanceof GridNearTxFinishRequest) {
@@ -358,23 +358,22 @@ public abstract class AbstractConsistentCutTest extends GridCommonAbstractTest {
 
                 bld
                     .append("; lastCutVer=").append(m.latestCutVersion())
-                    .append("; nearTx=").append(m.nearTxVersion().asIgniteUuid())
-                    .append("; dhtTx=").append(m.version().asIgniteUuid())
+                    .append("; nearTxVer=").append(m.nearXidVersion().asIgniteUuid())
+                    .append("; txVer=").append(m.xidVersion().asIgniteUuid())
                     .append("; txCutVer=").append(m.txCutVersion());
             }
             else if (msg instanceof GridNearTxFinishResponse) {
                 GridNearTxFinishResponse m = (GridNearTxFinishResponse)msg;
 
                 bld
-                    .append("; dhtTx=").append(m.xid().asIgniteUuid());
+                    .append("; txVer=").append(m.xid().asIgniteUuid());
             }
             else if (msg instanceof GridDhtTxPrepareRequest) {
                 GridDhtTxPrepareRequest m = (GridDhtTxPrepareRequest)msg;
 
                 bld
                     .append("; lastCutVer=").append(m.latestCutVersion())
-                    .append("; nearTx=").append(m.nearXidVersion().asIgniteUuid())
-                    .append("; dhtTx=").append((m.version()).asIgniteUuid())
+                    .append("; ver=").append(m.version().asIgniteUuid())
                     .append("; 1PC=").append((m.onePhaseCommit()));
             }
             else if (msg instanceof GridNearTxPrepareRequest) {
@@ -382,7 +381,7 @@ public abstract class AbstractConsistentCutTest extends GridCommonAbstractTest {
 
                 bld
                     .append("; lastCutVer=").append(m.latestCutVersion())
-                    .append("; dhtTx=").append(m.version().asIgniteUuid())
+                    .append("; ver=").append(m.version().asIgniteUuid())
                     .append("; 1PC=").append((m.onePhaseCommit()));
             }
             else if (msg instanceof GridDhtTxPrepareResponse) {
@@ -390,8 +389,8 @@ public abstract class AbstractConsistentCutTest extends GridCommonAbstractTest {
 
                 bld
                     .append("; lastCutVer=").append(m.latestCutVersion())
-                    .append("; nearTx=").append(m.nearTxVersion().asIgniteUuid())
-                    .append("; dhtTx=").append(m.version().asIgniteUuid())
+                    .append("; nearTxVer=").append(m.nearXidVersion().asIgniteUuid())
+                    .append("; txVer=").append(m.xidVersion().asIgniteUuid())
                     .append("; txCutVer=").append((m.txCutVersion()))
                     .append("; 1PC=").append((m.onePhaseCommit()));
             }
@@ -400,7 +399,8 @@ public abstract class AbstractConsistentCutTest extends GridCommonAbstractTest {
 
                 bld
                     .append("; lastCutVer=").append(m.latestCutVersion())
-                    .append("; dhtTx=").append(m.version().asIgniteUuid())
+                    .append("; nearTxVer=").append(m.nearXidVersion().asIgniteUuid())
+                    .append("; txVer=").append(m.xidVersion().asIgniteUuid())
                     .append("; txCutVer=").append((m.txCutVersion()))
                     .append("; 1PC=").append((m.onePhaseCommit()));
             }

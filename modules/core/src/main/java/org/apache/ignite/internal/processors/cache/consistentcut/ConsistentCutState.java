@@ -23,7 +23,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.internal.pagemem.wal.record.ConsistentCutFinishRecord;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
-import org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.transactions.TransactionState;
 import org.jetbrains.annotations.Nullable;
@@ -64,21 +63,21 @@ public class ConsistentCutState {
     private final AtomicBoolean ready = new AtomicBoolean();
 
     /**
-     * Set of transactions IDs on near node to include into this Consistent Cut.
+     * Collection of transactions to include to this Consistent Cut (to include to the global BEFORE state). It contains
+     * ID of transaction on near node (as exactly this ID is written to WAL).
      */
     private final Set<GridCacheVersion> includeBefore = ConcurrentHashMap.newKeySet();
 
     /**
-     * Collection of transactions to exclude from this Consistent Cut (to include to the global AFTER state).
-     * Key is transaction ID, value is related transaction.
+     * Collection of transactions to exclude from this Consistent Cut (to include to the global AFTER state). It contains
+     * ID of local transaction (not ID on near node like in {@link #includeBefore}).
      */
-    private final Map<GridCacheVersion, IgniteInternalTx> includeAfter = new ConcurrentHashMap<>();
+    private final Set<GridCacheVersion> includeAfter = ConcurrentHashMap.newKeySet();
 
     /**
-     * Map of transactions that bound to specific Consistent Cut Version.
-     * Key is transaction ID. Value is the latest finished Consistent Cut Version AFTER which this transaction committed.
+     * Collection of transactions to await before notify Consistent Cut coordinator.
      */
-    private final Map<GridCacheVersion, Long> txCutVers = new ConcurrentHashMap<>();
+    private final Map<GridCacheVersion, IgniteInternalTx> readyAwait = new ConcurrentHashMap<>();
 
     /**
      * Collection of transactions that are required to be checked whether to include them to this Consistent Cut. Such
@@ -107,23 +106,13 @@ public class ConsistentCutState {
     }
 
     /**
-     * Includes a transaction (optionally committed after Consistent Cut WAL records) to Consistent Cut.
-     *
-     * @param nearTxVer Transaction version on near node.
-     */
-    public boolean includeBeforeCut(GridCacheVersion txVer, GridCacheVersion nearTxVer) {
-        includeBefore.add(nearTxVer);
-
-        return tryFinish(txVer);
-    }
-
-    /**
-     * Excludes a transaction from Consistent Cut.
+     * Excludes a transaction from BEFORE side, and move it to AFTER side.
      *
      * @param tx Local transaction.
      */
     public void includeAfterCut(IgniteInternalTx tx) {
-        includeAfter.put(tx.xidVersion(), tx);
+        includeAfter.add(tx.xidVersion());
+        readyAwait.put(tx.xidVersion(), tx);
     }
 
     /**
@@ -139,27 +128,7 @@ public class ConsistentCutState {
      * @return {@code true} whether specified transaction is excluded from Consistent Cut.
      */
     public boolean afterCut(GridCacheVersion txVer) {
-        return includeAfter.containsKey(txVer);
-    }
-
-    /**
-     * Sets the latest finished Consistent Cut Version AFTER which specified transaction committed.
-     *
-     * @param txVer Transaction version.
-     * @param cutVer Consistent Cut Version.
-     */
-    public void txCutVersion(GridCacheVersion txVer, long cutVer) {
-        txCutVers.put(txVer, cutVer);
-    }
-
-    /**
-     * Gets the latest finished Consistent Cut Version AFTER which specified transaction committed.
-     *
-     * @param txVer Transaction version.
-     * @return Consistent Cut Version.
-     */
-    public Long txCutVersion(GridCacheVersion txVer) {
-        return txCutVers.remove(txVer);
+        return includeAfter.contains(txVer);
     }
 
     /**
@@ -184,7 +153,7 @@ public class ConsistentCutState {
 
         if (tx != null) {
             if (tx.state() != TransactionState.COMMITTED)
-                includeAfter.put(txVer, tx);
+                readyAwait.put(txVer, tx);
 
             return tryFinish(txVer);
         }
@@ -195,19 +164,30 @@ public class ConsistentCutState {
     /**
      * Includes specified transaction to this Consistent Cut.
      *
-     * @param txVer Transaction version.
-     * @param nearTxVer Transaction version on near node.
+     * @param txVer Transaction ID.
+     * @param nearTxVer Transaction ID on near node.
+     * @param tx Optional transaction, can be {@code null} for already committed transactions.
      */
-    public boolean checkInclude(GridCacheVersion txVer, GridCacheVersion nearTxVer) {
-        IgniteInternalTx tx = check.get(txVer);
+    public boolean checkInclude(GridCacheVersion txVer, GridCacheVersion nearTxVer, @Nullable IgniteInternalTx tx) {
+        includeBefore.add(nearTxVer);
 
-        if (tx != null) {
-            includeBefore.add(nearTxVer);
+        IgniteInternalTx t = check.get(txVer);
 
-            return tryFinish(txVer);
-        }
+        t = t == null ? tx : t;
 
-        return false;
+        if (t != null && t.state() != TransactionState.COMMITTED)
+            readyAwait.put(txVer, t);
+
+        return tryFinish(txVer);
+    }
+
+    /**
+     * Tries finishing local Consistent Cut after checking specified transaction.
+     *
+     * @return Whether local Consistent Cut has finished.
+     */
+    public boolean tryFinish() {
+        return check.isEmpty() && finish();
     }
 
     /**
@@ -216,31 +196,11 @@ public class ConsistentCutState {
      * @param txVer Transaction version, optional.
      * @return Whether local Consistent Cut has finished.
      */
-    public boolean tryFinish(@Nullable GridCacheVersion txVer) {
+    public boolean tryFinish(GridCacheVersion txVer) {
         if (txVer != null)
             check.remove(txVer);
 
-        return check.isEmpty() && finish();
-    }
-
-    /**
-     * For cases when node has multiple participations (e.g. near and backup) it's possible to clean check-list and
-     * after-list before receiving messages from remote nodes.
-     */
-    public void beforePublish(IgniteTxManager tm) {
-        if (check.isEmpty())
-            return;
-
-        for (GridCacheVersion tx : includeBefore) {
-            GridCacheVersion txVer = tm.mappedVersion(tx);
-
-            txVer = txVer == null ? tx : txVer;
-
-            check.remove(txVer);
-        }
-
-        for (GridCacheVersion tx : includeAfter.keySet())
-            check.remove(tx);
+        return tryFinish();
     }
 
     /**
@@ -270,16 +230,21 @@ public class ConsistentCutState {
      * @param txVer Transaction version.
      */
     public void onCommit(GridCacheVersion txVer) {
-        includeAfter.remove(txVer);
+        readyAwait.remove(txVer);
     }
 
     /**
-     * Checks whether it's safe to start new Consistent Cut procedure.
+     * Checks whether this node is ready for new Consistent Cut.
      *
-     * @return {@code true} if it's safe to start new Consistent Cut procedure.
+     * @return {@code true} if it's ready to start new Consistent Cut.
      */
-    public boolean checkReady() {
-        return finished.get() && includeAfter.isEmpty() && ready.compareAndSet(false, true);
+    public boolean tryReady() {
+        boolean awaitCommitted = true;
+
+        for (IgniteInternalTx tx: readyAwait.values())
+            awaitCommitted &= tx.state() == TransactionState.COMMITTED;
+
+        return awaitCommitted && finished.get() && ready.compareAndSet(false, true);
     }
 
     /**
@@ -305,10 +270,8 @@ public class ConsistentCutState {
         bld.append("ready=").append(ready).append(", ");
 
         setAppend(bld, "includeBefore", includeBefore);
-        setAppend(bld, "includeAfter", includeAfter.keySet());
+        setAppend(bld, "includeAfter", includeAfter);
         setAppend(bld, "check", check.keySet());
-
-        mapAppend(bld, "txCutVers", txCutVers);
 
         return bld.append("]").toString();
     }

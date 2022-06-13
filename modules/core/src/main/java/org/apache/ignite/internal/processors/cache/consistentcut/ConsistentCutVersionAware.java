@@ -50,20 +50,16 @@ public interface ConsistentCutVersionAware {
     public default void txCutVersion(long txCutVer) {}
 
     /**
-     * Transaction ID to notify with {@link #txCutVersion()}.
-     *
      * @return Near transaction ID.
      */
-    public default GridCacheVersion nearTxVersion() {
+    public default GridCacheVersion nearXidVersion() {
         return null;
     }
 
     /**
-     * Transaction ID to notify with {@link #txCutVersion()}.
-     *
-     * @return Near transaction ID.
+     * @return Transaction ID.
      */
-    public default GridCacheVersion version() {
+    public default GridCacheVersion xidVersion() {
         return null;
     }
 

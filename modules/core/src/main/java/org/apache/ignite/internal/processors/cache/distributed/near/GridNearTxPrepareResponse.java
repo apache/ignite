@@ -198,6 +198,11 @@ public class GridNearTxPrepareResponse extends GridDistributedTxPrepareResponse 
         return dhtVer;
     }
 
+    /** {@inheritDoc} */
+    @Override public GridCacheVersion nearXidVersion() {
+        return xidVersion();
+    }
+
     /**
      * @return Write version.
      */

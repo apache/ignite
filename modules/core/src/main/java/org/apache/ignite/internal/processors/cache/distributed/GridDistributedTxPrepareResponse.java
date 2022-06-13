@@ -167,13 +167,13 @@ public class GridDistributedTxPrepareResponse extends GridDistributedBaseMessage
         return txCutVer;
     }
 
-    /** */
-    public void txCutVersion(long ver) {
+    /** {@inheritDoc} */
+    @Override public void txCutVersion(long ver) {
         txCutVer = ver;
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheVersion nearTxVersion() {
+    @Override public GridCacheVersion xidVersion() {
         return version();
     }
 

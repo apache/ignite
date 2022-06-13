@@ -203,7 +203,7 @@ public class GridDhtTxPrepareResponse extends GridDistributedTxPrepareResponse {
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheVersion nearTxVersion() {
+    @Override public GridCacheVersion nearXidVersion() {
         return nearXidVer;
     }
 

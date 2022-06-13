@@ -116,6 +116,11 @@ public class GridNearTxFinishRequest extends GridDistributedTxFinishRequest {
         this.mvccSnapshot = mvccSnapshot;
     }
 
+    /** {@inheritDoc} */
+    @Override public GridCacheVersion nearXidVersion() {
+        return xidVersion();
+    }
+
     /**
      * @return Mvcc info.
      */

@@ -323,7 +323,7 @@ public class GridDistributedTxFinishRequest extends GridDistributedBaseMessage i
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheVersion nearTxVersion() {
+    @Override public GridCacheVersion xidVersion() {
         return version();
     }
 
