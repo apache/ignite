@@ -384,18 +384,20 @@ namespace ignite
                 writer.WriteInt64(qry.timeout);
                 writer.WriteBool(true); // Include field names
 
-                // TODO: If protocolCtx.isFeatureSupported(ClientBitmaskFeature.QRY_PARTITIONS_BATCH_SIZE)
-                if (qry.parts.empty())
-                    writer.WriteInt32(-1);
-                else
+                if (context.IsFeatureSupported(BitmaskFeature::QRY_PARTITIONS_BATCH_SIZE))
                 {
-                    writer.WriteInt32(static_cast<int32_t>(qry.parts.size()));
+                    if (qry.parts.empty())
+                        writer.WriteInt32(-1);
+                    else
+                    {
+                        writer.WriteInt32(static_cast<int32_t>(qry.parts.size()));
 
-                    for (std::vector<int32_t>::const_iterator it = qry.parts.cbegin(); it != qry.parts.cend(); ++it)
-                        writer.WriteInt32(*it);
+                        for (std::vector<int32_t>::const_iterator it = qry.parts.cbegin(); it != qry.parts.cend(); ++it)
+                            writer.WriteInt32(*it);
+                    }
+
+                    writer.WriteInt32(qry.updateBatchSize);
                 }
-
-                writer.WriteInt32(1); // Update batch size. 1 is the default value.
             }
 
             void SqlFieldsQueryResponse::ReadOnSuccess(binary::BinaryReaderImpl& reader, const ProtocolContext&)

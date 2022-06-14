@@ -71,6 +71,7 @@ namespace ignite
                         lazy(false),
                         collocated(false),
                         parts(),
+                        updateBatchSize(1),
                         args()
                     {
                         // No-op.
@@ -93,6 +94,7 @@ namespace ignite
                         lazy(other.lazy),
                         collocated(other.collocated),
                         parts(other.parts),
+                        updateBatchSize(other.updateBatchSize),
                         args()
                     {
                         args.reserve(other.args.size());
@@ -415,6 +417,26 @@ namespace ignite
                     }
 
                     /**
+                     * Set batch size for update queries.
+                     *
+                     * @param size Batch size for update queries.
+                     */
+                    void SetUpdateBatchSize(int32_t size)
+                    {
+                        updateBatchSize = size;
+                    }
+
+                    /**
+                     * Get batch size for update queries.
+                     *
+                     * @return Batch size for update queries.
+                     */
+                    int32_t GetUpdateBatchSize() const
+                    {
+                        return updateBatchSize;
+                    }
+
+                    /**
                      * Add argument for the query.
                      *
                      * @tparam T Type of argument. Should be copy-constructable and assignable. BinaryType
@@ -487,6 +509,9 @@ namespace ignite
 
                     /** Partitions. */
                     std::vector<int32_t> parts;
+
+                    /** Max rows to fetch. */
+                    int32_t updateBatchSize;
 
                     /** Arguments. */
                     std::vector<impl::thin::CopyableWritable*> args;
