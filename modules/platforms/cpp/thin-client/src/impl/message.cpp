@@ -392,7 +392,7 @@ namespace ignite
                     {
                         writer.WriteInt32(static_cast<int32_t>(qry.parts.size()));
 
-                        for (std::vector<int32_t>::const_iterator it = qry.parts.cbegin(); it != qry.parts.cend(); ++it)
+                        for (std::vector<int32_t>::const_iterator it = qry.parts.begin(); it != qry.parts.end(); ++it)
                             writer.WriteInt32(*it);
                     }
 
