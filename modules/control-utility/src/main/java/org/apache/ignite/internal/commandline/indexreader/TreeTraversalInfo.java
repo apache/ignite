@@ -20,13 +20,14 @@ package org.apache.ignite.internal.commandline.indexreader;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 
 /**
  * This class is used to store result of tree traversal.
  */
 public class TreeTraversalInfo {
     /** Page type statistics. */
-    final Map<Class, Long> ioStat;
+    final Map<Class<? extends PageIO>, Long> ioStat;
 
     /** Map of errors, pageId -> set of exceptions. */
     final Map<Long, List<Throwable>> errors;
@@ -44,7 +45,7 @@ public class TreeTraversalInfo {
 
     /** */
     public TreeTraversalInfo(
-            Map<Class, Long> ioStat,
+            Map<Class<? extends PageIO>, Long> ioStat,
             Map<Long, List<Throwable>> errors,
             Set<Long> innerPageIds,
             long rootPageId,
