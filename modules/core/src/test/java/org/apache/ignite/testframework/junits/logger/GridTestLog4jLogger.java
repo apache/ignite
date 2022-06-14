@@ -494,8 +494,7 @@ public class GridTestLog4jLogger implements IgniteLogger, LoggerNodeIdAndApplica
         if (!impl.isInfoEnabled())
             warning("Logging at INFO level without checking if INFO level is enabled: " + msg);
 
-        assert impl.isInfoEnabled() : "Logging at INFO level without checking if INFO level is enabled: " + msg
-            + "\n Logger name: "  + impl.getName();
+        assert impl.isInfoEnabled() : "Logging at INFO level without checking if INFO level is enabled: " + msg;
 
         impl.info(msg);
     }
