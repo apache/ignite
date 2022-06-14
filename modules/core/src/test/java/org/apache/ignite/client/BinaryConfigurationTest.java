@@ -36,8 +36,7 @@ import static org.apache.ignite.internal.binary.BinaryUtils.FLAG_COMPACT_FOOTER;
  */
 public class BinaryConfigurationTest extends AbstractThinClientTest {
     /** {@inheritDoc} */
-    @Override
-    protected void afterTest() throws Exception {
+    @Override protected void afterTest() throws Exception {
         stopAllGrids();
         super.afterTest();
     }
