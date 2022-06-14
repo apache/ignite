@@ -109,7 +109,7 @@ namespace ignite
 
             bool ProtocolContext::TestFeature(const std::vector<int8_t> &features, BitmaskFeature::Type feature)
             {
-                size_t byteN = (feature + 7) / 8;
+                size_t byteN = feature / 8;
                 size_t bitN = feature % 8;
 
                 if (features.size() <= byteN)
