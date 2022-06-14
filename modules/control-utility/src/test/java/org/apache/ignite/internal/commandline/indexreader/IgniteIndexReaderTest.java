@@ -27,6 +27,7 @@ import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
@@ -35,6 +36,7 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.QueryEntity;
@@ -71,7 +73,6 @@ import static java.util.Objects.nonNull;
 import static java.util.Objects.requireNonNull;
 import static java.util.regex.Pattern.compile;
 import static java.util.stream.Collectors.joining;
-import static java.util.stream.Collectors.toList;
 import static org.apache.ignite.internal.commandline.indexreader.IgniteIndexReader.ERROR_PREFIX;
 import static org.apache.ignite.internal.commandline.indexreader.IgniteIndexReader.HORIZONTAL_SCAN_NAME;
 import static org.apache.ignite.internal.commandline.indexreader.IgniteIndexReader.RECURSIVE_TRAVERSE_NAME;
@@ -172,12 +173,12 @@ public class IgniteIndexReaderTest extends GridCommonAbstractTest {
                         .setMaxSize(64 * 1024L * 1024L)
                 )
         ).setCacheConfiguration(
-            new CacheConfiguration(DEFAULT_CACHE_NAME)
+            new CacheConfiguration<>(DEFAULT_CACHE_NAME)
                 .setGroupName(CACHE_GROUP_NAME)
                 .setSqlSchema(QueryUtils.DFLT_SCHEMA),
-            new CacheConfiguration(EMPTY_CACHE_NAME)
+            new CacheConfiguration<>(EMPTY_CACHE_NAME)
                 .setGroupName(EMPTY_CACHE_GROUP_NAME),
-            new CacheConfiguration(QUERY_CACHE_NAME)
+            new CacheConfiguration<>(QUERY_CACHE_NAME)
                 .setGroupName(QUERY_CACHE_GROUP_NAME)
                 .setQueryEntities(asList(
                     new QueryEntity(Integer.class, TestClass1.class)
@@ -425,9 +426,9 @@ public class IgniteIndexReaderTest extends GridCommonAbstractTest {
      * @return List of pairs, first is index name, second is list of fields, covered by index, divived by comma.
      */
     private static List<IgnitePair<String>> idxs(String tblName, List<IgnitePair<String>> fields) {
-        List<IgnitePair<String>> res = new LinkedList<>();
-
-        res.addAll(fields.stream().map(f -> new IgnitePair<>(tblName + "_" + f.get1() + "_idx", f.get1())).collect(toList()));
+        List<IgnitePair<String>> res = fields.stream()
+            .map(f -> new IgnitePair<>(tblName + "_" + f.get1() + "_idx", f.get1()))
+            .collect(Collectors.toCollection(LinkedList::new));
 
         // Add one multicolumn index.
         if (fields.size() > 1) {
@@ -448,7 +449,7 @@ public class IgniteIndexReaderTest extends GridCommonAbstractTest {
      *      {@code false} for inserting, updating and deleting data and deleting indexes, {@code null} for all data processing.
      * @param info Table info.
      */
-    private static void createAndFillTable(IgniteCache cache, TableInfo info, @Nullable Boolean insert) {
+    private static void createAndFillTable(IgniteCache<?, ?> cache, TableInfo info, @Nullable Boolean insert) {
         String idxToDelName = info.tblName + "_idx_to_delete";
 
         List<IgnitePair<String>> fields = fields(info.fieldsCnt);
@@ -497,7 +498,7 @@ public class IgniteIndexReaderTest extends GridCommonAbstractTest {
      * @param fields List of fields.
      * @param cntr Counter which is used to generate data.
      */
-    private static void insertQuery(IgniteCache cache, String tblName, List<IgnitePair<String>> fields, int cntr) {
+    private static void insertQuery(IgniteCache<?, ?> cache, String tblName, List<IgnitePair<String>> fields, int cntr) {
         GridStringBuilder q = new GridStringBuilder().a("insert into ").a(tblName).a(" (id, ");
 
         q.a(fields.stream().map(IgniteBiTuple::get1).collect(joining(", ")));
@@ -520,7 +521,7 @@ public class IgniteIndexReaderTest extends GridCommonAbstractTest {
      * @param fields List of fields.
      * @param cntr Counter which is used to generate data.
      */
-    private static void updateQuery(IgniteCache cache, String tblName, List<IgnitePair<String>> fields, int cntr) {
+    private static void updateQuery(IgniteCache<?, ?> cache, String tblName, List<IgnitePair<String>> fields, int cntr) {
         GridStringBuilder q = new GridStringBuilder().a("update ").a(tblName).a(" set ")
             .a(fields.stream().map(IgniteBiTuple::get1).collect(joining("=?, ", "", "=?")))
             .a(" where id=?");
@@ -545,7 +546,7 @@ public class IgniteIndexReaderTest extends GridCommonAbstractTest {
      * @param qry Query string.
      * @return Result.
      */
-    private static List<List<?>> query(IgniteCache cache, String qry) {
+    private static List<List<?>> query(IgniteCache<?, ?> cache, String qry) {
         return cache.query(new SqlFieldsQuery(qry)).getAll();
     }
 
@@ -557,7 +558,7 @@ public class IgniteIndexReaderTest extends GridCommonAbstractTest {
      * @param args Query arguments.
      * @return Result.
      */
-    private static List<List<?>> query(IgniteCache cache, String qry, Object... args) {
+    private static List<List<?>> query(IgniteCache<?, ?> cache, String qry, Object... args) {
         return cache.query(new SqlFieldsQuery(qry).setArgs(args)).getAll();
     }
 
@@ -567,7 +568,6 @@ public class IgniteIndexReaderTest extends GridCommonAbstractTest {
      * @param output Output.
      * @param treesCnt Count of b+ trees.
      * @param travErrCnt Count of errors that can occur during traversal.
-     * @param horizScanErrCnt Count of errors that can occur during horizontal scan.
      * @param pageListsErrCnt Count of errors that can occur during page lists scan.
      * @param seqErrCnt Count of errors that can occur during sequential scan.
      * @param partReadingErr partition file reading errors should be present.
@@ -717,11 +717,10 @@ public class IgniteIndexReaderTest extends GridCommonAbstractTest {
      * Create new {@link IgniteIndexReaderFilePageStoreFactory}.
      *
      * @param dir Data rirectory.
-     * @throws IgniteCheckedException If failed.
      */
     protected IgniteIndexReaderFilePageStoreFactory createFilePageStoreFactory(
         File dir
-    ) throws IgniteCheckedException {
+    ) {
         return new IgniteIndexReaderFilePageStoreFactoryImpl(dir, PAGE_SIZE, PART_CNT, PAGE_STORE_VER);
     }
 
@@ -800,7 +799,7 @@ public class IgniteIndexReaderTest extends GridCommonAbstractTest {
      */
     @Test
     public void testCorruptedIdx() throws Exception {
-        checkCorruptedIdx(asList(workDir));
+        checkCorruptedIdx(Collections.singletonList(workDir));
     }
 
     /**
@@ -816,7 +815,7 @@ public class IgniteIndexReaderTest extends GridCommonAbstractTest {
      */
     @Test
     public void testCorruptedIdxWithCheckParts() throws Exception {
-        checkCorruptedIdxWithCheckParts(asList(workDir));
+        checkCorruptedIdxWithCheckParts(Collections.singletonList(workDir));
     }
 
     /**
@@ -833,7 +832,7 @@ public class IgniteIndexReaderTest extends GridCommonAbstractTest {
      */
     @Test
     public void testCorruptedPart() throws Exception {
-        checkCorruptedPart(asList(workDir));
+        checkCorruptedPart(Collections.singletonList(workDir));
     }
 
     /**
@@ -850,7 +849,7 @@ public class IgniteIndexReaderTest extends GridCommonAbstractTest {
      */
     @Test
     public void testCorruptedIdxAndPart() throws Exception {
-        checkCorruptedIdxAndPart(asList(workDir));
+        checkCorruptedIdxAndPart(Collections.singletonList(workDir));
     }
 
     /**
