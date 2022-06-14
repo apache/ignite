@@ -32,7 +32,7 @@
         <relativePath>../../../parent-internal/pom.xml</relativePath>
     </parent>
 
-    <artifactId>ignite-cpp-thin-client</artifactId>
+    <artifactId>ignite-cpp</artifactId>
     <packaging>pom</packaging>
 
     <properties>

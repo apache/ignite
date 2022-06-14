@@ -179,7 +179,7 @@
             <dependencies>
                 <dependency>
                     <groupId>${project.groupId}</groupId>
-                    <artifactId>ignite-donet-thin-client</artifactId>
+                    <artifactId>ignite-donet</artifactId>
                     <version>${project.version}</version>
                 </dependency>
             </dependencies>

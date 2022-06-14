@@ -32,7 +32,7 @@
         <relativePath>../../../parent-internal/pom.xml</relativePath>
     </parent>
 
-    <artifactId>ignite-donet-thin-client</artifactId>
+    <artifactId>ignite-donet</artifactId>
     <packaging>pom</packaging>
 
     <properties>

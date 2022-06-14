@@ -19,7 +19,7 @@ Apache Ignite Maven Build Instructions
    or if you have to build .NET part as well, use the following command:
    (Note that 'doxygen', '.NET Core SDK 3.1', 'PowerShell' should be installed before running this command.)
 
-        ./mvnw clean install -Pall-java,all-scala,licenses,thin -DskipTests -DclientDocs
+        ./mvnw clean install -Pall-java,all-scala,licenses,platforms -DskipTests -DclientDocs
 
 2) Javadoc generation (optional):
 
@@ -47,7 +47,7 @@ Apache Ignite with LGPL Maven Build Instructions
    or if you have to build .NET part as well, use the following command:
    (Note that 'doxygen', '.NET Core SDK 3.1', 'PowerShell' should be installed before running this command.)
 
-        ./mvnw clean install -Pall-java,all-scala,licenses,thin -DskipTests -DclientDocs
+        ./mvnw clean install -Pall-java,all-scala,licenses,platforms -DskipTests -DclientDocs
 
 2) Javadoc generation with LGPL (optional):
 

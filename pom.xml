@@ -131,7 +131,7 @@
         </profile>
 
         <profile>
-            <id>thin</id>
+            <id>platforms</id>
             <modules>
                 <module>modules/platforms/dotnet</module>
                 <module>modules/platforms/cpp</module>
