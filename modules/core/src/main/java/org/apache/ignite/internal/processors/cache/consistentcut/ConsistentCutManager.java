@@ -192,7 +192,7 @@ public class ConsistentCutManager extends GridCacheSharedManagerAdapter {
 
                 if (!F.isEmpty(notReadySrvNodes)) {
                     log.warning("Skip Consistent Cut procedure. Some nodes hasn't finished yet previous one. " +
-                        "Last 2 versions: " + latestCutState().prevVersion() + ", " + latestCutState().version() +
+                        "Last 2 versions: " + latestPublishedCutState().prevVersion() + ", " + latestPublishedCutState().version() +
                         "\n\tConsistent Cut may require more time that it configured." +
                         "\n\tConsider to increase param `DataStorageConfiguration#setPointInTimeRecoveryPeriod`. " +
                         "\n\tNodes that hasn't finished their job: " + notReadySrvNodes);
@@ -226,7 +226,7 @@ public class ConsistentCutManager extends GridCacheSharedManagerAdapter {
      */
     public void registerBeforeCommit(IgniteInternalTx tx) {
         // Await ConsistentCutStartRecord has written to WAL.
-        while (latestStartedCutVer.get() < latestCutVersion()) {
+        while (latestStartedCutVer.get() < latestKnownCutVersion()) {
             T2<GridCacheVersion, Long> v = txCutVer.get(tx.xidVersion());
 
             // Wait only commits related to new Consistent Cut.
@@ -251,7 +251,7 @@ public class ConsistentCutManager extends GridCacheSharedManagerAdapter {
             T2<GridCacheVersion, Long> info = txCutVer.get(tx.xidVersion());
 
             log.debug("`registerBeforeCommit` from " + tx.nearXidVersion().asIgniteUuid() + " to " + tx.xid()
-                + " , ver=" + (info == null ? null : info.get2()) + ", cutState = " + cutState + ", latestVer = " + latestCutVersion());
+                + " , ver=" + (info == null ? null : info.get2()) + ", cutState = " + cutState + ", latestVer = " + latestKnownCutVersion());
         }
     }
 
@@ -266,7 +266,7 @@ public class ConsistentCutManager extends GridCacheSharedManagerAdapter {
         else if (cutState.beforeCut(tx.nearXidVersion()))
             cutVer = cutState.prevVersion();
         else
-            cutVer = latestCutVersion();
+            cutVer = latestKnownCutVersion();
 
         tx.txCutVersion(cutVer);
 
@@ -306,16 +306,16 @@ public class ConsistentCutManager extends GridCacheSharedManagerAdapter {
     }
 
     /**
-     * @return Latest Consistent Cut Version.
+     * @return Latest known Consistent Cut Version.
      */
-    public long latestCutVersion() {
+    public long latestKnownCutVersion() {
         return latestKnownCutVer.get();
     }
 
     /**
-     * @return Latest Consistent Cut state.
+     * @return Latest published Consistent Cut state.
      */
-    public ConsistentCutState latestCutState() {
+    public ConsistentCutState latestPublishedCutState() {
         return latestPublishedCutState;
     }
 
@@ -470,7 +470,7 @@ public class ConsistentCutManager extends GridCacheSharedManagerAdapter {
 
         if (log.isDebugEnabled()) {
             log.debug("`handleRemoteTxCutVersion` from " + nearTxVer.asIgniteUuid() + " to " + txVer.asIgniteUuid() +
-                ", txCutVer=" + rmtTxCutVer + ", state " + cutState + ", lastVer = " + latestCutVersion());
+                ", txCutVer=" + rmtTxCutVer + ", state " + cutState + ", lastVer = " + latestKnownCutVersion());
         }
     }
 

@@ -140,7 +140,7 @@ public abstract class AbstractConsistentCutTest extends GridCommonAbstractTest {
         ConsistentCutManager crdCutMgr = grid(0).context().cache().context().consistentCutMgr();
 
         for (int i = 0; i < 100; i++) {
-            long ver = crdCutMgr.latestCutVersion();
+            long ver = crdCutMgr.latestKnownCutVersion();
 
             if (ver > prevCutVer) {
                 if (newCutVer < 0)
@@ -161,13 +161,13 @@ public abstract class AbstractConsistentCutTest extends GridCommonAbstractTest {
             .append(", prevCutVer ").append(prevCutVer);
 
         bld.append("\n\tCoordinator node0 = ").append(U.isLocalNodeCoordinator(grid(0).context().discovery()));
-        bld.append(", latestCutVersion = ").append(crdCutMgr.latestCutVersion());
+        bld.append(", latestCutVersion = ").append(crdCutMgr.latestKnownCutVersion());
         bld.append(", latestGlobalCutReady = ").append(crdCutMgr.latestGlobalCutReady());
 
         for (int i = 0; i < nodes(); i++) {
             ConsistentCutManager cutMgr = grid(i).context().cache().context().consistentCutMgr();
 
-            bld.append("\n\tNode").append(i).append( ": ").append(cutMgr.latestCutState());
+            bld.append("\n\tNode").append(i).append( ": ").append(cutMgr.latestPublishedCutState());
         }
 
         throw new Exception(bld.toString());

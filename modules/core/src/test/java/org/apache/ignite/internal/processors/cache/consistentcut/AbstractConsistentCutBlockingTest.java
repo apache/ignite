@@ -183,7 +183,7 @@ public abstract class AbstractConsistentCutBlockingTest extends AbstractConsiste
      * @param c Test case - list of tuples (prim, backup) to be written.
      */
     protected void runCase(Runnable tx, int nearNodeId, List<T2<Integer, Integer>> c) throws Exception {
-        long prevVer = grid(0).context().cache().context().consistentCutMgr().latestCutVersion();
+        long prevVer = grid(0).context().cache().context().consistentCutMgr().latestKnownCutVersion();
 
         initLatches();
 
@@ -353,7 +353,7 @@ public abstract class AbstractConsistentCutBlockingTest extends AbstractConsiste
 
             // At most 1 sec to wait.
             for (int i = 0; i < 1_000; i++) {
-                ConsistentCutState cutState = cutMgr.apply(n).latestCutState();
+                ConsistentCutState cutState = cutMgr.apply(n).latestPublishedCutState();
 
                 long ver = cutState.version();
 
@@ -380,7 +380,7 @@ public abstract class AbstractConsistentCutBlockingTest extends AbstractConsiste
             .append(", excl node ").append(excl);
 
         for (int n = 0; n < nodes(); n++)
-            bld.append("\nNode").append(n).append( ": ").append(cutMgr.apply(n).latestCutState());
+            bld.append("\nNode").append(n).append( ": ").append(cutMgr.apply(n).latestPublishedCutState());
 
         throw new Exception(bld.toString());
     }
