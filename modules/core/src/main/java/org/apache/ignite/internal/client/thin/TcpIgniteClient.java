@@ -423,30 +423,33 @@ public class TcpIgniteClient implements IgniteClient {
         if (!cfg.isAutoBinaryConfigurationEnabled())
             return;
 
-        ClientInternalBinaryConfiguration clusterBinaryCfg = ch.applyOnDefaultChannel(
+        ClientInternalBinaryConfiguration clusterCfg = ch.applyOnDefaultChannel(
                 c -> c.protocolCtx().isFeatureSupported(ProtocolBitmaskFeature.BINARY_CONFIGURATION)
                 ? c.service(ClientOperation.GET_BINARY_CONFIGURATION, null, r -> new ClientInternalBinaryConfiguration(r.in()))
                 : null,
                 ClientOperation.GET_BINARY_CONFIGURATION);
 
-        if (clusterBinaryCfg == null)
+        if (clusterCfg == null)
             return;
 
-        BinaryConfiguration userBinaryCfg = cfg.getBinaryConfiguration();
+        BinaryConfiguration resCfg = cfg.getBinaryConfiguration();
 
-        userBinaryCfg.setCompactFooter(clusterBinaryCfg.compactFooter());
+        if (resCfg == null)
+            resCfg = new BinaryConfiguration();
 
-        switch (clusterBinaryCfg.binaryNameMapperMode()) {
+        resCfg.setCompactFooter(clusterCfg.compactFooter());
+
+        switch (clusterCfg.binaryNameMapperMode()) {
             case BASIC_FULL:
-                userBinaryCfg.setNameMapper(new BinaryBasicNameMapper().setSimpleName(false));
+                resCfg.setNameMapper(new BinaryBasicNameMapper().setSimpleName(false));
                 break;
 
             case BASIC_SIMPLE:
-                userBinaryCfg.setNameMapper(new BinaryBasicNameMapper().setSimpleName(true));
+                resCfg.setNameMapper(new BinaryBasicNameMapper().setSimpleName(true));
                 break;
 
             case CUSTOM:
-                if (userBinaryCfg.getNameMapper() == null || userBinaryCfg.getNameMapper() instanceof BinaryBasicNameMapper) {
+                if (resCfg.getNameMapper() == null || resCfg.getNameMapper() instanceof BinaryBasicNameMapper) {
                     throw new IgniteClientException(ClientStatus.FAILED,
                             "Custom binary name mapper is configured on the server, but not on the client. "
                                     + "Update client BinaryConfigration to match the server.");
@@ -455,7 +458,7 @@ public class TcpIgniteClient implements IgniteClient {
                 break;
         }
 
-        marsh.setBinaryConfiguration(userBinaryCfg);
+        marsh.setBinaryConfiguration(resCfg);
     }
 
 
