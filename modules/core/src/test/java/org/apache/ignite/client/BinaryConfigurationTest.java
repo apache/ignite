@@ -38,10 +38,7 @@ public class BinaryConfigurationTest extends AbstractThinClientTest {
     @Test
     public void testAutoBinaryConfigurationEnabledRetrievesValuesFromServer() throws Exception {
         try (Ignite server = startGrid(0); IgniteClient client = startClient(0)) {
-            client.getOrCreateCache("c").put(1, new Person(1, "1"));
-
-            BinaryObjectImpl res = server.cache("c").<Integer, BinaryObjectImpl>withKeepBinary().get(1);
-            assertTrue(res.isFlagSet(FLAG_COMPACT_FOOTER));
+            assertClientCompactFooter(server, client, true);
         }
     }
 
@@ -49,10 +46,14 @@ public class BinaryConfigurationTest extends AbstractThinClientTest {
     public void testAutoBinaryConfigurationDisabledKeepsClientSettingsAsIs() throws Exception {
         try (Ignite server = startGrid(0);
                 IgniteClient client = Ignition.startClient(getClientConfiguration(server).setAutoBinaryConfigurationEnabled(false))) {
-            client.getOrCreateCache("c").put(1, new Person(1, "1"));
-
-            BinaryObjectImpl res = server.cache("c").<Integer, BinaryObjectImpl>withKeepBinary().get(1);
-            assertFalse(res.isFlagSet(FLAG_COMPACT_FOOTER));
+            assertClientCompactFooter(server, client, false);
         }
+    }
+
+    private void assertClientCompactFooter(Ignite server, IgniteClient client, boolean expected) {
+        client.getOrCreateCache("c").put(1, new Person(1, "1"));
+        BinaryObjectImpl res = server.cache("c").<Integer, BinaryObjectImpl>withKeepBinary().get(1);
+
+        assertEquals(expected, res.isFlagSet(FLAG_COMPACT_FOOTER));
     }
 }
