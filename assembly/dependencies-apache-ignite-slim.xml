@@ -141,7 +141,6 @@
                 <!-- Removed from slim packaging are: -->
                 <exclude>${project.groupId}:ignite-cassandra-serializers</exclude>
                 <exclude>${project.groupId}:ignite-cassandra-store</exclude>
-                <exclude>${project.groupId}:ignite-cloud</exclude>
                 <exclude>${project.groupId}:ignite-direct-io</exclude>
                 <exclude>${project.groupId}:ignite-jcl</exclude>
                 <exclude>${project.groupId}:ignite-ml</exclude>
@@ -154,7 +153,6 @@
                 <exclude>${project.groupId}:ignite-osgi-paxlogging</exclude>
                 <exclude>${project.groupId}:ignite-ssh</exclude>
                 <exclude>${project.groupId}:ignite-web</exclude>
-                <exclude>${project.groupId}:ignite-yarn</exclude>
                 <exclude>${project.groupId}:ignite-zookeeper</exclude>
             </excludes>
             <sources>

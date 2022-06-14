@@ -72,7 +72,6 @@ All optional modules can be imported just like the core module, but with differe
 
 The following modules are available:
 - ignite-cassandra (for Apache Cassandra integration)
-- ignite-cloud (for Apache JClouds integration) 
 - ignite-indexing (for SQL querying and indexing)
 - ignite-jcl (for Apache Commons logging)
 - ignite-jta (for XA integration)
@@ -88,7 +87,6 @@ The following modules are available:
 - ignite-ssh (for starting grid nodes on remote machines)
 - ignite-urideploy (for URI-based deployment)
 - ignite-web (for Web Sessions Clustering)
-- ignite-yarn (for integration with Apache Hadoop Yarn)
 - ignite-zookeeper (for cluster discovery based on Apache Zookeeper)
 
 For example, if you want to use Apache Ignite Spring-based configuration,
