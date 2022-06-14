@@ -36,9 +36,9 @@
     <packaging>pom</packaging>
 
     <properties>
-        <ignite.thin.full.version>
+        <ignite.platform.full.version>
             ${ignite.majorVersion}.${ignite.minorVersion}.${ignite.incrementalVersion}.${ignite.buildNumber}
-        </ignite.thin.full.version>
+        </ignite.platform.full.version>
     </properties>
 
     <build>
@@ -59,7 +59,7 @@
 
                                 <replaceregexp byline="true" encoding="UTF-8">
                                     <regexp pattern="(project\(.*\s)\d+\.\d+\.\d+.*?(\))" />
-                                    <substitution expression="\1${ignite.thin.full.version}\2" />
+                                    <substitution expression="\1${ignite.platform.full.version}\2" />
                                     <fileset dir="${project.basedir}/">
                                         <include name="**/CMakeLists.txt" />
                                     </fileset>
