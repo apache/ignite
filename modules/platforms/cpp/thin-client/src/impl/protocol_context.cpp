@@ -54,6 +54,11 @@ namespace ignite
                 SetAllFeatures(features);
             }
 
+            ProtocolContext::~ProtocolContext()
+            {
+                // No-op.
+            }
+
             ProtocolContext::ProtocolContext(const ProtocolVersion& ver) :
                 ver(ver),
                 features()
@@ -93,7 +98,7 @@ namespace ignite
 
             void ProtocolContext::SetFeature(std::vector<int8_t>& features, BitmaskFeature::Type feature)
             {
-                size_t byteN = (feature + 7) / 8;
+                size_t byteN = feature / 8;
                 size_t bitN = feature % 8;
 
                 if (features.size() <= byteN)

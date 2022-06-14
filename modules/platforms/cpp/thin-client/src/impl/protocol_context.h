@@ -111,6 +111,11 @@ namespace ignite
                 explicit ProtocolContext(const ProtocolVersion& ver);
 
                 /**
+                 * Destructor.
+                 */
+                ~ProtocolContext();
+
+                /**
                  * Get protocol version.
                  *
                  * @return Protocol version.
