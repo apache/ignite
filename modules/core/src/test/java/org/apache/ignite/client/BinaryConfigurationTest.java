@@ -21,6 +21,9 @@ import static org.apache.ignite.internal.binary.BinaryUtils.FLAG_COMPACT_FOOTER;
 
 import org.apache.ignite.Ignite;
 import org.apache.ignite.Ignition;
+import org.apache.ignite.binary.BinaryBasicNameMapper;
+import org.apache.ignite.configuration.BinaryConfiguration;
+import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.internal.binary.BinaryObjectImpl;
 import org.apache.ignite.internal.client.thin.AbstractThinClientTest;
 import org.junit.Test;
@@ -29,31 +32,48 @@ import org.junit.Test;
  * Tests binary configuration behavior.
  */
 public class BinaryConfigurationTest extends AbstractThinClientTest {
-    // TODO: See BinaryConfigurationRetrievalTest
     @Override
-    protected void afterTestsStopped() throws Exception {
+    protected void afterTest() throws Exception {
         stopAllGrids();
+        super.afterTest();
     }
 
     @Test
     public void testAutoBinaryConfigurationEnabledRetrievesValuesFromServer() throws Exception {
-        try (Ignite server = startGrid(0); IgniteClient client = startClient(0)) {
-            assertClientCompactFooter(server, client, true);
+        Ignite server = startGrid(0);
+
+        try (IgniteClient client = startClient(0)) {
+            BinaryObjectImpl res = getClientBinaryObjectFromServer(server, client);
+
+            // Server-side defaults are compact footers and full name mapper.
+            assertTrue(res.isFlagSet(FLAG_COMPACT_FOOTER));
+            assertEquals("org.apache.ignite.client.Person", res.type().typeName());
         }
     }
 
     @Test
     public void testAutoBinaryConfigurationDisabledKeepsClientSettingsAsIs() throws Exception {
-        try (Ignite server = startGrid(0);
-                IgniteClient client = Ignition.startClient(getClientConfiguration(server).setAutoBinaryConfigurationEnabled(false))) {
-            assertClientCompactFooter(server, client, false);
+        Ignite server = startGrid(0);
+
+        BinaryConfiguration binaryCfg = new BinaryConfiguration()
+                .setCompactFooter(false)
+                .setNameMapper(new BinaryBasicNameMapper().setSimpleName(true));
+
+        ClientConfiguration clientCfg = getClientConfiguration(server)
+                .setAutoBinaryConfigurationEnabled(false)
+                .setBinaryConfiguration(binaryCfg);
+
+        try (IgniteClient client = Ignition.startClient(clientCfg)) {
+            BinaryObjectImpl res = getClientBinaryObjectFromServer(server, client);
+
+            assertFalse(res.isFlagSet(FLAG_COMPACT_FOOTER));
+            assertEquals("Person", res.type().typeName());
         }
     }
 
-    private void assertClientCompactFooter(Ignite server, IgniteClient client, boolean expected) {
+    private BinaryObjectImpl getClientBinaryObjectFromServer(Ignite server, IgniteClient client) {
         client.getOrCreateCache("c").put(1, new Person(1, "1"));
-        BinaryObjectImpl res = server.cache("c").<Integer, BinaryObjectImpl>withKeepBinary().get(1);
 
-        assertEquals(expected, res.isFlagSet(FLAG_COMPACT_FOOTER));
+        return server.cache("c").<Integer, BinaryObjectImpl>withKeepBinary().get(1);
     }
 }
