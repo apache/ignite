@@ -44,7 +44,7 @@ Apache Ignite with LGPL Maven Build Instructions
 
         ./mvnw clean install -Pall-java,all-scala,licenses -DskipTests
 
-   or if you have to built Apache Ignite with Apache Ignite .NET use following command:
+   or if you have to build .NET part as well, use the following command:
    (Note that 'doxygen', '.NET Core SDK 3.1', 'PowerShell' should be installed before running this command.)
 
         ./mvnw clean install -Pall-java,all-scala,licenses,thin -DskipTests -DclientDocs
