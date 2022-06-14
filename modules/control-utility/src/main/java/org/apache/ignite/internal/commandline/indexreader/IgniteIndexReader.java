@@ -1154,7 +1154,7 @@ public class IgniteIndexReader implements AutoCloseable {
                             pageContent.items.forEach(itemStorage::add);
                         }
 
-                        pageId = ((BPlusIO)pageIO).getForward(addr);
+                        pageId = ((BPlusIO<?>)pageIO).getForward(addr);
                     }
                     catch (Throwable e) {
                         treeCtx.errors.computeIfAbsent(pageId, k -> new LinkedList<>()).add(e);
@@ -1361,7 +1361,7 @@ public class IgniteIndexReader implements AutoCloseable {
         CHECK_PARTS("--check-parts");
 
         /** */
-        private String arg;
+        private final String arg;
 
         /** */
         Args(String arg) {
@@ -1440,7 +1440,7 @@ public class IgniteIndexReader implements AutoCloseable {
     private class InnerPageIOProcessor implements PageIOProcessor {
         /** {@inheritDoc} */
         @Override public PageContent getContent(PageIO io, long addr, long pageId, TreeTraverseContext nodeCtx) {
-            BPlusInnerIO innerIo = (BPlusInnerIO)io;
+            BPlusInnerIO<?> innerIo = (BPlusInnerIO<?>)io;
 
             int cnt = innerIo.getCount(addr);
 
@@ -1487,14 +1487,14 @@ public class IgniteIndexReader implements AutoCloseable {
 
             List<Object> items = new LinkedList<>();
 
-            BPlusLeafIO leafIO = (BPlusLeafIO)io;
+            BPlusLeafIO<?> leafIO = (BPlusLeafIO<?>)io;
 
             for (int j = 0; j < leafIO.getCount(addr); j++) {
                 Object idxItem = null;
 
                 try {
                     if (io instanceof IndexStorageImpl.MetaStoreLeafIO) {
-                        idxItem = ((IndexStorageImpl.MetaStoreLeafIO)io).getLookupRow(null, addr, j);
+                        idxItem = ((BPlusIO<IndexStorageImpl.IndexItem>)io).getLookupRow(null, addr, j);
 
                         sb.a(idxItem + " ");
                     }
@@ -1513,14 +1513,14 @@ public class IgniteIndexReader implements AutoCloseable {
         }
 
         /** */
-        private Object getLeafItem(BPlusLeafIO io, long pageId, long addr, int idx, TreeTraverseContext nodeCtx) {
+        private Object getLeafItem(BPlusLeafIO<?> io, long pageId, long addr, int idx, TreeTraverseContext nodeCtx) {
             if (isLinkIo(io)) {
                 final long link = getLink(io, addr, idx);
 
                 final int cacheId;
 
                 if (io instanceof AbstractDataLeafIO && ((AbstractDataLeafIO)io).storeCacheId())
-                    cacheId = ((AbstractDataLeafIO)io).getCacheId(addr, idx);
+                    cacheId = ((RowLinkIO)io).getCacheId(addr, idx);
                 else
                     cacheId = nodeCtx.cacheId;
 
@@ -1559,7 +1559,7 @@ public class IgniteIndexReader implements AutoCloseable {
                             PageIO dataIo = PageIO.getPageIO(getType(dataBuf), getVersion(dataBuf));
 
                             if (dataIo instanceof AbstractDataPageIO) {
-                                AbstractDataPageIO dataPageIO = (AbstractDataPageIO)dataIo;
+                                AbstractDataPageIO<?> dataPageIO = (AbstractDataPageIO<?>)dataIo;
 
                                 DataPagePayload payload = dataPageIO.readPayload(dataBufAddr, linkedItemId, pageSize);
 
@@ -1606,7 +1606,7 @@ public class IgniteIndexReader implements AutoCloseable {
         }
 
         /** */
-        private long getLink(BPlusLeafIO io, long addr, int idx) {
+        private long getLink(BPlusLeafIO<?> io, long addr, int idx) {
             if (io instanceof RowLinkIO)
                 return ((RowLinkIO)io).getLink(addr, idx);
             if (io instanceof InlineIO)
