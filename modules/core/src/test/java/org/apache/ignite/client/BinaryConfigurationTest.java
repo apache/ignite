@@ -52,6 +52,26 @@ public class BinaryConfigurationTest extends AbstractThinClientTest {
     }
 
     @Test
+    public void testAutoBinaryConfigurationEnabledOverridesExplicitClientSettings() throws Exception {
+        Ignite server = startGrid(0);
+
+        BinaryConfiguration binaryCfg = new BinaryConfiguration()
+                .setCompactFooter(false)
+                .setNameMapper(new BinaryBasicNameMapper().setSimpleName(true));
+
+        ClientConfiguration clientCfg = getClientConfiguration(server)
+                .setBinaryConfiguration(binaryCfg);
+
+        try (IgniteClient client = Ignition.startClient(clientCfg)) {
+            BinaryObjectImpl res = getClientBinaryObjectFromServer(server, client);
+
+            // Server-side defaults are compact footers and full name mapper.
+            assertTrue(res.isFlagSet(FLAG_COMPACT_FOOTER));
+            assertEquals("org.apache.ignite.client.Person", res.type().typeName());
+        }
+    }
+
+    @Test
     public void testAutoBinaryConfigurationDisabledKeepsClientSettingsAsIs() throws Exception {
         Ignite server = startGrid(0);
 
