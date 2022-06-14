@@ -22,10 +22,13 @@ import static org.apache.ignite.internal.binary.BinaryUtils.FLAG_COMPACT_FOOTER;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.binary.BinaryBasicNameMapper;
+import org.apache.ignite.binary.BinaryNameMapper;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.internal.binary.BinaryObjectImpl;
 import org.apache.ignite.internal.client.thin.AbstractThinClientTest;
+import org.apache.ignite.internal.processors.platform.client.IgniteClientException;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
 
 /**
@@ -91,9 +94,44 @@ public class BinaryConfigurationTest extends AbstractThinClientTest {
         }
     }
 
+    @Test
+    public void testCustomMapperOnServerDefaultMapperOnClientThrows() throws Exception {
+        BinaryConfiguration serverBinaryCfg = new BinaryConfiguration()
+                .setNameMapper(new CustomBinaryNameMapper());
+
+        Ignite server = startGrid("0", cfg -> cfg.setBinaryConfiguration(serverBinaryCfg));
+
+        BinaryConfiguration binaryCfg = new BinaryConfiguration()
+                .setNameMapper(new BinaryBasicNameMapper());
+
+        ClientConfiguration clientCfg = getClientConfiguration(server)
+                .setBinaryConfiguration(binaryCfg);
+
+        GridTestUtils.assertThrowsAnyCause(null, () -> Ignition.startClient(clientCfg), IgniteClientException.class,
+                "Custom binary name mapper is configured on the server, but not on the client."
+                        + " Update client BinaryConfigration to match the server.");
+    }
+
+    @Test
+    public void testCustomMapperOnServerCustomMapperOnClientDoesNotThrow() {
+        // TODO
+    }
+
     private BinaryObjectImpl getClientBinaryObjectFromServer(Ignite server, IgniteClient client) {
         client.getOrCreateCache("c").put(1, new Person(1, "1"));
 
         return server.cache("c").<Integer, BinaryObjectImpl>withKeepBinary().get(1);
+    }
+
+    private static class CustomBinaryNameMapper implements BinaryNameMapper {
+        /** {@inheritDoc} */
+        @Override public String typeName(String clsName) {
+            return clsName + "_";
+        }
+
+        /** {@inheritDoc} */
+        @Override public String fieldName(String fieldName) {
+            return fieldName + "!";
+        }
     }
 }
