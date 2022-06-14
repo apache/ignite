@@ -60,7 +60,6 @@
         <module>modules/slf4j</module>
         <module>modules/jcl</module>
         <module>modules/codegen</module>
-        <module>modules/cloud</module>
         <module>modules/zookeeper</module>
         <module>modules/osgi-paxlogging</module>
         <module>modules/osgi-karaf</module>
