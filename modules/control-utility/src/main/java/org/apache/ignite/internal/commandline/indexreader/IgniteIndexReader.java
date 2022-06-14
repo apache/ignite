@@ -1341,7 +1341,7 @@ public class IgniteIndexReader implements AutoCloseable {
         }
     }
 
-/**
+    /**
      * Enum of possible utility arguments.
      */
     public enum Args {
