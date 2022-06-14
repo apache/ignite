@@ -41,6 +41,25 @@
         </ignite.thin.full.version>
     </properties>
 
+    <dependencies>
+        <!--
+            The modules below are required to build the .NET sources.
+            These dependencies are required for the maven reactor to build them first.
+        -->
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>ignite-core</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>ignite-indexing</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>ignite-spring</artifactId>
+        </dependency>
+    </dependencies>
+
     <build>
         <plugins>
             <plugin>
@@ -83,7 +102,7 @@
                             <tasks>
                                 <exec executable="pwsh" dir="${project.basedir}" failonerror="true">
                                     <arg line="${project.basedir}/build.ps1"/>
-                                    <arg line="-skipJava -skipDotNet -skipDotNetCore -jarDirs ${project.basedir}/bin/libs"/>
+                                    <arg line="-skipJava -skipExamples -jarDirs ${project.basedir}/bin/libs"/>
                                 </exec>
                             </tasks>
                         </configuration>

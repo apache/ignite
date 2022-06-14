@@ -175,6 +175,15 @@
                     <name>clientDocs</name>
                 </property>
             </activation>
+
+            <dependencies>
+                <dependency>
+                    <groupId>${project.groupId}</groupId>
+                    <artifactId>ignite-donet-thin-client</artifactId>
+                    <version>${project.version}</version>
+                </dependency>
+            </dependencies>
+
             <build>
                 <plugins>
                     <plugin>
