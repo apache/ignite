@@ -37,6 +37,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.ObjLongConsumer;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.regex.Matcher;
@@ -1031,42 +1032,24 @@ public class IgniteIndexReader implements AutoCloseable {
      *
      * @param rootPageId Root page id.
      * @param treeName Tree name.
-     * @param innerCb Inner pages callback.
      * @param leafCb Leaf pages callback.
-     * @param itemCb Items callback.
      * @param itemStorage Items storage.
      * @return Tree traversal info.
      */
     TreeTraversalInfo traverseTree(
         long rootPageId,
         String treeName,
-        @Nullable PageCallback innerCb,
-        @Nullable PageCallback leafCb,
-        @Nullable ItemCallback itemCb,
+        @Nullable ObjLongConsumer<PageContent> leafCb,
         ItemStorage itemStorage
     ) {
         Set<Long> innerPageIds = new HashSet<>();
 
-        PageCallback innerCb0 = (content, pageId) -> {
-            if (innerCb != null)
-                innerCb.cb(content, pageId);
-
-            innerPageIds.add(normalizePageId(pageId));
-        };
-
-        ItemCallback itemCb0 = (currPageId, item, link) -> {
-            if (itemCb != null)
-                itemCb.cb(currPageId, item, link);
-
-            itemStorage.add(item);
-        };
-
         TreeTraverseContext ctx = new TreeTraverseContext(
             treeName,
             filePageStore(partId(rootPageId)),
-            innerCb0,
+            (content, pageId) -> innerPageIds.add(normalizePageId(pageId)),
             leafCb,
-            itemCb0
+            (currPageId, item, link) -> itemStorage.add(item)
         );
 
         getTreeNode(rootPageId, ctx);
@@ -1083,7 +1066,7 @@ public class IgniteIndexReader implements AutoCloseable {
      * @return Tree traversal info.
      */
     TreeTraversalInfo traverseTree(long rootPageId, String treeName, ItemStorage itemStorage) {
-        return traverseTree(rootPageId, treeName, null, null, null, itemStorage);
+        return traverseTree(rootPageId, treeName, null, itemStorage);
     }
 
     /**
@@ -1471,7 +1454,7 @@ public class IgniteIndexReader implements AutoCloseable {
                 children.add(getTreeNode(id, nodeCtx));
 
             if (nodeCtx.innerCb != null)
-                nodeCtx.innerCb.cb(content, pageId);
+                nodeCtx.innerCb.accept(content, pageId);
 
             return new TreeNode(pageId, content.io, null, children);
         }
@@ -1620,7 +1603,7 @@ public class IgniteIndexReader implements AutoCloseable {
         /** {@inheritDoc} */
         @Override public TreeNode getNode(PageContent content, long pageId, TreeTraverseContext nodeCtx) {
             if (nodeCtx.leafCb != null)
-                nodeCtx.leafCb.cb(content, pageId);
+                nodeCtx.leafCb.accept(content, pageId);
 
             if (nodeCtx.itemCb != null) {
                 for (Object item : content.items)

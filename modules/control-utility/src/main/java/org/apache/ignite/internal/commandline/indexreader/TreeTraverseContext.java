@@ -20,6 +20,7 @@ package org.apache.ignite.internal.commandline.indexreader;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.ObjLongConsumer;
 
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStore;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
@@ -47,10 +48,10 @@ class TreeTraverseContext {
     final Map<Long, List<Throwable>> errors;
 
     /** Callback that is called for each inner node page. */
-    @Nullable final PageCallback innerCb;
+    @Nullable final ObjLongConsumer<PageContent> innerCb;
 
     /** Callback that is called for each leaf node page.*/
-    @Nullable final PageCallback leafCb;
+    @Nullable final ObjLongConsumer<PageContent> leafCb;
 
     /** Callback that is called for each leaf item. */
     @Nullable final ItemCallback itemCb;
@@ -59,8 +60,8 @@ class TreeTraverseContext {
     public TreeTraverseContext(
         String treeName,
         FilePageStore store,
-        @Nullable PageCallback innerCb,
-        @Nullable PageCallback leafCb,
+        @Nullable ObjLongConsumer<PageContent> innerCb,
+        @Nullable ObjLongConsumer<PageContent> leafCb,
         @Nullable ItemCallback itemCb
     ) {
         this.treeName = treeName;
