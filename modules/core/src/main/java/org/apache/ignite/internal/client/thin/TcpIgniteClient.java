@@ -461,7 +461,6 @@ public class TcpIgniteClient implements IgniteClient {
         marsh.setBinaryConfiguration(resCfg);
     }
 
-
     /**
      * Thin client implementation of {@link BinaryMetadataHandler}.
      */

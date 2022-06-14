@@ -35,12 +35,16 @@ import static org.apache.ignite.internal.binary.BinaryUtils.FLAG_COMPACT_FOOTER;
  * Tests binary configuration behavior.
  */
 public class BinaryConfigurationTest extends AbstractThinClientTest {
+    /** {@inheritDoc} */
     @Override
     protected void afterTest() throws Exception {
         stopAllGrids();
         super.afterTest();
     }
 
+    /**
+     * Tests that client retrieves binary configuration from the server by default.
+     */
     @Test
     public void testAutoBinaryConfigurationEnabledRetrievesValuesFromServer() throws Exception {
         Ignite server = startGrid(0);
@@ -54,6 +58,9 @@ public class BinaryConfigurationTest extends AbstractThinClientTest {
         }
     }
 
+    /**
+     * Tests that client retrieves binary configuration from the server and overrides client configuration settings.
+     */
     @Test
     public void testAutoBinaryConfigurationEnabledOverridesExplicitClientSettings() throws Exception {
         Ignite server = startGrid(0);
@@ -74,6 +81,9 @@ public class BinaryConfigurationTest extends AbstractThinClientTest {
         }
     }
 
+    /**
+     * Tests that client does not retrieve binary configuration from the server when this behavior is disabled.
+     */
     @Test
     public void testAutoBinaryConfigurationDisabledKeepsClientSettingsAsIs() throws Exception {
         Ignite server = startGrid(0);
@@ -94,6 +104,9 @@ public class BinaryConfigurationTest extends AbstractThinClientTest {
         }
     }
 
+    /**
+     * Tests that client throws an exception on start when server has a custom mapper configured, but client has not.
+     */
     @Test
     public void testCustomMapperOnServerDefaultMapperOnClientThrows() throws Exception {
         BinaryConfiguration serverBinaryCfg = new BinaryConfiguration()
@@ -112,6 +125,9 @@ public class BinaryConfigurationTest extends AbstractThinClientTest {
                         + " Update client BinaryConfigration to match the server.");
     }
 
+    /**
+     * Tests that client works as expected when custom mapper is configured on both sides.
+     */
     @Test
     public void testCustomMapperOnServerCustomMapperOnClientDoesNotThrow() throws Exception {
         BinaryConfiguration binaryCfg = new BinaryConfiguration()
@@ -130,12 +146,22 @@ public class BinaryConfigurationTest extends AbstractThinClientTest {
         }
     }
 
+    /**
+     * Inserts an object from the client and retrieves it as a binary object from the server.
+     *
+     * @param server Server.
+     * @param client Client.
+     * @return Binary object.
+     */
     private BinaryObjectImpl getClientBinaryObjectFromServer(Ignite server, IgniteClient client) {
         client.getOrCreateCache("c").put(1, new Person(1, "1"));
 
         return server.cache("c").<Integer, BinaryObjectImpl>withKeepBinary().get(1);
     }
 
+    /**
+     * Custom mapper.
+     */
     private static class CustomBinaryNameMapper implements BinaryNameMapper {
         /** {@inheritDoc} */
         @Override public String typeName(String clsName) {
