@@ -36,7 +36,7 @@
     <packaging>pom</packaging>
 
     <properties>
-        <ignite.thin.full.version>
+        <ignite.platform.full.version>
             ${ignite.majorVersion}.${ignite.minorVersion}.${ignite.incrementalVersion}.${ignite.buildNumber}
         </ignite.thin.full.version>
     </properties>
