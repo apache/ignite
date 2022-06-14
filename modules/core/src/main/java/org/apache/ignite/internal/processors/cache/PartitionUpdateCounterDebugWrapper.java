@@ -273,6 +273,11 @@ public class PartitionUpdateCounterDebugWrapper implements PartitionUpdateCounte
     }
 
     /** {@inheritDoc} */
+    @Override public Object comparableState() {
+        return delegate.comparableState();
+    }
+
+    /** {@inheritDoc} */
     @Override public String toString() {
         return delegate.toString();
     }

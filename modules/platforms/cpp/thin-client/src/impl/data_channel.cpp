@@ -31,26 +31,6 @@ namespace ignite
     {
         namespace thin
         {
-            const ProtocolVersion DataChannel::VERSION_1_2_0(1, 2, 0);
-            const ProtocolVersion DataChannel::VERSION_1_3_0(1, 3, 0);
-            const ProtocolVersion DataChannel::VERSION_1_4_0(1, 4, 0);
-            const ProtocolVersion DataChannel::VERSION_1_5_0(1, 5, 0);
-            const ProtocolVersion DataChannel::VERSION_1_6_0(1, 6, 0);
-            const ProtocolVersion DataChannel::VERSION_1_7_0(1, 7, 0);
-            const ProtocolVersion DataChannel::VERSION_DEFAULT(VERSION_1_7_0);
-
-            DataChannel::VersionSet::value_type supportedArray[] = {
-                DataChannel::VERSION_1_7_0,
-                DataChannel::VERSION_1_6_0,
-                DataChannel::VERSION_1_5_0,
-                DataChannel::VERSION_1_4_0,
-                DataChannel::VERSION_1_3_0,
-                DataChannel::VERSION_1_2_0,
-            };
-
-            const DataChannel::VersionSet DataChannel::supportedVersions(supportedArray,
-                supportedArray + (sizeof(supportedArray) / sizeof(supportedArray[0])));
-
             DataChannel::DataChannel(
                 uint64_t id,
                 const network::EndPoint& addr,
@@ -67,7 +47,7 @@ namespace ignite
                 node(addr),
                 config(cfg),
                 typeMgr(typeMgr),
-                currentVersion(VERSION_DEFAULT),
+                protocolContext(),
                 reqIdCounter(0),
                 responseMutex(),
                 userThreadPool(userThreadPool)
@@ -82,7 +62,7 @@ namespace ignite
 
             void DataChannel::StartHandshake()
             {
-                DoHandshake(VERSION_DEFAULT);
+                DoHandshake(ProtocolContext::VERSION_LATEST);
             }
 
             void DataChannel::Close(const IgniteError* err)
@@ -123,7 +103,7 @@ namespace ignite
                 // Space for RequestSize + OperationCode + RequestID.
                 outStream.Reserve(4 + 2 + 8);
 
-                req.Write(writer, currentVersion);
+                req.Write(writer, protocolContext);
 
                 int64_t reqId = GenerateRequestId();
                 req.SetId(reqId);
@@ -232,12 +212,12 @@ namespace ignite
 
             bool DataChannel::DoHandshake(const ProtocolVersion& propVer)
             {
-                currentVersion = propVer;
+                ProtocolContext context(propVer);
 
-                return Handshake(propVer);
+                return Handshake(context);
             }
 
-            bool DataChannel::Handshake(const ProtocolVersion& propVer)
+            bool DataChannel::Handshake(const ProtocolContext& context)
             {
                 // Allocating 4 KB just in case.
                 enum {
@@ -251,17 +231,19 @@ namespace ignite
                 int32_t lenPos = outStream.Reserve(4);
                 writer.WriteInt8(MessageType::HANDSHAKE);
 
-                writer.WriteInt16(propVer.GetMajor());
-                writer.WriteInt16(propVer.GetMinor());
-                writer.WriteInt16(propVer.GetMaintenance());
+                const ProtocolVersion& ver = context.GetVersion();
+
+                writer.WriteInt16(ver.GetMajor());
+                writer.WriteInt16(ver.GetMinor());
+                writer.WriteInt16(ver.GetMaintenance());
 
                 writer.WriteInt8(ClientType::THIN_CLIENT);
 
-                if (propVer >= VERSION_1_7_0) {
-                    // Use features for any new changes in protocol.
-                    int8_t features[] = {0};
+                if (context.IsFeatureSupported(VersionFeature::BITMAP_FEATURES))
+                {
+                    std::vector<int8_t> features = ProtocolContext::GetSupportedFeaturesMask();
 
-                    writer.WriteInt8Array(features, 0);
+                    writer.WriteInt8Array(&features[0], static_cast<int32_t>(features.size()));
                 }
 
                 writer.WriteString(config.GetUser());
@@ -298,7 +280,9 @@ namespace ignite
 
                     int32_t errorCode = reader.ReadInt32();
 
-                    bool shouldRetry = IsVersionSupported(resVer) && resVer != currentVersion;
+                    bool shouldRetry = ProtocolContext::IsVersionSupported(resVer) &&
+                        resVer != protocolContext.GetVersion();
+
                     if (shouldRetry)
                         shouldRetry = DoHandshake(resVer);
 
@@ -317,7 +301,7 @@ namespace ignite
                     return;
                 }
 
-                if (currentVersion >= VERSION_1_7_0)
+                if (protocolContext.IsFeatureSupported(VersionFeature::BITMAP_FEATURES))
                 {
                     int32_t len = reader.ReadInt8Array(0, 0);
                     std::vector<int8_t> features;
@@ -327,9 +311,11 @@ namespace ignite
                         features.resize(static_cast<size_t>(len));
                         reader.ReadInt8Array(features.data(), len);
                     }
+
+                    protocolContext.SetFeatures(features);
                 }
 
-                if (currentVersion >= VERSION_1_4_0)
+                if (protocolContext.IsFeatureSupported(VersionFeature::PARTITION_AWARENESS))
                 {
                     Guid nodeGuid = reader.ReadGuid();
 
@@ -338,11 +324,6 @@ namespace ignite
 
                 handshakePerformed = true;
                 stateHandler.OnHandshakeSuccess(id);
-            }
-
-            bool DataChannel::IsVersionSupported(const ProtocolVersion& ver)
-            {
-                return supportedVersions.find(ver) != supportedVersions.end();
             }
 
             void DataChannel::DeserializeMessage(const network::DataBuffer &data, Response &msg)
@@ -354,7 +335,7 @@ namespace ignite
 
                 binary::BinaryReaderImpl reader(&inStream);
 
-                msg.Read(reader, currentVersion);
+                msg.Read(reader, protocolContext);
             }
 
             void DataChannel::FailPendingRequests(const IgniteError* err)
