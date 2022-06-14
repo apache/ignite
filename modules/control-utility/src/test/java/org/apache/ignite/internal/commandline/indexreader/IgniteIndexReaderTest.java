@@ -269,11 +269,11 @@ public class IgniteIndexReaderTest extends GridCommonAbstractTest {
         File dir = new File(workDir, dataDir(cacheGrp));
 
         try (IgniteIndexReader reader = new IgniteIndexReader(null, false, null, createFilePageStoreFactory(dir))) {
-            IgniteBiTuple<Long, Long> partitionRoots = reader.partitionRoots(partMetaPageId(INDEX_PARTITION, FLAG_IDX));
+            long[] partitionRoots = reader.partitionRoots(partMetaPageId(INDEX_PARTITION, FLAG_IDX));
 
             ItemsListStorage<IndexStorageImpl.IndexItem> idxItemStorage = new ItemsListStorage<>();
 
-            reader.traverseTree(partitionRoots.get1(), "MetaTree", idxItemStorage);
+            reader.traverseTree(partitionRoots[0], "MetaTree", idxItemStorage);
 
             // Take any index item.
             IndexStorageImpl.IndexItem idxItem = idxItemStorage.iterator().next();

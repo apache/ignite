@@ -59,6 +59,7 @@ import org.apache.ignite.internal.processors.cache.persistence.IndexStorageImpl;
 import org.apache.ignite.internal.processors.cache.persistence.StorageException;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStore;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
+import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreV2;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.io.PagesListMetaIO;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.io.PagesListNodeIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.AbstractDataPageIO;
@@ -91,6 +92,7 @@ import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toList;
+import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_PAGE_SIZE;
 import static org.apache.ignite.internal.commandline.argument.parser.CLIArgument.mandatoryArg;
 import static org.apache.ignite.internal.commandline.argument.parser.CLIArgument.optionalArg;
 import static org.apache.ignite.internal.commandline.indexreader.IgniteIndexReader.Args.CHECK_PARTS;
@@ -320,16 +322,16 @@ public class IgniteIndexReader implements AutoCloseable {
      * @return Tuple consisting of meta tree root page and pages list root page.
      * @throws IgniteCheckedException If failed.
      */
-    IgniteBiTuple<Long, Long> partitionRoots(long pageMetaPageId) throws IgniteCheckedException {
+    long[] partitionRoots(long pageMetaPageId) throws IgniteCheckedException {
         return doWithBuffer((buf, addr) -> {
             readPage(filePageStore(partId(pageMetaPageId)), pageMetaPageId, buf);
 
             PageMetaIO pageMetaIO = PageIO.getPageIO(addr);
 
-            return new IgniteBiTuple<>(
+            return new long[] {
                 normalizePageId(pageMetaIO.getTreeRoot(addr)),
                 normalizePageId(pageMetaIO.getReuseListRoot(addr))
-            );
+            };
         });
     }
 
@@ -351,10 +353,10 @@ public class IgniteIndexReader implements AutoCloseable {
 
         Set<Long> pageIds = new HashSet<>();
 
-        IgniteBiTuple<Long, Long> indexPartitionRoots = partitionRoots(partMetaPageId(INDEX_PARTITION, FLAG_IDX));
+        long[] indexPartitionRoots = partitionRoots(partMetaPageId(INDEX_PARTITION, FLAG_IDX));
 
-        long metaTreeRootId = indexPartitionRoots.get1();
-        long pageListMetaPageId = indexPartitionRoots.get2();
+        long metaTreeRootId = indexPartitionRoots[0];
+        long pageListMetaPageId = indexPartitionRoots[1];
 
         // Traversing trees.
         Map<String, TreeTraversalInfo> treeInfo =
@@ -415,7 +417,7 @@ public class IgniteIndexReader implements AutoCloseable {
             printErr("---");
             printErr("Errors:");
 
-            errors.forEach(this::printStackTrace);
+            errors.forEach(e -> print(e.getMessage()));
         }
 
         print("---");
@@ -1273,8 +1275,8 @@ public class IgniteIndexReader implements AutoCloseable {
                     String.class
             ),
             optionalArg(PART_CNT.arg(), "full partitions count in cache group.", Integer.class, () -> 0),
-            optionalArg(PAGE_SIZE.arg(), "page size.", Integer.class, () -> 4096),
-            optionalArg(PAGE_STORE_VER.arg(), "page store version.", Integer.class, () -> 2),
+            optionalArg(PAGE_SIZE.arg(), "page size.", Integer.class, () -> DFLT_PAGE_SIZE),
+            optionalArg(PAGE_STORE_VER.arg(), "page store version.", Integer.class, () -> FilePageStoreV2.VERSION),
             optionalArg(INDEXES.arg(), "you can specify index tree names that will be processed, separated by comma " +
                 "without spaces, other index trees will be skipped.", String[].class, () -> null),
             optionalArg(DEST_FILE.arg(),
