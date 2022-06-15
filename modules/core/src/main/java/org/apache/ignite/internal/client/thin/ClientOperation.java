@@ -144,17 +144,20 @@ public enum ClientOperation {
     /** Continuous query event. */
     QUERY_CONTINUOUS_EVENT(2007, ClientNotificationType.CONTINUOUS_QUERY_EVENT),
 
-    /** Get binary type. */
-    GET_BINARY_TYPE(3002),
+    /** Get binary type name. */
+    GET_BINARY_TYPE_NAME(3000),
 
     /** Register binary type name. */
     REGISTER_BINARY_TYPE_NAME(3001),
 
+    /** Get binary type. */
+    GET_BINARY_TYPE(3002),
+
     /** Put binary type. */
     PUT_BINARY_TYPE(3003),
 
-    /** Get binary type name. */
-    GET_BINARY_TYPE_NAME(3000),
+    /** Get binary configuration. */
+    GET_BINARY_CONFIGURATION(3004),
 
     /** Start new transaction. */
     TX_START(4000),
