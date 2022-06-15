@@ -1053,10 +1053,6 @@ public class IgniteIndexReader implements AutoCloseable {
      * @return Tree node.
      */
     private TreeNode getTreeNode(long pageId, TreeTraverseContext nodeCtx) {
-        PageContent pageContent;
-
-        PageIOProcessor ioProcessor;
-
         try {
             final ByteBuffer buf = allocateBuffer(pageSize);
 
@@ -1069,15 +1065,15 @@ public class IgniteIndexReader implements AutoCloseable {
 
                 nodeCtx.ioStat.compute(io.getClass(), (k, v) -> v == null ? 1 : v + 1);
 
-                ioProcessor = getIOProcessor(io);
+                PageIOProcessor ioProcessor = getIOProcessor(io);
 
-                pageContent = ioProcessor.getContent(io, addr, pageId, nodeCtx);
+                PageContent pageContent = ioProcessor.getContent(io, addr, pageId, nodeCtx);
+
+                return ioProcessor.getNode(pageContent, pageId, nodeCtx);
             }
             finally {
                 freeBuffer(buf);
             }
-
-            return ioProcessor.getNode(pageContent, pageId, nodeCtx);
         }
         catch (Throwable e) {
             nodeCtx.errors.computeIfAbsent(pageId, k -> new LinkedList<>()).add(e);
@@ -1489,7 +1485,7 @@ public class IgniteIndexReader implements AutoCloseable {
 
         /** */
         private Object getLeafItem(BPlusLeafIO<?> io, long pageId, long addr, int idx, TreeTraverseContext nodeCtx) {
-            if (!isLinkIo(io))
+            if (!(io instanceof InlineIO || io instanceof PendingRowIO || io instanceof RowLinkIO))
                 throw new IgniteException("Unexpected page io: " + io.getClass().getSimpleName());
 
             final long link = getLink(io, addr, idx);
@@ -1572,11 +1568,6 @@ public class IgniteIndexReader implements AutoCloseable {
             }
 
             return new CacheAwareLink(cacheId, link, tombstone);
-        }
-
-        /** */
-        private boolean isLinkIo(PageIO io) {
-            return io instanceof InlineIO || io instanceof PendingRowIO || io instanceof RowLinkIO;
         }
 
         /** */
