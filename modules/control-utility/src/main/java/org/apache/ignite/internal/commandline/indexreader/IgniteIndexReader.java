@@ -54,7 +54,6 @@ import org.apache.ignite.internal.commandline.argument.parser.CLIArgument;
 import org.apache.ignite.internal.commandline.argument.parser.CLIArgumentParser;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageUtils;
-import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.persistence.IndexStorageImpl;
 import org.apache.ignite.internal.processors.cache.persistence.StorageException;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStore;
@@ -466,13 +465,11 @@ public class IgniteIndexReader implements AutoCloseable {
 
                             TreeTraverseContext tree = e.getValue();
 
-                            int cacheId = getCacheId(name);
-
-                            if (cacheId != cacheAwareLink.cacheId)
+                            if (getCacheId(name) != cacheAwareLink.cacheId)
                                 continue; // It's index for other cache, don't check.
 
                             // Tombstones are not indexed and shouldn't be tested.
-                            if (!tree.itemStorage.contains(cacheAwareLink) && !cacheAwareLink.tombstone)
+                            if (!tree.itemStorage.contains(cacheAwareLink))
                                 errors.add(new IgniteException(cacheDataTreeEntryMissingError(name, cacheAwareLink)));
                         }
 
@@ -1497,8 +1494,6 @@ public class IgniteIndexReader implements AutoCloseable {
             else
                 cacheId = nodeCtx.cacheId;
 
-            boolean tombstone = false;
-
             if (partCnt > 0) {
                 try {
                     long linkedPageId = pageId(link);
@@ -1506,7 +1501,7 @@ public class IgniteIndexReader implements AutoCloseable {
                     int linkedPagePartId = partId(linkedPageId);
 
                     if (missingPartitions.contains(linkedPagePartId))
-                        return new CacheAwareLink(cacheId, link, false); // just skip
+                        return new CacheAwareLink(cacheId, link); // just skip
 
                     int linkedItemId = itemId(link);
 
@@ -1526,7 +1521,7 @@ public class IgniteIndexReader implements AutoCloseable {
                             linkedPagePartId + ". Does partition file exist?");
                     }
 
-                    tombstone = doWithBuffer((dataBuf, dataBufAddr) -> {
+                    doWithBuffer((dataBuf, dataBufAddr) -> {
                         readPage(store, linkedPageId, dataBuf);
 
                         PageIO dataIo = PageIO.getPageIO(getType(dataBuf), getVersion(dataBuf));
@@ -1554,12 +1549,10 @@ public class IgniteIndexReader implements AutoCloseable {
                                 int len = PageUtils.getInt(dataBufAddr, off);
 
                                 byte type = PageUtils.getByte(dataBufAddr, off + len + 9);
-
-                                return type == CacheObject.TOMBSTONE;
                             }
                         }
 
-                        return false;
+                        return null;
                     });
                 }
                 catch (Exception e) {
@@ -1567,7 +1560,7 @@ public class IgniteIndexReader implements AutoCloseable {
                 }
             }
 
-            return new CacheAwareLink(cacheId, link, tombstone);
+            return new CacheAwareLink(cacheId, link);
         }
 
         /** */
