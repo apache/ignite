@@ -41,7 +41,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.file.FileP
 /**
  * Factory {@link FilePageStore} for analyzing partition and index files.
  */
-public class IgniteIndexReaderFilePageStoreFactory {
+class IgniteIndexReaderFilePageStoreFactory {
     /** Directory with data(partitions and index). */
     private final File dir;
 
@@ -65,7 +65,7 @@ public class IgniteIndexReaderFilePageStoreFactory {
      * @param partCnt Partition count.
      * @param filePageStoreVer Page store version.
      */
-    public IgniteIndexReaderFilePageStoreFactory(File dir, int pageSize, int partCnt, int filePageStoreVer) {
+    IgniteIndexReaderFilePageStoreFactory(File dir, int pageSize, int partCnt, int filePageStoreVer) {
         this.dir = dir;
         this.pageSize = pageSize;
         this.partCnt = partCnt;
@@ -109,7 +109,7 @@ public class IgniteIndexReaderFilePageStoreFactory {
      * @return New instance of {@link FilePageStore} or {@code null}.
      * @throws IgniteCheckedException If there are errors when creating or initializing {@link FilePageStore}.
      */
-    @Nullable public FilePageStore createFilePageStoreWithEnsure(
+    @Nullable FilePageStore createFilePageStoreWithEnsure(
         int partId,
         byte type,
         Collection<Throwable> errors
@@ -128,7 +128,7 @@ public class IgniteIndexReaderFilePageStoreFactory {
      * @param type Data type, can be {@link PageIdAllocator#FLAG_IDX} or {@link PageIdAllocator#FLAG_DATA}.
      * @return New buffer with header.
      */
-    public ByteBuffer headerBuffer(byte type) throws IgniteCheckedException {
+    ByteBuffer headerBuffer(byte type) throws IgniteCheckedException {
         int ver = storeFactory.latestVersion();
 
         FilePageStore store =
