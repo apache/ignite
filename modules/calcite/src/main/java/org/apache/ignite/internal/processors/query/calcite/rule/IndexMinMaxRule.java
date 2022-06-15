@@ -17,13 +17,35 @@
 
 package org.apache.ignite.internal.processors.query.calcite.rule;
 
+import com.google.common.collect.ImmutableMap;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.RelRule;
+import org.apache.calcite.plan.RelTraitSet;
+import org.apache.calcite.rel.RelCollations;
+import org.apache.calcite.rel.core.AggregateCall;
 import org.apache.calcite.rel.logical.LogicalAggregate;
+import org.apache.calcite.rex.RexBuilder;
+import org.apache.calcite.rex.RexNode;
+import org.apache.calcite.sql.SqlKind;
+import org.apache.calcite.sql.fun.SqlStdOperatorTable;
+import org.apache.calcite.util.ImmutableIntList;
 import org.apache.ignite.internal.processors.query.QueryUtils;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteConvention;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexProbe;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexScan;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteProject;
 import org.apache.ignite.internal.processors.query.calcite.rel.logical.IgniteLogicalTableScan;
+import org.apache.ignite.internal.processors.query.calcite.schema.CacheTableDescriptor;
+import org.apache.ignite.internal.processors.query.calcite.schema.ColumnDescriptor;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteIndex;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
+import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
+import org.apache.ignite.internal.processors.query.calcite.trait.RewindabilityTrait;
 import org.immutables.value.Value;
 
 /** Tries to optimize MIN() and MAX() to use first/last record index records. */
@@ -43,64 +65,78 @@ public class IndexMinMaxRule extends RelRule<IndexMinMaxRule.Config> {
         IgniteLogicalTableScan scan = call.rel(1);
         IgniteTable table = scan.getTable().unwrap(IgniteTable.class);
 
-        IgniteIndex idx = table.indexes().get(QueryUtils.PRIMARY_KEY_INDEX);
-
-        if (idx == null)
-            idx = table.indexes().values().stream().findFirst().orElse(null);
-
-        if (true)
+        if (
+            table.isIndexRebuildInProgress() ||
+                scan.condition() != null ||
+                scan.projects() != null ||
+                aggr.getGroupCount() > 0 ||
+                aggr.getAggCallList().stream().anyMatch(a -> a.getAggregation().getKind() != SqlKind.MIN &&
+                    a.getAggregation().getKind() != SqlKind.MAX)
+        )
             return;
 
-//        if (
-//            idx == null ||
-//                scan.condition() != null ||
-//                scan.projects() != null ||
-//                aggr.getGroupCount() > 0 ||
-//                table.isIndexRebuildInProgress() ||
-//                aggr.getAggCallList().stream().anyMatch(a -> a.getAggregation().getKind() != SqlKind.COUNT ||
-//                    !a.getArgList().isEmpty())
-//        )
-//            return;
+        // TODO: several columns
+        int columnNum = scan.requiredColumns().asList().get(0);
+
+        String tableName = scan.getTable().unwrap(CacheTableDescriptor.class).typeDescription().name();
+
+        IgniteIndex idx = null;
+
+        for (ColumnDescriptor fieldDesc : table.descriptor().columnDescriptors()) {
+            if (fieldDesc.fieldIndex() == columnNum) {
+                idx = table.getIndex(QueryUtils.normalizeObjectName(QueryUtils.indexName(tableName, fieldDesc.name()),
+                    false));
+
+                break;
+            }
+        }
+
+        if (idx == null)
+            return;
+
+        RelTraitSet idxTraits = aggr.getTraitSet()
+            .replace(IgniteConvention.INSTANCE)
+            .replace(IgniteDistributions.random())
+            .replace(RewindabilityTrait.REWINDABLE);
 //
-//        RelTraitSet idxTraits = aggr.getTraitSet()
-//            .replace(IgniteConvention.INSTANCE)
-//            .replace(IgniteDistributions.random())
-//            .replace(RewindabilityTrait.REWINDABLE);
-//
-//        IgniteIndexCount idxCnt = new IgniteIndexCount(
+//        // TODO: read multiple aggregates.
+//        IgniteIndexProbe idxCnt = new IgniteIndexProbe(
 //            scan.getCluster(),
 //            idxTraits,
 //            scan.getTable(),
 //            idx.name(),
+//            aggr.getAggCallList().get(0).getAggregation().getKind(),
 //            aggr.getRowType()
 //        );
-//
-//        AggregateCall idxSumAggCall = AggregateCall.create(
-//            SqlStdOperatorTable.SUM0,
-//            false,
-//            false,
-//            false,
-//            ImmutableIntList.of(0),
-//            -1,
-//            null,
-//            RelCollations.EMPTY,
-//            0,
-//            idxCnt,
-//            null,
-//            null);
-//
-//        List<AggregateCall> indCntSumFunLst = Stream.generate(() -> idxSumAggCall).limit(aggr.getAggCallList().size())
-//            .collect(Collectors.toList());
-//
-//        LogicalAggregate newRel = new LogicalAggregate(
-//            aggr.getCluster(),
-//            aggr.getTraitSet(),
-//            Collections.emptyList(),
-//            idxCnt,
-//            aggr.getGroupSet(),
-//            aggr.getGroupSets(),
-//            indCntSumFunLst
-//        );
+
+        IgniteIndexScan idxScan = new IgniteIndexScan(scan.getCluster(), idxTraits, scan.getTable(), idx.name(),
+            null, null, null, scan.requiredColumns(), idx.collation());
+
+        // TODO: read multiple aggregates.
+        AggregateCall idxSumAggCall = AggregateCall.create(
+            //TODO: aggergate call kind
+            SqlStdOperatorTable.MIN,
+            false,
+            false,
+            false,
+            ImmutableIntList.of(0),
+            -1,
+            null,
+            RelCollations.EMPTY,
+            0,
+            idxScan,
+            null,
+            null);
+
+        LogicalAggregate newRel = new LogicalAggregate(
+            aggr.getCluster(),
+            aggr.getTraitSet(),
+            Collections.emptyList(),
+            idxScan,
+            aggr.getGroupSet(),
+            aggr.getGroupSets(),
+            Stream.generate(() -> idxSumAggCall).limit(aggr.getAggCallList().size()).collect(Collectors.toList())
+        );
 //
 //        // SUM0/DECIMAL to COUNT()/Long converter.
 //        List<RexNode> proj = new ArrayList<>();
@@ -115,12 +151,12 @@ public class IndexMinMaxRule extends RelRule<IndexMinMaxRule.Config> {
 //            newRel,
 //            proj, aggr.getRowType());
 //
-//        call.transformTo(castToLongNode, ImmutableMap.of(castToLongNode, aggr));
+        call.transformTo(newRel, ImmutableMap.of(newRel, aggr));
     }
 
     /** The rule config. */
     @Value.Immutable
-    public interface Config extends RelRule.Config {
+    public interface    Config extends RelRule.Config {
         /** */
         IndexMinMaxRule.Config DEFAULT = ImmutableIndexMinMaxRule.Config.of()
             .withDescription("IndexMinMaxRule")

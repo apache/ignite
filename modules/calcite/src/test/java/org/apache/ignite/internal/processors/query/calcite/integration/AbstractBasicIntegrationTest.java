@@ -91,7 +91,7 @@ public class AbstractBasicIntegrationTest extends GridCommonAbstractTest {
 
     /** */
     protected int nodeCount() {
-        return 3;
+        return 1;
     }
 
     /** */
@@ -151,11 +151,11 @@ public class AbstractBasicIntegrationTest extends GridCommonAbstractTest {
 
         int idx = 0;
 
-        person.put(idx++, new Employer("Igor", 10d));
         person.put(idx++, new Employer(null, 15d));
-        person.put(idx++, new Employer("Ilya", 15d));
-        person.put(idx++, new Employer("Roma", 10d));
+        person.put(idx++, new Employer("Igor", 70d));
+        person.put(idx++, new Employer("Ilya", 14d));
         person.put(idx++, new Employer("Roma", 7d));
+        person.put(idx++, new Employer("Roma", 21d));
 
         return person;
     }
@@ -248,6 +248,10 @@ public class AbstractBasicIntegrationTest extends GridCommonAbstractTest {
         /** */
         @QuerySqlField(index = true)
         public Double salary;
+
+        /** */
+        @QuerySqlField(index = true)
+        public Double num;
 
         /** */
         public Employer(String name, Double salary) {

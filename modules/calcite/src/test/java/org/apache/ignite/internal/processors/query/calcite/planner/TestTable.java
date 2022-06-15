@@ -210,7 +210,7 @@ public class TestTable implements IgniteCacheTable {
 
     /** */
     public TestTable addIndex(RelCollation collation, String name) {
-        indexes.put(name, new CacheIndexImpl(collation, name, null, this));
+        indexes.put(name, new CacheIndexImpl(collation, name, null, this, Collections.emptyList()));
 
         return this;
     }

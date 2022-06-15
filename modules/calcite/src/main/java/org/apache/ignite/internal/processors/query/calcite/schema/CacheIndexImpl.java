@@ -16,6 +16,7 @@
  */
 package org.apache.ignite.internal.processors.query.calcite.schema;
 
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
@@ -56,11 +57,15 @@ public class CacheIndexImpl implements IgniteIndex {
     private final IgniteCacheTable tbl;
 
     /** */
-    public CacheIndexImpl(RelCollation collation, String name, Index idx, IgniteCacheTable tbl) {
+    private final Collection<String> fields;
+
+    /** */
+    public CacheIndexImpl(RelCollation collation, String name, Index idx, IgniteCacheTable tbl, Collection<String> fields) {
         this.collation = collation;
         idxName = name;
         this.idx = idx;
         this.tbl = tbl;
+        this.fields = Collections.unmodifiableCollection(fields);
     }
 
     /** */

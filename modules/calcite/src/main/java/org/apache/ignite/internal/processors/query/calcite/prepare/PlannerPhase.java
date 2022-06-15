@@ -225,6 +225,7 @@ public enum PlannerPhase {
                     FilterScanMergeRule.INDEX_SCAN,
                     FilterSpoolMergeToSortedIndexSpoolRule.INSTANCE,
                     FilterSpoolMergeToHashIndexSpoolRule.INSTANCE,
+                    IndexMinMaxRule.INSTANCE,
 
                     LogicalOrToUnionRule.INSTANCE,
 

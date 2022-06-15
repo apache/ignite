@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
@@ -46,6 +47,8 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.topology.Grid
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
+import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
+import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusIO;
 import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler.RowFactory;
 import org.apache.ignite.internal.processors.query.calcite.schema.CacheTableDescriptor;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
@@ -290,7 +293,19 @@ public class IndexScan<Row> extends AbstractIndexScan<Row, IndexRow> {
     /** {@inheritDoc} */
     @Override protected IndexQueryContext indexQueryContext() {
         IndexingQueryFilter filter = new IndexingQueryFilterImpl(kctx, topVer, parts);
-        return new IndexQueryContext(filter, null, mvccSnapshot);
+
+        BPlusTree.TreeRowClosure<IndexRow, IndexRow> firstRowFilter = new BPlusTree.TreeRowClosure<IndexRow, IndexRow>(){
+            /** */
+            private final AtomicInteger justOneFirstRow = new AtomicInteger(10);
+
+            /** */
+            @Override public boolean apply(BPlusTree<IndexRow, IndexRow> tree, BPlusIO<IndexRow> io, long pageAddr,
+                int idx) throws IgniteCheckedException {
+                return justOneFirstRow.getAndDecrement() > 0;
+            }
+        };
+
+        return new IndexQueryContext(filter, firstRowFilter, mvccSnapshot);
     }
 
     /** */

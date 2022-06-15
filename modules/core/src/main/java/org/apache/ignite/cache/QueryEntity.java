@@ -102,7 +102,7 @@ public class QueryEntity implements Serializable {
 
     /** Scale for fields. */
     private Map<String, Integer> fieldsScale = new HashMap<>();
-    
+
     /**
      * Creates an empty query entity.
      */
@@ -780,7 +780,7 @@ public class QueryEntity implements Serializable {
         @Nullable QueryEntityClassProperty parent) {
         if (U.isJdk(cls) || QueryUtils.isGeometryClass(cls)) {
             if (parent == null && !key && QueryUtils.isSqlType(cls)) { // We have to index primitive _val.
-                String idxName = cls.getSimpleName() + "_" + QueryUtils.VAL_FIELD_NAME + "_idx";
+                String idxName = QueryUtils.indexName(cls.getSimpleName(), QueryUtils.VAL_FIELD_NAME);
 
                 type.addIndex(idxName, QueryUtils.isGeometryClass(cls) ?
                     QueryIndexType.GEOSPATIAL : QueryIndexType.SORTED, QueryIndex.DFLT_INLINE_SIZE);
@@ -856,7 +856,7 @@ public class QueryEntity implements Serializable {
                 prop.alias(sqlAnn.name());
 
             if (sqlAnn.index()) {
-                String idxName = curCls.getSimpleName() + "_" + prop.alias() + "_idx";
+                String idxName = QueryUtils.indexName(curCls.getSimpleName(), prop.alias());
 
                 if (cls != curCls)
                     idxName = cls.getSimpleName() + "_" + idxName;
