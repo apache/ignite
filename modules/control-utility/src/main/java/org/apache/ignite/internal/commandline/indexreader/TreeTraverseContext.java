@@ -18,8 +18,11 @@
 package org.apache.ignite.internal.commandline.indexreader;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.function.Consumer;
 import java.util.function.ObjLongConsumer;
 
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStore;
@@ -47,6 +50,17 @@ class TreeTraverseContext {
     /** Map of errors, pageId -> set of exceptions. */
     final Map<Long, List<Throwable>> errors;
 
+    /** Root page id. */
+    final long rootPageId;
+
+    /**
+     * List of items storage.
+     */
+    final ItemStorage itemStorage;
+
+    /** Set of all inner page ids. */
+    final Set<Long> innerPageIds;
+
     /** Callback that is called for each inner node page. */
     @Nullable final ObjLongConsumer<PageContent> innerCb;
 
@@ -54,21 +68,27 @@ class TreeTraverseContext {
     @Nullable final ObjLongConsumer<PageContent> leafCb;
 
     /** Callback that is called for each leaf item. */
-    @Nullable final ItemCallback itemCb;
+    @Nullable final Consumer<Object> itemCb;
 
     /** */
     public TreeTraverseContext(
+        long rootPageId,
         String treeName,
         FilePageStore store,
+        ItemStorage itemStorage,
+        Set<Long> innerPageIds,
         @Nullable ObjLongConsumer<PageContent> innerCb,
         @Nullable ObjLongConsumer<PageContent> leafCb,
-        @Nullable ItemCallback itemCb
+        @Nullable Consumer<Object> itemCb
     ) {
+        this.rootPageId = rootPageId;
         this.treeName = treeName;
         this.cacheId = getCacheId(treeName);
         this.store = store;
+        this.itemStorage = itemStorage;
         this.ioStat = new HashMap<>();
         this.errors = new HashMap<>();
+        this.innerPageIds = innerPageIds;
         this.innerCb = innerCb;
         this.leafCb = leafCb;
         this.itemCb = itemCb;

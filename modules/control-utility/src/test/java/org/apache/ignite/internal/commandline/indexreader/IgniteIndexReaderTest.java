@@ -719,7 +719,7 @@ public class IgniteIndexReaderTest extends GridCommonAbstractTest {
     protected IgniteIndexReaderFilePageStoreFactory createFilePageStoreFactory(
         File dir
     ) {
-        return new IgniteIndexReaderFilePageStoreFactoryImpl(dir, PAGE_SIZE, PART_CNT, PAGE_STORE_VER);
+        return new IgniteIndexReaderFilePageStoreFactory(dir, PAGE_SIZE, PART_CNT, PAGE_STORE_VER);
     }
 
     /**
