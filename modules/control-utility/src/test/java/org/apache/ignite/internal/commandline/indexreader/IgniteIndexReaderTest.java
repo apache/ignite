@@ -17,16 +17,14 @@
 
 package org.apache.ignite.internal.commandline.indexreader;
 
-import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
-import java.io.OutputStream;
-import java.io.PrintStream;
 import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -34,6 +32,8 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.logging.Handler;
+import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -60,7 +60,7 @@ import org.apache.ignite.internal.util.lang.IgnitePair;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.apache.ignite.util.GridCommandHandlerAbstractTest;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
@@ -91,7 +91,7 @@ import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 /**
  * Class for testing {@link IgniteIndexReader}.
  */
-public class IgniteIndexReaderTest extends GridCommonAbstractTest {
+public class IgniteIndexReaderTest extends GridCommandHandlerAbstractTest {
     /** Page size. */
     protected static final int PAGE_SIZE = 4096;
 
@@ -132,7 +132,8 @@ public class IgniteIndexReaderTest extends GridCommonAbstractTest {
 
     /** Regexp to validate output of correct index. */
     private static final String CHECK_IDX_PTRN_CORRECT =
-        CHECK_IDX_PTRN_COMMON + "<PREFIX>No errors occurred while traversing.";
+        "<PREFIX>Index tree: I \\[idxName=[\\-_0-9]{1,20}_%s##H2Tree.0, pageId=[0-9a-f]{16}\\]";
+        //CHECK_IDX_PTRN_COMMON + "<PREFIX>No errors occurred while traversing.";
 
     /** Regexp to validate output of corrupted index. */
     private static final String CHECK_IDX_PTRN_WITH_ERRORS =
@@ -150,6 +151,13 @@ public class IgniteIndexReaderTest extends GridCommonAbstractTest {
         cleanPersistenceDir();
 
         prepareWorkDir();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        super.beforeTest();
+
+        injectTestSystemOut();
     }
 
     /** {@inheritDoc} */
@@ -267,7 +275,7 @@ public class IgniteIndexReaderTest extends GridCommonAbstractTest {
     private IgniteBiTuple<Long, Long> findPagesForAnyCacheKey(File workDir, String cacheGrp) throws IgniteCheckedException {
         File dir = new File(workDir, dataDir(cacheGrp));
 
-        try (IgniteIndexReader reader = new IgniteIndexReader(null, false, null, createFilePageStoreFactory(dir))) {
+        try (IgniteIndexReader reader = new IgniteIndexReader(null, false, createTestLogger(), createFilePageStoreFactory(dir))) {
             long[] partitionRoots = reader.partitionRoots(PageIdAllocator.META_PAGE_ID);
 
             ItemsListStorage<IndexStorageImpl.IndexItem> idxItemStorage = new ItemsListStorage<>();
@@ -692,22 +700,23 @@ public class IgniteIndexReaderTest extends GridCommonAbstractTest {
         @Nullable String[] idxs,
         boolean checkParts
     ) throws IgniteCheckedException {
-        File dir = new File(workDir, dataDir(cacheGrp));
+        testOut.reset();
 
-        OutputStream destStream = new ByteArrayOutputStream();
-
-        List<String> idxList = isNull(idxs) ? null : asList(idxs);
+        Logger logger = createTestLogger();
 
         try (IgniteIndexReader reader = new IgniteIndexReader(
-            isNull(idxList) ? null : idx -> idxList.stream().anyMatch(idx::endsWith),
+            isNull(idxs) ? null : idx -> Arrays.stream(idxs).anyMatch(idx::endsWith),
             checkParts,
-            new PrintStream(destStream),
-            createFilePageStoreFactory(dir)
+            logger,
+            createFilePageStoreFactory(new File(workDir, dataDir(cacheGrp)))
         )) {
             reader.readIdx();
         }
 
-        return destStream.toString();
+        // Flush all Logger handlers to make log data available to test.
+        Arrays.stream(logger.getHandlers()).forEach(Handler::flush);
+
+        return testOut.toString();
     }
 
     /**
