@@ -213,7 +213,7 @@ public class IgniteIndexReader implements AutoCloseable {
         Map<Integer, List<Throwable>> partStoresErrors = new HashMap<>();
         List<Throwable> errors = new ArrayList<>();
 
-        idxStore = filePageStoreFactory.createFilePageStoreWithEnsure(INDEX_PARTITION, FLAG_IDX, errors);
+        idxStore = filePageStoreFactory.createFilePageStoreWithEnsure(INDEX_PARTITION, FLAG_IDX);
 
         if (!errors.isEmpty())
             partStoresErrors.put(INDEX_PARTITION, new ArrayList<>(errors));
@@ -229,7 +229,7 @@ public class IgniteIndexReader implements AutoCloseable {
             if (!errors.isEmpty())
                 errors.clear();
 
-            partStores[i] = filePageStoreFactory.createFilePageStoreWithEnsure(i, FLAG_DATA, errors);
+            partStores[i] = filePageStoreFactory.createFilePageStoreWithEnsure(i, FLAG_DATA);
 
             if (!errors.isEmpty())
                 partStoresErrors.put(i, new ArrayList<>(errors));
