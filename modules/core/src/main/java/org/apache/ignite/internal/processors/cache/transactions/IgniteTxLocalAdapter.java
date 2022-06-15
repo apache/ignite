@@ -110,7 +110,7 @@ import static org.apache.ignite.transactions.TransactionState.UNKNOWN;
 /**
  * Transaction adapter for cache transactions.
  */
-public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements IgniteTxLocalEx, ConsistentCutVersionAware {
+public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements IgniteTxLocalEx {
     /** Commit error updater. */
     protected static final AtomicReferenceFieldUpdater<IgniteTxLocalAdapter, Throwable> COMMIT_ERR_UPD =
         AtomicReferenceFieldUpdater.newUpdater(IgniteTxLocalAdapter.class, Throwable.class, "commitErr");
@@ -1053,7 +1053,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
             }
 
             // commitCutVer != -1 here for 1PC case ((originated + primary) node + backup node).
-            if (this.txCutVer == -1)
+            if (txCutVer == -1)
                 txCutVersion(commitCutVer);
 
             state(commit ? COMMITTED : ROLLED_BACK);

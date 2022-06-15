@@ -979,8 +979,11 @@ public class IgniteTxHandler {
             ctx.tm().addRolledbackTx(null, req.version());
 
         // Transaction on local cache only.
-        if (locTx != null && !locTx.nearLocallyMapped() && !locTx.colocatedLocallyMapped())
+        if (locTx != null && !locTx.nearLocallyMapped() && !locTx.colocatedLocallyMapped()) {
+            locTx.txCutVersion(req.txCutVersion());
+
             return new GridFinishedFuture<IgniteInternalTx>(locTx);
+        }
 
         if (log.isDebugEnabled())
             log.debug("Processing near tx finish request [nodeId=" + nodeId + ", req=" + req + "]");
@@ -988,8 +991,7 @@ public class IgniteTxHandler {
         IgniteInternalFuture<IgniteInternalTx> colocatedFinishFut = null;
 
         if (locTx != null && locTx.colocatedLocallyMapped()) {
-            if (req.txCutVersion() > 0)
-                locTx.txCutVersion(req.txCutVersion());
+            locTx.txCutVersion(req.txCutVersion());
 
             colocatedFinishFut = finishColocatedLocal(req.commit(), locTx);
         }
@@ -1112,9 +1114,7 @@ public class IgniteTxHandler {
             tx.nearFinishFutureId(req.futureId());
             tx.nearFinishMiniId(req.miniId());
             tx.storeEnabled(req.storeEnabled());
-            // Commit primary node that equals to the near node.
-            if (req.txCutVersion() >= 0)
-                tx.txCutVersion(req.txCutVersion());
+            tx.txCutVersion(req.txCutVersion());
 
             if (!tx.markFinalizing(USER_FINISH)) {
                 if (log.isDebugEnabled())
@@ -1123,7 +1123,6 @@ public class IgniteTxHandler {
                 return null;
             }
 
-            // TODO
             if (req.commit()) {
                 IgniteInternalFuture<IgniteInternalTx> commitFut = tx.commitDhtLocalAsync();
 
@@ -1448,8 +1447,10 @@ public class IgniteTxHandler {
             if (anyTx == null && req.commit())
                 ctx.tm().addCommittedTx(null, req.version(), null);
 
-            if (dhtTx != null)
+            if (dhtTx != null) {
+                dhtTx.txCutVersion(req.txCutVersion());
                 finish(nodeId, dhtTx, req);
+            }
             else {
                 try {
                     applyPartitionsUpdatesCounters(req.updateCounters(), !req.commit(), false);

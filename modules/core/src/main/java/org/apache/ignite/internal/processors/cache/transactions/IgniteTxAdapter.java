@@ -56,6 +56,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheOperation;
 import org.apache.ignite.internal.processors.cache.GridCacheReturn;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.processors.cache.consistentcut.ConsistentCutVersionAware;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtInvalidPartitionException;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
@@ -123,7 +124,7 @@ import static org.apache.ignite.transactions.TransactionState.SUSPENDED;
 /**
  * Managed transaction adapter.
  */
-public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implements IgniteInternalTx {
+public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implements IgniteInternalTx, ConsistentCutVersionAware {
     /** Static logger to avoid re-creation. */
     private static final AtomicReference<IgniteLogger> logRef = new AtomicReference<>();
 
@@ -2000,6 +2001,35 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
                 }
             }
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean txCutVerSetNode() {
+        if (log.isDebugEnabled()) {
+            log.debug(nearXidVersion().asIgniteUuid() + " " + getClass().getSimpleName() + " 1pc=" + onePhaseCommit
+                + " node=" + nodeId + " nodes=" + txNodes + " " + "client=" + cctx.kernalContext().clientNode()
+                + " near=" + near() + " local=" + local() + " dht=" + dht());
+        }
+
+        if (onePhaseCommit) {
+            if (near() && cctx.kernalContext().clientNode())
+                return false;
+
+            Collection<UUID> backups = txNodes.get(nodeId);
+
+            // We are on backup node. It's by default set the version.
+            if (backups == null)
+                return true;
+
+            // Near doesn't set version for 1PC.
+            if (near())
+                return false;
+
+            // This is a backup or primary transaction. Primary node sets the version iff cache doesn't have backups.
+            return (dht() && remote()) || backups.isEmpty();
+        }
+        else
+            return near();
     }
 
     /** {@inheritDoc} */

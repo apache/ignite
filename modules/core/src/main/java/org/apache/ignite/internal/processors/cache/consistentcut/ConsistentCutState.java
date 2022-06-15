@@ -272,6 +272,7 @@ public class ConsistentCutState {
         setAppend(bld, "includeBefore", includeBefore);
         setAppend(bld, "includeAfter", includeAfter);
         setAppend(bld, "check", check.keySet());
+        setAppend(bld, "await", readyAwait.keySet());
 
         return bld.append("]").toString();
     }

@@ -42,6 +42,11 @@ public interface ConsistentCutVersionAware {
         return -1L;
     }
 
+    /** */
+    public default boolean txCutVerSetNode() {
+        return false;
+    }
+
     /**
      * Version of the latest finished Consistent Cut AFTER which the specified transaction committed.
      *
