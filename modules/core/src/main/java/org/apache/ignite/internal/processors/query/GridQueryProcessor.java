@@ -1051,10 +1051,13 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     public void onCacheStart0(GridCacheContextInfo<?, ?> cacheInfo, QuerySchema schema, boolean isSql)
         throws IgniteCheckedException {
         if (!cacheSupportSql(cacheInfo.config())) {
+            if (ctx.clientNode())
+                return;
+
             synchronized (stateMux) {
                 boolean proceed = false;
 
-                for (SchemaAbstractDiscoveryMessage msg: activeProposals.values()) {
+                for (SchemaAbstractDiscoveryMessage msg : activeProposals.values()) {
                     if (msg.operation() instanceof SchemaAddQueryEntityOperation) {
                         SchemaAddQueryEntityOperation op = (SchemaAddQueryEntityOperation)msg.operation();
 
@@ -2060,9 +2063,12 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
             if (cctx != null)
                 cacheInfo = new GridCacheContextInfo<>(cctx, false);
-            else
-                return;
-
+            else {
+                if (ctx.clientNode())
+                    cacheInfo = new GridCacheContextInfo<>(ctx.cache().cacheDescriptors().get(cacheName));
+                else
+                    return;
+            }
         }
         else
             cacheInfo = schemaMgr.cacheInfo(cacheName);
@@ -2158,11 +2164,13 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                     registerCache0(op0.cacheName(), op.schemaName(), cacheInfo, candRes.get1(), false);
                 }
 
-                if (idxRebuildFutStorage.prepareRebuildIndexes(singleton(cacheInfo.cacheId()), null).isEmpty())
-                    rebuildIndexesFromHash0(cacheInfo.cacheContext(), false, cancelTok);
-                else {
-                    if (log.isInfoEnabled())
-                        log.info("Rebuilding indexes for the cache is already in progress: " + cacheInfo.name());
+                if (!ctx.clientNode()) {
+                    if (idxRebuildFutStorage.prepareRebuildIndexes(singleton(cacheInfo.cacheId()), null).isEmpty())
+                        rebuildIndexesFromHash0(cacheInfo.cacheContext(), false, cancelTok);
+                    else {
+                        if (log.isInfoEnabled())
+                            log.info("Rebuilding indexes for the cache is already in progress: " + cacheInfo.name());
+                    }
                 }
             }
             else

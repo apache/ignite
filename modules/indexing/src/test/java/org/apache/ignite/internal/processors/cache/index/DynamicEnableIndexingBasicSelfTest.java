@@ -23,11 +23,13 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
@@ -117,7 +119,9 @@ public class DynamicEnableIndexingBasicSelfTest extends DynamicEnableIndexingAbs
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        node().destroyCache(POI_CACHE_NAME);
+        grid(IDX_SRV_CRD).destroyCache(POI_CACHE_NAME);
+
+        awaitPartitionMapExchange();
 
         super.afterTest();
     }
@@ -140,6 +144,45 @@ public class DynamicEnableIndexingBasicSelfTest extends DynamicEnableIndexingAbs
 
             checkQueryParallelism((IgniteEx)ig, cacheMode);
         }
+    }
+
+    /** */
+    @Test
+    public void testNotStartedCacheOnClientNode() throws Exception {
+        //Doesn't check when cache is started on the client.
+        if (nodeIdx == IDX_CLI)
+            return;
+
+        loadData(grid(IDX_SRV_CRD), 0, NUM_ENTRIES);
+
+        createTable(grid(IDX_SRV_CRD).cache(POI_CACHE_NAME), cacheMode == CacheMode.REPLICATED ? 1 : QUERY_PARALLELISM);
+
+        grid(IDX_SRV_CRD).cache(POI_CACHE_NAME).indexReadyFuture().get();
+
+        GridTestUtils.waitForCondition(
+            () -> {
+                try {
+                    return grid(IDX_CLI).context().query()
+                        .querySqlFields(
+                            new SqlFieldsQuery(String.format("SELECT * FROM %s.%s", POI_SCHEMA_NAME, POI_TABLE_NAME)),
+                            true)
+                        .getAll().size() == NUM_ENTRIES;
+                }
+                catch (IgniteSQLException ex) {
+                    if (ex.getMessage().contains("Failed to parse query"))
+                        return false;
+                    else
+                        throw ex;
+                }
+            },
+            5_000
+        );
+
+        assertEquals(NUM_ENTRIES, grid(IDX_CLI).context().query()
+            .querySqlFields(
+                new SqlFieldsQuery(String.format("SELECT * FROM %s.%s", POI_SCHEMA_NAME, POI_TABLE_NAME)),
+                true)
+            .getAll().size());
     }
 
     /** */
