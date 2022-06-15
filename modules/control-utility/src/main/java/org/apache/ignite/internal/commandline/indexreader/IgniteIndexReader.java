@@ -19,6 +19,7 @@ package org.apache.ignite.internal.commandline.indexreader;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.io.PrintStream;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
@@ -152,9 +153,6 @@ public class IgniteIndexReader implements AutoCloseable {
         IndexProcessor.registerIO();
     }
 
-    /** Logger. */
-    private final Logger logger;
-
     /** Page size. */
     private final int pageSize;
 
@@ -163,6 +161,9 @@ public class IgniteIndexReader implements AutoCloseable {
 
     /** Index name filter, if {@code null} then is not used. */
     @Nullable private final Predicate<String> idxFilter;
+
+    /** Logger. */
+    private final Logger logger;
 
     /** Page store of {@link FilePageStoreManager#INDEX_FILE_NAME}. */
     @Nullable private final FilePageStore idxStore;
@@ -190,6 +191,7 @@ public class IgniteIndexReader implements AutoCloseable {
      *
      * @param idxFilter Index name filter, if {@code null} then is not used.
      * @param checkParts Check cache data tree in partition files and it's consistency with indexes.
+     * @param logger Logger.
      * @throws IgniteCheckedException If failed.
      */
     public IgniteIndexReader(
@@ -198,12 +200,12 @@ public class IgniteIndexReader implements AutoCloseable {
         Logger logger,
         IgniteIndexReaderFilePageStoreFactory filePageStoreFactory
     ) throws IgniteCheckedException {
-        this.logger = logger;
-
         pageSize = filePageStoreFactory.pageSize();
         partCnt = filePageStoreFactory.partitionCount();
         this.checkParts = checkParts;
         this.idxFilter = idxFilter;
+
+        this.logger = logger;
 
         Map<Integer, List<Throwable>> partStoresErrors = new HashMap<>();
         List<Throwable> errors = new ArrayList<>();
@@ -274,7 +276,7 @@ public class IgniteIndexReader implements AutoCloseable {
         // Scanning page reuse lists.
         PageListsInfo pageListsInfo = pageListMetaPageId == 0 ? null : getPageListsInfo(pageListMetaPageId);
 
-        ProgressPrinter progressPrinter = new ProgressPrinter(System.out, "Reading pages sequentially", pagesNum);
+        ProgressPrinter progressPrinter = progressPrinter("Reading pages sequentially", pagesNum);
 
         // Scan all pages in file.
         List<Throwable> errors = scanFileStore(INDEX_PARTITION, FLAG_IDX, idxStore, (pageId, addr, io) -> {
@@ -417,7 +419,7 @@ public class IgniteIndexReader implements AutoCloseable {
      * @return Map of errors, bound to partition id.
      */
     private Map<Integer, List<Throwable>> checkParts(Map<String, TreeTraverseContext> aTreesInfo) {
-        System.out.println();
+        logger.info("");
 
         // Map partId -> errors.
         Map<Integer, List<Throwable>> res = new HashMap<>();
@@ -426,7 +428,7 @@ public class IgniteIndexReader implements AutoCloseable {
 
         treesInfo.remove(META_TREE_NAME);
 
-        ProgressPrinter progressPrinter = new ProgressPrinter(System.out, "Checking partitions", partCnt);
+        ProgressPrinter progressPrinter = progressPrinter("Checking partitions", partCnt);
 
         for (int i = 0; i < partCnt; i++) {
             progressPrinter.printProgress();
@@ -489,6 +491,11 @@ public class IgniteIndexReader implements AutoCloseable {
         }
 
         return res;
+    }
+
+    /** */
+    ProgressPrinter progressPrinter(String caption, long total) {
+        return new ProgressPrinter(System.out, caption, total);
     }
 
     /**
@@ -691,8 +698,7 @@ public class IgniteIndexReader implements AutoCloseable {
 
         treeInfos.put(META_TREE_NAME, metaTreeTraversalInfo);
 
-        ProgressPrinter progressPrinter =
-            new ProgressPrinter(System.out, traverseProcCaption, metaTreeTraversalInfo.itemStorage.size());
+        ProgressPrinter progressPrinter = progressPrinter(traverseProcCaption, metaTreeTraversalInfo.itemStorage.size());
 
         metaTreeTraversalInfo.itemStorage.forEach(item -> {
             progressPrinter.printProgress();
@@ -882,7 +888,7 @@ public class IgniteIndexReader implements AutoCloseable {
 
         printPageStat(prefix, "-- Page stat:", pageListsInfo.pageListStat);
 
-        printErrors(prefix, "--- Errors:", "--- No errors.", "Page id: %s, exception: ", true, pageListsInfo.errors);
+        printErrors(prefix, "---Errors:", "---No errors.", "Page id: %s, exception: ", true, pageListsInfo.errors);
 
         print("");
         print(prefix + "Total index pages found in lists: " + pageListsInfo.allPages.size());
@@ -1274,7 +1280,7 @@ public class IgniteIndexReader implements AutoCloseable {
 
     /** */
     private void printStackTrace(Throwable e) {
-        StringBuilderOutputStream os = new StringBuilderOutputStream();
+        OutputStream os = new StringBuilderOutputStream();
 
         e.printStackTrace(new PrintStream(os));
 

@@ -24,6 +24,7 @@ import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
@@ -49,6 +50,7 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.cluster.IgniteClusterEx;
+import org.apache.ignite.internal.commandline.ProgressPrinter;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.processors.cache.persistence.IndexStorageImpl;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
@@ -132,8 +134,7 @@ public class IgniteIndexReaderTest extends GridCommandHandlerAbstractTest {
 
     /** Regexp to validate output of correct index. */
     private static final String CHECK_IDX_PTRN_CORRECT =
-        "<PREFIX>Index tree: I \\[idxName=[\\-_0-9]{1,20}_%s##H2Tree.0, pageId=[0-9a-f]{16}\\]";
-        //CHECK_IDX_PTRN_COMMON + "<PREFIX>No errors occurred while traversing.";
+        CHECK_IDX_PTRN_COMMON + "<PREFIX>No errors occurred while traversing.";
 
     /** Regexp to validate output of corrupted index. */
     private static final String CHECK_IDX_PTRN_WITH_ERRORS =
@@ -704,12 +705,18 @@ public class IgniteIndexReaderTest extends GridCommandHandlerAbstractTest {
 
         Logger logger = createTestLogger();
 
-        try (IgniteIndexReader reader = new IgniteIndexReader(
+        IgniteIndexReader reader1 = new IgniteIndexReader(
             isNull(idxs) ? null : idx -> Arrays.stream(idxs).anyMatch(idx::endsWith),
             checkParts,
             logger,
             createFilePageStoreFactory(new File(workDir, dataDir(cacheGrp)))
-        )) {
+        ) {
+            /** {@inheritDoc} */
+            @Override ProgressPrinter progressPrinter(String caption, long total) {
+                return new ProgressPrinter(System.err, caption, total);
+            }
+        };
+        try (IgniteIndexReader reader = reader1) {
             reader.readIdx();
         }
 
