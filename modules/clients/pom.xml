@@ -175,7 +175,6 @@
                     <name>clientDocs</name>
                 </property>
             </activation>
-
             <build>
                 <plugins>
                     <plugin>
