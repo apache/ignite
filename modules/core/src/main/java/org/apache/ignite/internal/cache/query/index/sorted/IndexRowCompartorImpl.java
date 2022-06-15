@@ -82,15 +82,20 @@ public class IndexRowCompartorImpl implements IndexRowComparator {
 
     /** */
     private int compare(IndexKey lkey, IndexKey rkey) throws IgniteCheckedException {
-        if (lkey == NullIndexKey.INSTANCE)
-            return lkey.compare(rkey);
-        else if (rkey == NullIndexKey.INSTANCE)
-            return 1;
+        try {
+            if (lkey == NullIndexKey.INSTANCE)
+                return lkey.compare(rkey);
+            else if (rkey == NullIndexKey.INSTANCE)
+                return 1;
 
-        if (lkey.isComparableTo(rkey))
-            return lkey.compare(rkey);
-        else if (rkey.isComparableTo(lkey))
-            return -rkey.compare(lkey);
+            if (lkey.isComparableTo(rkey))
+                return lkey.compare(rkey);
+            else if (rkey.isComparableTo(lkey))
+                return -rkey.compare(lkey);
+        }
+        catch (RuntimeException e) {
+            throw new IgniteCheckedException(e);
+        }
 
         throw new IgniteCheckedException("Values can't be compared [lkey=" + lkey + ", rkey=" + rkey + ']');
     }

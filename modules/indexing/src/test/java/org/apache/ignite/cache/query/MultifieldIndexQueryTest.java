@@ -30,6 +30,7 @@ import javax.cache.Cache;
 import javax.cache.CacheException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
@@ -443,13 +444,13 @@ public class MultifieldIndexQueryTest extends GridCommonAbstractTest {
 
         // Use long boundary instead of int.
         IndexQuery<Long, Person> qry = new IndexQuery<Long, Person>(Person.class, qryIdx)
-            .setCriteria(lt("id", (long)0));
+            .setCriteria(lt("id", "0"));
 
         GridTestUtils.assertThrows(null,
             () -> cache.query(qry).getAll(), CacheException.class, null);
 
         GridTestUtils.assertThrowsWithCause(
-            () -> cache.query(qry).getAll(), ClassCastException.class);
+            () -> cache.query(qry).getAll(), IgniteCheckedException.class);
     }
 
     /** */

@@ -24,7 +24,6 @@ import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyType;
 import org.apache.ignite.internal.cache.query.index.sorted.keys.IndexKey;
 import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
 import org.apache.ignite.internal.processors.query.h2.H2Utils;
-import org.h2.message.DbException;
 import org.h2.table.Table;
 import org.h2.value.Value;
 
@@ -73,14 +72,9 @@ public class H2ValueIndexKey implements IndexKey {
      * @param v2 Second value.
      * @return Comparison result.
      */
-    public int compareValues(Value v1, Value v2) throws IgniteCheckedException {
-        try {
-            // Exploit convertion/comparison provided by H2.
-            return Integer.signum(table.compareTypeSafe(v1, v2));
-        }
-        catch (DbException ex) {
-            throw new IgniteCheckedException("Rows cannot be compared", ex);
-        }
+    public int compareValues(Value v1, Value v2) {
+        // Exploit convertion/comparison provided by H2.
+        return Integer.signum(table.compareTypeSafe(v1, v2));
     }
 
     /** {@inheritDoc} */
