@@ -2859,7 +2859,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             try {
                 task.partsLeft.compareAndSet(-1, partsCnt);
 
-                File cacheDir = new File(storeMgr.workDir(), cacheDirName);
+                File cacheDir = FilePageStoreManager.cacheWorkDir(storeMgr.workDir(), cacheDirName);
 
                 File tmpCacheDir = U.resolveWorkDirectory(storeMgr.workDir().getAbsolutePath(),
                     formatTmpDirName(cacheDir).getName(), false);
@@ -2867,7 +2867,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 return Paths.get(tmpCacheDir.getAbsolutePath(), getPartitionFileName(partId)).toString();
             }
             catch (IgniteCheckedException e) {
-                throw new RuntimeException(e);
+                throw new IgniteException(e);
             }
             finally {
                 busyLock.leaveBusy();

@@ -628,7 +628,9 @@ public class SnapshotRestoreProcess {
      * @param tmpCacheDir Temporary cache directory.
      * @return Cache or group id.
      */
-    static int tmpDirGroupId(File tmpCacheDir) {
+    static int groupIdFromTmpDir(File tmpCacheDir) {
+        assert tmpCacheDir.getName().startsWith(TMP_CACHE_DIR_PREFIX) : tmpCacheDir;
+
         String cacheGrpName = tmpCacheDir.getName().substring(TMP_CACHE_DIR_PREFIX.length());
 
         return CU.cacheId(cacheGroupName(new File(tmpCacheDir.getParentFile(), cacheGrpName)));
@@ -1014,7 +1016,7 @@ public class SnapshotRestoreProcess {
                                     return;
                                 }
 
-                                int grpId = tmpDirGroupId(snpFile.getParentFile());
+                                int grpId = groupIdFromTmpDir(snpFile.getParentFile());
                                 int partId = partId(snpFile.getName());
 
                                 PartitionRestoreFuture partFut = F.find(allParts.get(grpId), null,
