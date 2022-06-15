@@ -35,8 +35,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.LongConsumer;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
@@ -756,12 +754,15 @@ public class IgniteIndexReader implements AutoCloseable {
 
         Map<Class<? extends PageIO>, Long> totalStat = new HashMap<>();
 
-        AtomicInteger totalErr = new AtomicInteger(0);
+        int totalErr = 0;
 
         // Map (cacheId, typeId) -> (map idxName -> size))
         Map<IgnitePair<Integer>, Map<String, Long>> cacheIdxSizes = new HashMap<>();
 
-        treeInfos.forEach((idxName, validationInfo) -> {
+        for (Map.Entry<String, TreeTraverseContext> e : treeInfos.entrySet()) {
+            String idxName = e.getKey();
+            TreeTraverseContext validationInfo = e.getValue();
+
             print(prefix + "-----");
             print(prefix + "Index tree: " + idxName);
             print(prefix + "-- Page stat:");
@@ -783,11 +784,12 @@ public class IgniteIndexReader implements AutoCloseable {
                 validationInfo.errors
             );
 
-            totalErr.addAndGet(validationInfo.errors.size());
+            totalErr += validationInfo.errors.size();
 
-            cacheIdxSizes.computeIfAbsent(getCacheAndTypeId(idxName), k -> new HashMap<>())
+            cacheIdxSizes
+                .computeIfAbsent(getCacheAndTypeId(idxName), k -> new HashMap<>())
                 .put(idxName, validationInfo.itemStorage.size());
-        });
+        }
 
         print(prefix + "---");
 
@@ -795,27 +797,30 @@ public class IgniteIndexReader implements AutoCloseable {
 
         print("");
 
-        AtomicBoolean sizeConsistencyErrorsFound = new AtomicBoolean(false);
+        boolean sizeConsistencyErrorsFound = false;
 
-        cacheIdxSizes.forEach((cacheTypeId, idxSizes) -> {
+        for (Map.Entry<IgnitePair<Integer>, Map<String, Long>> entry : cacheIdxSizes.entrySet()) {
+            IgnitePair<Integer> cacheTypeId = entry.getKey();
+            Map<String, Long> idxSizes = entry.getValue();
+
             if (idxSizes.values().stream().distinct().count() > 1) {
-                sizeConsistencyErrorsFound.set(true);
+                sizeConsistencyErrorsFound = true;
 
-                totalErr.incrementAndGet();
+                totalErr++;
 
                 printErr("Index size inconsistency: cacheId=" + cacheTypeId.get1() + ", typeId=" + cacheTypeId.get2());
 
                 idxSizes.forEach((name, size) -> printErr("     Index name: " + name + ", size=" + size));
             }
-        });
+        }
 
-        if (!sizeConsistencyErrorsFound.get())
+        if (!sizeConsistencyErrorsFound)
             print(prefix + "No index size consistency errors found.");
 
         print("");
         print(prefix + "Total trees: " + treeInfos.keySet().size());
         print(prefix + "Total pages found in trees: " + totalStat.values().stream().mapToLong(a -> a).sum());
-        print(prefix + "Total errors during trees traversal: " + totalErr.get());
+        print(prefix + "Total errors during trees traversal: " + totalErr);
         print("");
 
         print("------------------");
