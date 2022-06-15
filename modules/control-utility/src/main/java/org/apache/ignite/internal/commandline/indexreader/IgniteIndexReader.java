@@ -52,7 +52,7 @@ import org.apache.ignite.internal.commandline.ProgressPrinter;
 import org.apache.ignite.internal.commandline.StringBuilderOutputStream;
 import org.apache.ignite.internal.commandline.argument.parser.CLIArgument;
 import org.apache.ignite.internal.commandline.argument.parser.CLIArgumentParser;
-import org.apache.ignite.internal.pagemem.PageIdUtils;
+import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageUtils;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.persistence.IndexStorageImpl;
@@ -238,104 +238,6 @@ public class IgniteIndexReader implements AutoCloseable {
         printFileReadingErrors(partStoresErrors);
     }
 
-    /** */
-    private void print(String s) {
-        outStream.println(s);
-    }
-
-    /** */
-    private void printErr(String s) {
-        outStream.println(ERROR_PREFIX + s);
-    }
-
-    /** */
-    private void printErrors(
-        String prefix,
-        String caption,
-        @Nullable String alternativeCaption,
-        String elementFormatPtrn,
-        boolean printTrace,
-        Map<?, ? extends List<? extends Throwable>> errors
-    ) {
-        if (errors.isEmpty() && alternativeCaption != null) {
-            print(prefix + alternativeCaption);
-
-            return;
-        }
-
-        if (caption != null)
-            outStream.println(prefix + ERROR_PREFIX + caption);
-
-        errors.forEach((k, v) -> {
-            outStream.println(prefix + ERROR_PREFIX + format(elementFormatPtrn, k.toString()));
-
-            v.forEach(e -> {
-                if (printTrace)
-                    printStackTrace(e);
-                else
-                    printErr(e.getMessage());
-            });
-        });
-    }
-
-    /** */
-    private void printPageStat(String prefix, String caption, Map<Class<? extends PageIO>, Long> stat) {
-        if (caption != null)
-            print(prefix + caption + (stat.isEmpty() ? " empty" : ""));
-
-        stat.forEach((cls, cnt) -> print(prefix + cls.getSimpleName() + ": " + cnt));
-    }
-
-    /** */
-    private void printStackTrace(Throwable e) {
-        OutputStream os = new StringBuilderOutputStream();
-
-        e.printStackTrace(new PrintStream(os));
-
-        outStream.println(os);
-    }
-
-    /** */
-    static long normalizePageId(long pageId) {
-        return pageId(partId(pageId), flag(pageId), pageIndex(pageId));
-    }
-
-    /**
-     * Reading pages into buffer.
-     *
-     * @param store Source for reading pages.
-     * @param pageId Page ID.
-     * @param buf Buffer.
-     */
-    private void readPage(FilePageStore store, long pageId, ByteBuffer buf) throws IgniteCheckedException {
-        try {
-            store.read(pageId, buf, false);
-        }
-        catch (IgniteDataIntegrityViolationException | IllegalArgumentException e) {
-            // Replacing exception due to security reasons, as IgniteDataIntegrityViolationException prints page content.
-            // Catch IllegalArgumentException for output page information.
-            throw new IgniteException("Failed to read page, id=" + pageId + ", idx=" + pageIndex(pageId) +
-                ", file=" + store.getFileAbsolutePath());
-        }
-    }
-
-    /**
-     * @return Tuple consisting of meta tree root page and pages list root page.
-     * @throws IgniteCheckedException If failed.
-     */
-    long[] partitionRoots(long pageMetaPageId) throws IgniteCheckedException {
-        return doWithBuffer((buf, addr) -> {
-            readPage(filePageStore(partId(pageMetaPageId)), pageMetaPageId, buf);
-
-            PageMetaIO pageMetaIO = PageIO.getPageIO(addr);
-
-            return new long[] {
-                normalizePageId(pageMetaIO.getTreeRoot(addr)),
-                normalizePageId(pageMetaIO.getReuseListRoot(addr))
-            };
-        });
-    }
-
     /**
      * Read index file.
      */
@@ -354,7 +256,7 @@ public class IgniteIndexReader implements AutoCloseable {
 
         Set<Long> pageIds = new HashSet<>();
 
-        long[] indexPartitionRoots = partitionRoots(partMetaPageId(INDEX_PARTITION, FLAG_IDX));
+        long[] indexPartitionRoots = partitionRoots(PageIdAllocator.META_PAGE_ID);
 
         long metaTreeRootId = indexPartitionRoots[0];
         long pageListMetaPageId = indexPartitionRoots[1];
@@ -452,28 +354,6 @@ public class IgniteIndexReader implements AutoCloseable {
     }
 
     /**
-     * Print partitions reading exceptions.
-     *
-     * @param partStoresErrors Partitions reading exceptions.
-     */
-    private void printFileReadingErrors(Map<Integer, List<Throwable>> partStoresErrors) {
-        List<Throwable> idxPartErrors = partStoresErrors.get(INDEX_PARTITION);
-
-        if (!F.isEmpty(idxPartErrors)) {
-            printErr("Errors detected while reading " + INDEX_FILE_NAME);
-
-            idxPartErrors.forEach(err -> printErr(err.getMessage()));
-
-            partStoresErrors.remove(INDEX_PARTITION);
-        }
-
-        if (!partStoresErrors.isEmpty()) {
-            printErrors("", "Errors detected while reading partition files:", null,
-                "Partition id: %s, exceptions: ", false, partStoresErrors);
-        }
-    }
-
-    /**
      * Allocates buffer and does some work in closure, then frees the buffer.
      *
      * @param c Closure.
@@ -515,7 +395,7 @@ public class IgniteIndexReader implements AutoCloseable {
                 buf.rewind();
 
                 try {
-                    long pageId = PageIdUtils.pageId(partId, flag, i);
+                    long pageId = pageId(partId, flag, i);
 
                     readPage(store, pageId, buf);
 
@@ -566,7 +446,7 @@ public class IgniteIndexReader implements AutoCloseable {
             final int partId = i;
 
             try {
-                long partMetaId = partMetaPageId(i, FLAG_DATA);
+                long partMetaId = pageId(i, FLAG_DATA, 0);
 
                 doWithBuffer((buf, addr) -> {
                     readPage(partStore, partMetaId, buf);
@@ -616,32 +496,6 @@ public class IgniteIndexReader implements AutoCloseable {
         }
 
         return res;
-    }
-
-    /** */
-    private String cacheDataTreeEntryMissingError(String treeName, CacheAwareLink cacheAwareLink) {
-        long link = cacheAwareLink.link;
-
-        long pageId = pageId(link);
-
-        int itemId = itemId(link);
-
-        int partId = partId(pageId);
-
-        int pageIdx = pageIndex(pageId);
-
-        return "Entry is missing in index: " + treeName +
-            ", cacheId=" + cacheAwareLink.cacheId + ", partId=" + partId +
-            ", pageIndex=" + pageIdx + ", itemId=" + itemId + ", link=" + link;
-    }
-
-    /**
-     * @param partId Partition id.
-     * @param flag Flag.
-     * @return Id of partition meta page.
-     */
-    public static long partMetaPageId(int partId, byte flag) {
-        return PageIdUtils.pageId(partId, flag, 0);
     }
 
     /**
@@ -701,19 +555,6 @@ public class IgniteIndexReader implements AutoCloseable {
         print("Comparing traversals detected " + errors.size() + " errors.");
         print("------------------");
 
-    }
-
-    /** */
-    private String compareError(String itemName, String idxName, long fromRoot, long scan, Class<? extends PageIO> pageType) {
-        return format(
-            "Different count of %s; index: %s, %s:%s, %s:%s" + (pageType == null ? "" : ", pageType: " + pageType.getName()),
-            itemName,
-            idxName,
-            RECURSIVE_TRAVERSE_NAME,
-            fromRoot,
-            HORIZONTAL_SCAN_NAME,
-            scan
-        );
     }
 
     /**
@@ -876,6 +717,36 @@ public class IgniteIndexReader implements AutoCloseable {
         });
 
         return treeInfos;
+    }
+
+    /** */
+    private String cacheDataTreeEntryMissingError(String treeName, CacheAwareLink cacheAwareLink) {
+        long link = cacheAwareLink.link;
+
+        long pageId = pageId(link);
+
+        int itemId = itemId(link);
+
+        int partId = partId(pageId);
+
+        int pageIdx = pageIndex(pageId);
+
+        return "Entry is missing in index: " + treeName +
+            ", cacheId=" + cacheAwareLink.cacheId + ", partId=" + partId +
+            ", pageIndex=" + pageIdx + ", itemId=" + itemId + ", link=" + link;
+    }
+
+    /** */
+    private String compareError(String itemName, String idxName, long fromRoot, long scan, Class<? extends PageIO> pageType) {
+        return format(
+            "Different count of %s; index: %s, %s:%s, %s:%s" + (pageType == null ? "" : ", pageType: " + pageType.getName()),
+            itemName,
+            idxName,
+            RECURSIVE_TRAVERSE_NAME,
+            fromRoot,
+            HORIZONTAL_SCAN_NAME,
+            scan
+        );
     }
 
     /**
@@ -1330,6 +1201,126 @@ public class IgniteIndexReader implements AutoCloseable {
         }
         catch (IgniteCheckedException e) {
             throw new IgniteException(INDEX_FILE_NAME + " scan problem", e);
+        }
+    }
+
+    /** */
+    static long normalizePageId(long pageId) {
+        return pageId(partId(pageId), flag(pageId), pageIndex(pageId));
+    }
+
+    /**
+     * Reading pages into buffer.
+     *
+     * @param store Source for reading pages.
+     * @param pageId Page ID.
+     * @param buf Buffer.
+     */
+    private void readPage(FilePageStore store, long pageId, ByteBuffer buf) throws IgniteCheckedException {
+        try {
+            store.read(pageId, buf, false);
+        }
+        catch (IgniteDataIntegrityViolationException | IllegalArgumentException e) {
+            // Replacing exception due to security reasons, as IgniteDataIntegrityViolationException prints page content.
+            // Catch IllegalArgumentException for output page information.
+            throw new IgniteException("Failed to read page, id=" + pageId + ", idx=" + pageIndex(pageId) +
+                ", file=" + store.getFileAbsolutePath());
+        }
+    }
+
+    /**
+     * @return Tuple consisting of meta tree root page and pages list root page.
+     * @throws IgniteCheckedException If failed.
+     */
+    long[] partitionRoots(long pageMetaPageId) throws IgniteCheckedException {
+        return doWithBuffer((buf, addr) -> {
+            readPage(filePageStore(partId(pageMetaPageId)), pageMetaPageId, buf);
+
+            PageMetaIO pageMetaIO = PageIO.getPageIO(addr);
+
+            return new long[] {
+                normalizePageId(pageMetaIO.getTreeRoot(addr)),
+                normalizePageId(pageMetaIO.getReuseListRoot(addr))
+            };
+        });
+    }
+
+    /** */
+    private void print(String s) {
+        outStream.println(s);
+    }
+
+    /** */
+    private void printErr(String s) {
+        outStream.println(ERROR_PREFIX + s);
+    }
+
+    /** */
+    private void printErrors(
+        String prefix,
+        String caption,
+        @Nullable String alternativeCaption,
+        String elementFormatPtrn,
+        boolean printTrace,
+        Map<?, ? extends List<? extends Throwable>> errors
+    ) {
+        if (errors.isEmpty() && alternativeCaption != null) {
+            print(prefix + alternativeCaption);
+
+            return;
+        }
+
+        if (caption != null)
+            outStream.println(prefix + ERROR_PREFIX + caption);
+
+        errors.forEach((k, v) -> {
+            outStream.println(prefix + ERROR_PREFIX + format(elementFormatPtrn, k.toString()));
+
+            v.forEach(e -> {
+                if (printTrace)
+                    printStackTrace(e);
+                else
+                    printErr(e.getMessage());
+            });
+        });
+    }
+
+    /** */
+    private void printPageStat(String prefix, String caption, Map<Class<? extends PageIO>, Long> stat) {
+        if (caption != null)
+            print(prefix + caption + (stat.isEmpty() ? " empty" : ""));
+
+        stat.forEach((cls, cnt) -> print(prefix + cls.getSimpleName() + ": " + cnt));
+    }
+
+    /** */
+    private void printStackTrace(Throwable e) {
+        OutputStream os = new StringBuilderOutputStream();
+
+        e.printStackTrace(new PrintStream(os));
+
+        outStream.println(os);
+    }
+
+    /**
+     * Print partitions reading exceptions.
+     *
+     * @param partStoresErrors Partitions reading exceptions.
+     */
+    private void printFileReadingErrors(Map<Integer, List<Throwable>> partStoresErrors) {
+        List<Throwable> idxPartErrors = partStoresErrors.get(INDEX_PARTITION);
+
+        if (!F.isEmpty(idxPartErrors)) {
+            printErr("Errors detected while reading " + INDEX_FILE_NAME);
+
+            idxPartErrors.forEach(err -> printErr(err.getMessage()));
+
+            partStoresErrors.remove(INDEX_PARTITION);
+        }
+
+        if (!partStoresErrors.isEmpty()) {
+            printErrors("", "Errors detected while reading partition files:", null,
+                "Partition id: %s, exceptions: ", false, partStoresErrors);
         }
     }
 

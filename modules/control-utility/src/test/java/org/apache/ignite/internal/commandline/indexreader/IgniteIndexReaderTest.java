@@ -49,6 +49,7 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.cluster.IgniteClusterEx;
+import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.processors.cache.persistence.IndexStorageImpl;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
@@ -77,8 +78,6 @@ import static org.apache.ignite.internal.commandline.indexreader.IgniteIndexRead
 import static org.apache.ignite.internal.commandline.indexreader.IgniteIndexReader.HORIZONTAL_SCAN_NAME;
 import static org.apache.ignite.internal.commandline.indexreader.IgniteIndexReader.RECURSIVE_TRAVERSE_NAME;
 import static org.apache.ignite.internal.commandline.indexreader.IgniteIndexReader.normalizePageId;
-import static org.apache.ignite.internal.commandline.indexreader.IgniteIndexReader.partMetaPageId;
-import static org.apache.ignite.internal.pagemem.PageIdAllocator.FLAG_IDX;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
 import static org.apache.ignite.internal.pagemem.PageIdUtils.pageIndex;
 import static org.apache.ignite.internal.pagemem.PageIdUtils.partId;
@@ -269,7 +268,7 @@ public class IgniteIndexReaderTest extends GridCommonAbstractTest {
         File dir = new File(workDir, dataDir(cacheGrp));
 
         try (IgniteIndexReader reader = new IgniteIndexReader(null, false, null, createFilePageStoreFactory(dir))) {
-            long[] partitionRoots = reader.partitionRoots(partMetaPageId(INDEX_PARTITION, FLAG_IDX));
+            long[] partitionRoots = reader.partitionRoots(PageIdAllocator.META_PAGE_ID);
 
             ItemsListStorage<IndexStorageImpl.IndexItem> idxItemStorage = new ItemsListStorage<>();
 
