@@ -169,6 +169,10 @@
         <osgi.fail.ok>false</osgi.fail.ok>
 
         <flattenMode>clean</flattenMode>
+
+        <ignite.platform.full.version>
+            ${ignite.majorVersion}.${ignite.minorVersion}.${ignite.incrementalVersion}.${ignite.buildNumber}
+        </ignite.platform.full.version>
     </properties>
 
     <url>https://ignite.apache.org</url>

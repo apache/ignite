@@ -35,12 +35,6 @@
     <artifactId>ignite-cpp</artifactId>
     <packaging>pom</packaging>
 
-    <properties>
-        <ignite.platform.full.version>
-            ${ignite.majorVersion}.${ignite.minorVersion}.${ignite.incrementalVersion}.${ignite.buildNumber}
-        </ignite.platform.full.version>
-    </properties>
-
     <build>
         <plugins>
             <plugin>

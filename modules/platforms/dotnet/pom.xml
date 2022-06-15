@@ -32,14 +32,8 @@
         <relativePath>../../../parent-internal/pom.xml</relativePath>
     </parent>
 
-    <artifactId>ignite-donet</artifactId>
+    <artifactId>ignite-dotnet</artifactId>
     <packaging>pom</packaging>
-
-    <properties>
-        <ignite.platform.full.version>
-            ${ignite.majorVersion}.${ignite.minorVersion}.${ignite.incrementalVersion}.${ignite.buildNumber}
-        </ignite.platform.full.version>
-    </properties>
 
     <dependencies>
         <!--
