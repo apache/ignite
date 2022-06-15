@@ -41,6 +41,34 @@ public abstract class AbstractThinClientTest extends GridCommonAbstractTest {
     }
 
     /**
+     * Gets default client configuration with addresses set to the specified nodes.
+     *
+     * @param nodes Server nodes.
+     */
+    protected ClientConfiguration getClientConfiguration(ClusterNode... nodes) {
+        String[] addrs = new String[nodes.length];
+
+        for (int i = 0; i < nodes.length; i++) {
+            ClusterNode node = nodes[i];
+
+            addrs[i] = clientHost(node) + ":" + clientPort(node);
+        }
+
+        return getClientConfiguration().setAddresses(addrs);
+    }
+
+    /**
+     * Gets default client configuration with addresses set to the specified nodes.
+     *
+     * @param ignites Server nodes.
+     */
+    protected ClientConfiguration getClientConfiguration(Ignite... ignites) {
+        ClusterNode[] nodes = Arrays.stream(ignites).map(ignite -> ignite.cluster().localNode()).toArray(ClusterNode[]::new);
+
+        return getClientConfiguration(nodes);
+    }
+
+    /**
      * Return thin client port for given node.
      *
      * @param node Node.
@@ -65,15 +93,9 @@ public abstract class AbstractThinClientTest extends GridCommonAbstractTest {
      * @return Thin client.
      */
     protected IgniteClient startClient(ClusterNode... nodes) {
-        String[] addrs = new String[nodes.length];
+        ClientConfiguration cfg = getClientConfiguration(nodes);
 
-        for (int i = 0; i < nodes.length; i++) {
-            ClusterNode node = nodes[i];
-
-            addrs[i] = clientHost(node) + ":" + clientPort(node);
-        }
-
-        return Ignition.startClient(getClientConfiguration().setAddresses(addrs));
+        return Ignition.startClient(cfg);
     }
 
     /**
