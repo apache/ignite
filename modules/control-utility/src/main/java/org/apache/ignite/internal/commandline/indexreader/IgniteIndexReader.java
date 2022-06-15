@@ -1489,90 +1489,89 @@ public class IgniteIndexReader implements AutoCloseable {
 
         /** */
         private Object getLeafItem(BPlusLeafIO<?> io, long pageId, long addr, int idx, TreeTraverseContext nodeCtx) {
-            if (isLinkIo(io)) {
-                final long link = getLink(io, addr, idx);
+            if (!isLinkIo(io))
+                throw new IgniteException("Unexpected page io: " + io.getClass().getSimpleName());
 
-                final int cacheId;
+            final long link = getLink(io, addr, idx);
 
-                if (io instanceof AbstractDataLeafIO && ((AbstractDataLeafIO)io).storeCacheId())
-                    cacheId = ((RowLinkIO)io).getCacheId(addr, idx);
-                else
-                    cacheId = nodeCtx.cacheId;
+            final int cacheId;
 
-                boolean tombstone = false;
+            if (io instanceof AbstractDataLeafIO && ((AbstractDataLeafIO)io).storeCacheId())
+                cacheId = ((RowLinkIO)io).getCacheId(addr, idx);
+            else
+                cacheId = nodeCtx.cacheId;
 
-                if (partCnt > 0) {
-                    try {
-                        long linkedPageId = pageId(link);
+            boolean tombstone = false;
 
-                        int linkedPagePartId = partId(linkedPageId);
+            if (partCnt > 0) {
+                try {
+                    long linkedPageId = pageId(link);
 
-                        if (missingPartitions.contains(linkedPagePartId))
-                            return new CacheAwareLink(cacheId, link, false); // just skip
+                    int linkedPagePartId = partId(linkedPageId);
 
-                        int linkedItemId = itemId(link);
+                    if (missingPartitions.contains(linkedPagePartId))
+                        return new CacheAwareLink(cacheId, link, false); // just skip
 
-                        if (linkedPagePartId > partStores.length - 1) {
-                            missingPartitions.add(linkedPagePartId);
+                    int linkedItemId = itemId(link);
 
-                            throw new IgniteException("Calculated data page partition id exceeds given partitions " +
-                                "count: " + linkedPagePartId + ", partCnt=" + partCnt);
-                        }
+                    if (linkedPagePartId > partStores.length - 1) {
+                        missingPartitions.add(linkedPagePartId);
 
-                        final FilePageStore store = partStores[linkedPagePartId];
+                        throw new IgniteException("Calculated data page partition id exceeds given partitions " +
+                            "count: " + linkedPagePartId + ", partCnt=" + partCnt);
+                    }
 
-                        if (store == null) {
-                            missingPartitions.add(linkedPagePartId);
+                    final FilePageStore store = partStores[linkedPagePartId];
 
-                            throw new IgniteException("Corresponding store wasn't found for partId=" +
-                                linkedPagePartId + ". Does partition file exist?");
-                        }
+                    if (store == null) {
+                        missingPartitions.add(linkedPagePartId);
 
-                        tombstone = doWithBuffer((dataBuf, dataBufAddr) -> {
-                            readPage(store, linkedPageId, dataBuf);
+                        throw new IgniteException("Corresponding store wasn't found for partId=" +
+                            linkedPagePartId + ". Does partition file exist?");
+                    }
 
-                            PageIO dataIo = PageIO.getPageIO(getType(dataBuf), getVersion(dataBuf));
+                    tombstone = doWithBuffer((dataBuf, dataBufAddr) -> {
+                        readPage(store, linkedPageId, dataBuf);
 
-                            if (dataIo instanceof AbstractDataPageIO) {
-                                AbstractDataPageIO<?> dataPageIO = (AbstractDataPageIO<?>)dataIo;
+                        PageIO dataIo = PageIO.getPageIO(getType(dataBuf), getVersion(dataBuf));
 
-                                DataPagePayload payload = dataPageIO.readPayload(dataBufAddr, linkedItemId, pageSize);
+                        if (dataIo instanceof AbstractDataPageIO) {
+                            AbstractDataPageIO<?> dataPageIO = (AbstractDataPageIO<?>)dataIo;
 
-                                if (payload.offset() <= 0 || payload.payloadSize() <= 0) {
-                                    GridStringBuilder payloadInfo = new GridStringBuilder("Invalid data page payload: ")
-                                        .a("off=").a(payload.offset())
-                                        .a(", size=").a(payload.payloadSize())
-                                        .a(", nextLink=").a(payload.nextLink());
+                            DataPagePayload payload = dataPageIO.readPayload(dataBufAddr, linkedItemId, pageSize);
 
-                                    throw new IgniteException(payloadInfo.toString());
-                                }
+                            if (payload.offset() <= 0 || payload.payloadSize() <= 0) {
+                                GridStringBuilder payloadInfo = new GridStringBuilder("Invalid data page payload: ")
+                                    .a("off=").a(payload.offset())
+                                    .a(", size=").a(payload.payloadSize())
+                                    .a(", nextLink=").a(payload.nextLink());
 
-                                if (payload.nextLink() == 0) {
-                                    if (io instanceof MvccDataLeafIO)
-                                        return false;
-
-                                    int off = payload.offset();
-
-                                    int len = PageUtils.getInt(dataBufAddr, off);
-
-                                    byte type = PageUtils.getByte(dataBufAddr, off + len + 9);
-
-                                    return type == CacheObject.TOMBSTONE;
-                                }
+                                throw new IgniteException(payloadInfo.toString());
                             }
 
-                            return false;
-                        });
-                    }
-                    catch (Exception e) {
-                        nodeCtx.errors.computeIfAbsent(pageId, k -> new LinkedList<>()).add(e);
-                    }
-                }
+                            if (payload.nextLink() == 0) {
+                                if (io instanceof MvccDataLeafIO)
+                                    return false;
 
-                return new CacheAwareLink(cacheId, link, tombstone);
+                                int off = payload.offset();
+
+                                int len = PageUtils.getInt(dataBufAddr, off);
+
+                                byte type = PageUtils.getByte(dataBufAddr, off + len + 9);
+
+                                return type == CacheObject.TOMBSTONE;
+                            }
+                        }
+
+                        return false;
+                    });
+                }
+                catch (Exception e) {
+                    nodeCtx.errors.computeIfAbsent(pageId, k -> new LinkedList<>()).add(e);
+                }
             }
-            else
-                throw new IgniteException("Unexpected page io: " + io.getClass().getSimpleName());
+
+            return new CacheAwareLink(cacheId, link, tombstone);
         }
 
         /** */
