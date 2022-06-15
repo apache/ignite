@@ -30,6 +30,7 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.GridTopic;
 import org.apache.ignite.internal.cache.query.index.Index;
+import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyType;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexRow;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexRowImpl;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexSearchRowImpl;
@@ -272,7 +273,26 @@ public class H2TreeIndex extends H2TreeIndexBase {
 
             Value v = row.getValue(colId);
 
-            keys[i] = v == null ? null : IndexKeyFactory.wrap(
+            IndexKeyType colType = rowHnd.indexKeyDefinitions().get(i).idxType();
+
+            if (v == null)
+                continue;
+
+            // If it's possible to convert search row to index value type - do it. In this case converted value
+            // can be used for the inline search. Otherwise, wrap search row into index key and exploit
+            // comparison/convertion provided by H2. In this case indexed value will be converted to search row type on
+            // each comparison.
+            if (colType.code() != v.getType()) {
+                if (Value.getHigherOrder(colType.code(), v.getType()) == colType.code())
+                    v = v.convertTo(colType.code());
+                else {
+                    keys[i] = new H2ValueIndexKey(rowDescriptor().context().cacheObjectContext(), tbl, v);
+
+                    continue;
+                }
+            }
+
+            keys[i] = IndexKeyFactory.wrap(
                 v.getObject(), v.getType(), cctx.cacheObjectContext(), queryIndex.keyTypeSettings());
         }
 

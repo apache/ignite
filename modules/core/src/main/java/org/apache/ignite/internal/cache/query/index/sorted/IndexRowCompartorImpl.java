@@ -81,7 +81,7 @@ public class IndexRowCompartorImpl implements IndexRowComparator {
     }
 
     /** */
-    private int compare(IndexKey lkey, IndexKey rkey) {
+    private int compare(IndexKey lkey, IndexKey rkey) throws IgniteCheckedException {
         if (lkey == NullIndexKey.INSTANCE)
             return lkey.compare(rkey);
         else if (rkey == NullIndexKey.INSTANCE)
@@ -89,7 +89,9 @@ public class IndexRowCompartorImpl implements IndexRowComparator {
 
         if (lkey.isComparableTo(rkey))
             return lkey.compare(rkey);
+        else if (rkey.isComparableTo(lkey))
+            return -rkey.compare(lkey);
 
-        return COMPARE_UNSUPPORTED;
+        throw new IgniteCheckedException("Values can't be compared [lkey=" + lkey + ", rkey=" + rkey + ']');
     }
 }
