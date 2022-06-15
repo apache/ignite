@@ -465,7 +465,7 @@ public class IgniteIndexReader implements AutoCloseable {
 
                             TreeTraverseContext tree = e.getValue();
 
-                            if (getCacheId(name) != cacheAwareLink.cacheId)
+                            if (getCacheAndTypeId(name).get1() != cacheAwareLink.cacheId)
                                 continue; // It's index for other cache, don't check.
 
                             // Tombstones are not indexed and shouldn't be tested.
@@ -819,16 +819,6 @@ public class IgniteIndexReader implements AutoCloseable {
         print("");
 
         print("------------------");
-    }
-
-    /**
-     * Tries to get cache id from index tree name.
-     *
-     * @param name Index name.
-     * @return Cache id.
-     */
-    public static int getCacheId(String name) {
-        return getCacheAndTypeId(name).get1();
     }
 
     /**

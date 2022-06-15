@@ -28,8 +28,6 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStor
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.internal.commandline.indexreader.IgniteIndexReader.getCacheId;
-
 /**
  * Traverse context, which is used for tree traversal and is unique for traversal of one single tree.
  */
@@ -82,7 +80,7 @@ class TreeTraverseContext {
     ) {
         this.rootPageId = rootPageId;
         this.treeName = treeName;
-        this.cacheId = getCacheId(treeName);
+        this.cacheId = IgniteIndexReader.getCacheAndTypeId(treeName).get1();
         this.store = store;
         this.itemStorage = itemStorage;
         this.ioStat = new HashMap<>();
