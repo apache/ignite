@@ -1270,7 +1270,12 @@ public class IgniteIndexReader implements AutoCloseable {
 
         stat.forEach((cls, cnt) -> data.add(Arrays.asList(prefix + cls.getSimpleName(), cnt)));
 
-        SystemViewCommand.printTable(Arrays.asList(prefix + "Type", "Count"), Arrays.asList(STRING, NUMBER), data, logger);
+        SystemViewCommand.printTable(
+            Arrays.asList(prefix + "Type", "Count"),
+            Arrays.asList(STRING, NUMBER),
+            data,
+            logger
+        );
     }
 
     /** */
