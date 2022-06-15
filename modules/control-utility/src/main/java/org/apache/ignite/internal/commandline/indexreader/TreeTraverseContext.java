@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
+import java.util.function.LongConsumer;
 import java.util.function.ObjLongConsumer;
 
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStore;
@@ -34,6 +35,9 @@ import static org.apache.ignite.internal.commandline.indexreader.IgniteIndexRead
  * Traverse context, which is used for tree traversal and is unique for traversal of one single tree.
  */
 class TreeTraverseContext {
+    /** Root page id. */
+    final long rootPageId;
+
     /** Tree name. */
     final String treeName;
 
@@ -49,9 +53,6 @@ class TreeTraverseContext {
     /** Map of errors, pageId -> set of exceptions. */
     final Map<Long, List<Throwable>> errors;
 
-    /** Root page id. */
-    final long rootPageId;
-
     /**
      * List of items storage.
      */
@@ -61,10 +62,10 @@ class TreeTraverseContext {
     final Set<Long> innerPageIds;
 
     /** Callback that is called for each inner node page. */
-    @Nullable final ObjLongConsumer<PageContent> innerCb;
+    @Nullable final LongConsumer innerCb;
 
     /** Callback that is called for each leaf node page.*/
-    @Nullable final ObjLongConsumer<PageContent> leafCb;
+    @Nullable final LongConsumer leafCb;
 
     /** Callback that is called for each leaf item. */
     @Nullable final Consumer<Object> itemCb;
@@ -76,8 +77,8 @@ class TreeTraverseContext {
         FilePageStore store,
         ItemStorage itemStorage,
         Set<Long> innerPageIds,
-        @Nullable ObjLongConsumer<PageContent> innerCb,
-        @Nullable ObjLongConsumer<PageContent> leafCb,
+        @Nullable LongConsumer innerCb,
+        @Nullable LongConsumer leafCb,
         @Nullable Consumer<Object> itemCb
     ) {
         this.rootPageId = rootPageId;

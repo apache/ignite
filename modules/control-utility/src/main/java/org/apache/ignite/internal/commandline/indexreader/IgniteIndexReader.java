@@ -37,7 +37,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.ObjLongConsumer;
+import java.util.function.LongConsumer;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.regex.Matcher;
@@ -576,7 +576,7 @@ public class IgniteIndexReader implements AutoCloseable {
                     long cacheDataTreeRoot = partMetaIO.getTreeRoot(addr);
 
                     TreeTraverseContext cacheDataTreeInfo =
-                        horizontalTreeScan(cacheDataTreeRoot, "dataTree-" + partId, new ItemsListStorage());
+                        horizontalTreeScan(cacheDataTreeRoot, "dataTree-" + partId, new ItemsListStorage<>());
 
                     for (Object dataTreeItem : cacheDataTreeInfo.itemStorage) {
                         CacheAwareLink cacheAwareLink = (CacheAwareLink)dataTreeItem;
@@ -1042,7 +1042,7 @@ public class IgniteIndexReader implements AutoCloseable {
     TreeTraverseContext traverseTree(
         long rootPageId,
         String treeName,
-        @Nullable ObjLongConsumer<PageContent> leafCb,
+        @Nullable LongConsumer leafCb,
         ItemStorage itemStorage
     ) {
         Set<Long> innerPageIds = new HashSet<>();
@@ -1053,7 +1053,7 @@ public class IgniteIndexReader implements AutoCloseable {
             filePageStore(partId(rootPageId)),
             itemStorage,
             innerPageIds,
-            (content, pageId) -> innerPageIds.add(normalizePageId(pageId)),
+            pageId -> innerPageIds.add(normalizePageId(pageId)),
             leafCb,
             itemStorage::add
         );
@@ -1455,7 +1455,7 @@ public class IgniteIndexReader implements AutoCloseable {
                 children.add(getTreeNode(id, nodeCtx));
 
             if (nodeCtx.innerCb != null)
-                nodeCtx.innerCb.accept(content, pageId);
+                nodeCtx.innerCb.accept(pageId);
 
             return new TreeNode(pageId, content.io, null, children);
         }
@@ -1604,7 +1604,7 @@ public class IgniteIndexReader implements AutoCloseable {
         /** {@inheritDoc} */
         @Override public TreeNode getNode(PageContent content, long pageId, TreeTraverseContext nodeCtx) {
             if (nodeCtx.leafCb != null)
-                nodeCtx.leafCb.accept(content, pageId);
+                nodeCtx.leafCb.accept(pageId);
 
             if (nodeCtx.itemCb != null) {
                 for (Object item : content.items)

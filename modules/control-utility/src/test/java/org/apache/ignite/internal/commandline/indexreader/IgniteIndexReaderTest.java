@@ -286,7 +286,7 @@ public class IgniteIndexReaderTest extends GridCommonAbstractTest {
             reader.traverseTree(
                 normalizePageId(idxItem.pageId()),
                 idxItem.nameString(),
-                (c, pageId) -> anyLeafId.set(pageId),
+                anyLeafId::set,
                 linkStorage
             );
 
