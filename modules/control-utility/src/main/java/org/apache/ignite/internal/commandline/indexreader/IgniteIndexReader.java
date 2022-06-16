@@ -941,7 +941,7 @@ public class IgniteIndexReader implements AutoCloseable {
             itemStorage::add
         );
 
-        getTreeNode(rootPageId, ctx);
+        traverse(rootPageId, ctx);
 
         return ctx;
     }
@@ -1064,7 +1064,7 @@ public class IgniteIndexReader implements AutoCloseable {
      * @param nodeCtx Tree traverse context.
      * @return Tree node.
      */
-    private TreeNode getTreeNode(long pageId, TreeTraverseContext nodeCtx) {
+    private void traverse(long pageId, TreeTraverseContext nodeCtx) {
         try {
             final ByteBuffer buf = allocateBuffer(pageSize);
 
@@ -1081,7 +1081,7 @@ public class IgniteIndexReader implements AutoCloseable {
 
                 PageContent pageContent = ioProcessor.getContent(io, addr, pageId, nodeCtx);
 
-                return ioProcessor.getNode(pageContent, pageId, nodeCtx);
+                ioProcessor.traverse(pageContent, pageId, nodeCtx);
             }
             finally {
                 freeBuffer(buf);
@@ -1089,8 +1089,6 @@ public class IgniteIndexReader implements AutoCloseable {
         }
         catch (Throwable e) {
             nodeCtx.errors.computeIfAbsent(pageId, k -> new LinkedList<>()).add(e);
-
-            return new TreeNode(pageId, null, Collections.emptyList());
         }
     }
 
@@ -1386,9 +1384,8 @@ public class IgniteIndexReader implements AutoCloseable {
          * @param content Page content.
          * @param pageId Page id.
          * @param nodeCtx Tree traversal context.
-         * @return Tree node info.
          */
-        TreeNode getNode(PageContent content, long pageId, TreeTraverseContext nodeCtx);
+        void traverse(PageContent content, long pageId, TreeTraverseContext nodeCtx);
     }
 
     /**
@@ -1406,8 +1403,8 @@ public class IgniteIndexReader implements AutoCloseable {
         }
 
         /** {@inheritDoc} */
-        @Override public TreeNode getNode(PageContent content, long pageId, TreeTraverseContext nodeCtx) {
-            return new TreeNode(pageId, content.io, singletonList(getTreeNode(content.linkedPageIds.get(0), nodeCtx)));
+        @Override public void traverse(PageContent content, long pageId, TreeTraverseContext nodeCtx) {
+            IgniteIndexReader.this.traverse(content.linkedPageIds.get(0), nodeCtx);
         }
     }
 
@@ -1441,16 +1438,12 @@ public class IgniteIndexReader implements AutoCloseable {
         }
 
         /** {@inheritDoc} */
-        @Override public TreeNode getNode(PageContent content, long pageId, TreeTraverseContext nodeCtx) {
-            List<TreeNode> children = new ArrayList<>(content.linkedPageIds.size());
-
+        @Override public void traverse(PageContent content, long pageId, TreeTraverseContext nodeCtx) {
             for (Long id : content.linkedPageIds)
-                children.add(getTreeNode(id, nodeCtx));
+                IgniteIndexReader.this.traverse(id, nodeCtx);
 
             if (nodeCtx.innerCb != null)
                 nodeCtx.innerCb.accept(pageId);
-
-            return new TreeNode(pageId, content.io, children);
         }
     }
 
@@ -1580,7 +1573,7 @@ public class IgniteIndexReader implements AutoCloseable {
         }
 
         /** {@inheritDoc} */
-        @Override public TreeNode getNode(PageContent content, long pageId, TreeTraverseContext nodeCtx) {
+        @Override public void traverse(PageContent content, long pageId, TreeTraverseContext nodeCtx) {
             if (nodeCtx.leafCb != null)
                 nodeCtx.leafCb.accept(pageId);
 
@@ -1588,8 +1581,6 @@ public class IgniteIndexReader implements AutoCloseable {
                 for (Object item : content.items)
                     nodeCtx.itemCb.accept(item);
             }
-
-            return new TreeNode(pageId, content.io, Collections.emptyList());
         }
     }
 }
