@@ -1420,11 +1420,11 @@ public class IgniteIndexReader implements AutoCloseable {
             if (ctx.leafCb != null)
                 ctx.leafCb.accept(PageIO.getPageId(addr));
 
-            data(io, addr, PageIO.getPageId(addr), ctx).forEach(ctx.itemStorage::add);
+            data(io, addr, ctx).forEach(ctx.itemStorage::add);
         }
 
         /** */
-        private List<Object> data(PageIO io, long addr, long pageId, TreeTraverseContext ctx) {
+        private List<Object> data(PageIO io, long addr, TreeTraverseContext ctx) {
             List<Object> items = new LinkedList<>();
 
             BPlusLeafIO<?> leafIO = (BPlusLeafIO<?>)io;
@@ -1434,18 +1434,18 @@ public class IgniteIndexReader implements AutoCloseable {
                     if (io instanceof IndexStorageImpl.MetaStoreLeafIO)
                         items.add(((BPlusIO<IndexStorageImpl.IndexItem>)io).getLookupRow(null, addr, i));
                     else
-                        items.add(getLeafItem(leafIO, pageId, addr, i, ctx));
+                        items.add(getLeafItem(leafIO, addr, i, ctx));
                 }
             }
             catch (Exception e) {
-                ctx.errors.computeIfAbsent(pageId, k -> new LinkedList<>()).add(e);
+                ctx.errors.computeIfAbsent(PageIO.getPageId(addr), k -> new LinkedList<>()).add(e);
             }
 
             return items;
         }
 
         /** */
-        private Object getLeafItem(BPlusLeafIO<?> io, long pageId, long addr, int idx, TreeTraverseContext ctx) {
+        private Object getLeafItem(BPlusLeafIO<?> io, long addr, int idx, TreeTraverseContext ctx) {
             if (!(io instanceof InlineIO || io instanceof PendingRowIO || io instanceof RowLinkIO))
                 throw new IgniteException("Unexpected page io: " + io.getClass().getSimpleName());
 
@@ -1458,59 +1458,60 @@ public class IgniteIndexReader implements AutoCloseable {
             else
                 cacheId = ctx.cacheId;
 
-            if (partCnt > 0) {
-                try {
-                    long linkedPageId = pageId(link);
+            if (partCnt == 0)
+                return new CacheAwareLink(cacheId, link);
 
-                    int linkedPagePartId = partId(linkedPageId);
+            try {
+                long linkedPageId = pageId(link);
 
-                    if (missingPartitions.contains(linkedPagePartId))
-                        return new CacheAwareLink(cacheId, link); // just skip
+                int linkedPagePartId = partId(linkedPageId);
 
-                    int linkedItemId = itemId(link);
+                if (missingPartitions.contains(linkedPagePartId))
+                    return new CacheAwareLink(cacheId, link); // just skip
 
-                    if (linkedPagePartId > partStores.length - 1) {
-                        missingPartitions.add(linkedPagePartId);
+                int linkedItemId = itemId(link);
 
-                        throw new IgniteException("Calculated data page partition id exceeds given partitions " +
-                            "count: " + linkedPagePartId + ", partCnt=" + partCnt);
-                    }
+                if (linkedPagePartId > partStores.length - 1) {
+                    missingPartitions.add(linkedPagePartId);
 
-                    final FilePageStore store = partStores[linkedPagePartId];
+                    throw new IgniteException("Calculated data page partition id exceeds given partitions " +
+                        "count: " + linkedPagePartId + ", partCnt=" + partCnt);
+                }
 
-                    if (store == null) {
-                        missingPartitions.add(linkedPagePartId);
+                final FilePageStore store = partStores[linkedPagePartId];
 
-                        throw new IgniteException("Corresponding store wasn't found for partId=" +
-                            linkedPagePartId + ". Does partition file exist?");
-                    }
+                if (store == null) {
+                    missingPartitions.add(linkedPagePartId);
 
-                    doWithBuffer((dataBuf, dataBufAddr) -> {
-                        readPage(store, linkedPageId, dataBuf);
+                    throw new IgniteException("Corresponding store wasn't found for partId=" +
+                        linkedPagePartId + ". Does partition file exist?");
+                }
 
-                        PageIO dataIo = PageIO.getPageIO(getType(dataBuf), getVersion(dataBuf));
+                doWithBuffer((dataBuf, dataBufAddr) -> {
+                    readPage(store, linkedPageId, dataBuf);
 
-                        if (dataIo instanceof AbstractDataPageIO) {
-                            AbstractDataPageIO<?> dataPageIO = (AbstractDataPageIO<?>)dataIo;
+                    PageIO dataIo = PageIO.getPageIO(getType(dataBuf), getVersion(dataBuf));
 
-                            DataPagePayload payload = dataPageIO.readPayload(dataBufAddr, linkedItemId, pageSize);
+                    if (dataIo instanceof AbstractDataPageIO) {
+                        AbstractDataPageIO<?> dataPageIO = (AbstractDataPageIO<?>)dataIo;
 
-                            if (payload.offset() <= 0 || payload.payloadSize() <= 0) {
-                                GridStringBuilder payloadInfo = new GridStringBuilder("Invalid data page payload: ")
-                                    .a("off=").a(payload.offset())
-                                    .a(", size=").a(payload.payloadSize())
-                                    .a(", nextLink=").a(payload.nextLink());
+                        DataPagePayload payload = dataPageIO.readPayload(dataBufAddr, linkedItemId, pageSize);
 
-                                throw new IgniteException(payloadInfo.toString());
-                            }
+                        if (payload.offset() <= 0 || payload.payloadSize() <= 0) {
+                            GridStringBuilder payloadInfo = new GridStringBuilder("Invalid data page payload: ")
+                                .a("off=").a(payload.offset())
+                                .a(", size=").a(payload.payloadSize())
+                                .a(", nextLink=").a(payload.nextLink());
+
+                            throw new IgniteException(payloadInfo.toString());
                         }
+                    }
 
-                        return null;
-                    });
-                }
-                catch (Exception e) {
-                    ctx.errors.computeIfAbsent(pageId, k -> new LinkedList<>()).add(e);
-                }
+                    return null;
+                });
+            }
+            catch (Exception e) {
+                ctx.errors.computeIfAbsent(PageIO.getPageId(addr), k -> new LinkedList<>()).add(e);
             }
 
             return new CacheAwareLink(cacheId, link);
