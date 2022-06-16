@@ -134,6 +134,7 @@ import org.apache.ignite.internal.processors.query.SqlMergeTest;
 import org.apache.ignite.internal.processors.query.SqlNotNullKeyValueFieldTest;
 import org.apache.ignite.internal.processors.query.SqlQueryHistoryFromClientSelfTest;
 import org.apache.ignite.internal.processors.query.SqlQueryHistorySelfTest;
+import org.apache.ignite.internal.processors.query.SqlQueryIndexWithDifferentTypeTest;
 import org.apache.ignite.internal.processors.query.SqlSystemViewsSelfTest;
 import org.apache.ignite.internal.processors.query.h2.GridIndexRebuildSelfTest;
 import org.apache.ignite.internal.processors.query.h2.GridIndexRebuildTest;
@@ -190,6 +191,7 @@ import org.junit.runners.Suite;
     GridOrderedMessageCancelSelfTest.class,
     CacheQueryEvictDataLostTest.class,
     IgniteSqlQueryDecimalArgumentsWithTest.class,
+    SqlQueryIndexWithDifferentTypeTest.class,
 
     // Full text queries.
     GridCacheFullTextQueryFailoverTest.class,
