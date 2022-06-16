@@ -275,7 +275,22 @@ public class IgniteIndexReaderTest extends GridCommandHandlerAbstractTest {
     private IgniteBiTuple<Long, Long> findPagesForAnyCacheKey(File workDir, String cacheGrp) throws IgniteCheckedException {
         File dir = new File(workDir, dataDir(cacheGrp));
 
-        try (IgniteIndexReader reader = new IgniteIndexReader(null, false, createTestLogger(), createFilePageStoreFactory(dir))) {
+        // Take any inner page from tree.
+        AtomicLong anyLeafId = new AtomicLong();
+
+        IgniteIndexReader reader = new IgniteIndexReader(null, false, createTestLogger(), createFilePageStoreFactory(dir)) {
+            @Override TreeTraverseContext createContext(long rootPageId, String treeName, ItemStorage itemStorage, Set<Long> innerPageIds) {
+                return new TreeTraverseContext(rootPageId, treeName, filePageStore(partId(rootPageId)), itemStorage, innerPageIds) {
+                    @Override public void onLeafPage(long pageId, List<Object> data) {
+                        super.onLeafPage(pageId, data);
+
+                        anyLeafId.set(pageId);
+                    }
+                };
+            }
+        };
+
+        try {
             long[] partitionRoots = reader.partitionRoots(PageIdAllocator.META_PAGE_ID);
 
             ItemsListStorage<IndexStorageImpl.IndexItem> idxItemStorage = new ItemsListStorage<>();
@@ -287,13 +302,9 @@ public class IgniteIndexReaderTest extends GridCommandHandlerAbstractTest {
 
             ItemsListStorage<CacheAwareLink> linkStorage = new ItemsListStorage<>();
 
-            // Take any inner page from tree.
-            AtomicLong anyLeafId = new AtomicLong();
-
             reader.traverseTree(
                 normalizePageId(idxItem.pageId()),
                 idxItem.nameString(),
-                anyLeafId::set,
                 linkStorage
             );
 
@@ -301,6 +312,9 @@ public class IgniteIndexReaderTest extends GridCommandHandlerAbstractTest {
             long link = linkStorage.store.get(0).link;
 
             return new IgniteBiTuple<>(anyLeafId.get(), link);
+        }
+        finally {
+            reader.close();
         }
     }
 

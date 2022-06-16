@@ -21,11 +21,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.LongConsumer;
 
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStore;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
-import org.jetbrains.annotations.Nullable;
+
+import static org.apache.ignite.internal.commandline.indexreader.IgniteIndexReader.normalizePageId;
 
 /**
  * Traverse context, which is used for tree traversal and is unique for traversal of one single tree.
@@ -55,21 +55,13 @@ class TreeTraverseContext {
     /** Set of all inner page ids. */
     final Set<Long> innerPageIds;
 
-    /** Callback that is called for each inner node page. */
-    @Nullable final LongConsumer innerCb;
-
-    /** Callback that is called for each leaf node page.*/
-    @Nullable final LongConsumer leafCb;
-
     /** */
     public TreeTraverseContext(
         long rootPageId,
         String treeName,
         FilePageStore store,
         ItemStorage itemStorage,
-        Set<Long> innerPageIds,
-        @Nullable LongConsumer innerCb,
-        @Nullable LongConsumer leafCb
+        Set<Long> innerPageIds
     ) {
         this.rootPageId = rootPageId;
         this.treeName = treeName;
@@ -79,7 +71,20 @@ class TreeTraverseContext {
         this.ioStat = new HashMap<>();
         this.errors = new HashMap<>();
         this.innerPageIds = innerPageIds;
-        this.innerCb = innerCb;
-        this.leafCb = leafCb;
+    }
+
+    /** */
+    public void onPageIO(PageIO io) {
+        ioStat.compute(io.getClass(), (k, v) -> v == null ? 1 : v + 1);
+    }
+
+    /** */
+    public void onInnerPage(long pageId) {
+        innerPageIds.add(normalizePageId(pageId));
+    }
+
+    /** */
+    public void onLeafPage(long pageId, List<Object> data) {
+        data.forEach(itemStorage::add);
     }
 }
