@@ -126,10 +126,9 @@ public class IgniteIndexReaderTest extends GridCommandHandlerAbstractTest {
     /** Common part of regexp for single index output validation. */
     private static final String CHECK_IDX_PTRN_COMMON =
         "<PREFIX>Index tree: I \\[idxName=[\\-_0-9]{1,20}_%s##H2Tree.0, pageId=[0-9a-f]{16}\\]" +
-            LINE_DELIM + "<PREFIX>-- Page stat:" +
-            LINE_DELIM + "<PREFIX>Type.*Count" +
+            LINE_DELIM + "<PREFIX>---- Page stat:" +
             LINE_DELIM + "<PREFIX>([0-9a-zA-Z]{1,50}.*[0-9]{1,5}" +
-            LINE_DELIM + "<PREFIX>){%s,1000}-- Count of items found in leaf pages: %s" +
+            LINE_DELIM + "<PREFIX>){%s,1000}---- Count of items found in leaf pages: %s" +
             LINE_DELIM;
 
     /** Regexp to validate output of correct index. */
@@ -589,11 +588,11 @@ public class IgniteIndexReaderTest extends GridCommandHandlerAbstractTest {
         boolean partReadingErr,
         boolean idxSizeConsistent
     ) {
-        assertContains(log, output, RECURSIVE_TRAVERSE_NAME + "Total trees: " + treesCnt);
-        assertContains(log, output, HORIZONTAL_SCAN_NAME + "Total trees: " + treesCnt);
-        assertContains(log, output, RECURSIVE_TRAVERSE_NAME + "Total errors during trees traversal: " + travErrCnt);
-        assertContains(log, output, HORIZONTAL_SCAN_NAME + "Total errors during trees traversal: " + travErrCnt);
-        assertContains(log, output, "Total errors during lists scan: " + pageListsErrCnt);
+        assertFound(output, RECURSIVE_TRAVERSE_NAME + "Total trees:.*" + treesCnt);
+        assertFound(output, HORIZONTAL_SCAN_NAME + "Total trees:.*" + treesCnt);
+        assertFound(output, RECURSIVE_TRAVERSE_NAME + "Total errors during trees traversal:.*" + travErrCnt);
+        assertFound(output, HORIZONTAL_SCAN_NAME + "Total errors during trees traversal:.*" + travErrCnt);
+        assertFound(output, "Total errors during lists scan: " + pageListsErrCnt);
 
         if (idxSizeConsistent)
             assertContains(log, output, "No index size consistency errors found.");
@@ -601,7 +600,7 @@ public class IgniteIndexReaderTest extends GridCommandHandlerAbstractTest {
             assertContains(log, output, "Index size inconsistency");
 
         if (seqErrCnt >= 0)
-            assertContains(log, output, "Total errors occurred during sequential scan: " + seqErrCnt);
+            assertFound(output, "Total errors occurred during sequential scan:.*" + seqErrCnt);
         else
             assertContains(log, output, "Orphan pages were not reported due to --indexes filter.");
 
@@ -969,11 +968,7 @@ public class IgniteIndexReaderTest extends GridCommandHandlerAbstractTest {
             String output = runIndexReader(workDirs.get(0), CACHE_GROUP_NAME, null, true);
 
             // Pattern with errors count > 9
-            Pattern ptrn = compile(
-                "Partition check finished, total errors: [0-9]{2,5}, total problem partitions: [0-9]{2,5}"
-            );
-
-            assertTrue(output, ptrn.matcher(output).find());
+            assertFound(output, "Partition check finished, total errors: [0-9]{2,5}, total problem partitions: [0-9]{2,5}");
 
             assertContains(log, output, "Total errors during lists scan: 0");
         }
@@ -981,6 +976,11 @@ public class IgniteIndexReaderTest extends GridCommandHandlerAbstractTest {
             for (File dir : workDirs)
                 restoreFile(dir, INDEX_PARTITION);
         }
+    }
+
+    /** */
+    private void assertFound(String output, String pattern) {
+        assertTrue(output, compile(pattern).matcher(output).find());
     }
 
     /**

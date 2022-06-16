@@ -166,7 +166,7 @@ public class IgniteIndexReader implements AutoCloseable {
     @Nullable private final Predicate<String> idxFilter;
 
     /** Logger. */
-    private final Logger logger;
+    private final Logger log;
 
     /** Page store of {@link FilePageStoreManager#INDEX_FILE_NAME}. */
     @Nullable private final FilePageStore idxStore;
@@ -194,13 +194,13 @@ public class IgniteIndexReader implements AutoCloseable {
      *
      * @param idxFilter Index name filter, if {@code null} then is not used.
      * @param checkParts Check cache data tree in partition files and it's consistency with indexes.
-     * @param logger Logger.
+     * @param log Logger.
      * @throws IgniteCheckedException If failed.
      */
     public IgniteIndexReader(
         @Nullable Predicate<String> idxFilter,
         boolean checkParts,
-        Logger logger,
+        Logger log,
         IgniteIndexReaderFilePageStoreFactory filePageStoreFactory
     ) throws IgniteCheckedException {
         pageSize = filePageStoreFactory.pageSize();
@@ -208,7 +208,7 @@ public class IgniteIndexReader implements AutoCloseable {
         this.checkParts = checkParts;
         this.idxFilter = idxFilter;
 
-        this.logger = logger;
+        this.log = log;
 
         Map<Integer, List<Throwable>> partStoresErrors = new HashMap<>();
         List<Throwable> errors = new ArrayList<>();
@@ -221,7 +221,7 @@ public class IgniteIndexReader implements AutoCloseable {
         if (isNull(idxStore))
             throw new IgniteCheckedException(INDEX_FILE_NAME + " file not found");
         else
-            logger.info("Analyzing file: " + INDEX_FILE_NAME);
+            log.info("Analyzing file: " + INDEX_FILE_NAME);
 
         partStores = new FilePageStore[partCnt];
 
@@ -246,13 +246,13 @@ public class IgniteIndexReader implements AutoCloseable {
             .filter(Objects::nonNull)
             .count();
 
-        logger.info("Partitions files num: " + partPageStoresNum);
+        log.info("Partitions files num: " + partPageStoresNum);
 
         Map<Class<? extends PageIO>, Long> pageClasses = new HashMap<>();
 
         long pagesNum = isNull(idxStore) ? 0 : (idxStore.size() - idxStore.headerSize()) / pageSize;
 
-        logger.info("Going to check " + pagesNum + " pages.");
+        log.info("Going to check " + pagesNum + " pages.");
 
         Set<Long> pageIds = new HashSet<>();
 
@@ -310,33 +310,41 @@ public class IgniteIndexReader implements AutoCloseable {
         compareTraversals(treeInfo, horizontalScans);
 
         if (pageListsInfo == null)
-            logger.severe("No page lists meta info found.");
+            log.severe("No page lists meta info found.");
         else
             printPagesListsInfo(pageListsInfo);
 
-        printPageStat("", "\n---These pages types were encountered during sequential scan:", pageClasses);
+        printPageStat("", "\n---- These pages types were encountered during sequential scan:", pageClasses);
 
         if (!errors.isEmpty()) {
-            logger.severe("---");
-            logger.severe("Errors:");
+            log.severe("----");
+            log.severe("Errors:");
 
-            errors.forEach(e -> logger.info(e.getMessage()));
+            errors.forEach(e -> log.info(e.getMessage()));
         }
 
-        logger.info("---");
-        logger.info("Total pages encountered during sequential scan: " + pageClasses.values().stream().mapToLong(a -> a).sum());
-        logger.info("Total errors occurred during sequential scan: " + errors.size());
+        log.info("----");
+
+        SystemViewCommand.printTable(
+            null,
+            Arrays.asList(STRING, NUMBER),
+            Arrays.asList(
+                Arrays.asList("Total pages encountered during sequential scan:", pageClasses.values().stream().mapToLong(a -> a).sum()),
+                Arrays.asList("Total errors occurred during sequential scan: ", errors.size())
+            ),
+            log
+        );
 
         if (idxFilter != null)
-            logger.info("Orphan pages were not reported due to --indexes filter.");
+            log.info("Orphan pages were not reported due to --indexes filter.");
 
-        logger.info("Note that some pages can be occupied by meta info, tracking info, etc., so total page count can differ " +
+        log.info("Note that some pages can be occupied by meta info, tracking info, etc., so total page count can differ " +
             "from count of pages found in index trees and page lists.");
 
         if (checkParts) {
             Map<Integer, List<Throwable>> checkPartsErrors = checkParts(horizontalScans);
 
-            logger.info("");
+            log.info("");
 
             printErrors("",
                 "Partitions check:",
@@ -346,7 +354,7 @@ public class IgniteIndexReader implements AutoCloseable {
                 checkPartsErrors
             );
 
-            logger.info("\nPartition check finished, total errors: " +
+            log.info("\nPartition check finished, total errors: " +
                 checkPartsErrors.values().stream().mapToInt(List::size).sum() + ", total problem partitions: " +
                 checkPartsErrors.size()
             );
@@ -405,9 +413,7 @@ public class IgniteIndexReader implements AutoCloseable {
                         break;
                 }
                 catch (Throwable e) {
-                    String err = "Exception occurred on step " + i + ": " + e.getMessage();
-
-                    errors.add(new IgniteException(err, e));
+                    errors.add(new IgniteException("Error [step=" + i + ", msg=" + e.getMessage() + ']', e));
                 }
             }
 
@@ -422,7 +428,7 @@ public class IgniteIndexReader implements AutoCloseable {
      * @return Map of errors, bound to partition id.
      */
     private Map<Integer, List<Throwable>> checkParts(Map<String, TreeTraverseContext> aTreesInfo) {
-        logger.info("");
+        log.info("");
 
         // Map partId -> errors.
         Map<Integer, List<Throwable>> res = new HashMap<>();
@@ -553,10 +559,10 @@ public class IgniteIndexReader implements AutoCloseable {
                     + RECURSIVE_TRAVERSE_NAME + ": " + name);
         });
 
-        errors.forEach(logger::severe);
+        errors.forEach(log::severe);
 
-        logger.info("Comparing traversals detected " + errors.size() + " errors.");
-        logger.info("------------------");
+        log.info("Comparing traversals detected " + errors.size() + " errors.");
+        log.info("------------------");
     }
 
     /**
@@ -756,7 +762,7 @@ public class IgniteIndexReader implements AutoCloseable {
      * @param treeInfos Tree traversal info.
      */
     private void printTraversalResults(String prefix, Map<String, TreeTraverseContext> treeInfos) {
-        logger.info("\n" + prefix + "Tree traversal results");
+        log.info("\n" + prefix + "Tree traversal results");
 
         Map<Class<? extends PageIO>, Long> totalStat = new HashMap<>();
 
@@ -769,13 +775,13 @@ public class IgniteIndexReader implements AutoCloseable {
             String idxName = e.getKey();
             TreeTraverseContext validationInfo = e.getValue();
 
-            logger.info(prefix + "-----");
-            logger.info(prefix + "Index tree: " + idxName);
-            printPageStat(prefix, "-- Page stat:", validationInfo.ioStat);
+            log.info(prefix + "-----");
+            log.info(prefix + "Index tree: " + idxName);
+            printPageStat(prefix, "---- Page stat:", validationInfo.ioStat);
 
             validationInfo.ioStat.forEach((cls, cnt) -> totalStat.compute(cls, (k, v) -> v == null ? 1 : v + 1));
 
-            logger.info(prefix + "-- Count of items found in leaf pages: " + validationInfo.itemStorage.size());
+            log.info(prefix + "---- Count of items found in leaf pages: " + validationInfo.itemStorage.size());
 
             printErrors(
                 prefix,
@@ -793,11 +799,11 @@ public class IgniteIndexReader implements AutoCloseable {
                 .put(idxName, validationInfo.itemStorage.size());
         }
 
-        logger.info(prefix + "---");
+        log.info(prefix + "----");
 
         printPageStat(prefix, "Total page stat collected during trees traversal:", totalStat);
 
-        logger.info("");
+        log.info("");
 
         boolean sizeConsistencyErrorsFound = false;
 
@@ -810,21 +816,30 @@ public class IgniteIndexReader implements AutoCloseable {
 
                 totalErr++;
 
-                logger.severe("Index size inconsistency: cacheId=" + cacheTypeId.get1() + ", typeId=" + cacheTypeId.get2());
+                log.severe("Index size inconsistency: cacheId=" + cacheTypeId.get1() + ", typeId=" + cacheTypeId.get2());
 
-                idxSizes.forEach((name, size) -> logger.severe("     Index name: " + name + ", size=" + size));
+                idxSizes.forEach((name, size) -> log.severe("     Index name: " + name + ", size=" + size));
             }
         }
 
         if (!sizeConsistencyErrorsFound)
-            logger.info(prefix + "No index size consistency errors found.");
+            log.info(prefix + "No index size consistency errors found.");
 
-        logger.info("");
-        logger.info(prefix + "Total trees: " + treeInfos.keySet().size());
-        logger.info(prefix + "Total pages found in trees: " + totalStat.values().stream().mapToLong(a -> a).sum());
-        logger.info(prefix + "Total errors during trees traversal: " + totalErr);
-        logger.info("");
-        logger.info("------------------");
+        log.info("");
+
+        SystemViewCommand.printTable(
+            null,
+            Arrays.asList(STRING, NUMBER),
+            Arrays.asList(
+                Arrays.asList(prefix + "Total trees: ", treeInfos.keySet().size()),
+                Arrays.asList(prefix + "Total pages found in trees: ", totalStat.values().stream().mapToLong(a -> a).sum()),
+                Arrays.asList(prefix + "Total errors during trees traversal: ", totalErr)
+            ),
+            log
+        );
+
+        log.info("");
+        log.info("------------------");
     }
 
     /**
@@ -866,10 +881,10 @@ public class IgniteIndexReader implements AutoCloseable {
     private void printPagesListsInfo(PageListsInfo pageListsInfo) {
         String prefix = PAGE_LISTS_PREFIX;
 
-        logger.info("\n" + prefix + "Page lists info.");
+        log.info("\n" + prefix + "Page lists info.");
 
         if (!pageListsInfo.bucketsData.isEmpty())
-            logger.info(prefix + "---Printing buckets data:");
+            log.info(prefix + "---- Printing buckets data:");
 
         pageListsInfo.bucketsData.forEach((bucket, bucketData) -> {
             GridStringBuilder sb = new GridStringBuilder(prefix)
@@ -881,17 +896,17 @@ public class IgniteIndexReader implements AutoCloseable {
                 .a(bucketData.stream().map(String::valueOf).collect(joining(", ")))
                 .a("]");
 
-            logger.info(sb.toString());
+            log.info(sb.toString());
         });
 
-        printPageStat(prefix, "-- Page stat:", pageListsInfo.pageListStat);
+        printPageStat(prefix, "---- Page stat:", pageListsInfo.pageListStat);
 
-        printErrors(prefix, "---Errors:", "---No errors.", "Page id: %s, exception: ", true, pageListsInfo.errors);
+        printErrors(prefix, "---- Errors:", "---- No errors.", "Page id: %s, exception: ", true, pageListsInfo.errors);
 
-        logger.info("");
-        logger.info(prefix + "Total index pages found in lists: " + pageListsInfo.allPages.size());
-        logger.info(prefix + "Total errors during lists scan: " + pageListsInfo.errors.size());
-        logger.info("------------------");
+        log.info("");
+        log.info(prefix + "Total index pages found in lists: " + pageListsInfo.allPages.size());
+        log.info(prefix + "Total errors during lists scan: " + pageListsInfo.errors.size());
+        log.info("------------------");
     }
 
     /**
@@ -1238,22 +1253,22 @@ public class IgniteIndexReader implements AutoCloseable {
         Map<?, ? extends List<? extends Throwable>> errors
     ) {
         if (errors.isEmpty() && alternativeCaption != null) {
-            logger.info(prefix + alternativeCaption);
+            log.info(prefix + alternativeCaption);
 
             return;
         }
 
         if (caption != null)
-            logger.info(prefix + ERROR_PREFIX + caption);
+            log.info(prefix + ERROR_PREFIX + caption);
 
         errors.forEach((k, v) -> {
-            logger.info(prefix + ERROR_PREFIX + format(elementFormatPtrn, k.toString()));
+            log.info(prefix + ERROR_PREFIX + format(elementFormatPtrn, k.toString()));
 
             v.forEach(e -> {
                 if (printTrace)
                     printStackTrace(e);
                 else
-                    logger.severe(e.getMessage());
+                    log.severe(e.getMessage());
             });
         });
     }
@@ -1261,7 +1276,7 @@ public class IgniteIndexReader implements AutoCloseable {
     /** */
     private void printPageStat(String prefix, String caption, Map<Class<? extends PageIO>, Long> stat) {
         if (caption != null)
-            logger.info(prefix + caption + (stat.isEmpty() ? " empty" : ""));
+            log.info(prefix + caption + (stat.isEmpty() ? " empty" : ""));
 
         if (stat.isEmpty())
             return;
@@ -1271,10 +1286,10 @@ public class IgniteIndexReader implements AutoCloseable {
         stat.forEach((cls, cnt) -> data.add(Arrays.asList(prefix + cls.getSimpleName(), cnt)));
 
         SystemViewCommand.printTable(
-            Arrays.asList(prefix + "Type", "Count"),
+            null,
             Arrays.asList(STRING, NUMBER),
             data,
-            logger
+            log
         );
     }
 
@@ -1284,7 +1299,7 @@ public class IgniteIndexReader implements AutoCloseable {
 
         e.printStackTrace(new PrintStream(os));
 
-        logger.info(os.toString());
+        log.info(os.toString());
     }
 
     /**
@@ -1296,9 +1311,9 @@ public class IgniteIndexReader implements AutoCloseable {
         List<Throwable> idxPartErrors = partStoresErrors.get(INDEX_PARTITION);
 
         if (!F.isEmpty(idxPartErrors)) {
-            logger.severe("Errors detected while reading " + INDEX_FILE_NAME);
+            log.severe("Errors detected while reading " + INDEX_FILE_NAME);
 
-            idxPartErrors.forEach(err -> logger.severe(err.getMessage()));
+            idxPartErrors.forEach(err -> log.severe(err.getMessage()));
 
             partStoresErrors.remove(INDEX_PARTITION);
         }
