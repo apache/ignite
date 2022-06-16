@@ -38,13 +38,16 @@ import org.junit.runners.Parameterized;
 @RunWith(Parameterized.class)
 public class ConcurrentTxsConsistentCutTest extends AbstractConsistentCutTest {
     /** Amount of Consistent Cuts to await. */
-    private static final int CUTS = 10;
+    private static final int CUTS = 20;
 
     /** How many times repeat the test. */
-    private static final int REPEAT = 20;
+    private static final int REPEAT = 1;
 
     /** */
     private final Map<IgniteUuid, Integer> txOrigNode = new ConcurrentHashMap<>();
+
+    /** Notifies data loader to stop preparing new transactions. */
+    private volatile CountDownLatch stopLoadLatch;
 
     /** Number of server nodes. */
     @Parameterized.Parameter
@@ -69,7 +72,7 @@ public class ConcurrentTxsConsistentCutTest extends AbstractConsistentCutTest {
     /** */
     @Parameterized.Parameters(name = "nodes={0} backups={1} repeat={2}")
     public static List<Object[]> params() {
-        List<T2<Integer, Integer>> nodesAndBackups = F.asList(new T2<>(2, 0), new T2<>(2, 1), new T2<>(3, 2));
+        List<T2<Integer, Integer>> nodesAndBackups = F.asList(new T2<>(2, 1)); //, new T2<>(2, 1), new T2<>(3, 2));
 
         List<Object[]> params = new ArrayList<>();
 
@@ -94,16 +97,16 @@ public class ConcurrentTxsConsistentCutTest extends AbstractConsistentCutTest {
     /** */
     @Test
     public void concurrentLoadAndCutTest() throws Exception {
-        final CountDownLatch latch = new CountDownLatch(1);
+        stopLoadLatch = new CountDownLatch(1);
 
-        IgniteInternalFuture<?> f = asyncLoadData(latch, 2);
+        IgniteInternalFuture<?> f = asyncLoadData(2);
 
         awaitConsistentCuts(CUTS, 0);
 
         // Disable new Consistent Cuts.
         grid(0).context().cache().context().consistentCutMgr().disable();
 
-        latch.countDown();
+        stopLoadLatch.countDown();
 
         f.get();
 
@@ -115,11 +118,11 @@ public class ConcurrentTxsConsistentCutTest extends AbstractConsistentCutTest {
      *
      * @return Future that completes with full amount of transactions.
      */
-    private IgniteInternalFuture<?> asyncLoadData(CountDownLatch latch, int threads) throws Exception {
+    private IgniteInternalFuture<?> asyncLoadData(int threads) throws Exception {
         return multithreadedAsync(() -> {
             Random r = new Random();
 
-            while (latch.getCount() > 0) {
+            while (stopLoadLatch.getCount() > 0) {
                 // +1 - client node.
                 int n = r.nextInt(nodes() + 1);
 
@@ -133,10 +136,10 @@ public class ConcurrentTxsConsistentCutTest extends AbstractConsistentCutTest {
                     for (int j = 0; j < cnt; j++) {
                         IgniteCache<Integer, Integer> cache = g.cache(CACHE);
 
-                        cache.put(r.nextInt(100), r.nextInt());
+                        cache.put(r.nextInt(), r.nextInt());
                     }
 
-                    tx.commit();
+                    tx.commitAsync();
                 }
             }
         }, threads);

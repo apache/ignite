@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.consistentcut;
 
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -25,7 +26,6 @@ import org.apache.ignite.internal.pagemem.wal.record.ConsistentCutFinishRecord;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.transactions.TransactionState;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * Describes current Consistent Cut state.
@@ -50,15 +50,8 @@ public class ConsistentCutState {
     private final AtomicBoolean finished = new AtomicBoolean();
 
     /**
-     * Whether it's allowed to finish Consistent Cut. After publishing this state it's still possible to add some
-     * transactions to {@link #includeBefore}, as it may receieve FinishRequest concurrently with preparing this state.
-     * Then after it's prohibited to finish until all transactions aren't handled.
-     */
-    private final AtomicBoolean allowFinish = new AtomicBoolean();
-
-    /**
-     * Whether it's safe to start new Consistent Cut procedure. It means that it's {@link #finished()} and all
-     * transactions in {@link #includeAfter} committed.
+     * Whether it's safe to start new Consistent Cut procedure. It means that it's {@link #finished} and all
+     * transactions in {@link #includeBefore} committed.
      */
     private final AtomicBoolean ready = new AtomicBoolean();
 
@@ -72,7 +65,7 @@ public class ConsistentCutState {
      * Collection of transactions to exclude from this Consistent Cut (to include to the global AFTER state). It contains
      * ID of local transaction (not ID on near node like in {@link #includeBefore}).
      */
-    private final Set<GridCacheVersion> includeAfter = ConcurrentHashMap.newKeySet();
+    private final Set<GridCacheVersion> includeAfter = new HashSet<>();
 
     /**
      * Collection of transactions to await before notify Consistent Cut coordinator.
@@ -81,9 +74,9 @@ public class ConsistentCutState {
 
     /**
      * Collection of transactions that are required to be checked whether to include them to this Consistent Cut. Such
-     * transactions are waiting for notifications from other nodes. Key is transaction ID. Value is related transaction.
+     * transactions are waiting for notifications from other nodes.
      */
-    private final Map<GridCacheVersion, IgniteInternalTx> check = new ConcurrentHashMap<>();
+    private final Set<GridCacheVersion> check = ConcurrentHashMap.newKeySet();
 
     /** */
     public ConsistentCutState(long ver, long prevVer) {
@@ -112,7 +105,6 @@ public class ConsistentCutState {
      */
     public void includeAfterCut(IgniteInternalTx tx) {
         includeAfter.add(tx.xidVersion());
-        readyAwait.put(tx.xidVersion(), tx);
     }
 
     /**
@@ -138,9 +130,7 @@ public class ConsistentCutState {
      * @param tx Transaction.
      */
     public void addForCheck(IgniteInternalTx tx) {
-        GridCacheVersion txVer = tx.xidVersion();
-
-        check.put(txVer, tx);
+        check.add(tx.xidVersion());
     }
 
     /**
@@ -149,34 +139,22 @@ public class ConsistentCutState {
      * @param txVer Transaction version.
      */
     public boolean checkExclude(GridCacheVersion txVer) {
-        IgniteInternalTx tx = check.get(txVer);
-
-        if (tx != null) {
-            if (tx.state() != TransactionState.COMMITTED)
-                readyAwait.put(txVer, tx);
-
-            return tryFinish(txVer);
-        }
-
-        return false;
+        return tryFinish(txVer);
     }
 
     /**
      * Includes specified transaction to this Consistent Cut.
      *
-     * @param txVer Transaction ID.
-     * @param nearTxVer Transaction ID on near node.
-     * @param tx Optional transaction, can be {@code null} for already committed transactions.
+     * @param tx Transaction to include.
      */
-    public boolean checkInclude(GridCacheVersion txVer, GridCacheVersion nearTxVer, @Nullable IgniteInternalTx tx) {
-        includeBefore.add(nearTxVer);
+    public boolean checkInclude(IgniteInternalTx tx) {
+        GridCacheVersion txVer = tx.xidVersion();
 
-        IgniteInternalTx t = check.get(txVer);
+        includeBefore.add(tx.nearXidVersion());
 
-        t = t == null ? tx : t;
-
-        if (t != null && t.state() != TransactionState.COMMITTED)
-            readyAwait.put(txVer, t);
+        // Transaction can be COMMITTING or COMMITTED here. In case of COMMITTED no need to await it.
+        if (tx != null && tx.state() == TransactionState.COMMITTING)
+            readyAwait.put(txVer, tx);
 
         return tryFinish(txVer);
     }
@@ -187,7 +165,7 @@ public class ConsistentCutState {
      * @return Whether local Consistent Cut has finished.
      */
     public boolean tryFinish() {
-        return check.isEmpty() && finish();
+        return check.isEmpty() && finished.compareAndSet(false, true);
     }
 
     /**
@@ -201,27 +179,6 @@ public class ConsistentCutState {
             check.remove(txVer);
 
         return tryFinish();
-    }
-
-    /**
-     * Finish local Consistent Cut.
-     */
-    private boolean finish() {
-        return allowFinish.get() && finished.compareAndSet(false, true);
-    }
-
-    /**
-     * Allows finish local Consistent Cut.
-     */
-    public void allowFinish() {
-        allowFinish.set(true);
-    }
-
-    /**
-     * Whether local Consistent Cut is finished.
-     */
-    public boolean finished() {
-        return finished.get();
     }
 
     /**
@@ -239,12 +196,7 @@ public class ConsistentCutState {
      * @return {@code true} if it's ready to start new Consistent Cut.
      */
     public boolean tryReady() {
-        boolean awaitCommitted = true;
-
-        for (IgniteInternalTx tx: readyAwait.values())
-            awaitCommitted &= tx.state() == TransactionState.COMMITTED;
-
-        return awaitCommitted && finished.get() && ready.compareAndSet(false, true);
+        return finished.get() && readyAwait.isEmpty() && ready.compareAndSet(false, true);
     }
 
     /**
@@ -265,13 +217,12 @@ public class ConsistentCutState {
 
         bld.append("ver=").append(ver).append(", ");
         bld.append("prevVer=").append(prevVer).append(", ");
-        bld.append("allowFinish=").append(allowFinish).append(", ");
         bld.append("finished=").append(finished).append(", ");
         bld.append("ready=").append(ready).append(", ");
 
         setAppend(bld, "includeBefore", includeBefore);
         setAppend(bld, "includeAfter", includeAfter);
-        setAppend(bld, "check", check.keySet());
+        setAppend(bld, "check", check);
         setAppend(bld, "await", readyAwait.keySet());
 
         return bld.append("]").toString();

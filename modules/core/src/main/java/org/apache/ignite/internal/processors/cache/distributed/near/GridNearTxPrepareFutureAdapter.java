@@ -95,7 +95,7 @@ public abstract class GridNearTxPrepareFutureAdapter extends
     protected boolean trackable = true;
 
     /** The Latest Consistent Cut Version AFTER which this transaction committed. */
-    private long txCutVer;
+    private long txCutVer = -1;
 
     /**
      * @param cctx Context.

@@ -71,7 +71,7 @@ public abstract class AbstractConsistentCutBlockingTest extends AbstractConsiste
     private static volatile CountDownLatch cutPublishBlkLatch = new CountDownLatch(0);
 
     /** Latch that blocks writing Consistent Cut record on single node. */
-    private static volatile CountDownLatch cutWalBlkLatch = new CountDownLatch(0);
+    private static volatile CountDownLatch cutVerUpdateLatch = new CountDownLatch(0);
 
     /**
      * Latch that counts down when Consistent Cut procedure started on every node. It means that every node writes
@@ -154,7 +154,6 @@ public abstract class AbstractConsistentCutBlockingTest extends AbstractConsiste
             for (int cs = 0; cs < cases.size(); cs++) {
                 final int n = near;
                 final int c = cs;
-
                 runCase(() -> tx(n, cases.get(c), TransactionConcurrency.PESSIMISTIC), near, cases.get(c));
                 runCase(() -> tx(n, cases.get(c), TransactionConcurrency.OPTIMISTIC), near, cases.get(c));
             }
@@ -246,7 +245,7 @@ public abstract class AbstractConsistentCutBlockingTest extends AbstractConsiste
         txFut.get(getTestTimeout(), TimeUnit.MILLISECONDS);
 
         // 8. Resume blocking Consistent Cut.
-        cutWalBlkLatch.countDown();
+        cutVerUpdateLatch.countDown();
         cutPublishBlkLatch.countDown();
 
         // 9. Await while Consistent Cut completed.
@@ -260,17 +259,17 @@ public abstract class AbstractConsistentCutBlockingTest extends AbstractConsiste
 
         switch (cutBlkType) {
             case NONE:
-                cutWalBlkLatch = new CountDownLatch(0);
+                cutVerUpdateLatch = new CountDownLatch(0);
                 cutPublishBlkLatch = new CountDownLatch(0);
                 break;
 
-            case WAL_START:
-                cutWalBlkLatch = new CountDownLatch(1);
+            case VERSION_UPDATE:
+                cutVerUpdateLatch = new CountDownLatch(1);
                 cutPublishBlkLatch = new CountDownLatch(0);
                 break;
 
             case PUBLISH:
-                cutWalBlkLatch = new CountDownLatch(0);
+                cutVerUpdateLatch = new CountDownLatch(0);
                 cutPublishBlkLatch = new CountDownLatch(1);
                 break;
         }
@@ -513,17 +512,17 @@ public abstract class AbstractConsistentCutBlockingTest extends AbstractConsiste
         }
 
         /** Blocks writing ConsistentCutStartRecord. */
-        @Override protected void walLog(long cutVer, WALRecord record) {
+        @Override protected ConsistentCutState startLocalConsistentCut(long prevCutVer, long newCutVer) {
             if (blkCut()) {
                 try {
-                    cutWalBlkLatch.await(100, TimeUnit.MILLISECONDS);
+                    cutVerUpdateLatch.await(100, TimeUnit.MILLISECONDS);
                 }
                 catch (InterruptedException e) {
                     throw new IgniteException(e);
                 }
             }
 
-            super.walLog(cutVer, record);
+            return super.startLocalConsistentCut(prevCutVer, newCutVer);
         }
 
         /** */
@@ -550,7 +549,7 @@ public abstract class AbstractConsistentCutBlockingTest extends AbstractConsiste
         NONE,
 
         /** */
-        WAL_START,
+        VERSION_UPDATE,
 
         /** */
         PUBLISH

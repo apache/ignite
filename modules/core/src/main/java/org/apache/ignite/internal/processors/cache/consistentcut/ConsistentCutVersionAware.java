@@ -42,7 +42,10 @@ public interface ConsistentCutVersionAware {
         return -1L;
     }
 
-    /** */
+    /**
+     * @return Whether local node is responsible to set Consistent Cut Version for transaction and send it
+     * to other nodes.
+     */
     public default boolean txCutVerSetNode() {
         return false;
     }

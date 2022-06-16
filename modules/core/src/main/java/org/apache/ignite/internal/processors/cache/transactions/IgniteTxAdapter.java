@@ -2006,9 +2006,9 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
     /** {@inheritDoc} */
     @Override public boolean txCutVerSetNode() {
         if (log.isDebugEnabled()) {
-            log.debug(nearXidVersion().asIgniteUuid() + " " + getClass().getSimpleName() + " 1pc=" + onePhaseCommit
-                + " node=" + nodeId + " nodes=" + txNodes + " " + "client=" + cctx.kernalContext().clientNode()
-                + " near=" + near() + " local=" + local() + " dht=" + dht());
+            log.debug("`txCutVerSetNode` " + nearXidVersion().asIgniteUuid() + " " + getClass().getSimpleName()
+                + " 1pc=" + onePhaseCommit + " node=" + nodeId + " nodes=" + txNodes + " " + "client="
+                + cctx.kernalContext().clientNode() + " near=" + near() + " local=" + local() + " dht=" + dht());
         }
 
         if (onePhaseCommit) {
@@ -2018,12 +2018,12 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
             Collection<UUID> backups = txNodes.get(nodeId);
 
             // We are on backup node. It's by default set the version.
-            if (backups == null)
+            if (dht() && backups == null)
                 return true;
 
-            // Near doesn't set version for 1PC.
+            // Near can set version iff it's colocated and there is no backups.
             if (near())
-                return false;
+                return F.isEmpty(backups) && ((GridNearTxLocal)this).colocatedLocallyMapped();
 
             // This is a backup or primary transaction. Primary node sets the version iff cache doesn't have backups.
             return (dht() && remote()) || backups.isEmpty();

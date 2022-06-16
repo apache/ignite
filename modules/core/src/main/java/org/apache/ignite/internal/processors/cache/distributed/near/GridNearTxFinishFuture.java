@@ -359,7 +359,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
                             finishOnePhase(commit);
 
                         try {
-                            long cutVer = 0;
+                            long cutVer = -1;
 
                             if (tx.currentPrepareFuture() != null)
                                 cutVer = ((GridNearTxPrepareFutureAdapter)tx.currentPrepareFuture()).txCutVer();

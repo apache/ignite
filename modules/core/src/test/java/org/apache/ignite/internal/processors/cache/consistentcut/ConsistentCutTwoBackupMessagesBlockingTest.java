@@ -47,7 +47,7 @@ public class ConsistentCutTwoBackupMessagesBlockingTest extends AbstractConsiste
 
         List<String> msgs = ConsistentCutBlockingCases.messages(true);
 
-        Stream.of(BlkCutType.NONE, BlkCutType.PUBLISH, BlkCutType.WAL_START).forEach(c ->
+        Stream.of(BlkCutType.NONE, BlkCutType.VERSION_UPDATE, BlkCutType.PUBLISH).forEach(c ->
             Stream.of(BlkNodeType.NEAR, BlkNodeType.PRIMARY, BlkNodeType.BACKUP).forEach(n -> {
                 for (String m: msgs)
                     p.add(new Object[] {c, n, m});

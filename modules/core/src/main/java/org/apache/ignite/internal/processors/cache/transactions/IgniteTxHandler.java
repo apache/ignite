@@ -161,7 +161,7 @@ public class IgniteTxHandler {
                     ", node=" + nearNodeId + ']');
             }
 
-            processConsistentVer(req, false);
+            processConsistentVer(req);
 
             ClusterNode nearNode = ctx.node(nearNodeId);
 
@@ -291,17 +291,11 @@ public class IgniteTxHandler {
     }
 
     /** */
-    private void processConsistentVer(ConsistentCutVersionAware msg, boolean map) {
+    private void processConsistentVer(ConsistentCutVersionAware msg) {
         if (ctx.consistentCutMgr() != null) {
             UUID crdNodeId = ctx.discovery().serverNodes(msg.topologyVersion()).get(0).id();
 
             ctx.consistentCutMgr().handleConsistentCutVersion(crdNodeId, msg.latestCutVersion());
-
-            if (msg.txCutVersion() >= 0) {
-                GridCacheVersion v = map ? ctx.tm().mappedVersion(msg.nearXidVersion()) : msg.xidVersion();
-
-                ctx.consistentCutMgr().handleRemoteTxCutVersion(v, msg.nearXidVersion(), msg.txCutVersion());
-            }
         }
     }
 
@@ -785,7 +779,7 @@ public class IgniteTxHandler {
                 txPrepareMsgLog.debug("Received near prepare response [txId=" + res.version() + ", node=" +
                     nodeId + ']');
 
-            processConsistentVer(res, false);
+            processConsistentVer(res);
 
             GridNearTxPrepareFutureAdapter fut = (GridNearTxPrepareFutureAdapter)ctx.mvcc()
                 .<IgniteInternalTx>versionedFuture(res.version(), res.futureId());
@@ -845,7 +839,7 @@ public class IgniteTxHandler {
         try (TraceSurroundings ignored =
                  MTC.support(ctx.kernalContext().tracing().create(TX_PROCESS_DHT_PREPARE_RESP, MTC.span()))) {
 
-            processConsistentVer(res, false);
+            processConsistentVer(res);
 
             GridDhtTxPrepareFuture fut =
                 (GridDhtTxPrepareFuture)ctx.mvcc().versionedFuture(res.version(), res.futureId());
@@ -946,7 +940,7 @@ public class IgniteTxHandler {
                 txFinishMsgLog.debug("Received near finish request [txId=" + req.version() + ", node=" + nodeId +
                     ']');
 
-            processConsistentVer(req, true);
+            processConsistentVer(req);
 
             IgniteInternalFuture<IgniteInternalTx> fut = finish(nodeId, null, req);
 
@@ -1235,7 +1229,7 @@ public class IgniteTxHandler {
 
             assert req.transactionNodes() != null;
 
-            processConsistentVer(req, false);
+            processConsistentVer(req);
 
             GridDhtTxRemote dhtTx = null;
             GridNearTxRemote nearTx = null;
@@ -1409,7 +1403,7 @@ public class IgniteTxHandler {
             assert nodeId != null;
             assert req != null;
 
-            processConsistentVer(req, false);
+            processConsistentVer(req);
 
             if (req.checkCommitted()) {
                 boolean committed = req.waitRemoteTransactions() || !ctx.tm().addRolledbackTx(null, req.version());
