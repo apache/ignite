@@ -2086,36 +2086,6 @@ public class GridFunc {
     }
 
     /**
-     * Finds, transforms and returns first element in given collection for which any of
-     * the provided predicates evaluates to {@code true}.
-     *
-     * @param c Input collection.
-     * @param dfltVal Default value to return when no element is found.
-     * @param f Transforming closure.
-     * @param p Optional set of finder predicates.
-     * @param <V> Type of the collection elements.
-     * @return First element in given collection for which predicate evaluates to
-     *      {@code true} - or {@code null} if such element cannot be found.
-     */
-    @Deprecated
-    public static <V, Y> Y find(Iterable<? extends V> c, @Nullable Y dfltVal, IgniteClosure<? super V, Y> f,
-        @Nullable IgnitePredicate<? super V>... p) {
-        A.notNull(c, "c", f, "f");
-
-        if (isAlwaysTrue(p) && c.iterator().hasNext())
-            return f.apply(c.iterator().next());
-
-        if (!isEmpty(p) && !isAlwaysFalse(p)) {
-            for (V v : c) {
-                if (isAny(v, p))
-                    return f.apply(v);
-            }
-        }
-
-        return dfltVal;
-    }
-
-    /**
      * Checks if collection {@code c1} contains any elements from collection {@code c2}.
      *
      * @param c1 Collection to check for containment. If {@code null} - this method returns {@code false}.

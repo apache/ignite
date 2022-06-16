@@ -49,8 +49,8 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
 
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.cacheGroupName;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.partId;
+import static org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotRestoreProcess.groupIdFromTmpDir;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsAnyCause;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
@@ -219,7 +219,7 @@ public class IgniteSnapshotRemoteRequestTest extends IgniteClusterSnapshotRestor
             () -> false,
             (part, t) -> {
                 if (t == null) {
-                    int grpId = CU.cacheId(cacheGroupName(part.getParentFile()));
+                    int grpId = groupIdFromTmpDir(part.getParentFile());
 
                     assertTrue("Received cache group has not been requested", parts.containsKey(grpId));
                     assertTrue("Received partition has not been requested",
@@ -305,7 +305,7 @@ public class IgniteSnapshotRemoteRequestTest extends IgniteClusterSnapshotRestor
         return (part, t) -> {
             assertNull(t);
 
-            int grpId = CU.cacheId(cacheGroupName(part.getParentFile()));
+            int grpId = groupIdFromTmpDir(part.getParentFile());
 
             assertTrue("Received cache group has not been requested", parts.containsKey(grpId));
             assertTrue("Received partition has not been requested",
