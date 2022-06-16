@@ -25,7 +25,6 @@ import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -74,6 +73,7 @@ import org.apache.ignite.internal.processors.cache.tree.PendingRowIO;
 import org.apache.ignite.internal.processors.cache.tree.RowLinkIO;
 import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.GridStringBuilder;
+import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.lang.GridClosure3;
 import org.apache.ignite.internal.util.lang.GridPlainClosure2;
 import org.apache.ignite.internal.util.lang.IgnitePair;
@@ -235,15 +235,9 @@ public class IgniteIndexReader implements AutoCloseable {
         printFileReadingErrors(partStoresErrors);
     }
 
-    /**
-     * Read index file.
-     */
+    /** Read index file. */
     public void readIdx() throws IgniteCheckedException {
-        long partPageStoresNum = Arrays.stream(partStores)
-            .filter(Objects::nonNull)
-            .count();
-
-        log.info("Partitions files num: " + partPageStoresNum);
+        log.info("Partitions files num: " + Arrays.stream(partStores).filter(Objects::nonNull).count());
 
         Map<Class<? extends PageIO>, Long> pageClasses = new HashMap<>();
 
@@ -565,65 +559,58 @@ public class IgniteIndexReader implements AutoCloseable {
      * @param metaPageListId Page list meta id.
      * @return Page list info.
      */
-    private PageListsInfo getPageListsInfo(long metaPageListId) {
-        Map<IgniteBiTuple<Long, Integer>, List<Long>> bucketsData = new HashMap<>();
+    private PageListsInfo getPageListsInfo(long metaPageListId) throws IgniteCheckedException {
+        return doWithBuffer((buf, addr) -> {
+            Map<IgniteBiTuple<Long, Integer>, List<Long>> bucketsData = new HashMap<>();
 
-        Set<Long> allPages = new HashSet<>();
+            Set<Long> allPages = new HashSet<>();
 
-        Map<Class<? extends PageIO>, Long> pageListStat = new HashMap<>();
+            Map<Class<? extends PageIO>, Long> pageListStat = new HashMap<>();
 
-        Map<Long, List<Throwable>> errors = new HashMap<>();
+            Map<Long, List<Throwable>> errors = new HashMap<>();
 
-        try {
-            doWithBuffer((buf, addr) -> {
-                long nextMetaId = metaPageListId;
+            long nextMetaId = metaPageListId;
 
-                while (nextMetaId != 0) {
-                    try {
-                        buf.rewind();
+            while (nextMetaId != 0) {
+                try {
+                    buf.rewind();
 
-                        readPage(idxStore, nextMetaId, buf);
+                    readPage(idxStore, nextMetaId, buf);
 
-                        PagesListMetaIO io = PageIO.getPageIO(addr);
+                    PagesListMetaIO io = PageIO.getPageIO(addr);
 
-                        Map<Integer, GridLongList> data = new HashMap<>();
+                    Map<Integer, GridLongList> data = new HashMap<>();
 
-                        io.getBucketsData(addr, data);
+                    io.getBucketsData(addr, data);
 
-                        final long fNextMetaId = nextMetaId;
+                    final long fNextMetaId = nextMetaId;
 
-                        data.forEach((k, v) -> {
-                            List<Long> listIds = LongStream.of(v.array()).map(IgniteIndexReader::normalizePageId).boxed().collect(toList());
+                    data.forEach((k, v) -> {
+                        List<Long> listIds = LongStream.of(v.array()).map(IgniteIndexReader::normalizePageId).boxed().collect(toList());
 
-                            for (Long listId : listIds) {
-                                try {
-                                    allPages.addAll(getPageList(listId, pageListStat));
-                                }
-                                catch (Exception e) {
-                                    errors.put(listId, singletonList(e));
-                                }
+                        for (Long listId : listIds) {
+                            try {
+                                allPages.addAll(getPageList(listId, pageListStat));
                             }
+                            catch (Exception e) {
+                                errors.put(listId, singletonList(e));
+                            }
+                        }
 
-                            bucketsData.put(new IgniteBiTuple<>(fNextMetaId, k), listIds);
-                        });
+                        bucketsData.put(new IgniteBiTuple<>(fNextMetaId, k), listIds);
+                    });
 
-                        nextMetaId = io.getNextMetaPageId(addr);
-                    }
-                    catch (Exception e) {
-                        errors.put(nextMetaId, singletonList(e));
-
-                        nextMetaId = 0;
-                    }
+                    nextMetaId = io.getNextMetaPageId(addr);
                 }
+                catch (Exception e) {
+                    errors.put(nextMetaId, singletonList(e));
 
-                return null;
-            });
-        }
-        catch (IgniteCheckedException e) {
-            throw new IgniteException(e);
-        }
+                    nextMetaId = 0;
+                }
+            }
 
-        return new PageListsInfo(bucketsData, allPages, pageListStat, errors);
+            return new PageListsInfo(bucketsData, allPages, pageListStat, errors);
+        });
     }
 
     /**
@@ -1364,14 +1351,14 @@ public class IgniteIndexReader implements AutoCloseable {
         @Override public void traverse(long addr, TreeTraverseContext ctx) throws IgniteCheckedException {
             PageIO io = PageIO.getPageIO(addr);
 
-            for (Long id : children(io, addr))
+            for (long id : children(io, addr))
                 IgniteIndexReader.this.traverse(id, ctx);
 
             ctx.onInnerPage(PageIO.getPageId(addr));
         }
 
         /** */
-        private List<Long> children(PageIO io, long addr) {
+        private long[] children(PageIO io, long addr) {
             BPlusInnerIO<?> innerIo = (BPlusInnerIO<?>)io;
 
             int cnt = innerIo.getCount(addr);
@@ -1379,15 +1366,15 @@ public class IgniteIndexReader implements AutoCloseable {
             if (cnt == 0) {
                 long left = innerIo.getLeft(addr, 0);
 
-                return left == 0 ? Collections.emptyList() : singletonList(left);
+                return left == 0 ? IgniteUtils.EMPTY_LONGS : new long[] {left};
             }
 
-            List<Long> children = new ArrayList<>(cnt + 1);
+            long[] children = new long[cnt + 1];
 
             for (int i = 0; i < cnt; i++)
-                children.add(innerIo.getLeft(addr, i));
+                children[i] = innerIo.getLeft(addr, i);
 
-            children.add(innerIo.getRight(addr, cnt - 1));
+            children[cnt] = innerIo.getRight(addr, cnt - 1);
 
             return children;
         }
@@ -1426,7 +1413,7 @@ public class IgniteIndexReader implements AutoCloseable {
             if (!(io instanceof InlineIO || io instanceof PendingRowIO || io instanceof RowLinkIO))
                 throw new IgniteException("Unexpected page io: " + io.getClass().getSimpleName());
 
-            final long link = getLink(io, addr, idx);
+            final long link = link(io, addr, idx);
 
             final int cacheId;
 
@@ -1495,10 +1482,10 @@ public class IgniteIndexReader implements AutoCloseable {
         }
 
         /** */
-        private long getLink(BPlusLeafIO<?> io, long addr, int idx) {
+        private long link(BPlusLeafIO<?> io, long addr, int idx) {
             if (io instanceof RowLinkIO)
                 return ((RowLinkIO)io).getLink(addr, idx);
-            if (io instanceof InlineIO)
+            else if (io instanceof InlineIO)
                 return ((InlineIO)io).link(addr, idx);
             else if (io instanceof PendingRowIO)
                 return ((PendingRowIO)io).getLink(addr, idx);
