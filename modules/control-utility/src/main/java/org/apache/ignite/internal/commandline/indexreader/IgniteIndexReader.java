@@ -728,19 +728,14 @@ public class IgniteIndexReader implements AutoCloseable {
 
     /** */
     private String cacheDataTreeEntryMissingError(String treeName, CacheAwareLink cacheAwareLink) {
-        long link = cacheAwareLink.link;
+        long pageId = pageId(cacheAwareLink.link);
 
-        long pageId = pageId(link);
-
-        int itemId = itemId(link);
-
-        int partId = partId(pageId);
-
-        int pageIdx = pageIndex(pageId);
-
-        return "Entry is missing in index: " + treeName +
-            ", cacheId=" + cacheAwareLink.cacheId + ", partId=" + partId +
-            ", pageIndex=" + pageIdx + ", itemId=" + itemId + ", link=" + link;
+        return "Entry is missing in index[" + treeName +
+            "cacheId=" + cacheAwareLink.cacheId +
+            ", partId=" + partId(pageId) +
+            ", pageIndex=" + pageIndex(pageId) +
+            ", itemId=" + itemId(cacheAwareLink.link) +
+            ", link=" + cacheAwareLink.link + ']';
     }
 
     /** */
