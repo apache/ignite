@@ -1020,7 +1020,7 @@ public class IgniteIndexReader implements AutoCloseable {
                         ctx.ioStat.compute(pageIO.getClass(), (k, v) -> v == null ? 1 : v + 1);
 
                         if (pageIO instanceof BPlusLeafIO)
-                            getIOProcessor(pageIO).traverse(pageIO, addr, ctx);
+                            getIOProcessor(pageIO).traverse(addr, ctx);
 
                         pageId = ((BPlusIO<?>)pageIO).getForward(addr);
                     }
@@ -1070,7 +1070,7 @@ public class IgniteIndexReader implements AutoCloseable {
 
                 ctx.ioStat.compute(io.getClass(), (k, v) -> v == null ? 1 : v + 1);
 
-                getIOProcessor(io).traverse(io, addr, ctx);
+                getIOProcessor(io).traverse(addr, ctx);
             }
             finally {
                 freeBuffer(buf);
@@ -1360,22 +1360,21 @@ public class IgniteIndexReader implements AutoCloseable {
     private interface PageIOProcessor {
         /**
          * Traverse tree.
-         * @param io Page IO.
          * @param addr Page address.
          * @param ctx Tree traversal context.
          */
-        void traverse(PageIO io, long addr, TreeTraverseContext ctx);
+        void traverse(long addr, TreeTraverseContext ctx) throws IgniteCheckedException;
     }
 
     /** */
     private class MetaPageIOProcessor implements PageIOProcessor {
         /** {@inheritDoc} */
-        @Override public void traverse(PageIO io, long addr, TreeTraverseContext ctx) {
-            BPlusMetaIO io0 = (BPlusMetaIO)io;
+        @Override public void traverse(long addr, TreeTraverseContext ctx) throws IgniteCheckedException {
+            BPlusMetaIO io = (BPlusMetaIO)PageIO.getPageIO(addr);
 
-            int rootLvl = io0.getRootLevel(addr);
+            int rootLvl = io.getRootLevel(addr);
 
-            IgniteIndexReader.this.traverse(io0.getFirstPageId(addr, rootLvl), ctx);
+            IgniteIndexReader.this.traverse(io.getFirstPageId(addr, rootLvl), ctx);
         }
     }
 
@@ -1404,7 +1403,9 @@ public class IgniteIndexReader implements AutoCloseable {
         }
 
         /** {@inheritDoc} */
-        @Override public void traverse(PageIO io, long addr, TreeTraverseContext ctx) {
+        @Override public void traverse(long addr, TreeTraverseContext ctx) throws IgniteCheckedException {
+            PageIO io = PageIO.getPageIO(addr);
+
             for (Long id : children(io, addr))
                 IgniteIndexReader.this.traverse(id, ctx);
 
@@ -1416,7 +1417,9 @@ public class IgniteIndexReader implements AutoCloseable {
     /** */
     private class LeafPageIOProcessor implements PageIOProcessor {
         /** {@inheritDoc} */
-        @Override public void traverse(PageIO io, long addr, TreeTraverseContext ctx) {
+        @Override public void traverse(long addr, TreeTraverseContext ctx) throws IgniteCheckedException {
+            PageIO io = PageIO.getPageIO(addr);
+
             if (ctx.leafCb != null)
                 ctx.leafCb.accept(PageIO.getPageId(addr));
 
