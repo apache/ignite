@@ -19,25 +19,19 @@ package org.apache.ignite.internal.commandline.indexreader;
 
 import java.util.List;
 
-import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
-
 /**
  * Content of the deserialized page. When content is gained, we can free the page buffer.
  */
 class PageContent {
-    /** */
-    final PageIO io;
-
     /** List of children page ids, or links to root pages (for meta leaf). */
-    final List<Long> linkedPageIds;
+    final List<Long> children;
 
     /** List of items (for leaf pages). */
     final List<Object> items;
 
     /** */
-    public PageContent(PageIO io, List<Long> linkedPageIds, List<Object> items) {
-        this.io = io;
-        this.linkedPageIds = linkedPageIds;
+    public PageContent(List<Long> children, List<Object> items) {
+        this.children = children;
         this.items = items;
     }
 }

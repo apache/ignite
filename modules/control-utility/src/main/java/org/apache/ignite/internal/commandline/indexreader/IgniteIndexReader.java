@@ -1399,12 +1399,12 @@ public class IgniteIndexReader implements AutoCloseable {
             int rootLvl = bPlusMetaIO.getRootLevel(addr);
             long rootId = bPlusMetaIO.getFirstPageId(addr, rootLvl);
 
-            return new PageContent(io, singletonList(rootId), null);
+            return new PageContent(singletonList(rootId), null);
         }
 
         /** {@inheritDoc} */
         @Override public void traverse(PageContent content, long pageId, TreeTraverseContext nodeCtx) {
-            IgniteIndexReader.this.traverse(content.linkedPageIds.get(0), nodeCtx);
+            IgniteIndexReader.this.traverse(content.children.get(0), nodeCtx);
         }
     }
 
@@ -1418,28 +1418,28 @@ public class IgniteIndexReader implements AutoCloseable {
 
             int cnt = innerIo.getCount(addr);
 
-            List<Long> childrenIds;
+            List<Long> children;
 
             if (cnt > 0) {
-                childrenIds = new ArrayList<>(cnt + 1);
+                children = new ArrayList<>(cnt + 1);
 
                 for (int i = 0; i < cnt; i++)
-                    childrenIds.add(innerIo.getLeft(addr, i));
+                    children.add(innerIo.getLeft(addr, i));
 
-                childrenIds.add(innerIo.getRight(addr, cnt - 1));
+                children.add(innerIo.getRight(addr, cnt - 1));
             }
             else {
                 long left = innerIo.getLeft(addr, 0);
 
-                childrenIds = left == 0 ? Collections.emptyList() : singletonList(left);
+                children = left == 0 ? Collections.emptyList() : singletonList(left);
             }
 
-            return new PageContent(io, childrenIds, null);
+            return new PageContent(children, null);
         }
 
         /** {@inheritDoc} */
         @Override public void traverse(PageContent content, long pageId, TreeTraverseContext nodeCtx) {
-            for (Long id : content.linkedPageIds)
+            for (Long id : content.children)
                 IgniteIndexReader.this.traverse(id, nodeCtx);
 
             if (nodeCtx.innerCb != null)
@@ -1474,7 +1474,7 @@ public class IgniteIndexReader implements AutoCloseable {
                     items.add(idxItem);
             }
 
-            return new PageContent(io, null, items);
+            return new PageContent(null, items);
         }
 
         /** */
