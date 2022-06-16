@@ -592,7 +592,7 @@ public class IgniteIndexReaderTest extends GridCommandHandlerAbstractTest {
         assertFound(output, HORIZONTAL_SCAN_NAME + "Total trees:.*" + treesCnt);
         assertFound(output, RECURSIVE_TRAVERSE_NAME + "Total errors during trees traversal:.*" + travErrCnt);
         assertFound(output, HORIZONTAL_SCAN_NAME + "Total errors during trees traversal:.*" + travErrCnt);
-        assertFound(output, "Total errors during lists scan: " + pageListsErrCnt);
+        assertFound(output, "Total errors during lists scan:.*" + pageListsErrCnt);
 
         if (idxSizeConsistent)
             assertContains(log, output, "No index size consistency errors found.");
@@ -969,8 +969,7 @@ public class IgniteIndexReaderTest extends GridCommandHandlerAbstractTest {
 
             // Pattern with errors count > 9
             assertFound(output, "Partition check finished, total errors: [0-9]{2,5}, total problem partitions: [0-9]{2,5}");
-
-            assertContains(log, output, "Total errors during lists scan: 0");
+            assertFound(output, "Total errors during lists scan:.*0");
         }
         finally {
             for (File dir : workDirs)

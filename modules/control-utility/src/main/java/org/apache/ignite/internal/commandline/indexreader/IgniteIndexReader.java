@@ -320,7 +320,7 @@ public class IgniteIndexReader implements AutoCloseable {
             log.severe("----");
             log.severe("Errors:");
 
-            errors.forEach(e -> log.info(e.getMessage()));
+            errors.forEach(e -> log.severe(e.getMessage()));
         }
 
         log.info("----");
