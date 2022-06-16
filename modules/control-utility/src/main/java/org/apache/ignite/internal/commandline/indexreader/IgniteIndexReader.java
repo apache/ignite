@@ -53,7 +53,6 @@ import org.apache.ignite.internal.commandline.argument.parser.CLIArgument;
 import org.apache.ignite.internal.commandline.argument.parser.CLIArgumentParser;
 import org.apache.ignite.internal.commandline.systemview.SystemViewCommand;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
-import org.apache.ignite.internal.pagemem.PageUtils;
 import org.apache.ignite.internal.processors.cache.persistence.IndexStorageImpl;
 import org.apache.ignite.internal.processors.cache.persistence.StorageException;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStore;
@@ -74,7 +73,6 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.crc.IgniteDat
 import org.apache.ignite.internal.processors.cache.tree.AbstractDataLeafIO;
 import org.apache.ignite.internal.processors.cache.tree.PendingRowIO;
 import org.apache.ignite.internal.processors.cache.tree.RowLinkIO;
-import org.apache.ignite.internal.processors.cache.tree.mvcc.data.MvccDataLeafIO;
 import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.GridStringBuilder;
 import org.apache.ignite.internal.util.lang.GridClosure3;
@@ -1022,7 +1020,7 @@ public class IgniteIndexReader implements AutoCloseable {
                         ctx.ioStat.compute(pageIO.getClass(), (k, v) -> v == null ? 1 : v + 1);
 
                         if (pageIO instanceof BPlusLeafIO)
-                            getIOProcessor(pageIO).traverse(pageIO, addr, pageId, ctx);
+                            getIOProcessor(pageIO).traverse(pageIO, addr, ctx);
 
                         pageId = ((BPlusIO<?>)pageIO).getForward(addr);
                     }
@@ -1072,7 +1070,7 @@ public class IgniteIndexReader implements AutoCloseable {
 
                 ctx.ioStat.compute(io.getClass(), (k, v) -> v == null ? 1 : v + 1);
 
-                getIOProcessor(io).traverse(io, addr, pageId, ctx);
+                getIOProcessor(io).traverse(io, addr, ctx);
             }
             finally {
                 freeBuffer(buf);
@@ -1364,16 +1362,15 @@ public class IgniteIndexReader implements AutoCloseable {
          * Traverse tree.
          * @param io Page IO.
          * @param addr Page address.
-         * @param pageId Page id.
          * @param ctx Tree traversal context.
          */
-        void traverse(PageIO io, long addr, long pageId, TreeTraverseContext ctx);
+        void traverse(PageIO io, long addr, TreeTraverseContext ctx);
     }
 
     /** */
     private class MetaPageIOProcessor implements PageIOProcessor {
         /** {@inheritDoc} */
-        @Override public void traverse(PageIO io, long addr, long pageId, TreeTraverseContext ctx) {
+        @Override public void traverse(PageIO io, long addr, TreeTraverseContext ctx) {
             BPlusMetaIO io0 = (BPlusMetaIO)io;
 
             int rootLvl = io0.getRootLevel(addr);
@@ -1407,24 +1404,23 @@ public class IgniteIndexReader implements AutoCloseable {
         }
 
         /** {@inheritDoc} */
-        @Override public void traverse(PageIO io, long addr, long pageId, TreeTraverseContext ctx) {
+        @Override public void traverse(PageIO io, long addr, TreeTraverseContext ctx) {
             for (Long id : children(io, addr))
                 IgniteIndexReader.this.traverse(id, ctx);
 
             if (ctx.innerCb != null)
-                ctx.innerCb.accept(pageId);
+                ctx.innerCb.accept(PageIO.getPageId(addr));
         }
     }
 
     /** */
     private class LeafPageIOProcessor implements PageIOProcessor {
         /** {@inheritDoc} */
-        @Override public void traverse(PageIO io, long addr, long pageId, TreeTraverseContext ctx) {
+        @Override public void traverse(PageIO io, long addr, TreeTraverseContext ctx) {
             if (ctx.leafCb != null)
-                ctx.leafCb.accept(pageId);
+                ctx.leafCb.accept(PageIO.getPageId(addr));
 
-            for (Object item : data(io, addr, pageId, ctx))
-                ctx.itemStorage.add(item);
+            data(io, addr, PageIO.getPageId(addr), ctx).forEach(ctx.itemStorage::add);
         }
 
         /** */
@@ -1433,16 +1429,16 @@ public class IgniteIndexReader implements AutoCloseable {
 
             BPlusLeafIO<?> leafIO = (BPlusLeafIO<?>)io;
 
-            for (int i = 0; i < leafIO.getCount(addr); i++) {
-                try {
+            try {
+                for (int i = 0; i < leafIO.getCount(addr); i++) {
                     if (io instanceof IndexStorageImpl.MetaStoreLeafIO)
                         items.add(((BPlusIO<IndexStorageImpl.IndexItem>)io).getLookupRow(null, addr, i));
                     else
                         items.add(getLeafItem(leafIO, pageId, addr, i, ctx));
                 }
-                catch (Exception e) {
-                    ctx.errors.computeIfAbsent(pageId, k -> new LinkedList<>()).add(e);
-                }
+            }
+            catch (Exception e) {
+                ctx.errors.computeIfAbsent(pageId, k -> new LinkedList<>()).add(e);
             }
 
             return items;
@@ -1506,17 +1502,6 @@ public class IgniteIndexReader implements AutoCloseable {
                                     .a(", nextLink=").a(payload.nextLink());
 
                                 throw new IgniteException(payloadInfo.toString());
-                            }
-
-                            if (payload.nextLink() == 0) {
-                                if (io instanceof MvccDataLeafIO)
-                                    return false;
-
-                                int off = payload.offset();
-
-                                int len = PageUtils.getInt(dataBufAddr, off);
-
-                                byte type = PageUtils.getByte(dataBufAddr, off + len + 9);
                             }
                         }
 
