@@ -40,6 +40,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -53,6 +54,9 @@ import org.apache.ignite.indexing.IndexingQueryEngineConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.binary.BinaryArray;
 import org.apache.ignite.internal.binary.BinaryUtils;
+import org.apache.ignite.internal.cache.query.index.NullsOrder;
+import org.apache.ignite.internal.cache.query.index.Order;
+import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyDefinition;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -1092,6 +1096,27 @@ public class H2Utils {
      */
     public static String queryEngine() {
         return IndexingQueryEngineConfiguration.ENGINE_NAME;
+    }
+
+    /**
+     * Maps H2 columns to IndexKeyDefinition.
+     */
+    public static LinkedHashMap<String, IndexKeyDefinition> columnsToKeyDefinitions(GridH2Table tbl, List<IndexColumn> cols) {
+        LinkedHashMap<String, IndexKeyDefinition> idxKeyDefinitions = new LinkedHashMap<>();
+
+        for (IndexColumn c: cols) {
+            Order sortOrder = new Order((c.sortType & 1) != 0 ?
+                org.apache.ignite.internal.cache.query.index.SortOrder.DESC :
+                org.apache.ignite.internal.cache.query.index.SortOrder.ASC,
+                (c.sortType & 2) != 0 ? NullsOrder.NULLS_FIRST : (c.sortType & 4) != 0 ? NullsOrder.NULLS_LAST : null);
+
+            idxKeyDefinitions.put(c.columnName,
+                new IndexKeyDefinition(c.column.getType(), sortOrder, c.column.getPrecision()));
+        }
+
+        IndexColumn.mapColumns(cols.toArray(new IndexColumn[0]), tbl);
+
+        return idxKeyDefinitions;
     }
 
     /**

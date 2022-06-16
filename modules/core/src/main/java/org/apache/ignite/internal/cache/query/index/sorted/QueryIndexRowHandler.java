@@ -33,11 +33,11 @@ import org.apache.ignite.internal.processors.query.GridQueryRowDescriptor;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 
 /** Maps CacheDataRow to IndexRow using columns references. */
-public class InlineIndexRowHandlerImpl implements InlineIndexRowHandler {
+public class QueryIndexRowHandler implements InlineIndexRowHandler {
     /** Cache descriptor. */
     private final GridQueryRowDescriptor rowDescriptor;
 
-    /** H2 index columns. */
+    /** Index to columns references. */
     private final List<Integer> keyColumns;
 
     /** List of key types for inlined index keys. */
@@ -50,7 +50,7 @@ public class InlineIndexRowHandlerImpl implements InlineIndexRowHandler {
     private final IndexKeyTypeSettings keyTypeSettings;
 
     /** */
-    public InlineIndexRowHandlerImpl(
+    public QueryIndexRowHandler(
         GridQueryRowDescriptor rowDescriptor,
         LinkedHashMap<String, IndexKeyDefinition> keyDefs,
         List<InlineIndexKeyType> keyTypes,

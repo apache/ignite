@@ -59,7 +59,7 @@ public class QueryIndexDefinition implements SortedIndexDefinition {
     private final IndexRowCache idxRowCache;
 
     /** Row handler factory. */
-    private final QueryRowHandlerFactory rowHndFactory = new QueryRowHandlerFactory();
+    private final QueryIndexRowHandlerFactory rowHndFactory = new QueryIndexRowHandlerFactory();
 
     /** */
     public QueryIndexDefinition(

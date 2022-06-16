@@ -37,8 +37,8 @@ public class IndexKeyFactory {
     private static final Map<IndexKeyType, Function<Object, IndexKey>> registry = new EnumMap<>(IndexKeyType.class);
 
     /** Register wrapper for custom IndexKey type. Used by Ignite extensions. */
-    public static void register(int keyTypeCode, Function<Object, IndexKey> wrapper) {
-        registry.put(IndexKeyType.forCode(keyTypeCode), wrapper);
+    public static void register(IndexKeyType keyType, Function<Object, IndexKey> wrapper) {
+        registry.put(keyType, wrapper);
     }
 
     /** Wraps user object to {@code IndexKey} object.  */

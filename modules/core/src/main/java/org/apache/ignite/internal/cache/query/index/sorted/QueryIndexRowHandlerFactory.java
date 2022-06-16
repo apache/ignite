@@ -25,13 +25,13 @@ import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexKey
 /**
  * This factory applies tree's meta page info to build info about inlined types.
  */
-public class QueryRowHandlerFactory implements InlineIndexRowHandlerFactory {
+public class QueryIndexRowHandlerFactory implements InlineIndexRowHandlerFactory {
     /** {@inheritDoc} */
     @Override public InlineIndexRowHandler create(SortedIndexDefinition sdef, IndexKeyTypeSettings keyTypeSettings) {
         LinkedHashMap<String, IndexKeyDefinition> keyDefs = sdef.indexKeyDefinitions();
 
         List<InlineIndexKeyType> keyTypes = InlineIndexKeyTypeRegistry.types(keyDefs.values(), keyTypeSettings);
 
-        return new InlineIndexRowHandlerImpl(sdef.rowDescriptor(), keyDefs, keyTypes, keyTypeSettings);
+        return new QueryIndexRowHandler(sdef.rowDescriptor(), keyDefs, keyTypes, keyTypeSettings);
     }
 }
