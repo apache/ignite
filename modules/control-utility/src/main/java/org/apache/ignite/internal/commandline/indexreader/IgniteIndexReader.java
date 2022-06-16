@@ -1022,9 +1022,9 @@ public class IgniteIndexReader implements AutoCloseable {
                         treeCtx.ioStat.compute(pageIO.getClass(), (k, v) -> v == null ? 1 : v + 1);
 
                         if (pageIO instanceof BPlusLeafIO) {
-                            List<Object> pageContent = getIOProcessor(pageIO).data(pageIO, addr, pageId, treeCtx);
-
-                            pageContent.forEach(itemStorage::add);
+                            getIOProcessor(pageIO)
+                                .data(pageIO, addr, pageId, treeCtx)
+                                .forEach(itemStorage::add);
                         }
 
                         pageId = ((BPlusIO<?>)pageIO).getForward(addr);
@@ -1376,7 +1376,7 @@ public class IgniteIndexReader implements AutoCloseable {
         }
 
         /**
-         * Gets node info from page contents.
+         * Traverse tree.
          * @param io Page IO.
          * @param addr Page address.
          * @param pageId Page id.
@@ -1385,9 +1385,7 @@ public class IgniteIndexReader implements AutoCloseable {
         void traverse(PageIO io, long addr, long pageId, TreeTraverseContext nodeCtx);
     }
 
-    /**
-     *
-     */
+    /** */
     private class MetaPageIOProcessor implements PageIOProcessor {
         /** */
         public Long root(PageIO io, long addr) {
@@ -1404,9 +1402,7 @@ public class IgniteIndexReader implements AutoCloseable {
         }
     }
 
-    /**
-     *
-     */
+    /** */
     private class InnerPageIOProcessor implements PageIOProcessor {
         /** */
         private List<Long> children(PageIO io, long addr) {
@@ -1440,9 +1436,7 @@ public class IgniteIndexReader implements AutoCloseable {
         }
     }
 
-    /**
-     *
-     */
+    /** */
     private class LeafPageIOProcessor implements PageIOProcessor {
         /** {@inheritDoc} */
         @Override public List<Object> data(PageIO io, long addr, long pageId, TreeTraverseContext nodeCtx) {

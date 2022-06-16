@@ -46,10 +46,10 @@ class PageListsInfo {
 
     /** */
     public PageListsInfo(
-            Map<IgniteBiTuple<Long, Integer>, List<Long>> bucketsData,
-            Set<Long> allPages,
-            Map<Class<? extends PageIO>, Long> pageListStat,
-            Map<Long, List<Throwable>> errors
+        Map<IgniteBiTuple<Long, Integer>, List<Long>> bucketsData,
+        Set<Long> allPages,
+        Map<Class<? extends PageIO>, Long> pageListStat,
+        Map<Long, List<Throwable>> errors
     ) {
         this.bucketsData = bucketsData;
         this.allPages = allPages;
