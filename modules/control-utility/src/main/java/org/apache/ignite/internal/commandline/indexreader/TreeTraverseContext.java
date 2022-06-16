@@ -21,7 +21,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.Consumer;
 import java.util.function.LongConsumer;
 
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStore;
@@ -50,9 +49,7 @@ class TreeTraverseContext {
     /** Map of errors, pageId -> set of exceptions. */
     final Map<Long, List<Throwable>> errors;
 
-    /**
-     * List of items storage.
-     */
+    /** List of items storage. */
     final ItemStorage itemStorage;
 
     /** Set of all inner page ids. */
@@ -64,9 +61,6 @@ class TreeTraverseContext {
     /** Callback that is called for each leaf node page.*/
     @Nullable final LongConsumer leafCb;
 
-    /** Callback that is called for each leaf item. */
-    @Nullable final Consumer<Object> itemCb;
-
     /** */
     public TreeTraverseContext(
         long rootPageId,
@@ -75,8 +69,7 @@ class TreeTraverseContext {
         ItemStorage itemStorage,
         Set<Long> innerPageIds,
         @Nullable LongConsumer innerCb,
-        @Nullable LongConsumer leafCb,
-        @Nullable Consumer<Object> itemCb
+        @Nullable LongConsumer leafCb
     ) {
         this.rootPageId = rootPageId;
         this.treeName = treeName;
@@ -88,6 +81,5 @@ class TreeTraverseContext {
         this.innerPageIds = innerPageIds;
         this.innerCb = innerCb;
         this.leafCb = leafCb;
-        this.itemCb = itemCb;
     }
 }

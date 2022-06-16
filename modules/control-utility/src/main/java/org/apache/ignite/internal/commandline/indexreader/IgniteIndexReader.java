@@ -518,30 +518,30 @@ public class IgniteIndexReader implements AutoCloseable {
         treeInfos.forEach((name, tree) -> {
             treeIdxNames.add(name);
 
-            TreeTraverseContext scan = treeScans.get(name);
+            TreeTraverseContext ctx = treeScans.get(name);
 
-            if (scan == null) {
+            if (ctx == null) {
                 errors.add("Tree was detected in " + RECURSIVE_TRAVERSE_NAME + " but absent in  "
                     + HORIZONTAL_SCAN_NAME + ": " + name);
 
                 return;
             }
 
-            if (tree.itemStorage.size() != scan.itemStorage.size())
-                errors.add(compareError("items", name, tree.itemStorage.size(), scan.itemStorage.size(), null));
+            if (tree.itemStorage.size() != ctx.itemStorage.size())
+                errors.add(compareError("items", name, tree.itemStorage.size(), ctx.itemStorage.size(), null));
 
             Set<Class<? extends PageIO>> classesInStat = new HashSet<>();
 
             tree.ioStat.forEach((cls, cnt) -> {
                 classesInStat.add(cls);
 
-                long scanCnt = scan.ioStat.getOrDefault(cls, 0L);
+                long scanCnt = ctx.ioStat.getOrDefault(cls, 0L);
 
                 if (scanCnt != cnt)
                     errors.add(compareError("pages", name, cnt, scanCnt, cls));
             });
 
-            scan.ioStat.forEach((cls, cnt) -> {
+            ctx.ioStat.forEach((cls, cnt) -> {
                 if (classesInStat.contains(cls))
                     // Already checked.
                     return;
@@ -939,8 +939,7 @@ public class IgniteIndexReader implements AutoCloseable {
             itemStorage,
             innerPageIds,
             pageId -> innerPageIds.add(normalizePageId(pageId)),
-            leafCb,
-            itemStorage::add
+            leafCb
         );
 
         traverse(rootPageId, ctx);
@@ -973,12 +972,11 @@ public class IgniteIndexReader implements AutoCloseable {
         String treeName,
         ItemStorage itemStorage
     ) {
-        TreeTraverseContext treeCtx = new TreeTraverseContext(
+        TreeTraverseContext ctx = new TreeTraverseContext(
             rootPageId,
             treeName,
             filePageStore(partId(rootPageId)),
             itemStorage,
-            null,
             null,
             null,
             null
@@ -989,7 +987,7 @@ public class IgniteIndexReader implements AutoCloseable {
         try {
             long addr = bufferAddress(buf);
 
-            readPage(treeCtx.store, rootPageId, buf);
+            readPage(ctx.store, rootPageId, buf);
 
             PageIO pageIO = PageIO.getPageIO(addr);
 
@@ -998,7 +996,7 @@ public class IgniteIndexReader implements AutoCloseable {
 
             BPlusMetaIO metaIO = (BPlusMetaIO)pageIO;
 
-            treeCtx.ioStat.compute(metaIO.getClass(), (k, v) -> v == null ? 1 : v + 1);
+            ctx.ioStat.compute(metaIO.getClass(), (k, v) -> v == null ? 1 : v + 1);
 
             int lvlsCnt = metaIO.getLevelsCount(addr);
 
@@ -1011,7 +1009,7 @@ public class IgniteIndexReader implements AutoCloseable {
                     try {
                         buf.rewind();
 
-                        readPage(treeCtx.store, pageId, buf);
+                        readPage(ctx.store, pageId, buf);
 
                         pageIO = PageIO.getPageIO(addr);
 
@@ -1021,18 +1019,15 @@ public class IgniteIndexReader implements AutoCloseable {
                         if (!(pageIO instanceof BPlusIO))
                             throw new IgniteException("Not-BPlus page found [pageId=" + pageId + ", level=" + i + ']');
 
-                        treeCtx.ioStat.compute(pageIO.getClass(), (k, v) -> v == null ? 1 : v + 1);
+                        ctx.ioStat.compute(pageIO.getClass(), (k, v) -> v == null ? 1 : v + 1);
 
-                        if (pageIO instanceof BPlusLeafIO) {
-                            getIOProcessor(pageIO)
-                                .data(pageIO, addr, pageId, treeCtx)
-                                .forEach(itemStorage::add);
-                        }
+                        if (pageIO instanceof BPlusLeafIO)
+                            getIOProcessor(pageIO).traverse(pageIO, addr, pageId, ctx);
 
                         pageId = ((BPlusIO<?>)pageIO).getForward(addr);
                     }
                     catch (Throwable e) {
-                        treeCtx.errors.computeIfAbsent(pageId, k -> new LinkedList<>()).add(e);
+                        ctx.errors.computeIfAbsent(pageId, k -> new LinkedList<>()).add(e);
 
                         pageId = 0;
                     }
@@ -1040,13 +1035,13 @@ public class IgniteIndexReader implements AutoCloseable {
             }
         }
         catch (Throwable e) {
-            treeCtx.errors.computeIfAbsent(rootPageId, k -> new LinkedList<>()).add(e);
+            ctx.errors.computeIfAbsent(rootPageId, k -> new LinkedList<>()).add(e);
         }
         finally {
             freeBuffer(buf);
         }
 
-        return treeCtx;
+        return ctx;
     }
 
     /**
@@ -1061,30 +1056,30 @@ public class IgniteIndexReader implements AutoCloseable {
      * Gets tree node and all its children.
      *
      * @param pageId Page id, where tree node is located.
-     * @param nodeCtx Tree traverse context.
+     * @param ctx Tree traverse context.
      * @return Tree node.
      */
-    private void traverse(long pageId, TreeTraverseContext nodeCtx) {
+    private void traverse(long pageId, TreeTraverseContext ctx) {
         try {
             final ByteBuffer buf = allocateBuffer(pageSize);
 
             try {
-                readPage(nodeCtx.store, pageId, buf);
+                readPage(ctx.store, pageId, buf);
 
                 final long addr = bufferAddress(buf);
 
                 final PageIO io = PageIO.getPageIO(addr);
 
-                nodeCtx.ioStat.compute(io.getClass(), (k, v) -> v == null ? 1 : v + 1);
+                ctx.ioStat.compute(io.getClass(), (k, v) -> v == null ? 1 : v + 1);
 
-                getIOProcessor(io).traverse(io, addr, pageId, nodeCtx);
+                getIOProcessor(io).traverse(io, addr, pageId, ctx);
             }
             finally {
                 freeBuffer(buf);
             }
         }
         catch (Throwable e) {
-            nodeCtx.errors.computeIfAbsent(pageId, k -> new LinkedList<>()).add(e);
+            ctx.errors.computeIfAbsent(pageId, k -> new LinkedList<>()).add(e);
         }
     }
 
@@ -1366,36 +1361,24 @@ public class IgniteIndexReader implements AutoCloseable {
      */
     private interface PageIOProcessor {
         /**
-         * Gets deserialized content.
-         * @param io Page IO.
-         * @param addr Page address.
-         * @param pageId Page id.
-         * @param nodeCtx Tree traversal context.
-         * @return Page content.
-         */
-        default List<Object> data(PageIO io, long addr, long pageId, TreeTraverseContext nodeCtx) {
-            return null;
-        }
-
-        /**
          * Traverse tree.
          * @param io Page IO.
          * @param addr Page address.
          * @param pageId Page id.
-         * @param nodeCtx Tree traversal context.
+         * @param ctx Tree traversal context.
          */
-        void traverse(PageIO io, long addr, long pageId, TreeTraverseContext nodeCtx);
+        void traverse(PageIO io, long addr, long pageId, TreeTraverseContext ctx);
     }
 
     /** */
     private class MetaPageIOProcessor implements PageIOProcessor {
         /** {@inheritDoc} */
-        @Override public void traverse(PageIO io, long addr, long pageId, TreeTraverseContext nodeCtx) {
+        @Override public void traverse(PageIO io, long addr, long pageId, TreeTraverseContext ctx) {
             BPlusMetaIO io0 = (BPlusMetaIO)io;
 
             int rootLvl = io0.getRootLevel(addr);
 
-            IgniteIndexReader.this.traverse(io0.getFirstPageId(addr, rootLvl), nodeCtx);
+            IgniteIndexReader.this.traverse(io0.getFirstPageId(addr, rootLvl), ctx);
         }
     }
 
@@ -1424,56 +1407,49 @@ public class IgniteIndexReader implements AutoCloseable {
         }
 
         /** {@inheritDoc} */
-        @Override public void traverse(PageIO io, long addr, long pageId, TreeTraverseContext nodeCtx) {
+        @Override public void traverse(PageIO io, long addr, long pageId, TreeTraverseContext ctx) {
             for (Long id : children(io, addr))
-                IgniteIndexReader.this.traverse(id, nodeCtx);
+                IgniteIndexReader.this.traverse(id, ctx);
 
-            if (nodeCtx.innerCb != null)
-                nodeCtx.innerCb.accept(pageId);
+            if (ctx.innerCb != null)
+                ctx.innerCb.accept(pageId);
         }
     }
 
     /** */
     private class LeafPageIOProcessor implements PageIOProcessor {
         /** {@inheritDoc} */
-        @Override public List<Object> data(PageIO io, long addr, long pageId, TreeTraverseContext nodeCtx) {
+        @Override public void traverse(PageIO io, long addr, long pageId, TreeTraverseContext ctx) {
+            if (ctx.leafCb != null)
+                ctx.leafCb.accept(pageId);
+
+            for (Object item : data(io, addr, pageId, ctx))
+                ctx.itemStorage.add(item);
+        }
+
+        /** */
+        private List<Object> data(PageIO io, long addr, long pageId, TreeTraverseContext ctx) {
             List<Object> items = new LinkedList<>();
 
             BPlusLeafIO<?> leafIO = (BPlusLeafIO<?>)io;
 
-            for (int j = 0; j < leafIO.getCount(addr); j++) {
-                Object idxItem = null;
-
+            for (int i = 0; i < leafIO.getCount(addr); i++) {
                 try {
                     if (io instanceof IndexStorageImpl.MetaStoreLeafIO)
-                        idxItem = ((BPlusIO<IndexStorageImpl.IndexItem>)io).getLookupRow(null, addr, j);
+                        items.add(((BPlusIO<IndexStorageImpl.IndexItem>)io).getLookupRow(null, addr, i));
                     else
-                        idxItem = getLeafItem(leafIO, pageId, addr, j, nodeCtx);
+                        items.add(getLeafItem(leafIO, pageId, addr, i, ctx));
                 }
                 catch (Exception e) {
-                    nodeCtx.errors.computeIfAbsent(pageId, k -> new LinkedList<>()).add(e);
+                    ctx.errors.computeIfAbsent(pageId, k -> new LinkedList<>()).add(e);
                 }
-
-                if (idxItem != null)
-                    items.add(idxItem);
             }
 
             return items;
         }
 
-        /** {@inheritDoc} */
-        @Override public void traverse(PageIO io, long addr, long pageId, TreeTraverseContext nodeCtx) {
-            if (nodeCtx.leafCb != null)
-                nodeCtx.leafCb.accept(pageId);
-
-            if (nodeCtx.itemCb != null) {
-                for (Object item : data(io, addr, pageId, nodeCtx))
-                    nodeCtx.itemCb.accept(item);
-            }
-        }
-
         /** */
-        private Object getLeafItem(BPlusLeafIO<?> io, long pageId, long addr, int idx, TreeTraverseContext nodeCtx) {
+        private Object getLeafItem(BPlusLeafIO<?> io, long pageId, long addr, int idx, TreeTraverseContext ctx) {
             if (!(io instanceof InlineIO || io instanceof PendingRowIO || io instanceof RowLinkIO))
                 throw new IgniteException("Unexpected page io: " + io.getClass().getSimpleName());
 
@@ -1484,7 +1460,7 @@ public class IgniteIndexReader implements AutoCloseable {
             if (io instanceof AbstractDataLeafIO && ((AbstractDataLeafIO)io).storeCacheId())
                 cacheId = ((RowLinkIO)io).getCacheId(addr, idx);
             else
-                cacheId = nodeCtx.cacheId;
+                cacheId = ctx.cacheId;
 
             if (partCnt > 0) {
                 try {
@@ -1548,7 +1524,7 @@ public class IgniteIndexReader implements AutoCloseable {
                     });
                 }
                 catch (Exception e) {
-                    nodeCtx.errors.computeIfAbsent(pageId, k -> new LinkedList<>()).add(e);
+                    ctx.errors.computeIfAbsent(pageId, k -> new LinkedList<>()).add(e);
                 }
             }
 
