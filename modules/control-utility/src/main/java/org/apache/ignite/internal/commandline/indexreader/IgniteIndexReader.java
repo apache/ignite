@@ -1090,7 +1090,7 @@ public class IgniteIndexReader implements AutoCloseable {
         catch (Throwable e) {
             nodeCtx.errors.computeIfAbsent(pageId, k -> new LinkedList<>()).add(e);
 
-            return new TreeNode(pageId, null, "exception: " + e.getMessage(), Collections.emptyList());
+            return new TreeNode(pageId, null, Collections.emptyList());
         }
     }
 
@@ -1402,12 +1402,12 @@ public class IgniteIndexReader implements AutoCloseable {
             int rootLvl = bPlusMetaIO.getRootLevel(addr);
             long rootId = bPlusMetaIO.getFirstPageId(addr, rootLvl);
 
-            return new PageContent(io, singletonList(rootId), null, null);
+            return new PageContent(io, singletonList(rootId), null);
         }
 
         /** {@inheritDoc} */
         @Override public TreeNode getNode(PageContent content, long pageId, TreeTraverseContext nodeCtx) {
-            return new TreeNode(pageId, content.io, null, singletonList(getTreeNode(content.linkedPageIds.get(0), nodeCtx)));
+            return new TreeNode(pageId, content.io, singletonList(getTreeNode(content.linkedPageIds.get(0), nodeCtx)));
         }
     }
 
@@ -1437,7 +1437,7 @@ public class IgniteIndexReader implements AutoCloseable {
                 childrenIds = left == 0 ? Collections.emptyList() : singletonList(left);
             }
 
-            return new PageContent(io, childrenIds, null, null);
+            return new PageContent(io, childrenIds, null);
         }
 
         /** {@inheritDoc} */
@@ -1450,7 +1450,7 @@ public class IgniteIndexReader implements AutoCloseable {
             if (nodeCtx.innerCb != null)
                 nodeCtx.innerCb.accept(pageId);
 
-            return new TreeNode(pageId, content.io, null, children);
+            return new TreeNode(pageId, content.io, children);
         }
     }
 
@@ -1460,8 +1460,6 @@ public class IgniteIndexReader implements AutoCloseable {
     private class LeafPageIOProcessor implements PageIOProcessor {
         /** {@inheritDoc} */
         @Override public PageContent getContent(PageIO io, long addr, long pageId, TreeTraverseContext nodeCtx) {
-            GridStringBuilder sb = new GridStringBuilder();
-
             List<Object> items = new LinkedList<>();
 
             BPlusLeafIO<?> leafIO = (BPlusLeafIO<?>)io;
@@ -1470,11 +1468,8 @@ public class IgniteIndexReader implements AutoCloseable {
                 Object idxItem = null;
 
                 try {
-                    if (io instanceof IndexStorageImpl.MetaStoreLeafIO) {
+                    if (io instanceof IndexStorageImpl.MetaStoreLeafIO)
                         idxItem = ((BPlusIO<IndexStorageImpl.IndexItem>)io).getLookupRow(null, addr, j);
-
-                        sb.a(idxItem + " ");
-                    }
                     else
                         idxItem = getLeafItem(leafIO, pageId, addr, j, nodeCtx);
                 }
@@ -1486,7 +1481,7 @@ public class IgniteIndexReader implements AutoCloseable {
                     items.add(idxItem);
             }
 
-            return new PageContent(io, null, items, sb.toString());
+            return new PageContent(io, null, items);
         }
 
         /** */
@@ -1594,7 +1589,7 @@ public class IgniteIndexReader implements AutoCloseable {
                     nodeCtx.itemCb.accept(item);
             }
 
-            return new TreeNode(pageId, content.io, content.info, Collections.emptyList());
+            return new TreeNode(pageId, content.io, Collections.emptyList());
         }
     }
 }

@@ -34,14 +34,10 @@ class PageContent {
     /** List of items (for leaf pages). */
     final List<Object> items;
 
-    /** Some info. */
-    final String info;
-
     /** */
-    public PageContent(PageIO io, List<Long> linkedPageIds, List<Object> items, String info) {
+    public PageContent(PageIO io, List<Long> linkedPageIds, List<Object> items) {
         this.io = io;
         this.linkedPageIds = linkedPageIds;
         this.items = items;
-        this.info = info;
     }
 }

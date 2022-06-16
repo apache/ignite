@@ -32,16 +32,12 @@ class TreeNode {
     final PageIO io;
 
     /** */
-    final String additionalInfo;
-
-    /** */
     final List<TreeNode> children;
 
     /** */
-    public TreeNode(long pageId, PageIO io, String additionalInfo, List<TreeNode> children) {
+    public TreeNode(long pageId, PageIO io, List<TreeNode> children) {
         this.pageId = pageId;
         this.io = io;
-        this.additionalInfo = additionalInfo;
         this.children = children;
     }
 }
