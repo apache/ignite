@@ -805,6 +805,19 @@ public class GridSubqueryJoinOptimizerSelfTest extends GridCommonAbstractTest {
     }
 
     /**
+     * Case with left join where subquery is on the left shoulder.
+     */
+    @Test
+    public void testOptimizationLeftJoinSubqueryOnLeft() {
+        String outerSqlTemplate = "SELECT * FROM (%s) AS t1 LEFT JOIN dep AS t2 ON t1.dep_id = t2.id;";
+        String subSql = "SELECT * FROM emp WHERE id % 2 = 1";
+
+        String resSql = String.format(outerSqlTemplate, subSql);
+
+        check(resSql, 1);
+    }
+
+    /**
      * Test should verify all cases where subquery should not be rewrited.
      */
     @Test

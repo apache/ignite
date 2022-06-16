@@ -321,9 +321,7 @@ public class IndexScan<Row> extends AbstractIndexScan<Row, IndexRow> {
         /** {@inheritDoc} */
         @Override public GridCursor<IndexRow> find(IndexRow lower, IndexRow upper, IndexQueryContext qctx) {
             try {
-                int seg = 0; // TODO segments support
-
-                return idx.find(lower, upper, true, true, seg, qctx);
+                return idx.find(lower, upper, true, true, qctx);
             }
             catch (IgniteCheckedException e) {
                 throw new IgniteException("Failed to find index rows", e);

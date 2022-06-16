@@ -18,7 +18,10 @@
 package org.apache.ignite.internal.cache.query.index.sorted.keys;
 
 import java.math.BigDecimal;
+import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Function;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.binary.BinaryObjectImpl;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypeSettings;
@@ -30,6 +33,14 @@ import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
  * Factory for creating IndexKey objects.
  */
 public class IndexKeyFactory {
+    /** Registry for non-default key types factory methods (e.g., Geometry). */
+    private static final Map<Integer, Function<Object, IndexKey>> registry = new ConcurrentHashMap<>();
+
+    /** Register wrapper for custom IndexKey type. Used by Ignite extensions. */
+    public static void register(int keyType, Function<Object, IndexKey> wrapper) {
+        registry.put(keyType, wrapper);
+    }
+
     /** Wraps user object to {@code IndexKey} object.  */
     public static IndexKey wrap(Object o, int keyType, CacheObjectValueContext coctx, IndexKeyTypeSettings keyTypeSettings) {
         if (o == null || keyType == IndexKeyTypes.NULL)
@@ -71,6 +82,9 @@ public class IndexKeyFactory {
             case IndexKeyTypes.TIMESTAMP:
                 return new TimestampIndexKey(o);
         }
+
+        if (registry.containsKey(keyType))
+            return registry.get(keyType).apply(o);
 
         throw new IgniteException("Failed to wrap value[type=" + keyType + ", value=" + o + "]");
     }
