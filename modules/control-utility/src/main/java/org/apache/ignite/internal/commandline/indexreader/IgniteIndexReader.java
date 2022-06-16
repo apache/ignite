@@ -314,7 +314,7 @@ public class IgniteIndexReader implements AutoCloseable {
         else
             printPagesListsInfo(pageListsInfo);
 
-        printPageStat("", "\n---- These pages types were encountered during sequential scan:", pageClasses);
+        printPageStat("", "---- These pages types were encountered during sequential scan:", pageClasses);
 
         if (!errors.isEmpty()) {
             log.severe("----");
@@ -354,7 +354,7 @@ public class IgniteIndexReader implements AutoCloseable {
                 checkPartsErrors
             );
 
-            log.info("\nPartition check finished, total errors: " +
+            log.info("Partition check finished, total errors: " +
                 checkPartsErrors.values().stream().mapToInt(List::size).sum() + ", total problem partitions: " +
                 checkPartsErrors.size()
             );
@@ -762,7 +762,7 @@ public class IgniteIndexReader implements AutoCloseable {
      * @param treeInfos Tree traversal info.
      */
     private void printTraversalResults(String prefix, Map<String, TreeTraverseContext> treeInfos) {
-        log.info("\n" + prefix + "Tree traversal results");
+        log.info(prefix + "Tree traversal results");
 
         Map<Class<? extends PageIO>, Long> totalStat = new HashMap<>();
 
@@ -881,7 +881,7 @@ public class IgniteIndexReader implements AutoCloseable {
     private void printPagesListsInfo(PageListsInfo pageListsInfo) {
         String prefix = PAGE_LISTS_PREFIX;
 
-        log.info("\n" + prefix + "Page lists info.");
+        log.info(prefix + "Page lists info.");
 
         if (!pageListsInfo.bucketsData.isEmpty())
             log.info(prefix + "---- Printing buckets data:");
@@ -904,8 +904,17 @@ public class IgniteIndexReader implements AutoCloseable {
         printErrors(prefix, "---- Errors:", "---- No errors.", "Page id: %s, exception: ", true, pageListsInfo.errors);
 
         log.info("");
-        log.info(prefix + "Total index pages found in lists: " + pageListsInfo.allPages.size());
-        log.info(prefix + "Total errors during lists scan: " + pageListsInfo.errors.size());
+
+        SystemViewCommand.printTable(
+            null,
+            Arrays.asList(STRING, NUMBER),
+            Arrays.asList(
+                Arrays.asList(prefix + "Total index pages found in lists:", pageListsInfo.allPages.size()),
+                Arrays.asList(prefix + "Total errors during lists scan:", pageListsInfo.errors.size())
+            ),
+            log
+        );
+
         log.info("------------------");
     }
 
