@@ -1397,21 +1397,21 @@ public class IgniteIndexReader implements AutoCloseable {
     private class LeafPageIOProcessor implements PageIOProcessor {
         /** {@inheritDoc} */
         @Override public void traverse(long addr, TreeTraverseContext ctx) throws IgniteCheckedException {
-            ctx.onLeafPage(PageIO.getPageId(addr), data(PageIO.getPageIO(addr), addr, ctx));
+            ctx.onLeafPage(PageIO.getPageId(addr), data(addr, ctx));
         }
 
         /** */
-        private List<Object> data(PageIO io, long addr, TreeTraverseContext ctx) {
+        private List<Object> data(long addr, TreeTraverseContext ctx) throws IgniteCheckedException {
             List<Object> items = new LinkedList<>();
 
-            BPlusLeafIO<?> leafIO = (BPlusLeafIO<?>)io;
+            BPlusLeafIO<?> io = PageIO.getPageIO(addr);
 
             try {
-                for (int i = 0; i < leafIO.getCount(addr); i++) {
+                for (int i = 0; i < io.getCount(addr); i++) {
                     if (io instanceof IndexStorageImpl.MetaStoreLeafIO)
                         items.add(((BPlusIO<IndexStorageImpl.IndexItem>)io).getLookupRow(null, addr, i));
                     else
-                        items.add(getLeafItem(leafIO, addr, i, ctx));
+                        items.add(getLeafItem(io, addr, i, ctx));
                 }
             }
             catch (Exception e) {
