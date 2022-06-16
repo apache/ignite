@@ -271,10 +271,12 @@ public class IgniteIndexReader implements AutoCloseable {
             pageIds.add(info.rootPageId);
         });
 
-        Supplier<ItemStorage> itemStorageFactory = checkParts ? LinkStorage::new : CountOnlyStorage::new;
-
-        Map<String, TreeTraverseContext> horizontalScans =
-            traverseAllTrees("Scan index trees horizontally", metaTreeRootId, itemStorageFactory, this::horizontalTreeScan);
+        Map<String, TreeTraverseContext> horizontalScans = traverseAllTrees(
+            "Scan index trees horizontally",
+            metaTreeRootId,
+            checkParts ? LinkStorage::new : CountOnlyStorage::new,
+            this::horizontalTreeScan
+        );
 
         // Scanning page reuse lists.
         PageListsInfo pageListsInfo = pageListMetaPageId == 0 ? null : getPageListsInfo(pageListMetaPageId);
@@ -1014,10 +1016,10 @@ public class IgniteIndexReader implements AutoCloseable {
                         pageIO = PageIO.getPageIO(addr);
 
                         if (i == 0 && !(pageIO instanceof BPlusLeafIO))
-                            throw new IgniteException("Not-leaf page found on leaf level, pageId=" + pageId + ", level=" + i);
+                            throw new IgniteException("Not-leaf page found on leaf level [pageId=" + pageId + ", level=0]");
 
                         if (!(pageIO instanceof BPlusIO))
-                            throw new IgniteException("Not-BPlus page found, pageId=" + pageId + ", level=" + i);
+                            throw new IgniteException("Not-BPlus page found [pageId=" + pageId + ", level=" + i + ']');
 
                         treeCtx.ioStat.compute(pageIO.getClass(), (k, v) -> v == null ? 1 : v + 1);
 
@@ -1387,18 +1389,13 @@ public class IgniteIndexReader implements AutoCloseable {
 
     /** */
     private class MetaPageIOProcessor implements PageIOProcessor {
-        /** */
-        public Long root(PageIO io, long addr) {
-            BPlusMetaIO bPlusMetaIO = (BPlusMetaIO)io;
-
-            int rootLvl = bPlusMetaIO.getRootLevel(addr);
-
-            return bPlusMetaIO.getFirstPageId(addr, rootLvl);
-        }
-
         /** {@inheritDoc} */
         @Override public void traverse(PageIO io, long addr, long pageId, TreeTraverseContext nodeCtx) {
-            IgniteIndexReader.this.traverse(root(io, addr), nodeCtx);
+            BPlusMetaIO io0 = (BPlusMetaIO)io;
+
+            int rootLvl = io0.getRootLevel(addr);
+
+            IgniteIndexReader.this.traverse(io0.getFirstPageId(addr, rootLvl), nodeCtx);
         }
     }
 
@@ -1410,20 +1407,20 @@ public class IgniteIndexReader implements AutoCloseable {
 
             int cnt = innerIo.getCount(addr);
 
-            if (cnt > 0) {
-                List<Long> children = new ArrayList<>(cnt + 1);
+            if (cnt == 0) {
+                long left = innerIo.getLeft(addr, 0);
 
-                for (int i = 0; i < cnt; i++)
-                    children.add(innerIo.getLeft(addr, i));
-
-                children.add(innerIo.getRight(addr, cnt - 1));
-
-                return children;
+                return left == 0 ? Collections.emptyList() : singletonList(left);
             }
 
-            long left = innerIo.getLeft(addr, 0);
+            List<Long> children = new ArrayList<>(cnt + 1);
 
-            return left == 0 ? Collections.emptyList() : singletonList(left);
+            for (int i = 0; i < cnt; i++)
+                children.add(innerIo.getLeft(addr, i));
+
+            children.add(innerIo.getRight(addr, cnt - 1));
+
+            return children;
         }
 
         /** {@inheritDoc} */
