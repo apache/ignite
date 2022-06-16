@@ -24,6 +24,7 @@ import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lifecycle.LifecycleAware;
+import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -58,6 +59,10 @@ public class LifecycleAwareListenerTest extends GridCommonAbstractTest {
         /** Is stopped. */
         private boolean isStopped;
 
+        /** */
+        @IgniteInstanceResource
+        private Ignite ignite;
+
         /** {@inheritDoc} */
         @Override public boolean apply(Event evt) {
             return true;
@@ -66,6 +71,8 @@ public class LifecycleAwareListenerTest extends GridCommonAbstractTest {
         /** {@inheritDoc} */
         @Override public void start() throws IgniteException {
             assertFalse(isStarted);
+
+            assertNotNull(ignite);
 
             isStarted = true;
         }

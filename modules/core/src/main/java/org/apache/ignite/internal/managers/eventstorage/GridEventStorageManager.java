@@ -287,10 +287,10 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
         if (evtLsnrs != null) {
             Set<IgnitePredicate<? extends Event>> lsnrs = evtLsnrs.keySet();
 
-            U.startLifecycleAware(lsnrs);
-
             for (IgnitePredicate<? extends Event> lsnr : lsnrs)
                 addLocalEventListener(lsnr, evtLsnrs.get(lsnr));
+
+            U.startLifecycleAware(lsnrs);
         }
 
         startSpi();
