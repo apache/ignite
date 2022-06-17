@@ -270,7 +270,7 @@ public class IgniteIndexReader implements AutoCloseable {
         );
 
         // Scanning page reuse lists.
-        PageListsInfo pageListsInfo = pageListMetaPageId == 0 ? null : getPageListsInfo(pageListMetaPageId);
+        PageListsInfo pageListsInfo = pageListMetaPageId == 0 ? null : pageListInfo(pageListMetaPageId);
 
         ProgressPrinter progressPrinter = progressPrinter("Reading pages sequentially", pagesNum);
 
@@ -287,7 +287,7 @@ public class IgniteIndexReader implements AutoCloseable {
                             && pageListsInfo != null
                             && !pageListsInfo.allPages.contains(pageId)) {
                         throw new IgniteException(
-                                "Possibly orphan " + io.getClass().getSimpleName() + " page, pageId=" + pageId
+                            "Possibly orphan " + io.getClass().getSimpleName() + " page, pageId=" + pageId
                         );
                     }
                 }
@@ -465,7 +465,7 @@ public class IgniteIndexReader implements AutoCloseable {
 
                             TreeTraverseContext tree = e.getValue();
 
-                            if (getCacheAndTypeId(name).get1() != cacheAwareLink.cacheId)
+                            if (cacheAndTypeId(name).get1() != cacheAwareLink.cacheId)
                                 continue; // It's index for other cache, don't check.
 
                             // Tombstones are not indexed and shouldn't be tested.
@@ -559,7 +559,7 @@ public class IgniteIndexReader implements AutoCloseable {
      * @param metaPageListId Page list meta id.
      * @return Page list info.
      */
-    private PageListsInfo getPageListsInfo(long metaPageListId) throws IgniteCheckedException {
+    private PageListsInfo pageListInfo(long metaPageListId) throws IgniteCheckedException {
         return doWithBuffer((buf, addr) -> {
             Map<IgniteBiTuple<Long, Integer>, List<Long>> bucketsData = new HashMap<>();
 
@@ -569,13 +569,13 @@ public class IgniteIndexReader implements AutoCloseable {
 
             Map<Long, List<Throwable>> errors = new HashMap<>();
 
-            long nextMetaId = metaPageListId;
+            long currPageId = metaPageListId;
 
-            while (nextMetaId != 0) {
+            while (currPageId != 0) {
                 try {
                     buf.rewind();
 
-                    readPage(idxStore, nextMetaId, buf);
+                    readPage(idxStore, currPageId, buf);
 
                     PagesListMetaIO io = PageIO.getPageIO(addr);
 
@@ -583,29 +583,30 @@ public class IgniteIndexReader implements AutoCloseable {
 
                     io.getBucketsData(addr, data);
 
-                    final long fNextMetaId = nextMetaId;
-
-                    data.forEach((k, v) -> {
-                        List<Long> listIds = LongStream.of(v.array()).map(IgniteIndexReader::normalizePageId).boxed().collect(toList());
+                    for (Map.Entry<Integer, GridLongList> e : data.entrySet()) {
+                        List<Long> listIds = LongStream.of(e.getValue().array())
+                            .map(IgniteIndexReader::normalizePageId)
+                            .boxed()
+                            .collect(toList());
 
                         for (Long listId : listIds) {
                             try {
-                                allPages.addAll(getPageList(listId, pageListStat));
+                                allPages.addAll(pageList(listId, pageListStat));
                             }
-                            catch (Exception e) {
-                                errors.put(listId, singletonList(e));
+                            catch (Exception err) {
+                                errors.put(listId, singletonList(err));
                             }
                         }
 
-                        bucketsData.put(new IgniteBiTuple<>(fNextMetaId, k), listIds);
-                    });
+                        bucketsData.put(new IgniteBiTuple<>(currPageId, e.getKey()), listIds);
+                    }
 
-                    nextMetaId = io.getNextMetaPageId(addr);
+                    currPageId = io.getNextMetaPageId(addr);
                 }
                 catch (Exception e) {
-                    errors.put(nextMetaId, singletonList(e));
+                    errors.put(currPageId, singletonList(e));
 
-                    nextMetaId = 0;
+                    break;
                 }
             }
 
@@ -620,11 +621,7 @@ public class IgniteIndexReader implements AutoCloseable {
      * @param pageStat Page types statistics.
      * @return List of page ids.
      */
-    private List<Long> getPageList(long pageListStartId, Map<Class<? extends PageIO>, Long> pageStat) {
-        List<Long> res = new LinkedList<>();
-
-        long nextNodeId = pageListStartId;
-
+    private List<Long> pageList(long pageListStartId, Map<Class<? extends PageIO>, Long> pageStat) {
         ByteBuffer nodeBuf = allocateBuffer(pageSize);
         ByteBuffer pageBuf = allocateBuffer(pageSize);
 
@@ -632,41 +629,41 @@ public class IgniteIndexReader implements AutoCloseable {
         long pageAddr = bufferAddress(pageBuf);
 
         try {
-            while (nextNodeId != 0) {
-                try {
-                    nodeBuf.rewind();
+            List<Long> res = new LinkedList<>();
 
-                    readPage(idxStore, nextNodeId, nodeBuf);
+            long currPageId = pageListStartId;
 
-                    PagesListNodeIO io = PageIO.getPageIO(nodeAddr);
+            while (currPageId != 0) {
+                nodeBuf.rewind();
 
-                    for (int i = 0; i < io.getCount(nodeAddr); i++) {
-                        pageBuf.rewind();
+                readPage(idxStore, currPageId, nodeBuf);
 
-                        long pageId = normalizePageId(io.getAt(nodeAddr, i));
+                PagesListNodeIO io = PageIO.getPageIO(nodeAddr);
 
-                        res.add(pageId);
+                for (int i = 0; i < io.getCount(nodeAddr); i++) {
+                    pageBuf.rewind();
 
-                        readPage(idxStore, pageId, pageBuf);
+                    long pageId = normalizePageId(io.getAt(nodeAddr, i));
 
-                        PageIO pageIO = PageIO.getPageIO(pageAddr);
+                    res.add(pageId);
 
-                        pageStat.compute(pageIO.getClass(), (k, v) -> v == null ? 1 : v + 1);
-                    }
+                    readPage(idxStore, pageId, pageBuf);
 
-                    nextNodeId = io.getNextId(nodeAddr);
+                    pageStat.compute(PageIO.getPageIO(pageAddr).getClass(), (k, v) -> v == null ? 1 : v + 1);
                 }
-                catch (IgniteCheckedException e) {
-                    throw new IgniteException(e.getMessage(), e);
-                }
+
+                currPageId = io.getNextId(nodeAddr);
             }
+
+            return res;
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteException(e);
         }
         finally {
             freeBuffer(nodeBuf);
             freeBuffer(pageBuf);
         }
-
-        return res;
     }
 
     /**
@@ -776,7 +773,7 @@ public class IgniteIndexReader implements AutoCloseable {
             totalErr += validationInfo.errors.size();
 
             cacheIdxSizes
-                .computeIfAbsent(getCacheAndTypeId(idxName), k -> new HashMap<>())
+                .computeIfAbsent(cacheAndTypeId(idxName), k -> new HashMap<>())
                 .put(idxName, validationInfo.itemStorage.size());
         }
 
@@ -829,7 +826,7 @@ public class IgniteIndexReader implements AutoCloseable {
      * @param name Index name.
      * @return Pair of cache id and type id.
      */
-    public IgnitePair<Integer> getCacheAndTypeId(String name) {
+    public IgnitePair<Integer> cacheAndTypeId(String name) {
         return cacheTypeIds.computeIfAbsent(name, k -> {
             Matcher mId = CACHE_TYPE_ID_SEARCH_PATTERN.matcher(k);
 
@@ -1411,7 +1408,7 @@ public class IgniteIndexReader implements AutoCloseable {
             if (io instanceof AbstractDataLeafIO && ((AbstractDataLeafIO)io).storeCacheId())
                 cacheId = ((RowLinkIO)io).getCacheId(addr, idx);
             else
-                cacheId = getCacheAndTypeId(ctx.treeName).get1();
+                cacheId = cacheAndTypeId(ctx.treeName).get1();
 
             if (partCnt == 0)
                 return new CacheAwareLink(cacheId, link);
