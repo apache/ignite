@@ -69,7 +69,6 @@ import org.apache.ignite.internal.processors.cache.tree.PendingRowIO;
 import org.apache.ignite.internal.processors.cache.tree.RowLinkIO;
 import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.GridStringBuilder;
-import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.lang.GridClosure3;
 import org.apache.ignite.internal.util.lang.GridPlainClosure2;
 import org.apache.ignite.internal.util.lang.IgnitePair;
@@ -1265,7 +1264,7 @@ public class IgniteIndexReader implements AutoCloseable {
             if (cnt == 0) {
                 long left = io.getLeft(addr, 0);
 
-                return left == 0 ? IgniteUtils.EMPTY_LONGS : new long[] {left};
+                return left == 0 ? U.EMPTY_LONGS : new long[] {left};
             }
 
             long[] children = new long[cnt + 1];
