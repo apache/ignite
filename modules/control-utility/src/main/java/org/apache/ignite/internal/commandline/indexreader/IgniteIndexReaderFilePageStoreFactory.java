@@ -83,7 +83,7 @@ class IgniteIndexReaderFilePageStoreFactory {
      * @return New instance of {@link FilePageStore} or {@code null}.
      * @throws IgniteCheckedException If there are errors when creating or initializing {@link FilePageStore}.
      */
-    @Nullable FilePageStore createFilePageStoreWithEnsure(int partId, byte type) throws IgniteCheckedException {
+    @Nullable FilePageStore createFilePageStore(int partId, byte type) throws IgniteCheckedException {
         File file = getFile(dir, partId, null);
 
         if (!file.exists())

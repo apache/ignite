@@ -73,7 +73,6 @@ import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.lang.GridClosure3;
 import org.apache.ignite.internal.util.lang.GridPlainClosure2;
 import org.apache.ignite.internal.util.lang.IgnitePair;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.jetbrains.annotations.Nullable;
@@ -153,6 +152,9 @@ public class IgniteIndexReader implements AutoCloseable {
     /** Partition count. */
     private final int partCnt;
 
+    /** Check cache data tree in partition files and it's consistency with indexes. */
+    private final boolean checkParts;
+
     /** Index name filter, if {@code null} then is not used. */
     @Nullable private final Predicate<String> idxFilter;
 
@@ -160,13 +162,10 @@ public class IgniteIndexReader implements AutoCloseable {
     private final Logger log;
 
     /** Page store of {@link FilePageStoreManager#INDEX_FILE_NAME}. */
-    @Nullable private final FilePageStore idxStore;
+    private final FilePageStore idxStore;
 
     /** Partitions page stores, may contains {@code null}. */
-    @Nullable private final FilePageStore[] partStores;
-
-    /** Check cache data tree in partition files and it's consistency with indexes. */
-    private final boolean checkParts;
+    private final FilePageStore[] partStores;
 
     /** */
     private final Set<Integer> missingPartitions = new HashSet<>();
@@ -201,35 +200,18 @@ public class IgniteIndexReader implements AutoCloseable {
         partCnt = filePageStoreFactory.partitionCount();
         this.checkParts = checkParts;
         this.idxFilter = idxFilter;
-
         this.log = log;
-
-        Map<Integer, List<Throwable>> partStoresErrors = new HashMap<>();
-        List<Throwable> errors = new ArrayList<>();
-
-        idxStore = filePageStoreFactory.createFilePageStoreWithEnsure(INDEX_PARTITION, FLAG_IDX);
-
-        if (!errors.isEmpty())
-            partStoresErrors.put(INDEX_PARTITION, new ArrayList<>(errors));
+        idxStore = filePageStoreFactory.createFilePageStore(INDEX_PARTITION, FLAG_IDX);
 
         if (isNull(idxStore))
             throw new IgniteCheckedException(INDEX_FILE_NAME + " file not found");
-        else
-            log.info("Analyzing file: " + INDEX_FILE_NAME);
+
+        log.info("Analyzing file: " + INDEX_FILE_NAME);
 
         partStores = new FilePageStore[partCnt];
 
-        for (int i = 0; i < partCnt; i++) {
-            if (!errors.isEmpty())
-                errors.clear();
-
-            partStores[i] = filePageStoreFactory.createFilePageStoreWithEnsure(i, FLAG_DATA);
-
-            if (!errors.isEmpty())
-                partStoresErrors.put(i, new ArrayList<>(errors));
-        }
-
-        printFileReadingErrors(partStoresErrors);
+        for (int i = 0; i < partCnt; i++)
+            partStores[i] = filePageStoreFactory.createFilePageStore(i, FLAG_DATA);
     }
 
     /** Read index file. */
@@ -1028,14 +1010,11 @@ public class IgniteIndexReader implements AutoCloseable {
 
     /** {@inheritDoc} */
     @Override public void close() throws StorageException {
-        if (nonNull(idxStore))
-            idxStore.stop(false);
+        idxStore.stop(false);
 
-        if (nonNull(partStores)) {
-            for (FilePageStore store : partStores) {
-                if (nonNull(store))
-                    store.stop(false);
-            }
+        for (FilePageStore store : partStores) {
+            if (nonNull(store))
+                store.stop(false);
         }
     }
 
@@ -1202,26 +1181,6 @@ public class IgniteIndexReader implements AutoCloseable {
             data,
             log
         );
-    }
-
-    /**
-     * Print partitions reading exceptions.
-     *
-     * @param partStoresErrors Partitions reading exceptions.
-     */
-    private void printFileReadingErrors(Map<Integer, List<Throwable>> partStoresErrors) {
-        List<Throwable> idxPartErrors = partStoresErrors.get(INDEX_PARTITION);
-
-        if (!F.isEmpty(idxPartErrors)) {
-            log.severe("Errors detected while reading " + INDEX_FILE_NAME);
-
-            idxPartErrors.forEach(err -> log.severe(err.getMessage()));
-
-            partStoresErrors.remove(INDEX_PARTITION);
-        }
-
-        if (!partStoresErrors.isEmpty())
-            printErrors("", "Errors detected while reading partition files:", null, "Partition id: %s, exceptions: ", partStoresErrors);
     }
 
     /**
