@@ -485,11 +485,8 @@ public class IgniteIndexReader implements AutoCloseable {
             });
 
             ctx.ioStat.forEach((cls, cnt) -> {
-                if (tree.ioStat.containsKey(cls))
-                    // Already checked.
-                    return;
-
-                errors.add(compareError("pages", name, 0, cnt, cls));
+                if (!tree.ioStat.containsKey(cls))
+                    errors.add(compareError("pages", name, 0, cnt, cls));
             });
         });
 
