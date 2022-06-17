@@ -31,8 +31,8 @@ import static org.apache.ignite.internal.commandline.indexreader.IgniteIndexRead
  * Traverse context, which is used for tree traversal and is unique for traversal of one single tree.
  */
 class TreeTraverseContext {
-    /** Root page id. */
-    final long rootPageId;
+    /** Set of all inner page ids. */
+    final Set<Long> innerPageIds;
 
     /** Tree name. */
     final String treeName;
@@ -49,18 +49,13 @@ class TreeTraverseContext {
     /** List of items storage. */
     final ItemStorage itemStorage;
 
-    /** Set of all inner page ids. */
-    final Set<Long> innerPageIds;
-
     /** */
     public TreeTraverseContext(
-        long rootPageId,
         String treeName,
         FilePageStore store,
         ItemStorage itemStorage,
         Set<Long> innerPageIds
     ) {
-        this.rootPageId = rootPageId;
         this.treeName = treeName;
         this.store = store;
         this.itemStorage = itemStorage;

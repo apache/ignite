@@ -140,7 +140,6 @@ public class IgniteIndexReader implements AutoCloseable {
     /** */
     private static final int CHECK_PARTS_MAX_ERRORS_PER_PARTITION = 10;
 
-    /** */
     static {
         IndexProcessor.registerIO();
     }
@@ -243,7 +242,6 @@ public class IgniteIndexReader implements AutoCloseable {
 
         recursiveScans.forEach((name, info) -> {
             pageIds.addAll(info.innerPageIds);
-            pageIds.add(info.rootPageId);
         });
 
         // Scanning page reuse lists.
@@ -858,6 +856,8 @@ public class IgniteIndexReader implements AutoCloseable {
     ) {
         Set<Long> innerPageIds = new HashSet<>();
 
+        innerPageIds.add(rootPageId);
+
         TreeTraverseContext ctx = createContext(rootPageId, treeName, itemStorage, innerPageIds);
 
         traverse(rootPageId, ctx);
@@ -945,7 +945,6 @@ public class IgniteIndexReader implements AutoCloseable {
     /** */
     TreeTraverseContext createContext(long rootPageId, String treeName, ItemStorage itemStorage, Set<Long> innerPageIds) {
         return new TreeTraverseContext(
-            rootPageId,
             treeName,
             filePageStore(partId(rootPageId)),
             itemStorage,
