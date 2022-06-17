@@ -1316,12 +1316,9 @@ public class IgniteIndexReader implements AutoCloseable {
 
             final long link = link(io, addr, idx);
 
-            final int cacheId;
-
-            if (io instanceof AbstractDataLeafIO && ((AbstractDataLeafIO)io).storeCacheId())
-                cacheId = ((RowLinkIO)io).getCacheId(addr, idx);
-            else
-                cacheId = cacheAndTypeId(ctx.treeName).get1();
+            final int cacheId = (io instanceof AbstractDataLeafIO && ((AbstractDataLeafIO)io).storeCacheId())
+                ? ((RowLinkIO)io).getCacheId(addr, idx)
+                : cacheAndTypeId(ctx.treeName).get1();
 
             if (partCnt == 0)
                 return new CacheAwareLink(cacheId, link);
