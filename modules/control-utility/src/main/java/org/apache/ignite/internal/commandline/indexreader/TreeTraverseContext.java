@@ -20,20 +20,14 @@ package org.apache.ignite.internal.commandline.indexreader;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStore;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
-
-import static org.apache.ignite.internal.commandline.indexreader.IgniteIndexReader.normalizePageId;
 
 /**
  * Traverse context, which is used for tree traversal and is unique for traversal of one single tree.
  */
 class TreeTraverseContext {
-    /** Set of all inner page ids. */
-    final Set<Long> innerPageIds;
-
     /** Tree name. */
     final String treeName;
 
@@ -53,25 +47,18 @@ class TreeTraverseContext {
     public TreeTraverseContext(
         String treeName,
         FilePageStore store,
-        ItemStorage itemStorage,
-        Set<Long> innerPageIds
+        ItemStorage itemStorage
     ) {
         this.treeName = treeName;
         this.store = store;
         this.itemStorage = itemStorage;
         this.ioStat = new HashMap<>();
         this.errors = new HashMap<>();
-        this.innerPageIds = innerPageIds;
     }
 
     /** */
     public void onPageIO(PageIO io) {
         ioStat.compute(io.getClass(), (k, v) -> v == null ? 1 : v + 1);
-    }
-
-    /** */
-    public void onInnerPage(long pageId) {
-        innerPageIds.add(normalizePageId(pageId));
     }
 
     /** */

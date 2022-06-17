@@ -180,6 +180,9 @@ public class IgniteIndexReader implements AutoCloseable {
     /** */
     private final Map<String, IgnitePair<Integer>> cacheTypeIds = new HashMap<>();
 
+    /** */
+    private final Set<Long> pageIds = new HashSet<>();
+
     /**
      * Constructor.
      *
@@ -237,12 +240,6 @@ public class IgniteIndexReader implements AutoCloseable {
             checkParts ? LinkStorage::new : CountOnlyStorage::new,
             this::horizontalTreeScan
         );
-
-        Set<Long> pageIds = new HashSet<>();
-
-        recursiveScans.forEach((name, info) -> {
-            pageIds.addAll(info.innerPageIds);
-        });
 
         // Scanning page reuse lists.
         PageListsInfo pageListsInfo = indexPartitionRoots[1] == 0 ? null : pageListInfo(indexPartitionRoots[1]);
@@ -854,11 +851,9 @@ public class IgniteIndexReader implements AutoCloseable {
         String treeName,
         ItemStorage itemStorage
     ) {
-        Set<Long> innerPageIds = new HashSet<>();
+        pageIds.add(rootPageId);
 
-        innerPageIds.add(rootPageId);
-
-        TreeTraverseContext ctx = createContext(rootPageId, treeName, itemStorage, innerPageIds);
+        TreeTraverseContext ctx = createContext(rootPageId, treeName, itemStorage);
 
         traverse(rootPageId, ctx);
 
@@ -878,7 +873,7 @@ public class IgniteIndexReader implements AutoCloseable {
         String treeName,
         ItemStorage itemStorage
     ) {
-        TreeTraverseContext ctx = createContext(rootPageId, treeName, itemStorage, null);
+        TreeTraverseContext ctx = createContext(rootPageId, treeName, itemStorage);
 
         ByteBuffer buf = allocateBuffer(pageSize);
 
@@ -943,12 +938,11 @@ public class IgniteIndexReader implements AutoCloseable {
     }
 
     /** */
-    TreeTraverseContext createContext(long rootPageId, String treeName, ItemStorage itemStorage, Set<Long> innerPageIds) {
+    TreeTraverseContext createContext(long rootPageId, String treeName, ItemStorage itemStorage) {
         return new TreeTraverseContext(
             treeName,
             filePageStore(partId(rootPageId)),
-            itemStorage,
-            innerPageIds
+            itemStorage
         );
     }
 
@@ -1249,7 +1243,7 @@ public class IgniteIndexReader implements AutoCloseable {
             for (long id : children((BPlusInnerIO<?>)io, addr))
                 traverse(id, ctx);
 
-            ctx.onInnerPage(PageIO.getPageId(addr));
+            pageIds.add(normalizePageId(PageIO.getPageId(addr)));
         }
 
         /** */
