@@ -38,9 +38,8 @@ fi
 
 echo Updating versions to "$1"
 
-sed "${SED_OPTION[@]}" -e "s/<revision>\(.*\)</<revision>${1}</g" ./parent/pom.xml;
 # The ignite-checkstyle module has it's own Apache parent, so in has to be updated independently.
-sed "${SED_OPTION[@]}" -e "s/<revision>\(.*\)</<revision>${1}</g" ./modules/checkstyle/pom.xml;
+sed "${SED_OPTION[@]}" -e "s/<revision>\(.*\)</<revision>${1}</g" ./parent/pom.xml ./modules/checkstyle/pom.xml;
 
 echo Updating sub-modules versions to "$1" and resouces during the build
 
