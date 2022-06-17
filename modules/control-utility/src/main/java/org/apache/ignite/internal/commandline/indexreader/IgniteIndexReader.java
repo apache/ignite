@@ -69,10 +69,10 @@ import org.apache.ignite.internal.processors.cache.tree.PendingRowIO;
 import org.apache.ignite.internal.processors.cache.tree.RowLinkIO;
 import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.GridStringBuilder;
-import org.apache.ignite.internal.util.lang.GridInClosure3;
 import org.apache.ignite.internal.util.lang.GridPlainClosure2;
 import org.apache.ignite.internal.util.lang.IgnitePair;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.jetbrains.annotations.Nullable;
 
@@ -301,7 +301,7 @@ public class IgniteIndexReader implements AutoCloseable {
         Map<Class<? extends PageIO>, Long> ioStat = new HashMap<>();
 
         // Scan all pages in file.
-        List<Throwable> errors = scanIndex((pageId, addr, io) -> {
+        List<Throwable> errors = scanIndex((pageId, io) -> {
             ioStat.compute(io.getClass(), (k, v) -> v == null ? 1 : v + 1);
 
             if (idxFilter != null)
@@ -577,7 +577,7 @@ public class IgniteIndexReader implements AutoCloseable {
      * @return List of errors that occured while scanning.
      * @throws IgniteCheckedException If failed.
      */
-    private List<Throwable> scanIndex(GridInClosure3<Long, Long, PageIO> c) throws IgniteCheckedException {
+    private List<Throwable> scanIndex(IgniteBiInClosure<Long, PageIO> c) throws IgniteCheckedException {
         long pagesNum = (idxStore.size() - idxStore.headerSize()) / pageSize;
 
         ProgressPrinter progressPrinter = progressPrinter("Reading pages sequentially", pagesNum);
@@ -597,7 +597,7 @@ public class IgniteIndexReader implements AutoCloseable {
 
                     progressPrinter.printProgress();
 
-                    c.apply(pageId, addr, io);
+                    c.apply(pageId, io);
                 }
                 catch (Throwable e) {
                     errors.add(new IgniteException("Error [step=" + i + ", msg=" + e.getMessage() + ']', e));
