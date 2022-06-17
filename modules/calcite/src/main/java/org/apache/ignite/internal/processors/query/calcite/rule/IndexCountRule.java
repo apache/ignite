@@ -17,34 +17,29 @@
 
 package org.apache.ignite.internal.processors.query.calcite.rule;
 
-import java.util.ArrayList;
 import java.util.Collections;
-import java.util.List;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-
-import com.google.common.collect.ImmutableMap;
+import org.apache.calcite.linq4j.Ord;
 import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.RelRule;
 import org.apache.calcite.plan.RelTraitSet;
-import org.apache.calcite.rel.RelCollations;
-import org.apache.calcite.rel.core.AggregateCall;
+import org.apache.calcite.rel.RelDistribution;
 import org.apache.calcite.rel.logical.LogicalAggregate;
-import org.apache.calcite.rex.RexBuilder;
-import org.apache.calcite.rex.RexNode;
+import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
-import org.apache.calcite.util.ImmutableIntList;
-import org.apache.ignite.internal.processors.query.QueryUtils;
+import org.apache.calcite.sql.type.SqlTypeName;
+import org.apache.calcite.tools.RelBuilder;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteConvention;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexCount;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteProject;
 import org.apache.ignite.internal.processors.query.calcite.rel.logical.IgniteLogicalTableScan;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteIndex;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
 import org.apache.ignite.internal.processors.query.calcite.trait.RewindabilityTrait;
+import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.immutables.value.Value;
+
+import static java.util.Collections.singletonList;
 
 /** Tries to optimize 'COUNT(*)' to use number of index records. */
 @Value.Enclosing
@@ -63,17 +58,14 @@ public class IndexCountRule extends RelRule<IndexCountRule.Config> {
         IgniteLogicalTableScan scan = call.rel(1);
         IgniteTable table = scan.getTable().unwrap(IgniteTable.class);
 
-        IgniteIndex idx = table.indexes().get(QueryUtils.PRIMARY_KEY_INDEX);
-
-        if (idx == null)
-            idx = table.indexes().values().stream().findFirst().orElse(null);
+        IgniteIndex idx = table.indexes().values().stream().findFirst().orElse(null);
 
         if (
             idx == null ||
-                scan.condition() != null ||
-                scan.projects() != null ||
-                aggr.getGroupCount() > 0 ||
                 table.isIndexRebuildInProgress() ||
+                scan.condition() != null ||
+                scan.requiredColumns() != null ||
+                aggr.getGroupCount() > 0 ||
                 aggr.getAggCallList().stream().anyMatch(a -> a.getAggregation().getKind() != SqlKind.COUNT ||
                     !a.getArgList().isEmpty())
         )
@@ -81,58 +73,29 @@ public class IndexCountRule extends RelRule<IndexCountRule.Config> {
 
         RelTraitSet idxTraits = aggr.getTraitSet()
             .replace(IgniteConvention.INSTANCE)
-            .replace(IgniteDistributions.random())
+            .replace(table.distribution().getType() == RelDistribution.Type.HASH_DISTRIBUTED ?
+                IgniteDistributions.random() : table.distribution())
             .replace(RewindabilityTrait.REWINDABLE);
+
+        RelDataTypeFactory tf = scan.getCluster().getTypeFactory();
 
         IgniteIndexCount idxCnt = new IgniteIndexCount(
             scan.getCluster(),
             idxTraits,
             scan.getTable(),
-            idx.name(),
-            aggr.getRowType()
+            idx.name()
         );
 
-        AggregateCall idxSumAggCall = AggregateCall.create(
-            SqlStdOperatorTable.SUM0,
-            false,
-            false,
-            false,
-            ImmutableIntList.of(0),
-            -1,
-            null,
-            RelCollations.EMPTY,
-            0,
-            idxCnt,
-            null,
-            null);
+        RelBuilder b = call.builder();
 
-        List<AggregateCall> indCntSumFunLst = Stream.generate(() -> idxSumAggCall).limit(aggr.getAggCallList().size())
-            .collect(Collectors.toList());
-
-        LogicalAggregate newRel = new LogicalAggregate(
-            aggr.getCluster(),
-            aggr.getTraitSet(),
-            Collections.emptyList(),
-            idxCnt,
-            aggr.getGroupSet(),
-            aggr.getGroupSets(),
-            indCntSumFunLst
+        // Also cast DECIMAL of SUN0 to BIGINT(Long) of COUNT().
+        call.transformTo(b.push(idxCnt)
+            .aggregate(b.groupKey(), Collections.nCopies(aggr.getAggCallList().size(),
+                b.aggregateCall(SqlStdOperatorTable.SUM0, b.field(0))))
+            .project(Commons.transform(Ord.zip(b.fields()),
+                f -> b.cast(f.e, aggr.getRowType().getFieldList().get(f.i).getType().getSqlTypeName())))
+            .build()
         );
-
-        // SUM0/DECIMAL to COUNT()/Long converter.
-        List<RexNode> proj = new ArrayList<>();
-        RexBuilder rexBuilder = scan.getCluster().getRexBuilder();
-
-        for (int i = 0; i < aggr.getAggCallList().size(); ++i)
-            proj.add(rexBuilder.makeCast(aggr.getAggCallList().get(i).getType(), rexBuilder.makeInputRef(newRel, i)));
-
-        IgniteProject castToLongNode = new IgniteProject(
-            newRel.getCluster(),
-            aggr.getTraitSet().replace(IgniteConvention.INSTANCE),
-            newRel,
-            proj, aggr.getRowType());
-
-        call.transformTo(castToLongNode, ImmutableMap.of(castToLongNode, aggr));
     }
 
     /** The rule config. */

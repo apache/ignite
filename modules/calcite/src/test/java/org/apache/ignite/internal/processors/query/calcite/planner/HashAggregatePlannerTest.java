@@ -55,8 +55,7 @@ public class HashAggregatePlannerTest extends AbstractAggregatePlannerTest {
         TestTable tbl = createBroadcastTable();
         publicSchema.addTable("TEST", tbl);
 
-        assertPlan("SELECT COUNT(*) FROM TEST", publicSchema,
-            hasChildThat(isInstanceOf(IgniteIndexCount.class)).negate());
+        assertNoIndexCount("SELECT COUNT(*) FROM TEST", publicSchema);
 
         // Check with 'primary' index.
         tbl.addIndex(QueryUtils.PRIMARY_KEY_INDEX, 0);
@@ -77,10 +76,12 @@ public class HashAggregatePlannerTest extends AbstractAggregatePlannerTest {
 
         // Count on certain fields can't be optimized. Nulls are count included.
         assertNoIndexCount("SELECT COUNT(VAL0) FROM TEST", publicSchema);
+        assertNoIndexCount("SELECT COUNT(DISTINCT VAL0) FROM TEST", publicSchema);
 
         assertNoIndexCount("SELECT COUNT(*), COUNT(VAL0) FROM TEST", publicSchema);
 
         assertNoIndexCount("SELECT COUNT(1), COUNT(VAL0) FROM TEST", publicSchema);
+        assertNoIndexCount("SELECT COUNT(DISTINCT 1), COUNT(VAL0) FROM TEST", publicSchema);
 
         assertNoIndexCount("SELECT COUNT(*) FILTER (WHERE VAL0>1) FROM TEST", publicSchema);
 
@@ -103,13 +104,14 @@ public class HashAggregatePlannerTest extends AbstractAggregatePlannerTest {
     }
 
     /** */
-    private void assertIndexCount(String sql, IgniteSchema publicSchema) throws Exception {
+    private void assertIndexCount(String sql, IgniteSchema schema) throws Exception {
         assertPlan(
             sql,
-            publicSchema,
+            schema,
             nodeOrAnyChild(isInstanceOf(IgniteColocatedHashAggregate.class)
-                .and(input(isInstanceOf(IgniteExchange.class)
-                    .and(input(isInstanceOf(IgniteIndexCount.class)))))));
+                .and(input(isInstanceOf(IgniteExchange.class))
+                    .or(t->((TestTable)schema.getTable("TEST")).distribution() != IgniteDistributions.random()))
+                        .and(input(isInstanceOf(IgniteIndexCount.class)))));
     }
 
     /** */

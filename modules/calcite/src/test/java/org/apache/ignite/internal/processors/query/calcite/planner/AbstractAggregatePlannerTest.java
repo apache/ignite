@@ -51,6 +51,7 @@ public class AbstractAggregatePlannerTest extends AbstractPlannerTest {
                 return IgniteDistributions.broadcast();
             }
         };
+
         return tbl;
     }
 

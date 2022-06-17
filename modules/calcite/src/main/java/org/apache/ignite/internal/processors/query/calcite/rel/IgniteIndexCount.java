@@ -28,13 +28,18 @@ import org.apache.calcite.rel.RelInput;
 import org.apache.calcite.rel.RelWriter;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rel.type.RelDataType;
+import org.apache.calcite.rel.type.RelDataTypeFactory;
+import org.apache.calcite.sql.type.SqlTypeName;
 
-import static org.apache.ignite.internal.processors.query.calcite.metadata.cost.IgniteCost.ROW_PASS_THROUGH_COST;
+import static java.util.Collections.singletonList;
 
 /**
  * Returns number of index records.
  */
 public class IgniteIndexCount extends AbstractRelNode implements SourceAwareIgniteRel {
+    /** */
+    private static final double INDEX_TRAVERSE_COST_DIVIDER = 1000;
+
     /** */
     private final RelOptTable tbl;
 
@@ -51,7 +56,6 @@ public class IgniteIndexCount extends AbstractRelNode implements SourceAwareIgni
 
         idxName = input.getString("index");
         tbl = input.getTable("table");
-        rowType = input.getRowType("type");
     }
 
     /**
@@ -61,20 +65,24 @@ public class IgniteIndexCount extends AbstractRelNode implements SourceAwareIgni
      * @param traits Traits of this relational expression
      * @param tbl Table definition.
      * @param idxName Index name.
-     * @param type Data type.
      */
     public IgniteIndexCount(
         RelOptCluster cluster,
         RelTraitSet traits,
         RelOptTable tbl,
-        String idxName,
-        RelDataType type
+        String idxName
     ) {
         super(cluster, traits);
 
         this.idxName = idxName;
         this.tbl = tbl;
-        this.rowType = type;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected RelDataType deriveRowType() {
+        RelDataTypeFactory tf = getCluster().getTypeFactory();
+
+        return tf.createStructType(singletonList(tf.createSqlType(SqlTypeName.BIGINT)), singletonList("COUNT"));
     }
 
     /** */
@@ -85,12 +93,12 @@ public class IgniteIndexCount extends AbstractRelNode implements SourceAwareIgni
     /** {@inheritDoc} */
     @Override public double estimateRowCount(RelMetadataQuery mq) {
         // Requesting index count always produces just one record.
-        return 1.0d;
+        return 1.0;
     }
 
     /** {@inheritDoc} */
     @Override public RelOptCost computeSelfCost(RelOptPlanner planner, RelMetadataQuery mq) {
-        return planner.getCostFactory().makeCost(1.0, 1.0, tbl.getRowCount() * ROW_PASS_THROUGH_COST);
+        return planner.getCostFactory().makeCost(1.0, tbl.getRowCount() / INDEX_TRAVERSE_COST_DIVIDER, 1.0);
     }
 
     /** {@inheritDoc} */
@@ -107,7 +115,6 @@ public class IgniteIndexCount extends AbstractRelNode implements SourceAwareIgni
     @Override public RelWriter explainTerms(RelWriter pw) {
         return super.explainTerms(pw)
             .item("index", idxName)
-            .item("type", rowType)
             .item("table", tbl.getQualifiedName());
     }
 
@@ -118,11 +125,11 @@ public class IgniteIndexCount extends AbstractRelNode implements SourceAwareIgni
 
     /** {@inheritDoc} */
     @Override public IgniteRel clone(RelOptCluster cluster, List<IgniteRel> inputs) {
-        return new IgniteIndexCount(cluster, traitSet, tbl, idxName, rowType);
+        return new IgniteIndexCount(cluster, traitSet, tbl, idxName);
     }
 
     /** {@inheritDoc} */
     @Override public IgniteRel clone(long sourceId) {
-        return new IgniteIndexCount(getCluster(), traitSet, tbl, idxName, rowType);
+        return new IgniteIndexCount(getCluster(), traitSet, tbl, idxName);
     }
 }
