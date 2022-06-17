@@ -52,6 +52,7 @@ import org.apache.ignite.internal.cluster.IgniteClusterEx;
 import org.apache.ignite.internal.commandline.ProgressPrinter;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.processors.cache.persistence.IndexStorageImpl;
+import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStore;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.query.QueryUtils;
@@ -280,8 +281,8 @@ public class IgniteIndexReaderTest extends GridCommandHandlerAbstractTest {
         AtomicLong anyLeafId = new AtomicLong();
 
         IgniteIndexReader reader = new IgniteIndexReader(null, false, createTestLogger(), createFilePageStoreFactory(dir)) {
-            @Override TreeTraverseContext createContext(long rootPageId, String idx, ItemStorage items) {
-                return new TreeTraverseContext(cacheAndTypeId(idx).get1(), filePageStore(partId(rootPageId)), items) {
+            @Override TreeTraverseContext createContext(String idx, FilePageStore store, ItemStorage items) {
+                return new TreeTraverseContext(cacheAndTypeId(idx).get1(), store, items) {
                     @Override public void onLeafPage(long pageId, List<Object> data) {
                         super.onLeafPage(pageId, data);
 

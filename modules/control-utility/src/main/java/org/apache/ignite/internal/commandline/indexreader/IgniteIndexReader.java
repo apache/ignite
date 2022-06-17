@@ -409,7 +409,7 @@ public class IgniteIndexReader implements AutoCloseable {
     TreeTraverseContext recursiveTreeScan(long rootPageId, String idx, ItemStorage items) {
         pageIds.add(rootPageId);
 
-        TreeTraverseContext ctx = createContext(rootPageId, idx, items);
+        TreeTraverseContext ctx = createContext(idx, filePageStore(rootPageId), items);
 
         traverse(rootPageId, ctx);
 
@@ -425,7 +425,7 @@ public class IgniteIndexReader implements AutoCloseable {
      * @return Tree traversal context.
      */
     private TreeTraverseContext horizontalTreeScan(long rootPageId, String idx, ItemStorage items) {
-        TreeTraverseContext ctx = createContext(rootPageId, idx, items);
+        TreeTraverseContext ctx = createContext(idx, filePageStore(rootPageId), items);
 
         ByteBuffer buf = allocateBuffer(pageSize);
 
@@ -971,15 +971,17 @@ public class IgniteIndexReader implements AutoCloseable {
     }
 
     /** */
-    TreeTraverseContext createContext(long rootPageId, String idx, ItemStorage items) {
-        return new TreeTraverseContext(cacheAndTypeId(idx).get1(), filePageStore(partId(rootPageId)), items);
+    TreeTraverseContext createContext(String idx, FilePageStore store, ItemStorage items) {
+        return new TreeTraverseContext(cacheAndTypeId(idx).get1(), store, items);
     }
 
     /**
-     * @param partId Partition id.
+     * @param rootPageId Root page id.
      * @return File page store of given partition.
      */
-    FilePageStore filePageStore(int partId) {
+    FilePageStore filePageStore(long rootPageId) {
+        int partId = partId(rootPageId);
+
         return partId == INDEX_PARTITION ? idxStore : partStores[partId];
     }
 
@@ -1089,9 +1091,9 @@ public class IgniteIndexReader implements AutoCloseable {
      * @return Tuple consisting of meta tree root page and pages list root page.
      * @throws IgniteCheckedException If failed.
      */
-    long[] partitionRoots(long pageMetaPageId) throws IgniteCheckedException {
+    long[] partitionRoots(long metaPageId) throws IgniteCheckedException {
         return doWithBuffer((buf, addr) -> {
-            readPage(filePageStore(partId(pageMetaPageId)), pageMetaPageId, buf);
+            readPage(filePageStore(metaPageId), metaPageId, buf);
 
             PageMetaIO pageMetaIO = PageIO.getPageIO(addr);
 
