@@ -17,28 +17,23 @@
 
 package org.apache.ignite.internal.processors.query.calcite.rule;
 
-import com.google.common.collect.ImmutableMap;
-import java.util.ArrayList;
 import java.util.Collections;
-import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import com.google.common.collect.ImmutableMap;
 import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.RelRule;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelCollations;
 import org.apache.calcite.rel.core.AggregateCall;
 import org.apache.calcite.rel.logical.LogicalAggregate;
-import org.apache.calcite.rex.RexBuilder;
-import org.apache.calcite.rex.RexNode;
+import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.util.ImmutableIntList;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteConvention;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexProbe;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexScan;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteProject;
 import org.apache.ignite.internal.processors.query.calcite.rel.logical.IgniteLogicalTableScan;
 import org.apache.ignite.internal.processors.query.calcite.schema.CacheTableDescriptor;
 import org.apache.ignite.internal.processors.query.calcite.schema.ColumnDescriptor;
@@ -46,7 +41,10 @@ import org.apache.ignite.internal.processors.query.calcite.schema.IgniteIndex;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
 import org.apache.ignite.internal.processors.query.calcite.trait.RewindabilityTrait;
+import org.apache.ignite.internal.processors.query.calcite.util.IndexConditions;
 import org.immutables.value.Value;
+
+import static org.apache.calcite.sql.fun.SqlStdOperatorTable.FIRST_VALUE;
 
 /** Tries to optimize MIN() and MAX() to use first/last record index records. */
 @Value.Enclosing
@@ -109,8 +107,12 @@ public class IndexMinMaxRule extends RelRule<IndexMinMaxRule.Config> {
 //            aggr.getRowType()
 //        );
 
-        IgniteIndexScan idxScan = new IgniteIndexScan(scan.getCluster(), idxTraits, scan.getTable(), idx.name(),
-            null, null, null, scan.requiredColumns(), idx.collation());
+        RexLiteral limit = scan.getCluster().getRexBuilder().makeLiteral(FIRST_VALUE, aggr.getRowType());
+
+        IndexConditions idxConditions = new IndexConditions(null, null, null, Collections.singletonList(limit));
+
+        IgniteIndexScan idxProbe = new IgniteIndexScan(scan.getCluster(), idxTraits, scan.getTable(), idx.name(),
+            null, limit, idxConditions, scan.requiredColumns(), idx.collation());
 
         // TODO: read multiple aggregates.
         AggregateCall idxSumAggCall = AggregateCall.create(
@@ -124,7 +126,7 @@ public class IndexMinMaxRule extends RelRule<IndexMinMaxRule.Config> {
             null,
             RelCollations.EMPTY,
             0,
-            idxScan,
+            idxProbe,
             null,
             null);
 
@@ -132,7 +134,7 @@ public class IndexMinMaxRule extends RelRule<IndexMinMaxRule.Config> {
             aggr.getCluster(),
             aggr.getTraitSet(),
             Collections.emptyList(),
-            idxScan,
+            idxProbe,
             aggr.getGroupSet(),
             aggr.getGroupSets(),
             Stream.generate(() -> idxSumAggCall).limit(aggr.getAggCallList().size()).collect(Collectors.toList())
