@@ -19,8 +19,6 @@ package org.apache.ignite.internal.commandline.indexreader;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.OutputStream;
-import java.io.PrintStream;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.util.ArrayList;
@@ -46,7 +44,6 @@ import org.apache.ignite.internal.cache.query.index.IndexProcessor;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.io.InlineIO;
 import org.apache.ignite.internal.commandline.CommandHandler;
 import org.apache.ignite.internal.commandline.ProgressPrinter;
-import org.apache.ignite.internal.commandline.StringBuilderOutputStream;
 import org.apache.ignite.internal.commandline.argument.parser.CLIArgumentParser;
 import org.apache.ignite.internal.commandline.systemview.SystemViewCommand;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
@@ -247,19 +244,16 @@ public class IgniteIndexReader implements AutoCloseable {
 
         long[] indexPartitionRoots = partitionRoots(PageIdAllocator.META_PAGE_ID);
 
-        long metaTreeRootId = indexPartitionRoots[0];
-        long pageListMetaPageId = indexPartitionRoots[1];
-
         Map<String, TreeTraverseContext> recursiveScans = traverseAllTrees(
             "Index trees traversal",
-            metaTreeRootId,
+            indexPartitionRoots[0],
             CountOnlyStorage::new,
             this::traverseTree
         );
 
         Map<String, TreeTraverseContext> horizontalScans = traverseAllTrees(
             "Scan index trees horizontally",
-            metaTreeRootId,
+            indexPartitionRoots[0],
             checkParts ? LinkStorage::new : CountOnlyStorage::new,
             this::horizontalTreeScan
         );
@@ -272,7 +266,7 @@ public class IgniteIndexReader implements AutoCloseable {
         });
 
         // Scanning page reuse lists.
-        PageListsInfo pageListsInfo = pageListMetaPageId == 0 ? null : pageListInfo(pageListMetaPageId);
+        PageListsInfo pageListsInfo = indexPartitionRoots[1] == 0 ? null : pageListInfo(indexPartitionRoots[1]);
 
         ProgressPrinter progressPrinter = progressPrinter("Reading pages sequentially", pagesNum);
 
@@ -1208,15 +1202,6 @@ public class IgniteIndexReader implements AutoCloseable {
             data,
             log
         );
-    }
-
-    /** */
-    private void printStackTrace(Throwable e) {
-        OutputStream os = new StringBuilderOutputStream();
-
-        e.printStackTrace(new PrintStream(os));
-
-        log.info(os.toString());
     }
 
     /**
