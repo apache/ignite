@@ -1090,9 +1090,9 @@ public class IgniteIndexReader implements AutoCloseable {
 
         List<CLIArgument<?>> argsConfiguration = asList(
             mandatoryArg(
-                    DIR.arg(),
-                    "partition directory, where " + INDEX_FILE_NAME + " and (optionally) partition files are located.",
-                    String.class
+                DIR.arg(),
+                "partition directory, where " + INDEX_FILE_NAME + " and (optionally) partition files are located.",
+                String.class
             ),
             optionalArg(PART_CNT.arg(), "full partitions count in cache group.", Integer.class, () -> 0),
             optionalArg(PAGE_SIZE.arg(), "page size.", Integer.class, () -> DFLT_PAGE_SIZE),
