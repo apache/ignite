@@ -458,40 +458,43 @@ public class IgniteIndexReader implements AutoCloseable {
     /**
      * Compares result of traversals.
      *
-     * @param treeInfos Traversal from root to leafs.
-     * @param treeScans Traversal using horizontal scan.
+     * @param recursiveScans Traversal from root to leafs.
+     * @param horizontalScans Traversal using horizontal scan.
      */
-    private void compareTraversals(Map<String, TreeTraverseContext> treeInfos, Map<String, TreeTraverseContext> treeScans) {
+    private void compareTraversals(
+        Map<String, TreeTraverseContext> recursiveScans,
+        Map<String, TreeTraverseContext> horizontalScans
+    ) {
         List<String> errors = new LinkedList<>();
 
-        treeInfos.forEach((name, tree) -> {
-            TreeTraverseContext ctx = treeScans.get(name);
+        recursiveScans.forEach((name, ctx) -> {
+            TreeTraverseContext ctx0 = horizontalScans.get(name);
 
-            if (ctx == null) {
+            if (ctx0 == null) {
                 errors.add("Tree was detected in " + RECURSIVE_TRAVERSE_NAME + " but absent in  "
                     + HORIZONTAL_SCAN_NAME + ": " + name);
 
                 return;
             }
 
-            if (tree.itemStorage.size() != ctx.itemStorage.size())
-                errors.add(compareError("items", name, tree.itemStorage.size(), ctx.itemStorage.size(), null));
+            if (ctx.itemStorage.size() != ctx0.itemStorage.size())
+                errors.add(compareError("items", name, ctx.itemStorage.size(), ctx0.itemStorage.size(), null));
 
-            tree.ioStat.forEach((cls, cnt) -> {
-                long scanCnt = ctx.ioStat.getOrDefault(cls, 0L);
+            ctx.ioStat.forEach((cls, cnt) -> {
+                long scanCnt = ctx0.ioStat.getOrDefault(cls, 0L);
 
                 if (scanCnt != cnt)
                     errors.add(compareError("pages", name, cnt, scanCnt, cls));
             });
 
-            ctx.ioStat.forEach((cls, cnt) -> {
-                if (!tree.ioStat.containsKey(cls))
+            ctx0.ioStat.forEach((cls, cnt) -> {
+                if (!ctx.ioStat.containsKey(cls))
                     errors.add(compareError("pages", name, 0, cnt, cls));
             });
         });
 
-        treeScans.forEach((name, tree) -> {
-            if (!treeInfos.containsKey(name))
+        horizontalScans.forEach((name, ctx) -> {
+            if (!recursiveScans.containsKey(name))
                 errors.add("Tree was detected in " + HORIZONTAL_SCAN_NAME + " but absent in  "
                     + RECURSIVE_TRAVERSE_NAME + ": " + name);
         });
