@@ -1105,13 +1105,7 @@ public class IgniteIndexReader implements AutoCloseable {
     }
 
     /** */
-    private void printErrors(
-        String prefix,
-        String caption,
-        String emptyCaption,
-        String msg,
-        Map<?, ? extends List<? extends Throwable>> errors
-    ) {
+    private void printErrors(String prefix, String caption, String emptyCaption, String msg, Map<?, List<Throwable>> errors) {
         if (errors.isEmpty()) {
             log.info(prefix + emptyCaption);
 
