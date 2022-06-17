@@ -245,22 +245,17 @@ public class IgniteIndexReader implements AutoCloseable {
 
         log.info("Going to check " + pagesNum + " pages.");
 
-        Set<Long> pageIds = new HashSet<>();
-
         long[] indexPartitionRoots = partitionRoots(PageIdAllocator.META_PAGE_ID);
 
         long metaTreeRootId = indexPartitionRoots[0];
         long pageListMetaPageId = indexPartitionRoots[1];
 
-        // Traversing trees.
-        Map<String, TreeTraverseContext> treeInfo =
-            traverseAllTrees("Index trees traversal", metaTreeRootId, CountOnlyStorage::new, this::traverseTree);
-
-        treeInfo.forEach((name, info) -> {
-            pageIds.addAll(info.innerPageIds);
-
-            pageIds.add(info.rootPageId);
-        });
+        Map<String, TreeTraverseContext> recursiveScans = traverseAllTrees(
+            "Index trees traversal",
+            metaTreeRootId,
+            CountOnlyStorage::new,
+            this::traverseTree
+        );
 
         Map<String, TreeTraverseContext> horizontalScans = traverseAllTrees(
             "Scan index trees horizontally",
@@ -268,6 +263,13 @@ public class IgniteIndexReader implements AutoCloseable {
             checkParts ? LinkStorage::new : CountOnlyStorage::new,
             this::horizontalTreeScan
         );
+
+        Set<Long> pageIds = new HashSet<>();
+
+        recursiveScans.forEach((name, info) -> {
+            pageIds.addAll(info.innerPageIds);
+            pageIds.add(info.rootPageId);
+        });
 
         // Scanning page reuse lists.
         PageListsInfo pageListsInfo = pageListMetaPageId == 0 ? null : pageListInfo(pageListMetaPageId);
@@ -295,11 +297,11 @@ public class IgniteIndexReader implements AutoCloseable {
             throw new IgniteException("Possibly orphan " + io.getClass().getSimpleName() + " page, pageId=" + pageId);
         });
 
-        printTraversalResults(RECURSIVE_TRAVERSE_NAME, treeInfo);
+        printTraversalResults(RECURSIVE_TRAVERSE_NAME, recursiveScans);
 
         printTraversalResults(HORIZONTAL_SCAN_NAME, horizontalScans);
 
-        compareTraversals(treeInfo, horizontalScans);
+        compareTraversals(recursiveScans, horizontalScans);
 
         if (pageListsInfo == null)
             log.severe("No page lists meta info found.");
@@ -659,12 +661,7 @@ public class IgniteIndexReader implements AutoCloseable {
         }
     }
 
-    /**
-     * Traverse all trees in file and return their info.
-     *
-     * @param metaTreeRoot Meta tree root page id.
-     * @return Index trees info.
-     */
+    /** Traverse all trees in file and return their info. */
     private Map<String, TreeTraverseContext> traverseAllTrees(
         String traverseProcCaption,
         long metaTreeRoot,
@@ -727,11 +724,7 @@ public class IgniteIndexReader implements AutoCloseable {
         );
     }
 
-    /**
-     * Prints traversal info.
-     *
-     * @param treeInfos Tree traversal info.
-     */
+    /** Prints traversal info. */
     private void printTraversalResults(String prefix, Map<String, TreeTraverseContext> treeInfos) {
         log.info(prefix + "Tree traversal results");
 
@@ -885,7 +878,7 @@ public class IgniteIndexReader implements AutoCloseable {
      * @param rootPageId Root page id.
      * @param treeName Tree name.
      * @param itemStorage Items storage.
-     * @return Tree traversal info.
+     * @return Tree traversal context.
      */
     TreeTraverseContext traverseTree(
         long rootPageId,
@@ -907,7 +900,7 @@ public class IgniteIndexReader implements AutoCloseable {
      * @param rootPageId Root page id.
      * @param treeName Tree name.
      * @param itemStorage Items storage.
-     * @return Tree traversal info.
+     * @return Tree traversal context.
      */
     private TreeTraverseContext horizontalTreeScan(
         long rootPageId,
@@ -1002,7 +995,6 @@ public class IgniteIndexReader implements AutoCloseable {
      *
      * @param pageId Page id, where tree node is located.
      * @param ctx Tree traverse context.
-     * @return Tree node.
      */
     private void traverse(long pageId, TreeTraverseContext ctx) {
         try {
