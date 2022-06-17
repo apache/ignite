@@ -219,7 +219,7 @@ public class IgniteIndexReader implements AutoCloseable {
 
         Map<Class<? extends PageIO>, Long> pageClasses = new HashMap<>();
 
-        long pagesNum = isNull(idxStore) ? 0 : (idxStore.size() - idxStore.headerSize()) / pageSize;
+        long pagesNum = (idxStore.size() - idxStore.headerSize()) / pageSize;
 
         log.info("Going to check " + pagesNum + " pages.");
 
@@ -365,7 +365,7 @@ public class IgniteIndexReader implements AutoCloseable {
         return doWithBuffer((buf, addr) -> {
             List<Throwable> errors = new ArrayList<>();
 
-            long pagesNum = isNull(store) ? 0 : (store.size() - store.headerSize()) / pageSize;
+            long pagesNum = (store.size() - store.headerSize()) / pageSize;
 
             for (int i = 0; i < pagesNum; i++) {
                 buf.rewind();
