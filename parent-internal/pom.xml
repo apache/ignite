@@ -24,7 +24,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
-        <groupId>org.apache.ignite</groupId>
+        <groupId>com.sbt.ignite</groupId>
         <artifactId>ignite-parent</artifactId>
         <version>${revision}</version>
         <relativePath>../parent/pom.xml</relativePath>
@@ -39,7 +39,7 @@
     <dependencyManagement>
         <dependencies>
             <dependency>
-                <groupId>org.apache.ignite</groupId>
+                <groupId>com.sbt.ignite</groupId>
                 <artifactId>ignite-bom</artifactId>
                 <version>${revision}</version>
                 <scope>import</scope>
