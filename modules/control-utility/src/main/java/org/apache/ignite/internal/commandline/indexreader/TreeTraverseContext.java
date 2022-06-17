@@ -37,9 +37,6 @@ class TreeTraverseContext {
     /** Tree name. */
     final String treeName;
 
-    /** Cache id. */
-    final int cacheId;
-
     /** Page store. */
     final FilePageStore store;
 
@@ -65,7 +62,6 @@ class TreeTraverseContext {
     ) {
         this.rootPageId = rootPageId;
         this.treeName = treeName;
-        this.cacheId = IgniteIndexReader.getCacheAndTypeId(treeName).get1();
         this.store = store;
         this.itemStorage = itemStorage;
         this.ioStat = new HashMap<>();

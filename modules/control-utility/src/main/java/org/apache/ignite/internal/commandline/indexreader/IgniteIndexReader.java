@@ -120,7 +120,7 @@ import static org.apache.ignite.internal.visor.systemview.VisorSystemViewTask.Si
  */
 public class IgniteIndexReader implements AutoCloseable {
     /** */
-    private static final String META_TREE_NAME = "MetaTree";
+    public static final String META_TREE_NAME = "MetaTree";
 
     /** */
     public static final String RECURSIVE_TRAVERSE_NAME = "<RECURSIVE> ";
@@ -144,9 +144,6 @@ public class IgniteIndexReader implements AutoCloseable {
 
     /** */
     private static final int CHECK_PARTS_MAX_ERRORS_PER_PARTITION = 10;
-
-    /** */
-    private static final Map<String, IgnitePair<Integer>> CACHE_TYPE_IDS = new HashMap<>();
 
     /** */
     static {
@@ -178,13 +175,16 @@ public class IgniteIndexReader implements AutoCloseable {
     private final Set<Integer> missingPartitions = new HashSet<>();
 
     /** */
-    private final PageIOProcessor innerPageIOProcessor = new InnerPageIOProcessor();
+    private final TreePageVisitor innerPageVisitor = new InnerPageVisitor();
 
     /** */
-    private final PageIOProcessor leafPageIOProcessor = new LeafPageIOProcessor();
+    private final TreePageVisitor leafPageVisitor = new LeafPageVisitor();
 
     /** */
-    private final PageIOProcessor metaPageIOProcessor = new MetaPageIOProcessor();
+    private final TreePageVisitor metaPageVisitor = new MetaPageVisitor();
+
+    /** */
+    private final Map<String, IgnitePair<Integer>> cacheTypeIds = new HashMap<>();
 
     /**
      * Constructor.
@@ -683,14 +683,14 @@ public class IgniteIndexReader implements AutoCloseable {
     ) {
         Map<String, TreeTraverseContext> treeInfos = new LinkedHashMap<>();
 
-        TreeTraverseContext metaTreeTraversalInfo =
+        TreeTraverseContext metaTreeCtx =
             traverseProc.traverse(metaTreeRoot, META_TREE_NAME, new ItemsListStorage<IndexStorageImpl.IndexItem>());
 
-        treeInfos.put(META_TREE_NAME, metaTreeTraversalInfo);
+        treeInfos.put(META_TREE_NAME, metaTreeCtx);
 
-        ProgressPrinter progressPrinter = progressPrinter(traverseProcCaption, metaTreeTraversalInfo.itemStorage.size());
+        ProgressPrinter progressPrinter = progressPrinter(traverseProcCaption, metaTreeCtx.itemStorage.size());
 
-        metaTreeTraversalInfo.itemStorage.forEach(item -> {
+        metaTreeCtx.itemStorage.forEach(item -> {
             progressPrinter.printProgress();
 
             IndexStorageImpl.IndexItem idxItem = (IndexStorageImpl.IndexItem)item;
@@ -829,26 +829,17 @@ public class IgniteIndexReader implements AutoCloseable {
      * @param name Index name.
      * @return Pair of cache id and type id.
      */
-    public static IgnitePair<Integer> getCacheAndTypeId(String name) {
-        return CACHE_TYPE_IDS.computeIfAbsent(name, k -> {
+    public IgnitePair<Integer> getCacheAndTypeId(String name) {
+        return cacheTypeIds.computeIfAbsent(name, k -> {
             Matcher mId = CACHE_TYPE_ID_SEARCH_PATTERN.matcher(k);
 
-            if (mId.find()) {
-                String id = mId.group("id");
+            if (mId.find())
+                return new IgnitePair<>(parseInt(mId.group("id")), parseInt(mId.group("typeId")));
 
-                String typeId = mId.group("typeId");
+            Matcher cId = CACHE_ID_SEARCH_PATTERN.matcher(k);
 
-                return new IgnitePair<>(parseInt(id), parseInt(typeId));
-            }
-            else {
-                Matcher cId = CACHE_ID_SEARCH_PATTERN.matcher(k);
-
-                if (cId.find()) {
-                    String id = cId.group("id");
-
-                    return new IgnitePair<>(parseInt(id), 0);
-                }
-            }
+            if (cId.find())
+                return new IgnitePair<>(parseInt(cId.group("id")), 0);
 
             return new IgnitePair<>(0, 0);
         });
@@ -976,7 +967,7 @@ public class IgniteIndexReader implements AutoCloseable {
                         ctx.onPageIO(pageIO);
 
                         if (pageIO instanceof BPlusLeafIO)
-                            getIOProcessor(pageIO).traverse(addr, ctx);
+                            pageVisitor(pageIO).visit(addr, ctx);
 
                         pageId = ((BPlusIO<?>)pageIO).getForward(addr);
                     }
@@ -1037,7 +1028,7 @@ public class IgniteIndexReader implements AutoCloseable {
 
                 ctx.onPageIO(io);
 
-                getIOProcessor(io).traverse(addr, ctx);
+                pageVisitor(io).visit(addr, ctx);
             }
             finally {
                 freeBuffer(buf);
@@ -1049,13 +1040,13 @@ public class IgniteIndexReader implements AutoCloseable {
     }
 
     /** */
-    private PageIOProcessor getIOProcessor(PageIO io) {
+    private TreePageVisitor pageVisitor(PageIO io) {
         if (io instanceof BPlusLeafIO)
-            return leafPageIOProcessor;
+            return leafPageVisitor;
         else if (io instanceof BPlusInnerIO)
-            return innerPageIOProcessor;
+            return innerPageVisitor;
         else if (io instanceof BPlusMetaIO)
-            return metaPageIOProcessor;
+            return metaPageVisitor;
         else
             return null;
     }
@@ -1324,31 +1315,31 @@ public class IgniteIndexReader implements AutoCloseable {
     /**
      * Processor for page IOs.
      */
-    private interface PageIOProcessor {
+    private interface TreePageVisitor {
         /**
          * Traverse tree.
          * @param addr Page address.
          * @param ctx Tree traversal context.
          */
-        void traverse(long addr, TreeTraverseContext ctx) throws IgniteCheckedException;
+        void visit(long addr, TreeTraverseContext ctx) throws IgniteCheckedException;
     }
 
     /** */
-    private class MetaPageIOProcessor implements PageIOProcessor {
+    private class MetaPageVisitor implements TreePageVisitor {
         /** {@inheritDoc} */
-        @Override public void traverse(long addr, TreeTraverseContext ctx) throws IgniteCheckedException {
+        @Override public void visit(long addr, TreeTraverseContext ctx) throws IgniteCheckedException {
             BPlusMetaIO io = PageIO.getPageIO(addr);
 
             int rootLvl = io.getRootLevel(addr);
 
-            IgniteIndexReader.this.traverse(io.getFirstPageId(addr, rootLvl), ctx);
+            traverse(io.getFirstPageId(addr, rootLvl), ctx);
         }
     }
 
     /** */
-    private class InnerPageIOProcessor implements PageIOProcessor {
+    private class InnerPageVisitor implements TreePageVisitor {
         /** {@inheritDoc} */
-        @Override public void traverse(long addr, TreeTraverseContext ctx) throws IgniteCheckedException {
+        @Override public void visit(long addr, TreeTraverseContext ctx) throws IgniteCheckedException {
             PageIO io = PageIO.getPageIO(addr);
 
             for (long id : children(io, addr))
@@ -1381,9 +1372,9 @@ public class IgniteIndexReader implements AutoCloseable {
     }
 
     /** */
-    private class LeafPageIOProcessor implements PageIOProcessor {
+    private class LeafPageVisitor implements TreePageVisitor {
         /** {@inheritDoc} */
-        @Override public void traverse(long addr, TreeTraverseContext ctx) throws IgniteCheckedException {
+        @Override public void visit(long addr, TreeTraverseContext ctx) throws IgniteCheckedException {
             ctx.onLeafPage(PageIO.getPageId(addr), data(addr, ctx));
         }
 
@@ -1398,7 +1389,7 @@ public class IgniteIndexReader implements AutoCloseable {
                     if (io instanceof IndexStorageImpl.MetaStoreLeafIO)
                         items.add(((BPlusIO<IndexStorageImpl.IndexItem>)io).getLookupRow(null, addr, i));
                     else
-                        items.add(getLeafItem(io, addr, i, ctx));
+                        items.add(leafItem(io, addr, i, ctx));
                 }
             }
             catch (Exception e) {
@@ -1409,7 +1400,7 @@ public class IgniteIndexReader implements AutoCloseable {
         }
 
         /** */
-        private Object getLeafItem(BPlusLeafIO<?> io, long addr, int idx, TreeTraverseContext ctx) {
+        private Object leafItem(BPlusLeafIO<?> io, long addr, int idx, TreeTraverseContext ctx) {
             if (!(io instanceof InlineIO || io instanceof PendingRowIO || io instanceof RowLinkIO))
                 throw new IgniteException("Unexpected page io: " + io.getClass().getSimpleName());
 
@@ -1420,7 +1411,7 @@ public class IgniteIndexReader implements AutoCloseable {
             if (io instanceof AbstractDataLeafIO && ((AbstractDataLeafIO)io).storeCacheId())
                 cacheId = ((RowLinkIO)io).getCacheId(addr, idx);
             else
-                cacheId = ctx.cacheId;
+                cacheId = getCacheAndTypeId(ctx.treeName).get1();
 
             if (partCnt == 0)
                 return new CacheAwareLink(cacheId, link);

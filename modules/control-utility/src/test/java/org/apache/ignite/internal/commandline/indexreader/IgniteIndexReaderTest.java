@@ -77,6 +77,7 @@ import static java.util.regex.Pattern.compile;
 import static java.util.stream.Collectors.joining;
 import static org.apache.ignite.internal.commandline.indexreader.IgniteIndexReader.ERROR_PREFIX;
 import static org.apache.ignite.internal.commandline.indexreader.IgniteIndexReader.HORIZONTAL_SCAN_NAME;
+import static org.apache.ignite.internal.commandline.indexreader.IgniteIndexReader.META_TREE_NAME;
 import static org.apache.ignite.internal.commandline.indexreader.IgniteIndexReader.RECURSIVE_TRAVERSE_NAME;
 import static org.apache.ignite.internal.commandline.indexreader.IgniteIndexReader.normalizePageId;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
@@ -295,7 +296,7 @@ public class IgniteIndexReaderTest extends GridCommandHandlerAbstractTest {
 
             ItemsListStorage<IndexStorageImpl.IndexItem> idxItemStorage = new ItemsListStorage<>();
 
-            reader.traverseTree(partitionRoots[0], "MetaTree", idxItemStorage);
+            reader.traverseTree(partitionRoots[0], META_TREE_NAME, idxItemStorage);
 
             // Take any index item.
             IndexStorageImpl.IndexItem idxItem = idxItemStorage.iterator().next();
