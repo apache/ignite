@@ -1360,12 +1360,11 @@ public class IgniteIndexReader implements AutoCloseable {
                         DataPagePayload payload = dataPageIO.readPayload(dataBufAddr, linkedItemId, pageSize);
 
                         if (payload.offset() <= 0 || payload.payloadSize() <= 0) {
-                            GridStringBuilder payloadInfo = new GridStringBuilder("Invalid data page payload: ")
+                            throw new IgniteException(new GridStringBuilder("Invalid data page payload: ")
                                 .a("off=").a(payload.offset())
                                 .a(", size=").a(payload.payloadSize())
-                                .a(", nextLink=").a(payload.nextLink());
-
-                            throw new IgniteException(payloadInfo.toString());
+                                .a(", nextLink=").a(payload.nextLink())
+                                .toString());
                         }
                     }
 
