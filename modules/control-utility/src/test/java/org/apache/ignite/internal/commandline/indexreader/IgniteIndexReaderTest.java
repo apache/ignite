@@ -140,7 +140,7 @@ public class IgniteIndexReaderTest extends GridCommandHandlerAbstractTest {
     private static final String CHECK_IDX_PTRN_WITH_ERRORS =
         CHECK_IDX_PTRN_COMMON + "<PREFIX>" + ERROR_PREFIX + "Errors:" +
             LINE_DELIM + "<PREFIX>" + ERROR_PREFIX + "Page id=[0-9]{1,30}, exceptions:" +
-            LINE_DELIM + "class.*?Exception.*";
+            LINE_DELIM + "Failed to read page.*";
 
     /** Work directory, containing cache group directories. */
     private static File workDir;

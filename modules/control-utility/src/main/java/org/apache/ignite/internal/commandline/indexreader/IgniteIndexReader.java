@@ -280,20 +280,19 @@ public class IgniteIndexReader implements AutoCloseable {
 
             pageClasses.compute(io.getClass(), (k, v) -> v == null ? 1 : v + 1);
 
-            if (!(io instanceof PageMetaIO || io instanceof PagesListMetaIO)) {
-                if (idxFilter == null) {
-                    if ((io instanceof BPlusMetaIO || io instanceof BPlusInnerIO)
-                            && !pageIds.contains(pageId)
-                            && pageListsInfo != null
-                            && !pageListsInfo.allPages.contains(pageId)) {
-                        throw new IgniteException(
-                            "Possibly orphan " + io.getClass().getSimpleName() + " page, pageId=" + pageId
-                        );
-                    }
-                }
-            }
+            if (idxFilter != null)
+                return true;
 
-            return true;
+            if (io instanceof PageMetaIO || io instanceof PagesListMetaIO)
+                return true;
+
+            if (!((io instanceof BPlusMetaIO || io instanceof BPlusInnerIO)))
+                return true;
+
+            if (pageIds.contains(pageId) || pageListsInfo == null || pageListsInfo.allPages.contains(pageId))
+                return true;
+
+            throw new IgniteException("Possibly orphan " + io.getClass().getSimpleName() + " page, pageId=" + pageId);
         });
 
         printTraversalResults(RECURSIVE_TRAVERSE_NAME, treeInfo);
@@ -343,7 +342,6 @@ public class IgniteIndexReader implements AutoCloseable {
                 "Partitions check:",
                 "Partitions check detected no errors.",
                 "Errors detected in partition, partId=%s",
-                false,
                 checkPartsErrors
             );
 
@@ -461,16 +459,11 @@ public class IgniteIndexReader implements AutoCloseable {
                         CacheAwareLink cacheAwareLink = (CacheAwareLink)dataTreeItem;
 
                         for (Map.Entry<String, TreeTraverseContext> e : treesInfo.entrySet()) {
-                            String name = e.getKey();
+                            if (cacheAndTypeId(e.getKey()).get1() != cacheAwareLink.cacheId
+                                || e.getValue().itemStorage.contains(cacheAwareLink))
+                                continue;
 
-                            TreeTraverseContext tree = e.getValue();
-
-                            if (cacheAndTypeId(name).get1() != cacheAwareLink.cacheId)
-                                continue; // It's index for other cache, don't check.
-
-                            // Tombstones are not indexed and shouldn't be tested.
-                            if (!tree.itemStorage.contains(cacheAwareLink))
-                                errors.add(new IgniteException(cacheDataTreeEntryMissingError(name, cacheAwareLink)));
+                            errors.add(new IgniteException(cacheDataTreeEntryMissingError(e.getKey(), cacheAwareLink)));
                         }
 
                         if (errors.size() >= CHECK_PARTS_MAX_ERRORS_PER_PARTITION) {
@@ -766,7 +759,6 @@ public class IgniteIndexReader implements AutoCloseable {
                 "Errors:",
                 "No errors occurred while traversing.",
                 "Page id=%s, exceptions:",
-                true,
                 validationInfo.errors
             );
 
@@ -870,7 +862,7 @@ public class IgniteIndexReader implements AutoCloseable {
 
         printPageStat(prefix, "---- Page stat:", pageListsInfo.pageListStat);
 
-        printErrors(prefix, "---- Errors:", "---- No errors.", "Page id: %s, exception: ", true, pageListsInfo.errors);
+        printErrors(prefix, "---- Errors:", "---- No errors.", "Page id: %s, exception: ", pageListsInfo.errors);
 
         log.info("");
 
@@ -1195,7 +1187,6 @@ public class IgniteIndexReader implements AutoCloseable {
         String caption,
         @Nullable String alternativeCaption,
         String elementFormatPtrn,
-        boolean printTrace,
         Map<?, ? extends List<? extends Throwable>> errors
     ) {
         if (errors.isEmpty() && alternativeCaption != null) {
@@ -1210,12 +1201,7 @@ public class IgniteIndexReader implements AutoCloseable {
         errors.forEach((k, v) -> {
             log.info(prefix + ERROR_PREFIX + format(elementFormatPtrn, k.toString()));
 
-            v.forEach(e -> {
-                if (printTrace)
-                    printStackTrace(e);
-                else
-                    log.severe(e.getMessage());
-            });
+            v.forEach(e -> log.severe(e.getMessage()));
         });
     }
 
@@ -1264,10 +1250,8 @@ public class IgniteIndexReader implements AutoCloseable {
             partStoresErrors.remove(INDEX_PARTITION);
         }
 
-        if (!partStoresErrors.isEmpty()) {
-            printErrors("", "Errors detected while reading partition files:", null,
-                "Partition id: %s, exceptions: ", false, partStoresErrors);
-        }
+        if (!partStoresErrors.isEmpty())
+            printErrors("", "Errors detected while reading partition files:", null, "Partition id: %s, exceptions: ", partStoresErrors);
     }
 
     /**
