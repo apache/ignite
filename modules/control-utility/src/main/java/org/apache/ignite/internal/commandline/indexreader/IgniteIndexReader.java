@@ -1340,9 +1340,7 @@ public class IgniteIndexReader implements AutoCloseable {
                         "count: " + linkedPagePartId + ", partCnt=" + partCnt);
                 }
 
-                final FilePageStore store = partStores[linkedPagePartId];
-
-                if (store == null) {
+                if (partStores[linkedPagePartId] == null) {
                     missingPartitions.add(linkedPagePartId);
 
                     throw new IgniteException("Corresponding store wasn't found for partId=" +
@@ -1350,7 +1348,7 @@ public class IgniteIndexReader implements AutoCloseable {
                 }
 
                 doWithBuffer((dataBuf, dataBufAddr) -> {
-                    readPage(store, linkedPageId, dataBuf);
+                    readPage(partStores[linkedPagePartId], linkedPageId, dataBuf);
 
                     PageIO dataIo = PageIO.getPageIO(getType(dataBuf), getVersion(dataBuf));
 
