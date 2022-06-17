@@ -1252,20 +1252,18 @@ public class IgniteIndexReader implements AutoCloseable {
         @Override public void visit(long addr, TreeTraverseContext ctx) throws IgniteCheckedException {
             PageIO io = PageIO.getPageIO(addr);
 
-            for (long id : children(io, addr))
-                IgniteIndexReader.this.traverse(id, ctx);
+            for (long id : children((BPlusInnerIO<?>)io, addr))
+                traverse(id, ctx);
 
             ctx.onInnerPage(PageIO.getPageId(addr));
         }
 
         /** */
-        private long[] children(PageIO io, long addr) {
-            BPlusInnerIO<?> innerIo = (BPlusInnerIO<?>)io;
-
-            int cnt = innerIo.getCount(addr);
+        private long[] children(BPlusInnerIO<?> io, long addr) {
+            int cnt = io.getCount(addr);
 
             if (cnt == 0) {
-                long left = innerIo.getLeft(addr, 0);
+                long left = io.getLeft(addr, 0);
 
                 return left == 0 ? IgniteUtils.EMPTY_LONGS : new long[] {left};
             }
@@ -1273,9 +1271,9 @@ public class IgniteIndexReader implements AutoCloseable {
             long[] children = new long[cnt + 1];
 
             for (int i = 0; i < cnt; i++)
-                children[i] = innerIo.getLeft(addr, i);
+                children[i] = io.getLeft(addr, i);
 
-            children[cnt] = innerIo.getRight(addr, cnt - 1);
+            children[cnt] = io.getRight(addr, cnt - 1);
 
             return children;
         }
