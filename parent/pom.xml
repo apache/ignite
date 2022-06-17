@@ -169,6 +169,10 @@
         <osgi.fail.ok>false</osgi.fail.ok>
 
         <flattenMode>clean</flattenMode>
+
+        <ignite.platform.full.version>
+            ${ignite.majorVersion}.${ignite.minorVersion}.${ignite.incrementalVersion}.${ignite.buildNumber}
+        </ignite.platform.full.version>
     </properties>
 
     <url>https://ignite.apache.org</url>
@@ -625,6 +629,40 @@
                             <goal>jar</goal>
                         </goals>
                         <phase>package</phase>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <!-- Thin clients have the own versions format. We need to prepare required properties.-->
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>build-helper-maven-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <!--
+                            This will create the following properties:
+                            ignite.majorVersion, ignite.minorVersion, ignite.incrementalVersion
+                        -->
+                        <id>parse-version</id>
+                        <goals>
+                            <goal>parse-version</goal>
+                        </goals>
+                        <phase>validate</phase>
+                        <configuration>
+                            <propertyPrefix>ignite</propertyPrefix>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>thin-timestamp-property</id>
+                        <goals>
+                            <goal>timestamp-property</goal>
+                        </goals>
+                        <phase>validate</phase>
+                        <configuration>
+                            <name>ignite.buildNumber</name>
+                            <!-- See: https://docs.oracle.com/javase/8/docs/api/java/text/SimpleDateFormat.html -->
+                            <pattern>yywwu</pattern>
+                        </configuration>
                     </execution>
                 </executions>
             </plugin>
