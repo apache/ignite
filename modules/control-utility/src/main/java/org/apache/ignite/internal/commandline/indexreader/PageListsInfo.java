@@ -22,6 +22,7 @@ import java.util.Map;
 import java.util.Set;
 
 import org.apache.ignite.internal.processors.cache.persistence.freelist.io.PagesListMetaIO;
+import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.lang.IgniteBiTuple;
 
 /**
@@ -38,7 +39,7 @@ class PageListsInfo {
     final Set<Long> allPages;
 
     /** Page type statistics. */
-    final Map<Class, Long> pageListStat;
+    final Map<Class<? extends PageIO>, Long> pageListStat;
 
     /** Map of errors, pageId -> list of exceptions. */
     final Map<Long, List<Throwable>> errors;
@@ -47,7 +48,7 @@ class PageListsInfo {
     public PageListsInfo(
             Map<IgniteBiTuple<Long, Integer>, List<Long>> bucketsData,
             Set<Long> allPages,
-            Map<Class, Long> pageListStat,
+            Map<Class<? extends PageIO>, Long> pageListStat,
             Map<Long, List<Throwable>> errors
     ) {
         this.bucketsData = bucketsData;

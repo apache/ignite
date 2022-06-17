@@ -34,6 +34,7 @@
 #include <ignite/impl/binary/binary_writer_impl.h>
 
 #include "impl/protocol_version.h"
+#include "impl/protocol_context.h"
 #include "impl/ignite_node.h"
 #include "impl/response_status.h"
 #include "impl/channel_state_handler.h"
@@ -66,9 +67,6 @@ namespace ignite
             class DataChannel
             {
             public:
-                /** Version set type. */
-                typedef std::set<ProtocolVersion> VersionSet;
-
                 /** Shared pointer to DataBuffer Promise. */
                 typedef common::concurrent::SharedPointer<common::Promise<network::DataBuffer> > SP_PromiseDataBuffer;
 
@@ -77,27 +75,6 @@ namespace ignite
 
                 /** Notification handler map. */
                 typedef std::map< int64_t, NotificationHandlerHolder > NotificationHandlerMap;
-
-                /** Version 1.2.0. */
-                static const ProtocolVersion VERSION_1_2_0;
-
-                /** Version 1.3.0. */
-                static const ProtocolVersion VERSION_1_3_0;
-
-                /** Version 1.4.0. Added: Partition awareness support, IEP-23. */
-                static const ProtocolVersion VERSION_1_4_0;
-
-                /** Version 1.5.0. Transaction support. */
-                static const ProtocolVersion VERSION_1_5_0;
-
-                /** Version 1.6.0. Expiration Policy Configuration. */
-                static const ProtocolVersion VERSION_1_6_0;
-
-                /** Version 1.7.0. Features introduced. */
-                static const ProtocolVersion VERSION_1_7_0;
-
-                /** Current version. */
-                static const ProtocolVersion VERSION_DEFAULT;
 
                 /**
                  * Constructor.
@@ -252,11 +229,11 @@ namespace ignite
                  * Synchronously send handshake request message and receive handshake response. Uses provided timeout.
                  * Does not try to restore connection on fail.
                  *
-                 * @param propVer Proposed protocol version.
+                 * @param context Current protocol context.
                  * @return @c true if accepted.
                  * @throw IgniteError on error.
                  */
-                bool Handshake(const ProtocolVersion& propVer);
+                bool Handshake(const ProtocolContext& context);
 
                 /**
                  * Handle handshake response.
@@ -264,17 +241,6 @@ namespace ignite
                  * @param msg Message.
                  */
                 void OnHandshakeResponse(const network::DataBuffer& msg);
-
-                /**
-                 * Check if the version is supported.
-                 *
-                 * @param ver Version.
-                 * @return True if the version is supported.
-                 */
-                static bool IsVersionSupported(const ProtocolVersion& ver);
-
-                /** Set of supported versions. */
-                const static VersionSet supportedVersions;
 
                 /** State handler. */
                 ChannelStateHandler& stateHandler;
@@ -297,8 +263,8 @@ namespace ignite
                 /** Metadata manager. */
                 binary::BinaryTypeManager& typeMgr;
 
-                /** Protocol version. */
-                ProtocolVersion currentVersion;
+                /** Protocol context. */
+                ProtocolContext protocolContext;
 
                 /** Request ID counter. */
                 int64_t reqIdCounter;

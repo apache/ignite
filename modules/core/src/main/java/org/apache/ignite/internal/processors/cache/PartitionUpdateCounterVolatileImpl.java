@@ -177,4 +177,9 @@ public class PartitionUpdateCounterVolatileImpl implements PartitionUpdateCounte
 
         return copy;
     }
+
+    /** {@inheritDoc} */
+    @Override public Object comparableState() {
+        return get();
+    }
 }

@@ -70,7 +70,8 @@ import org.junit.runners.Suite;
     CacheAsyncTest.class,
     TimeoutTest.class,
     OptimizedMarshallerClassesCachedTest.class,
-    AtomicLongTest.class
+    AtomicLongTest.class,
+    BinaryConfigurationTest.class
 })
 public class ClientTestSuite {
     // No-op.
