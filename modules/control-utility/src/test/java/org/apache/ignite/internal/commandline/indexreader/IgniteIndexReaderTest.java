@@ -280,8 +280,8 @@ public class IgniteIndexReaderTest extends GridCommandHandlerAbstractTest {
         AtomicLong anyLeafId = new AtomicLong();
 
         IgniteIndexReader reader = new IgniteIndexReader(null, false, createTestLogger(), createFilePageStoreFactory(dir)) {
-            @Override TreeTraverseContext createContext(long rootPageId, String idx, ItemStorage itemStorage) {
-                return new TreeTraverseContext(cacheAndTypeId(idx).get1(), filePageStore(partId(rootPageId)), itemStorage) {
+            @Override TreeTraverseContext createContext(long rootPageId, String idx, ItemStorage items) {
+                return new TreeTraverseContext(cacheAndTypeId(idx).get1(), filePageStore(partId(rootPageId)), items) {
                     @Override public void onLeafPage(long pageId, List<Object> data) {
                         super.onLeafPage(pageId, data);
 
@@ -296,14 +296,14 @@ public class IgniteIndexReaderTest extends GridCommandHandlerAbstractTest {
 
             ItemsListStorage<IndexStorageImpl.IndexItem> idxItemStorage = new ItemsListStorage<>();
 
-            reader.traverseTree(partitionRoots[0], META_TREE_NAME, idxItemStorage);
+            reader.recursiveTreeScan(partitionRoots[0], META_TREE_NAME, idxItemStorage);
 
             // Take any index item.
             IndexStorageImpl.IndexItem idxItem = idxItemStorage.iterator().next();
 
             ItemsListStorage<CacheAwareLink> linkStorage = new ItemsListStorage<>();
 
-            reader.traverseTree(
+            reader.recursiveTreeScan(
                 normalizePageId(idxItem.pageId()),
                 idxItem.nameString(),
                 linkStorage

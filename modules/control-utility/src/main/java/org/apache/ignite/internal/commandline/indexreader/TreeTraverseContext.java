@@ -41,17 +41,13 @@ class TreeTraverseContext {
     final Map<Long, List<Throwable>> errors;
 
     /** List of items storage. */
-    final ItemStorage itemStorage;
+    final ItemStorage items;
 
     /** */
-    public TreeTraverseContext(
-        int cacheId,
-        FilePageStore store,
-        ItemStorage itemStorage
-    ) {
+    public TreeTraverseContext(int cacheId, FilePageStore store, ItemStorage items) {
         this.cacheId = cacheId;
         this.store = store;
-        this.itemStorage = itemStorage;
+        this.items = items;
         this.ioStat = new HashMap<>();
         this.errors = new HashMap<>();
     }
@@ -63,6 +59,6 @@ class TreeTraverseContext {
 
     /** */
     public void onLeafPage(long pageId, List<Object> data) {
-        data.forEach(itemStorage::add);
+        data.forEach(items::add);
     }
 }
