@@ -464,11 +464,7 @@ public class IgniteIndexReader implements AutoCloseable {
     private void compareTraversals(Map<String, TreeTraverseContext> treeInfos, Map<String, TreeTraverseContext> treeScans) {
         List<String> errors = new LinkedList<>();
 
-        Set<String> treeIdxNames = new HashSet<>();
-
         treeInfos.forEach((name, tree) -> {
-            treeIdxNames.add(name);
-
             TreeTraverseContext ctx = treeScans.get(name);
 
             if (ctx == null) {
@@ -481,11 +477,7 @@ public class IgniteIndexReader implements AutoCloseable {
             if (tree.itemStorage.size() != ctx.itemStorage.size())
                 errors.add(compareError("items", name, tree.itemStorage.size(), ctx.itemStorage.size(), null));
 
-            Set<Class<? extends PageIO>> classesInStat = new HashSet<>();
-
             tree.ioStat.forEach((cls, cnt) -> {
-                classesInStat.add(cls);
-
                 long scanCnt = ctx.ioStat.getOrDefault(cls, 0L);
 
                 if (scanCnt != cnt)
@@ -493,7 +485,7 @@ public class IgniteIndexReader implements AutoCloseable {
             });
 
             ctx.ioStat.forEach((cls, cnt) -> {
-                if (classesInStat.contains(cls))
+                if (tree.ioStat.containsKey(cls))
                     // Already checked.
                     return;
 
@@ -502,7 +494,7 @@ public class IgniteIndexReader implements AutoCloseable {
         });
 
         treeScans.forEach((name, tree) -> {
-            if (!treeIdxNames.contains(name))
+            if (!treeInfos.containsKey(name))
                 errors.add("Tree was detected in " + HORIZONTAL_SCAN_NAME + " but absent in  "
                     + RECURSIVE_TRAVERSE_NAME + ": " + name);
         });
