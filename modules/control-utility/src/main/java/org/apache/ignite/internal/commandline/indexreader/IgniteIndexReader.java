@@ -169,6 +169,9 @@ public class IgniteIndexReader implements AutoCloseable {
     private final Set<Integer> missingPartitions = new HashSet<>();
 
     /** */
+    private final Set<Long> pageIds = new HashSet<>();
+
+    /** */
     private final TreePageVisitor innerPageVisitor = new InnerPageVisitor();
 
     /** */
@@ -179,9 +182,6 @@ public class IgniteIndexReader implements AutoCloseable {
 
     /** */
     private final Map<String, IgnitePair<Integer>> cacheTypeIds = new HashMap<>();
-
-    /** */
-    private final Set<Long> pageIds = new HashSet<>();
 
     /**
      * Constructor.
@@ -381,20 +381,16 @@ public class IgniteIndexReader implements AutoCloseable {
     }
 
     /**
-     * Checks partitions, comparing partition indexes (cache data tree) to indexes given in {@code aTreesInfo}.
+     * Checks partitions, comparing partition indexes (cache data tree) to indexes given in {@code treesInfo}.
      *
-     * @param aTreesInfo Index trees info to compare cache data tree with.
+     * @param treesInfo Index trees info to compare cache data tree with.
      * @return Map of errors, bound to partition id.
      */
-    private Map<Integer, List<Throwable>> checkParts(Map<String, TreeTraverseContext> aTreesInfo) {
+    private Map<Integer, List<Throwable>> checkParts(Map<String, TreeTraverseContext> treesInfo) {
         log.info("");
 
         // Map partId -> errors.
         Map<Integer, List<Throwable>> res = new HashMap<>();
-
-        Map<String, TreeTraverseContext> treesInfo = new HashMap<>(aTreesInfo);
-
-        treesInfo.remove(META_TREE_NAME);
 
         ProgressPrinter progressPrinter = progressPrinter("Checking partitions", partCnt);
 
@@ -427,6 +423,9 @@ public class IgniteIndexReader implements AutoCloseable {
                         CacheAwareLink cacheAwareLink = (CacheAwareLink)dataTreeItem;
 
                         for (Map.Entry<String, TreeTraverseContext> e : treesInfo.entrySet()) {
+                            if (e.getKey().equals(META_TREE_NAME))
+                                continue;
+
                             if (cacheAndTypeId(e.getKey()).get1() != cacheAwareLink.cacheId
                                 || e.getValue().itemStorage.contains(cacheAwareLink))
                                 continue;
@@ -666,10 +665,10 @@ public class IgniteIndexReader implements AutoCloseable {
     }
 
     /** */
-    private String cacheDataTreeEntryMissingError(String treeName, CacheAwareLink cacheAwareLink) {
+    private String cacheDataTreeEntryMissingError(String idx, CacheAwareLink cacheAwareLink) {
         long pageId = pageId(cacheAwareLink.link);
 
-        return "Entry is missing in index[" + treeName +
+        return "Entry is missing in index[name=" + idx +
             "cacheId=" + cacheAwareLink.cacheId +
             ", partId=" + partId(pageId) +
             ", pageIndex=" + pageIndex(pageId) +
@@ -772,7 +771,7 @@ public class IgniteIndexReader implements AutoCloseable {
     }
 
     /**
-     * Tries to get cache id and type id from index tree name.
+     * Tries to get cache id and type id from index name.
      *
      * @param name Index name.
      * @return Pair of cache id and type id.
@@ -842,18 +841,18 @@ public class IgniteIndexReader implements AutoCloseable {
      * Traverse single index tree from root to leafs.
      *
      * @param rootPageId Root page id.
-     * @param treeName Tree name.
+     * @param idx Index name.
      * @param itemStorage Items storage.
      * @return Tree traversal context.
      */
     TreeTraverseContext traverseTree(
         long rootPageId,
-        String treeName,
+        String idx,
         ItemStorage itemStorage
     ) {
         pageIds.add(rootPageId);
 
-        TreeTraverseContext ctx = createContext(rootPageId, treeName, itemStorage);
+        TreeTraverseContext ctx = createContext(rootPageId, idx, itemStorage);
 
         traverse(rootPageId, ctx);
 
@@ -864,16 +863,16 @@ public class IgniteIndexReader implements AutoCloseable {
      * Traverse single index tree by each level horizontally.
      *
      * @param rootPageId Root page id.
-     * @param treeName Tree name.
+     * @param idx Index name.
      * @param itemStorage Items storage.
      * @return Tree traversal context.
      */
     private TreeTraverseContext horizontalTreeScan(
         long rootPageId,
-        String treeName,
+        String idx,
         ItemStorage itemStorage
     ) {
-        TreeTraverseContext ctx = createContext(rootPageId, treeName, itemStorage);
+        TreeTraverseContext ctx = createContext(rootPageId, idx, itemStorage);
 
         ByteBuffer buf = allocateBuffer(pageSize);
 
@@ -938,9 +937,9 @@ public class IgniteIndexReader implements AutoCloseable {
     }
 
     /** */
-    TreeTraverseContext createContext(long rootPageId, String treeName, ItemStorage itemStorage) {
+    TreeTraverseContext createContext(long rootPageId, String idx, ItemStorage itemStorage) {
         return new TreeTraverseContext(
-            treeName,
+            cacheAndTypeId(idx).get1(),
             filePageStore(partId(rootPageId)),
             itemStorage
         );
@@ -1207,7 +1206,7 @@ public class IgniteIndexReader implements AutoCloseable {
      */
     private interface TraverseProc {
         /** */
-        TreeTraverseContext traverse(long rootId, String treeName, ItemStorage itemStorage);
+        TreeTraverseContext traverse(long rootId, String idx, ItemStorage itemStorage);
     }
 
     /**
@@ -1304,7 +1303,7 @@ public class IgniteIndexReader implements AutoCloseable {
 
             final int cacheId = (io instanceof AbstractDataLeafIO && ((AbstractDataLeafIO)io).storeCacheId())
                 ? ((RowLinkIO)io).getCacheId(addr, idx)
-                : cacheAndTypeId(ctx.treeName).get1();
+                : ctx.cacheId;
 
             if (partCnt == 0)
                 return new CacheAwareLink(cacheId, link);

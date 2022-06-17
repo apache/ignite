@@ -29,7 +29,7 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
  */
 class TreeTraverseContext {
     /** Tree name. */
-    final String treeName;
+    final int cacheId;
 
     /** Page store. */
     final FilePageStore store;
@@ -45,11 +45,11 @@ class TreeTraverseContext {
 
     /** */
     public TreeTraverseContext(
-        String treeName,
+        int cacheId,
         FilePageStore store,
         ItemStorage itemStorage
     ) {
-        this.treeName = treeName;
+        this.cacheId = cacheId;
         this.store = store;
         this.itemStorage = itemStorage;
         this.ioStat = new HashMap<>();
