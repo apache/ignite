@@ -249,12 +249,8 @@ public class IgniteIndexReader implements AutoCloseable {
         // Scanning page reuse lists.
         PageListsInfo pageListsInfo = indexPartitionRoots[1] == 0 ? null : pageListInfo(indexPartitionRoots[1]);
 
-        ProgressPrinter progressPrinter = progressPrinter("Reading pages sequentially", pagesNum);
-
         // Scan all pages in file.
-        List<Throwable> errors = scanFileStore(INDEX_PARTITION, FLAG_IDX, idxStore, (pageId, addr, io) -> {
-            progressPrinter.printProgress();
-
+        List<Throwable> errors = scanIndex((pageId, addr, io) -> {
             pageClasses.compute(io.getClass(), (k, v) -> v == null ? 1 : v + 1);
 
             if (idxFilter != null)
@@ -351,31 +347,31 @@ public class IgniteIndexReader implements AutoCloseable {
     }
 
     /**
-     * Scans given file page store and executes closure for each page.
+     * Scans index store and executes closure for each page.
      *
-     * @param partId Partition id.
-     * @param flag Flag.
-     * @param store Page store.
      * @param c Closure that accepts page id, page address, page IO. If it returns false, scan stops.
      * @return List of errors that occured while scanning.
      * @throws IgniteCheckedException If failed.
      */
-    private List<Throwable> scanFileStore(int partId, byte flag, FilePageStore store, GridClosure3<Long, Long, PageIO, Boolean> c)
-        throws IgniteCheckedException {
+    private List<Throwable> scanIndex(GridClosure3<Long, Long, PageIO, Boolean> c) throws IgniteCheckedException {
+        long pagesNum = (idxStore.size() - idxStore.headerSize()) / pageSize;
+
+        ProgressPrinter progressPrinter = progressPrinter("Reading pages sequentially", pagesNum);
+
         return doWithBuffer((buf, addr) -> {
             List<Throwable> errors = new ArrayList<>();
-
-            long pagesNum = (store.size() - store.headerSize()) / pageSize;
 
             for (int i = 0; i < pagesNum; i++) {
                 buf.rewind();
 
                 try {
-                    long pageId = pageId(partId, flag, i);
+                    long pageId = pageId(INDEX_PARTITION, FLAG_IDX, i);
 
-                    readPage(store, pageId, buf);
+                    readPage(idxStore, pageId, buf);
 
                     PageIO io = PageIO.getPageIO(addr);
+
+                    progressPrinter.printProgress();
 
                     if (!c.apply(pageId, addr, io))
                         break;
