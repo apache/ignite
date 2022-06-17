@@ -47,7 +47,6 @@ import org.apache.ignite.internal.cache.query.index.sorted.inline.io.InlineIO;
 import org.apache.ignite.internal.commandline.CommandHandler;
 import org.apache.ignite.internal.commandline.ProgressPrinter;
 import org.apache.ignite.internal.commandline.StringBuilderOutputStream;
-import org.apache.ignite.internal.commandline.argument.parser.CLIArgument;
 import org.apache.ignite.internal.commandline.argument.parser.CLIArgumentParser;
 import org.apache.ignite.internal.commandline.systemview.SystemViewCommand;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
@@ -78,6 +77,7 @@ import org.apache.ignite.internal.util.lang.GridClosure3;
 import org.apache.ignite.internal.util.lang.GridPlainClosure2;
 import org.apache.ignite.internal.util.lang.IgnitePair;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.jetbrains.annotations.Nullable;
 
@@ -1088,7 +1088,7 @@ public class IgniteIndexReader implements AutoCloseable {
     public static void main(String[] args) throws Exception {
         System.out.println("THIS UTILITY MUST BE LAUNCHED ON PERSISTENT STORE WHICH IS NOT UNDER RUNNING GRID!");
 
-        List<CLIArgument<?>> argsConfiguration = asList(
+        CLIArgumentParser p = new CLIArgumentParser(asList(
             mandatoryArg(
                 DIR.arg(),
                 "partition directory, where " + INDEX_FILE_NAME + " and (optionally) partition files are located.",
@@ -1098,12 +1098,10 @@ public class IgniteIndexReader implements AutoCloseable {
             optionalArg(PAGE_SIZE.arg(), "page size.", Integer.class, () -> DFLT_PAGE_SIZE),
             optionalArg(PAGE_STORE_VER.arg(), "page store version.", Integer.class, () -> FilePageStoreV2.VERSION),
             optionalArg(INDEXES.arg(), "you can specify index tree names that will be processed, separated by comma " +
-                "without spaces, other index trees will be skipped.", String[].class, () -> null),
+                "without spaces, other index trees will be skipped.", String[].class, () -> U.EMPTY_STRS),
             optionalArg(CHECK_PARTS.arg(),
-                    "check cache data tree in partition files and it's consistency with indexes.", Boolean.class, () -> false)
-        );
-
-        CLIArgumentParser p = new CLIArgumentParser(argsConfiguration);
+                "check cache data tree in partition files and it's consistency with indexes.", Boolean.class, () -> false)
+        ));
 
         if (args.length == 0) {
             System.out.println(p.usage());
@@ -1113,22 +1111,17 @@ public class IgniteIndexReader implements AutoCloseable {
 
         p.parse(asList(args).iterator());
 
-        String dir = p.get(DIR.arg());
-
-        int pageSize = p.get(PAGE_SIZE.arg());
-
         IgniteIndexReaderFilePageStoreFactory filePageStoreFactory = new IgniteIndexReaderFilePageStoreFactory(
-            new File(dir),
-            pageSize,
+            new File(p.<String>get(DIR.arg())),
+            p.get(PAGE_SIZE.arg()),
             p.get(PART_CNT.arg()),
             p.get(PAGE_STORE_VER.arg())
         );
 
-        String[] idxArr = p.get(INDEXES.arg());
-        Set<String> idxSet = isNull(idxArr) ? null : new HashSet<>(asList(idxArr));
+        Set<String> idxs = new HashSet<>(asList(p.get(INDEXES.arg())));
 
         try (IgniteIndexReader reader = new IgniteIndexReader(
-            isNull(idxSet) ? null : idxSet::contains,
+            idxs.isEmpty() ? null : idxs::contains,
             p.get(CHECK_PARTS.arg()),
             CommandHandler.setupJavaLogger("index-reader", IgniteIndexReader.class),
             filePageStoreFactory
