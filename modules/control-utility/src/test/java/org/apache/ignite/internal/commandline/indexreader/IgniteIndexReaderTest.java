@@ -281,8 +281,8 @@ public class IgniteIndexReaderTest extends GridCommandHandlerAbstractTest {
         AtomicLong anyLeafId = new AtomicLong();
 
         IgniteIndexReader reader = new IgniteIndexReader(null, false, createTestLogger(), createFilePageStoreFactory(dir)) {
-            @Override TreeTraverseContext createContext(String idx, FilePageStore store, ItemStorage items) {
-                return new TreeTraverseContext(cacheAndTypeId(idx).get1(), store, items) {
+            @Override TreeTraverseContext createContext(int cacheId, FilePageStore store, ItemStorage items) {
+                return new TreeTraverseContext(cacheId, store, items) {
                     @Override public void onLeafPage(long pageId, List<Object> data) {
                         super.onLeafPage(pageId, data);
 

@@ -23,6 +23,7 @@ import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -72,7 +73,6 @@ import org.apache.ignite.internal.util.GridStringBuilder;
 import org.apache.ignite.internal.util.lang.GridPlainClosure2;
 import org.apache.ignite.internal.util.lang.IgnitePair;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.jetbrains.annotations.Nullable;
 
@@ -298,34 +298,16 @@ public class IgniteIndexReader implements AutoCloseable {
         else // Scanning page reuse lists.
             printPagesListsInfo(indexPartitionRoots[1]);
 
-        Map<Class<? extends PageIO>, Long> ioStat = new HashMap<>();
+        // Sequentially scan index file.
+        TreeTraverseContext ctx = traverseIndexFile();
 
-        // Scan all pages in file.
-        List<Throwable> errors = scanIndex((pageId, io) -> {
-            ioStat.compute(io.getClass(), (k, v) -> v == null ? 1 : v + 1);
+        printPageStat("", "---- These pages types were encountered during sequential scan:", ctx.ioStat);
 
-            if (idxFilter != null)
-                return;
-
-            if (io instanceof PageMetaIO || io instanceof PagesListMetaIO)
-                return;
-
-            if (!((io instanceof BPlusMetaIO || io instanceof BPlusInnerIO)))
-                return;
-
-            if (pageIds.contains(pageId))
-                return;
-
-            throw new IgniteException("Possibly orphan " + io.getClass().getSimpleName() + " page, pageId=" + pageId);
-        });
-
-        printPageStat("", "---- These pages types were encountered during sequential scan:", ioStat);
-
-        if (!errors.isEmpty()) {
+        if (!ctx.errors.isEmpty()) {
             log.severe("----");
             log.severe("Errors:");
 
-            errors.forEach(e -> log.severe(e.getMessage()));
+            ctx.errors.values().forEach(e -> log.severe(e.get(0).getMessage()));
         }
 
         log.info("----");
@@ -334,8 +316,8 @@ public class IgniteIndexReader implements AutoCloseable {
             null,
             Arrays.asList(STRING, NUMBER),
             Arrays.asList(
-                Arrays.asList("Total pages encountered during sequential scan:", ioStat.values().stream().mapToLong(a -> a).sum()),
-                Arrays.asList("Total errors occurred during sequential scan: ", errors.size())
+                Arrays.asList("Total pages encountered during sequential scan:", ctx.ioStat.values().stream().mapToLong(a -> a).sum()),
+                Arrays.asList("Total errors occurred during sequential scan: ", ctx.errors.size())
             ),
             log
         );
@@ -409,7 +391,7 @@ public class IgniteIndexReader implements AutoCloseable {
     TreeTraverseContext recursiveTreeScan(long rootPageId, String idx, ItemStorage items) {
         pageIds.add(rootPageId);
 
-        TreeTraverseContext ctx = createContext(idx, filePageStore(rootPageId), items);
+        TreeTraverseContext ctx = createContext(cacheAndTypeId(idx).get1(), filePageStore(rootPageId), items);
 
         traverse(rootPageId, ctx);
 
@@ -425,7 +407,7 @@ public class IgniteIndexReader implements AutoCloseable {
      * @return Tree traversal context.
      */
     private TreeTraverseContext horizontalTreeScan(long rootPageId, String idx, ItemStorage items) {
-        TreeTraverseContext ctx = createContext(idx, filePageStore(rootPageId), items);
+        TreeTraverseContext ctx = createContext(cacheAndTypeId(idx).get1(), filePageStore(rootPageId), items);
 
         ByteBuffer buf = allocateBuffer(pageSize);
 
@@ -571,25 +553,26 @@ public class IgniteIndexReader implements AutoCloseable {
     }
 
     /**
-     * Scans index store and executes closure for each page.
+     * Traverse index file sequentially.
      *
-     * @param c Closure that accepts page id, page address, page IO. If it returns false, scan stops.
-     * @return List of errors that occured while scanning.
+     * @return Traverse results.
      * @throws IgniteCheckedException If failed.
      */
-    private List<Throwable> scanIndex(IgniteBiInClosure<Long, PageIO> c) throws IgniteCheckedException {
+    private TreeTraverseContext traverseIndexFile() throws IgniteCheckedException {
         long pagesNum = (idxStore.size() - idxStore.headerSize()) / pageSize;
 
         ProgressPrinter progressPrinter = progressPrinter("Reading pages sequentially", pagesNum);
 
-        return doWithBuffer((buf, addr) -> {
-            List<Throwable> errors = new ArrayList<>();
+        TreeTraverseContext ctx = createContext(-1, idxStore, new CountOnlyStorage());
 
+        doWithBuffer((buf, addr) -> {
             for (int i = 0; i < pagesNum; i++) {
                 buf.rewind();
 
+                long pageId = -1;
+
                 try {
-                    long pageId = pageId(INDEX_PARTITION, FLAG_IDX, i);
+                    pageId = pageId(INDEX_PARTITION, FLAG_IDX, i);
 
                     readPage(idxStore, pageId, buf);
 
@@ -597,15 +580,36 @@ public class IgniteIndexReader implements AutoCloseable {
 
                     progressPrinter.printProgress();
 
-                    c.apply(pageId, io);
+                    ctx.onPageIO(io);
+
+                    if (idxFilter != null)
+                        continue;
+
+                    if (io instanceof PageMetaIO || io instanceof PagesListMetaIO)
+                        continue;
+
+                    if (!((io instanceof BPlusMetaIO || io instanceof BPlusInnerIO)))
+                        continue;
+
+                    if (pageIds.contains(pageId))
+                        continue;
+
+                    ctx.errors.put(pageId, Collections.singletonList(new IgniteException("Error [step=" + i +
+                        ", msg=Possibly orphan " + io.getClass().getSimpleName() + " page" +
+                        ", pageId=" + pageId + ']')));
                 }
                 catch (Throwable e) {
-                    errors.add(new IgniteException("Error [step=" + i + ", msg=" + e.getMessage() + ']', e));
+                    ctx.errors.put(
+                        pageId,
+                        Collections.singletonList(new IgniteException("Error [step=" + i + ", msg=" + e.getMessage() + ']', e))
+                    );
                 }
             }
 
-            return errors;
+            return null;
         });
+
+        return ctx;
     }
 
     /**
@@ -971,8 +975,8 @@ public class IgniteIndexReader implements AutoCloseable {
     }
 
     /** */
-    TreeTraverseContext createContext(String idx, FilePageStore store, ItemStorage items) {
-        return new TreeTraverseContext(cacheAndTypeId(idx).get1(), store, items);
+    TreeTraverseContext createContext(int cacheId, FilePageStore store, ItemStorage items) {
+        return new TreeTraverseContext(cacheId, store, items);
     }
 
     /**
