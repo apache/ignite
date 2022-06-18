@@ -366,63 +366,60 @@ public class IgniteIndexReader implements AutoCloseable {
     private TreeTraverseContext horizontalTreeScan(long rootPageId, String idx, ItemStorage items) {
         TreeTraverseContext ctx = createContext(cacheAndTypeId(idx).get1(), filePageStore(rootPageId), items);
 
-        ByteBuffer buf = allocateBuffer(pageSize);
-
         try {
-            long addr = bufferAddress(buf);
+            doWithBuffer((buf, addr) -> {
+                readPage(ctx.store, rootPageId, buf);
 
-            readPage(ctx.store, rootPageId, buf);
+                PageIO pageIO = PageIO.getPageIO(addr);
 
-            PageIO pageIO = PageIO.getPageIO(addr);
+                if (!(pageIO instanceof BPlusMetaIO))
+                    throw new IgniteException("Root page is not meta, pageId=" + rootPageId);
 
-            if (!(pageIO instanceof BPlusMetaIO))
-                throw new IgniteException("Root page is not meta, pageId=" + rootPageId);
+                BPlusMetaIO metaIO = (BPlusMetaIO)pageIO;
 
-            BPlusMetaIO metaIO = (BPlusMetaIO)pageIO;
+                ctx.onPageIO(metaIO);
 
-            ctx.onPageIO(metaIO);
+                int lvlsCnt = metaIO.getLevelsCount(addr);
 
-            int lvlsCnt = metaIO.getLevelsCount(addr);
+                long[] firstPageIds = IntStream.range(0, lvlsCnt).mapToLong(i -> metaIO.getFirstPageId(addr, i)).toArray();
 
-            long[] firstPageIds = IntStream.range(0, lvlsCnt).mapToLong(i -> metaIO.getFirstPageId(addr, i)).toArray();
+                for (int i = 0; i < lvlsCnt; i++) {
+                    long pageId = firstPageIds[i];
 
-            for (int i = 0; i < lvlsCnt; i++) {
-                long pageId = firstPageIds[i];
+                    while (pageId > 0) {
+                        try {
+                            buf.rewind();
 
-                while (pageId > 0) {
-                    try {
-                        buf.rewind();
+                            readPage(ctx.store, pageId, buf);
 
-                        readPage(ctx.store, pageId, buf);
+                            pageIO = PageIO.getPageIO(addr);
 
-                        pageIO = PageIO.getPageIO(addr);
+                            if (i == 0 && !(pageIO instanceof BPlusLeafIO))
+                                throw new IgniteException("Not-leaf page found on leaf level [pageId=" + pageId + ", level=0]");
 
-                        if (i == 0 && !(pageIO instanceof BPlusLeafIO))
-                            throw new IgniteException("Not-leaf page found on leaf level [pageId=" + pageId + ", level=0]");
+                            if (!(pageIO instanceof BPlusIO))
+                                throw new IgniteException("Not-BPlus page found [pageId=" + pageId + ", level=" + i + ']');
 
-                        if (!(pageIO instanceof BPlusIO))
-                            throw new IgniteException("Not-BPlus page found [pageId=" + pageId + ", level=" + i + ']');
+                            ctx.onPageIO(pageIO);
 
-                        ctx.onPageIO(pageIO);
+                            if (pageIO instanceof BPlusLeafIO)
+                                pageVisitor(pageIO).visit(addr, ctx);
 
-                        if (pageIO instanceof BPlusLeafIO)
-                            pageVisitor(pageIO).visit(addr, ctx);
+                            pageId = ((BPlusIO<?>)pageIO).getForward(addr);
+                        }
+                        catch (Throwable e) {
+                            ctx.errors.computeIfAbsent(pageId, k -> new LinkedList<>()).add(e.getMessage());
 
-                        pageId = ((BPlusIO<?>)pageIO).getForward(addr);
-                    }
-                    catch (Throwable e) {
-                        ctx.errors.computeIfAbsent(pageId, k -> new LinkedList<>()).add(e.getMessage());
-
-                        pageId = 0;
+                            pageId = 0;
+                        }
                     }
                 }
-            }
+
+                return null;
+            });
         }
         catch (Throwable e) {
             ctx.errors.computeIfAbsent(rootPageId, k -> new LinkedList<>()).add(e.getMessage());
-        }
-        finally {
-            freeBuffer(buf);
         }
 
         return ctx;
@@ -436,22 +433,17 @@ public class IgniteIndexReader implements AutoCloseable {
      */
     private void traverse(long pageId, TreeTraverseContext ctx) {
         try {
-            final ByteBuffer buf = allocateBuffer(pageSize);
-
-            try {
+            doWithBuffer((buf, addr) -> {
                 readPage(ctx.store, pageId, buf);
-
-                final long addr = bufferAddress(buf);
 
                 final PageIO io = PageIO.getPageIO(addr);
 
                 ctx.onPageIO(io);
 
                 pageVisitor(io).visit(addr, ctx);
-            }
-            finally {
-                freeBuffer(buf);
-            }
+
+                return null;
+            });
         }
         catch (Throwable e) {
             ctx.errors.computeIfAbsent(pageId, k -> new LinkedList<>()).add(e.getMessage());
@@ -526,49 +518,41 @@ public class IgniteIndexReader implements AutoCloseable {
      * @return List of page ids.
      */
     private long pageList(long pageListStartId, Map<Class<? extends PageIO>, Long> ioStat) {
-        ByteBuffer nodeBuf = allocateBuffer(pageSize);
-        ByteBuffer pageBuf = allocateBuffer(pageSize);
-
-        long nodeAddr = bufferAddress(nodeBuf);
-        long pageAddr = bufferAddress(pageBuf);
-
         try {
-            int res = 0;
+            return doWithBuffer((nodeBuf, nodeAddr) -> doWithBuffer((pageBuf, pageAddr) -> {
+                long res = 0;
 
-            long currPageId = pageListStartId;
+                long currPageId = pageListStartId;
 
-            while (currPageId != 0) {
-                nodeBuf.rewind();
+                while (currPageId != 0) {
+                    nodeBuf.rewind();
 
-                readPage(idxStore, currPageId, nodeBuf);
+                    readPage(idxStore, currPageId, nodeBuf);
 
-                PagesListNodeIO io = PageIO.getPageIO(nodeAddr);
+                    PagesListNodeIO io = PageIO.getPageIO(nodeAddr);
 
-                for (int i = 0; i < io.getCount(nodeAddr); i++) {
-                    pageBuf.rewind();
+                    for (int i = 0; i < io.getCount(nodeAddr); i++) {
+                        pageBuf.rewind();
 
-                    long pageId = normalizePageId(io.getAt(nodeAddr, i));
+                        long pageId = normalizePageId(io.getAt(nodeAddr, i));
 
-                    res++;
+                        res++;
 
-                    pageIds.add(pageId);
+                        pageIds.add(pageId);
 
-                    readPage(idxStore, pageId, pageBuf);
+                        readPage(idxStore, pageId, pageBuf);
 
-                    ioStat.compute(PageIO.getPageIO(pageAddr).getClass(), (k, v) -> v == null ? 1 : v + 1);
+                        ioStat.compute(PageIO.getPageIO(pageAddr).getClass(), (k, v) -> v == null ? 1 : v + 1);
+                    }
+
+                    currPageId = io.getNextId(nodeAddr);
                 }
 
-                currPageId = io.getNextId(nodeAddr);
-            }
-
-            return res;
+                return res;
+            }));
         }
         catch (IgniteCheckedException e) {
             throw new IgniteException(e);
-        }
-        finally {
-            freeBuffer(nodeBuf);
-            freeBuffer(pageBuf);
         }
     }
 
