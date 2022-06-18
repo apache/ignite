@@ -350,7 +350,7 @@ public class IgniteIndexReader implements AutoCloseable {
 
         TreeTraverseContext ctx = createContext(cacheAndTypeId(idx).get1(), filePageStore(rootPageId), items);
 
-        traverse(rootPageId, ctx);
+        visit(rootPageId, ctx);
 
         return ctx;
     }
@@ -431,14 +431,12 @@ public class IgniteIndexReader implements AutoCloseable {
      * @param pageId Page id, where tree node is located.
      * @param ctx Tree traverse context.
      */
-    private void traverse(long pageId, TreeTraverseContext ctx) {
+    private void visit(long pageId, TreeTraverseContext ctx) {
         try {
             doWithBuffer((buf, addr) -> {
                 readPage(ctx.store, pageId, buf);
 
                 final PageIO io = PageIO.getPageIO(addr);
-
-                ctx.onPageIO(io);
 
                 pageVisitor(io).visit(addr, ctx);
 
@@ -517,43 +515,38 @@ public class IgniteIndexReader implements AutoCloseable {
      * @param ioStat Page types statistics.
      * @return List of page ids.
      */
-    private long pageList(long pageListStartId, Map<Class<? extends PageIO>, Long> ioStat) {
-        try {
-            return doWithBuffer((nodeBuf, nodeAddr) -> doWithBuffer((pageBuf, pageAddr) -> {
-                long res = 0;
+    private long pageList(long pageListStartId, Map<Class<? extends PageIO>, Long> ioStat) throws IgniteCheckedException {
+        return doWithBuffer((nodeBuf, nodeAddr) -> doWithBuffer((pageBuf, pageAddr) -> {
+            long res = 0;
 
-                long currPageId = pageListStartId;
+            long currPageId = pageListStartId;
 
-                while (currPageId != 0) {
-                    nodeBuf.rewind();
+            while (currPageId != 0) {
+                nodeBuf.rewind();
 
-                    readPage(idxStore, currPageId, nodeBuf);
+                readPage(idxStore, currPageId, nodeBuf);
 
-                    PagesListNodeIO io = PageIO.getPageIO(nodeAddr);
+                PagesListNodeIO io = PageIO.getPageIO(nodeAddr);
 
-                    for (int i = 0; i < io.getCount(nodeAddr); i++) {
-                        pageBuf.rewind();
+                for (int i = 0; i < io.getCount(nodeAddr); i++) {
+                    pageBuf.rewind();
 
-                        long pageId = normalizePageId(io.getAt(nodeAddr, i));
+                    long pageId = normalizePageId(io.getAt(nodeAddr, i));
 
-                        res++;
+                    res++;
 
-                        pageIds.add(pageId);
+                    pageIds.add(pageId);
 
-                        readPage(idxStore, pageId, pageBuf);
+                    readPage(idxStore, pageId, pageBuf);
 
-                        ioStat.compute(PageIO.getPageIO(pageAddr).getClass(), (k, v) -> v == null ? 1 : v + 1);
-                    }
-
-                    currPageId = io.getNextId(nodeAddr);
+                    ioStat.compute(PageIO.getPageIO(pageAddr).getClass(), (k, v) -> v == null ? 1 : v + 1);
                 }
 
-                return res;
-            }));
-        }
-        catch (IgniteCheckedException e) {
-            throw new IgniteException(e);
-        }
+                currPageId = io.getNextId(nodeAddr);
+            }
+
+            return res;
+        }));
     }
 
     /**
@@ -1184,7 +1177,7 @@ public class IgniteIndexReader implements AutoCloseable {
 
             int rootLvl = io.getRootLevel(addr);
 
-            traverse(io.getFirstPageId(addr, rootLvl), ctx);
+            IgniteIndexReader.this.visit(io.getFirstPageId(addr, rootLvl), ctx);
         }
     }
 
@@ -1195,7 +1188,7 @@ public class IgniteIndexReader implements AutoCloseable {
             PageIO io = PageIO.getPageIO(addr);
 
             for (long id : children((BPlusInnerIO<?>)io, addr))
-                traverse(id, ctx);
+                IgniteIndexReader.this.visit(id, ctx);
 
             pageIds.add(normalizePageId(PageIO.getPageId(addr)));
         }
