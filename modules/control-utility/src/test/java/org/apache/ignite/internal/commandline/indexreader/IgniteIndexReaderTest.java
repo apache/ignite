@@ -724,7 +724,7 @@ public class IgniteIndexReaderTest extends GridCommandHandlerAbstractTest {
             logger
         ) {
             /** {@inheritDoc} */
-            @Override ProgressPrinter progressPrinter(String caption, long total) {
+            @Override ProgressPrinter createProgressPrinter(String caption, long total) {
                 return new ProgressPrinter(System.err, caption, total);
             }
         };
