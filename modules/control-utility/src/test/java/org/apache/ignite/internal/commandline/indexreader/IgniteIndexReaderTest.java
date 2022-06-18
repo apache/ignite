@@ -280,7 +280,7 @@ public class IgniteIndexReaderTest extends GridCommandHandlerAbstractTest {
         // Take any inner page from tree.
         AtomicLong anyLeafId = new AtomicLong();
 
-        IgniteIndexReader reader = new IgniteIndexReader(null, false, createTestLogger(), createFilePageStoreFactory(dir)) {
+        IgniteIndexReader reader0 = new IgniteIndexReader(null, false, createFilePageStoreFactory(dir), createTestLogger()) {
             @Override TreeTraverseContext createContext(int cacheId, FilePageStore store, ItemStorage items) {
                 return new TreeTraverseContext(cacheId, store, items) {
                     @Override public void onLeafPage(long pageId, List<Object> data) {
@@ -292,7 +292,7 @@ public class IgniteIndexReaderTest extends GridCommandHandlerAbstractTest {
             }
         };
 
-        try {
+        try (IgniteIndexReader reader = reader0) {
             long[] partitionRoots = reader.partitionRoots(PageIdAllocator.META_PAGE_ID);
 
             ItemsListStorage<IndexStorageImpl.IndexItem> idxItemStorage = new ItemsListStorage<>();
@@ -314,9 +314,6 @@ public class IgniteIndexReaderTest extends GridCommandHandlerAbstractTest {
             long link = linkStorage.store.get(0).link;
 
             return new IgniteBiTuple<>(anyLeafId.get(), link);
-        }
-        finally {
-            reader.close();
         }
     }
 
@@ -720,18 +717,18 @@ public class IgniteIndexReaderTest extends GridCommandHandlerAbstractTest {
 
         Logger logger = createTestLogger();
 
-        IgniteIndexReader reader1 = new IgniteIndexReader(
+        IgniteIndexReader reader0 = new IgniteIndexReader(
             isNull(idxs) ? null : idx -> Arrays.stream(idxs).anyMatch(idx::endsWith),
             checkParts,
-            logger,
-            createFilePageStoreFactory(new File(workDir, dataDir(cacheGrp)))
+            createFilePageStoreFactory(new File(workDir, dataDir(cacheGrp))),
+            logger
         ) {
             /** {@inheritDoc} */
             @Override ProgressPrinter progressPrinter(String caption, long total) {
                 return new ProgressPrinter(System.err, caption, total);
             }
         };
-        try (IgniteIndexReader reader = reader1) {
+        try (IgniteIndexReader reader = reader0) {
             reader.readIdx();
         }
 

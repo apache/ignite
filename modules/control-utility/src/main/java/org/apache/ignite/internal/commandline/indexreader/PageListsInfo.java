@@ -41,14 +41,14 @@ class PageListsInfo {
     final Map<Class<? extends PageIO>, Long> ioStat;
 
     /** Map of errors, pageId -> list of exceptions. */
-    final Map<Long, List<Throwable>> errors;
+    final Map<Long, List<String>> errors;
 
     /** */
     public PageListsInfo(
         Map<IgniteBiTuple<Long, Integer>, List<Long>> bucketsData,
         long pagesCnt,
         Map<Class<? extends PageIO>, Long> ioStat,
-        Map<Long, List<Throwable>> errors
+        Map<Long, List<String>> errors
     ) {
         this.bucketsData = bucketsData;
         this.pagesCnt = pagesCnt;

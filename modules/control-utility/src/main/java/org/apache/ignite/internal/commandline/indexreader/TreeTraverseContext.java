@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.commandline.indexreader;
 
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -28,7 +29,7 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
  * Traverse context, which is used for tree traversal and is unique for traversal of one single tree.
  */
 class TreeTraverseContext {
-    /** Tree name. */
+    /** Cache id or {@code -1} for sequential scan. */
     final int cacheId;
 
     /** Page store. */
@@ -38,7 +39,7 @@ class TreeTraverseContext {
     final Map<Class<? extends PageIO>, Long> ioStat;
 
     /** Map of errors, pageId -> set of exceptions. */
-    final Map<Long, List<Throwable>> errors;
+    final Map<Long, List<String>> errors;
 
     /** List of items storage. */
     final ItemStorage items;
@@ -48,8 +49,8 @@ class TreeTraverseContext {
         this.cacheId = cacheId;
         this.store = store;
         this.items = items;
-        this.ioStat = new HashMap<>();
-        this.errors = new HashMap<>();
+        this.ioStat = new LinkedHashMap<>();
+        this.errors = new LinkedHashMap<>();
     }
 
     /** */

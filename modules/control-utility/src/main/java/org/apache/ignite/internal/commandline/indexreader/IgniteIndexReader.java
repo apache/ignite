@@ -188,15 +188,15 @@ public class IgniteIndexReader implements AutoCloseable {
      *
      * @param idxFilter Index name filter, if {@code null} then is not used.
      * @param checkParts Check cache data tree in partition files and it's consistency with indexes.
-     * @param log Logger.
      * @param filePageStoreFactory File page store factory.
+     * @param log Logger.
      * @throws IgniteCheckedException If failed.
      */
     public IgniteIndexReader(
         @Nullable Predicate<String> idxFilter,
         boolean checkParts,
-        Logger log,
-        IgniteIndexReaderFilePageStoreFactory filePageStoreFactory
+        IgniteIndexReaderFilePageStoreFactory filePageStoreFactory,
+        Logger log
     ) throws IgniteCheckedException {
         pageSize = filePageStoreFactory.pageSize();
         partCnt = filePageStoreFactory.partitionCount();
@@ -222,7 +222,7 @@ public class IgniteIndexReader implements AutoCloseable {
      * @param args Arguments.
      * @throws Exception If failed.
      */
-    public static void main(String[] args) throws Exception {
+    public static void main(String[] args) {
         System.out.println("THIS UTILITY MUST BE LAUNCHED ON PERSISTENT STORE WHICH IS NOT UNDER RUNNING GRID!");
 
         CLIArgumentParser p = new CLIArgumentParser(asList(
@@ -260,8 +260,8 @@ public class IgniteIndexReader implements AutoCloseable {
         try (IgniteIndexReader reader = new IgniteIndexReader(
             idxs.isEmpty() ? null : idxs::contains,
             p.get(CHECK_PARTS.arg()),
-            CommandHandler.setupJavaLogger("index-reader", IgniteIndexReader.class),
-            filePageStoreFactory
+            filePageStoreFactory,
+            CommandHandler.setupJavaLogger("index-reader", IgniteIndexReader.class)
         )) {
             reader.readIdx();
         }
@@ -299,37 +299,10 @@ public class IgniteIndexReader implements AutoCloseable {
             printPagesListsInfo(indexPartitionRoots[1]);
 
         // Sequentially scan index file.
-        TreeTraverseContext ctx = traverseIndexFile();
-
-        printPageStat("", "---- These pages types were encountered during sequential scan:", ctx.ioStat);
-
-        if (!ctx.errors.isEmpty()) {
-            log.severe("----");
-            log.severe("Errors:");
-
-            ctx.errors.values().forEach(e -> log.severe(e.get(0).getMessage()));
-        }
-
-        log.info("----");
-
-        SystemViewCommand.printTable(
-            null,
-            Arrays.asList(STRING, NUMBER),
-            Arrays.asList(
-                Arrays.asList("Total pages encountered during sequential scan:", ctx.ioStat.values().stream().mapToLong(a -> a).sum()),
-                Arrays.asList("Total errors occurred during sequential scan: ", ctx.errors.size())
-            ),
-            log
-        );
-
-        if (idxFilter != null)
-            log.info("Orphan pages were not reported due to --indexes filter.");
-
-        log.info("Note that some pages can be occupied by meta info, tracking info, etc., so total page count can differ " +
-            "from count of pages found in index trees and page lists.");
+        printSequentialScanInfo(traverseIndexSequentially());
 
         if (checkParts) {
-            Map<Integer, List<Throwable>> checkPartsErrors = checkParts(horizontalScans);
+            Map<Integer, List<String>> checkPartsErrors = checkParts(horizontalScans);
 
             log.info("");
 
@@ -454,7 +427,7 @@ public class IgniteIndexReader implements AutoCloseable {
                         pageId = ((BPlusIO<?>)pageIO).getForward(addr);
                     }
                     catch (Throwable e) {
-                        ctx.errors.computeIfAbsent(pageId, k -> new LinkedList<>()).add(e);
+                        ctx.errors.computeIfAbsent(pageId, k -> new LinkedList<>()).add(e.getMessage());
 
                         pageId = 0;
                     }
@@ -462,7 +435,7 @@ public class IgniteIndexReader implements AutoCloseable {
             }
         }
         catch (Throwable e) {
-            ctx.errors.computeIfAbsent(rootPageId, k -> new LinkedList<>()).add(e);
+            ctx.errors.computeIfAbsent(rootPageId, k -> new LinkedList<>()).add(e.getMessage());
         }
         finally {
             freeBuffer(buf);
@@ -483,7 +456,7 @@ public class IgniteIndexReader implements AutoCloseable {
 
             Map<Class<? extends PageIO>, Long> ioStat = new HashMap<>();
 
-            Map<Long, List<Throwable>> errors = new HashMap<>();
+            Map<Long, List<String>> errors = new HashMap<>();
 
             long pagesCnt = 0;
             long currPageId = metaPageListId;
@@ -511,7 +484,7 @@ public class IgniteIndexReader implements AutoCloseable {
                                 pagesCnt += pageList(listId, ioStat);
                             }
                             catch (Exception err) {
-                                errors.put(listId, singletonList(err));
+                                errors.put(listId, singletonList(err.getMessage()));
                             }
                         }
 
@@ -521,7 +494,7 @@ public class IgniteIndexReader implements AutoCloseable {
                     currPageId = io.getNextMetaPageId(addr);
                 }
                 catch (Exception e) {
-                    errors.put(currPageId, singletonList(e));
+                    errors.put(currPageId, singletonList(e.getMessage()));
 
                     break;
                 }
@@ -529,215 +502,6 @@ public class IgniteIndexReader implements AutoCloseable {
 
             return new PageListsInfo(bucketsData, pagesCnt, ioStat, errors);
         });
-    }
-
-    /**
-     * Allocates buffer and does some work in closure, then frees the buffer.
-     *
-     * @param c Closure.
-     * @param <T> Result type.
-     * @return Result of closure.
-     * @throws IgniteCheckedException If failed.
-     */
-    private <T> T doWithBuffer(GridPlainClosure2<ByteBuffer, Long, T> c) throws IgniteCheckedException {
-        ByteBuffer buf = allocateBuffer(pageSize);
-
-        try {
-            long addr = bufferAddress(buf);
-
-            return c.apply(buf, addr);
-        }
-        finally {
-            freeBuffer(buf);
-        }
-    }
-
-    /**
-     * Traverse index file sequentially.
-     *
-     * @return Traverse results.
-     * @throws IgniteCheckedException If failed.
-     */
-    private TreeTraverseContext traverseIndexFile() throws IgniteCheckedException {
-        long pagesNum = (idxStore.size() - idxStore.headerSize()) / pageSize;
-
-        ProgressPrinter progressPrinter = progressPrinter("Reading pages sequentially", pagesNum);
-
-        TreeTraverseContext ctx = createContext(-1, idxStore, new CountOnlyStorage());
-
-        doWithBuffer((buf, addr) -> {
-            for (int i = 0; i < pagesNum; i++) {
-                buf.rewind();
-
-                long pageId = -1;
-
-                try {
-                    pageId = pageId(INDEX_PARTITION, FLAG_IDX, i);
-
-                    readPage(idxStore, pageId, buf);
-
-                    PageIO io = PageIO.getPageIO(addr);
-
-                    progressPrinter.printProgress();
-
-                    ctx.onPageIO(io);
-
-                    if (idxFilter != null)
-                        continue;
-
-                    if (io instanceof PageMetaIO || io instanceof PagesListMetaIO)
-                        continue;
-
-                    if (!((io instanceof BPlusMetaIO || io instanceof BPlusInnerIO)))
-                        continue;
-
-                    if (pageIds.contains(pageId))
-                        continue;
-
-                    ctx.errors.put(pageId, Collections.singletonList(new IgniteException("Error [step=" + i +
-                        ", msg=Possibly orphan " + io.getClass().getSimpleName() + " page" +
-                        ", pageId=" + pageId + ']')));
-                }
-                catch (Throwable e) {
-                    ctx.errors.put(
-                        pageId,
-                        Collections.singletonList(new IgniteException("Error [step=" + i + ", msg=" + e.getMessage() + ']', e))
-                    );
-                }
-            }
-
-            return null;
-        });
-
-        return ctx;
-    }
-
-    /**
-     * Checks partitions, comparing partition indexes (cache data tree) to indexes given in {@code treesInfo}.
-     *
-     * @param treesInfo Index trees info to compare cache data tree with.
-     * @return Map of errors, bound to partition id.
-     */
-    private Map<Integer, List<Throwable>> checkParts(Map<String, TreeTraverseContext> treesInfo) {
-        log.info("");
-
-        // Map partId -> errors.
-        Map<Integer, List<Throwable>> res = new HashMap<>();
-
-        ProgressPrinter progressPrinter = progressPrinter("Checking partitions", partCnt);
-
-        for (int i = 0; i < partCnt; i++) {
-            progressPrinter.printProgress();
-
-            FilePageStore partStore = partStores[i];
-
-            if (partStore == null)
-                continue;
-
-            List<Throwable> errors = new LinkedList<>();
-
-            final int partId = i;
-
-            try {
-                long partMetaId = pageId(i, FLAG_DATA, 0);
-
-                doWithBuffer((buf, addr) -> {
-                    readPage(partStore, partMetaId, buf);
-
-                    PagePartitionMetaIO partMetaIO = PageIO.getPageIO(addr);
-
-                    long cacheDataTreeRoot = partMetaIO.getTreeRoot(addr);
-
-                    TreeTraverseContext ctx =
-                        horizontalTreeScan(cacheDataTreeRoot, "dataTree-" + partId, new ItemsListStorage<>());
-
-                    for (Object dataTreeItem : ctx.items) {
-                        CacheAwareLink cacheAwareLink = (CacheAwareLink)dataTreeItem;
-
-                        for (Map.Entry<String, TreeTraverseContext> e : treesInfo.entrySet()) {
-                            if (e.getKey().equals(META_TREE_NAME))
-                                continue;
-
-                            if (cacheAndTypeId(e.getKey()).get1() != cacheAwareLink.cacheId
-                                || e.getValue().items.contains(cacheAwareLink))
-                                continue;
-
-                            errors.add(new IgniteException(cacheDataTreeEntryMissingError(e.getKey(), cacheAwareLink)));
-                        }
-
-                        if (errors.size() >= CHECK_PARTS_MAX_ERRORS_PER_PARTITION) {
-                            errors.add(new IgniteException("Too many errors (" + CHECK_PARTS_MAX_ERRORS_PER_PARTITION +
-                                ") found for partId=" + partId + ", stopping analysis for this partition."));
-
-                            break;
-                        }
-                    }
-
-                    return null;
-                });
-            }
-            catch (IgniteCheckedException e) {
-                errors.add(new IgniteException("Partition check failed, partId=" + i, e));
-            }
-
-            if (!errors.isEmpty())
-                res.put(partId, errors);
-        }
-
-        return res;
-    }
-
-    /**
-     * Compares result of traversals.
-     *
-     * @param recursiveScans Traversal from root to leafs.
-     * @param horizontalScans Traversal using horizontal scan.
-     */
-    private void compareTraversals(
-        Map<String, TreeTraverseContext> recursiveScans,
-        Map<String, TreeTraverseContext> horizontalScans
-    ) {
-        printTraversalResults(RECURSIVE_TRAVERSE_NAME, recursiveScans);
-        printTraversalResults(HORIZONTAL_SCAN_NAME, horizontalScans);
-
-        List<String> errors = new LinkedList<>();
-
-        recursiveScans.forEach((name, rctx) -> {
-            TreeTraverseContext hctx = horizontalScans.get(name);
-
-            if (hctx == null) {
-                errors.add("Tree was detected in " + RECURSIVE_TRAVERSE_NAME + " but absent in  "
-                    + HORIZONTAL_SCAN_NAME + ": " + name);
-
-                return;
-            }
-
-            if (rctx.items.size() != hctx.items.size())
-                errors.add(compareError("items", name, rctx.items.size(), hctx.items.size(), null));
-
-            rctx.ioStat.forEach((cls, cnt) -> {
-                long scanCnt = hctx.ioStat.getOrDefault(cls, 0L);
-
-                if (scanCnt != cnt)
-                    errors.add(compareError("pages", name, cnt, scanCnt, cls));
-            });
-
-            hctx.ioStat.forEach((cls, cnt) -> {
-                if (!rctx.ioStat.containsKey(cls))
-                    errors.add(compareError("pages", name, 0, cnt, cls));
-            });
-        });
-
-        horizontalScans.forEach((name, hctx) -> {
-            if (!recursiveScans.containsKey(name))
-                errors.add("Tree was detected in " + HORIZONTAL_SCAN_NAME + " but absent in  "
-                    + RECURSIVE_TRAVERSE_NAME + ": " + name);
-        });
-
-        errors.forEach(log::severe);
-
-        log.info("Comparing traversals detected " + errors.size() + " errors.");
-        log.info("------------------");
     }
 
     /**
@@ -794,21 +558,253 @@ public class IgniteIndexReader implements AutoCloseable {
         }
     }
 
+    /**
+     * Traverse index file sequentially.
+     *
+     * @return Traverse results.
+     * @throws IgniteCheckedException If failed.
+     */
+    private TreeTraverseContext traverseIndexSequentially() throws IgniteCheckedException {
+        long pagesNum = (idxStore.size() - idxStore.headerSize()) / pageSize;
+
+        ProgressPrinter progressPrinter = progressPrinter("Reading pages sequentially", pagesNum);
+
+        TreeTraverseContext ctx = createContext(-1, idxStore, new CountOnlyStorage());
+
+        doWithBuffer((buf, addr) -> {
+            for (int i = 0; i < pagesNum; i++) {
+                buf.rewind();
+
+                long pageId = -1;
+
+                try {
+                    pageId = pageId(INDEX_PARTITION, FLAG_IDX, i);
+
+                    readPage(idxStore, pageId, buf);
+
+                    PageIO io = PageIO.getPageIO(addr);
+
+                    progressPrinter.printProgress();
+
+                    ctx.onPageIO(io);
+
+                    if (idxFilter != null)
+                        continue;
+
+                    if (io instanceof PageMetaIO || io instanceof PagesListMetaIO)
+                        continue;
+
+                    if (!((io instanceof BPlusMetaIO || io instanceof BPlusInnerIO)))
+                        continue;
+
+                    if (pageIds.contains(pageId))
+                        continue;
+
+                    ctx.errors.put(pageId, Collections.singletonList("Error [step=" + i +
+                        ", msg=Possibly orphan " + io.getClass().getSimpleName() + " page" +
+                        ", pageId=" + pageId + ']'));
+                }
+                catch (Throwable e) {
+                    ctx.errors.put(
+                        pageId,
+                        Collections.singletonList("Error [step=" + i + ", msg=" + e.getMessage() + ']')
+                    );
+                }
+            }
+
+            return null;
+        });
+
+        return ctx;
+    }
+
+    /**
+     * Checks partitions, comparing partition indexes (cache data tree) to indexes given in {@code treesInfo}.
+     *
+     * @param treesInfo Index trees info to compare cache data tree with.
+     * @return Map of errors, bound to partition id.
+     */
+    private Map<Integer, List<String>> checkParts(Map<String, TreeTraverseContext> treesInfo) {
+        log.info("");
+
+        // Map partId -> errors.
+        Map<Integer, List<String>> res = new HashMap<>();
+
+        ProgressPrinter progressPrinter = progressPrinter("Checking partitions", partCnt);
+
+        IntStream.range(0, partCnt).forEach(partId -> {
+            progressPrinter.printProgress();
+
+            FilePageStore partStore = partStores[partId];
+
+            if (partStore == null)
+                return;
+
+            List<String> errors = new LinkedList<>();
+
+            try {
+                long partMetaId = pageId(partId, FLAG_DATA, 0);
+
+                doWithBuffer((buf, addr) -> {
+                    readPage(partStore, partMetaId, buf);
+
+                    PagePartitionMetaIO partMetaIO = PageIO.getPageIO(addr);
+
+                    long cacheDataTreeRoot = partMetaIO.getTreeRoot(addr);
+
+                    TreeTraverseContext ctx =
+                        horizontalTreeScan(cacheDataTreeRoot, "dataTree-" + partId, new ItemsListStorage<>());
+
+                    for (Object dataTreeItem : ctx.items) {
+                        CacheAwareLink cacheAwareLink = (CacheAwareLink)dataTreeItem;
+
+                        for (Map.Entry<String, TreeTraverseContext> e : treesInfo.entrySet()) {
+                            if (e.getKey().equals(META_TREE_NAME))
+                                continue;
+
+                            if (cacheAndTypeId(e.getKey()).get1() != cacheAwareLink.cacheId
+                                || e.getValue().items.contains(cacheAwareLink))
+                                continue;
+
+                            long pageId = pageId(cacheAwareLink.link);
+
+                            errors.add("Entry is missing in index[name=" + e.getKey() +
+                                "cacheId=" + cacheAwareLink.cacheId +
+                                ", partId=" + partId(pageId) +
+                                ", pageIndex=" + pageIndex(pageId) +
+                                ", itemId=" + itemId(cacheAwareLink.link) +
+                                ", link=" + cacheAwareLink.link + ']');
+                        }
+
+                        if (errors.size() >= CHECK_PARTS_MAX_ERRORS_PER_PARTITION) {
+                            errors.add("Too many errors (" + CHECK_PARTS_MAX_ERRORS_PER_PARTITION +
+                                ") found for partId=" + partId + ", stopping analysis for this partition.");
+
+                            break;
+                        }
+                    }
+
+                    return null;
+                });
+            }
+            catch (IgniteCheckedException e) {
+                errors.add("Partition check failed, partId=" + partId);
+            }
+
+            if (!errors.isEmpty())
+                res.put(partId, errors);
+        });
+
+        return res;
+    }
+
     /** */
     ProgressPrinter progressPrinter(String caption, long total) {
         return new ProgressPrinter(System.out, caption, total);
     }
 
-    /** */
-    private String cacheDataTreeEntryMissingError(String idx, CacheAwareLink cacheAwareLink) {
-        long pageId = pageId(cacheAwareLink.link);
+    /**
+     * Allocates buffer and does some work in closure, then frees the buffer.
+     *
+     * @param c Closure.
+     * @param <T> Result type.
+     * @return Result of closure.
+     * @throws IgniteCheckedException If failed.
+     */
+    private <T> T doWithBuffer(GridPlainClosure2<ByteBuffer, Long, T> c) throws IgniteCheckedException {
+        ByteBuffer buf = allocateBuffer(pageSize);
 
-        return "Entry is missing in index[name=" + idx +
-            "cacheId=" + cacheAwareLink.cacheId +
-            ", partId=" + partId(pageId) +
-            ", pageIndex=" + pageIndex(pageId) +
-            ", itemId=" + itemId(cacheAwareLink.link) +
-            ", link=" + cacheAwareLink.link + ']';
+        try {
+            long addr = bufferAddress(buf);
+
+            return c.apply(buf, addr);
+        }
+        finally {
+            freeBuffer(buf);
+        }
+    }
+
+    /**
+     * Compares result of traversals.
+     *
+     * @param recursiveScans Traversal from root to leafs.
+     * @param horizontalScans Traversal using horizontal scan.
+     */
+    private void compareTraversals(
+        Map<String, TreeTraverseContext> recursiveScans,
+        Map<String, TreeTraverseContext> horizontalScans
+    ) {
+        printTraversalResults(RECURSIVE_TRAVERSE_NAME, recursiveScans);
+        printTraversalResults(HORIZONTAL_SCAN_NAME, horizontalScans);
+
+        List<String> errors = new LinkedList<>();
+
+        recursiveScans.forEach((name, rctx) -> {
+            TreeTraverseContext hctx = horizontalScans.get(name);
+
+            if (hctx == null) {
+                errors.add("Tree was detected in " + RECURSIVE_TRAVERSE_NAME + " but absent in  "
+                    + HORIZONTAL_SCAN_NAME + ": " + name);
+
+                return;
+            }
+
+            if (rctx.items.size() != hctx.items.size())
+                errors.add(compareError("items", name, rctx.items.size(), hctx.items.size(), null));
+
+            rctx.ioStat.forEach((cls, cnt) -> {
+                long scanCnt = hctx.ioStat.getOrDefault(cls, 0L);
+
+                if (scanCnt != cnt)
+                    errors.add(compareError("pages", name, cnt, scanCnt, cls));
+            });
+
+            hctx.ioStat.forEach((cls, cnt) -> {
+                if (!rctx.ioStat.containsKey(cls))
+                    errors.add(compareError("pages", name, 0, cnt, cls));
+            });
+        });
+
+        horizontalScans.forEach((name, hctx) -> {
+            if (!recursiveScans.containsKey(name))
+                errors.add("Tree was detected in " + HORIZONTAL_SCAN_NAME + " but absent in  "
+                    + RECURSIVE_TRAVERSE_NAME + ": " + name);
+        });
+
+        errors.forEach(log::severe);
+
+        log.info("Comparing traversals detected " + errors.size() + " errors.");
+        log.info("------------------");
+    }
+
+    /** Prints sequential file scan results. */
+    private void printSequentialScanInfo(TreeTraverseContext ctx) {
+        printPageStat("", "---- These pages types were encountered during sequential scan:", ctx.ioStat);
+
+        if (!ctx.errors.isEmpty()) {
+            log.severe("----");
+            log.severe("Errors:");
+
+            ctx.errors.values().forEach(e -> log.severe(e.get(0)));
+        }
+
+        log.info("----");
+
+        SystemViewCommand.printTable(
+            null,
+            Arrays.asList(STRING, NUMBER),
+            Arrays.asList(
+                Arrays.asList("Total pages encountered during sequential scan:", ctx.ioStat.values().stream().mapToLong(a -> a).sum()),
+                Arrays.asList("Total errors occurred during sequential scan: ", ctx.errors.size())
+            ),
+            log
+        );
+
+        if (idxFilter != null)
+            log.info("Orphan pages were not reported due to --indexes filter.");
+
+        log.info("Note that some pages can be occupied by meta info, tracking info, etc., so total page count can differ " +
+            "from count of pages found in index trees and page lists.");
     }
 
     /** */
@@ -1015,7 +1011,7 @@ public class IgniteIndexReader implements AutoCloseable {
             }
         }
         catch (Throwable e) {
-            ctx.errors.computeIfAbsent(pageId, k -> new LinkedList<>()).add(e);
+            ctx.errors.computeIfAbsent(pageId, k -> new LinkedList<>()).add(e.getMessage());
         }
     }
 
@@ -1109,7 +1105,7 @@ public class IgniteIndexReader implements AutoCloseable {
     }
 
     /** */
-    private void printErrors(String prefix, String caption, String emptyCaption, String msg, Map<?, List<Throwable>> errors) {
+    private void printErrors(String prefix, String caption, String emptyCaption, String msg, Map<?, List<String>> errors) {
         if (errors.isEmpty()) {
             log.info(prefix + emptyCaption);
 
@@ -1121,7 +1117,7 @@ public class IgniteIndexReader implements AutoCloseable {
         errors.forEach((k, v) -> {
             log.info(prefix + ERROR_PREFIX + format(msg, k.toString()));
 
-            v.forEach(e -> log.severe(e.getMessage()));
+            v.forEach(log::severe);
         });
     }
 
@@ -1263,7 +1259,7 @@ public class IgniteIndexReader implements AutoCloseable {
                 }
             }
             catch (Exception e) {
-                ctx.errors.computeIfAbsent(PageIO.getPageId(addr), k -> new LinkedList<>()).add(e);
+                ctx.errors.computeIfAbsent(PageIO.getPageId(addr), k -> new LinkedList<>()).add(e.getMessage());
             }
 
             return items;
@@ -1328,7 +1324,7 @@ public class IgniteIndexReader implements AutoCloseable {
                 });
             }
             catch (Exception e) {
-                ctx.errors.computeIfAbsent(PageIO.getPageId(addr), k -> new LinkedList<>()).add(e);
+                ctx.errors.computeIfAbsent(PageIO.getPageId(addr), k -> new LinkedList<>()).add(e.getMessage());
             }
 
             return new CacheAwareLink(cacheId, link);
