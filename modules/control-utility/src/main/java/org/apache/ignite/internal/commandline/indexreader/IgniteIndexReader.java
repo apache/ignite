@@ -438,6 +438,8 @@ public class IgniteIndexReader implements AutoCloseable {
 
                 final PageIO io = PageIO.getPageIO(addr);
 
+                ctx.onPageIO(io);
+
                 pageVisitor(io).visit(addr, ctx);
 
                 return null;
