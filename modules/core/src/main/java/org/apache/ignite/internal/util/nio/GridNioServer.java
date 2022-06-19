@@ -2849,33 +2849,36 @@ public class GridNioServer<T> {
 
                 IOException err = new IOException("Failed to send message (connection was closed): " + ses);
 
-                if (outRecovery != null || inRecovery != null) {
-                    // Poll will update recovery data.
-                    while ((req = ses.pollFuture()) != null) {
-                        if (req.skipRecovery())
+                try {
+                    if (outRecovery != null || inRecovery != null) {
+                        // Poll will update recovery data.
+                        while ((req = ses.pollFuture()) != null) {
+                            if (req.skipRecovery())
+                                req.onError(err);
+                        }
+                    }
+                    else {
+                        if (req != null)
+                            req.onError(err);
+
+                        while ((req = ses.pollFuture()) != null)
                             req.onError(err);
                     }
-                }
-                else {
-                    if (req != null)
-                        req.onError(err);
 
-                    while ((req = ses.pollFuture()) != null)
-                        req.onError(err);
+                    try {
+                        filterChain.onSessionClosed(ses);
+                    }
+                    catch (IgniteCheckedException e1) {
+                        filterChain.onExceptionCaught(ses, e1);
+                    }
                 }
+                finally {
+                    if (outRecovery != null)
+                        outRecovery.release();
 
-                try {
-                    filterChain.onSessionClosed(ses);
+                    if (inRecovery != null && inRecovery != outRecovery)
+                        inRecovery.release();
                 }
-                catch (IgniteCheckedException e1) {
-                    filterChain.onExceptionCaught(ses, e1);
-                }
-
-                if (outRecovery != null)
-                    outRecovery.release();
-
-                if (inRecovery != null && inRecovery != outRecovery)
-                    inRecovery.release();
 
                 return true;
             }
