@@ -84,19 +84,18 @@ public class CLIArgumentParser {
 
     /** */
     private <T> T parseVal(String val, Class<T> type) {
-        switch (type.getSimpleName()) {
-            case "String": return (T)val;
+        if (type == String.class)
+            return (T)val;
+        else if (type == String[].class)
+            return (T)val.split(",");
+        else if (type == Integer.class)
+            return (T)wrapNumberFormatException(() -> Integer.parseInt(val), val, Integer.class);
+        else if (type == Long.class)
+            return (T)wrapNumberFormatException(() -> Long.parseLong(val), val, Long.class);
+        else if (type == UUID.class)
+            return (T)UUID.fromString(val);
 
-            case "String[]": return (T)val.split(",");
-
-            case "Integer": return (T)wrapNumberFormatException(() -> Integer.parseInt(val), val, Integer.class);
-
-            case "Long": return (T)wrapNumberFormatException(() -> Long.parseLong(val), val, Long.class);
-
-            case "UUID": return (T)UUID.fromString(val);
-
-            default: throw new IgniteException("Unsupported argument type: " + type.getName());
-        }
+        throw new IgniteException("Unsupported argument type: " + type.getName());
     }
 
     /**
