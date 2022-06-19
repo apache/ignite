@@ -369,12 +369,12 @@ public class IgniteIndexReader implements AutoCloseable {
             doWithBuffer((buf, addr) -> {
                 PageIO pageIO = readPage(ctx.store, rootPageId, buf);
 
+                ctx.onPageIO(pageIO);
+
                 if (!(pageIO instanceof BPlusMetaIO))
                     throw new IgniteException("Root page is not meta, pageId=" + rootPageId);
 
                 BPlusMetaIO metaIO = (BPlusMetaIO)pageIO;
-
-                ctx.onPageIO(metaIO);
 
                 int lvlsCnt = metaIO.getLevelsCount(addr);
 
@@ -387,13 +387,13 @@ public class IgniteIndexReader implements AutoCloseable {
                         try {
                             pageIO = readPage(ctx.store, pageId, buf);
 
+                            ctx.onPageIO(pageIO);
+
                             if (i == 0 && !(pageIO instanceof BPlusLeafIO))
                                 throw new IgniteException("Not-leaf page found on leaf level [pageId=" + pageId + ", level=0]");
 
                             if (!(pageIO instanceof BPlusIO))
                                 throw new IgniteException("Not-BPlus page found [pageId=" + pageId + ", level=" + i + ']');
-
-                            ctx.onPageIO(pageIO);
 
                             if (pageIO instanceof BPlusLeafIO)
                                 pageVisitor(pageIO).visit(addr, ctx);
@@ -520,9 +520,7 @@ public class IgniteIndexReader implements AutoCloseable {
 
                     pageIds.add(pageId);
 
-                    PageIO io0 = readPage(idxStore, pageId, pageBuf);
-
-                    ioStat.compute(io0.getClass(), (k, v) -> v == null ? 1 : v + 1);
+                    TreeTraverseContext.onPageIO(readPage(idxStore, pageId, pageBuf).getClass(), ioStat, 1);
                 }
 
                 currPageId = io.getNextId(nodeAddr);
@@ -924,7 +922,7 @@ public class IgniteIndexReader implements AutoCloseable {
             log.info(prefix + "Index tree: " + idxName);
             printPageStat(prefix, "---- Page stat:", ctx.ioStat);
 
-            ctx.ioStat.forEach((cls, cnt) -> ioStat.compute(cls, (k, v) -> v == null ? cnt : v + cnt));
+            ctx.ioStat.forEach((cls, cnt) -> TreeTraverseContext.onPageIO(cls, ioStat, cnt));
 
             log.info(prefix + "---- Count of items found in leaf pages: " + ctx.items.size());
 

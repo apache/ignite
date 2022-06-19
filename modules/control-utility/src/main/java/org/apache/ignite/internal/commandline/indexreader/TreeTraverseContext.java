@@ -54,7 +54,12 @@ class TreeTraverseContext {
 
     /** */
     public void onPageIO(PageIO io) {
-        ioStat.compute(io.getClass(), (k, v) -> v == null ? 1 : v + 1);
+        onPageIO(io.getClass(), ioStat, 1);
+    }
+
+    /** */
+    public static void onPageIO(Class<? extends PageIO> io, Map<Class<? extends PageIO>, Long> ioStat, long cnt) {
+        ioStat.compute(io, (k, v) -> v == null ? cnt : v + cnt);
     }
 
     /** */
