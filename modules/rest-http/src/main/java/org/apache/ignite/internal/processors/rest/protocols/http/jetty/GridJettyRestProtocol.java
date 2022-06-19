@@ -69,7 +69,7 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
             System.setProperty("org.eclipse.jetty.util.component.LEVEL", "OFF");
 
             try {
-                Class<?> logCls = Class.forName("org.apache.log4j.Logger");
+                Class<?> logCls = Class.forName("org.apache.logging.log4j.LogManager");
 
                 String ctgrJetty = "org.eclipse.jetty";                         // WARN for this category.
                 String ctgrJettyUtil = "org.eclipse.jetty.util.log";            // ERROR for this...
@@ -79,7 +79,7 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
                 Object logJettyUtil = logCls.getMethod("getLogger", String.class).invoke(logCls, ctgrJettyUtil);
                 Object logJettyUtilComp = logCls.getMethod("getLogger", String.class).invoke(logCls, ctgrJettyUtilComp);
 
-                Class<?> lvlCls = Class.forName("org.apache.log4j.Level");
+                Class<?> lvlCls = Class.forName("org.apache.logging.log4j.Level");
 
                 Object warnLvl = lvlCls.getField("WARN").get(null);
                 Object errLvl = lvlCls.getField("ERROR").get(null);

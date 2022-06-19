@@ -49,40 +49,6 @@ You can override the default logging directory by specifying the `IGNITE_LOG_DIR
 If you use Ignite as a library in your application, the default logging configuration includes only console handler at INFO level.
 You can provide a custom configuration file via the `java.util.logging.config.file` system property.
 
-== Using Log4j
-
-[CAUTION]
-====
-[discrete]
-The ignite-log4j module is deprecated and will be removed in the next releases.
-Log4j 1.x had link:https://blogs.apache.org/foundation/entry/apache_logging_services_project_announces[reached end of life] and contains critical vulnerabilities.
-Use link:logging#using-log4j2[ignite-log4j2] module instead.
-====
-
-NOTE: Before using Log4j, enable the link:setup#enabling-modules[ignite-log4j] module.
-
-To enable Log4j logger, set the `gridLogger` property of `IgniteConfiguration`, as shown in the following example:
-
-:javaFile: {javaCodeDir}/Logging.java
-
-[tabs]
---
-tab:XML[]
-[source,xml]
-----
-include::code-snippets/xml/log4j.xml[tags=log4j;!discovery, indent=0]
-----
-tab:Java[]
-[source,java]
-----
-include::{javaFile}[tag=log4j, indent=0]
-----
-tab:.NET[unsupported]
-tab:C++[unsupported]
---
-
-In the above example, the path to `log4j-config.xml` can be either an absolute path, a local path relative to META-INF in classpath or to `IGNITE_HOME`. An example log4j configuration file can be found in the distribution package (`$IGNITE_HOME/config/ignite-log4j.xml`).
-
 == Using Log4j2
 NOTE: Before using Log4j2, enable the link:setup#enabling-modules[ignite-log4j2] module.
 

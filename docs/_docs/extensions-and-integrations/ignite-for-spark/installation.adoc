@@ -55,7 +55,7 @@ export SPARK_CLASSPATH=$IGNITE_LIBS
 ----
 
 
-Copy any folders required from the `$IGNITE_HOME/libs/optional` folder, such as `ignite-log4j`, to the `$IGNITE_HOME/libs` folder.
+Copy any folders required from the `$IGNITE_HOME/libs/optional` folder, such as `ignite-log4j2`, to the `$IGNITE_HOME/libs` folder.
 
 You can verify that the Spark classpath is changed by running `bin/spark-shell` and typing a simple import statement:
 
@@ -120,7 +120,7 @@ The following shows how to fill in `spark.driver.extraClassPath` parameters:
 
 [source, shell]
 ----
-spark.executor.extraClassPath /opt/ignite/libs/*:/opt/ignite/libs/optional/ignite-spark-ext/*:/opt/ignite/libs/optional/ignite-log4j/*:/opt/ignite/libs/optional/ignite-yarn-ext/*:/opt/ignite/libs/ignite-spring/*
+spark.executor.extraClassPath /opt/ignite/libs/*:/opt/ignite/libs/optional/ignite-spark-ext/*:/opt/ignite/libs/optional/ignite-log4j2/*:/opt/ignite/libs/optional/ignite-yarn-ext/*:/opt/ignite/libs/ignite-spring/*
 ----
 
 === Source Code Configuration

@@ -47,12 +47,6 @@
         </dependency>
 
         <dependency>
-            <groupId>log4j</groupId>
-            <artifactId>log4j</artifactId>
-            <scope>test</scope>
-        </dependency>
-
-        <dependency>
             <groupId>org.ow2.jotm</groupId>
             <artifactId>jotm-core</artifactId>
             <version>${jotm.version}</version>
@@ -76,6 +70,12 @@
         <dependency>
             <groupId>${project.groupId}</groupId>
             <artifactId>ignite-tools</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>ignite-log4j2</artifactId>
             <scope>test</scope>
         </dependency>
 

@@ -118,7 +118,7 @@ public class Log4J2Logger implements IgniteLogger, LoggerNodeIdAndApplicationAwa
     /**
      * Creates new logger with given implementation.
      *
-     * @param impl Log4j implementation to use.
+     * @param impl Log4j2 implementation to use.
      */
     private Log4J2Logger(final Logger impl, String path) {
         assert impl != null;
@@ -131,6 +131,15 @@ public class Log4J2Logger implements IgniteLogger, LoggerNodeIdAndApplicationAwa
 
         quiet = quiet0;
         cfg = path;
+    }
+
+    /**
+     * Creates new logger with given implementation.
+     *
+     * @param impl Log4j2 implementation to use.
+     */
+    public Log4J2Logger(final Logger impl) {
+        this(impl, null);
     }
 
     /**
@@ -153,7 +162,7 @@ public class Log4J2Logger implements IgniteLogger, LoggerNodeIdAndApplicationAwa
                 if (init)
                     Configurator.initialize(LogManager.ROOT_LOGGER_NAME, cfgUrl.toString());
 
-                return (Logger)LogManager.getRootLogger();
+                return LoggerContext.getContext().getRootLogger();
             }
         });
 
@@ -181,7 +190,7 @@ public class Log4J2Logger implements IgniteLogger, LoggerNodeIdAndApplicationAwa
                 if (init)
                     Configurator.initialize(LogManager.ROOT_LOGGER_NAME, path);
 
-                return (Logger)LogManager.getRootLogger();
+                return LoggerContext.getContext().getRootLogger();
             }
         });
 
@@ -204,7 +213,7 @@ public class Log4J2Logger implements IgniteLogger, LoggerNodeIdAndApplicationAwa
                 if (init)
                     Configurator.initialize(LogManager.ROOT_LOGGER_NAME, cfgUrl.toString());
 
-                return (Logger)LogManager.getRootLogger();
+                return LoggerContext.getContext().getRootLogger();
             }
         });
 
@@ -360,11 +369,10 @@ public class Log4J2Logger implements IgniteLogger, LoggerNodeIdAndApplicationAwa
 
         PatternLayout layout = builder.build();
 
-        ConsoleAppender.Builder consoleAppenderBuilder = ConsoleAppender.newBuilder()
-            .withName(CONSOLE_APPENDER)
-            .withLayout(layout);
-
-        ConsoleAppender consoleApp = consoleAppenderBuilder.build();
+        ConsoleAppender consoleApp = ConsoleAppender.newBuilder()
+            .setName(CONSOLE_APPENDER)
+            .setLayout(layout)
+            .build();
 
         consoleApp.start();
 
@@ -398,7 +406,7 @@ public class Log4J2Logger implements IgniteLogger, LoggerNodeIdAndApplicationAwa
                     if (init)
                         ctx.reconfigure();
 
-                    return (Logger)LogManager.getRootLogger();
+                    return LoggerContext.getContext().getRootLogger();
                 }
             });
         }
@@ -420,17 +428,17 @@ public class Log4J2Logger implements IgniteLogger, LoggerNodeIdAndApplicationAwa
      */
     @Override public Log4J2Logger getLogger(Object ctgr) {
         if (ctgr == null)
-            return new Log4J2Logger((Logger)LogManager.getRootLogger(), cfg);
+            return new Log4J2Logger(LoggerContext.getContext().getRootLogger(), cfg);
 
         if (ctgr instanceof Class) {
             String name = ((Class<?>)ctgr).getName();
 
-            return new Log4J2Logger((Logger)LogManager.getLogger(name), cfg);
+            return new Log4J2Logger(LoggerContext.getContext().getLogger(name), cfg);
         }
 
         String name = ctgr.toString();
 
-        return new Log4J2Logger((Logger)LogManager.getLogger(name), cfg);
+        return new Log4J2Logger(LoggerContext.getContext().getLogger(name), cfg);
     }
 
     /** {@inheritDoc} */

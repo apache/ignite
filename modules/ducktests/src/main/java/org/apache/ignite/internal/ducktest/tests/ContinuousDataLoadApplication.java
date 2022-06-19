@@ -31,15 +31,15 @@ import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.ducktest.utils.IgniteAwareApplication;
 import org.apache.ignite.transactions.Transaction;
-import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.core.LoggerContext;
 
 /**
  * Keeps data load until stopped.
  */
 public class ContinuousDataLoadApplication extends IgniteAwareApplication {
     /** Logger. */
-    private static final Logger log = LogManager.getLogger(ContinuousDataLoadApplication.class);
+    private static final Logger log = LoggerContext.getContext().getLogger(ContinuousDataLoadApplication.class);
 
     /** */
     private IgniteCache<Integer, Integer> cache;

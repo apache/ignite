@@ -41,14 +41,16 @@ import org.apache.ignite.testframework.junits.logger.GridTestLog4jLogger;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
-import org.apache.log4j.Appender;
-import org.apache.log4j.ConsoleAppender;
-import org.apache.log4j.Level;
-import org.apache.log4j.Logger;
-import org.apache.log4j.PatternLayout;
-import org.apache.log4j.RollingFileAppender;
-import org.apache.log4j.varia.LevelRangeFilter;
-import org.apache.log4j.varia.NullAppender;
+import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.core.Appender;
+import org.apache.logging.log4j.core.Logger;
+import org.apache.logging.log4j.core.LoggerContext;
+import org.apache.logging.log4j.core.appender.ConsoleAppender;
+import org.apache.logging.log4j.core.appender.NullAppender;
+import org.apache.logging.log4j.core.appender.RollingFileAppender;
+import org.apache.logging.log4j.core.filter.LevelRangeFilter;
+import org.apache.logging.log4j.core.filter.ThresholdFilter;
+import org.apache.logging.log4j.core.layout.PatternLayout;
 import org.jetbrains.annotations.Nullable;
 import org.springframework.beans.BeansException;
 import org.springframework.context.ApplicationContext;
@@ -261,66 +263,57 @@ abstract class GridCacheAbstractLoadTest {
      * @throws IgniteCheckedException If file initialization failed.
      */
     protected IgniteLogger initLogger(String log) throws IgniteCheckedException {
-        Logger impl = Logger.getRootLogger();
+        Logger impl = LoggerContext.getContext().getRootLogger();
 
-        impl.removeAllAppenders();
+        for (Appender appndr : impl.getAppenders().values()) {
+            appndr.stop();
+
+            impl.removeAppender(appndr);
+        }
 
         String fileName = U.getIgniteHome() + "/work/log/" + log;
 
-        // Configure output that should go to System.out
-        RollingFileAppender fileApp;
+        PatternLayout p = PatternLayout.newBuilder().withPattern("[%d{ISO8601}][%-5p][%t][%c{1}] %m%n").build();
 
-        String fmt = "[%d{ISO8601}][%-5p][%t][%c{1}] %m%n";
+        // Configure output that should go to file
+        RollingFileAppender fileAppender = RollingFileAppender.newBuilder()
+                .withFileName(fileName)
+                .setLayout(p)
+                .setFilter(LevelRangeFilter.createFilter(Level.DEBUG, null, null, null))
+                .build();
 
-        try {
-            fileApp = new RollingFileAppender(new PatternLayout(fmt), fileName);
+        fileAppender.start();
 
-            fileApp.setMaxBackupIndex(0);
-            fileApp.setAppend(false);
-
-            // fileApp.rollOver();
-
-            fileApp.activateOptions();
-        }
-        catch (IOException e) {
-            throw new IgniteCheckedException("Unable to initialize file appender.", e);
-        }
-
-        LevelRangeFilter lvlFilter = new LevelRangeFilter();
-
-        lvlFilter.setLevelMin(Level.DEBUG);
-
-        fileApp.addFilter(lvlFilter);
-
-        impl.addAppender(fileApp);
+        impl.addAppender(fileAppender);
 
         // Configure output that should go to System.out
-        ConsoleAppender conApp = new ConsoleAppender(new PatternLayout(fmt), ConsoleAppender.SYSTEM_OUT);
+        ConsoleAppender console_out = ConsoleAppender.newBuilder()
+                .setName("CONSOLE_OUT")
+                .setTarget(ConsoleAppender.Target.SYSTEM_OUT)
+                .setFilter(LevelRangeFilter.createFilter(Level.DEBUG, Level.INFO, null, null))
+                .setLayout(p)
+                .build();
 
-        lvlFilter = new LevelRangeFilter();
+        console_out.start();
 
-        lvlFilter.setLevelMin(Level.DEBUG);
-        lvlFilter.setLevelMax(Level.INFO);
-
-        conApp.addFilter(lvlFilter);
-
-        conApp.activateOptions();
-
-        impl.addAppender(conApp);
+        impl.addAppender(console_out);
 
         // Configure output that should go to System.err
-        conApp = new ConsoleAppender(new PatternLayout(fmt), ConsoleAppender.SYSTEM_ERR);
+        ConsoleAppender console_err = ConsoleAppender.newBuilder()
+                .setName("CONSOLE_ERR")
+                .setTarget(ConsoleAppender.Target.SYSTEM_ERR)
+                .setFilter(ThresholdFilter.createFilter(Level.WARN, null, null))
+                .setLayout(p)
+                .build();
 
-        conApp.setThreshold(Level.WARN);
+        console_err.start();
 
-        conApp.activateOptions();
-
-        impl.addAppender(conApp);
+        impl.addAppender(console_err);
 
         impl.setLevel(Level.INFO);
 
-        //Logger.getLogger("org.apache.ignite").setLevel(Level.INFO);
-        //Logger.getLogger(GridCacheVersionManager.class).setLevel(Level.DEBUG);
+        //LogManager.getLogger("org.apache.ignite").setLevel(Level.INFO);
+        //LogManager.getLogger(GridCacheVersionManager.class).setLevel(Level.DEBUG);
 
         return new GridTestLog4jLogger(false);
     }
@@ -344,9 +337,11 @@ abstract class GridCacheAbstractLoadTest {
             throw new IgniteCheckedException("Provided file path is not a file: " + path);
 
         // Add no-op logger to remove no-appender warning.
-        Appender app = new NullAppender();
+        NullAppender aNull = NullAppender.createAppender("aNull");
 
-        Logger.getRootLogger().addAppender(app);
+        aNull.start();
+
+        LoggerContext.getContext().getRootLogger().addAppender(aNull);
 
         ApplicationContext springCtx;
 
@@ -372,7 +367,9 @@ abstract class GridCacheAbstractLoadTest {
             throw new IgniteCheckedException("Failed to find a single grid factory configuration in: " + path);
 
         // Remove previously added no-op logger.
-        Logger.getRootLogger().removeAppender(app);
+        LoggerContext.getContext().getRootLogger().removeAppender(aNull);
+
+        aNull.stop();
 
         if (cfgMap.isEmpty())
             throw new IgniteCheckedException("Can't find grid factory configuration in: " + path);

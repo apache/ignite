@@ -98,11 +98,11 @@ namespace Apache.Ignite.Core.Tests.Log
                     Assert.IsTrue(log.Contains("[DEBUG][main][=DOTNET=] DOTNET-Debug"));
 
                     Assert.IsTrue(log.Contains("[WARN ][main][=DOTNET=] DOTNET-Warn"));
-                    Assert.IsTrue(log.Contains("class org.apache.ignite.IgniteException: " +
+                    Assert.IsTrue(log.Contains("org.apache.ignite.IgniteException: " +
                                                "Platform error:System.Exception: EXCEPTION_TEST_Warn"));
 
                     Assert.IsTrue(log.Contains("[ERROR][main][=DOTNET=] DOTNET-Error"));
-                    Assert.IsTrue(log.Contains("class org.apache.ignite.IgniteException: " +
+                    Assert.IsTrue(log.Contains("org.apache.ignite.IgniteException: " +
                                                "Platform error:System.Exception: EXCEPTION_TEST_Error"));
                 }
             }

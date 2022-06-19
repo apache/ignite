@@ -92,8 +92,8 @@
         </dependency>
 
         <dependency>
-            <groupId>log4j</groupId>
-            <artifactId>log4j</artifactId>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>ignite-log4j2</artifactId>
             <scope>test</scope>
         </dependency>
 

@@ -17,26 +17,36 @@
   limitations under the License.
 -->
 
-<Configuration>
+<Configuration monitorInterval="60">
     <Appenders>
         <Console name="CONSOLE" target="SYSTEM_OUT">
-            <PatternLayout pattern="[%d{ISO8601}][%-5p][%t][%c{1}] %m%n"/>
+            <PatternLayout pattern="[%d{ISO8601}][%-5p][%t][%c{1}]%notEmpty{[%markerSimpleName]} %m%n"/>
         </Console>
-        <RollingFile name="FILE" append="true"
-                     filePattern="logs/ignite-log-0-%i.log.gz"
-                     fileName="logs/ignite-log-0.txt">
-            <PatternLayout pattern="%m%n"/>
-            <Policies>
-                <SizeBasedTriggeringPolicy size="10MB" />
-            </Policies>
-            <DefaultRolloverStrategy max="10"/>
-        </RollingFile>
+
+        <Routing name="FILE">
+            <Routes pattern="$${sys:nodeId}">
+                <Route>
+                    <RollingFile name="Rolling-${sys:nodeId}" append="true"
+                                 fileName="logs/ignite-log-0.txt"
+                                 filePattern="logs/ignite-log-0-%i.log.gz">
+                        <PatternLayout pattern="[%d{ISO8601}][%-5p][%t][%c{1}]%notEmpty{[%markerSimpleName]} %m%n"/>
+                        <Policies>
+                            <TimeBasedTriggeringPolicy interval="6" modulate="true" />
+                            <SizeBasedTriggeringPolicy size="10 MB" />
+                        </Policies>
+                    </RollingFile>
+                </Route>
+            </Routes>
+        </Routing>
     </Appenders>
+
     <Loggers>
         <Logger name="org.apache.ignite.internal.processors.odbc.ClientListenerNioListener" level="debug"/>
-        <Root level="info">
+
+        <Root level="INFO">
             <AppenderRef ref="CONSOLE"/>
             <AppenderRef ref="FILE"/>
         </Root>
     </Loggers>
 </Configuration>
+

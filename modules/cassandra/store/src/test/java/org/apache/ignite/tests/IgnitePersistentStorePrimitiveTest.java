@@ -31,7 +31,8 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.tests.utils.CassandraAdminCredentials;
 import org.apache.ignite.tests.utils.CassandraHelper;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.core.Logger;
+import org.apache.logging.log4j.core.LoggerContext;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -44,7 +45,7 @@ import static org.junit.Assert.assertEquals;
  */
 public class IgnitePersistentStorePrimitiveTest {
     /** */
-    private static final Logger LOGGER = Logger.getLogger(IgnitePersistentStorePrimitiveTest.class.getName());
+    private static final Logger LOGGER = LoggerContext.getContext().getLogger(IgnitePersistentStorePrimitiveTest.class.getName());
 
     /** */
     @BeforeClass
