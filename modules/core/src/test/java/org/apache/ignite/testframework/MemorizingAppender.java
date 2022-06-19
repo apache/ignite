@@ -17,13 +17,10 @@
 
 package org.apache.ignite.testframework;
 
-import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Predicate;
-import org.apache.logging.log4j.core.Filter;
-import org.apache.logging.log4j.core.Layout;
 import org.apache.logging.log4j.core.LogEvent;
 import org.apache.logging.log4j.core.Logger;
 import org.apache.logging.log4j.core.LoggerContext;
@@ -52,19 +49,6 @@ public class MemorizingAppender extends AbstractAppender {
     /** */
     public MemorizingAppender() {
         super(MemorizingAppender.class.getName(), null, null, true, Property.EMPTY_ARRAY);
-    }
-
-    /**
-     * @param name Name.
-     * @param filter Filter.
-     * @param layout Layout.
-     * @param ignoreExceptions Ignore exceptions.
-     * @param properties Properties.
-     */
-    protected MemorizingAppender(String name, Filter filter,
-        Layout<? extends Serializable> layout, boolean ignoreExceptions,
-        Property[] properties) {
-        super(name, filter, layout, ignoreExceptions, properties);
     }
 
     /**
