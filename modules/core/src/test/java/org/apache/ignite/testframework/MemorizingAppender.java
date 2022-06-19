@@ -17,41 +17,54 @@
 
 package org.apache.ignite.testframework;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Predicate;
-import org.apache.log4j.AppenderSkeleton;
-import org.apache.log4j.Logger;
-import org.apache.log4j.spi.LoggingEvent;
+import org.apache.logging.log4j.core.Filter;
+import org.apache.logging.log4j.core.Layout;
+import org.apache.logging.log4j.core.LogEvent;
+import org.apache.logging.log4j.core.Logger;
+import org.apache.logging.log4j.core.LoggerContext;
+import org.apache.logging.log4j.core.appender.AbstractAppender;
+import org.apache.logging.log4j.core.config.Property;
 
 import static java.util.stream.Collectors.toList;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasSize;
 
 /**
- * A Log4j {@link org.apache.log4j.Appender} that memorizes all the events it gets from loggers. These events are made
- * available to the class users.
+ * A Log4j2 {@link org.apache.logging.log4j.core.appender.AbstractAppender} that memorizes all the events it gets from loggers.
+ * These events are made available to the class users.
  */
-public class MemorizingAppender extends AppenderSkeleton {
+public class MemorizingAppender extends AbstractAppender {
     /**
      * Events that were seen by this Appender.
      */
-    private final List<LoggingEvent> events = new CopyOnWriteArrayList<>();
+    private final List<LogEvent> events = new CopyOnWriteArrayList<>();
 
     /** {@inheritDoc} */
-    @Override protected void append(LoggingEvent event) {
+    @Override public void append(LogEvent event) {
         events.add(event);
     }
 
-    /** {@inheritDoc} */
-    @Override public void close() {
-        // no-op
+    /** */
+    public MemorizingAppender() {
+        super(MemorizingAppender.class.getName(), null, null, true, Property.EMPTY_ARRAY);
     }
 
-    /** {@inheritDoc} */
-    @Override public boolean requiresLayout() {
-        return false;
+    /**
+     * @param name Name.
+     * @param filter Filter.
+     * @param layout Layout.
+     * @param ignoreExceptions Ignore exceptions.
+     * @param properties Properties.
+     */
+    protected MemorizingAppender(String name, Filter filter,
+        Layout<? extends Serializable> layout, boolean ignoreExceptions,
+        Property[] properties) {
+        super(name, filter, layout, ignoreExceptions, properties);
     }
 
     /**
@@ -59,7 +72,7 @@ public class MemorizingAppender extends AppenderSkeleton {
      *
      * @return All events that were seen by this Appender so far.
      */
-    public List<LoggingEvent> events() {
+    public List<LogEvent> events() {
         return new ArrayList<>(events);
     }
 
@@ -69,9 +82,9 @@ public class MemorizingAppender extends AppenderSkeleton {
      * @param target Class on whose logger to install this Appender.
      */
     public void installSelfOn(Class<?> target) {
-        Logger logger = Logger.getLogger(target);
+        Logger log = LoggerContext.getContext().getLogger(target.getName());
 
-        logger.addAppender(this);
+        log.addAppender(this);
     }
 
     /**
@@ -80,9 +93,9 @@ public class MemorizingAppender extends AppenderSkeleton {
      * @param target Class from whose logger to remove this Appender.
      */
     public void removeSelfFrom(Class<?> target) {
-        Logger logger = Logger.getLogger(target);
+        Logger log = LoggerContext.getContext().getLogger(target.getName());
 
-        logger.removeAppender(this);
+        log.removeAppender(this);
     }
 
     /**
@@ -92,8 +105,8 @@ public class MemorizingAppender extends AppenderSkeleton {
      * @param predicate Predicate to use to select the event.
      * @return The single event satisfying the given predicate.
      */
-    public LoggingEvent singleEventSatisfying(Predicate<LoggingEvent> predicate) {
-        List<LoggingEvent> matches = events.stream().filter(predicate).collect(toList());
+    public LogEvent singleEventSatisfying(Predicate<LogEvent> predicate) {
+        List<LogEvent> matches = events.stream().filter(predicate).collect(toList());
 
         assertThat(matches, hasSize(1));
 
