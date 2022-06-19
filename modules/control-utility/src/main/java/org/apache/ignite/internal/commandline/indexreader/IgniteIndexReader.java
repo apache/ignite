@@ -72,6 +72,7 @@ import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.GridStringBuilder;
 import org.apache.ignite.internal.util.lang.GridPlainClosure2;
 import org.apache.ignite.internal.util.lang.IgnitePair;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.jetbrains.annotations.Nullable;
@@ -263,7 +264,7 @@ public class IgniteIndexReader implements AutoCloseable {
             filePageStoreFactory,
             CommandHandler.setupJavaLogger("index-reader", IgniteIndexReader.class)
         )) {
-            reader.readIdx();
+            reader.readIndex();
         }
         catch (IgniteCheckedException e) {
             throw new IgniteException(INDEX_FILE_NAME + " scan problem", e);
@@ -271,7 +272,7 @@ public class IgniteIndexReader implements AutoCloseable {
     }
 
     /** Read index file. */
-    public void readIdx() throws IgniteCheckedException {
+    public void readIndex() throws IgniteCheckedException {
         log.info("Partitions files num: " + Arrays.stream(partStores).filter(Objects::nonNull).count());
         log.info("Going to check " + ((idxStore.size() - idxStore.headerSize()) / pageSize) + " pages.");
 
@@ -388,8 +389,6 @@ public class IgniteIndexReader implements AutoCloseable {
 
                     while (pageId > 0) {
                         try {
-                            buf.rewind();
-
                             readPage(ctx.store, pageId, buf);
 
                             pageIO = PageIO.getPageIO(addr);
@@ -469,8 +468,6 @@ public class IgniteIndexReader implements AutoCloseable {
 
             while (currPageId != 0) {
                 try {
-                    buf.rewind();
-
                     readPage(idxStore, currPageId, buf);
 
                     PagesListMetaIO io = PageIO.getPageIO(addr);
@@ -494,7 +491,7 @@ public class IgniteIndexReader implements AutoCloseable {
                             }
                         }
 
-                        bucketsData.put(new IgniteBiTuple<>(currPageId, e.getKey()), listIds);
+                        bucketsData.put(F.t(currPageId, e.getKey()), listIds);
                     }
 
                     currPageId = io.getNextMetaPageId(addr);
@@ -524,15 +521,11 @@ public class IgniteIndexReader implements AutoCloseable {
             long currPageId = pageListStartId;
 
             while (currPageId != 0) {
-                nodeBuf.rewind();
-
                 readPage(idxStore, currPageId, nodeBuf);
 
                 PagesListNodeIO io = PageIO.getPageIO(nodeAddr);
 
                 for (int i = 0; i < io.getCount(nodeAddr); i++) {
-                    pageBuf.rewind();
-
                     long pageId = normalizePageId(io.getAt(nodeAddr, i));
 
                     res++;
@@ -566,8 +559,6 @@ public class IgniteIndexReader implements AutoCloseable {
 
         doWithBuffer((buf, addr) -> {
             for (int i = 0; i < pagesNum; i++) {
-                buf.rewind();
-
                 long pageId = -1;
 
                 try {
@@ -794,7 +785,7 @@ public class IgniteIndexReader implements AutoCloseable {
      */
     private void readPage(FilePageStore store, long pageId, ByteBuffer buf) throws IgniteCheckedException {
         try {
-            store.read(pageId, buf, false);
+            store.read(pageId, (ByteBuffer)buf.rewind(), false);
         }
         catch (IgniteDataIntegrityViolationException | IllegalArgumentException e) {
             // Replacing exception due to security reasons, as IgniteDataIntegrityViolationException prints page content.
@@ -1189,10 +1180,10 @@ public class IgniteIndexReader implements AutoCloseable {
         @Override public void visit(long addr, TreeTraverseContext ctx) throws IgniteCheckedException {
             PageIO io = PageIO.getPageIO(addr);
 
+            pageIds.add(normalizePageId(PageIO.getPageId(addr)));
+
             for (long id : children((BPlusInnerIO<?>)io, addr))
                 IgniteIndexReader.this.visit(id, ctx);
-
-            pageIds.add(normalizePageId(PageIO.getPageId(addr)));
         }
 
         /** */

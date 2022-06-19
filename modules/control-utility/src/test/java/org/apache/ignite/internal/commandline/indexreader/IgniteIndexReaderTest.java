@@ -729,7 +729,7 @@ public class IgniteIndexReaderTest extends GridCommandHandlerAbstractTest {
             }
         };
         try (IgniteIndexReader reader = reader0) {
-            reader.readIdx();
+            reader.readIndex();
         }
 
         // Flush all Logger handlers to make log data available to test.
