@@ -29,7 +29,7 @@
     <bean parent="test.cfg">
         <property name="gridLogger">
             <bean class="org.apache.ignite.logger.log4j2.Log4J2Logger">
-                <constructor-arg type="java.lang.String" value="${IGNITE_NATIVE_TEST_CPP_THIN_CONFIG_PATH}/log/log4j-0.xml"/>
+                <constructor-arg type="java.lang.String" value="${IGNITE_NATIVE_TEST_CPP_THIN_CONFIG_PATH}/log/log4j2-0.xml"/>
             </bean>
         </property>
     </bean>
