@@ -14,9 +14,41 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-/**
- * <!-- Package description. -->
- * Contains Apache jclouds based IP finder.
- */
 
-package org.apache.ignite.spi.discovery.tcp.ipfinder.cloud;
+package org.apache.ignite.internal.client.thin;
+
+import org.jetbrains.annotations.Nullable;
+
+/**
+ * Represents the binary name mapper mode.
+ */
+enum BinaryNameMapperMode {
+    /**
+     * Full name mapper.
+     */
+    BASIC_FULL,
+
+    /**
+     * Simple name mapper.
+     */
+    BASIC_SIMPLE,
+
+    /**
+     * Custom name mapper.
+     */
+    CUSTOM;
+
+    /** Enumerated values. */
+    private static final BinaryNameMapperMode[] VALS = values();
+
+    /**
+     * Gets enumerated value from its ordinal.
+     *
+     * @param ord Ordinal value.
+     * @return Enumerated value or {@code null} if ordinal out of range.
+     */
+    @Nullable
+    public static BinaryNameMapperMode fromOrdinal(int ord) {
+        return ord >= 0 && ord < VALS.length ? VALS[ord] : null;
+    }
+}

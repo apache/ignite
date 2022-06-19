@@ -202,8 +202,6 @@ The following modules are available:
 
 |ignite-cassandra-store | Ignite Cassandra Store provides a CacheStore implementation backed by the  Cassandra database.
 
-|ignite-cloud | Ignite Cloud provides Apache jclouds implementations of the IP finder for TCP discovery.
-
 |ignite-direct-io | Ignite Direct IO is a plugin that provides a page store with the ability to write and read cache partitions in O_DIRECT mode.
 
 |ignite-indexing | link:SQL/indexes[SQL querying and indexing]
@@ -265,6 +263,8 @@ The following extensions are available:
 |ignite-aws-ext|Cluster discovery on AWS S3. Refer to link:clustering/discovery-in-the-cloud#amazon-s3-ip-finder[Amazon S3 IP Finder] for details.
 
 |ignite-azure-ext| Ignite Azure provides Azure Blob Storage-based implementation of IP finder for TCP discovery.
+
+|ignite-cloud-ext | Ignite Cloud provides Apache jclouds implementations of the IP finder for TCP discovery.
 
 |ignite-gce-ext | Ignite GCE provides Google Cloud Storage based implementations of IP finder for TCP discovery.
 

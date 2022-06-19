@@ -17,10 +17,12 @@
 
 package org.apache.ignite.internal.commandline.indexreader;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStore;
+import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.commandline.indexreader.IgniteIndexReader.getCacheId;
@@ -39,7 +41,7 @@ class TreeTraverseContext {
     final FilePageStore store;
 
     /** Page type statistics. */
-    final Map<Class, Long> ioStat;
+    final Map<Class<? extends PageIO>, Long> ioStat;
 
     /** Map of errors, pageId -> set of exceptions. */
     final Map<Long, List<Throwable>> errors;
@@ -57,8 +59,6 @@ class TreeTraverseContext {
     public TreeTraverseContext(
         String treeName,
         FilePageStore store,
-        Map<Class, Long> ioStat,
-        Map<Long, List<Throwable>> errors,
         @Nullable PageCallback innerCb,
         @Nullable PageCallback leafCb,
         @Nullable ItemCallback itemCb
@@ -66,8 +66,8 @@ class TreeTraverseContext {
         this.treeName = treeName;
         this.cacheId = getCacheId(treeName);
         this.store = store;
-        this.ioStat = ioStat;
-        this.errors = errors;
+        this.ioStat = new HashMap<>();
+        this.errors = new HashMap<>();
         this.innerCb = innerCb;
         this.leafCb = leafCb;
         this.itemCb = itemCb;

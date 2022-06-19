@@ -79,6 +79,13 @@ public class IndexProcessor extends GridProcessorAdapter {
      * Register inline IOs for sorted indexes.
      */
     static {
+        registerIO();
+    }
+
+    /**
+     * Register inline IOs for sorted indexes.
+     */
+    public static void registerIO() {
         PageIO.registerH2(InnerIO.VERSIONS, LeafIO.VERSIONS, MvccInnerIO.VERSIONS, MvccLeafIO.VERSIONS);
 
         AbstractInlineInnerIO.register();

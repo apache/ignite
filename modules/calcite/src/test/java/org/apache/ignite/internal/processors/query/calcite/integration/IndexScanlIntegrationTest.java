@@ -22,10 +22,14 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import org.apache.calcite.util.ImmutableBitSet;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cache.QueryEntity;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.processors.query.calcite.QueryChecker;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.processors.query.calcite.metadata.ColocationGroup;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
+import org.apache.ignite.internal.util.typedef.F;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
@@ -88,5 +92,43 @@ public class IndexScanlIntegrationTest extends AbstractBasicIntegrationTest {
         // There shouldn't be full index scan in case of null values in search row, only one value must be found by
         // range scan and passed to predicate.
         assertEquals(1, filteredRows.get());
+    }
+
+    /** */
+    @Test
+    public void testSegmentedIndexes() {
+        IgniteCache<Integer, Employer> emp = client.getOrCreateCache(new CacheConfiguration<Integer, Employer>("emp")
+            .setSqlSchema("PUBLIC")
+            .setQueryEntities(F.asList(new QueryEntity(Integer.class, Employer.class).setTableName("emp")))
+            .setQueryParallelism(10)
+        );
+
+        executeSql("CREATE INDEX idx1 ON emp(salary)");
+        executeSql("CREATE INDEX idx2 ON emp(name DESC)");
+
+        for (int i = 0; i < 100; i++)
+            emp.put(i, new Employer("emp" + i, (double)i));
+
+        assertQuery("SELECT name FROM emp WHERE salary BETWEEN 50 AND 55 ORDER BY salary")
+            .matches(QueryChecker.containsIndexScan("PUBLIC", "EMP", "IDX1"))
+            .ordered()
+            .returns("emp50")
+            .returns("emp51")
+            .returns("emp52")
+            .returns("emp53")
+            .returns("emp54")
+            .returns("emp55")
+            .check();
+
+        assertQuery("SELECT name FROM emp WHERE name BETWEEN 'emp60' AND 'emp65' ORDER BY name DESC")
+            .matches(QueryChecker.containsIndexScan("PUBLIC", "EMP", "IDX2"))
+            .ordered()
+            .returns("emp65")
+            .returns("emp64")
+            .returns("emp63")
+            .returns("emp62")
+            .returns("emp61")
+            .returns("emp60")
+            .check();
     }
 }
