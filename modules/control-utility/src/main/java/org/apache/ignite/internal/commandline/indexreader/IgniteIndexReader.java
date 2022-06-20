@@ -508,7 +508,7 @@ public class IgniteIndexReader implements AutoCloseable {
                     if (!((io instanceof BPlusMetaIO || io instanceof BPlusInnerIO)))
                         continue;
 
-                    if (pageIds.contains(pageId))
+                    if (pageIds.contains(normalizePageId(pageId)))
                         continue;
 
                     ctx.errors.put(pageId, Collections.singletonList("Error [step=" + i +
