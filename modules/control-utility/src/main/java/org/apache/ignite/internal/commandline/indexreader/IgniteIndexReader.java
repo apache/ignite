@@ -357,7 +357,7 @@ public class IgniteIndexReader implements AutoCloseable {
      * @return Tree traversal context.
      */
     ScanContext recursiveTreeScan(long rootPageId, String idx, ItemStorage items) {
-        pageIds.add(rootPageId);
+        pageIds.add(normalizePageId(rootPageId));
 
         ScanContext ctx = createContext(cacheAndTypeId(idx).get1(), filePageStore(rootPageId), items);
 
@@ -375,7 +375,7 @@ public class IgniteIndexReader implements AutoCloseable {
      * @return Tree traversal context.
      */
     private ScanContext horizontalTreeScan(long rootPageId, String idx, ItemStorage items) {
-        pageIds.add(rootPageId);
+        pageIds.add(normalizePageId(rootPageId));
 
         ScanContext ctx = createContext(cacheAndTypeId(idx).get1(), filePageStore(rootPageId), items);
 
@@ -461,7 +461,7 @@ public class IgniteIndexReader implements AutoCloseable {
 
                     res++;
 
-                    pageIds.add(pageId);
+                    pageIds.add(normalizePageId(pageId));
 
                     ScanContext.onPageIO(readPage(idxStore, pageId, pageBuf).getClass(), ioStat, 1);
                 }
