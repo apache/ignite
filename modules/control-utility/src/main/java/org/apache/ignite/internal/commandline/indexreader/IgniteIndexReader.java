@@ -458,6 +458,8 @@ public class IgniteIndexReader implements AutoCloseable {
 
                 ScanContext.onPageIO(readPage(idxStore, currPageId, pageBuf).getClass(), ioStat, 1);
 
+                pageIds.add(normalizePageId(normalizePageId(currPageId)));
+
                 for (int i = 0; i < io.getCount(nodeAddr); i++) {
                     long pageId = normalizePageId(io.getAt(nodeAddr, i));
 
@@ -513,7 +515,7 @@ public class IgniteIndexReader implements AutoCloseable {
 
                     ctx.errors.put(pageId, Collections.singletonList("Error [step=" + i +
                         ", msg=Possibly orphan " + io.getClass().getSimpleName() + " page" +
-                        ", pageId=" + pageId + ']'));
+                        ", pageId=" + normalizePageId(pageId) + ']'));
                 }
                 catch (Throwable e) {
                     ctx.errors.put(
@@ -719,6 +721,9 @@ public class IgniteIndexReader implements AutoCloseable {
      * @param buf Buffer.
      */
     private <I extends PageIO> I readPage(FilePageStore store, long pageId, ByteBuffer buf) throws IgniteCheckedException {
+        if (normalizePageId(pageId) == 844420635165092L)
+            log.info("pageId=" + normalizePageId(pageId));
+
         try {
             store.read(pageId, (ByteBuffer)buf.rewind(), false);
 
@@ -960,7 +965,7 @@ public class IgniteIndexReader implements AutoCloseable {
                 .a(", bucket number=")
                 .a(bucket.get2())
                 .a(", lists=[")
-                .a(bucketData.stream().map(String::valueOf).collect(joining(", ")))
+                .a(bucketData.stream().map(IgniteIndexReader::normalizePageId).map(String::valueOf).collect(joining(", ")))
                 .a("]");
 
             log.info(sb.toString());
