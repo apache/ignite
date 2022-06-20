@@ -494,9 +494,9 @@ public class IgniteIndexReader implements AutoCloseable {
 
                     PageIO io = readPage(idxStore, pageId, buf);
 
-                    progressPrinter.printProgress();
-
                     ctx.onPageIO(io);
+
+                    progressPrinter.printProgress();
 
                     if (idxFilter != null)
                         continue;
