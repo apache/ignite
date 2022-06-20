@@ -405,6 +405,8 @@ public class IgniteIndexReader implements AutoCloseable {
                 try {
                     PagesListMetaIO io = readPage(idxStore, currMetaPageId, buf);
 
+                    pageIds.add(normalizePageId(currMetaPageId));
+
                     Map<Integer, GridLongList> data = new HashMap<>();
 
                     io.getBucketsData(addr, data);
@@ -460,12 +462,12 @@ public class IgniteIndexReader implements AutoCloseable {
 
                 pageIds.add(normalizePageId(normalizePageId(currPageId)));
 
+                res += io.getCount(nodeAddr);
+
                 for (int i = 0; i < io.getCount(nodeAddr); i++) {
                     long pageId = normalizePageId(io.getAt(nodeAddr, i));
 
-                    res++;
-
-                    pageIds.add(normalizePageId(pageId));
+                    pageIds.add(pageId);
 
                     ScanContext.onPageIO(readPage(idxStore, pageId, pageBuf).getClass(), ioStat, 1);
                 }
