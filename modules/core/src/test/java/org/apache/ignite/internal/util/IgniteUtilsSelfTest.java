@@ -62,6 +62,7 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteInterruptedException;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.compute.ComputeJob;
@@ -79,6 +80,7 @@ import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.http.GridEmbeddedHttpServer;
+import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
 import org.apache.ignite.thread.IgniteThreadFactory;
@@ -1480,6 +1482,64 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
 
                 consumer.accept(readLine);
             }
+        }
+    }
+
+    /**
+     * Tests that local hostname is ignored if {@link IgniteSystemProperties#IGNITE_IGNORE_LOCAL_HOST_NAME} is
+     * set to {@code true}.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    @WithSystemProperty(key = IgniteSystemProperties.IGNITE_LOCAL_HOST, value = "example.com")
+    @WithSystemProperty(key = IgniteSystemProperties.IGNITE_IGNORE_LOCAL_HOST_NAME, value = "true")
+    public void testResolveLocalAddressesWithHostNameDefined() throws Exception {
+        testAddressResolveWithLocalHostDefined();
+    }
+
+    /**
+     * Tests that local hostname is not ignored if {@link IgniteSystemProperties#IGNITE_IGNORE_LOCAL_HOST_NAME} is
+     * set to {@code false}.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    @WithSystemProperty(key = IgniteSystemProperties.IGNITE_LOCAL_HOST, value = "example.com")
+    @WithSystemProperty(key = IgniteSystemProperties.IGNITE_IGNORE_LOCAL_HOST_NAME, value = "false")
+    public void testResolveLocalAddressesWithHostNameDefinedAndLocalHostNameNotIgnored() throws Exception {
+        testAddressResolveWithLocalHostDefined();
+    }
+
+    /**
+     * Tests {@link IgniteUtils#resolveLocalAddresses(InetAddress)} with different values set to
+     * {@link IgniteSystemProperties#IGNITE_LOCAL_HOST} and {@link IgniteSystemProperties#IGNITE_IGNORE_LOCAL_HOST_NAME}.
+     *
+     * @throws Exception If failed.
+     */
+    private void testAddressResolveWithLocalHostDefined() throws Exception {
+        try {
+            boolean ignoreLocalHostname = IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_IGNORE_LOCAL_HOST_NAME);
+            String userDefinedHost = IgniteSystemProperties.getString(IgniteSystemProperties.IGNITE_LOCAL_HOST);
+
+            InetSocketAddress inetSocketAddress = new InetSocketAddress(userDefinedHost, 0);
+            InetAddress addr = inetSocketAddress.getAddress();
+            IgniteBiTuple<Collection<String>, Collection<String>> localAddresses = IgniteUtils.resolveLocalAddresses(addr);
+
+            if (ignoreLocalHostname) {
+                // If local hostname is ignored, then no hostname should be resolved.
+                assertTrue(localAddresses.get2().isEmpty());
+            }
+            else {
+                // If local hostname is not ignored, then we should receive example.com.
+                assertFalse(localAddresses.get2().isEmpty());
+                assertEquals("example.com", F.first(localAddresses.get2()));
+            }
+        }
+        finally {
+            // Clear local address cache as we have polluted it with this test.
+            GridTestUtils.setFieldValue(IgniteUtils.class, "cachedLocalAddrAllHostNames", null);
+            GridTestUtils.setFieldValue(IgniteUtils.class, "cachedLocalAddr", null);
         }
     }
 
