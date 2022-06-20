@@ -456,6 +456,8 @@ public class IgniteIndexReader implements AutoCloseable {
             while (currPageId != 0) {
                 PagesListNodeIO io = readPage(idxStore, currPageId, nodeBuf);
 
+                ScanContext.onPageIO(readPage(idxStore, currPageId, pageBuf).getClass(), ioStat, 1);
+
                 for (int i = 0; i < io.getCount(nodeAddr); i++) {
                     long pageId = normalizePageId(io.getAt(nodeAddr, i));
 
@@ -493,9 +495,7 @@ public class IgniteIndexReader implements AutoCloseable {
                 try {
                     pageId = pageId(INDEX_PARTITION, FLAG_IDX, i);
 
-                    PageIO io = readPage(idxStore, pageId, buf);
-
-                    ctx.onPageIO(io);
+                    PageIO io = readPage(ctx, pageId, buf);
 
                     progressPrinter.printProgress();
 
@@ -712,7 +712,7 @@ public class IgniteIndexReader implements AutoCloseable {
     }
 
     /**
-     * Reading pages into buffer.
+     * Reads pages into buffer.
      *
      * @param store Source for reading pages.
      * @param pageId Page ID.
@@ -730,6 +730,15 @@ public class IgniteIndexReader implements AutoCloseable {
             throw new IgniteException("Failed to read page, id=" + pageId + ", idx=" + pageIndex(pageId) +
                 ", file=" + store.getFileAbsolutePath());
         }
+    }
+
+    /** */
+    protected <I extends PageIO> I readPage(ScanContext ctx, long pageId, ByteBuffer buf) throws IgniteCheckedException {
+        final I io = readPage(ctx.store, pageId, buf);
+
+        ctx.onPageIO(io);
+
+        return io;
     }
 
     /**
@@ -799,7 +808,7 @@ public class IgniteIndexReader implements AutoCloseable {
 
     /** Prints sequential file scan results. */
     private void printSequentialScanInfo(ScanContext ctx) {
-        printPageStat("", "---- These pages types were encountered during sequential scan:", ctx.ioStat);
+        printIoStat("", "---- These pages types were encountered during sequential scan:", ctx.ioStat);
 
         if (!ctx.errors.isEmpty()) {
             log.severe("----");
@@ -861,7 +870,7 @@ public class IgniteIndexReader implements AutoCloseable {
 
             log.info(prefix + "-----");
             log.info(prefix + "Index tree: " + idxName);
-            printPageStat(prefix, "---- Page stat:", ctx.ioStat);
+            printIoStat(prefix, "---- Page stat:", ctx.ioStat);
 
             ctx.ioStat.forEach((cls, cnt) -> ScanContext.onPageIO(cls, ioStat, cnt));
 
@@ -884,7 +893,7 @@ public class IgniteIndexReader implements AutoCloseable {
 
         log.info(prefix + "----");
 
-        printPageStat(prefix, "Total page stat collected during trees traversal:", ioStat);
+        printIoStat(prefix, "Total page stat collected during trees traversal:", ioStat);
 
         log.info("");
 
@@ -939,15 +948,13 @@ public class IgniteIndexReader implements AutoCloseable {
 
         PageListsInfo pageListsInfo = pageListsInfo(reuseListRoot);
 
-        String prefix = PAGE_LISTS_PREFIX;
-
-        log.info(prefix + "Page lists info.");
+        log.info(PAGE_LISTS_PREFIX + "Page lists info.");
 
         if (!pageListsInfo.bucketsData.isEmpty())
-            log.info(prefix + "---- Printing buckets data:");
+            log.info(PAGE_LISTS_PREFIX + "---- Printing buckets data:");
 
         pageListsInfo.bucketsData.forEach((bucket, bucketData) -> {
-            GridStringBuilder sb = new GridStringBuilder(prefix)
+            GridStringBuilder sb = new GridStringBuilder(PAGE_LISTS_PREFIX)
                 .a("List meta id=")
                 .a(bucket.get1())
                 .a(", bucket number=")
@@ -959,9 +966,9 @@ public class IgniteIndexReader implements AutoCloseable {
             log.info(sb.toString());
         });
 
-        printPageStat(prefix, "---- Page stat:", pageListsInfo.ioStat);
+        printIoStat(PAGE_LISTS_PREFIX, "---- Page stat:", pageListsInfo.ioStat);
 
-        printErrors(prefix, "---- Errors:", "---- No errors.", "Page id: %s, exception: ", pageListsInfo.errors);
+        printErrors(PAGE_LISTS_PREFIX, "---- Errors:", "---- No errors.", "Page id: %s, exception: ", pageListsInfo.errors);
 
         log.info("");
 
@@ -969,8 +976,8 @@ public class IgniteIndexReader implements AutoCloseable {
             null,
             Arrays.asList(STRING, NUMBER),
             Arrays.asList(
-                Arrays.asList(prefix + "Total index pages found in lists:", pageListsInfo.pagesCnt),
-                Arrays.asList(prefix + "Total errors during lists scan:", pageListsInfo.errors.size())
+                Arrays.asList(PAGE_LISTS_PREFIX + "Total index pages found in lists:", pageListsInfo.pagesCnt),
+                Arrays.asList(PAGE_LISTS_PREFIX + "Total errors during lists scan:", pageListsInfo.errors.size())
             ),
             log
         );
@@ -1009,7 +1016,7 @@ public class IgniteIndexReader implements AutoCloseable {
     }
 
     /** */
-    private void printPageStat(String prefix, String caption, Map<Class<? extends PageIO>, Long> ioStat) {
+    private void printIoStat(String prefix, String caption, Map<Class<? extends PageIO>, Long> ioStat) {
         if (caption != null)
             log.info(prefix + caption + (ioStat.isEmpty() ? " empty" : ""));
 
@@ -1060,15 +1067,6 @@ public class IgniteIndexReader implements AutoCloseable {
 
                 return null;
             }), ctx, pageId);
-        }
-
-        /** */
-        protected <I extends PageIO> I readPage(ScanContext ctx, long pageId, ByteBuffer buf) throws IgniteCheckedException {
-            final I io = IgniteIndexReader.this.readPage(ctx.store, pageId, buf);
-
-            ctx.onPageIO(io);
-
-            return io;
         }
     }
 
@@ -1223,7 +1221,7 @@ public class IgniteIndexReader implements AutoCloseable {
                 }
 
                 doWithBuffer((dataBuf, dataBufAddr) -> {
-                    PageIO dataIo = IgniteIndexReader.this.readPage(partStores[linkedPagePartId], linkedPageId, dataBuf);
+                    PageIO dataIo = readPage(partStores[linkedPagePartId], linkedPageId, dataBuf);
 
                     if (dataIo instanceof AbstractDataPageIO) {
                         DataPagePayload payload = ((AbstractDataPageIO<?>)dataIo).readPayload(dataBufAddr, itemId(link), pageSize);
