@@ -1200,16 +1200,14 @@ public class IgniteIndexReader implements AutoCloseable {
             if (partCnt == 0)
                 return new CacheAwareLink(cacheId, link);
 
-            try {
-                long linkedPageId = pageId(link);
+            long linkedPageId = pageId(link);
 
-                int linkedPagePartId = partId(linkedPageId);
+            int linkedPagePartId = partId(linkedPageId);
 
-                if (missingPartitions.contains(linkedPagePartId))
-                    return new CacheAwareLink(cacheId, link); // just skip
+            if (missingPartitions.contains(linkedPagePartId))
+                return new CacheAwareLink(cacheId, link); // just skip
 
-                int linkedItemId = itemId(link);
-
+            doWithoutErrors(() -> {
                 if (linkedPagePartId > partStores.length - 1) {
                     missingPartitions.add(linkedPagePartId);
 
@@ -1228,7 +1226,7 @@ public class IgniteIndexReader implements AutoCloseable {
                     PageIO dataIo = IgniteIndexReader.this.readPage(partStores[linkedPagePartId], linkedPageId, dataBuf);
 
                     if (dataIo instanceof AbstractDataPageIO) {
-                        DataPagePayload payload = ((AbstractDataPageIO<?>)dataIo).readPayload(dataBufAddr, linkedItemId, pageSize);
+                        DataPagePayload payload = ((AbstractDataPageIO<?>)dataIo).readPayload(dataBufAddr, itemId(link), pageSize);
 
                         if (payload.offset() <= 0 || payload.payloadSize() <= 0) {
                             throw new IgniteException(new GridStringBuilder("Invalid data page payload: ")
@@ -1241,10 +1239,7 @@ public class IgniteIndexReader implements AutoCloseable {
 
                     return null;
                 });
-            }
-            catch (Exception e) {
-                ctx.errors.computeIfAbsent(PageIO.getPageId(addr), k -> new LinkedList<>()).add(e.getMessage());
-            }
+            }, ctx, PageIO.getPageId(addr));
 
             return new CacheAwareLink(cacheId, link);
         }
