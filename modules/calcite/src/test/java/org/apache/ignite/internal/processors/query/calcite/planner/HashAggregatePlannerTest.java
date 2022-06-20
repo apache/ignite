@@ -18,6 +18,9 @@
 package org.apache.ignite.internal.processors.query.calcite.planner;
 
 import java.util.Arrays;
+import java.util.List;
+
+import com.google.common.collect.ImmutableList;
 import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.sql.fun.SqlAvgAggFunction;
@@ -32,6 +35,8 @@ import org.apache.ignite.internal.processors.query.calcite.rel.agg.IgniteColocat
 import org.apache.ignite.internal.processors.query.calcite.rel.agg.IgniteMapHashAggregate;
 import org.apache.ignite.internal.processors.query.calcite.rel.agg.IgniteReduceHashAggregate;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteSchema;
+import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
+import org.apache.ignite.internal.processors.query.calcite.trait.DistributionFunction;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
@@ -52,66 +57,79 @@ public class HashAggregatePlannerTest extends AbstractAggregatePlannerTest {
     @Test
     public void indexCount() throws Exception {
         IgniteSchema publicSchema = new IgniteSchema("PUBLIC");
-        TestTable tbl = createBroadcastTable();
-        publicSchema.addTable("TEST", tbl);
 
-        assertNoIndexCount("SELECT COUNT(*) FROM TEST", publicSchema);
+        List<IgniteDistribution> lst = ImmutableList.of(
+            IgniteDistributions.single(),
+            IgniteDistributions.random(),
+            IgniteDistributions.broadcast(),
+            IgniteDistributions.hash(ImmutableList.of(0, 1, 2, 3)));
 
-        // Check with 'primary' index.
-        tbl.addIndex(QueryUtils.PRIMARY_KEY_INDEX, 0);
+        for (IgniteDistribution distr : lst) {
+            TestTable tbl = createTable(distr);
+            publicSchema.addTable("TEST", tbl);
 
-        assertIndexCount("SELECT COUNT(*) FROM TEST", publicSchema);
+            assertNoIndexCount("SELECT COUNT(*) FROM TEST", publicSchema);
 
-        // Check with other index.
-        tbl.removeIndex(QueryUtils.PRIMARY_KEY_INDEX);
+            tbl.addIndex(QueryUtils.PRIMARY_KEY_INDEX, 0);
 
-        tbl.addIndex("idx", 1);
+            assertIndexCount("SELECT COUNT(*) FROM TEST", publicSchema);
+            assertIndexCount("SELECT COUNT(1) FROM TEST", publicSchema);
+            assertIndexCount("SELECT COUNT(*) FROM (SELECT * FROM TEST)", publicSchema);
+            assertIndexCount("SELECT COUNT(1) FROM (SELECT * FROM TEST)", publicSchema);
 
-        assertIndexCount("SELECT COUNT(*) FROM TEST", publicSchema);
-        assertIndexCount("SELECT COUNT(1) FROM TEST", publicSchema);
-        assertIndexCount("SELECT COUNT(*) FROM (SELECT * FROM TEST)", publicSchema);
-        assertIndexCount("SELECT COUNT(1) FROM (SELECT * FROM TEST)", publicSchema);
+            assertIndexCount("SELECT COUNT(*), COUNT(*), COUNT(1) FROM TEST", publicSchema);
 
-        assertIndexCount("SELECT COUNT(*), COUNT(*), COUNT(1) FROM TEST", publicSchema);
+            // Count on certain fields can't be optimized. Nulls are count included.
+            assertNoIndexCount("SELECT COUNT(VAL0) FROM TEST", publicSchema);
+            assertNoIndexCount("SELECT COUNT(DISTINCT VAL0) FROM TEST", publicSchema);
 
-        // Count on certain fields can't be optimized. Nulls are count included.
-        assertNoIndexCount("SELECT COUNT(VAL0) FROM TEST", publicSchema);
-        assertNoIndexCount("SELECT COUNT(DISTINCT VAL0) FROM TEST", publicSchema);
+            assertNoIndexCount("SELECT COUNT(*), COUNT(VAL0) FROM TEST", publicSchema);
 
-        assertNoIndexCount("SELECT COUNT(*), COUNT(VAL0) FROM TEST", publicSchema);
+            assertNoIndexCount("SELECT COUNT(1), COUNT(VAL0) FROM TEST", publicSchema);
+            assertNoIndexCount("SELECT COUNT(DISTINCT 1), COUNT(VAL0) FROM TEST", publicSchema);
 
-        assertNoIndexCount("SELECT COUNT(1), COUNT(VAL0) FROM TEST", publicSchema);
-        assertNoIndexCount("SELECT COUNT(DISTINCT 1), COUNT(VAL0) FROM TEST", publicSchema);
+            assertNoIndexCount("SELECT COUNT(*) FILTER (WHERE VAL0>1) FROM TEST", publicSchema);
 
-        assertNoIndexCount("SELECT COUNT(*) FILTER (WHERE VAL0>1) FROM TEST", publicSchema);
+            // IndexCount can't be used with a condition, groups, other aggregates or distincts.
+            assertNoIndexCount("SELECT COUNT(*) FROM TEST WHERE VAL0>1", publicSchema);
+            assertNoIndexCount("SELECT COUNT(1) FROM TEST WHERE VAL0>1", publicSchema);
 
-        // IndexCount can't be used with a condition, groups, other aggregates or distincts.
-        assertNoIndexCount("SELECT COUNT(*) FROM TEST WHERE VAL0>1", publicSchema);
-        assertNoIndexCount("SELECT COUNT(1) FROM TEST WHERE VAL0>1", publicSchema);
+            assertNoIndexCount("SELECT COUNT(*), SUM(VAL0) FROM TEST", publicSchema);
 
-        assertNoIndexCount("SELECT COUNT(*), SUM(VAL0) FROM TEST", publicSchema);
+            assertNoIndexCount("SELECT VAL0, COUNT(*) FROM TEST GROUP BY VAL0", publicSchema);
 
-        assertNoIndexCount("SELECT VAL0, COUNT(*) FROM TEST GROUP BY VAL0", publicSchema);
+            assertNoIndexCount("SELECT COUNT(*) FROM TEST GROUP BY VAL0", publicSchema);
 
-        assertNoIndexCount("SELECT COUNT(*) FROM TEST GROUP BY VAL0", publicSchema);
+            assertNoIndexCount("SELECT COUNT(*) FILTER (WHERE VAL0>1) FROM TEST", publicSchema);
 
-        assertNoIndexCount("SELECT COUNT(*) FILTER (WHERE VAL0>1) FROM TEST", publicSchema);
+            publicSchema.addTable("TEST2", createBroadcastTable());
 
-        publicSchema.addTable("TEST2", createBroadcastTable());
+            assertNoIndexCount("SELECT COUNT(*) FROM (SELECT T1.VAL0, T2.VAL1 FROM TEST T1, " +
+                "TEST2 T2 WHERE T1.GRP0 = T2.GRP0)", publicSchema);
 
-        assertNoIndexCount("SELECT COUNT(*) FROM (SELECT T1.VAL0, T2.VAL1 FROM TEST T1, " +
-            "TEST2 T2 WHERE T1.GRP0 = T2.GRP0)", publicSchema);
+            publicSchema.removeTable("TEST");
+        }
     }
 
     /** */
     private void assertIndexCount(String sql, IgniteSchema schema) throws Exception {
-        assertPlan(
-            sql,
-            schema,
-            nodeOrAnyChild(isInstanceOf(IgniteColocatedHashAggregate.class)
-                .and(input(isInstanceOf(IgniteExchange.class))
-                    .or(t->((TestTable)schema.getTable("TEST")).distribution() != IgniteDistributions.random()))
-                        .and(input(isInstanceOf(IgniteIndexCount.class)))));
+        DistributionFunction distr = ((IgniteTable)schema.getTable("TEST")).distribution().function();
+
+        if (distr.equals(DistributionFunction.hash()) || distr.equals(DistributionFunction.random())) {
+            assertPlan(
+                sql,
+                schema,
+                nodeOrAnyChild(isInstanceOf(IgniteColocatedHashAggregate.class)
+                    .and(input(isInstanceOf(IgniteExchange.class)
+                        .and(input(isInstanceOf(IgniteIndexCount.class)))))));
+        }
+        else {
+            assertPlan(
+                sql,
+                schema,
+                nodeOrAnyChild(isInstanceOf(IgniteColocatedHashAggregate.class)
+                    .and(input(isInstanceOf(IgniteIndexCount.class)))));
+        }
     }
 
     /** */

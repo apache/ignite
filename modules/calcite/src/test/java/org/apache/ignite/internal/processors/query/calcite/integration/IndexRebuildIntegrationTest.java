@@ -207,37 +207,46 @@ public class IndexRebuildIntegrationTest extends AbstractBasicIntegrationTest {
      */
     @Test
     public void testIndexCountAtUnavailableIndex() throws IgniteCheckedException {
+        int records = 50;
+        int iterations = 500;
+
         CalciteQueryProcessor srvEngine = Commons.lookupComponent(grid(0).context(), CalciteQueryProcessor.class);
 
-        IgniteCacheTable tbl = (IgniteCacheTable)srvEngine.schemaHolder().schema("PUBLIC").getTable("TBL");
+        for (int backups = -1; backups < 2; ++backups) {
+            String ddl = "CREATE TABLE tbl3 (id INT PRIMARY KEY, val VARCHAR, val2 VARCHAR) WITH ";
 
-        tbl.markIndexRebuildInProgress(true);
+            ddl += backups < 0 ? "TEMPLATE=REPLICATED" : "TEMPLATE=PARTITIONED,backups=" + backups;
 
-        assertQuery("select COUNT(*) from tbl").returns(100L).check();
+            executeSql(ddl);
 
-        // Check values with concurrently unavailable index.
-        tbl.markIndexRebuildInProgress(false);
+            for (int i = 0; i < records; i++)
+                executeSql("INSERT INTO tbl3 VALUES (?, ?, ?)", i, "val" + i, "val" + i);
 
-        AtomicBoolean stop = new AtomicBoolean();
+            IgniteCacheTable tbl3 = (IgniteCacheTable)srvEngine.schemaHolder().schema("PUBLIC").getTable("TBL3");
 
-        IgniteInternalFuture<?> fut = GridTestUtils.runAsync(() -> {
-            boolean lever = true;
+            AtomicBoolean stop = new AtomicBoolean();
 
-            while (!stop.get())
-                tbl.markIndexRebuildInProgress(lever = !lever);
-        });
+            IgniteInternalFuture<?> fut = GridTestUtils.runAsync(() -> {
+                boolean lever = true;
 
-        try {
-            for (int i = 0; i < 1000; i++)
-                assertQuery("select COUNT(*) from Tbl").returns(100L).check();
+                while (!stop.get())
+                    tbl3.markIndexRebuildInProgress(lever = !lever);
+            });
+
+            try {
+                for (int i = 0; i < iterations; i++)
+                    assertQuery("select COUNT(*) from tbl3").returns(50L).check();
+            }
+            finally {
+                stop.set(true);
+
+                tbl3.markIndexRebuildInProgress(false);
+
+                executeSql("DROP TABLE tbl3");
+            }
+
+            fut.get();
         }
-        finally {
-            stop.set(true);
-
-            tbl.markIndexRebuildInProgress(false);
-        }
-
-        fut.get();
     }
 
     /** */

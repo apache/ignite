@@ -2510,7 +2510,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
                 releasePage(metaPageId, metaPage);
             }
 
-            long cnt = 0, ccnt=0;
+            long cnt = 0;
 
             long curPage = acquirePage(curPageId);
 
@@ -2532,8 +2532,6 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
                             cnt += curPageSize;
                         else {
                             for (int i = 0; i < curPageSize; ++i) {
-                                ++ ccnt;
-
                                 if (filter.apply(this, io, curPageAddr, i))
                                     cnt++;
                             }
@@ -2543,8 +2541,6 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
 
                         if (nextPageId == 0) {
                             checkDestroyed();
-
-                            System.err.println("TEST | iterated: " + ccnt);
 
                             return cnt;
                         }

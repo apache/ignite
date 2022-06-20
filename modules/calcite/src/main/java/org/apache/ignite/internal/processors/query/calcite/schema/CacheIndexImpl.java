@@ -28,7 +28,9 @@ import org.apache.calcite.rel.RelCollation;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.util.ImmutableBitSet;
-import org.apache.ignite.internal.cache.query.index.Index;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.cache.query.index.sorted.inline.IndexQueryContext;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndex;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.processors.query.calcite.exec.IndexScan;
@@ -37,6 +39,8 @@ import org.apache.ignite.internal.processors.query.calcite.rel.logical.IgniteLog
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.processors.query.calcite.util.IndexConditions;
 import org.apache.ignite.internal.processors.query.calcite.util.RexUtils;
+import org.apache.ignite.spi.indexing.IndexingQueryFilter;
+import org.apache.ignite.spi.indexing.IndexingQueryFilterImpl;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -50,13 +54,13 @@ public class CacheIndexImpl implements IgniteIndex {
     private final String idxName;
 
     /** */
-    private final Index idx;
+    private final InlineIndex idx;
 
     /** */
     private final IgniteCacheTable tbl;
 
     /** */
-    public CacheIndexImpl(RelCollation collation, String name, Index idx, IgniteCacheTable tbl) {
+    public CacheIndexImpl(RelCollation collation, String name, InlineIndex idx, IgniteCacheTable tbl) {
         this.collation = collation;
         idxName = name;
         this.idx = idx;
@@ -133,5 +137,25 @@ public class CacheIndexImpl implements IgniteIndex {
 
         // Empty index find predicate.
         return new IndexConditions();
+    }
+
+    /**
+     * @return Number of local records.
+     */
+    public long scanCount(ExecutionContext<?> ectx) {
+        IndexingQueryFilter filter = new IndexingQueryFilterImpl(tbl.descriptor().cacheContext().kernalContext(),
+            ectx.topologyVersion(), ectx.target().partitions(ectx.localNodeId()));
+
+        long cnt = 0;
+
+        try {
+            for (int i = 0; i < idx.segmentsCount(); ++i)
+                cnt += idx.count(i, new IndexQueryContext(filter, null, ectx.mvccSnapshot()));
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteException("Unable to count index records.", e);
+        }
+
+        return cnt;
     }
 }

@@ -46,6 +46,9 @@ public class IgniteIndexCount extends AbstractRelNode implements SourceAwareIgni
     /** */
     private final String idxName;
 
+    /** */
+    private final long sourceId;
+
     /**
      * Constructor for deserialization.
      *
@@ -56,13 +59,19 @@ public class IgniteIndexCount extends AbstractRelNode implements SourceAwareIgni
 
         idxName = input.getString("index");
         tbl = input.getTable("table");
+
+        Object srcIdObj = input.get("sourceId");
+        if (srcIdObj != null)
+            sourceId = ((Number)srcIdObj).longValue();
+        else
+            sourceId = -1L;
     }
 
     /**
      * Ctor.
      *
-     * @param cluster Cluster that this relational expression belongs to
-     * @param traits Traits of this relational expression
+     * @param cluster Cluster that this relational expression belongs to.
+     * @param traits Traits of this relational expression.
      * @param tbl Table definition.
      * @param idxName Index name.
      */
@@ -72,10 +81,30 @@ public class IgniteIndexCount extends AbstractRelNode implements SourceAwareIgni
         RelOptTable tbl,
         String idxName
     ) {
+        this(-1, cluster, traits, tbl, idxName);
+    }
+
+    /**
+     * Ctor.
+     *
+     * @param sourceId Source id.
+     * @param cluster Cluster that this relational expression belongs to.
+     * @param traits Traits of this relational expression.
+     * @param tbl Table definition.
+     * @param idxName Index name.
+     */
+    private IgniteIndexCount(
+        long sourceId,
+        RelOptCluster cluster,
+        RelTraitSet traits,
+        RelOptTable tbl,
+        String idxName
+    ) {
         super(cluster, traits);
 
         this.idxName = idxName;
         this.tbl = tbl;
+        this.sourceId = sourceId;
     }
 
     /** {@inheritDoc} */
@@ -103,7 +132,7 @@ public class IgniteIndexCount extends AbstractRelNode implements SourceAwareIgni
 
     /** {@inheritDoc} */
     @Override public long sourceId() {
-        return -1L;
+        return sourceId;
     }
 
     /** {@inheritDoc} */
@@ -115,7 +144,8 @@ public class IgniteIndexCount extends AbstractRelNode implements SourceAwareIgni
     @Override public RelWriter explainTerms(RelWriter pw) {
         return super.explainTerms(pw)
             .item("index", idxName)
-            .item("table", tbl.getQualifiedName());
+            .item("table", tbl.getQualifiedName())
+            .itemIf("sourceId", sourceId, sourceId != -1L);
     }
 
     /** {@inheritDoc} */
@@ -125,11 +155,11 @@ public class IgniteIndexCount extends AbstractRelNode implements SourceAwareIgni
 
     /** {@inheritDoc} */
     @Override public IgniteRel clone(RelOptCluster cluster, List<IgniteRel> inputs) {
-        return new IgniteIndexCount(cluster, traitSet, tbl, idxName);
+        return new IgniteIndexCount(sourceId, cluster, traitSet, tbl, idxName);
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteRel clone(long sourceId) {
-        return new IgniteIndexCount(getCluster(), traitSet, tbl, idxName);
+    @Override public IgniteRel clone(long srcId) {
+        return new IgniteIndexCount(srcId, getCluster(), traitSet, tbl, idxName);
     }
 }

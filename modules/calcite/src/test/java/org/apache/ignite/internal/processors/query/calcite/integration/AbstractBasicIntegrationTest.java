@@ -28,6 +28,7 @@ import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.QueryCursor;
@@ -58,6 +59,9 @@ import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
  */
 @WithSystemProperty(key = "calcite.debug", value = "false")
 public class AbstractBasicIntegrationTest extends GridCommonAbstractTest {
+    /** */
+    protected static final String TABLE_NAME = "person";
+
     /** */
     protected static IgniteEx client;
 
@@ -142,11 +146,17 @@ public class AbstractBasicIntegrationTest extends GridCommonAbstractTest {
 
     /** */
     protected IgniteCache<Integer, Employer> createAndPopulateTable() {
+        return createAndPopulateTable(2, CacheMode.PARTITIONED);
+    }
+
+    /** */
+    protected IgniteCache<Integer, Employer> createAndPopulateTable(int backups, CacheMode cacheMode) {
         IgniteCache<Integer, Employer> person = client.getOrCreateCache(new CacheConfiguration<Integer, Employer>()
-            .setName("person")
+            .setName(TABLE_NAME)
             .setSqlSchema("PUBLIC")
-            .setQueryEntities(F.asList(new QueryEntity(Integer.class, Employer.class).setTableName("person")))
-            .setBackups(2)
+            .setQueryEntities(F.asList(new QueryEntity(Integer.class, Employer.class).setTableName(TABLE_NAME)))
+            .setCacheMode(cacheMode)
+            .setBackups(backups)
         );
 
         int idx = 0;

@@ -48,9 +48,22 @@ public class CollectNode<Row> extends AbstractNode<Row> implements SingleNode<Ro
         ExecutionContext<Row> ctx,
         RelDataType rowType
     ) {
+        this(createCollector(ctx, rowType), ctx, rowType);
+    }
+
+    /**
+     * @param collector Collector.
+     * @param ctx       Execution context.
+     * @param rowType   Output row type.
+     */
+    public CollectNode(
+        Collector<Row> collector,
+        ExecutionContext<Row> ctx,
+        RelDataType rowType
+    ) {
         super(ctx, rowType);
 
-        collector = createCollector(ctx, rowType);
+        this.collector = collector;
     }
 
     /** {@inheritDoc} */
@@ -136,7 +149,7 @@ public class CollectNode<Row> extends AbstractNode<Row> implements SingleNode<Ro
     }
 
     /** */
-    private abstract static class Collector<Row> implements Supplier<Row> {
+    public abstract static class Collector<Row> implements Supplier<Row> {
         /** */
         protected final RowHandler<Row> rowHandler;
 
@@ -147,7 +160,7 @@ public class CollectNode<Row> extends AbstractNode<Row> implements SingleNode<Ro
         protected final int cap;
 
         /** */
-        Collector(
+        public Collector(
             RowHandler<Row> handler,
             RowHandler.RowFactory<Row> factory,
             int cap
