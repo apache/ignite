@@ -72,6 +72,7 @@ import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.GridStringBuilder;
 import org.apache.ignite.internal.util.lang.GridPlainClosure2;
 import org.apache.ignite.internal.util.lang.IgnitePair;
+import org.apache.ignite.internal.util.lang.RunnableX;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
@@ -627,6 +628,16 @@ public class IgniteIndexReader implements AutoCloseable {
         }
     }
 
+    /** */
+    private void doWithoutErrors(RunnableX x, ScanContext ctx, long pageId) {
+        try {
+            x.run();
+        }
+        catch (Throwable e) {
+            ctx.errors.computeIfAbsent(pageId, k -> new LinkedList<>()).add(e.getMessage());
+        }
+    }
+
     /**
      * Tries to get cache id and type id from index name.
      *
@@ -1037,23 +1048,18 @@ public class IgniteIndexReader implements AutoCloseable {
     private abstract class TreePageVisitor {
         /** */
         protected void readAndVisit(long pageId, ScanContext ctx) {
-            try {
-                doWithBuffer((buf, addr) -> {
-                    final PageIO io = readPage(ctx, pageId, buf);
+            doWithoutErrors(() -> doWithBuffer((buf, addr) -> {
+                final PageIO io = readPage(ctx, pageId, buf);
 
-                    if (io instanceof BPlusLeafIO)
-                        leafPageVisitor.visit(addr, ctx);
-                    else if (io instanceof BPlusInnerIO)
-                        innerPageVisitor.visit(addr, ctx);
-                    else
-                        throw new IllegalArgumentException("Unknown io [io=" + io.getClass().getSimpleName() + ']');
+                if (io instanceof BPlusLeafIO)
+                    leafPageVisitor.visit(addr, ctx);
+                else if (io instanceof BPlusInnerIO)
+                    innerPageVisitor.visit(addr, ctx);
+                else
+                    throw new IllegalArgumentException("Unknown io [io=" + io.getClass().getSimpleName() + ']');
 
-                    return null;
-                });
-            }
-            catch (Throwable e) {
-                ctx.errors.computeIfAbsent(pageId, k -> new LinkedList<>()).add(e.getMessage());
-            }
+                return null;
+            }), ctx, pageId);
         }
 
         /** */
@@ -1070,7 +1076,7 @@ public class IgniteIndexReader implements AutoCloseable {
     private class MetaPageVisitor extends TreePageVisitor {
         /** {@inheritDoc} */
         @Override protected void readAndVisit(long pageId, ScanContext ctx) {
-            try {
+            doWithoutErrors(() -> {
                 long firstPageId = doWithBuffer((buf, addr) -> {
                     BPlusMetaIO io = readPage(ctx, pageId, buf);
 
@@ -1078,10 +1084,7 @@ public class IgniteIndexReader implements AutoCloseable {
                 });
 
                 super.readAndVisit(firstPageId, ctx);
-            }
-            catch (Throwable e) {
-                ctx.errors.computeIfAbsent(pageId, k -> new LinkedList<>()).add(e.getMessage());
-            }
+            }, ctx, pageId);
         }
     }
 
@@ -1089,51 +1092,44 @@ public class IgniteIndexReader implements AutoCloseable {
     private class LevelsPageVisitor extends TreePageVisitor {
         /** {@inheritDoc} */
         @Override protected void readAndVisit(long rootPageId, ScanContext ctx) {
-            try {
-                doWithBuffer((buf, addr) -> {
-                    PageIO pageIO = readPage(ctx, rootPageId, buf);
+            doWithoutErrors(() -> doWithBuffer((buf, addr) -> {
+                PageIO pageIO = readPage(ctx, rootPageId, buf);
 
-                    if (!(pageIO instanceof BPlusMetaIO))
-                        throw new IgniteException("Root page is not meta, pageId=" + rootPageId);
+                if (!(pageIO instanceof BPlusMetaIO))
+                    throw new IgniteException("Root page is not meta, pageId=" + rootPageId);
 
-                    BPlusMetaIO metaIO = (BPlusMetaIO)pageIO;
+                BPlusMetaIO metaIO = (BPlusMetaIO)pageIO;
 
-                    int lvlsCnt = metaIO.getLevelsCount(addr);
+                int lvlsCnt = metaIO.getLevelsCount(addr);
 
-                    long[] firstPageIds = IntStream.range(0, lvlsCnt).mapToLong(i -> metaIO.getFirstPageId(addr, i)).toArray();
+                long[] firstPageIds = IntStream.range(0, lvlsCnt).mapToLong(i -> metaIO.getFirstPageId(addr, i)).toArray();
 
-                    for (int i = 0; i < lvlsCnt; i++) {
-                        long pageId = firstPageIds[i];
+                for (int i = 0; i < lvlsCnt; i++) {
+                    long pageId = firstPageIds[i];
 
+                    try {
                         while (pageId > 0) {
-                            try {
-                                pageIO = readPage(ctx, pageId, buf);
+                            pageIO = readPage(ctx, pageId, buf);
 
-                                if (i == 0 && !(pageIO instanceof BPlusLeafIO))
-                                    throw new IgniteException("Not-leaf page found on leaf level [pageId=" + pageId + ", level=0]");
+                            if (i == 0 && !(pageIO instanceof BPlusLeafIO))
+                                throw new IgniteException("Not-leaf page found on leaf level [pageId=" + pageId + ", level=0]");
 
-                                if (!(pageIO instanceof BPlusIO))
-                                    throw new IgniteException("Not-BPlus page found [pageId=" + pageId + ", level=" + i + ']');
+                            if (!(pageIO instanceof BPlusIO))
+                                throw new IgniteException("Not-BPlus page found [pageId=" + pageId + ", level=" + i + ']');
 
-                                if (pageIO instanceof BPlusLeafIO)
-                                    leafPageVisitor.visit(addr, ctx);
+                            if (pageIO instanceof BPlusLeafIO)
+                                leafPageVisitor.visit(addr, ctx);
 
-                                pageId = ((BPlusIO<?>)pageIO).getForward(addr);
-                            }
-                            catch (Throwable e) {
-                                ctx.errors.computeIfAbsent(pageId, k -> new LinkedList<>()).add(e.getMessage());
-
-                                pageId = 0;
-                            }
+                            pageId = ((BPlusIO<?>)pageIO).getForward(addr);
                         }
                     }
+                    catch (Throwable e) {
+                        ctx.errors.computeIfAbsent(pageId, k -> new LinkedList<>()).add(e.getMessage());
+                    }
+                }
 
-                    return null;
-                });
-            }
-            catch (Throwable e) {
-                ctx.errors.computeIfAbsent(rootPageId, k -> new LinkedList<>()).add(e.getMessage());
-            }
+                return null;
+            }), ctx, rootPageId);
         }
     }
 
@@ -1178,17 +1174,14 @@ public class IgniteIndexReader implements AutoCloseable {
 
             BPlusLeafIO<?> io = PageIO.getPageIO(addr);
 
-            try {
+            doWithoutErrors(() -> {
                 for (int i = 0; i < io.getCount(addr); i++) {
                     if (io instanceof IndexStorageImpl.MetaStoreLeafIO)
                         items.add(((BPlusIO<IndexStorageImpl.IndexItem>)io).getLookupRow(null, addr, i));
                     else
                         items.add(leafItem(io, addr, i, ctx));
                 }
-            }
-            catch (Exception e) {
-                ctx.errors.computeIfAbsent(PageIO.getPageId(addr), k -> new LinkedList<>()).add(e.getMessage());
-            }
+            }, ctx, PageIO.getPageId(addr));
 
             ctx.onLeafPage(PageIO.getPageId(addr), items);
         }
