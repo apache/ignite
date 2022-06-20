@@ -134,14 +134,10 @@ public class IgniteStatisticsManagerImpl implements IgniteStatisticsManager {
      * Constructor.
      *
      * @param ctx Kernal context.
-     * @param schemaMgr Schema manager.
      */
-    public IgniteStatisticsManagerImpl(
-        GridKernalContext ctx,
-        GridQuerySchemaManager schemaMgr
-    ) {
+    public IgniteStatisticsManagerImpl(GridKernalContext ctx) {
         this.ctx = ctx;
-        this.schemaMgr = schemaMgr;
+        schemaMgr = ctx.query().schemaManager();
 
         boolean serverNode = !(ctx.config().isClientMode() || ctx.isDaemon());
 

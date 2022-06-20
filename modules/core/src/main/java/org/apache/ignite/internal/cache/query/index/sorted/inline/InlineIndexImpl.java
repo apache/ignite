@@ -434,10 +434,9 @@ public class InlineIndexImpl extends AbstractIndex implements InlineIndex {
     /** {@inheritDoc} */
     @Override public void destroy(boolean softDel) {
         try {
-            destroy0(softDel, false);
+            destroy0(softDel);
         }
         catch (IgniteCheckedException e) {
-            // Should NEVER happen because renameImmediately is false here, but just in case:
             throw new IgniteException(e);
         }
     }
@@ -446,10 +445,9 @@ public class InlineIndexImpl extends AbstractIndex implements InlineIndex {
      * Destroys the index and if {@code renameImmediately} is {@code true} renames index trees.
      *
      * @param softDel If {@code true} then perform logical deletion.
-     * @param renameImmediately If {@code true} then rename index trees immediately.
      * @throws IgniteCheckedException If failed to rename index trees.
      */
-    public void destroy0(boolean softDel, boolean renameImmediately) throws IgniteCheckedException {
+    private void destroy0(boolean softDel) throws IgniteCheckedException {
         // Already destroyed.
         if (!destroyed.compareAndSet(false, true))
             return;
@@ -476,9 +474,10 @@ public class InlineIndexImpl extends AbstractIndex implements InlineIndex {
                     segments
                 );
 
-                if (renameImmediately) {
+                // In maintenance mode, durable task is not started immediately (only after restart and activation),
+                // but to rebuild the index we need to create a new tree, and old tree should be renamed prior to this.
+                if (cctx.kernalContext().maintenanceRegistry().isMaintenanceMode())
                     task.renameIndexTrees(cctx.group());
-                }
 
                 cctx.kernalContext().durableBackgroundTask().executeAsync(task, cctx.config());
             }

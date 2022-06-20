@@ -35,7 +35,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheContextInfo;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccUtils;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
-import org.apache.ignite.internal.processors.query.GridQueryIndexing;
 import org.apache.ignite.internal.processors.query.GridQueryProperty;
 import org.apache.ignite.internal.processors.query.GridQuerySchemaManager;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
@@ -65,6 +64,7 @@ import org.apache.ignite.internal.sql.command.SqlStatisticsCommands;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.plugin.security.SecurityPermission;
 import org.jetbrains.annotations.Nullable;
+
 import static org.apache.ignite.internal.processors.query.QueryUtils.convert;
 import static org.apache.ignite.internal.processors.query.QueryUtils.isDdlOnSchemaSupported;
 
@@ -85,7 +85,6 @@ public class SqlCommandProcessor {
      * Constructor.
      *
      * @param ctx Kernal context.
-     * @param schemaMgr Schema manager.
      */
     public SqlCommandProcessor(GridKernalContext ctx, GridQuerySchemaManager schemaMgr) {
         this.ctx = ctx;
@@ -221,8 +220,6 @@ public class SqlCommandProcessor {
     private void processAnalyzeCommand(SqlAnalyzeCommand cmd) {
         ctx.security().authorize(SecurityPermission.CHANGE_STATISTICS);
 
-        GridQueryIndexing indexing = ctx.query().getIndexing();
-
         StatisticsObjectConfiguration objCfgs[] = cmd.configurations().stream()
             .map(t -> {
                 if (t.key().schema() == null) {
@@ -236,7 +233,7 @@ public class SqlCommandProcessor {
             }).toArray(StatisticsObjectConfiguration[]::new);
 
         try {
-            indexing.statsManager().collectStatistics(objCfgs);
+            ctx.query().statsManager().collectStatistics(objCfgs);
         }
         catch (IgniteCheckedException e) {
             throw new IgniteSQLException(e.getMessage(), e);
@@ -251,14 +248,12 @@ public class SqlCommandProcessor {
     private void processRefreshStatisticsCommand(SqlRefreshStatitsicsCommand cmd) {
         ctx.security().authorize(SecurityPermission.REFRESH_STATISTICS);
 
-        GridQueryIndexing indexing = ctx.query().getIndexing();
-
         StatisticsTarget[] targets = cmd.targets().stream()
             .map(t -> (t.schema() == null) ? new StatisticsTarget(cmd.schemaName(), t.obj(), t.columns()) : t)
             .toArray(StatisticsTarget[]::new);
 
         try {
-            indexing.statsManager().refreshStatistics(targets);
+            ctx.query().statsManager().refreshStatistics(targets);
         }
         catch (IgniteCheckedException e) {
             throw new IgniteSQLException(e.getMessage(), e);
@@ -273,14 +268,12 @@ public class SqlCommandProcessor {
     private void processDropStatisticsCommand(SqlDropStatisticsCommand cmd) {
         ctx.security().authorize(SecurityPermission.CHANGE_STATISTICS);
 
-        GridQueryIndexing indexing = ctx.query().getIndexing();
-
         StatisticsTarget[] targets = cmd.targets().stream()
             .map(t -> (t.schema() == null) ? new StatisticsTarget(cmd.schemaName(), t.obj(), t.columns()) : t)
             .toArray(StatisticsTarget[]::new);
 
         try {
-            indexing.statsManager().dropStatistics(targets);
+            ctx.query().statsManager().dropStatistics(targets);
         }
         catch (IgniteCheckedException e) {
             throw new IgniteSQLException(e.getMessage(), e);

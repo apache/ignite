@@ -27,6 +27,7 @@ import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
+import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessorTest;
 import org.apache.ignite.internal.util.typedef.F;
 import org.junit.Ignore;
@@ -40,15 +41,19 @@ import static org.apache.ignite.internal.processors.query.calcite.QueryChecker.c
 import static org.apache.ignite.internal.processors.query.calcite.QueryChecker.containsSubPlan;
 import static org.apache.ignite.internal.processors.query.calcite.QueryChecker.containsTableScan;
 import static org.apache.ignite.internal.processors.query.calcite.QueryChecker.containsUnion;
-import static org.apache.ignite.internal.processors.query.h2.H2TableDescriptor.AFFINITY_KEY_IDX_NAME;
-import static org.apache.ignite.internal.processors.query.h2.H2TableDescriptor.PK_IDX_NAME;
-import static org.apache.ignite.internal.processors.query.h2.opt.GridH2Table.generateProxyIdxName;
+import static org.apache.ignite.internal.processors.query.schema.management.SchemaManager.generateProxyIdxName;
 import static org.hamcrest.CoreMatchers.not;
 
 /**
  * Basic index tests.
  */
 public class CalciteBasicSecondaryIndexIntegrationTest extends AbstractBasicIntegrationTest {
+    /** */
+    private static final String PK_IDX_NAME = QueryUtils.PRIMARY_KEY_INDEX;
+
+    /** */
+    private static final String AFFINITY_KEY_IDX_NAME = QueryUtils.AFFINITY_KEY_INDEX;
+
     /** */
     private static final String DEPID_IDX = "DEPID_IDX";
 
@@ -228,7 +233,7 @@ public class CalciteBasicSecondaryIndexIntegrationTest extends AbstractBasicInte
     @Test
     public void testEqualsFilterWithUnwrpKey() {
         assertQuery("SELECT F1 FROM UNWRAP_PK WHERE F2=2")
-            .matches(containsIndexScan("PUBLIC", "UNWRAP_PK", PK_IDX_NAME))
+            .matches(containsIndexScan("PUBLIC", "UNWRAP_PK", QueryUtils.PRIMARY_KEY_INDEX))
             .returns("Ivan")
             .check();
     }
@@ -237,7 +242,7 @@ public class CalciteBasicSecondaryIndexIntegrationTest extends AbstractBasicInte
     @Test
     public void testEqualsFilterWithUnwrpKeyAndAff() {
         assertQuery("SELECT F2 FROM UNWRAP_PK WHERE F1='Ivan'")
-            .matches(containsIndexScan("PUBLIC", "UNWRAP_PK", AFFINITY_KEY_IDX_NAME))
+            .matches(containsIndexScan("PUBLIC", "UNWRAP_PK", QueryUtils.AFFINITY_KEY_INDEX))
             .check();
     }
 

@@ -171,11 +171,6 @@ public class GridH2ProxyIndex extends H2IndexCostedBase {
         return new ProxyDistributedLookupBatch(batch, rowDesc);
     }
 
-    /** {@inheritDoc} */
-    @Override public void removeChildrenAndResources(Session session) {
-        // No-op. Will be removed when underlying index is removed
-    }
-
     /**
      * Clones provided row and copies values of alias key and val columns
      * into respective key and val positions.

@@ -446,7 +446,7 @@ public class ServerStatisticsIntegrationTest extends AbstractBasicIntegrationTes
 
     /**
      * Drop statistics for specified key.
-     * 
+     *
      * @param key Statistics key to collect statistics for.
      */
     protected void dropStatistics(StatisticsKey key) {

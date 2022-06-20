@@ -936,7 +936,7 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
         if (!ctx.kernalContext().query().moduleEnabled() &&
             (qry instanceof SqlQuery || qry instanceof SqlFieldsQuery || qry instanceof TextQuery))
             throw new CacheException("Failed to execute query. Add module 'ignite-indexing' to the classpath " +
-                    "of all Ignite nodes.");
+                    "of all Ignite nodes or configure any query engine.");
     }
 
     /** {@inheritDoc} */

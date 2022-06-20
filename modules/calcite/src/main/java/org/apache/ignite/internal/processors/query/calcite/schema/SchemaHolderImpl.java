@@ -33,9 +33,9 @@ import org.apache.ignite.cache.affinity.AffinityFunction;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.cache.query.index.Index;
+import org.apache.ignite.internal.cache.query.index.SortOrder;
+import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyDefinition;
 import org.apache.ignite.internal.processors.cache.GridCacheContextInfo;
-import org.apache.ignite.internal.processors.query.GridQueryIndexDescriptor;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.QueryField;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.IgniteScalarFunction;
@@ -43,6 +43,7 @@ import org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.util.AbstractService;
 import org.apache.ignite.internal.processors.query.schema.SchemaChangeListener;
+import org.apache.ignite.internal.processors.query.schema.management.IndexDescriptor;
 import org.apache.ignite.internal.processors.subscription.GridInternalSubscriptionProcessor;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgnitePredicate;
@@ -230,7 +231,7 @@ public class SchemaHolderImpl extends AbstractService implements SchemaHolder, S
 
     /** {@inheritDoc} */
     @Override public synchronized void onIndexCreated(String schemaName, String tblName, String idxName,
-        GridQueryIndexDescriptor idxDesc, @Nullable Index gridIdx) {
+        IndexDescriptor idxDesc) {
         IgniteSchema schema = igniteSchemas.get(schemaName);
         assert schema != null;
 
@@ -239,7 +240,7 @@ public class SchemaHolderImpl extends AbstractService implements SchemaHolder, S
 
         RelCollation idxCollation = deriveSecondaryIndexCollation(idxDesc, tbl);
 
-        IgniteIndex idx = new CacheIndexImpl(idxCollation, idxName, gridIdx, tbl);
+        IgniteIndex idx = new CacheIndexImpl(idxCollation, idxName, idxDesc.index(), tbl);
         tbl.addIndex(idx);
     }
 
@@ -247,18 +248,18 @@ public class SchemaHolderImpl extends AbstractService implements SchemaHolder, S
      * @return Index collation.
      */
     @NotNull private static RelCollation deriveSecondaryIndexCollation(
-        GridQueryIndexDescriptor idxDesc,
+        IndexDescriptor idxDesc,
         IgniteCacheTable tbl
     ) {
         CacheTableDescriptor tblDesc = tbl.descriptor();
-        List<RelFieldCollation> collations = new ArrayList<>(idxDesc.fields().size());
+        List<RelFieldCollation> collations = new ArrayList<>(idxDesc.keyDefinitions().size());
 
-        for (String idxField : idxDesc.fields()) {
-            ColumnDescriptor fieldDesc = tblDesc.columnDescriptor(idxField);
+        for (Map.Entry<String, IndexKeyDefinition> keyDef : idxDesc.keyDefinitions().entrySet()) {
+            ColumnDescriptor fieldDesc = tblDesc.columnDescriptor(keyDef.getKey());
 
             assert fieldDesc != null;
 
-            boolean descending = idxDesc.descending(idxField);
+            boolean descending = keyDef.getValue().order().sortOrder() == SortOrder.DESC;
             int fieldIdx = fieldDesc.fieldIndex();
 
             collations.add(TraitUtils.createFieldCollation(fieldIdx, !descending));
@@ -303,7 +304,7 @@ public class SchemaHolderImpl extends AbstractService implements SchemaHolder, S
     }
 
     /** {@inheritDoc} */
-    @Override public void onFunctionCreated(String schemaName, String name, Method method) {
+    @Override public void onFunctionCreated(String schemaName, String name, boolean deterministic, Method method) {
         IgniteSchema schema = igniteSchemas.computeIfAbsent(schemaName, IgniteSchema::new);
 
         schema.addFunction(name.toUpperCase(), IgniteScalarFunction.create(method));

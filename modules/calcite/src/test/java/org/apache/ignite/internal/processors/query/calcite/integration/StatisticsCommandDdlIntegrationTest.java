@@ -23,10 +23,9 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
-import org.apache.ignite.internal.processors.query.GridQueryIndexing;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.stat.ColumnStatistics;
-import org.apache.ignite.internal.processors.query.stat.IgniteStatisticsManagerImpl;
+import org.apache.ignite.internal.processors.query.stat.IgniteStatisticsManager;
 import org.apache.ignite.internal.processors.query.stat.ObjectStatistics;
 import org.apache.ignite.internal.processors.query.stat.ObjectStatisticsImpl;
 import org.apache.ignite.internal.processors.query.stat.StatisticsKey;
@@ -308,9 +307,8 @@ public class StatisticsCommandDdlIntegrationTest extends AbstractDdlIntegrationT
                 if (node.cluster().localNode().isClient())
                     continue;
 
-                GridQueryIndexing indexing = ((IgniteEx)node).context().query().getIndexing();
-
-                ObjectStatistics localStat = indexing.statsManager().getLocalStatistics(new StatisticsKey(schema, obj));
+                ObjectStatistics localStat = statisticsMgr((IgniteEx)node).getLocalStatistics(
+                    new StatisticsKey(schema, obj));
 
                 if (!(isNull == (localStat == null)))
                     return false;
@@ -335,11 +333,8 @@ public class StatisticsCommandDdlIntegrationTest extends AbstractDdlIntegrationT
                 if (node.cluster().localNode().isClient())
                     continue;
 
-                GridQueryIndexing indexing = ((IgniteEx)node).context().query().getIndexing();
-
-                ObjectStatisticsImpl localStat = (ObjectStatisticsImpl)indexing.statsManager().getLocalStatistics(
-                    new StatisticsKey(schema, obj)
-                );
+                ObjectStatisticsImpl localStat = (ObjectStatisticsImpl)statisticsMgr((IgniteEx)node)
+                    .getLocalStatistics(new StatisticsKey(schema, obj));
 
                 long sumVer = localStat.columnsStatistics().values().stream()
                     .mapToLong(ColumnStatistics::version)
@@ -369,14 +364,12 @@ public class StatisticsCommandDdlIntegrationTest extends AbstractDdlIntegrationT
     }
 
     /** */
-    private IgniteStatisticsManagerImpl statisticsMgr(int idx) {
+    private IgniteStatisticsManager statisticsMgr(int idx) {
         return statisticsMgr(grid(idx));
     }
 
     /** */
-    private IgniteStatisticsManagerImpl statisticsMgr(IgniteEx ign) {
-        GridQueryIndexing indexing = ign.context().query().getIndexing();
-
-        return (IgniteStatisticsManagerImpl)indexing.statsManager();
+    private IgniteStatisticsManager statisticsMgr(IgniteEx ign) {
+        return ign.context().query().statsManager();
     }
 }

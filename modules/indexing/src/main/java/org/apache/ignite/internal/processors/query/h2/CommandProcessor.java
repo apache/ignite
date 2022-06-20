@@ -21,17 +21,17 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.QueryEntity;
-import org.apache.ignite.cache.QueryIndex;
+import org.apache.ignite.cache.QueryIndexType;
 import org.apache.ignite.cache.query.BulkLoadContextCursor;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -45,7 +45,6 @@ import org.apache.ignite.internal.processors.bulkload.BulkLoadStreamerWriter;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
-import org.apache.ignite.internal.processors.query.GridQueryProperty;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.NestedTxMode;
@@ -71,9 +70,11 @@ import org.apache.ignite.internal.sql.command.SqlBeginTransactionCommand;
 import org.apache.ignite.internal.sql.command.SqlBulkLoadCommand;
 import org.apache.ignite.internal.sql.command.SqlCommand;
 import org.apache.ignite.internal.sql.command.SqlCommitTransactionCommand;
+import org.apache.ignite.internal.sql.command.SqlCreateIndexCommand;
+import org.apache.ignite.internal.sql.command.SqlDropIndexCommand;
+import org.apache.ignite.internal.sql.command.SqlIndexColumn;
 import org.apache.ignite.internal.sql.command.SqlRollbackTransactionCommand;
 import org.apache.ignite.internal.sql.command.SqlSetStreamingCommand;
-import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.lang.IgniteClosureX;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -104,7 +105,7 @@ import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlQueryPar
  */
 public class CommandProcessor extends SqlCommandProcessor {
     /** Schema manager. */
-    private final SchemaManager schemaMgr;
+    private final H2SchemaManager schemaMgr;
 
     /** H2 Indexing. */
     private final IgniteH2Indexing idx;
@@ -119,8 +120,8 @@ public class CommandProcessor extends SqlCommandProcessor {
      * @param ctx Kernal context.
      * @param schemaMgr Schema manager.
      */
-    public CommandProcessor(GridKernalContext ctx, SchemaManager schemaMgr, IgniteH2Indexing idx) {
-        super(ctx, schemaMgr);
+    public CommandProcessor(GridKernalContext ctx, H2SchemaManager schemaMgr, IgniteH2Indexing idx) {
+        super(ctx, idx.kernalContext().query().schemaManager());
 
         this.schemaMgr = schemaMgr;
         this.idx = idx;
@@ -145,9 +146,14 @@ public class CommandProcessor extends SqlCommandProcessor {
         FieldsQueryCursor<List<?>> res = H2Utils.zeroCursor();
         boolean unregister = true;
 
-        if (cmdNative != null) {
-            assert cmdH2 == null;
+        if (cmdH2 != null) {
+            assert cmdNative == null;
 
+            // Some commands are duplicated.
+            cmdNative = convertH2Command(cmdH2);
+        }
+
+        if (cmdNative != null) {
             if (isCommandSupported(cmdNative)) {
                 FieldsQueryCursor<List<?>> resNative = runNativeCommand(sql, cmdNative, params, cliCtx, qryId);
 
@@ -204,6 +210,41 @@ public class CommandProcessor extends SqlCommandProcessor {
     }
 
     /**
+     * Converts H2 command to corresponding native command if possible.
+     *
+     * @param cmdH2 H2 command.
+     * @return Native command.
+     **/
+    private @Nullable SqlCommand convertH2Command(GridSqlStatement cmdH2) {
+        if (cmdH2 instanceof GridSqlCreateIndex) {
+            GridSqlCreateIndex cmd = (GridSqlCreateIndex)cmdH2;
+
+            return new SqlCreateIndexCommand(
+                cmd.schemaName(),
+                cmd.tableName(),
+                cmd.index().getName(),
+                cmd.ifNotExists(),
+                cmd.index().getFields().entrySet().stream().map(e -> new SqlIndexColumn(e.getKey(), !e.getValue()))
+                    .collect(Collectors.toList()),
+                cmd.index().getIndexType() == QueryIndexType.GEOSPATIAL,
+                0,
+                -1
+            );
+        }
+        else if (cmdH2 instanceof GridSqlDropIndex) {
+            GridSqlDropIndex cmd = (GridSqlDropIndex)cmdH2;
+
+            return new SqlDropIndexCommand(
+                cmd.schemaName(),
+                cmd.indexName(),
+                cmd.ifExists()
+            );
+        }
+
+        return null;
+    }
+
+    /**
      * Execute DDL statement.
      *
      * @param sql SQL.
@@ -215,63 +256,7 @@ public class CommandProcessor extends SqlCommandProcessor {
         try {
             finishActiveTxIfNecessary();
 
-            if (cmdH2 instanceof GridSqlCreateIndex) {
-                GridSqlCreateIndex cmd = (GridSqlCreateIndex)cmdH2;
-
-                isDdlOnSchemaSupported(cmd.schemaName());
-
-                GridH2Table tbl = schemaMgr.dataTable(cmd.schemaName(), cmd.tableName());
-
-                if (tbl == null)
-                    throw new SchemaOperationException(SchemaOperationException.CODE_TABLE_NOT_FOUND, cmd.tableName());
-
-                assert tbl.rowDescriptor() != null;
-
-                QueryIndex newIdx = new QueryIndex();
-
-                newIdx.setName(cmd.index().getName());
-
-                newIdx.setIndexType(cmd.index().getIndexType());
-
-                LinkedHashMap<String, Boolean> flds = new LinkedHashMap<>();
-
-                // Let's replace H2's table and property names by those operated by GridQueryProcessor.
-                GridQueryTypeDescriptor typeDesc = tbl.rowDescriptor().type();
-
-                for (Map.Entry<String, Boolean> e : cmd.index().getFields().entrySet()) {
-                    GridQueryProperty prop = typeDesc.property(e.getKey());
-
-                    if (prop == null)
-                        throw new SchemaOperationException(SchemaOperationException.CODE_COLUMN_NOT_FOUND, e.getKey());
-
-                    flds.put(prop.name(), e.getValue());
-                }
-
-                newIdx.setFields(flds);
-
-                fut = ctx.query().dynamicIndexCreate(tbl.cacheName(), cmd.schemaName(), typeDesc.tableName(),
-                    newIdx, cmd.ifNotExists(), 0);
-            }
-            else if (cmdH2 instanceof GridSqlDropIndex) {
-                GridSqlDropIndex cmd = (GridSqlDropIndex)cmdH2;
-
-                isDdlOnSchemaSupported(cmd.schemaName());
-
-                GridH2Table tbl = schemaMgr.dataTableForIndex(cmd.schemaName(), cmd.indexName());
-
-                if (tbl != null) {
-                    fut = ctx.query().dynamicIndexDrop(tbl.cacheName(), cmd.schemaName(), cmd.indexName(),
-                        cmd.ifExists());
-                }
-                else {
-                    if (cmd.ifExists())
-                        fut = new GridFinishedFuture();
-                    else
-                        throw new SchemaOperationException(SchemaOperationException.CODE_INDEX_NOT_FOUND,
-                            cmd.indexName());
-                }
-            }
-            else if (cmdH2 instanceof GridSqlCreateTable) {
+            if (cmdH2 instanceof GridSqlCreateTable) {
                 GridSqlCreateTable cmd = (GridSqlCreateTable)cmdH2;
 
                 ctx.security().authorize(cmd.cacheName(), SecurityPermission.CACHE_CREATE);
