@@ -32,6 +32,8 @@
 
     <properties>
         <prometheus.version>0.3.0</prometheus.version>
+        <gatling.version>3.7.6</gatling.version>
+        <scala.compat.version>2.13</scala.compat.version>
     </properties>
 
     <artifactId>ignite-ducktests</artifactId>
@@ -56,6 +58,53 @@
         <dependency>
             <groupId>${project.groupId}</groupId>
             <artifactId>ignite-log4j2</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>ignite-gatling-plugin</artifactId>
+            <exclusions>
+                <exclusion>
+                    <groupId>io.gatling</groupId>
+                    <artifactId>gatling-redis</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>io.gatling</groupId>
+                    <artifactId>gatling-redis-java</artifactId>
+                </exclusion>
+<!--                <exclusion>-->
+<!--                    <groupId>org.scala-lang.modules</groupId>-->
+<!--                    <artifactId>scala-parser-combinators_2.13</artifactId>-->
+<!--                </exclusion>-->
+            </exclusions>
+        </dependency>
+
+        <dependency>
+            <groupId>io.gatling</groupId>
+            <artifactId>gatling-app</artifactId>
+            <version>${gatling.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>io.gatling</groupId>
+                    <artifactId>gatling-redis</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>io.gatling</groupId>
+                    <artifactId>gatling-redis-java</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+
+        <dependency>
+            <groupId>io.netty</groupId>
+            <artifactId>netty-tcnative-classes</artifactId>
+            <version>2.0.51.Final</version>
+        </dependency>
+
+        <dependency>
+            <groupId>io.netty</groupId>
+            <artifactId>netty-tcnative-boringssl-static</artifactId>
+            <version>2.0.51.Final</version>
         </dependency>
 
         <dependency>
@@ -153,7 +202,7 @@
                 <executions>
                     <execution>
                         <id>copy-libs</id>
-                        <phase>test-compile</phase>
+                        <phase>package</phase>
                         <goals>
                             <goal>copy-dependencies</goal>
                         </goals>
@@ -184,6 +233,20 @@
                         </configuration>
                     </execution>
                 </executions>
+            </plugin>
+
+            <plugin>
+                <groupId>net.alchim31.maven</groupId>
+                <artifactId>scala-maven-plugin</artifactId>
+                <version>3.3.2</version>
+                <configuration>
+                    <scalaCompatVersion>${scala.compat.version}</scalaCompatVersion>
+                    <args>
+                        <arg>-deprecation</arg>
+                        <arg>-feature</arg>
+                        <arg>-language:implicitConversions</arg>
+                    </args>
+                </configuration>
             </plugin>
         </plugins>
     </build>

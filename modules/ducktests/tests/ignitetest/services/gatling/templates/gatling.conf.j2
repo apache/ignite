@@ -1,0 +1,14 @@
+gatling {
+  core {
+    outputDirectoryBaseName = gatling-report
+    directory {
+      results = {{ settings.core_directory_results }}
+    }
+  }
+  charting {
+    noReports = true
+  }
+  http {
+    enableGA = false
+  }
+}

@@ -38,3 +38,4 @@ class ClientConnectorConfiguration(NamedTuple):
     ssl_client_auth: bool = False
     ssl_params: SslParams = None
     thin_client_configuration: ThinClientConfiguration = None
+    thread_pool_size: int = None

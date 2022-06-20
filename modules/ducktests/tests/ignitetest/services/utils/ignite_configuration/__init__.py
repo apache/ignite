@@ -27,6 +27,7 @@ from ignitetest.services.utils.ssl.connector_configuration import ConnectorConfi
 from ignitetest.services.utils.ignite_configuration.data_storage import DataStorageConfiguration
 from ignitetest.services.utils.ignite_configuration.discovery import DiscoverySpi, TcpDiscoverySpi
 from ignitetest.services.utils.ignite_configuration.binary_configuration import BinaryConfiguration
+from ignitetest.services.utils.ignite_configuration.transaction import TransactionConfiguration
 from ignitetest.services.utils.ssl.ssl_params import SslParams, is_ssl_enabled, get_ssl_params, IGNITE_CLIENT_ALIAS, \
     IGNITE_SERVER_ALIAS
 from ignitetest.utils.version import IgniteVersion, DEV_BRANCH
@@ -68,6 +69,9 @@ class IgniteConfiguration(NamedTuple):
     include_event_types: list = []
     event_storage_spi: str = None
     log4j_config: str = IgnitePathAware.IGNITE_LOG_CONFIG_NAME
+    sql_schemas: list = []
+    auto_activation_enabled: bool = None
+    transaction_configuration: TransactionConfiguration = None
 
     def __prepare_ssl(self, test_globals, shared_root):
         """
@@ -81,11 +85,13 @@ class IgniteConfiguration(NamedTuple):
                 IGNITE_CLIENT_ALIAS if self.client_mode else IGNITE_SERVER_ALIAS
             )
         if ssl_params:
+            connector_configuration = self.connector_configuration or ConnectorConfiguration()
+            client_connector_configuration = self.client_connector_configuration or ClientConnectorConfiguration()
             return self._replace(ssl_params=ssl_params,
-                                 connector_configuration=ConnectorConfiguration(ssl_enabled=True,
-                                                                                ssl_params=ssl_params),
-                                 client_connector_configuration=ClientConnectorConfiguration(ssl_enabled=True,
-                                                                                             ssl_params=ssl_params))
+                                 connector_configuration=connector_configuration._replace(
+                                     ssl_enabled=True, ssl_params=ssl_params),
+                                 client_connector_configuration=client_connector_configuration._replace(
+                                     ssl_enabled=True, ssl_params=ssl_params))
         return self
 
     def __prepare_discovery(self, cluster, node):
