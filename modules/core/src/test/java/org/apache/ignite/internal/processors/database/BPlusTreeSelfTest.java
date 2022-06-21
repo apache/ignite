@@ -317,7 +317,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
 
         long size = CNT * CNT;
 
-        for (long i = 1; i <= size; i++) {
+        for (long i = 0; i <= size; i++) {
             tree.put(i);
             map.put(i, i);
         }
@@ -335,11 +335,6 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
 
         // This must remove all.
         tree.remove(alwaysTrue);
-
-        GridCursor<Long> cursor = tree.find(null, null, alwaysTrue, null);
-
-        while (cursor.next())
-            System.out.println("cursor.get() = " + cursor.get());
 
         checkCursor(tree.find(null, null, alwaysTrue, null), Collections.emptyIterator());
     }
@@ -400,7 +395,6 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
     private void checkCursor(GridCursor<Long> cursor, Iterator<Long> iterator) throws IgniteCheckedException {
         while (cursor.next()) {
             assertTrue(iterator.hasNext());
-
             assertEquals(iterator.next(), cursor.get());
         }
 
@@ -3538,7 +3532,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
             throws IgniteCheckedException {
             Long val = io.getLookupRow(tree, pageAddr, idx);
 
-            System.out.println("TestTreeFindFilteredClosure.apply - " + val);
+            //System.out.println("TestTreeFindFilteredClosure.apply - " + val);
 
             return vals.contains(val);
         }
