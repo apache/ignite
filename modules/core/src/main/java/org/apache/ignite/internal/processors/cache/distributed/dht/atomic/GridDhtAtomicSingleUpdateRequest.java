@@ -83,6 +83,7 @@ public class GridDhtAtomicSingleUpdateRequest extends GridDhtAtomicAbstractUpdat
      * @param addDepInfo Deployment info.
      * @param keepBinary Keep binary flag.
      * @param skipStore Skip store flag.
+     * @param readRepairRecovery Recovery on Read Repair flag.
      */
     GridDhtAtomicSingleUpdateRequest(
         int cacheId,
@@ -94,7 +95,8 @@ public class GridDhtAtomicSingleUpdateRequest extends GridDhtAtomicAbstractUpdat
         int taskNameHash,
         boolean addDepInfo,
         boolean keepBinary,
-        boolean skipStore
+        boolean skipStore,
+        boolean readRepairRecovery
     ) {
         super(cacheId,
             nodeId,
@@ -105,7 +107,8 @@ public class GridDhtAtomicSingleUpdateRequest extends GridDhtAtomicAbstractUpdat
             taskNameHash,
             addDepInfo,
             keepBinary,
-            skipStore);
+            skipStore,
+            readRepairRecovery);
     }
 
     /**

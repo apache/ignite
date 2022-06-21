@@ -196,7 +196,7 @@ public class IgniteSnapshotRestoreFromRemoteTest extends IgniteClusterSnapshotRe
 
         // Ensure that the snapshot check command succeeds.
         IdleVerifyResultV2 res =
-            emptyNode.context().cache().context().snapshotMgr().checkSnapshot(SNAPSHOT_NAME).get(TIMEOUT);
+            emptyNode.context().cache().context().snapshotMgr().checkSnapshot(SNAPSHOT_NAME, null).get(TIMEOUT);
 
         StringBuilder buf = new StringBuilder();
         res.print(buf::append, true);

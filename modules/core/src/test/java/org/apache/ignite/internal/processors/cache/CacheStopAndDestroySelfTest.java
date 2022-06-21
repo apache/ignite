@@ -217,6 +217,8 @@ public class CacheStopAndDestroySelfTest extends GridCommonAbstractTest {
     private void dhtDestroy() throws Exception {
         grid(0).getOrCreateCache(getDhtConfig());
 
+        awaitCacheOnClient(grid(2), getDhtConfig().getName());
+
         assertNull(grid(0).cache(CACHE_NAME_DHT).get(KEY_VAL));
 
         grid(0).cache(CACHE_NAME_DHT).put(KEY_VAL, KEY_VAL);
@@ -257,6 +259,8 @@ public class CacheStopAndDestroySelfTest extends GridCommonAbstractTest {
      */
     private void clientDestroy() throws Exception {
         grid(0).getOrCreateCache(getClientConfig());
+
+        awaitCacheOnClient(grid(2), getClientConfig().getName());
 
         assertNull(grid(0).cache(CACHE_NAME_CLIENT).get(KEY_VAL));
 
@@ -300,6 +304,8 @@ public class CacheStopAndDestroySelfTest extends GridCommonAbstractTest {
      */
     private void nearDestroy() throws Exception {
         grid(0).getOrCreateCache(getNearConfig());
+
+        awaitCacheOnClient(grid(2), getNearConfig().getName());
 
         grid(2).getOrCreateNearCache(CACHE_NAME_NEAR, new NearCacheConfiguration());
 
@@ -368,6 +374,8 @@ public class CacheStopAndDestroySelfTest extends GridCommonAbstractTest {
         startGridsMultiThreaded(gridCount());
 
         IgniteCache<Integer, Integer> dhtCache0 = grid(0).getOrCreateCache(getDhtConfig());
+
+        awaitCacheOnClient(grid(2), getDhtConfig().getName());
 
         final Integer key = primaryKey(dhtCache0);
 
@@ -453,6 +461,8 @@ public class CacheStopAndDestroySelfTest extends GridCommonAbstractTest {
 
         for (int i = 0; i < 3; i++) {
             try (IgniteCache<String, String> cache0 = grid(0).getOrCreateCache(getDhtConfig())) {
+                awaitCacheOnClient(grid(2), getDhtConfig().getName());
+
                 IgniteCache<String, String> cache1 = grid(1).cache(CACHE_NAME_DHT);
                 IgniteCache<String, String> cache2 = grid(2).cache(CACHE_NAME_DHT);
 
@@ -488,6 +498,8 @@ public class CacheStopAndDestroySelfTest extends GridCommonAbstractTest {
         startGridsMultiThreaded(gridCount());
 
         IgniteCache<String, String> cache0 = grid(0).getOrCreateCache(getClientConfig());
+
+        awaitCacheOnClient(grid(2), getClientConfig().getName());
 
         assert cache0.get(KEY_VAL) == null;
 
@@ -605,6 +617,8 @@ public class CacheStopAndDestroySelfTest extends GridCommonAbstractTest {
 
         IgniteCache<String, String> cache0 = grid(0).getOrCreateCache(getNearConfig());
 
+        awaitCacheOnClient(grid(2), getNearConfig().getName());
+
         // GridDhtTxPrepareRequest requests to Client node will be counted.
         CountingTxRequestsToClientNodeTcpCommunicationSpi.nodeFilter = grid(2).context().localNodeId();
 
@@ -683,6 +697,8 @@ public class CacheStopAndDestroySelfTest extends GridCommonAbstractTest {
 
         grid(0).getOrCreateCache(getNearConfig());
 
+        awaitCacheOnClient(grid(2), getNearConfig().getName());
+
         NearCacheConfiguration nearCfg = new NearCacheConfiguration();
 
         for (int i = 0; i < 3; i++) {
@@ -753,6 +769,8 @@ public class CacheStopAndDestroySelfTest extends GridCommonAbstractTest {
             fut.get();
 
         grid(0).getOrCreateCache(getLocalConfig());
+
+        awaitCacheOnClient(grid(2), getLocalConfig().getName());
 
         grid(0).cache(CACHE_NAME_LOC).put(KEY_VAL, KEY_VAL + "recreated0");
         grid(1).cache(CACHE_NAME_LOC).put(KEY_VAL, KEY_VAL + "recreated1");

@@ -662,6 +662,8 @@ public class ClientSizeCacheCreationDestructionTest extends GridCommonAbstractTe
         for (int i = 0; i < 2; i++)
             createCache(srv, cacheConfig().setGroupName(CACHE_GROUP_NAME).setName(CACHE_NAME + i));
 
+        awaitCacheOnClient(thickClient, CACHE_NAME + 1);
+
         CountDownLatch latch = new CountDownLatch(1);
 
         IgniteInternalFuture srv = GridTestUtils.runAsync(() -> {
@@ -840,6 +842,8 @@ public class ClientSizeCacheCreationDestructionTest extends GridCommonAbstractTe
         srv.createCache(cacheConfig().setName(ANOTHER_CACHE_NAME));
 
         srv.createCache(cacheConfig());
+
+        awaitCacheOnClient(thickClient, cacheConfig().getName());
 
         thickClient.destroyCache(CACHE_NAME);
 
@@ -1125,6 +1129,8 @@ public class ClientSizeCacheCreationDestructionTest extends GridCommonAbstractTe
         srv.createCache(cacheConfig().setName(ANOTHER_CACHE_NAME));
 
         createCacheWithRestClient(cacheConfig());
+
+        awaitCacheOnClient(thickClient, CACHE_NAME);
 
         thickClient.destroyCache(CACHE_NAME);
 

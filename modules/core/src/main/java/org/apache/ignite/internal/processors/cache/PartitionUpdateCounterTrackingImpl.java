@@ -22,7 +22,9 @@ import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
 import java.util.TreeMap;
@@ -445,15 +447,60 @@ public class PartitionUpdateCounterTrackingImpl implements PartitionUpdateCounte
         return F.iterator(queue.values().iterator(), item -> new long[] {item.start, item.delta}, true);
     }
 
+    /**
+     * Human-readable missed unordered updates.
+     */
+    private String gaps() {
+        List<String> gaps = new ArrayList<>();
+
+        long prev = cntr.get();
+
+        for (Item item : queue.values()) {
+            if (prev + 1 == item.start)
+                gaps.add(String.valueOf(item.start));
+            else
+                gaps.add((prev + 1) + " - " + item.start);
+
+            prev = item.start + item.delta;
+        }
+
+        return gaps.toString();
+    }
+
+    /** {@inheritDoc} */
+    @Override public Object comparableState() {
+        String missed;
+        long lwm;
+        long hwm;
+
+        synchronized (this) {
+            missed = gaps();
+
+            lwm = get();
+
+            hwm = highestAppliedCounter();
+        }
+
+        return new SB()
+            .a("[lwm=")
+            .a(lwm)
+            .a(", missed=")
+            .a(missed)
+            .a(", hwm=")
+            .a(hwm)
+            .a(']')
+            .toString();
+    }
+
     /** {@inheritDoc} */
     @Override public String toString() {
-        String quequeStr;
+        String missed;
         long lwm;
         long hwm;
         long maxApplied;
 
         synchronized (this) {
-            quequeStr = queue.toString();
+            missed = gaps();
 
             lwm = get();
 
@@ -465,8 +512,8 @@ public class PartitionUpdateCounterTrackingImpl implements PartitionUpdateCounte
         return new SB()
             .a("Counter [lwm=")
             .a(lwm)
-            .a(", holes=")
-            .a(quequeStr)
+            .a(", missed=")
+            .a(missed)
             .a(", maxApplied=")
             .a(maxApplied)
             .a(", hwm=")

@@ -42,7 +42,7 @@
         <immutables.version>2.8.2</immutables.version>
         <janino.version>3.1.6</janino.version>
         <javacc-maven-plugin>2.4</javacc-maven-plugin>
-        <jsonpath.version>2.4.0</jsonpath.version>
+        <jsonpath.version>2.7.0</jsonpath.version>
         <reflections.version>0.10.2</reflections.version>
     </properties>
 
@@ -148,6 +148,12 @@
         </dependency>
 
         <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+            <version>${slf4j.version}</version>
+        </dependency>
+
+        <dependency>
             <groupId>org.immutables</groupId>
             <artifactId>value</artifactId>
             <version>${immutables.version}</version>
@@ -216,6 +222,14 @@
                 <artifactId>maven-bundle-plugin</artifactId>
             </plugin>
             <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-deploy-plugin</artifactId>
+                <version>2.8.2</version>
+                <configuration>
+                    <skip>false</skip>
+                </configuration>
+            </plugin>
+            <plugin>
                 <artifactId>maven-resources-plugin</artifactId>
                 <executions>
                     <execution>
@@ -272,7 +286,7 @@
                 <executions>
                     <execution>
                         <id>generate-fmpp-sources</id>
-                        <phase>compile</phase>
+                        <phase>validate</phase>
                         <goals>
                             <goal>generate</goal>
                         </goals>
@@ -300,14 +314,6 @@
                         </configuration>
                     </execution>
                 </executions>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-deploy-plugin</artifactId>
-                <version>2.8.2</version>
-                <configuration>
-                    <skip>false</skip>
-                </configuration>
             </plugin>
         </plugins>
     </build>

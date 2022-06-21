@@ -240,7 +240,7 @@ public class IdleVerifyUtility {
      */
     public static @Nullable PartitionHashRecordV2 calculatePartitionHash(
         PartitionKeyV2 partKey,
-        long updCntr,
+        Object updCntr,
         Object consId,
         GridDhtPartitionState state,
         boolean isPrimary,

@@ -24,6 +24,7 @@ include_directories(include src)
 set(SOURCES src/impl/data_channel.cpp
         src/impl/utility.cpp
         src/impl/protocol_version.cpp
+        src/impl/protocol_context.cpp
         src/impl/ignite_node.cpp
         src/impl/ignite_client_impl.cpp
         src/impl/data_router.cpp

@@ -59,107 +59,6 @@
         </dependency>
 
         <dependency>
-            <groupId>${project.groupId}</groupId>
-            <artifactId>ignite-spark</artifactId>
-            <exclusions>
-                <exclusion>
-                    <groupId>org.apache.curator</groupId>
-                    <artifactId>curator-recipes</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>org.apache.curator</groupId>
-                    <artifactId>curator-framework</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>org.apache.curator</groupId>
-                    <artifactId>curator-client</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>org.apache.zookeeper</groupId>
-                    <artifactId>zookeeper</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>log4j</groupId>
-                    <artifactId>log4j</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
-
-        <dependency>
-            <groupId>org.apache.spark</groupId>
-            <artifactId>spark-core_2.11</artifactId>
-            <version>${spark.version}</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>org.apache.curator</groupId>
-                    <artifactId>curator-recipes</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>org.apache.curator</groupId>
-                    <artifactId>curator-framework</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>org.apache.curator</groupId>
-                    <artifactId>curator-client</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>org.apache.zookeeper</groupId>
-                    <artifactId>zookeeper</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>org.slf4j</groupId>
-                    <artifactId>slf4j-api</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>org.slf4j</groupId>
-                    <artifactId>jul-to-slf4j</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>org.slf4j</groupId>
-                    <artifactId>jcl-over-slf4j</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>org.slf4j</groupId>
-                    <artifactId>slf4j-log4j12</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>log4j</groupId>
-                    <artifactId>log4j</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
-
-        <dependency>
-            <groupId>org.apache.spark</groupId>
-            <artifactId>spark-sql_2.11</artifactId>
-            <version>${spark.version}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.apache.spark</groupId>
-            <artifactId>spark-tags_2.11</artifactId>
-            <version>${spark.version}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.apache.spark</groupId>
-            <artifactId>spark-catalyst_2.11</artifactId>
-            <version>${spark.version}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.apache.spark</groupId>
-            <artifactId>spark-network-shuffle_2.11</artifactId>
-            <version>${spark.version}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.apache.spark</groupId>
-            <artifactId>spark-network-common_2.11</artifactId>
-            <version>${spark.version}</version>
-        </dependency>
-
-        <dependency>
             <groupId>com.fasterxml.woodstox</groupId>
             <artifactId>woodstox-core</artifactId>
             <version>5.0.3</version>
@@ -224,10 +123,29 @@
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-deploy-plugin</artifactId>
-                <configuration>
-                    <skip>true</skip>
-                </configuration>
+                <artifactId>maven-antrun-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>update-versions</id>
+                        <goals>
+                            <goal>run</goal>
+                        </goals>
+                        <phase>initialize</phase>
+                        <configuration>
+                            <target>
+                                <echo message="Update ignite.version in ducktests" />
+
+                                <replaceregexp byline="true" encoding="UTF-8">
+                                    <regexp pattern="(__version__ = ).*$"/>
+                                    <substitution expression="\1'${project.version}'" />
+                                    <fileset dir="${basedir}/">
+                                        <include name="${project.basedir}/tests/ignitetest/__init__.py" />
+                                    </fileset>
+                                </replaceregexp>
+                            </target>
+                        </configuration>
+                    </execution>
+                </executions>
             </plugin>
 
             <plugin>

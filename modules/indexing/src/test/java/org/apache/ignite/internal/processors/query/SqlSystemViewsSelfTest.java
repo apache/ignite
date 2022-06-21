@@ -294,7 +294,7 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
                 {-825022849, "SQL_PUBLIC_AFF_CACHE", "PUBLIC", "AFF_CACHE", "_key_PK_hash", "HASH",
                     "\"ID1\" ASC, \"ID2\" ASC, \"ID2\" ASC", false, true, null},
 
-                {707660652, "SQL_PUBLIC_CACHE_SQL", "PUBLIC", "CACHE_SQL", "IDX_2", "BTREE", "\"ID\" DESC, \"ID\" ASC", false, false, 13},
+                {707660652, "SQL_PUBLIC_CACHE_SQL", "PUBLIC", "CACHE_SQL", "IDX_2", "BTREE", "\"ID\" DESC, \"ID\" ASC", false, false, 10},
                 {707660652, "SQL_PUBLIC_CACHE_SQL", "PUBLIC", "CACHE_SQL", "__SCAN_", "SCAN", null, false, false, null},
                 {707660652, "SQL_PUBLIC_CACHE_SQL", "PUBLIC", "CACHE_SQL", "_key_PK", "BTREE", "\"ID\" ASC", true, true, 5},
                 {707660652, "SQL_PUBLIC_CACHE_SQL", "PUBLIC", "CACHE_SQL", "_key_PK_hash", "HASH", "\"ID\" ASC", false, true, null},

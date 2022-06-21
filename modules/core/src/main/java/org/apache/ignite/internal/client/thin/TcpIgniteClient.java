@@ -29,6 +29,7 @@ import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import org.apache.ignite.IgniteBinary;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.binary.BinaryBasicNameMapper;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
@@ -45,6 +46,7 @@ import org.apache.ignite.client.ClientServices;
 import org.apache.ignite.client.ClientTransactions;
 import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.client.IgniteClientFuture;
+import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.configuration.ClientTransactionConfiguration;
 import org.apache.ignite.internal.MarshallerPlatformIds;
@@ -59,6 +61,8 @@ import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
 import org.apache.ignite.internal.client.thin.io.ClientConnectionMultiplexer;
+import org.apache.ignite.internal.processors.platform.client.ClientStatus;
+import org.apache.ignite.internal.processors.platform.client.IgniteClientException;
 import org.apache.ignite.internal.util.GridArgumentCheck;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
@@ -127,6 +131,8 @@ public class TcpIgniteClient implements IgniteClient {
 
         try {
             ch.channelsInit();
+
+            retrieveBinaryConfiguration(cfg);
 
             // Metadata, binary descriptors and user types caches must be cleared so that the
             // client will register all the user types within the cluster once again in case this information
@@ -410,6 +416,49 @@ public class TcpIgniteClient implements IgniteClient {
         catch (IOException e) {
             throw new BinaryObjectException(e);
         }
+    }
+
+    /** Load cluster binary configration. */
+    private void retrieveBinaryConfiguration(ClientConfiguration cfg) {
+        if (!cfg.isAutoBinaryConfigurationEnabled())
+            return;
+
+        ClientInternalBinaryConfiguration clusterCfg = ch.applyOnDefaultChannel(
+                c -> c.protocolCtx().isFeatureSupported(ProtocolBitmaskFeature.BINARY_CONFIGURATION)
+                ? c.service(ClientOperation.GET_BINARY_CONFIGURATION, null, r -> new ClientInternalBinaryConfiguration(r.in()))
+                : null,
+                ClientOperation.GET_BINARY_CONFIGURATION);
+
+        if (clusterCfg == null)
+            return;
+
+        BinaryConfiguration resCfg = cfg.getBinaryConfiguration();
+
+        if (resCfg == null)
+            resCfg = new BinaryConfiguration();
+
+        resCfg.setCompactFooter(clusterCfg.compactFooter());
+
+        switch (clusterCfg.binaryNameMapperMode()) {
+            case BASIC_FULL:
+                resCfg.setNameMapper(new BinaryBasicNameMapper().setSimpleName(false));
+                break;
+
+            case BASIC_SIMPLE:
+                resCfg.setNameMapper(new BinaryBasicNameMapper().setSimpleName(true));
+                break;
+
+            case CUSTOM:
+                if (resCfg.getNameMapper() == null || resCfg.getNameMapper() instanceof BinaryBasicNameMapper) {
+                    throw new IgniteClientException(ClientStatus.FAILED,
+                            "Custom binary name mapper is configured on the server, but not on the client. "
+                                    + "Update client BinaryConfigration to match the server.");
+                }
+
+                break;
+        }
+
+        marsh.setBinaryConfiguration(resCfg);
     }
 
     /**

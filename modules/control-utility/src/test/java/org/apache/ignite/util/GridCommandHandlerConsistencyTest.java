@@ -71,6 +71,9 @@ public class GridCommandHandlerConsistencyTest extends GridCommandHandlerCluster
     /** Partitions. */
     private static final int PARTITIONS = 32;
 
+    /** Backups. */
+    private static final int BACKUPS = 2;
+
     /** */
     protected final ListeningTestLogger listeningLog = new ListeningTestLogger(log);
 
@@ -99,7 +102,7 @@ public class GridCommandHandlerConsistencyTest extends GridCommandHandlerCluster
             tx ? DEFAULT_CACHE_NAME_TX : DEFAULT_CACHE_NAME_ATOMIC);
 
         cfg.setAtomicityMode(tx ? TRANSACTIONAL : ATOMIC);
-        cfg.setBackups(2);
+        cfg.setBackups(BACKUPS);
         cfg.setAffinity(new RendezvousAffinityFunction().setPartitions(PARTITIONS));
 
         return cfg;
@@ -148,9 +151,20 @@ public class GridCommandHandlerConsistencyTest extends GridCommandHandlerCluster
 
         injectTestSystemOut();
 
-        LogListener lsnrUnmaskedKey = matches("Key: 0 (cache: ").build(); // Unmasked key.
-        LogListener lsnrMaskedKey = matches("Key: [HIDDEN_KEY#").build(); // Masked key.
-        LogListener lsnrMaskedVal = matches("Value: [HIDDEN_VALUE#").build(); // Masked value.
+        int repairsPerEntry = repairsPerEntry();
+
+        int copies = BACKUPS + 1;
+
+        int timesMultiplicator = repairsPerEntry == 0 ?
+            copies : // N times, on each check.
+            1; // Once, on fix.
+
+        LogListener lsnrUnmaskedKey =
+            matches("Key: 0 (cache: ").times(2/*tx + atomic*/ * timesMultiplicator).build();
+        LogListener lsnrMaskedKey =
+            matches("Key: [HIDDEN_KEY#").times(brokenParts.get() * timesMultiplicator).build();
+        LogListener lsnrMaskedVal =
+            matches("Value: [HIDDEN_VALUE#").times(brokenParts.get() * copies * timesMultiplicator).build();
 
         listeningLog.registerListener(lsnrUnmaskedKey);
         listeningLog.registerListener(lsnrMaskedKey);
@@ -173,9 +187,7 @@ public class GridCommandHandlerConsistencyTest extends GridCommandHandlerCluster
         assertContains(log, testOut.toString(),
             "conflict partitions has been found: [counterConflicts=0, hashConflicts=" + brokenParts.get());
 
-        Integer fixesPerEntry = fixesPerEntry();
-
-        readRepair(brokenParts, txCacheName, fixesPerEntry);
+        readRepair(brokenParts, txCacheName, repairsPerEntry);
 
         if (S.includeSensitive()) {
             for (LogListener listener : listeners) {
@@ -185,18 +197,18 @@ public class GridCommandHandlerConsistencyTest extends GridCommandHandlerCluster
             }
         }
 
-        if (fixesPerEntry != null && fixesPerEntry > 0)
-            assertEquals(PARTITIONS, brokenParts.get()); // Half fixed.
+        if (repairsPerEntry > 0)
+            assertEquals(PARTITIONS, brokenParts.get()); // Half repaired.
 
-        readRepair(brokenParts, atomicCacheName, fixesPerEntry != null ? 0 : null);
+        readRepair(brokenParts, atomicCacheName, repairsPerEntry);
 
         if (S.includeSensitive()) {
             for (LogListener listener : listeners)
                 assertTrue(listener.check());
         }
 
-        if (fixesPerEntry != null && fixesPerEntry > 0)
-            assertEquals(PARTITIONS, brokenParts.get()); // Atomics still broken.
+        if (repairsPerEntry > 0)
+            assertEquals(0, brokenParts.get()); // Another half repaired.
 
         assertEquals(S.includeSensitive(), lsnrUnmaskedKey.check());
         assertEquals(S.includeSensitive(), !lsnrMaskedKey.check());
@@ -236,12 +248,11 @@ public class GridCommandHandlerConsistencyTest extends GridCommandHandlerCluster
         assertContains(log, testOut.toString(),
             "conflict partitions has been found: [counterConflicts=0, hashConflicts=" + brokenParts.get());
 
-        Integer fixesPerEntry = fixesPerEntry();
+        int repairsPerEntry = repairsPerEntry();
 
-        readRepair(brokenParts, cacheName, fixesPerEntry);
+        readRepair(brokenParts, cacheName, repairsPerEntry);
 
-        if (fixesPerEntry != null)
-            assertEquals(fixesPerEntry > 0 ? 0 : PARTITIONS, brokenParts.get());
+        assertEquals(repairsPerEntry > 0 ? 0 : PARTITIONS, brokenParts.get());
     }
 
     /**
@@ -269,7 +280,7 @@ public class GridCommandHandlerConsistencyTest extends GridCommandHandlerCluster
     /**
      *
      */
-    private void readRepair(AtomicInteger brokenParts, String cacheName, Integer fixesPerEntry) {
+    private void readRepair(AtomicInteger brokenParts, String cacheName, Integer repairsPerEntry) {
         for (int i = 0; i < PARTITIONS; i++) {
             assertEquals(EXIT_CODE_OK, execute("--consistency", "repair",
                 ConsistencyCommand.CACHE, cacheName,
@@ -279,41 +290,39 @@ public class GridCommandHandlerConsistencyTest extends GridCommandHandlerCluster
             assertTrue(VisorConsistencyStatusTask.MAP.isEmpty());
 
             assertContains(log, testOut.toString(), CONSISTENCY_VIOLATIONS_FOUND);
-            assertContains(log, testOut.toString(), "[found=1, fixed=" + (fixesPerEntry != null ? fixesPerEntry.toString() : ""));
+            assertContains(log, testOut.toString(), "[found=1, repaired=" + repairsPerEntry.toString());
 
             assertEquals(EXIT_CODE_OK, execute("--cache", "idle_verify"));
 
-            if (fixesPerEntry != null)
-                if (fixesPerEntry > 0) {
-                    brokenParts.decrementAndGet();
+            if (repairsPerEntry > 0) {
+                brokenParts.decrementAndGet();
 
-                    if (brokenParts.get() > 0)
-                        assertContains(log, testOut.toString(),
-                            "conflict partitions has been found: [counterConflicts=0, hashConflicts=" + brokenParts);
-                    else
-                        assertContains(log, testOut.toString(), "no conflicts have been found");
-                }
-                else
+                if (brokenParts.get() > 0)
                     assertContains(log, testOut.toString(),
-                        "conflict partitions has been found: [counterConflicts=0, hashConflicts=" + brokenParts); // Nothing fixed.
+                        "conflict partitions has been found: [counterConflicts=0, hashConflicts=" + brokenParts);
+                else
+                    assertContains(log, testOut.toString(), "no conflicts have been found");
+            }
+            else {
+                assertContains(log, testOut.toString(),
+                    "conflict partitions has been found: [counterConflicts=0, hashConflicts=" + brokenParts); // Nothing repaired.
+            }
         }
     }
 
     /**
      *
      */
-    private Integer fixesPerEntry() {
+    private int repairsPerEntry() {
         switch (strategy) {
             case PRIMARY:
             case REMOVE:
+            case LWW: // Each filled value has an incremental version. Last versioned value will win.
                 return 1;
 
             case CHECK_ONLY:
+            case RELATIVE_MAJORITY: // Each filled value has incremental version. Each value is unique. Winner is absent.
                 return 0;
-
-            case RELATIVE_MAJORITY:
-            case LWW:
-                return null; // Who knows :)
 
             default:
                 throw new UnsupportedOperationException("Unsupported strategy");

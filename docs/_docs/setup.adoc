@@ -198,14 +198,9 @@ The following modules are available:
 [width="100%",cols="1,2",options="header",]
 |=======================================================================
 |Module’s artifactId |Description
-|ignite-aop | Ignite AOP module provides capability to turn any Java method to a distributed closure by
-adding @Gridify annotation to it.
-
 |ignite-cassandra-serializers | The Ignite Cassandra Serializers module provides additional serializers to store objects as BLOBs in Cassandra. The module could be used as in conjunction with the Ignite Cassandra Store module.
 
 |ignite-cassandra-store | Ignite Cassandra Store provides a CacheStore implementation backed by the  Cassandra database.
-
-|ignite-cloud | Ignite Cloud provides Apache jclouds implementations of the IP finder for TCP discovery.
 
 |ignite-direct-io | Ignite Direct IO is a plugin that provides a page store with the ability to write and read cache partitions in O_DIRECT mode.
 
@@ -246,8 +241,6 @@ by the Pax Logging API - the logging framework used by Apache Karaf.
 
 |ignite-slf4j | Support for link:logging#using-slf4j[SLF4J logging framework].
 
-|ignite-spark | This module provides an implementation of Spark RDD abstraction that enables easy access to Ignite caches.
-
 |ignite-ssh | The Ignite SSH module provides capabilities to start Ignite nodes on remote machines via SSH.
 
 |ignite-tensorflow | The Ignite TensorFlow Integration Module allows using TensorFlow with Ignite. In this scenario Ignite will be a datasource for any TensorFlow model training.
@@ -267,11 +260,17 @@ The following extensions are available:
 [width="100%",cols="1,2",options="header",]
 |=======================================================================
 |Extension’s artifactId |Description
+|ignite-aop-ext | Ignite AOP module provides capability to turn any Java method to a distributed closure by adding @Gridify annotation to it.
+
 |ignite-aws-ext|Cluster discovery on AWS S3. Refer to link:clustering/discovery-in-the-cloud#amazon-s3-ip-finder[Amazon S3 IP Finder] for details.
 
 |ignite-azure-ext| Ignite Azure provides Azure Blob Storage-based implementation of IP finder for TCP discovery.
 
+|ignite-cloud-ext | Ignite Cloud provides Apache jclouds implementations of the IP finder for TCP discovery.
+
 |ignite-gce-ext | Ignite GCE provides Google Cloud Storage based implementations of IP finder for TCP discovery.
+
+|ignite-spark-ext | This module provides an implementation of Spark RDD abstraction that enables easy access to Ignite caches.
 
 |ignite-spring-data-ext | Ignite Spring Data provides an integration with Spring Data framework.
 

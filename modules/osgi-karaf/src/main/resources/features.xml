@@ -30,7 +30,6 @@
             NOTE #2: This feature *does not* include components that depend on LGPL software.]]>
         </details>
         <feature>ignite-core</feature>
-        <feature>ignite-aop</feature>
         <feature>ignite-camel-ext</feature>
         <feature>ignite-flume-ext</feature>
         <feature>ignite-indexing</feature>
@@ -57,14 +56,6 @@
         <bundle start="true" dependency="true">mvn:org.apache.servicemix.bundles/org.apache.servicemix.bundles.javax-cache-api/${javax.cache.bundle.version}</bundle>
         <bundle dependency="true">mvn:org.apache.ignite/ignite-osgi/${project.version}</bundle>
         <bundle start="true">mvn:org.apache.ignite/ignite-core/${project.version}</bundle>
-    </feature>
-
-    <feature name="ignite-aop" version="${project.version}" description="Apache Ignite :: AOP">
-        <details><![CDATA[The Apache Ignite AOP module + dependencies.]]></details>
-        <feature dependency="true" version="[${spring41.osgi.feature.version},4.2)">spring-aspects</feature>
-        <bundle start="true" dependency="true">mvn:org.apache.servicemix.bundles/org.apache.servicemix.bundles.aopalliance/${aopalliance.bundle.version}</bundle>        
-        <bundle start="true" dependency="true">mvn:org.apache.servicemix.bundles/org.apache.servicemix.bundles.aspectj/${aspectj.bundle.version}</bundle>
-        <bundle start="true">mvn:org.apache.ignite/ignite-aop/${project.version}</bundle>
     </feature>
 
     <feature name="ignite-camel-ext" version="${ignite-camel-ext.version}" description="Apache Ignite :: Camel">

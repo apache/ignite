@@ -71,8 +71,8 @@ public class CacheConsistencyViolationEvent extends EventAdapter {
     /** Represents original values of entries.*/
     private final Map<Object, EntriesInfo> entries;
 
-    /** Fixed entries. */
-    private final Map<Object, Object> fixed;
+    /** Repaired entries. */
+    private final Map<Object, Object> repaired;
 
     /** Cache name. */
     private final String cacheName;
@@ -86,7 +86,7 @@ public class CacheConsistencyViolationEvent extends EventAdapter {
      * @param node Local node.
      * @param msg Event message.
      * @param entries Collection of original entries.
-     * @param fixed Collection of fixed entries.
+     * @param repaired Collection of repaired entries.
      * @param strategy Strategy.
      */
     public CacheConsistencyViolationEvent(
@@ -94,13 +94,13 @@ public class CacheConsistencyViolationEvent extends EventAdapter {
         ClusterNode node,
         String msg,
         Map<Object, EntriesInfo> entries,
-        Map<Object, Object> fixed,
+        Map<Object, Object> repaired,
         ReadRepairStrategy strategy) {
         super(node, msg, EVT_CONSISTENCY_VIOLATION);
 
         this.cacheName = cacheName;
         this.entries = Collections.unmodifiableMap(entries);
-        this.fixed = Collections.unmodifiableMap(fixed);
+        this.repaired = Collections.unmodifiableMap(repaired);
         this.strategy = strategy;
     }
 
@@ -114,12 +114,12 @@ public class CacheConsistencyViolationEvent extends EventAdapter {
     }
 
     /**
-     * Returns a mapping of keys to a collection of fixed entries.
+     * Returns a mapping of keys to a collection of repaired entries.
      *
-     * @return Collection of fixed entries.
+     * @return Collection of repaired entries.
      */
-    public Map<Object, Object> getFixedEntries() {
-        return fixed;
+    public Map<Object, Object> getRepairedEntries() {
+        return repaired;
     }
 
     /**
@@ -175,7 +175,7 @@ public class CacheConsistencyViolationEvent extends EventAdapter {
         public boolean isPrimary();
 
         /**
-         * @return Marked as correct during the fix.
+         * @return Marked as correct during the repair.
          */
         public boolean isCorrect();
     }

@@ -33,8 +33,10 @@ import org.apache.ignite.internal.visor.snapshot.VisorSnapshotRestoreTaskArg;
 import static org.apache.ignite.internal.commandline.CommandList.SNAPSHOT;
 import static org.apache.ignite.internal.commandline.CommandLogger.optional;
 import static org.apache.ignite.internal.commandline.snapshot.SnapshotRestoreCommandOption.GROUPS;
+import static org.apache.ignite.internal.commandline.snapshot.SnapshotRestoreCommandOption.SOURCE;
 import static org.apache.ignite.internal.commandline.snapshot.SnapshotRestoreCommandOption.SYNC;
 import static org.apache.ignite.internal.commandline.snapshot.SnapshotSubcommands.RESTORE;
+import static org.apache.ignite.internal.visor.snapshot.VisorSnapshotRestoreTaskAction.START;
 
 /**
  * Sub-command to restore snapshot.
@@ -58,13 +60,14 @@ public class SnapshotRestoreCommand extends SnapshotSubcommand {
     @Override public void parseArguments(CommandArgIterator argIter) {
         String snpName = argIter.nextArg("Expected snapshot name.");
         VisorSnapshotRestoreTaskAction restoreAction = parseAction(argIter);
+        String snpPath = null;
         Set<String> grpNames = null;
         boolean sync = false;
 
         while (argIter.hasNextSubArg()) {
             String arg = argIter.nextArg(null);
 
-            if (restoreAction != VisorSnapshotRestoreTaskAction.START) {
+            if (restoreAction != START) {
                 throw new IllegalArgumentException("Invalid argument: " + arg + ". " +
                     "Action \"--" + restoreAction.name().toLowerCase() + "\" does not support specified option.");
             }
@@ -75,7 +78,10 @@ public class SnapshotRestoreCommand extends SnapshotSubcommand {
                 throw new IllegalArgumentException("Invalid argument: " + arg + ". " +
                     "Possible options: " + F.concat(F.asList(SnapshotRestoreCommandOption.values()), ", ") + '.');
             }
-            else if (option == SnapshotRestoreCommandOption.GROUPS) {
+            else if (option == GROUPS) {
+                if (grpNames != null)
+                    throw new IllegalArgumentException(GROUPS.argName() + " arg specified twice.");
+
                 String argDesc = "a comma-separated list of cache group names.";
 
                 grpNames = argIter.nextStringSet(argDesc);
@@ -83,11 +89,26 @@ public class SnapshotRestoreCommand extends SnapshotSubcommand {
                 if (grpNames.isEmpty())
                     throw new IllegalArgumentException("Expected " + argDesc);
             }
-            else if (option == SYNC)
+            else if (option == SOURCE) {
+                if (snpPath != null)
+                    throw new IllegalArgumentException(SOURCE.argName() + " arg specified twice.");
+
+                String errMsg = "Expected path to the snapshot directory.";
+
+                if (CommandArgIterator.isCommandOrOption(argIter.peekNextArg()))
+                    throw new IllegalArgumentException(errMsg);
+
+                snpPath = argIter.nextArg(errMsg);
+            }
+            else if (option == SYNC) {
+                if (sync)
+                    throw new IllegalArgumentException(SYNC.argName() + " arg specified twice.");
+
                 sync = true;
+            }
         }
 
-        cmdArg = new VisorSnapshotRestoreTaskArg(snpName, sync, restoreAction, grpNames);
+        cmdArg = new VisorSnapshotRestoreTaskArg(snpName, snpPath, sync, restoreAction, grpNames);
     }
 
     /** {@inheritDoc} */
@@ -95,11 +116,12 @@ public class SnapshotRestoreCommand extends SnapshotSubcommand {
         Map<String, String> params = generalUsageOptions();
         Map<String, String> startParams = new LinkedHashMap<>(params);
 
-        startParams.put(GROUPS.optionName(), GROUPS.description());
-        startParams.put(SYNC.optionName(), SYNC.description());
+        startParams.put(GROUPS.argName() + " " + GROUPS.arg(), GROUPS.description());
+        startParams.put(SOURCE.argName() + " " + SOURCE.arg(), SOURCE.description());
+        startParams.put(SYNC.argName(), SYNC.description());
 
         usage(log, "Restore snapshot:", SNAPSHOT, startParams, RESTORE.toString(), SNAPSHOT_NAME_ARG, "--start",
-            optional(GROUPS.argName(), GROUPS.optionName()), optional(SYNC.argName()));
+            optional(GROUPS.argName(), GROUPS.arg()), optional(SOURCE.argName(), SOURCE.arg()), optional(SYNC.argName()));
         usage(log, "Snapshot restore operation status:", SNAPSHOT, params, RESTORE.toString(), SNAPSHOT_NAME_ARG, "--status");
         usage(log, "Cancel snapshot restore operation:", SNAPSHOT, params, RESTORE.toString(), SNAPSHOT_NAME_ARG, "--cancel");
     }
@@ -108,7 +130,7 @@ public class SnapshotRestoreCommand extends SnapshotSubcommand {
     @Override public String confirmationPrompt() {
         VisorSnapshotRestoreTaskArg arg = (VisorSnapshotRestoreTaskArg)cmdArg;
 
-        return arg.jobAction() != VisorSnapshotRestoreTaskAction.START || arg.groupNames() != null ? null :
+        return arg.jobAction() != START || arg.groupNames() != null ? null :
             "Warning: command will restore ALL USER-CREATED CACHE GROUPS from the snapshot " + arg.snapshotName() + '.';
     }
 

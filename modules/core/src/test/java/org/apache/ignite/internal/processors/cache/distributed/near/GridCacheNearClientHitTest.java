@@ -80,6 +80,8 @@ public class GridCacheNearClientHitTest extends GridCommonAbstractTest {
 
             IgniteCache<Object, Object> cache = srvNode.getOrCreateCache(cacheConfiguration());
 
+            awaitCacheOnClient(client, CACHE_NAME);
+
             IgniteCache<Object, Object> nearCache = client.createNearCache(CACHE_NAME, nearCacheConfiguration());
 
             UUID serverNodeId = srvNode.cluster().localNode().id();
