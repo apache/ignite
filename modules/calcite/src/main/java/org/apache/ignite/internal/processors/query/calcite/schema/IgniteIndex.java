@@ -35,19 +35,13 @@ import org.jetbrains.annotations.Nullable;
  * Ignite scannable index.
  */
 public interface IgniteIndex {
-    /**
-     *
-     */
+    /** */
     public RelCollation collation();
 
-    /**
-     *
-     */
+    /** */
     public String name();
 
-    /**
-     *
-     */
+    /** */
     public IgniteTable table();
 
     /**
@@ -82,9 +76,7 @@ public interface IgniteIndex {
         @Nullable ImmutableBitSet requiredColumns
     );
 
-    /**
-     *
-     */
+    /** */
     public <Row> Iterable<Row> scan(
         ExecutionContext<Row> execCtx,
         ColocationGroup grp,

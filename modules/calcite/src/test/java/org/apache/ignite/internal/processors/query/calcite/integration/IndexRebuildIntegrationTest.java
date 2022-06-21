@@ -212,7 +212,7 @@ public class IndexRebuildIntegrationTest extends AbstractBasicIntegrationTest {
 
         CalciteQueryProcessor srvEngine = Commons.lookupComponent(grid(0).context(), CalciteQueryProcessor.class);
 
-        for (int backups = -1; backups < 2; ++backups) {
+        for (int backups = -1; backups < 3; ++backups) {
             String ddl = "CREATE TABLE tbl3 (id INT PRIMARY KEY, val VARCHAR, val2 VARCHAR) WITH ";
 
             ddl += backups < 0 ? "TEMPLATE=REPLICATED" : "TEMPLATE=PARTITIONED,backups=" + backups;
@@ -235,7 +235,7 @@ public class IndexRebuildIntegrationTest extends AbstractBasicIntegrationTest {
 
             try {
                 for (int i = 0; i < iterations; ++i)
-                    assertQuery("select COUNT(*) from tbl3").returns(50L).check();
+                    assertQuery("select COUNT(*) from tbl3").returns(records).check();
             }
             finally {
                 stop.set(true);

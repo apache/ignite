@@ -183,7 +183,7 @@ public class HashAggregatePlannerTest extends AbstractAggregatePlannerTest {
      */
     @Test
     public void noGroupByAggregate() throws Exception {
-        TestTable tbl = createAffinityTable();
+        TestTable tbl = createAffinityTable().addIndex("val0_val1", 1, 2);
 
         IgniteSchema publicSchema = new IgniteSchema("PUBLIC");
 

@@ -42,7 +42,7 @@ public class CollectNode<Row> extends AbstractNode<Row> implements SingleNode<Ro
     private int waiting;
 
     /**
-     * Creates Collect node with the collector defined by {@code rowType}.
+     * Creates Collect node with the collector depending on {@code rowType}.
      *
      * @param ctx Execution context.
      * @param rowType Output row type.
@@ -152,7 +152,7 @@ public class CollectNode<Row> extends AbstractNode<Row> implements SingleNode<Ro
     }
 
     /** */
-    public abstract static class Collector<Row> implements Supplier<Row> {
+    private abstract static class Collector<Row> implements Supplier<Row> {
         /** */
         protected final RowHandler<Row> rowHandler;
 
@@ -163,7 +163,7 @@ public class CollectNode<Row> extends AbstractNode<Row> implements SingleNode<Ro
         protected final int cap;
 
         /** */
-        public Collector(
+        Collector(
             RowHandler<Row> handler,
             RowHandler.RowFactory<Row> factory,
             int cap
