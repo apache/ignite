@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache;
+package org.apache.ignite.internal.processors.cache.consistentcut;
 
 import java.nio.ByteBuffer;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentRequest;
@@ -28,7 +28,7 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 /**
  * This message is sent by every node to Consistent Cut coordinator after node is ready to run new Consistent Cut.
  */
-public class ConsistentCutReadyResponse implements Message {
+public class ConsistentCutFinishResponse implements Message {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -39,7 +39,7 @@ public class ConsistentCutReadyResponse implements Message {
      * Consistent Cut Version.
      */
     @GridToStringInclude
-    private long ver;
+    private ConsistentCutVersion ver;
 
     /**
      * Whether local Consistent Cut procedure was finished with an error.
@@ -48,11 +48,11 @@ public class ConsistentCutReadyResponse implements Message {
     private boolean err;
 
     /** */
-    public ConsistentCutReadyResponse() {
+    public ConsistentCutFinishResponse() {
     }
 
     /** */
-    public ConsistentCutReadyResponse(long ver, boolean err) {
+    public ConsistentCutFinishResponse(ConsistentCutVersion ver, boolean err) {
         this.ver = ver;
         this.err = err;
     }
@@ -60,7 +60,7 @@ public class ConsistentCutReadyResponse implements Message {
     /**
      * @return Consistent Cut Version.
      */
-    public long version() {
+    public ConsistentCutVersion version() {
         return ver;
     }
 
@@ -84,7 +84,7 @@ public class ConsistentCutReadyResponse implements Message {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeLong("ver", ver))
+                if (!writer.writeMessage("ver", ver))
                     return false;
 
                 writer.incrementState();
@@ -108,7 +108,7 @@ public class ConsistentCutReadyResponse implements Message {
 
         switch (reader.state()) {
             case 0:
-                ver = reader.readLong("ver");
+                ver = reader.readMessage("ver");
 
                 if (!reader.isLastRead())
                     return false;
@@ -144,6 +144,6 @@ public class ConsistentCutReadyResponse implements Message {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(ConsistentCutReadyResponse.class, this);
+        return S.toString(ConsistentCutFinishResponse.class, this);
     }
 }

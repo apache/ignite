@@ -32,6 +32,7 @@ import org.apache.ignite.internal.GridDirectMap;
 import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
+import org.apache.ignite.internal.processors.cache.consistentcut.ConsistentCutVersion;
 import org.apache.ignite.internal.processors.cache.consistentcut.ConsistentCutVersionAware;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
@@ -162,7 +163,7 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
     private byte flags;
 
     /** Version of the latest observable Consistent Cut on local node. */
-    private long latestCutVer;
+    private ConsistentCutVersion latestCutVer;
 
     /**
      * Required by {@link Externalizable}.
@@ -193,7 +194,7 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
         boolean last,
         boolean onePhaseCommit,
         boolean addDepInfo,
-        long latestCutVer
+        ConsistentCutVersion latestCutVer
     ) {
         super(tx.xidVersion(), 0, addDepInfo);
 
@@ -411,7 +412,7 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
     }
 
     /** {@inheritDoc} */
-    @Override public long latestCutVersion() {
+    @Override public ConsistentCutVersion latestCutVersion() {
         return latestCutVer;
     }
 
@@ -597,7 +598,7 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
                 writer.incrementState();
 
             case 21:
-                if (!writer.writeLong("latestCutVer", latestCutVer))
+                if (!writer.writeMessage("latestCutVer", latestCutVer))
                     return false;
 
                 writer.incrementState();
@@ -731,7 +732,7 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
                 reader.incrementState();
 
             case 21:
-                latestCutVer = reader.readLong("latestCutVer");
+                latestCutVer = reader.readMessage("latestCutVer");
 
                 if (!reader.isLastRead())
                     return false;

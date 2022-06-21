@@ -23,6 +23,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
+import org.apache.ignite.internal.processors.cache.consistentcut.ConsistentCutVersion;
 import org.apache.ignite.internal.processors.cache.consistentcut.ConsistentCutVersionAware;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxState;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxStateAware;
@@ -59,7 +60,7 @@ public class GridDistributedTxPrepareResponse extends GridDistributedBaseMessage
     protected byte flags;
 
     /** Version of the latest observable Consistent Cut on local node. */
-    private long latestCutVer = -1;
+    private ConsistentCutVersion latestCutVer;
 
     /**
      * Version of the latest Consistent Cut AFTER which this transaction committed.
@@ -153,12 +154,12 @@ public class GridDistributedTxPrepareResponse extends GridDistributedBaseMessage
     }
 
     /** {@inheritDoc} */
-    @Override public long latestCutVersion() {
+    @Override public ConsistentCutVersion latestCutVersion() {
         return latestCutVer;
     }
 
     /** */
-    public void latestCutVersion(long latestCutVer) {
+    public void latestCutVersion(ConsistentCutVersion latestCutVer) {
         this.latestCutVer = latestCutVer;
     }
 
@@ -232,7 +233,7 @@ public class GridDistributedTxPrepareResponse extends GridDistributedBaseMessage
                 writer.incrementState();
 
             case 11:
-                if (!writer.writeLong("latestCutVer", latestCutVer))
+                if (!writer.writeMessage("latestCutVer", latestCutVer))
                     return false;
 
                 writer.incrementState();
@@ -284,7 +285,7 @@ public class GridDistributedTxPrepareResponse extends GridDistributedBaseMessage
                 reader.incrementState();
 
             case 11:
-                latestCutVer = reader.readLong("latestCutVer");
+                latestCutVer = reader.readMessage("latestCutVer");
 
                 if (!reader.isLastRead())
                     return false;

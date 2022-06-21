@@ -40,8 +40,8 @@ public class ConsistentCutFinishRecordSerializer {
     public void write(ConsistentCutFinishRecord rec, ByteBuffer buf) {
         buf.putInt(rec.include().size());
 
-        for (GridCacheVersion tx: rec.include())
-            putVersion(buf, tx, false);
+        for (GridCacheVersion v: rec.include())
+            putVersion(buf, v, false);
     }
 
     /**

@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.persistence.wal.serializer;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import org.apache.ignite.internal.pagemem.wal.record.ConsistentCutStartRecord;
+import org.apache.ignite.internal.processors.cache.consistentcut.ConsistentCutVersion;
 import org.apache.ignite.internal.processors.cache.persistence.wal.ByteBufferBackedDataInput;
 
 /** */
@@ -31,7 +32,8 @@ public class ConsistentCutStartRecordSerializer {
      * @param buf Byte buffer.
      */
     public void write(ConsistentCutStartRecord rec, ByteBuffer buf) {
-        buf.putLong(rec.version());
+        buf.putLong(rec.version().version());
+        buf.putLong(rec.version().timestamp());
     }
 
     /**
@@ -43,8 +45,9 @@ public class ConsistentCutStartRecordSerializer {
      */
     public ConsistentCutStartRecord read(ByteBufferBackedDataInput in) throws IOException {
         long ver = in.readLong();
+        long ts = in.readLong();
 
-        return new ConsistentCutStartRecord(ver);
+        return new ConsistentCutStartRecord(new ConsistentCutVersion(ver, ts));
     }
 
     /**
@@ -54,6 +57,6 @@ public class ConsistentCutStartRecordSerializer {
      * @return Size of ConsistentCutStartRecord in bytes.
      */
     public int size(ConsistentCutStartRecord rec) {
-        return 8;  // Version size.
+        return 8 + 8;  // Version + Timestamp.
     }
 }

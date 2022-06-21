@@ -57,11 +57,10 @@ public class ConsistentCutNoBackupWALBlockingTest extends AbstractConsistentCutB
 
         Stream.of(PREPARED, COMMITTED).forEach((tx) ->
             Stream.of(NEAR, PRIMARY).forEach((nt) ->
-                Stream.of(NEAR, PRIMARY).forEach(nc ->
-                    Stream.of(BlkCutType.NONE, BlkCutType.VERSION_UPDATE, BlkCutType.PUBLISH).forEach(c ->
-                        params.add(new Object[] {tx, nt, c, nc})
-                    )
-                )
+                Stream.of(NEAR, PRIMARY).forEach(nc -> {
+                    for (BlkCutType c : BlkCutType.values())
+                        params.add(new Object[] {tx, nt, c, nc});
+                })
             )
         );
 

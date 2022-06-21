@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.consistentcut;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -30,17 +31,21 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
+import org.apache.ignite.internal.pagemem.wal.record.ConsistentCutStartRecord;
 import org.apache.ignite.internal.pagemem.wal.record.TxRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
+import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.persistence.StorageException;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
+import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.lang.IgniteInClosure;
@@ -55,6 +60,9 @@ import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionState;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.processors.cache.consistentcut.AbstractConsistentCutBlockingTest.BlkCutType.BEFORE_WAL_STARTED;
+import static org.apache.ignite.internal.processors.cache.consistentcut.AbstractConsistentCutBlockingTest.BlkCutType.CUT_PREPARED;
+import static org.apache.ignite.internal.processors.cache.consistentcut.AbstractConsistentCutBlockingTest.BlkCutType.VERSION_UPDATE;
 import static org.apache.ignite.internal.processors.cache.consistentcut.AbstractConsistentCutBlockingTest.BlkNodeType.NEAR;
 import static org.apache.ignite.internal.processors.cache.consistentcut.AbstractConsistentCutBlockingTest.BlkNodeType.PRIMARY;
 import static org.apache.ignite.transactions.TransactionIsolation.SERIALIZABLE;
@@ -67,11 +75,8 @@ public abstract class AbstractConsistentCutBlockingTest extends AbstractConsiste
     /** Latch that blocks transaction execution. */
     private static volatile CountDownLatch txLatch = new CountDownLatch(0);
 
-    /** Latch that blocks publishing Consistent Cut state on single node. */
-    private static volatile CountDownLatch cutPublishBlkLatch = new CountDownLatch(0);
-
     /** Latch that blocks writing Consistent Cut record on single node. */
-    private static volatile CountDownLatch cutVerUpdateLatch = new CountDownLatch(0);
+    private static volatile CountDownLatch cutBlkLatch = new CountDownLatch(0);
 
     /**
      * Latch that counts down when Consistent Cut procedure started on every node. It means that every node writes
@@ -182,7 +187,7 @@ public abstract class AbstractConsistentCutBlockingTest extends AbstractConsiste
      * @param c Test case - list of tuples (prim, backup) to be written.
      */
     protected void runCase(Runnable tx, int nearNodeId, List<T2<Integer, Integer>> c) throws Exception {
-        long prevVer = grid(0).context().cache().context().consistentCutMgr().latestKnownCutVersion();
+        long prevVer = grid(0).context().cache().context().consistentCutMgr().latestKnownCutVersion().version();
 
         initLatches();
 
@@ -245,8 +250,7 @@ public abstract class AbstractConsistentCutBlockingTest extends AbstractConsiste
         txFut.get(getTestTimeout(), TimeUnit.MILLISECONDS);
 
         // 8. Resume blocking Consistent Cut.
-        cutVerUpdateLatch.countDown();
-        cutPublishBlkLatch.countDown();
+        cutBlkLatch.countDown();
 
         // 9. Await while Consistent Cut completed.
         awaitGlobalCutReady(prevVer);
@@ -255,24 +259,11 @@ public abstract class AbstractConsistentCutBlockingTest extends AbstractConsiste
     /** Init latches depending on test parameters. */
     private void initLatches() {
         txLatch = new CountDownLatch(1);
+
         cutGlobalStartLatch = new CountDownLatch(1);
 
-        switch (cutBlkType) {
-            case NONE:
-                cutVerUpdateLatch = new CountDownLatch(0);
-                cutPublishBlkLatch = new CountDownLatch(0);
-                break;
-
-            case VERSION_UPDATE:
-                cutVerUpdateLatch = new CountDownLatch(1);
-                cutPublishBlkLatch = new CountDownLatch(0);
-                break;
-
-            case PUBLISH:
-                cutVerUpdateLatch = new CountDownLatch(0);
-                cutPublishBlkLatch = new CountDownLatch(1);
-                break;
-        }
+        if (cutBlkType != BlkCutType.NONE)
+            cutBlkLatch = new CountDownLatch(1);
     }
 
     /**
@@ -352,9 +343,7 @@ public abstract class AbstractConsistentCutBlockingTest extends AbstractConsiste
 
             // At most 1 sec to wait.
             for (int i = 0; i < 1_000; i++) {
-                ConsistentCutState cutState = cutMgr.apply(n).latestPublishedCutState();
-
-                long ver = cutState.version();
+                long ver = cutMgr.apply(n).latestKnownCutVersion().version();
 
                 if (ver > prevCutVer) {
                     if (newCutVer < 0)
@@ -379,7 +368,7 @@ public abstract class AbstractConsistentCutBlockingTest extends AbstractConsiste
             .append(", excl node ").append(excl);
 
         for (int n = 0; n < nodes(); n++)
-            bld.append("\nNode").append(n).append( ": ").append(cutMgr.apply(n).latestPublishedCutState());
+            bld.append("\nNode").append(n).append( ": ").append(cutMgr.apply(n).consistentCut());
 
         throw new Exception(bld.toString());
     }
@@ -492,42 +481,70 @@ public abstract class AbstractConsistentCutBlockingTest extends AbstractConsiste
         /** */
         private final GridKernalContext ctx;
 
+        /** {@inheritDoc} */
+        @Override protected ConsistentCut consistentCut(
+            GridCacheSharedContext<?, ?> cctx,
+            IgniteLogger log,
+            ConsistentCutVersion cutVer
+        ) {
+            return new BlockingConsistentCut(cctx, log, cutVer);
+        }
+
         /** */
         public BlockingConsistentCutManager(GridKernalContext ctx) {
             this.ctx = ctx;
         }
 
-        /** Blocks preparing and publishing Consistent Cut state. */
-        @Override protected ConsistentCutState consistentCut(long prevCutVer, long cutVer) {
-            if (blkCut()) {
-                try {
-                    cutPublishBlkLatch.await(100, TimeUnit.MILLISECONDS);
-                }
-                catch (InterruptedException e) {
-                    throw new IgniteException(e);
-                }
+        /** */
+        private final class BlockingConsistentCut extends ConsistentCut {
+            /** */
+            public BlockingConsistentCut(GridCacheSharedContext<?, ?> cctx, IgniteLogger log, ConsistentCutVersion ver) {
+                super(cctx, log, ver);
             }
 
-            return super.consistentCut(prevCutVer, cutVer);
-        }
+            /** Blocks before or after ConsistentCut preparation. */
+            @Override protected boolean prepare(Collection<IgniteInternalTx> beforeCut) throws IgniteCheckedException {
+                if (blkCut(VERSION_UPDATE)) {
+                    try {
+                        cutBlkLatch.await(100, TimeUnit.MILLISECONDS);
+                    }
+                    catch (InterruptedException e) {
+                        throw new IgniteException(e);
+                    }
+                }
 
-        /** Blocks writing ConsistentCutStartRecord. */
-        @Override protected ConsistentCutState startLocalConsistentCut(long prevCutVer, long newCutVer) {
-            if (blkCut()) {
-                try {
-                    cutVerUpdateLatch.await(100, TimeUnit.MILLISECONDS);
+                boolean prepared = super.prepare(beforeCut);
+
+                if (blkCut(CUT_PREPARED)) {
+                    try {
+                        cutBlkLatch.await(100, TimeUnit.MILLISECONDS);
+                    }
+                    catch (InterruptedException e) {
+                        throw new IgniteException(e);
+                    }
                 }
-                catch (InterruptedException e) {
-                    throw new IgniteException(e);
-                }
+
+                return prepared;
             }
 
-            return super.startLocalConsistentCut(prevCutVer, newCutVer);
+            /** Blocks before writing {@link ConsistentCutStartRecord} to WAL. */
+            @Override protected void walLog(ConsistentCutVersion cutVer, WALRecord record) throws IgniteCheckedException {
+                if (blkCut(BEFORE_WAL_STARTED)) {
+                    try {
+                        cutBlkLatch.await(100, TimeUnit.MILLISECONDS);
+                    }
+                    catch (InterruptedException e) {
+                        throw new IgniteException(e);
+                    }
+                }
+
+                super.walLog(cutVer, record);
+            }
         }
 
         /** */
-        private boolean blkCut() {
-            return ctx.localNodeId().equals(cutBlkNodeId);
+        private boolean blkCut(BlkCutType type) {
+            return type == cutBlkType && ctx.localNodeId().equals(cutBlkNodeId);
         }
     }
 
@@ -552,6 +569,9 @@ public abstract class AbstractConsistentCutBlockingTest extends AbstractConsiste
         VERSION_UPDATE,
 
         /** */
-        PUBLISH
+        BEFORE_WAL_STARTED,
+
+        /** */
+        CUT_PREPARED
     }
 }

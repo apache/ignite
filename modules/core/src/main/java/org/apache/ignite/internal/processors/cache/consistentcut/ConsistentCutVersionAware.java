@@ -29,8 +29,8 @@ public interface ConsistentCutVersionAware {
      *
      * It is used to trigger Consistent Cut procedure on receiver.
      */
-    public default long latestCutVersion() {
-        return 0L;
+    public default ConsistentCutVersion latestCutVersion() {
+        return null;
     }
 
     /**
@@ -43,10 +43,9 @@ public interface ConsistentCutVersionAware {
     }
 
     /**
-     * @return Whether local node is responsible to set Consistent Cut Version for transaction and send it
-     * to other nodes.
+     * @return Whether local node defines Consistent Cut Version for transaction and sends it to other nodes.
      */
-    public default boolean txCutVerSetNode() {
+    public default boolean defineTxCutVersionNode() {
         return false;
     }
 

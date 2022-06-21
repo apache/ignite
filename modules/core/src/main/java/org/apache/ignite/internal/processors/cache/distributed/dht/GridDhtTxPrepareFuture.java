@@ -1482,7 +1482,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                 retVal,
                 mvccSnapshot,
                 cctx.tm().txHandler().filterUpdateCountersForBackupNode(tx, n),
-                cctx.consistentCutMgr() != null ? cctx.consistentCutMgr().latestKnownCutVersion() : 0);
+                cctx.consistentCutMgr() != null ? cctx.consistentCutMgr().latestKnownCutVersion() : null);
 
             req.queryUpdate(dhtMapping.queryUpdate());
 
@@ -1597,7 +1597,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                     retVal,
                     mvccSnapshot,
                     null,
-                    cctx.consistentCutMgr() != null ? cctx.consistentCutMgr().latestKnownCutVersion() : 0);
+                    cctx.consistentCutMgr() != null ? cctx.consistentCutMgr().latestKnownCutVersion() : null);
 
                 for (IgniteTxEntry entry : nearMapping.entries()) {
                     if (CU.writes().apply(entry)) {

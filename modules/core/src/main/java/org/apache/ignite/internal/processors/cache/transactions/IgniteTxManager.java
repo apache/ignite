@@ -1678,7 +1678,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
      *
      * @return {@code true} if {@code tx} is active transaction, otherwise {@code false}.
      */
-    private boolean activeTx(IgniteInternalTx tx) {
+    private boolean activeTx(IgniteInternalTx tx) throws IgniteCheckedException {
         ConcurrentMap<GridCacheVersion, IgniteInternalTx> txIdMap = transactionMap(tx);
 
         if (cctx.consistentCutMgr() == null)

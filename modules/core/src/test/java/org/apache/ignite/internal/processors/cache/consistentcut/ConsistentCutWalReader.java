@@ -383,11 +383,11 @@ public class ConsistentCutWalReader {
 
         System.out.println("START " + curCutVer + " CUT[" + rec + "], state = " + cut);
 
-        cutVers.put(curCutVer, rec.version());
+        cutVers.put(curCutVer, rec.version().version());
 
         ++curCutVer;
 
-        cut.ver = rec.version();
+        cut.ver = rec.version().version();
 
         return rec;
     }

@@ -17,7 +17,8 @@
 
 package org.apache.ignite.internal.pagemem.wal.record;
 
-import org.apache.ignite.internal.processors.cache.consistentcut.ConsistentCutState;
+import org.apache.ignite.internal.processors.cache.consistentcut.ConsistentCut;
+import org.apache.ignite.internal.processors.cache.consistentcut.ConsistentCutVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
@@ -29,26 +30,26 @@ import org.apache.ignite.internal.util.typedef.internal.S;
  * This record is written to WAL in moment when Consistent Cut starts on a local node. All transactions committed before
  * this WAL record are part of the global area BEFORE. But it's possible then some transactions committed after this
  * record are also part of the BEFORE state. Set of such transactions is prepared in moment of taken Consistent Cut and
- * stored within {@link ConsistentCutState}. Ignite analyzes such transactions and decided whether to include
+ * stored within {@link ConsistentCut}. Ignite analyzes such transactions and decided whether to include
  * them to the state or not. Information about that is written to WAL with {@link ConsistentCutFinishRecord}.
  *
  * @see ConsistentCutFinishRecord
- * @see ConsistentCutState
+ * @see ConsistentCut
  */
 public class ConsistentCutStartRecord extends WALRecord {
     /**
      * Consistent Cut Version. It's timestamp of start Consistent Cut on the Ignite coordinator node.
      */
     @GridToStringInclude
-    private final long ver;
+    private final ConsistentCutVersion ver;
 
     /** */
-    public ConsistentCutStartRecord(long ver) {
+    public ConsistentCutStartRecord(ConsistentCutVersion ver) {
         this.ver = ver;
     }
 
     /** */
-    public long version() {
+    public ConsistentCutVersion version() {
         return ver;
     }
 

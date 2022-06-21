@@ -43,18 +43,17 @@ public class ConsistentCutNoBackupMessagesBlockingTest extends AbstractConsisten
     public static List<Object[]> params() {
         List<Object[]> p = new ArrayList<>();
 
-        Stream.of(BlkCutType.NONE, BlkCutType.VERSION_UPDATE, BlkCutType.PUBLISH).forEach(c ->
-            Stream.of(BlkNodeType.NEAR, BlkNodeType.PRIMARY).forEach(n ->
-                p.add(new Object[] {c, n})
-            )
-        );
+        Stream.of(BlkNodeType.NEAR, BlkNodeType.PRIMARY).forEach(n -> {
+            for (BlkCutType c : BlkCutType.values())
+                p.add(new Object[] {c, n});
+        });
 
         return p;
     }
 
     /** */
     @Test
-    public void testOnePhaseCommitCases() throws Exception {
+    public void testMultipleCases() throws Exception {
         List<List<T2<Integer, Integer>>> cases = ConsistentCutBlockingCases.casesNoBackup(nodes());
 
         List<String> msgs = messages(false);

@@ -1233,10 +1233,20 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
         }
 
         if (valid) {
-            if (cctx.consistentCutMgr() != null && (state == COMMITTED || state == ROLLED_BACK))
-                cctx.consistentCutMgr().unregisterAfterCommit(this);
+            if (ptr != null && (state == COMMITTED || state == ROLLED_BACK)) {
+                if (cctx.consistentCutMgr() != null) {
+                    try {
+                        cctx.consistentCutMgr().unregisterAfterCommit(this);
+                    }
+                    catch (IgniteCheckedException e) {
+                        String msg = "Failed to unregister transaction in ConsistentCutMgr.";
 
-            if (ptr != null && (state == COMMITTED || state == ROLLED_BACK))
+                        U.error(log, msg, e);
+
+                        throw new IgniteException(msg, e);
+                    }
+                }
+
                 try {
                     cctx.wal().flush(ptr, false);
                 }
@@ -1247,6 +1257,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
 
                     throw new IgniteException(msg, e);
                 }
+            }
         }
 
         if (notify) {
@@ -2004,7 +2015,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
     }
 
     /** {@inheritDoc} */
-    @Override public boolean txCutVerSetNode() {
+    @Override public boolean defineTxCutVersionNode() {
         if (log.isDebugEnabled()) {
             log.debug("`txCutVerSetNode` " + nearXidVersion().asIgniteUuid() + " " + getClass().getSimpleName()
                 + " 1pc=" + onePhaseCommit + " node=" + nodeId + " nodes=" + txNodes + " " + "client="

@@ -140,7 +140,7 @@ public abstract class AbstractConsistentCutTest extends GridCommonAbstractTest {
         ConsistentCutManager crdCutMgr = grid(0).context().cache().context().consistentCutMgr();
 
         for (int i = 0; i < 100; i++) {
-            long ver = crdCutMgr.latestKnownCutVersion();
+            long ver = crdCutMgr.latestKnownCutVersion().version();
 
             if (ver > prevCutVer) {
                 if (newCutVer < 0)
@@ -167,7 +167,7 @@ public abstract class AbstractConsistentCutTest extends GridCommonAbstractTest {
         for (int i = 0; i < nodes(); i++) {
             ConsistentCutManager cutMgr = grid(i).context().cache().context().consistentCutMgr();
 
-            bld.append("\n\tNode").append(i).append( ": ").append(cutMgr.latestPublishedCutState());
+            bld.append("\n\tNode").append(i).append( ": ").append(cutMgr.consistentCut());
         }
 
         throw new Exception(bld.toString());
@@ -312,7 +312,7 @@ public abstract class AbstractConsistentCutTest extends GridCommonAbstractTest {
             Message msg,
             IgniteInClosure<IgniteException> ackC
         ) throws IgniteSpiException {
-            if (log.isDebugEnabled() && txMessage(msg))
+            if (log.isInfoEnabled() && txMessage(msg))
                 logTxMessage(node, msg);
 
             super.sendMessage(node, msg, ackC);

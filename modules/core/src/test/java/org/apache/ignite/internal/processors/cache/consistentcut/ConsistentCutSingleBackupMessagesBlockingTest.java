@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.cache.consistentcut;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Stream;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -41,11 +40,10 @@ public class ConsistentCutSingleBackupMessagesBlockingTest extends AbstractConsi
     public static List<Object[]> params() {
         List<Object[]> p = new ArrayList<>();
 
-        Stream.of(BlkCutType.NONE, BlkCutType.VERSION_UPDATE, BlkCutType.PUBLISH).forEach(c ->
-            Stream.of(BlkNodeType.NEAR, BlkNodeType.PRIMARY, BlkNodeType.BACKUP).forEach(n ->
-                p.add(new Object[] {c, n})
-            )
-        );
+        for (BlkNodeType n: BlkNodeType.values()) {
+            for (BlkCutType c : BlkCutType.values())
+                p.add(new Object[] {c, n});
+        }
 
         return p;
     }

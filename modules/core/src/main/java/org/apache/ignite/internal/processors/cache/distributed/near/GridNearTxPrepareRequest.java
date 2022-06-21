@@ -26,6 +26,7 @@ import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.consistentcut.ConsistentCutVersion;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxPrepareRequest;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
@@ -128,7 +129,7 @@ public class GridNearTxPrepareRequest extends GridDistributedTxPrepareRequest {
         boolean allowWaitTopFut,
         boolean addDepInfo,
         boolean recovery,
-        long consistentVer
+        ConsistentCutVersion cutVer
     ) {
         super(tx,
             timeout,
@@ -139,7 +140,7 @@ public class GridNearTxPrepareRequest extends GridDistributedTxPrepareRequest {
             last,
             onePhaseCommit,
             addDepInfo,
-            consistentVer);
+            cutVer);
 
         assert futId != null;
         assert !firstClientReq || tx.optimistic() : tx;

@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache;
+package org.apache.ignite.internal.processors.cache.consistentcut;
 
 import java.nio.ByteBuffer;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentRequest;
@@ -39,21 +39,21 @@ public class ConsistentCutStartRequest implements Message {
      * Consistent Cut Version.
      */
     @GridToStringInclude
-    private long ver;
+    private ConsistentCutVersion ver;
 
     /** */
     public ConsistentCutStartRequest() {
     }
 
     /** */
-    public ConsistentCutStartRequest(long ver) {
+    public ConsistentCutStartRequest(ConsistentCutVersion ver) {
         this.ver = ver;
     }
 
     /**
      * @return Consistent Cut Version.
      */
-    public long version() {
+    public ConsistentCutVersion version() {
         return ver;
     }
 
@@ -69,7 +69,7 @@ public class ConsistentCutStartRequest implements Message {
         }
 
         if (writer.state() == 0) {
-            if (!writer.writeLong("ver", ver))
+            if (!writer.writeMessage("ver", ver))
                 return false;
 
             writer.incrementState();
@@ -86,7 +86,7 @@ public class ConsistentCutStartRequest implements Message {
             return false;
 
         if (reader.state() == 0) {
-            ver = reader.readLong("ver");
+            ver = reader.readMessage("ver");
 
             if (!reader.isLastRead())
                 return false;
