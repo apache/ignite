@@ -220,7 +220,7 @@ public class ConsistentCutManager extends GridCacheSharedManagerAdapter {
 
         // If Consistent Cut isn't running now then it might be started in any moment after registering this transaction.
         // To avoid misses add every transaction until Consistent Cut hasn't been grabbing active transactions yet.
-        if (cut == null || !cut.grabbedTransactions())
+        if (cut == null || cut.grabTransactionsInProgress())
             beforeCut.add(tx);
 
         if (log.isDebugEnabled()) {
@@ -243,13 +243,14 @@ public class ConsistentCutManager extends GridCacheSharedManagerAdapter {
         // Safely remove transaction here as it's whether:
         // 1. Committed before Consistent Cut write `ConsistentCutStartRecord` to WAL.
         // 2. Grabbed to be included while preparing the check-list.
-        if (beforeCut.remove(tx) && cut != null && cut.checkTransaction(tx) && beforeCut.isEmpty()) {
+        beforeCut.remove(tx);
+
+        if (cut != null && cut.checkTransaction(tx) && beforeCut.isEmpty())
             onFinish(cut, false);
 
-            if (log.isDebugEnabled()) {
-                log.debug("`unregisterAfterCommit` from " + tx.nearXidVersion().asIgniteUuid() + " to " + tx.xid()
-                    + ", cut " + cut + ", txCutVer " + v);
-            }
+        if (log.isDebugEnabled()) {
+            log.debug("`unregisterAfterCommit` from " + tx.nearXidVersion().asIgniteUuid() + " to " + tx.xid()
+                + ", cut " + cut + ", txCutVer " + v + "; incl " + beforeCut);
         }
     }
 

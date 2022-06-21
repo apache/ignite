@@ -312,7 +312,7 @@ public abstract class AbstractConsistentCutTest extends GridCommonAbstractTest {
             Message msg,
             IgniteInClosure<IgniteException> ackC
         ) throws IgniteSpiException {
-            if (log.isInfoEnabled() && txMessage(msg))
+            if (log.isDebugEnabled() && txMessage(msg))
                 logTxMessage(node, msg);
 
             super.sendMessage(node, msg, ackC);

@@ -124,8 +124,12 @@ public class ConsistentCut {
 
         ConsistentCutVersionAware aware = (ConsistentCutVersionAware)tx;
 
-        if (check.remove(tx.xidVersion()) && aware.txCutVersion() < ver.version())
-            includeBefore.add(tx.nearXidVersion());
+        if (check.contains(tx.xidVersion())) {
+            if (aware.txCutVersion() < ver.version())
+                includeBefore.add(tx.nearXidVersion());
+
+            check.remove(tx.xidVersion());
+        }
 
         if (log.isDebugEnabled())
             log.debug("`checkTransaction` " + tx.xid() + " cutVer=" + aware.txCutVersion() + " " + this);
@@ -201,8 +205,8 @@ public class ConsistentCut {
     /**
      * @return {@code true} if Consistent Cut grabbed list of transactions to check.
      */
-    public boolean grabbedTransactions() {
-        return grabTxs.isDone();
+    public boolean grabTransactionsInProgress() {
+        return !grabTxs.isDone();
     }
 
     /**
