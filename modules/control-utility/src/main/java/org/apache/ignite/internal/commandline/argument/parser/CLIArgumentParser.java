@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.commandline.argument.parser;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
@@ -171,7 +172,7 @@ public class CLIArgumentParser {
             sb.a("\n\n").a(arg.name()).a(": ").a(arg.usage());
 
             if (arg.optional())
-                sb.a(" Default value: ").a(dfltVal);
+                sb.a(" Default value: ").a(dfltVal instanceof String[] ? Arrays.toString((Object[])dfltVal) : dfltVal);
         }
 
         return sb.toString();
