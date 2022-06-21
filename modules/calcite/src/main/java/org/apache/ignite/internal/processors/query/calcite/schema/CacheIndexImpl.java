@@ -30,6 +30,7 @@ import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.cache.query.index.Index;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.IndexQueryContext;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndex;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
@@ -54,13 +55,13 @@ public class CacheIndexImpl implements IgniteIndex {
     private final String idxName;
 
     /** */
-    private final InlineIndex idx;
+    private final @Nullable Index idx;
 
     /** */
     private final IgniteCacheTable tbl;
 
     /** */
-    public CacheIndexImpl(RelCollation collation, String name, InlineIndex idx, IgniteCacheTable tbl) {
+    public CacheIndexImpl(RelCollation collation, String name, @Nullable Index idx, IgniteCacheTable tbl) {
         this.collation = collation;
         idxName = name;
         this.idx = idx;
@@ -114,6 +115,28 @@ public class CacheIndexImpl implements IgniteIndex {
     }
 
     /** {@inheritDoc} */
+    @Override public long scanCount(ExecutionContext<?> ectx, ColocationGroup grp) {
+        long cnt = 0;
+
+        if (idx != null && grp.nodeIds().contains(ectx.localNodeId())) {
+            IndexingQueryFilter filter = new IndexingQueryFilterImpl(tbl.descriptor().cacheContext().kernalContext(),
+                ectx.topologyVersion(), grp.partitions(ectx.localNodeId()));
+
+            InlineIndex iidx = idx.unwrap(InlineIndex.class);
+
+            try {
+                for (int i = 0; i < iidx.segmentsCount(); ++i)
+                    cnt += iidx.count(i, new IndexQueryContext(filter, null, ectx.mvccSnapshot()));
+            }
+            catch (IgniteCheckedException e) {
+                throw new IgniteException("Unable to count index records.", e);
+            }
+        }
+
+        return cnt;
+    }
+
+    /** {@inheritDoc} */
     @Override public IndexConditions toIndexCondition(
         RelOptCluster cluster,
         @Nullable RexNode cond,
@@ -137,25 +160,5 @@ public class CacheIndexImpl implements IgniteIndex {
 
         // Empty index find predicate.
         return new IndexConditions();
-    }
-
-    /**
-     * @return Number of local records.
-     */
-    public long scanCount(ExecutionContext<?> ectx) {
-        IndexingQueryFilter filter = new IndexingQueryFilterImpl(tbl.descriptor().cacheContext().kernalContext(),
-            ectx.topologyVersion(), ectx.target().partitions(ectx.localNodeId()));
-
-        long cnt = 0;
-
-        try {
-            for (int i = 0; i < idx.segmentsCount(); ++i)
-                cnt += idx.count(i, new IndexQueryContext(filter, null, ectx.mvccSnapshot()));
-        }
-        catch (IgniteCheckedException e) {
-            throw new IgniteException("Unable to count index records.", e);
-        }
-
-        return cnt;
     }
 }

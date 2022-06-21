@@ -234,7 +234,7 @@ public class IndexRebuildIntegrationTest extends AbstractBasicIntegrationTest {
             });
 
             try {
-                for (int i = 0; i < iterations; i++)
+                for (int i = 0; i < iterations; ++i)
                     assertQuery("select COUNT(*) from tbl3").returns(50L).check();
             }
             finally {

@@ -24,7 +24,6 @@ import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.rel.RelCollation;
 import org.apache.calcite.rex.RexNode;
-import org.apache.calcite.schema.Wrapper;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.processors.query.calcite.metadata.ColocationGroup;
@@ -35,14 +34,20 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Ignite scannable index.
  */
-public interface IgniteIndex extends Wrapper {
-    /** */
+public interface IgniteIndex {
+    /**
+     *
+     */
     public RelCollation collation();
 
-    /** */
+    /**
+     *
+     */
     public String name();
 
-    /** */
+    /**
+     *
+     */
     public IgniteTable table();
 
     /**
@@ -77,7 +82,9 @@ public interface IgniteIndex extends Wrapper {
         @Nullable ImmutableBitSet requiredColumns
     );
 
-    /** */
+    /**
+     *
+     */
     public <Row> Iterable<Row> scan(
         ExecutionContext<Row> execCtx,
         ColocationGroup grp,
@@ -88,14 +95,12 @@ public interface IgniteIndex extends Wrapper {
         @Nullable ImmutableBitSet requiredColumns
     );
 
-    /** {@inheritDoc} */
-    default @Override <C> @org.checkerframework.checker.nullness.qual.Nullable C unwrap(Class<C> cls) {
-        if (cls == null)
-            return null;
-
-        if (getClass().isAssignableFrom(cls))
-            return (C)this;
-
-        return null;
-    }
+    /**
+     * Calculates index records number.
+     *
+     * @param ectx Execution context.
+     * @param grp  Colocation group.
+     * @return Index records number for {@code group}.
+     */
+    public long scanCount(ExecutionContext<?> ectx, ColocationGroup grp);
 }

@@ -28,15 +28,12 @@ import org.apache.calcite.sql.fun.SqlCountAggFunction;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.calcite.metadata.ColocationGroup;
 import org.apache.ignite.internal.processors.query.calcite.prepare.MappingQueryContext;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteExchange;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteAggregate;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexCount;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
-import org.apache.ignite.internal.processors.query.calcite.rel.agg.IgniteColocatedHashAggregate;
 import org.apache.ignite.internal.processors.query.calcite.rel.agg.IgniteMapHashAggregate;
 import org.apache.ignite.internal.processors.query.calcite.rel.agg.IgniteReduceHashAggregate;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteSchema;
-import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
-import org.apache.ignite.internal.processors.query.calcite.trait.DistributionFunction;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
@@ -113,23 +110,8 @@ public class HashAggregatePlannerTest extends AbstractAggregatePlannerTest {
 
     /** */
     private void assertIndexCount(String sql, IgniteSchema schema) throws Exception {
-        DistributionFunction distr = ((IgniteTable)schema.getTable("TEST")).distribution().function();
-
-        if (distr.equals(DistributionFunction.hash()) || distr.equals(DistributionFunction.random())) {
-            assertPlan(
-                sql,
-                schema,
-                nodeOrAnyChild(isInstanceOf(IgniteColocatedHashAggregate.class)
-                    .and(input(isInstanceOf(IgniteExchange.class)
-                        .and(input(isInstanceOf(IgniteIndexCount.class)))))));
-        }
-        else {
-            assertPlan(
-                sql,
-                schema,
-                nodeOrAnyChild(isInstanceOf(IgniteColocatedHashAggregate.class)
-                    .and(input(isInstanceOf(IgniteIndexCount.class)))));
-        }
+        assertPlan(sql, schema, nodeOrAnyChild(isInstanceOf(IgniteAggregate.class)
+            .and(nodeOrAnyChild(isInstanceOf(IgniteIndexCount.class)))));
     }
 
     /** */

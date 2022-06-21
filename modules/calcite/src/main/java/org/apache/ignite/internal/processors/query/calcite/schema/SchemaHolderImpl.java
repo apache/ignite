@@ -34,7 +34,6 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.cache.query.index.Index;
-import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndex;
 import org.apache.ignite.internal.processors.cache.GridCacheContextInfo;
 import org.apache.ignite.internal.processors.query.GridQueryIndexDescriptor;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
@@ -218,7 +217,7 @@ public class SchemaHolderImpl extends AbstractService implements SchemaHolder, S
 
     /** {@inheritDoc} */
     @Override public synchronized void onIndexCreated(String schemaName, String tblName, String idxName,
-        GridQueryIndexDescriptor idxDesc, Index gridIdx) {
+        GridQueryIndexDescriptor idxDesc, @Nullable Index gridIdx) {
         IgniteSchema schema = igniteSchemas.get(schemaName);
         assert schema != null;
 
@@ -227,7 +226,8 @@ public class SchemaHolderImpl extends AbstractService implements SchemaHolder, S
 
         RelCollation idxCollation = deriveSecondaryIndexCollation(idxDesc, tbl);
 
-        tbl.addIndex(new CacheIndexImpl(idxCollation, idxName, gridIdx.unwrap(InlineIndex.class), tbl));
+        IgniteIndex idx = new CacheIndexImpl(idxCollation, idxName, gridIdx, tbl);
+        tbl.addIndex(idx);
     }
 
     /**

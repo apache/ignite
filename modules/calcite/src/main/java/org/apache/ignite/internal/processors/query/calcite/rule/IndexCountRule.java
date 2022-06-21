@@ -28,6 +28,7 @@ import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.tools.RelBuilder;
+import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteConvention;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexCount;
 import org.apache.ignite.internal.processors.query.calcite.rel.logical.IgniteLogicalTableScan;
@@ -54,17 +55,15 @@ public class IndexCountRule extends RelRule<IndexCountRule.Config> {
         LogicalAggregate aggr = call.rel(0);
         IgniteLogicalTableScan scan = call.rel(1);
         IgniteTable table = scan.getTable().unwrap(IgniteTable.class);
-
-        IgniteIndex idx = table.indexes().values().stream().findFirst().orElse(null);
+        IgniteIndex idx = table.getIndex(QueryUtils.PRIMARY_KEY_INDEX);
 
         if (
             idx == null ||
                 table.isIndexRebuildInProgress() ||
                 scan.condition() != null ||
-                scan.requiredColumns() != null ||
                 aggr.getGroupCount() > 0 ||
                 aggr.getAggCallList().stream().anyMatch(a -> a.getAggregation().getKind() != SqlKind.COUNT ||
-                    !a.getArgList().isEmpty())
+                    !a.getArgList().isEmpty() || a.hasFilter())
         )
             return;
 
@@ -85,7 +84,7 @@ public class IndexCountRule extends RelRule<IndexCountRule.Config> {
 
         RelBuilder b = call.builder();
 
-        // Also cast DECIMAL of SUN0 to BIGINT(Long) of COUNT().
+        // Also cast DECIMAL of SUM0 to BIGINT(Long) of COUNT().
         call.transformTo(b.push(idxCnt)
             .aggregate(b.groupKey(), Collections.nCopies(aggr.getAggCallList().size(),
                 b.aggregateCall(SqlStdOperatorTable.SUM0, b.field(0))))

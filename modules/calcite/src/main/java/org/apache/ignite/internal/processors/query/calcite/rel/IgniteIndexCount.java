@@ -127,7 +127,7 @@ public class IgniteIndexCount extends AbstractRelNode implements SourceAwareIgni
 
     /** {@inheritDoc} */
     @Override public RelOptCost computeSelfCost(RelOptPlanner planner, RelMetadataQuery mq) {
-        return planner.getCostFactory().makeCost(1.0, tbl.getRowCount() / INDEX_TRAVERSE_COST_DIVIDER, 1.0);
+        return planner.getCostFactory().makeCost(1.0, tbl.getRowCount() / INDEX_TRAVERSE_COST_DIVIDER, 0);
     }
 
     /** {@inheritDoc} */

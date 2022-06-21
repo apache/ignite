@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.query.calcite.exec;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
@@ -98,7 +97,6 @@ import org.apache.ignite.internal.processors.query.calcite.rel.agg.IgniteReduceH
 import org.apache.ignite.internal.processors.query.calcite.rel.agg.IgniteReduceSortAggregate;
 import org.apache.ignite.internal.processors.query.calcite.rel.set.IgniteSetOp;
 import org.apache.ignite.internal.processors.query.calcite.rule.LogicalScanConverterRule;
-import org.apache.ignite.internal.processors.query.calcite.schema.CacheIndexImpl;
 import org.apache.ignite.internal.processors.query.calcite.schema.CacheTableDescriptor;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteIndex;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
@@ -109,7 +107,6 @@ import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactor
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.processors.query.calcite.util.RexUtils;
 import org.apache.ignite.internal.util.typedef.F;
-import org.jetbrains.annotations.NotNull;
 
 import static org.apache.calcite.rel.RelDistribution.Type.HASH_DISTRIBUTED;
 import static org.apache.ignite.internal.processors.query.calcite.util.TypeUtils.combinedRowType;
@@ -417,43 +414,15 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
         IgniteIndex idx = tbl.getIndex(rel.indexName());
 
         if (idx != null && !tbl.isIndexRebuildInProgress()) {
-            Iterable<Row> src = new Iterable<Row>() {
-                @NotNull @Override public Iterator<Row> iterator() {
-                    RowFactory<Row> rowFactory = ctx.rowHandler().factory(ctx.getTypeFactory(), rel.getRowType());
-
-                    return Collections.singletonList(rowFactory.create(idx.unwrap(CacheIndexImpl.class)
-                        .scanCount(ctx))).iterator();
-                }
-            };
-
-            return new ScanNode<>(ctx, rel.getRowType(), src);
+            return new ScanNode<>(ctx, rel.getRowType(), () -> Collections.singletonList(ctx.rowHandler()
+                .factory(ctx.getTypeFactory(), rel.getRowType())
+                .create(idx.scanCount(ctx, ctx.group(rel.sourceId())))).iterator());
         }
         else {
-            CollectNode.Collector<Row> collector = new CollectNode.Collector<Row>(
-                ctx.rowHandler(),
-                ctx.rowHandler().factory(ctx.getTypeFactory(), rel.getRowType()), 1
-            ) {
-                /** */
-                private long cnt = 0;
+            CollectNode<Row> replacement = new CollectNode<>(ctx);
 
-                @Override public void push(Row row) {
-                    ++cnt;
-                }
-
-                @Override public void clear() {
-                    cnt = 0;
-                }
-
-                @Override protected Object outData() {
-                    return cnt;
-                }
-            };
-
-            ScanNode<Row> input = new ScanNode<>(ctx, rel.getTable().getRowType(),
-                tbl.scan(ctx, ctx.group(rel.sourceId()), null, null, ImmutableBitSet.of(0)));
-
-            CollectNode<Row> replacement = new CollectNode<>(collector, ctx, rel.getRowType());
-            replacement.register(input);
+            replacement.register(new ScanNode<>(ctx, rel.getTable().getRowType(), tbl.scan(ctx,
+                ctx.group(rel.sourceId()), null, null, ImmutableBitSet.of(0))));
 
             return replacement;
         }

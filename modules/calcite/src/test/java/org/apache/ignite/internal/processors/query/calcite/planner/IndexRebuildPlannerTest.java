@@ -19,6 +19,8 @@ package org.apache.ignite.internal.processors.query.calcite.planner;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.processors.query.QueryUtils;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteAggregate;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexCount;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexScan;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
@@ -47,7 +49,7 @@ public class IndexRebuildPlannerTest extends AbstractPlannerTest {
         super.setup();
 
         tbl = createTable("TBL", 100, IgniteDistributions.single(), "ID", Integer.class, "VAL", String.class)
-            .addIndex("IDX", 0);
+            .addIndex(QueryUtils.PRIMARY_KEY_INDEX, 0);
 
         publicSchema = createSchema(tbl);
     }
@@ -73,21 +75,21 @@ public class IndexRebuildPlannerTest extends AbstractPlannerTest {
     public void testIndexCountAtIndexRebuild() throws Exception {
         String sql = "SELECT COUNT(*) FROM TBL";
 
-        assertPlan(sql, publicSchema, nodeOrAnyChild(isInstanceOf(IgniteColocatedHashAggregate.class)
+        assertPlan(sql, publicSchema, nodeOrAnyChild(isInstanceOf(IgniteAggregate.class)
             .and(a -> a.getAggCallList().stream().filter(agg -> agg.getAggregation().getKind() == SUM0).count() == 1)
-            .and(input(isInstanceOf(IgniteIndexCount.class)))));
+            .and(nodeOrAnyChild(isInstanceOf(IgniteIndexCount.class)))));
 
         tbl.markIndexRebuildInProgress(true);
 
-        assertPlan(sql, publicSchema, isInstanceOf(IgniteColocatedHashAggregate.class)
+        assertPlan(sql, publicSchema, isInstanceOf(IgniteAggregate.class)
             .and(a -> a.getAggCallList().stream().filter(agg -> agg.getAggregation().getKind() == COUNT).count() == 1)
-            .and(input(isInstanceOf(IgniteTableScan.class))));
+            .and(nodeOrAnyChild(isInstanceOf(IgniteTableScan.class))));
 
         tbl.markIndexRebuildInProgress(false);
 
-        assertPlan(sql, publicSchema, nodeOrAnyChild(isInstanceOf(IgniteColocatedHashAggregate.class)
+        assertPlan(sql, publicSchema, nodeOrAnyChild(isInstanceOf(IgniteAggregate.class)
             .and(a -> a.getAggCallList().stream().filter(agg -> agg.getAggregation().getKind() == SUM0).count() == 1)
-            .and(input(isInstanceOf(IgniteIndexCount.class)))));
+            .and(nodeOrAnyChild(isInstanceOf(IgniteIndexCount.class)))));
     }
 
     /** */

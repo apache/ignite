@@ -247,6 +247,11 @@ public class AbstractBasicIntegrationTest extends GridCommonAbstractTest {
             return delegate.scan(execCtx, grp, filters, lowerIdxConditions, upperIdxConditions, rowTransformer,
                 requiredColumns);
         }
+
+        /** {@inheritDoc} */
+        @Override public long scanCount(ExecutionContext<?> ectx, ColocationGroup grp) {
+            return delegate.scanCount(ectx, grp);
+        }
     }
 
     /** */
