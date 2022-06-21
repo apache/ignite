@@ -20,13 +20,18 @@ package org.apache.ignite.internal.util.lang;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.lang.IgniteRunnable;
 
-/** */
+/**
+ * Runnable that can throw checked exception.
+ * Any exception from {@link #runx()} will be converted to {@link IgniteException}.
+ */
 @FunctionalInterface
 public interface RunnableX extends IgniteRunnable {
-    /** */
+    /**
+     * @throws Exception If failed.
+     */
     void runx() throws Exception;
 
-    /** {@inheritdoc} */
+    /** {@inheritDoc} */
     @Override default void run() {
         try {
             runx();
