@@ -723,9 +723,6 @@ public class IgniteIndexReader implements AutoCloseable {
      * @param buf Buffer.
      */
     private <I extends PageIO> I readPage(FilePageStore store, long pageId, ByteBuffer buf) throws IgniteCheckedException {
-        if (normalizePageId(pageId) == 844420635165092L)
-            log.info("pageId=" + normalizePageId(pageId));
-
         try {
             store.read(pageId, (ByteBuffer)buf.rewind(), false);
 
