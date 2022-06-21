@@ -147,7 +147,7 @@ public class LogicalRelImplementorTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Tests IndexCount execution plan is chcnged to Collect/Scan when index is unavailable.
+     * Tests IndexCount execution plan is changed to Collect/Scan when index is unavailable.
      */
     @Test
     public void testIndexCountRewriter() {
