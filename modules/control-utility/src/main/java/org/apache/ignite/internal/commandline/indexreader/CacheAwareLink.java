@@ -22,18 +22,14 @@ package org.apache.ignite.internal.commandline.indexreader;
  */
 class CacheAwareLink {
     /** */
-    public final int cacheId;
+    final int cacheId;
 
     /** */
-    public final long link;
-
-    /** True if a link points to tombstone value. */
-    public final boolean tombstone;
+    final long link;
 
     /** */
-    public CacheAwareLink(int cacheId, long link, boolean tombstone) {
+    public CacheAwareLink(int cacheId, long link) {
         this.cacheId = cacheId;
         this.link = link;
-        this.tombstone = tombstone;
     }
 }

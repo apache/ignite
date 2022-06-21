@@ -32,10 +32,10 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.CacheEvent;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.events.EventType;
+import org.apache.ignite.internal.util.lang.RunnableX;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.LoggerResource;
-import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
 
 /**
@@ -97,7 +97,7 @@ public class EventsSandboxTest extends AbstractSandboxTest {
         UUID id = func.apply(evts, cacheName);
 
         try {
-            GridTestUtils.RunnableX r = () -> {
+            RunnableX r = () -> {
                 error = null;
 
                 latch = new CountDownLatch(1);
