@@ -40,8 +40,10 @@ import org.apache.ignite.client.ClientCache;
 import org.apache.ignite.client.ClientCacheConfiguration;
 import org.apache.ignite.client.ClientCluster;
 import org.apache.ignite.client.ClientClusterGroup;
+import org.apache.ignite.client.ClientCollectionConfiguration;
 import org.apache.ignite.client.ClientCompute;
 import org.apache.ignite.client.ClientException;
+import org.apache.ignite.client.ClientIgniteSet;
 import org.apache.ignite.client.ClientServices;
 import org.apache.ignite.client.ClientTransactions;
 import org.apache.ignite.client.IgniteClient;
@@ -69,6 +71,7 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.marshaller.MarshallerContext;
 import org.apache.ignite.marshaller.MarshallerUtils;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Implementation of {@link IgniteClient} over TCP protocol.
@@ -373,6 +376,39 @@ public class TcpIgniteClient implements IgniteClient {
             return null;
 
         return res;
+    }
+
+    /** {@inheritDoc} */
+    @Override public <T> ClientIgniteSet<T> set(String name, @Nullable ClientCollectionConfiguration cfg) {
+        GridArgumentCheck.notNull(name, "name");
+
+        if (cfg == null) {
+            // Get existing.
+        } else {
+            // Create new.
+            ch.service(ClientOperation.OP_SET_GET_OR_CREATE, out -> {
+                try (BinaryRawWriterEx w = new BinaryWriterExImpl(null, out.out(), null, null)) {
+                    w.writeString(name);
+                    w.writeLong(initVal);
+
+                    if (cfg != null) {
+                        w.writeBoolean(true);
+                        w.writeInt(cfg.getAtomicSequenceReserveSize());
+                        w.writeByte((byte)cfg.getCacheMode().ordinal());
+                        w.writeInt(cfg.getBackups());
+                        w.writeString(cfg.getGroupName());
+                    }
+                    else
+                        w.writeBoolean(false);
+                }
+            }, null);
+        }
+
+        // Use set name for client ops - setId can't be used to retrieve the set. But we need setId for colocation
+        // When colocated flag is true, all items are on the same node, determined by setName.hashCode()
+        // Otherwise GridCacheSetItemKey is used (setId + object)
+
+        return null;
     }
 
     /**

@@ -242,10 +242,7 @@ public interface IgniteClient extends AutoCloseable {
      */
     public ClientAtomicLong atomicLong(String name, ClientAtomicConfiguration cfg, long initVal, boolean create);
 
-    // Use set name for client ops - setId can't be used to retrieve the set. But we need setId for colocation
-    // When colocated flag is true, all items are on the same node, determined by setName.hashCode()
-    // Otherwise GridCacheSetItemKey is used (setId + object)
-    public ClientIgniteSet set(String name, @Nullable ClientCollectionConfiguration cfg);
+    public <T> ClientIgniteSet<T> set(String name, @Nullable ClientCollectionConfiguration cfg);
 
     /**
      * Closes this client's open connections and relinquishes all underlying resources.

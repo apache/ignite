@@ -32,7 +32,7 @@ import org.apache.ignite.lang.IgniteUuid;
 /**
  * Ignite set get or update request.
  */
-public class ClientIgniteSetCreateRequest extends ClientIgniteSetRequest {
+public class ClientIgniteSetGetOrCreateRequest extends ClientIgniteSetRequest {
     /** Cache atomicity mode. */
     private final CollectionConfiguration collectionConfiguration;
 
@@ -41,15 +41,19 @@ public class ClientIgniteSetCreateRequest extends ClientIgniteSetRequest {
      *
      * @param reader Reader.
      */
-    public ClientIgniteSetCreateRequest(BinaryRawReader reader) {
+    public ClientIgniteSetGetOrCreateRequest(BinaryRawReader reader) {
         super(reader);
 
-        collectionConfiguration = new CollectionConfiguration()
+        boolean create = reader.readBoolean();
+
+        collectionConfiguration = create
+                ? new CollectionConfiguration()
                 .setAtomicityMode(CacheAtomicityMode.fromOrdinal(reader.readByte()))
                 .setCacheMode(CacheMode.fromOrdinal(reader.readByte()))
                 .setBackups(reader.readInt())
                 .setOffHeapMaxMemory(reader.readLong())
-                .setCollocated(reader.readBoolean());
+                .setCollocated(reader.readBoolean())
+                : null;
     }
 
     /** {@inheritDoc} */

@@ -88,7 +88,7 @@ import org.apache.ignite.internal.processors.platform.client.datastructures.Clie
 import org.apache.ignite.internal.processors.platform.client.datastructures.ClientAtomicLongValueGetRequest;
 import org.apache.ignite.internal.processors.platform.client.datastructures.ClientIgniteSetAddRequest;
 import org.apache.ignite.internal.processors.platform.client.datastructures.ClientIgniteSetContainsRequest;
-import org.apache.ignite.internal.processors.platform.client.datastructures.ClientIgniteSetCreateRequest;
+import org.apache.ignite.internal.processors.platform.client.datastructures.ClientIgniteSetGetOrCreateRequest;
 import org.apache.ignite.internal.processors.platform.client.datastructures.ClientIgniteSetRemoveRequest;
 import org.apache.ignite.internal.processors.platform.client.datastructures.ClientIgniteSetRequest;
 import org.apache.ignite.internal.processors.platform.client.service.ClientServiceGetDescriptorRequest;
@@ -328,7 +328,7 @@ public class ClientMessageParser implements ClientListenerMessageParser {
     private static final short OP_ATOMIC_LONG_VALUE_COMPARE_AND_SET_AND_GET = 9007;
 
     /** Create an IgniteSet. */
-    private static final short OP_SET_CREATE = 9010;
+    private static final short OP_SET_GET_OR_CREATE = 9010;
 
     /** Remove an IgniteSet. */
     private static final short OP_SET_REMOVE = 9011;
@@ -597,8 +597,8 @@ public class ClientMessageParser implements ClientListenerMessageParser {
             case OP_ATOMIC_LONG_VALUE_COMPARE_AND_SET_AND_GET:
                 return new ClientAtomicLongValueCompareAndSetAndGetRequest(reader);
 
-            case OP_SET_CREATE:
-                return new ClientIgniteSetCreateRequest(reader);
+            case OP_SET_GET_OR_CREATE:
+                return new ClientIgniteSetGetOrCreateRequest(reader);
 
             case OP_SET_REMOVE:
                 // TODO

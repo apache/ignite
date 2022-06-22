@@ -220,7 +220,25 @@ public enum ClientOperation {
     ATOMIC_LONG_VALUE_COMPARE_AND_SET(9006),
 
     /** AtomicLong.compareAndSetAndGet. */
-    ATOMIC_LONG_VALUE_COMPARE_AND_SET_AND_GET(9007);
+    ATOMIC_LONG_VALUE_COMPARE_AND_SET_AND_GET(9007),
+
+    /** Create an IgniteSet. */
+    OP_SET_GET_OR_CREATE(9010),
+
+    /** Remove an IgniteSet. */
+    OP_SET_REMOVE(9011),
+
+    /** Check if IgniteSet exists. */
+    OP_SET_EXISTS(9012),
+
+    /** IgniteSet.add. */
+    OP_SET_VALUE_ADD(9013),
+
+    /** IgniteSet.remove. */
+    OP_SET_VALUE_REMOVE(9014),
+
+    /** IgniteSet.contains. */
+    OP_SET_VALUE_CONTAINS(9015);
 
     /** Code. */
     private final int code;
