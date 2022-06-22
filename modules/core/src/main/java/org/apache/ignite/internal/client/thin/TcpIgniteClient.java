@@ -403,7 +403,7 @@ public class TcpIgniteClient implements IgniteClient {
 
             IgniteUuid id = new IgniteUuid(new UUID(in.in().readLong(), in.in().readLong()), in.in().readLong());
 
-            return new ClientIgniteSetImpl<>(ch, name, id);
+            return new ClientIgniteSetImpl<>(ch, serDes, name, id);
         });
     }
 
@@ -722,6 +722,7 @@ public class TcpIgniteClient implements IgniteClient {
         }
 
         /** {@inheritDoc} */
+        @SuppressWarnings("rawtypes")
         @Override public Class getClass(int typeId, ClassLoader ldr)
             throws ClassNotFoundException, IgniteCheckedException {
 
