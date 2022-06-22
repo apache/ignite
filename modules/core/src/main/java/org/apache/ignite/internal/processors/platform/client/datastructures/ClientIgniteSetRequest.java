@@ -48,6 +48,24 @@ public class ClientIgniteSetRequest extends ClientRequest {
     }
 
     /**
+     * Gets the name.
+     *
+     * @return Set name.
+     */
+    protected String name() {
+        return name;
+    }
+
+    /**
+     * Gets the group name.
+     *
+     * @return Group name.
+     */
+    protected String groupName() {
+        return groupName;
+    }
+
+    /**
      * Gets the IgniteSet.
      *
      * @param ctx Context.
