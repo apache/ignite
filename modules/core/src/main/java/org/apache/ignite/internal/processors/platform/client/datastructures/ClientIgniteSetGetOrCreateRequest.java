@@ -62,7 +62,7 @@ public class ClientIgniteSetGetOrCreateRequest extends ClientIgniteSetRequest {
                 .grid()
                 .set(name(), collectionConfiguration);
 
-        IgniteUuid id = set.delegate().id();
+        IgniteUuid id = set == null ? null : set.delegate().id();
 
         return new Response(requestId(), id);
     }
@@ -90,8 +90,14 @@ public class ClientIgniteSetGetOrCreateRequest extends ClientIgniteSetRequest {
         @Override public void encode(ClientConnectionContext ctx, BinaryRawWriterEx writer) {
             super.encode(ctx, writer);
 
-            writer.writeUuid(id.globalId());
-            writer.writeLong(id.localId());
+            if (id != null) {
+                writer.writeBoolean(true);
+
+                writer.writeLong(id.globalId().getMostSignificantBits());
+                writer.writeLong(id.globalId().getLeastSignificantBits());
+                writer.writeLong(id.localId());
+            } else
+                writer.writeBoolean(false);
         }
     }
 }

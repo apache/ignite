@@ -23,6 +23,7 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiFunction;
@@ -68,6 +69,7 @@ import org.apache.ignite.internal.processors.platform.client.IgniteClientExcepti
 import org.apache.ignite.internal.util.GridArgumentCheck;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.marshaller.MarshallerContext;
 import org.apache.ignite.marshaller.MarshallerUtils;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
@@ -397,7 +399,14 @@ public class TcpIgniteClient implements IgniteClient {
                 } else
                     w.writeBoolean(false);
             }
-        }, null);
+        }, in -> {
+            if (!in.in().readBoolean())
+                return null;
+
+            IgniteUuid id = new IgniteUuid(new UUID(in.in().readLong(), in.in().readLong()), in.in().readLong());
+
+            return new ClientIgniteSetImpl(ch, name, id);
+        });
 
         // Use set name for client ops - setId can't be used to retrieve the set. But we need setId for colocation
         // When colocated flag is true, all items are on the same node, determined by setName.hashCode()
