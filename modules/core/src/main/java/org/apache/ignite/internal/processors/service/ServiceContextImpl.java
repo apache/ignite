@@ -27,6 +27,7 @@ import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.services.Service;
 import org.apache.ignite.services.ServiceCallContext;
+import org.apache.ignite.services.ServiceCallInterceptor;
 import org.apache.ignite.services.ServiceContext;
 import org.apache.ignite.spi.metric.ReadOnlyMetricRegistry;
 import org.jetbrains.annotations.Nullable;
@@ -73,6 +74,9 @@ public class ServiceContextImpl implements ServiceContext {
 
     /** Service statistics flag. */
     private final boolean isStatisticsEnabled;
+
+    /** Service call interceptor. */
+    private ServiceCallInterceptor intcp;
 
     /**
      * @param name Service name.
@@ -126,6 +130,20 @@ public class ServiceContextImpl implements ServiceContext {
      */
     void service(Service svc) {
         this.svc = svc;
+    }
+
+    /**
+     * @param intcp Service call interceptor.
+     */
+    void interceptor(ServiceCallInterceptor intcp) {
+        this.intcp = intcp;
+    }
+
+    /**
+     * @return Service call interceptor.
+     */
+    ServiceCallInterceptor interceptor() {
+        return intcp;
     }
 
     /**

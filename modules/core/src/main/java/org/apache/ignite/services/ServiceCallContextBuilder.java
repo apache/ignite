@@ -72,6 +72,6 @@ public class ServiceCallContextBuilder {
         if (attrs.isEmpty())
             throw new IllegalStateException("Cannot create an empty context.");
 
-        return new ServiceCallContextImpl(new HashMap<>(attrs));
+        return new ServiceCallContextImpl(new HashMap<>(attrs), null, null);
     }
 }

@@ -80,6 +80,10 @@ public class ServiceConfiguration implements Serializable {
     @GridToStringExclude
     protected IgnitePredicate<ClusterNode> nodeFilter;
 
+    /** Interceptor. */
+    @GridToStringExclude
+    protected ServiceCallInterceptor interceptor;
+
     /** Enables or disables service statistics. */
     protected boolean isStatisticsEnabled;
 
@@ -258,6 +262,27 @@ public class ServiceConfiguration implements Serializable {
      */
     public ServiceConfiguration setNodeFilter(IgnitePredicate<ClusterNode> nodeFilter) {
         this.nodeFilter = nodeFilter;
+
+        return this;
+    }
+
+    /**
+     * Gets service method interceptor.
+     *
+     * @return Service method interceptor.
+     */
+    public ServiceCallInterceptor getInterceptor() {
+        return interceptor;
+    }
+
+    /**
+     * Sets service method interceptor.
+     *
+     * @param interceptor Interceptor.
+     * @return {@code this} for chaining.
+     */
+    public ServiceConfiguration setInterceptor(ServiceCallInterceptor interceptor) {
+        this.interceptor = interceptor;
 
         return this;
     }

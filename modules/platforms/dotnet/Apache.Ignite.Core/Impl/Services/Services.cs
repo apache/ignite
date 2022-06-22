@@ -353,7 +353,7 @@ namespace Apache.Ignite.Core.Impl.Services
                     var res = new List<T>(count);
 
                     for (var i = 0; i < count; i++)
-                        res.Add(Marshaller.Ignite.HandleRegistry.Get<T>(r.ReadLong()));
+                        res.Add((T)Marshaller.Ignite.HandleRegistry.Get<ServiceRegistryEntry>(r.ReadLong()).Service);
 
                     return res;
                 });
@@ -484,11 +484,11 @@ namespace Apache.Ignite.Core.Impl.Services
         /// <returns>Service call context attributes.</returns>
         private IDictionary GetCallerContextAttributes(IServiceCallContext callCtx)
         {
-            IgniteArgumentCheck.Ensure(callCtx == null || callCtx is ServiceCallContext, "callCtx", 
-                "custom implementation of " + typeof(ServiceCallContext).Name + " is not supported." +
+            IgniteArgumentCheck.Ensure(callCtx == null || callCtx is ServiceCallContextEx, "callCtx", 
+                "custom implementation of " + typeof(ServiceCallContextEx).Name + " is not supported." +
                 " Please use " + typeof(ServiceCallContextBuilder).Name + " to create it.");
 
-            return callCtx == null ? null : ((ServiceCallContext) callCtx).Values();
+            return callCtx == null ? null : ((ServiceCallContextEx) callCtx).Values();
         }
 
         /// <summary>

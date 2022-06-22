@@ -1291,6 +1291,9 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
                 srvc.init(srvcCtx);
 
                 srvcCtx.service(srvc);
+
+                // todo copy and injection
+                srvcCtx.interceptor(cfg.getInterceptor());
             }
             catch (Throwable e) {
                 U.error(log, "Failed to initialize service (service will not be deployed): " + name, e);

@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Core.Tests.Services
 {
     using System;
+    using System.Collections;
     using System.Diagnostics.CodeAnalysis;
     using System.IO;
     using System.Linq;
@@ -293,7 +294,7 @@ namespace Apache.Ignite.Core.Tests.Services
                 // 2) call InvokeServiceMethod
                 string mthdName;
                 object[] mthdArgs;
-                IServiceCallContext unused;
+                IDictionary unused;
 
                 ServiceProxySerializer.ReadProxyMethod(inStream, _marsh, out mthdName, out mthdArgs, out unused);
 

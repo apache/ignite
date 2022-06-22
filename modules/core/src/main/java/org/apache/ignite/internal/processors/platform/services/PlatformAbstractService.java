@@ -46,6 +46,9 @@ public abstract class PlatformAbstractService implements PlatformService, Extern
     /** .Net binary service. */
     protected Object svc;
 
+    /** .Net service interceptor. */
+    protected Object intcp;
+
     /** Whether to keep objects binary on server if possible. */
     protected boolean srvKeepBinary;
 
@@ -69,13 +72,14 @@ public abstract class PlatformAbstractService implements PlatformService, Extern
      * @param ctx Context.
      * @param srvKeepBinary Whether to keep objects binary on server if possible.
      */
-    public PlatformAbstractService(Object svc, PlatformContext ctx, boolean srvKeepBinary) {
+    public PlatformAbstractService(Object svc, PlatformContext ctx, boolean srvKeepBinary, @Nullable Object intcp) {
         assert svc != null;
         assert ctx != null;
 
         this.svc = svc;
         this.platformCtx = ctx;
         this.srvKeepBinary = srvKeepBinary;
+        this.intcp = intcp;
     }
 
     /** {@inheritDoc} */
@@ -90,6 +94,7 @@ public abstract class PlatformAbstractService implements PlatformService, Extern
 
             writer.writeBoolean(srvKeepBinary);
             writer.writeObject(svc);
+            writer.writeObject(intcp);
 
             writeServiceContext(ctx, writer);
 
@@ -239,12 +244,14 @@ public abstract class PlatformAbstractService implements PlatformService, Extern
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         svc = in.readObject();
+        intcp = in.readObject();
         srvKeepBinary = in.readBoolean();
     }
 
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         out.writeObject(svc);
+        out.writeObject(intcp);
         out.writeBoolean(srvKeepBinary);
     }
 }

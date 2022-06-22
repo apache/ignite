@@ -95,12 +95,12 @@ namespace Apache.Ignite.Core.Impl.Client.Services
         public T GetServiceProxy<T>(string serviceName, IServiceCallContext callCtx) where T : class
         {
             IgniteArgumentCheck.NotNullOrEmpty(serviceName, "name");
-            IgniteArgumentCheck.Ensure(callCtx == null || callCtx is ServiceCallContext, "callCtx",
-                "custom implementation of " + typeof(ServiceCallContext).Name + " is not supported." +
+            IgniteArgumentCheck.Ensure(callCtx == null || callCtx is ServiceCallContextEx, "callCtx",
+                "custom implementation of " + typeof(ServiceCallContextEx).Name + " is not supported." +
                 " Please use " + typeof(ServiceCallContextBuilder).Name + " to create it.");
 
             var platformType = GetServiceDescriptor(serviceName).PlatformType;
-            IDictionary callAttrs = callCtx == null ? null : ((ServiceCallContext) callCtx).Values();
+            IDictionary callAttrs = callCtx == null ? null : ((ServiceCallContextEx) callCtx).Values();
 
             return ServiceProxyFactory<T>.CreateProxy(
                 (method, args) => InvokeProxyMethod(serviceName, method, args, platformType, callAttrs)

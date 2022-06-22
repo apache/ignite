@@ -408,7 +408,7 @@ public class PlatformServices extends PlatformAbstractTarget {
         int totalCnt = reader.readInt();
         int maxPerNodeCnt = reader.readInt();
 
-        services.deployMultiple(name, new PlatformDotNetServiceImpl(svc, platformCtx, srvKeepBinary),
+        services.deployMultiple(name, new PlatformDotNetServiceImpl(svc, platformCtx, srvKeepBinary, null),
                 totalCnt, maxPerNodeCnt);
     }
 
@@ -424,7 +424,7 @@ public class PlatformServices extends PlatformAbstractTarget {
         int totalCnt = reader.readInt();
         int maxPerNodeCnt = reader.readInt();
 
-        return services.deployMultipleAsync(name, new PlatformDotNetServiceImpl(svc, platformCtx, srvKeepBinary),
+        return services.deployMultipleAsync(name, new PlatformDotNetServiceImpl(svc, platformCtx, srvKeepBinary, null),
             totalCnt, maxPerNodeCnt);
     }
 
@@ -488,7 +488,9 @@ public class PlatformServices extends PlatformAbstractTarget {
         PlatformServiceConfiguration cfg = new PlatformServiceConfiguration();
 
         cfg.setName(reader.readString());
-        cfg.setService(new PlatformDotNetServiceImpl(reader.readObjectDetached(), platformCtx, srvKeepBinary));
+
+        Object svc = reader.readObjectDetached();
+
         cfg.setTotalCount(reader.readInt());
         cfg.setMaxPerNodeCount(reader.readInt());
         cfg.setCacheName(reader.readString());
@@ -499,10 +501,14 @@ public class PlatformServices extends PlatformAbstractTarget {
         if (filter != null)
             cfg.setNodeFilter(platformCtx.createClusterNodeFilter(filter));
 
+        Object intCp = reader.readObjectDetached();
+
         cfg.setStatisticsEnabled(reader.readBoolean());
 
         if (cfg.isStatisticsEnabled())
             cfg.mtdNames(reader.readStringArray());
+
+        cfg.setService(new PlatformDotNetServiceImpl(svc, platformCtx, srvKeepBinary, intCp));
 
         return cfg;
     }
@@ -813,9 +819,13 @@ public class PlatformServices extends PlatformAbstractTarget {
     private static void writeFailedConfiguration(BinaryRawWriterEx w, ServiceConfiguration svcCfg) {
         Object dotnetSvc = null;
         Object dotnetFilter = null;
+        Object dotnetInterceptor = null;
         w.writeString(svcCfg.getName());
-        if (svcCfg.getService() instanceof PlatformDotNetServiceImpl)
+
+        if (svcCfg.getService() instanceof PlatformDotNetServiceImpl) {
             dotnetSvc = ((PlatformDotNetServiceImpl)svcCfg.getService()).getInternalService();
+            dotnetInterceptor = ((PlatformDotNetServiceImpl)svcCfg.getService()).getInterceptor();
+        }
 
         w.writeObjectDetached(dotnetSvc);
         w.writeInt(svcCfg.getTotalCount());
@@ -826,6 +836,8 @@ public class PlatformServices extends PlatformAbstractTarget {
         if (svcCfg.getNodeFilter() instanceof PlatformClusterNodeFilterImpl)
             dotnetFilter = ((PlatformClusterNodeFilterImpl)svcCfg.getNodeFilter()).getInternalPredicate();
         w.writeObjectDetached(dotnetFilter);
+
+        w.writeObjectDetached(dotnetInterceptor);
 
         w.writeBoolean(svcCfg.isStatisticsEnabled());
     }

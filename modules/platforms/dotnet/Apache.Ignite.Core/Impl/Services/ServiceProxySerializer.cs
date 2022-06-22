@@ -101,9 +101,9 @@ namespace Apache.Ignite.Core.Impl.Services
         /// <param name="marsh">Marshaller.</param>
         /// <param name="mthdName">Method name.</param>
         /// <param name="mthdArgs">Method arguments.</param>
-        /// <param name="callCtx">Service call context.</param>
+        /// <param name="callAttrs">Service call attributes.</param>
         public static void ReadProxyMethod(IBinaryStream stream, Marshaller marsh, 
-            out string mthdName, out object[] mthdArgs, out IServiceCallContext callCtx)
+            out string mthdName, out object[] mthdArgs, out IDictionary callAttrs)
         {
             var reader = marsh.StartUnmarshal(stream);
 
@@ -124,9 +124,7 @@ namespace Apache.Ignite.Core.Impl.Services
             else
                 mthdArgs = null;
 
-            var attrs = reader.ReadDictionary();
-
-            callCtx = attrs == null ? null : new ServiceCallContext(attrs);
+            callAttrs = reader.ReadDictionary();
         }
 
         /// <summary>

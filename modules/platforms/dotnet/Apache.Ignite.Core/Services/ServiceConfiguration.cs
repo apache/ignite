@@ -67,6 +67,11 @@ namespace Apache.Ignite.Core.Services
         public IClusterNodeFilter NodeFilter { get; set; }
         
         /// <summary>
+        /// 
+        /// </summary>
+        public ServiceCallInterceptor CallInterceptor { get; set; }
+        
+        /// <summary>
         /// Enables or disables service statistics.
         /// NOTE: Service statistics work only via service proxies. <see cref="IServices.GetServiceProxy{T}(string)"/>
         /// </summary>
@@ -91,6 +96,11 @@ namespace Apache.Ignite.Core.Services
                 w.WriteObject(NodeFilter);
             else
                 w.WriteObject<object>(null);
+                    
+            if (CallInterceptor != null)
+                w.WriteObject(CallInterceptor);
+            else
+                w.WriteObject<object>(null);;
 
             w.WriteBoolean(StatisticsEnabled);
 
@@ -140,7 +150,7 @@ namespace Apache.Ignite.Core.Services
             }
             catch (Exception)
             {
-                // Ignore exceptions in user deserealization code.
+                // Ignore exceptions in user deserialization code.
             }
 
             TotalCount = r.ReadInt();
@@ -151,10 +161,11 @@ namespace Apache.Ignite.Core.Services
             try
             {
                 NodeFilter = r.ReadObject<IClusterNodeFilter>();
+                CallInterceptor = r.ReadObject<ServiceCallInterceptor>();
             }
             catch (Exception)
             {
-                // Ignore exceptions in user deserealization code.
+                // Ignore exceptions in user deserialization code.
             }
 
             StatisticsEnabled = r.ReadBoolean();

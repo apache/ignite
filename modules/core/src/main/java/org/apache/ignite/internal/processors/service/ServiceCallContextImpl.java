@@ -18,20 +18,31 @@
 package org.apache.ignite.internal.processors.service;
 
 import java.util.Map;
-import org.apache.ignite.services.ServiceCallContext;
+import org.apache.ignite.services.ServiceInterceptorContext;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Service call context implementation.
  */
-public class ServiceCallContextImpl implements ServiceCallContext {
+public class ServiceCallContextImpl implements ServiceInterceptorContext {
+    /** Method name. */
+    private final String mtdName;
+
+    /** Method arguments. */
+    private final Object[] mtdArgs;
+
     /** Service call context attributes. */
-    private Map<String, Object> attrs;
+    private final Map<String, Object> attrs;
 
     /**
      * @param attrs Service call context attributes.
+     * @param mtdName Method name.
+     * @param mtdArgs Method arguments.
      */
-    public ServiceCallContextImpl(Map<String, Object> attrs) {
+    public ServiceCallContextImpl(Map<String, Object> attrs, String mtdName, Object[] mtdArgs) {
         this.attrs = attrs;
+        this.mtdName = mtdName;
+        this.mtdArgs = mtdArgs;
     }
 
     /** {@inheritDoc} */
@@ -40,8 +51,28 @@ public class ServiceCallContextImpl implements ServiceCallContext {
     }
 
     /** {@inheritDoc} */
+    @Override public void attribute(String name, String val) {
+        attrs.put(name, val);
+    }
+
+    /** {@inheritDoc} */
     @Override public byte[] binaryAttribute(String name) {
         return (byte[])attrs.get(name);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void binaryAttribute(String name, byte[] val) {
+        attrs.put(name, val);
+    }
+
+    /** {@inheritDoc} */
+    @Override public String method() {
+        return mtdName;
+    }
+
+    /** {@inheritDoc} */
+    @Override public @Nullable Object[] arguments() {
+        return mtdArgs;
     }
 
     /**

@@ -75,7 +75,7 @@ namespace Apache.Ignite.Core.Services
             if (_attrs.Count == 0)
                 throw new InvalidOperationException("Cannot create an empty context.");
 
-            return new ServiceCallContext((Hashtable)_attrs.Clone());
+            return new ServiceCallContextEx((Hashtable)_attrs.Clone(), null, null);
         }
     }
 }

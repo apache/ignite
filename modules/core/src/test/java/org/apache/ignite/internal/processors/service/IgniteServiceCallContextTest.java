@@ -23,20 +23,27 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.T2;
+import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.resources.ServiceContextResource;
 import org.apache.ignite.resources.ServiceResource;
 import org.apache.ignite.services.Service;
 import org.apache.ignite.services.ServiceCallContext;
+import org.apache.ignite.services.ServiceCallInterceptor;
 import org.apache.ignite.services.ServiceConfiguration;
 import org.apache.ignite.services.ServiceContext;
+import org.apache.ignite.services.ServiceInterceptException;
+import org.apache.ignite.services.ServiceInterceptorContext;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -57,6 +64,9 @@ public class IgniteServiceCallContextTest extends GridCommonAbstractTest {
 
     /** Injected service name. */
     private static final String SVC_NAME_INJECTED = "test-svc-injected";
+
+    /** Intercepted service name. */
+    private static final String SVC_NAME_INTERCEPTED = "test-svc-intercepted";
 
     /** Nodes count. */
     private static final int NODES_CNT = 3;
@@ -90,10 +100,12 @@ public class IgniteServiceCallContextTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        return super.getConfiguration(igniteInstanceName).setServiceConfiguration(
-            serviceCfg(SVC_NAME_INJECTED, true),
-            serviceCfg(SVC_NAME, clusterSingleton)
-        );
+        return super.getConfiguration(igniteInstanceName)
+            .setServiceConfiguration(
+                serviceCfg(SVC_NAME_INJECTED, true),
+                serviceCfg(SVC_NAME, clusterSingleton),
+                serviceCfg(SVC_NAME_INTERCEPTED, clusterSingleton).setInterceptor(new SvcInterceptor("attribute", STR_ATTR_NAME, "Jane"))
+            );
     }
 
     /**
@@ -126,6 +138,66 @@ public class IgniteServiceCallContextTest extends GridCommonAbstractTest {
 
         GridTestUtils.assertThrowsAnyCause(log, () -> grid(0).services().serviceProxy(SVC_NAME, TestService.class,
             sticky, callCtx), IllegalArgumentException.class, "\"callCtx\" has an invalid type.");
+    }
+
+    /** Service call interceptor. */
+    static class SvcInterceptor implements ServiceCallInterceptor {
+        /** Logger. */
+        @LoggerResource
+        private IgniteLogger log;
+
+        /** Expected method name. */
+        private final String expMtdName;
+
+        /** Name of the changed attribute. */
+        private final String attrName;
+
+        /** Attribute value to set. */
+        private final String attrVal;
+
+        /** Result holder. */
+        private static final AtomicReference<Object> resHolder = new AtomicReference<>();
+
+        /**
+         * @param expMtdName Expected method name.
+         * @param attrName Name of the changed attribute.
+         * @param attrVal Attribute value to set.
+         */
+        public SvcInterceptor(String expMtdName, String attrName, String attrVal) {
+            this.expMtdName = expMtdName;
+            this.attrName = attrName;
+            this.attrVal = attrVal;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void onInvoke(ServiceInterceptorContext ctx) {
+            assertEquals(expMtdName, ctx.method());
+
+            ctx.attribute(attrName, attrVal);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void onComplete(@Nullable Object res, ServiceInterceptorContext ctx) throws ServiceInterceptException {
+            resHolder.set(res);
+        }
+
+        // todo check errors
+    }
+
+    /**
+     * Check service interceptor.
+     */
+    @Test
+    public void testInterceptor() {
+        // todo
+        ServiceCallContext callCtx = ServiceCallContext.builder().put(STR_ATTR_NAME, "John").build();
+
+        TestService ctxProxy = grid(0).services().serviceProxy(SVC_NAME_INTERCEPTED, TestService.class, sticky, callCtx);
+        TestService noCtxProxy = grid(0).services().serviceProxy(SVC_NAME_INTERCEPTED, TestService.class, sticky);
+
+        assertEquals("Jane", ctxProxy.attribute(false));
+        assertEquals("Jane", noCtxProxy.attribute(false));
+
     }
 
     /**
@@ -212,18 +284,18 @@ public class IgniteServiceCallContextTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private static interface TestService extends Service {
+    private interface TestService extends Service {
         /**
          * @param useInjectedSvc Get attribute from the injected service.
          * @return Context attribute value.
          */
-        public String attribute(boolean useInjectedSvc);
+        String attribute(boolean useInjectedSvc);
 
         /**
          * @param useInjectedSvc Get attribute from the injected service.
          * @return Context attribute value.
          */
-        public byte[] binaryAttribute(boolean useInjectedSvc);
+        byte[] binaryAttribute(boolean useInjectedSvc);
     }
 
     /** */

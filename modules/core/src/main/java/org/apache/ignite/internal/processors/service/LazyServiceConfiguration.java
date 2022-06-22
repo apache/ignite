@@ -65,6 +65,7 @@ public class LazyServiceConfiguration extends ServiceConfiguration {
         cacheName = cfg.getCacheName();
         affKey = cfg.getAffinityKey();
         nodeFilter = cfg.getNodeFilter();
+        interceptor = cfg.getInterceptor();
         this.srvcBytes = srvcBytes;
         srvc = cfg.getService();
         srvcClsName = srvc.getClass().getName();

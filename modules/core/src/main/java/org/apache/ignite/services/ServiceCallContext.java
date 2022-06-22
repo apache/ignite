@@ -55,6 +55,7 @@ import org.apache.ignite.lang.IgniteExperimental;
  *
  * @see ServiceContext
  * @see ServiceCallContextBuilder
+ * @see ServiceCallInterceptor
  */
 @IgniteExperimental
 public interface ServiceCallContext {
