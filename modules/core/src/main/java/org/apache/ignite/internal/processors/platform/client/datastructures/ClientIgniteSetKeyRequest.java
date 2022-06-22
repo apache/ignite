@@ -19,21 +19,43 @@ package org.apache.ignite.internal.processors.platform.client.datastructures;
 
 import org.apache.ignite.IgniteSet;
 import org.apache.ignite.binary.BinaryRawReader;
-import org.apache.ignite.internal.processors.platform.client.ClientBooleanResponse;
+import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
 
-public class ClientIgniteSetContainsRequest extends ClientIgniteSetKeyRequest {
+/**
+ * Base class for all IgniteSet single-key requests.
+ */
+public abstract class ClientIgniteSetKeyRequest extends ClientIgniteSetRequest {
+    /** Key. */
+    private final Object key;
+
     /**
      * Constructor.
      *
      * @param reader Reader.
      */
-    ClientIgniteSetContainsRequest(BinaryRawReader reader) {
+    ClientIgniteSetKeyRequest(BinaryRawReader reader) {
         super(reader);
+
+        key = reader.readObject();
     }
 
     /** {@inheritDoc} */
-    @Override ClientResponse process(IgniteSet<Object> set, Object key) {
-        return new ClientBooleanResponse(requestId(), set.contains(key));
+    @Override public ClientResponse process(ClientConnectionContext ctx) {
+        IgniteSet<Object> igniteSet = igniteSet(ctx);
+
+        if (igniteSet == null)
+            return notFoundResponse();
+
+        return process(igniteSet, key);
     }
+
+    /**
+     * Processes the key request.
+     *
+     * @param set Ignite set.
+     * @param key Key.
+     * @return Response.
+     */
+    abstract ClientResponse process(IgniteSet<Object> set, Object key);
 }
