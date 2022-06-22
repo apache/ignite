@@ -34,13 +34,13 @@
 
     <groupId>org.apache.ignite</groupId>
     <artifactId>ignite-checkstyle</artifactId>
-    <version>2.14.0-SNAPSHOT</version>
+    <version>${revision}</version>
 
     <properties>
         <maven.compiler.source>1.8</maven.compiler.source>
         <maven.compiler.target>1.8</maven.compiler.target>
-
         <maven.flatten.file.name>pom-installed.xml</maven.flatten.file.name>
+        <revision>2.14.0-SNAPSHOT</revision>
     </properties>
 
     <url>https://ignite.apache.org</url>
