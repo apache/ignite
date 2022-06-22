@@ -331,6 +331,15 @@ public class ClientMessageParser implements ClientListenerMessageParser {
     /** Check if IgniteSet exists. */
     private static final short OP_SET_EXISTS = 9002;
 
+    /** IgniteSet.add. */
+    private static final short OP_SET_VALUE_ADD = 9003;
+
+    /** IgniteSet.remove. */
+    private static final short OP_SET_VALUE_REMOVE = 9004;
+
+    /** IgniteSet.contains. */
+    private static final short OP_SET_VALUE_CONTAINS = 9005;
+
     /** Marshaller. */
     private final GridBinaryMarshaller marsh;
 

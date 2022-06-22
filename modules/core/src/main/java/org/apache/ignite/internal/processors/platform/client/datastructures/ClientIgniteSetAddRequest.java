@@ -23,20 +23,20 @@ import org.apache.ignite.internal.processors.platform.client.ClientBooleanRespon
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
 
 /**
- *
+ * 
  */
-public class ClientIgniteSetContainsRequest extends ClientIgniteSetKeyRequest {
+public class ClientIgniteSetAddRequest extends ClientIgniteSetKeyRequest {
     /**
      * Constructor.
      *
      * @param reader Reader.
      */
-    ClientIgniteSetContainsRequest(BinaryRawReader reader) {
+    ClientIgniteSetAddRequest(BinaryRawReader reader) {
         super(reader);
     }
 
     /** {@inheritDoc} */
     @Override ClientResponse process(IgniteSet<Object> set, Object key) {
-        return new ClientBooleanResponse(requestId(), set.contains(key));
+        return new ClientBooleanResponse(requestId(), set.add(key));
     }
 }
