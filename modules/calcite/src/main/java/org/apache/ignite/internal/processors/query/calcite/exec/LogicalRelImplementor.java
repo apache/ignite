@@ -416,10 +416,10 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
         if (idx != null && !tbl.isIndexRebuildInProgress()) {
             return new ScanNode<>(ctx, rel.getRowType(), () -> Collections.singletonList(ctx.rowHandler()
                 .factory(ctx.getTypeFactory(), rel.getRowType())
-                .create(idx.scanCount(ctx, ctx.group(rel.sourceId())))).iterator());
+                .create(idx.count(ctx, ctx.group(rel.sourceId())))).iterator());
         }
         else {
-            CollectNode<Row> replacement = new CollectNode<>(ctx);
+            CollectNode<Row> replacement = CollectNode.createCountCollector(ctx);
 
             replacement.register(new ScanNode<>(ctx, rel.getTable().getRowType(), tbl.scan(ctx,
                 ctx.group(rel.sourceId()), null, null, ImmutableBitSet.of(0))));

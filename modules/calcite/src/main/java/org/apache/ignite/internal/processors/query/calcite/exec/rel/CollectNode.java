@@ -51,9 +51,24 @@ public class CollectNode<Row> extends AbstractNode<Row> implements SingleNode<Ro
         ExecutionContext<Row> ctx,
         RelDataType rowType
     ) {
+        this(ctx, rowType, createCollector(ctx, rowType));
+    }
+
+    /**
+     * Creates Collect node with the collector depending on {@code rowType}.
+     *
+     * @param ctx Execution context.
+     * @param rowType Output row type.
+     * @param collector Collector.
+     */
+    private CollectNode(
+        ExecutionContext<Row> ctx,
+        RelDataType rowType,
+        Collector<Row> collector
+    ) {
         super(ctx, rowType);
 
-        collector = createCollector(ctx, rowType);
+        this.collector = collector;
     }
 
     /**
@@ -61,12 +76,15 @@ public class CollectNode<Row> extends AbstractNode<Row> implements SingleNode<Ro
      *
      * @param ctx Execution context.
      */
-    public CollectNode(
-        ExecutionContext<Row> ctx
-    ) {
-        super(ctx, ctx.getTypeFactory().createSqlType(SqlTypeName.BIGINT));
+    public static <Row> CollectNode<Row> createCountCollector(ExecutionContext<Row> ctx) {
+        RelDataType rowType = ctx.getTypeFactory().createSqlType(SqlTypeName.BIGINT);
 
-        collector = new Counter<>(ctx.rowHandler(), ctx.rowHandler().factory(ctx.getTypeFactory(), rowType()), 1);
+        Collector<Row> collector = new Counter<>(
+            ctx.rowHandler(),
+            ctx.rowHandler().factory(ctx.getTypeFactory(), rowType),
+            1);
+
+        return new CollectNode<>(ctx, rowType, collector);
     }
 
     /** {@inheritDoc} */

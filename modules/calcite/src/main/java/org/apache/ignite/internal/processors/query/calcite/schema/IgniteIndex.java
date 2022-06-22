@@ -94,5 +94,5 @@ public interface IgniteIndex {
      * @param grp  Colocation group.
      * @return Index records number for {@code group}.
      */
-    public long scanCount(ExecutionContext<?> ectx, ColocationGroup grp);
+    public long count(ExecutionContext<?> ectx, ColocationGroup grp);
 }
