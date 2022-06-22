@@ -98,7 +98,7 @@ public class SystemViewIndexImpl implements IgniteIndex {
     }
 
     /** {@inheritDoc} */
-    @Override public long scanCount(ExecutionContext<?> ectx, ColocationGroup grp) {
+    @Override public long count(ExecutionContext<?> ectx, ColocationGroup grp) {
         return tbl.descriptor().systemView().size();
     }
 

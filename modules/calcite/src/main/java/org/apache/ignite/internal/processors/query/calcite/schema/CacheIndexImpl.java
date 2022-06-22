@@ -115,7 +115,7 @@ public class CacheIndexImpl implements IgniteIndex {
     }
 
     /** {@inheritDoc} */
-    @Override public long scanCount(ExecutionContext<?> ectx, ColocationGroup grp) {
+    @Override public long count(ExecutionContext<?> ectx, ColocationGroup grp) {
         long cnt = 0;
 
         if (idx != null && grp.nodeIds().contains(ectx.localNodeId())) {
