@@ -31,7 +31,7 @@ public class ClientIgniteSetRemoveRequest extends ClientIgniteSetKeyRequest {
      *
      * @param reader Reader.
      */
-    ClientIgniteSetRemoveRequest(BinaryRawReader reader) {
+    public ClientIgniteSetRemoveRequest(BinaryRawReader reader) {
         super(reader);
     }
 

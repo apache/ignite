@@ -31,7 +31,7 @@ public class ClientIgniteSetContainsRequest extends ClientIgniteSetKeyRequest {
      *
      * @param reader Reader.
      */
-    ClientIgniteSetContainsRequest(BinaryRawReader reader) {
+    public ClientIgniteSetContainsRequest(BinaryRawReader reader) {
         super(reader);
     }
 
