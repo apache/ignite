@@ -225,8 +225,6 @@ public enum PlannerPhase {
                     FilterScanMergeRule.INDEX_SCAN,
                     FilterSpoolMergeToSortedIndexSpoolRule.INSTANCE,
                     FilterSpoolMergeToHashIndexSpoolRule.INSTANCE,
-                    IndexMinMaxRule.INSTANCE,
-
                     LogicalOrToUnionRule.INSTANCE,
 
                     // TODO: https://issues.apache.org/jira/browse/IGNITE-16334 join rules ordering is significant here.

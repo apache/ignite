@@ -327,5 +327,27 @@ public class IndexScan<Row> extends AbstractIndexScan<Row, IndexRow> {
                 throw new IgniteException("Failed to find index rows", e);
             }
         }
+
+        @Override
+        public GridCursor<IndexRow> findFirst(IndexQueryContext qctx) {
+            try {
+                //TODO: segment
+                return idx.findFirst(0, qctx);
+            } catch (IgniteCheckedException e) {
+                //TODO: exception
+                throw new RuntimeException(e);
+            }
+        }
+
+        @Override
+        public GridCursor<IndexRow> findLast(IndexQueryContext qctx) {
+            try {
+                //TODO: segment
+                return idx.findLast(0, qctx);
+            } catch (IgniteCheckedException e) {
+                //TODO: exception
+                throw new IgniteException(e);
+            }
+        }
     }
 }

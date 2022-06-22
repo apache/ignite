@@ -21,15 +21,21 @@ import java.util.Collections;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import com.google.common.collect.ImmutableMap;
+import org.apache.calcite.linq4j.Ord;
 import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.RelRule;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelCollations;
+import org.apache.calcite.rel.RelDistribution;
 import org.apache.calcite.rel.core.AggregateCall;
 import org.apache.calcite.rel.logical.LogicalAggregate;
 import org.apache.calcite.rex.RexLiteral;
+import org.apache.calcite.sql.SqlCall;
 import org.apache.calcite.sql.SqlKind;
+import org.apache.calcite.sql.fun.SqlMinMaxAggFunction;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
+import org.apache.calcite.tools.RelBuilder;
+import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.calcite.util.ImmutableIntList;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteConvention;
@@ -41,7 +47,9 @@ import org.apache.ignite.internal.processors.query.calcite.schema.IgniteIndex;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
 import org.apache.ignite.internal.processors.query.calcite.trait.RewindabilityTrait;
+import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.processors.query.calcite.util.IndexConditions;
+import org.apache.ignite.internal.processors.query.calcite.util.RexUtils;
 import org.immutables.value.Value;
 
 import static org.apache.calcite.sql.fun.SqlStdOperatorTable.FIRST_VALUE;
@@ -94,7 +102,8 @@ public class IndexMinMaxRule extends RelRule<IndexMinMaxRule.Config> {
 
         RelTraitSet idxTraits = aggr.getTraitSet()
             .replace(IgniteConvention.INSTANCE)
-            .replace(IgniteDistributions.random())
+            .replace(table.distribution().getType() == RelDistribution.Type.HASH_DISTRIBUTED ?
+                    IgniteDistributions.random() : table.distribution())
             .replace(RewindabilityTrait.REWINDABLE);
 //
 //        // TODO: read multiple aggregates.
@@ -110,35 +119,53 @@ public class IndexMinMaxRule extends RelRule<IndexMinMaxRule.Config> {
         RexLiteral limit = scan.getCluster().getRexBuilder().makeLiteral(FIRST_VALUE, aggr.getRowType());
 
         IndexConditions idxConditions = new IndexConditions(null, null, null, Collections.singletonList(limit));
+        idxConditions = RexUtils.buildSortedIndexConditions(
+                scan.getCluster(),
+                idx.collation(),
+                RexUtils.builder(scan.getCluster()).makeCall(),
+                scan.getRowType(),
+                scan.requiredColumns()
+                );
 
-        IgniteIndexScan idxProbe = new IgniteIndexScan(scan.getCluster(), idxTraits, scan.getTable(), idx.name(),
-            null, limit, idxConditions, scan.requiredColumns(), idx.collation());
+        IgniteIndexScan input = new IgniteIndexScan(
+                scan.getCluster(),
+                idxTraits,
+                scan.getTable(),
+                idx.name(),
+                null,
+                null,
+                idxConditions,
+                scan.requiredColumns(),
+                idx.collation());
 
-        // TODO: read multiple aggregates.
-        AggregateCall idxSumAggCall = AggregateCall.create(
-            //TODO: aggergate call kind
-            SqlStdOperatorTable.MIN,
-            false,
-            false,
-            false,
-            ImmutableIntList.of(0),
-            -1,
-            null,
-            RelCollations.EMPTY,
-            0,
-            idxProbe,
-            null,
-            null);
+//        IgniteIndexScan input = new IgniteIndexScan(scan.getCluster(), idxTraits, scan.getTable(), idx.name(),
+//            null, limit, idxConditions, scan.requiredColumns(), idx.collation());
 
-        LogicalAggregate newRel = new LogicalAggregate(
-            aggr.getCluster(),
-            aggr.getTraitSet(),
-            Collections.emptyList(),
-            idxProbe,
-            aggr.getGroupSet(),
-            aggr.getGroupSets(),
-            Stream.generate(() -> idxSumAggCall).limit(aggr.getAggCallList().size()).collect(Collectors.toList())
-        );
+//        // TODO: read multiple aggregates.
+//        AggregateCall idxSumAggCall = AggregateCall.create(
+//            //TODO: aggergate call kind
+//            SqlStdOperatorTable.MIN,
+//            false,
+//            false,
+//            false,
+//            ImmutableIntList.of(0),
+//            -1,
+//            null,
+//            RelCollations.EMPTY,
+//            0,
+//                input,
+//            null,
+//            null);
+//
+//        LogicalAggregate newRel = new LogicalAggregate(
+//            aggr.getCluster(),
+//            aggr.getTraitSet(),
+//            Collections.emptyList(),
+//                input,
+//            aggr.getGroupSet(),
+//            aggr.getGroupSets(),
+//            Stream.generate(() -> idxSumAggCall).limit(aggr.getAggCallList().size()).collect(Collectors.toList())
+//        );
 //
 //        // SUM0/DECIMAL to COUNT()/Long converter.
 //        List<RexNode> proj = new ArrayList<>();
@@ -152,8 +179,21 @@ public class IndexMinMaxRule extends RelRule<IndexMinMaxRule.Config> {
 //            aggr.getTraitSet().replace(IgniteConvention.INSTANCE),
 //            newRel,
 //            proj, aggr.getRowType());
+
+
+
+        RelBuilder b = call.builder();
+
+        // Also cast DECIMAL of SUM0 to BIGINT(Long) of COUNT().
+        call.transformTo(b.push(idxCnt)
+                .aggregate(b.groupKey(), Collections.nCopies(aggr.getAggCallList().size(),
+                        b.aggregateCall(SqlStdOperatorTable.SUM0, b.field(0))))
+                .project(Commons.transform(Ord.zip(b.fields()),
+                        f -> b.cast(f.e, aggr.getRowType().getFieldList().get(f.i).getType().getSqlTypeName())))
+                .build()
+        );
 //
-        call.transformTo(newRel, ImmutableMap.of(newRel, aggr));
+//        call.transformTo(newRel, ImmutableMap.of(newRel, aggr));
     }
 
     /** The rule config. */

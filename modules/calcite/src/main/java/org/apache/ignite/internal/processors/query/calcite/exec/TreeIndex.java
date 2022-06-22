@@ -34,4 +34,10 @@ public interface TreeIndex<R> {
      * @return Cursor over the rows within bounds.
      */
     public GridCursor<R> find(R lower, R upper, IndexQueryContext qctx);
+
+    /** TODO */
+    public GridCursor<R> findFirst(IndexQueryContext qctx);
+
+    /** TODO */
+    public GridCursor<R> findLast(IndexQueryContext qctx);
 }

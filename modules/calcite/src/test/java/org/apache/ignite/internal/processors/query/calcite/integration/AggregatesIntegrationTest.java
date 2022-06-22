@@ -33,8 +33,8 @@ public class AggregatesIntegrationTest extends AbstractBasicIntegrationTest {
     public void testMinOptimization(){
         createAndPopulateTable();
 
-//        assertQuery("select min(salary) from Person where name <> 'dg'").returns(7.0).check();
-        assertQuery("select 1, min(salary), max(salary) from Person").returns(7.0).check();
+        assertQuery("select min(salary) from Person").returns(7.0).check();
+//        assertQuery("select 1, min(salary), max(salary) from Person").returns(7.0).check();
     }
 
     /** */
