@@ -17,5 +17,143 @@
 
 package org.apache.ignite.client;
 
+import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.internal.util.typedef.internal.S;
+
+import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
+import static org.apache.ignite.cache.CacheMode.PARTITIONED;
+
+/**
+ * Configuration for Ignite collections.
+ */
 public class ClientCollectionConfiguration {
+    /** Cache atomicity mode. */
+    private CacheAtomicityMode atomicityMode = ATOMIC;
+
+    /** Cache mode. */
+    private CacheMode cacheMode = PARTITIONED;
+
+    /** Number of backups. */
+    private int backups = 0;
+
+    /** Off-heap memory size. */
+    private long offHeapMaxMem = -1;
+
+    /** Collocated flag. */
+    private boolean collocated;
+
+    /** Group name. */
+    private String grpName;
+
+    /**
+     * @return {@code True} if all items within the same collection will be collocated on the same node.
+     */
+    public boolean isCollocated() {
+        return collocated;
+    }
+
+    /**
+     * @param collocated If {@code true} then all items within the same collection will be collocated on the same node.
+     *      Otherwise elements of the same set maybe be cached on different nodes. This parameter works only
+     *      collections stored in {@link CacheMode#PARTITIONED} cache.
+     *
+     * @return {@code this} for chaining.
+     */
+    public ClientCollectionConfiguration setCollocated(boolean collocated) {
+        this.collocated = collocated;
+
+        return this;
+    }
+
+    /**
+     * @return Cache atomicity mode.
+     */
+    public CacheAtomicityMode getAtomicityMode() {
+        return atomicityMode;
+    }
+
+    /**
+     * @param atomicityMode Cache atomicity mode.
+     * @return {@code this} for chaining.
+     */
+    public ClientCollectionConfiguration setAtomicityMode(CacheAtomicityMode atomicityMode) {
+        this.atomicityMode = atomicityMode;
+
+        return this;
+    }
+
+    /**
+     * @return Cache mode.
+     */
+    public CacheMode getCacheMode() {
+        return cacheMode;
+    }
+
+    /**
+     * @param cacheMode Cache mode.
+     * @return {@code this} for chaining.
+     */
+    public ClientCollectionConfiguration setCacheMode(CacheMode cacheMode) {
+        this.cacheMode = cacheMode;
+
+        return this;
+    }
+
+    /**
+     * @return Number of backups.
+     */
+    public int getBackups() {
+        return backups;
+    }
+
+    /**
+     * @param backups Cache number of backups.
+     * @return {@code this} for chaining.
+     */
+    public ClientCollectionConfiguration setBackups(int backups) {
+        this.backups = backups;
+
+        return this;
+    }
+
+    /**
+     * @return Off-heap memory size.
+     */
+    public long getOffHeapMaxMemory() {
+        return offHeapMaxMem;
+    }
+
+    /**
+     * @param offHeapMaxMemory Off-heap memory size.
+     * @return {@code this} for chaining.
+     */
+    public ClientCollectionConfiguration setOffHeapMaxMemory(long offHeapMaxMemory) {
+        this.offHeapMaxMem = offHeapMaxMemory;
+
+        return this;
+    }
+
+    /**
+     * @return Group name.
+     */
+    public String getGroupName() {
+        return grpName;
+    }
+
+    /**
+     * @param grpName Group name.
+     * @return {@code this} for chaining.
+     */
+    public ClientCollectionConfiguration setGroupName(String grpName) {
+        this.grpName = grpName;
+
+        return this;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(ClientCollectionConfiguration.class, this);
+    }
+
 }

@@ -322,6 +322,15 @@ public class ClientMessageParser implements ClientListenerMessageParser {
     /** AtomicLong.compareAndSetAndGet. */
     private static final short OP_ATOMIC_LONG_VALUE_COMPARE_AND_SET_AND_GET = 9007;
 
+    /** Create an IgniteSet. */
+    private static final short OP_SET_CREATE = 9000;
+
+    /** Remove an IgniteSet. */
+    private static final short OP_SET_REMOVE = 9001;
+
+    /** Check if IgniteSet exists. */
+    private static final short OP_SET_EXISTS = 9002;
+
     /** Marshaller. */
     private final GridBinaryMarshaller marsh;
 
