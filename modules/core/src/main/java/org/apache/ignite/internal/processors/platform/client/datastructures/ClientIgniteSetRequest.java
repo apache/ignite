@@ -17,8 +17,6 @@
 
 package org.apache.ignite.internal.processors.platform.client.datastructures;
 
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSet;
 import org.apache.ignite.binary.BinaryRawReader;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
@@ -32,9 +30,6 @@ public class ClientIgniteSetRequest extends ClientRequest {
     /** */
     private final String name;
 
-    /** Cache group name. */
-    private final String groupName;
-
     /**
      * Constructor.
      *
@@ -44,7 +39,6 @@ public class ClientIgniteSetRequest extends ClientRequest {
         super(reader);
 
         name = reader.readString();
-        groupName = reader.readString();
     }
 
     /**
@@ -57,26 +51,13 @@ public class ClientIgniteSetRequest extends ClientRequest {
     }
 
     /**
-     * Gets the group name.
-     *
-     * @return Group name.
-     */
-    protected String groupName() {
-        return groupName;
-    }
-
-    /**
      * Gets the IgniteSet.
      *
      * @param ctx Context.
      * @return IgniteSet or null.
      */
     protected <T> IgniteSet<T> igniteSet(ClientConnectionContext ctx) {
-        try {
-            return ctx.kernalContext().dataStructures().set(name, groupName, null);
-        } catch (IgniteCheckedException e) {
-            throw new IgniteException(e.getMessage(), e);
-        }
+        return ctx.kernalContext().grid().set(name, null);
     }
 
     /**

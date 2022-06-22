@@ -17,8 +17,6 @@
 
 package org.apache.ignite.internal.processors.platform.client.datastructures;
 
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.binary.BinaryRawReader;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
@@ -51,6 +49,7 @@ public class ClientIgniteSetGetOrCreateRequest extends ClientIgniteSetRequest {
                 .setAtomicityMode(CacheAtomicityMode.fromOrdinal(reader.readByte()))
                 .setCacheMode(CacheMode.fromOrdinal(reader.readByte()))
                 .setBackups(reader.readInt())
+                .setGroupName(reader.readString())
                 .setOffHeapMaxMemory(reader.readLong())
                 .setCollocated(reader.readBoolean())
                 : null;
@@ -58,16 +57,14 @@ public class ClientIgniteSetGetOrCreateRequest extends ClientIgniteSetRequest {
 
     /** {@inheritDoc} */
     @Override public ClientResponse process(ClientConnectionContext ctx) {
-        try {
-            GridCacheSetProxy<Object> set = (GridCacheSetProxy<Object>)ctx.kernalContext().dataStructures().set(
-                    name(), groupName(), collectionConfiguration);
+        GridCacheSetProxy<Object> set = (GridCacheSetProxy<Object>) ctx
+                .kernalContext()
+                .grid()
+                .set(name(), collectionConfiguration);
 
-            IgniteUuid id = set.delegate().id();
+        IgniteUuid id = set.delegate().id();
 
-            return new Response(requestId(), id);
-        } catch (IgniteCheckedException e) {
-            throw new IgniteException(e.getMessage(), e);
-        }
+        return new Response(requestId(), id);
     }
 
     /**
