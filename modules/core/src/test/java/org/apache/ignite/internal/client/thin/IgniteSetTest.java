@@ -28,6 +28,7 @@ import org.junit.Test;
  */
 // TODO: Test custom objects
 // TODO: Test behavior when removed or does not exist - match thick API.
+// TODO: Test partition awareness.
 public class IgniteSetTest extends AbstractThinClientTest {
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
