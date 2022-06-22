@@ -322,6 +322,11 @@ public abstract class AbstractDataPageIO<T extends Storable> extends PageIO impl
         PageUtils.putShort(pageAddr, FREE_SPACE_OFF, (short)freeSpace);
     }
 
+    /** {@inheritDoc} */
+    @Override public int getFreeSpace(int pageSize, long pageAddr) {
+        return getFreeSpace(pageAddr);
+    }
+
     /**
      * Free space refers to a "max row size (without any data page specific overhead) which is guaranteed to fit into
      * this data page".

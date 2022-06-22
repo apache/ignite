@@ -230,4 +230,9 @@ public class PagePartitionCountersIO extends PageIO {
 
         sb.a("\n\t}\n]");
     }
+
+    /** {@inheritDoc} */
+    @Override public int getFreeSpace(int pageSize, long pageAddr) {
+        return (getCapacity(pageSize) - getCount(pageAddr)) / ITEM_SIZE;
+    }
 }

@@ -18,9 +18,7 @@
 package org.apache.ignite.internal.commandline.indexreader;
 
 import java.io.File;
-import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.channels.FileChannel;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -459,7 +457,7 @@ public class IgniteIndexReader implements AutoCloseable {
             while (currPageId != 0) {
                 PagesListNodeIO io = readPage(idxStore, currPageId, nodeBuf);
 
-                ScanContext.onPageIO(readPage(idxStore, currPageId, pageBuf), stats, 1);
+                ScanContext.onPageIO(readPage(idxStore, currPageId, pageBuf), stats, 1, 0);
 
                 pageIds.add(normalizePageId(normalizePageId(currPageId)));
 
@@ -470,7 +468,7 @@ public class IgniteIndexReader implements AutoCloseable {
 
                     pageIds.add(pageId);
 
-                    ScanContext.onPageIO(readPage(idxStore, pageId, pageBuf), stats, 1);
+                    ScanContext.onPageIO(readPage(idxStore, pageId, pageBuf), stats, 1, 0);
                 }
 
                 currPageId = io.getNextId(nodeAddr);
@@ -667,7 +665,7 @@ public class IgniteIndexReader implements AutoCloseable {
 
     /** */
     ScanContext createContext(int cacheId, FilePageStore store, ItemStorage items) {
-        return new ScanContext(cacheId, store, items);
+        return new ScanContext(cacheId, store, items, log);
     }
 
     /** */
@@ -685,32 +683,6 @@ public class IgniteIndexReader implements AutoCloseable {
         return partId == INDEX_PARTITION ? idxStore : partStores[partId];
     }
 
-    /**
-     * Reading a page from channel into buffer.
-     *
-     * @param buf Buffer.
-     * @param ch Source for reading pages.
-     * @param pageSize Size of page to read into buffer.
-     */
-    private boolean readNextPage(ByteBuffer buf, FileChannel ch, int pageSize) throws IOException {
-        assert buf.remaining() == pageSize;
-
-        do {
-            if (ch.read(buf) == -1)
-                break;
-        }
-        while (buf.hasRemaining());
-
-        if (!buf.hasRemaining() && PageIO.getPageId(buf) != 0)
-            return true; //pageSize bytes read && pageId != 0
-        else if (buf.remaining() == pageSize)
-            return false; //0 bytes read
-        else
-            // 1 <= readBytes < pageSize || readBytes == pagesIze && pageId != 0
-            throw new IgniteException("Corrupted page in partitionId " +
-                ", readByte=" + buf.position() + ", pageSize=" + pageSize);
-    }
-
     /** */
     static long normalizePageId(long pageId) {
         return pageId(partId(pageId), flag(pageId), pageIndex(pageId));
@@ -723,7 +695,7 @@ public class IgniteIndexReader implements AutoCloseable {
      * @param pageId Page ID.
      * @param buf Buffer.
      */
-    private <I extends PageIO> I readPage(FilePageStore store, long pageId, ByteBuffer buf) throws IgniteCheckedException {
+    static <I extends PageIO> I readPage(FilePageStore store, long pageId, ByteBuffer buf) throws IgniteCheckedException {
         try {
             store.read(pageId, (ByteBuffer)buf.rewind(), false);
 
@@ -741,7 +713,7 @@ public class IgniteIndexReader implements AutoCloseable {
     protected <I extends PageIO> I readPage(ScanContext ctx, long pageId, ByteBuffer buf) throws IgniteCheckedException {
         final I io = readPage(ctx.store, pageId, buf);
 
-        ctx.onPageIO(io);
+        ctx.onPageIO(io, bufferAddress(buf));
 
         return io;
     }

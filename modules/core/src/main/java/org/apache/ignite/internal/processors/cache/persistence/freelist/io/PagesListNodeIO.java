@@ -282,4 +282,9 @@ public class PagesListNodeIO extends PageIO implements CompactablePageIO {
 
         sb.a("\n\t}\n]");
     }
+
+    /** {@inheritDoc} */
+    @Override public int getFreeSpace(int pageSize, long pageAddr) {
+        return (getCapacity(pageSize) - getCount(pageAddr)) * 8;
+    }
 }

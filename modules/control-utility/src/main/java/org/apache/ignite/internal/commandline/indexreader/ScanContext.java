@@ -20,14 +20,22 @@ package org.apache.ignite.internal.commandline.indexreader;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.logging.Logger;
 
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStore;
+import org.apache.ignite.internal.processors.cache.persistence.freelist.io.PagesListNodeIO;
+import org.apache.ignite.internal.processors.cache.persistence.tree.io.AbstractDataPageIO;
+import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusIO;
+import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusLeafIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 
 /**
  * Traverse context, which is used for tree traversal and is unique for traversal of one single tree.
  */
 class ScanContext {
+    /** Logger. */
+    private final Logger log;
+
     /** Cache id or {@code -1} for sequential scan. */
     final int cacheId;
 
@@ -44,7 +52,8 @@ class ScanContext {
     final ItemStorage items;
 
     /** */
-    public ScanContext(int cacheId, FilePageStore store, ItemStorage items) {
+    public ScanContext(int cacheId, FilePageStore store, ItemStorage items, Logger log) {
+        this.log = log;
         this.cacheId = cacheId;
         this.store = store;
         this.items = items;
@@ -53,15 +62,16 @@ class ScanContext {
     }
 
     /** */
-    public void onPageIO(PageIO io) {
-        onPageIO(io, stats, 1);
+    public void onPageIO(PageIO io, long addr) {
+        onPageIO(io, stats, 1, io.getFreeSpace(store.getPageSize(), addr));
     }
 
     /** */
-    public static void onPageIO(PageIO io, Map<Class<? extends PageIO>, PagesStatistic> stats, long cnt) {
+    public static void onPageIO(PageIO io, Map<Class<? extends PageIO>, PagesStatistic> stats, long cnt, int free) {
         PagesStatistic stat = stats.computeIfAbsent(io.getClass(), k -> new PagesStatistic());
 
         stat.cnt += cnt;
+        stat.freeSpace += free;
     }
 
     /** */
@@ -88,9 +98,5 @@ class ScanContext {
 
         /** Summary free space. */
         long freeSpace;
-
-        /** */
-        PagesStatistic() {
-        }
     }
 }

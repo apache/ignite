@@ -346,6 +346,11 @@ public class BPlusMetaIO extends PageIO {
             //TODO print firstPageIds by level
     }
 
+    /** {@inheritDoc} */
+    @Override public int getFreeSpace(int pageSize, long pageAddr) {
+        return (getMaxLevels(pageAddr, pageSize) - getLevelsCount(pageAddr)) * 8;
+    }
+
     /**
      * @param pageAddr Page address.
      * @param inlineObjSupported Supports inline object flag.
