@@ -20,6 +20,7 @@ package org.apache.ignite.internal.client.thin;
 import java.util.Collection;
 import java.util.Iterator;
 import org.apache.ignite.client.ClientIgniteSet;
+import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.lang.IgniteUuid;
@@ -37,26 +38,32 @@ class ClientIgniteSetImpl<T> implements ClientIgniteSet<T> {
     /** */
     private final ReliableChannel ch;
 
+    /** */
+    private final ClientUtils serDes;
+
     /**
      * Constructor.
      *
      * @param ch Channel.
+     * @param serDes Utils..
      * @param name Name.
      * @param id Id.
      */
-    public ClientIgniteSetImpl(ReliableChannel ch, String name, IgniteUuid id) {
+    public ClientIgniteSetImpl(ReliableChannel ch, ClientUtils serDes, String name, IgniteUuid id) {
         assert ch != null;
+        assert serDes != null;
         assert name != null;
         assert id != null;
 
         this.ch = ch;
+        this.serDes = serDes;
         this.name = name;
         this.id = id;
     }
 
     @Override
     public boolean add(T t) {
-        return false;
+        return singleKeyOp(ClientOperation.OP_SET_VALUE_ADD, t);
     }
 
     @Override
@@ -71,7 +78,7 @@ class ClientIgniteSetImpl<T> implements ClientIgniteSet<T> {
 
     @Override
     public boolean contains(Object o) {
-        return false;
+        return singleKeyOp(ClientOperation.OP_SET_VALUE_CONTAINS, o);
     }
 
     @Override
@@ -91,7 +98,7 @@ class ClientIgniteSetImpl<T> implements ClientIgniteSet<T> {
 
     @Override
     public boolean remove(Object o) {
-        return false;
+        return singleKeyOp(ClientOperation.OP_SET_VALUE_REMOVE, o);
     }
 
     @Override
@@ -147,5 +154,15 @@ class ClientIgniteSetImpl<T> implements ClientIgniteSet<T> {
     @Override
     public <R> R affinityCall(IgniteCallable<R> job) {
         return null;
+    }
+
+    private Boolean singleKeyOp(ClientOperation op, Object key) {
+        // TODO: Partition awareness - we need to know colocated flag.
+        return ch.service(op, out -> {
+            try (BinaryRawWriterEx w = serDes.createBinaryWriter(out.out())) {
+                w.writeString(name);
+                w.writeObject(key);
+            }
+        }, r -> r.in().readBoolean());
     }
 }

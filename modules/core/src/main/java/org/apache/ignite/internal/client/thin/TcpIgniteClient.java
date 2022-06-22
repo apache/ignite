@@ -354,20 +354,17 @@ public class TcpIgniteClient implements IgniteClient {
 
         if (create) {
             ch.service(ClientOperation.ATOMIC_LONG_CREATE, out -> {
-                try (BinaryRawWriterEx w = new BinaryWriterExImpl(null, out.out(), null, null)) {
-                    w.writeString(name);
-                    w.writeLong(initVal);
+                writeString(name, out.out());
+                out.out().writeLong(initVal);
 
-                    if (cfg != null) {
-                        w.writeBoolean(true);
-                        w.writeInt(cfg.getAtomicSequenceReserveSize());
-                        w.writeByte((byte)cfg.getCacheMode().ordinal());
-                        w.writeInt(cfg.getBackups());
-                        w.writeString(cfg.getGroupName());
-                    }
-                    else
-                        w.writeBoolean(false);
-                }
+                if (cfg != null) {
+                    out.out().writeBoolean(true);
+                    out.out().writeInt(cfg.getAtomicSequenceReserveSize());
+                    out.out().writeByte((byte) cfg.getCacheMode().ordinal());
+                    out.out().writeInt(cfg.getBackups());
+                    writeString(cfg.getGroupName(), out.out());
+                } else
+                    out.out().writeBoolean(false);
             }, null);
         }
 
@@ -384,35 +381,30 @@ public class TcpIgniteClient implements IgniteClient {
     @Override public <T> ClientIgniteSet<T> set(String name, @Nullable ClientCollectionConfiguration cfg) {
         GridArgumentCheck.notNull(name, "name");
 
-        ch.service(ClientOperation.OP_SET_GET_OR_CREATE, out -> {
-            try (BinaryRawWriterEx w = new BinaryWriterExImpl(null, out.out(), null, null)) {
-                w.writeString(name);
+        // TODO Use set name for client ops - setId can't be used to retrieve the set. But we need setId for colocation
+        // When colocated flag is true, all items are on the same node, determined by setName.hashCode()
+        // Otherwise GridCacheSetItemKey is used (setId + object)
+        return ch.service(ClientOperation.OP_SET_GET_OR_CREATE, out -> {
+            writeString(name, out.out());
 
-                if (cfg != null) {
-                    w.writeBoolean(true);
-                    w.writeByte((byte) cfg.getAtomicityMode().ordinal());
-                    w.writeByte((byte) cfg.getCacheMode().ordinal());
-                    w.writeInt(cfg.getBackups());
-                    w.writeString(cfg.getGroupName());
-                    w.writeLong(cfg.getOffHeapMaxMemory());
-                    w.writeBoolean(cfg.isCollocated());
-                } else
-                    w.writeBoolean(false);
-            }
+            if (cfg != null) {
+                out.out().writeBoolean(true);
+                out.out().writeByte((byte) cfg.getAtomicityMode().ordinal());
+                out.out().writeByte((byte) cfg.getCacheMode().ordinal());
+                out.out().writeInt(cfg.getBackups());
+                writeString(cfg.getGroupName(), out.out());
+                out.out().writeLong(cfg.getOffHeapMaxMemory());
+                out.out().writeBoolean(cfg.isCollocated());
+            } else
+                out.out().writeBoolean(false);
         }, in -> {
             if (!in.in().readBoolean())
                 return null;
 
             IgniteUuid id = new IgniteUuid(new UUID(in.in().readLong(), in.in().readLong()), in.in().readLong());
 
-            return new ClientIgniteSetImpl(ch, name, id);
+            return new ClientIgniteSetImpl<>(ch, name, id);
         });
-
-        // Use set name for client ops - setId can't be used to retrieve the set. But we need setId for colocation
-        // When colocated flag is true, all items are on the same node, determined by setName.hashCode()
-        // Otherwise GridCacheSetItemKey is used (setId + object)
-
-        return null;
     }
 
     /**
