@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.platform.client.datastructures;
 
+import org.apache.ignite.IgniteSet;
 import org.apache.ignite.binary.BinaryRawReader;
 import org.apache.ignite.internal.processors.platform.client.ClientBooleanResponse;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
@@ -39,9 +40,11 @@ public class ClientIgniteSetContainsRequest extends ClientIgniteSetRequest {
 
     @Override
     public ClientResponse process(ClientConnectionContext ctx) {
-        // TODO: Do we need to pass group name too?
-        ctx.kernalContext().grid().set()
+        IgniteSet<Object> igniteSet = igniteSet(ctx);
 
-        return new ClientBooleanResponse(requestId(), false);
+        if (igniteSet == null)
+            return notFoundResponse();
+
+        return new ClientBooleanResponse(requestId(), igniteSet.contains(key));
     }
 }

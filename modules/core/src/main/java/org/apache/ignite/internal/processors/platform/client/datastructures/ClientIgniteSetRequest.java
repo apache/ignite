@@ -17,8 +17,13 @@
 
 package org.apache.ignite.internal.processors.platform.client.datastructures;
 
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteSet;
 import org.apache.ignite.binary.BinaryRawReader;
+import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientRequest;
+import org.apache.ignite.internal.processors.platform.client.ClientResponse;
 
 /**
  * Ignite set get or update request.
@@ -26,6 +31,9 @@ import org.apache.ignite.internal.processors.platform.client.ClientRequest;
 public class ClientIgniteSetRequest extends ClientRequest {
     /** */
     private final String name;
+
+    /** Cache group name. */
+    private final String groupName;
 
     /**
      * Constructor.
@@ -36,5 +44,29 @@ public class ClientIgniteSetRequest extends ClientRequest {
         super(reader);
 
         name = reader.readString();
+        groupName = reader.readString();
+    }
+
+    /**
+     * Gets the IgniteSet.
+     *
+     * @param ctx Context.
+     * @return IgniteSet or null.
+     */
+    protected <T> IgniteSet<T> igniteSet(ClientConnectionContext ctx) {
+        try {
+            return ctx.kernalContext().dataStructures().set(name, groupName, null);
+        } catch (IgniteCheckedException e) {
+            throw new IgniteException(e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Gets a response for non-existent set.
+     *
+     * @return Response for non-existent set.
+     */
+    protected ClientResponse notFoundResponse() {
+        return new ClientResponse(requestId(), String.format("AtomicLong with name '%s' does not exist.", name));
     }
 }
