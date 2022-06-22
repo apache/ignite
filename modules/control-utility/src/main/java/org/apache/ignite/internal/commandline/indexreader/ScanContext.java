@@ -35,7 +35,7 @@ class ScanContext {
     final FilePageStore store;
 
     /** Page type statistics. */
-    final Map<Class<? extends PageIO>, Long> ioStat;
+    final Map<Class<? extends PageIO>, PagesStatistic> stats;
 
     /** Map of errors, pageId -> set of exceptions. */
     final Map<Long, List<String>> errors;
@@ -48,22 +48,49 @@ class ScanContext {
         this.cacheId = cacheId;
         this.store = store;
         this.items = items;
-        this.ioStat = new LinkedHashMap<>();
+        this.stats = new LinkedHashMap<>();
         this.errors = new LinkedHashMap<>();
     }
 
     /** */
     public void onPageIO(PageIO io) {
-        onPageIO(io.getClass(), ioStat, 1);
+        onPageIO(io, stats, 1);
     }
 
     /** */
-    public static void onPageIO(Class<? extends PageIO> io, Map<Class<? extends PageIO>, Long> ioStat, long cnt) {
-        ioStat.compute(io, (k, v) -> v == null ? cnt : v + cnt);
+    public static void onPageIO(PageIO io, Map<Class<? extends PageIO>, PagesStatistic> stats, long cnt) {
+        PagesStatistic stat = stats.computeIfAbsent(io.getClass(), k -> new PagesStatistic());
+
+        stat.cnt += cnt;
+    }
+
+    /** */
+    public static void merge(
+        Class<? extends PageIO> io,
+        Map<Class<? extends PageIO>, PagesStatistic> stats,
+        PagesStatistic stat0
+    ) {
+        PagesStatistic stat = stats.computeIfAbsent(io, k -> new PagesStatistic());
+
+        stat.cnt += stat0.cnt;
+        stat.freeSpace += stat0.freeSpace;
     }
 
     /** */
     public void onLeafPage(long pageId, List<Object> data) {
         data.forEach(items::add);
+    }
+
+    /** */
+    static class PagesStatistic {
+        /** Count of pages. */
+        long cnt;
+
+        /** Summary free space. */
+        long freeSpace;
+
+        /** */
+        PagesStatistic() {
+        }
     }
 }

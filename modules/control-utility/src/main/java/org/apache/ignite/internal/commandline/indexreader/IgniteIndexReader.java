@@ -46,6 +46,7 @@ import org.apache.ignite.internal.cache.query.index.sorted.inline.io.InlineIO;
 import org.apache.ignite.internal.commandline.CommandHandler;
 import org.apache.ignite.internal.commandline.ProgressPrinter;
 import org.apache.ignite.internal.commandline.argument.parser.CLIArgumentParser;
+import org.apache.ignite.internal.commandline.indexreader.ScanContext.PagesStatistic;
 import org.apache.ignite.internal.commandline.systemview.SystemViewCommand;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.processors.cache.persistence.IndexStorageImpl;
@@ -394,7 +395,7 @@ public class IgniteIndexReader implements AutoCloseable {
         return doWithBuffer((buf, addr) -> {
             Map<IgniteBiTuple<Long, Integer>, List<Long>> bucketsData = new HashMap<>();
 
-            Map<Class<? extends PageIO>, Long> ioStat = new HashMap<>();
+            Map<Class<? extends PageIO>, PagesStatistic> stats = new HashMap<>();
 
             Map<Long, List<String>> errors = new HashMap<>();
 
@@ -419,7 +420,7 @@ public class IgniteIndexReader implements AutoCloseable {
 
                         for (Long listId : listIds) {
                             try {
-                                pagesCnt += visitPageList(listId, ioStat);
+                                pagesCnt += visitPageList(listId, stats);
                             }
                             catch (Exception err) {
                                 errors.put(listId, singletonList(err.getMessage()));
@@ -438,7 +439,7 @@ public class IgniteIndexReader implements AutoCloseable {
                 }
             }
 
-            return new PageListsInfo(bucketsData, pagesCnt, ioStat, errors);
+            return new PageListsInfo(bucketsData, pagesCnt, stats, errors);
         });
     }
 
@@ -446,10 +447,10 @@ public class IgniteIndexReader implements AutoCloseable {
      * Visit single page list.
      *
      * @param listStartPageId Id of the start page of the page list.
-     * @param ioStat Page types statistics.
+     * @param stats Page types statistics.
      * @return List of page ids.
      */
-    private long visitPageList(long listStartPageId, Map<Class<? extends PageIO>, Long> ioStat) throws IgniteCheckedException {
+    private long visitPageList(long listStartPageId, Map<Class<? extends PageIO>, PagesStatistic> stats) throws IgniteCheckedException {
         return doWithBuffer((nodeBuf, nodeAddr) -> doWithBuffer((pageBuf, pageAddr) -> {
             long res = 0;
 
@@ -458,7 +459,7 @@ public class IgniteIndexReader implements AutoCloseable {
             while (currPageId != 0) {
                 PagesListNodeIO io = readPage(idxStore, currPageId, nodeBuf);
 
-                ScanContext.onPageIO(readPage(idxStore, currPageId, pageBuf).getClass(), ioStat, 1);
+                ScanContext.onPageIO(readPage(idxStore, currPageId, pageBuf), stats, 1);
 
                 pageIds.add(normalizePageId(normalizePageId(currPageId)));
 
@@ -469,7 +470,7 @@ public class IgniteIndexReader implements AutoCloseable {
 
                     pageIds.add(pageId);
 
-                    ScanContext.onPageIO(readPage(idxStore, pageId, pageBuf).getClass(), ioStat, 1);
+                    ScanContext.onPageIO(readPage(idxStore, pageId, pageBuf), stats, 1);
                 }
 
                 currPageId = io.getNextId(nodeAddr);
@@ -785,16 +786,16 @@ public class IgniteIndexReader implements AutoCloseable {
             if (rctx.items.size() != hctx.items.size())
                 errors.add(compareError("items", name, rctx.items.size(), hctx.items.size(), null));
 
-            rctx.ioStat.forEach((cls, cnt) -> {
-                long scanCnt = hctx.ioStat.getOrDefault(cls, 0L);
+            rctx.stats.forEach((cls, stat) -> {
+                long scanCnt = hctx.stats.getOrDefault(cls, new PagesStatistic()).cnt;
 
-                if (scanCnt != cnt)
-                    errors.add(compareError("pages", name, cnt, scanCnt, cls));
+                if (scanCnt != stat.cnt)
+                    errors.add(compareError("pages", name, stat.cnt, scanCnt, cls));
             });
 
-            hctx.ioStat.forEach((cls, cnt) -> {
-                if (!rctx.ioStat.containsKey(cls))
-                    errors.add(compareError("pages", name, 0, cnt, cls));
+            hctx.stats.forEach((cls, stat) -> {
+                if (!rctx.stats.containsKey(cls))
+                    errors.add(compareError("pages", name, 0, stat.cnt, cls));
             });
         });
 
@@ -812,7 +813,7 @@ public class IgniteIndexReader implements AutoCloseable {
 
     /** Prints sequential file scan results. */
     private void printSequentialScanInfo(ScanContext ctx) {
-        printIoStat("", "---- These pages types were encountered during sequential scan:", ctx.ioStat);
+        printIoStat("", "---- These pages types were encountered during sequential scan:", ctx.stats);
 
         if (!ctx.errors.isEmpty()) {
             log.severe("----");
@@ -827,7 +828,7 @@ public class IgniteIndexReader implements AutoCloseable {
             null,
             Arrays.asList(STRING, NUMBER),
             Arrays.asList(
-                Arrays.asList("Total pages encountered during sequential scan:", ctx.ioStat.values().stream().mapToLong(a -> a).sum()),
+                Arrays.asList("Total pages encountered during sequential scan:", ctx.stats.values().stream().mapToLong(a -> a.cnt).sum()),
                 Arrays.asList("Total errors occurred during sequential scan: ", ctx.errors.size())
             ),
             log
@@ -861,7 +862,7 @@ public class IgniteIndexReader implements AutoCloseable {
     private void printScanResults(String prefix, Map<String, ScanContext> ctxs) {
         log.info(prefix + "Tree traversal results");
 
-        Map<Class<? extends PageIO>, Long> ioStat = new HashMap<>();
+        Map<Class<? extends PageIO>, PagesStatistic> stats = new HashMap<>();
 
         int totalErr = 0;
 
@@ -874,9 +875,9 @@ public class IgniteIndexReader implements AutoCloseable {
 
             log.info(prefix + "-----");
             log.info(prefix + "Index tree: " + idxName);
-            printIoStat(prefix, "---- Page stat:", ctx.ioStat);
+            printIoStat(prefix, "---- Page stat:", ctx.stats);
 
-            ctx.ioStat.forEach((cls, cnt) -> ScanContext.onPageIO(cls, ioStat, cnt));
+            ctx.stats.forEach((cls, stat) -> ScanContext.merge(cls, stats, stat));
 
             log.info(prefix + "---- Count of items found in leaf pages: " + ctx.items.size());
 
@@ -897,7 +898,7 @@ public class IgniteIndexReader implements AutoCloseable {
 
         log.info(prefix + "----");
 
-        printIoStat(prefix, "Total page stat collected during trees traversal:", ioStat);
+        printIoStat(prefix, "Total page stat collected during trees traversal:", stats);
 
         log.info("");
 
@@ -928,7 +929,7 @@ public class IgniteIndexReader implements AutoCloseable {
             Arrays.asList(STRING, NUMBER),
             Arrays.asList(
                 Arrays.asList(prefix + "Total trees: ", ctxs.keySet().size()),
-                Arrays.asList(prefix + "Total pages found in trees: ", ioStat.values().stream().mapToLong(a -> a).sum()),
+                Arrays.asList(prefix + "Total pages found in trees: ", stats.values().stream().mapToLong(a -> a.cnt).sum()),
                 Arrays.asList(prefix + "Total errors during trees traversal: ", totalErr)
             ),
             log
@@ -970,7 +971,7 @@ public class IgniteIndexReader implements AutoCloseable {
             log.info(sb.toString());
         });
 
-        printIoStat(PAGE_LISTS_PREFIX, "---- Page stat:", pageListsInfo.ioStat);
+        printIoStat(PAGE_LISTS_PREFIX, "---- Page stat:", pageListsInfo.stats);
 
         printErrors(PAGE_LISTS_PREFIX, "---- Errors:", "---- No errors.", "Page id: %s, exception: ", pageListsInfo.errors);
 
@@ -1020,16 +1021,16 @@ public class IgniteIndexReader implements AutoCloseable {
     }
 
     /** */
-    private void printIoStat(String prefix, String caption, Map<Class<? extends PageIO>, Long> ioStat) {
+    private void printIoStat(String prefix, String caption, Map<Class<? extends PageIO>, PagesStatistic> stats) {
         if (caption != null)
-            log.info(prefix + caption + (ioStat.isEmpty() ? " empty" : ""));
+            log.info(prefix + caption + (stats.isEmpty() ? " empty" : ""));
 
-        if (ioStat.isEmpty())
+        if (stats.isEmpty())
             return;
 
-        List<List<?>> data = new ArrayList<>(ioStat.size());
+        List<List<?>> data = new ArrayList<>(stats.size());
 
-        ioStat.forEach((cls, cnt) -> data.add(Arrays.asList(prefix + cls.getSimpleName(), cnt)));
+        stats.forEach((cls, stat) -> data.add(Arrays.asList(prefix + cls.getSimpleName(), stat.cnt)));
 
         SystemViewCommand.printTable(
             null,
