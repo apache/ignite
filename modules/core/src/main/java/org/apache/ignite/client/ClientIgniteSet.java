@@ -21,72 +21,65 @@ import java.io.Closeable;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.Set;
-import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgniteRunnable;
 
 /**
- * Set implementation based on on In-Memory Data Grid.
+ * Distributed Set.
  * <h1 class="header">Overview</h1>
  * Cache set implements {@link Set} interface and provides all methods from collections.
- * Note that all {@link Collection} methods in the set may throw {@link IgniteException} in case of failure
- * or if set was removed.
- * <h1 class="header">Collocated vs Non-collocated</h1>
- * Set items can be placed on one node or distributed throughout grid nodes
- * (governed by {@code collocated} parameter). {@code Non-collocated} mode is provided only
+ * <h1 class="header">Colocated vs Non-colocated</h1>
+ * Set items can be placed on one node or distributed across grid nodes
+ * (governed by {@code colocated} parameter). {@code Non-colocated} mode is provided only
  * for partitioned caches. If {@code collocated} parameter is {@code true}, then all set items
- * will be collocated on one node, otherwise items will be distributed through all grid nodes.
- * @see Ignite#set(String, org.apache.ignite.configuration.CollectionConfiguration)
+ * will be colocated on one node, otherwise items will be distributed across all grid nodes.
+ * @see IgniteClient#set(String, org.apache.ignite.client.ClientCollectionConfiguration)
  */
 public interface ClientIgniteSet<T> extends Set<T>, Closeable {
     /** {@inheritDoc} */
-    @Override boolean add(T t) throws IgniteException;
+    @Override boolean add(T t);
 
     /** {@inheritDoc} */
-    @Override boolean addAll(Collection<? extends T> c) throws IgniteException;
+    @Override boolean addAll(Collection<? extends T> c);
 
     /** {@inheritDoc} */
-    @Override void clear() throws IgniteException;
+    @Override void clear();
 
     /** {@inheritDoc} */
-    @Override boolean contains(Object o) throws IgniteException;
+    @Override boolean contains(Object o);
 
     /** {@inheritDoc} */
-    @Override boolean containsAll(Collection<?> c) throws IgniteException;
+    @Override boolean containsAll(Collection<?> c);
 
     /** {@inheritDoc} */
-    @Override boolean isEmpty() throws IgniteException;
+    @Override boolean isEmpty();
 
     /** {@inheritDoc} */
     @Override
-    Iterator<T> iterator() throws IgniteException;
+    Iterator<T> iterator();
 
     /** {@inheritDoc} */
-    @Override boolean remove(Object o) throws IgniteException;
+    @Override boolean remove(Object o);
 
     /** {@inheritDoc} */
-    @Override boolean removeAll(Collection<?> c) throws IgniteException;
+    @Override boolean removeAll(Collection<?> c);
 
     /** {@inheritDoc} */
-    @Override boolean retainAll(Collection<?> c) throws IgniteException;
+    @Override boolean retainAll(Collection<?> c);
 
     /** {@inheritDoc} */
-    @Override int size() throws IgniteException;
+    @Override int size();
 
     /** {@inheritDoc} */
-    @Override Object[] toArray() throws IgniteException;
+    @Override Object[] toArray();
 
     /** {@inheritDoc} */
-    @Override <T1> T1[] toArray(T1[] a) throws IgniteException;
+    @Override <T1> T1[] toArray(T1[] a);
 
     /**
      * Removes this set.
-     * In order to check the state it is possible to use {@link #removed()}.
-     *
-     * @throws IgniteException If operation failed.
      */
-    @Override public void close() throws IgniteException;
+    @Override public void close();
 
     /**
      * Gets set name.
@@ -116,7 +109,7 @@ public interface ClientIgniteSet<T> extends Set<T>, Closeable {
      *
      * @param job Job.
      */
-    public void affinityRun(IgniteRunnable job) throws IgniteException;
+    public void affinityRun(IgniteRunnable job);
 
     /**
      * Executes given job on colocated set on the node where the set is located.
