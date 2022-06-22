@@ -280,11 +280,9 @@ public class IgniteIndexReaderTest extends GridCommandHandlerAbstractTest {
         // Take any inner page from tree.
         AtomicLong anyLeafId = new AtomicLong();
 
-        Logger log = createTestLogger();
-
-        IgniteIndexReader reader0 = new IgniteIndexReader(null, false, createFilePageStoreFactory(dir), log) {
+        IgniteIndexReader reader0 = new IgniteIndexReader(null, false, createFilePageStoreFactory(dir), createTestLogger()) {
             @Override ScanContext createContext(int cacheId, FilePageStore store, ItemStorage items) {
-                return new ScanContext(cacheId, store, items, log) {
+                return new ScanContext(cacheId, store, items) {
                     @Override public void onLeafPage(long pageId, List<Object> data) {
                         super.onLeafPage(pageId, data);
 

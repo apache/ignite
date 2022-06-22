@@ -277,7 +277,6 @@ public class PageMetaIO extends PageIO {
 
     /** {@inheritDoc} */
     @Override public int getFreeSpace(int pageSize, long pageAddr) {
-        // TODO: CHECKME.
         return 0;
     }
 }

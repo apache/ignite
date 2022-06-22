@@ -29,9 +29,6 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
  * Traverse context, which is used for tree traversal and is unique for traversal of one single tree.
  */
 class ScanContext {
-    /** Logger. */
-    private final Logger log;
-
     /** Cache id or {@code -1} for sequential scan. */
     final int cacheId;
 
@@ -48,8 +45,7 @@ class ScanContext {
     final ItemStorage items;
 
     /** */
-    public ScanContext(int cacheId, FilePageStore store, ItemStorage items, Logger log) {
-        this.log = log;
+    public ScanContext(int cacheId, FilePageStore store, ItemStorage items) {
         this.cacheId = cacheId;
         this.store = store;
         this.items = items;

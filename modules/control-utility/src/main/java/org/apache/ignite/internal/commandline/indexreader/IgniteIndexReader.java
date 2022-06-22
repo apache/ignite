@@ -665,7 +665,7 @@ public class IgniteIndexReader implements AutoCloseable {
 
     /** */
     ScanContext createContext(int cacheId, FilePageStore store, ItemStorage items) {
-        return new ScanContext(cacheId, store, items, log);
+        return new ScanContext(cacheId, store, items);
     }
 
     /** */
