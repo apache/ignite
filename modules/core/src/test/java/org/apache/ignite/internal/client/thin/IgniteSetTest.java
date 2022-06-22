@@ -62,6 +62,8 @@ public class IgniteSetTest extends AbstractThinClientTest {
 
             set.remove("foo");
             assertFalse(set.contains("foo"));
+
+            assertEquals(1, set.size());
         }
     }
 }
