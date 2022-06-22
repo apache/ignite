@@ -17,44 +17,53 @@
 
 package org.apache.ignite.internal.commandline.indexreader;
 
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
+
+import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStore;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 
 /**
- * This class is used to store result of tree traversal.
+ * Traverse context, which is used for tree traversal and is unique for traversal of one single tree.
  */
-public class TreeTraversalInfo {
+class ScanContext {
+    /** Cache id or {@code -1} for sequential scan. */
+    final int cacheId;
+
+    /** Page store. */
+    final FilePageStore store;
+
     /** Page type statistics. */
     final Map<Class<? extends PageIO>, Long> ioStat;
 
     /** Map of errors, pageId -> set of exceptions. */
-    final Map<Long, List<Throwable>> errors;
+    final Map<Long, List<String>> errors;
 
-    /** Set of all inner page ids. */
-    final Set<Long> innerPageIds;
-
-    /** Root page id. */
-    final long rootPageId;
-
-    /**
-     * List of items storage.
-     */
-    final ItemStorage itemStorage;
+    /** List of items storage. */
+    final ItemStorage items;
 
     /** */
-    public TreeTraversalInfo(
-            Map<Class<? extends PageIO>, Long> ioStat,
-            Map<Long, List<Throwable>> errors,
-            Set<Long> innerPageIds,
-            long rootPageId,
-            ItemStorage itemStorage
-    ) {
-        this.ioStat = ioStat;
-        this.errors = errors;
-        this.innerPageIds = innerPageIds;
-        this.rootPageId = rootPageId;
-        this.itemStorage = itemStorage;
+    public ScanContext(int cacheId, FilePageStore store, ItemStorage items) {
+        this.cacheId = cacheId;
+        this.store = store;
+        this.items = items;
+        this.ioStat = new LinkedHashMap<>();
+        this.errors = new LinkedHashMap<>();
+    }
+
+    /** */
+    public void onPageIO(PageIO io) {
+        onPageIO(io.getClass(), ioStat, 1);
+    }
+
+    /** */
+    public static void onPageIO(Class<? extends PageIO> io, Map<Class<? extends PageIO>, Long> ioStat, long cnt) {
+        ioStat.compute(io, (k, v) -> v == null ? cnt : v + cnt);
+    }
+
+    /** */
+    public void onLeafPage(long pageId, List<Object> data) {
+        data.forEach(items::add);
     }
 }

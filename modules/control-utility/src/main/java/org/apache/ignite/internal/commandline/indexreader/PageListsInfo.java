@@ -19,7 +19,6 @@ package org.apache.ignite.internal.commandline.indexreader;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import org.apache.ignite.internal.processors.cache.persistence.freelist.io.PagesListMetaIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
@@ -35,25 +34,25 @@ class PageListsInfo {
      */
     final Map<IgniteBiTuple<Long, Integer>, List<Long>> bucketsData;
 
-    /** All page ids from page lists. */
-    final Set<Long> allPages;
+    /** Found pages count. */
+    final long pagesCnt;
 
     /** Page type statistics. */
-    final Map<Class<? extends PageIO>, Long> pageListStat;
+    final Map<Class<? extends PageIO>, Long> ioStat;
 
     /** Map of errors, pageId -> list of exceptions. */
-    final Map<Long, List<Throwable>> errors;
+    final Map<Long, List<String>> errors;
 
     /** */
     public PageListsInfo(
-            Map<IgniteBiTuple<Long, Integer>, List<Long>> bucketsData,
-            Set<Long> allPages,
-            Map<Class<? extends PageIO>, Long> pageListStat,
-            Map<Long, List<Throwable>> errors
+        Map<IgniteBiTuple<Long, Integer>, List<Long>> bucketsData,
+        long pagesCnt,
+        Map<Class<? extends PageIO>, Long> ioStat,
+        Map<Long, List<String>> errors
     ) {
         this.bucketsData = bucketsData;
-        this.allPages = allPages;
-        this.pageListStat = pageListStat;
+        this.pagesCnt = pagesCnt;
+        this.ioStat = ioStat;
         this.errors = errors;
     }
 }

@@ -83,7 +83,6 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.services.ServiceConfiguration;
 import org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.GridTestUtils.RunnableX;
 import org.apache.ignite.transactions.Transaction;
 import org.junit.Test;
 
@@ -250,8 +249,8 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
     public void testFilterAndExport() throws Exception {
         createAdditionalMetrics(ignite);
 
-        assertThrowsWithCause(new RunnableX() {
-            @Override public void runx() throws Exception {
+        assertThrowsWithCause(new Runnable() {
+            @Override public void run() {
                 metricRegistry(ignite.name(), "filtered", "metric");
             }
         }, IgniteException.class);
