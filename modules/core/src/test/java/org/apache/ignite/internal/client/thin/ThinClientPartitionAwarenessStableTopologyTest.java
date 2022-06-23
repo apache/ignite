@@ -25,6 +25,8 @@ import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.client.ClientAtomicConfiguration;
 import org.apache.ignite.client.ClientAtomicLong;
 import org.apache.ignite.client.ClientCache;
+import org.apache.ignite.client.ClientCollectionConfiguration;
+import org.apache.ignite.client.ClientIgniteSet;
 import org.apache.ignite.configuration.AtomicConfiguration;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.datastructures.GridCacheAtomicLongEx;
@@ -175,6 +177,29 @@ public class ThinClientPartitionAwarenessStableTopologyTest extends ThinClientAb
 
             assertOpOnChannel(dfltCh, ClientOperation.QUERY_SCAN);
         }
+    }
+
+    /**
+     * Tests Ignite set.
+     */
+    @Test
+    public void testIgniteSet() {
+        // TODO: Test different names, custom groups
+        // TODO: Test colocated mode separately!
+        ClientIgniteSet<String> clientSet = client.set("set1", new ClientCollectionConfiguration());
+
+        String cacheName = "TODO";
+        IgniteInternalCache<Object, Object> cache = grid(0).context().cache().cache(cacheName);
+
+        // Warm up.
+        clientSet.add("a");
+        opsQueue.clear();
+
+        // Test.
+        clientSet.add("b");
+
+        TestTcpClientChannel opCh = affinityChannel("TODO", cache);
+        assertOpOnChannel(opCh, ClientOperation.OP_SET_VALUE_ADD);
     }
 
     /**
