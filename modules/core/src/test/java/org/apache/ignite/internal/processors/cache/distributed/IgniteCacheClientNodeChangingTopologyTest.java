@@ -529,29 +529,30 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
 
         awaitPartitionMapExchange();
 
-        final Ignite ignite2 = startClientGrid(2);
+        final Ignite client = startClientGrid(2);
 
-        assertTrue(ignite2.configuration().isClientMode());
+        assertTrue(client.configuration().isClientMode());
 
         final Map<Integer, Integer> map = new HashMap<>();
 
+        // First cache fill.
         for (int i = 0; i < 100; i++)
             map.put(i, i);
 
-        TestCommunicationSpi spi = (TestCommunicationSpi)ignite2.configuration().getCommunicationSpi();
+        TestCommunicationSpi spi = (TestCommunicationSpi)client.configuration().getCommunicationSpi();
 
         spi.blockMessages(GridNearLockRequest.class, ignite0.localNode().id());
         spi.blockMessages(GridNearLockRequest.class, ignite1.localNode().id());
 
         spi.record(GridNearLockRequest.class);
 
-        final IgniteCache<Integer, Integer> cache = ignite2.cache(DEFAULT_CACHE_NAME);
+        final IgniteCache<Integer, Integer> cache = client.cache(DEFAULT_CACHE_NAME);
 
         IgniteInternalFuture<?> putFut = GridTestUtils.runAsync(new Callable<Object>() {
             @Override public Object call() throws Exception {
                 Thread.currentThread().setName("put-thread");
 
-                try (Transaction tx = ignite2.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                try (Transaction tx = client.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
                     cache.putAll(map);
 
                     tx.commit();
@@ -587,6 +588,9 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
 
         ignite3.close();
 
+        awaitPartitionMapExchange();
+
+        // Second cache fill.
         for (int i = 0; i < 100; i++)
             map.put(i, i + 1);
 
@@ -597,7 +601,7 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
             @Override public Object call() throws Exception {
                 Thread.currentThread().setName("put-thread");
 
-                try (Transaction tx = ignite2.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                try (Transaction tx = client.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
                     for (Map.Entry<Integer, Integer> e : map.entrySet())
                         cache.put(e.getKey(), e.getValue());
 
@@ -623,7 +627,7 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
         for (int i = 0; i < 100; i++)
             map.put(i, i + 2);
 
-        try (Transaction tx = ignite2.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
+        try (Transaction tx = client.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
             cache.putAll(map);
 
             tx.commit();
