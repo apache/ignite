@@ -162,7 +162,7 @@ public class RexUtils {
     public static IndexConditions buildSortedIndexConditions(
         RelOptCluster cluster,
         RelCollation collation,
-        RexNode condition1,
+        RexNode condition,
         RelDataType rowType,
         ImmutableBitSet requiredColumns
     ) {
