@@ -323,6 +323,28 @@ public class GridSpringResourceInjectionSelfTest extends GridCommonAbstractTest 
             ".GridSpringResourceInjectionSelfTest$AnotherDummyResourceBean' available");
     }
 
+
+    /** */
+    @Test
+    public void testClosureMethodWithDuplicatingResourceClass() {
+        assertError(new IgniteCallable<Object>() {
+            private DuplicatingResourceBean rsrcBean;
+
+            @SpringResource(resourceClass = DuplicatingResourceBean.class, required = false)
+            private void setDummyResourceBean(DuplicatingResourceBean rsrcBean) {
+                this.rsrcBean = rsrcBean;
+            }
+
+            @Override public Object call() {
+                fail();
+
+                return null;
+            }
+        }, grid, NoUniqueBeanDefinitionException.class, "No qualifying bean of type" +
+            " 'org.apache.ignite.internal.processors.resource.GridSpringResourceInjectionSelfTest$DuplicatingResourceBean'" +
+            " available: expected single matching bean but found 2");
+    }
+
     /** */
     @Test
     public void testClosureMethodWithNotRequiredWrongResourceClass() {
@@ -412,6 +434,14 @@ public class GridSpringResourceInjectionSelfTest extends GridCommonAbstractTest 
          *
          */
         public AnotherDummyResourceBean() {
+            // No-op.
+        }
+    }
+
+    /** Resource bean to test scenario with multiple beans of the same type in the Spring Context. */
+    private static class DuplicatingResourceBean {
+        /** */
+        public DuplicatingResourceBean() {
             // No-op.
         }
     }

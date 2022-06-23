@@ -24,4 +24,12 @@
     <bean id="dummyResourceBean"
           class="org.apache.ignite.internal.processors.resource.GridSpringResourceInjectionSelfTest$DummyResourceBean">
     </bean>
+
+    <bean id="firstDuplicatingTypeBean"
+          class="org.apache.ignite.internal.processors.resource.GridSpringResourceInjectionSelfTest$DuplicatingResourceBean">
+    </bean>
+
+    <bean id="secondDuplicatingTypeBean"
+          class="org.apache.ignite.internal.processors.resource.GridSpringResourceInjectionSelfTest$DuplicatingResourceBean">
+    </bean>
 </beans>
