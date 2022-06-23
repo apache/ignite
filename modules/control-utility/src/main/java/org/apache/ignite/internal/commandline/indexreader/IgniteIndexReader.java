@@ -1002,11 +1002,17 @@ public class IgniteIndexReader implements AutoCloseable {
 
         List<List<?>> data = new ArrayList<>(stats.size());
 
-        stats.forEach((cls, stat) -> data.add(Arrays.asList(prefix + cls.getSimpleName(), stat.cnt)));
+        stats.forEach((cls, stat) -> data.add(Arrays.asList(
+            prefix + cls.getSimpleName(),
+            stat.cnt,
+            stat.freeSpace, //String.format("%.2f", ((double)stat.freeSpace) / U.KB)
+            String.format("%.2f", (stat.freeSpace * 100.0d) / (pageSize * stat.cnt))
+        )));
 
+        //TODO check pages count in indexes.
         SystemViewCommand.printTable(
-            null,
-            Arrays.asList(STRING, NUMBER),
+            Arrays.asList("Type", "Pages", "Free space (Kb)", "Free space (%)"),
+            Arrays.asList(STRING, NUMBER, NUMBER, NUMBER),
             data,
             log
         );
