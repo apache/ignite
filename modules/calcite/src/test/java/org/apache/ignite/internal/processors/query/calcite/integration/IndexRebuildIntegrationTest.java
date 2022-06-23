@@ -207,7 +207,7 @@ public class IndexRebuildIntegrationTest extends AbstractBasicIntegrationTest {
      */
     @Test
     public void testIndexCountAtUnavailableIndex() throws IgniteCheckedException {
-        long records = 50;
+        int records = 50;
         int iterations = 500;
 
         CalciteQueryProcessor srvEngine = Commons.lookupComponent(grid(0).context(), CalciteQueryProcessor.class);
@@ -235,7 +235,7 @@ public class IndexRebuildIntegrationTest extends AbstractBasicIntegrationTest {
 
             try {
                 for (int i = 0; i < iterations; ++i)
-                    assertQuery("select COUNT(*) from tbl3").returns(records).check();
+                    assertQuery("select COUNT(*) from tbl3").returns((long)records).check();
             }
             finally {
                 stop.set(true);
