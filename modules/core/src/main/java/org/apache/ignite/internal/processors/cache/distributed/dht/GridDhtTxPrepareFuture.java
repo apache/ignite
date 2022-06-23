@@ -546,9 +546,6 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                             /*keepBinary*/true);
                     }
 
-                    if (oldVal != null)
-                        oldVal.prepareMarshal(cacheCtx.cacheObjectContext());
-
                     txEntry.oldValue(oldVal);
                 }
             }
