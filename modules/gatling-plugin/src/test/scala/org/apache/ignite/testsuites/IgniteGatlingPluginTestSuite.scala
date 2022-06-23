@@ -33,10 +33,3 @@ import org.junit.runners.Suite
   classOf[SqlTest],
   classOf[TransactionTest]))
 class IgniteGatlingPluginTestSuite
-
-
-//@RunWith(classOf[JUnitRunner])
-//class IgniteGatlingPluginTestSuite extends Suites(
-//    new PutGetTest,
-//    new SqlTest,
-//    new TransactionTest)
