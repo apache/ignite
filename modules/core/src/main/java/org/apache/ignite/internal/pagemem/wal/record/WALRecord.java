@@ -279,7 +279,10 @@ public abstract class WALRecord {
         PARTITION_CLEARING_START_RECORD(73, LOGICAL),
 
         /** Ecnrypted out-of-order update which is used by atomic caches on backup nodes. (Placeholder) */
-        ENCRYPTED_OUT_OF_ORDER_UPDATE(74, LOGICAL);
+        ENCRYPTED_OUT_OF_ORDER_UPDATE(74, LOGICAL),
+
+        /** ClusterSnapshot start. */
+        CLUSTER_SNAPSHOT(75, LOGICAL);
 
         /** Index for serialization. Should be consistent throughout all versions. */
         private final int idx;

@@ -54,6 +54,7 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.store.PageStore;
 import org.apache.ignite.internal.pagemem.store.PageWriteListener;
+import org.apache.ignite.internal.pagemem.wal.record.delta.ClusterSnapshotRecord;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
@@ -342,6 +343,9 @@ class SnapshotFutureTask extends AbstractSnapshotFutureTask<Set<GroupPartitionId
             return;
 
         try {
+            if (cctx.wal() != null)
+                cctx.wal().log(new ClusterSnapshotRecord(snpName));
+
             for (Map.Entry<Integer, Set<Integer>> e : parts.entrySet()) {
                 int grpId = e.getKey();
                 Set<Integer> grpParts = e.getValue();

@@ -116,6 +116,8 @@ public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
     @Test
     public void testSnapshotLocalPartitionMultiCpWithLoad() throws Exception {
         int valMultiplier = 2;
+        int afterSnpValMultiplier = 3;
+
         CountDownLatch slowCopy = new CountDownLatch(1);
 
         // Start grid node with data before each test.
@@ -201,7 +203,7 @@ public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
 
             // Change data after snapshot.
             for (int i = 0; i < CACHE_KEYS_RANGE; i++)
-                ig.cache(DEFAULT_CACHE_NAME).put(i, new Account(i, 3 * i));
+                ig.cache(DEFAULT_CACHE_NAME).put(i, new Account(i, afterSnpValMultiplier * i));
 
             // Snapshot on the next checkpoint must copy page to delta file before write it to a partition.
             forceCheckpoint(ig);
@@ -213,6 +215,24 @@ public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
         finally {
             loadFut.cancel();
         }
+
+        // Checks that ClusterSnapshotRecord correctly splits WAL on 2 areas - before and after snapshot.
+        checkSnpWalRecords(ig, SNAPSHOT_NAME, (e, afterSnp) -> {
+            if (e.cacheId() == ig.cachex(DEFAULT_CACHE_NAME).context().cacheId()) {
+                CacheObjectContext cacheObjCtx = ig.cachex(DEFAULT_CACHE_NAME).context().cacheObjectContext();
+
+                int key = e.key().value(cacheObjCtx, false);
+                Account val = e.value().value(cacheObjCtx, false);
+
+                boolean entryBeforeSnp = (key == val.id && key == val.balance) || (key == val.id && key == val.balance / valMultiplier);
+
+                boolean entryAfterSnp = (key == val.id && key == val.balance / afterSnpValMultiplier) || (key != val.id);
+
+                assertTrue(
+                    "CHECK ENTRY: key=" + key + " val=" + val,
+                    afterSnp && entryAfterSnp || !afterSnp && entryBeforeSnp);
+            }
+        });
 
         // Now can stop the node and check created snapshots.
         stopGrid(0);

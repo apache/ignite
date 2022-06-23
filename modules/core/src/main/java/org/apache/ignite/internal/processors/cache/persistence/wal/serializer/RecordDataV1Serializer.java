@@ -52,6 +52,7 @@ import org.apache.ignite.internal.pagemem.wal.record.TxRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType;
 import org.apache.ignite.internal.pagemem.wal.record.WalRecordCacheGroupAware;
+import org.apache.ignite.internal.pagemem.wal.record.delta.ClusterSnapshotRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.DataPageInsertFragmentRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.DataPageInsertRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.DataPageMvccMarkUpdatedRecord;
@@ -572,6 +573,9 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
 
             case PARTITION_CLEARING_START_RECORD:
                 return 4 + 4 + 8;
+
+            case CLUSTER_SNAPSHOT:
+                return 4 + ((ClusterSnapshotRecord)record).clusterSnapshotName().getBytes().length;
 
             default:
                 throw new UnsupportedOperationException("Type: " + record.type());
@@ -1299,6 +1303,17 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
 
                 break;
 
+            case CLUSTER_SNAPSHOT:
+                int snpNameLen = in.readInt();
+
+                byte[] snpName = new byte[snpNameLen];
+
+                in.readFully(snpName);
+
+                res = new ClusterSnapshotRecord(new String(snpName));
+
+                break;
+
             default:
                 throw new UnsupportedOperationException("Type: " + type);
         }
@@ -1941,6 +1956,14 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
                 buf.putInt(partitionClearingStartRecord.groupId());
 
                 buf.putLong(partitionClearingStartRecord.clearVersion());
+
+                break;
+
+            case CLUSTER_SNAPSHOT:
+                byte[] snpName = ((ClusterSnapshotRecord)rec).clusterSnapshotName().getBytes();
+
+                buf.putInt(snpName.length);
+                buf.put(snpName);
 
                 break;
 
