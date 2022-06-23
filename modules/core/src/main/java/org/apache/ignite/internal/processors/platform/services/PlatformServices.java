@@ -838,7 +838,6 @@ public class PlatformServices extends PlatformAbstractTarget {
         w.writeObjectDetached(dotnetFilter);
 
         w.writeObjectDetached(dotnetInterceptor);
-
         w.writeBoolean(svcCfg.isStatisticsEnabled());
     }
 }

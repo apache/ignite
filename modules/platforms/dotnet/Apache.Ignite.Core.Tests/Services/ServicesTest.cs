@@ -559,7 +559,7 @@ namespace Apache.Ignite.Core.Tests.Services
         {
             DoTestMetrics(Grid1.GetServices(), _client.GetServices(), callContext(), false);
 
-            // DoTestMetrics(_client.GetServices(), _client.GetServices(), callContext(), false);
+            DoTestMetrics(_client.GetServices(), _client.GetServices(), callContext(), false);
         }
 
         /// <summary>
