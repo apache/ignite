@@ -282,6 +282,25 @@ public class GridSpringResourceInjectionSelfTest extends GridCommonAbstractTest 
         }, grid, NoSuchBeanDefinitionException.class, "No bean named 'nonExistentResource' available");
     }
 
+    /** */
+    @Test
+    public void testClosureMethodWithNotRequiredWrongResourceName() {
+        grid.compute().call(new IgniteCallable<Object>() {
+            private AnotherDummyResourceBean dummyRsrcBean;
+
+            @SpringResource(resourceName = "nonExistentResource", required = false)
+            private void setDummyResourceBean(AnotherDummyResourceBean dummyRsrcBean) {
+                this.dummyRsrcBean = dummyRsrcBean;
+            }
+
+            @Override public Object call() {
+                assertNull(dummyRsrcBean);
+
+                return null;
+            }
+        });
+    }
+
     /**
      * Resource injection with non-existing resource class.
      */
@@ -302,6 +321,25 @@ public class GridSpringResourceInjectionSelfTest extends GridCommonAbstractTest 
             }
         }, grid, NoSuchBeanDefinitionException.class, "No qualifying bean of type 'org.apache.ignite.internal.processors.resource" +
             ".GridSpringResourceInjectionSelfTest$AnotherDummyResourceBean' available");
+    }
+
+    /** */
+    @Test
+    public void testClosureMethodWithNotRequiredWrongResourceClass() {
+        grid.compute().call(new IgniteCallable<Object>() {
+            private AnotherDummyResourceBean dummyRsrcBean;
+
+            @SpringResource(resourceClass = AnotherDummyResourceBean.class, required = false)
+            private void setDummyResourceBean(AnotherDummyResourceBean dummyRsrcBean) {
+                this.dummyRsrcBean = dummyRsrcBean;
+            }
+
+            @Override public Object call() {
+                assertNull(dummyRsrcBean);
+
+                return null;
+            }
+        });
     }
 
     /**
