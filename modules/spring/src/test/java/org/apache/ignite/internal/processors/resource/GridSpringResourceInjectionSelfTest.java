@@ -328,10 +328,10 @@ public class GridSpringResourceInjectionSelfTest extends GridCommonAbstractTest 
     @Test
     public void testClosureMethodWithDuplicatingResourceClass() {
         assertError(new IgniteCallable<Object>() {
-            private DuplicatingResourceBean rsrcBean;
+            private DuplicatedResourceBean rsrcBean;
 
-            @SpringResource(resourceClass = DuplicatingResourceBean.class, required = false)
-            private void setDummyResourceBean(DuplicatingResourceBean rsrcBean) {
+            @SpringResource(resourceClass = DuplicatedResourceBean.class, required = false)
+            private void setDummyResourceBean(DuplicatedResourceBean rsrcBean) {
                 this.rsrcBean = rsrcBean;
             }
 
@@ -439,9 +439,9 @@ public class GridSpringResourceInjectionSelfTest extends GridCommonAbstractTest 
     }
 
     /** Resource bean to test scenario with multiple beans of the same type in the Spring Context. */
-    private static class DuplicatingResourceBean {
+    private static class DuplicatedResourceBean {
         /** */
-        public DuplicatingResourceBean() {
+        public DuplicatedResourceBean() {
             // No-op.
         }
     }
