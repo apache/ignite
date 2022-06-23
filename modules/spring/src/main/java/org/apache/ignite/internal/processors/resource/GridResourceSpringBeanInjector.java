@@ -82,7 +82,8 @@ public class GridResourceSpringBeanInjector implements GridResourceInjector {
         if (springCtx != null) {
             Object bean = getBeanByResourceAnnotation(ann);
 
-            GridResourceUtils.inject(mtd.getMethod(), target, bean);
+            if (bean != null)
+                GridResourceUtils.inject(mtd.getMethod(), target, bean);
         }
     }
 
