@@ -73,8 +73,6 @@ public class IndexCountRule extends RelRule<IndexCountRule.Config> {
                 IgniteDistributions.random() : table.distribution())
             .replace(RewindabilityTrait.REWINDABLE);
 
-        RelDataTypeFactory tf = scan.getCluster().getTypeFactory();
-
         IgniteIndexCount idxCnt = new IgniteIndexCount(
             scan.getCluster(),
             idxTraits,
