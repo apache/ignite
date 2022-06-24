@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.processors.platform.client.datastructures;
 
 import org.apache.ignite.IgniteSet;
-import org.apache.ignite.binary.BinaryRawReader;
+import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 import org.apache.ignite.internal.processors.platform.client.ClientBooleanResponse;
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
 
@@ -31,7 +31,7 @@ public class ClientIgniteSetContainsRequest extends ClientIgniteSetKeyRequest {
      *
      * @param reader Reader.
      */
-    public ClientIgniteSetContainsRequest(BinaryRawReader reader) {
+    public ClientIgniteSetContainsRequest(BinaryRawReaderEx reader) {
         super(reader);
     }
 

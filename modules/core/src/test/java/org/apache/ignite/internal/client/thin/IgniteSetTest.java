@@ -29,7 +29,6 @@ import org.junit.Test;
  */
 // TODO: Test custom objects
 // TODO: Test behavior when removed or does not exist - match thick API.
-// TODO: Test partition awareness.
 public class IgniteSetTest extends AbstractThinClientTest {
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
@@ -66,6 +65,33 @@ public class IgniteSetTest extends AbstractThinClientTest {
             assertFalse(set.contains("foo"));
 
             assertEquals(1, set.size());
+        }
+    }
+
+    @Test
+    public void testUserObject() {
+        try (IgniteClient client = startClient(0)) {
+            ClientIgniteSet<UserObj> set = client.set("testUserObject", new ClientCollectionConfiguration());
+
+            set.add(new UserObj(1, "a"));
+
+            // Binary object equality does not require overriding equals/hashCode
+            assertTrue(set.contains(new UserObj(1, "a")));
+            assertFalse(set.contains(new UserObj(1, "b")));
+
+            UserObj res = set.iterator().next();
+            assertEquals(1, res.id);
+            assertEquals("a", res.val);
+        }
+    }
+
+    private static class UserObj {
+        public final int id;
+        public final String val;
+
+        public UserObj(int id, String val) {
+            this.id = id;
+            this.val = val;
         }
     }
 }
