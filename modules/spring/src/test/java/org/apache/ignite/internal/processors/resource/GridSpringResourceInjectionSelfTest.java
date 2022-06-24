@@ -326,7 +326,7 @@ public class GridSpringResourceInjectionSelfTest extends GridCommonAbstractTest 
 
     /** */
     @Test
-    public void testClosureMethodWithDuplicatingResourceClass() {
+    public void testClosureMethodWithDuplicatedResourceClass() {
         assertError(new IgniteCallable<Object>() {
             private DuplicatedResourceBean rsrcBean;
 
@@ -340,9 +340,8 @@ public class GridSpringResourceInjectionSelfTest extends GridCommonAbstractTest 
 
                 return null;
             }
-        }, grid, NoUniqueBeanDefinitionException.class, "No qualifying bean of type" +
-            " 'org.apache.ignite.internal.processors.resource.GridSpringResourceInjectionSelfTest$DuplicatingResourceBean'" +
-            " available: expected single matching bean but found 2");
+        }, grid, NoUniqueBeanDefinitionException.class, "No qualifying bean of type '" +
+            DuplicatedResourceBean.class.getName() + "' available: expected single matching bean but found 2");
     }
 
     /** */
