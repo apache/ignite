@@ -124,10 +124,10 @@ public class IgniteSetTest extends AbstractThinClientTest {
     @Test
     public void testUserObject() {
         try (IgniteClient client = startClient(0)) {
-            ClientIgniteSet<UserObj> set = client.set("testUserObject", new ClientCollectionConfiguration());
-            IgniteSet<UserObj> serverSet = ignite(0).set("testUserObject", null);
+            ClientIgniteSet<UserObj> clientSet = client.set("testUserObject", new ClientCollectionConfiguration());
+            IgniteSet<UserObj> serverSet = ignite(0).set(clientSet.name(), null);
 
-            set.add(new UserObj(1, "client"));
+            clientSet.add(new UserObj(1, "client"));
             serverSet.add(new UserObj(2, "server"));
 
             // Binary object equality does not require overriding equals/hashCode
@@ -135,13 +135,13 @@ public class IgniteSetTest extends AbstractThinClientTest {
             // it does not use binary object to get the hash - see GridCacheSetItemKey.
 
             // TODO: Client sends obj as BinaryObject, resulting in a different hash code than server uses.
-            assertTrue(set.contains(new UserObj(1, "client")));
-            assertTrue(set.contains(new UserObj(2, "server")));
+            assertTrue(clientSet.contains(new UserObj(1, "client")));
+            assertTrue(clientSet.contains(new UserObj(2, "server")));
 
             assertTrue(serverSet.contains(new UserObj(1, "client")));
             assertTrue(serverSet.contains(new UserObj(2, "server")));
 
-            assertFalse(set.contains(new UserObj(1, "x")));
+            assertFalse(clientSet.contains(new UserObj(1, "x")));
             assertFalse(serverSet.contains(new UserObj(1, "x")));
 
             // TODO: does it belong here?
