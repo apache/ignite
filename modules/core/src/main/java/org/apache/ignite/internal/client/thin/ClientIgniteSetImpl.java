@@ -157,6 +157,8 @@ class ClientIgniteSetImpl<T> implements ClientIgniteSet<T> {
             return;
 
         op(ClientOperation.OP_SET_REMOVE, null, null);
+
+        removed = true;
     }
 
     @Override
