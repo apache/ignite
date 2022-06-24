@@ -28,6 +28,7 @@ import org.apache.ignite.internal.processors.platform.client.ClientResponse;
  */
 public class ClientIgniteSetRequest extends ClientRequest {
     /** */
+    // TODO: We should pass ID too and check if it matches, to handle scenario "new set with old name" - check thick API behavior
     private final String name;
 
     /**

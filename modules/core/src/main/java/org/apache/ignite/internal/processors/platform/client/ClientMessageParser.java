@@ -333,17 +333,35 @@ public class ClientMessageParser implements ClientListenerMessageParser {
     /** Remove an IgniteSet. */
     private static final short OP_SET_REMOVE = 9011;
 
-    /** Check if IgniteSet exists. */
+    /** IgniteSet.removed. */
     private static final short OP_SET_EXISTS = 9012;
 
     /** IgniteSet.add. */
     private static final short OP_SET_VALUE_ADD = 9013;
 
+    /** IgniteSet.addAll. */
+    private static final short OP_SET_VALUE_ADD_ALL = 9014;
+
     /** IgniteSet.remove. */
-    private static final short OP_SET_VALUE_REMOVE = 9014;
+    private static final short OP_SET_VALUE_REMOVE = 9015;
+
+    /** IgniteSet.removeAll. */
+    private static final short OP_SET_VALUE_REMOVE_ALL = 9016;
 
     /** IgniteSet.contains. */
-    private static final short OP_SET_VALUE_CONTAINS = 9015;
+    private static final short OP_SET_VALUE_CONTAINS = 9017;
+
+    /** IgniteSet.containsAll. */
+    private static final short OP_SET_VALUE_CONTAINS_ALL = 9018;
+
+    /** IgniteSet.retainAll. */
+    private static final short OP_SET_VALUE_RETAIN_ALL = 9019;
+
+    /** IgniteSet.size. */
+    private static final short OP_SET_SIZE = 9020;
+
+    /** IgniteSet.clear. */
+    private static final short OP_SET_CLEAR = 9021;
 
     /** Marshaller. */
     private final GridBinaryMarshaller marsh;
