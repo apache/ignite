@@ -23,6 +23,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import org.apache.ignite.client.ClientIgniteSet;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
+import org.apache.ignite.internal.processors.datastructures.GridCacheSetItemKey;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgniteRunnable;
@@ -221,5 +222,15 @@ class ClientIgniteSetImpl<T> implements ClientIgniteSet<T> {
         w.writeLong(id.globalId().getMostSignificantBits());
         w.writeLong(id.globalId().getLeastSignificantBits());
         w.writeLong(id.localId());
+    }
+
+    private Object affinityKey(Object o) {
+        // Only separated mode is supported by the client partition awareness,
+        // because older cluster nodes simply don't support this client feature.
+        if (collocated)
+            return name.hashCode();
+
+        // TODO: Can we avoid using this class?
+        return new GridCacheSetItemKey(null, o);
     }
 }
