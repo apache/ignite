@@ -45,17 +45,20 @@ class ClientIgniteSetImpl<T> implements ClientIgniteSet<T> {
     private final ClientUtils serDes;
 
     /** */
+    private final boolean collocated;
+
+    /** */
     private volatile boolean removed;
 
     /**
      * Constructor.
-     *
-     * @param ch Channel.
+     *  @param ch Channel.
      * @param serDes Utils..
      * @param name Name.
      * @param id Id.
+     * @param colocated Colocated flag.
      */
-    public ClientIgniteSetImpl(ReliableChannel ch, ClientUtils serDes, String name, IgniteUuid id) {
+    public ClientIgniteSetImpl(ReliableChannel ch, ClientUtils serDes, String name, IgniteUuid id, boolean colocated) {
         assert ch != null;
         assert serDes != null;
         assert name != null;
@@ -65,6 +68,7 @@ class ClientIgniteSetImpl<T> implements ClientIgniteSet<T> {
         this.serDes = serDes;
         this.name = name;
         this.id = id;
+        this.collocated = colocated;
     }
 
     @Override
@@ -168,8 +172,7 @@ class ClientIgniteSetImpl<T> implements ClientIgniteSet<T> {
 
     @Override
     public boolean collocated() {
-        // TODO pass in ctor
-        return false;
+        return collocated;
     }
 
     @Override

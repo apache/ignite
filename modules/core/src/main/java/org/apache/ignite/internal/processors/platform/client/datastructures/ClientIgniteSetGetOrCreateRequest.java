@@ -67,9 +67,10 @@ public class ClientIgniteSetGetOrCreateRequest extends ClientRequest {
                 .grid()
                 .set(name, collectionConfiguration);
 
-        IgniteUuid id = set == null ? null : set.delegate().id();
+        if (set == null)
+            return new Response(requestId(), null, false);
 
-        return new Response(requestId(), id);
+        return new Response(requestId(), set.delegate().id(), set.collocated());
     }
 
     /**
@@ -79,16 +80,20 @@ public class ClientIgniteSetGetOrCreateRequest extends ClientRequest {
         /** */
         private final IgniteUuid id;
 
+        /** */
+        private final boolean collocated;
+
         /**
          * Constructor.
          *
          * @param reqId Request id.
          * @param id Set id.
          */
-        public Response(long reqId, IgniteUuid id) {
+        public Response(long reqId, IgniteUuid id, boolean collocated) {
             super(reqId);
 
             this.id = id;
+            this.collocated = collocated;
         }
 
         /** {@inheritDoc} */
@@ -101,6 +106,7 @@ public class ClientIgniteSetGetOrCreateRequest extends ClientRequest {
                 writer.writeLong(id.globalId().getMostSignificantBits());
                 writer.writeLong(id.globalId().getLeastSignificantBits());
                 writer.writeLong(id.localId());
+                writer.writeBoolean(collocated);
             } else
                 writer.writeBoolean(false);
         }
