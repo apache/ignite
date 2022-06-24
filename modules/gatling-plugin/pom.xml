@@ -226,6 +226,13 @@
                                 <phase>validate</phase>
                             </execution>
                         </executions>
+                        <dependencies>
+                            <dependency>
+                                <groupId>com.beautiful-scala</groupId>
+                                <artifactId>scalastyle_2.13</artifactId>
+                                <version>1.5.1</version>
+                            </dependency>
+                        </dependencies>
                     </plugin>
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
