@@ -31,15 +31,8 @@ import org.apache.calcite.rel.metadata.RelMetadataProvider;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.ignite.internal.processors.query.calcite.metadata.IgniteMetadata.FragmentMappingMetadata;
 import org.apache.ignite.internal.processors.query.calcite.prepare.MappingQueryContext;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteExchange;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteFilter;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexProbe;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexScan;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteReceiver;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableFunctionScan;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableScan;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTrimExchange;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteValues;
+import org.apache.ignite.internal.processors.query.calcite.rel.*;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexCount;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
 import org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils;
@@ -194,9 +187,17 @@ public class IgniteMdFragmentMapping implements MetadataHandler<FragmentMappingM
     /**
      * See {@link IgniteMdFragmentMapping#fragmentMapping(RelNode, RelMetadataQuery, MappingQueryContext)}
      */
-    public FragmentMapping fragmentMapping(IgniteIndexProbe rel, RelMetadataQuery mq, MappingQueryContext ctx) {
+    public FragmentMapping fragmentMapping(IgniteIndexCount rel, RelMetadataQuery mq, MappingQueryContext ctx) {
         return FragmentMapping.create(rel.sourceId(),
             rel.getTable().unwrap(IgniteTable.class).colocationGroup(ctx));
+    }
+
+    /**
+     * See {@link IgniteMdFragmentMapping#fragmentMapping(RelNode, RelMetadataQuery, MappingQueryContext)}
+     */
+    public FragmentMapping fragmentMapping(IgniteIndexProbe rel, RelMetadataQuery mq, MappingQueryContext ctx) {
+        return FragmentMapping.create(rel.sourceId(),
+                rel.getTable().unwrap(IgniteTable.class).colocationGroup(ctx));
     }
 
     /**

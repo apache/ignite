@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.query.calcite.exec;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
@@ -75,30 +76,8 @@ import org.apache.ignite.internal.processors.query.calcite.exec.rel.TableSpoolNo
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.UnionAllNode;
 import org.apache.ignite.internal.processors.query.calcite.metadata.AffinityService;
 import org.apache.ignite.internal.processors.query.calcite.metadata.ColocationGroup;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteCollect;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteCorrelatedNestedLoopJoin;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteExchange;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteFilter;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteHashIndexSpool;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexProbe;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexScan;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteLimit;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteMergeJoin;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteNestedLoopJoin;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteProject;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteReceiver;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRelVisitor;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSender;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSort;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSortedIndexSpool;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableFunctionScan;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableModify;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableScan;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableSpool;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTrimExchange;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteUnionAll;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteValues;
+import org.apache.ignite.internal.processors.query.calcite.rel.*;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexCount;
 import org.apache.ignite.internal.processors.query.calcite.rel.agg.IgniteColocatedHashAggregate;
 import org.apache.ignite.internal.processors.query.calcite.rel.agg.IgniteColocatedSortAggregate;
 import org.apache.ignite.internal.processors.query.calcite.rel.agg.IgniteMapHashAggregate;
@@ -421,6 +400,26 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
     }
 
     /** {@inheritDoc} */
+    @Override public Node<Row> visit(IgniteIndexCount rel) {
+        IgniteTable tbl = rel.getTable().unwrap(IgniteTable.class);
+        IgniteIndex idx = tbl.getIndex(rel.indexName());
+
+        if (idx != null && !tbl.isIndexRebuildInProgress()) {
+            return new ScanNode<>(ctx, rel.getRowType(), () -> Collections.singletonList(ctx.rowHandler()
+                .factory(ctx.getTypeFactory(), rel.getRowType())
+                .create(idx.count(ctx, ctx.group(rel.sourceId())))).iterator());
+        }
+        else {
+            CollectNode<Row> replacement = CollectNode.createCountCollector(ctx);
+
+            replacement.register(new ScanNode<>(ctx, rel.getTable().getRowType(), tbl.scan(ctx,
+                ctx.group(rel.sourceId()), null, null, ImmutableBitSet.of(0))));
+
+            return replacement;
+        }
+    }
+
+    /** {@inheritDoc} */
     @Override public Node<Row> visit(IgniteIndexProbe rel) {
         IgniteTable tbl = rel.getTable().unwrap(IgniteTable.class);
         IgniteIndex idx = tbl.getIndex(rel.indexName());
@@ -431,7 +430,7 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
             GridKernalContext kctx = cctx.kernalContext();
 
             IndexName idxName = new IndexName(cctx.name(), kctx.query().schemaName(cctx),
-                descr.typeDescription().tableName(), idx.name());
+                    descr.typeDescription().tableName(), idx.name());
 
             IndexQueryContext qryCtx = null;
 
@@ -449,21 +448,21 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
 
             // TODO: certain aggregate
             AggregateCall aggFun = AggregateCall.create(
-                SqlStdOperatorTable.MIN,
-                false,
-                false,
-                false,
-                ImmutableIntList.of(0),
-                -1,
-                null,
-                RelCollations.EMPTY,
-                0,
-                relInput,
-                null,
-                null);
+                    SqlStdOperatorTable.MIN,
+                    false,
+                    false,
+                    false,
+                    ImmutableIntList.of(0),
+                    -1,
+                    null,
+                    RelCollations.EMPTY,
+                    0,
+                    relInput,
+                    null,
+                    null);
 
             IgniteColocatedHashAggregate relAggr = new IgniteColocatedHashAggregate(rel.getCluster(), rel.getTraitSet(), relInput,
-                ImmutableBitSet.of(), singletonList(ImmutableBitSet.of()), singletonList(aggFun));
+                    ImmutableBitSet.of(), singletonList(ImmutableBitSet.of()), singletonList(aggFun));
 
             return visit(relAggr);
         }

@@ -95,7 +95,7 @@ public class IgniteTableScan extends ProjectableFilterableTableScan implements S
      * @param cond Filters.
      * @param requiredColunms Participating colunms.
      */
-    public IgniteTableScan(
+    private IgniteTableScan(
         long sourceId,
         RelOptCluster cluster,
         RelTraitSet traits,

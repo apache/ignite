@@ -42,25 +42,8 @@ import org.apache.calcite.tools.Program;
 import org.apache.calcite.tools.RuleSet;
 import org.apache.calcite.tools.RuleSets;
 import org.apache.calcite.util.Optionality;
-import org.apache.ignite.internal.processors.query.calcite.rule.CollectRule;
-import org.apache.ignite.internal.processors.query.calcite.rule.CorrelateToNestedLoopRule;
-import org.apache.ignite.internal.processors.query.calcite.rule.CorrelatedNestedLoopJoinRule;
-import org.apache.ignite.internal.processors.query.calcite.rule.FilterConverterRule;
-import org.apache.ignite.internal.processors.query.calcite.rule.FilterSpoolMergeToHashIndexSpoolRule;
-import org.apache.ignite.internal.processors.query.calcite.rule.FilterSpoolMergeToSortedIndexSpoolRule;
-import org.apache.ignite.internal.processors.query.calcite.rule.HashAggregateConverterRule;
-import org.apache.ignite.internal.processors.query.calcite.rule.IndexMinMaxRule;
-import org.apache.ignite.internal.processors.query.calcite.rule.LogicalScanConverterRule;
-import org.apache.ignite.internal.processors.query.calcite.rule.MergeJoinConverterRule;
-import org.apache.ignite.internal.processors.query.calcite.rule.NestedLoopJoinConverterRule;
-import org.apache.ignite.internal.processors.query.calcite.rule.ProjectConverterRule;
-import org.apache.ignite.internal.processors.query.calcite.rule.SetOpConverterRule;
-import org.apache.ignite.internal.processors.query.calcite.rule.SortAggregateConverterRule;
-import org.apache.ignite.internal.processors.query.calcite.rule.SortConverterRule;
-import org.apache.ignite.internal.processors.query.calcite.rule.TableFunctionScanConverterRule;
-import org.apache.ignite.internal.processors.query.calcite.rule.TableModifyConverterRule;
-import org.apache.ignite.internal.processors.query.calcite.rule.UnionConverterRule;
-import org.apache.ignite.internal.processors.query.calcite.rule.ValuesConverterRule;
+import org.apache.ignite.internal.processors.query.calcite.rule.*;
+import org.apache.ignite.internal.processors.query.calcite.rule.IndexCountRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.logical.ExposeIndexRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.logical.FilterScanMergeRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.logical.LogicalOrToUnionRule;
@@ -225,6 +208,7 @@ public enum PlannerPhase {
                     FilterScanMergeRule.INDEX_SCAN,
                     FilterSpoolMergeToSortedIndexSpoolRule.INSTANCE,
                     FilterSpoolMergeToHashIndexSpoolRule.INSTANCE,
+
                     LogicalOrToUnionRule.INSTANCE,
 
                     // TODO: https://issues.apache.org/jira/browse/IGNITE-16334 join rules ordering is significant here.
@@ -236,8 +220,9 @@ public enum PlannerPhase {
                     ValuesConverterRule.INSTANCE,
                     LogicalScanConverterRule.INDEX_SCAN,
                     LogicalScanConverterRule.TABLE_SCAN,
-                    IndexMinMaxRule.INSTANCE,
-                    CollectRule.INSTANCE,
+                    IndexCountRule.INSTANCE,
+                        IndexMinMaxRule.INSTANCE,
+                        CollectRule.INSTANCE,
                     HashAggregateConverterRule.COLOCATED,
                     HashAggregateConverterRule.MAP_REDUCE,
                     SortAggregateConverterRule.COLOCATED,

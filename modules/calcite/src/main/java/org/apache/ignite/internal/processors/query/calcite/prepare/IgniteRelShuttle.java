@@ -18,30 +18,9 @@
 package org.apache.ignite.internal.processors.query.calcite.prepare;
 
 import java.util.List;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteCollect;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteCorrelatedNestedLoopJoin;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteExchange;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteFilter;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteHashIndexSpool;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexProbe;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexScan;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteLimit;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteMergeJoin;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteNestedLoopJoin;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteProject;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteReceiver;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRelVisitor;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSender;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSort;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSortedIndexSpool;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableFunctionScan;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableModify;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableScan;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableSpool;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTrimExchange;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteUnionAll;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteValues;
+
+import org.apache.ignite.internal.processors.query.calcite.rel.*;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexCount;
 import org.apache.ignite.internal.processors.query.calcite.rel.agg.IgniteColocatedHashAggregate;
 import org.apache.ignite.internal.processors.query.calcite.rel.agg.IgniteColocatedSortAggregate;
 import org.apache.ignite.internal.processors.query.calcite.rel.agg.IgniteMapHashAggregate;
@@ -145,6 +124,11 @@ public class IgniteRelShuttle implements IgniteRelVisitor<IgniteRel> {
 
     /** {@inheritDoc} */
     @Override public IgniteRel visit(IgniteIndexScan rel) {
+        return processNode(rel);
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteRel visit(IgniteIndexCount rel) {
         return processNode(rel);
     }
 
