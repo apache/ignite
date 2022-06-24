@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.platform.client.datastructures;
 import java.util.UUID;
 import org.apache.ignite.IgniteSet;
 import org.apache.ignite.binary.BinaryRawReader;
+import org.apache.ignite.internal.processors.datastructures.GridCacheSetProxy;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientRequest;
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
@@ -52,7 +53,6 @@ public class ClientIgniteSetRequest extends ClientRequest {
     @Override public ClientResponse process(ClientConnectionContext ctx) {
         IgniteSet<Object> igniteSet = igniteSet(ctx);
 
-        // TODO: Check id.
         if (igniteSet == null)
             return notFoundResponse();
 
@@ -85,7 +85,12 @@ public class ClientIgniteSetRequest extends ClientRequest {
      * @return IgniteSet or null.
      */
     protected <T> IgniteSet<T> igniteSet(ClientConnectionContext ctx) {
-        return ctx.kernalContext().grid().set(name, null);
+        IgniteSet<T> set = ctx.kernalContext().grid().set(name, null);
+
+        if (set != null && ((GridCacheSetProxy<T>) set).delegate().id().equals(id))
+            return set;
+
+        return null;
     }
 
     /**
