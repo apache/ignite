@@ -37,9 +37,6 @@ public class ClientCollectionConfiguration {
     /** Number of backups. */
     private int backups = 0;
 
-    /** Off-heap memory size. */
-    private long offHeapMaxMem = -1;
-
     /** Collocated flag. */
     private boolean collocated;
 
@@ -113,23 +110,6 @@ public class ClientCollectionConfiguration {
      */
     public ClientCollectionConfiguration setBackups(int backups) {
         this.backups = backups;
-
-        return this;
-    }
-
-    /**
-     * @return Off-heap memory size.
-     */
-    public long getOffHeapMaxMemory() {
-        return offHeapMaxMem;
-    }
-
-    /**
-     * @param offHeapMaxMemory Off-heap memory size.
-     * @return {@code this} for chaining.
-     */
-    public ClientCollectionConfiguration setOffHeapMaxMemory(long offHeapMaxMemory) {
-        this.offHeapMaxMem = offHeapMaxMemory;
 
         return this;
     }
