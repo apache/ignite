@@ -93,6 +93,7 @@ class ClientIgniteSetImpl<T> implements ClientIgniteSet<T> {
 
     @Override
     public Iterator<T> iterator() {
+        // TODO: Should we use CacheWeakQueryIteratorsHolder here somehow to match weak ref semantics?
         return null;
     }
 
