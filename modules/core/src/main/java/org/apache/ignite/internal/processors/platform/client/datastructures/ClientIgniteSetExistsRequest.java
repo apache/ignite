@@ -19,29 +19,25 @@ package org.apache.ignite.internal.processors.platform.client.datastructures;
 
 import org.apache.ignite.IgniteSet;
 import org.apache.ignite.binary.BinaryRawReader;
+import org.apache.ignite.internal.processors.platform.client.ClientBooleanResponse;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
 
 /**
- * Closes the IgniteSet.
+ * Checks if IgniteSet exists.
  */
-public class ClientIgniteSetCloseRequest extends ClientIgniteSetRequest {
+public class ClientIgniteSetExistsRequest extends ClientIgniteSetRequest {
     /**
      * Constructor.
      *
      * @param reader Reader.
      */
-    public ClientIgniteSetCloseRequest(BinaryRawReader reader) {
+    public ClientIgniteSetExistsRequest(BinaryRawReader reader) {
         super(reader);
     }
 
     /** {@inheritDoc} */
     @Override public ClientResponse process(ClientConnectionContext ctx) {
-        IgniteSet<Object> igniteSet = igniteSet(ctx);
-
-        if (igniteSet != null)
-            igniteSet.close();
-
-        return new ClientResponse(requestId());
+        return new ClientBooleanResponse(requestId(), igniteSet(ctx) != null);
     }
 }

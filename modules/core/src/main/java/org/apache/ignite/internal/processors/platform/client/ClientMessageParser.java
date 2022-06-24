@@ -87,11 +87,11 @@ import org.apache.ignite.internal.processors.platform.client.datastructures.Clie
 import org.apache.ignite.internal.processors.platform.client.datastructures.ClientAtomicLongValueGetAndSetRequest;
 import org.apache.ignite.internal.processors.platform.client.datastructures.ClientAtomicLongValueGetRequest;
 import org.apache.ignite.internal.processors.platform.client.datastructures.ClientIgniteSetCloseRequest;
+import org.apache.ignite.internal.processors.platform.client.datastructures.ClientIgniteSetExistsRequest;
 import org.apache.ignite.internal.processors.platform.client.datastructures.ClientIgniteSetValueAddRequest;
 import org.apache.ignite.internal.processors.platform.client.datastructures.ClientIgniteSetValueContainsRequest;
 import org.apache.ignite.internal.processors.platform.client.datastructures.ClientIgniteSetGetOrCreateRequest;
 import org.apache.ignite.internal.processors.platform.client.datastructures.ClientIgniteSetValueRemoveRequest;
-import org.apache.ignite.internal.processors.platform.client.datastructures.ClientIgniteSetRequest;
 import org.apache.ignite.internal.processors.platform.client.service.ClientServiceGetDescriptorRequest;
 import org.apache.ignite.internal.processors.platform.client.service.ClientServiceGetDescriptorsRequest;
 import org.apache.ignite.internal.processors.platform.client.service.ClientServiceInvokeRequest;
@@ -629,8 +629,7 @@ public class ClientMessageParser implements ClientListenerMessageParser {
                 return new ClientIgniteSetCloseRequest(reader);
 
             case OP_SET_EXISTS:
-                // TODO
-                return new ClientIgniteSetRequest(reader);
+                return new ClientIgniteSetExistsRequest(reader);
 
             case OP_SET_VALUE_ADD:
                 return new ClientIgniteSetValueAddRequest(reader);
