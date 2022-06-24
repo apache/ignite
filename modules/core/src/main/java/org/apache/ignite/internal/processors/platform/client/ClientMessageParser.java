@@ -363,6 +363,12 @@ public class ClientMessageParser implements ClientListenerMessageParser {
     /** IgniteSet.clear. */
     private static final short OP_SET_CLEAR = 9021;
 
+    /** IgniteSet.iterator. */
+    private static final short OP_SET_ITERATOR_START = 9022;
+
+    /** IgniteSet.iterator page. */
+    private static final short OP_SET_ITERATOR_NEXT_PAGE = 9023;
+
     /** Marshaller. */
     private final GridBinaryMarshaller marsh;
 
