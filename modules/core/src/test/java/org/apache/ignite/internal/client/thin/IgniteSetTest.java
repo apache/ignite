@@ -133,6 +133,8 @@ public class IgniteSetTest extends AbstractThinClientTest {
             // Binary object equality does not require overriding equals/hashCode
             // However, partition awareness requires proper hashCode override for user objects -
             // it does not use binary object to get the hash - see GridCacheSetItemKey.
+
+            // TODO: Client sends obj as BinaryObject, resulting in a different hash code than server uses.
             assertTrue(set.contains(new UserObj(1, "client")));
             assertTrue(set.contains(new UserObj(2, "server")));
 
