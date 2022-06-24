@@ -232,12 +232,9 @@ class ClientIgniteSetImpl<T> implements ClientIgniteSet<T> {
         if (collocated)
             return name.hashCode();
 
-        // This is how server calculates hash code for GridCacheSetItemKey.
-        // There is no binary object conversion even for user-defined types,
-        // so a proper hashCode() override is required for partition awareness to work.
-        // TODO: BUT we send a binary object there as a key!! So the hash will be different!
-        // So we should return O as is?
-        // PROBLEM: same code using thick client and thin client will end up with different hash?
-        return o.hashCode();
+        // TODO: same code using thick client and thin client will end up with different hash for user objects,
+        // because client passes objects in form of BinaryObject.
+        // Write a test to confirm that we can put from thin and get from thick.
+        return o;
     }
 }
