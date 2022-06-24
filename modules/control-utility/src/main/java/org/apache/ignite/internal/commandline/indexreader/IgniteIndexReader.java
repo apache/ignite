@@ -22,6 +22,7 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -1013,7 +1014,8 @@ public class IgniteIndexReader implements AutoCloseable {
             String.format("%.2f", (stat.freeSpace * 100.0d) / (pageSize * stat.cnt))
         )));
 
-        //TODO check pages count in indexes.
+        Collections.sort(data, Comparator.comparingLong(l -> (long)l.get(1)));
+
         SystemViewCommand.printTable(
             Arrays.asList(prefix + "Type", "Pages", "Free space (Kb)", "Free space (%)"),
             Arrays.asList(STRING, NUMBER, NUMBER, NUMBER),
