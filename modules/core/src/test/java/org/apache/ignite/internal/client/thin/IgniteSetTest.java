@@ -50,6 +50,26 @@ public class IgniteSetTest extends AbstractThinClientTest {
     }
 
     @Test
+    public void testGetNonExistentSetReturnsNull() {
+        try (IgniteClient client = startClient(0)) {
+            assertNull(client.set("non-existent", null));
+        }
+    }
+
+    @Test
+    public void testUseRemovedSetThrowsException() {
+        try (IgniteClient client = startClient(0)) {
+            ClientIgniteSet<Integer> set = client.set("testUseRemovedSetThrowsException", new ClientCollectionConfiguration());
+
+            set.add(1);
+            set.close();
+
+            set.add(2);
+            assertTrue(set.removed());
+        }
+    }
+
+    @Test
     public void testBasicUsage() {
         try (IgniteClient client = startClient(0)) {
             ClientIgniteSet<String> set = client.set("testBasicUsage", new ClientCollectionConfiguration());
