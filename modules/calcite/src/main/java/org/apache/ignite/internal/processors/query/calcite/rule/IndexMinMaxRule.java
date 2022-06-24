@@ -17,26 +17,18 @@
 
 package org.apache.ignite.internal.processors.query.calcite.rule;
 
-import java.util.Collections;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-import com.google.common.collect.ImmutableMap;
-import org.apache.calcite.linq4j.Ord;
 import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.RelRule;
 import org.apache.calcite.plan.RelTraitSet;
-import org.apache.calcite.rel.RelCollations;
 import org.apache.calcite.rel.RelDistribution;
-import org.apache.calcite.rel.core.AggregateCall;
 import org.apache.calcite.rel.logical.LogicalAggregate;
-import org.apache.calcite.rex.RexLiteral;
-import org.apache.calcite.sql.SqlCall;
+import org.apache.calcite.rel.type.RelDataType;
+import org.apache.calcite.rel.type.RelDataTypeFactory;
+import org.apache.calcite.rex.RexBuilder;
+import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.sql.SqlKind;
-import org.apache.calcite.sql.fun.SqlMinMaxAggFunction;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.tools.RelBuilder;
-import org.apache.calcite.util.ImmutableBitSet;
-import org.apache.calcite.util.ImmutableIntList;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteConvention;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexScan;
@@ -47,12 +39,15 @@ import org.apache.ignite.internal.processors.query.calcite.schema.IgniteIndex;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
 import org.apache.ignite.internal.processors.query.calcite.trait.RewindabilityTrait;
-import org.apache.ignite.internal.processors.query.calcite.util.Commons;
+import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.util.IndexConditions;
 import org.apache.ignite.internal.processors.query.calcite.util.RexUtils;
+import org.apache.ignite.internal.util.typedef.F;
 import org.immutables.value.Value;
 
-import static org.apache.calcite.sql.fun.SqlStdOperatorTable.FIRST_VALUE;
+import java.util.Collections;
+
+import static org.apache.calcite.sql.fun.SqlStdOperatorTable.MIN;
 
 /** Tries to optimize MIN() and MAX() to use first/last record index records. */
 @Value.Enclosing
@@ -116,24 +111,24 @@ public class IndexMinMaxRule extends RelRule<IndexMinMaxRule.Config> {
 //            aggr.getRowType()
 //        );
 
-        RexLiteral limit = scan.getCluster().getRexBuilder().makeLiteral(FIRST_VALUE, aggr.getRowType());
+        RexBuilder rexb = RexUtils.builder(scan.getCluster());
 
-        IndexConditions idxConditions = new IndexConditions(null, null, null, Collections.singletonList(limit));
-        idxConditions = RexUtils.buildSortedIndexConditions(
-                scan.getCluster(),
-                idx.collation(),
-                RexUtils.builder(scan.getCluster()).makeCall(),
-                scan.getRowType(),
-                scan.requiredColumns()
-                );
+        RelDataTypeFactory tf = scan.getCluster().getTypeFactory();
 
-        IgniteIndexScan input = new IgniteIndexScan(
+        RelDataType tableType = table.getRowType(tf);
+
+        RexNode condition = rexb.makeCall(MIN,
+                rexb.makeLocalRef(tableType.getFieldList().get(columnNum).getType(), 0));
+
+        IndexConditions idxConditions = new IndexConditions(F.asList(condition), F.asList(condition), null, null);
+
+        IgniteIndexScan replacement = new IgniteIndexScan(
                 scan.getCluster(),
                 idxTraits,
                 scan.getTable(),
                 idx.name(),
                 null,
-                null,
+                condition,
                 idxConditions,
                 scan.requiredColumns(),
                 idx.collation());
@@ -180,16 +175,12 @@ public class IndexMinMaxRule extends RelRule<IndexMinMaxRule.Config> {
 //            newRel,
 //            proj, aggr.getRowType());
 
-
-
-        RelBuilder b = call.builder();
+        RelBuilder relb = call.builder();
 
         // Also cast DECIMAL of SUM0 to BIGINT(Long) of COUNT().
-        call.transformTo(b.push(idxCnt)
-                .aggregate(b.groupKey(), Collections.nCopies(aggr.getAggCallList().size(),
-                        b.aggregateCall(SqlStdOperatorTable.SUM0, b.field(0))))
-                .project(Commons.transform(Ord.zip(b.fields()),
-                        f -> b.cast(f.e, aggr.getRowType().getFieldList().get(f.i).getType().getSqlTypeName())))
+        call.transformTo(relb.push(replacement)
+                .aggregate(relb.groupKey(), Collections.nCopies(aggr.getAggCallList().size(),
+                        relb.aggregateCall(SqlStdOperatorTable.MIN, relb.field(0))))
                 .build()
         );
 //

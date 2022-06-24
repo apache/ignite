@@ -19,14 +19,16 @@ package org.apache.ignite.internal.processors.query.calcite.rel;
 
 import java.util.List;
 import com.google.common.collect.ImmutableList;
-import org.apache.calcite.plan.RelOptCluster;
-import org.apache.calcite.plan.RelOptTable;
-import org.apache.calcite.plan.RelTraitSet;
+import org.apache.calcite.plan.*;
 import org.apache.calcite.rel.RelCollation;
 import org.apache.calcite.rel.RelInput;
 import org.apache.calcite.rel.RelWriter;
+import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rex.RexNode;
+import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.util.ImmutableBitSet;
+import org.apache.ignite.internal.processors.query.calcite.metadata.cost.IgniteCost;
+import org.apache.ignite.internal.processors.query.calcite.metadata.cost.IgniteCostFactory;
 import org.apache.ignite.internal.processors.query.calcite.util.IndexConditions;
 import org.jetbrains.annotations.Nullable;
 
@@ -111,6 +113,15 @@ public class IgniteIndexScan extends AbstractIndexScan implements SourceAwareIgn
 
         this.sourceId = sourceId;
         this.collation = collation;
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public RelOptCost computeSelfCost(RelOptPlanner planner, RelMetadataQuery mq) {
+        if(condition != null && condition.isA(SqlKind.MIN) || condition.isA(SqlKind.MAX))
+            return planner.getCostFactory().makeTinyCost();
+
+        return super.computeSelfCost(planner, mq);
     }
 
     /** {@inheritDoc} */
