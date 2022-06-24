@@ -17,13 +17,14 @@
 
 package org.apache.ignite.internal.client.thin;
 
+import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.client.ClientCollectionConfiguration;
 import org.apache.ignite.client.ClientException;
 import org.apache.ignite.client.ClientIgniteSet;
 import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
 
 /**
@@ -128,6 +129,24 @@ public class IgniteSetTest extends AbstractThinClientTest {
             UserObj res = set.iterator().next();
             assertEquals(1, res.id);
             assertEquals("a", res.val);
+        }
+    }
+
+    @Test
+    public void testConfigPropagation() {
+        ClientCollectionConfiguration cfg = new ClientCollectionConfiguration()
+                .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
+                .setCacheMode(CacheMode.REPLICATED)
+                .setBackups(7)
+                .setCollocated(true)
+                .setGroupName("grp-testConfigPropagation")
+                .setOffHeapMaxMemory(9000);
+
+        try (IgniteClient client = startClient(0)) {
+            ClientIgniteSet<UserObj> set = client.set("testConfigPropagation", cfg);
+
+            // TODO: Check all properties from cache context.
+            assertTrue(set.collocated());
         }
     }
 
