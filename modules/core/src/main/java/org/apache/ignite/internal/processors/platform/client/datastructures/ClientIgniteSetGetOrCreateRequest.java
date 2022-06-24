@@ -55,7 +55,6 @@ public class ClientIgniteSetGetOrCreateRequest extends ClientRequest {
                 .setCacheMode(CacheMode.fromOrdinal(reader.readByte()))
                 .setBackups(reader.readInt())
                 .setGroupName(reader.readString())
-                .setOffHeapMaxMemory(reader.readLong())
                 .setCollocated(reader.readBoolean())
                 : null;
     }

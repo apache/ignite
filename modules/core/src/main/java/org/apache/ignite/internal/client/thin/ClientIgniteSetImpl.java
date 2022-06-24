@@ -56,9 +56,9 @@ class ClientIgniteSetImpl<T> implements ClientIgniteSet<T> {
      * @param serDes Utils..
      * @param name Name.
      * @param id Id.
-     * @param colocated Colocated flag.
+     * @param collocated Colocated flag.
      */
-    public ClientIgniteSetImpl(ReliableChannel ch, ClientUtils serDes, String name, IgniteUuid id, boolean colocated) {
+    public ClientIgniteSetImpl(ReliableChannel ch, ClientUtils serDes, String name, IgniteUuid id, boolean collocated) {
         assert ch != null;
         assert serDes != null;
         assert name != null;
@@ -68,7 +68,7 @@ class ClientIgniteSetImpl<T> implements ClientIgniteSet<T> {
         this.serDes = serDes;
         this.name = name;
         this.id = id;
-        this.collocated = colocated;
+        this.collocated = collocated;
     }
 
     @Override

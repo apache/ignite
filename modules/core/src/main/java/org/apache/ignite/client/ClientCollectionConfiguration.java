@@ -35,7 +35,7 @@ public class ClientCollectionConfiguration {
     private CacheMode cacheMode = PARTITIONED;
 
     /** Number of backups. */
-    private int backups = 0;
+    private int backups;
 
     /** Collocated flag. */
     private boolean collocated;

@@ -147,8 +147,7 @@ public class IgniteSetTest extends AbstractThinClientTest {
                 .setCacheMode(CacheMode.PARTITIONED)
                 .setBackups(7)
                 .setCollocated(true)
-                .setGroupName(groupName)
-                .setOffHeapMaxMemory(9000);
+                .setGroupName(groupName);
 
         try (IgniteClient client = startClient(0)) {
             ClientIgniteSet<UserObj> set = client.set("testConfigPropagation", cfg);
