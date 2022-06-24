@@ -61,7 +61,7 @@
    <parameter name="maxParameters"><![CDATA[8]]></parameter>
   </parameters>
  </check>
- <check level="warning" class="org.scalastyle.scalariform.MagicNumberChecker" enabled="false">
+ <check level="warning" class="org.scalastyle.scalariform.MagicNumberChecker" enabled="true">
   <parameters>
    <parameter name="ignore"><![CDATA[-1,0,1,2,3]]></parameter>
   </parameters>
@@ -139,8 +139,9 @@
   </parameters>
  </check>
  <check level="warning" class="org.scalastyle.scalariform.ImportGroupingChecker" enabled="true"></check>
+
  <!-- Below are custom checks -->
- <check enabled="true" class="org.scalastyle.scalariform.ImportOrderChecker" level="warning">
+ <check enabled="true" class="org.scalastyle.scalariform.ImportOrderChecker" level="error">
   <parameters>
    <parameter name="groups">java,javax,scala,others</parameter>
    <parameter name="group.java">java\..+</parameter>
@@ -157,4 +158,6 @@
    <parameter name="ignoreRegex">scala\.jdk\.CollectionConverters\._|io\.gatling\.core\.Predef\._|org\.apache\.ignite\.gatling\.Predef\._</parameter>
   </parameters>
  </check>
+ <check level="warning" enabled="true" class="org.scalastyle.scalariform.ScalaDocChecker"/>
+ <check level="warning" class="org.scalastyle.scalariform.MagicNumberChecker" enabled="false"/>
 </scalastyle>

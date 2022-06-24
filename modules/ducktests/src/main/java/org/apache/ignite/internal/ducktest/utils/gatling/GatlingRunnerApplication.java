@@ -18,28 +18,29 @@
 package org.apache.ignite.internal.ducktest.utils.gatling;
 
 import java.util.Optional;
-import java.util.Properties;
 import com.fasterxml.jackson.databind.JsonNode;
-import io.gatling.core.config.GatlingPropertiesBuilder;
 import io.gatling.app.Gatling;
-import org.apache.ignite.client.IgniteClient;
+import io.gatling.core.config.GatlingPropertiesBuilder;
+import org.apache.ignite.gatling.Predef;
+import org.apache.ignite.gatling.protocol.IgniteProtocol;
 import org.apache.ignite.internal.ducktest.utils.IgniteAwareApplication;
 
 /**
- * Gatling test.
+ * Application executing the Gatling simulation.
  */
 public class GatlingRunnerApplication extends IgniteAwareApplication {
+    /** Ignite protocol to be used by the gatling simulation. */
+    public static IgniteProtocol igniteProtocol;
+
     /** {@inheritDoc} */
     @Override protected void run(JsonNode jsonNode) throws Exception {
         markInitialized();
 
         if (client != null) {
-            igniteClient = client;
-//            client.close();
+            igniteProtocol = Predef.ignite().cfg(client).build();
+        } else {
+            igniteProtocol = Predef.ignite().cfg(ignite).build();
         }
-
-        Properties sysProperties = System.getProperties();
-        sysProperties.setProperty("config", cfgPath);
 
         GatlingPropertiesBuilder gatlingPropertiesBuilder = new GatlingPropertiesBuilder();
 
@@ -54,9 +55,5 @@ public class GatlingRunnerApplication extends IgniteAwareApplication {
         Gatling.fromMap(gatlingPropertiesBuilder.build());
 
         markFinished();
-
-        igniteClient = null;
     }
-
-    public static IgniteClient igniteClient;
 }

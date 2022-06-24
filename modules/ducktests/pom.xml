@@ -209,7 +209,7 @@
                         <configuration>
                             <excludeGroupIds>${project.groupId}</excludeGroupIds>
                             <outputDirectory>target/libs</outputDirectory>
-                            <includeScope>compile</includeScope>
+                            <includeScope>runtime</includeScope>
                             <excludeTransitive>false</excludeTransitive>
                         </configuration>
                     </execution>

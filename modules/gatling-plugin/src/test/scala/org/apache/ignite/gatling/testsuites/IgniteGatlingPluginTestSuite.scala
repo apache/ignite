@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.testsuites
+package org.apache.ignite.gatling.testsuites
 
 import org.apache.ignite.gatling.PutGetTest
 import org.apache.ignite.gatling.SqlTest

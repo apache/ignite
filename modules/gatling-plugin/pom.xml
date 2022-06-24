@@ -100,14 +100,14 @@
             <groupId>io.gatling</groupId>
             <artifactId>gatling-charts</artifactId>
             <version>${gatling.version}</version>
-            <scope>test</scope>
+            <scope>runtime</scope>
         </dependency>
 
         <dependency>
             <groupId>io.gatling.highcharts</groupId>
             <artifactId>gatling-charts-highcharts</artifactId>
             <version>${gatling.version}</version>
-            <scope>test</scope>
+            <scope>runtime</scope>
             <exclusions>
                 <exclusion>
                     <groupId>io.gatling</groupId>
@@ -168,42 +168,74 @@
                         <arg>-language:implicitConversions</arg>
                     </args>
                 </configuration>
-            </plugin>
-            <plugin>
-                <groupId>org.scalastyle</groupId>
-                <artifactId>scalastyle-maven-plugin</artifactId>
-                <version>1.0.0</version>
-                <configuration>
-                    <verbose>false</verbose>
-                    <failOnViolation>true</failOnViolation>
-                    <includeTestSourceDirectory>true</includeTestSourceDirectory>
-                    <failOnWarning>false</failOnWarning>
-                    <sourceDirectory>${project.basedir}/src/main/scala</sourceDirectory>
-                    <testSourceDirectory>${project.basedir}/src/test/scala</testSourceDirectory>
-                    <configLocation>${project.basedir}/scalastyle_config.xml</configLocation>
-                    <outputFile>${project.basedir}/target/scalastyle/scalastyle-output.xml</outputFile>
-                    <outputEncoding>UTF-8</outputEncoding>
-                </configuration>
                 <executions>
                     <execution>
+                        <id>scaladoc</id>
+                        <phase>prepare-package</phase>
                         <goals>
-                            <goal>check</goal>
+                            <goal>doc</goal>
+                            <goal>doc-jar</goal>
                         </goals>
+                        <configuration>
+                            <doctitle>Ignite Gatling Plugin</doctitle>
+                            <windowtitle>Ignite Gatling Plugin</windowtitle>
+                            <skip>${maven.javadoc.skip}</skip>
+                        </configuration>
                     </execution>
                 </executions>
             </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-surefire-plugin</artifactId>
-
-                <configuration>
-                    <includes>
-                        <!-- Check all classes that may have any test. -->
-                        <include>**/*.scala</include>
-                        <include>**/*.java</include>
-                    </includes>
-                </configuration>
-            </plugin>
+<!--            <plugin>-->
+<!--                <groupId>org.apache.maven.plugins</groupId>-->
+<!--                <artifactId>maven-surefire-plugin</artifactId>-->
+<!--                <configuration>-->
+<!--                    <includes>-->
+<!--                        &lt;!&ndash; Check all classes that may have any test. &ndash;&gt;-->
+<!--                        <include>**/*.scala</include>-->
+<!--                        <include>**/*.java</include>-->
+<!--                    </includes>-->
+<!--                </configuration>-->
+<!--            </plugin>-->
         </plugins>
     </build>
+    <profiles>
+        <profile>
+            <id>checkstyle</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.scalastyle</groupId>
+                        <artifactId>scalastyle-maven-plugin</artifactId>
+                        <version>1.0.0</version>
+                        <configuration>
+                            <verbose>true</verbose>
+                            <failOnViolation>true</failOnViolation>
+                            <includeTestSourceDirectory>true</includeTestSourceDirectory>
+                            <failOnWarning>true</failOnWarning>
+                            <sourceDirectory>${project.basedir}/src/main/scala</sourceDirectory>
+                            <testSourceDirectory>${project.basedir}/src/test/scala</testSourceDirectory>
+                            <configLocation>${project.basedir}/scalastyle_config.xml</configLocation>
+                            <outputFile>${project.basedir}/target/checkstyle-result.xml</outputFile>
+                            <outputEncoding>UTF-8</outputEncoding>
+                        </configuration>
+                        <executions>
+                            <execution>
+                                <id>style</id>
+                                <goals>
+                                    <goal>check</goal>
+                                </goals>
+                                <phase>validate</phase>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-checkstyle-plugin</artifactId>
+                        <configuration>
+                            <skip>true</skip>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
 </project>

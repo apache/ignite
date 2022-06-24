@@ -35,7 +35,7 @@ case object IgniteProtocolBuilderBase {
 }
 
 case class IgniteProtocolBuilderManualStartStep(cfg: IgniteCfg) {
-  def withManualStart: IgniteProtocolBuilder = IgniteProtocolBuilder(cfg, manualClientStart = true)
+  def withManualClientStart: IgniteProtocolBuilder = IgniteProtocolBuilder(cfg, manualClientStart = true)
 
   def build: IgniteProtocol = IgniteProtocol(cfg)
 }

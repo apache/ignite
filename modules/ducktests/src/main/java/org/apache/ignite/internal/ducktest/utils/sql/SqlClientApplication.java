@@ -24,7 +24,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.internal.ducktest.utils.IgniteAwareApplication;
 
-
 /**
  * Application executing the set of the SQL statements from the script file.
  */

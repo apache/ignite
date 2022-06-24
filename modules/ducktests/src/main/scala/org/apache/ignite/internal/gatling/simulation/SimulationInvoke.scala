@@ -69,7 +69,7 @@ class SimulationInvoke extends Simulation with DucktapeIgniteSupport {
     rampUsersPerSec(0).to(100).during(10.seconds),
     constantUsersPerSec(100) during 30,
   ))
-    .protocols(ducktapeIgnite)
+    .protocols(protocol)
     .maxDuration(60.seconds)
     .assertions(global.failedRequests.count.is(0))
 }

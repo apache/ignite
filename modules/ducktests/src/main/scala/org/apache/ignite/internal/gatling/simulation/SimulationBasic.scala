@@ -25,7 +25,7 @@ import scala.concurrent.duration.DurationInt
 import scala.language.postfixOps
 
 class SimulationBasic extends Simulation with DucktapeIgniteSupport {
-    private val protocol = ducktapeIgnite
+//    private val protocol = ducktapeIgnite
     private val feeder = IntPairsFeeder()
 
     private val basicScenario = scenario("Basic")

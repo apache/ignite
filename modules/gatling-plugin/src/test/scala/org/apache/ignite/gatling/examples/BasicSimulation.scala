@@ -54,7 +54,7 @@ class BasicSimulation extends Simulation {
 
   private def protocol = ignite.cfg(
     new ClientConfiguration().setAddresses("localhost:10800")
-  ).withManualStart
+  ).withManualClientStart
 
   setUp(
     scn
