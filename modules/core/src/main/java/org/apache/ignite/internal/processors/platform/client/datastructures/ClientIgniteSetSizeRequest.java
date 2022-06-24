@@ -17,26 +17,28 @@
 
 package org.apache.ignite.internal.processors.platform.client.datastructures;
 
+import org.apache.ignite.IgniteSet;
 import org.apache.ignite.binary.BinaryRawReader;
 import org.apache.ignite.internal.processors.platform.client.ClientBooleanResponse;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
+import org.apache.ignite.internal.processors.platform.client.ClientIntResponse;
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
 
 /**
- * Checks if IgniteSet exists.
+ * Gets IgniteSet size.
  */
-public class ClientIgniteSetExistsRequest extends ClientIgniteSetRequest {
+public class ClientIgniteSetSizeRequest extends ClientIgniteSetRequest {
     /**
      * Constructor.
      *
      * @param reader Reader.
      */
-    public ClientIgniteSetExistsRequest(BinaryRawReader reader) {
+    public ClientIgniteSetSizeRequest(BinaryRawReader reader) {
         super(reader);
     }
 
     /** {@inheritDoc} */
-    @Override public ClientResponse process(ClientConnectionContext ctx) {
-        return new ClientBooleanResponse(requestId(), igniteSet(ctx) != null);
+    @Override protected ClientResponse process(IgniteSet<Object> set) {
+        return new ClientIntResponse(requestId(), set.size());
     }
 }
