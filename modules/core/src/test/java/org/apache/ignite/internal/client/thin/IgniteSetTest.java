@@ -25,8 +25,6 @@ import org.apache.ignite.client.ClientException;
 import org.apache.ignite.client.ClientIgniteSet;
 import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.configuration.ClientConfiguration;
-import org.apache.ignite.configuration.CollectionConfiguration;
-import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.datastructures.GridCacheSetProxy;
 import org.apache.ignite.testframework.GridTestUtils;
