@@ -24,6 +24,8 @@ import org.apache.ignite.client.ClientException;
 import org.apache.ignite.client.ClientIgniteSet;
 import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.configuration.ClientConfiguration;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.datastructures.GridCacheSetProxy;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
 
@@ -31,6 +33,7 @@ import org.junit.Test;
  * Tests client set.
  * Partition awareness tests are in {@link ThinClientPartitionAwarenessStableTopologyTest#testIgniteSet()}.
  */
+@SuppressWarnings("rawtypes")
 public class IgniteSetTest extends AbstractThinClientTest {
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
@@ -133,7 +136,7 @@ public class IgniteSetTest extends AbstractThinClientTest {
     }
 
     @Test
-    public void testConfigPropagation() {
+    public void testConfigPropagation() throws Exception {
         ClientCollectionConfiguration cfg = new ClientCollectionConfiguration()
                 .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
                 .setCacheMode(CacheMode.REPLICATED)
@@ -144,9 +147,15 @@ public class IgniteSetTest extends AbstractThinClientTest {
 
         try (IgniteClient client = startClient(0)) {
             ClientIgniteSet<UserObj> set = client.set("testConfigPropagation", cfg);
+            GridCacheSetProxy serverSet = (GridCacheSetProxy)ignite(0).set(set.name(), null);
+            GridCacheContext cctx = (GridCacheContext) GridCacheSetProxy.class.getDeclaredField("cctx").get(serverSet.delegate());
 
             // TODO: Check all properties from cache context.
             assertTrue(set.collocated());
+            assertEquals(7, cctx.config().getBackups());
+            assertEquals(CacheMode.REPLICATED, cctx.config().getCacheMode());
+            assertEquals(CacheAtomicityMode.TRANSACTIONAL, cctx.config().getAtomicityMode());
+            assertEquals("testConfigPropagation", cctx.config().getGroupName());
         }
     }
 
