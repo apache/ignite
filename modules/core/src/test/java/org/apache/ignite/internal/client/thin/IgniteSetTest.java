@@ -23,6 +23,7 @@ import org.apache.ignite.client.ClientIgniteSet;
 import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
 
 /**
@@ -65,9 +66,8 @@ public class IgniteSetTest extends AbstractThinClientTest {
             set.add(1);
             set.close();
 
-            // TODO: assertThrows
-            set.add(2);
-            set2.add(2);
+            assertThrowsClosed(set);
+            assertThrowsClosed(set2);
 
             assertTrue(set.removed());
             assertTrue(set2.removed());
@@ -75,7 +75,6 @@ public class IgniteSetTest extends AbstractThinClientTest {
     }
 
     @Test
-    @SuppressWarnings("ThrowableNotThrown")
     public void testCloseAndCreateWithSameName() {
         try (IgniteClient client = startClient(0)) {
             ClientIgniteSet<Integer> oldSet = client.set("testCreateCloseCreateRemovesOldData", new ClientCollectionConfiguration());
@@ -91,9 +90,8 @@ public class IgniteSetTest extends AbstractThinClientTest {
             assertTrue(oldSet.removed());
             assertTrue(oldSet2.removed());
 
-            String msg = "IgniteSet with name 'testCreateCloseCreateRemovesOldData' does not exist.";
-            GridTestUtils.assertThrows(null, oldSet::size, ClientException.class, msg);
-            GridTestUtils.assertThrows(null, oldSet2::size, ClientException.class, msg);
+            assertThrowsClosed(oldSet);
+            assertThrowsClosed(oldSet2);
         }
     }
 
@@ -131,6 +129,12 @@ public class IgniteSetTest extends AbstractThinClientTest {
             assertEquals(1, res.id);
             assertEquals("a", res.val);
         }
+    }
+
+    @SuppressWarnings("ThrowableNotThrown")
+    private static void assertThrowsClosed(ClientIgniteSet<Integer> set) {
+        String msg = "IgniteSet with name '" + set.name() + "' does not exist.";
+        GridTestUtils.assertThrows(null, set::size, ClientException.class, msg);
     }
 
     private static class UserObj {
