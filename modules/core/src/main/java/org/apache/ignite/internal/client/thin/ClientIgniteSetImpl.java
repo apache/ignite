@@ -23,7 +23,6 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import org.apache.ignite.client.ClientIgniteSet;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
-import org.apache.ignite.internal.processors.datastructures.GridCacheSetItemKey;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgniteRunnable;
@@ -51,6 +50,9 @@ class ClientIgniteSetImpl<T> implements ClientIgniteSet<T> {
     /** */
     private volatile boolean removed;
 
+    /** */
+    private volatile boolean deserializeOnServer;
+
     /**
      * Constructor.
      *  @param ch Channel.
@@ -72,8 +74,8 @@ class ClientIgniteSetImpl<T> implements ClientIgniteSet<T> {
         this.collocated = collocated;
     }
 
-    @Override
-    public boolean add(T o) {
+    /** {@inheritDoc} */
+    @Override public boolean add(T o) {
         A.notNull(o, "o");
 
         return singleKeyOp(ClientOperation.OP_SET_VALUE_ADD, o);
@@ -186,14 +188,24 @@ class ClientIgniteSetImpl<T> implements ClientIgniteSet<T> {
         return removed;
     }
 
-    @Override
-    public void affinityRun(IgniteRunnable job) {
+    @Override public void affinityRun(IgniteRunnable job) {
 
     }
 
-    @Override
-    public <R> R affinityCall(IgniteCallable<R> job) {
+    @Override public <R> R affinityCall(IgniteCallable<R> job) {
         return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public ClientIgniteSet<T> deserializeOnServer(boolean deserializeOnServer) {
+        this.deserializeOnServer = deserializeOnServer;
+
+        return this;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean deserializeOnServer() {
+        return deserializeOnServer;
     }
 
     private Boolean singleKeyOp(ClientOperation op, Object key) {
@@ -201,6 +213,8 @@ class ClientIgniteSetImpl<T> implements ClientIgniteSet<T> {
         return ch.service(op, out -> {
             try (BinaryRawWriterEx w = serDes.createBinaryWriter(out.out())) {
                 writeIdentity(w);
+
+                w.writeBoolean(deserializeOnServer);
                 w.writeObject(key);
             }
         }, r -> r.in().readBoolean());

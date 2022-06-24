@@ -121,4 +121,9 @@ public interface ClientIgniteSet<T> extends Set<T>, Closeable {
      * @return Job result.
      */
     public <R> R affinityCall(IgniteCallable<R> job);
+
+    // TODO: Better name?
+    public ClientIgniteSet<T> deserializeOnServer(boolean deserializeOnServer);
+
+    public boolean deserializeOnServer();
 }

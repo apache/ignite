@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.client.thin;
 
 import java.lang.reflect.Field;
+import java.util.Objects;
 import org.apache.ignite.IgniteSet;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
@@ -29,7 +30,6 @@ import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.datastructures.GridCacheSetProxy;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.graalvm.compiler.lir.LIRInstruction.Use;
 import org.junit.Test;
 
 /**
@@ -125,6 +125,8 @@ public class IgniteSetTest extends AbstractThinClientTest {
     public void testUserObject() {
         try (IgniteClient client = startClient(0)) {
             ClientIgniteSet<UserObj> clientSet = client.set("testUserObject", new ClientCollectionConfiguration());
+            clientSet.deserializeOnServer(true);
+
             IgniteSet<UserObj> serverSet = ignite(0).set(clientSet.name(), null);
 
             clientSet.add(new UserObj(1, "client"));
@@ -193,6 +195,23 @@ public class IgniteSetTest extends AbstractThinClientTest {
         public UserObj(int id, String val) {
             this.id = id;
             this.val = val;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) {
+                return true;
+            }
+            if (o == null || getClass() != o.getClass()) {
+                return false;
+            }
+            UserObj userObj = (UserObj) o;
+            return id == userObj.id && Objects.equals(val, userObj.val);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(id, val);
         }
     }
 }

@@ -18,9 +18,7 @@
 package org.apache.ignite.internal.processors.platform.client.datastructures;
 
 import org.apache.ignite.IgniteSet;
-import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.internal.binary.BinaryRawReaderEx;
-import org.apache.ignite.internal.processors.datastructures.GridCacheSetItemKey.HashCodeHolder;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
 
@@ -39,12 +37,11 @@ public abstract class ClientIgniteSetKeyRequest extends ClientIgniteSetRequest {
     ClientIgniteSetKeyRequest(BinaryRawReaderEx reader) {
         super(reader);
 
-        // Hack to make thick and thin IgniteSet APIs use the same hash code for user objects
-        // and behave consistently.
-        Object obj = reader.readObjectDetached();
-        int hashCode = reader.readInt();
-
-        key = obj instanceof BinaryObject ? new HashCodeHolder(obj, hashCode) : obj;
+        // Clients can enable deserialized values on server so that user objects are stored the same way
+        // as if we were using "thick" API.
+        // This is needed when both thick and thin APIs work with the same IgniteSet AND custom user types.
+        boolean deserialize = reader.readBoolean();
+        key = deserialize ? reader.readObject() : reader.readObjectDetached();
     }
 
     /** {@inheritDoc} */
