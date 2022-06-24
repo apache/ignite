@@ -22,6 +22,7 @@ import org.apache.ignite.binary.BinaryRawReader;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientRequest;
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
+import org.apache.ignite.internal.processors.platform.client.ClientStatus;
 
 /**
  * Ignite set get or update request.
@@ -87,6 +88,10 @@ public class ClientIgniteSetRequest extends ClientRequest {
      * @return Response for non-existent set.
      */
     protected ClientResponse notFoundResponse() {
-        return new ClientResponse(requestId(), String.format("AtomicLong with name '%s' does not exist.", name));
+        // TODO: Include ID in the message.
+        return new ClientResponse(
+                requestId(),
+                ClientStatus.RESOURCE_DOES_NOT_EXIST,
+                String.format("IgniteSet with name '%s' does not exist.", name));
     }
 }

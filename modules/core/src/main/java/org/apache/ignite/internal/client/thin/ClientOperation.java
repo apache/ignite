@@ -226,7 +226,7 @@ public enum ClientOperation {
     OP_SET_GET_OR_CREATE(9010),
 
     /** Remove an IgniteSet. */
-    OP_SET_REMOVE(9011),
+    OP_SET_CLOSE(9011),
 
     /** Check if IgniteSet exists. */
     OP_SET_EXISTS(9012),

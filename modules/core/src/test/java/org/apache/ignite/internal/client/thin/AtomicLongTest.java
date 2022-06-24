@@ -27,6 +27,7 @@ import org.apache.ignite.client.ClientException;
 import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
+import org.apache.ignite.internal.processors.platform.client.ClientStatus;
 import org.junit.Test;
 import static org.apache.ignite.testframework.GridTestUtils.assertContains;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
@@ -245,5 +246,6 @@ public class AtomicLongTest extends AbstractThinClientTest {
         ClientException ex = (ClientException)assertThrows(null, callable, ClientException.class, null);
 
         assertContains(null, ex.getMessage(), "AtomicLong with name '" + name + "' does not exist.");
+        assertEquals(ClientStatus.RESOURCE_DOES_NOT_EXIST, ((ClientServerError)ex.getCause()).getCode());
     }
 }

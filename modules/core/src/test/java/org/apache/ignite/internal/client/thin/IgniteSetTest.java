@@ -21,6 +21,8 @@ import org.apache.ignite.client.ClientCollectionConfiguration;
 import org.apache.ignite.client.ClientIgniteSet;
 import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.configuration.ClientConfiguration;
+import org.apache.ignite.internal.processors.platform.client.IgniteClientException;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
 
 /**
@@ -73,17 +75,25 @@ public class IgniteSetTest extends AbstractThinClientTest {
     }
 
     @Test
+    @SuppressWarnings("ThrowableNotThrown")
     public void testCloseAndCreateWithSameName() {
         try (IgniteClient client = startClient(0)) {
-            ClientIgniteSet<Integer> set1 = client.set("testCreateCloseCreateRemovesOldData", new ClientCollectionConfiguration());
+            ClientIgniteSet<Integer> oldSet = client.set("testCreateCloseCreateRemovesOldData", new ClientCollectionConfiguration());
+            ClientIgniteSet<Integer> oldSet2 = client.set(oldSet.name(), null);
 
-            set1.add(1);
-            set1.close();
+            oldSet.add(1);
+            oldSet.close();
 
-            ClientIgniteSet<Integer> set2 = client.set(set1.name(), new ClientCollectionConfiguration());
+            ClientIgniteSet<Integer> newSet = client.set(oldSet.name(), new ClientCollectionConfiguration());
 
-            assertFalse(set2.contains(1));
-            assertTrue(set1.removed());
+            assertEquals(0, newSet.size());
+
+            assertTrue(oldSet.removed());
+            assertTrue(oldSet2.removed());
+
+            String msg = "Set is closed: testCreateCloseCreateRemovesOldData";
+            GridTestUtils.assertThrows(null, oldSet::size, IgniteClientException.class, msg);
+            GridTestUtils.assertThrows(null, oldSet2::size, IgniteClientException.class, msg);
         }
     }
 

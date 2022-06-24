@@ -45,6 +45,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryManager;
+import org.apache.ignite.internal.processors.platform.client.IgniteClientException;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteCallable;
@@ -1173,20 +1174,27 @@ public abstract class GridCacheSetAbstractSelfTest extends IgniteCollectionAbstr
      * Tests that new set with the same name as an old removed set does not contain old data.
      */
     @Test
+    @SuppressWarnings("ThrowableNotThrown")
     public void testCloseAndCreateWithSameName() {
         Ignite ignite = grid(0);
 
-        IgniteSet<Integer> set1 = ignite.set("testRemoveAndCreateWithSameName", new CollectionConfiguration());
+        IgniteSet<Integer> oldSet = ignite.set("testRemoveAndCreateWithSameName", new CollectionConfiguration());
+        IgniteSet<Integer> oldSet2 = ignite.set(oldSet.name(), null);
 
-        set1.add(1);
-        set1.close();
+        oldSet.add(1);
+        oldSet.close();
 
-        IgniteSet<Integer> set2 = ignite.set(set1.name(), new CollectionConfiguration());
+        IgniteSet<Integer> newSet = ignite.set(oldSet.name(), new CollectionConfiguration());
 
-        assertTrue(set2.isEmpty());
-        assertTrue(set1.removed());
+        assertEquals(0, newSet.size());
 
-        set2.close();
+        assertTrue(oldSet.removed());
+        assertTrue(oldSet2.removed());
+
+        GridTestUtils.assertThrows(null, oldSet::size, IllegalStateException.class, null);
+        GridTestUtils.assertThrows(null, oldSet2::size, IllegalStateException.class, null);
+
+        newSet.close();
     }
 
     /**
