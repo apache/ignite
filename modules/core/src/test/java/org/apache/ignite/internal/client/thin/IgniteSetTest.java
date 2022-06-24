@@ -73,15 +73,17 @@ public class IgniteSetTest extends AbstractThinClientTest {
     }
 
     @Test
-    public void testCreateCloseCreateRemovesOldData() {
+    public void testCloseAndCreateWithSameName() {
         try (IgniteClient client = startClient(0)) {
-            ClientIgniteSet<Integer> set = client.set("testCreateCloseCreateRemovesOldData", new ClientCollectionConfiguration());
+            ClientIgniteSet<Integer> set1 = client.set("testCreateCloseCreateRemovesOldData", new ClientCollectionConfiguration());
 
-            set.add(1);
-            set.close();
+            set1.add(1);
+            set1.close();
 
-            ClientIgniteSet<Integer> set2 = client.set("testCreateCloseCreateRemovesOldData", new ClientCollectionConfiguration());
+            ClientIgniteSet<Integer> set2 = client.set(set1.name(), new ClientCollectionConfiguration());
+
             assertFalse(set2.contains(1));
+            assertTrue(set1.removed());
         }
     }
 
