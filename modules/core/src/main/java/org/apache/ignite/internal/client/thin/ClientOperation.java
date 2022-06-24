@@ -234,11 +234,35 @@ public enum ClientOperation {
     /** IgniteSet.add. */
     OP_SET_VALUE_ADD(9013),
 
+    /** IgniteSet.addAll. */
+    OP_SET_VALUE_ADD_ALL(9014),
+
     /** IgniteSet.remove. */
-    OP_SET_VALUE_REMOVE(9014),
+    OP_SET_VALUE_REMOVE(9015),
+
+    /** IgniteSet.removeAll. */
+    OP_SET_VALUE_REMOVE_ALL(9016),
 
     /** IgniteSet.contains. */
-    OP_SET_VALUE_CONTAINS(9015);
+    OP_SET_VALUE_CONTAINS(9017),
+
+    /** IgniteSet.containsAll. */
+    OP_SET_VALUE_CONTAINS_ALL(9018),
+
+    /** IgniteSet.retainAll. */
+    OP_SET_VALUE_RETAIN_ALL(9019),
+
+    /** IgniteSet.size. */
+    OP_SET_SIZE(9020),
+
+    /** IgniteSet.clear. */
+    OP_SET_CLEAR(9021),
+
+    /** IgniteSet.iterator. */
+    OP_SET_ITERATOR_START(9022),
+
+    /** IgniteSet.iterator page. */
+    OP_SET_ITERATOR_NEXT_PAGE(9023);
 
     /** Code. */
     private final int code;
