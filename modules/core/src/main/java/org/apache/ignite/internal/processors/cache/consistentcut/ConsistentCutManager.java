@@ -216,17 +216,24 @@ public class ConsistentCutManager extends GridCacheSharedManagerAdapter {
 
         assert txCutVer >= 0 : tx;
 
-        ConsistentCut cut = currentCutBeforeCommit(txCutVer);
+        ConsistentCut cut = CUT_HOLDER.get(this).cut;
 
-        // If Consistent Cut isn't running now then it might be started in any moment after registering this transaction.
-        // To avoid misses add every transaction until Consistent Cut hasn't been grabbing active transactions yet.
-        if (cut == null || cut.grabTransactionsInProgress())
-            beforeCut.add(tx);
+        try {
+            // If Consistent Cut isn't running now then it might be started in any moment after registering this transaction.
+            // To avoid misses add every transaction while Consistent Cut is grabbing active transactions.
+            if (cut == null || (cut.grabTransactionsInProgress() && cut.txBeforeCut(txCutVer)))
+                beforeCut.add(tx);
 
-        if (log.isDebugEnabled()) {
-            log.debug("`registerBeforeCommit` from " + tx.nearXidVersion().asIgniteUuid() + " to " + tx.xid()
-                + " , ver=" + txCutVerAware.txCutVersion() + ", cut = " + cut + ", latestVer = " + latestKnownCutVersion()
-                + " , incl = " + beforeCut);
+            if (cut != null)
+                cut.processTxBeforeCommit(txCutVer);
+
+            if (log.isDebugEnabled()) {
+                log.debug("`registerBeforeCommit` from " + tx.nearXidVersion().asIgniteUuid() + " to " + tx.xid()
+                    + " , ver=" + txCutVerAware.txCutVersion() + ", cut = " + cut + ", latestVer = " + latestKnownCutVersion());
+            }
+        }
+        catch (IgniteCheckedException e) {
+            onFinish(cut, true);
         }
     }
 
@@ -238,19 +245,24 @@ public class ConsistentCutManager extends GridCacheSharedManagerAdapter {
     public void unregisterAfterCommit(IgniteInternalTx tx) throws IgniteCheckedException {
         long v = ((ConsistentCutVersionAware)tx).txCutVersion();
 
-        ConsistentCut cut = currentCutAfterCommit(tx);
+        ConsistentCut cut = CUT_HOLDER.get(this).cut;
 
         // Safely remove transaction here as it's whether:
         // 1. Committed before Consistent Cut write `ConsistentCutStartRecord` to WAL.
-        // 2. Grabbed to be included while preparing the check-list.
-        beforeCut.remove(tx);
+        // 2. Grabbed to be checked while preparing the check-list.
+        boolean incl = beforeCut.remove(tx);
 
-        if (cut != null && cut.checkTransaction(tx) && beforeCut.isEmpty())
-            onFinish(cut, false);
+        try {
+            if (cut != null && cut.processTxAfterCommit(tx, !incl) && beforeCut.isEmpty())
+                onFinish(cut, false);
 
-        if (log.isDebugEnabled()) {
-            log.debug("`unregisterAfterCommit` from " + tx.nearXidVersion().asIgniteUuid() + " to " + tx.xid()
-                + ", cut " + cut + ", txCutVer " + v + "; incl " + beforeCut);
+            if (log.isDebugEnabled()) {
+                log.debug("`unregisterAfterCommit` from " + tx.nearXidVersion().asIgniteUuid() + " to " + tx.xid()
+                    + ", cut " + cut + ", txCutVer " + v + "; latestCutVer " + latestKnownCutVersion());
+            }
+        }
+        catch (IgniteCheckedException e) {
+            onFinish(cut, true);
         }
     }
 
@@ -259,59 +271,6 @@ public class ConsistentCutManager extends GridCacheSharedManagerAdapter {
      */
     public ConsistentCutVersion latestKnownCutVersion() {
         return CUT_HOLDER.get(this).ver;
-    }
-
-    /**
-     * Returns current Consistent Cut object. If specified transaction is on the AFTER side it's required to await while
-     * Consistent Cut has written to WAL.
-     *
-     * @return Current Consistent Cut or {@code null}, if Consistent Cut isn't running now.
-     */
-    private @Nullable ConsistentCut currentCutBeforeCommit(long txCutVer) {
-        ConsistentCut cut = CUT_HOLDER.get(this).cut;
-
-        if (cut != null && cut.version().compareTo(txCutVer) == 0) {
-            try {
-                cut.awaitWALWritten();
-            }
-            catch (IgniteCheckedException e) {
-                onFinish(cut, true);
-
-                return null;
-            }
-        }
-
-        return cut;
-    }
-
-    /**
-     * Returns current Consistent Cut object. If specified transaction wasn't explicitly included into the BEFORE side,
-     * then it's required to await preparion of Consistent Cut to correctly check the transaction.
-     *
-     * @return Current Consistent Cut or {@code null}, if Consistent Cut isn't running now.
-     */
-    private @Nullable ConsistentCut currentCutAfterCommit(IgniteInternalTx tx) {
-        ConsistentCut cut = CUT_HOLDER.get(this).cut;
-
-        if (cut != null && !beforeCut.contains(tx)) {
-            try {
-                cut.awaitPrepared();
-            }
-            catch (IgniteCheckedException e) {
-                onFinish(cut, true);
-
-                return null;
-            }
-        }
-
-        return cut;
-    }
-
-    /**
-     * @return {@code true} if it's safe to run new Consistent Cut procedure.
-     */
-    public boolean latestGlobalCutReady() {
-        return F.isEmpty(notFinishedSrvNodes);
     }
 
     /**
@@ -340,7 +299,7 @@ public class ConsistentCutManager extends GridCacheSharedManagerAdapter {
                         onFinish(holder.cut, false);
 
                     if (log.isDebugEnabled())
-                        log.debug("Prepared Consistent Cut State: " + cut + ", incl " + beforeCut);
+                        log.debug("Prepared Consistent Cut State: " + cut);
                 }
                 catch (IgniteCheckedException e) {
                     U.error(log, "Failed to write to WAL local Consistent Cut record.", e);
@@ -361,13 +320,13 @@ public class ConsistentCutManager extends GridCacheSharedManagerAdapter {
             ConsistentCutHolder curHolder = CUT_HOLDER.get(this);
 
             if (curHolder.cut != null) {
-                ConsistentCutHolder holder = new ConsistentCutHolder(cut.version(), null);
+                ConsistentCutHolder holder = new ConsistentCutHolder(curHolder.ver, null);
 
                 if (CUT_HOLDER.compareAndSet(this, curHolder, holder)) {
                     if (cctx.kernalContext().clientNode())
                         return;
 
-                    Message msg = new ConsistentCutFinishResponse(cut.version(), err);
+                    Message msg = new ConsistentCutFinishResponse(holder.ver, err);
 
                     if (log.isDebugEnabled())
                         log.debug("Send ConsistentCutFinishResponse from " + cctx.localNodeId() + ": " + msg);
@@ -388,7 +347,7 @@ public class ConsistentCutManager extends GridCacheSharedManagerAdapter {
      *
      * @return New Consistent Cut Version.
      */
-    public ConsistentCutVersion triggerConsistentCutOnCluster() {
+    ConsistentCutVersion triggerConsistentCutOnCluster() {
         AffinityTopologyVersion topVer = cctx.kernalContext().discovery().topologyVersionEx();
 
         assert F.isEmpty(notFinishedSrvNodes);
@@ -424,7 +383,7 @@ public class ConsistentCutManager extends GridCacheSharedManagerAdapter {
     /**
      * Coordinator handles finish responses from remote nodes.
      */
-    public void handleConsistentCutFinishResponse(UUID nodeId, ConsistentCutFinishResponse msg) {
+    void handleConsistentCutFinishResponse(UUID nodeId, ConsistentCutFinishResponse msg) {
         if (log.isDebugEnabled())
             log.debug("Receive ConsistentCutReadyResponse from node " + nodeId + ": " + msg + " . Wait " + notFinishedSrvNodes);
 
@@ -458,6 +417,13 @@ public class ConsistentCutManager extends GridCacheSharedManagerAdapter {
         long cutPeriod = CU.getPitrPointsPeriod(cctx.gridConfig());
 
         scheduleConsistentCut(cutPeriod, cutPeriod);
+    }
+
+    /**
+     * @return {@code true} if it's safe to run new Consistent Cut procedure.
+     */
+    boolean latestGlobalCutReady() {
+        return F.isEmpty(notFinishedSrvNodes);
     }
 
     /**

@@ -58,11 +58,11 @@ public class ConsistentCut {
     private final ConsistentCutVersion ver;
 
     /**
-     * Future completes after grabbing collection of active transactions to check.
+     * It is set to {@code true} after grabbing Consistent Cut grabbed collection of active transactions to check.
      *
      * Every transaction appeared after completion of this future belongs to the AFTER side of this Consistent Cut.
      */
-    private final GridFutureAdapter<Void> grabTxs = new GridFutureAdapter<>();
+    private volatile boolean grabbedTxs;
 
     /**
      * Future completes after writing {@link ConsistentCutStartRecord}.
@@ -99,42 +99,11 @@ public class ConsistentCut {
     private final IgniteLogger log;
 
     /** */
-    public ConsistentCut(GridCacheSharedContext<?, ?> cctx, IgniteLogger log, ConsistentCutVersion ver) {
+    ConsistentCut(GridCacheSharedContext<?, ?> cctx, IgniteLogger log, ConsistentCutVersion ver) {
         this.ver = ver;
 
         this.cctx = cctx;
         this.log = log;
-    }
-
-    /**
-     * @return Consistent Cut Version.
-     */
-    public ConsistentCutVersion version() {
-        return ver;
-    }
-
-    /**
-     * Checks specified transaction: finds which side of Consistent Cut it belongs to.
-     *
-     * @return {@code true} if Consistent Cut was finished, otherwise {@code false}.
-     */
-    public boolean checkTransaction(IgniteInternalTx tx) throws IgniteCheckedException {
-        if (!prepared.isDone())
-            return false;
-
-        ConsistentCutVersionAware aware = (ConsistentCutVersionAware)tx;
-
-        if (check.contains(tx.xidVersion())) {
-            if (aware.txCutVersion() < ver.version())
-                includeBefore.add(tx.nearXidVersion());
-
-            check.remove(tx.xidVersion());
-        }
-
-        if (log.isDebugEnabled())
-            log.debug("`checkTransaction` " + tx.xid() + " cutVer=" + aware.txCutVersion() + " " + this);
-
-        return tryFinish();
     }
 
     /**
@@ -146,18 +115,19 @@ public class ConsistentCut {
     protected boolean prepare(Collection<IgniteInternalTx> beforeCutRef) throws IgniteCheckedException {
         Collection<IgniteInternalTx> activeTxs = new HashSet<>(cctx.tm().activeTransactions());
 
-        grabTxs.onDone();
+        grabbedTxs = true;
 
-        Set<GridCacheVersion> incl = new HashSet<>();
+        Set<GridCacheVersion> beforeCutTxs = new HashSet<>();
 
         // It guarantees that there is no missed transactions for checking:
-        // 1. `beforeCutRef` and `activeTxs` may have some duplicated txs - tx is addes to `beforeCutRef` and after that
-        // is removed from `activeTxs`.
-        // 2. `beforeCutRef` collection stops filling after grabbing `activeTxs`.
+        // 1. `beforeCutRef` and `activeTxs` may have some duplicated txs - tx is firstly added to `beforeCutRef` and
+        //    only after that it is removed from `activeTxs`.
+        // 2. `beforeCutRef` collection stops filling after grabbing `activeTxs`. It still may receive some updates,
+        //    but they duplicated with the `activeTxs` and will be cleaned before adding to the check-list.
         // 3. It prepares before writing StartRecord to WAL. Then it's safe to remove concurrently some txs after
-        // they were committed at `ConsistentCutManager#unregisterAfterCommit`.
+        //    they were committed at `ConsistentCutManager#unregisterAfterCommit`.
         for (IgniteInternalTx tx: beforeCutRef)
-            incl.add(tx.nearXidVersion());
+            beforeCutTxs.add(tx.nearXidVersion());
 
         walLog(ver, new ConsistentCutStartRecord(ver));
 
@@ -169,16 +139,22 @@ public class ConsistentCut {
             TransactionState txState = tx.state();
 
             // Checks COMMITTING / COMMITTED transactions due to concurrency with transactions: some active transactions
-            // start to commit after grabbing it. To avoid misses we need to add them to the `check` and await while
-            // they were unregistered at `ConsistentCutManager#unregisterAfterCommit`.
+            // start committing after being grabbed.
             if (txState == PREPARING || txState == PREPARED || txState == COMMITTING || txState == COMMITTED) {
-                if (!incl.contains(tx.nearXidVersion()))
-                    checkTxs.add(tx.xidVersion());
+                if (!beforeCutTxs.contains(tx.nearXidVersion())) {
+                    long txCutVer = ((ConsistentCutVersionAware)tx).txCutVersion();
+
+                    // Adds transactions to the check-list iff they don't know their Consistent Cut version.
+                    if (txCutVer == -1)
+                        checkTxs.add(tx.xidVersion());
+                    else if (ver.compareTo(txCutVer) > 0)
+                        beforeCutTxs.add(tx.nearXidVersion());
+                }
             }
         }
 
         includeBefore = ConcurrentHashMap.newKeySet();
-        includeBefore.addAll(incl);
+        includeBefore.addAll(beforeCutTxs);
 
         check = ConcurrentHashMap.newKeySet();
         check.addAll(checkTxs);
@@ -189,24 +165,63 @@ public class ConsistentCut {
     }
 
     /**
-     * Awaits while Consistent Cut prepared {@link #check} list of transactions.
+     * If specified transaction is on the AFTER side it's required to await while Consistent Cut has written to WAL.
+     *
+     * @param txCutVer Consistent Cut Version with that the transaction is signed.
      */
-    public void awaitPrepared() throws IgniteCheckedException {
-        prepared.get(TIMEOUT, TimeUnit.MILLISECONDS);
+    void processTxBeforeCommit(long txCutVer) throws IgniteCheckedException {
+        if (ver.compareTo(txCutVer) == 0)
+            walWritten.get(TIMEOUT, TimeUnit.MILLISECONDS);
     }
 
     /**
-     * Awaits while Consistent Cut wrote {@link ConsistentCutStartRecord} to WAL.
+     * If needed it checks committed transaction to find which side of Consistent Cut this transaction belongs to.
+     *
+     * @param needCheck {@code true} if check this transaction, otherwise {@code false}.
+     * @param tx Transaction to check after commit.
      */
-    public void awaitWALWritten() throws IgniteCheckedException {
-        walWritten.get(TIMEOUT, TimeUnit.MILLISECONDS);
+    boolean processTxAfterCommit(IgniteInternalTx tx, boolean needCheck) throws IgniteCheckedException {
+        if (needCheck) {
+            if (!prepared.isDone())
+                prepared.get(TIMEOUT, TimeUnit.MILLISECONDS);
+
+            checkTransaction(tx);
+        }
+
+        return prepared.isDone() && tryFinish();
     }
 
     /**
      * @return {@code true} if Consistent Cut grabbed list of transactions to check.
      */
-    public boolean grabTransactionsInProgress() {
-        return !grabTxs.isDone();
+    boolean grabTransactionsInProgress() {
+        return !grabbedTxs;
+    }
+
+    /**
+     * @return {@code true} if specified transaction is on the BEFORE side of this Consistent Cut.
+     */
+    boolean txBeforeCut(long txCutVer) {
+        return txCutVer != -1 && ver.compareTo(txCutVer) > 0;
+    }
+
+    /**
+     * Checks specified transaction: it finds which side of Consistent Cut it belongs to.
+     *
+     * @param tx Transaction to check.
+     */
+    private void checkTransaction(IgniteInternalTx tx) {
+        ConsistentCutVersionAware aware = (ConsistentCutVersionAware)tx;
+
+        if (check.contains(tx.xidVersion())) {
+            if (ver.compareTo(aware.txCutVersion()) > 0)
+                includeBefore.add(tx.nearXidVersion());
+
+            check.remove(tx.xidVersion());
+        }
+
+        if (log.isDebugEnabled())
+            log.debug("`checkTransaction` " + tx.xid() + " cutVer=" + aware.txCutVersion() + " " + this);
     }
 
     /**

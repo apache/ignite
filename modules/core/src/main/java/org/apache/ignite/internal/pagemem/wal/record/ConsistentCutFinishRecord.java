@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.pagemem.wal.record;
 
-import java.util.HashSet;
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -46,7 +46,7 @@ public class ConsistentCutFinishRecord extends WALRecord {
 
     /** */
     public ConsistentCutFinishRecord(Set<GridCacheVersion> include) {
-        this.include = new HashSet<>(include);
+        this.include = Collections.unmodifiableSet(include);
     }
 
     /** */
