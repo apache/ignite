@@ -404,6 +404,8 @@ public class IgniteIndexReader implements AutoCloseable {
                 try {
                     PagesListMetaIO io = readPage(idxStore, currMetaPageId, buf);
 
+                    ScanContext.onPageIO(io, stats, 1, addr, idxStore.getPageSize());
+
                     pageIds.add(normalizePageId(currMetaPageId));
 
                     Map<Integer, GridLongList> data = new HashMap<>();
@@ -457,7 +459,9 @@ public class IgniteIndexReader implements AutoCloseable {
             while (currPageId != 0) {
                 PagesListNodeIO io = readPage(idxStore, currPageId, nodeBuf);
 
-                ScanContext.onPageIO(readPage(idxStore, currPageId, pageBuf), stats, 1, 0);
+                ScanContext.onPageIO(io, stats, 1, nodeAddr, idxStore.getPageSize());
+
+                ScanContext.onPageIO(readPage(idxStore, currPageId, pageBuf), stats, 1, pageAddr, idxStore.getPageSize());
 
                 pageIds.add(normalizePageId(normalizePageId(currPageId)));
 
@@ -468,7 +472,7 @@ public class IgniteIndexReader implements AutoCloseable {
 
                     pageIds.add(pageId);
 
-                    ScanContext.onPageIO(readPage(idxStore, pageId, pageBuf), stats, 1, 0);
+                    ScanContext.onPageIO(readPage(idxStore, pageId, pageBuf), stats, 1, pageAddr, idxStore.getPageSize());
                 }
 
                 currPageId = io.getNextId(nodeAddr);
@@ -1005,13 +1009,13 @@ public class IgniteIndexReader implements AutoCloseable {
         stats.forEach((cls, stat) -> data.add(Arrays.asList(
             prefix + cls.getSimpleName(),
             stat.cnt,
-            stat.freeSpace, //String.format("%.2f", ((double)stat.freeSpace) / U.KB)
+            String.format("%.2f", ((double)stat.freeSpace) / U.KB),
             String.format("%.2f", (stat.freeSpace * 100.0d) / (pageSize * stat.cnt))
         )));
 
         //TODO check pages count in indexes.
         SystemViewCommand.printTable(
-            Arrays.asList("Type", "Pages", "Free space (Kb)", "Free space (%)"),
+            Arrays.asList(prefix + "Type", "Pages", "Free space (Kb)", "Free space (%)"),
             Arrays.asList(STRING, NUMBER, NUMBER, NUMBER),
             data,
             log
@@ -1041,10 +1045,10 @@ public class IgniteIndexReader implements AutoCloseable {
             doWithoutErrors(() -> doWithBuffer((buf, addr) -> {
                 final PageIO io = readPage(ctx, pageId, buf);
 
-                if (io instanceof BPlusLeafIO)
-                    leafPageVisitor.visit(addr, ctx);
-                else if (io instanceof BPlusInnerIO)
+                if (io instanceof BPlusInnerIO)
                     innerPageVisitor.visit(addr, ctx);
+                else if (io instanceof BPlusLeafIO)
+                    leafPageVisitor.visit(addr, ctx);
                 else
                     throw new IllegalArgumentException("Unknown io [io=" + io.getClass().getSimpleName() + ']');
 

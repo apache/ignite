@@ -20,7 +20,6 @@ package org.apache.ignite.internal.commandline.indexreader;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.logging.Logger;
 
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStore;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
@@ -55,15 +54,15 @@ class ScanContext {
 
     /** */
     public void onPageIO(PageIO io, long addr) {
-        onPageIO(io, stats, 1, io.getFreeSpace(store.getPageSize(), addr));
+        onPageIO(io, stats, 1, addr, store.getPageSize());
     }
 
     /** */
-    public static void onPageIO(PageIO io, Map<Class<? extends PageIO>, PagesStatistic> stats, long cnt, int free) {
+    public static void onPageIO(PageIO io, Map<Class<? extends PageIO>, PagesStatistic> stats, long cnt, long addr, int pageSize) {
         PagesStatistic stat = stats.computeIfAbsent(io.getClass(), k -> new PagesStatistic());
 
         stat.cnt += cnt;
-        stat.freeSpace += free;
+        stat.freeSpace += io.getFreeSpace(pageSize, addr);
     }
 
     /** */
