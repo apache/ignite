@@ -18,10 +18,10 @@
 package org.apache.ignite.internal.client.thin;
 
 import org.apache.ignite.client.ClientCollectionConfiguration;
+import org.apache.ignite.client.ClientException;
 import org.apache.ignite.client.ClientIgniteSet;
 import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.configuration.ClientConfiguration;
-import org.apache.ignite.internal.processors.platform.client.IgniteClientException;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
 
@@ -91,9 +91,9 @@ public class IgniteSetTest extends AbstractThinClientTest {
             assertTrue(oldSet.removed());
             assertTrue(oldSet2.removed());
 
-            String msg = "Set is closed: testCreateCloseCreateRemovesOldData";
-            GridTestUtils.assertThrows(null, oldSet::size, IgniteClientException.class, msg);
-            GridTestUtils.assertThrows(null, oldSet2::size, IgniteClientException.class, msg);
+            String msg = "IgniteSet with name 'testCreateCloseCreateRemovesOldData' does not exist.";
+            GridTestUtils.assertThrows(null, oldSet::size, ClientException.class, msg);
+            GridTestUtils.assertThrows(null, oldSet2::size, ClientException.class, msg);
         }
     }
 

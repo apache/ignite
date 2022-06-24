@@ -177,7 +177,7 @@ class ClientIgniteSetImpl<T> implements ClientIgniteSet<T> {
         if (removed)
             return true;
 
-        removed = op(ClientOperation.OP_SET_EXISTS, null, r -> r.in().readBoolean());
+        removed = !op(ClientOperation.OP_SET_EXISTS, null, r -> r.in().readBoolean());
 
         return removed;
     }

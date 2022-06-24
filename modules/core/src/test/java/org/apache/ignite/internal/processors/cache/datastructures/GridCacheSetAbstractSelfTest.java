@@ -1191,8 +1191,9 @@ public abstract class GridCacheSetAbstractSelfTest extends IgniteCollectionAbstr
         assertTrue(oldSet.removed());
         assertTrue(oldSet2.removed());
 
-        GridTestUtils.assertThrows(null, oldSet::size, IllegalStateException.class, null);
-        GridTestUtils.assertThrows(null, oldSet2::size, IllegalStateException.class, null);
+        String msg = "Set has been removed from cache";
+        GridTestUtils.assertThrows(null, oldSet::size, IllegalStateException.class, msg);
+        GridTestUtils.assertThrows(null, oldSet2::size, IllegalStateException.class, msg);
 
         newSet.close();
     }
