@@ -22,7 +22,6 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.Objects;
-import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -42,10 +41,6 @@ public class GridCacheSetItemKey implements SetItemKey, Externalizable {
     @GridToStringInclude(sensitive = true)
     private Object item;
 
-    /** */
-    @GridToStringExclude
-    private HashCodeHolder hashCodeHolder;
-
     /**
      * Required by {@link Externalizable}.
      */
@@ -60,11 +55,6 @@ public class GridCacheSetItemKey implements SetItemKey, Externalizable {
     GridCacheSetItemKey(IgniteUuid setId, Object item) {
         this.setId = setId;
         this.item = item;
-
-        if (item instanceof HashCodeHolder) {
-            hashCodeHolder = (HashCodeHolder) item;
-            this.item = hashCodeHolder.obj;
-        }
     }
 
     /** {@inheritDoc} */
@@ -79,9 +69,6 @@ public class GridCacheSetItemKey implements SetItemKey, Externalizable {
 
     /** {@inheritDoc} */
     @Override public int hashCode() {
-        if (hashCodeHolder != null)
-            return hashCodeHolder.hashCode;
-
         int res = setId == null ? 0 : setId.hashCode();
 
         res = 31 * res + item.hashCode();
@@ -105,51 +92,17 @@ public class GridCacheSetItemKey implements SetItemKey, Externalizable {
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         U.writeIgniteUuid(out, setId);
-        out.writeObject(hashCodeHolder != null ? hashCodeHolder : item);
+        out.writeObject(item);
     }
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         setId = U.readIgniteUuid(in);
         item = in.readObject();
-
-        if (item instanceof HashCodeHolder) {
-            hashCodeHolder = (HashCodeHolder) item;
-            item = hashCodeHolder.obj;
-        }
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(GridCacheSetItemKey.class, this);
-    }
-
-    public static class HashCodeHolder implements Externalizable {
-        /** */
-        private static final long serialVersionUID = 0L;
-
-        private Object obj;
-
-        private int hashCode;
-
-        public HashCodeHolder() {
-        }
-
-        public HashCodeHolder(Object obj, int hashCode) {
-            this.obj = obj;
-            this.hashCode = hashCode;
-        }
-
-        @Override
-        public void writeExternal(ObjectOutput out) throws IOException {
-            out.writeObject(obj);
-            out.writeInt(hashCode);
-        }
-
-        @Override
-        public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-            obj = in.readObject();
-            hashCode = in.readInt();
-        }
     }
 }
