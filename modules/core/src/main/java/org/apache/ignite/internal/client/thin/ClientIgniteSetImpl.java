@@ -19,6 +19,8 @@ package org.apache.ignite.internal.client.thin;
 
 import java.util.Collection;
 import java.util.Iterator;
+import java.util.function.Consumer;
+import java.util.function.Function;
 import org.apache.ignite.client.ClientIgniteSet;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.lang.IgniteCallable;
@@ -40,6 +42,9 @@ class ClientIgniteSetImpl<T> implements ClientIgniteSet<T> {
 
     /** */
     private final ClientUtils serDes;
+
+    /** */
+    private volatile boolean removed;
 
     /**
      * Constructor.
@@ -129,7 +134,10 @@ class ClientIgniteSetImpl<T> implements ClientIgniteSet<T> {
 
     @Override
     public void close() {
+        if (removed)
+            return;
 
+        op(ClientOperation.OP_SET_REMOVE, null, null);
     }
 
     @Override
@@ -139,12 +147,18 @@ class ClientIgniteSetImpl<T> implements ClientIgniteSet<T> {
 
     @Override
     public boolean collocated() {
+        // TODO pass in ctor
         return false;
     }
 
     @Override
     public boolean removed() {
-        return false;
+        if (removed)
+            return true;
+
+        removed = op(ClientOperation.OP_SET_REMOVE, null, r -> r.in().readBoolean());
+
+        return removed;
     }
 
     @Override
@@ -165,5 +179,16 @@ class ClientIgniteSetImpl<T> implements ClientIgniteSet<T> {
                 w.writeObject(key);
             }
         }, r -> r.in().readBoolean());
+    }
+
+    private <TR> TR op(ClientOperation op, Consumer<BinaryRawWriterEx> writer, Function<PayloadInputChannel, TR> reader) {
+        return ch.service(op, out -> {
+            try (BinaryRawWriterEx w = serDes.createBinaryWriter(out.out())) {
+                w.writeString(name);
+
+                if (writer != null)
+                    writer.accept(w);
+            }
+        }, reader);
     }
 }
