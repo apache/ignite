@@ -16,7 +16,7 @@
 """
 This module contains gatling tests
 """
-from ducktape.mark import matrix, parametrize
+from ducktape.mark import matrix
 from ignitetest.services.ignite import IgniteService
 from ignitetest.services.utils.ignite_configuration import IgniteConfiguration, IgniteThinClientConfiguration
 from ignitetest.utils import ignite_versions, cluster

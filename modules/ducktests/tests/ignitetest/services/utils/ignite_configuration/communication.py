@@ -45,8 +45,8 @@ class TcpCommunicationSpi(CommunicationSpi):
     """
 
     def __init__(self,
-                 local_port = 47100,
-                 local_port_range = 100,
+                 local_port=47100,
+                 local_port_range=100,
                  idle_connection_timeout: int = None,
                  socket_write_timeout: int = None,
                  selectors_count: int = None,
