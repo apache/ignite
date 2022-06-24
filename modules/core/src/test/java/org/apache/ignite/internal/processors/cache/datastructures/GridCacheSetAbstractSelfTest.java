@@ -1170,6 +1170,26 @@ public abstract class GridCacheSetAbstractSelfTest extends IgniteCollectionAbstr
     }
 
     /**
+     * Tests that new set with the same name as an old removed set does not contain old data.
+     */
+    @Test
+    public void testCloseAndCreateWithSameName() {
+        Ignite ignite = grid(0);
+
+        IgniteSet<Integer> set1 = ignite.set("testRemoveAndCreateWithSameName", new CollectionConfiguration());
+
+        set1.add(1);
+        set1.close();
+
+        IgniteSet<Integer> set2 = ignite.set(set1.name(), new CollectionConfiguration());
+
+        assertTrue(set2.isEmpty());
+        assertTrue(set1.removed());
+
+        set2.close();
+    }
+
+    /**
      * @param set Set.
      * @param size Expected size.
      */
