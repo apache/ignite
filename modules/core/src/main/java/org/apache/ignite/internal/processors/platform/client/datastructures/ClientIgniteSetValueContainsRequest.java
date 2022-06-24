@@ -18,26 +18,25 @@
 package org.apache.ignite.internal.processors.platform.client.datastructures;
 
 import org.apache.ignite.IgniteSet;
-import org.apache.ignite.binary.BinaryRawReader;
 import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 import org.apache.ignite.internal.processors.platform.client.ClientBooleanResponse;
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
 
 /**
- * 
+ *
  */
-public class ClientIgniteSetRemoveRequest extends ClientIgniteSetKeyRequest {
+public class ClientIgniteSetValueContainsRequest extends ClientIgniteSetKeyRequest {
     /**
      * Constructor.
      *
      * @param reader Reader.
      */
-    public ClientIgniteSetRemoveRequest(BinaryRawReaderEx reader) {
+    public ClientIgniteSetValueContainsRequest(BinaryRawReaderEx reader) {
         super(reader);
     }
 
     /** {@inheritDoc} */
     @Override ClientResponse process(IgniteSet<Object> set, Object key) {
-        return new ClientBooleanResponse(requestId(), set.remove(key));
+        return new ClientBooleanResponse(requestId(), set.contains(key));
     }
 }

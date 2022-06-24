@@ -18,25 +18,26 @@
 package org.apache.ignite.internal.processors.platform.client.datastructures;
 
 import org.apache.ignite.IgniteSet;
-import org.apache.ignite.internal.binary.BinaryRawReaderEx;
-import org.apache.ignite.internal.processors.platform.client.ClientBooleanResponse;
+import org.apache.ignite.binary.BinaryRawReader;
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
 
 /**
- * 
+ * Closes the IgniteSet.
  */
-public class ClientIgniteSetAddRequest extends ClientIgniteSetKeyRequest {
+public class ClientIgniteSetCloseRequest extends ClientIgniteSetRequest {
     /**
      * Constructor.
      *
      * @param reader Reader.
      */
-    public ClientIgniteSetAddRequest(BinaryRawReaderEx reader) {
+    public ClientIgniteSetCloseRequest(BinaryRawReader reader) {
         super(reader);
     }
 
     /** {@inheritDoc} */
-    @Override ClientResponse process(IgniteSet<Object> set, Object key) {
-        return new ClientBooleanResponse(requestId(), set.add(key));
+    @Override protected ClientResponse process(IgniteSet<Object> set) {
+        set.close();
+
+        return super.process(set);
     }
 }

@@ -42,6 +42,26 @@ public class ClientIgniteSetRequest extends ClientRequest {
         name = reader.readString();
     }
 
+    /** {@inheritDoc} */
+    @Override public ClientResponse process(ClientConnectionContext ctx) {
+        IgniteSet<Object> igniteSet = igniteSet(ctx);
+
+        if (igniteSet == null)
+            return notFoundResponse();
+
+        return process(igniteSet);
+    }
+
+    /**
+     * Processes the request.
+     *
+     * @param set Ignite set.
+     * @return Response.
+     */
+    protected ClientResponse process(IgniteSet<Object> set) {
+        return new ClientResponse(requestId());
+    }
+
     /**
      * Gets the name.
      *

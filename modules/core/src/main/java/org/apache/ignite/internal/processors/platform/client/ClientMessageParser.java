@@ -86,10 +86,11 @@ import org.apache.ignite.internal.processors.platform.client.datastructures.Clie
 import org.apache.ignite.internal.processors.platform.client.datastructures.ClientAtomicLongValueCompareAndSetRequest;
 import org.apache.ignite.internal.processors.platform.client.datastructures.ClientAtomicLongValueGetAndSetRequest;
 import org.apache.ignite.internal.processors.platform.client.datastructures.ClientAtomicLongValueGetRequest;
-import org.apache.ignite.internal.processors.platform.client.datastructures.ClientIgniteSetAddRequest;
-import org.apache.ignite.internal.processors.platform.client.datastructures.ClientIgniteSetContainsRequest;
+import org.apache.ignite.internal.processors.platform.client.datastructures.ClientIgniteSetCloseRequest;
+import org.apache.ignite.internal.processors.platform.client.datastructures.ClientIgniteSetValueAddRequest;
+import org.apache.ignite.internal.processors.platform.client.datastructures.ClientIgniteSetValueContainsRequest;
 import org.apache.ignite.internal.processors.platform.client.datastructures.ClientIgniteSetGetOrCreateRequest;
-import org.apache.ignite.internal.processors.platform.client.datastructures.ClientIgniteSetRemoveRequest;
+import org.apache.ignite.internal.processors.platform.client.datastructures.ClientIgniteSetValueRemoveRequest;
 import org.apache.ignite.internal.processors.platform.client.datastructures.ClientIgniteSetRequest;
 import org.apache.ignite.internal.processors.platform.client.service.ClientServiceGetDescriptorRequest;
 import org.apache.ignite.internal.processors.platform.client.service.ClientServiceGetDescriptorsRequest;
@@ -331,7 +332,7 @@ public class ClientMessageParser implements ClientListenerMessageParser {
     private static final short OP_SET_GET_OR_CREATE = 9010;
 
     /** Remove an IgniteSet. */
-    private static final short OP_SET_REMOVE = 9011;
+    private static final short OP_SET_CLOSE = 9011;
 
     /** IgniteSet.removed. */
     private static final short OP_SET_EXISTS = 9012;
@@ -624,22 +625,21 @@ public class ClientMessageParser implements ClientListenerMessageParser {
             case OP_SET_GET_OR_CREATE:
                 return new ClientIgniteSetGetOrCreateRequest(reader);
 
-            case OP_SET_REMOVE:
-                // TODO
-                return new ClientIgniteSetRequest(reader);
+            case OP_SET_CLOSE:
+                return new ClientIgniteSetCloseRequest(reader);
 
             case OP_SET_EXISTS:
                 // TODO
                 return new ClientIgniteSetRequest(reader);
 
             case OP_SET_VALUE_ADD:
-                return new ClientIgniteSetAddRequest(reader);
+                return new ClientIgniteSetValueAddRequest(reader);
 
             case OP_SET_VALUE_REMOVE:
-                return new ClientIgniteSetRemoveRequest(reader);
+                return new ClientIgniteSetValueRemoveRequest(reader);
 
             case OP_SET_VALUE_CONTAINS:
-                return new ClientIgniteSetContainsRequest(reader);
+                return new ClientIgniteSetValueContainsRequest(reader);
         }
 
         return new ClientRawRequest(reader.readLong(), ClientStatus.INVALID_OP_CODE,
