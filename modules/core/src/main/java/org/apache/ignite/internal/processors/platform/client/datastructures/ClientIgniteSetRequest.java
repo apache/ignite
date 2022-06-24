@@ -17,20 +17,24 @@
 
 package org.apache.ignite.internal.processors.platform.client.datastructures;
 
+import java.util.UUID;
 import org.apache.ignite.IgniteSet;
 import org.apache.ignite.binary.BinaryRawReader;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientRequest;
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
 import org.apache.ignite.internal.processors.platform.client.ClientStatus;
+import org.apache.ignite.lang.IgniteUuid;
 
 /**
  * Ignite set get or update request.
  */
 public class ClientIgniteSetRequest extends ClientRequest {
     /** */
-    // TODO: We should pass ID too and check if it matches, to handle scenario "new set with old name" - check thick API behavior
     private final String name;
+
+    /** */
+    private final IgniteUuid id;
 
     /**
      * Constructor.
@@ -41,12 +45,14 @@ public class ClientIgniteSetRequest extends ClientRequest {
         super(reader);
 
         name = reader.readString();
+        id = new IgniteUuid(new UUID(reader.readLong(), reader.readLong()), reader.readLong());
     }
 
     /** {@inheritDoc} */
     @Override public ClientResponse process(ClientConnectionContext ctx) {
         IgniteSet<Object> igniteSet = igniteSet(ctx);
 
+        // TODO: Check id.
         if (igniteSet == null)
             return notFoundResponse();
 

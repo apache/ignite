@@ -24,14 +24,18 @@ import org.apache.ignite.configuration.CollectionConfiguration;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.processors.datastructures.GridCacheSetProxy;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
+import org.apache.ignite.internal.processors.platform.client.ClientRequest;
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
 import org.apache.ignite.lang.IgniteUuid;
 
 /**
  * Ignite set get or update request.
  */
-public class ClientIgniteSetGetOrCreateRequest extends ClientIgniteSetRequest {
-    /** Cache atomicity mode. */
+public class ClientIgniteSetGetOrCreateRequest extends ClientRequest {
+    /** Name. */
+    private final String name;
+
+    /** Config. */
     private final CollectionConfiguration collectionConfiguration;
 
     /**
@@ -42,6 +46,7 @@ public class ClientIgniteSetGetOrCreateRequest extends ClientIgniteSetRequest {
     public ClientIgniteSetGetOrCreateRequest(BinaryRawReader reader) {
         super(reader);
 
+        name = reader.readString();
         boolean create = reader.readBoolean();
 
         collectionConfiguration = create
@@ -60,7 +65,7 @@ public class ClientIgniteSetGetOrCreateRequest extends ClientIgniteSetRequest {
         GridCacheSetProxy<Object> set = (GridCacheSetProxy<Object>) ctx
                 .kernalContext()
                 .grid()
-                .set(name(), collectionConfiguration);
+                .set(name, collectionConfiguration);
 
         IgniteUuid id = set == null ? null : set.delegate().id();
 

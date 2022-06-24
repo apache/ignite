@@ -196,7 +196,7 @@ class ClientIgniteSetImpl<T> implements ClientIgniteSet<T> {
         // TODO: Partition awareness - we need to know colocated flag.
         return ch.service(op, out -> {
             try (BinaryRawWriterEx w = serDes.createBinaryWriter(out.out())) {
-                w.writeString(name);
+                writeIdentity(w);
                 w.writeObject(key);
             }
         }, r -> r.in().readBoolean());
@@ -205,11 +205,18 @@ class ClientIgniteSetImpl<T> implements ClientIgniteSet<T> {
     private <TR> TR op(ClientOperation op, Consumer<BinaryRawWriterEx> writer, Function<PayloadInputChannel, TR> reader) {
         return ch.service(op, out -> {
             try (BinaryRawWriterEx w = serDes.createBinaryWriter(out.out())) {
-                w.writeString(name);
+                writeIdentity(w);
 
                 if (writer != null)
                     writer.accept(w);
             }
         }, reader);
+    }
+
+    private void writeIdentity(BinaryRawWriterEx w) {
+        w.writeString(name);
+        w.writeLong(id.globalId().getMostSignificantBits());
+        w.writeLong(id.globalId().getLeastSignificantBits());
+        w.writeLong(id.localId());
     }
 }
