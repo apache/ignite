@@ -31,9 +31,23 @@ import org.apache.ignite.cache.CacheEntryProcessor
 import org.apache.ignite.cache.query.SqlFieldsQuery
 import org.apache.ignite.gatling.api.CacheApi
 
+/**
+ * Implementation of [[CacheApi]] working via the Ignite Node (thick) API.
+ *
+ * @param wrapped Instance of Cache API.
+ * @param ec Execution context to handle results of operations.
+ * @tparam K Type of the cache key.
+ * @tparam V Type of the cache value.
+ */
 case class CacheNodeApi[K, V](wrapped: IgniteCache[K, V])(implicit val ec: ExecutionContext)
   extends CacheApi[K, V] with StrictLogging {
 
+  /** @inheritdoc
+   * @param key @inheritdoc
+   * @param value @inheritdoc
+   * @param s @inheritdoc
+   * @param f @inheritdoc
+   */
   override def put(key: K, value: V)(s: Unit => Unit, f: Throwable => Unit): Unit = {
     logger.debug("sync put")
     Try {

@@ -36,24 +36,36 @@ import org.apache.ignite.gatling.builder.ignite.SimpleCacheConfiguration
 import org.apache.ignite.transactions.TransactionConcurrency
 import org.apache.ignite.transactions.TransactionIsolation
 
+/**
+ * Implementation of [[IgniteApi]] working via the ignite node (thick) API.
+ *
+ * @param wrapped Instance of Ignite API.
+ * @param ec Execution context to handle results of operations.
+ */
 case class IgniteNodeApi(wrapped: Ignite)(implicit val ec: ExecutionContext) extends IgniteApi with CompletionSupport {
+  /** @inheritdoc */
   override def cache[K, V](name: String): Validation[CacheApi[K, V]] =
     Try(wrapped.cache[K, V](name))
       .map(CacheNodeApi(_))
       .fold(ex => ValidationFailure(ex.getMessage), ValidationSuccess(_))
 
+  /** @inheritdoc */
   override def getOrCreateCache[K, V](name: String)(s: CacheApi[K, V] => Unit, f: Throwable => Unit): Unit =
     withCompletion(Future(wrapped.getOrCreateCache[K, V](name)).map(CacheNodeApi(_)))(s, f)
 
+  /** @inheritdoc */
   override def getOrCreateCacheByClientConfiguration[K, V](cfg: ClientCacheConfiguration)(s: CacheApi[K, V] => Unit, f: Throwable => Unit): Unit =
     throw new NotImplementedError("Thin client cache configuration was used to create cache via node API")
 
+  /** @inheritdoc */
   override def getOrCreateCacheByConfiguration[K, V](cfg: CacheConfiguration[K, V])(s: CacheApi[K, V] => Unit, f: Throwable => Unit): Unit =
     withCompletion(Future(wrapped.getOrCreateCache(cfg)).map(CacheNodeApi(_)))(s, f)
 
+  /** @inheritdoc */
   override def getOrCreateCacheBySimpleConfig[K, V](name: String, cfg: SimpleCacheConfiguration)(s: CacheApi[K, V] => Unit, f: Throwable => Unit): Unit =
     getOrCreateCacheByConfiguration(cacheConfiguration[K, V](name, cfg))(s, f)
 
+  /** @inheritdoc */
   override def close()(s: Unit => Unit, f: Throwable => Unit): Unit =
     withCompletion(Future.successful(()))(s, f)
 
@@ -64,6 +76,7 @@ case class IgniteNodeApi(wrapped: Ignite)(implicit val ec: ExecutionContext) ext
       .setAtomicityMode(simpleCacheConfiguration.atomicity)
       .setBackups(simpleCacheConfiguration.backups)
 
+  /** @inheritdoc */
   override def txStart()(s: TransactionApi => Unit, f: Throwable => Unit): Unit = {
     Try {
       wrapped.transactions().txStart()
@@ -73,6 +86,7 @@ case class IgniteNodeApi(wrapped: Ignite)(implicit val ec: ExecutionContext) ext
     )
   }
 
+  /** @inheritdoc */
   override def txStartEx(concurrency: TransactionConcurrency, isolation: TransactionIsolation)
                         (s: TransactionApi => Unit, f: Throwable => Unit): Unit =
     Try {
@@ -82,6 +96,7 @@ case class IgniteNodeApi(wrapped: Ignite)(implicit val ec: ExecutionContext) ext
       tx => s(TransactionNodeApi(tx))
     )
 
+  /** @inheritdoc */
   override def txStartEx2(concurrency: TransactionConcurrency, isolation: TransactionIsolation, timeout: Long, txSize: Int)
                          (s: TransactionApi => Unit, f: Throwable => Unit): Unit =
     Try {
@@ -91,8 +106,10 @@ case class IgniteNodeApi(wrapped: Ignite)(implicit val ec: ExecutionContext) ext
       tx => s(TransactionNodeApi(tx))
     )
 
+  /** @inheritdoc */
   override def wrapped[API]: API = wrapped.asInstanceOf[API]
 
+  /** @inheritdoc */
   override def binaryObjectBuilder: String => BinaryObjectBuilder = typeName =>
     wrapped.binary().builder(typeName)
 }

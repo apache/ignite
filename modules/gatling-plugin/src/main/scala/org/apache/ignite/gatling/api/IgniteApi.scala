@@ -50,51 +50,201 @@ import org.apache.ignite.gatling.protocol.IgniteProtocol.IGNITE_API_SESSION_KEY
 import org.apache.ignite.transactions.TransactionConcurrency
 import org.apache.ignite.transactions.TransactionIsolation
 
+/**
+ *  Wrapper around the Ignite API abstracting access either via the Ignite Node (thick) API or via the
+ *  Ignite Client (thin) API.
+ */
 trait IgniteApi {
+  /**
+   * Gets an instance of cache API by name.
+   *
+   * @tparam K Type of the cache key.
+   * @tparam V Type of the cache value.
+   * @param name Cache name.
+   * @return Instance of the CacheAPI.
+   */
   def cache[K, V](name: String): Validation[CacheApi[K, V]]
 
+  /**
+   * Gets existing cache with the given name or creates new one.
+   *
+   * @tparam K Type of the cache key.
+   * @tparam V Type of the cache value.
+   * @param name Cache name.
+   * @param s Function to be called if operation is competed successfully.
+   * @param f Function to be called if exception occurs.
+   */
   def getOrCreateCache[K, V](name: String)(s: CacheApi[K, V] => Unit, f: Throwable => Unit = _ => ()): Unit
 
+  /**
+   * Gets existing cache or creates new one with the given name and the simplified cache configuration
+   * which may be defined via the Ignite Gatling DSL.
+   *
+   * @tparam K Type of the cache key.
+   * @tparam V Type of the cache value.
+   * @param name Cache name.
+   * @param cfg Simplified configuration of the cache (see the [[SimpleCacheConfiguration]]).
+   * @param s Function to be called if operation is competed successfully.
+   * @param f Function to be called if exception occurs.
+   */
   def getOrCreateCacheBySimpleConfig[K, V](name: String, cfg: SimpleCacheConfiguration)
                                           (s: CacheApi[K, V] => Unit, f: Throwable => Unit = _ => ()): Unit
 
+  /**
+   * Gets existing cache or creates new one with the provided Ignite (thin) Client cache configuration.
+   *
+   * @tparam K Type of the cache key.
+   * @tparam V Type of the cache value.
+   * @param cfg Instance of Ignite Client cache configuration.
+   * @param s Function to be called if operation is competed successfully.
+   * @param f Function to be called if exception occurs.
+   */
   def getOrCreateCacheByClientConfiguration[K, V](cfg: ClientCacheConfiguration)
                                                  (s: CacheApi[K, V] => Unit, f: Throwable => Unit = _ => ()): Unit
 
+  /**
+   * Gets existing cache or creates new one with the provided Ignite (thick) cache configuration.
+   *
+   * @tparam K Type of the cache key.
+   * @tparam V Type of the cache value.
+   * @param cfg Instance of Ignite cache configuration.
+   * @param s Function to be called if operation is competed successfully.
+   * @param f Function to be called if exception occurs.
+   */
   def getOrCreateCacheByConfiguration[K, V](cfg: CacheConfiguration[K, V])
                                            (s: CacheApi[K, V] => Unit, f: Throwable => Unit = _ => ()): Unit
 
+  /**
+   * Closes the Ignite API.
+   *
+   * @param s Function to be called if operation is competed successfully.
+   * @param f Function to be called if exception occurs.
+   */
   def close()(s: Unit => Unit, f: Throwable => Unit = _ => ()): Unit
 
+  /**
+   * Starts the transaction with the default parameters.
+   *
+   * @param s Function to be called if operation is competed successfully.
+   * @param f Function to be called if exception occurs.
+   */
   def txStart()(s: TransactionApi => Unit, f: Throwable => Unit = _ => ()): Unit
 
+  /**
+   * Starts the transaction with the provided concurrency and isolation.
+   *
+   * @param concurrency Concurrency.
+   * @param isolation Isolation.
+   * @param s Function to be called if operation is competed successfully.
+   * @param f Function to be called if exception occurs.
+   */
   def txStartEx(concurrency: TransactionConcurrency, isolation: TransactionIsolation)
                (s: TransactionApi => Unit, f: Throwable => Unit = _ => ()): Unit
 
+  /**
+   * Starts the transaction with the provided concurrency, isolation timeout and transaction size.
+   *
+   * @param concurrency Concurrency.
+   * @param isolation Isolation.
+   * @param timeout Timeout.
+   * @param txSize Number of entries participating in transaction (may be approximate).
+   * @param s Function to be called if operation is competed successfully.
+   * @param f Function to be called if exception occurs.
+   */
   def txStartEx2(concurrency: TransactionConcurrency, isolation: TransactionIsolation, timeout: Long, txSize: Int)
                 (s: TransactionApi => Unit, f: Throwable => Unit = _ => ()): Unit
 
+  /**
+   * @return Instance of BinaryObjectBuilder
+   */
   def binaryObjectBuilder: String => BinaryObjectBuilder
 
+  /**
+   * @tparam API API type (either Ignite or IgniteClient)
+   * @return Instance of the underlined Ignite API.
+   */
   def wrapped[API]: API
 }
 
-//noinspection AccessorLikeMethodIsUnit
+/**
+ * Wrapper around the Ignite Cache API abstracting access either via the Ignite node (thick) API or vai the
+ * Ignite Client (thin) API.
+ *
+ * @tparam K Type of the cache key.
+ * @tparam V Type of the cache value.
+ */
+// noinspection AccessorLikeMethodIsUnit
 trait CacheApi[K, V] {
+  /**
+   * Puts entry to cache.
+   *
+   * @param key Key.
+   * @param value Value.
+   * @param s Function to be called if operation is competed successfully.
+   * @param f Function to be called if exception occurs.
+   */
   def put(key: K, value: V)(s: Unit => Unit, f: Throwable => Unit = _ => ()): Unit
 
+  /**
+   * Asynchronously puts entry to cache.
+   *
+   * @param key Key.
+   * @param value Value.
+   * @param s Function to be called if operation is competed successfully.
+   * @param f Function to be called if exception occurs.
+   */
   def putAsync(key: K, value: V)(s: Unit => Unit, f: Throwable => Unit = _ => ()): Unit
 
+  /**
+   * Puts batch of entries to cache.
+   *
+   * @param map Key / value pairs map.
+   * @param s Function to be called if operation is competed successfully.
+   * @param f Function to be called if exception occurs.
+   */
   def putAll(map: Map[K, V])(s: Unit => Unit, f: Throwable => Unit = _ => ()): Unit
 
+  /**
+   * Asynchronously puts batch of entries to cache.
+   *
+   * @param map Key / value pairs map.
+   * @param s Function to be called if operation is competed successfully.
+   * @param f Function to be called if exception occurs.
+   */
   def putAllAsync(map: Map[K, V])(s: Unit => Unit, f: Throwable => Unit = _ => ()): Unit
 
+  /**
+   * Gets an entry from cache by key.
+   *
+   * @param key Key.
+   * @param s Function to be called if operation is competed successfully.
+   * @param f Function to be called if exception occurs.
+   */
   def get(key: K)(s: Map[K, V] => Unit, f: Throwable => Unit = _ => ()): Unit
 
+  /**
+   * Asynchronously gets an entry from cache by key.
+   *
+   * @param key Key.
+   * @param s Function to be called if operation is competed successfully.
+   * @param f Function to be called if exception occurs.
+   */
   def getAsync(key: K)(s: Map[K, V] => Unit, f: Throwable => Unit = _ => ()): Unit
 
+  /**
+   * Gets a collection of entries from the cache.
+   * @param keys Collection of keys.
+   * @param s Function to be called if operation is competed successfully.
+   * @param f Function to be called if exception occurs.
+   */
   def getAll(keys: Set[K])(s: Map[K, V] => Unit, f: Throwable => Unit = _ => ()): Unit
 
+  /**
+   * Asynchronously gets a collection of entries from the cache.
+   * @param keys Collection of keys.
+   * @param s Function to be called if operation is competed successfully.
+   * @param f Function to be called if exception occurs.
+   */
   def getAllAsync(keys: Set[K])(s: Map[K, V] => Unit, f: Throwable => Unit = _ => ()): Unit
 
   def getAndRemove(key: K)(s: Map[K, V] => Unit, f: Throwable => Unit = _ => ()): Unit
