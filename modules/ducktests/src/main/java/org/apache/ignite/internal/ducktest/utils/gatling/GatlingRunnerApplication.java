@@ -38,7 +38,8 @@ public class GatlingRunnerApplication extends IgniteAwareApplication {
 
         if (client != null) {
             igniteProtocol = Predef.ignite().cfg(client).build();
-        } else {
+        }
+        else {
             igniteProtocol = Predef.ignite().cfg(ignite).build();
         }
 
