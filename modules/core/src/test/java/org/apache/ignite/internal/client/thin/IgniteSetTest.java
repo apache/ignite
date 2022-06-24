@@ -125,6 +125,22 @@ public class IgniteSetTest extends AbstractThinClientTest {
     public void testUserObject() {
         try (IgniteClient client = startClient(0)) {
             ClientIgniteSet<UserObj> clientSet = client.set("testUserObject", new ClientCollectionConfiguration());
+
+            clientSet.add(new UserObj(1, "a"));
+
+            assertTrue(clientSet.contains(new UserObj(1, "a")));
+            assertFalse(clientSet.contains(new UserObj(1, "b")));
+        }
+    }
+
+    @Test
+    public void testUserObjectClientServer() {
+        try (IgniteClient client = startClient(0)) {
+            ClientIgniteSet<UserObj> clientSet = client.set("testUserObjectClientServer", new ClientCollectionConfiguration());
+
+            // By default, Client sends obj as BinaryObject, resulting in a different behavior.
+            // When thick and thin APIs are used with the same user-defined classes together,
+            // it means that classes are available on the server, and we can deserialize the obj to enable matching behavior.
             clientSet.deserializeOnServer(true);
 
             IgniteSet<UserObj> serverSet = ignite(0).set(clientSet.name(), null);
@@ -132,11 +148,6 @@ public class IgniteSetTest extends AbstractThinClientTest {
             clientSet.add(new UserObj(1, "client"));
             serverSet.add(new UserObj(2, "server"));
 
-            // Binary object equality does not require overriding equals/hashCode
-            // However, partition awareness requires proper hashCode override for user objects -
-            // it does not use binary object to get the hash - see GridCacheSetItemKey.
-
-            // TODO: Client sends obj as BinaryObject, resulting in a different hash code than server uses.
             assertTrue(clientSet.contains(new UserObj(1, "client")));
             assertTrue(clientSet.contains(new UserObj(2, "server")));
 
@@ -145,11 +156,6 @@ public class IgniteSetTest extends AbstractThinClientTest {
 
             assertFalse(clientSet.contains(new UserObj(1, "x")));
             assertFalse(serverSet.contains(new UserObj(1, "x")));
-
-            // TODO: does it belong here?
-            // UserObj res = set.iterator().next();
-            // assertEquals(1, res.id);
-            // assertEquals("a", res.val);
         }
     }
 
