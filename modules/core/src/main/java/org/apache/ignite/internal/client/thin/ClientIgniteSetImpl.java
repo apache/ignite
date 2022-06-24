@@ -219,6 +219,8 @@ class ClientIgniteSetImpl<T> implements ClientIgniteSet<T> {
 
     private void writeIdentity(BinaryRawWriterEx w) {
         w.writeString(name);
+
+        // TODO: Since ID is not used for affinity, we can drop it for simplicity and efficiency. Ignore same-name set issues.
         w.writeLong(id.globalId().getMostSignificantBits());
         w.writeLong(id.globalId().getLeastSignificantBits());
         w.writeLong(id.localId());
