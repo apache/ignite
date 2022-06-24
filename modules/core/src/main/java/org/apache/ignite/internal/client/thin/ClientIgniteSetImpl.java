@@ -88,12 +88,12 @@ class ClientIgniteSetImpl<T> implements ClientIgniteSet<T> {
 
     @Override
     public boolean isEmpty() {
-        return false;
+        return size() == 0;
     }
 
     @Override
     public Iterator<T> iterator() {
-        // TODO: Should we use CacheWeakQueryIteratorsHolder here somehow to match weak ref semantics?
+        // TODO: Should we use CacheWeakQueryIteratorsHolder here somehow to match thick API weak ref semantics?
         return null;
     }
 
