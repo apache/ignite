@@ -37,7 +37,7 @@ import org.apache.ignite.lang.IgniteRunnable;
  */
 public interface ClientIgniteSet<T> extends Set<T>, Closeable {
     /** {@inheritDoc} */
-    @Override boolean add(T t);
+    @Override boolean add(T o);
 
     /** {@inheritDoc} */
     @Override boolean addAll(Collection<? extends T> c);

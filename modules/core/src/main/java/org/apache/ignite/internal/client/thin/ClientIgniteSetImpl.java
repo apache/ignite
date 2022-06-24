@@ -23,6 +23,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import org.apache.ignite.client.ClientIgniteSet;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
+import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.lang.IgniteUuid;
@@ -67,27 +68,37 @@ class ClientIgniteSetImpl<T> implements ClientIgniteSet<T> {
     }
 
     @Override
-    public boolean add(T t) {
-        return singleKeyOp(ClientOperation.OP_SET_VALUE_ADD, t);
+    public boolean add(T o) {
+        A.notNull(o, "o");
+
+        return singleKeyOp(ClientOperation.OP_SET_VALUE_ADD, o);
     }
 
     @Override
     public boolean addAll(Collection<? extends T> c) {
+        A.notNull(c, "c");
+
+        // TODO
         return false;
     }
 
     @Override
     public void clear() {
-
+        op(ClientOperation.OP_SET_CLEAR, null, null);
     }
 
     @Override
     public boolean contains(Object o) {
+        A.notNull(o, "o");
+
         return singleKeyOp(ClientOperation.OP_SET_VALUE_CONTAINS, o);
     }
 
     @Override
     public boolean containsAll(Collection<?> c) {
+        A.notNull(c, "c");
+
+        // TODO
         return false;
     }
 
@@ -104,22 +115,30 @@ class ClientIgniteSetImpl<T> implements ClientIgniteSet<T> {
 
     @Override
     public boolean remove(Object o) {
+        A.notNull(o, "o");
+
         return singleKeyOp(ClientOperation.OP_SET_VALUE_REMOVE, o);
     }
 
     @Override
     public boolean removeAll(Collection<?> c) {
+        A.notNull(c, "c");
+
+        // TODO
         return false;
     }
 
     @Override
     public boolean retainAll(Collection<?> c) {
+        A.notNull(c, "c");
+
+        // TODO
         return false;
     }
 
     @Override
     public int size() {
-        return 0;
+        return op(ClientOperation.OP_SET_SIZE, null, r -> r.in().readInt());
     }
 
     @Override
