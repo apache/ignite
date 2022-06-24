@@ -232,7 +232,9 @@ class ClientIgniteSetImpl<T> implements ClientIgniteSet<T> {
         if (collocated)
             return name.hashCode();
 
-        // TODO: Can we avoid using this class?
-        return new GridCacheSetItemKey(null, o);
+        // TODO: This is how server side works.
+        // Looks like there is a problem with user classes - they are not serialized to get correct hash code from binary object.
+        // What does actually happen on servers in this case? Write tests.
+        return o.hashCode();
     }
 }

@@ -52,7 +52,7 @@ public class GridCacheSetItemKey implements SetItemKey, Externalizable {
      * @param setId Set unique ID.
      * @param item Set item.
      */
-    public GridCacheSetItemKey(IgniteUuid setId, Object item) {
+    GridCacheSetItemKey(IgniteUuid setId, Object item) {
         this.setId = setId;
         this.item = item;
     }
