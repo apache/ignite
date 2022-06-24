@@ -16,6 +16,7 @@
  */
 package org.apache.ignite.internal.processors.query.calcite.schema;
 
+import java.util.Iterator;
 import java.util.List;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -100,6 +101,14 @@ public class SystemViewIndexImpl implements IgniteIndex {
     /** {@inheritDoc} */
     @Override public long count(ExecutionContext<?> ectx, ColocationGroup grp) {
         return tbl.descriptor().systemView().size();
+    }
+
+    @Override public <Row> Row findFirstOrLast(boolean first, ExecutionContext<Row> ectx, ColocationGroup grp,
+        @Nullable ImmutableBitSet requiredColumns) {
+        //TODO: last
+        Iterator<Row> it = scan(ectx, grp, null, null, null, null, requiredColumns).iterator();
+
+        return it.hasNext() ? it.next() : null;
     }
 
     /** {@inheritDoc} */

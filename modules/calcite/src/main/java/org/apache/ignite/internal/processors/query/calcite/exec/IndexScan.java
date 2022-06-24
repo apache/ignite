@@ -162,6 +162,31 @@ public class IndexScan<Row> extends AbstractIndexScan<Row, IndexRow> {
         }
     }
 
+    //TODO
+    public Row firstOrLast(boolean first) {
+        reserve();
+
+        IndexingQueryFilter filter = new IndexingQueryFilterImpl(kctx, topVer, parts);
+
+        IndexQueryContext qctx = new IndexQueryContext(filter, null, ectx.mvccSnapshot());
+
+        try {
+            //TODO: segment
+            GridCursor<IndexRow> cursor = !first ? idx.findFirst(0, qctx) : idx.findLast(0, qctx);
+
+            IndexRow row = cursor.next() ? cursor.get() : null;
+
+            assert !cursor.next();
+
+            return row == null ? null : indexRow2Row(row);
+        }
+        catch (IgniteCheckedException e) {
+            release();
+
+            throw new IgniteException("Unable to get " + (first ? "first" : "last") + " record from the index.", e);
+        }
+    }
+
     /** {@inheritDoc} */
     @Override protected IndexRow row2indexRow(Row bound) {
         if (bound == null)

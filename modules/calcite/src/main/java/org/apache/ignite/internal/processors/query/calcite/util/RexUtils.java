@@ -165,8 +165,9 @@ public class RexUtils {
         if (condition == null)
             return new IndexConditions();
 
-        if(condition.isA(MIN))
-            return new IndexConditions(null, null, null, F.asList(condition));
+        //TODO : check field?
+        if (condition.isA(MIN) || condition.isA(MAX))
+            return new IndexConditions(null, null, F.asList(condition), F.asList(condition));
 
         condition = RexUtil.toCnf(builder(cluster), condition);
 
@@ -363,6 +364,7 @@ public class RexUtils {
 
             fldPreds.add(predCall);
         }
+
         return res;
     }
 

@@ -226,7 +226,7 @@ public class SchemaHolderImpl extends AbstractService implements SchemaHolder, S
 
         RelCollation idxCollation = deriveSecondaryIndexCollation(idxDesc, tbl);
 
-        IgniteIndex idx = new CacheIndexImpl(idxCollation, idxName, gridIdx, tbl, idxDesc.fields());
+        IgniteIndex idx = new CacheIndexImpl(idxCollation, idxName, gridIdx, tbl);
         tbl.addIndex(idx);
     }
 

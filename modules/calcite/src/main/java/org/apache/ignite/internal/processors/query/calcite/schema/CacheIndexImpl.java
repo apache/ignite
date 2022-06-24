@@ -16,7 +16,6 @@
  */
 package org.apache.ignite.internal.processors.query.calcite.schema;
 
-import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
@@ -106,10 +105,10 @@ public class CacheIndexImpl implements IgniteIndex {
         @Nullable ImmutableBitSet requiredColumns
     ) {
         UUID localNodeId = execCtx.localNodeId();
+
         if (group.nodeIds().contains(localNodeId) && idx != null) {
-            return new IndexScan<>(execCtx, tbl.descriptor(), idx.unwrap(InlineIndex.class), collation.getKeys(),
-                group.partitions(localNodeId), filters, lowerIdxConditions, upperIdxConditions, rowTransformer,
-                requiredColumns);
+            return createScan(localNodeId, execCtx, group, filters, lowerIdxConditions, upperIdxConditions,
+                rowTransformer, requiredColumns);
         }
 
         return Collections.emptyList();
@@ -138,6 +137,27 @@ public class CacheIndexImpl implements IgniteIndex {
     }
 
     /** {@inheritDoc} */
+    @Override public <Row> Row findFirstOrLast(boolean first, ExecutionContext<Row> ectx, ColocationGroup grp,
+        @Nullable ImmutableBitSet requiredColumns) {
+        if (idx != null && grp.nodeIds().contains(ectx.localNodeId())) {
+            try (IndexScan<Row> scan = createScan(
+                ectx.localNodeId(),
+                ectx,
+                grp,
+                null,
+                null,
+                null,
+                null,
+                requiredColumns
+            )) {
+                return scan.firstOrLast(first);
+            }
+        }
+
+        return null;
+    }
+
+    /** {@inheritDoc} */
     @Override public IndexConditions toIndexCondition(
         RelOptCluster cluster,
         @Nullable RexNode cond,
@@ -161,5 +181,22 @@ public class CacheIndexImpl implements IgniteIndex {
 
         // Empty index find predicate.
         return new IndexConditions();
+    }
+
+    //TODO
+    private <Row> IndexScan<Row> createScan(
+        UUID localNodeId,
+        ExecutionContext<Row> execCtx,
+        ColocationGroup group,
+        Predicate<Row> filters,
+        Supplier<Row> lowerIdxConditions,
+        Supplier<Row> upperIdxConditions,
+        Function<Row, Row> rowTransformer,
+        @Nullable ImmutableBitSet requiredColumns
+
+    ) {
+        return new IndexScan<>(execCtx, tbl.descriptor(), idx.unwrap(InlineIndex.class), collation.getKeys(),
+            group.partitions(localNodeId), filters, lowerIdxConditions, upperIdxConditions, rowTransformer,
+            requiredColumns);
     }
 }

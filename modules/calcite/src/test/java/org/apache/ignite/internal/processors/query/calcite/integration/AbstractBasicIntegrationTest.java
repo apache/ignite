@@ -252,6 +252,12 @@ public class AbstractBasicIntegrationTest extends GridCommonAbstractTest {
         @Override public long count(ExecutionContext<?> ectx, ColocationGroup grp) {
             return delegate.count(ectx, grp);
         }
+
+        /** {@inheritDoc} */
+        @Override public <Row> Row findFirstOrLast(boolean first, ExecutionContext<Row> ectx, ColocationGroup grp,
+            @Nullable ImmutableBitSet requiredColumns) {
+            return delegate.findFirstOrLast(first, ectx, grp, requiredColumns);
+        }
     }
 
     /** */

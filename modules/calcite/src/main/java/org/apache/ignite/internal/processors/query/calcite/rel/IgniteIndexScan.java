@@ -19,7 +19,11 @@ package org.apache.ignite.internal.processors.query.calcite.rel;
 
 import java.util.List;
 import com.google.common.collect.ImmutableList;
-import org.apache.calcite.plan.*;
+import org.apache.calcite.plan.RelOptCluster;
+import org.apache.calcite.plan.RelOptCost;
+import org.apache.calcite.plan.RelOptPlanner;
+import org.apache.calcite.plan.RelOptTable;
+import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelCollation;
 import org.apache.calcite.rel.RelInput;
 import org.apache.calcite.rel.RelWriter;
@@ -27,9 +31,8 @@ import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.util.ImmutableBitSet;
-import org.apache.ignite.internal.processors.query.calcite.metadata.cost.IgniteCost;
-import org.apache.ignite.internal.processors.query.calcite.metadata.cost.IgniteCostFactory;
 import org.apache.ignite.internal.processors.query.calcite.util.IndexConditions;
+import org.apache.ignite.internal.util.typedef.F;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils.changeTraits;
@@ -118,10 +121,29 @@ public class IgniteIndexScan extends AbstractIndexScan implements SourceAwareIgn
     /** {@inheritDoc} */
     @Override
     public RelOptCost computeSelfCost(RelOptPlanner planner, RelMetadataQuery mq) {
-        if(condition != null && condition.isA(SqlKind.MIN) || condition.isA(SqlKind.MAX))
+        if (firstOrLast(true))
             return planner.getCostFactory().makeTinyCost();
 
         return super.computeSelfCost(planner, mq);
+    }
+
+    /** {@inheritDoc} */
+    @Override public List<RexNode> lowerBound() {
+        return firstOrLast(true) || firstOrLast(false) ? null : super.lowerBound();
+    }
+
+    /** {@inheritDoc} */
+    @Override public List<RexNode> upperBound() {
+        return firstOrLast(true) || firstOrLast(false) ? null : super.upperBound();
+    }
+
+    //TODO: comment
+    public boolean firstOrLast(boolean first) {
+        return condition == null &&
+            idxCond != null &&
+            idxCond.lowerBound() != null &&
+            idxCond.lowerBound().stream().filter(b -> b.isA(first ? SqlKind.MIN : SqlKind.MAX)).count() == 1 &&
+            F.eq(idxCond.lowerBound(), idxCond.upperBound());
     }
 
     /** {@inheritDoc} */

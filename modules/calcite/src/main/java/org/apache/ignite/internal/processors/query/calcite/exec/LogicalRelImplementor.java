@@ -76,8 +76,31 @@ import org.apache.ignite.internal.processors.query.calcite.exec.rel.TableSpoolNo
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.UnionAllNode;
 import org.apache.ignite.internal.processors.query.calcite.metadata.AffinityService;
 import org.apache.ignite.internal.processors.query.calcite.metadata.ColocationGroup;
-import org.apache.ignite.internal.processors.query.calcite.rel.*;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteCollect;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteCorrelatedNestedLoopJoin;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteExchange;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteFilter;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteHashIndexSpool;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexCount;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexProbe;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexScan;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteLimit;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteMergeJoin;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteNestedLoopJoin;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteProject;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteReceiver;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRelVisitor;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSender;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSort;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSortedIndexSpool;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableFunctionScan;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableModify;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableScan;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableSpool;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTrimExchange;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteUnionAll;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteValues;
 import org.apache.ignite.internal.processors.query.calcite.rel.agg.IgniteColocatedHashAggregate;
 import org.apache.ignite.internal.processors.query.calcite.rel.agg.IgniteColocatedSortAggregate;
 import org.apache.ignite.internal.processors.query.calcite.rel.agg.IgniteMapHashAggregate;
@@ -286,14 +309,16 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
         IgniteTypeFactory typeFactory = ctx.getTypeFactory();
 
         ImmutableBitSet requiredColumns = rel.requiredColumns();
-        List<RexNode> lowerCond = rel.lowerBound();
-        List<RexNode> upperCond = rel.upperBound();
+        boolean firstVal = rel.firstOrLast(true);
+        boolean lastVal = !firstVal && rel.firstOrLast(false);
+        List<RexNode> lowerBound = rel.lowerBound();
+        List<RexNode> upperBound = rel.upperBound();
 
         RelDataType rowType = tbl.getRowType(typeFactory, requiredColumns);
 
         Predicate<Row> filters = condition == null ? null : expressionFactory.predicate(condition, rowType);
-        Supplier<Row> lower = lowerCond == null ? null : expressionFactory.rowSource(lowerCond);
-        Supplier<Row> upper = upperCond == null ? null : expressionFactory.rowSource(upperCond);
+        Supplier<Row> lower = lowerBound == null ? null : expressionFactory.rowSource(lowerBound);
+        Supplier<Row> upper = upperBound == null ? null : expressionFactory.rowSource(upperBound);
         Function<Row, Row> prj = projects == null ? null : expressionFactory.project(projects, rowType);
 
         ColocationGroup grp = ctx.group(rel.sourceId());
@@ -301,7 +326,9 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
         IgniteIndex idx = tbl.getIndex(rel.indexName());
 
         if (idx != null && !tbl.isIndexRebuildInProgress()) {
-            Iterable<Row> rowsIter = idx.scan(ctx, grp, filters, lower, upper, prj, requiredColumns);
+            Iterable<Row> rowsIter = firstVal || lastVal
+                ? F.asList(idx.findFirstOrLast(firstVal, ctx, grp, requiredColumns))
+                : idx.scan(ctx, grp, filters, lower, upper, prj, requiredColumns);
 
             return new ScanNode<>(ctx, rowType, rowsIter);
         }
@@ -352,19 +379,19 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
             }
 
             if (spoolNodeRequired) {
-                if (lowerCond != null || upperCond != null) {
+                if (lowerBound != null || upperBound != null) {
                     if (requiredColumns != null) {
                         // Remap index find predicate according to rowType of the spool.
                         int cardinality = requiredColumns.cardinality();
-                        List<RexNode> remappedLowerCond = lowerCond != null ? new ArrayList<>(cardinality) : null;
-                        List<RexNode> remappedUpperCond = upperCond != null ? new ArrayList<>(cardinality) : null;
+                        List<RexNode> remappedLowerCond = lowerBound != null ? new ArrayList<>(cardinality) : null;
+                        List<RexNode> remappedUpperCond = upperBound != null ? new ArrayList<>(cardinality) : null;
 
                         for (int i = requiredColumns.nextSetBit(0); i != -1; i = requiredColumns.nextSetBit(i + 1)) {
                             if (remappedLowerCond != null)
-                                remappedLowerCond.add(lowerCond.get(i));
+                                remappedLowerCond.add(lowerBound.get(i));
 
                             if (remappedUpperCond != null)
-                                remappedUpperCond.add(upperCond.get(i));
+                                remappedUpperCond.add(upperBound.get(i));
                         }
 
                         lower = remappedLowerCond == null ? null : expressionFactory.rowSource(remappedLowerCond);

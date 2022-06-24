@@ -95,4 +95,12 @@ public interface IgniteIndex {
      * @return Index records number for {@code group}.
      */
     public long count(ExecutionContext<?> ectx, ColocationGroup grp);
+
+    /** */
+    public <Row> Row findFirstOrLast(
+        boolean first,
+        ExecutionContext<Row> ectx,
+        ColocationGroup grp,
+        @Nullable ImmutableBitSet requiredColumns
+    );
 }

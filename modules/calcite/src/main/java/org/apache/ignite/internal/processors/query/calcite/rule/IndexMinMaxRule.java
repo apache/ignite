@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.calcite.rule;
 
+import java.util.Collections;
 import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.RelRule;
 import org.apache.calcite.plan.RelTraitSet;
@@ -25,7 +26,6 @@ import org.apache.calcite.rel.logical.LogicalAggregate;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rex.RexBuilder;
-import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.tools.RelBuilder;
@@ -39,15 +39,9 @@ import org.apache.ignite.internal.processors.query.calcite.schema.IgniteIndex;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
 import org.apache.ignite.internal.processors.query.calcite.trait.RewindabilityTrait;
-import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.util.IndexConditions;
 import org.apache.ignite.internal.processors.query.calcite.util.RexUtils;
-import org.apache.ignite.internal.util.typedef.F;
 import org.immutables.value.Value;
-
-import java.util.Collections;
-
-import static org.apache.calcite.sql.fun.SqlStdOperatorTable.MIN;
 
 /** Tries to optimize MIN() and MAX() to use first/last record index records. */
 @Value.Enclosing
@@ -100,7 +94,7 @@ public class IndexMinMaxRule extends RelRule<IndexMinMaxRule.Config> {
             .replace(table.distribution().getType() == RelDistribution.Type.HASH_DISTRIBUTED ?
                     IgniteDistributions.random() : table.distribution())
             .replace(RewindabilityTrait.REWINDABLE);
-//
+
 //        // TODO: read multiple aggregates.
 //        IgniteIndexProbe idxCnt = new IgniteIndexProbe(
 //            scan.getCluster(),
@@ -117,21 +111,25 @@ public class IndexMinMaxRule extends RelRule<IndexMinMaxRule.Config> {
 
         RelDataType tableType = table.getRowType(tf);
 
-        RexNode condition = rexb.makeCall(MIN,
-                rexb.makeLocalRef(tableType.getFieldList().get(columnNum).getType(), 0));
-
-        IndexConditions idxConditions = new IndexConditions(F.asList(condition), F.asList(condition), null, null);
+        //TODO: sevelar aggregations
+        IndexConditions idxConditions = RexUtils.buildSortedIndexConditions(
+            scan.getCluster(),
+            idx.collation(),
+            rexb.makeCall(aggr.getAggCallList().get(0).getAggregation(),
+                rexb.makeLocalRef(tableType.getFieldList().get(columnNum).getType(), 0)),
+            tableType,
+            scan.requiredColumns());
 
         IgniteIndexScan replacement = new IgniteIndexScan(
-                scan.getCluster(),
-                idxTraits,
-                scan.getTable(),
-                idx.name(),
-                null,
-                condition,
-                idxConditions,
-                scan.requiredColumns(),
-                idx.collation());
+            scan.getCluster(),
+            idxTraits,
+            scan.getTable(),
+            idx.name(),
+            null,
+            null,
+            idxConditions,
+            scan.requiredColumns(),
+            idx.collation());
 
 //        IgniteIndexScan input = new IgniteIndexScan(scan.getCluster(), idxTraits, scan.getTable(), idx.name(),
 //            null, limit, idxConditions, scan.requiredColumns(), idx.collation());
