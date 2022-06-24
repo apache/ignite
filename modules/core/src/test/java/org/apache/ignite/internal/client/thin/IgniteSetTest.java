@@ -57,15 +57,20 @@ public class IgniteSetTest extends AbstractThinClientTest {
     }
 
     @Test
-    public void testUseRemovedSetThrowsException() {
+    public void testCloseThenUseThrowsException() {
         try (IgniteClient client = startClient(0)) {
             ClientIgniteSet<Integer> set = client.set("testUseRemovedSetThrowsException", new ClientCollectionConfiguration());
+            ClientIgniteSet<Integer> set2 = client.set("testUseRemovedSetThrowsException", null);
 
             set.add(1);
             set.close();
 
+            // TODO: assertThrows
             set.add(2);
+            set2.add(2);
+
             assertTrue(set.removed());
+            assertTrue(set2.removed());
         }
     }
 
