@@ -27,8 +27,6 @@ import org.junit.Test;
  * Tests client set.
  * Partition awareness tests are in {@link ThinClientPartitionAwarenessStableTopologyTest#testIgniteSet()}.
  */
-// TODO: Test custom objects
-// TODO: Test behavior when removed or does not exist - match thick API.
 public class IgniteSetTest extends AbstractThinClientTest {
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
