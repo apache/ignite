@@ -235,6 +235,9 @@ class ClientIgniteSetImpl<T> implements ClientIgniteSet<T> {
         // TODO: same code using thick client and thin client will end up with different hash for user objects,
         // because client passes objects in form of BinaryObject.
         // Write a test to confirm that we can put from thin and get from thick.
+
+        // Server wraps user object into GridCacheSetItemKey, but setId is always null in separated mode,
+        // so the user object itself ends up as affinity key.
         return o;
     }
 }
