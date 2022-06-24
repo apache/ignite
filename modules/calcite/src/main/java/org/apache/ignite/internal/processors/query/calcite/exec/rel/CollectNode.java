@@ -24,6 +24,7 @@ import java.util.Map;
 import java.util.function.Supplier;
 import com.google.common.collect.Iterables;
 import org.apache.calcite.rel.type.RelDataType;
+import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
@@ -41,6 +42,8 @@ public class CollectNode<Row> extends AbstractNode<Row> implements SingleNode<Ro
     private int waiting;
 
     /**
+     * Creates Collect node with the collector depending on {@code rowType}.
+     *
      * @param ctx Execution context.
      * @param rowType Output row type.
      */
@@ -48,9 +51,40 @@ public class CollectNode<Row> extends AbstractNode<Row> implements SingleNode<Ro
         ExecutionContext<Row> ctx,
         RelDataType rowType
     ) {
+        this(ctx, rowType, createCollector(ctx, rowType));
+    }
+
+    /**
+     * Creates Collect node with the collector depending on {@code rowType}.
+     *
+     * @param ctx Execution context.
+     * @param rowType Output row type.
+     * @param collector Collector.
+     */
+    private CollectNode(
+        ExecutionContext<Row> ctx,
+        RelDataType rowType,
+        Collector<Row> collector
+    ) {
         super(ctx, rowType);
 
-        collector = createCollector(ctx, rowType);
+        this.collector = collector;
+    }
+
+    /**
+     * Creates row counting Collect node.
+     *
+     * @param ctx Execution context.
+     */
+    public static <Row> CollectNode<Row> createCountCollector(ExecutionContext<Row> ctx) {
+        RelDataType rowType = ctx.getTypeFactory().createSqlType(SqlTypeName.BIGINT);
+
+        Collector<Row> collector = new Counter<>(
+            ctx.rowHandler(),
+            ctx.rowHandler().factory(ctx.getTypeFactory(), rowType),
+            1);
+
+        return new CollectNode<>(ctx, rowType, collector);
     }
 
     /** {@inheritDoc} */
@@ -234,6 +268,32 @@ public class CollectNode<Row> extends AbstractNode<Row> implements SingleNode<Ro
         /** {@inheritDoc} */
         @Override public void clear() {
             outBuf = new ArrayList<>(cap);
+        }
+    }
+
+    /** */
+    private static class Counter<Row> extends Collector<Row> {
+        /** */
+        private long cnt;
+
+        /** */
+        private Counter(RowHandler<Row> hnd, RowHandler.RowFactory<Row> rowFactory, int cap) {
+            super(hnd, rowFactory, cap);
+        }
+
+        /** {@inheritDoc} */
+        @Override protected Object outData() {
+            return cnt;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void push(Row row) {
+            ++cnt;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void clear() {
+            cnt = 0;
         }
     }
 }
