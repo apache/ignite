@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.client.thin;
 
+import java.lang.reflect.Field;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.client.ClientCollectionConfiguration;
@@ -24,6 +25,8 @@ import org.apache.ignite.client.ClientException;
 import org.apache.ignite.client.ClientIgniteSet;
 import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.configuration.ClientConfiguration;
+import org.apache.ignite.configuration.CollectionConfiguration;
+import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.datastructures.GridCacheSetProxy;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -137,25 +140,31 @@ public class IgniteSetTest extends AbstractThinClientTest {
 
     @Test
     public void testConfigPropagation() throws Exception {
+        String groupName = "grp-testConfigPropagation";
+
         ClientCollectionConfiguration cfg = new ClientCollectionConfiguration()
                 .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
-                .setCacheMode(CacheMode.REPLICATED)
+                .setCacheMode(CacheMode.PARTITIONED)
                 .setBackups(7)
                 .setCollocated(true)
-                .setGroupName("grp-testConfigPropagation")
+                .setGroupName(groupName)
                 .setOffHeapMaxMemory(9000);
 
         try (IgniteClient client = startClient(0)) {
             ClientIgniteSet<UserObj> set = client.set("testConfigPropagation", cfg);
-            GridCacheSetProxy serverSet = (GridCacheSetProxy)ignite(0).set(set.name(), null);
-            GridCacheContext cctx = (GridCacheContext) GridCacheSetProxy.class.getDeclaredField("cctx").get(serverSet.delegate());
 
-            // TODO: Check all properties from cache context.
+            GridCacheSetProxy serverSet = (GridCacheSetProxy) ignite(0).context().dataStructures()
+                    .set(set.name(), groupName, null);
+
+            Field field = GridCacheSetProxy.class.getDeclaredField("cctx");
+            field.setAccessible(true);
+            GridCacheContext cctx = (GridCacheContext) field.get(serverSet);
+
             assertTrue(set.collocated());
             assertEquals(7, cctx.config().getBackups());
-            assertEquals(CacheMode.REPLICATED, cctx.config().getCacheMode());
+            assertEquals(CacheMode.PARTITIONED, cctx.config().getCacheMode());
             assertEquals(CacheAtomicityMode.TRANSACTIONAL, cctx.config().getAtomicityMode());
-            assertEquals("testConfigPropagation", cctx.config().getGroupName());
+            assertEquals(groupName, cctx.config().getGroupName());
         }
     }
 
