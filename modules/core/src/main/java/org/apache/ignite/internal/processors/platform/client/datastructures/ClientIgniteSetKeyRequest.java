@@ -18,7 +18,9 @@
 package org.apache.ignite.internal.processors.platform.client.datastructures;
 
 import org.apache.ignite.IgniteSet;
+import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.internal.binary.BinaryRawReaderEx;
+import org.apache.ignite.internal.processors.datastructures.GridCacheSetItemKey.HashCodeHolder;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
 
@@ -37,7 +39,12 @@ public abstract class ClientIgniteSetKeyRequest extends ClientIgniteSetRequest {
     ClientIgniteSetKeyRequest(BinaryRawReaderEx reader) {
         super(reader);
 
-        key = reader.readObjectDetached();
+        // Hack to make thick and thin IgniteSet APIs use the same hash code for user objects
+        // and behave consistently.
+        Object obj = reader.readObjectDetached();
+        int hashCode = reader.readInt();
+
+        key = obj instanceof BinaryObject ? new HashCodeHolder(obj, hashCode) : obj;
     }
 
     /** {@inheritDoc} */
