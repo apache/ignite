@@ -20,6 +20,7 @@ package org.apache.ignite.internal.client.thin;
 import java.util.function.Function;
 
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.client.ClientAtomicConfiguration;
@@ -184,11 +185,26 @@ public class ThinClientPartitionAwarenessStableTopologyTest extends ThinClientAb
      */
     @Test
     public void testIgniteSet() {
-        // TODO: Test different names, custom groups
-        // TODO: Test colocated mode separately!
-        ClientIgniteSet<String> clientSet = client.set("testIgniteSet", new ClientCollectionConfiguration());
+        testIgniteSet("testIgniteSet", null, CacheAtomicityMode.ATOMIC);
+        testIgniteSet("testIgniteSet2", null, CacheAtomicityMode.TRANSACTIONAL);
+        testIgniteSet("testIgniteSet3", "grp-testIgniteSet3", CacheAtomicityMode.ATOMIC);
+        testIgniteSet("testIgniteSet4", "grp-testIgniteSet4", CacheAtomicityMode.TRANSACTIONAL);
+    }
 
-        String cacheName = "datastructures_ATOMIC_PARTITIONED_0@default-ds-group#SET_" + clientSet.name();
+    /**
+     * Tests Ignite set.
+     */
+    private void testIgniteSet(String name, String groupName, CacheAtomicityMode mode) {
+        ClientCollectionConfiguration cfg = new ClientCollectionConfiguration()
+                .setGroupName(groupName)
+                .setAtomicityMode(mode);
+
+        ClientIgniteSet<String> clientSet = client.set(name, cfg);
+
+        if (groupName == null)
+            groupName = "default-ds-group";
+
+        String cacheName = "datastructures_" + mode + "_PARTITIONED_0@" + groupName + "#SET_" + clientSet.name();
         IgniteInternalCache<Object, Object> cache = grid(0).context().cache().cache(cacheName);
 
         // Warm up.
