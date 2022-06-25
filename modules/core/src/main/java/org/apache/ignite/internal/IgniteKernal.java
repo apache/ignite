@@ -3098,7 +3098,24 @@ public class IgniteKernal implements IgniteEx, Externalizable {
         try {
             checkClusterState();
 
-            return ctx.dataStructures().set(name, null, cfg);
+            return ctx.dataStructures().set(name, null, cfg, false);
+        }
+        catch (IgniteCheckedException e) {
+            throw U.convertException(e);
+        }
+        finally {
+            unguard();
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public <T> IgniteSet<T> setNoCreate(String name, String groupName) throws IgniteException {
+        guard();
+
+        try {
+            checkClusterState();
+
+            return ctx.dataStructures().set(name, groupName, null, true);
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);

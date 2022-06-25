@@ -21,8 +21,11 @@ import java.util.Collection;
 import javax.cache.CacheException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteSet;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.CollectionConfiguration;
 import org.apache.ignite.internal.cluster.IgniteClusterEx;
 import org.apache.ignite.internal.processors.cache.GridCacheUtilityKey;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
@@ -157,4 +160,15 @@ public interface IgniteEx extends Ignite {
      * @param rebalanceEnabled rebalance enabled flag.
      */
     public void rebalanceEnabled(boolean rebalanceEnabled);
+
+    /**
+     * Gets a named set from cache. Does not create a new set.
+     *
+     * @param name Set name.
+     * @param groupName Group name.
+     * @param <T> Type of the elements in set.
+     * @return Set with given properties.
+     * @throws IgniteException If set could not be fetched or created.
+     */
+    public <T> IgniteSet<T> setNoCreate(String name, String groupName) throws IgniteException;
 }

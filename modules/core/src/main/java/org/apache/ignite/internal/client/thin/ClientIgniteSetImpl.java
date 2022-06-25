@@ -36,6 +36,9 @@ class ClientIgniteSetImpl<T> implements ClientIgniteSet<T> {
     private final String name;
 
     /** */
+    private final String groupName;
+
+    /** */
     private final IgniteUuid id;
 
     /** */
@@ -69,6 +72,7 @@ class ClientIgniteSetImpl<T> implements ClientIgniteSet<T> {
             ReliableChannel ch,
             ClientUtils serDes,
             String name,
+            String groupName,
             IgniteUuid id,
             boolean collocated,
             int cacheId) {
@@ -80,6 +84,7 @@ class ClientIgniteSetImpl<T> implements ClientIgniteSet<T> {
         this.ch = ch;
         this.serDes = serDes;
         this.name = name;
+        this.groupName = groupName;
         this.id = id;
         this.collocated = collocated;
         this.cacheId = cacheId;
@@ -245,6 +250,7 @@ class ClientIgniteSetImpl<T> implements ClientIgniteSet<T> {
 
     private void writeIdentity(BinaryRawWriterEx w) {
         w.writeString(name);
+        w.writeString(groupName);
 
         // TODO: Since ID is not used for affinity, we can drop it for simplicity and efficiency. Ignore same-name set issues.
         w.writeLong(id.globalId().getMostSignificantBits());

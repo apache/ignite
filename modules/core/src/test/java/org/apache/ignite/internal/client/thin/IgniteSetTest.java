@@ -173,8 +173,7 @@ public class IgniteSetTest extends AbstractThinClientTest {
         try (IgniteClient client = startClient(0)) {
             ClientIgniteSet<UserObj> set = client.set("testConfigPropagation", cfg);
 
-            GridCacheSetProxy serverSet = (GridCacheSetProxy) ignite(0).context().dataStructures()
-                    .set(set.name(), groupName, null);
+            GridCacheSetProxy serverSet = (GridCacheSetProxy) ignite(0).setNoCreate(set.name(), groupName);
 
             Field field = GridCacheSetProxy.class.getDeclaredField("cctx");
             field.setAccessible(true);
@@ -190,7 +189,6 @@ public class IgniteSetTest extends AbstractThinClientTest {
 
     @Test
     public void testSameNameInDifferentGroups() {
-        // TODO
         String name = "testSameNameInDifferentGroups";
         ClientCollectionConfiguration cfg1 = new ClientCollectionConfiguration();
 
@@ -198,9 +196,8 @@ public class IgniteSetTest extends AbstractThinClientTest {
                 .setGroupName("gp1");
 
         ClientCollectionConfiguration cfg3 = new ClientCollectionConfiguration()
-                .setGroupName("gp1")
+                .setGroupName("gp2")
                 .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
-
 
         try (IgniteClient client = startClient(0)) {
             ClientIgniteSet<Integer> set1 = client.set(name, cfg1);

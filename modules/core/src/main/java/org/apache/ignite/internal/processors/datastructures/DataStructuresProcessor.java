@@ -1768,11 +1768,15 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
      * @return Set instance.
      * @throws IgniteCheckedException If failed.
      */
-    @Nullable public <T> IgniteSet<T> set(final String name, @Nullable final String grpName, @Nullable final CollectionConfiguration cfg)
+    @Nullable public <T> IgniteSet<T> set(
+            final String name,
+            @Nullable final String grpName,
+            @Nullable final CollectionConfiguration cfg,
+            boolean noCreate)
         throws IgniteCheckedException {
         A.notNull(name, "name");
 
-        final boolean create = cfg != null;
+        final boolean create = !noCreate && cfg != null;
         final boolean collocated = isCollocated(cfg);
         final boolean separated = !collocated &&
             U.isOldestNodeVersionAtLeast(SEPARATE_CACHE_PER_NON_COLLOCATED_SET_SINCE, ctx.grid().cluster().nodes());
