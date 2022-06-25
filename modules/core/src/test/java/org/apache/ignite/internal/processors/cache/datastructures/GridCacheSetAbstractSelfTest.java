@@ -34,6 +34,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteCluster;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSet;
+import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -45,7 +46,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryManager;
-import org.apache.ignite.internal.processors.platform.client.IgniteClientException;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteCallable;
@@ -1196,6 +1196,35 @@ public abstract class GridCacheSetAbstractSelfTest extends IgniteCollectionAbstr
         GridTestUtils.assertThrows(null, oldSet2::size, IllegalStateException.class, msg);
 
         newSet.close();
+    }
+
+    @Test
+    public void testSameNameDifferentOptions() {
+        Ignite ignite = grid(0);
+
+        String name = "testSameNameDifferentOptions";
+
+        CollectionConfiguration cfg1 = new CollectionConfiguration()
+                .setGroupName("gp1");
+
+        CollectionConfiguration cfg2 = new CollectionConfiguration()
+                .setGroupName("gp1")
+                .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
+
+        IgniteSet<Integer> set1 = ignite.set(name, cfg1);
+        IgniteSet<Integer> set1_1 = ignite.set(name, cfg1);
+        IgniteSet<Integer> set2 = ignite.set(name, cfg2);
+        IgniteSet<Integer> set2_2 = ignite.set(name, cfg2);
+
+        set1.add(1);
+
+        assertEquals(1, set1.size());
+        assertEquals(1, set1_1.size());
+        assertEquals(0, set2.size());
+        assertEquals(0, set2_2.size());
+
+        set1.close();
+        set2.close();
     }
 
     /**
