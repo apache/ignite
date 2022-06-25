@@ -220,7 +220,10 @@ public class IgniteSetTest extends AbstractThinClientTest {
 
     @Test
     public void testSameNameDifferentOptions() {
-        // TODO: Same name and group, different atomicity mode - weird behavior.
+        // TODO: We can't rely only on name and group name.
+        // Cache mode, atomicity, and backups are also important.
+        // This whole process makes operations slow. We should use ResourceRegistry instead.
+        // Resource approach is more complicated with affinity, but we can deal with that.
         String name = "testSameNameDifferentOptions";
         ClientCollectionConfiguration cfg1 = new ClientCollectionConfiguration()
                 .setGroupName("gp1");
