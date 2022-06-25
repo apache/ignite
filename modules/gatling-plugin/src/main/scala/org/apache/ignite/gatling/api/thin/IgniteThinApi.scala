@@ -46,13 +46,18 @@ case class IgniteThinApi(wrapped: IgniteClient)(implicit val ec: ExecutionContex
   override def getOrCreateCache[K, V](name: String)(s: CacheApi[K, V] => Unit, f: Throwable => Unit): Unit =
     withCompletion(wrapped.getOrCreateCacheAsync[K, V](name).asScala.map(CacheThinApi(_)))(s, f)
 
-  override def getOrCreateCacheByClientConfiguration[K, V](cfg: ClientCacheConfiguration)(s: CacheApi[K, V] => Unit, f: Throwable => Unit): Unit =
+  override def getOrCreateCacheByClientConfiguration[K, V](
+    cfg: ClientCacheConfiguration
+  )(s: CacheApi[K, V] => Unit, f: Throwable => Unit): Unit =
     withCompletion(wrapped.getOrCreateCacheAsync[K, V](cfg).asScala.map(CacheThinApi(_)))(s, f)
 
   override def getOrCreateCacheByConfiguration[K, V](cfg: CacheConfiguration[K, V])(s: CacheApi[K, V] => Unit, f: Throwable => Unit): Unit =
     throw new NotImplementedError("Node client cache configuration was used to create cache via thin client API")
 
-  override def getOrCreateCacheBySimpleConfig[K, V](name: String, cfg: SimpleCacheConfiguration)(s: CacheApi[K, V] => Unit, f: Throwable => Unit): Unit =
+  override def getOrCreateCacheBySimpleConfig[K, V](name: String, cfg: SimpleCacheConfiguration)(
+    s: CacheApi[K, V] => Unit,
+    f: Throwable => Unit
+  ): Unit =
     getOrCreateCacheByClientConfiguration(cacheConfiguration(name, cfg))(s, f)
 
   override def close()(s: Unit => Unit, f: Throwable => Unit): Unit =
@@ -66,8 +71,10 @@ case class IgniteThinApi(wrapped: IgniteClient)(implicit val ec: ExecutionContex
       tx => s(TransactionThinApi(tx))
     )
 
-  override def txStartEx(concurrency: TransactionConcurrency, isolation: TransactionIsolation)
-                        (s: TransactionApi => Unit, f: Throwable => Unit): Unit =
+  override def txStartEx(
+    concurrency: TransactionConcurrency,
+    isolation: TransactionIsolation
+  )(s: TransactionApi => Unit, f: Throwable => Unit): Unit =
     Try {
       wrapped.transactions().txStart(concurrency, isolation)
     }.fold(
@@ -75,8 +82,10 @@ case class IgniteThinApi(wrapped: IgniteClient)(implicit val ec: ExecutionContex
       tx => s(TransactionThinApi(tx))
     )
 
-  override def txStartEx2(concurrency: TransactionConcurrency, isolation: TransactionIsolation, timeout: Long, txSize: Int)
-                         (s: TransactionApi => Unit, f: Throwable => Unit): Unit =
+  override def txStartEx2(concurrency: TransactionConcurrency, isolation: TransactionIsolation, timeout: Long, txSize: Int)(
+    s: TransactionApi => Unit,
+    f: Throwable => Unit
+  ): Unit =
     Try {
       wrapped.transactions().txStart(concurrency, isolation, timeout)
     }.fold(
@@ -93,6 +102,5 @@ case class IgniteThinApi(wrapped: IgniteClient)(implicit val ec: ExecutionContex
       .setAtomicityMode(simpleCacheConfiguration.atomicity)
       .setBackups(simpleCacheConfiguration.backups)
 
-  override def binaryObjectBuilder: String => BinaryObjectBuilder = typeName =>
-    wrapped.binary().builder(typeName)
+  override def binaryObjectBuilder: String => BinaryObjectBuilder = typeName => wrapped.binary().builder(typeName)
 }

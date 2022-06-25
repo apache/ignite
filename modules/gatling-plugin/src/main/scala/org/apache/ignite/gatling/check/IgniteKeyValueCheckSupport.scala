@@ -64,25 +64,25 @@ class IgniteKeyValueCheckSupport {
     )
 
   @implicitNotFound("Could not find a CheckMaterializer. This check might not be valid for Ignite.")
-  implicit def checkBuilder2IgniteCheck[T, P, K, V](checkBuilder: CheckBuilder[T, P])
-                                                   (implicit materializer:
-                                                   CheckMaterializer[T, IgniteCheck[K, V], AllKeyValueResult[K, V], P]): IgniteCheck[K, V] =
+  implicit def checkBuilder2IgniteCheck[T, P, K, V](checkBuilder: CheckBuilder[T, P])(implicit
+    materializer: CheckMaterializer[T, IgniteCheck[K, V], AllKeyValueResult[K, V], P]
+  ): IgniteCheck[K, V] =
     checkBuilder.build(materializer)
 
   @implicitNotFound("Could not find a CheckMaterializer. This check might not be valid for Ignite.")
-  implicit def validate2IgniteCheck[T, P, X, K, V](validate: CheckBuilder.Validate[T, P, X])
-                                                  (implicit materializer:
-                                                  CheckMaterializer[T, IgniteCheck[K, V], AllKeyValueResult[K, V], P]): IgniteCheck[K, V] =
+  implicit def validate2IgniteCheck[T, P, X, K, V](validate: CheckBuilder.Validate[T, P, X])(implicit
+    materializer: CheckMaterializer[T, IgniteCheck[K, V], AllKeyValueResult[K, V], P]
+  ): IgniteCheck[K, V] =
     validate.exists
 
   @implicitNotFound("Could not find a CheckMaterializer. This check might not be valid for Ignite.")
-  implicit def find2IgniteCheck[T, P, X, K, V](find: CheckBuilder.Find[T, P, X])
-                                              (implicit materializer:
-                                              CheckMaterializer[T, IgniteCheck[K, V], AllKeyValueResult[K, V], P]): IgniteCheck[K, V] =
+  implicit def find2IgniteCheck[T, P, X, K, V](find: CheckBuilder.Find[T, P, X])(implicit
+    materializer: CheckMaterializer[T, IgniteCheck[K, V], AllKeyValueResult[K, V], P]
+  ): IgniteCheck[K, V] =
     find.find.exists
 
-  class AllKeyValueCheckMaterializer[K, V] extends
-    CheckMaterializer[IgniteAllKeyValueCheckType, IgniteCheck[K, V], AllKeyValueResult[K, V], AllKeyValueResult[K, V]](identity) {
+  class AllKeyValueCheckMaterializer[K, V]
+      extends CheckMaterializer[IgniteAllKeyValueCheckType, IgniteCheck[K, V], AllKeyValueResult[K, V], AllKeyValueResult[K, V]](identity) {
     override protected def preparer: Preparer[AllKeyValueResult[K, V], AllKeyValueResult[K, V]] = identityPreparer
   }
 

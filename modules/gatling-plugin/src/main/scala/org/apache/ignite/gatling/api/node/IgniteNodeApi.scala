@@ -54,7 +54,9 @@ case class IgniteNodeApi(wrapped: Ignite)(implicit val ec: ExecutionContext) ext
     withCompletion(Future(wrapped.getOrCreateCache[K, V](name)).map(CacheNodeApi(_)))(s, f)
 
   /** @inheritdoc */
-  override def getOrCreateCacheByClientConfiguration[K, V](cfg: ClientCacheConfiguration)(s: CacheApi[K, V] => Unit, f: Throwable => Unit): Unit =
+  override def getOrCreateCacheByClientConfiguration[K, V](
+    cfg: ClientCacheConfiguration
+  )(s: CacheApi[K, V] => Unit, f: Throwable => Unit): Unit =
     throw new NotImplementedError("Thin client cache configuration was used to create cache via node API")
 
   /** @inheritdoc */
@@ -62,7 +64,10 @@ case class IgniteNodeApi(wrapped: Ignite)(implicit val ec: ExecutionContext) ext
     withCompletion(Future(wrapped.getOrCreateCache(cfg)).map(CacheNodeApi(_)))(s, f)
 
   /** @inheritdoc */
-  override def getOrCreateCacheBySimpleConfig[K, V](name: String, cfg: SimpleCacheConfiguration)(s: CacheApi[K, V] => Unit, f: Throwable => Unit): Unit =
+  override def getOrCreateCacheBySimpleConfig[K, V](name: String, cfg: SimpleCacheConfiguration)(
+    s: CacheApi[K, V] => Unit,
+    f: Throwable => Unit
+  ): Unit =
     getOrCreateCacheByConfiguration(cacheConfiguration[K, V](name, cfg))(s, f)
 
   /** @inheritdoc */
@@ -77,18 +82,19 @@ case class IgniteNodeApi(wrapped: Ignite)(implicit val ec: ExecutionContext) ext
       .setBackups(simpleCacheConfiguration.backups)
 
   /** @inheritdoc */
-  override def txStart()(s: TransactionApi => Unit, f: Throwable => Unit): Unit = {
+  override def txStart()(s: TransactionApi => Unit, f: Throwable => Unit): Unit =
     Try {
       wrapped.transactions().txStart()
     }.fold(
       f,
       tx => s(TransactionNodeApi(tx))
     )
-  }
 
   /** @inheritdoc */
-  override def txStartEx(concurrency: TransactionConcurrency, isolation: TransactionIsolation)
-                        (s: TransactionApi => Unit, f: Throwable => Unit): Unit =
+  override def txStartEx(
+    concurrency: TransactionConcurrency,
+    isolation: TransactionIsolation
+  )(s: TransactionApi => Unit, f: Throwable => Unit): Unit =
     Try {
       wrapped.transactions().txStart(concurrency, isolation)
     }.fold(
@@ -97,8 +103,10 @@ case class IgniteNodeApi(wrapped: Ignite)(implicit val ec: ExecutionContext) ext
     )
 
   /** @inheritdoc */
-  override def txStartEx2(concurrency: TransactionConcurrency, isolation: TransactionIsolation, timeout: Long, txSize: Int)
-                         (s: TransactionApi => Unit, f: Throwable => Unit): Unit =
+  override def txStartEx2(concurrency: TransactionConcurrency, isolation: TransactionIsolation, timeout: Long, txSize: Int)(
+    s: TransactionApi => Unit,
+    f: Throwable => Unit
+  ): Unit =
     Try {
       wrapped.transactions().txStart(concurrency, isolation, timeout, txSize)
     }.fold(
@@ -110,6 +118,5 @@ case class IgniteNodeApi(wrapped: Ignite)(implicit val ec: ExecutionContext) ext
   override def wrapped[API]: API = wrapped.asInstanceOf[API]
 
   /** @inheritdoc */
-  override def binaryObjectBuilder: String => BinaryObjectBuilder = typeName =>
-    wrapped.binary().builder(typeName)
+  override def binaryObjectBuilder: String => BinaryObjectBuilder = typeName => wrapped.binary().builder(typeName)
 }

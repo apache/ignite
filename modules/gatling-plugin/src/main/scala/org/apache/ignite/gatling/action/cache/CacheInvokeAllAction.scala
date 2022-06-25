@@ -42,12 +42,14 @@ abstract class CacheInvokeAllAction[K, V, T] extends CacheAction[K, V] {
       }
       .map(l => l.reverse)
 
-  def execute(session: Session,
-              resolvedRequestName: String,
-              cacheApi: CacheApi[K, V],
-              transactionApi: Option[TransactionApi],
-              resolvedMap: Map[K, CacheEntryProcessor[K, V, T]],
-              resolvedArguments: List[Any]): Unit = {
+  def execute(
+    session: Session,
+    resolvedRequestName: String,
+    cacheApi: CacheApi[K, V],
+    transactionApi: Option[TransactionApi],
+    resolvedMap: Map[K, CacheEntryProcessor[K, V, T]],
+    resolvedArguments: List[Any]
+  ): Unit = {
 
     logger.debug(s"session user id: #${session.userId}, before $name")
 
@@ -59,14 +61,15 @@ abstract class CacheInvokeAllAction[K, V, T] extends CacheAction[K, V] {
   }
 }
 
-case class CacheInvokeAllMapAction[K, V, T](requestName: Expression[String],
-                                            cacheName: Expression[String],
-                                            map: Expression[Map[K, CacheEntryProcessor[K, V, T]]],
-                                            arguments: Seq[Expression[Any]],
-                                            checks: Seq[IgniteCheck[K, EntryProcessorResult[T]]],
-                                            next: Action,
-                                            ctx: ScenarioContext)
-  extends CacheInvokeAllAction[K, V, T] {
+case class CacheInvokeAllMapAction[K, V, T](
+  requestName: Expression[String],
+  cacheName: Expression[String],
+  map: Expression[Map[K, CacheEntryProcessor[K, V, T]]],
+  arguments: Seq[Expression[Any]],
+  checks: Seq[IgniteCheck[K, EntryProcessorResult[T]]],
+  next: Action,
+  ctx: ScenarioContext
+) extends CacheInvokeAllAction[K, V, T] {
 
   override val actionType: String = "invokeAll"
 
@@ -75,20 +78,20 @@ case class CacheInvokeAllMapAction[K, V, T](requestName: Expression[String],
       CommonParameters(resolvedRequestName, cacheApi, transactionApi) <- cacheParameters(session)
       resolvedMap <- map(session)
       resolvedArguments <- resolveArgs(session)
-    } yield
-      execute(session, resolvedRequestName, cacheApi, transactionApi, resolvedMap, resolvedArguments)
+    } yield execute(session, resolvedRequestName, cacheApi, transactionApi, resolvedMap, resolvedArguments)
   }
 }
 
-case class CacheInvokeAllSingleProcessorAction[K, V, T](requestName: Expression[String],
-                                                        cacheName: Expression[String],
-                                                        keys: Expression[Set[K]],
-                                                        processor: CacheEntryProcessor[K, V, T],
-                                                        arguments: Seq[Expression[Any]],
-                                                        checks: Seq[IgniteCheck[K, EntryProcessorResult[T]]],
-                                                        next: Action,
-                                                        ctx: ScenarioContext)
-  extends CacheInvokeAllAction[K, V, T] {
+case class CacheInvokeAllSingleProcessorAction[K, V, T](
+  requestName: Expression[String],
+  cacheName: Expression[String],
+  keys: Expression[Set[K]],
+  processor: CacheEntryProcessor[K, V, T],
+  arguments: Seq[Expression[Any]],
+  checks: Seq[IgniteCheck[K, EntryProcessorResult[T]]],
+  next: Action,
+  ctx: ScenarioContext
+) extends CacheInvokeAllAction[K, V, T] {
 
   override val actionType: String = "invokeAll"
 
@@ -98,7 +101,6 @@ case class CacheInvokeAllSingleProcessorAction[K, V, T](requestName: Expression[
       resolvedKeys <- keys(session)
       resolvedMap <- resolvedKeys.map(k => (k, processor)).toMap.success
       resolvedArguments <- resolveArgs(session)
-    } yield
-      execute(session, resolvedRequestName, cacheApi, transactionApi, resolvedMap, resolvedArguments)
+    } yield execute(session, resolvedRequestName, cacheApi, transactionApi, resolvedMap, resolvedArguments)
   }
 }

@@ -87,8 +87,10 @@ trait IgniteApi {
    * @param s Function to be called if operation is competed successfully.
    * @param f Function to be called if exception occurs.
    */
-  def getOrCreateCacheBySimpleConfig[K, V](name: String, cfg: SimpleCacheConfiguration)
-                                          (s: CacheApi[K, V] => Unit, f: Throwable => Unit = _ => ()): Unit
+  def getOrCreateCacheBySimpleConfig[K, V](name: String, cfg: SimpleCacheConfiguration)(
+    s: CacheApi[K, V] => Unit,
+    f: Throwable => Unit = _ => ()
+  ): Unit
 
   /**
    * Gets existing cache or creates new one with the provided Ignite (thin) Client cache configuration.
@@ -99,8 +101,9 @@ trait IgniteApi {
    * @param s Function to be called if operation is competed successfully.
    * @param f Function to be called if exception occurs.
    */
-  def getOrCreateCacheByClientConfiguration[K, V](cfg: ClientCacheConfiguration)
-                                                 (s: CacheApi[K, V] => Unit, f: Throwable => Unit = _ => ()): Unit
+  def getOrCreateCacheByClientConfiguration[K, V](
+    cfg: ClientCacheConfiguration
+  )(s: CacheApi[K, V] => Unit, f: Throwable => Unit = _ => ()): Unit
 
   /**
    * Gets existing cache or creates new one with the provided Ignite (thick) cache configuration.
@@ -111,8 +114,7 @@ trait IgniteApi {
    * @param s Function to be called if operation is competed successfully.
    * @param f Function to be called if exception occurs.
    */
-  def getOrCreateCacheByConfiguration[K, V](cfg: CacheConfiguration[K, V])
-                                           (s: CacheApi[K, V] => Unit, f: Throwable => Unit = _ => ()): Unit
+  def getOrCreateCacheByConfiguration[K, V](cfg: CacheConfiguration[K, V])(s: CacheApi[K, V] => Unit, f: Throwable => Unit = _ => ()): Unit
 
   /**
    * Closes the Ignite API.
@@ -138,8 +140,10 @@ trait IgniteApi {
    * @param s Function to be called if operation is competed successfully.
    * @param f Function to be called if exception occurs.
    */
-  def txStartEx(concurrency: TransactionConcurrency, isolation: TransactionIsolation)
-               (s: TransactionApi => Unit, f: Throwable => Unit = _ => ()): Unit
+  def txStartEx(concurrency: TransactionConcurrency, isolation: TransactionIsolation)(
+    s: TransactionApi => Unit,
+    f: Throwable => Unit = _ => ()
+  ): Unit
 
   /**
    * Starts the transaction with the provided concurrency, isolation timeout and transaction size.
@@ -151,8 +155,10 @@ trait IgniteApi {
    * @param s Function to be called if operation is competed successfully.
    * @param f Function to be called if exception occurs.
    */
-  def txStartEx2(concurrency: TransactionConcurrency, isolation: TransactionIsolation, timeout: Long, txSize: Int)
-                (s: TransactionApi => Unit, f: Throwable => Unit = _ => ()): Unit
+  def txStartEx2(concurrency: TransactionConcurrency, isolation: TransactionIsolation, timeout: Long, txSize: Int)(
+    s: TransactionApi => Unit,
+    f: Throwable => Unit = _ => ()
+  ): Unit
 
   /**
    * @return Instance of BinaryObjectBuilder
@@ -337,8 +343,10 @@ trait CacheApi[K, V] {
    * @param s Function to be called if operation is competed successfully.
    * @param f Function to be called if exception occurs.
    */
-  def invoke[T](key: K, entryProcessor: CacheEntryProcessor[K, V, T], arguments: Any*)
-               (s: Map[K, T] => Unit, f: Throwable => Unit = _ => ()): Unit
+  def invoke[T](key: K, entryProcessor: CacheEntryProcessor[K, V, T], arguments: Any*)(
+    s: Map[K, T] => Unit,
+    f: Throwable => Unit = _ => ()
+  ): Unit
 
   /**
    * Asynchronously invokes an [[CacheEntryProcessor]] against the entry specified by the provided key.
@@ -350,8 +358,10 @@ trait CacheApi[K, V] {
    * @param s Function to be called if operation is competed successfully.
    * @param f Function to be called if exception occurs.
    */
-  def invokeAsync[T](key: K, entryProcessor: CacheEntryProcessor[K, V, T], arguments: Any*)
-                    (s: Map[K, T] => Unit, f: Throwable => Unit = _ => ()): Unit
+  def invokeAsync[T](key: K, entryProcessor: CacheEntryProcessor[K, V, T], arguments: Any*)(
+    s: Map[K, T] => Unit,
+    f: Throwable => Unit = _ => ()
+  ): Unit
 
   /**
    * Invokes each EntryProcessor from map's values against the correspondent
@@ -363,8 +373,10 @@ trait CacheApi[K, V] {
    * @param s Function to be called if operation is competed successfully.
    * @param f Function to be called if exception occurs.
    */
-  def invokeAll[T](map: Map[K, CacheEntryProcessor[K, V, T]], arguments: Any*)
-               (s: Map[K, EntryProcessorResult[T]] => Unit, f: Throwable => Unit = _ => ()): Unit
+  def invokeAll[T](map: Map[K, CacheEntryProcessor[K, V, T]], arguments: Any*)(
+    s: Map[K, EntryProcessorResult[T]] => Unit,
+    f: Throwable => Unit = _ => ()
+  ): Unit
 
   /**
    * Asynchronously invokes each EntryProcessor from map's values against the correspondent
@@ -376,8 +388,10 @@ trait CacheApi[K, V] {
    * @param s Function to be called if operation is competed successfully.
    * @param f Function to be called if exception occurs.
    */
-  def invokeAllAsync[T](map: Map[K, CacheEntryProcessor[K, V, T]], arguments: Any*)
-                    (s: Map[K, EntryProcessorResult[T]] => Unit, f: Throwable => Unit = _ => ()): Unit
+  def invokeAllAsync[T](map: Map[K, CacheEntryProcessor[K, V, T]], arguments: Any*)(
+    s: Map[K, EntryProcessorResult[T]] => Unit,
+    f: Throwable => Unit = _ => ()
+  ): Unit
 
   /**
    * Acquires lock associated with a passed key.
@@ -443,7 +457,6 @@ object IgniteApi extends CompletionSupport with StrictLogging {
   implicit val ec: ExecutionContext = scala.concurrent.ExecutionContext.global
 
   /**
-   *
    * @param protocol Gatling Ignite protocol.
    * @param session Gatling session.
    * @param s Function to be called if operation is competed successfully.
@@ -509,7 +522,7 @@ trait CompletionSupport {
   implicit val ec: ExecutionContext
 
   def withCompletion[T, U](fut: Future[T])(s: T => U, f: Throwable => U): Unit = fut.onComplete {
-    case Success(value) => s(value)
+    case Success(value)     => s(value)
     case Failure(exception) => f(exception)
   }
 }

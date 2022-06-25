@@ -25,12 +25,13 @@ import io.gatling.core.session.Session
 import io.gatling.core.structure.ScenarioContext
 import org.apache.ignite.gatling.action.CacheAction
 
-case class CacheUnlockAction[K, V](requestName: Expression[String],
-                                   cacheName: Expression[String],
-                                   lock: Expression[Lock],
-                                   next: Action,
-                                   ctx: ScenarioContext
-                                  ) extends CacheAction[K, V] {
+case class CacheUnlockAction[K, V](
+  requestName: Expression[String],
+  cacheName: Expression[String],
+  lock: Expression[Lock],
+  next: Action,
+  ctx: ScenarioContext
+) extends CacheAction[K, V] {
 
   override val actionType: String = "unlock"
 

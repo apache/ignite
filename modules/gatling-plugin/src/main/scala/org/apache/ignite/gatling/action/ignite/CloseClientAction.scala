@@ -24,10 +24,7 @@ import io.gatling.core.structure.ScenarioContext
 import org.apache.ignite.gatling.action.IgniteAction
 import org.apache.ignite.gatling.protocol.IgniteProtocol.IGNITE_API_SESSION_KEY
 
-case class CloseClientAction(requestName: Expression[String],
-                             next: Action,
-                             ctx: ScenarioContext
-                            ) extends IgniteAction {
+case class CloseClientAction(requestName: Expression[String], next: Action, ctx: ScenarioContext) extends IgniteAction {
 
   override val actionType: String = "closeClient"
 

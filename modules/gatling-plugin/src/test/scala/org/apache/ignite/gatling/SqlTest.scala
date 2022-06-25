@@ -29,17 +29,18 @@ import org.apache.ignite.gatling.Predef._
 import org.apache.ignite.gatling.simulation.IgniteSupport
 import org.junit.Test
 
-
 class SqlTest extends AbstractGatlingTest {
   val cache = "TEST-CACHE"
 
   override protected def beforeTest(): Unit = {
     super.beforeTest()
     val ignite = grid(0)
-    ignite.createCache(new CacheConfiguration[Int, Int]()
-      .setName(cache)
-      .setCacheMode(PARTITIONED)
-      .setAtomicityMode(TRANSACTIONAL))
+    ignite.createCache(
+      new CacheConfiguration[Int, Int]()
+        .setName(cache)
+        .setCacheMode(PARTITIONED)
+        .setAtomicityMode(TRANSACTIONAL)
+    )
   }
 
   @Test
@@ -63,19 +64,20 @@ class SqlSimulation extends Simulation with IgniteSupport with StrictLogging {
       create(cache).backups(1) as "Create cache",
       sql(cache, "CREATE TABLE City (id int primary key, name varchar, region varchar)") as "Create table",
       sql(cache, "INSERT INTO City(id, name, region) VALUES(?, ?, ?)").args("#{key}", _ => UUID.randomUUID().toString, "R") as "Insert",
-      sql(cache, "SELECT * FROM City WHERE id = ?").args(keyExpression)
-      .check(
-        simpleSqlCheck((m, s) => {
-          val id : Int = m.head.head.asInstanceOf[Int]
-          id == s("key").as[Int]
-        }),
-        allSqlResults.transform(r => r.head).saveAs("firstRow")
-      ) as "Select"
+      sql(cache, "SELECT * FROM City WHERE id = ?")
+        .args(keyExpression)
+        .check(
+          simpleSqlCheck { (m, s) =>
+            val id: Int = m.head.head.asInstanceOf[Int]
+            id == s("key").as[Int]
+          },
+          allSqlResults.transform(r => r.head).saveAs("firstRow")
+        ) as "Select"
     )
-    .exec {
-      session =>
-        logger.info(session.toString)
-        session }
+    .exec { session =>
+      logger.info(session.toString)
+      session
+    }
     .exec(close as "Close client")
 
   setUp(scn.inject(atOnceUsers(1))).protocols(protocol).assertions(global.failedRequests.count.is(0))

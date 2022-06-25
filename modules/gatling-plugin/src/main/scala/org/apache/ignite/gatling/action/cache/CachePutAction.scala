@@ -23,13 +23,14 @@ import io.gatling.core.session.Session
 import io.gatling.core.structure.ScenarioContext
 import org.apache.ignite.gatling.action.CacheAction
 
-case class CachePutAction[K, V](requestName: Expression[String],
-                                cacheName: Expression[String],
-                                pair: Expression[(K, V)],
-                                override val keepBinary: Boolean,
-                                next: Action,
-                                ctx: ScenarioContext
-                               ) extends CacheAction[K, V] {
+case class CachePutAction[K, V](
+  requestName: Expression[String],
+  cacheName: Expression[String],
+  pair: Expression[(K, V)],
+  override val keepBinary: Boolean,
+  next: Action,
+  ctx: ScenarioContext
+) extends CacheAction[K, V] {
 
   override val actionType: String = "put"
 

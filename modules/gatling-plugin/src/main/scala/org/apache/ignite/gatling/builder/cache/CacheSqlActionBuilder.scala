@@ -27,12 +27,14 @@ import org.apache.ignite.gatling.SqlCheck
 import org.apache.ignite.gatling.action.cache.CacheSqlAction
 import org.apache.ignite.gatling.builder.IgniteActionBuilder
 
-case class CacheSqlActionBuilder(cacheName: Expression[String],
-                                 sql: Expression[String],
-                                 argsList: List[Expression[Any]] = List.empty,
-                                 partitionsList: Expression[List[Int]] = _ => List.empty.success,
-                                 checks: Seq[SqlCheck] = Seq.empty,
-                                 requestName: Expression[String] = EmptyStringExpressionSuccess) extends IgniteActionBuilder {
+case class CacheSqlActionBuilder(
+  cacheName: Expression[String],
+  sql: Expression[String],
+  argsList: List[Expression[Any]] = List.empty,
+  partitionsList: Expression[List[Int]] = _ => List.empty.success,
+  checks: Seq[SqlCheck] = Seq.empty,
+  requestName: Expression[String] = EmptyStringExpressionSuccess
+) extends IgniteActionBuilder {
 
   def check(newChecks: SqlCheck*): CacheSqlActionBuilder = this.copy(checks = newChecks)
 
@@ -40,8 +42,8 @@ case class CacheSqlActionBuilder(cacheName: Expression[String],
 
   def partitions(newPartitions: Expression[List[Int]]): CacheSqlActionBuilder = this.copy(partitionsList = newPartitions)
 
-  def as(requestName: Expression[String]): ActionBuilder = this.copy(requestName=requestName)
+  def as(requestName: Expression[String]): ActionBuilder = this.copy(requestName = requestName)
 
-  override def build(ctx: ScenarioContext, next: Action): Action = CacheSqlAction(
-    requestName, cacheName, sql, argsList, partitionsList, checks, next, ctx)
+  override def build(ctx: ScenarioContext, next: Action): Action =
+    CacheSqlAction(requestName, cacheName, sql, argsList, partitionsList, checks, next, ctx)
 }

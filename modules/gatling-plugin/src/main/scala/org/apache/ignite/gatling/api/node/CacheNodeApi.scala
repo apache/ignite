@@ -39,10 +39,10 @@ import org.apache.ignite.gatling.api.CacheApi
  * @tparam K Type of the cache key.
  * @tparam V Type of the cache value.
  */
-case class CacheNodeApi[K, V](wrapped: IgniteCache[K, V])(implicit val ec: ExecutionContext)
-  extends CacheApi[K, V] with StrictLogging {
+case class CacheNodeApi[K, V](wrapped: IgniteCache[K, V])(implicit val ec: ExecutionContext) extends CacheApi[K, V] with StrictLogging {
 
-  /** @inheritdoc
+  /**
+   * @inheritdoc
    * @param key @inheritdoc
    * @param value @inheritdoc
    * @param s @inheritdoc
@@ -59,7 +59,8 @@ case class CacheNodeApi[K, V](wrapped: IgniteCache[K, V])(implicit val ec: Execu
 
   override def putAsync(key: K, value: V)(s: Unit => Unit, f: Throwable => Unit): Unit = {
     logger.debug("async put")
-    wrapped.putAsync(key, value)
+    wrapped
+      .putAsync(key, value)
       .listen(future =>
         Try {
           future.get()
@@ -80,7 +81,8 @@ case class CacheNodeApi[K, V](wrapped: IgniteCache[K, V])(implicit val ec: Execu
 
   override def putAllAsync(map: Map[K, V])(s: Unit => Unit, f: Throwable => Unit): Unit = {
     logger.debug("async putAll")
-    wrapped.putAllAsync(map.asJava)
+    wrapped
+      .putAllAsync(map.asJava)
       .listen(future =>
         Try {
           future.get()
@@ -101,7 +103,8 @@ case class CacheNodeApi[K, V](wrapped: IgniteCache[K, V])(implicit val ec: Execu
 
   override def getAsync(key: K)(s: Map[K, V] => Unit, f: Throwable => Unit): Unit = {
     logger.debug("async get")
-    wrapped.getAsync(key)
+    wrapped
+      .getAsync(key)
       .listen(future =>
         Try {
           future.get()
@@ -122,7 +125,8 @@ case class CacheNodeApi[K, V](wrapped: IgniteCache[K, V])(implicit val ec: Execu
 
   override def getAndRemoveAsync(key: K)(s: Map[K, V] => Unit, f: Throwable => Unit): Unit = {
     logger.debug("async getAndRemove")
-    wrapped.getAndRemoveAsync(key)
+    wrapped
+      .getAndRemoveAsync(key)
       .listen(future =>
         Try {
           future.get()
@@ -143,7 +147,8 @@ case class CacheNodeApi[K, V](wrapped: IgniteCache[K, V])(implicit val ec: Execu
 
   override def getAndPutAsync(key: K, value: V)(s: Map[K, V] => Unit, f: Throwable => Unit): Unit = {
     logger.debug("async getAndPut")
-    wrapped.getAndPutAsync(key, value)
+    wrapped
+      .getAndPutAsync(key, value)
       .listen(future =>
         Try {
           future.get()
@@ -164,7 +169,8 @@ case class CacheNodeApi[K, V](wrapped: IgniteCache[K, V])(implicit val ec: Execu
 
   override def getAllAsync(keys: Set[K])(s: Map[K, V] => Unit, f: Throwable => Unit): Unit = {
     logger.debug("async getAll")
-    wrapped.getAllAsync(keys.asJava)
+    wrapped
+      .getAllAsync(keys.asJava)
       .listen(future =>
         Try {
           future.get()
@@ -185,7 +191,8 @@ case class CacheNodeApi[K, V](wrapped: IgniteCache[K, V])(implicit val ec: Execu
 
   override def removeAsync(key: K)(s: Unit => Unit, f: Throwable => Unit): Unit = {
     logger.debug("async remove")
-    wrapped.removeAsync(key)
+    wrapped
+      .removeAsync(key)
       .listen(future =>
         Try {
           future.get()
@@ -206,7 +213,8 @@ case class CacheNodeApi[K, V](wrapped: IgniteCache[K, V])(implicit val ec: Execu
 
   override def removeAllAsync(keys: Set[K])(s: Unit => Unit, f: Throwable => Unit): Unit = {
     logger.debug("async removeAll")
-    wrapped.removeAllAsync(keys.asJava)
+    wrapped
+      .removeAllAsync(keys.asJava)
       .listen(future =>
         Try {
           future.get()
@@ -216,8 +224,10 @@ case class CacheNodeApi[K, V](wrapped: IgniteCache[K, V])(implicit val ec: Execu
       )
   }
 
-  override def invoke[T](key: K, entryProcessor: CacheEntryProcessor[K, V, T], arguments: Any*)
-                        (s: Map[K, T] => Unit, f: Throwable => Unit): Unit = {
+  override def invoke[T](key: K, entryProcessor: CacheEntryProcessor[K, V, T], arguments: Any*)(
+    s: Map[K, T] => Unit,
+    f: Throwable => Unit
+  ): Unit = {
     logger.debug("sync invoke")
     Try {
       wrapped.invoke[T](key, entryProcessor, arguments)
@@ -226,10 +236,13 @@ case class CacheNodeApi[K, V](wrapped: IgniteCache[K, V])(implicit val ec: Execu
       .fold(f, s)
   }
 
-  override def invokeAsync[T](key: K, entryProcessor: CacheEntryProcessor[K, V, T], arguments: Any*)
-                             (s: Map[K, T] => Unit, f: Throwable => Unit): Unit = {
+  override def invokeAsync[T](key: K, entryProcessor: CacheEntryProcessor[K, V, T], arguments: Any*)(
+    s: Map[K, T] => Unit,
+    f: Throwable => Unit
+  ): Unit = {
     logger.debug("async invoke")
-    wrapped.invokeAsync(key, entryProcessor, arguments)
+    wrapped
+      .invokeAsync(key, entryProcessor, arguments)
       .listen(future =>
         Try {
           future.get()
@@ -239,8 +252,10 @@ case class CacheNodeApi[K, V](wrapped: IgniteCache[K, V])(implicit val ec: Execu
       )
   }
 
-  override def invokeAll[T](map: Map[K, CacheEntryProcessor[K, V, T]], arguments: Any*)
-                        (s: Map[K, EntryProcessorResult[T]] => Unit, f: Throwable => Unit): Unit = {
+  override def invokeAll[T](
+    map: Map[K, CacheEntryProcessor[K, V, T]],
+    arguments: Any*
+  )(s: Map[K, EntryProcessorResult[T]] => Unit, f: Throwable => Unit): Unit = {
     logger.debug("sync invokeAll")
     Try {
       wrapped.invokeAll[T](map.asJava, arguments)
@@ -249,10 +264,13 @@ case class CacheNodeApi[K, V](wrapped: IgniteCache[K, V])(implicit val ec: Execu
       .fold(f, s)
   }
 
-  override def invokeAllAsync[T](map: Map[K, CacheEntryProcessor[K, V, T]], arguments: Any*)
-                             (s: Map[K, EntryProcessorResult[T]] => Unit, f: Throwable => Unit): Unit = {
+  override def invokeAllAsync[T](
+    map: Map[K, CacheEntryProcessor[K, V, T]],
+    arguments: Any*
+  )(s: Map[K, EntryProcessorResult[T]] => Unit, f: Throwable => Unit): Unit = {
     logger.debug("async invokeAll")
-    wrapped.invokeAllAsync(map.asJava, arguments)
+    wrapped
+      .invokeAllAsync(map.asJava, arguments)
       .listen(future =>
         Try {
           future.get()
@@ -281,8 +299,11 @@ case class CacheNodeApi[K, V](wrapped: IgniteCache[K, V])(implicit val ec: Execu
   override def sql(query: SqlFieldsQuery)(s: List[List[Any]] => Unit, f: Throwable => Unit): Unit = {
     logger.debug("sync sql")
     Try {
-      wrapped.query(query)
-        .getAll.asScala.toList
+      wrapped
+        .query(query)
+        .getAll
+        .asScala
+        .toList
         .map(_.asScala.toList)
     }.fold(f, s)
   }

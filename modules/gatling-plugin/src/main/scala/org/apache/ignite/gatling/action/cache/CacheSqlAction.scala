@@ -26,15 +26,16 @@ import org.apache.ignite.cache.query.SqlFieldsQuery
 import org.apache.ignite.gatling.SqlCheck
 import org.apache.ignite.gatling.action.CacheAction
 
-case class CacheSqlAction[K, V](requestName: Expression[String],
-                                cacheName: Expression[String],
-                                sql: Expression[String],
-                                args: Seq[Expression[Any]],
-                                partitions: Expression[List[Int]],
-                                checks: Seq[SqlCheck],
-                                next: Action,
-                                ctx: ScenarioContext
-                               ) extends CacheAction[K, V] {
+case class CacheSqlAction[K, V](
+  requestName: Expression[String],
+  cacheName: Expression[String],
+  sql: Expression[String],
+  args: Seq[Expression[Any]],
+  partitions: Expression[List[Int]],
+  checks: Seq[SqlCheck],
+  next: Action,
+  ctx: ScenarioContext
+) extends CacheAction[K, V] {
 
   override val actionType: String = "sql"
 

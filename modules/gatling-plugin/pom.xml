@@ -174,19 +174,6 @@
                 <groupId>com.diffplug.spotless</groupId>
                 <artifactId>spotless-maven-plugin</artifactId>
                 <version>2.22.8</version>
-                <configuration>
-                    <scala>
-                        <scalafmt/>
-                        <licenseHeader>
-                            <file>${project.basedir}/checkstyle/license-header</file>
-                            <delimiter>package</delimiter>
-                        </licenseHeader>
-                    </scala>
-                    <scalafmt>
-                        <version>3.5.8</version>
-                        <file>${project.basedir}/.scalafmt.conf</file>
-                    </scalafmt>
-                </configuration>
                 <dependencies>
                     <dependency>
                         <groupId>org.scalameta</groupId>
@@ -194,6 +181,18 @@
                         <version>3.5.8</version>
                     </dependency>
                 </dependencies>
+                <configuration>
+                    <scala>
+                        <scalafmt>
+                            <version>3.5.8</version>
+                            <file>${project.basedir}/checkstyle/.scalafmt.conf</file>
+                        </scalafmt>
+                        <licenseHeader>
+                            <file>${project.basedir}/checkstyle/license-header</file>
+                            <delimiter>package</delimiter>
+                        </licenseHeader>
+                    </scala>
+                </configuration>
             </plugin>
         </plugins>
     </build>

@@ -30,11 +30,8 @@ import org.apache.ignite.gatling.protocol.IgniteProtocol.TRANSACTION_API_SESSION
 import org.apache.ignite.transactions.TransactionConcurrency
 import org.apache.ignite.transactions.TransactionIsolation
 
-case class TransactionStartAction(requestName: Expression[String],
-                                  params: TransactionParameters,
-                                  next: Action,
-                                  ctx: ScenarioContext
-                                 ) extends IgniteAction {
+case class TransactionStartAction(requestName: Expression[String], params: TransactionParameters, next: Action, ctx: ScenarioContext)
+    extends IgniteAction {
 
   override val actionType: String = "txStart"
 
@@ -48,18 +45,25 @@ case class TransactionStartAction(requestName: Expression[String],
 
       val func = txStart(igniteApi, params.concurrency, params.isolation, resolvedTimeout, resolvedTxSize)
 
-      call(func, resolvedRequestName, session, (session, transactionApi: Option[TransactionApi]) =>
-        transactionApi.map(transactionApi => session.set(TRANSACTION_API_SESSION_KEY, transactionApi))
-          .getOrElse(session)
+      call(
+        func,
+        resolvedRequestName,
+        session,
+        (session, transactionApi: Option[TransactionApi]) =>
+          transactionApi
+            .map(transactionApi => session.set(TRANSACTION_API_SESSION_KEY, transactionApi))
+            .getOrElse(session)
       )
     }
   }
 
-  private def txStart(igniteApi: IgniteApi,
-                      concurrency: Option[TransactionConcurrency],
-                      isolation: Option[TransactionIsolation],
-                      timeout: Option[Long],
-                      txSize: Option[Int]): (TransactionApi => Unit, Throwable => Unit) => Unit = {
+  private def txStart(
+    igniteApi: IgniteApi,
+    concurrency: Option[TransactionConcurrency],
+    isolation: Option[TransactionIsolation],
+    timeout: Option[Long],
+    txSize: Option[Int]
+  ): (TransactionApi => Unit, Throwable => Unit) => Unit =
     if (isolation.isDefined && concurrency.isDefined) {
       if (timeout.isDefined) {
         igniteApi.txStartEx2(params.concurrency.get, params.isolation.get, timeout.get, txSize.getOrElse(0))
@@ -69,5 +73,4 @@ case class TransactionStartAction(requestName: Expression[String],
     } else {
       igniteApi.txStart()
     }
-  }
 }

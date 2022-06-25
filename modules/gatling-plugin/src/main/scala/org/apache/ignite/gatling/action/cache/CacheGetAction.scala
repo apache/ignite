@@ -24,15 +24,15 @@ import io.gatling.core.structure.ScenarioContext
 import org.apache.ignite.gatling.IgniteCheck
 import org.apache.ignite.gatling.action.CacheAction
 
-
-case class CacheGetAction[K, V](requestName: Expression[String],
-                                cacheName: Expression[String],
-                                key: Expression[K],
-                                override val keepBinary: Boolean,
-                                checks: Seq[IgniteCheck[K, V]],
-                                next: Action,
-                                ctx: ScenarioContext
-                               ) extends CacheAction[K, V] {
+case class CacheGetAction[K, V](
+  requestName: Expression[String],
+  cacheName: Expression[String],
+  key: Expression[K],
+  override val keepBinary: Boolean,
+  checks: Seq[IgniteCheck[K, V]],
+  next: Action,
+  ctx: ScenarioContext
+) extends CacheAction[K, V] {
 
   override val actionType: String = "get"
 

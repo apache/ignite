@@ -43,8 +43,7 @@ trait Transactions {
 
 case class TransactionBuilderBase(requestName: Expression[String]) {
   def apply(concurrency: TransactionConcurrency, isolation: TransactionIsolation): TransactionBuilderTimeoutStep =
-    TransactionBuilderTimeoutStep(requestName,
-      TransactionParameters(concurrency = Some(concurrency), isolation = Some(isolation)))
+    TransactionBuilderTimeoutStep(requestName, TransactionParameters(concurrency = Some(concurrency), isolation = Some(isolation)))
 
   def apply(transactionChain: ChainBuilder*): ChainBuilder =
     exec(TransactionStartBuilder(requestName, TransactionParameters()))
@@ -52,8 +51,7 @@ case class TransactionBuilderBase(requestName: Expression[String]) {
       .exec(TransactionEndBuilder(requestName))
 }
 
-case class TransactionBuilderTimeoutStep(requestName: Expression[String],
-                                         params: TransactionParameters) {
+case class TransactionBuilderTimeoutStep(requestName: Expression[String], params: TransactionParameters) {
   def timeout(timeout: Expression[Long]): TransactionBuilderTimeoutStep =
     TransactionBuilderTimeoutStep(requestName, params.copy(timeout = Some(timeout)))
 
@@ -66,27 +64,28 @@ case class TransactionBuilderTimeoutStep(requestName: Expression[String],
       .exec(TransactionEndBuilder(requestName))
 }
 
-case class TransactionParameters(concurrency: Option[TransactionConcurrency] = None,
-                                 isolation: Option[TransactionIsolation] = None,
-                                 timeout: Option[Expression[Long]] = None,
-                                 txSize: Option[Expression[Int]] = None)
+case class TransactionParameters(
+  concurrency: Option[TransactionConcurrency] = None,
+  isolation: Option[TransactionIsolation] = None,
+  timeout: Option[Expression[Long]] = None,
+  txSize: Option[Expression[Int]] = None
+)
 
 case class TransactionCommitActionBuilder(requestName: Expression[String] = EmptyStringExpressionSuccess) extends IgniteActionBuilder {
-  def as(requestName: Expression[String]): ActionBuilder = this.copy(requestName=requestName)
+  def as(requestName: Expression[String]): ActionBuilder = this.copy(requestName = requestName)
 
   override def build(ctx: ScenarioContext, next: Action): TransactionCommitAction =
     TransactionCommitAction(requestName, next, ctx)
 }
 
 case class TransactionRollbackActionBuilder(requestName: Expression[String] = EmptyStringExpressionSuccess) extends IgniteActionBuilder {
-  def as(requestName: Expression[String]): ActionBuilder = this.copy(requestName=requestName)
+  def as(requestName: Expression[String]): ActionBuilder = this.copy(requestName = requestName)
 
   override def build(ctx: ScenarioContext, next: Action): TransactionRollbackAction =
     TransactionRollbackAction(requestName, next, ctx)
 }
 
-case class TransactionStartBuilder(requestName: Expression[String],
-                                   params: TransactionParameters) extends IgniteActionBuilder {
+case class TransactionStartBuilder(requestName: Expression[String], params: TransactionParameters) extends IgniteActionBuilder {
   override def build(ctx: ScenarioContext, next: Action): Action =
     TransactionStartAction(requestName, TransactionParameters(), next, ctx)
 }

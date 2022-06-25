@@ -29,8 +29,8 @@ import org.apache.ignite.configuration.CacheConfiguration
 import org.apache.ignite.gatling.action.ignite
 import org.apache.ignite.gatling.builder.IgniteActionBuilder
 
-case class CreateCacheActionBuilderBase[K, V](cacheName: Expression[String],
-                                              requestName: Expression[String] = EmptyStringExpressionSuccess) extends IgniteActionBuilder {
+case class CreateCacheActionBuilderBase[K, V](cacheName: Expression[String], requestName: Expression[String] = EmptyStringExpressionSuccess)
+    extends IgniteActionBuilder {
   def backups(newValue: Integer): CreateCacheActionBuilderSimpleConfigStep =
     CreateCacheActionBuilderSimpleConfigStep(requestName, cacheName).copy(backups = newValue)
 
@@ -49,14 +49,16 @@ case class CreateCacheActionBuilderBase[K, V](cacheName: Expression[String],
   override def build(ctx: ScenarioContext, next: Action): Action =
     ignite.CreateCacheAction(requestName, cacheName, Configuration(), next, ctx)
 
-  def as(name: Expression[String]): ActionBuilder = this.copy(requestName=name)
+  def as(name: Expression[String]): ActionBuilder = this.copy(requestName = name)
 }
 
-case class CreateCacheActionBuilderSimpleConfigStep(requestName: Expression[String],
-                                                    cacheName: Expression[String],
-                                                    backups: Integer = 0,
-                                                    atomicity: CacheAtomicityMode = CacheAtomicityMode.ATOMIC,
-                                                    mode: CacheMode = CacheMode.PARTITIONED) extends IgniteActionBuilder {
+case class CreateCacheActionBuilderSimpleConfigStep(
+  requestName: Expression[String],
+  cacheName: Expression[String],
+  backups: Integer = 0,
+  atomicity: CacheAtomicityMode = CacheAtomicityMode.ATOMIC,
+  mode: CacheMode = CacheMode.PARTITIONED
+) extends IgniteActionBuilder {
   def backups(newValue: Integer): CreateCacheActionBuilderSimpleConfigStep =
     this.copy(backups = newValue)
 
@@ -67,25 +69,30 @@ case class CreateCacheActionBuilderSimpleConfigStep(requestName: Expression[Stri
     this.copy(mode = newValue)
 
   def createCacheActionBuilder[K, V]: CreateCacheActionBuilder[K, V] =
-    CreateCacheActionBuilder[K, V](requestName, cacheName, Configuration(simpleCfg = Some(SimpleCacheConfiguration(backups, atomicity, mode))))
+    CreateCacheActionBuilder[K, V](
+      requestName,
+      cacheName,
+      Configuration(simpleCfg = Some(SimpleCacheConfiguration(backups, atomicity, mode)))
+    )
 
   override def build(ctx: ScenarioContext, next: Action): Action =
     createCacheActionBuilder.build(ctx, next)
 
-  def as(name: Expression[String]): ActionBuilder = this.copy(requestName=name)
+  def as(name: Expression[String]): ActionBuilder = this.copy(requestName = name)
 }
 
 case class SimpleCacheConfiguration(backups: Integer, atomicity: CacheAtomicityMode, mode: CacheMode)
 
-case class Configuration[K, V](clientCacheCfg: Option[ClientCacheConfiguration] = None,
-                               cacheCfg: Option[CacheConfiguration[K, V]] = None,
-                               simpleCfg: Option[SimpleCacheConfiguration] = None)
+case class Configuration[K, V](
+  clientCacheCfg: Option[ClientCacheConfiguration] = None,
+  cacheCfg: Option[CacheConfiguration[K, V]] = None,
+  simpleCfg: Option[SimpleCacheConfiguration] = None
+)
 
-case class CreateCacheActionBuilder[K, V](requestName: Expression[String],
-                                          cacheName: Expression[String],
-                                          config: Configuration[K, V]) extends IgniteActionBuilder {
+case class CreateCacheActionBuilder[K, V](requestName: Expression[String], cacheName: Expression[String], config: Configuration[K, V])
+    extends IgniteActionBuilder {
   override def build(ctx: ScenarioContext, next: Action): Action =
     ignite.CreateCacheAction(requestName, cacheName, config, next, ctx)
 
-  def as(requestName: Expression[String]): ActionBuilder = this.copy(requestName=requestName)
+  def as(requestName: Expression[String]): ActionBuilder = this.copy(requestName = requestName)
 }

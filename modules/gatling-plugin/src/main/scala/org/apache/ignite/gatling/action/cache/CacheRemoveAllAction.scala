@@ -23,12 +23,13 @@ import io.gatling.core.session.Session
 import io.gatling.core.structure.ScenarioContext
 import org.apache.ignite.gatling.action.CacheAction
 
-case class CacheRemoveAllAction[K, V](requestName: Expression[String],
-                                      cacheName: Expression[String],
-                                      keys: Expression[Set[K]],
-                                      next: Action,
-                                      ctx: ScenarioContext
-                                     ) extends CacheAction[K, V] {
+case class CacheRemoveAllAction[K, V](
+  requestName: Expression[String],
+  cacheName: Expression[String],
+  keys: Expression[Set[K]],
+  next: Action,
+  ctx: ScenarioContext
+) extends CacheAction[K, V] {
 
   override val actionType: String = "removeAll"
 

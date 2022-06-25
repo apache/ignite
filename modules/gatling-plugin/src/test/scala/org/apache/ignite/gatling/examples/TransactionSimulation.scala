@@ -32,16 +32,12 @@ import org.apache.ignite.gatling.Predef._
 import org.apache.ignite.gatling.Predef.allResults
 import org.apache.ignite.gatling.protocol.IgniteProtocol
 
-
 class TransactionSimulation extends Simulation with StrictLogging {
 
   private val key = "key"
   private val value = "value"
   val c = new AtomicInteger(0)
-  val feeder: Feeder[Int] = Iterator.continually(Map(
-    key -> c.incrementAndGet(),
-    value -> c.incrementAndGet()))
-
+  val feeder: Feeder[Int] = Iterator.continually(Map(key -> c.incrementAndGet(), value -> c.incrementAndGet()))
 
   private val cache = "TEST-CACHE"
 
@@ -49,35 +45,37 @@ class TransactionSimulation extends Simulation with StrictLogging {
     .exec(get[Int, Any](cache, s"#{$key}"))
 
   val commitTx: ChainBuilder =
-    tx(PESSIMISTIC, READ_COMMITTED).timeout(3000L).txSize(8) (
-      exec(put[Int, Int](cache, s"#{$key}", s"#{$value}"))
-      .exec(commit)
-      .exec(get[Int, Any](cache, s"#{$key}")
-        .check(
-          allResults[Int, Any].saveAs("C"),
-          simpleCheck((m, session) => {
-            m(session(key).as[Int]) == session(value).as[Int]
-          })
-        )
+    tx(PESSIMISTIC, READ_COMMITTED)
+      .timeout(3000L)
+      .txSize(8)(
+        exec(put[Int, Int](cache, s"#{$key}", s"#{$value}"))
+          .exec(commit)
+          .exec(
+            get[Int, Any](cache, s"#{$key}")
+              .check(
+                allResults[Int, Any].saveAs("C"),
+                simpleCheck((m, session) => m(session(key).as[Int]) == session(value).as[Int])
+              )
+          )
+          .exec { session => logger.info(session.toString); session }
       )
-      .exec { session => logger.info(session.toString); session }
-    )
 
   val rollbackTx: ChainBuilder =
     tx(OPTIMISTIC, REPEATABLE_READ)(
       exec(put[Int, Int](cache, s"#{$key}", s"#{$value}"))
-      .exec(rollback)
-      .exec(get[Int, Any](cache, s"#{$key}")
-        .check(
-          allResults[Int, Any].saveAs("R"),
-          simpleCheck((m, session) => {
-            logger.info(m.toString)
-            m(session(key).as[Int]) == null
-          })
+        .exec(rollback)
+        .exec(
+          get[Int, Any](cache, s"#{$key}")
+            .check(
+              allResults[Int, Any].saveAs("R"),
+              simpleCheck { (m, session) =>
+                logger.info(m.toString)
+                m(session(key).as[Int]) == null
+              }
+            )
         )
-      )
-      .exec { session => logger.info(session.toString); session }
-  )
+        .exec { session => logger.info(session.toString); session }
+    )
   val scn: ScenarioBuilder = scenario("Basic")
     .feed(feeder)
     .exec(start)
@@ -85,8 +83,8 @@ class TransactionSimulation extends Simulation with StrictLogging {
     .exec(rollbackTx)
     .exec(commitTx)
     .exec { session =>
-        logger.info(session.toString)
-        session
+      logger.info(session.toString)
+      session
     }
     .exec(close)
 
@@ -105,6 +103,6 @@ class TransactionSimulation extends Simulation with StrictLogging {
       constantUsersPerSec(100) during 10
     )
   )
-  .protocols(protocol)
-  .maxDuration(600.seconds)
+    .protocols(protocol)
+    .maxDuration(600.seconds)
 }

@@ -24,19 +24,19 @@ import io.gatling.core.session.Session
 import org.apache.ignite.gatling.api.IgniteApi
 import org.apache.ignite.gatling.protocol.IgniteProtocol.IGNITE_API_SESSION_KEY
 
-case class IgniteComponents(coreComponents: CoreComponents,
-                            igniteProtocol: IgniteProtocol,
-                            igniteApi: Option[IgniteApi] = None) extends ProtocolComponents with StrictLogging {
+case class IgniteComponents(coreComponents: CoreComponents, igniteProtocol: IgniteProtocol, igniteApi: Option[IgniteApi] = None)
+    extends ProtocolComponents
+    with StrictLogging {
 
-  override def onStart: Session => Session = session => {
+  override def onStart: Session => Session = session =>
     igniteApi
       .map(api => session.set(IGNITE_API_SESSION_KEY, api))
       .getOrElse(session)
-  }
 
   override def onExit: Session => Unit = session =>
     if (igniteApi.isEmpty) {
-      session(IGNITE_API_SESSION_KEY).asOption[IgniteApi]
+      session(IGNITE_API_SESSION_KEY)
+        .asOption[IgniteApi]
         .foreach(_.close()(_ => (), _ => ()))
     }
 }

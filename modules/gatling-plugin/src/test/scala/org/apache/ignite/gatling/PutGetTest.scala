@@ -32,10 +32,12 @@ class PutGetTest extends AbstractGatlingTest {
   override protected def beforeTest(): Unit = {
     super.beforeTest()
     val ignite = grid(0)
-    ignite.createCache(new CacheConfiguration[Int, Int]()
-      .setName(cache)
-      .setCacheMode(PARTITIONED)
-      .setAtomicityMode(TRANSACTIONAL))
+    ignite.createCache(
+      new CacheConfiguration[Int, Int]()
+        .setName(cache)
+        .setCacheMode(PARTITIONED)
+        .setAtomicityMode(TRANSACTIONAL)
+    )
   }
 
   @Test
@@ -57,18 +59,20 @@ class PutGetSimulation extends Simulation with IgniteSupport with StrictLogging 
   private val scn = scenario("Basic")
     .feed(feeder)
     .exec(start as "start")
-    .exec(create(cache) backups 1  atomicity ATOMIC mode PARTITIONED as "create")
+    .exec(create(cache) backups 1 atomicity ATOMIC mode PARTITIONED as "create")
     .exec(put[Int, Int](cache, "#{key}", "#{value}") as "put")
-    .exec(get[Int, Any](cache, key = minusTwo)
-      check allResults[Int, Any].transform(r => r(minusTwo)).isNull as "get absent")
-    .exec(session => {
+    .exec(
+      get[Int, Any](cache, key = minusTwo)
+        check allResults[Int, Any].transform(r => r(minusTwo)).isNull as "get absent"
+    )
+    .exec { session =>
       logger.info(session.toString)
       session
-    })
-    .exec(get[Int, Int](cache, key = "#{key}")
-      check(
-      simpleCheck((r, s) => r(s("key").as[Int]) == s("value").as[Int]),
-      allResults[Int, Int].saveAs("savedInSession")) as "get present"
+    }
+    .exec(
+      get[Int, Int](cache, key = "#{key}")
+        check (simpleCheck((r, s) => r(s("key").as[Int]) == s("value").as[Int]),
+        allResults[Int, Int].saveAs("savedInSession")) as "get present"
     )
 
   setUp(scn.inject(atOnceUsers(1))).protocols(protocol).assertions(global.failedRequests.count.is(0))

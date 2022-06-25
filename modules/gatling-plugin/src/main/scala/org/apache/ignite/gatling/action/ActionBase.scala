@@ -50,8 +50,15 @@ abstract class ActionBase extends ChainableAction with NameGen {
   val defaultRequestName: Expression[String] = _ => name.success
   protected val components: Components = ctx.protocolComponentsRegistry.components(IgniteProtocol.igniteProtocolKey)
 
-  protected def logAndExecuteNext(session: Session, requestName: String, sent: Long, received: Long, status: Status,
-                                  responseCode: Option[String], message: Option[String]): Unit = {
+  protected def logAndExecuteNext(
+    session: Session,
+    requestName: String,
+    sent: Long,
+    received: Long,
+    status: Status,
+    responseCode: Option[String],
+    message: Option[String]
+  ): Unit = {
     ctx.coreComponents.statsEngine.logResponse(
       session.scenario,
       session.groups,
@@ -81,10 +88,12 @@ abstract class ActionBase extends ChainableAction with NameGen {
       resolvedRequestName <- requestName(session)
     } yield resolvedRequestName
 
-  def callWithCheck[R](func: (R => Unit, Throwable => Unit) => Unit,
-                       resolvedRequestName: String,
-                       session: Session,
-                       checks: Seq[Check[R]]): Unit = {
+  def callWithCheck[R](
+    func: (R => Unit, Throwable => Unit) => Unit,
+    resolvedRequestName: String,
+    session: Session,
+    checks: Seq[Check[R]]
+  ): Unit = {
     val startTime = ctx.coreComponents.clock.nowMillis
     func(
       value => {
@@ -93,18 +102,37 @@ abstract class ActionBase extends ChainableAction with NameGen {
         val (newSession, error) = Check.check(value, session, checks.toList, new JHashMap[Any, Any]())
         error match {
           case Some(Failure(errorMessage)) =>
-            logAndExecuteNext(newSession.markAsFailed, resolvedRequestName, startTime, finishTime, KO, Some("Check ERROR"), Some(errorMessage))
+            logAndExecuteNext(
+              newSession.markAsFailed,
+              resolvedRequestName,
+              startTime,
+              finishTime,
+              KO,
+              Some("Check ERROR"),
+              Some(errorMessage)
+            )
           case _ => logAndExecuteNext(newSession, resolvedRequestName, startTime, finishTime, OK, None, None)
         }
       },
-      ex => logAndExecuteNext(session, resolvedRequestName, startTime, ctx.coreComponents.clock.nowMillis, KO, Some("ERROR"), Some(ex.getMessage))
+      ex =>
+        logAndExecuteNext(
+          session,
+          resolvedRequestName,
+          startTime,
+          ctx.coreComponents.clock.nowMillis,
+          KO,
+          Some("ERROR"),
+          Some(ex.getMessage)
+        )
     )
   }
 
-  def call[R](func: (R => Unit, Throwable => Unit) => Unit,
-              resolvedRequestName: String,
-              session: Session,
-              newSession: (Session, Option[R]) => Session = (s: Session, _: Option[R]) => s): Unit = {
+  def call[R](
+    func: (R => Unit, Throwable => Unit) => Unit,
+    resolvedRequestName: String,
+    session: Session,
+    newSession: (Session, Option[R]) => Session = (s: Session, _: Option[R]) => s
+  ): Unit = {
     val startTime = ctx.coreComponents.clock.nowMillis
     func(
       r => {
@@ -112,8 +140,16 @@ abstract class ActionBase extends ChainableAction with NameGen {
         val finishTime = ctx.coreComponents.clock.nowMillis
         logAndExecuteNext(newSession(session, Some(r)), resolvedRequestName, startTime, finishTime, OK, None, None)
       },
-      ex => logAndExecuteNext(newSession(session, None), resolvedRequestName, startTime,
-        ctx.coreComponents.clock.nowMillis, KO, Some("ERROR"), Some(ex.getMessage))
+      ex =>
+        logAndExecuteNext(
+          newSession(session, None),
+          resolvedRequestName,
+          startTime,
+          ctx.coreComponents.clock.nowMillis,
+          KO,
+          Some("ERROR"),
+          Some(ex.getMessage)
+        )
     )
   }
 
@@ -141,9 +177,7 @@ abstract class CacheAction[K, V] extends IgniteAction with StrictLogging {
   override val defaultRequestName: Expression[String] =
     s => cacheName(s).map(cacheName => s"$actionType $cacheName")
 
-  case class CommonParameters(requestName: String,
-                              cacheApi: CacheApi[K, V],
-                              transactionApi: Option[TransactionApi])
+  case class CommonParameters(requestName: String, cacheApi: CacheApi[K, V], transactionApi: Option[TransactionApi])
 
   def cacheParameters(session: Session): Validation[CommonParameters] =
     resolveCacheParameters(session)

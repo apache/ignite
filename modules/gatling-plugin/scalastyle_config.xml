@@ -331,7 +331,7 @@
     </parameters>
   </check>
   <check level="warning" enabled="true" class="org.scalastyle.scalariform.ScalaDocChecker">
-    <parameter name="ignoreOverride">true</parameter>
+    <parameter name="indentStyle">javadoc</parameter>
   </check>
   <check level="warning" class="org.scalastyle.scalariform.MagicNumberChecker" enabled="false"/>
 </scalastyle>

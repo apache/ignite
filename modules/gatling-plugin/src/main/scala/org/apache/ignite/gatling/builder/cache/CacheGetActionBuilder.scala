@@ -27,29 +27,33 @@ import org.apache.ignite.gatling.action.cache
 import org.apache.ignite.gatling.action.cache.CacheGetAction
 import org.apache.ignite.gatling.builder.IgniteActionBuilder
 
-case class CacheGetActionBuilder[K, V](cacheName: Expression[String],
-                                       key: Expression[K],
-                                       checks: Seq[IgniteCheck[K, V]] = Seq.empty,
-                                       requestName: Expression[String] = EmptyStringExpressionSuccess) extends IgniteActionBuilder {
+case class CacheGetActionBuilder[K, V](
+  cacheName: Expression[String],
+  key: Expression[K],
+  checks: Seq[IgniteCheck[K, V]] = Seq.empty,
+  requestName: Expression[String] = EmptyStringExpressionSuccess
+) extends IgniteActionBuilder {
   def keepBinary: CacheGetActionBuilderBinaryStep[K, V] =
     CacheGetActionBuilderBinaryStep(requestName, cacheName, key, checks)
 
   def check(newChecks: IgniteCheck[K, V]*): CacheGetActionBuilder[K, V] = this.copy(checks = newChecks)
 
-  def as(requestName: Expression[String]): ActionBuilder = this.copy(requestName=requestName)
+  def as(requestName: Expression[String]): ActionBuilder = this.copy(requestName = requestName)
 
   override def build(ctx: ScenarioContext, next: Action): Action =
     CacheGetAction(requestName, cacheName, key, keepBinary = false, checks, next, ctx)
 }
 
-case class CacheGetActionBuilderBinaryStep[K, V](requestName: Expression[String],
-                                                 cacheName: Expression[String],
-                                                 key: Expression[K],
-                                                 checks: Seq[IgniteCheck[K, V]]) extends IgniteActionBuilder {
+case class CacheGetActionBuilderBinaryStep[K, V](
+  requestName: Expression[String],
+  cacheName: Expression[String],
+  key: Expression[K],
+  checks: Seq[IgniteCheck[K, V]]
+) extends IgniteActionBuilder {
 
   def check(newChecks: IgniteCheck[K, V]*): CacheGetActionBuilderBinaryStep[K, V] = this.copy(checks = newChecks)
 
-  def as(requestName: Expression[String]): ActionBuilder = this.copy(requestName=requestName)
+  def as(requestName: Expression[String]): ActionBuilder = this.copy(requestName = requestName)
 
   override def build(ctx: ScenarioContext, next: Action): Action =
     cache.CacheGetAction(requestName, cacheName, key, keepBinary = true, checks, next, ctx)

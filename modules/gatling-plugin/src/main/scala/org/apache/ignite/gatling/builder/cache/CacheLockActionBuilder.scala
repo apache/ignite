@@ -28,14 +28,16 @@ import org.apache.ignite.gatling.IgniteCheck
 import org.apache.ignite.gatling.action.cache.CacheLockAction
 import org.apache.ignite.gatling.builder.IgniteActionBuilder
 
-case class CacheLockActionBuilder[K](cacheName: Expression[String],
-                                     key: Expression[K],
-                                     checks: Seq[IgniteCheck[K, Lock]] = Seq.empty,
-                                     requestName: Expression[String] = EmptyStringExpressionSuccess) extends IgniteActionBuilder {
+case class CacheLockActionBuilder[K](
+  cacheName: Expression[String],
+  key: Expression[K],
+  checks: Seq[IgniteCheck[K, Lock]] = Seq.empty,
+  requestName: Expression[String] = EmptyStringExpressionSuccess
+) extends IgniteActionBuilder {
 
   def check(newChecks: IgniteCheck[K, Lock]*): CacheLockActionBuilder[K] = this.copy(checks = newChecks)
 
-  def as(requestName: Expression[String]): ActionBuilder = this.copy(requestName=requestName)
+  def as(requestName: Expression[String]): ActionBuilder = this.copy(requestName = requestName)
 
   override def build(ctx: ScenarioContext, next: Action): Action =
     CacheLockAction(requestName, cacheName, key, checks, next, ctx)

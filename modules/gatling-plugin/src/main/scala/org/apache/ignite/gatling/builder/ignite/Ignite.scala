@@ -19,7 +19,6 @@ package org.apache.ignite.gatling.builder.ignite
 
 import io.gatling.core.session.Expression
 
-
 trait Ignite {
   def create[K, V](cacheName: Expression[String]): CreateCacheActionBuilderBase[K, V] =
     CreateCacheActionBuilderBase(cacheName)

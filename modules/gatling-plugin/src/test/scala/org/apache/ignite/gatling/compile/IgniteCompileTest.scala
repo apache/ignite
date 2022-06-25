@@ -52,46 +52,43 @@ class IgniteCompileTest extends Simulation {
 //    .asIgnite
 //    .exec("start" start)
 
-
-  val igniteChainBuilder: ChainBuilder = execIgnite (
-      tx("")(
-        start as "start client",
-        put(c, 1, 2) as "put",
+  val igniteChainBuilder: ChainBuilder = execIgnite(
+    tx("")(
+      start as "start client",
+      put(c, 1, 2) as "put",
 //        feed(IntPairsFeeder()),
-        commit as "commit"
-      ),
-      exec(start as r),
-      put("test-cache", "#{key}", "#{value}") as "put request",
+      commit as "commit"
+    ),
+    exec(start as r),
+    put("test-cache", "#{key}", "#{value}") as "put request",
 //      .feed(IntPairsFeeder())
-      tx("")(
-        exec(start as r)
-      ),
-      group("gn") {
-        exec(start as r)
-      }
-
-    ,tx("tx start")(
+    tx("")(
       exec(start as r)
-      .exec(close as r)
+    ),
+    group("gn") {
+      exec(start as r)
+    },
+    tx("tx start")(
+      exec(start as r)
+        .exec(close as r)
     )
 //    .put("")("", 1, 2)
 //    .put("")("", 1, 2)
-    ,tx("tx 2")(
+    ,
+    tx("tx 2")(
       start as r,
       close as r
-    ))
+    )
+  )
     .exec(start as "start")
 
 //    .exec(tx("tx") (
 //      exec(ignite(r).cache(c).put(1, 2))
 //        .exec(ignite(r).cache(c).putPair((1, 2)))
 //    ))
-
     .exec(start as r)
     .exec(close as r)
-
     .exec(create(c) as r)
-
     .exec(create(c) as r)
     .exec(create(c).backups(1) as r)
     .exec(create(c).atomicity(TRANSACTIONAL) as r)
@@ -99,7 +96,6 @@ class IgniteCompileTest extends Simulation {
     .exec(create(c).backups(1).atomicity(TRANSACTIONAL).mode(PARTITIONED) as r)
     .exec(create(c).cfg(new ClientCacheConfiguration()) as r)
     .exec(create(c).cfg(new CacheConfiguration[Int, Int]()) as r)
-
     .exec(tx())
     .exec(tx(OPTIMISTIC, READ_COMMITTED)(commit))
     .exec(tx(OPTIMISTIC, READ_COMMITTED).timeout(1L)(rollback))
@@ -110,12 +106,10 @@ class IgniteCompileTest extends Simulation {
     .exec(tx("t")(OPTIMISTIC, READ_COMMITTED).timeout(1L)(rollback))
     .exec(tx("t")(OPTIMISTIC, READ_COMMITTED).txSize(1)())
     .exec(tx("t")(OPTIMISTIC, READ_COMMITTED).timeout(1L).txSize(1)())
-
     .exec(commit)
     .exec(rollback)
     .exec(commit as "commit")
     .exec(rollback as "rollback")
-
     .exec(put(c, 1, 2))
     .exec(put(c, (1, 2)))
     .exec(put[Int, Int](c, "#{key}", "#{value}"))
@@ -124,78 +118,83 @@ class IgniteCompileTest extends Simulation {
     .exec(putAll(c, Map(1 -> 2, 3 -> 4)))
     .exec(remove(c, 1))
     .exec(removeAll(c, Set(1)))
-    .exec(invoke[Int, Int, String](c, 1)(
-      new CacheEntryProcessor[Int, Int, String] {
-        override def process(mutableEntry: MutableEntry[Int, Int], objects: Object*): String = ""
-      })
-    )
-    .exec(invoke[Int, Int, String](c, 1).args(Seq("", 2, 3)) { (_, _: Seq[Any]) => "" })
-    .exec(invoke[Int, Int, String](c, 1).args("", 2, Map(1 -> 3)) {
-      (_, _: Seq[Any]) => ""
+    .exec(invoke[Int, Int, String](c, 1)(new CacheEntryProcessor[Int, Int, String] {
+      override def process(mutableEntry: MutableEntry[Int, Int], objects: Object*): String = ""
+    }))
+    .exec(invoke[Int, Int, String](c, 1).args(Seq("", 2, 3))((_, _: Seq[Any]) => ""))
+    .exec(invoke[Int, Int, String](c, 1).args("", 2, Map(1 -> 3)) { (_, _: Seq[Any]) =>
+      ""
     })
-    .exec(invoke[Int, Int, String](c, 1) {
-      _: MutableEntry[Int, Int] => ""
+    .exec(invoke[Int, Int, String](c, 1) { _: MutableEntry[Int, Int] =>
+      ""
     })
-    .exec(invoke[Int, Int, String](c, 1)((_, _: Seq[Any]) => "")
-      .check(
-        allResults[Int, String].saveAs("R1"),
-        simpleCheck(result => result(1) == "")
-      ) as r
+    .exec(
+      invoke[Int, Int, String](c, 1)((_, _: Seq[Any]) => "")
+        .check(
+          allResults[Int, String].saveAs("R1"),
+          simpleCheck(result => result(1) == "")
+        ) as r
     )
-
     .exec(getAll(c, Set(1)))
     .exec(get(c, 1) as r)
     .exec(get(c, 1).keepBinary)
-    .exec(get[Int, Any](c, 1)
-      .keepBinary
-      .check(
-        allResults[Int, Any].transform(a => a.values.head).saveAs("R")
-      )
+    .exec(
+      get[Int, Any](c, 1).keepBinary
+        .check(
+          allResults[Int, Any].transform(a => a.values.head).saveAs("R")
+        )
     )
-    .exec(get[Int, Int](c, 1)
-      .check(
-        simpleCheck((result, session) => result(session("key").as[Int]) == session("value").as[Int])
-      )
+    .exec(
+      get[Int, Int](c, 1)
+        .check(
+          simpleCheck((result, session) => result(session("key").as[Int]) == session("value").as[Int])
+        )
     )
-    .exec(get[Int, Int](c, 1)
-      .check(
-        simpleCheck(result => result(1) == 2)
-      )
+    .exec(
+      get[Int, Int](c, 1)
+        .check(
+          simpleCheck(result => result(1) == 2)
+        )
     )
     .exec(getAndRemove(c, 1))
-    .exec(getAndRemove[Int, Any](c, 1)
-      .check(
-        allResults[Int, Any].transform(a => a.values.head).saveAs("R2")
-      )
+    .exec(
+      getAndRemove[Int, Any](c, 1)
+        .check(
+          allResults[Int, Any].transform(a => a.values.head).saveAs("R2")
+        )
     )
     .exec(getAndPut(c, 1, 2))
-    .exec(getAndPut[Int, Any](c, 1, 2)
-      .check(
-        allResults[Int, Any].transform(a => a.values.head).saveAs("R3")
-      )
+    .exec(
+      getAndPut[Int, Any](c, 1, 2)
+        .check(
+          allResults[Int, Any].transform(a => a.values.head).saveAs("R3")
+        )
     )
-
-    .exec(lock[Int](c, 1)
-      .check(
-        allResults[Int, Lock].transform(a => a.values.head).saveAs("lock")
-      )
+    .exec(
+      lock[Int](c, 1)
+        .check(
+          allResults[Int, Lock].transform(a => a.values.head).saveAs("lock")
+        )
     )
     .exec(unlock(c, "#{lock}"))
-
     .exec(sql(c, "CREATE TABLE TEST_TABLE"))
-    .exec(sql(c, "SELECT * FROM TEST_TABLE WHERE id = ?")
-      .args("#{id}"))
+    .exec(
+      sql(c, "SELECT * FROM TEST_TABLE WHERE id = ?")
+        .args("#{id}")
+    )
     .exec(
       sql(c, "SELECT * FROM TEST_TABLE WHERE id = ? AND affinity_id = ?")
-      .args("#{id}", "#{affinity_id}"))
+        .args("#{id}", "#{affinity_id}")
+    )
     .exec(
       sql(c, "SELECT * FROM TEST_TABLE")
-      .partitions("#{partitions}"))
+        .partitions("#{partitions}")
+    )
     .exec(
       sql(c, "SELECT * FROM TEST_TABLE WHERE id = ? AND affinity_id = ?")
-      .check(allSqlResults.transformWithSession((r, s) => s("value").as[Int] :: r.head).saveAs("firstRow"))
+        .check(allSqlResults.transformWithSession((r, s) => s("value").as[Int] :: r.head).saveAs("firstRow"))
     )
-    .exec(session => {
+    .exec { session =>
       val client: IgniteApi = session("igniteApi").as[IgniteApi]
 
       val ignite: Ignite = client.wrapped
@@ -204,21 +203,16 @@ class IgniteCompileTest extends Simulation {
       igniteClient.close()
 
       session
-    })
-    .exec(session => {
+    }
+    .exec { session =>
       val client: IgniteApi = session("igniteApi").as[IgniteApi]
       val cache = client.cache[Int, Int]("test-cache").toOption.get
-      cache.get(session("key").as[Int])(
-        value => print(value)
-      )
-      client.close() {
-        _ =>
-          client.txStart() {
-            _ =>
-          }
+      cache.get(session("key").as[Int])(value => print(value))
+      client.close() { _ =>
+        client.txStart() { _ => }
       }
       session
-    })
+    }
 
   private val scn = scenario("scn").exec(igniteChainBuilder)
   setUp(scn.inject(atOnceUsers(1)))

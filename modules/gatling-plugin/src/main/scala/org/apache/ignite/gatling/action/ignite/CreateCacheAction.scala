@@ -26,12 +26,13 @@ import org.apache.ignite.gatling.api.CacheApi
 import org.apache.ignite.gatling.api.IgniteApi
 import org.apache.ignite.gatling.builder.ignite.Configuration
 
-case class CreateCacheAction[K, V](requestName: Expression[String],
-                                   cacheName: Expression[String],
-                                   config: Configuration[K, V],
-                                   next: Action,
-                                   ctx: ScenarioContext
-                                  ) extends IgniteAction {
+case class CreateCacheAction[K, V](
+  requestName: Expression[String],
+  cacheName: Expression[String],
+  config: Configuration[K, V],
+  next: Action,
+  ctx: ScenarioContext
+) extends IgniteAction {
 
   override val actionType: String = "createCache"
 
@@ -51,7 +52,11 @@ case class CreateCacheAction[K, V](requestName: Expression[String],
     }
   }
 
-  private def getOrCreateCache(igniteApi: IgniteApi, cacheName: String, config: Configuration[K, V]): (CacheApi[K, V] => Unit, Throwable => Unit) => Unit = {
+  private def getOrCreateCache(
+    igniteApi: IgniteApi,
+    cacheName: String,
+    config: Configuration[K, V]
+  ): (CacheApi[K, V] => Unit, Throwable => Unit) => Unit =
     if (config == null) {
       igniteApi.getOrCreateCache(cacheName)
     } else if (config.cacheCfg.isDefined) {
@@ -61,5 +66,4 @@ case class CreateCacheAction[K, V](requestName: Expression[String],
     } else {
       igniteApi.getOrCreateCacheBySimpleConfig(cacheName, config.simpleCfg.get)
     }
-  }
 }

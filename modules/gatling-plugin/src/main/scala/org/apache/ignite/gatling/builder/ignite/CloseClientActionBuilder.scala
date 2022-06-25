@@ -26,7 +26,7 @@ import org.apache.ignite.gatling.action.ignite
 import org.apache.ignite.gatling.builder.IgniteActionBuilder
 
 case class CloseClientActionBuilder(requestName: Expression[String] = EmptyStringExpressionSuccess) extends IgniteActionBuilder {
-  def as(requestName: Expression[String]): ActionBuilder = this.copy(requestName=requestName)
+  def as(requestName: Expression[String]): ActionBuilder = this.copy(requestName = requestName)
 
   override def build(ctx: ScenarioContext, next: Action): Action =
     ignite.CloseClientAction(requestName, next, ctx)

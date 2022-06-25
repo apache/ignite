@@ -23,12 +23,13 @@ import io.gatling.core.session.Session
 import io.gatling.core.structure.ScenarioContext
 import org.apache.ignite.gatling.action.CacheAction
 
-case class CachePutAllAction[K, V](requestName: Expression[String],
-                                   cacheName: Expression[String],
-                                   map: Expression[Map[K, V]],
-                                   next: Action,
-                                   ctx: ScenarioContext
-                                  ) extends CacheAction[K, V] {
+case class CachePutAllAction[K, V](
+  requestName: Expression[String],
+  cacheName: Expression[String],
+  map: Expression[Map[K, V]],
+  next: Action,
+  ctx: ScenarioContext
+) extends CacheAction[K, V] {
 
   override val actionType: String = "putAll"
 

@@ -26,15 +26,17 @@ import org.apache.ignite.gatling.IgniteCheck
 import org.apache.ignite.gatling.action.cache.CacheGetAndPutAction
 import org.apache.ignite.gatling.builder.IgniteActionBuilder
 
-case class CacheGetAndPutActionBuilder[K, V](cacheName: Expression[String],
-                                             key: Expression[K],
-                                             value: Expression[V],
-                                             checks: Seq[IgniteCheck[K, V]] = Seq.empty,
-                                             requestName: Expression[String] = EmptyStringExpressionSuccess) extends IgniteActionBuilder {
+case class CacheGetAndPutActionBuilder[K, V](
+  cacheName: Expression[String],
+  key: Expression[K],
+  value: Expression[V],
+  checks: Seq[IgniteCheck[K, V]] = Seq.empty,
+  requestName: Expression[String] = EmptyStringExpressionSuccess
+) extends IgniteActionBuilder {
 
   def check(newChecks: IgniteCheck[K, V]*): CacheGetAndPutActionBuilder[K, V] = this.copy(checks = newChecks)
 
-  def as(requestName: Expression[String]): ActionBuilder = this.copy(requestName=requestName)
+  def as(requestName: Expression[String]): ActionBuilder = this.copy(requestName = requestName)
 
   override def build(ctx: ScenarioContext, next: Action): Action =
     CacheGetAndPutAction(requestName, cacheName, key, value, checks, next, ctx)

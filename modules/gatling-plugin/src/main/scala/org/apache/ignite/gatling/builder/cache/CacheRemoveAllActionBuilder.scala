@@ -25,11 +25,13 @@ import io.gatling.core.structure.ScenarioContext
 import org.apache.ignite.gatling.action.cache.CacheRemoveAllAction
 import org.apache.ignite.gatling.builder.IgniteActionBuilder
 
-case class CacheRemoveAllActionBuilder[K](cacheName: Expression[String],
-                                          keys: Expression[Set[K]],
-                                          requestName: Expression[String] = EmptyStringExpressionSuccess) extends IgniteActionBuilder {
+case class CacheRemoveAllActionBuilder[K](
+  cacheName: Expression[String],
+  keys: Expression[Set[K]],
+  requestName: Expression[String] = EmptyStringExpressionSuccess
+) extends IgniteActionBuilder {
 
-  def as(requestName: Expression[String]): ActionBuilder = this.copy(requestName=requestName)
+  def as(requestName: Expression[String]): ActionBuilder = this.copy(requestName = requestName)
 
   override def build(ctx: ScenarioContext, next: Action): Action =
     CacheRemoveAllAction(requestName, cacheName, keys, next, ctx)

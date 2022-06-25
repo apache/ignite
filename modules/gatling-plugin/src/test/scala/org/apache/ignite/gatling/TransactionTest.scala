@@ -26,17 +26,18 @@ import org.apache.ignite.gatling.Predef._
 import org.apache.ignite.gatling.simulation.IgniteSupport
 import org.junit.Test
 
-
 class TransactionTest extends AbstractGatlingTest {
   val cache = "TEST-CACHE"
 
   override protected def beforeTest(): Unit = {
     super.beforeTest()
     val ignite = grid(0)
-    ignite.createCache(new CacheConfiguration[Int, Int]()
-      .setName(cache)
-      .setCacheMode(PARTITIONED)
-      .setAtomicityMode(TRANSACTIONAL))
+    ignite.createCache(
+      new CacheConfiguration[Int, Int]()
+        .setName(cache)
+        .setCacheMode(PARTITIONED)
+        .setAtomicityMode(TRANSACTIONAL)
+    )
   }
 
   @Test
@@ -56,42 +57,46 @@ class TransactionSimulation extends Simulation with IgniteSupport {
     .feed(feeder)
     .execIgnite(
       start,
-      tx(PESSIMISTIC, READ_COMMITTED).timeout(1000L) (
+      tx(PESSIMISTIC, READ_COMMITTED).timeout(1000L)(
         put[Int, Int](cache, "#{key}", "#{value}"),
         get[Int, Any](cache, key = "#{key}") check allResults[Int, Any].transform(r => r.values.head.asInstanceOf[Int]).is("#{value}"),
         commit
       ),
-      tx(PESSIMISTIC, READ_COMMITTED).timeout(1000L).txSize(8) (
-        put[Int, Int](cache, 3, 4),
-        get[Int, Any](cache, key = 3) check allResults[Int, Any].transform(r => r.values.head.asInstanceOf[Int]).is(4),
-        commit
-      ),
-      tx(PESSIMISTIC, READ_COMMITTED) (
+      tx(PESSIMISTIC, READ_COMMITTED)
+        .timeout(1000L)
+        .txSize(8)(
+          put[Int, Int](cache, 3, 4),
+          get[Int, Any](cache, key = 3) check allResults[Int, Any].transform(r => r.values.head.asInstanceOf[Int]).is(4),
+          commit
+        ),
+      tx(PESSIMISTIC, READ_COMMITTED)(
         put[Int, Int](cache, 1, 2),
         get[Int, Any](cache, key = 1) check allResults[Int, Any].transform(r => r.values.head.asInstanceOf[Int]).is(2),
         commit
       ),
-      tx (
+      tx(
         put[Int, Int](cache, 1, 2),
         get[Int, Any](cache, key = 1) check allResults[Int, Any].transform(r => r.values.head.asInstanceOf[Int]).is(2),
         commit
       ),
-      tx("tx1")(PESSIMISTIC, READ_COMMITTED).timeout(1000L) (
+      tx("tx1")(PESSIMISTIC, READ_COMMITTED).timeout(1000L)(
         put[Int, Int](cache, 1, 2),
         get[Int, Any](cache, key = 1) check allResults[Int, Any].transform(r => r.values.head.asInstanceOf[Int]).is(2),
         commit
       ),
-      tx("tx2")(PESSIMISTIC, READ_COMMITTED).timeout(1000L).txSize(8) (
-        put[Int, Int](cache, 1, 2),
-        get[Int, Any](cache, key = 1) check allResults[Int, Any].transform(r => r.values.head.asInstanceOf[Int]).is(2),
-        commit
-      ),
-      tx("tx3")(PESSIMISTIC, READ_COMMITTED) (
+      tx("tx2")(PESSIMISTIC, READ_COMMITTED)
+        .timeout(1000L)
+        .txSize(8)(
+          put[Int, Int](cache, 1, 2),
+          get[Int, Any](cache, key = 1) check allResults[Int, Any].transform(r => r.values.head.asInstanceOf[Int]).is(2),
+          commit
+        ),
+      tx("tx3")(PESSIMISTIC, READ_COMMITTED)(
         put[Int, Int](cache, 1, 2),
         get[Int, Any](cache, key = 1) check allResults[Int, Any].transform(r => r.values.head.asInstanceOf[Int]).is(2),
         rollback
       ),
-      tx("tx4") (
+      tx("tx4")(
         put[Int, Int](cache, 1, 2),
         get[Int, Any](cache, key = 1) check allResults[Int, Any].transform(r => r.values.head.asInstanceOf[Int]).is(2)
       ),

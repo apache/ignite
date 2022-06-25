@@ -34,7 +34,9 @@ import org.apache.ignite.gatling.api.CacheApi
 import org.apache.ignite.gatling.api.CompletionSupport
 
 case class CacheThinApi[K, V](wrapped: ClientCache[K, V])(implicit val ec: ExecutionContext)
-  extends CacheApi[K, V] with CompletionSupport with StrictLogging {
+    extends CacheApi[K, V]
+    with CompletionSupport
+    with StrictLogging {
 
   override def put(key: K, value: V)(s: Unit => Unit, f: Throwable => Unit): Unit = {
     logger.debug("sync put")
@@ -154,20 +156,28 @@ case class CacheThinApi[K, V](wrapped: ClientCache[K, V])(implicit val ec: Execu
     withCompletion(wrapped.removeAllAsync(keys.asJava).asScala.map(_ => ()))(s, f)
   }
 
-  override def invoke[T](key: K, entryProcessor: CacheEntryProcessor[K, V, T], arguments: Any*)
-                        (s: Map[K, T] => Unit, f: Throwable => Unit): Unit =
+  override def invoke[T](key: K, entryProcessor: CacheEntryProcessor[K, V, T], arguments: Any*)(
+    s: Map[K, T] => Unit,
+    f: Throwable => Unit
+  ): Unit =
     throw new NotImplementedError("invoke is not supported in thin client API")
 
-  override def invokeAsync[T](key: K, entryProcessor: CacheEntryProcessor[K, V, T], arguments: Any*)
-                             (s: Map[K, T] => Unit, f: Throwable => Unit): Unit =
+  override def invokeAsync[T](key: K, entryProcessor: CacheEntryProcessor[K, V, T], arguments: Any*)(
+    s: Map[K, T] => Unit,
+    f: Throwable => Unit
+  ): Unit =
     throw new NotImplementedError("invokeAsync is not supported in thin client API")
 
-  override def invokeAll[T](map: Map[K, CacheEntryProcessor[K, V, T]], arguments: Any*)
-                           (s: Map[K, EntryProcessorResult[T]] => Unit, f: Throwable => Unit): Unit =
+  override def invokeAll[T](map: Map[K, CacheEntryProcessor[K, V, T]], arguments: Any*)(
+    s: Map[K, EntryProcessorResult[T]] => Unit,
+    f: Throwable => Unit
+  ): Unit =
     throw new NotImplementedError("invokeAll is not supported in thin client API")
 
-  override def invokeAllAsync[T](map: Map[K, CacheEntryProcessor[K, V, T]], arguments: Any*)
-                                (s: Map[K, EntryProcessorResult[T]] => Unit, f: Throwable => Unit): Unit =
+  override def invokeAllAsync[T](map: Map[K, CacheEntryProcessor[K, V, T]], arguments: Any*)(
+    s: Map[K, EntryProcessorResult[T]] => Unit,
+    f: Throwable => Unit
+  ): Unit =
     throw new NotImplementedError("invokeAllAsync is not supported in thin client API")
 
   override def lock(key: K)(s: Lock => Unit, f: Throwable => Unit): Unit =
@@ -179,8 +189,11 @@ case class CacheThinApi[K, V](wrapped: ClientCache[K, V])(implicit val ec: Execu
   override def sql(query: SqlFieldsQuery)(s: List[List[Any]] => Unit, f: Throwable => Unit): Unit = {
     logger.debug("sync sql")
     Try {
-      wrapped.query(query)
-        .getAll.asScala.toList
+      wrapped
+        .query(query)
+        .getAll
+        .asScala
+        .toList
         .map(_.asScala.toList)
     }.fold(f, s)
   }

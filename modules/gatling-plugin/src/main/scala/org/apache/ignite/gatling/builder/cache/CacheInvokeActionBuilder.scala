@@ -27,10 +27,11 @@ import org.apache.ignite.gatling.IgniteCheck
 import org.apache.ignite.gatling.action.cache.CacheInvokeAction
 import org.apache.ignite.gatling.builder.IgniteActionBuilder
 
-
-case class CacheInvokeActionBuilderBase[K, V, T](cacheName: Expression[String],
-                                                 key: Expression[K],
-                                                 requestName: Expression[String] = EmptyStringExpressionSuccess) {
+case class CacheInvokeActionBuilderBase[K, V, T](
+  cacheName: Expression[String],
+  key: Expression[K],
+  requestName: Expression[String] = EmptyStringExpressionSuccess
+) {
 
   def apply(entryProcessor: CacheEntryProcessor[K, V, T]): CacheInvokeActionBuilder[K, V, T] =
     CacheInvokeActionBuilder[K, V, T](requestName, cacheName, key, entryProcessor, Seq.empty)
@@ -39,25 +40,29 @@ case class CacheInvokeActionBuilderBase[K, V, T](cacheName: Expression[String],
     CacheInvokeActionBuilderProcessorStep[K, V, T](requestName, cacheName, key, args)
 }
 
-case class CacheInvokeActionBuilderProcessorStep[K, V, T](requestName: Expression[String],
-                                                          cacheName: Expression[String],
-                                                          key: Expression[K],
-                                                          arguments: Seq[Expression[Any]]) {
+case class CacheInvokeActionBuilderProcessorStep[K, V, T](
+  requestName: Expression[String],
+  cacheName: Expression[String],
+  key: Expression[K],
+  arguments: Seq[Expression[Any]]
+) {
 
   def apply(entryProcessor: CacheEntryProcessor[K, V, T]): CacheInvokeActionBuilder[K, V, T] =
     CacheInvokeActionBuilder[K, V, T](requestName, cacheName, key, entryProcessor, arguments)
 }
 
-case class CacheInvokeActionBuilder[K, V, T](requestName: Expression[String],
-                                             cacheName: Expression[String],
-                                             key: Expression[K],
-                                             entryProcessor: CacheEntryProcessor[K, V, T],
-                                             arguments: Seq[Expression[Any]],
-                                             checks: Seq[IgniteCheck[K, T]] = Seq.empty) extends IgniteActionBuilder {
+case class CacheInvokeActionBuilder[K, V, T](
+  requestName: Expression[String],
+  cacheName: Expression[String],
+  key: Expression[K],
+  entryProcessor: CacheEntryProcessor[K, V, T],
+  arguments: Seq[Expression[Any]],
+  checks: Seq[IgniteCheck[K, T]] = Seq.empty
+) extends IgniteActionBuilder {
 
   def check(newChecks: IgniteCheck[K, T]*): CacheInvokeActionBuilder[K, V, T] = this.copy(checks = newChecks)
 
-  def as(requestName: Expression[String]): ActionBuilder = this.copy(requestName=requestName)
+  def as(requestName: Expression[String]): ActionBuilder = this.copy(requestName = requestName)
 
   override def build(ctx: ScenarioContext, next: Action): Action =
     CacheInvokeAction[K, V, T](requestName, cacheName, key, entryProcessor, arguments, checks, next, ctx)

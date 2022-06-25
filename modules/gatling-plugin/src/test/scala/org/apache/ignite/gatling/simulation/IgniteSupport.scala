@@ -39,7 +39,7 @@ trait IgniteSupport {
 
   protected def feeder: IntPairsFeeder = IntPairsFeeder()
 
-  protected def protocol: IgniteProtocol = {
+  protected def protocol: IgniteProtocol =
     Option(System.getProperty("host"))
       .flatMap(host => Option(System.getProperty("port")).map(port => (host, port)))
       .map { case (host, port) =>
@@ -48,5 +48,4 @@ trait IgniteSupport {
           .getOrElse(ignite.cfg(IgnitionEx.allGrids().get(1)).build)
       }
       .getOrElse(ignite.cfg(IgnitionEx.allGrids().get(1)).build)
-  }
 }

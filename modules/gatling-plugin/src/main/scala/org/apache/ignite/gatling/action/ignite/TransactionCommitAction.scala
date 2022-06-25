@@ -28,17 +28,14 @@ import org.apache.ignite.gatling.action.IgniteAction
 import org.apache.ignite.gatling.api.TransactionApi
 import org.apache.ignite.gatling.protocol.IgniteProtocol.TRANSACTION_API_SESSION_KEY
 
-case class TransactionCommitAction(requestName: Expression[String],
-                                   next: Action,
-                                   ctx: ScenarioContext) extends IgniteAction {
+case class TransactionCommitAction(requestName: Expression[String], next: Action, ctx: ScenarioContext) extends IgniteAction {
 
   override val actionType: String = "commit"
 
   override protected def execute(session: Session): Unit = withSession(session) {
     for (
       (resolvedRequestName, _, transactionApiOptional) <- igniteParameters(session);
-      transactionApi <- transactionApiOptional.fold[Validation[TransactionApi]]
-        (Failure("no transaction found in session"))(t => Success(t))
+      transactionApi <- transactionApiOptional.fold[Validation[TransactionApi]](Failure("no transaction found in session"))(t => Success(t))
     ) yield {
       logger.debug(s"session user id: #${session.userId}, before $name")
 

@@ -64,22 +64,24 @@ trait IgniteSqlCheckSupport {
     )
 
   @implicitNotFound("Could not find a CheckMaterializer. This check might not be valid for Ignite.")
-  implicit def checkBuilder2SqlCheck[T, P](checkBuilder: CheckBuilder[T, P])
-                                          (implicit materializer: CheckMaterializer[T, SqlCheck, AllSqlResult, P]): SqlCheck =
+  implicit def checkBuilder2SqlCheck[T, P](checkBuilder: CheckBuilder[T, P])(implicit
+    materializer: CheckMaterializer[T, SqlCheck, AllSqlResult, P]
+  ): SqlCheck =
     checkBuilder.build(materializer)
 
   @implicitNotFound("Could not find a CheckMaterializer. This check might not be valid for Ignite.")
-  implicit def validate2SqlCheck[T, P, X](validate: CheckBuilder.Validate[T, P, X])
-                                         (implicit materializer: CheckMaterializer[T, SqlCheck, AllSqlResult, P]): SqlCheck =
+  implicit def validate2SqlCheck[T, P, X](validate: CheckBuilder.Validate[T, P, X])(implicit
+    materializer: CheckMaterializer[T, SqlCheck, AllSqlResult, P]
+  ): SqlCheck =
     validate.exists
 
   @implicitNotFound("Could not find a CheckMaterializer. This check might not be valid for Ignite.")
-  implicit def find2SqlCheck[T, P, X](find: CheckBuilder.Find[T, P, X])
-                                     (implicit materializer: CheckMaterializer[T, SqlCheck, AllSqlResult, P]): SqlCheck =
+  implicit def find2SqlCheck[T, P, X](find: CheckBuilder.Find[T, P, X])(implicit
+    materializer: CheckMaterializer[T, SqlCheck, AllSqlResult, P]
+  ): SqlCheck =
     find.find.exists
 
-  class AllSqlCheckMaterializer extends
-    CheckMaterializer[IgniteAllSqlCheckType, SqlCheck, AllSqlResult, AllSqlResult](identity) {
+  class AllSqlCheckMaterializer extends CheckMaterializer[IgniteAllSqlCheckType, SqlCheck, AllSqlResult, AllSqlResult](identity) {
     override protected def preparer: Preparer[AllSqlResult, AllSqlResult] = identityPreparer
   }
 

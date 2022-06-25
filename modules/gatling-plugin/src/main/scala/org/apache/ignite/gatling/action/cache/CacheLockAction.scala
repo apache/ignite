@@ -26,13 +26,14 @@ import io.gatling.core.structure.ScenarioContext
 import org.apache.ignite.gatling.IgniteCheck
 import org.apache.ignite.gatling.action.CacheAction
 
-case class CacheLockAction[K, V](requestName: Expression[String],
-                                 cacheName: Expression[String],
-                                 key: Expression[K],
-                                 checks: Seq[IgniteCheck[K, Lock]],
-                                 next: Action,
-                                 ctx: ScenarioContext
-                                ) extends CacheAction[K, V] {
+case class CacheLockAction[K, V](
+  requestName: Expression[String],
+  cacheName: Expression[String],
+  key: Expression[K],
+  checks: Seq[IgniteCheck[K, Lock]],
+  next: Action,
+  ctx: ScenarioContext
+) extends CacheAction[K, V] {
 
   override val actionType: String = "lock"
 
@@ -44,7 +45,7 @@ case class CacheLockAction[K, V](requestName: Expression[String],
       logger.debug(s"session user id: #${session.userId}, before $name")
 
       val call = (s: Map[K, Lock] => Unit, f: Throwable => Unit) =>
-        cacheApi.lock(resolvedKey) (
+        cacheApi.lock(resolvedKey)(
           v => s(Map(resolvedKey -> v)),
           ex => f(ex)
         )

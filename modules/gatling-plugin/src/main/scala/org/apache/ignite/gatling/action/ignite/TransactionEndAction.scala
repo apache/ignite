@@ -24,23 +24,22 @@ import io.gatling.core.structure.ScenarioContext
 import org.apache.ignite.gatling.action.IgniteAction
 import org.apache.ignite.gatling.protocol.IgniteProtocol.TRANSACTION_API_SESSION_KEY
 
-case class TransactionEndAction(requestName: Expression[String],
-                                next: Action,
-                                ctx: ScenarioContext) extends IgniteAction {
+case class TransactionEndAction(requestName: Expression[String], next: Action, ctx: ScenarioContext) extends IgniteAction {
   override val actionType: String = "txEnd"
 
   def execute(session: Session): Unit =
-    for (
-      (resolvedRequestName, _, transactionApiOptional) <- igniteParameters(session)
-    ) yield {
+    for ((resolvedRequestName, _, transactionApiOptional) <- igniteParameters(session)) yield {
       logger.debug(s"session user id: #${session.userId}, before $name")
       transactionApiOptional.fold {
         next ! session
       } { transactionApi =>
         val func = transactionApi.commit() _
-        call(func,
+        call(
+          func,
           if (resolvedRequestName.nonEmpty) s"$resolvedRequestName-auto-commit" else resolvedRequestName,
-          session, (session, _: Option[Unit]) => session.remove(TRANSACTION_API_SESSION_KEY))
+          session,
+          (session, _: Option[Unit]) => session.remove(TRANSACTION_API_SESSION_KEY)
+        )
       }
     }
 }

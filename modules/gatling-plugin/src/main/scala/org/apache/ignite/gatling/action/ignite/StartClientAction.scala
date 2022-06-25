@@ -25,9 +25,7 @@ import org.apache.ignite.gatling.action.ActionBase
 import org.apache.ignite.gatling.api.IgniteApi
 import org.apache.ignite.gatling.protocol.IgniteProtocol.IGNITE_API_SESSION_KEY
 
-case class StartClientAction(requestName: Expression[String],
-                             next: Action,
-                             ctx: ScenarioContext) extends ActionBase {
+case class StartClientAction(requestName: Expression[String], next: Action, ctx: ScenarioContext) extends ActionBase {
 
   override val actionType: String = "startClient"
 
@@ -40,10 +38,14 @@ case class StartClientAction(requestName: Expression[String],
 
       val func = IgniteApi.start(components.igniteProtocol, session) _
 
-      call(func, resolvedRequestName, session, (session, igniteApi: Option[IgniteApi]) =>
-        igniteApi
-          .map(igniteApi => session.set(IGNITE_API_SESSION_KEY, igniteApi))
-          .getOrElse(session)
+      call(
+        func,
+        resolvedRequestName,
+        session,
+        (session, igniteApi: Option[IgniteApi]) =>
+          igniteApi
+            .map(igniteApi => session.set(IGNITE_API_SESSION_KEY, igniteApi))
+            .getOrElse(session)
       )
     }
   }

@@ -30,9 +30,7 @@ class BasicSimulation extends Simulation {
   private val cache = "TEST-CACHE"
 
   private val c = new AtomicInteger(0)
-  private val feeder = Iterator.continually(Map(
-    "key" -> c.incrementAndGet(),
-    "value" -> c.incrementAndGet()))
+  private val feeder = Iterator.continually(Map("key" -> c.incrementAndGet(), "value" -> c.incrementAndGet()))
 
   private val scn = scenario("Basic")
     .feed(feeder)
@@ -41,7 +39,7 @@ class BasicSimulation extends Simulation {
       create(cache).backups(1) as "Create cache",
       put[Int, Int](cache, "#{key}", "#{value}") as "Put",
       get[Int, Int](cache, "#{key}")
-        .check(simpleCheck { (result, session) =>  result(session("key").as[Int]) == session("value").as[Int] }) as "Get",
+        .check(simpleCheck((result, session) => result(session("key").as[Int]) == session("value").as[Int])) as "Get",
       close
     )
 
@@ -52,9 +50,11 @@ class BasicSimulation extends Simulation {
     Ignition.allGrids().get(0).close()
   }
 
-  private def protocol = ignite.cfg(
-    new ClientConfiguration().setAddresses("localhost:10800")
-  ).withManualClientStart
+  private def protocol = ignite
+    .cfg(
+      new ClientConfiguration().setAddresses("localhost:10800")
+    )
+    .withManualClientStart
 
   setUp(
     scn

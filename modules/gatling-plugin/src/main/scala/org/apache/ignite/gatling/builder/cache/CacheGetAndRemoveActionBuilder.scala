@@ -26,14 +26,16 @@ import org.apache.ignite.gatling.IgniteCheck
 import org.apache.ignite.gatling.action.cache.CacheGetAndRemoveAction
 import org.apache.ignite.gatling.builder.IgniteActionBuilder
 
-case class CacheGetAndRemoveActionBuilder[K, V](cacheName: Expression[String],
-                                                key: Expression[K],
-                                                checks: Seq[IgniteCheck[K, V]] = Seq.empty,
-                                                requestName: Expression[String] = EmptyStringExpressionSuccess) extends IgniteActionBuilder {
+case class CacheGetAndRemoveActionBuilder[K, V](
+  cacheName: Expression[String],
+  key: Expression[K],
+  checks: Seq[IgniteCheck[K, V]] = Seq.empty,
+  requestName: Expression[String] = EmptyStringExpressionSuccess
+) extends IgniteActionBuilder {
 
   def check(newChecks: IgniteCheck[K, V]*): CacheGetAndRemoveActionBuilder[K, V] = this.copy(checks = newChecks)
 
-  def as(requestName: Expression[String]): ActionBuilder = this.copy(requestName=requestName)
+  def as(requestName: Expression[String]): ActionBuilder = this.copy(requestName = requestName)
 
   override def build(ctx: ScenarioContext, next: Action): Action =
     CacheGetAndRemoveAction(requestName, cacheName, key, checks, next, ctx)

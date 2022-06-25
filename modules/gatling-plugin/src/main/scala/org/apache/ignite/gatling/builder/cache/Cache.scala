@@ -30,8 +30,7 @@ trait Cache {
 
   case class PutBuilder[K, V]() {
     def apply(cacheName: Expression[String], key: Expression[K], value: Expression[V]): CachePutActionBuilder[K, V] =
-      CachePutActionBuilder(cacheName, session =>
-        key(session).flatMap(k => value(session).map(v => (k, v))))
+      CachePutActionBuilder(cacheName, session => key(session).flatMap(k => value(session).map(v => (k, v))))
 
     def apply(cacheName: Expression[String], pair: Expression[(K, V)]): CachePutActionBuilder[K, V] =
       CachePutActionBuilder(cacheName, pair)
@@ -67,7 +66,10 @@ trait Cache {
   def invokeAll[K, V, T](cacheName: Expression[String], keys: Expression[Set[K]]): CacheInvokeAllSingleProcessorActionBuilderBase[K, V, T] =
     CacheInvokeAllSingleProcessorActionBuilderBase[K, V, T](cacheName, keys)
 
-  def invokeAll[K, V, T](cacheName: Expression[String], map: Expression[Map[K, CacheEntryProcessor[K, V, T]]]): CacheInvokeAllActionBuilderBase[K, V, T] =
+  def invokeAll[K, V, T](
+    cacheName: Expression[String],
+    map: Expression[Map[K, CacheEntryProcessor[K, V, T]]]
+  ): CacheInvokeAllActionBuilderBase[K, V, T] =
     CacheInvokeAllActionBuilderBase[K, V, T](cacheName, map)
 
   def lock[K](cacheName: Expression[String], key: Expression[K]): CacheLockActionBuilder[K] =

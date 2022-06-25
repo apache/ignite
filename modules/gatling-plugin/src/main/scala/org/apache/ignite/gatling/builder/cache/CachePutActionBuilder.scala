@@ -26,24 +26,23 @@ import org.apache.ignite.gatling.action.cache
 import org.apache.ignite.gatling.action.cache.CachePutAction
 import org.apache.ignite.gatling.builder.IgniteActionBuilder
 
-case class CachePutActionBuilder[K, V](cacheName: Expression[String],
-                                       pair: Expression[(K, V)],
-                                       requestName: Expression[String] = EmptyStringExpressionSuccess
-                                      ) extends IgniteActionBuilder {
+case class CachePutActionBuilder[K, V](
+  cacheName: Expression[String],
+  pair: Expression[(K, V)],
+  requestName: Expression[String] = EmptyStringExpressionSuccess
+) extends IgniteActionBuilder {
   def keepBinary: CachePutActionBuilderBinaryStep[K, V] =
     CachePutActionBuilderBinaryStep(requestName, cacheName, pair)
 
-  def as(requestName: Expression[String]): ActionBuilder = this.copy(requestName=requestName)
+  def as(requestName: Expression[String]): ActionBuilder = this.copy(requestName = requestName)
 
   override def build(ctx: ScenarioContext, next: Action): Action =
     CachePutAction(requestName, cacheName, pair, keepBinary = false, next, ctx)
 }
 
-case class CachePutActionBuilderBinaryStep[K, V](requestName: Expression[String],
-                                                 cacheName: Expression[String],
-                                                 pair: Expression[(K, V)]
-                                                ) extends IgniteActionBuilder {
-  def as(requestName: Expression[String]): ActionBuilder = this.copy(requestName=requestName)
+case class CachePutActionBuilderBinaryStep[K, V](requestName: Expression[String], cacheName: Expression[String], pair: Expression[(K, V)])
+    extends IgniteActionBuilder {
+  def as(requestName: Expression[String]): ActionBuilder = this.copy(requestName = requestName)
 
   override def build(ctx: ScenarioContext, next: Action): Action =
     cache.CachePutAction(requestName, cacheName, pair, keepBinary = true, next, ctx)

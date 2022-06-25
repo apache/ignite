@@ -42,9 +42,7 @@ object IgniteProtocol {
       throw new IllegalStateException("Can't provide a default value for IgniteProtocol")
 
     override def newComponents(coreComponents: CoreComponents): IgniteProtocol => IgniteComponents =
-      igniteProtocol => {
-        IgniteComponents(coreComponents, igniteProtocol, IgniteApi(igniteProtocol))
-      }
+      igniteProtocol => IgniteComponents(coreComponents, igniteProtocol, IgniteApi(igniteProtocol))
   }
 }
 

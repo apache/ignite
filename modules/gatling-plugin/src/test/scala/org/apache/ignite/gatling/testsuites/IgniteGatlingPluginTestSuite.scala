@@ -23,13 +23,9 @@ import org.apache.ignite.gatling.TransactionTest
 import org.junit.runner.RunWith
 import org.junit.runners.Suite
 
-
 /**
  * Gatling plugin tests.
  */
 @RunWith(classOf[Suite])
-@Suite.SuiteClasses(Array(
-  classOf[PutGetTest],
-  classOf[SqlTest],
-  classOf[TransactionTest]))
+@Suite.SuiteClasses(Array(classOf[PutGetTest], classOf[SqlTest], classOf[TransactionTest]))
 class IgniteGatlingPluginTestSuite

@@ -26,15 +26,16 @@ import org.apache.ignite.cache.CacheEntryProcessor
 import org.apache.ignite.gatling.IgniteCheck
 import org.apache.ignite.gatling.action.CacheAction
 
-case class CacheInvokeAction[K, V, T](requestName: Expression[String],
-                                      cacheName: Expression[String],
-                                      key: Expression[K],
-                                      entryProcessor: CacheEntryProcessor[K, V, T],
-                                      arguments: Seq[Expression[Any]],
-                                      checks: Seq[IgniteCheck[K, T]],
-                                      next: Action,
-                                      ctx: ScenarioContext
-                                     ) extends CacheAction[K, V] {
+case class CacheInvokeAction[K, V, T](
+  requestName: Expression[String],
+  cacheName: Expression[String],
+  key: Expression[K],
+  entryProcessor: CacheEntryProcessor[K, V, T],
+  arguments: Seq[Expression[Any]],
+  checks: Seq[IgniteCheck[K, T]],
+  next: Action,
+  ctx: ScenarioContext
+) extends CacheAction[K, V] {
 
   override val actionType: String = "invoke"
 
