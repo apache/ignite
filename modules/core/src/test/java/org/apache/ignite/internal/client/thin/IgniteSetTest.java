@@ -192,7 +192,33 @@ public class IgniteSetTest extends AbstractThinClientTest {
     public void testSameNameInDifferentGroups() {
         // TODO
         String name = "testSameNameInDifferentGroups";
-        assertEquals("x", name);
+        ClientCollectionConfiguration cfg1 = new ClientCollectionConfiguration();
+
+        ClientCollectionConfiguration cfg2 = new ClientCollectionConfiguration()
+                .setGroupName("gp1");
+
+        ClientCollectionConfiguration cfg3 = new ClientCollectionConfiguration()
+                .setGroupName("gp1")
+                .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
+
+
+        try (IgniteClient client = startClient(0)) {
+            ClientIgniteSet<Integer> set1 = client.set(name, cfg1);
+            ClientIgniteSet<Integer> set2 = client.set(name, cfg2);
+            ClientIgniteSet<Integer> set3 = client.set(name, cfg3);
+
+            set1.add(1);
+            set2.add(2);
+            set3.add(3);
+
+            assertTrue(set1.contains(1));
+            assertTrue(set2.contains(2));
+            assertTrue(set3.contains(3));
+
+            assertFalse(set1.contains(2));
+            assertFalse(set2.contains(3));
+            assertFalse(set3.contains(1));
+        }
     }
 
     @SuppressWarnings("ThrowableNotThrown")
