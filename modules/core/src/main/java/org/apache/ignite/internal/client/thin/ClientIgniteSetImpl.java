@@ -220,8 +220,9 @@ class ClientIgniteSetImpl<T> implements ClientIgniteSet<T> {
     }
 
     private Boolean singleKeyOp(ClientOperation op, Object key) {
-        // TODO: Partition awareness - we need to know colocated flag and cacheId
-        return ch.service(op, out -> {
+        Object affKey = affinityKey(key);
+
+        return ch.affinityService(cacheId, affKey, op, out -> {
             try (BinaryRawWriterEx w = serDes.createBinaryWriter(out.out())) {
                 writeIdentity(w);
 
@@ -251,14 +252,15 @@ class ClientIgniteSetImpl<T> implements ClientIgniteSet<T> {
         w.writeLong(id.localId());
     }
 
-    private Object affinityKey(Object o) {
-        // Only separated mode is supported by the client partition awareness,
-        // because older cluster nodes simply don't support this client feature.
+    private Object affinityKey(Object key) {
+        // CollocatedSetItemKey#setNameHash is AffinityKeyMapped.
         if (collocated)
             return name.hashCode();
 
+        // Only separated mode is supported by the client partition awareness,
+        // because older cluster nodes simply don't support this client feature.
         // Server wraps user object into GridCacheSetItemKey, but setId is always null in separated mode,
         // so the user object itself ends up as affinity key.
-        return o;
+        return key;
     }
 }
