@@ -226,6 +226,7 @@ public class IgniteSetTest extends AbstractThinClientTest {
         // Resource approach is more complicated with affinity, but we can deal with that.`
         // OR adopt AtomicLong logic and ignore that noise, get rid of IgniteUuid.
         // OR somehow leverage known cache id! It will also be fast!
+        // TODO: Looks like a similar issue exists in thick API - only name and groupName are used to locate a DS. Write a test.
         String name = "testSameNameDifferentOptions";
         ClientCollectionConfiguration cfg1 = new ClientCollectionConfiguration()
                 .setGroupName("gp1");
