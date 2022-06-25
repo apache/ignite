@@ -218,6 +218,32 @@ public class IgniteSetTest extends AbstractThinClientTest {
         }
     }
 
+    @Test
+    public void testSameNameDifferentOptions() {
+        // TODO: Same name and group, different atomicity mode - weird behavior.
+        String name = "testSameNameDifferentOptions";
+        ClientCollectionConfiguration cfg1 = new ClientCollectionConfiguration()
+                .setGroupName("gp1");
+
+        ClientCollectionConfiguration cfg2 = new ClientCollectionConfiguration()
+                .setGroupName("gp1")
+                .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
+
+        try (IgniteClient client = startClient(0)) {
+            ClientIgniteSet<Integer> set1 = client.set(name, cfg1);
+            ClientIgniteSet<Integer> set2 = client.set(name, cfg2);
+
+            set1.add(2);
+            set2.add(3);
+
+            assertTrue(set1.contains(2));
+            assertTrue(set2.contains(3));
+
+            assertFalse(set1.contains(3));
+            assertFalse(set2.contains(1));
+        }
+    }
+
     @SuppressWarnings("ThrowableNotThrown")
     private static void assertThrowsClosed(ClientIgniteSet<Integer> set) {
         String msg = "IgniteSet with name '" + set.name() + "' does not exist.";
