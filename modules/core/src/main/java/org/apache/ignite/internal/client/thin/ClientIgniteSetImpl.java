@@ -36,9 +36,6 @@ class ClientIgniteSetImpl<T> implements ClientIgniteSet<T> {
     private final String name;
 
     /** */
-    private final String groupName; // TODO remove
-
-    /** */
     private final IgniteUuid id;
 
     /** */
@@ -72,7 +69,6 @@ class ClientIgniteSetImpl<T> implements ClientIgniteSet<T> {
             ReliableChannel ch,
             ClientUtils serDes,
             String name,
-            String groupName,
             IgniteUuid id,
             boolean collocated,
             int cacheId) {
@@ -84,7 +80,6 @@ class ClientIgniteSetImpl<T> implements ClientIgniteSet<T> {
         this.ch = ch;
         this.serDes = serDes;
         this.name = name;
-        this.groupName = groupName;
         this.id = id;
         this.collocated = collocated;
         this.cacheId = cacheId;

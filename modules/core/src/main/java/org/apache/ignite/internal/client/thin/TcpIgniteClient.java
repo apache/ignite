@@ -403,9 +403,8 @@ public class TcpIgniteClient implements IgniteClient {
             IgniteUuid id = new IgniteUuid(new UUID(in.in().readLong(), in.in().readLong()), in.in().readLong());
             boolean colocated = in.in().readBoolean();
             int cacheId = in.in().readInt();
-            String groupName = cfg == null ? null : cfg.getGroupName();
 
-            return new ClientIgniteSetImpl<>(ch, serDes, name, groupName, id, colocated, cacheId);
+            return new ClientIgniteSetImpl<>(ch, serDes, name, id, colocated, cacheId);
         });
     }
 
