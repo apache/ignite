@@ -188,6 +188,13 @@ public class IgniteSetTest extends AbstractThinClientTest {
         }
     }
 
+    @Test
+    public void testSameNameInDifferentGroups() {
+        // TODO
+        String name = "testSameNameInDifferentGroups";
+        assertEquals("x", name);
+    }
+
     @SuppressWarnings("ThrowableNotThrown")
     private static void assertThrowsClosed(ClientIgniteSet<Integer> set) {
         String msg = "IgniteSet with name '" + set.name() + "' does not exist.";
