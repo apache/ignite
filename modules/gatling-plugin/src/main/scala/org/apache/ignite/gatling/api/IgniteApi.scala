@@ -160,8 +160,10 @@ trait IgniteApi {
   def binaryObjectBuilder: String => BinaryObjectBuilder
 
   /**
+   * Returns instance of the underlined Ignite API.
+   *
    * @tparam API API type (either Ignite or IgniteClient)
-   * @return Instance of the underlined Ignite API.
+   * @return Ignite Api instance.
    */
   def wrapped[API]: API
 }
@@ -233,6 +235,7 @@ trait CacheApi[K, V] {
 
   /**
    * Gets a collection of entries from the cache.
+   *
    * @param keys Collection of keys.
    * @param s Function to be called if operation is competed successfully.
    * @param f Function to be called if exception occurs.
@@ -241,59 +244,212 @@ trait CacheApi[K, V] {
 
   /**
    * Asynchronously gets a collection of entries from the cache.
+   *
    * @param keys Collection of keys.
    * @param s Function to be called if operation is competed successfully.
    * @param f Function to be called if exception occurs.
    */
   def getAllAsync(keys: Set[K])(s: Map[K, V] => Unit, f: Throwable => Unit = _ => ()): Unit
 
+  /**
+   * Removes the entry for a key only if currently mapped to some.
+   *
+   * @param key Key.
+   * @param s Function to be called if operation is competed successfully.
+   * @param f Function to be called if exception occurs.
+   */
   def getAndRemove(key: K)(s: Map[K, V] => Unit, f: Throwable => Unit = _ => ()): Unit
 
+  /**
+   * Asynchronously removes the entry for a key only if currently mapped to some.
+   *
+   * @param key Key.
+   * @param s Function to be called if operation is competed successfully.
+   * @param f Function to be called if exception occurs.
+   */
   def getAndRemoveAsync(key: K)(s: Map[K, V] => Unit, f: Throwable => Unit = _ => ()): Unit
 
+  /**
+   * Puts value with the specified key in this cache, returning an existing value
+   * if one existed.
+   *
+   * @param key Key.
+   * @param value Value.
+   * @param s Function to be called if operation is competed successfully.
+   * @param f Function to be called if exception occurs.
+   */
   def getAndPut(key: K, value: V)(s: Map[K, V] => Unit, f: Throwable => Unit = _ => ()): Unit
 
+  /**
+   * Asynchronously puts value with the specified key in this cache, returning an existing
+   * value if one existed.
+   *
+   * @param key Key.
+   * @param value Value.
+   * @param s Function to be called if operation is competed successfully.
+   * @param f Function to be called if exception occurs.
+   */
   def getAndPutAsync(key: K, value: V)(s: Map[K, V] => Unit, f: Throwable => Unit = _ => ()): Unit
 
+  /**
+   * Removes the entry for a key.
+   *
+   * @param key Key.
+   * @param s Function to be called if operation is competed successfully.
+   * @param f Function to be called if exception occurs.
+   */
   def remove(key: K)(s: Unit => Unit, f: Throwable => Unit = _ => ()): Unit
 
+  /**
+   * Asynchronously removes the entry for a key.
+   *
+   * @param key Key.
+   * @param s Function to be called if operation is competed successfully.
+   * @param f Function to be called if exception occurs.
+   */
   def removeAsync(key: K)(s: Unit => Unit, f: Throwable => Unit = _ => ()): Unit
 
+  /**
+   * Removes a collection of entries from the cache.
+   *
+   * @param keys Set of keys.
+   * @param s Function to be called if operation is competed successfully.
+   * @param f Function to be called if exception occurs.
+   */
   def removeAll(keys: Set[K])(s: Unit => Unit, f: Throwable => Unit = _ => ()): Unit
 
+  /**
+   * Asynchronously removes a collection of entries from the cache.
+   *
+   * @param keys Set of keys.
+   * @param s Function to be called if operation is competed successfully.
+   * @param f Function to be called if exception occurs.
+   */
   def removeAllAsync(keys: Set[K])(s: Unit => Unit, f: Throwable => Unit = _ => ()): Unit
 
+  /**
+   * Invokes an [[CacheEntryProcessor]] against the entry specified by the provided key.
+   *
+   * @tparam T Type of the return value.
+   * @param key Key.
+   * @param entryProcessor Entry processor.
+   * @param arguments Additional arguments to pass to the entry processor.
+   * @param s Function to be called if operation is competed successfully.
+   * @param f Function to be called if exception occurs.
+   */
   def invoke[T](key: K, entryProcessor: CacheEntryProcessor[K, V, T], arguments: Any*)
                (s: Map[K, T] => Unit, f: Throwable => Unit = _ => ()): Unit
 
+  /**
+   * Asynchronously invokes an [[CacheEntryProcessor]] against the entry specified by the provided key.
+   *
+   * @tparam T Type of the return value.
+   * @param key Key.
+   * @param entryProcessor Entry processor.
+   * @param arguments Additional arguments to pass to the entry processor.
+   * @param s Function to be called if operation is competed successfully.
+   * @param f Function to be called if exception occurs.
+   */
   def invokeAsync[T](key: K, entryProcessor: CacheEntryProcessor[K, V, T], arguments: Any*)
                     (s: Map[K, T] => Unit, f: Throwable => Unit = _ => ()): Unit
 
+  /**
+   * Invokes each EntryProcessor from map's values against the correspondent
+   * entry specified by map's key set.
+   *
+   * @tparam T Type of the return value.
+   * @param map Map containing keys and entry processors to be applied to values.
+   * @param arguments Additional arguments to pass to the entry processors.
+   * @param s Function to be called if operation is competed successfully.
+   * @param f Function to be called if exception occurs.
+   */
   def invokeAll[T](map: Map[K, CacheEntryProcessor[K, V, T]], arguments: Any*)
                (s: Map[K, EntryProcessorResult[T]] => Unit, f: Throwable => Unit = _ => ()): Unit
 
+  /**
+   * Asynchronously invokes each EntryProcessor from map's values against the correspondent
+   * entry specified by map's key set.
+   *
+   * @tparam T Type of the return value.
+   * @param map Map containing keys and entry processors to be applied to values.
+   * @param arguments Additional arguments to pass to the entry processors.
+   * @param s Function to be called if operation is competed successfully.
+   * @param f Function to be called if exception occurs.
+   */
   def invokeAllAsync[T](map: Map[K, CacheEntryProcessor[K, V, T]], arguments: Any*)
                     (s: Map[K, EntryProcessorResult[T]] => Unit, f: Throwable => Unit = _ => ()): Unit
 
+  /**
+   * Acquires lock associated with a passed key.
+   *
+   * @param key Key.
+   * @param s Function to be called if operation is competed successfully.
+   * @param f Function to be called if exception occurs.
+   */
   def lock(key: K)(s: Lock => Unit, f: Throwable => Unit = _ => ()): Unit
 
+  /**
+   * Releases the lock.
+   *
+   * @param lock Lock.
+   * @param s Function to be called if operation is competed successfully.
+   * @param f Function to be called if exception occurs.
+   */
   def unlock(lock: Lock)(s: Unit => Unit, f: Throwable => Unit = _ => ()): Unit
 
+  /**
+   * Executes the Ignite [[SqlFieldsQuery]]
+   *
+   * @param query Query object.
+   * @param s Function to be called if operation is competed successfully.
+   * @param f Function to be called if exception occurs.
+   */
   def sql(query: SqlFieldsQuery)(s: List[List[Any]] => Unit, f: Throwable => Unit = _ => ()): Unit
 
+  /**
+   * Returns cache that will operate with binary objects.
+   *
+   * @return Instance of Cache API.
+   */
   def withKeepBinary(): CacheApi[K, V]
 }
 
+/**
+ * Wrapper around the Ignite [[org.apache.ignite.transactions.Transaction]] object.
+ */
 trait TransactionApi {
+  /**
+   * Commit an enclosed transaction
+   *
+   * @param s Function to be called if operation is competed successfully.
+   * @param f Function to be called if exception occurs.
+   */
   def commit()(s: Unit => Unit, f: Throwable => Unit = _ => ()): Unit
 
+  /**
+   * Rollback an enclosed transaction
+   *
+   * @param s Function to be called if operation is competed successfully.
+   * @param f Function to be called if exception occurs.
+   */
   def rollback()(s: Unit => Unit, f: Throwable => Unit = _ => ()): Unit
 }
 
+/**
+ * Factory for [[IgniteApi]] instances.
+ */
 object IgniteApi extends CompletionSupport with StrictLogging {
+  /** Execution context to handle results of operations. */
   implicit val ec: ExecutionContext = scala.concurrent.ExecutionContext.global
 
-  def manualStart[U](protocol: IgniteProtocol, session: Session)(s: IgniteApi => U, f: Throwable => U): Unit =
+  /**
+   *
+   * @param protocol Gatling Ignite protocol.
+   * @param session Gatling session.
+   * @param s Function to be called if operation is competed successfully.
+   * @param f Function to be called if exception occurs.
+   */
+  def start(protocol: IgniteProtocol, session: Session)(s: IgniteApi => Unit, f: Throwable => Unit): Unit =
     protocol.cfg match {
       case IgniteClientConfigurationCfg(cfg) if protocol.manualClientStart => Try(startClient(cfg)).fold(f, s)
 
@@ -302,7 +458,18 @@ object IgniteApi extends CompletionSupport with StrictLogging {
       case _ => s(session(IGNITE_API_SESSION_KEY).as[IgniteApi])
     }
 
-  def autoStart(protocol: IgniteProtocol): Option[IgniteApi] =
+  /**
+   * Creates default instance of IgniteApi on simulation start depending on the protocol passed.
+   *
+   * If protocol contains configuration objects it starts either ignite node
+   * in client mode or thin ignite client.
+   *
+   * If protocol contains started instances of node or client just returns it.
+   *
+   * @param protocol Gatling Ignite protocol
+   * @return Instance of Ignite API
+   */
+  def apply(protocol: IgniteProtocol): Option[IgniteApi] =
     protocol.cfg match {
       case IgniteClientConfigurationCfg(cfg) if !protocol.manualClientStart => Some(startClient(cfg))
 
@@ -317,12 +484,24 @@ object IgniteApi extends CompletionSupport with StrictLogging {
       case _ => None
     }
 
+  /**
+   * Starts Ignite node in client mode.
+   *
+   * @param cfg Node configuration.
+   * @return Instance of IgniteNodeApi.
+   */
   private def startNode(cfg: IgniteConfiguration): IgniteNodeApi = {
     val node = Ignition.start(cfg)
     node.cacheNames.forEach(name => node.cache(name))
     IgniteNodeApi(node)
   }
 
+  /**
+   * Starts Ignite (thin) client.
+   *
+   * @param cfg Client configuration.
+   * @return Instance of IgniteThinApi.
+   */
   private def startClient(cfg: ClientConfiguration): IgniteThinApi = IgniteThinApi(Ignition.startClient(cfg))
 }
 

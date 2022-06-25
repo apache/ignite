@@ -231,7 +231,7 @@
       </parameter>
     </parameters>
   </check>
-  <check class="org.scalastyle.scalariform.UnderscoreImportChecker" level="warning" enabled="true" />
+<!--  <check class="org.scalastyle.scalariform.UnderscoreImportChecker" level="warning" enabled="true" />-->
   <check class="org.scalastyle.scalariform.LowercasePatternMatchChecker" level="warning" enabled="true" />
   <check class="org.scalastyle.scalariform.EmptyInterpolatedStringChecker" level="warning" enabled="true" />
   <check class="org.scalastyle.scalariform.MultipleStringLiteralsChecker" level="warning" enabled="true">

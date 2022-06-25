@@ -38,7 +38,7 @@ case class StartClientAction(requestName: Expression[String],
 
       logger.debug(s"session user id: #${session.userId}, before $name")
 
-      val func = IgniteApi.manualStart(components.igniteProtocol, session) _
+      val func = IgniteApi.start(components.igniteProtocol, session) _
 
       call(func, resolvedRequestName, session, (session, igniteApi: Option[IgniteApi]) =>
         igniteApi

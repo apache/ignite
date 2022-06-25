@@ -43,7 +43,7 @@ object IgniteProtocol {
 
     override def newComponents(coreComponents: CoreComponents): IgniteProtocol => IgniteComponents =
       igniteProtocol => {
-        IgniteComponents(coreComponents, igniteProtocol, IgniteApi.autoStart(igniteProtocol))
+        IgniteComponents(coreComponents, igniteProtocol, IgniteApi(igniteProtocol))
       }
   }
 }
