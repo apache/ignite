@@ -21,8 +21,6 @@ import java.util.concurrent.locks.Lock
 
 import javax.cache.processor.MutableEntry
 
-import scala.language.implicitConversions
-
 import io.gatling.core.session.Expression
 import org.apache.ignite.cache.CacheEntryProcessor
 

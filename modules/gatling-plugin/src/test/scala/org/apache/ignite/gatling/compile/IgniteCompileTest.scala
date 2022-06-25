@@ -21,8 +21,6 @@ import java.util.concurrent.locks.Lock
 
 import javax.cache.processor.MutableEntry
 
-import scala.language.postfixOps
-
 import io.gatling.core.Predef._
 import io.gatling.core.structure.ChainBuilder
 import org.apache.ignite.Ignite

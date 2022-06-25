@@ -17,8 +17,6 @@
 
 package org.apache.ignite.gatling
 
-import scala.language.implicitConversions
-
 import io.gatling.core.Predef.{group => ggroup}
 import io.gatling.core.Predef.exec
 import io.gatling.core.action.builder.ActionBuilder
