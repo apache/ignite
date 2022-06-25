@@ -186,7 +186,7 @@ public class ThinClientPartitionAwarenessStableTopologyTest extends ThinClientAb
     public void testIgniteSet() {
         // TODO: Test different names, custom groups
         // TODO: Test colocated mode separately!
-        ClientIgniteSet<String> clientSet = client.set("set1", new ClientCollectionConfiguration());
+        ClientIgniteSet<String> clientSet = client.set("testIgniteSet", new ClientCollectionConfiguration());
 
         String cacheName = "TODO";
         IgniteInternalCache<Object, Object> cache = grid(0).context().cache().cache(cacheName);
@@ -200,6 +200,13 @@ public class ThinClientPartitionAwarenessStableTopologyTest extends ThinClientAb
 
         TestTcpClientChannel opCh = affinityChannel("TODO", cache);
         assertOpOnChannel(opCh, ClientOperation.OP_SET_VALUE_ADD);
+    }
+
+    @Test
+    public void testIgniteSetCollocated() {
+        ClientCollectionConfiguration cfg = new ClientCollectionConfiguration().setCollocated(true);
+        ClientIgniteSet<String> clientSet = client.set("testIgniteSetColocated", cfg);
+        assertEquals("todo", "TODO");
     }
 
     /**
