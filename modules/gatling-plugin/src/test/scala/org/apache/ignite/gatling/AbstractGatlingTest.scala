@@ -20,24 +20,48 @@ package org.apache.ignite.gatling
 import io.gatling.app.Gatling
 import io.gatling.core.config.GatlingPropertiesBuilder
 import org.apache.ignite.gatling.IgniteClientApi.IgniteApi
-import org.apache.ignite.gatling.IgniteClientApi.thinClient
+import org.apache.ignite.gatling.IgniteClientApi.NodeApi
+import org.apache.ignite.gatling.IgniteClientApi.ThinClient
 import org.apache.ignite.internal.client.thin.AbstractThinClientTest
 import org.junit.Assert.assertTrue
+import org.junit.Test
 
-class AbstractGatlingTest extends AbstractThinClientTest {
+abstract class AbstractGatlingTest extends AbstractThinClientTest {
+  /** Class name of simulation */
+  val simulation: String
 
+  /** @inheritdoc */
   override protected def beforeTest(): Unit = {
     super.beforeTest()
     startGrid(0)
   }
 
+  /** @inheritdoc */
   override protected def afterTest(): Unit = {
     stopAllGrids()
     super.afterTest()
   }
 
+  /**
+   * Tests simulation with thin client.
+   */
+  @Test
+  def thinClient(): Unit = runWith(ThinClient)(simulation)
+
+  /**
+   * Tests simulation with thick client.
+   */
+  @Test
+  def thickClient(): Unit = runWith(NodeApi)(simulation)
+
+  /**
+   * Runs simulation with the specified API.
+   *
+   * @param api ThinApi or NodeApi.
+   * @param simulationClass Class name of simulation.
+   */
   protected def runWith(api: IgniteApi)(simulationClass: String): Unit = {
-    if (api == thinClient) {
+    if (api == ThinClient) {
       val sysProperties = System.getProperties
       sysProperties.setProperty("host", clientHost(grid(0).cluster.localNode))
       sysProperties.setProperty("port", String.valueOf(clientPort(grid(0).cluster.localNode)))
@@ -52,7 +76,12 @@ class AbstractGatlingTest extends AbstractThinClientTest {
   }
 }
 
+/**
+ * Types of Ignite API
+ */
 object IgniteClientApi extends Enumeration {
+  /**  */
   type IgniteApi = Value
-  val thinClient, nodeApi = Value
+  /**  */
+  val ThinClient, NodeApi = Value
 }

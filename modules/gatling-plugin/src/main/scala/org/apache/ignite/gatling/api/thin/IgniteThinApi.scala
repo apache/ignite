@@ -18,7 +18,6 @@
 package org.apache.ignite.gatling.api.thin
 
 import scala.concurrent.ExecutionContext
-import scala.concurrent.Future
 import scala.jdk.FutureConverters.CompletionStageOps
 import scala.util.Try
 
@@ -30,77 +29,144 @@ import org.apache.ignite.client.ClientCacheConfiguration
 import org.apache.ignite.client.IgniteClient
 import org.apache.ignite.configuration.CacheConfiguration
 import org.apache.ignite.gatling.api.CacheApi
-import org.apache.ignite.gatling.api.CompletionSupport
 import org.apache.ignite.gatling.api.IgniteApi
 import org.apache.ignite.gatling.api.TransactionApi
 import org.apache.ignite.gatling.builder.ignite.SimpleCacheConfiguration
 import org.apache.ignite.transactions.TransactionConcurrency
 import org.apache.ignite.transactions.TransactionIsolation
 
-case class IgniteThinApi(wrapped: IgniteClient)(implicit val ec: ExecutionContext) extends IgniteApi with CompletionSupport {
+/**
+ * Implementation of [[IgniteApi]] working via the Ignite (thin) Client API.
+ *
+ * @param wrapped Enclosed IgniteClient instance.
+ */
+case class IgniteThinApi(wrapped: IgniteClient) extends IgniteApi with CompletionSupport {
+  /** @inheritdoc */
+  implicit val ec: ExecutionContext = scala.concurrent.ExecutionContext.global
+
+  /**
+   * @inheritdoc
+   * @tparam K @inheritdoc
+   * @tparam V @inheritdoc
+   * @param name @inheritdoc
+   * @return @inheritdoc
+   */
   override def cache[K, V](name: String): Validation[CacheApi[K, V]] =
     Try(wrapped.cache[K, V](name))
-      .map(CacheThinApi(_))
+      .map(CacheThinApi[K, V])
       .fold(ex => ValidationFailure(ex.getMessage), ValidationSuccess(_))
 
+  /**
+   * @inheritdoc
+   * @tparam K @inheritdoc
+   * @tparam V @inheritdoc
+   * @param name @inheritdoc
+   * @param s @inheritdoc
+   * @param f @inheritdoc
+   */
   override def getOrCreateCache[K, V](name: String)(s: CacheApi[K, V] => Unit, f: Throwable => Unit): Unit =
-    withCompletion(wrapped.getOrCreateCacheAsync[K, V](name).asScala.map(CacheThinApi(_)))(s, f)
+    withCompletion(wrapped.getOrCreateCacheAsync[K, V](name).asScala.map(CacheThinApi[K, V]))(s, f)
 
+  /**
+   * @inheritdoc
+   * @tparam K @inheritdoc
+   * @tparam V @inheritdoc
+   * @param cfg @inheritdoc
+   * @param s @inheritdoc
+   * @param f @inheritdoc
+   */
   override def getOrCreateCacheByClientConfiguration[K, V](
     cfg: ClientCacheConfiguration
   )(s: CacheApi[K, V] => Unit, f: Throwable => Unit): Unit =
-    withCompletion(wrapped.getOrCreateCacheAsync[K, V](cfg).asScala.map(CacheThinApi(_)))(s, f)
+    withCompletion(wrapped.getOrCreateCacheAsync[K, V](cfg).asScala.map(CacheThinApi[K, V]))(s, f)
 
+  /**
+   * @inheritdoc
+   * @tparam K @inheritdoc
+   * @tparam V @inheritdoc
+   * @param cfg @inheritdoc
+   * @param s @inheritdoc
+   * @param f @inheritdoc
+   */
   override def getOrCreateCacheByConfiguration[K, V](cfg: CacheConfiguration[K, V])(s: CacheApi[K, V] => Unit, f: Throwable => Unit): Unit =
     throw new NotImplementedError("Node client cache configuration was used to create cache via thin client API")
 
+  /**
+   * @inheritdoc
+   * @tparam K @inheritdoc
+   * @tparam V @inheritdoc
+   * @param name @inheritdoc
+   * @param cfg @inheritdoc
+   * @param s @inheritdoc
+   * @param f @inheritdoc
+   */
   override def getOrCreateCacheBySimpleConfig[K, V](name: String, cfg: SimpleCacheConfiguration)(
     s: CacheApi[K, V] => Unit,
     f: Throwable => Unit
   ): Unit =
-    getOrCreateCacheByClientConfiguration(cacheConfiguration(name, cfg))(s, f)
+    getOrCreateCacheByClientConfiguration(
+      new ClientCacheConfiguration()
+        .setName(name)
+        .setCacheMode(cfg.mode)
+        .setAtomicityMode(cfg.atomicity)
+        .setBackups(cfg.backups))(s, f)
 
+  /**
+   * @inheritdoc
+   * @param s @inheritdoc
+   * @param f @inheritdoc
+   */
   override def close()(s: Unit => Unit, f: Throwable => Unit): Unit =
-    withCompletion(Future(wrapped.close()))(s, f)
+    Try(wrapped.close()).fold(f, s)
 
+  /** @inheritdoc
+   * @param s @inheritdoc
+   * @param f @inheritdoc
+   */
   override def txStart()(s: TransactionApi => Unit, f: Throwable => Unit): Unit =
-    Try {
-      wrapped.transactions().txStart()
-    }.fold(
-      f,
-      tx => s(TransactionThinApi(tx))
-    )
+    Try(wrapped.transactions().txStart())
+      .map(TransactionThinApi)
+      .fold(f, s)
 
+  /** @inheritdoc
+   * @param concurrency @inheritdoc
+   * @param isolation @inheritdoc
+   * @param s @inheritdoc
+   * @param f @inheritdoc
+   */
   override def txStartEx(
     concurrency: TransactionConcurrency,
     isolation: TransactionIsolation
   )(s: TransactionApi => Unit, f: Throwable => Unit): Unit =
-    Try {
-      wrapped.transactions().txStart(concurrency, isolation)
-    }.fold(
-      f,
-      tx => s(TransactionThinApi(tx))
-    )
+    Try(wrapped.transactions().txStart(concurrency, isolation))
+      .map(TransactionThinApi)
+      .fold(f, s)
 
+  /** @inheritdoc
+   * @param concurrency @inheritdoc
+   * @param isolation @inheritdoc
+   * @param timeout @inheritdoc
+   * @param txSize @inheritdoc
+   * @param s @inheritdoc
+   * @param f @inheritdoc
+   */
   override def txStartEx2(concurrency: TransactionConcurrency, isolation: TransactionIsolation, timeout: Long, txSize: Int)(
     s: TransactionApi => Unit,
     f: Throwable => Unit
   ): Unit =
-    Try {
-      wrapped.transactions().txStart(concurrency, isolation, timeout)
-    }.fold(
-      f,
-      tx => s(TransactionThinApi(tx))
-    )
+    Try(wrapped.transactions().txStart(concurrency, isolation, timeout))
+      .map(TransactionThinApi)
+      .fold(f, s)
 
+  /**
+   * @inheritdoc
+   * @tparam API @inheritdoc
+   * @return @inheritdoc
+   */
   override def wrapped[API]: API = wrapped.asInstanceOf[API]
 
-  private def cacheConfiguration(name: String, simpleCacheConfiguration: SimpleCacheConfiguration): ClientCacheConfiguration =
-    new ClientCacheConfiguration()
-      .setName(name)
-      .setCacheMode(simpleCacheConfiguration.mode)
-      .setAtomicityMode(simpleCacheConfiguration.atomicity)
-      .setBackups(simpleCacheConfiguration.backups)
-
+  /** @inheritdoc
+   * @return @inheritdoc
+   */
   override def binaryObjectBuilder: String => BinaryObjectBuilder = typeName => wrapped.binary().builder(typeName)
 }

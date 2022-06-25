@@ -31,7 +31,6 @@ import org.apache.ignite.cache.CacheEntryProcessor
 import org.apache.ignite.cache.query.SqlFieldsQuery
 import org.apache.ignite.client.ClientCache
 import org.apache.ignite.gatling.api.CacheApi
-import org.apache.ignite.gatling.api.CompletionSupport
 
 case class CacheThinApi[K, V](wrapped: ClientCache[K, V])(implicit val ec: ExecutionContext)
     extends CacheApi[K, V]

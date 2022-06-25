@@ -18,17 +18,19 @@
 package org.apache.ignite.gatling
 
 import io.gatling.core.Predef._
-import io.gatling.core.structure.ScenarioBuilder
 import org.apache.ignite.configuration.CacheConfiguration
-import org.apache.ignite.gatling.IgniteClientApi.nodeApi
-import org.apache.ignite.gatling.IgniteClientApi.thinClient
 import org.apache.ignite.gatling.Predef._
 import org.apache.ignite.gatling.simulation.IgniteSupport
-import org.junit.Test
 
+/**
+ * Tests creation of all types of transactions.
+ */
 class TransactionTest extends AbstractGatlingTest {
-  val cache = "TEST-CACHE"
+  private val cache = "TEST-CACHE"
+  /** @inheritdoc */
+  override val simulation: String = "org.apache.ignite.gatling.TransactionSimulation"
 
+  /** @inheritdoc */
   override protected def beforeTest(): Unit = {
     super.beforeTest()
     val ignite = grid(0)
@@ -39,21 +41,14 @@ class TransactionTest extends AbstractGatlingTest {
         .setAtomicityMode(TRANSACTIONAL)
     )
   }
-
-  @Test
-  def thinClientTest(): Unit = runWith(thinClient) {
-    "org.apache.ignite.gatling.TransactionSimulation"
-  }
-
-  @Test
-  def thickClientTest(): Unit = runWith(nodeApi) {
-    "org.apache.ignite.gatling.TransactionSimulation"
-  }
 }
 
+/**
+ * Simulation with all types of transactions.
+ */
 class TransactionSimulation extends Simulation with IgniteSupport {
   private val cache = "TEST-CACHE"
-  val scn: ScenarioBuilder = scenario("Basic")
+  private val scn = scenario("Basic")
     .feed(feeder)
     .execIgnite(
       start,

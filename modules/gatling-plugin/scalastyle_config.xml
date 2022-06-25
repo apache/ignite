@@ -96,7 +96,7 @@
       </parameter>
     </parameters>
   </check>
-  <check class="org.scalastyle.scalariform.MagicNumberChecker" level="warning" enabled="true">
+  <check class="org.scalastyle.scalariform.MagicNumberChecker" level="warning" enabled="false">
     <parameters>
       <parameter name="ignore">
         <![CDATA[-1,0,1,2,3]]>
@@ -234,7 +234,7 @@
 <!--  <check class="org.scalastyle.scalariform.UnderscoreImportChecker" level="warning" enabled="true" />-->
   <check class="org.scalastyle.scalariform.LowercasePatternMatchChecker" level="warning" enabled="true" />
   <check class="org.scalastyle.scalariform.EmptyInterpolatedStringChecker" level="warning" enabled="true" />
-  <check class="org.scalastyle.scalariform.MultipleStringLiteralsChecker" level="warning" enabled="true">
+  <check class="org.scalastyle.scalariform.MultipleStringLiteralsChecker" level="warning" enabled="false">
     <parameters>
       <parameter name="allowed">
         <![CDATA[2]]>
@@ -296,7 +296,7 @@
       </parameter>
     </parameters>
   </check>
-  <check class="org.scalastyle.scalariform.NamedArgumentChecker" level="warning" enabled="true">
+  <check class="org.scalastyle.scalariform.NamedArgumentChecker" level="warning" enabled="false">
     <parameters>
       <parameter name="checkString">
         <![CDATA[false]]>

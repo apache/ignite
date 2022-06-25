@@ -21,10 +21,6 @@ import java.util.concurrent.locks.Lock
 
 import javax.cache.processor.EntryProcessorResult
 
-import scala.concurrent.ExecutionContext
-import scala.concurrent.Future
-import scala.util.Failure
-import scala.util.Success
 import scala.util.Try
 
 import com.typesafe.scalalogging.StrictLogging
@@ -161,7 +157,9 @@ trait IgniteApi {
   ): Unit
 
   /**
-   * @return Instance of BinaryObjectBuilder
+   * Creates instance of BinaryObjectBuilder.
+   *
+   * @return Instance of BinaryObjectBuilder.
    */
   def binaryObjectBuilder: String => BinaryObjectBuilder
 
@@ -452,11 +450,13 @@ trait TransactionApi {
 /**
  * Factory for [[IgniteApi]] instances.
  */
-object IgniteApi extends CompletionSupport with StrictLogging {
-  /** Execution context to handle results of operations. */
-  implicit val ec: ExecutionContext = scala.concurrent.ExecutionContext.global
-
+object IgniteApi extends StrictLogging {
   /**
+   * Starts new instance of IgniteApi.
+   *
+   * Starts new Ignite node or thin client instances if protocol was configured via configuration objects.
+   * Do nothing and returns existing instances from session otherwise.
+   *
    * @param protocol Gatling Ignite protocol.
    * @param session Gatling session.
    * @param s Function to be called if operation is competed successfully.
@@ -516,13 +516,4 @@ object IgniteApi extends CompletionSupport with StrictLogging {
    * @return Instance of IgniteThinApi.
    */
   private def startClient(cfg: ClientConfiguration): IgniteThinApi = IgniteThinApi(Ignition.startClient(cfg))
-}
-
-trait CompletionSupport {
-  implicit val ec: ExecutionContext
-
-  def withCompletion[T, U](fut: Future[T])(s: T => U, f: Throwable => U): Unit = fut.onComplete {
-    case Success(value)     => s(value)
-    case Failure(exception) => f(exception)
-  }
 }

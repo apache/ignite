@@ -185,7 +185,7 @@
                     <scala>
                         <scalafmt>
                             <version>3.5.8</version>
-                            <file>${project.basedir}/checkstyle/.scalafmt.conf</file>
+                            <file>${project.basedir}/.scalafmt.conf</file>
                         </scalafmt>
                         <licenseHeader>
                             <file>${project.basedir}/checkstyle/license-header</file>

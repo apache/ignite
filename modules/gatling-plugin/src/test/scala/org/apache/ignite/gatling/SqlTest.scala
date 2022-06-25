@@ -22,38 +22,20 @@ import java.util.UUID
 import com.typesafe.scalalogging.StrictLogging
 import io.gatling.commons.validation.SuccessWrapper
 import io.gatling.core.Predef._
-import org.apache.ignite.configuration.CacheConfiguration
-import org.apache.ignite.gatling.IgniteClientApi.nodeApi
-import org.apache.ignite.gatling.IgniteClientApi.thinClient
 import org.apache.ignite.gatling.Predef._
 import org.apache.ignite.gatling.simulation.IgniteSupport
-import org.junit.Test
 
+/**
+ * Tests SQL queries.
+ */
 class SqlTest extends AbstractGatlingTest {
-  val cache = "TEST-CACHE"
-
-  override protected def beforeTest(): Unit = {
-    super.beforeTest()
-    val ignite = grid(0)
-    ignite.createCache(
-      new CacheConfiguration[Int, Int]()
-        .setName(cache)
-        .setCacheMode(PARTITIONED)
-        .setAtomicityMode(TRANSACTIONAL)
-    )
-  }
-
-  @Test
-  def thinClientTest(): Unit = runWith(thinClient) {
-    "org.apache.ignite.gatling.SqlSimulation"
-  }
-
-  @Test
-  def thickClientTest(): Unit = runWith(nodeApi) {
-    "org.apache.ignite.gatling.SqlSimulation"
-  }
+  /** @inheritdoc */
+  override val simulation: String = "org.apache.ignite.gatling.SqlSimulation"
 }
 
+/**
+ * SQL simulation.
+ */
 class SqlSimulation extends Simulation with IgniteSupport with StrictLogging {
   private val cache = "TEST-CACHE"
   private val keyExpression = (s: Session) => s("key").as[Long].success

@@ -17,8 +17,6 @@
 
 package org.apache.ignite.gatling.api.node
 
-import scala.concurrent.ExecutionContext
-import scala.concurrent.Future
 import scala.util.Try
 
 import io.gatling.commons.validation.{Failure => ValidationFailure}
@@ -29,7 +27,6 @@ import org.apache.ignite.binary.BinaryObjectBuilder
 import org.apache.ignite.client.ClientCacheConfiguration
 import org.apache.ignite.configuration.CacheConfiguration
 import org.apache.ignite.gatling.api.CacheApi
-import org.apache.ignite.gatling.api.CompletionSupport
 import org.apache.ignite.gatling.api.IgniteApi
 import org.apache.ignite.gatling.api.TransactionApi
 import org.apache.ignite.gatling.builder.ignite.SimpleCacheConfiguration
@@ -37,86 +34,139 @@ import org.apache.ignite.transactions.TransactionConcurrency
 import org.apache.ignite.transactions.TransactionIsolation
 
 /**
- * Implementation of [[IgniteApi]] working via the ignite node (thick) API.
+ * Implementation of [[IgniteApi]] working via the Ignite node (thick) API.
  *
  * @param wrapped Instance of Ignite API.
- * @param ec Execution context to handle results of operations.
  */
-case class IgniteNodeApi(wrapped: Ignite)(implicit val ec: ExecutionContext) extends IgniteApi with CompletionSupport {
-  /** @inheritdoc */
+case class IgniteNodeApi(wrapped: Ignite) extends IgniteApi {
+  /**
+   * @inheritdoc
+   * @tparam K @inheritdoc
+   * @tparam V @inheritdoc
+   * @param name @inheritdoc
+   * @return @inheritdoc
+   */
   override def cache[K, V](name: String): Validation[CacheApi[K, V]] =
     Try(wrapped.cache[K, V](name))
-      .map(CacheNodeApi(_))
+      .map(CacheNodeApi[K, V])
       .fold(ex => ValidationFailure(ex.getMessage), ValidationSuccess(_))
 
-  /** @inheritdoc */
+  /**
+   * @inheritdoc
+   * @tparam K @inheritdoc
+   * @tparam V @inheritdoc
+   * @param name @inheritdoc
+   * @param s @inheritdoc
+   * @param f @inheritdoc
+   */
   override def getOrCreateCache[K, V](name: String)(s: CacheApi[K, V] => Unit, f: Throwable => Unit): Unit =
-    withCompletion(Future(wrapped.getOrCreateCache[K, V](name)).map(CacheNodeApi(_)))(s, f)
+    Try(wrapped.getOrCreateCache[K, V](name))
+      .map(CacheNodeApi[K, V])
+      .fold(f, s)
 
-  /** @inheritdoc */
+  /**
+   * @inheritdoc
+   * @tparam K @inheritdoc
+   * @tparam V @inheritdoc
+   * @param cfg @inheritdoc
+   * @param s @inheritdoc
+   * @param f @inheritdoc
+   */
   override def getOrCreateCacheByClientConfiguration[K, V](
     cfg: ClientCacheConfiguration
   )(s: CacheApi[K, V] => Unit, f: Throwable => Unit): Unit =
     throw new NotImplementedError("Thin client cache configuration was used to create cache via node API")
 
-  /** @inheritdoc */
-  override def getOrCreateCacheByConfiguration[K, V](cfg: CacheConfiguration[K, V])(s: CacheApi[K, V] => Unit, f: Throwable => Unit): Unit =
-    withCompletion(Future(wrapped.getOrCreateCache(cfg)).map(CacheNodeApi(_)))(s, f)
+  /**
+   * @inheritdoc
+   * @tparam K @inheritdoc
+   * @tparam V @inheritdoc
+   * @param cfg @inheritdoc
+   * @param s @inheritdoc
+   * @param f @inheritdoc
+   */
+  override def getOrCreateCacheByConfiguration[K, V](
+    cfg: CacheConfiguration[K, V]
+  )(s: CacheApi[K, V] => Unit, f: Throwable => Unit): Unit =
+    Try(wrapped.getOrCreateCache[K, V](cfg))
+      .map(CacheNodeApi[K, V])
+      .fold(f, s)
 
-  /** @inheritdoc */
+  /**
+   * @inheritdoc
+   * @tparam K @inheritdoc
+   * @tparam V @inheritdoc
+   * @param name @inheritdoc
+   * @param cfg @inheritdoc
+   * @param s @inheritdoc
+   * @param f @inheritdoc
+   */
   override def getOrCreateCacheBySimpleConfig[K, V](name: String, cfg: SimpleCacheConfiguration)(
     s: CacheApi[K, V] => Unit,
     f: Throwable => Unit
   ): Unit =
-    getOrCreateCacheByConfiguration(cacheConfiguration[K, V](name, cfg))(s, f)
+    getOrCreateCacheByConfiguration(
+      new CacheConfiguration[K, V]()
+        .setName(name)
+        .setCacheMode(cfg.mode)
+        .setAtomicityMode(cfg.atomicity)
+        .setBackups(cfg.backups))(s, f)
 
-  /** @inheritdoc */
-  override def close()(s: Unit => Unit, f: Throwable => Unit): Unit =
-    withCompletion(Future.successful(()))(s, f)
+  /**
+   * @inheritdoc
+   * @param s @inheritdoc
+   * @param f @inheritdoc
+   */
+  override def close()(s: Unit => Unit, f: Throwable => Unit): Unit = s.apply()
 
-  private def cacheConfiguration[K, V](name: String, simpleCacheConfiguration: SimpleCacheConfiguration): CacheConfiguration[K, V] =
-    new CacheConfiguration()
-      .setName(name)
-      .setCacheMode(simpleCacheConfiguration.mode)
-      .setAtomicityMode(simpleCacheConfiguration.atomicity)
-      .setBackups(simpleCacheConfiguration.backups)
-
-  /** @inheritdoc */
+  /** @inheritdoc
+   * @param s @inheritdoc
+   * @param f @inheritdoc
+   */
   override def txStart()(s: TransactionApi => Unit, f: Throwable => Unit): Unit =
-    Try {
-      wrapped.transactions().txStart()
-    }.fold(
-      f,
-      tx => s(TransactionNodeApi(tx))
-    )
+    Try(wrapped.transactions().txStart())
+      .map(TransactionNodeApi)
+      .fold(f, s)
 
-  /** @inheritdoc */
+  /** @inheritdoc
+   * @param concurrency @inheritdoc
+   * @param isolation @inheritdoc
+   * @param s @inheritdoc
+   * @param f @inheritdoc
+   */
   override def txStartEx(
     concurrency: TransactionConcurrency,
     isolation: TransactionIsolation
   )(s: TransactionApi => Unit, f: Throwable => Unit): Unit =
-    Try {
-      wrapped.transactions().txStart(concurrency, isolation)
-    }.fold(
-      f,
-      tx => s(TransactionNodeApi(tx))
-    )
+    Try(wrapped.transactions().txStart(concurrency, isolation))
+      .map(TransactionNodeApi)
+      .fold(f, s)
 
-  /** @inheritdoc */
+  /** @inheritdoc
+   * @param concurrency @inheritdoc
+   * @param isolation @inheritdoc
+   * @param timeout @inheritdoc
+   * @param txSize @inheritdoc
+   * @param s @inheritdoc
+   * @param f @inheritdoc
+   */
   override def txStartEx2(concurrency: TransactionConcurrency, isolation: TransactionIsolation, timeout: Long, txSize: Int)(
     s: TransactionApi => Unit,
     f: Throwable => Unit
   ): Unit =
-    Try {
-      wrapped.transactions().txStart(concurrency, isolation, timeout, txSize)
-    }.fold(
-      f,
-      tx => s(TransactionNodeApi(tx))
-    )
+    Try(wrapped.transactions().txStart(concurrency, isolation, timeout, txSize))
+      .map(TransactionNodeApi)
+      .fold(f, s)
 
-  /** @inheritdoc */
+  /**
+   * @inheritdoc
+   * @tparam API @inheritdoc
+   * @return @inheritdoc
+   */
   override def wrapped[API]: API = wrapped.asInstanceOf[API]
 
-  /** @inheritdoc */
+  /** @inheritdoc
+   * @return @inheritdoc
+   */
   override def binaryObjectBuilder: String => BinaryObjectBuilder = typeName => wrapped.binary().builder(typeName)
 }

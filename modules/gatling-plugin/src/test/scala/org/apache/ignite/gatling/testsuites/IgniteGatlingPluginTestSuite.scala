@@ -19,6 +19,7 @@ package org.apache.ignite.gatling.testsuites
 
 import org.apache.ignite.gatling.PutGetTest
 import org.apache.ignite.gatling.SqlTest
+import org.apache.ignite.gatling.TransactionCommitRollbackTest
 import org.apache.ignite.gatling.TransactionTest
 import org.junit.runner.RunWith
 import org.junit.runners.Suite
@@ -27,5 +28,10 @@ import org.junit.runners.Suite
  * Gatling plugin tests.
  */
 @RunWith(classOf[Suite])
-@Suite.SuiteClasses(Array(classOf[PutGetTest], classOf[SqlTest], classOf[TransactionTest]))
+@Suite.SuiteClasses(Array(
+  classOf[PutGetTest],
+  classOf[SqlTest],
+  classOf[TransactionTest],
+  classOf[TransactionCommitRollbackTest]
+))
 class IgniteGatlingPluginTestSuite
