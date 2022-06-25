@@ -48,6 +48,9 @@ class ClientIgniteSetImpl<T> implements ClientIgniteSet<T> {
     private final boolean collocated;
 
     /** */
+    private final int cacheId;
+
+    /** */
     private volatile boolean removed;
 
     /** */
@@ -60,8 +63,15 @@ class ClientIgniteSetImpl<T> implements ClientIgniteSet<T> {
      * @param name Name.
      * @param id Id.
      * @param collocated Colocated flag.
+     * @param cacheId Cache id.
      */
-    public ClientIgniteSetImpl(ReliableChannel ch, ClientUtils serDes, String name, IgniteUuid id, boolean collocated) {
+    public ClientIgniteSetImpl(
+            ReliableChannel ch,
+            ClientUtils serDes,
+            String name,
+            IgniteUuid id,
+            boolean collocated,
+            int cacheId) {
         assert ch != null;
         assert serDes != null;
         assert name != null;
@@ -72,6 +82,7 @@ class ClientIgniteSetImpl<T> implements ClientIgniteSet<T> {
         this.name = name;
         this.id = id;
         this.collocated = collocated;
+        this.cacheId = cacheId;
     }
 
     /** {@inheritDoc} */
@@ -209,7 +220,7 @@ class ClientIgniteSetImpl<T> implements ClientIgniteSet<T> {
     }
 
     private Boolean singleKeyOp(ClientOperation op, Object key) {
-        // TODO: Partition awareness - we need to know colocated flag.
+        // TODO: Partition awareness - we need to know colocated flag and cacheId
         return ch.service(op, out -> {
             try (BinaryRawWriterEx w = serDes.createBinaryWriter(out.out())) {
                 writeIdentity(w);
@@ -245,10 +256,6 @@ class ClientIgniteSetImpl<T> implements ClientIgniteSet<T> {
         // because older cluster nodes simply don't support this client feature.
         if (collocated)
             return name.hashCode();
-
-        // TODO: same code using thick client and thin client will end up with different hash for user objects,
-        // because client passes objects in form of BinaryObject.
-        // Write a test to confirm that we can put from thin and get from thick.
 
         // Server wraps user object into GridCacheSetItemKey, but setId is always null in separated mode,
         // so the user object itself ends up as affinity key.
