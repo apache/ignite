@@ -223,7 +223,8 @@ public class IgniteSetTest extends AbstractThinClientTest {
         // TODO: We can't rely only on name and group name.
         // Cache mode, atomicity, and backups are also important.
         // This whole process makes operations slow. We should use ResourceRegistry instead.
-        // Resource approach is more complicated with affinity, but we can deal with that.
+        // Resource approach is more complicated with affinity, but we can deal with that.`
+        // OR adopt AtomicLong logic and ignore that noise, get rid of IgniteUuid.
         String name = "testSameNameDifferentOptions";
         ClientCollectionConfiguration cfg1 = new ClientCollectionConfiguration()
                 .setGroupName("gp1");
