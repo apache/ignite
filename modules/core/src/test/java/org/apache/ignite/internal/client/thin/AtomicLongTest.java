@@ -237,6 +237,46 @@ public class AtomicLongTest extends AbstractThinClientTest {
     }
 
     /**
+     * Tests atomic long with same name and group name, but different cache modes.
+     */
+    @Test
+    public void testSameNameDifferentOptionsDoesNotCreateSecondAtomic() {
+        String groupName = "testSameNameDifferentOptions";
+
+        ClientAtomicConfiguration cfg1 = new ClientAtomicConfiguration()
+                .setCacheMode(CacheMode.REPLICATED)
+                .setGroupName(groupName);
+
+        ClientAtomicConfiguration cfg2 = new ClientAtomicConfiguration()
+                .setCacheMode(CacheMode.PARTITIONED)
+                .setGroupName(groupName);
+
+        String name = "testSameNameDifferentOptionsDoesNotCreateSecondAtomic";
+
+        try (IgniteClient client = startClient(0)) {
+            ClientAtomicLong al1 = client.atomicLong(name, cfg1, 1, true);
+            ClientAtomicLong al2 = client.atomicLong(name, cfg2, 2, true);
+            ClientAtomicLong al3 = client.atomicLong(name, 3, true);
+
+            assertEquals(1, al1.get());
+            assertEquals(1, al2.get());
+            assertEquals(3, al3.get());
+        }
+
+        List<IgniteInternalCache<?, ?>> caches = new ArrayList<>(grid(0).cachesx());
+        assertEquals(3, caches.size());
+
+        IgniteInternalCache<?, ?> replicatedCache = caches.get(1);
+        IgniteInternalCache<?, ?> defaultCache = caches.get(2);
+
+        assertEquals("ignite-sys-atomic-cache@testSameNameDifferentOptions", replicatedCache.name());
+        assertEquals("ignite-sys-atomic-cache@default-ds-group", defaultCache.name());
+
+        assertEquals(Integer.MAX_VALUE, replicatedCache.configuration().getBackups());
+        assertEquals(1, defaultCache.configuration().getBackups());
+    }
+
+    /**
      * Asserts that "does not exist" error is thrown.
      *
      * @param name Atomic long name.
