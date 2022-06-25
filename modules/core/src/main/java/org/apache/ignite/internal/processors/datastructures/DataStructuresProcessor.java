@@ -1768,15 +1768,11 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
      * @return Set instance.
      * @throws IgniteCheckedException If failed.
      */
-    @Nullable public <T> IgniteSet<T> set(
-            final String name,
-            @Nullable final String grpName,
-            @Nullable final CollectionConfiguration cfg,
-            boolean noCreate)
+    @Nullable public <T> IgniteSet<T> set(final String name, @Nullable final String grpName, @Nullable final CollectionConfiguration cfg)
         throws IgniteCheckedException {
         A.notNull(name, "name");
 
-        final boolean create = !noCreate && cfg != null;
+        final boolean create = cfg != null;
         final boolean collocated = isCollocated(cfg);
         final boolean separated = !collocated &&
             U.isOldestNodeVersionAtLeast(SEPARATE_CACHE_PER_NON_COLLOCATED_SET_SINCE, ctx.grid().cluster().nodes());
@@ -1786,6 +1782,33 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
                 return cctx.dataStructures().set(name, collocated, create, separated);
             }
         }, cfg, name, grpName, SET, create, separated);
+    }
+
+    /**
+     * Gets a set from cache by known cache id. Does not create new sets.
+     *
+     * @param name Set name.
+     * @param cacheId Cache id.
+     * @param collocated Colocated mode flag.
+     * @param separated Separated cache flag.
+     * @return Set instance.
+     * @throws IgniteCheckedException If failed.
+     */
+    @Nullable public <T> IgniteSet<T> set(String name, int cacheId, boolean collocated, boolean separated)
+        throws IgniteCheckedException {
+        A.notNull(name, "name");
+
+        DynamicCacheDescriptor desc = ctx.cache().cacheDescriptor(cacheId);
+
+        if (desc == null)
+            return null;
+
+        IgniteInternalCache<Object, Object> cache = ctx.cache().cache(desc.cacheName());
+
+        if (cache == null)
+            return null;
+
+        return cache.context().dataStructures().set(name, collocated, false, separated);
     }
 
     /**

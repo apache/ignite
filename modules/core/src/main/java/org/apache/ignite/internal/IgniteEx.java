@@ -162,13 +162,15 @@ public interface IgniteEx extends Ignite {
     public void rebalanceEnabled(boolean rebalanceEnabled);
 
     /**
-     * Gets a named set from cache. Does not create a new set.
+     * Gets a set from cache by known cache id. Does not create new sets.
      *
      * @param name Set name.
-     * @param groupName Group name.
+     * @param cacheId Cache id.
+     * @param collocated Colocated mode flag.
+     * @param separated Separated cache flag.
      * @param <T> Type of the elements in set.
      * @return Set with given properties.
      * @throws IgniteException If set could not be fetched or created.
      */
-    public <T> IgniteSet<T> setNoCreate(String name, String groupName) throws IgniteException;
+    public <T> IgniteSet<T> set(String name, int cacheId, boolean collocated, boolean separated) throws IgniteException;
 }

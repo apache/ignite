@@ -27,6 +27,7 @@ import org.apache.ignite.client.ClientException;
 import org.apache.ignite.client.ClientIgniteSet;
 import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.configuration.ClientConfiguration;
+import org.apache.ignite.configuration.CollectionConfiguration;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.datastructures.GridCacheSetProxy;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -170,10 +171,17 @@ public class IgniteSetTest extends AbstractThinClientTest {
                 .setCollocated(true)
                 .setGroupName(groupName);
 
+        CollectionConfiguration serverCfg = new CollectionConfiguration()
+                .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
+                .setCacheMode(CacheMode.PARTITIONED)
+                .setBackups(7)
+                .setCollocated(true)
+                .setGroupName(groupName);
+
         try (IgniteClient client = startClient(0)) {
             ClientIgniteSet<UserObj> set = client.set("testConfigPropagation", cfg);
 
-            GridCacheSetProxy serverSet = (GridCacheSetProxy) ignite(0).setNoCreate(set.name(), groupName);
+            GridCacheSetProxy serverSet = (GridCacheSetProxy) ignite(0).set(set.name(), serverCfg);
 
             Field field = GridCacheSetProxy.class.getDeclaredField("cctx");
             field.setAccessible(true);
@@ -220,13 +228,6 @@ public class IgniteSetTest extends AbstractThinClientTest {
 
     @Test
     public void testSameNameDifferentOptions() {
-        // TODO: We can't rely only on name and group name.
-        // Cache mode, atomicity, and backups are also important.
-        // This whole process makes operations slow. We should use ResourceRegistry instead.
-        // Resource approach is more complicated with affinity, but we can deal with that.`
-        // OR adopt AtomicLong logic and ignore that noise, get rid of IgniteUuid.
-        // OR somehow leverage known cache id! It will also be fast!
-        // TODO: Looks like a similar issue exists in thick API - only name and groupName are used to locate a DS. Write a test.
         String name = "testSameNameDifferentOptions";
         ClientCollectionConfiguration cfg1 = new ClientCollectionConfiguration()
                 .setGroupName("gp1");

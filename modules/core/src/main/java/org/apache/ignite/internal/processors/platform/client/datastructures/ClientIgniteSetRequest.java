@@ -35,7 +35,10 @@ public class ClientIgniteSetRequest extends ClientRequest {
     private final String name;
 
     /** */
-    private final String groupName;
+    private final int cacheId;
+
+    /** */
+    private final boolean collocated;
 
     /** */
     private final IgniteUuid id;
@@ -49,7 +52,8 @@ public class ClientIgniteSetRequest extends ClientRequest {
         super(reader);
 
         name = reader.readString();
-        groupName = reader.readString();
+        cacheId = reader.readInt();
+        collocated = reader.readBoolean();
         id = new IgniteUuid(new UUID(reader.readLong(), reader.readLong()), reader.readLong());
     }
 
@@ -89,7 +93,8 @@ public class ClientIgniteSetRequest extends ClientRequest {
      * @return IgniteSet or null.
      */
     protected <T> IgniteSet<T> igniteSet(ClientConnectionContext ctx) {
-        IgniteSet<T> set = ctx.kernalContext().grid().setNoCreate(name, groupName);
+        // Thin client only works in separated mode, because non-separated mode was discontinued earlier.
+        IgniteSet<T> set = ctx.kernalContext().grid().set(name, cacheId, collocated, true);
 
         if (set != null && ((GridCacheSetProxy<T>) set).delegate().id().equals(id))
             return set;

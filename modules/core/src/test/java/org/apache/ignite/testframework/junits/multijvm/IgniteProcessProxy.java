@@ -533,7 +533,7 @@ public class IgniteProcessProxy implements IgniteEx {
     }
 
     /** {@inheritDoc} */
-    @Override public <T> IgniteSet<T> setNoCreate(String name, String groupName) throws IgniteException {
+    @Override public <T> IgniteSet<T> set(String name, int cacheId, boolean collocated, boolean separated) throws IgniteException {
         throw new UnsupportedOperationException("Operation isn't supported yet.");
     }
 

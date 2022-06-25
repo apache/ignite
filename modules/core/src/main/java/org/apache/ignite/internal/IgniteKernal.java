@@ -3098,7 +3098,7 @@ public class IgniteKernal implements IgniteEx, Externalizable {
         try {
             checkClusterState();
 
-            return ctx.dataStructures().set(name, null, cfg, false);
+            return ctx.dataStructures().set(name, null, cfg);
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
@@ -3109,13 +3109,13 @@ public class IgniteKernal implements IgniteEx, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public <T> IgniteSet<T> setNoCreate(String name, String groupName) throws IgniteException {
+    @Override public <T> IgniteSet<T> set(String name, int cacheId, boolean collocated, boolean separated) throws IgniteException {
         guard();
 
         try {
             checkClusterState();
 
-            return ctx.dataStructures().set(name, groupName, null, true);
+            return ctx.dataStructures().set(name, cacheId, collocated, separated);
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
