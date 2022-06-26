@@ -1014,7 +1014,7 @@ public class IgniteIndexReader implements AutoCloseable {
             String.format("%.2f", (stat.freeSpace * 100.0d) / (pageSize * stat.cnt))
         )));
 
-        Collections.sort(data, Comparator.comparingLong(l -> (long)l.get(1)));
+        Collections.sort(data, Comparator.comparingLong(l -> (Long)l.get(1)));
 
         SystemViewCommand.printTable(
             Arrays.asList(prefix + "Type", "Pages", "Free space (Kb)", "Free space (%)"),
