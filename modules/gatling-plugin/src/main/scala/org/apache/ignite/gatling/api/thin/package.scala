@@ -23,13 +23,13 @@ import scala.util.Failure
 import scala.util.Success
 
 package object thin {
+  /**  Execution context to run callbacks. */
+  implicit val Ec: ExecutionContext = scala.concurrent.ExecutionContext.global
+
   /**
    * Helper to execute future with the callback functions passed.
    */
   trait CompletionSupport {
-    /**  Execution context to run callbacks. */
-    implicit val ec: ExecutionContext
-
     /**
      * @param fut Future to execute.
      * @param s Function to be called if future is competed successfully.

@@ -24,8 +24,8 @@ import io.gatling.core.structure.ScenarioContext
 import org.apache.ignite.gatling.action.IgniteAction
 import org.apache.ignite.gatling.protocol.IgniteProtocol.TRANSACTION_API_SESSION_KEY
 
-case class TransactionEndAction(requestName: Expression[String], next: Action, ctx: ScenarioContext) extends IgniteAction {
-  override val actionType: String = "txEnd"
+case class TransactionCloseAction(requestName: Expression[String], next: Action, ctx: ScenarioContext) extends IgniteAction {
+  override val actionType: String = "txClose"
 
   def execute(session: Session): Unit =
     for ((resolvedRequestName, _, transactionApiOptional) <- igniteParameters(session)) yield {
@@ -33,10 +33,10 @@ case class TransactionEndAction(requestName: Expression[String], next: Action, c
       transactionApiOptional.fold {
         next ! session
       } { transactionApi =>
-        val func = transactionApi.commit() _
+        val func = transactionApi.close() _
         call(
           func,
-          if (resolvedRequestName.nonEmpty) s"$resolvedRequestName-auto-commit" else resolvedRequestName,
+          resolvedRequestName,
           session,
           (session, _: Option[Unit]) => session.remove(TRANSACTION_API_SESSION_KEY)
         )

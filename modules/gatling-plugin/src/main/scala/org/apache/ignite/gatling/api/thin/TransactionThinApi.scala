@@ -17,23 +17,41 @@
 
 package org.apache.ignite.gatling.api.thin
 
+import scala.util.Try
+
 import org.apache.ignite.client.ClientTransaction
 import org.apache.ignite.gatling.api.TransactionApi
 
+/**
+ * Implementation of [[TransactionApi]] working via the Ignite (thin) Client API.
+ *
+ * @param wrapped Enclosed IgniteClient instance.
+ */
 case class TransactionThinApi(wrapped: ClientTransaction) extends TransactionApi {
+  /**
+   * @inheritdoc
+   * @param s @inheritdoc
+   * @param f @inheritdoc
+   */
   override def commit()(s: Unit => Unit, f: Throwable => Unit): Unit =
-    try
-      s(wrapped.commit())
-    catch {
-      case ex: Throwable => f(ex)
-    } finally
-      wrapped.close()
+    Try(wrapped.commit())
+      .fold(f, s)
 
+  /**
+   * @inheritdoc
+   * @param s @inheritdoc
+   * @param f @inheritdoc
+   */
   override def rollback()(s: Unit => Unit, f: Throwable => Unit): Unit =
-    try
-      s(wrapped.rollback())
-    catch {
-      case ex: Throwable => f(ex)
-    } finally
-      wrapped.close()
+    Try(wrapped.rollback())
+      .fold(f, s)
+
+  /**
+   * @inheritdoc
+   * @param s @inheritdoc
+   * @param f @inheritdoc
+   */
+  override def close()(s: Unit => Unit, f: Throwable => Unit): Unit =
+    Try(wrapped.close())
+      .fold(f, s)
 }

@@ -38,35 +38,43 @@ class TransactionCommitRollbackSimulation extends Simulation with StrictLogging 
   private val value = "value"
   private val cache = "TEST-CACHE"
 
-  private val commitTx =
+  private val commitTx = execIgnite(
     tx(PESSIMISTIC, READ_COMMITTED).timeout(3000L).txSize(1)(
       put[Int, Int](cache, s"#{$key}", s"#{$value}"),
-      commit,
-      get[Int, Any](cache, s"#{$key}") check(
-        allResults[Int, Any].saveAs("C"),
-        simpleCheck((m, session) => m(session(key).as[Int]) == session(value).as[Int])
-      ),
-      exec { session =>
-        logger.info(session.toString); session
-      }
+      commit
+    ),
+    get[Int, Any](cache, s"#{$key}") check(
+      allResults[Int, Any].saveAs("C"),
+      simpleCheck((m, session) => m(session(key).as[Int]) == session(value).as[Int])
     )
+  )
 
-  private val rollbackTx =
+  private val rollbackTx = execIgnite(
     tx(OPTIMISTIC, REPEATABLE_READ)(
       put[Int, Int](cache, s"#{$key}", s"#{$value}"),
-      rollback,
-      get[Int, Any](cache, s"#{$key}") check(
-        allResults[Int, Any].saveAs("R"),
-        simpleCheck { (m, session) =>
-          logger.info(m.toString)
-          m(session(key).as[Int]) == null
-        }
-      ),
-      exec { session =>
-        logger.info(session.toString)
-        session
+      rollback
+    ),
+    get[Int, Any](cache, s"#{$key}") check(
+      allResults[Int, Any].saveAs("R"),
+      simpleCheck { (m, session) =>
+        logger.info(m.toString)
+        m(session(key).as[Int]) == null
       }
     )
+  )
+
+  private val autoRollbackTx = execIgnite(
+    tx(OPTIMISTIC, REPEATABLE_READ)(
+      put[Int, Int](cache, s"#{$key}", s"#{$value}"),
+    ),
+    get[Int, Any](cache, s"#{$key}") check(
+      allResults[Int, Any].saveAs("R"),
+      simpleCheck { (m, session) =>
+        logger.info(m.toString)
+        m(session(key).as[Int]) == null
+      }
+    )
+  )
 
   private val scn = scenario("Basic")
     .feed(feeder)
@@ -74,6 +82,7 @@ class TransactionCommitRollbackSimulation extends Simulation with StrictLogging 
       start,
       create(cache).backups(0).atomicity(TRANSACTIONAL),
       rollbackTx,
+      autoRollbackTx,
       commitTx,
       exec { session =>
         logger.info(session.toString)
@@ -82,5 +91,5 @@ class TransactionCommitRollbackSimulation extends Simulation with StrictLogging 
       close
     )
 
-  setUp(scn.inject(atOnceUsers(1))).protocols(protocol).assertions(global.failedRequests.count.is(0))
+  setUp(scn.inject(atOnceUsers(10))).protocols(protocol).assertions(global.failedRequests.count.is(0))
 }

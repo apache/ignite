@@ -431,7 +431,7 @@ trait CacheApi[K, V] {
  */
 trait TransactionApi {
   /**
-   * Commit an enclosed transaction
+   * Commits the enclosed transaction
    *
    * @param s Function to be called if operation is competed successfully.
    * @param f Function to be called if exception occurs.
@@ -439,12 +439,20 @@ trait TransactionApi {
   def commit()(s: Unit => Unit, f: Throwable => Unit = _ => ()): Unit
 
   /**
-   * Rollback an enclosed transaction
+   * Rollbacks the enclosed transaction
    *
    * @param s Function to be called if operation is competed successfully.
    * @param f Function to be called if exception occurs.
    */
   def rollback()(s: Unit => Unit, f: Throwable => Unit = _ => ()): Unit
+
+  /**
+   * Closes the enclosed transaction
+   *
+   * @param s Function to be called if operation is competed successfully.
+   * @param f Function to be called if exception occurs.
+   */
+  def close()(s: Unit => Unit, f: Throwable => Unit = _ => ()): Unit
 }
 
 /**

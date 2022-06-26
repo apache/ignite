@@ -17,7 +17,6 @@
 
 package org.apache.ignite.gatling.api.thin
 
-import scala.concurrent.ExecutionContext
 import scala.jdk.FutureConverters.CompletionStageOps
 import scala.util.Try
 
@@ -41,9 +40,6 @@ import org.apache.ignite.transactions.TransactionIsolation
  * @param wrapped Enclosed IgniteClient instance.
  */
 case class IgniteThinApi(wrapped: IgniteClient) extends IgniteApi with CompletionSupport {
-  /** @inheritdoc */
-  implicit val ec: ExecutionContext = scala.concurrent.ExecutionContext.global
-
   /**
    * @inheritdoc
    * @tparam K @inheritdoc

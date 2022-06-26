@@ -24,8 +24,8 @@ import io.gatling.core.session.EmptyStringExpressionSuccess
 import io.gatling.core.session.Expression
 import io.gatling.core.structure.ChainBuilder
 import io.gatling.core.structure.ScenarioContext
+import org.apache.ignite.gatling.action.ignite.TransactionCloseAction
 import org.apache.ignite.gatling.action.ignite.TransactionCommitAction
-import org.apache.ignite.gatling.action.ignite.TransactionEndAction
 import org.apache.ignite.gatling.action.ignite.TransactionRollbackAction
 import org.apache.ignite.gatling.action.ignite.TransactionStartAction
 import org.apache.ignite.gatling.builder.IgniteActionBuilder
@@ -48,7 +48,7 @@ case class TransactionBuilderBase(requestName: Expression[String]) {
   def apply(transactionChain: ChainBuilder*): ChainBuilder =
     exec(TransactionStartBuilder(requestName, TransactionParameters()))
       .exec(transactionChain)
-      .exec(TransactionEndBuilder(requestName))
+      .exec(TransactionCloseBuilder(requestName))
 }
 
 case class TransactionBuilderTimeoutStep(requestName: Expression[String], params: TransactionParameters) {
@@ -61,7 +61,7 @@ case class TransactionBuilderTimeoutStep(requestName: Expression[String], params
   def apply(transactionChain: ChainBuilder*): ChainBuilder =
     exec(TransactionStartBuilder(requestName, params))
       .exec(transactionChain)
-      .exec(TransactionEndBuilder(requestName))
+      .exec(TransactionCloseBuilder(requestName))
 }
 
 case class TransactionParameters(
@@ -90,7 +90,7 @@ case class TransactionStartBuilder(requestName: Expression[String], params: Tran
     TransactionStartAction(requestName, TransactionParameters(), next, ctx)
 }
 
-case class TransactionEndBuilder(requestName: Expression[String]) extends IgniteActionBuilder {
+case class TransactionCloseBuilder(requestName: Expression[String]) extends IgniteActionBuilder {
   override def build(ctx: ScenarioContext, next: Action): Action =
-    TransactionEndAction(requestName, next, ctx)
+    TransactionCloseAction(requestName, next, ctx)
 }

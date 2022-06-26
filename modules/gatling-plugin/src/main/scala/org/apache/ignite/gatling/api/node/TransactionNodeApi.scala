@@ -17,23 +17,41 @@
 
 package org.apache.ignite.gatling.api.node
 
+import scala.util.Try
+
 import org.apache.ignite.gatling.api.TransactionApi
 import org.apache.ignite.transactions.Transaction
 
+/**
+ * Implementation of [[TransactionApi]] working via the Ignite node (thick) API.
+ *
+ * @param wrapped Enclosed Ignite instance.
+ */
 case class TransactionNodeApi(wrapped: Transaction) extends TransactionApi {
+  /**
+   * @inheritdoc
+   * @param s @inheritdoc
+   * @param f @inheritdoc
+   */
   override def commit()(s: Unit => Unit, f: Throwable => Unit): Unit =
-    try
-      s(wrapped.commit())
-    catch {
-      case ex: Throwable => f(ex)
-    } finally
-      wrapped.close()
+    Try(wrapped.commit())
+      .fold(f, s)
 
+  /**
+   * @inheritdoc
+   * @param s @inheritdoc
+   * @param f @inheritdoc
+   */
   override def rollback()(s: Unit => Unit, f: Throwable => Unit): Unit =
-    try
-      s(wrapped.rollback())
-    catch {
-      case ex: Throwable => f(ex)
-    } finally
-      wrapped.close()
+    Try(wrapped.rollback())
+      .fold(f, s)
+
+  /**
+   * @inheritdoc
+   * @param s @inheritdoc
+   * @param f @inheritdoc
+   */
+  override def close()(s: Unit => Unit, f: Throwable => Unit): Unit =
+    Try(wrapped.close())
+      .fold(f, s)
 }

@@ -22,6 +22,8 @@ import io.gatling.core.session.Expression
 import io.gatling.core.session.Session
 import io.gatling.core.structure.ScenarioContext
 import org.apache.ignite.gatling.action.IgniteAction
+import org.apache.ignite.gatling.protocol.IgniteClientConfigurationCfg
+import org.apache.ignite.gatling.protocol.IgniteConfigurationCfg
 import org.apache.ignite.gatling.protocol.IgniteProtocol.IGNITE_API_SESSION_KEY
 
 case class CloseClientAction(requestName: Expression[String], next: Action, ctx: ScenarioContext) extends IgniteAction {
@@ -34,9 +36,14 @@ case class CloseClientAction(requestName: Expression[String], next: Action, ctx:
     } yield {
       logger.debug(s"session user id: #${session.userId}, before $name")
 
-      val func = igniteApi.close() _
+      val func = components.igniteProtocol.cfg match {
+        case IgniteClientConfigurationCfg(_) | IgniteConfigurationCfg(_) if components.igniteProtocol.manualClientStart => igniteApi.close() _
+        case _ => noOp
+      }
 
       call(func, resolvedRequestName, session, (session, _: Option[Unit]) => session.remove(IGNITE_API_SESSION_KEY))
     }
   }
+
+  private val noOp: (Unit => Unit, Throwable => Unit) => Unit = (s, _) => s.apply()
 }
