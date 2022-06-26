@@ -192,13 +192,13 @@ public abstract class AbstractDataPageIO<T extends Storable> extends PageIO impl
     public static final int ITEMS_OFF = FIRST_ENTRY_OFF + 2;
 
     /** */
-    private static final int ITEM_SIZE = 2;
+    public static final int ITEM_SIZE = 2;
 
     /** */
-    private static final int PAYLOAD_LEN_SIZE = 2;
+    public static final int PAYLOAD_LEN_SIZE = 2;
 
     /** */
-    private static final int LINK_SIZE = 8;
+    public static final int LINK_SIZE = 8;
 
     /** */
     private static final int FRAGMENTED_FLAG = 0b10000000_00000000;

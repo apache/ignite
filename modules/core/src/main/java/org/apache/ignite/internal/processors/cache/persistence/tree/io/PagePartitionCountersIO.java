@@ -210,7 +210,7 @@ public class PagePartitionCountersIO extends PageIO {
      * @param pageSize Page size.
      * @return Maximum number of items which can be stored in buffer.
      */
-    private int getCapacity(int pageSize) {
+    public int getCapacity(int pageSize) {
         return (pageSize - ITEMS_OFF) / ITEM_SIZE;
     }
 
@@ -233,6 +233,6 @@ public class PagePartitionCountersIO extends PageIO {
 
     /** {@inheritDoc} */
     @Override public int getFreeSpace(int pageSize, long pageAddr) {
-        return (getCapacity(pageSize) - getCount(pageAddr)) / ITEM_SIZE;
+        return (getCapacity(pageSize) - getCount(pageAddr)) * ITEM_SIZE;
     }
 }
