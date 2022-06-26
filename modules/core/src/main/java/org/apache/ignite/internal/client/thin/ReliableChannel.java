@@ -527,8 +527,21 @@ final class ReliableChannel implements AutoCloseable {
         rollCurrentChannel(hld);
 
         // For partiton awareness it's already initializing asynchronously in #onTopologyChanged.
-        if (scheduledChannelsReinit.get() && !partitionAwarenessEnabled)
+        if (addressChanged() || (scheduledChannelsReinit.get() && !partitionAwarenessEnabled))
             channelsInit();
+    }
+
+    /**
+     * check ip address whether changed,after pod restart
+     */
+    private boolean addressChanged(){
+        if (clientCfg.getAddressesFinder() != null) {
+            String[] hostAddrs = clientCfg.getAddressesFinder().getAddresses();
+            if(!Arrays.equals(hostAddrs, prevHostAddrs)){
+                return true;
+            }
+        }
+        return false;
     }
 
     /**

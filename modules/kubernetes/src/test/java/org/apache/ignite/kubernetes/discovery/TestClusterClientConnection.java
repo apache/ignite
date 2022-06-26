@@ -49,4 +49,44 @@ public class TestClusterClientConnection extends KubernetesDiscoveryAbstractTest
         cache.put(1, 2);
         assertEquals(2, cache.get(1));
     }
+
+    @Test
+    public void testClientReConnectsToClusterAfterPodIpChange() throws Exception {
+        mockServerResponse();
+
+        IgniteConfiguration cfg = getConfiguration(getTestIgniteInstanceName(), false);
+
+        IgniteEx crd = startGrid(cfg);
+        String crdAddr = crd.localNode().addresses().iterator().next();
+
+        mockServerResponse(crdAddr);
+
+        ClientConfiguration ccfg = new ClientConfiguration();
+        ccfg.setAddressesFinder(new ThinClientKubernetesAddressFinder(prepareConfiguration()));
+        IgniteClient client = Ignition.startClient(ccfg);
+
+        ClientCache cache = client.createCache("cache");
+        cache.put(1, 2);
+        assertEquals(2, cache.get(1));
+
+        //stop node and change port still can connect
+        Ignition.stop(crd.name(), true);
+        int newPort = 10801;
+        ccfg.setAddressesFinder(new ThinClientKubernetesAddressFinder(prepareConfiguration(),newPort));
+        mockServerResponse(5,crdAddr);
+
+        cfg = getConfiguration(getTestIgniteInstanceName(), false);
+        cfg.setSqlConnectorConfiguration(new SqlConnectorConfiguration().setPort(newPort));
+        startGrid(cfg);
+
+        try {
+            cache = client.getOrCreateCache("cache");
+            cache.put(1, 3);
+        }catch (Exception e) {
+
+        }
+        cache = client.getOrCreateCache("cache");
+        cache.put(1, 3);
+        assertEquals(3, cache.get(1));
+    }
 }
