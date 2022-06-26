@@ -100,7 +100,7 @@ public class LimitOffsetPlannerTest extends AbstractPlannerTest {
                         .and(s -> doubleFromRex(s.fetch, -1) == 5.0)
                         .and(s -> s.offset == null))))));
 
-        // No special liited sort required if LIMIT is not set.
+        // No special limited sort required if LIMIT is not set.
         assertPlan("SELECT * FROM TEST ORDER BY ID OFFSET 10", publicSchema,
             isInstanceOf(IgniteLimit.class)
                 .and(input(isInstanceOf(IgniteExchange.class)
