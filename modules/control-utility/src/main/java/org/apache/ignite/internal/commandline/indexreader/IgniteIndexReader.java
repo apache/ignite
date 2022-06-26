@@ -1047,10 +1047,10 @@ public class IgniteIndexReader implements AutoCloseable {
             doWithoutErrors(() -> doWithBuffer((buf, addr) -> {
                 final PageIO io = readPage(ctx, pageId, buf);
 
-                if (io instanceof BPlusInnerIO)
-                    innerPageVisitor.visit(addr, ctx);
-                else if (io instanceof BPlusLeafIO)
+                if (io instanceof BPlusLeafIO)
                     leafPageVisitor.visit(addr, ctx);
+                else if (io instanceof BPlusInnerIO)
+                    innerPageVisitor.visit(addr, ctx);
                 else
                     throw new IllegalArgumentException("Unknown io [io=" + io.getClass().getSimpleName() + ']');
 
