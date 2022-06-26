@@ -23,7 +23,6 @@ import org.apache.ignite.gatling.Predef._
 import org.apache.ignite.gatling.simulation.IgniteSupport
 
 /**
- *
  */
 class PutGetTest extends AbstractGatlingTest {
   /** @inheritdoc */
@@ -31,7 +30,6 @@ class PutGetTest extends AbstractGatlingTest {
 }
 
 /**
- *
  */
 class PutGetSimulation extends Simulation with IgniteSupport with StrictLogging {
 

@@ -23,7 +23,6 @@ import org.apache.ignite.gatling.Predef._
 import org.apache.ignite.gatling.simulation.IgniteSupport
 
 /**
- *
  */
 class TransactionCommitRollbackTest extends AbstractGatlingTest {
   /** @inheritdoc */
@@ -39,11 +38,13 @@ class TransactionCommitRollbackSimulation extends Simulation with StrictLogging 
   private val cache = "TEST-CACHE"
 
   private val commitTx = execIgnite(
-    tx(PESSIMISTIC, READ_COMMITTED).timeout(3000L).txSize(1)(
-      put[Int, Int](cache, s"#{$key}", s"#{$value}"),
-      commit
-    ),
-    get[Int, Any](cache, s"#{$key}") check(
+    tx(PESSIMISTIC, READ_COMMITTED)
+      .timeout(3000L)
+      .txSize(1)(
+        put[Int, Int](cache, s"#{$key}", s"#{$value}"),
+        commit
+      ),
+    get[Int, Any](cache, s"#{$key}") check (
       allResults[Int, Any].saveAs("C"),
       simpleCheck((m, session) => m(session(key).as[Int]) == session(value).as[Int])
     )
@@ -54,7 +55,7 @@ class TransactionCommitRollbackSimulation extends Simulation with StrictLogging 
       put[Int, Int](cache, s"#{$key}", s"#{$value}"),
       rollback
     ),
-    get[Int, Any](cache, s"#{$key}") check(
+    get[Int, Any](cache, s"#{$key}") check (
       allResults[Int, Any].saveAs("R"),
       simpleCheck { (m, session) =>
         logger.info(m.toString)
@@ -65,9 +66,9 @@ class TransactionCommitRollbackSimulation extends Simulation with StrictLogging 
 
   private val autoRollbackTx = execIgnite(
     tx(OPTIMISTIC, REPEATABLE_READ)(
-      put[Int, Int](cache, s"#{$key}", s"#{$value}"),
+      put[Int, Int](cache, s"#{$key}", s"#{$value}")
     ),
-    get[Int, Any](cache, s"#{$key}") check(
+    get[Int, Any](cache, s"#{$key}") check (
       allResults[Int, Any].saveAs("R"),
       simpleCheck { (m, session) =>
         logger.info(m.toString)

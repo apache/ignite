@@ -38,10 +38,7 @@ import org.apache.ignite.gatling.api.CacheApi
  * @tparam V Type of the cache value.
  * @param wrapped Instance of Ignite Client API.
  */
-case class CacheThinApi[K, V](wrapped: ClientCache[K, V])
-    extends CacheApi[K, V]
-    with CompletionSupport
-    with StrictLogging {
+case class CacheThinApi[K, V](wrapped: ClientCache[K, V]) extends CacheApi[K, V] with CompletionSupport with StrictLogging {
 
   /**
    * @inheritdoc

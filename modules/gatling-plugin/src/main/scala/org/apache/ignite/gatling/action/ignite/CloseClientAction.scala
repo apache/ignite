@@ -37,7 +37,8 @@ case class CloseClientAction(requestName: Expression[String], next: Action, ctx:
       logger.debug(s"session user id: #${session.userId}, before $name")
 
       val func = components.igniteProtocol.cfg match {
-        case IgniteClientConfigurationCfg(_) | IgniteConfigurationCfg(_) if components.igniteProtocol.manualClientStart => igniteApi.close() _
+        case IgniteClientConfigurationCfg(_) | IgniteConfigurationCfg(_) if components.igniteProtocol.manualClientStart =>
+          igniteApi.close() _
         case _ => noOp
       }
 

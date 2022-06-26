@@ -80,8 +80,8 @@ abstract class AbstractGatlingTest extends AbstractThinClientTest {
  * Types of Ignite API
  */
 object IgniteClientApi extends Enumeration {
-  /**  */
+  /** Type of enum */
   type IgniteApi = Value
-  /**  */
+  /** Values */
   val ThinClient, NodeApi = Value
 }

@@ -105,7 +105,8 @@ case class IgniteThinApi(wrapped: IgniteClient) extends IgniteApi with Completio
         .setName(name)
         .setCacheMode(cfg.mode)
         .setAtomicityMode(cfg.atomicity)
-        .setBackups(cfg.backups))(s, f)
+        .setBackups(cfg.backups)
+    )(s, f)
 
   /**
    * @inheritdoc
@@ -115,7 +116,8 @@ case class IgniteThinApi(wrapped: IgniteClient) extends IgniteApi with Completio
   override def close()(s: Unit => Unit, f: Throwable => Unit): Unit =
     Try(wrapped.close()).fold(f, s)
 
-  /** @inheritdoc
+  /**
+   * @inheritdoc
    * @param s @inheritdoc
    * @param f @inheritdoc
    */
@@ -124,7 +126,8 @@ case class IgniteThinApi(wrapped: IgniteClient) extends IgniteApi with Completio
       .map(TransactionThinApi)
       .fold(f, s)
 
-  /** @inheritdoc
+  /**
+   * @inheritdoc
    * @param concurrency @inheritdoc
    * @param isolation @inheritdoc
    * @param s @inheritdoc
@@ -138,7 +141,8 @@ case class IgniteThinApi(wrapped: IgniteClient) extends IgniteApi with Completio
       .map(TransactionThinApi)
       .fold(f, s)
 
-  /** @inheritdoc
+  /**
+   * @inheritdoc
    * @param concurrency @inheritdoc
    * @param isolation @inheritdoc
    * @param timeout @inheritdoc
@@ -161,7 +165,8 @@ case class IgniteThinApi(wrapped: IgniteClient) extends IgniteApi with Completio
    */
   override def wrapped[API]: API = wrapped.asInstanceOf[API]
 
-  /** @inheritdoc
+  /**
+   * @inheritdoc
    * @return @inheritdoc
    */
   override def binaryObjectBuilder: String => BinaryObjectBuilder = typeName => wrapped.binary().builder(typeName)

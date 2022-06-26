@@ -23,7 +23,7 @@ import scala.util.Failure
 import scala.util.Success
 
 package object thin {
-  /**  Execution context to run callbacks. */
+  /** Execution context to run callbacks. */
   implicit val Ec: ExecutionContext = scala.concurrent.ExecutionContext.global
 
   /**

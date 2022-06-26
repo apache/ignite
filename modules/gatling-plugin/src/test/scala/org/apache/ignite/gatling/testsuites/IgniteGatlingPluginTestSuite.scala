@@ -28,10 +28,12 @@ import org.junit.runners.Suite
  * Gatling plugin tests.
  */
 @RunWith(classOf[Suite])
-@Suite.SuiteClasses(Array(
-  classOf[PutGetTest],
-  classOf[SqlTest],
-  classOf[TransactionTest],
-  classOf[TransactionCommitRollbackTest]
-))
+@Suite.SuiteClasses(
+  Array(
+    classOf[PutGetTest],
+    classOf[SqlTest],
+    classOf[TransactionTest],
+    classOf[TransactionCommitRollbackTest]
+  )
+)
 class IgniteGatlingPluginTestSuite
