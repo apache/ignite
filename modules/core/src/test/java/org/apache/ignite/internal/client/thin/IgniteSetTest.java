@@ -350,9 +350,22 @@ public class IgniteSetTest extends AbstractThinClientTest {
     }
 
     @Test
+    public void testToArrayEmpty() {
+        ClientIgniteSet<Integer> set = client.set("testToArrayEmpty", new ClientCollectionConfiguration());
+
+        assertEquals(0, set.toArray().length);
+        assertEquals(0, set.toArray(new Integer[0]).length);
+    }
+
+    @Test
     public void testToArray() {
+        for (int i = 0; i < 10; i++)
+            testToArray(i);
+    }
+
+    public void testToArray(int pageSize) {
         ClientIgniteSet<Integer> set = client.set("testToArray", new ClientCollectionConfiguration());
-        set.pageSize(2);
+        set.pageSize(pageSize);
 
         ImmutableList<Integer> keys = ImmutableList.of(1, 2, 3, 4, 5);
         set.addAll(keys);
