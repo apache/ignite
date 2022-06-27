@@ -124,11 +124,27 @@ public class IgniteSetTest extends AbstractThinClientTest {
     public void testAddAll() {
         ClientIgniteSet<Integer> set = client.set("testAddAll", new ClientCollectionConfiguration());
 
-        set.addAll(ImmutableList.of(1, 3));
+        boolean added = set.addAll(ImmutableList.of(1, 3));
 
+        assertTrue(added);
         assertTrue(set.contains(1));
         assertFalse(set.contains(2));
         assertTrue(set.contains(3));
+        assertEquals(2, set.size());
+
+        added = set.addAll(ImmutableList.of(1, 2, 3));
+
+        assertTrue(added);
+        assertTrue(set.contains(1));
+        assertTrue(set.contains(2));
+        assertTrue(set.contains(3));
+        assertEquals(3, set.size());
+
+        assertFalse(set.addAll(ImmutableList.of(2, 3)));
+        assertFalse(set.addAll(ImmutableList.of(3)));
+        assertFalse(set.addAll(ImmutableList.of()));
+
+        assertEquals(3, set.size());
     }
 
     @Test
