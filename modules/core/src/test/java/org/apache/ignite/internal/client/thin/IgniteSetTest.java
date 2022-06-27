@@ -189,8 +189,14 @@ public class IgniteSetTest extends AbstractThinClientTest {
 
         assertFalse(set.retainAll(ImmutableList.of(3, 2, 1, 4)));
         assertFalse(set.retainAll(ImmutableList.of(1, 2, 3)));
-
         assertEquals(3, set.size());
+
+        assertTrue(set.retainAll(ImmutableList.of(1, 4, 7)));
+        assertEquals(1, set.size());
+        assertTrue(set.contains(1));
+
+        assertTrue(set.retainAll(ImmutableList.of()));
+        assertTrue(set.isEmpty());
     }
 
     @Test
