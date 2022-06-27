@@ -198,14 +198,15 @@ public class ThinClientPartitionAwarenessStableTopologyTest extends ThinClientAb
     private void testIgniteSet(String name, String groupName, CacheAtomicityMode mode) {
         ClientCollectionConfiguration cfg = new ClientCollectionConfiguration()
                 .setGroupName(groupName)
-                .setAtomicityMode(mode);
+                .setAtomicityMode(mode)
+                .setBackups(1);
 
         ClientIgniteSet<String> clientSet = client.set(name, cfg);
 
         if (groupName == null)
             groupName = "default-ds-group";
 
-        String cacheName = "datastructures_" + mode + "_PARTITIONED_0@" + groupName + "#SET_" + clientSet.name();
+        String cacheName = "datastructures_" + mode + "_PARTITIONED_1@" + groupName + "#SET_" + clientSet.name();
         IgniteInternalCache<Object, Object> cache = grid(0).context().cache().cache(cacheName);
 
         // Warm up.
@@ -241,14 +242,15 @@ public class ThinClientPartitionAwarenessStableTopologyTest extends ThinClientAb
         ClientCollectionConfiguration cfg = new ClientCollectionConfiguration()
                 .setCollocated(true)
                 .setGroupName(groupName)
-                .setAtomicityMode(mode);
+                .setAtomicityMode(mode)
+                .setBackups(1);
 
         ClientIgniteSet<String> clientSet = client.set(name, cfg);
 
         if (groupName == null)
             groupName = "default-ds-group";
 
-        String cacheName = "datastructures_" + mode + "_PARTITIONED_0@" + groupName;
+        String cacheName = "datastructures_" + mode + "_PARTITIONED_1@" + groupName;
         IgniteInternalCache<Object, Object> cache = grid(0).context().cache().cache(cacheName);
 
         // Warm up.
