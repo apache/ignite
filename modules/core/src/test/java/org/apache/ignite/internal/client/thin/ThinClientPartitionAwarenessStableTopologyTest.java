@@ -224,10 +224,25 @@ public class ThinClientPartitionAwarenessStableTopologyTest extends ThinClientAb
 
     @Test
     public void testIgniteSetCollocated() {
-        ClientCollectionConfiguration cfg = new ClientCollectionConfiguration().setCollocated(true);
-        ClientIgniteSet<String> clientSet = client.set("testIgniteSetCollocated", cfg);
+        testIgniteSetCollocated("testIgniteSetCollocated", null, CacheAtomicityMode.ATOMIC);
+        testIgniteSetCollocated("testIgniteSetCollocated2", null, CacheAtomicityMode.TRANSACTIONAL);
+        testIgniteSetCollocated("testIgniteSetCollocated3", "grp-testIgniteSetCollocated3", CacheAtomicityMode.ATOMIC);
+        testIgniteSetCollocated("testIgniteSetCollocated4", "grp-testIgniteSetCollocated4",
+                CacheAtomicityMode.TRANSACTIONAL);
+    }
 
-        String cacheName = "datastructures_???";
+    public void testIgniteSetCollocated(String name, String groupName, CacheAtomicityMode mode) {
+        ClientCollectionConfiguration cfg = new ClientCollectionConfiguration()
+                .setCollocated(true)
+                .setGroupName(groupName)
+                .setAtomicityMode(mode);
+
+        ClientIgniteSet<String> clientSet = client.set(name, cfg);
+
+        if (groupName == null)
+            groupName = "default-ds-group";
+
+        String cacheName = "datastructures_" + mode + "_PARTITIONED_0@" + groupName;
         IgniteInternalCache<Object, Object> cache = grid(0).context().cache().cache(cacheName);
 
         // Warm up.
@@ -235,9 +250,13 @@ public class ThinClientPartitionAwarenessStableTopologyTest extends ThinClientAb
         opsQueue.clear();
 
         // Test.
-        clientSet.add("b");
-        TestTcpClientChannel opCh = affinityChannel(clientSet.name().hashCode(), cache);
-        assertOpOnChannel(opCh, ClientOperation.OP_SET_VALUE_ADD);
+        for (int i = 0; i < 10; i++) {
+            String key = "b" + i;
+            clientSet.add(key);
+
+            TestTcpClientChannel opCh = affinityChannel(clientSet.name().hashCode(), cache);
+            assertOpOnChannel(opCh, ClientOperation.OP_SET_VALUE_ADD);
+        }
     }
 
     /**
