@@ -344,7 +344,7 @@ public class IgniteSetTest extends AbstractThinClientTest {
     }
 
     @Test
-    public void testIteratorClosesOnLastPage() {
+    public void testIteratorClosesOnLastPage() throws Exception {
         ClientIgniteSet<Integer> set = client.set("testCloseBeforeEnd", new ClientCollectionConfiguration());
         set.pageSize(1);
 
@@ -493,7 +493,10 @@ public class IgniteSetTest extends AbstractThinClientTest {
         }
     }
 
-    private static boolean isIteratorClosed(ClientAutoCloseableIterator<Integer> iter) {
-        return false;
+    private static boolean isIteratorClosed(ClientAutoCloseableIterator<Integer> iter) throws Exception {
+        Field field = iter.getClass().getDeclaredField("resourceId");
+        field.setAccessible(true);
+
+        return field.get(iter) == null;
     }
 }
