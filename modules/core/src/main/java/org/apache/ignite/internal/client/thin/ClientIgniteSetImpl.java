@@ -115,8 +115,7 @@ class ClientIgniteSetImpl<T> implements ClientIgniteSet<T> {
     public boolean containsAll(Collection<?> c) {
         A.notNull(c, "c");
 
-        // TODO
-        return false;
+        return multiKeyOp(ClientOperation.OP_SET_VALUE_CONTAINS_ALL, c);
     }
 
     @Override
@@ -141,16 +140,14 @@ class ClientIgniteSetImpl<T> implements ClientIgniteSet<T> {
     public boolean removeAll(Collection<?> c) {
         A.notNull(c, "c");
 
-        // TODO
-        return false;
+        return multiKeyOp(ClientOperation.OP_SET_VALUE_REMOVE_ALL, c);
     }
 
     @Override
     public boolean retainAll(Collection<?> c) {
         A.notNull(c, "c");
 
-        // TODO
-        return false;
+        return multiKeyOp(ClientOperation.OP_SET_VALUE_RETAIN_ALL, c);
     }
 
     @Override
@@ -231,11 +228,12 @@ class ClientIgniteSetImpl<T> implements ClientIgniteSet<T> {
         }, r -> r.in().readBoolean());
     }
 
-    private Boolean multiKeyOp(ClientOperation op, Collection<? extends T> keys) {
+    @SuppressWarnings("rawtypes")
+    private Boolean multiKeyOp(ClientOperation op, Collection keys) {
         if (keys.isEmpty())
             return false;
 
-        Iterator<? extends T> iter = keys.iterator();
+        Iterator iter = keys.iterator();
         Object firstKey = iter.next();
 
         // Use the first key as affinity key as a simple optimization.
