@@ -19,10 +19,7 @@ package org.apache.ignite.client;
 
 import java.io.Closeable;
 import java.util.Collection;
-import java.util.Iterator;
 import java.util.Set;
-import org.apache.ignite.lang.IgniteCallable;
-import org.apache.ignite.lang.IgniteRunnable;
 
 /**
  * Distributed Set.
@@ -56,7 +53,7 @@ public interface ClientIgniteSet<T> extends Set<T>, Closeable {
 
     /** {@inheritDoc} */
     @Override
-    Iterator<T> iterator();
+    ClientIgniteSetIterator<T> iterator();
 
     /** {@inheritDoc} */
     @Override boolean remove(Object o);

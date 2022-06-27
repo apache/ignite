@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.client.thin;
 
 import java.io.IOException;
-import java.util.AbstractCollection;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
@@ -28,15 +27,19 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import org.apache.ignite.client.ClientException;
 import org.apache.ignite.client.ClientIgniteSet;
+import org.apache.ignite.client.ClientIgniteSetIterator;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
+import org.apache.ignite.internal.processors.platform.client.ClientStatus;
+import org.apache.ignite.internal.processors.platform.client.IgniteClientException;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.lang.IgniteUuid;
 
 /**
  * Client Ignite Set.
  */
-class ClientIgniteSetImpl<T> extends AbstractCollection<T> implements ClientIgniteSet<T> {
+class ClientIgniteSetImpl<T> implements ClientIgniteSet<T> {
     private final String name;
 
     private final IgniteUuid id;
@@ -123,13 +126,13 @@ class ClientIgniteSetImpl<T> extends AbstractCollection<T> implements ClientIgni
     }
 
     @Override
-    public Iterator<T> iterator() {
+    public ClientIgniteSetIterator<T> iterator() {
         Consumer<PayloadOutputChannel> payloadWriter = out -> {
             writeIdentity(out);
             out.out().writeInt(pageSize);
         };
 
-        Function<PayloadInputChannel, PagedIterator> payloadReader = in -> {
+        Function<PayloadInputChannel, ClientIgniteSetIterator> payloadReader = in -> {
             List<T> page = readPage(in);
             boolean hasNext = in.in().readBoolean();
             Long resourceId = hasNext ? in.in().readLong() : null;
@@ -182,6 +185,23 @@ class ClientIgniteSetImpl<T> extends AbstractCollection<T> implements ClientIgni
 
     @Override public int size() {
         return op(ClientOperation.OP_SET_SIZE, null, r -> r.in().readInt());
+    }
+
+    @Override public Object[] toArray() {
+        return toArray(X.EMPTY_OBJECT_ARRAY);
+    }
+
+    @Override public <T1> T1[] toArray(T1[] a) {
+        try (ClientIgniteSetIterator<T> it = iterator()) {
+            ArrayList<T1> res = new ArrayList<>();
+
+            while (it.hasNext())
+                res.add((T1) it.next());
+
+            return res.toArray(a);
+        } catch (Exception e) {
+            throw new IgniteClientException(ClientStatus.FAILED, e.getMessage(), e);
+        }
     }
 
     @Override public void close() {
@@ -336,7 +356,7 @@ class ClientIgniteSetImpl<T> extends AbstractCollection<T> implements ClientIgni
         }
     }
 
-    private class PagedIterator implements Iterator<T>, AutoCloseable {
+    private class PagedIterator implements ClientIgniteSetIterator<T> {
         private ClientChannel resourceCh;
 
         private Long resourceId;
