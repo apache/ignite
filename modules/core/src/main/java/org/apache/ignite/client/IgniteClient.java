@@ -23,7 +23,6 @@ import org.apache.ignite.IgniteBinary;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
-import org.apache.ignite.configuration.CollectionConfiguration;
 import org.jetbrains.annotations.Nullable;
 
 /**

@@ -40,22 +40,31 @@ import org.apache.ignite.lang.IgniteUuid;
  * Client Ignite Set.
  */
 class ClientIgniteSetImpl<T> implements ClientIgniteSet<T> {
+    /** */
     private final String name;
 
+    /** */
     private final IgniteUuid id;
 
+    /** */
     private final ReliableChannel ch;
 
+    /** */
     private final ClientUtils serDes;
 
+    /** */
     private final boolean colocated;
 
+    /** */
     private final int cacheId;
 
+    /** */
     private volatile boolean removed;
 
+    /** */
     private volatile boolean serverKeepBinary = true;
 
+    /** */
     private volatile int pageSize = 1024;
 
     /**
@@ -94,39 +103,39 @@ class ClientIgniteSetImpl<T> implements ClientIgniteSet<T> {
         return singleKeyOp(ClientOperation.OP_SET_VALUE_ADD, o);
     }
 
-    @Override
-    public boolean addAll(Collection<? extends T> c) {
+    /** {@inheritDoc} */
+    @Override public boolean addAll(Collection<? extends T> c) {
         A.notNull(c, "c");
 
         return multiKeyOp(ClientOperation.OP_SET_VALUE_ADD_ALL, c);
     }
 
-    @Override
-    public void clear() {
+    /** {@inheritDoc} */
+    @Override public void clear() {
         op(ClientOperation.OP_SET_CLEAR, null, null);
     }
 
-    @Override
-    public boolean contains(Object o) {
+    /** {@inheritDoc} */
+    @Override public boolean contains(Object o) {
         A.notNull(o, "o");
 
         return singleKeyOp(ClientOperation.OP_SET_VALUE_CONTAINS, o);
     }
 
-    @Override
-    public boolean containsAll(Collection<?> c) {
+    /** {@inheritDoc} */
+    @Override public boolean containsAll(Collection<?> c) {
         A.notNull(c, "c");
 
         return multiKeyOp(ClientOperation.OP_SET_VALUE_CONTAINS_ALL, c);
     }
 
-    @Override
-    public boolean isEmpty() {
+    /** {@inheritDoc} */
+    @Override public boolean isEmpty() {
         return size() == 0;
     }
 
-    @Override
-    public ClientAutoCloseableIterator<T> iterator() {
+    /** {@inheritDoc} */
+    @Override public ClientAutoCloseableIterator<T> iterator() {
         Consumer<PayloadOutputChannel> payloadWriter = out -> {
             writeIdentity(out);
             out.out().writeInt(pageSize);
@@ -150,22 +159,22 @@ class ClientIgniteSetImpl<T> implements ClientIgniteSet<T> {
         return ch.service(ClientOperation.OP_SET_ITERATOR_START, payloadWriter, payloadReader);
     }
 
-    @Override
-    public boolean remove(Object o) {
+    /** {@inheritDoc} */
+    @Override public boolean remove(Object o) {
         A.notNull(o, "o");
 
         return singleKeyOp(ClientOperation.OP_SET_VALUE_REMOVE, o);
     }
 
-    @Override
-    public boolean removeAll(Collection<?> c) {
+    /** {@inheritDoc} */
+    @Override public boolean removeAll(Collection<?> c) {
         A.notNull(c, "c");
 
         return multiKeyOp(ClientOperation.OP_SET_VALUE_REMOVE_ALL, c);
     }
 
-    @Override
-    public boolean retainAll(Collection<?> c) {
+    /** {@inheritDoc} */
+    @Override public boolean retainAll(Collection<?> c) {
         A.notNull(c, "c");
 
         if (c.isEmpty()) {
@@ -183,14 +192,17 @@ class ClientIgniteSetImpl<T> implements ClientIgniteSet<T> {
         return multiKeyOp(ClientOperation.OP_SET_VALUE_RETAIN_ALL, c);
     }
 
+    /** {@inheritDoc} */
     @Override public int size() {
         return op(ClientOperation.OP_SET_SIZE, null, r -> r.in().readInt());
     }
 
+    /** {@inheritDoc} */
     @Override public Object[] toArray() {
         return toArray(X.EMPTY_OBJECT_ARRAY);
     }
 
+    /** {@inheritDoc} */
     @Override public <T1> T1[] toArray(T1[] a) {
         try (ClientAutoCloseableIterator<T> it = iterator()) {
             ArrayList<T1> res = new ArrayList<>();
@@ -204,6 +216,7 @@ class ClientIgniteSetImpl<T> implements ClientIgniteSet<T> {
         }
     }
 
+    /** {@inheritDoc} */
     @Override public void close() {
         if (removed)
             return;
@@ -213,18 +226,18 @@ class ClientIgniteSetImpl<T> implements ClientIgniteSet<T> {
         removed = true;
     }
 
-    @Override
-    public String name() {
+    /** {@inheritDoc} */
+    @Override public String name() {
         return name;
     }
 
-    @Override
-    public boolean colocated() {
+    /** {@inheritDoc} */
+    @Override public boolean colocated() {
         return colocated;
     }
 
-    @Override
-    public boolean removed() {
+    /** {@inheritDoc} */
+    @Override public boolean removed() {
         if (removed)
             return true;
 
@@ -260,6 +273,13 @@ class ClientIgniteSetImpl<T> implements ClientIgniteSet<T> {
         return pageSize;
     }
 
+    /**
+     * Performs a single key operation.
+     *
+     * @param op Op code.
+     * @param key Key.
+     * @return Result.
+     */
     private Boolean singleKeyOp(ClientOperation op, Object key) {
         Object affKey = affinityKey(key);
 
@@ -273,6 +293,13 @@ class ClientIgniteSetImpl<T> implements ClientIgniteSet<T> {
         }, r -> r.in().readBoolean());
     }
 
+    /**
+     * Performs a multi key operation.
+     *
+     * @param op Op code.
+     * @param keys Keys.
+     * @return Result.
+     */
     @SuppressWarnings("rawtypes")
     private Boolean multiKeyOp(ClientOperation op, Collection keys) {
         if (keys.isEmpty())
@@ -301,6 +328,15 @@ class ClientIgniteSetImpl<T> implements ClientIgniteSet<T> {
         }, r -> r.in().readBoolean());
     }
 
+    /**
+     * Performs an operation.
+     *
+     * @param op Op code.
+     * @param writer Writer.
+     * @param reader Reader.
+     * @param <TR> Result type.
+     * @return Result.
+     */
     private <TR> TR op(ClientOperation op, Consumer<BinaryRawWriterEx> writer, Function<PayloadInputChannel, TR> reader) {
         return ch.service(op, out -> {
             try (BinaryRawWriterEx w = serDes.createBinaryWriter(out.out())) {
