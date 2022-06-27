@@ -21,50 +21,41 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import org.apache.ignite.IgniteException;
+import org.apache.ignite.client.ClientCompute;
 import org.apache.ignite.client.ClientIgniteSet;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.util.typedef.internal.A;
-import org.apache.ignite.lang.IgniteCallable;
-import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.lang.IgniteUuid;
 
 /**
  * Client Ignite Set.
  */
 class ClientIgniteSetImpl<T> implements ClientIgniteSet<T> {
-    /** */
     private final String name;
 
-    /** */
     private final IgniteUuid id;
 
-    /** */
     private final ReliableChannel ch;
 
-    /** */
     private final ClientUtils serDes;
 
-    /** */
     private final boolean colocated;
 
-    /** */
     private final int cacheId;
 
-    /** */
     private volatile boolean removed;
 
-    /** */
     private volatile boolean serverKeepBinary = true;
 
     /**
      * Constructor.
-     *  @param ch Channel.
+     * @param ch Channel.
      * @param serDes Utils..
      * @param name Name.
      * @param id Id.
      * @param colocated Colocated flag.
      * @param cacheId Cache id.
+     * @param compute Compute.
      */
     public ClientIgniteSetImpl(
             ReliableChannel ch,
@@ -206,26 +197,6 @@ class ClientIgniteSetImpl<T> implements ClientIgniteSet<T> {
         removed = !op(ClientOperation.OP_SET_EXISTS, null, r -> r.in().readBoolean());
 
         return removed;
-    }
-
-    @Override public void affinityRun(IgniteRunnable job) {
-        A.notNull(job, "job");
-
-        if (!colocated)
-            throw new IgniteException("Failed to execute affinityRun() for non-colocated set: " + name() +
-                    ". This operation is supported only for colocated sets.");
-
-
-    }
-
-    @Override public <R> R affinityCall(IgniteCallable<R> job) {
-        A.notNull(job, "job");
-
-        if (!colocated)
-            throw new IgniteException("Failed to execute affinityCall() for non-colocated set: " + name() +
-                    ". This operation is supported only for colocated sets.");
-
-        return null;
     }
 
     /** {@inheritDoc} */

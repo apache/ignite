@@ -103,26 +103,6 @@ public interface ClientIgniteSet<T> extends Set<T>, Closeable {
     public boolean removed();
 
     /**
-     * Executes given job on colocated set on the node where the set is located.
-     * <p>
-     * This is not supported for non-colocated sets.
-     *
-     * @param job Job.
-     */
-    public void affinityRun(IgniteRunnable job);
-
-    /**
-     * Executes given job on colocated set on the node where the set is located.
-     * <p>
-     * This is not supported for non-colocated sets.
-     *
-     * @param job Job.
-     * @param <R> Type of the job result.
-     * @return Job result.
-     */
-    public <R> R affinityCall(IgniteCallable<R> job);
-
-    /**
      * Sets a value indicating whether user objects should be kept in binary form on the server, or deserialized.
      * <p>
      * Default is {@code true}: does not require classes on server, interoperable with other thin clients, performs better.
