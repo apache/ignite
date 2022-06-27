@@ -366,8 +366,14 @@ public class IgniteSetTest extends AbstractThinClientTest {
         ImmutableList<Integer> keys = ImmutableList.of(1, 2, 3);
         set.addAll(keys);
 
-        for (Integer k : set)
+        int count = 0;
+
+        for (Integer k : set) {
             assertTrue(keys.contains(k));
+            count++;
+        }
+
+        assertEquals(keys.size(), count);
     }
 
     @Test
