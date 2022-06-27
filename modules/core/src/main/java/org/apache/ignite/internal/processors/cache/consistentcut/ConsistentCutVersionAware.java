@@ -43,13 +43,6 @@ public interface ConsistentCutVersionAware {
     }
 
     /**
-     * @return Whether local node defines Consistent Cut Version for transaction and sends it to other nodes.
-     */
-    public default boolean defineTxCutVersionNode() {
-        return false;
-    }
-
-    /**
      * Version of the latest finished Consistent Cut AFTER which the specified transaction committed.
      *
      * It is used to notify a transaction in the check-list whether to include it to this Consistent Cut.

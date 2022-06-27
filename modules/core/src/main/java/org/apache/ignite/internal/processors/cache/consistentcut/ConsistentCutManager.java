@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.consistentcut;
 
+import java.util.Collection;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -32,6 +33,7 @@ import org.apache.ignite.internal.pagemem.wal.record.TxRecord;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager;
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateFinishMessage;
@@ -71,7 +73,7 @@ import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYS
  * 4. It prepares check-list of transactions to verify which side of the Consistent Cut every of them belongs to. It
  *    guarantees that every transaction from this check-list will be handled in {@link #unregisterAfterCommit(IgniteInternalTx)}.
  * 5. Every transaction is signed with the latest Consistent Cut Version AFTER which it committed. This version is defined
- *    at single node within a transaction - {@link ConsistentCutVersionAware#defineTxCutVersionNode()}.
+ *    at single node within a transaction - {@link #isSetterTxCutVersion(IgniteInternalTx)}}.
  * 6. It's possible to receive transaction finish messages concurrently with preparing the check-list. To avoid misses
  *    such transactions all committing transactions are stored in {@link #beforeCut}.
  * 7. After the check-list is empty it finishes Consistent Cut with writing {@link ConsistentCutFinishRecord} that contains
@@ -204,17 +206,7 @@ public class ConsistentCutManager extends GridCacheSharedManagerAdapter {
      * It invokes before committing transactions leave {@link IgniteTxManager#activeTransactions()}.
      */
     public void registerBeforeCommit(IgniteInternalTx tx) {
-        ConsistentCutVersionAware txCutVerAware = (ConsistentCutVersionAware)tx;
-
-        if (txCutVerAware.defineTxCutVersionNode()) {
-            assert txCutVerAware.txCutVersion() == -1 : tx;
-
-            txCutVerAware.txCutVersion(latestKnownCutVersion().version());
-        }
-
-        long txCutVer = txCutVerAware.txCutVersion();
-
-        assert txCutVer >= 0 : tx;
+        long txCutVer = setTxCutVersionIfNeeded(tx);
 
         ConsistentCut cut = CUT_HOLDER.get(this).cut;
 
@@ -229,7 +221,8 @@ public class ConsistentCutManager extends GridCacheSharedManagerAdapter {
 
             if (log.isDebugEnabled()) {
                 log.debug("`registerBeforeCommit` from " + tx.nearXidVersion().asIgniteUuid() + " to " + tx.xid()
-                    + " , ver=" + txCutVerAware.txCutVersion() + ", cut = " + cut + ", latestVer = " + latestKnownCutVersion());
+                    + " , ver=" + ((ConsistentCutVersionAware)tx).txCutVersion() + ", cut = " + cut + ", latestVer = "
+                    + latestKnownCutVersion());
             }
         }
         catch (IgniteCheckedException e) {
@@ -242,7 +235,7 @@ public class ConsistentCutManager extends GridCacheSharedManagerAdapter {
      *
      * It invokes after specified transaction committed and write related {@link TxRecord} to WAL.
      */
-    public void unregisterAfterCommit(IgniteInternalTx tx) throws IgniteCheckedException {
+    public void unregisterAfterCommit(IgniteInternalTx tx) {
         long v = ((ConsistentCutVersionAware)tx).txCutVersion();
 
         ConsistentCut cut = CUT_HOLDER.get(this).cut;
@@ -424,6 +417,64 @@ public class ConsistentCutManager extends GridCacheSharedManagerAdapter {
      */
     boolean latestGlobalCutReady() {
         return F.isEmpty(notFinishedSrvNodes);
+    }
+
+    /**
+     * Sets Consistent Cut version for specified transaction if it hasn't set yet. Single node is responsible for
+     * setting the version within transaction (see {@link #isSetterTxCutVersion(IgniteInternalTx)}). Other nodes
+     * recieves this version due to Finish messages.
+     *
+     * @return Consistent Cut version AFTER which specified transctions committed.
+     */
+    private long setTxCutVersionIfNeeded(IgniteInternalTx tx) {
+        ConsistentCutVersionAware txCutVerAware = (ConsistentCutVersionAware)tx;
+
+        if (isSetterTxCutVersion(tx)) {
+            assert txCutVerAware.txCutVersion() == -1 : tx;
+
+            txCutVerAware.txCutVersion(latestKnownCutVersion().version());
+        }
+
+        long txCutVer = txCutVerAware.txCutVersion();
+
+        assert txCutVer >= 0 : tx;
+
+        return txCutVer;
+    }
+
+    /**
+     * Finds whether local node is responsible for setting Consistent Cut version for specified transaction.
+     * - For 2PC transactions the version is inherited in direct order (from originated to primary and backup nodes).
+     * - For 1PC transactions the version is inherited in reverse order (from backup to primary).
+     *
+     * @return Whether local node for the specified transaction sets Consistent Cut Version for whole transaction.
+     */
+    private boolean isSetterTxCutVersion(IgniteInternalTx tx) {
+        if (log.isDebugEnabled()) {
+            log.debug("`txCutVerSetNode` " + tx.nearXidVersion().asIgniteUuid() + " " + getClass().getSimpleName()
+                + " 1pc=" + tx.onePhaseCommit() + " node=" + tx.nodeId() + " nodes=" + tx.transactionNodes() + " " + "client="
+                + cctx.kernalContext().clientNode() + " near=" + tx.near() + " local=" + tx.local() + " dht=" + tx.dht());
+        }
+
+        if (tx.onePhaseCommit()) {
+            if (tx.near() && cctx.kernalContext().clientNode())
+                return false;
+
+            Collection<UUID> backups = tx.transactionNodes().get(tx.nodeId());
+
+            // We are on backup node. It's by default set the version.
+            if (tx.dht() && backups == null)
+                return true;
+
+            // Near can set version iff it's colocated and there is no backups.
+            if (tx.near())
+                return F.isEmpty(backups) && ((GridNearTxLocal)tx).colocatedLocallyMapped();
+
+            // This is a backup or primary node. Primary node sets the version iff cache doesn't have backups.
+            return (tx.dht() && !tx.local()) || backups.isEmpty();
+        }
+        else
+            return tx.near();
     }
 
     /**

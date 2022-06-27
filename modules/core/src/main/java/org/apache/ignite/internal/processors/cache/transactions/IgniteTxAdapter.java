@@ -1234,18 +1234,8 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
 
         if (valid) {
             if (ptr != null && (state == COMMITTED || state == ROLLED_BACK)) {
-                if (cctx.consistentCutMgr() != null) {
-                    try {
-                        cctx.consistentCutMgr().unregisterAfterCommit(this);
-                    }
-                    catch (IgniteCheckedException e) {
-                        String msg = "Failed to unregister transaction in ConsistentCutMgr.";
-
-                        U.error(log, msg, e);
-
-                        throw new IgniteException(msg, e);
-                    }
-                }
+                if (cctx.consistentCutMgr() != null)
+                    cctx.consistentCutMgr().unregisterAfterCommit(this);
 
                 try {
                     cctx.wal().flush(ptr, false);
@@ -2012,35 +2002,6 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
                 }
             }
         }
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean defineTxCutVersionNode() {
-        if (log.isDebugEnabled()) {
-            log.debug("`txCutVerSetNode` " + nearXidVersion().asIgniteUuid() + " " + getClass().getSimpleName()
-                + " 1pc=" + onePhaseCommit + " node=" + nodeId + " nodes=" + txNodes + " " + "client="
-                + cctx.kernalContext().clientNode() + " near=" + near() + " local=" + local() + " dht=" + dht());
-        }
-
-        if (onePhaseCommit) {
-            if (near() && cctx.kernalContext().clientNode())
-                return false;
-
-            Collection<UUID> backups = txNodes.get(nodeId);
-
-            // We are on backup node. It's by default set the version.
-            if (dht() && backups == null)
-                return true;
-
-            // Near can set version iff it's colocated and there is no backups.
-            if (near())
-                return F.isEmpty(backups) && ((GridNearTxLocal)this).colocatedLocallyMapped();
-
-            // This is a backup or primary transaction. Primary node sets the version iff cache doesn't have backups.
-            return (dht() && remote()) || backups.isEmpty();
-        }
-        else
-            return near();
     }
 
     /** {@inheritDoc} */
