@@ -19,6 +19,7 @@ package org.apache.ignite.client;
 
 import java.io.Closeable;
 import java.util.Collection;
+import java.util.Iterator;
 import java.util.Set;
 
 /**
@@ -51,9 +52,19 @@ public interface ClientIgniteSet<T> extends Set<T>, Closeable {
     /** {@inheritDoc} */
     @Override boolean isEmpty();
 
-    /** {@inheritDoc} */
-    @Override
-    ClientAutoCloseableIterator<T> iterator();
+    /**
+     * Returns an iterator over the elements in this collection.
+     * <p>
+     * There are no guarantees concerning the order in which the elements are returned.
+     * <p>
+     * Returned iterator is {@link AutoCloseable}: it may hold server-side resources and must be closed.
+     * It will close itself when the last page of data is fetched from the server.
+     * When {@link Iterator#hasNext()} returns {@code false}, it is guaranteed that the iterator is closed.
+     * In other cases (incomplete iteration) the user must close the iterator.
+     *
+     * @return an Iterator over the elements in this collection.
+     */
+    @Override ClientAutoCloseableIterator<T> iterator();
 
     /** {@inheritDoc} */
     @Override boolean remove(Object o);

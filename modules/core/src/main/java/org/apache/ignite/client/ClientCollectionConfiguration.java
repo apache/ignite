@@ -135,5 +135,4 @@ public class ClientCollectionConfiguration {
     @Override public String toString() {
         return S.toString(ClientCollectionConfiguration.class, this);
     }
-
 }
