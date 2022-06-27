@@ -27,7 +27,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import org.apache.ignite.client.ClientException;
 import org.apache.ignite.client.ClientIgniteSet;
-import org.apache.ignite.client.ClientIgniteSetIterator;
+import org.apache.ignite.client.ClientAutoCloseableIterator;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.processors.platform.client.ClientStatus;
@@ -126,13 +126,13 @@ class ClientIgniteSetImpl<T> implements ClientIgniteSet<T> {
     }
 
     @Override
-    public ClientIgniteSetIterator<T> iterator() {
+    public ClientAutoCloseableIterator<T> iterator() {
         Consumer<PayloadOutputChannel> payloadWriter = out -> {
             writeIdentity(out);
             out.out().writeInt(pageSize);
         };
 
-        Function<PayloadInputChannel, ClientIgniteSetIterator> payloadReader = in -> {
+        Function<PayloadInputChannel, ClientAutoCloseableIterator> payloadReader = in -> {
             List<T> page = readPage(in);
             boolean hasNext = in.in().readBoolean();
             Long resourceId = hasNext ? in.in().readLong() : null;
@@ -192,7 +192,7 @@ class ClientIgniteSetImpl<T> implements ClientIgniteSet<T> {
     }
 
     @Override public <T1> T1[] toArray(T1[] a) {
-        try (ClientIgniteSetIterator<T> it = iterator()) {
+        try (ClientAutoCloseableIterator<T> it = iterator()) {
             ArrayList<T1> res = new ArrayList<>();
 
             while (it.hasNext())
@@ -356,7 +356,7 @@ class ClientIgniteSetImpl<T> implements ClientIgniteSet<T> {
         }
     }
 
-    private class PagedIterator implements ClientIgniteSetIterator<T> {
+    private class PagedIterator implements ClientAutoCloseableIterator<T> {
         private ClientChannel resourceCh;
 
         private Long resourceId;

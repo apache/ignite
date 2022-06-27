@@ -53,7 +53,7 @@ public interface ClientIgniteSet<T> extends Set<T>, Closeable {
 
     /** {@inheritDoc} */
     @Override
-    ClientIgniteSetIterator<T> iterator();
+    ClientAutoCloseableIterator<T> iterator();
 
     /** {@inheritDoc} */
     @Override boolean remove(Object o);
