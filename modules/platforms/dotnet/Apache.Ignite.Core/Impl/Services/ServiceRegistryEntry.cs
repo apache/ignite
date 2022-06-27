@@ -22,7 +22,7 @@ namespace Apache.Ignite.Core.Impl.Services
     /// <summary>
     /// 
     /// </summary>
-    public class ServiceRegistryEntry
+    internal class ServiceRegistryEntry
     {
         /// <summary>
         /// 
