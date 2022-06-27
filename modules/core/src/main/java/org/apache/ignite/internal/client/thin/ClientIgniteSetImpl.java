@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.client.thin;
 
 import java.io.IOException;
+import java.util.AbstractCollection;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
@@ -35,7 +36,7 @@ import org.apache.ignite.lang.IgniteUuid;
 /**
  * Client Ignite Set.
  */
-class ClientIgniteSetImpl<T> implements ClientIgniteSet<T> {
+class ClientIgniteSetImpl<T> extends AbstractCollection<T> implements ClientIgniteSet<T> {
     private final String name;
 
     private final IgniteUuid id;
@@ -165,23 +166,11 @@ class ClientIgniteSetImpl<T> implements ClientIgniteSet<T> {
         return multiKeyOp(ClientOperation.OP_SET_VALUE_RETAIN_ALL, c);
     }
 
-    @Override
-    public int size() {
+    @Override public int size() {
         return op(ClientOperation.OP_SET_SIZE, null, r -> r.in().readInt());
     }
 
-    @Override
-    public Object[] toArray() {
-        return new Object[0];
-    }
-
-    @Override
-    public <T1> T1[] toArray(T1[] a) {
-        return null;
-    }
-
-    @Override
-    public void close() {
+    @Override public void close() {
         if (removed)
             return;
 
