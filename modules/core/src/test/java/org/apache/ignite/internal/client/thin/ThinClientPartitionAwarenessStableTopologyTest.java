@@ -193,7 +193,7 @@ public class ThinClientPartitionAwarenessStableTopologyTest extends ThinClientAb
     }
 
     /**
-     * Tests Ignite set.
+     * Tests {@link ClientIgniteSet} partition awareness.
      */
     private void testIgniteSet(String name, String groupName, CacheAtomicityMode mode) {
         ClientCollectionConfiguration cfg = new ClientCollectionConfiguration()
@@ -222,6 +222,9 @@ public class ThinClientPartitionAwarenessStableTopologyTest extends ThinClientAb
         }
     }
 
+    /**
+     * Tests {@link ClientIgniteSet} partition awareness in colocated mode.
+     */
     @Test
     public void testIgniteSetCollocated() {
         testIgniteSetCollocated("testIgniteSetCollocated", null, CacheAtomicityMode.ATOMIC);
@@ -231,6 +234,9 @@ public class ThinClientPartitionAwarenessStableTopologyTest extends ThinClientAb
                 CacheAtomicityMode.TRANSACTIONAL);
     }
 
+    /**
+     * Tests {@link ClientIgniteSet} partition awareness in colocated mode.
+     */
     public void testIgniteSetCollocated(String name, String groupName, CacheAtomicityMode mode) {
         ClientCollectionConfiguration cfg = new ClientCollectionConfiguration()
                 .setCollocated(true)
