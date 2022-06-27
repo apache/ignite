@@ -86,6 +86,7 @@ import org.apache.ignite.internal.processors.platform.client.datastructures.Clie
 import org.apache.ignite.internal.processors.platform.client.datastructures.ClientAtomicLongValueCompareAndSetRequest;
 import org.apache.ignite.internal.processors.platform.client.datastructures.ClientAtomicLongValueGetAndSetRequest;
 import org.apache.ignite.internal.processors.platform.client.datastructures.ClientAtomicLongValueGetRequest;
+import org.apache.ignite.internal.processors.platform.client.datastructures.ClientIgniteSetClearRequest;
 import org.apache.ignite.internal.processors.platform.client.datastructures.ClientIgniteSetCloseRequest;
 import org.apache.ignite.internal.processors.platform.client.datastructures.ClientIgniteSetExistsRequest;
 import org.apache.ignite.internal.processors.platform.client.datastructures.ClientIgniteSetSizeRequest;
@@ -661,8 +662,7 @@ public class ClientMessageParser implements ClientListenerMessageParser {
                 return new ClientIgniteSetSizeRequest(reader);
 
             case OP_SET_CLEAR:
-                // TODO
-                return new ClientIgniteSetSizeRequest(reader);
+                return new ClientIgniteSetClearRequest(reader);
 
             case OP_SET_ITERATOR_START:
                 // TODO
