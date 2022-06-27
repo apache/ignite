@@ -21,6 +21,7 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.client.ClientIgniteSet;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.util.typedef.internal.A;
@@ -208,10 +209,22 @@ class ClientIgniteSetImpl<T> implements ClientIgniteSet<T> {
     }
 
     @Override public void affinityRun(IgniteRunnable job) {
+        A.notNull(job, "job");
+
+        if (!collocated)
+            throw new IgniteException("Failed to execute affinityRun() for non-colocated set: " + name() +
+                    ". This operation is supported only for collocated sets.");
+
 
     }
 
     @Override public <R> R affinityCall(IgniteCallable<R> job) {
+        A.notNull(job, "job");
+
+        if (!collocated)
+            throw new IgniteException("Failed to execute affinityCall() for non-colocated set: " + name() +
+                    ". This operation is supported only for collocated sets.");
+
         return null;
     }
 
