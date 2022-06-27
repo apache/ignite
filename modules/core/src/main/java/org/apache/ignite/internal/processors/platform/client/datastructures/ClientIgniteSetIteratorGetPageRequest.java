@@ -30,7 +30,7 @@ import org.apache.ignite.internal.processors.platform.client.ClientResponse;
  * Ignite set iterator next page request.
  */
 @SuppressWarnings("rawtypes")
-public class ClientIgniteSetIteratorNextPageRequest extends ClientRequest {
+public class ClientIgniteSetIteratorGetPageRequest extends ClientRequest {
     /** Page size. */
     private final int pageSize;
 
@@ -42,7 +42,7 @@ public class ClientIgniteSetIteratorNextPageRequest extends ClientRequest {
      *
      * @param reader Reader.
      */
-    public ClientIgniteSetIteratorNextPageRequest(BinaryRawReader reader) {
+    public ClientIgniteSetIteratorGetPageRequest(BinaryRawReader reader) {
         super(reader);
 
         resId = reader.readLong();

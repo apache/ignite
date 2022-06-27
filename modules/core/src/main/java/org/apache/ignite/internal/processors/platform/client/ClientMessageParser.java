@@ -89,6 +89,8 @@ import org.apache.ignite.internal.processors.platform.client.datastructures.Clie
 import org.apache.ignite.internal.processors.platform.client.datastructures.ClientIgniteSetClearRequest;
 import org.apache.ignite.internal.processors.platform.client.datastructures.ClientIgniteSetCloseRequest;
 import org.apache.ignite.internal.processors.platform.client.datastructures.ClientIgniteSetExistsRequest;
+import org.apache.ignite.internal.processors.platform.client.datastructures.ClientIgniteSetIteratorGetPageRequest;
+import org.apache.ignite.internal.processors.platform.client.datastructures.ClientIgniteSetIteratorStartRequest;
 import org.apache.ignite.internal.processors.platform.client.datastructures.ClientIgniteSetSizeRequest;
 import org.apache.ignite.internal.processors.platform.client.datastructures.ClientIgniteSetValueAddAllRequest;
 import org.apache.ignite.internal.processors.platform.client.datastructures.ClientIgniteSetValueAddRequest;
@@ -374,7 +376,7 @@ public class ClientMessageParser implements ClientListenerMessageParser {
     private static final short OP_SET_ITERATOR_START = 9022;
 
     /** IgniteSet.iterator page. */
-    private static final short OP_SET_ITERATOR_NEXT_PAGE = 9023;
+    private static final short OP_SET_ITERATOR_GET_PAGE = 9023;
 
     /** Marshaller. */
     private final GridBinaryMarshaller marsh;
@@ -665,12 +667,10 @@ public class ClientMessageParser implements ClientListenerMessageParser {
                 return new ClientIgniteSetClearRequest(reader);
 
             case OP_SET_ITERATOR_START:
-                // TODO
-                return new ClientIgniteSetSizeRequest(reader);
+                return new ClientIgniteSetIteratorStartRequest(reader);
 
-            case OP_SET_ITERATOR_NEXT_PAGE:
-                // TODO
-                return new ClientIgniteSetSizeRequest(reader);
+            case OP_SET_ITERATOR_GET_PAGE:
+                return new ClientIgniteSetIteratorGetPageRequest(reader);
         }
 
         return new ClientRawRequest(reader.readLong(), ClientStatus.INVALID_OP_CODE,

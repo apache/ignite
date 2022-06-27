@@ -124,6 +124,11 @@ class ClientIgniteSetImpl<T> extends AbstractCollection<T> implements ClientIgni
 
     @Override
     public Iterator<T> iterator() {
+        Consumer<PayloadOutputChannel> payloadWriter = out -> {
+            writeIdentity(out);
+            out.out().writeInt(pageSize);
+        };
+
         Function<PayloadInputChannel, PagedIterator> payloadReader = in -> {
             List<T> page = readPage(in);
             Long resourceId = in.in().readBoolean() ? in.in().readLong() : null;
@@ -134,10 +139,10 @@ class ClientIgniteSetImpl<T> extends AbstractCollection<T> implements ClientIgni
         if (colocated) {
             Object affinityKey = name.hashCode();
 
-            return ch.affinityService(cacheId, affinityKey, ClientOperation.OP_SET_ITERATOR_START, this::writeIdentity, payloadReader);
+            return ch.affinityService(cacheId, affinityKey, ClientOperation.OP_SET_ITERATOR_START, payloadWriter, payloadReader);
         }
 
-        return ch.service(ClientOperation.OP_SET_ITERATOR_START, this::writeIdentity, payloadReader);
+        return ch.service(ClientOperation.OP_SET_ITERATOR_START, payloadWriter, payloadReader);
     }
 
     @Override
@@ -356,7 +361,7 @@ class ClientIgniteSetImpl<T> extends AbstractCollection<T> implements ClientIgni
                 throw new NoSuchElementException();
 
             if (pos == page.size()) {
-                page = resourceCh.service(ClientOperation.OP_SET_ITERATOR_NEXT_PAGE, ClientIgniteSetImpl.this::writeIdentity, in -> {
+                page = resourceCh.service(ClientOperation.OP_SET_ITERATOR_GET_PAGE, ClientIgniteSetImpl.this::writeIdentity, in -> {
                    List<T> res = readPage(in);
                    boolean hasNext = in.in().readBoolean();
 
