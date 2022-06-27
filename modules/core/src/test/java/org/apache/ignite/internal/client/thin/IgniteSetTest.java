@@ -342,15 +342,14 @@ public class IgniteSetTest extends AbstractThinClientTest {
     }
 
     @Test
-    public void testIterator() {
-        ClientIgniteSet<Integer> set = client.set("testIterator", new ClientCollectionConfiguration());
+    public void testIteratorForeach() {
+        ClientIgniteSet<Integer> set = client.set("testIteratorForeach", new ClientCollectionConfiguration());
 
         ImmutableList<Integer> keys = ImmutableList.of(1, 2, 3);
         set.addAll(keys);
 
-        for (Integer k : set) {
+        for (Integer k : set)
             assertTrue(keys.contains(k));
-        }
 
 
         // TODO
@@ -363,8 +362,21 @@ public class IgniteSetTest extends AbstractThinClientTest {
 
     @Test
     public void testModifyWhileIterating() {
-        // TODO
         ClientIgniteSet<Integer> set = client.set("testToArrayEmpty", new ClientCollectionConfiguration());
+        set.pageSize(1);
+
+        ImmutableList<Integer> keys = ImmutableList.of(1, 2, 3);
+        set.addAll(keys);
+
+        ClientAutoCloseableIterator<Integer> iterator = set.iterator();
+
+        set.remove(3);
+        assertTrue(keys.contains(iterator.next()));
+
+        set.remove(2);
+        assertTrue(keys.contains(iterator.next()));
+
+        assertFalse(iterator.hasNext());
     }
 
     @Test
