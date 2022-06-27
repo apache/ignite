@@ -182,12 +182,13 @@ public class IgniteSetTest extends AbstractThinClientTest {
     @SuppressWarnings("SuspiciousMethodCalls")
     public void testRetainAll() {
         ClientIgniteSet<Integer> set = client.set("testRemoveAll", new ClientCollectionConfiguration());
+
+        assertFalse(set.retainAll(ImmutableList.of()));
+
         set.addAll(ImmutableList.of(1, 2, 3));
 
-        // TODO: What happens with empty set? Check thick.
-        assertFalse(set.retainAll(ImmutableList.of()));
-        assertFalse(set.retainAll(ImmutableList.of(1)));
-        assertFalse(set.retainAll(ImmutableList.of(3, 2, 1)));
+        assertFalse(set.retainAll(ImmutableList.of(3, 2, 1, 4)));
+        assertFalse(set.retainAll(ImmutableList.of(1, 2, 3)));
 
         assertEquals(3, set.size());
     }
