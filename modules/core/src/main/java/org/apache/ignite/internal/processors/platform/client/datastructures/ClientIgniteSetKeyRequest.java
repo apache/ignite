@@ -40,8 +40,8 @@ public abstract class ClientIgniteSetKeyRequest extends ClientIgniteSetRequest {
         // Clients can enable deserialized values on server so that user objects are stored the same way
         // as if we were using "thick" API.
         // This is needed when both thick and thin APIs work with the same IgniteSet AND custom user types.
-        boolean deserialize = reader.readBoolean();
-        key = deserialize ? reader.readObject() : reader.readObjectDetached();
+        boolean keepBinary = reader.readBoolean();
+        key = keepBinary ? reader.readObjectDetached() : reader.readObject();
     }
 
     /** {@inheritDoc} */

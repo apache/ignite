@@ -54,7 +54,7 @@ class ClientIgniteSetImpl<T> implements ClientIgniteSet<T> {
     private volatile boolean removed;
 
     /** */
-    private volatile boolean deserializeOnServer;
+    private volatile boolean serverKeepBinary = true;
 
     /**
      * Constructor.
@@ -208,15 +208,15 @@ class ClientIgniteSetImpl<T> implements ClientIgniteSet<T> {
     }
 
     /** {@inheritDoc} */
-    @Override public ClientIgniteSet<T> deserializeOnServer(boolean deserializeOnServer) {
-        this.deserializeOnServer = deserializeOnServer;
+    @Override public ClientIgniteSet<T> serverKeepBinary(boolean keepBinary) {
+        serverKeepBinary = keepBinary;
 
         return this;
     }
 
     /** {@inheritDoc} */
-    @Override public boolean deserializeOnServer() {
-        return deserializeOnServer;
+    @Override public boolean serverKeepBinary() {
+        return serverKeepBinary;
     }
 
     private Boolean singleKeyOp(ClientOperation op, Object key) {
@@ -226,7 +226,7 @@ class ClientIgniteSetImpl<T> implements ClientIgniteSet<T> {
             try (BinaryRawWriterEx w = serDes.createBinaryWriter(out.out())) {
                 writeIdentity(w);
 
-                w.writeBoolean(deserializeOnServer);
+                w.writeBoolean(serverKeepBinary);
                 w.writeObject(key);
             }
         }, r -> r.in().readBoolean());

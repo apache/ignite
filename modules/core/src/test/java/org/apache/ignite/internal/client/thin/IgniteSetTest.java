@@ -142,7 +142,7 @@ public class IgniteSetTest extends AbstractThinClientTest {
             // By default, Client sends obj as BinaryObject, resulting in a different behavior.
             // When thick and thin APIs are used with the same user-defined classes together,
             // it means that classes are available on the server, and we can deserialize the obj to enable matching behavior.
-            clientSet.deserializeOnServer(true);
+            clientSet.serverKeepBinary(true);
 
             IgniteSet<UserObj> serverSet = ignite(0).set(clientSet.name(), null);
 

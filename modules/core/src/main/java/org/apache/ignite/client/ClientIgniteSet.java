@@ -122,8 +122,19 @@ public interface ClientIgniteSet<T> extends Set<T>, Closeable {
      */
     public <R> R affinityCall(IgniteCallable<R> job);
 
-    // TODO: Better name?
-    public ClientIgniteSet<T> deserializeOnServer(boolean deserializeOnServer);
+    /**
+     * Sets a value indicating whether user objects should be kept in binary form on the server, or deserialized.
+     * <p>
+     * Default is {@code true}: does not require classes on server, interoperable with other thin clients, performs better.
+     * Suitable for most use cases.
+     * <p>
+     * Set to {@code false} if there is a requirement to use deserialized objects in "thick" API ({@link org.apache.ignite.IgniteSet})
+     * together with thin client API.
+     *
+     * @param keepBinary Whether to keep objects in binary form on the server.
+     * @return This set instance (for chaining).
+     */
+    public ClientIgniteSet<T> serverKeepBinary(boolean keepBinary);
 
-    public boolean deserializeOnServer();
+    public boolean serverKeepBinary();
 }
