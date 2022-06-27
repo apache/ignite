@@ -147,6 +147,18 @@ class ClientIgniteSetImpl<T> implements ClientIgniteSet<T> {
     public boolean retainAll(Collection<?> c) {
         A.notNull(c, "c");
 
+        if (c.isEmpty()) {
+            // Special case: remove all.
+            // Not the same as clear, because we need the boolean result.
+            return ch.service(ClientOperation.OP_SET_VALUE_RETAIN_ALL, out -> {
+                try (BinaryRawWriterEx w = serDes.createBinaryWriter(out.out())) {
+                    writeIdentity(w);
+                    w.writeBoolean(serverKeepBinary);
+                    w.writeInt(0); // Size.
+                }
+            }, r -> r.in().readBoolean());
+        }
+
         return multiKeyOp(ClientOperation.OP_SET_VALUE_RETAIN_ALL, c);
     }
 
