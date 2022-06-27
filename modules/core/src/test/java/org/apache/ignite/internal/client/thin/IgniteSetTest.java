@@ -362,7 +362,7 @@ public class IgniteSetTest extends AbstractThinClientTest {
 
     @Test
     public void testModifyWhileIterating() {
-        ClientIgniteSet<Integer> set = client.set("testToArrayEmpty", new ClientCollectionConfiguration());
+        ClientIgniteSet<Integer> set = client.set("testModifyWhileIterating", new ClientCollectionConfiguration());
         set.pageSize(1);
 
         ImmutableList<Integer> keys = ImmutableList.of(1, 2, 3);

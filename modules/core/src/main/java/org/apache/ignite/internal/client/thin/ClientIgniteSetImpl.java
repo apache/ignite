@@ -375,18 +375,19 @@ class ClientIgniteSetImpl<T> implements ClientIgniteSet<T> {
         }
 
         @Override public boolean hasNext() {
-            return pos < page.size() || resourceId != null;
+            return pos < page.size();
         }
 
         @Override public T next() {
             if (!hasNext())
                 throw new NoSuchElementException();
 
-            if (pos == page.size())
+            T next = page.get(pos++);
+
+            if (pos >= page.size() && resourceId != null)
                 fetchNextPage();
 
-            // TODO: Can the page be empty due to concurrent update? Test it.
-            return page.get(pos++);
+            return next;
         }
 
         @Override public void close() throws Exception {
