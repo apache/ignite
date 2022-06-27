@@ -23,7 +23,7 @@ import org.apache.ignite.internal.processors.platform.client.ClientBooleanRespon
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
 
 /**
- * 
+ * Set add request.
  */
 public class ClientIgniteSetValueAddRequest extends ClientIgniteSetKeyRequest {
     /**

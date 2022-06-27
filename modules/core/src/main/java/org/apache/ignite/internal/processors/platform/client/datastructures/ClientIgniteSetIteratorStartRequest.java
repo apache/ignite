@@ -67,15 +67,26 @@ public class ClientIgniteSetIteratorStartRequest extends ClientIgniteSetRequest 
         writer.writeBoolean(iter.hasNext());
     }
 
+    /**
+     * Response.
+     */
     private class Response extends ClientResponse {
+        /** Iterator. */
         private final Iterator iter;
 
+        /**
+         * Constructor.
+         *
+         * @param reqId Request id.
+         * @param iter Iterator.
+         */
         public Response(long reqId, Iterator iter) {
             super(reqId);
 
             this.iter = iter;
         }
 
+        /** {@inheritDoc} */
         @Override public void encode(ClientConnectionContext ctx, BinaryRawWriterEx writer) {
             super.encode(ctx, writer);
 

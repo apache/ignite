@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.platform.client.datastructures;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 import org.apache.ignite.IgniteSet;
 import org.apache.ignite.internal.binary.BinaryRawReaderEx;

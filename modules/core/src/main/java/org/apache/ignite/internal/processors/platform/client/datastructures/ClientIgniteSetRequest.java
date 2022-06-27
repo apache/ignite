@@ -96,7 +96,6 @@ public class ClientIgniteSetRequest extends ClientRequest {
      * @return Response for non-existent set.
      */
     protected ClientResponse notFoundResponse() {
-        // TODO: Include ID in the message.
         return new ClientResponse(
                 requestId(),
                 ClientStatus.RESOURCE_DOES_NOT_EXIST,

@@ -23,7 +23,7 @@ import org.apache.ignite.internal.processors.platform.client.ClientBooleanRespon
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
 
 /**
- * 
+ * Set value remove request.
  */
 public class ClientIgniteSetValueRemoveRequest extends ClientIgniteSetKeyRequest {
     /**

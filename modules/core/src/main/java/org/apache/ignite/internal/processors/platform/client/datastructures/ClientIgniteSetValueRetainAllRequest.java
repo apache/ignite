@@ -24,7 +24,7 @@ import org.apache.ignite.internal.processors.platform.client.ClientBooleanRespon
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
 
 /**
- * 
+ * Set retain all request.
  */
 public class ClientIgniteSetValueRetainAllRequest extends ClientIgniteSetKeysRequest {
     /**

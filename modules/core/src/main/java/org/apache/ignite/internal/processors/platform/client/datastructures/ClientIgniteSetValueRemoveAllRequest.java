@@ -24,7 +24,7 @@ import org.apache.ignite.internal.processors.platform.client.ClientBooleanRespon
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
 
 /**
- * 
+ * Set value remove all request.
  */
 public class ClientIgniteSetValueRemoveAllRequest extends ClientIgniteSetKeysRequest {
     /**
