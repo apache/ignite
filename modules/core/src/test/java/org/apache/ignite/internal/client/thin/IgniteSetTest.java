@@ -19,7 +19,6 @@ package org.apache.ignite.internal.client.thin;
 
 import com.google.common.collect.ImmutableList;
 import java.lang.reflect.Field;
-import java.util.List;
 import java.util.Objects;
 import org.apache.ignite.IgniteSet;
 import org.apache.ignite.cache.CacheAtomicityMode;
@@ -106,6 +105,8 @@ public class IgniteSetTest extends AbstractThinClientTest {
     @Test
     public void testAddRemoveContains() {
         ClientIgniteSet<String> set = client.set("testBasicUsage", new ClientCollectionConfiguration());
+
+        assertTrue(set.isEmpty());
 
         set.add("foo");
         set.add("bar");
@@ -268,6 +269,8 @@ public class IgniteSetTest extends AbstractThinClientTest {
         GridCacheContext cctx = (GridCacheContext) field.get(serverSet);
 
         assertTrue(set.collocated());
+        assertFalse(set.removed());
+        assertEquals("testConfigPropagation", set.name());
         assertEquals(7, cctx.config().getBackups());
         assertEquals(CacheMode.PARTITIONED, cctx.config().getCacheMode());
         assertEquals(CacheAtomicityMode.TRANSACTIONAL, cctx.config().getAtomicityMode());
