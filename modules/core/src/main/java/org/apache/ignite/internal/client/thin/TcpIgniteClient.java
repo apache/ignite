@@ -23,7 +23,6 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiFunction;
@@ -69,7 +68,6 @@ import org.apache.ignite.internal.processors.platform.client.IgniteClientExcepti
 import org.apache.ignite.internal.util.GridArgumentCheck;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
-import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.marshaller.MarshallerContext;
 import org.apache.ignite.marshaller.MarshallerUtils;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
@@ -400,11 +398,10 @@ public class TcpIgniteClient implements IgniteClient {
             if (!in.in().readBoolean())
                 return null;
 
-            IgniteUuid id = new IgniteUuid(new UUID(in.in().readLong(), in.in().readLong()), in.in().readLong());
             boolean colocated = in.in().readBoolean();
             int cacheId = in.in().readInt();
 
-            return new ClientIgniteSetImpl<>(ch, serDes, name, id, colocated, cacheId);
+            return new ClientIgniteSetImpl<>(ch, serDes, name, colocated, cacheId);
         });
     }
 

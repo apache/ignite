@@ -26,7 +26,6 @@ import org.apache.ignite.internal.processors.datastructures.GridCacheSetProxy;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientRequest;
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
-import org.apache.ignite.lang.IgniteUuid;
 
 /**
  * Ignite set get or update request.
@@ -67,9 +66,9 @@ public class ClientIgniteSetGetOrCreateRequest extends ClientRequest {
                 .set(name, collectionConfiguration);
 
         if (set == null)
-            return new Response(requestId(), null, false, 0);
+            return new Response(requestId(), false, null);
 
-        return new Response(requestId(), set.delegate().id(), set.collocated(), set.delegate().context().cacheId());
+        return new Response(requestId(), set.collocated(), set.delegate().context().cacheId());
     }
 
     /**
@@ -77,24 +76,21 @@ public class ClientIgniteSetGetOrCreateRequest extends ClientRequest {
      */
     private static class Response extends ClientResponse {
         /** */
-        private final IgniteUuid id;
-
-        /** */
         private final boolean collocated;
 
         /** */
-        private final int cacheId;
+        private final Integer cacheId;
 
         /**
          * Constructor.
          *
          * @param reqId Request id.
-         * @param id Set id.
+         * @param collocated Collocated.
+         * @param cacheId Cache id.
          */
-        public Response(long reqId, IgniteUuid id, boolean collocated, int cacheId) {
+        public Response(long reqId, boolean collocated, Integer cacheId) {
             super(reqId);
 
-            this.id = id;
             this.collocated = collocated;
             this.cacheId = cacheId;
         }
@@ -103,12 +99,8 @@ public class ClientIgniteSetGetOrCreateRequest extends ClientRequest {
         @Override public void encode(ClientConnectionContext ctx, BinaryRawWriterEx writer) {
             super.encode(ctx, writer);
 
-            if (id != null) {
+            if (cacheId != null) {
                 writer.writeBoolean(true);
-
-                writer.writeLong(id.globalId().getMostSignificantBits());
-                writer.writeLong(id.globalId().getLeastSignificantBits());
-                writer.writeLong(id.localId());
                 writer.writeBoolean(collocated);
                 writer.writeInt(cacheId);
             } else

@@ -17,15 +17,12 @@
 
 package org.apache.ignite.internal.processors.platform.client.datastructures;
 
-import java.util.UUID;
 import org.apache.ignite.IgniteSet;
 import org.apache.ignite.binary.BinaryRawReader;
-import org.apache.ignite.internal.processors.datastructures.GridCacheSetProxy;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientRequest;
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
 import org.apache.ignite.internal.processors.platform.client.ClientStatus;
-import org.apache.ignite.lang.IgniteUuid;
 
 /**
  * Ignite set get or update request.
@@ -40,9 +37,6 @@ public class ClientIgniteSetRequest extends ClientRequest {
     /** */
     private final boolean collocated;
 
-    /** */
-    private final IgniteUuid id;
-
     /**
      * Constructor.
      *
@@ -54,7 +48,6 @@ public class ClientIgniteSetRequest extends ClientRequest {
         name = reader.readString();
         cacheId = reader.readInt();
         collocated = reader.readBoolean();
-        id = new IgniteUuid(new UUID(reader.readLong(), reader.readLong()), reader.readLong());
     }
 
     /** {@inheritDoc} */
@@ -94,12 +87,7 @@ public class ClientIgniteSetRequest extends ClientRequest {
      */
     protected <T> IgniteSet<T> igniteSet(ClientConnectionContext ctx) {
         // Thin client only works in separated mode, because non-separated mode was discontinued earlier.
-        IgniteSet<T> set = ctx.kernalContext().grid().set(name, cacheId, collocated, true);
-
-        if (set != null && ((GridCacheSetProxy<T>) set).delegate().id().equals(id))
-            return set;
-
-        return null;
+        return ctx.kernalContext().grid().set(name, cacheId, collocated, true);
     }
 
     /**

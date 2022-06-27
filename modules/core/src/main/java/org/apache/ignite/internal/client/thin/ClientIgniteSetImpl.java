@@ -44,9 +44,6 @@ class ClientIgniteSetImpl<T> implements ClientIgniteSet<T> {
     private final String name;
 
     /** */
-    private final IgniteUuid id;
-
-    /** */
     private final ReliableChannel ch;
 
     /** */
@@ -72,7 +69,6 @@ class ClientIgniteSetImpl<T> implements ClientIgniteSet<T> {
      * @param ch Channel.
      * @param serDes Utils..
      * @param name Name.
-     * @param id Id.
      * @param colocated Colocated flag.
      * @param cacheId Cache id.
      */
@@ -80,18 +76,15 @@ class ClientIgniteSetImpl<T> implements ClientIgniteSet<T> {
             ReliableChannel ch,
             ClientUtils serDes,
             String name,
-            IgniteUuid id,
             boolean colocated,
             int cacheId) {
         assert ch != null;
         assert serDes != null;
         assert name != null;
-        assert id != null;
 
         this.ch = ch;
         this.serDes = serDes;
         this.name = name;
-        this.id = id;
         this.colocated = colocated;
         this.cacheId = cacheId;
     }
@@ -368,11 +361,6 @@ class ClientIgniteSetImpl<T> implements ClientIgniteSet<T> {
         w.writeString(name);
         w.writeInt(cacheId);
         w.writeBoolean(colocated);
-
-        // TODO: Since ID is not used for affinity, we can drop it for simplicity and efficiency. Ignore same-name set issues.
-        w.writeLong(id.globalId().getMostSignificantBits());
-        w.writeLong(id.globalId().getLeastSignificantBits());
-        w.writeLong(id.localId());
     }
 
     /**
