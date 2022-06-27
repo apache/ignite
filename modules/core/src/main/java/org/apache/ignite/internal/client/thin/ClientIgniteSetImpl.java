@@ -20,6 +20,7 @@ package org.apache.ignite.internal.client.thin;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import org.apache.ignite.client.ClientIgniteSet;
@@ -116,12 +117,12 @@ class ClientIgniteSetImpl<T> implements ClientIgniteSet<T> {
 
     @Override
     public Iterator<T> iterator() {
-        ch.service(ClientOperation.OP_SET_ITERATOR_START, this::writeIdentity, in -> {
+        return ch.service(ClientOperation.OP_SET_ITERATOR_START, this::writeIdentity, in -> {
             // Read first page, hasNext and resId.
             int cnt = in.in().readInt();
-        });
 
-        return null;
+            return new PagedIterator(null);
+        });
     }
 
     @Override
@@ -295,26 +296,36 @@ class ClientIgniteSetImpl<T> implements ClientIgniteSet<T> {
         return key;
     }
 
-    // TODO: AutoCloseable
-    private class SetIterator implements Iterator<T> {
-        private final Long resourceId;
+    private class PagedIterator implements Iterator<T>, AutoCloseable {
+        private Long resourceId;
 
         private List<T> page;
 
         private int pos;
 
-        public SetIterator(Long resourceId) {
+        public PagedIterator(Long resourceId) {
+            // TODO: Read current page
             this.resourceId = resourceId;
         }
 
-        @Override
-        public boolean hasNext() {
-            return false;
+        @Override public boolean hasNext() {
+            return pos < page.size() && resourceId == null;
         }
 
-        @Override
-        public T next() {
-            return null;
+        @Override public T next() {
+            if (!hasNext())
+                throw new NoSuchElementException();
+
+            if (pos == page.size()) {
+                // TODO: Load next page
+            }
+
+            return page.get(pos++);
+        }
+
+        @Override public void close() throws Exception {
+            // TODO: Close server resource if not already closed.
+            resourceId = null;
         }
     }
 }
