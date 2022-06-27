@@ -34,7 +34,6 @@ import org.apache.ignite.internal.processors.platform.client.ClientStatus;
 import org.apache.ignite.internal.processors.platform.client.IgniteClientException;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.A;
-import org.apache.ignite.lang.IgniteUuid;
 
 /**
  * Client Ignite Set.
@@ -402,15 +401,29 @@ class ClientIgniteSetImpl<T> implements ClientIgniteSet<T> {
         }
     }
 
+    /**
+     * Paged iterator.
+     */
     private class PagedIterator implements ClientAutoCloseableIterator<T> {
+        /** */
         private final ClientChannel resourceCh;
 
+        /** */
         private Long resourceId;
 
+        /** */
         private List<T> page;
 
+        /** */
         private int pos;
 
+        /**
+         * Constructor.
+         *
+         * @param resourceCh Associated channel.
+         * @param resourceId Resource id.
+         * @param page First page.
+         */
         public PagedIterator(ClientChannel resourceCh, Long resourceId, List<T> page) {
             assert page != null;
             assert (resourceCh == null) == (resourceId == null);
@@ -420,10 +433,12 @@ class ClientIgniteSetImpl<T> implements ClientIgniteSet<T> {
             this.page = page;
         }
 
+        /** {@inheritDoc} */
         @Override public boolean hasNext() {
             return pos < page.size();
         }
 
+        /** {@inheritDoc} */
         @Override public T next() {
             if (!hasNext())
                 throw new NoSuchElementException();
@@ -436,6 +451,7 @@ class ClientIgniteSetImpl<T> implements ClientIgniteSet<T> {
             return next;
         }
 
+        /** {@inheritDoc} */
         @Override public void close() throws Exception {
             Long id = resourceId;
 
@@ -448,6 +464,9 @@ class ClientIgniteSetImpl<T> implements ClientIgniteSet<T> {
             pos = Integer.MAX_VALUE;
         }
 
+        /**
+         * Fetches next page from the server.
+         */
         private void fetchNextPage() {
             page = resourceCh.service(
                     ClientOperation.OP_SET_ITERATOR_GET_PAGE,
