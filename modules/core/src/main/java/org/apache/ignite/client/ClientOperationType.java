@@ -17,6 +17,7 @@
 
 package org.apache.ignite.client;
 
+import java.util.Collection;
 import java.util.Set;
 import org.apache.ignite.cache.query.ContinuousQuery;
 import org.apache.ignite.cache.query.Query;
@@ -269,52 +270,52 @@ public enum ClientOperationType {
     SET_EXISTS,
 
     /**
-     * IgniteSet.add ({@link ClientIgniteSet#close()}).
+     * IgniteSet.add ({@link ClientIgniteSet#add(Object)}).
      */
     SET_VALUE_ADD,
 
     /**
-     * IgniteSet.addAll ({@link ClientIgniteSet#close()}).
+     * IgniteSet.addAll ({@link ClientIgniteSet#addAll(Collection)}).
      */
     SET_VALUE_ADD_ALL,
 
     /**
-     * IgniteSet.remove ({@link ClientIgniteSet#close()}).
+     * IgniteSet.remove ({@link ClientIgniteSet#remove}).
      */
     SET_VALUE_REMOVE,
 
     /**
-     * IgniteSet.removeAll ({@link ClientIgniteSet#close()}).
+     * IgniteSet.removeAll ({@link ClientIgniteSet#removeAll}).
      */
     SET_VALUE_REMOVE_ALL,
 
     /**
-     * IgniteSet.contains ({@link ClientIgniteSet#close()}).
+     * IgniteSet.contains ({@link ClientIgniteSet#contains(Object)}).
      */
     SET_VALUE_CONTAINS,
 
     /**
-     * IgniteSet.containsAll ({@link ClientIgniteSet#close()}).
+     * IgniteSet.containsAll ({@link ClientIgniteSet#containsAll}).
      */
     SET_VALUE_CONTAINS_ALL,
 
     /**
-     * IgniteSet.retainAll ({@link ClientIgniteSet#close()}).
+     * IgniteSet.retainAll ({@link ClientIgniteSet#retainAll}).
      */
     SET_VALUE_RETAIN_ALL,
 
     /**
-     * IgniteSet.size ({@link ClientIgniteSet#close()}).
+     * IgniteSet.size ({@link ClientIgniteSet#size()}).
      */
     SET_SIZE,
 
     /**
-     * IgniteSet.clear ({@link ClientIgniteSet#close()}).
+     * IgniteSet.clear ({@link ClientIgniteSet#clear()}).
      */
     SET_CLEAR,
 
     /**
-     * IgniteSet.iterator ({@link ClientIgniteSet#close()}).
+     * IgniteSet.iterator ({@link ClientIgniteSet#iterator()}, {@link ClientIgniteSet#toArray()}).
      */
     SET_ITERATOR
 }
