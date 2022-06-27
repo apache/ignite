@@ -129,7 +129,17 @@ public interface ClientIgniteSet<T> extends Set<T>, Closeable {
      * Suitable for most use cases.
      * <p>
      * Set to {@code false} if there is a requirement to use deserialized objects in "thick" API ({@link org.apache.ignite.IgniteSet})
-     * together with thin client API.
+     * together with thin client API, like in this scenario:
+     *
+     *  <pre> {@code
+     *  ClientIgniteSet<UserObj> clientSet = client.set("my-set", new ClientCollectionConfiguration());
+     *  clientSet.serverKeepBinary(false);
+     *
+     *  IgniteSet<UserObj> serverSet = server.set(clientSet.name(), null);
+     *
+     *  clientSet.add(new UserObj(1, "client"));
+     *  assert serverSet.contains(new UserObj(1, "client"));
+     * }</pre>
      *
      * @param keepBinary Whether to keep objects in binary form on the server.
      * @return This set instance (for chaining).
