@@ -39,11 +39,14 @@ import org.junit.Test;
  */
 @SuppressWarnings("rawtypes")
 public class IgniteSetTest extends AbstractThinClientTest {
+    static IgniteClient client;
+
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 
         startGrids(1);
+        client = startClient(0);
     }
 
     /** {@inheritDoc} */
@@ -53,6 +56,7 @@ public class IgniteSetTest extends AbstractThinClientTest {
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
+        client.close();
         stopAllGrids();
 
         super.afterTestsStopped();
@@ -60,104 +64,97 @@ public class IgniteSetTest extends AbstractThinClientTest {
 
     @Test
     public void testGetNonExistentSetReturnsNull() {
-        try (IgniteClient client = startClient(0)) {
-            assertNull(client.set("non-existent", null));
-        }
+        assertNull(client.set("non-existent", null));
     }
 
     @Test
     public void testCloseThenUseThrowsException() {
-        try (IgniteClient client = startClient(0)) {
-            ClientIgniteSet<Integer> set = client.set("testCloseThenUseThrowsException", new ClientCollectionConfiguration());
-            ClientIgniteSet<Integer> set2 = client.set(set.name(), null);
+        ClientIgniteSet<Integer> set = client.set("testCloseThenUseThrowsException", new ClientCollectionConfiguration());
+        ClientIgniteSet<Integer> set2 = client.set(set.name(), null);
 
-            set.add(1);
-            set.close();
+        set.add(1);
+        set.close();
 
-            assertThrowsClosed(set);
-            assertThrowsClosed(set2);
+        assertThrowsClosed(set);
+        assertThrowsClosed(set2);
 
-            assertTrue(set.removed());
-            assertTrue(set2.removed());
-        }
+        assertTrue(set.removed());
+        assertTrue(set2.removed());
     }
 
     @Test
     public void testCloseAndCreateWithSameName() {
-        try (IgniteClient client = startClient(0)) {
-            ClientIgniteSet<Integer> oldSet = client.set("testCreateCloseCreateRemovesOldData", new ClientCollectionConfiguration());
-            ClientIgniteSet<Integer> oldSet2 = client.set(oldSet.name(), null);
+        ClientIgniteSet<Integer> oldSet = client.set("testCreateCloseCreateRemovesOldData", new ClientCollectionConfiguration());
+        ClientIgniteSet<Integer> oldSet2 = client.set(oldSet.name(), null);
 
-            oldSet.add(1);
-            oldSet.close();
+        oldSet.add(1);
+        oldSet.close();
 
-            ClientIgniteSet<Integer> newSet = client.set(oldSet.name(), new ClientCollectionConfiguration());
+        ClientIgniteSet<Integer> newSet = client.set(oldSet.name(), new ClientCollectionConfiguration());
 
-            assertEquals(0, newSet.size());
+        assertEquals(0, newSet.size());
 
-            assertTrue(oldSet.removed());
-            assertTrue(oldSet2.removed());
+        assertTrue(oldSet.removed());
+        assertTrue(oldSet2.removed());
 
-            assertThrowsClosed(oldSet);
-            assertThrowsClosed(oldSet2);
-        }
+        assertThrowsClosed(oldSet);
+        assertThrowsClosed(oldSet2);
     }
 
     @Test
-    public void testBasicUsage() {
-        try (IgniteClient client = startClient(0)) {
-            ClientIgniteSet<String> set = client.set("testBasicUsage", new ClientCollectionConfiguration());
+    public void testAddRemoveContains() {
+        ClientIgniteSet<String> set = client.set("testBasicUsage", new ClientCollectionConfiguration());
 
-            set.add("foo");
-            set.add("bar");
+        set.add("foo");
+        set.add("bar");
 
-            assertTrue(set.contains("foo"));
-            assertTrue(set.contains("bar"));
-            assertFalse(set.contains("baz"));
+        assertTrue(set.contains("foo"));
+        assertTrue(set.contains("bar"));
+        assertFalse(set.contains("baz"));
 
-            set.remove("foo");
-            assertFalse(set.contains("foo"));
+        set.remove("foo");
+        assertFalse(set.contains("foo"));
 
-            assertEquals(1, set.size());
-        }
+        assertEquals(1, set.size());
+    }
+
+    @Test
+    public void testAddAll() {
+
     }
 
     @Test
     public void testUserObject() {
-        try (IgniteClient client = startClient(0)) {
-            ClientIgniteSet<UserObj> clientSet = client.set("testUserObject", new ClientCollectionConfiguration());
+        ClientIgniteSet<UserObj> clientSet = client.set("testUserObject", new ClientCollectionConfiguration());
 
-            clientSet.add(new UserObj(1, "a"));
+        clientSet.add(new UserObj(1, "a"));
 
-            assertTrue(clientSet.contains(new UserObj(1, "a")));
-            assertFalse(clientSet.contains(new UserObj(1, "b")));
-        }
+        assertTrue(clientSet.contains(new UserObj(1, "a")));
+        assertFalse(clientSet.contains(new UserObj(1, "b")));
     }
 
     @Test
     public void testUserObjectClientServer() {
-        try (IgniteClient client = startClient(0)) {
-            ClientIgniteSet<UserObj> clientSet = client.set("testUserObjectClientServer", new ClientCollectionConfiguration());
+        ClientIgniteSet<UserObj> clientSet = client.set("testUserObjectClientServer", new ClientCollectionConfiguration());
 
-            // By default, Client sends obj as BinaryObject, resulting in a different behavior.
-            // When thick and thin APIs are used with the same user-defined classes together,
-            // it means that classes are available on the server, and we can deserialize the obj to enable matching behavior.
-            clientSet.serverKeepBinary(false);
+        // By default, Client sends obj as BinaryObject, resulting in a different behavior.
+        // When thick and thin APIs are used with the same user-defined classes together,
+        // it means that classes are available on the server, and we can deserialize the obj to enable matching behavior.
+        clientSet.serverKeepBinary(false);
 
-            IgniteSet<UserObj> serverSet = ignite(0).set(clientSet.name(), null);
+        IgniteSet<UserObj> serverSet = ignite(0).set(clientSet.name(), null);
 
-            clientSet.add(new UserObj(1, "client"));
-            serverSet.add(new UserObj(2, "server"));
+        clientSet.add(new UserObj(1, "client"));
+        serverSet.add(new UserObj(2, "server"));
 
-            assertTrue(clientSet.contains(new UserObj(1, "client")));
-            assertTrue(clientSet.contains(new UserObj(2, "server")));
+        assertTrue(clientSet.contains(new UserObj(1, "client")));
+        assertTrue(clientSet.contains(new UserObj(2, "server")));
 
-            assertTrue(serverSet.contains(new UserObj(1, "client")));
-            assertTrue(serverSet.contains(new UserObj(2, "server")));
+        assertTrue(serverSet.contains(new UserObj(1, "client")));
+        assertTrue(serverSet.contains(new UserObj(2, "server")));
 
-            assertFalse(clientSet.contains(new UserObj(1, "x")));
-            assertFalse(serverSet.contains(new UserObj(1, "x")));
-        }
+        assertFalse(clientSet.contains(new UserObj(1, "x")));
+        assertFalse(serverSet.contains(new UserObj(1, "x")));
     }
 
     @Test
@@ -178,21 +175,19 @@ public class IgniteSetTest extends AbstractThinClientTest {
                 .setCollocated(true)
                 .setGroupName(groupName);
 
-        try (IgniteClient client = startClient(0)) {
-            ClientIgniteSet<UserObj> set = client.set("testConfigPropagation", cfg);
+        ClientIgniteSet<UserObj> set = client.set("testConfigPropagation", cfg);
 
-            GridCacheSetProxy serverSet = (GridCacheSetProxy) ignite(0).set(set.name(), serverCfg);
+        GridCacheSetProxy serverSet = (GridCacheSetProxy) ignite(0).set(set.name(), serverCfg);
 
-            Field field = GridCacheSetProxy.class.getDeclaredField("cctx");
-            field.setAccessible(true);
-            GridCacheContext cctx = (GridCacheContext) field.get(serverSet);
+        Field field = GridCacheSetProxy.class.getDeclaredField("cctx");
+        field.setAccessible(true);
+        GridCacheContext cctx = (GridCacheContext) field.get(serverSet);
 
-            assertTrue(set.collocated());
-            assertEquals(7, cctx.config().getBackups());
-            assertEquals(CacheMode.PARTITIONED, cctx.config().getCacheMode());
-            assertEquals(CacheAtomicityMode.TRANSACTIONAL, cctx.config().getAtomicityMode());
-            assertEquals(groupName, cctx.config().getGroupName());
-        }
+        assertTrue(set.collocated());
+        assertEquals(7, cctx.config().getBackups());
+        assertEquals(CacheMode.PARTITIONED, cctx.config().getCacheMode());
+        assertEquals(CacheAtomicityMode.TRANSACTIONAL, cctx.config().getAtomicityMode());
+        assertEquals(groupName, cctx.config().getGroupName());
     }
 
     @Test
@@ -207,23 +202,21 @@ public class IgniteSetTest extends AbstractThinClientTest {
                 .setGroupName("gp2")
                 .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
 
-        try (IgniteClient client = startClient(0)) {
-            ClientIgniteSet<Integer> set1 = client.set(name, cfg1);
-            ClientIgniteSet<Integer> set2 = client.set(name, cfg2);
-            ClientIgniteSet<Integer> set3 = client.set(name, cfg3);
+        ClientIgniteSet<Integer> set1 = client.set(name, cfg1);
+        ClientIgniteSet<Integer> set2 = client.set(name, cfg2);
+        ClientIgniteSet<Integer> set3 = client.set(name, cfg3);
 
-            set1.add(1);
-            set2.add(2);
-            set3.add(3);
+        set1.add(1);
+        set2.add(2);
+        set3.add(3);
 
-            assertTrue(set1.contains(1));
-            assertTrue(set2.contains(2));
-            assertTrue(set3.contains(3));
+        assertTrue(set1.contains(1));
+        assertTrue(set2.contains(2));
+        assertTrue(set3.contains(3));
 
-            assertFalse(set1.contains(2));
-            assertFalse(set2.contains(3));
-            assertFalse(set3.contains(1));
-        }
+        assertFalse(set1.contains(2));
+        assertFalse(set2.contains(3));
+        assertFalse(set3.contains(1));
     }
 
     @Test
@@ -236,19 +229,17 @@ public class IgniteSetTest extends AbstractThinClientTest {
                 .setGroupName("gp1")
                 .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
 
-        try (IgniteClient client = startClient(0)) {
-            ClientIgniteSet<Integer> set1 = client.set(name, cfg1);
-            ClientIgniteSet<Integer> set2 = client.set(name, cfg2);
+        ClientIgniteSet<Integer> set1 = client.set(name, cfg1);
+        ClientIgniteSet<Integer> set2 = client.set(name, cfg2);
 
-            set1.add(2);
-            set2.add(3);
+        set1.add(2);
+        set2.add(3);
 
-            assertTrue(set1.contains(2));
-            assertTrue(set2.contains(3));
+        assertTrue(set1.contains(2));
+        assertTrue(set2.contains(3));
 
-            assertFalse(set1.contains(3));
-            assertFalse(set2.contains(1));
-        }
+        assertFalse(set1.contains(3));
+        assertFalse(set2.contains(1));
     }
 
     @SuppressWarnings("ThrowableNotThrown")
