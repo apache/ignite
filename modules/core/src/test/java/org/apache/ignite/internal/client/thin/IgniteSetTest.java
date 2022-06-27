@@ -124,17 +124,13 @@ public class IgniteSetTest extends AbstractThinClientTest {
     public void testAddAll() {
         ClientIgniteSet<Integer> set = client.set("testAddAll", new ClientCollectionConfiguration());
 
-        boolean added = set.addAll(ImmutableList.of(1, 3));
-
-        assertTrue(added);
+        assertTrue(set.addAll(ImmutableList.of(1, 3)));
         assertTrue(set.contains(1));
         assertFalse(set.contains(2));
         assertTrue(set.contains(3));
         assertEquals(2, set.size());
 
-        added = set.addAll(ImmutableList.of(1, 2, 3));
-
-        assertTrue(added);
+        assertTrue(set.addAll(ImmutableList.of(1, 2, 3)));
         assertTrue(set.contains(1));
         assertTrue(set.contains(2));
         assertTrue(set.contains(3));
@@ -162,6 +158,24 @@ public class IgniteSetTest extends AbstractThinClientTest {
         assertFalse(set.containsAll(ImmutableList.of(0)));
         assertFalse(set.containsAll(ImmutableList.of(0, 1)));
         assertFalse(set.containsAll(ImmutableList.of(1, 2, 4)));
+    }
+
+    @Test
+    @SuppressWarnings({"SlowAbstractSetRemoveAll", "SuspiciousMethodCalls"})
+    public void testRemoveAll() {
+        ClientIgniteSet<Integer> set = client.set("testRemoveAll", new ClientCollectionConfiguration());
+        set.addAll(ImmutableList.of(1, 2, 3));
+
+        assertFalse(set.removeAll(ImmutableList.of()));
+        assertFalse(set.removeAll(ImmutableList.of(0)));
+        assertFalse(set.removeAll(ImmutableList.of(0, 4)));
+
+        assertEquals(3, set.size());
+
+        assertTrue(set.removeAll(ImmutableList.of(5, 4, 3, 1, 0)));
+
+        assertEquals(1, set.size());
+        assertTrue(set.contains(2));
     }
 
     @Test
