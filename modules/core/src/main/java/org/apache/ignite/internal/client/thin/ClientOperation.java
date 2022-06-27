@@ -389,9 +389,6 @@ public enum ClientOperation {
             case QUERY_CONTINUOUS:
                 return ClientOperationType.QUERY_CONTINUOUS;
 
-            case TX_START:
-                return ClientOperationType.TRANSACTION_START;
-
             case CLUSTER_GET_STATE:
                 return ClientOperationType.CLUSTER_GET_STATE;
 
@@ -441,6 +438,45 @@ public enum ClientOperation {
             case ATOMIC_LONG_VALUE_COMPARE_AND_SET:
             case ATOMIC_LONG_VALUE_COMPARE_AND_SET_AND_GET:
                 return ClientOperationType.ATOMIC_LONG_VALUE_COMPARE_AND_SET;
+
+            case OP_SET_GET_OR_CREATE:
+                break;
+
+            case OP_SET_CLOSE:
+                break;
+
+            case OP_SET_EXISTS:
+                break;
+
+            case OP_SET_VALUE_ADD:
+                break;
+
+            case OP_SET_VALUE_ADD_ALL:
+                break;
+
+            case OP_SET_VALUE_REMOVE:
+                break;
+
+            case OP_SET_VALUE_REMOVE_ALL:
+                break;
+
+            case OP_SET_VALUE_CONTAINS:
+                break;
+
+            case OP_SET_VALUE_CONTAINS_ALL:
+                break;
+
+            case OP_SET_VALUE_RETAIN_ALL:
+                break;
+
+            case OP_SET_SIZE:
+                break;
+
+            case OP_SET_CLEAR:
+                break;
+
+            case OP_SET_ITERATOR_START:
+                break;
 
             default:
                 return null;

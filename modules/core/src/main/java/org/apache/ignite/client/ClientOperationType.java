@@ -251,5 +251,50 @@ public enum ClientOperationType {
     /**
      * AtomicLong.compareAndSet ({@link ClientAtomicLong#compareAndSet(long, long)}).
      */
-    ATOMIC_LONG_VALUE_COMPARE_AND_SET
+    ATOMIC_LONG_VALUE_COMPARE_AND_SET,
+
+    /**
+     * Create an IgniteSet.
+     */
+    OP_SET_GET_OR_CREATE,
+
+    /**
+     * Remove an IgniteSet.
+     */
+    OP_SET_CLOSE,
+
+    /**
+     * Check if IgniteSet exists.
+     */
+    OP_SET_EXISTS,
+
+    /** IgniteSet.add. */
+    OP_SET_VALUE_ADD,
+
+    /** IgniteSet.addAll. */
+    OP_SET_VALUE_ADD_ALL,
+
+    /** IgniteSet.remove. */
+    OP_SET_VALUE_REMOVE,
+
+    /** IgniteSet.removeAll. */
+    OP_SET_VALUE_REMOVE_ALL,
+
+    /** IgniteSet.contains. */
+    OP_SET_VALUE_CONTAINS,
+
+    /** IgniteSet.containsAll. */
+    OP_SET_VALUE_CONTAINS_ALL,
+
+    /** IgniteSet.retainAll. */
+    OP_SET_VALUE_RETAIN_ALL,
+
+    /** IgniteSet.size. */
+    OP_SET_SIZE,
+
+    /** IgniteSet.clear. */
+    OP_SET_CLEAR,
+
+    /** IgniteSet.iterator. */
+    OP_SET_ITERATOR_START
 }
