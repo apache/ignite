@@ -132,7 +132,7 @@ class ClientIgniteSetImpl<T> implements ClientIgniteSet<T> {
             out.out().writeInt(pageSize);
         };
 
-        Function<PayloadInputChannel, ClientAutoCloseableIterator> payloadReader = in -> {
+        Function<PayloadInputChannel, ClientAutoCloseableIterator<T>> payloadReader = in -> {
             List<T> page = readPage(in);
             boolean hasNext = in.in().readBoolean();
             Long resourceId = hasNext ? in.in().readLong() : null;
@@ -357,7 +357,7 @@ class ClientIgniteSetImpl<T> implements ClientIgniteSet<T> {
     }
 
     private class PagedIterator implements ClientAutoCloseableIterator<T> {
-        private ClientChannel resourceCh;
+        private final ClientChannel resourceCh;
 
         private Long resourceId;
 
