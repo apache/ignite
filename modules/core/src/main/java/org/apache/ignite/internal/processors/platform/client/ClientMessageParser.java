@@ -89,6 +89,7 @@ import org.apache.ignite.internal.processors.platform.client.datastructures.Clie
 import org.apache.ignite.internal.processors.platform.client.datastructures.ClientIgniteSetCloseRequest;
 import org.apache.ignite.internal.processors.platform.client.datastructures.ClientIgniteSetExistsRequest;
 import org.apache.ignite.internal.processors.platform.client.datastructures.ClientIgniteSetSizeRequest;
+import org.apache.ignite.internal.processors.platform.client.datastructures.ClientIgniteSetValueAddAllRequest;
 import org.apache.ignite.internal.processors.platform.client.datastructures.ClientIgniteSetValueAddRequest;
 import org.apache.ignite.internal.processors.platform.client.datastructures.ClientIgniteSetValueContainsRequest;
 import org.apache.ignite.internal.processors.platform.client.datastructures.ClientIgniteSetGetOrCreateRequest;
@@ -636,8 +637,7 @@ public class ClientMessageParser implements ClientListenerMessageParser {
                 return new ClientIgniteSetValueAddRequest(reader);
 
             case OP_SET_VALUE_ADD_ALL:
-                // TODO
-                return new ClientIgniteSetSizeRequest(reader);
+                return new ClientIgniteSetValueAddAllRequest(reader);
 
             case OP_SET_VALUE_REMOVE:
                 return new ClientIgniteSetValueRemoveRequest(reader);
