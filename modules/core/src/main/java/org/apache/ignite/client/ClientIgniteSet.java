@@ -58,7 +58,7 @@ public interface ClientIgniteSet<T> extends Set<T>, Closeable {
      * There are no guarantees concerning the order in which the elements are returned.
      * <p>
      * Returned iterator is {@link AutoCloseable}: it may hold server-side resources and must be closed.
-     * It will close itself when the last page of data is fetched from the server.
+     * It will close itself when the last page of data (see {@link #pageSize()}) is fetched from the server.
      * When {@link Iterator#hasNext()} returns {@code false}, it is guaranteed that the iterator is closed.
      * In other cases (incomplete iteration) the user must close the iterator.
      *
@@ -157,7 +157,17 @@ public interface ClientIgniteSet<T> extends Set<T>, Closeable {
      */
     public boolean serverKeepBinary();
 
+    /**
+     * Sets the page size to be used for batched network data retrieval in {@link #iterator()} and {@link #toArray()}.
+     *
+     * @return Page size.
+     */
     public ClientIgniteSet<T> pageSize(int pageSize);
 
+    /**
+     * Gets the page size to be used for batched network data retrieval in {@link #iterator()} and {@link #toArray()}.
+     *
+     * @return Page size.
+     */
     public int pageSize();
 }
