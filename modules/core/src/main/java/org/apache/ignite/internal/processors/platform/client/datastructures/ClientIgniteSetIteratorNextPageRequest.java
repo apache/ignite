@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.platform.client.datastructures;
 
+import static org.apache.ignite.internal.processors.platform.client.datastructures.ClientIgniteSetIteratorStartRequest.writePage;
+
 import java.util.Iterator;
 import org.apache.ignite.binary.BinaryRawReader;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
@@ -64,10 +66,7 @@ public class ClientIgniteSetIteratorNextPageRequest extends ClientRequest {
         @Override public void encode(ClientConnectionContext ctx, BinaryRawWriterEx writer) {
             super.encode(ctx, writer);
 
-            for (int i = 0; i < pageSize && iter.hasNext(); i++)
-                writer.writeObject(iter.next());
-
-            writer.writeBoolean(iter.hasNext());
+            writePage(writer, iter, pageSize);
 
             if (!iter.hasNext())
                 ctx.resources().release(resId);

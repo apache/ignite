@@ -48,6 +48,25 @@ public class ClientIgniteSetIteratorStartRequest extends ClientIgniteSetRequest 
         return new Response(requestId(), set.iterator());
     }
 
+    /**
+     * Writes next page to the writer.
+     *
+     * @param writer Writer.
+     */
+    static void writePage(BinaryRawWriterEx writer, Iterator iter, int pageSize) {
+        int cntPos = writer.reserveInt();
+        int cnt = 0;
+
+        while (cnt < pageSize && iter.hasNext()) {
+            writer.writeObject(iter.next());
+
+            cnt++;
+        }
+
+        writer.writeInt(cntPos, cnt);
+        writer.writeBoolean(iter.hasNext());
+    }
+
     private class Response extends ClientResponse {
         private final Iterator iter;
 
@@ -60,10 +79,7 @@ public class ClientIgniteSetIteratorStartRequest extends ClientIgniteSetRequest 
         @Override public void encode(ClientConnectionContext ctx, BinaryRawWriterEx writer) {
             super.encode(ctx, writer);
 
-            for (int i = 0; i < pageSize && iter.hasNext(); i++)
-                writer.writeObject(iter.next());
-
-            writer.writeBoolean(iter.hasNext());
+            writePage(writer, iter, pageSize);
 
             if (iter.hasNext()) {
                 long resId = ctx.resources().put(iter);
