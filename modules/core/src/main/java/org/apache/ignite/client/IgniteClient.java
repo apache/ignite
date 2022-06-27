@@ -20,6 +20,7 @@ package org.apache.ignite.client;
 import java.util.Collection;
 import java.util.List;
 import org.apache.ignite.IgniteBinary;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.CollectionConfiguration;
@@ -242,6 +243,15 @@ public interface IgniteClient extends AutoCloseable {
      */
     public ClientAtomicLong atomicLong(String name, ClientAtomicConfiguration cfg, long initVal, boolean create);
 
+    /**
+     * Gets a distributed set from cache. Creates one if it has not been created yet and {@code cfg} is not {@code null}.
+     *
+     * @param name Set name.
+     * @param cfg Set configuration if new set should be created.
+     * @param <T> Type of the elements in set.
+     * @return Set with given properties.
+     * @throws IgniteException If set could not be fetched or created.
+     */
     public <T> ClientIgniteSet<T> set(String name, @Nullable ClientCollectionConfiguration cfg);
 
     /**
