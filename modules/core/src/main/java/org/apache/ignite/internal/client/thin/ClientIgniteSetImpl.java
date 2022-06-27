@@ -375,7 +375,7 @@ class ClientIgniteSetImpl<T> implements ClientIgniteSet<T> {
         }
 
         @Override public boolean hasNext() {
-            return pos < page.size() && resourceId == null;
+            return pos < page.size() || resourceId != null;
         }
 
         @Override public T next() {
