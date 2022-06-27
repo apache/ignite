@@ -370,13 +370,19 @@ public class IgniteSetTest extends AbstractThinClientTest {
         ImmutableList<Integer> keys = ImmutableList.of(1, 2, 3, 4, 5);
         set.addAll(keys);
 
-        // TODO: Object overload.
-        Integer[] res = set.toArray(new Integer[0]);
+        Integer[] resTyped = set.toArray(new Integer[0]);
 
-        assertEquals(5, res.length);
+        assertEquals(5, resTyped.length);
 
-        for (Integer k : res)
+        for (Integer k : resTyped)
             assertTrue(keys.contains(k));
+
+        Object[] resObjects = set.toArray();
+
+        assertEquals(5, resObjects.length);
+
+        for (Object k : resObjects)
+            assertTrue(keys.contains((Integer) k));
     }
 
     @SuppressWarnings("ThrowableNotThrown")
