@@ -88,7 +88,6 @@ import org.apache.ignite.internal.processors.platform.client.datastructures.Clie
 import org.apache.ignite.internal.processors.platform.client.datastructures.ClientAtomicLongValueGetRequest;
 import org.apache.ignite.internal.processors.platform.client.datastructures.ClientIgniteSetCloseRequest;
 import org.apache.ignite.internal.processors.platform.client.datastructures.ClientIgniteSetExistsRequest;
-import org.apache.ignite.internal.processors.platform.client.datastructures.ClientIgniteSetRequest;
 import org.apache.ignite.internal.processors.platform.client.datastructures.ClientIgniteSetSizeRequest;
 import org.apache.ignite.internal.processors.platform.client.datastructures.ClientIgniteSetValueAddRequest;
 import org.apache.ignite.internal.processors.platform.client.datastructures.ClientIgniteSetValueContainsRequest;
@@ -636,13 +635,41 @@ public class ClientMessageParser implements ClientListenerMessageParser {
             case OP_SET_VALUE_ADD:
                 return new ClientIgniteSetValueAddRequest(reader);
 
+            case OP_SET_VALUE_ADD_ALL:
+                // TODO
+                return new ClientIgniteSetSizeRequest(reader);
+
             case OP_SET_VALUE_REMOVE:
                 return new ClientIgniteSetValueRemoveRequest(reader);
+
+            case OP_SET_VALUE_REMOVE_ALL:
+                // TODO
+                return new ClientIgniteSetSizeRequest(reader);
 
             case OP_SET_VALUE_CONTAINS:
                 return new ClientIgniteSetValueContainsRequest(reader);
 
+            case OP_SET_VALUE_CONTAINS_ALL:
+                // TODO
+                return new ClientIgniteSetSizeRequest(reader);
+
+            case OP_SET_VALUE_RETAIN_ALL:
+                // TODO
+                return new ClientIgniteSetSizeRequest(reader);
+
             case OP_SET_SIZE:
+                return new ClientIgniteSetSizeRequest(reader);
+
+            case OP_SET_CLEAR:
+                // TODO
+                return new ClientIgniteSetSizeRequest(reader);
+
+            case OP_SET_ITERATOR_START:
+                // TODO
+                return new ClientIgniteSetSizeRequest(reader);
+
+            case OP_SET_ITERATOR_NEXT_PAGE:
+                // TODO
                 return new ClientIgniteSetSizeRequest(reader);
         }
 
