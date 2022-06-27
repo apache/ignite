@@ -64,6 +64,7 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPageP
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageMetaIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PagePartitionMetaIO;
+import org.apache.ignite.internal.processors.cache.persistence.tree.io.TrackingPageIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.IgniteDataIntegrityViolationException;
 import org.apache.ignite.internal.processors.cache.tree.AbstractDataLeafIO;
 import org.apache.ignite.internal.processors.cache.tree.PendingRowIO;
@@ -150,7 +151,7 @@ public class IgniteIndexReader implements AutoCloseable {
         Pattern.compile("(?<id>[-0-9]{1,15})_.*");
 
     /** */
-    private static final int CHECK_PARTS_MAX_ERRORS_PER_PARTITION = 10;
+    private static final int MAX_ERRO_CNT = 10;
 
     static {
         IndexProcessor.registerIO();
@@ -505,6 +506,9 @@ public class IgniteIndexReader implements AutoCloseable {
                     if (idxFilter != null)
                         continue;
 
+                    if (io instanceof TrackingPageIO)
+                        continue;
+
                     if (pageIds.contains(normalizePageId(pageId)))
                         continue;
 
@@ -584,8 +588,8 @@ public class IgniteIndexReader implements AutoCloseable {
                                 ", link=" + cacheAwareLink.link + ']');
                         }
 
-                        if (errors.size() >= CHECK_PARTS_MAX_ERRORS_PER_PARTITION) {
-                            errors.add("Too many errors (" + CHECK_PARTS_MAX_ERRORS_PER_PARTITION +
+                        if (errors.size() >= MAX_ERRO_CNT) {
+                            errors.add("Too many errors (" + MAX_ERRO_CNT +
                                 ") found for partId=" + partId + ", stopping analysis for this partition.");
 
                             break;
