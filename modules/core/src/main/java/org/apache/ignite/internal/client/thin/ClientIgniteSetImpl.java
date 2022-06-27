@@ -17,14 +17,18 @@
 
 package org.apache.ignite.internal.client.thin;
 
+import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import org.apache.ignite.client.ClientException;
 import org.apache.ignite.client.ClientIgniteSet;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
+import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.lang.IgniteUuid;
 
@@ -120,10 +124,11 @@ class ClientIgniteSetImpl<T> implements ClientIgniteSet<T> {
     @Override
     public Iterator<T> iterator() {
         return ch.service(ClientOperation.OP_SET_ITERATOR_START, this::writeIdentity, in -> {
-            // Read first page, hasNext and resId.
-            int cnt = in.in().readInt();
+            List<T> page = readPage(in);
+            Long resourceId = in.in().readBoolean() ? in.in().readLong() : null;
 
-            return new PagedIterator(null);
+            // TODO: Pass node channel.
+            return new PagedIterator(resourceId, page);
         });
     }
 
@@ -313,6 +318,21 @@ class ClientIgniteSetImpl<T> implements ClientIgniteSet<T> {
         return key;
     }
 
+    private List<T> readPage(PayloadInputChannel in) {
+        try (BinaryReaderExImpl r = serDes.createBinaryReader(in.in())) {
+            int size = r.readInt();
+            List<T> res = new ArrayList<>(size);
+
+            for (int i = 0; i < size; i++)
+                res.add((T) r.readObject());
+
+            return res;
+        }
+        catch (IOException e) {
+            throw new ClientException(e);
+        }
+    }
+
     private class PagedIterator implements Iterator<T>, AutoCloseable {
         private Long resourceId;
 
@@ -320,9 +340,11 @@ class ClientIgniteSetImpl<T> implements ClientIgniteSet<T> {
 
         private int pos;
 
-        public PagedIterator(Long resourceId) {
-            // TODO: Read current page
+        public PagedIterator(Long resourceId, List<T> page) {
+            assert page != null;
+
             this.resourceId = resourceId;
+            this.page = page;
         }
 
         @Override public boolean hasNext() {
@@ -334,14 +356,30 @@ class ClientIgniteSetImpl<T> implements ClientIgniteSet<T> {
                 throw new NoSuchElementException();
 
             if (pos == page.size()) {
-                // TODO: Load next page
+                page = ch.service(ClientOperation.OP_SET_ITERATOR_NEXT_PAGE, ClientIgniteSetImpl.this::writeIdentity, in -> {
+                   List<T> res = readPage(in);
+                   boolean hasNext = in.in().readBoolean();
+
+                   if (!hasNext)
+                       resourceId = null;
+
+                   return res;
+                });
+
+                pos = 0;
             }
 
             return page.get(pos++);
         }
 
         @Override public void close() throws Exception {
-            // TODO: Close server resource if not already closed.
+            Long id = resourceId;
+
+            if (id == null)
+                return;
+
+            ch.service(ClientOperation.RESOURCE_CLOSE, w -> w.out().writeLong(id), null);
+
             resourceId = null;
         }
     }
