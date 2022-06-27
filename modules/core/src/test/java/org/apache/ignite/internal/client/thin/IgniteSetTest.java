@@ -353,11 +353,21 @@ public class IgniteSetTest extends AbstractThinClientTest {
         ClientAutoCloseableIterator<Integer> iter = set.iterator();
 
         assertFalse(isIteratorClosed(iter));
+        assertTrue(iter.hasNext());
+
         iter.next();
+
         assertFalse(isIteratorClosed(iter));
+        assertTrue(iter.hasNext());
+
         iter.next();
+
         assertTrue(isIteratorClosed(iter));
+        assertTrue(iter.hasNext());
+
         iter.next();
+
+        assertFalse(iter.hasNext());
     }
 
     @Test
