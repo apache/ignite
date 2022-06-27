@@ -146,5 +146,26 @@ public interface ClientIgniteSet<T> extends Set<T>, Closeable {
      */
     public ClientIgniteSet<T> serverKeepBinary(boolean keepBinary);
 
+    /**
+     * Gets a value indicating whether user objects should be kept in binary form on the server, or deserialized.
+     * <p>
+     * Default is {@code true}: does not require classes on server, interoperable with other thin clients, performs better.
+     * Suitable for most use cases.
+     * <p>
+     * Set to {@code false} if there is a requirement to use deserialized objects in "thick" API ({@link org.apache.ignite.IgniteSet})
+     * together with thin client API, like in this scenario:
+     *
+     *  <pre> {@code
+     *  ClientIgniteSet<UserObj> clientSet = client.set("my-set", new ClientCollectionConfiguration());
+     *  clientSet.serverKeepBinary(false);
+     *
+     *  IgniteSet<UserObj> serverSet = server.set(clientSet.name(), null);
+     *
+     *  clientSet.add(new UserObj(1, "client"));
+     *  assert serverSet.contains(new UserObj(1, "client"));
+     * }</pre>
+     *
+     * @return {@code true} when user objects will be kept in binary form on the server, {@code false} otherwise.
+     */
     public boolean serverKeepBinary();
 }
