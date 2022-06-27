@@ -348,12 +348,22 @@ class ClientIgniteSetImpl<T> implements ClientIgniteSet<T> {
         }, reader);
     }
 
+    /**
+     * Writes identity.
+     *
+     * @param out Output channel.
+     */
     private void writeIdentity(PayloadOutputChannel out) {
         try (BinaryRawWriterEx w = serDes.createBinaryWriter(out.out())) {
             writeIdentity(w);
         }
     }
 
+    /**
+     * Writes identity.
+     *
+     * @param w Writer.
+     */
     private void writeIdentity(BinaryRawWriterEx w) {
         w.writeString(name);
         w.writeInt(cacheId);
@@ -365,6 +375,12 @@ class ClientIgniteSetImpl<T> implements ClientIgniteSet<T> {
         w.writeLong(id.localId());
     }
 
+    /**
+     * Gets affinity key for the user key.
+     *
+     * @param key Key.
+     * @return Affinity key.
+     */
     private Object affinityKey(Object key) {
         // CollocatedSetItemKey#setNameHash is AffinityKeyMapped.
         if (colocated)
@@ -377,6 +393,12 @@ class ClientIgniteSetImpl<T> implements ClientIgniteSet<T> {
         return key;
     }
 
+    /**
+     * Reads iterator page.
+     *
+     * @param in Input channel.
+     * @return Page.
+     */
     private List<T> readPage(PayloadInputChannel in) {
         try (BinaryReaderExImpl r = serDes.createBinaryReader(in.in())) {
             int size = r.readInt();
