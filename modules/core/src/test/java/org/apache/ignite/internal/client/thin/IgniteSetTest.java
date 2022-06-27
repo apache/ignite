@@ -17,7 +17,9 @@
 
 package org.apache.ignite.internal.client.thin;
 
+import com.google.common.collect.ImmutableList;
 import java.lang.reflect.Field;
+import java.util.List;
 import java.util.Objects;
 import org.apache.ignite.IgniteSet;
 import org.apache.ignite.cache.CacheAtomicityMode;
@@ -120,7 +122,13 @@ public class IgniteSetTest extends AbstractThinClientTest {
 
     @Test
     public void testAddAll() {
+        ClientIgniteSet<Integer> set = client.set("testAddAll", new ClientCollectionConfiguration());
 
+        set.addAll(ImmutableList.of(1, 3));
+
+        assertTrue(set.contains(1));
+        assertFalse(set.contains(2));
+        assertTrue(set.contains(3));
     }
 
     @Test
