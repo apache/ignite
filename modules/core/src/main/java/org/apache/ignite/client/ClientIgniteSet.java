@@ -31,7 +31,7 @@ import org.apache.ignite.lang.IgniteRunnable;
  * <h1 class="header">Colocated vs Non-colocated</h1>
  * Set items can be placed on one node or distributed across grid nodes
  * (governed by {@code colocated} parameter). {@code Non-colocated} mode is provided only
- * for partitioned caches. If {@code collocated} parameter is {@code true}, then all set items
+ * for partitioned caches. If {@code colocated} parameter is {@code true}, then all set items
  * will be colocated on one node, otherwise items will be distributed across all grid nodes.
  * @see IgniteClient#set(String, org.apache.ignite.client.ClientCollectionConfiguration)
  */
@@ -93,7 +93,7 @@ public interface ClientIgniteSet<T> extends Set<T>, Closeable {
      *
      * @return {@code True} if all items of this set are stored on a single node, {@code false} otherwise.
      */
-    public boolean collocated();
+    public boolean colocated();
 
     /**
      * Gets a value indicating whether this set has been removed ({@link #close()} was called).

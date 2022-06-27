@@ -46,7 +46,7 @@ class ClientIgniteSetImpl<T> implements ClientIgniteSet<T> {
     private final ClientUtils serDes;
 
     /** */
-    private final boolean collocated;
+    private final boolean colocated;
 
     /** */
     private final int cacheId;
@@ -63,7 +63,7 @@ class ClientIgniteSetImpl<T> implements ClientIgniteSet<T> {
      * @param serDes Utils..
      * @param name Name.
      * @param id Id.
-     * @param collocated Colocated flag.
+     * @param colocated Colocated flag.
      * @param cacheId Cache id.
      */
     public ClientIgniteSetImpl(
@@ -71,7 +71,7 @@ class ClientIgniteSetImpl<T> implements ClientIgniteSet<T> {
             ClientUtils serDes,
             String name,
             IgniteUuid id,
-            boolean collocated,
+            boolean colocated,
             int cacheId) {
         assert ch != null;
         assert serDes != null;
@@ -82,7 +82,7 @@ class ClientIgniteSetImpl<T> implements ClientIgniteSet<T> {
         this.serDes = serDes;
         this.name = name;
         this.id = id;
-        this.collocated = collocated;
+        this.colocated = colocated;
         this.cacheId = cacheId;
     }
 
@@ -194,8 +194,8 @@ class ClientIgniteSetImpl<T> implements ClientIgniteSet<T> {
     }
 
     @Override
-    public boolean collocated() {
-        return collocated;
+    public boolean colocated() {
+        return colocated;
     }
 
     @Override
@@ -211,9 +211,9 @@ class ClientIgniteSetImpl<T> implements ClientIgniteSet<T> {
     @Override public void affinityRun(IgniteRunnable job) {
         A.notNull(job, "job");
 
-        if (!collocated)
+        if (!colocated)
             throw new IgniteException("Failed to execute affinityRun() for non-colocated set: " + name() +
-                    ". This operation is supported only for collocated sets.");
+                    ". This operation is supported only for colocated sets.");
 
 
     }
@@ -221,9 +221,9 @@ class ClientIgniteSetImpl<T> implements ClientIgniteSet<T> {
     @Override public <R> R affinityCall(IgniteCallable<R> job) {
         A.notNull(job, "job");
 
-        if (!collocated)
+        if (!colocated)
             throw new IgniteException("Failed to execute affinityCall() for non-colocated set: " + name() +
-                    ". This operation is supported only for collocated sets.");
+                    ". This operation is supported only for colocated sets.");
 
         return null;
     }
@@ -295,7 +295,7 @@ class ClientIgniteSetImpl<T> implements ClientIgniteSet<T> {
     private void writeIdentity(BinaryRawWriterEx w) {
         w.writeString(name);
         w.writeInt(cacheId);
-        w.writeBoolean(collocated);
+        w.writeBoolean(colocated);
 
         // TODO: Since ID is not used for affinity, we can drop it for simplicity and efficiency. Ignore same-name set issues.
         w.writeLong(id.globalId().getMostSignificantBits());
@@ -305,7 +305,7 @@ class ClientIgniteSetImpl<T> implements ClientIgniteSet<T> {
 
     private Object affinityKey(Object key) {
         // CollocatedSetItemKey#setNameHash is AffinityKeyMapped.
-        if (collocated)
+        if (colocated)
             return name.hashCode();
 
         // Only separated mode is supported by the client partition awareness,

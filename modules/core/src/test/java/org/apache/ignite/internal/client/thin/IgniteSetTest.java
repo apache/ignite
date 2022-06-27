@@ -268,7 +268,7 @@ public class IgniteSetTest extends AbstractThinClientTest {
         field.setAccessible(true);
         GridCacheContext cctx = (GridCacheContext) field.get(serverSet);
 
-        assertTrue(set.collocated());
+        assertTrue(set.colocated());
         assertFalse(set.removed());
         assertEquals("testConfigPropagation", set.name());
         assertEquals(7, cctx.config().getBackups());
