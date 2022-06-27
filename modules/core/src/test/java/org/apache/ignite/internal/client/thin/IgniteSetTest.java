@@ -195,6 +195,7 @@ public class IgniteSetTest extends AbstractThinClientTest {
         assertEquals(1, set.size());
         assertTrue(set.contains(1));
 
+        // retainAll with empty list: clear the collection and get a boolean value indicating if it was empty or not.
         assertTrue(set.retainAll(ImmutableList.of()));
         assertTrue(set.isEmpty());
     }
