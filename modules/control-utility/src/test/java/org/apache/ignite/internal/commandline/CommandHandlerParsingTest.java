@@ -959,14 +959,30 @@ public class CommandHandlerParsingTest {
             null,
             () -> parseArgs(asList("--cache", "schedule_indexes_rebuild", "--node-id", nodeId, "--cache-names")),
             IllegalArgumentException.class,
-            "Expected a comma-separated cache names (and optionally a comma-separated list of index names in square brackets)"
+            "Expected a comma-separated cache names (and optionally a comma-separated list of index names in square brackets)."
         );
 
         GridTestUtils.assertThrows(
             null,
             () -> parseArgs(asList("--cache", "schedule_indexes_rebuild", "--node-id", nodeId, "--node-id", nodeId)),
             IllegalArgumentException.class,
-            "--node-id arg specified twice"
+            "--node-id arg specified twice."
+        );
+
+        GridTestUtils.assertThrows(
+            null,
+            () -> parseArgs(asList("--cache", "schedule_indexes_rebuild", "--node-id", nodeId, "--cache-names", "a",
+                "--cache-names", "b")),
+            IllegalArgumentException.class,
+            "--cache-names arg specified twice."
+        );
+
+        GridTestUtils.assertThrows(
+            null,
+            () -> parseArgs(asList("--cache", "schedule_indexes_rebuild", "--node-id", nodeId, "--group-names", "a",
+                "--group-names", "b")),
+            IllegalArgumentException.class,
+            "--group-names arg specified twice."
         );
     }
 

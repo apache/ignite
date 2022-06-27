@@ -53,6 +53,9 @@ public class CacheScheduleIndexesRebuild extends AbstractCommand<CacheScheduleIn
     /** --cache-names parameter format. */
     private static final String CACHE_NAMES_FORMAT = "cacheName[index1,...indexN],cacheName2,cacheName3[index1]";
 
+    /** --group-names parameter format. */
+    private static final String CACHE_GROUPS_FORMAT = "groupName1,groupName2,...groupNameN";
+
     /** Command's parsed arguments. */
     private Arguments args;
 
@@ -66,9 +69,12 @@ public class CacheScheduleIndexesRebuild extends AbstractCommand<CacheScheduleIn
 
         map.put(
             CACHE_NAMES_TARGET.argName(),
-            "Cache name with optionally specified indexes. If indexes are not specified then all indexes of the cache will be scheduled "
-            + "for the rebuild operation."
+            "Comma-separated list of cache names with optionally specified indexes. If indexes are not specified then all indexes "
+            + "of the cache will be scheduled for the rebuild operation."
         );
+
+        map.put(CACHE_GROUPS_TARGET.argName(), "Comma-separated list of cache group names for which indexes should be scheduled for the "
+            + "rebuild.");
 
         usageCache(
             logger,
@@ -76,7 +82,8 @@ public class CacheScheduleIndexesRebuild extends AbstractCommand<CacheScheduleIn
             desc,
             map,
             NODE_ID.argName() + " nodeId",
-            CACHE_NAMES_TARGET + " " + CACHE_NAMES_FORMAT
+            CACHE_NAMES_TARGET + " " + CACHE_NAMES_FORMAT,
+            CACHE_GROUPS_TARGET + " " + CACHE_GROUPS_FORMAT
         );
     }
 
@@ -254,7 +261,7 @@ public class CacheScheduleIndexesRebuild extends AbstractCommand<CacheScheduleIn
                     cacheToIndexes = new HashMap<>();
 
                     String cacheNamesArg = argIterator.nextArg("Expected a comma-separated cache names (and optionally a"
-                        + " comma-separated list of index names in square brackets)");
+                        + " comma-separated list of index names in square brackets).");
 
                     Pattern cacheNamesPattern = Pattern.compile("([^,\\[\\]]+)(\\[(.*?)])?");
                     Matcher matcher = cacheNamesPattern.matcher(cacheNamesArg);

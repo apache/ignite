@@ -90,12 +90,13 @@ Arguments: --cache help --yes
       --caches cache1[,...,cacheN]  - specifies a comma-separated list of cache names to which operation should be applied.
       --all-caches                  - applies operation to all user caches.
 
-  --cache schedule_indexes_rebuild --node-id nodeId --cache-names cacheName[index1,...indexN],cacheName2,cacheName3[index1]
+  --cache schedule_indexes_rebuild --node-id nodeId --cache-names cacheName[index1,...indexN],cacheName2,cacheName3[index1] --group-names groupName1,groupName2,...groupNameN
     Schedules rebuild of the indexes for specified caches via the Maintenance Mode.
 
     Parameters:
       --node-id      - (Optional) Specify node for indexes rebuild.
-      --cache-names  - Cache name with optionally specified indexes. If indexes are not specified then all indexes of the cache will be scheduled for the rebuild operation.
+      --cache-names  - Comma-separated list of cache names with optionally specified indexes. If indexes are not specified then all indexes of the cache will be scheduled for the rebuild operation.
+      --group-names  - Comma-separated list of cache group names for which indexes should be scheduled for the rebuild.
 
 Command [CACHE] finished with code: 0
 Control utility has completed execution at: <!any!>
