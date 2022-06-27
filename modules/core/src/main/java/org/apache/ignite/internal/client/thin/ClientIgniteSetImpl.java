@@ -383,15 +383,21 @@ class ClientIgniteSetImpl<T> implements ClientIgniteSet<T> {
                 throw new NoSuchElementException();
 
             if (pos == page.size()) {
-                page = resourceCh.service(ClientOperation.OP_SET_ITERATOR_GET_PAGE, ClientIgniteSetImpl.this::writeIdentity, in -> {
-                   List<T> res = readPage(in);
-                   boolean hasNext = in.in().readBoolean();
+                page = resourceCh.service(
+                        ClientOperation.OP_SET_ITERATOR_GET_PAGE,
+                        out -> {
+                            out.out().writeLong(resourceId);
+                            out.out().writeInt(pageSize);
+                        },
+                        in -> {
+                            List<T> res = readPage(in);
+                            boolean hasNext = in.in().readBoolean();
 
-                   if (!hasNext)
-                       resourceId = null;
+                            if (!hasNext)
+                                resourceId = null;
 
-                   return res;
-                });
+                            return res;
+                        });
 
                 pos = 0;
             }
