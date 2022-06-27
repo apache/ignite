@@ -124,12 +124,12 @@ class ClientIgniteSetImpl<T> extends AbstractCollection<T> implements ClientIgni
 
     @Override
     public Iterator<T> iterator() {
+        // TODO: affinityService when using colocated mode.
         return ch.service(ClientOperation.OP_SET_ITERATOR_START, this::writeIdentity, in -> {
             List<T> page = readPage(in);
             Long resourceId = in.in().readBoolean() ? in.in().readLong() : null;
 
-            // TODO: Pass node channel.
-            return new PagedIterator(resourceId, page);
+            return new PagedIterator(in.clientChannel(), resourceId, page);
         });
     }
 
@@ -323,15 +323,19 @@ class ClientIgniteSetImpl<T> extends AbstractCollection<T> implements ClientIgni
     }
 
     private class PagedIterator implements Iterator<T>, AutoCloseable {
+        private ClientChannel resourceCh;
+
         private Long resourceId;
 
         private List<T> page;
 
         private int pos;
 
-        public PagedIterator(Long resourceId, List<T> page) {
+        public PagedIterator(ClientChannel resourceCh, Long resourceId, List<T> page) {
             assert page != null;
+            assert (resourceCh == null) == (resourceId == null);
 
+            this.resourceCh = resourceCh;
             this.resourceId = resourceId;
             this.page = page;
         }
@@ -345,7 +349,7 @@ class ClientIgniteSetImpl<T> extends AbstractCollection<T> implements ClientIgni
                 throw new NoSuchElementException();
 
             if (pos == page.size()) {
-                page = ch.service(ClientOperation.OP_SET_ITERATOR_NEXT_PAGE, ClientIgniteSetImpl.this::writeIdentity, in -> {
+                page = resourceCh.service(ClientOperation.OP_SET_ITERATOR_NEXT_PAGE, ClientIgniteSetImpl.this::writeIdentity, in -> {
                    List<T> res = readPage(in);
                    boolean hasNext = in.in().readBoolean();
 
