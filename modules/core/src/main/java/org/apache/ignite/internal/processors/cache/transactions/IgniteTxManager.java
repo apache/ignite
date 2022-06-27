@@ -74,6 +74,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter
 import org.apache.ignite.internal.processors.cache.GridCacheVersionedFuture;
 import org.apache.ignite.internal.processors.cache.GridDeferredAckMessageSender;
 import org.apache.ignite.internal.processors.cache.TxTimeoutOnPartitionMapExchangeChangeMessage;
+import org.apache.ignite.internal.processors.cache.consistentcut.ConsistentCutManager;
 import org.apache.ignite.internal.processors.cache.distributed.GridCacheMappedVersion;
 import org.apache.ignite.internal.processors.cache.distributed.GridCacheTxRecoveryFuture;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedCacheEntry;
@@ -1674,23 +1675,23 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
     }
 
     /**
-     * Checks whether specified tx is active. Also syncs committing transactions with Consistent Cut.
+     * Checks whether specified tx is active. Register committing transactions for Consistent Cut.
      *
      * @return {@code true} if {@code tx} is active transaction, otherwise {@code false}.
      */
     private boolean activeTx(IgniteInternalTx tx) {
         ConcurrentMap<GridCacheVersion, IgniteInternalTx> txIdMap = transactionMap(tx);
 
-        if (cctx.consistentCutMgr() == null)
-            return txIdMap.remove(tx.xidVersion(), tx);
-
         if (txIdMap.containsKey(tx.xidVersion())) {
-            cctx.consistentCutMgr().registerBeforeCommit(tx);
+            ConsistentCutManager cutMgr = cctx.consistentCutMgr();
+
+            if (cutMgr != null)
+                cutMgr.registerBeforeCommit(tx);
 
             boolean active = txIdMap.remove(tx.xidVersion(), tx);
 
-            if (!active)
-                cctx.consistentCutMgr().unregisterAfterCommit(tx);
+            if (!active && cutMgr != null)
+                cutMgr.unregisterAfterCommit(tx, true);
 
             return active;
         }

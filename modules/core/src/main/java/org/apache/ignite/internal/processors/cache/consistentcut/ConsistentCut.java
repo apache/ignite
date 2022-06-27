@@ -170,7 +170,7 @@ public class ConsistentCut {
      * @param txCutVer Consistent Cut Version with that the transaction is signed.
      */
     void processTxBeforeCommit(long txCutVer) throws IgniteCheckedException {
-        if (ver.compareTo(txCutVer) == 0)
+        if (ver.compareTo(txCutVer) == 0 && !walWritten.isDone())
             walWritten.get(TIMEOUT, TimeUnit.MILLISECONDS);
     }
 

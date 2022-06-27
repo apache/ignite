@@ -71,7 +71,7 @@ import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYS
  * 3. It writes {@link ConsistentCutStartRecord} before any transaction from the AFTER side committed. It guarantees that
  *    every transaction committed before this record is part of the BEFORE side.
  * 4. It prepares check-list of transactions to verify which side of the Consistent Cut every of them belongs to. It
- *    guarantees that every transaction from this check-list will be handled in {@link #unregisterAfterCommit(IgniteInternalTx)}.
+ *    guarantees that every transaction from this check-list will be handled in {@link #unregisterAfterCommit(IgniteInternalTx, boolean)}.
  * 5. Every transaction is signed with the latest Consistent Cut Version AFTER which it committed. This version is defined
  *    at single node within a transaction - {@link #isSetterTxCutVersion(IgniteInternalTx)}}.
  * 6. It's possible to receive transaction finish messages concurrently with preparing the check-list. To avoid misses
@@ -234,8 +234,12 @@ public class ConsistentCutManager extends GridCacheSharedManagerAdapter {
      * Unregisters committed transaction and tries finish local Consistent Cut.
      *
      * It invokes after specified transaction committed and write related {@link TxRecord} to WAL.
+     *
+     * @param tx Transaction.
+     * @param onlyRemove {@code true} if it's required only remove transaction from {@link #beforeCut} and no need
+     *                   to process transaction.
      */
-    public void unregisterAfterCommit(IgniteInternalTx tx) {
+    public void unregisterAfterCommit(IgniteInternalTx tx, boolean onlyRemove) {
         long v = ((ConsistentCutVersionAware)tx).txCutVersion();
 
         ConsistentCut cut = CUT_HOLDER.get(this).cut;
@@ -244,6 +248,9 @@ public class ConsistentCutManager extends GridCacheSharedManagerAdapter {
         // 1. Committed before Consistent Cut write `ConsistentCutStartRecord` to WAL.
         // 2. Grabbed to be checked while preparing the check-list.
         boolean incl = beforeCut.remove(tx);
+
+        if (onlyRemove)
+            return;
 
         try {
             if (cut != null && cut.processTxAfterCommit(tx, !incl) && beforeCut.isEmpty())
