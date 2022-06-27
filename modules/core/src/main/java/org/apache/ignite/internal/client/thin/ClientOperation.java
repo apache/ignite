@@ -389,6 +389,9 @@ public enum ClientOperation {
             case QUERY_CONTINUOUS:
                 return ClientOperationType.QUERY_CONTINUOUS;
 
+            case TX_START:
+                return ClientOperationType.TRANSACTION_START;
+
             case CLUSTER_GET_STATE:
                 return ClientOperationType.CLUSTER_GET_STATE;
 
