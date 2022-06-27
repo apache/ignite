@@ -19,10 +19,12 @@ package org.apache.ignite.internal.client.thin;
 
 import com.google.common.collect.ImmutableList;
 import java.lang.reflect.Field;
+import java.util.NoSuchElementException;
 import java.util.Objects;
 import org.apache.ignite.IgniteSet;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.client.ClientAutoCloseableIterator;
 import org.apache.ignite.client.ClientCollectionConfiguration;
 import org.apache.ignite.client.ClientException;
 import org.apache.ignite.client.ClientIgniteSet;
@@ -38,7 +40,7 @@ import org.junit.Test;
  * Tests client set.
  * Partition awareness tests are in {@link ThinClientPartitionAwarenessStableTopologyTest#testIgniteSet()}.
  */
-@SuppressWarnings({"rawtypes", "ZeroLengthArrayAllocation"})
+@SuppressWarnings({"rawtypes", "ZeroLengthArrayAllocation", "ThrowableNotThrown"})
 public class IgniteSetTest extends AbstractThinClientTest {
     static IgniteClient client;
 
@@ -330,6 +332,16 @@ public class IgniteSetTest extends AbstractThinClientTest {
     }
 
     @Test
+    public void testIteratorEmpty() {
+        ClientIgniteSet<Integer> set = client.set("testIteratorEmpty", new ClientCollectionConfiguration());
+
+        ClientAutoCloseableIterator<Integer> iterator = set.iterator();
+
+        assertFalse(iterator.hasNext());
+        GridTestUtils.assertThrows(null, iterator::next, NoSuchElementException.class, null);
+    }
+
+    @Test
     public void testIterator() {
         ClientIgniteSet<Integer> set = client.set("testIterator", new ClientCollectionConfiguration());
 
@@ -347,6 +359,12 @@ public class IgniteSetTest extends AbstractThinClientTest {
         // * try-with-resources
         // * partial read and close
         // * affinity call in colocated mode
+    }
+
+    @Test
+    public void testModifyWhileIterating() {
+        // TODO
+        ClientIgniteSet<Integer> set = client.set("testToArrayEmpty", new ClientCollectionConfiguration());
     }
 
     @Test
