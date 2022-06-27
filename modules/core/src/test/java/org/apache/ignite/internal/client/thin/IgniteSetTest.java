@@ -148,6 +148,23 @@ public class IgniteSetTest extends AbstractThinClientTest {
     }
 
     @Test
+    @SuppressWarnings("SuspiciousMethodCalls")
+    public void testContainsAll() {
+        ClientIgniteSet<Integer> set = client.set("testContainsAll", new ClientCollectionConfiguration());
+        set.addAll(ImmutableList.of(1, 2, 3));
+
+        assertTrue(set.containsAll(ImmutableList.of(1)));
+        assertTrue(set.containsAll(ImmutableList.of(1, 2)));
+        assertTrue(set.containsAll(ImmutableList.of(2, 1)));
+        assertTrue(set.containsAll(ImmutableList.of(3, 1, 2)));
+
+        assertFalse(set.containsAll(ImmutableList.of()));
+        assertFalse(set.containsAll(ImmutableList.of(0)));
+        assertFalse(set.containsAll(ImmutableList.of(0, 1)));
+        assertFalse(set.containsAll(ImmutableList.of(1, 2, 4)));
+    }
+
+    @Test
     public void testUserObject() {
         ClientIgniteSet<UserObj> clientSet = client.set("testUserObject", new ClientCollectionConfiguration());
 
