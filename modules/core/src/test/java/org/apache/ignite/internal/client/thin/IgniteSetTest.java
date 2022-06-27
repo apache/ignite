@@ -42,6 +42,7 @@ import org.junit.Test;
  */
 @SuppressWarnings({"rawtypes", "ZeroLengthArrayAllocation", "ThrowableNotThrown"})
 public class IgniteSetTest extends AbstractThinClientTest {
+    /** Client. */
     static IgniteClient client;
 
     /** {@inheritDoc} */
@@ -92,10 +93,15 @@ public class IgniteSetTest extends AbstractThinClientTest {
         oldSet.add(1);
         oldSet.close();
 
+        assertTrue(oldSet.removed());
+
         ClientIgniteSet<Integer> newSet = client.set(oldSet.name(), new ClientCollectionConfiguration());
 
         assertEquals(0, newSet.size());
-        assertTrue(oldSet.removed());
+
+        // Set is identified by id, so it is no longer removed.
+        assertFalse(newSet.removed());
+        assertFalse(oldSet.removed());
     }
 
     @Test

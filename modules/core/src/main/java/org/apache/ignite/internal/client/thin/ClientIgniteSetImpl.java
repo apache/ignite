@@ -55,9 +55,6 @@ class ClientIgniteSetImpl<T> implements ClientIgniteSet<T> {
     private final int cacheId;
 
     /** */
-    private volatile boolean removed;
-
-    /** */
     private volatile boolean serverKeepBinary = true;
 
     /** */
@@ -210,12 +207,7 @@ class ClientIgniteSetImpl<T> implements ClientIgniteSet<T> {
 
     /** {@inheritDoc} */
     @Override public void close() {
-        if (removed)
-            return;
-
         op(ClientOperation.OP_SET_CLOSE, null, null);
-
-        removed = true;
     }
 
     /** {@inheritDoc} */
@@ -230,12 +222,7 @@ class ClientIgniteSetImpl<T> implements ClientIgniteSet<T> {
 
     /** {@inheritDoc} */
     @Override public boolean removed() {
-        if (removed)
-            return true;
-
-        removed = !op(ClientOperation.OP_SET_EXISTS, null, r -> r.in().readBoolean());
-
-        return removed;
+        return !op(ClientOperation.OP_SET_EXISTS, null, r -> r.in().readBoolean());
     }
 
     /** {@inheritDoc} */

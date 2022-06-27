@@ -440,43 +440,43 @@ public enum ClientOperation {
                 return ClientOperationType.ATOMIC_LONG_VALUE_COMPARE_AND_SET;
 
             case OP_SET_GET_OR_CREATE:
-                break;
+                return ClientOperationType.SET_GET_OR_CREATE;
 
             case OP_SET_CLOSE:
-                break;
+                return ClientOperationType.SET_GET_OR_CREATE;
 
             case OP_SET_EXISTS:
-                break;
+                return ClientOperationType.SET_GET_OR_CREATE;
 
             case OP_SET_VALUE_ADD:
-                break;
+                return ClientOperationType.SET_GET_OR_CREATE;
 
             case OP_SET_VALUE_ADD_ALL:
-                break;
+                return ClientOperationType.SET_GET_OR_CREATE;
 
             case OP_SET_VALUE_REMOVE:
-                break;
+                return ClientOperationType.SET_GET_OR_CREATE;
 
             case OP_SET_VALUE_REMOVE_ALL:
-                break;
+                return ClientOperationType.SET_GET_OR_CREATE;
 
             case OP_SET_VALUE_CONTAINS:
-                break;
+                return ClientOperationType.SET_GET_OR_CREATE;
 
             case OP_SET_VALUE_CONTAINS_ALL:
-                break;
+                return ClientOperationType.SET_GET_OR_CREATE;
 
             case OP_SET_VALUE_RETAIN_ALL:
-                break;
+                return ClientOperationType.SET_GET_OR_CREATE;
 
             case OP_SET_SIZE:
-                break;
+                return ClientOperationType.SET_GET_OR_CREATE;
 
             case OP_SET_CLEAR:
-                break;
+                return ClientOperationType.SET_GET_OR_CREATE;
 
             case OP_SET_ITERATOR_START:
-                break;
+                return ClientOperationType.SET_GET_OR_CREATE;
 
             default:
                 return null;

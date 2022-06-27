@@ -254,47 +254,67 @@ public enum ClientOperationType {
     ATOMIC_LONG_VALUE_COMPARE_AND_SET,
 
     /**
-     * Create an IgniteSet.
+     * Create an IgniteSet ({@link IgniteClient#set(String, ClientCollectionConfiguration)}).
      */
     SET_GET_OR_CREATE,
 
     /**
-     * Remove an IgniteSet.
+     * Remove an IgniteSet ({@link ClientIgniteSet#close()}).
      */
     SET_REMOVE,
 
     /**
-     * Check if IgniteSet exists.
+     * Check if IgniteSet exists ({@link ClientIgniteSet#removed()}).
      */
     SET_EXISTS,
 
-    /** IgniteSet.add. */
+    /**
+     * IgniteSet.add ({@link ClientIgniteSet#close()}).
+     */
     SET_VALUE_ADD,
 
-    /** IgniteSet.addAll. */
+    /**
+     * IgniteSet.addAll ({@link ClientIgniteSet#close()}).
+     */
     SET_VALUE_ADD_ALL,
 
-    /** IgniteSet.remove. */
+    /**
+     * IgniteSet.remove ({@link ClientIgniteSet#close()}).
+     */
     SET_VALUE_REMOVE,
 
-    /** IgniteSet.removeAll. */
+    /**
+     * IgniteSet.removeAll ({@link ClientIgniteSet#close()}).
+     */
     SET_VALUE_REMOVE_ALL,
 
-    /** IgniteSet.contains. */
+    /**
+     * IgniteSet.contains ({@link ClientIgniteSet#close()}).
+     */
     SET_VALUE_CONTAINS,
 
-    /** IgniteSet.containsAll. */
+    /**
+     * IgniteSet.containsAll ({@link ClientIgniteSet#close()}).
+     */
     SET_VALUE_CONTAINS_ALL,
 
-    /** IgniteSet.retainAll. */
+    /**
+     * IgniteSet.retainAll ({@link ClientIgniteSet#close()}).
+     */
     SET_VALUE_RETAIN_ALL,
 
-    /** IgniteSet.size. */
+    /**
+     * IgniteSet.size ({@link ClientIgniteSet#close()}).
+     */
     SET_SIZE,
 
-    /** IgniteSet.clear. */
+    /**
+     * IgniteSet.clear ({@link ClientIgniteSet#close()}).
+     */
     SET_CLEAR,
 
-    /** IgniteSet.iterator. */
+    /**
+     * IgniteSet.iterator ({@link ClientIgniteSet#close()}).
+     */
     SET_ITERATOR
 }
