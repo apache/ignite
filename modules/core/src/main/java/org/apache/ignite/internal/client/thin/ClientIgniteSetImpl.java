@@ -295,6 +295,7 @@ class ClientIgniteSetImpl<T> implements ClientIgniteSet<T> {
         return key;
     }
 
+    // TODO: AutoCloseable
     private class SetIterator implements Iterator<T> {
         private final Long resourceId;
 
