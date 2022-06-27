@@ -168,9 +168,16 @@ public class IgniteSetTest extends AbstractThinClientTest {
     public void testUserObject() {
         ClientIgniteSet<UserObj> clientSet = client.set("testUserObject", new ClientCollectionConfiguration());
 
-        clientSet.add(new UserObj(1, "a"));
+        UserObj obj1 = new UserObj(1, "a");
+        UserObj obj2 = new UserObj(2, "a");
 
+        clientSet.add(obj1);
+        clientSet.add(obj2);
+
+        assertTrue(clientSet.contains(obj1));
         assertTrue(clientSet.contains(new UserObj(1, "a")));
+        assertTrue(clientSet.containsAll(ImmutableList.of(obj1, obj2)));
+
         assertFalse(clientSet.contains(new UserObj(1, "b")));
     }
 
