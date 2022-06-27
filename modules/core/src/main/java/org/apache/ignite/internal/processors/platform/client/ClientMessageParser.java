@@ -91,9 +91,12 @@ import org.apache.ignite.internal.processors.platform.client.datastructures.Clie
 import org.apache.ignite.internal.processors.platform.client.datastructures.ClientIgniteSetSizeRequest;
 import org.apache.ignite.internal.processors.platform.client.datastructures.ClientIgniteSetValueAddAllRequest;
 import org.apache.ignite.internal.processors.platform.client.datastructures.ClientIgniteSetValueAddRequest;
+import org.apache.ignite.internal.processors.platform.client.datastructures.ClientIgniteSetValueContainsAllRequest;
 import org.apache.ignite.internal.processors.platform.client.datastructures.ClientIgniteSetValueContainsRequest;
 import org.apache.ignite.internal.processors.platform.client.datastructures.ClientIgniteSetGetOrCreateRequest;
+import org.apache.ignite.internal.processors.platform.client.datastructures.ClientIgniteSetValueRemoveAllRequest;
 import org.apache.ignite.internal.processors.platform.client.datastructures.ClientIgniteSetValueRemoveRequest;
+import org.apache.ignite.internal.processors.platform.client.datastructures.ClientIgniteSetValueRetainAllRequest;
 import org.apache.ignite.internal.processors.platform.client.service.ClientServiceGetDescriptorRequest;
 import org.apache.ignite.internal.processors.platform.client.service.ClientServiceGetDescriptorsRequest;
 import org.apache.ignite.internal.processors.platform.client.service.ClientServiceInvokeRequest;
@@ -643,19 +646,16 @@ public class ClientMessageParser implements ClientListenerMessageParser {
                 return new ClientIgniteSetValueRemoveRequest(reader);
 
             case OP_SET_VALUE_REMOVE_ALL:
-                // TODO
-                return new ClientIgniteSetSizeRequest(reader);
+                return new ClientIgniteSetValueRemoveAllRequest(reader);
 
             case OP_SET_VALUE_CONTAINS:
                 return new ClientIgniteSetValueContainsRequest(reader);
 
             case OP_SET_VALUE_CONTAINS_ALL:
-                // TODO
-                return new ClientIgniteSetSizeRequest(reader);
+                return new ClientIgniteSetValueContainsAllRequest(reader);
 
             case OP_SET_VALUE_RETAIN_ALL:
-                // TODO
-                return new ClientIgniteSetSizeRequest(reader);
+                return new ClientIgniteSetValueRetainAllRequest(reader);
 
             case OP_SET_SIZE:
                 return new ClientIgniteSetSizeRequest(reader);
