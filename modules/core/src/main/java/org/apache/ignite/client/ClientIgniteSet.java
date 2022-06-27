@@ -24,13 +24,17 @@ import java.util.Set;
 
 /**
  * Distributed Set.
+ *
  * <h1 class="header">Overview</h1>
  * Cache set implements {@link Set} interface and provides all methods from collections.
+ *
  * <h1 class="header">Colocated vs Non-colocated</h1>
  * Set items can be placed on one node or distributed across grid nodes
- * (governed by {@code colocated} parameter). {@code Non-colocated} mode is provided only
- * for partitioned caches. If {@code colocated} parameter is {@code true}, then all set items
+ * (governed by {@link ClientCollectionConfiguration#setColocated(boolean)} parameter).
+ * {@code Non-colocated} mode is provided only for partitioned caches.
+ * If {@code colocated} parameter is {@code true}, then all set items
  * will be colocated on one node, otherwise items will be distributed across all grid nodes.
+ *
  * @see IgniteClient#set(String, org.apache.ignite.client.ClientCollectionConfiguration)
  */
 public interface ClientIgniteSet<T> extends Set<T>, Closeable {

@@ -37,8 +37,8 @@ public class ClientCollectionConfiguration {
     /** Number of backups. */
     private int backups;
 
-    /** Collocated flag. */
-    private boolean collocated;
+    /** Colocated flag. */
+    private boolean colocated;
 
     /** Group name. */
     private String grpName;
@@ -46,19 +46,19 @@ public class ClientCollectionConfiguration {
     /**
      * @return {@code True} if all items within the same collection will be collocated on the same node.
      */
-    public boolean isCollocated() {
-        return collocated;
+    public boolean isColocated() {
+        return colocated;
     }
 
     /**
-     * @param collocated If {@code true} then all items within the same collection will be collocated on the same node.
+     * @param colocated If {@code true} then all items within the same collection will be collocated on the same node.
      *      Otherwise elements of the same set maybe be cached on different nodes. This parameter works only
      *      collections stored in {@link CacheMode#PARTITIONED} cache.
      *
      * @return {@code this} for chaining.
      */
-    public ClientCollectionConfiguration setCollocated(boolean collocated) {
-        this.collocated = collocated;
+    public ClientCollectionConfiguration setColocated(boolean colocated) {
+        this.colocated = colocated;
 
         return this;
     }

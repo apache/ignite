@@ -393,7 +393,7 @@ public class TcpIgniteClient implements IgniteClient {
                 out.out().writeByte((byte) cfg.getCacheMode().ordinal());
                 out.out().writeInt(cfg.getBackups());
                 writeString(cfg.getGroupName(), out.out());
-                out.out().writeBoolean(cfg.isCollocated());
+                out.out().writeBoolean(cfg.isColocated());
             } else
                 out.out().writeBoolean(false);
         }, in -> {

@@ -253,7 +253,7 @@ public class IgniteSetTest extends AbstractThinClientTest {
                 .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
                 .setCacheMode(CacheMode.PARTITIONED)
                 .setBackups(7)
-                .setCollocated(true)
+                .setColocated(true)
                 .setGroupName(groupName);
 
         CollectionConfiguration serverCfg = new CollectionConfiguration()

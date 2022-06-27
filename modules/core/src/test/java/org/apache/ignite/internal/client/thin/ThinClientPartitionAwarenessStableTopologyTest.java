@@ -240,7 +240,7 @@ public class ThinClientPartitionAwarenessStableTopologyTest extends ThinClientAb
      */
     public void testIgniteSetCollocated(String name, String groupName, CacheAtomicityMode mode) {
         ClientCollectionConfiguration cfg = new ClientCollectionConfiguration()
-                .setCollocated(true)
+                .setColocated(true)
                 .setGroupName(groupName)
                 .setAtomicityMode(mode)
                 .setBackups(1);
