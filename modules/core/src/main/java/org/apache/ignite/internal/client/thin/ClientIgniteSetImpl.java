@@ -399,6 +399,7 @@ class ClientIgniteSetImpl<T> implements ClientIgniteSet<T> {
             ch.service(ClientOperation.RESOURCE_CLOSE, w -> w.out().writeLong(id), null);
 
             resourceId = null;
+            pos = Integer.MAX_VALUE;
         }
 
         private void fetchNextPage() {

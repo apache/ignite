@@ -337,23 +337,37 @@ public class IgniteSetTest extends AbstractThinClientTest {
 
         ClientAutoCloseableIterator<Integer> iterator = set.iterator();
 
+        assertEquals(1024, set.pageSize());
         assertFalse(iterator.hasNext());
         GridTestUtils.assertThrows(null, iterator::next, NoSuchElementException.class, null);
     }
 
     @Test
+    public void testCloseBeforeEnd() throws Exception {
+        ClientIgniteSet<Integer> set = client.set("testCloseBeforeEnd", new ClientCollectionConfiguration());
+        set.pageSize(1);
+
+        ImmutableList<Integer> keys = ImmutableList.of(1, 2, 3);
+        set.addAll(keys);
+
+        ClientAutoCloseableIterator<Integer> iter = set.iterator();
+
+        assertTrue(iter.hasNext());
+        iter.close();
+
+        assertFalse(iter.hasNext());
+    }
+
+    @Test
     public void testIteratorForeach() {
         ClientIgniteSet<Integer> set = client.set("testIteratorForeach", new ClientCollectionConfiguration());
+        set.pageSize(2);
 
         ImmutableList<Integer> keys = ImmutableList.of(1, 2, 3);
         set.addAll(keys);
 
         for (Integer k : set)
             assertTrue(keys.contains(k));
-
-
-        // TODO
-        // * partial read and close
     }
 
     @Test
