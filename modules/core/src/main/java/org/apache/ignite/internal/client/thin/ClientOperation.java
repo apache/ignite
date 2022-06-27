@@ -443,40 +443,40 @@ public enum ClientOperation {
                 return ClientOperationType.SET_GET_OR_CREATE;
 
             case OP_SET_CLOSE:
-                return ClientOperationType.SET_GET_OR_CREATE;
+                return ClientOperationType.SET_REMOVE;
 
             case OP_SET_EXISTS:
-                return ClientOperationType.SET_GET_OR_CREATE;
+                return ClientOperationType.SET_EXISTS;
 
             case OP_SET_VALUE_ADD:
-                return ClientOperationType.SET_GET_OR_CREATE;
+                return ClientOperationType.SET_VALUE_ADD;
 
             case OP_SET_VALUE_ADD_ALL:
-                return ClientOperationType.SET_GET_OR_CREATE;
+                return ClientOperationType.SET_VALUE_ADD_ALL;
 
             case OP_SET_VALUE_REMOVE:
-                return ClientOperationType.SET_GET_OR_CREATE;
+                return ClientOperationType.SET_VALUE_REMOVE;
 
             case OP_SET_VALUE_REMOVE_ALL:
-                return ClientOperationType.SET_GET_OR_CREATE;
+                return ClientOperationType.SET_VALUE_REMOVE_ALL;
 
             case OP_SET_VALUE_CONTAINS:
-                return ClientOperationType.SET_GET_OR_CREATE;
+                return ClientOperationType.SET_VALUE_CONTAINS;
 
             case OP_SET_VALUE_CONTAINS_ALL:
-                return ClientOperationType.SET_GET_OR_CREATE;
+                return ClientOperationType.SET_VALUE_CONTAINS_ALL;
 
             case OP_SET_VALUE_RETAIN_ALL:
-                return ClientOperationType.SET_GET_OR_CREATE;
+                return ClientOperationType.SET_VALUE_RETAIN_ALL;
 
             case OP_SET_SIZE:
-                return ClientOperationType.SET_GET_OR_CREATE;
+                return ClientOperationType.SET_SIZE;
 
             case OP_SET_CLEAR:
-                return ClientOperationType.SET_GET_OR_CREATE;
+                return ClientOperationType.SET_CLEAR;
 
             case OP_SET_ITERATOR_START:
-                return ClientOperationType.SET_GET_OR_CREATE;
+                return ClientOperationType.SET_ITERATOR;
 
             default:
                 return null;

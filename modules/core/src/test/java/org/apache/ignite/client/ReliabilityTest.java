@@ -316,6 +316,7 @@ public class ReliabilityTest extends AbstractThinClientTest {
 
         String nullOpsNames = nullOps.stream().map(Enum::name).collect(Collectors.joining(", "));
 
+        // TODO: Why 17? Only 1 added?
         long expectedNullCount = 16;
 
         String msg = nullOps.size()
