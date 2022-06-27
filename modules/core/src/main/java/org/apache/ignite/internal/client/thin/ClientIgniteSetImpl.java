@@ -124,13 +124,20 @@ class ClientIgniteSetImpl<T> extends AbstractCollection<T> implements ClientIgni
 
     @Override
     public Iterator<T> iterator() {
-        // TODO: affinityService when using colocated mode.
-        return ch.service(ClientOperation.OP_SET_ITERATOR_START, this::writeIdentity, in -> {
+        Function<PayloadInputChannel, PagedIterator> payloadReader = in -> {
             List<T> page = readPage(in);
             Long resourceId = in.in().readBoolean() ? in.in().readLong() : null;
 
             return new PagedIterator(in.clientChannel(), resourceId, page);
-        });
+        };
+
+        if (colocated) {
+            Object affinityKey = name.hashCode();
+
+            return ch.affinityService(cacheId, affinityKey, ClientOperation.OP_SET_ITERATOR_START, this::writeIdentity, payloadReader);
+        }
+
+        return ch.service(ClientOperation.OP_SET_ITERATOR_START, this::writeIdentity, payloadReader);
     }
 
     @Override
