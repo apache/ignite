@@ -19,9 +19,9 @@ package org.apache.ignite.internal.client.thin;
 
 import java.util.Collection;
 import java.util.Iterator;
+import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import org.apache.ignite.client.ClientCompute;
 import org.apache.ignite.client.ClientIgniteSet;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.util.typedef.internal.A;
@@ -55,7 +55,6 @@ class ClientIgniteSetImpl<T> implements ClientIgniteSet<T> {
      * @param id Id.
      * @param colocated Colocated flag.
      * @param cacheId Cache id.
-     * @param compute Compute.
      */
     public ClientIgniteSetImpl(
             ReliableChannel ch,
@@ -117,7 +116,11 @@ class ClientIgniteSetImpl<T> implements ClientIgniteSet<T> {
 
     @Override
     public Iterator<T> iterator() {
-        // TODO: Should we use CacheWeakQueryIteratorsHolder here somehow to match thick API weak ref semantics?
+        ch.service(ClientOperation.OP_SET_ITERATOR_START, this::writeIdentity, in -> {
+            // Read first page, hasNext and resId.
+            int cnt = in.in().readInt();
+        });
+
         return null;
     }
 
@@ -263,6 +266,12 @@ class ClientIgniteSetImpl<T> implements ClientIgniteSet<T> {
         }, reader);
     }
 
+    private void writeIdentity(PayloadOutputChannel out) {
+        try (BinaryRawWriterEx w = serDes.createBinaryWriter(out.out())) {
+            writeIdentity(w);
+        }
+    }
+
     private void writeIdentity(BinaryRawWriterEx w) {
         w.writeString(name);
         w.writeInt(cacheId);
@@ -284,5 +293,27 @@ class ClientIgniteSetImpl<T> implements ClientIgniteSet<T> {
         // Server wraps user object into GridCacheSetItemKey, but setId is always null in separated mode,
         // so the user object itself ends up as affinity key.
         return key;
+    }
+
+    private class SetIterator implements Iterator<T> {
+        private final Long resourceId;
+
+        private List<T> page;
+
+        private int pos;
+
+        public SetIterator(Long resourceId) {
+            this.resourceId = resourceId;
+        }
+
+        @Override
+        public boolean hasNext() {
+            return false;
+        }
+
+        @Override
+        public T next() {
+            return null;
+        }
     }
 }
