@@ -379,9 +379,6 @@ public class TcpIgniteClient implements IgniteClient {
     @Override public <T> ClientIgniteSet<T> set(String name, @Nullable ClientCollectionConfiguration cfg) {
         GridArgumentCheck.notNull(name, "name");
 
-        // TODO Use set name for client ops - setId can't be used to retrieve the set. But we need setId for colocation
-        // When colocated flag is true, all items are on the same node, determined by setName.hashCode()
-        // Otherwise GridCacheSetItemKey is used (setId + object)
         return ch.service(ClientOperation.OP_SET_GET_OR_CREATE, out -> {
             writeString(name, out.out());
 
