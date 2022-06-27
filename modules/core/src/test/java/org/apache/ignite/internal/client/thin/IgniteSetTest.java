@@ -329,6 +329,20 @@ public class IgniteSetTest extends AbstractThinClientTest {
         assertFalse(set2.contains(1));
     }
 
+    @Test
+    public void testIterator() {
+        // TODO
+        // * Double close
+        // * Different page sizes
+        // * try-with-resources
+        // * partial read and close
+    }
+
+    @Test
+    public void testToArray() {
+        // TODO
+    }
+
     @SuppressWarnings("ThrowableNotThrown")
     private static void assertThrowsClosed(ClientIgniteSet<Integer> set) {
         String msg = "IgniteSet with name '" + set.name() + "' does not exist.";
