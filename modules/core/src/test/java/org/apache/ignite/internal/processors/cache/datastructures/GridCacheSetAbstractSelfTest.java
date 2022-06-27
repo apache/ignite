@@ -397,6 +397,8 @@ public abstract class GridCacheSetAbstractSelfTest extends IgniteCollectionAbstr
         }
 
         assertFalse(set0.isEmpty());
+
+        // retainAll with empty list: clear the collection and get a boolean value indicating if it was empty or not.
         assertTrue(set0.retainAll(new ArrayList<>()));
         assertTrue(set0.isEmpty());
 
