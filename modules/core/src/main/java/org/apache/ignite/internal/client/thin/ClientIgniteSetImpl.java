@@ -382,26 +382,10 @@ class ClientIgniteSetImpl<T> implements ClientIgniteSet<T> {
             if (!hasNext())
                 throw new NoSuchElementException();
 
-            if (pos == page.size()) {
-                page = resourceCh.service(
-                        ClientOperation.OP_SET_ITERATOR_GET_PAGE,
-                        out -> {
-                            out.out().writeLong(resourceId);
-                            out.out().writeInt(pageSize);
-                        },
-                        in -> {
-                            List<T> res = readPage(in);
-                            boolean hasNext = in.in().readBoolean();
+            if (pos == page.size())
+                fetchNextPage();
 
-                            if (!hasNext)
-                                resourceId = null;
-
-                            return res;
-                        });
-
-                pos = 0;
-            }
-
+            // TODO: Can the page be empty due to concurrent update? Test it.
             return page.get(pos++);
         }
 
@@ -414,6 +398,26 @@ class ClientIgniteSetImpl<T> implements ClientIgniteSet<T> {
             ch.service(ClientOperation.RESOURCE_CLOSE, w -> w.out().writeLong(id), null);
 
             resourceId = null;
+        }
+
+        private void fetchNextPage() {
+            page = resourceCh.service(
+                    ClientOperation.OP_SET_ITERATOR_GET_PAGE,
+                    out -> {
+                        out.out().writeLong(resourceId);
+                        out.out().writeInt(pageSize);
+                    },
+                    in -> {
+                        List<T> res = readPage(in);
+                        boolean hasNext = in.in().readBoolean();
+
+                        if (!hasNext)
+                            resourceId = null;
+
+                        return res;
+                    });
+
+            pos = 0;
         }
     }
 }
