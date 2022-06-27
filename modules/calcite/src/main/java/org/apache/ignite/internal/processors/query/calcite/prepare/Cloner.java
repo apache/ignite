@@ -138,12 +138,6 @@ public class Cloner implements IgniteRelVisitor<IgniteRel> {
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteRel visit(IgniteIndexProbe rel) {
-        return rel.clone(cluster, F.asList());
-    }
-
-
-    /** {@inheritDoc} */
     @Override public IgniteRel visit(IgniteTableScan rel) {
         return rel.clone(cluster, F.asList());
     }

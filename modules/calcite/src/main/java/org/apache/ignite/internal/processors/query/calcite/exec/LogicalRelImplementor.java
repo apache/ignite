@@ -28,9 +28,7 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import org.apache.calcite.rel.RelCollation;
-import org.apache.calcite.rel.RelCollations;
 import org.apache.calcite.rel.RelNode;
-import org.apache.calcite.rel.core.AggregateCall;
 import org.apache.calcite.rel.core.Intersect;
 import org.apache.calcite.rel.core.JoinRelType;
 import org.apache.calcite.rel.core.Minus;
@@ -38,15 +36,7 @@ import org.apache.calcite.rel.core.Spool;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.rex.RexNode;
-import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.util.ImmutableBitSet;
-import org.apache.calcite.util.ImmutableIntList;
-import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.cache.query.index.IndexName;
-import org.apache.ignite.internal.cache.query.index.sorted.inline.IndexQueryContext;
-import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndex;
-import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.failure.FailureProcessor;
 import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler.RowFactory;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.ExpressionFactory;
@@ -58,7 +48,6 @@ import org.apache.ignite.internal.processors.query.calcite.exec.rel.CorrelatedNe
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.FilterNode;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.HashAggregateNode;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.Inbox;
-import org.apache.ignite.internal.processors.query.calcite.exec.rel.IndexProbeNode;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.IndexSpoolNode;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.IntersectNode;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.LimitNode;
@@ -82,7 +71,6 @@ import org.apache.ignite.internal.processors.query.calcite.rel.IgniteExchange;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteFilter;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteHashIndexSpool;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexCount;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexProbe;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexScan;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteLimit;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteMergeJoin;
@@ -119,9 +107,7 @@ import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactor
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.processors.query.calcite.util.RexUtils;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.spi.indexing.IndexingQueryFilterImpl;
 
-import static java.util.Collections.singletonList;
 import static org.apache.calcite.rel.RelDistribution.Type.HASH_DISTRIBUTED;
 import static org.apache.ignite.internal.processors.query.calcite.util.TypeUtils.combinedRowType;
 
@@ -311,8 +297,8 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
         ImmutableBitSet requiredColumns = rel.requiredColumns();
         boolean firstVal = rel.firstOrLast(true);
         boolean lastVal = !firstVal && rel.firstOrLast(false);
-        List<RexNode> lowerBound = rel.lowerBound();
-        List<RexNode> upperBound = rel.upperBound();
+        List<RexNode> lowerBound = (firstVal || lastVal) ? null : rel.lowerBound();
+        List<RexNode> upperBound = (firstVal || lastVal) ? null : rel.upperBound();
 
         RelDataType rowType = tbl.getRowType(typeFactory, requiredColumns);
 
@@ -443,55 +429,6 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
                 ctx.group(rel.sourceId()), null, null, ImmutableBitSet.of(0))));
 
             return replacement;
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public Node<Row> visit(IgniteIndexProbe rel) {
-        IgniteTable tbl = rel.getTable().unwrap(IgniteTable.class);
-        IgniteIndex idx = tbl.getIndex(rel.indexName());
-
-        if (idx != null && !tbl.isIndexRebuildInProgress()) {
-            CacheTableDescriptor descr = rel.getTable().unwrap(CacheTableDescriptor.class);
-            GridCacheContext<?, ?> cctx = descr.cacheContext();
-            GridKernalContext kctx = cctx.kernalContext();
-
-            IndexName idxName = new IndexName(cctx.name(), kctx.query().schemaName(cctx),
-                    descr.typeDescription().tableName(), idx.name());
-
-            IndexQueryContext qryCtx = null;
-
-            if (descr.cacheInfo().config().getBackups() > 0) {
-                IndexingQueryFilterImpl filter = new IndexingQueryFilterImpl(kctx, AffinityTopologyVersion.NONE, null);
-
-                qryCtx = new IndexQueryContext(filter, null, null);
-            }
-
-            return new IndexProbeNode<>(kctx.indexProcessor().index(idxName).unwrap(InlineIndex.class), ctx, qryCtx);
-        }
-        else {
-            // Index is unavailable. Work with table scan.
-            RelNode relInput = new IgniteTableScan(rel.getCluster(), rel.getTraitSet(), rel.getTable());
-
-            // TODO: certain aggregate
-            AggregateCall aggFun = AggregateCall.create(
-                    SqlStdOperatorTable.MIN,
-                    false,
-                    false,
-                    false,
-                    ImmutableIntList.of(0),
-                    -1,
-                    null,
-                    RelCollations.EMPTY,
-                    0,
-                    relInput,
-                    null,
-                    null);
-
-            IgniteColocatedHashAggregate relAggr = new IgniteColocatedHashAggregate(rel.getCluster(), rel.getTraitSet(), relInput,
-                    ImmutableBitSet.of(), singletonList(ImmutableBitSet.of()), singletonList(aggFun));
-
-            return visit(relAggr);
         }
     }
 

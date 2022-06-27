@@ -26,8 +26,8 @@ import org.apache.calcite.rel.logical.LogicalAggregate;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rex.RexBuilder;
+import org.apache.calcite.sql.SqlAggFunction;
 import org.apache.calcite.sql.SqlKind;
-import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.tools.RelBuilder;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteConvention;
@@ -43,7 +43,9 @@ import org.apache.ignite.internal.processors.query.calcite.util.IndexConditions;
 import org.apache.ignite.internal.processors.query.calcite.util.RexUtils;
 import org.immutables.value.Value;
 
-/** Tries to optimize MIN() and MAX() to use first/last record index records. */
+/**
+ * Tries to optimize MIN() and MAX() to use first/last record index records.
+ */
 @Value.Enclosing
 public class IndexMinMaxRule extends RelRule<IndexMinMaxRule.Config> {
     /** */
@@ -95,28 +97,19 @@ public class IndexMinMaxRule extends RelRule<IndexMinMaxRule.Config> {
                     IgniteDistributions.random() : table.distribution())
             .replace(RewindabilityTrait.REWINDABLE);
 
-//        // TODO: read multiple aggregates.
-//        IgniteIndexProbe idxCnt = new IgniteIndexProbe(
-//            scan.getCluster(),
-//            idxTraits,
-//            scan.getTable(),
-//            idx.name(),
-//            aggr.getAggCallList().get(0).getAggregation().getKind(),
-//            aggr.getRowType()
-//        );
-
         RexBuilder rexb = RexUtils.builder(scan.getCluster());
 
         RelDataTypeFactory tf = scan.getCluster().getTypeFactory();
 
         RelDataType tableType = table.getRowType(tf);
 
+        SqlAggFunction aggFun = aggr.getAggCallList().get(0).getAggregation();
+
         //TODO: sevelar aggregations
         IndexConditions idxConditions = RexUtils.buildSortedIndexConditions(
             scan.getCluster(),
             idx.collation(),
-            rexb.makeCall(aggr.getAggCallList().get(0).getAggregation(),
-                rexb.makeLocalRef(tableType.getFieldList().get(columnNum).getType(), 0)),
+            rexb.makeCall(aggFun, rexb.makeLocalRef(tableType.getFieldList().get(columnNum).getType(), 0)),
             tableType,
             scan.requiredColumns());
 
@@ -131,58 +124,13 @@ public class IndexMinMaxRule extends RelRule<IndexMinMaxRule.Config> {
             scan.requiredColumns(),
             idx.collation());
 
-//        IgniteIndexScan input = new IgniteIndexScan(scan.getCluster(), idxTraits, scan.getTable(), idx.name(),
-//            null, limit, idxConditions, scan.requiredColumns(), idx.collation());
-
-//        // TODO: read multiple aggregates.
-//        AggregateCall idxSumAggCall = AggregateCall.create(
-//            //TODO: aggergate call kind
-//            SqlStdOperatorTable.MIN,
-//            false,
-//            false,
-//            false,
-//            ImmutableIntList.of(0),
-//            -1,
-//            null,
-//            RelCollations.EMPTY,
-//            0,
-//                input,
-//            null,
-//            null);
-//
-//        LogicalAggregate newRel = new LogicalAggregate(
-//            aggr.getCluster(),
-//            aggr.getTraitSet(),
-//            Collections.emptyList(),
-//                input,
-//            aggr.getGroupSet(),
-//            aggr.getGroupSets(),
-//            Stream.generate(() -> idxSumAggCall).limit(aggr.getAggCallList().size()).collect(Collectors.toList())
-//        );
-//
-//        // SUM0/DECIMAL to COUNT()/Long converter.
-//        List<RexNode> proj = new ArrayList<>();
-//        RexBuilder rexBuilder = scan.getCluster().getRexBuilder();
-//
-//        for (int i = 0; i < aggr.getAggCallList().size(); ++i)
-//            proj.add(rexBuilder.makeCast(aggr.getAggCallList().get(i).getType(), rexBuilder.makeInputRef(newRel, i)));
-//
-//        IgniteProject castToLongNode = new IgniteProject(
-//            newRel.getCluster(),
-//            aggr.getTraitSet().replace(IgniteConvention.INSTANCE),
-//            newRel,
-//            proj, aggr.getRowType());
-
         RelBuilder relb = call.builder();
 
-        // Also cast DECIMAL of SUM0 to BIGINT(Long) of COUNT().
         call.transformTo(relb.push(replacement)
-                .aggregate(relb.groupKey(), Collections.nCopies(aggr.getAggCallList().size(),
-                        relb.aggregateCall(SqlStdOperatorTable.MIN, relb.field(0))))
-                .build()
+            .aggregate(relb.groupKey(), Collections.nCopies(aggr.getAggCallList().size(),
+                relb.aggregateCall(aggFun, relb.field(0))))
+            .build()
         );
-//
-//        call.transformTo(newRel, ImmutableMap.of(newRel, aggr));
     }
 
     /** The rule config. */

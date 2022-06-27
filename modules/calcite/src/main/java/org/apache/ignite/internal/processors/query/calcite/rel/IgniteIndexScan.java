@@ -127,17 +127,9 @@ public class IgniteIndexScan extends AbstractIndexScan implements SourceAwareIgn
         return super.computeSelfCost(planner, mq);
     }
 
-    /** {@inheritDoc} */
-    @Override public List<RexNode> lowerBound() {
-        return firstOrLast(true) || firstOrLast(false) ? null : super.lowerBound();
-    }
-
-    /** {@inheritDoc} */
-    @Override public List<RexNode> upperBound() {
-        return firstOrLast(true) || firstOrLast(false) ? null : super.upperBound();
-    }
-
-    //TODO: comment
+    /**
+     * @return {@core True}, if lower or upper condition supposes taking only first or last index record.
+     */
     public boolean firstOrLast(boolean first) {
         return condition == null &&
             idxCond != null &&

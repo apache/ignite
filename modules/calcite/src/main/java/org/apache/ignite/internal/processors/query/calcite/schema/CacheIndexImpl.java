@@ -183,7 +183,7 @@ public class CacheIndexImpl implements IgniteIndex {
         return new IndexConditions();
     }
 
-    //TODO
+    /** */
     private <Row> IndexScan<Row> createScan(
         UUID localNodeId,
         ExecutionContext<Row> execCtx,

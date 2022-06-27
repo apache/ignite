@@ -133,11 +133,6 @@ public class IgniteRelShuttle implements IgniteRelVisitor<IgniteRel> {
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteRel visit(IgniteIndexProbe rel) {
-        return processNode(rel);
-    }
-
-    /** {@inheritDoc} */
     @Override public IgniteRel visit(IgniteTableScan rel) {
         return processNode(rel);
     }

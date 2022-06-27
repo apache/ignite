@@ -88,18 +88,6 @@ public class RuntimeSortedIndex<Row> implements RuntimeIndex<Row>, TreeIndex<Row
         return new Cursor(rows, lowerRow, upperRow);
     }
 
-    //TODO
-    @Override
-    public GridCursor<Row> findFirst(IndexQueryContext qctx) {
-        return new Cursor(F.asList(rows.get(0)), null, null);
-    }
-
-    //TODO
-    @Override
-    public GridCursor<Row> findLast(IndexQueryContext qctx) {
-        return new Cursor(F.asList(rows.get(rows.size() -1)), null, null);
-    }
-
     /**
      * Creates iterable on the index.
      */

@@ -948,7 +948,6 @@ class RelJson {
         map.put("name", operator.getName());
         map.put("kind", toJson(operator.kind));
         map.put("syntax", toJson(operator.getSyntax()));
-        map.put("class", toJson(operator.getClass().getName()));
         return map;
     }
 
