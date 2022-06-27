@@ -66,11 +66,17 @@ public class IgniteSetTest extends AbstractThinClientTest {
         super.afterTestsStopped();
     }
 
+    /**
+     * Tests that missing set returns null.
+     */
     @Test
     public void testGetNonExistentSetReturnsNull() {
         assertNull(client.set("non-existent", null));
     }
 
+    /**
+     * Tests that closed set throws exceptions.
+     */
     @Test
     public void testCloseThenUseThrowsException() {
         ClientIgniteSet<Integer> set = client.set("testCloseThenUseThrowsException", new ClientCollectionConfiguration());
@@ -86,6 +92,9 @@ public class IgniteSetTest extends AbstractThinClientTest {
         assertTrue(set2.removed());
     }
 
+    /**
+     * Tests creating a new set with the old name.
+     */
     @Test
     public void testCloseAndCreateWithSameName() {
         ClientIgniteSet<Integer> oldSet = client.set("testCreateCloseCreateRemovesOldData", new ClientCollectionConfiguration());
@@ -104,6 +113,9 @@ public class IgniteSetTest extends AbstractThinClientTest {
         assertFalse(oldSet.removed());
     }
 
+    /**
+     * Tests basic usage.
+     */
     @Test
     public void testAddRemoveContains() {
         ClientIgniteSet<String> set = client.set("testBasicUsage", new ClientCollectionConfiguration());
@@ -124,6 +136,9 @@ public class IgniteSetTest extends AbstractThinClientTest {
         assertEquals("bar", set.iterator().next());
     }
 
+    /**
+     * Tests addAll.
+     */
     @Test
     public void testAddAll() {
         ClientIgniteSet<Integer> set = client.set("testAddAll", new ClientCollectionConfiguration());
@@ -147,6 +162,9 @@ public class IgniteSetTest extends AbstractThinClientTest {
         assertEquals(3, set.size());
     }
 
+    /**
+     * Tests containsAll.
+     */
     @Test
     @SuppressWarnings("SuspiciousMethodCalls")
     public void testContainsAll() {
@@ -164,6 +182,9 @@ public class IgniteSetTest extends AbstractThinClientTest {
         assertFalse(set.containsAll(ImmutableList.of(1, 2, 4)));
     }
 
+    /**
+     * Tests removeAll.
+     */
     @Test
     @SuppressWarnings({"SlowAbstractSetRemoveAll", "SuspiciousMethodCalls"})
     public void testRemoveAll() {
@@ -182,6 +203,9 @@ public class IgniteSetTest extends AbstractThinClientTest {
         assertTrue(set.contains(2));
     }
 
+    /**
+     * Tests retainAll.
+     */
     @Test
     @SuppressWarnings("SuspiciousMethodCalls")
     public void testRetainAll() {
@@ -204,6 +228,9 @@ public class IgniteSetTest extends AbstractThinClientTest {
         assertTrue(set.isEmpty());
     }
 
+    /**
+     * Tests user object types as set values.
+     */
     @Test
     public void testUserObject() {
         ClientIgniteSet<UserObj> clientSet = client.set("testUserObject", new ClientCollectionConfiguration());
@@ -221,6 +248,9 @@ public class IgniteSetTest extends AbstractThinClientTest {
         assertFalse(clientSet.contains(new UserObj(1, "b")));
     }
 
+    /**
+     * Tests user object types as set values with server-side API interop.
+     */
     @Test
     public void testUserObjectClientServer() {
         ClientIgniteSet<UserObj> clientSet = client.set("testUserObjectClientServer", new ClientCollectionConfiguration());
@@ -245,6 +275,9 @@ public class IgniteSetTest extends AbstractThinClientTest {
         assertFalse(serverSet.contains(new UserObj(1, "x")));
     }
 
+    /**
+     * Tests config propagation.
+     */
     @Test
     public void testConfigPropagation() throws Exception {
         String groupName = "grp-testConfigPropagation";
@@ -280,6 +313,9 @@ public class IgniteSetTest extends AbstractThinClientTest {
         assertEquals(groupName, cctx.config().getGroupName());
     }
 
+    /**
+     * Tests different cache groups.
+     */
     @Test
     public void testSameNameInDifferentGroups() {
         String name = "testSameNameInDifferentGroups";
@@ -309,6 +345,9 @@ public class IgniteSetTest extends AbstractThinClientTest {
         assertFalse(set3.contains(1));
     }
 
+    /**
+     * Tests same set name with different options.
+     */
     @Test
     public void testSameNameDifferentOptions() {
         String name = "testSameNameDifferentOptions";
@@ -332,6 +371,9 @@ public class IgniteSetTest extends AbstractThinClientTest {
         assertFalse(set2.contains(1));
     }
 
+    /**
+     * Tests iterator over an empty set.
+     */
     @Test
     public void testIteratorEmpty() {
         ClientIgniteSet<Integer> set = client.set("testIteratorEmpty", new ClientCollectionConfiguration());
@@ -343,6 +385,9 @@ public class IgniteSetTest extends AbstractThinClientTest {
         GridTestUtils.assertThrows(null, iterator::next, NoSuchElementException.class, null);
     }
 
+    /**
+     * Tests that iterator closes itself when the last page is retrieved.
+     */
     @Test
     public void testIteratorClosesOnLastPage() throws Exception {
         ClientIgniteSet<Integer> set = client.set("testCloseBeforeEnd", new ClientCollectionConfiguration());
@@ -371,6 +416,9 @@ public class IgniteSetTest extends AbstractThinClientTest {
         assertFalse(iter.hasNext());
     }
 
+    /**
+     * Tests closing the iterator before it is finished.
+     */
     @Test
     public void testCloseBeforeEnd() throws Exception {
         ClientIgniteSet<Integer> set = client.set("testCloseBeforeEnd", new ClientCollectionConfiguration());
@@ -387,6 +435,9 @@ public class IgniteSetTest extends AbstractThinClientTest {
         assertFalse(iter.hasNext());
     }
 
+    /**
+     * Tests iterator in a foreach loop.
+     */
     @Test
     public void testIteratorForeach() {
         ClientIgniteSet<Integer> set = client.set("testIteratorForeach", new ClientCollectionConfiguration());
@@ -405,6 +456,9 @@ public class IgniteSetTest extends AbstractThinClientTest {
         assertEquals(keys.size(), count);
     }
 
+    /**
+     * Tests iterator with data modifications.
+     */
     @Test
     public void testModifyWhileIterating() {
         ClientIgniteSet<Integer> set = client.set("testModifyWhileIterating", new ClientCollectionConfiguration());
@@ -424,6 +478,9 @@ public class IgniteSetTest extends AbstractThinClientTest {
         assertFalse(iterator.hasNext());
     }
 
+    /**
+     * Tests toArray on empty set.
+     */
     @Test
     public void testToArrayEmpty() {
         ClientIgniteSet<Integer> set = client.set("testToArrayEmpty", new ClientCollectionConfiguration());
@@ -432,12 +489,18 @@ public class IgniteSetTest extends AbstractThinClientTest {
         assertEquals(0, set.toArray(new Integer[0]).length);
     }
 
+    /**
+     * Tests toArray.
+     */
     @Test
     public void testToArray() {
         for (int i = 1; i < 10; i++)
             testToArray(i);
     }
 
+    /**
+     * Tests toArray.
+     */
     public void testToArray(int pageSize) {
         ClientIgniteSet<Integer> set = client.set("testToArray", new ClientCollectionConfiguration());
         set.pageSize(pageSize);
@@ -460,23 +523,46 @@ public class IgniteSetTest extends AbstractThinClientTest {
             assertTrue(keys.contains((Integer) k));
     }
 
+    /**
+     * Asserts that usage throws closed exception.
+     */
     @SuppressWarnings("ThrowableNotThrown")
     private static void assertThrowsClosed(ClientIgniteSet<Integer> set) {
         String msg = "IgniteSet with name '" + set.name() + "' does not exist.";
         GridTestUtils.assertThrows(null, set::size, ClientException.class, msg);
     }
 
+    /**
+     * Returns a value indicating whether iterator resources are closed.
+     *
+     * @param iter Iterator.
+     * @return Whether iterator resources are closed.
+     */
+    private static boolean isIteratorClosed(ClientAutoCloseableIterator<Integer> iter) throws Exception {
+        Field field = iter.getClass().getDeclaredField("resourceId");
+        field.setAccessible(true);
+
+        return field.get(iter) == null;
+    }
+
+    /**
+     * Custom user class.
+     */
     private static class UserObj {
+        /** */
         public final int id;
+
+        /** */
         public final String val;
 
+        /** */
         public UserObj(int id, String val) {
             this.id = id;
             this.val = val;
         }
 
-        @Override
-        public boolean equals(Object o) {
+        /** {@inheritDoc} */
+        @Override public boolean equals(Object o) {
             if (this == o) {
                 return true;
             }
@@ -487,16 +573,9 @@ public class IgniteSetTest extends AbstractThinClientTest {
             return id == userObj.id && Objects.equals(val, userObj.val);
         }
 
-        @Override
-        public int hashCode() {
+        /** {@inheritDoc} */
+        @Override public int hashCode() {
             return Objects.hash(id, val);
         }
-    }
-
-    private static boolean isIteratorClosed(ClientAutoCloseableIterator<Integer> iter) throws Exception {
-        Field field = iter.getClass().getDeclaredField("resourceId");
-        field.setAccessible(true);
-
-        return field.get(iter) == null;
     }
 }
