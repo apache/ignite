@@ -160,28 +160,32 @@ public class IndexScan<Row> extends AbstractIndexScan<Row, IndexRow> {
     }
 
     /** {@inheritDoc} */
-    public Row firstOrLast(boolean first) {
+    public List<Row> firstOrLast(boolean first) {
         reserve();
 
         IndexingQueryFilter filter = new IndexingQueryFilterImpl(kctx, topVer, parts);
-
         IndexQueryContext qctx = new IndexQueryContext(filter, null, ectx.mvccSnapshot());
+        List<Row> lst = new ArrayList<>();
 
         try {
-            //TODO: segments. Collect all, compare.
-            GridCursor<IndexRow> cursor = first ? idx.findFirst(0, qctx) : idx.findLast(0, qctx);
+            for (int s = 0; s < idx.segmentsCount(); ++s) {
+                GridCursor<IndexRow> cursor = first ? idx.findFirst(0, qctx) : idx.findLast(0, qctx);
 
-            IndexRow row = cursor.next() ? cursor.get() : null;
+                IndexRow row = cursor.next() ? cursor.get() : null;
 
-            assert !cursor.next();
+                assert !cursor.next();
 
-            return row == null ? null : indexRow2Row(row);
+                if (row != null)
+                    lst.add(indexRow2Row(row));
+            }
         }
         catch (IgniteCheckedException e) {
             release();
 
             throw new IgniteException("Unable to get " + (first ? "first" : "last") + " record from the index.", e);
         }
+
+        return lst;
     }
 
     /** {@inheritDoc} */

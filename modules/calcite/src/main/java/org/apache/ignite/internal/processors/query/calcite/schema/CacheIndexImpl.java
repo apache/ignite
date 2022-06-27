@@ -137,7 +137,7 @@ public class CacheIndexImpl implements IgniteIndex {
     }
 
     /** {@inheritDoc} */
-    @Override public <Row> Row findFirstOrLast(boolean first, ExecutionContext<Row> ectx, ColocationGroup grp,
+    @Override public <Row> List<Row> findFirstOrLast(boolean first, ExecutionContext<Row> ectx, ColocationGroup grp,
         @Nullable ImmutableBitSet requiredColumns) {
         if (idx != null && grp.nodeIds().contains(ectx.localNodeId())) {
             try (IndexScan<Row> scan = createScan(
@@ -150,7 +150,8 @@ public class CacheIndexImpl implements IgniteIndex {
                 null,
                 requiredColumns
             )) {
-                return scan.firstOrLast(first);
+                //TODO: check, test
+                return scan.firstOrLast(first != collation.getFieldCollations().get(0).getDirection().isDescending());
             }
         }
 

@@ -96,8 +96,13 @@ public interface IgniteIndex {
      */
     public long count(ExecutionContext<?> ectx, ColocationGroup grp);
 
-    /** */
-    public <Row> Row findFirstOrLast(
+    /**
+     * Extracts firt or last index values from all values.
+     *
+     * @return List of first or last values from all index segments. Doesn't contain null. Values number might not
+     * match segments number.
+     */
+    public <Row> List<Row> findFirstOrLast(
         boolean first,
         ExecutionContext<Row> ectx,
         ColocationGroup grp,

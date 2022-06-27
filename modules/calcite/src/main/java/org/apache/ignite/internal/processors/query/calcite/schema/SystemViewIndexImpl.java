@@ -16,6 +16,7 @@
  */
 package org.apache.ignite.internal.processors.query.calcite.schema;
 
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.function.Function;
@@ -34,6 +35,7 @@ import org.apache.ignite.internal.processors.query.calcite.metadata.ColocationGr
 import org.apache.ignite.internal.processors.query.calcite.rel.logical.IgniteLogicalIndexScan;
 import org.apache.ignite.internal.processors.query.calcite.util.IndexConditions;
 import org.apache.ignite.internal.processors.query.calcite.util.RexUtils;
+import org.apache.ignite.internal.util.typedef.F;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -103,12 +105,12 @@ public class SystemViewIndexImpl implements IgniteIndex {
         return tbl.descriptor().systemView().size();
     }
 
-    @Override public <Row> Row findFirstOrLast(boolean first, ExecutionContext<Row> ectx, ColocationGroup grp,
+    @Override public <Row> List<Row> findFirstOrLast(boolean first, ExecutionContext<Row> ectx, ColocationGroup grp,
         @Nullable ImmutableBitSet requiredColumns) {
         //TODO: last
         Iterator<Row> it = scan(ectx, grp, null, null, null, null, requiredColumns).iterator();
 
-        return it.hasNext() ? it.next() : null;
+        return it.hasNext() ? F.asList(it.next()) : Collections.emptyList();
     }
 
     /** {@inheritDoc} */
