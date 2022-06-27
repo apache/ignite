@@ -343,6 +343,24 @@ public class IgniteSetTest extends AbstractThinClientTest {
     }
 
     @Test
+    public void testIteratorClosesOnLastPage() {
+        ClientIgniteSet<Integer> set = client.set("testCloseBeforeEnd", new ClientCollectionConfiguration());
+        set.pageSize(1);
+
+        ImmutableList<Integer> keys = ImmutableList.of(1, 2, 3);
+        set.addAll(keys);
+
+        ClientAutoCloseableIterator<Integer> iter = set.iterator();
+
+        assertFalse(isIteratorClosed(iter));
+        iter.next();
+        assertFalse(isIteratorClosed(iter));
+        iter.next();
+        assertTrue(isIteratorClosed(iter));
+        iter.next();
+    }
+
+    @Test
     public void testCloseBeforeEnd() throws Exception {
         ClientIgniteSet<Integer> set = client.set("testCloseBeforeEnd", new ClientCollectionConfiguration());
         set.pageSize(1);
@@ -462,5 +480,9 @@ public class IgniteSetTest extends AbstractThinClientTest {
         public int hashCode() {
             return Objects.hash(id, val);
         }
+    }
+
+    private static boolean isIteratorClosed(ClientAutoCloseableIterator<Integer> iter) {
+        return false;
     }
 }
