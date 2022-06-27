@@ -353,11 +353,7 @@ public class IgniteSetTest extends AbstractThinClientTest {
 
 
         // TODO
-        // * Double close
-        // * Different page sizes
-        // * try-with-resources
         // * partial read and close
-        // * affinity call in colocated mode
     }
 
     @Test
