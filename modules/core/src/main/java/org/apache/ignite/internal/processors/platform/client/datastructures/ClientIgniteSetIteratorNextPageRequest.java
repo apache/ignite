@@ -18,34 +18,38 @@
 package org.apache.ignite.internal.processors.platform.client.datastructures;
 
 import java.util.Iterator;
-import org.apache.ignite.IgniteSet;
 import org.apache.ignite.binary.BinaryRawReader;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
+import org.apache.ignite.internal.processors.platform.client.ClientRequest;
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
 
 /**
- * Ignite set iterator start request.
+ * Ignite set iterator next page request.
  */
 @SuppressWarnings("rawtypes")
-public class ClientIgniteSetIteratorStartRequest extends ClientIgniteSetRequest {
+public class ClientIgniteSetIteratorNextPageRequest extends ClientRequest {
     /** Page size. */
     private final int pageSize;
+
+    /** Resource id. */
+    private final long resId;
 
     /**
      * Constructor.
      *
      * @param reader Reader.
      */
-    public ClientIgniteSetIteratorStartRequest(BinaryRawReader reader) {
+    public ClientIgniteSetIteratorNextPageRequest(BinaryRawReader reader) {
         super(reader);
 
+        resId = reader.readLong();
         pageSize = reader.readInt();
     }
 
     /** {@inheritDoc} */
-    @Override protected ClientResponse process(IgniteSet<Object> set) {
-        return new Response(requestId(), set.iterator());
+    @Override public ClientResponse process(ClientConnectionContext ctx) {
+        return new Response(requestId(), ctx.resources().get(resId));
     }
 
     private class Response extends ClientResponse {
@@ -65,10 +69,8 @@ public class ClientIgniteSetIteratorStartRequest extends ClientIgniteSetRequest 
 
             writer.writeBoolean(iter.hasNext());
 
-            if (iter.hasNext()) {
-                long resId = ctx.resources().put(iter);
-                writer.writeLong(resId);
-            }
+            if (!iter.hasNext())
+                ctx.resources().release(resId);
         }
     }
 }
