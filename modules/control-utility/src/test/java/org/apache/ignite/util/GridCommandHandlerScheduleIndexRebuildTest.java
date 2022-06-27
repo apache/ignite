@@ -60,7 +60,7 @@ import static org.apache.ignite.util.GridCommandHandlerIndexingUtils.createAndFi
 /**
  * Tests for --cache schedule_indexes_rebuild command. Uses single cluster per suite.
  */
-public class GridCommandHandlerIndexRebuildTest extends GridCommandHandlerAbstractTest {
+public class GridCommandHandlerScheduleIndexRebuildTest extends GridCommandHandlerAbstractTest {
     /** */
     private static final String INDEX_REBUILD_MNTC_TASK = "indexRebuildMaintenanceTask";
 

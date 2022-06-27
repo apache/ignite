@@ -963,10 +963,10 @@ public class CommandHandlerParsingTest {
         );
 
         GridTestUtils.assertThrows(
-                null,
-                () -> parseArgs(asList("--cache", "schedule_indexes_rebuild", "--node-id", nodeId, "--node-id", nodeId)),
-                IllegalArgumentException.class,
-                "--node-id arg specified twice"
+            null,
+            () -> parseArgs(asList("--cache", "schedule_indexes_rebuild", "--node-id", nodeId, "--node-id", nodeId)),
+            IllegalArgumentException.class,
+            "--node-id arg specified twice"
         );
     }
 
@@ -1001,7 +1001,6 @@ public class CommandHandlerParsingTest {
         ).command();
 
         Map<String, Set<String>> normalized = normalizeScheduleIndexRebuildCacheNamesMap(params2);
-        normalized.put("someGrp", emptySet());
 
         CacheScheduleIndexesRebuild.Arguments arg2 = (Arguments)cacheCommand2.arg().subcommand().arg();
         assertEquals(normalized, arg2.cacheToIndexes());
