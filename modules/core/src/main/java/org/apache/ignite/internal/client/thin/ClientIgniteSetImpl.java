@@ -344,6 +344,10 @@ class ClientIgniteSetImpl<T> implements ClientIgniteSet<T> {
      * @param w Writer.
      */
     private void writeIdentity(BinaryRawWriterEx w) {
+        // IgniteSet is uniquely identified by name, cacheId, and colocated flag.
+        // Just name and groupName are not enough, because target cache name depends on multiple config properties
+        // (atomicity mode, backups, etc).
+        // So cacheId replaces group name and all those properties. It also simplifies affinity calculation.
         w.writeString(name);
         w.writeInt(cacheId);
         w.writeBoolean(colocated);
