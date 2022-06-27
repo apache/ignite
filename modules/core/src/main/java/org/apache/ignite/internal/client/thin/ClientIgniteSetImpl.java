@@ -96,8 +96,7 @@ class ClientIgniteSetImpl<T> implements ClientIgniteSet<T> {
     public boolean addAll(Collection<? extends T> c) {
         A.notNull(c, "c");
 
-        // TODO
-        return false;
+        return multiKeyOp(ClientOperation.OP_SET_VALUE_ADD_ALL, c);
     }
 
     @Override
@@ -228,6 +227,33 @@ class ClientIgniteSetImpl<T> implements ClientIgniteSet<T> {
 
                 w.writeBoolean(serverKeepBinary);
                 w.writeObject(key);
+            }
+        }, r -> r.in().readBoolean());
+    }
+
+    private Boolean multiKeyOp(ClientOperation op, Collection<? extends T> keys) {
+        if (keys.isEmpty())
+            return false;
+
+        Iterator<? extends T> iter = keys.iterator();
+        Object firstKey = iter.next();
+
+        // Use the first key as affinity key as a simple optimization.
+        // Let the server map other keys to nodes, while still using no more than N network requests.
+        Object affKey = affinityKey(firstKey);
+
+        return ch.affinityService(cacheId, affKey, op, out -> {
+            try (BinaryRawWriterEx w = serDes.createBinaryWriter(out.out())) {
+                writeIdentity(w);
+
+                w.writeBoolean(serverKeepBinary);
+                w.writeInt(keys.size());
+
+                w.writeObject(firstKey);
+
+                while (iter.hasNext()) {
+                    w.writeObject(iter.next());
+                }
             }
         }, r -> r.in().readBoolean());
     }
