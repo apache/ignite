@@ -148,4 +148,8 @@ public interface ClientIgniteSet<T> extends Set<T>, Closeable {
      * @return {@code true} when user objects will be kept in binary form on the server, {@code false} otherwise.
      */
     public boolean serverKeepBinary();
+
+    public ClientIgniteSet<T> pageSize(int pageSize);
+
+    public int pageSize();
 }

@@ -48,6 +48,8 @@ class ClientIgniteSetImpl<T> implements ClientIgniteSet<T> {
 
     private volatile boolean serverKeepBinary = true;
 
+    private volatile int pageSize = 1024;
+
     /**
      * Constructor.
      * @param ch Channel.
@@ -213,6 +215,21 @@ class ClientIgniteSetImpl<T> implements ClientIgniteSet<T> {
     /** {@inheritDoc} */
     @Override public boolean serverKeepBinary() {
         return serverKeepBinary;
+    }
+
+    /** {@inheritDoc} */
+    @Override public ClientIgniteSet<T> pageSize(int pageSize) {
+        if (pageSize <= 0)
+            throw new IllegalArgumentException("Page size must be greater than 0.");
+
+        this.pageSize = pageSize;
+
+        return this;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int pageSize() {
+        return pageSize;
     }
 
     private Boolean singleKeyOp(ClientOperation op, Object key) {
