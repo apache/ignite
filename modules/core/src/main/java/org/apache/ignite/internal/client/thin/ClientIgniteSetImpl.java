@@ -131,9 +131,11 @@ class ClientIgniteSetImpl<T> extends AbstractCollection<T> implements ClientIgni
 
         Function<PayloadInputChannel, PagedIterator> payloadReader = in -> {
             List<T> page = readPage(in);
-            Long resourceId = in.in().readBoolean() ? in.in().readLong() : null;
+            boolean hasNext = in.in().readBoolean();
+            Long resourceId = hasNext ? in.in().readLong() : null;
+            ClientChannel resourceCh = hasNext ? in.clientChannel() : null;
 
-            return new PagedIterator(in.clientChannel(), resourceId, page);
+            return new PagedIterator(resourceCh, resourceId, page);
         };
 
         if (colocated) {
