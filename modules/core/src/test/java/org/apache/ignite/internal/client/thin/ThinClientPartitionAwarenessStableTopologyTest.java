@@ -265,6 +265,12 @@ public class ThinClientPartitionAwarenessStableTopologyTest extends ThinClientAb
             TestTcpClientChannel opCh = affinityChannel(clientSet.name().hashCode(), cache);
             assertOpOnChannel(opCh, ClientOperation.OP_SET_VALUE_ADD);
         }
+
+        // Test iterator.
+        clientSet.toArray();
+
+        TestTcpClientChannel opCh = affinityChannel(clientSet.name().hashCode(), cache);
+        assertOpOnChannel(opCh, ClientOperation.OP_SET_ITERATOR_START);
     }
 
     /**
