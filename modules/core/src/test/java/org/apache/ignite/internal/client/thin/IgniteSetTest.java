@@ -38,7 +38,7 @@ import org.junit.Test;
  * Tests client set.
  * Partition awareness tests are in {@link ThinClientPartitionAwarenessStableTopologyTest#testIgniteSet()}.
  */
-@SuppressWarnings("rawtypes")
+@SuppressWarnings({"rawtypes", "ZeroLengthArrayAllocation"})
 public class IgniteSetTest extends AbstractThinClientTest {
     static IgniteClient client;
 
@@ -331,6 +331,16 @@ public class IgniteSetTest extends AbstractThinClientTest {
 
     @Test
     public void testIterator() {
+        ClientIgniteSet<Integer> set = client.set("testIterator", new ClientCollectionConfiguration());
+
+        ImmutableList<Integer> keys = ImmutableList.of(1, 2, 3);
+        set.addAll(keys);
+
+        for (Integer k : set) {
+            assertTrue(keys.contains(k));
+        }
+
+
         // TODO
         // * Double close
         // * Different page sizes
@@ -341,7 +351,18 @@ public class IgniteSetTest extends AbstractThinClientTest {
 
     @Test
     public void testToArray() {
-        // TODO
+        ClientIgniteSet<Integer> set = client.set("testToArray", new ClientCollectionConfiguration());
+        set.pageSize(2);
+
+        ImmutableList<Integer> keys = ImmutableList.of(1, 2, 3, 4, 5);
+        set.addAll(keys);
+
+        Integer[] res = set.toArray(new Integer[0]);
+
+        assertEquals(5, res.length);
+
+        for (Integer k : res)
+            assertTrue(keys.contains(k));
     }
 
     @SuppressWarnings("ThrowableNotThrown")
