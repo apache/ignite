@@ -181,7 +181,8 @@ public class ThinClientPartitionAwarenessStableTopologyTest extends ThinClientAb
     }
 
     /**
-     * Tests Ignite set.
+     * Tests {@link ClientIgniteSet} partition awareness.
+     * Other client set tests are in {@link IgniteSetTest}.
      */
     @Test
     public void testIgniteSet() {
@@ -224,8 +225,19 @@ public class ThinClientPartitionAwarenessStableTopologyTest extends ThinClientAb
     @Test
     public void testIgniteSetCollocated() {
         ClientCollectionConfiguration cfg = new ClientCollectionConfiguration().setCollocated(true);
-        ClientIgniteSet<String> clientSet = client.set("testIgniteSetColocated", cfg);
-        assertEquals("todo", "TODO");
+        ClientIgniteSet<String> clientSet = client.set("testIgniteSetCollocated", cfg);
+
+        String cacheName = "datastructures_???";
+        IgniteInternalCache<Object, Object> cache = grid(0).context().cache().cache(cacheName);
+
+        // Warm up.
+        clientSet.add("a");
+        opsQueue.clear();
+
+        // Test.
+        clientSet.add("b");
+        TestTcpClientChannel opCh = affinityChannel(clientSet.name().hashCode(), cache);
+        assertOpOnChannel(opCh, ClientOperation.OP_SET_VALUE_ADD);
     }
 
     /**
