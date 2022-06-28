@@ -529,7 +529,7 @@ final class ReliableChannel implements AutoCloseable {
         rollCurrentChannel(hld);
 
         // For partiton awareness it's already initializing asynchronously in #onTopologyChanged.
-        if (addressChanged() || (scheduledChannelsReinit.get() && !partitionAwarenessEnabled))
+        if (addressFinderAddressesChanged() || (scheduledChannelsReinit.get() && !partitionAwarenessEnabled))
             channelsInit();
     }
 
