@@ -181,9 +181,6 @@ public class IgniteIndexReader implements AutoCloseable {
     /** */
     private final Set<Integer> missingPartitions = new HashSet<>();
 
-    /** If {@code True} then add page to {@link #pageIds} on read. */
-    private boolean addToPageIds = true;
-
     /** */
     private final Set<Long> pageIds = new HashSet<>();
 
@@ -484,55 +481,48 @@ public class IgniteIndexReader implements AutoCloseable {
      * @throws IgniteCheckedException If failed.
      */
     private ScanContext scanIndexSequentially() throws IgniteCheckedException {
-        addToPageIds = false;
+        long pagesNum = (idxStore.size() - idxStore.headerSize()) / pageSize;
 
-        try {
-            long pagesNum = (idxStore.size() - idxStore.headerSize()) / pageSize;
+        ProgressPrinter progressPrinter = createProgressPrinter("Reading pages sequentially", pagesNum);
 
-            ProgressPrinter progressPrinter = createProgressPrinter("Reading pages sequentially", pagesNum);
+        ScanContext ctx = createContext(-1, idxStore, new CountOnlyStorage());
 
-            ScanContext ctx = createContext(-1, idxStore, new CountOnlyStorage());
+        doWithBuffer((buf, addr) -> {
+            for (int i = 0; i < pagesNum; i++) {
+                long pageId = -1;
 
-            doWithBuffer((buf, addr) -> {
-                for (int i = 0; i < pagesNum; i++) {
-                    long pageId = -1;
+                try {
+                    pageId = pageId(INDEX_PARTITION, FLAG_IDX, i);
 
-                    try {
-                        pageId = pageId(INDEX_PARTITION, FLAG_IDX, i);
+                    PageIO io = readPage(ctx, pageId, buf, false);
 
-                        PageIO io = readPage(ctx, pageId, buf);
+                    progressPrinter.printProgress();
 
-                        progressPrinter.printProgress();
+                    if (idxFilter != null)
+                        continue;
 
-                        if (idxFilter != null)
-                            continue;
+                    if (io instanceof TrackingPageIO)
+                        continue;
 
-                        if (io instanceof TrackingPageIO)
-                            continue;
+                    if (pageIds.contains(normalizePageId(pageId)))
+                        continue;
 
-                        if (pageIds.contains(normalizePageId(pageId)))
-                            continue;
-
-                        ctx.errors.put(pageId, Collections.singletonList("Error [step=" + i +
-                            ", msg=Possibly orphan " + io.getClass().getSimpleName() + " page" +
-                            ", pageId=" + normalizePageId(pageId) + ']'));
-                    }
-                    catch (Throwable e) {
-                        ctx.errors.put(
-                            pageId,
-                            Collections.singletonList("Error [step=" + i + ", msg=" + e.getMessage() + ']')
-                        );
-                    }
+                    ctx.errors.put(pageId, Collections.singletonList("Error [step=" + i +
+                        ", msg=Possibly orphan " + io.getClass().getSimpleName() + " page" +
+                        ", pageId=" + normalizePageId(pageId) + ']'));
                 }
+                catch (Throwable e) {
+                    ctx.errors.put(
+                        pageId,
+                        Collections.singletonList("Error [step=" + i + ", msg=" + e.getMessage() + ']')
+                    );
+                }
+            }
 
-                return null;
-            });
+            return null;
+        });
 
-            return ctx;
-        }
-        finally {
-            addToPageIds = true;
-        }
+        return ctx;
     }
 
     /**
@@ -691,14 +681,25 @@ public class IgniteIndexReader implements AutoCloseable {
         return pageId(partId(pageId), flag(pageId), pageIndex(pageId));
     }
 
+    /** */
+    private <I extends PageIO> I readPage(FilePageStore store, long pageId, ByteBuffer buf) throws IgniteCheckedException {
+        return readPage(store, pageId, buf, true);
+    }
+
     /**
      * Reads pages into buffer.
      *
      * @param store Source for reading pages.
      * @param pageId Page ID.
      * @param buf Buffer.
+     * @param addToPageIds If {@code true} then add page ID to global set.
      */
-    private <I extends PageIO> I readPage(FilePageStore store, long pageId, ByteBuffer buf) throws IgniteCheckedException {
+    private <I extends PageIO> I readPage(
+        FilePageStore store,
+        long pageId,
+        ByteBuffer buf,
+        boolean addToPageIds
+    ) throws IgniteCheckedException {
         try {
             store.read(pageId, (ByteBuffer)buf.rewind(), false);
 
@@ -721,6 +722,16 @@ public class IgniteIndexReader implements AutoCloseable {
 
     /** */
     protected <I extends PageIO> I readPage(ScanContext ctx, long pageId, ByteBuffer buf) throws IgniteCheckedException {
+        return readPage(ctx, pageId, buf, true);
+    }
+
+    /** */
+    protected <I extends PageIO> I readPage(
+        ScanContext ctx,
+        long pageId,
+        ByteBuffer buf,
+        boolean addToPageIds
+    ) throws IgniteCheckedException {
         final I io = readPage(ctx.store, pageId, buf);
 
         ctx.onPageIO(io, bufferAddress(buf));
