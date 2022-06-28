@@ -55,6 +55,9 @@ public class GridNioClientConnectionMultiplexer implements ClientConnectionMulti
     private static final int CLIENT_MODE_PORT = -1;
 
     /** */
+    private static final int NIO_REGISTER_TIMEOUT = 1000;
+
+    /** */
     private final GridNioServer<ByteBuffer> srv;
 
     /** */
@@ -133,7 +136,7 @@ public class GridNioClientConnectionMultiplexer implements ClientConnectionMulti
                 meta.put(GridNioSslFilter.HANDSHAKE_FUT_META_KEY, sslHandshakeFut);
             }
 
-            GridNioSession ses = srv.createSession(ch, meta, false, null).get();
+            GridNioSession ses = srv.createSession(ch, meta, false, null).get(NIO_REGISTER_TIMEOUT);
 
             if (sslHandshakeFut != null)
                 sslHandshakeFut.get();
