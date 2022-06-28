@@ -25,14 +25,34 @@ import io.gatling.core.session.Expression
 import io.gatling.core.structure.ScenarioContext
 import org.apache.ignite.gatling.action.cache.CacheUnlockAction
 
+/**
+ * Cache entry release lock action builder.
+ *
+ * @param cacheName Cache name.
+ * @param lock Lock instance.
+ * @param requestName Request name.
+ */
 case class CacheUnlockActionBuilder(
   cacheName: Expression[String],
   lock: Expression[Lock],
   requestName: Expression[String] = EmptyStringExpressionSuccess
 ) extends ActionBuilder {
 
+  /**
+   * Specify request name for action.
+   *
+   * @param requestName Request name.
+   * @return itself.
+   */
   def as(requestName: Expression[String]): ActionBuilder = this.copy(requestName = requestName)
 
+  /**
+   * Builds an action.
+   *
+   * @param ctx The scenario context.
+   * @param next The action that will be chained with the Action build by this builder.
+   * @return The resulting action.
+   */
   override def build(ctx: ScenarioContext, next: Action): Action =
     new CacheUnlockAction(requestName, cacheName, lock, keepBinary = false, next, ctx)
 }

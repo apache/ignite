@@ -164,13 +164,6 @@ case class IgniteNodeApi(wrapped: Ignite) extends IgniteApi {
 
   /**
    * @inheritdoc
-   * @tparam API @inheritdoc
-   * @return @inheritdoc
-   */
-  override def wrapped[API]: API = wrapped.asInstanceOf[API]
-
-  /**
-   * @inheritdoc
    * @return @inheritdoc
    */
   override def binaryObjectBuilder: String => BinaryObjectBuilder = typeName => wrapped.binary().builder(typeName)

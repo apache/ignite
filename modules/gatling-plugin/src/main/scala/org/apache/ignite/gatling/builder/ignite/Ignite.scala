@@ -18,11 +18,32 @@ package org.apache.ignite.gatling.builder.ignite
 
 import io.gatling.core.session.Expression
 
+/**
+ * DSL to create Ignite operations.
+ */
 trait Ignite {
+  /**
+   * Start constructing of the create cache action with the provided cache name.
+   *
+   * @tparam K Type of the cache key.
+   * @tparam V Type of the cache value.
+   * @param cacheName Cache name.
+   * @return CreateCacheActionBuilderBase
+   */
   def create[K, V](cacheName: Expression[String]): CreateCacheActionBuilderBase[K, V] =
     CreateCacheActionBuilderBase(cacheName)
 
+  /**
+   * Start constructing of the start Ignite API action.
+   *
+   * @return StartClientActionBuilder
+   */
   def start: StartClientActionBuilder = StartClientActionBuilder()
 
+  /**
+   * Start constructing of the close Ignite API action.
+   *
+   * @return CloseClientActionBuilder
+   */
   def close: CloseClientActionBuilder = CloseClientActionBuilder()
 }

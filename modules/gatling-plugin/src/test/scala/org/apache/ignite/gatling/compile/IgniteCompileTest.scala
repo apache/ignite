@@ -32,6 +32,8 @@ import org.apache.ignite.configuration.ClientConfiguration
 import org.apache.ignite.gatling.Predef._
 import org.apache.ignite.gatling.Predef.group
 import org.apache.ignite.gatling.api.IgniteApi
+import org.apache.ignite.gatling.api.node.IgniteNodeApi
+import org.apache.ignite.gatling.api.thin.IgniteThinApi
 import org.apache.ignite.gatling.protocol.IgniteProtocol
 
 class IgniteCompileTest extends Simulation {
@@ -136,12 +138,12 @@ class IgniteCompileTest extends Simulation {
     )
     .exec(getAll(c, Set(1)))
     .exec(get(c, 1) as r)
-    .exec(get(c, 1).keepBinary)
+    .exec(get(c, 1).keepBinary as "s")
     .exec(
       get[Int, Any](c, 1).keepBinary
         .check(
           allResults[Int, Any].transform(a => a.values.head).saveAs("R")
-        )
+        ) as "aa"
     )
     .exec(
       get[Int, Int](c, 1)
@@ -194,13 +196,21 @@ class IgniteCompileTest extends Simulation {
         .check(allSqlResults.transformWithSession((r, s) => s("value").as[Int] :: r.head).saveAs("firstRow"))
     )
     .exec { session =>
-      val client: IgniteApi = session("igniteApi").as[IgniteApi]
-
-      val ignite: Ignite = client.wrapped
+      val api: IgniteApi = session("igniteApi").as[IgniteApi]
+      api match {
+        case IgniteNodeApi(w) => w.close()
+        case IgniteThinApi(z) => z.close()
+      }
+      session
+    }
+    .exec { session =>
+      val ignite: Ignite = session("igniteApi").as[IgniteNodeApi].wrapped
       ignite.close()
-      val igniteClient: IgniteClient = client.wrapped
+      session
+    }
+    .exec { session =>
+      val igniteClient: IgniteClient = session("igniteApi").as[IgniteThinApi].wrapped
       igniteClient.close()
-
       session
     }
     .exec { session =>

@@ -40,8 +40,8 @@ import org.apache.ignite.transactions.TransactionConcurrency
 import org.apache.ignite.transactions.TransactionIsolation
 
 /**
- *  Wrapper around the Ignite API abstracting access either via the Ignite Node (thick) API or via the
- *  Ignite Client (thin) API.
+ * Wrapper around the Ignite API abstracting access either via the Ignite Node (thick) API or via the
+ * Ignite Client (thin) API.
  */
 trait IgniteApi {
   /**
@@ -155,14 +155,6 @@ trait IgniteApi {
    * @return Instance of BinaryObjectBuilder.
    */
   def binaryObjectBuilder: String => BinaryObjectBuilder
-
-  /**
-   * Returns instance of the underlined Ignite API.
-   *
-   * @tparam API API type (either Ignite or IgniteClient)
-   * @return Ignite Api instance.
-   */
-  def wrapped[API]: API
 }
 
 /**

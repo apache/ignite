@@ -159,13 +159,6 @@ case class IgniteThinApi(wrapped: IgniteClient) extends IgniteApi with Completio
 
   /**
    * @inheritdoc
-   * @tparam API @inheritdoc
-   * @return @inheritdoc
-   */
-  override def wrapped[API]: API = wrapped.asInstanceOf[API]
-
-  /**
-   * @inheritdoc
    * @return @inheritdoc
    */
   override def binaryObjectBuilder: String => BinaryObjectBuilder = typeName => wrapped.binary().builder(typeName)
