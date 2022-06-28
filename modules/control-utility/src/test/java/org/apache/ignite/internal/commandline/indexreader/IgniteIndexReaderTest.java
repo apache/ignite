@@ -129,6 +129,7 @@ public class IgniteIndexReaderTest extends GridCommandHandlerAbstractTest {
     private static final String CHECK_IDX_PTRN_COMMON =
         "<PREFIX>Index tree: I \\[idxName=[\\-_0-9]{1,20}_%s##H2Tree.0, pageId=[0-9a-f]{16}\\]" +
             LINE_DELIM + "<PREFIX>---- Page stat:" +
+            LINE_DELIM + "<PREFIX>Type.*Pages.*Free space.*" +
             LINE_DELIM + "<PREFIX>([0-9a-zA-Z]{1,50}.*[0-9]{1,5}" +
             LINE_DELIM + "<PREFIX>){%s,1000}---- Count of items found in leaf pages: %s" +
             LINE_DELIM;
