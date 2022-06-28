@@ -41,13 +41,20 @@ import java.util.stream.LongStream;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.cache.query.index.IndexProcessor;
+import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypeSettings;
+import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypes;
+import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexKeyType;
+import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexKeyTypeRegistry;
+import org.apache.ignite.internal.cache.query.index.sorted.inline.io.AbstractInlineLeafIO;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.io.InlineIO;
+import org.apache.ignite.internal.cache.query.index.sorted.inline.types.NullableInlineIndexKeyType;
 import org.apache.ignite.internal.commandline.CommandHandler;
 import org.apache.ignite.internal.commandline.ProgressPrinter;
 import org.apache.ignite.internal.commandline.argument.parser.CLIArgumentParser;
 import org.apache.ignite.internal.commandline.indexreader.ScanContext.PagesStatistic;
 import org.apache.ignite.internal.commandline.systemview.SystemViewCommand;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
+import org.apache.ignite.internal.pagemem.PageUtils;
 import org.apache.ignite.internal.processors.cache.persistence.IndexStorageImpl;
 import org.apache.ignite.internal.processors.cache.persistence.StorageException;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStore;
@@ -1161,6 +1168,9 @@ public class IgniteIndexReader implements AutoCloseable {
 
             BPlusLeafIO<?> io = PageIO.getPageIO(addr);
 
+            if (io instanceof AbstractInlineLeafIO)
+                visitInline(addr, (AbstractInlineLeafIO)io, ctx);
+
             doWithoutErrors(() -> {
                 for (int i = 0; i < io.getCount(addr); i++) {
                     if (io instanceof IndexStorageImpl.MetaStoreLeafIO)
@@ -1171,6 +1181,52 @@ public class IgniteIndexReader implements AutoCloseable {
             }, ctx, PageIO.getPageId(addr));
 
             ctx.onLeafPage(PageIO.getPageId(addr), items);
+        }
+
+        /** */
+        private void visitInline(long addr, AbstractInlineLeafIO io, ScanContext ctx) {
+            int inlineSz = ((InlineIO)io).inlineSize();
+
+            // Use MetaPageInfo here.
+            IndexKeyTypeSettings settings = new IndexKeyTypeSettings();
+
+            for (int i = 0; i < io.getCount(addr); i++) {
+                int itemOff = io.offset(i);
+
+                int inlineOff = 0;
+
+                while (inlineOff < inlineSz) {
+                    int type0 = PageUtils.getByte(addr, itemOff + inlineOff);
+
+                    if (type0 == IndexKeyTypes.UNKNOWN || type0 == IndexKeyTypes.NULL) {
+                        inlineOff += 1;
+
+                        continue;
+                    }
+
+                    InlineIndexKeyType type = InlineIndexKeyTypeRegistry.get(type0, settings);
+
+                    // Page not zeroed when writing inline data.
+                    // We can't know wherer inline ends and garbage starts.
+                    // Using some kind of fuzzy logic here. Ignoring all errors.
+                    if (type == null)
+                        break;
+
+                    if (type.keySize() == -1) {
+                        try {
+                            // Assuming all variable length keys written using `writeBytes` method.
+                            inlineOff += NullableInlineIndexKeyType.readBytes(addr, itemOff + inlineOff).length;
+                        }
+                        catch (Throwable ignored) {
+                            break;
+                        }
+                    }
+                    else
+                        inlineOff += type.keySize();
+
+                    inlineOff++; // One more byte for type.
+                }
+            }
         }
 
         /** */
