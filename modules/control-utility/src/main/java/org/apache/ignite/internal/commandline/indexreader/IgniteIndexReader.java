@@ -151,7 +151,7 @@ public class IgniteIndexReader implements AutoCloseable {
         Pattern.compile("(?<id>[-0-9]{1,15})_.*");
 
     /** */
-    private static final int MAX_ERRO_CNT = 10;
+    private static final int MAX_ERRORS_CNT = 10;
 
     static {
         IndexProcessor.registerIO();
@@ -486,50 +486,53 @@ public class IgniteIndexReader implements AutoCloseable {
     private ScanContext scanIndexSequentially() throws IgniteCheckedException {
         addToPageIds = false;
 
-        long pagesNum = (idxStore.size() - idxStore.headerSize()) / pageSize;
+        try {
+            long pagesNum = (idxStore.size() - idxStore.headerSize()) / pageSize;
 
-        ProgressPrinter progressPrinter = createProgressPrinter("Reading pages sequentially", pagesNum);
+            ProgressPrinter progressPrinter = createProgressPrinter("Reading pages sequentially", pagesNum);
 
-        ScanContext ctx = createContext(-1, idxStore, new CountOnlyStorage());
+            ScanContext ctx = createContext(-1, idxStore, new CountOnlyStorage());
 
-        doWithBuffer((buf, addr) -> {
-            for (int i = 0; i < pagesNum; i++) {
-                long pageId = -1;
+            doWithBuffer((buf, addr) -> {
+                for (int i = 0; i < pagesNum; i++) {
+                    long pageId = -1;
 
-                try {
-                    pageId = pageId(INDEX_PARTITION, FLAG_IDX, i);
+                    try {
+                        pageId = pageId(INDEX_PARTITION, FLAG_IDX, i);
 
-                    PageIO io = readPage(ctx, pageId, buf);
+                        PageIO io = readPage(ctx, pageId, buf);
 
-                    progressPrinter.printProgress();
+                        progressPrinter.printProgress();
 
-                    if (idxFilter != null)
-                        continue;
+                        if (idxFilter != null)
+                            continue;
 
-                    if (io instanceof TrackingPageIO)
-                        continue;
+                        if (io instanceof TrackingPageIO)
+                            continue;
 
-                    if (pageIds.contains(normalizePageId(pageId)))
-                        continue;
+                        if (pageIds.contains(normalizePageId(pageId)))
+                            continue;
 
-                    ctx.errors.put(pageId, Collections.singletonList("Error [step=" + i +
-                        ", msg=Possibly orphan " + io.getClass().getSimpleName() + " page" +
-                        ", pageId=" + normalizePageId(pageId) + ']'));
+                        ctx.errors.put(pageId, Collections.singletonList("Error [step=" + i +
+                            ", msg=Possibly orphan " + io.getClass().getSimpleName() + " page" +
+                            ", pageId=" + normalizePageId(pageId) + ']'));
+                    }
+                    catch (Throwable e) {
+                        ctx.errors.put(
+                            pageId,
+                            Collections.singletonList("Error [step=" + i + ", msg=" + e.getMessage() + ']')
+                        );
+                    }
                 }
-                catch (Throwable e) {
-                    ctx.errors.put(
-                        pageId,
-                        Collections.singletonList("Error [step=" + i + ", msg=" + e.getMessage() + ']')
-                    );
-                }
-            }
 
-            return null;
-        });
+                return null;
+            });
 
-        addToPageIds = true;
-
-        return ctx;
+            return ctx;
+        }
+        finally {
+            addToPageIds = true;
+        }
     }
 
     /**
@@ -588,8 +591,8 @@ public class IgniteIndexReader implements AutoCloseable {
                                 ", link=" + cacheAwareLink.link + ']');
                         }
 
-                        if (errors.size() >= MAX_ERRO_CNT) {
-                            errors.add("Too many errors (" + MAX_ERRO_CNT +
+                        if (errors.size() >= MAX_ERRORS_CNT) {
+                            errors.add("Too many errors (" + MAX_ERRORS_CNT +
                                 ") found for partId=" + partId + ", stopping analysis for this partition.");
 
                             break;
