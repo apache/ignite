@@ -1245,7 +1245,7 @@ public class IgniteIndexReader implements AutoCloseable {
                     InlineIndexKeyType type = InlineIndexKeyTypeRegistry.get(type0, settings);
 
                     // Page not zeroed when writing inline data.
-                    // We can't know wherer inline ends and garbage starts.
+                    // We can't know where inline ends and garbage starts.
                     // Using some kind of fuzzy logic here. Ignoring all errors.
                     if (type == null)
                         break;
