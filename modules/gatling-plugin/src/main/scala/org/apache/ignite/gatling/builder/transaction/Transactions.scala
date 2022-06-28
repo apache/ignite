@@ -85,7 +85,7 @@ case class TransactionRollbackActionBuilder(requestName: Expression[String] = Em
 
 case class TransactionStartBuilder(requestName: Expression[String], params: TransactionParameters) extends ActionBuilder {
   override def build(ctx: ScenarioContext, next: Action): Action =
-    new TransactionStartAction(requestName, TransactionParameters(), next, ctx)
+    new TransactionStartAction(requestName, params, next, ctx)
 }
 
 case class TransactionCloseBuilder(requestName: Expression[String]) extends ActionBuilder {

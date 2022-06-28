@@ -83,12 +83,12 @@ class TransactionSimulation extends Simulation with IgniteSupport {
         .txSize(8)(
           put[Int, Int](cache, 1, 2),
           get[Int, Any](cache, key = 1) check allResults[Int, Any].transform(r => r.values.head.asInstanceOf[Int]).is(2),
-          commit
+          commit as "commit"
         ),
       tx("tx3")(PESSIMISTIC, READ_COMMITTED)(
         put[Int, Int](cache, 1, 2),
         get[Int, Any](cache, key = 1) check allResults[Int, Any].transform(r => r.values.head.asInstanceOf[Int]).is(2),
-        rollback
+        rollback as "rollback"
       ),
       tx("tx4")(
         put[Int, Int](cache, 1, 2),
