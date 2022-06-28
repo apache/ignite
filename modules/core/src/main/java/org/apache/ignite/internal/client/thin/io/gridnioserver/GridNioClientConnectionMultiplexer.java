@@ -136,6 +136,7 @@ public class GridNioClientConnectionMultiplexer implements ClientConnectionMulti
                 meta.put(GridNioSslFilter.HANDSHAKE_FUT_META_KEY, sslHandshakeFut);
             }
 
+            // TODO: Why does this hang sometimes? It should not do any socket IO!
             GridNioSession ses = srv.createSession(ch, meta, false, null).get(NIO_REGISTER_TIMEOUT);
 
             if (sslHandshakeFut != null)
