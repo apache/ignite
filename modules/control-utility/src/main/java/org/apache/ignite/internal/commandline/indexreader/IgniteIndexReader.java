@@ -402,7 +402,7 @@ public class IgniteIndexReader implements AutoCloseable {
                 try {
                     PagesListMetaIO io = readPage(idxStore, currMetaPageId, buf);
 
-                    ScanContext.onPageIO(io, stats, 1, addr, idxStore.getPageSize());
+                    ScanContext.addToStats(io, stats, 1, addr, idxStore.getPageSize());
 
                     Map<Integer, GridLongList> data = new HashMap<>();
 
@@ -455,16 +455,16 @@ public class IgniteIndexReader implements AutoCloseable {
             while (currPageId != 0) {
                 PagesListNodeIO io = readPage(idxStore, currPageId, nodeBuf);
 
-                ScanContext.onPageIO(io, stats, 1, nodeAddr, idxStore.getPageSize());
+                ScanContext.addToStats(io, stats, 1, nodeAddr, idxStore.getPageSize());
 
-                ScanContext.onPageIO(readPage(idxStore, currPageId, pageBuf), stats, 1, pageAddr, idxStore.getPageSize());
+                ScanContext.addToStats(readPage(idxStore, currPageId, pageBuf), stats, 1, pageAddr, idxStore.getPageSize());
 
                 res += io.getCount(nodeAddr);
 
                 for (int i = 0; i < io.getCount(nodeAddr); i++) {
                     long pageId = normalizePageId(io.getAt(nodeAddr, i));
 
-                    ScanContext.onPageIO(readPage(idxStore, pageId, pageBuf), stats, 1, pageAddr, idxStore.getPageSize());
+                    ScanContext.addToStats(readPage(idxStore, pageId, pageBuf), stats, 1, pageAddr, idxStore.getPageSize());
                 }
 
                 currPageId = io.getNextId(nodeAddr);
@@ -732,9 +732,9 @@ public class IgniteIndexReader implements AutoCloseable {
         ByteBuffer buf,
         boolean addToPageIds
     ) throws IgniteCheckedException {
-        final I io = readPage(ctx.store, pageId, buf);
+        final I io = readPage(ctx.store, pageId, buf, addToPageIds);
 
-        ctx.onPageIO(io, bufferAddress(buf));
+        ctx.addToStats(io, bufferAddress(buf));
 
         return io;
     }
@@ -870,7 +870,7 @@ public class IgniteIndexReader implements AutoCloseable {
             log.info(prefix + "Index tree: " + idxName);
             printIoStat(prefix, "---- Page stat:", ctx.stats);
 
-            ctx.stats.forEach((cls, stat) -> ScanContext.merge(cls, stats, stat));
+            ctx.stats.forEach((cls, stat) -> ScanContext.addToStats(cls, stats, stat));
 
             log.info(prefix + "---- Count of items found in leaf pages: " + ctx.items.size());
 
