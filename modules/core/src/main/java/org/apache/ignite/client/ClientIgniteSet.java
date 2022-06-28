@@ -164,7 +164,8 @@ public interface ClientIgniteSet<T> extends Set<T>, Closeable {
     /**
      * Sets the page size to be used for batched network data retrieval in {@link #iterator()} and {@link #toArray()}.
      *
-     * @return Page size.
+     * @param pageSize Page size.
+     * @return This set instance (for chaining).
      */
     public ClientIgniteSet<T> pageSize(int pageSize);
 
