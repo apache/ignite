@@ -1225,7 +1225,6 @@ public class IgniteIndexReader implements AutoCloseable {
             if (ctx.inline == null)
                 ctx.inline = new int[inlineSz];
 
-            // Use MetaPageInfo here.
             IndexKeyTypeSettings settings = new IndexKeyTypeSettings();
 
             for (int i = 0; i < io.getCount(addr); i++) {
