@@ -22,11 +22,13 @@ import org.apache.ignite.client.ClientCache;
 import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.client.ThinClientKubernetesAddressFinder;
 import org.apache.ignite.configuration.ClientConfiguration;
+import org.apache.ignite.configuration.ClientConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.junit.Test;
 
 /** Test that thin client connects to cluster with {@link ThinClientKubernetesAddressFinder}. */
+@SuppressWarnings({"rawtypes", "unchecked"})
 public class TestClusterClientConnection extends KubernetesDiscoveryAbstractTest {
     /** */
     @Test
@@ -50,6 +52,9 @@ public class TestClusterClientConnection extends KubernetesDiscoveryAbstractTest
         assertEquals(2, cache.get(1));
     }
 
+    /**
+     * Tests that client updates addresses from address finder and can connect to the cluster after pod restart.
+     */
     @Test
     public void testClientReConnectsToClusterAfterPodIpChange() throws Exception {
         mockServerResponse();
@@ -69,22 +74,24 @@ public class TestClusterClientConnection extends KubernetesDiscoveryAbstractTest
         cache.put(1, 2);
         assertEquals(2, cache.get(1));
 
-        //stop node and change port still can connect
+        // Stop node and change port => still can connect.
         Ignition.stop(crd.name(), true);
         int newPort = 10801;
         ccfg.setAddressesFinder(new ThinClientKubernetesAddressFinder(prepareConfiguration(),newPort));
         mockServerResponse(5,crdAddr);
 
         cfg = getConfiguration(getTestIgniteInstanceName(), false);
-        cfg.setSqlConnectorConfiguration(new SqlConnectorConfiguration().setPort(newPort));
+        cfg.setClientConnectorConfiguration(new ClientConnectorConfiguration().setPort(newPort));
         startGrid(cfg);
 
         try {
             cache = client.getOrCreateCache("cache");
             cache.put(1, 3);
-        }catch (Exception e) {
-
         }
+        catch (Exception ignored) {
+            // No-op.
+        }
+
         cache = client.getOrCreateCache("cache");
         cache.put(1, 3);
         assertEquals(3, cache.get(1));
