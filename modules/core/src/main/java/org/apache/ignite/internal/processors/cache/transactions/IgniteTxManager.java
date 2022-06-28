@@ -2868,6 +2868,9 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
      * @return WALPointer or {@code null} if nothing was logged.
      */
     @Nullable WALPointer logTxRecord(IgniteTxAdapter tx) {
+        if (tx.near() && tx.local() && tx.txNodes != null && !tx.txNodes.containsKey(cctx.localNode().id()))
+            return null;
+
         BaselineTopology baselineTop;
 
         // Log tx state change to WAL.
