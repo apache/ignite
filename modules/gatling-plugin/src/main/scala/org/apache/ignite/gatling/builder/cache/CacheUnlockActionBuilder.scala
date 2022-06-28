@@ -14,7 +14,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.ignite.gatling.builder.cache
 
 import java.util.concurrent.locks.Lock
@@ -25,13 +24,12 @@ import io.gatling.core.session.EmptyStringExpressionSuccess
 import io.gatling.core.session.Expression
 import io.gatling.core.structure.ScenarioContext
 import org.apache.ignite.gatling.action.cache.CacheUnlockAction
-import org.apache.ignite.gatling.builder.IgniteActionBuilder
 
 case class CacheUnlockActionBuilder(
   cacheName: Expression[String],
   lock: Expression[Lock],
   requestName: Expression[String] = EmptyStringExpressionSuccess
-) extends IgniteActionBuilder {
+) extends ActionBuilder {
 
   def as(requestName: Expression[String]): ActionBuilder = this.copy(requestName = requestName)
 

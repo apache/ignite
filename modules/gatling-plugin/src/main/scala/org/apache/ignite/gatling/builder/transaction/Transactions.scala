@@ -14,7 +14,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.ignite.gatling.builder.transaction
 
 import io.gatling.core.Predef.exec
@@ -28,7 +27,6 @@ import org.apache.ignite.gatling.action.ignite.TransactionCloseAction
 import org.apache.ignite.gatling.action.ignite.TransactionCommitAction
 import org.apache.ignite.gatling.action.ignite.TransactionRollbackAction
 import org.apache.ignite.gatling.action.ignite.TransactionStartAction
-import org.apache.ignite.gatling.builder.IgniteActionBuilder
 import org.apache.ignite.transactions.TransactionConcurrency
 import org.apache.ignite.transactions.TransactionIsolation
 
@@ -71,26 +69,26 @@ case class TransactionParameters(
   txSize: Option[Expression[Int]] = None
 )
 
-case class TransactionCommitActionBuilder(requestName: Expression[String] = EmptyStringExpressionSuccess) extends IgniteActionBuilder {
+case class TransactionCommitActionBuilder(requestName: Expression[String] = EmptyStringExpressionSuccess) extends ActionBuilder {
   def as(requestName: Expression[String]): ActionBuilder = this.copy(requestName = requestName)
 
   override def build(ctx: ScenarioContext, next: Action): TransactionCommitAction =
     new TransactionCommitAction(requestName, next, ctx)
 }
 
-case class TransactionRollbackActionBuilder(requestName: Expression[String] = EmptyStringExpressionSuccess) extends IgniteActionBuilder {
+case class TransactionRollbackActionBuilder(requestName: Expression[String] = EmptyStringExpressionSuccess) extends ActionBuilder {
   def as(requestName: Expression[String]): ActionBuilder = this.copy(requestName = requestName)
 
   override def build(ctx: ScenarioContext, next: Action): TransactionRollbackAction =
     new TransactionRollbackAction(requestName, next, ctx)
 }
 
-case class TransactionStartBuilder(requestName: Expression[String], params: TransactionParameters) extends IgniteActionBuilder {
+case class TransactionStartBuilder(requestName: Expression[String], params: TransactionParameters) extends ActionBuilder {
   override def build(ctx: ScenarioContext, next: Action): Action =
     new TransactionStartAction(requestName, TransactionParameters(), next, ctx)
 }
 
-case class TransactionCloseBuilder(requestName: Expression[String]) extends IgniteActionBuilder {
+case class TransactionCloseBuilder(requestName: Expression[String]) extends ActionBuilder {
   override def build(ctx: ScenarioContext, next: Action): Action =
     new TransactionCloseAction(requestName, next, ctx)
 }

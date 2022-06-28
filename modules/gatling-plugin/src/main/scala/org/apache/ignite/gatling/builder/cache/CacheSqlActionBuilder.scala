@@ -14,7 +14,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.ignite.gatling.builder.cache
 
 import io.gatling.commons.validation.SuccessWrapper
@@ -25,7 +24,6 @@ import io.gatling.core.session.Expression
 import io.gatling.core.structure.ScenarioContext
 import org.apache.ignite.gatling.SqlCheck
 import org.apache.ignite.gatling.action.cache.CacheSqlAction
-import org.apache.ignite.gatling.builder.IgniteActionBuilder
 
 case class CacheSqlActionBuilder(
   cacheName: Expression[String],
@@ -34,7 +32,7 @@ case class CacheSqlActionBuilder(
   partitionsList: Expression[List[Int]] = _ => List.empty.success,
   checks: Seq[SqlCheck] = Seq.empty,
   requestName: Expression[String] = EmptyStringExpressionSuccess
-) extends IgniteActionBuilder {
+) extends ActionBuilder {
 
   def check(newChecks: SqlCheck*): CacheSqlActionBuilder = this.copy(checks = newChecks)
 

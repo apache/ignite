@@ -14,7 +14,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.ignite.gatling.builder.ignite
 
 import io.gatling.core.action.Action
@@ -27,10 +26,9 @@ import org.apache.ignite.cache.CacheMode
 import org.apache.ignite.client.ClientCacheConfiguration
 import org.apache.ignite.configuration.CacheConfiguration
 import org.apache.ignite.gatling.action.ignite.CreateCacheAction
-import org.apache.ignite.gatling.builder.IgniteActionBuilder
 
 case class CreateCacheActionBuilderBase[K, V](cacheName: Expression[String], requestName: Expression[String] = EmptyStringExpressionSuccess)
-    extends IgniteActionBuilder {
+    extends ActionBuilder {
   def backups(newValue: Integer): CreateCacheActionBuilderSimpleConfigStep =
     CreateCacheActionBuilderSimpleConfigStep(requestName, cacheName).copy(backups = newValue)
 
@@ -58,7 +56,7 @@ case class CreateCacheActionBuilderSimpleConfigStep(
   backups: Integer = 0,
   atomicity: CacheAtomicityMode = CacheAtomicityMode.ATOMIC,
   mode: CacheMode = CacheMode.PARTITIONED
-) extends IgniteActionBuilder {
+) extends ActionBuilder {
   def backups(newValue: Integer): CreateCacheActionBuilderSimpleConfigStep =
     this.copy(backups = newValue)
 
@@ -90,7 +88,7 @@ case class Configuration[K, V](
 )
 
 case class CreateCacheActionBuilder[K, V](requestName: Expression[String], cacheName: Expression[String], config: Configuration[K, V])
-    extends IgniteActionBuilder {
+    extends ActionBuilder {
   override def build(ctx: ScenarioContext, next: Action): Action =
     new CreateCacheAction(requestName, cacheName, config, next, ctx)
 

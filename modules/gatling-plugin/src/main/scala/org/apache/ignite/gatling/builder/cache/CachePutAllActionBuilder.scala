@@ -14,7 +14,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.ignite.gatling.builder.cache
 
 import io.gatling.core.action.Action
@@ -23,13 +22,12 @@ import io.gatling.core.session.EmptyStringExpressionSuccess
 import io.gatling.core.session.Expression
 import io.gatling.core.structure.ScenarioContext
 import org.apache.ignite.gatling.action.cache.CachePutAllAction
-import org.apache.ignite.gatling.builder.IgniteActionBuilder
 
 case class CachePutAllActionBuilder[K, V](
   cacheName: Expression[String],
   map: Expression[Map[K, V]],
   requestName: Expression[String] = EmptyStringExpressionSuccess
-) extends IgniteActionBuilder {
+) extends ActionBuilder {
 
   def as(requestName: Expression[String]): ActionBuilder = this.copy(requestName = requestName)
 

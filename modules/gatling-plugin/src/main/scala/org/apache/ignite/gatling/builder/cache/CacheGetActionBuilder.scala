@@ -14,7 +14,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.ignite.gatling.builder.cache
 
 import io.gatling.core.action.Action
@@ -24,14 +23,13 @@ import io.gatling.core.session.Expression
 import io.gatling.core.structure.ScenarioContext
 import org.apache.ignite.gatling.IgniteCheck
 import org.apache.ignite.gatling.action.cache.CacheGetAction
-import org.apache.ignite.gatling.builder.IgniteActionBuilder
 
 case class CacheGetActionBuilder[K, V](
   cacheName: Expression[String],
   key: Expression[K],
   checks: Seq[IgniteCheck[K, V]] = Seq.empty,
   requestName: Expression[String] = EmptyStringExpressionSuccess
-) extends IgniteActionBuilder {
+) extends ActionBuilder {
   def keepBinary: CacheGetActionBuilderBinaryStep[K, V] =
     CacheGetActionBuilderBinaryStep(requestName, cacheName, key, checks)
 
@@ -48,7 +46,7 @@ case class CacheGetActionBuilderBinaryStep[K, V](
   cacheName: Expression[String],
   key: Expression[K],
   checks: Seq[IgniteCheck[K, V]]
-) extends IgniteActionBuilder {
+) extends ActionBuilder {
 
   def check(newChecks: IgniteCheck[K, V]*): CacheGetActionBuilderBinaryStep[K, V] = this.copy(checks = newChecks)
 

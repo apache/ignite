@@ -14,7 +14,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.ignite.gatling.builder.cache
 
 import javax.cache.processor.EntryProcessorResult
@@ -28,7 +27,6 @@ import org.apache.ignite.cache.CacheEntryProcessor
 import org.apache.ignite.gatling.IgniteCheck
 import org.apache.ignite.gatling.action.cache.CacheInvokeAllMapAction
 import org.apache.ignite.gatling.action.cache.CacheInvokeAllSingleProcessorAction
-import org.apache.ignite.gatling.builder.IgniteActionBuilder
 
 case class CacheInvokeAllSingleProcessorActionBuilderBase[K, V, T](
   cacheName: Expression[String],
@@ -61,7 +59,7 @@ case class CacheInvokeAllSingleProcessorActionBuilder[K, V, T](
   entryProcessor: CacheEntryProcessor[K, V, T],
   arguments: Seq[Expression[Any]],
   checks: Seq[IgniteCheck[K, EntryProcessorResult[T]]] = Seq.empty
-) extends IgniteActionBuilder {
+) extends ActionBuilder {
 
   def check(newChecks: IgniteCheck[K, EntryProcessorResult[T]]*): CacheInvokeAllSingleProcessorActionBuilder[K, V, T] =
     this.copy(checks = newChecks)
@@ -86,7 +84,7 @@ case class CacheInvokeAllActionBuilderBase[K, V, T](
   cacheName: Expression[String],
   map: Expression[Map[K, CacheEntryProcessor[K, V, T]]],
   requestName: Expression[String] = EmptyStringExpressionSuccess
-) extends IgniteActionBuilder {
+) extends ActionBuilder {
 
   def as(requestName: Expression[String]): ActionBuilder = this.copy(requestName = requestName)
 
@@ -103,7 +101,7 @@ case class CacheInvokeAllActionBuilder[K, V, T](
   map: Expression[Map[K, CacheEntryProcessor[K, V, T]]],
   arguments: Seq[Expression[Any]],
   checks: Seq[IgniteCheck[K, EntryProcessorResult[T]]] = Seq.empty
-) extends IgniteActionBuilder {
+) extends ActionBuilder {
 
   def check(newChecks: IgniteCheck[K, EntryProcessorResult[T]]*): CacheInvokeAllActionBuilder[K, V, T] = this.copy(checks = newChecks)
 

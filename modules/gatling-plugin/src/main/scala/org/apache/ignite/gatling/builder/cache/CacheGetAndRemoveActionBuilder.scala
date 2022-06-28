@@ -14,7 +14,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.ignite.gatling.builder.cache
 
 import io.gatling.core.action.Action
@@ -24,14 +23,13 @@ import io.gatling.core.session.Expression
 import io.gatling.core.structure.ScenarioContext
 import org.apache.ignite.gatling.IgniteCheck
 import org.apache.ignite.gatling.action.cache.CacheGetAndRemoveAction
-import org.apache.ignite.gatling.builder.IgniteActionBuilder
 
 case class CacheGetAndRemoveActionBuilder[K, V](
   cacheName: Expression[String],
   key: Expression[K],
   checks: Seq[IgniteCheck[K, V]] = Seq.empty,
   requestName: Expression[String] = EmptyStringExpressionSuccess
-) extends IgniteActionBuilder {
+) extends ActionBuilder {
 
   def check(newChecks: IgniteCheck[K, V]*): CacheGetAndRemoveActionBuilder[K, V] = this.copy(checks = newChecks)
 

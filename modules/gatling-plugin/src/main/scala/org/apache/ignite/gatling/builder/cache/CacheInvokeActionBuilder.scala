@@ -14,7 +14,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.ignite.gatling.builder.cache
 
 import io.gatling.core.action.Action
@@ -25,7 +24,6 @@ import io.gatling.core.structure.ScenarioContext
 import org.apache.ignite.cache.CacheEntryProcessor
 import org.apache.ignite.gatling.IgniteCheck
 import org.apache.ignite.gatling.action.cache.CacheInvokeAction
-import org.apache.ignite.gatling.builder.IgniteActionBuilder
 
 case class CacheInvokeActionBuilderBase[K, V, T](
   cacheName: Expression[String],
@@ -58,7 +56,7 @@ case class CacheInvokeActionBuilder[K, V, T](
   entryProcessor: CacheEntryProcessor[K, V, T],
   arguments: Seq[Expression[Any]],
   checks: Seq[IgniteCheck[K, T]] = Seq.empty
-) extends IgniteActionBuilder {
+) extends ActionBuilder {
 
   def check(newChecks: IgniteCheck[K, T]*): CacheInvokeActionBuilder[K, V, T] = this.copy(checks = newChecks)
 
