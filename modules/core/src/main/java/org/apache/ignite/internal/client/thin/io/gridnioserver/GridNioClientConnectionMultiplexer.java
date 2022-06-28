@@ -23,6 +23,8 @@ import java.nio.ByteOrder;
 import java.nio.channels.SocketChannel;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 import javax.net.ssl.SSLContext;
 
 import org.apache.ignite.IgniteCheckedException;
@@ -55,13 +57,13 @@ public class GridNioClientConnectionMultiplexer implements ClientConnectionMulti
     private static final int CLIENT_MODE_PORT = -1;
 
     /** */
-    private static final int NIO_REGISTER_TIMEOUT = 1000;
-
-    /** */
     private final GridNioServer<ByteBuffer> srv;
 
     /** */
     private final SSLContext sslCtx;
+
+    /** */
+    private final ReadWriteLock rwLock = new ReentrantReadWriteLock();
 
     /**
      * Constructor.
@@ -110,19 +112,35 @@ public class GridNioClientConnectionMultiplexer implements ClientConnectionMulti
 
     /** {@inheritDoc} */
     @Override public void start() {
-        srv.start();
+        rwLock.writeLock().lock();
+
+        try {
+            srv.start();
+        }
+        finally {
+            rwLock.writeLock().unlock();
+        }
     }
 
     /** {@inheritDoc} */
-    @Override public void stop() {
-        srv.stop();
+    @Override public synchronized void stop() {
+        rwLock.writeLock().lock();
+
+        try {
+            srv.stop();
+        }
+        finally {
+            rwLock.writeLock().unlock();
+        }
     }
 
     /** {@inheritDoc} */
-    @Override public ClientConnection open(InetSocketAddress addr,
+    @Override public synchronized ClientConnection open(InetSocketAddress addr,
                                            ClientMessageHandler msgHnd,
                                            ClientConnectionStateHandler stateHnd)
             throws ClientConnectionException {
+        rwLock.readLock().lock();
+
         try {
             SocketChannel ch = SocketChannel.open();
             ch.socket().connect(new InetSocketAddress(addr.getHostName(), addr.getPort()), Integer.MAX_VALUE);
@@ -136,8 +154,7 @@ public class GridNioClientConnectionMultiplexer implements ClientConnectionMulti
                 meta.put(GridNioSslFilter.HANDSHAKE_FUT_META_KEY, sslHandshakeFut);
             }
 
-            // TODO: Why does this hang sometimes? It should not do any socket IO!
-            GridNioSession ses = srv.createSession(ch, meta, false, null).get(NIO_REGISTER_TIMEOUT);
+            GridNioSession ses = srv.createSession(ch, meta, false, null).get();
 
             if (sslHandshakeFut != null)
                 sslHandshakeFut.get();
@@ -146,6 +163,9 @@ public class GridNioClientConnectionMultiplexer implements ClientConnectionMulti
         }
         catch (Exception e) {
             throw new ClientConnectionException(e.getMessage(), e);
+        }
+        finally {
+            rwLock.readLock().unlock();
         }
     }
 }
