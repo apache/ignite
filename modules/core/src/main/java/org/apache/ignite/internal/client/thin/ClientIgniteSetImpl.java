@@ -25,9 +25,9 @@ import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import org.apache.ignite.client.ClientAutoCloseableIterator;
 import org.apache.ignite.client.ClientException;
 import org.apache.ignite.client.ClientIgniteSet;
-import org.apache.ignite.client.ClientAutoCloseableIterator;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.processors.platform.client.ClientStatus;
@@ -197,10 +197,11 @@ class ClientIgniteSetImpl<T> implements ClientIgniteSet<T> {
             ArrayList<T1> res = new ArrayList<>();
 
             while (it.hasNext())
-                res.add((T1) it.next());
+                res.add((T1)it.next());
 
             return res.toArray(a);
-        } catch (Exception e) {
+        }
+        catch (Exception e) {
             throw new IgniteClientException(ClientStatus.FAILED, e.getMessage(), e);
         }
     }
@@ -383,7 +384,7 @@ class ClientIgniteSetImpl<T> implements ClientIgniteSet<T> {
             List<T> res = new ArrayList<>(size);
 
             for (int i = 0; i < size; i++)
-                res.add((T) r.readObject());
+                res.add((T)r.readObject());
 
             return res;
         }
