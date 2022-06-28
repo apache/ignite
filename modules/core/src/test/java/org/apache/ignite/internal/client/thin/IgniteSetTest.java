@@ -17,10 +17,10 @@
 
 package org.apache.ignite.internal.client.thin;
 
-import com.google.common.collect.ImmutableList;
+import java.lang.reflect.Field;
 import java.util.NoSuchElementException;
 import java.util.Objects;
-import java.lang.reflect.Field;
+import com.google.common.collect.ImmutableList;
 import org.apache.ignite.IgniteSet;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;

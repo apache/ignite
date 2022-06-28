@@ -1207,6 +1207,9 @@ public abstract class GridCacheSetAbstractSelfTest extends IgniteCollectionAbstr
         newSet.close();
     }
 
+    /**
+     * Tests multiple sets with the same name but different cache options.
+     */
     @Test
     public void testSameNameDifferentOptions() {
         Ignite ignite = grid(0);
