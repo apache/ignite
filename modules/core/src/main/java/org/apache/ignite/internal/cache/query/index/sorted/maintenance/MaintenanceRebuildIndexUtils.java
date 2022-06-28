@@ -17,8 +17,6 @@
 
 package org.apache.ignite.internal.cache.query.index.sorted.maintenance;
 
-import static java.util.stream.Collectors.joining;
-
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Base64;
@@ -29,6 +27,8 @@ import java.util.Objects;
 import java.util.Set;
 import org.apache.ignite.maintenance.MaintenanceTask;
 import org.jetbrains.annotations.Nullable;
+
+import static java.util.stream.Collectors.joining;
 
 /** Utility methods for the index rebuild maintenance task. */
 public class MaintenanceRebuildIndexUtils {
