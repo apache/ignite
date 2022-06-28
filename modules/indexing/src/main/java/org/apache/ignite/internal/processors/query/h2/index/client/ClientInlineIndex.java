@@ -71,6 +71,17 @@ public class ClientInlineIndex extends AbstractClientIndex implements InlineInde
     }
 
     /** {@inheritDoc} */
+    @Override public GridCursor<IndexRow> find(
+        IndexRow lower,
+        IndexRow upper,
+        boolean lowIncl,
+        boolean upIncl,
+        IndexQueryContext qryCtx
+    ) {
+        throw unsupported();
+    }
+
+    /** {@inheritDoc} */
     @Override public GridCursor<IndexRow> findFirst(int segment, IndexQueryContext qryCtx) {
         throw unsupported();
     }

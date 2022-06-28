@@ -18,12 +18,12 @@
 package org.apache.ignite.internal.commandline.indexreader;
 
 import java.io.File;
-import java.nio.ByteBuffer;
-import java.util.Collection;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
+import org.apache.ignite.internal.processors.cache.persistence.file.AsyncFileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStore;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
+import org.apache.ignite.internal.processors.cache.persistence.file.FileVersionCheckingFactory;
 import org.jetbrains.annotations.Nullable;
 
 import static java.lang.String.format;
@@ -36,18 +36,43 @@ import static org.apache.ignite.internal.processors.cache.persistence.file.FileP
 /**
  * Factory {@link FilePageStore} for analyzing partition and index files.
  */
-public interface IgniteIndexReaderFilePageStoreFactory {
+class IgniteIndexReaderFilePageStoreFactory {
+    /** Directory with data(partitions and index). */
+    private final File dir;
+
+    /** {@link FilePageStore} factory by page store version. */
+    private final FileVersionCheckingFactory storeFactory;
+
+    /** Page size. */
+    private final int pageSize;
+
+    /** Partition count. */
+    private final int partCnt;
+
     /**
-     * Creating new {@link FilePageStore}. It can return {@code null} if partition file were not found,
-     * for example: node should not contain it by affinity.
+     * Constructor.
      *
-     * @param partId Partition ID.
-     * @param type Data type, can be {@link PageIdAllocator#FLAG_IDX} or {@link PageIdAllocator#FLAG_DATA}.
-     * @param errors Errors while reading partition.
-     * @return New instance of {@link FilePageStore} or {@code null}.
-     * @throws IgniteCheckedException If there are errors when creating {@link FilePageStore}.
+     * @param dir Directory with data(partitions and index).
+     * @param pageSize Page size.
+     * @param partCnt Partition count.
+     * @param filePageStoreVer Page store version.
      */
-    @Nullable FilePageStore createFilePageStore(int partId, byte type, Collection<Throwable> errors) throws IgniteCheckedException;
+    IgniteIndexReaderFilePageStoreFactory(File dir, int pageSize, int partCnt, int filePageStoreVer) {
+        this.dir = dir;
+        this.pageSize = pageSize;
+        this.partCnt = partCnt;
+
+        storeFactory = new FileVersionCheckingFactory(
+            new AsyncFileIOFactory(),
+            new AsyncFileIOFactory(),
+            () -> pageSize
+        ) {
+            /** {@inheritDoc} */
+            @Override public int latestVersion() {
+                return filePageStoreVer;
+            }
+        };
+    }
 
     /**
      * Creating new {@link FilePageStore} and initializing it.
@@ -55,31 +80,20 @@ public interface IgniteIndexReaderFilePageStoreFactory {
      *
      * @param partId Partition ID.
      * @param type Data type, can be {@link PageIdAllocator#FLAG_IDX} or {@link PageIdAllocator#FLAG_DATA}.
-     * @param errors Errors while reading partition.
      * @return New instance of {@link FilePageStore} or {@code null}.
      * @throws IgniteCheckedException If there are errors when creating or initializing {@link FilePageStore}.
      */
-    @Nullable default FilePageStore createFilePageStoreWithEnsure(
-        int partId,
-        byte type,
-        Collection<Throwable> errors
-    ) throws IgniteCheckedException {
-        FilePageStore filePageStore = createFilePageStore(partId, type, errors);
+    @Nullable FilePageStore createFilePageStore(int partId, byte type) throws IgniteCheckedException {
+        File file = getFile(dir, partId, null);
 
-        if (nonNull(filePageStore))
-            filePageStore.ensure();
+        if (!file.exists())
+            return null;
+
+        FilePageStore filePageStore = (FilePageStore)storeFactory.createPageStore(type, file, l -> {});
+
+        filePageStore.ensure();
 
         return filePageStore;
-    }
-
-    /**
-     * Create buffer with header.
-     *
-     * @param type Data type, can be {@link PageIdAllocator#FLAG_IDX} or {@link PageIdAllocator#FLAG_DATA}.
-     * @return New buffer with header.
-     */
-    default ByteBuffer headerBuffer(byte type) throws IgniteCheckedException {
-        throw new UnsupportedOperationException();
     }
 
     /**
@@ -90,7 +104,7 @@ public interface IgniteIndexReaderFilePageStoreFactory {
      * @param fileExt File extension if it differs from {@link FilePageStoreManager#FILE_SUFFIX}.
      * @return Partition or index file that may not exist.
      */
-    default File getFile(File dir, int partId, @Nullable String fileExt) {
+    private File getFile(File dir, int partId, @Nullable String fileExt) {
         String fileName = partId == INDEX_PARTITION ? INDEX_FILE_NAME : format(PART_FILE_TEMPLATE, partId);
 
         if (nonNull(fileExt) && !FILE_SUFFIX.equals(fileExt))
@@ -104,12 +118,16 @@ public interface IgniteIndexReaderFilePageStoreFactory {
      *
      * @return Page size.
      */
-    int pageSize();
+    int pageSize() {
+        return pageSize;
+    }
 
     /**
      * Return partition count.
      *
      * @return Partition count.
      */
-    int partitionCount();
+    int partitionCount() {
+        return partCnt;
+    }
 }

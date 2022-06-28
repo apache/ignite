@@ -126,14 +126,16 @@ public class ConverterUtils {
         if (targetTypes.length == expressions.size()) {
             for (int i = 0; i < expressions.size(); i++)
                 list.add(fromInternal(expressions.get(i), targetTypes[i]));
-        } else {
+        }
+        else {
             int j = 0;
             for (int i = 0; i < expressions.size(); i++) {
                 Class<?> type;
                 if (!targetTypes[j].isArray()) {
                     type = targetTypes[j];
                     j++;
-                } else
+                }
+                else
                     type = targetTypes[j].getComponentType();
 
                 list.add(fromInternal(expressions.get(i), type));
@@ -430,14 +432,16 @@ public class ConverterUtils {
         if (targetTypes.length == arguments.size()) {
             for (int i = 0; i < arguments.size(); i++)
                 list.add(convertAssignableType(arguments.get(i), targetTypes[i]));
-        } else {
+        }
+        else {
             int j = 0;
             for (Expression argument: arguments) {
                 Class<?> type;
                 if (!targetTypes[j].isArray()) {
                     type = targetTypes[j];
                     j++;
-                } else
+                }
+                else
                     type = targetTypes[j].getComponentType();
 
                 list.add(convertAssignableType(argument, type));

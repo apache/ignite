@@ -28,6 +28,14 @@
 
 namespace ignite
 {
+    namespace impl
+    {
+        namespace thin
+        {
+            template<typename T>
+            class ReadableImpl;
+        }
+    }
     namespace thin
     {
         namespace cache
@@ -41,6 +49,7 @@ namespace ignite
             template<typename K, typename V>
             class CacheEntry
             {
+                friend class ignite::impl::thin::ReadableImpl< ignite::thin::cache::CacheEntry<K, V> >;
             public:
                 /**
                  * Default constructor.

@@ -111,11 +111,13 @@ public class ClientCacheSqlFieldsQueryRequest extends ClientCacheDataRequest imp
 
                 for (int i = 0; i < partCnt; i++)
                     partitions[i] = reader.readInt();
-            } else
+            }
+            else
                 partitions = null;
 
             updateBatchSize = reader.readInt();
-        } else {
+        }
+        else {
             partitions = null;
             updateBatchSize = null;
         }

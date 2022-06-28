@@ -37,9 +37,10 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
+import java.util.stream.Collectors;
 import com.google.common.collect.ImmutableSet;
 import org.apache.calcite.avatica.util.ByteString;
 import org.apache.ignite.IgniteException;
@@ -174,8 +175,22 @@ public class SqlScriptRunner {
     private static String toString(Object res) {
         if (res instanceof byte[])
             return ByteString.toString((byte[])res, 16);
+        else if (res instanceof Map)
+            return mapToString((Map<?, ?>)res);
         else
             return String.valueOf(res);
+    }
+
+    /** */
+    private static String mapToString(Map<?, ?> map) {
+        if (map == null)
+            return NULL;
+
+        List<String> entries = (new TreeMap<>(map)).entrySet().stream()
+            .map(e -> toString(e.getKey()) + ":" + toString(e.getValue()))
+            .collect(Collectors.toList());
+
+        return "{" + String.join(", ", entries) + "}";
     }
 
     /** */
@@ -677,6 +692,12 @@ public class SqlScriptRunner {
                     if (actDec.compareTo(expDec) != 0)
                         throw new AssertionError(msg);
                 }
+            }
+            else if (actual instanceof Map) {
+                String actualStr = mapToString((Map<? extends Comparable, ?>)actual);
+
+                if (!expectedStr.equals(actualStr))
+                    throw new AssertionError(msg);
             }
             else {
                 if (!String.valueOf(expectedStr).equals(SqlScriptRunner.toString(actual)) &&

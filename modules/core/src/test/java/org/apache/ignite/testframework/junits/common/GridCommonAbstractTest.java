@@ -17,6 +17,7 @@
 
 package org.apache.ignite.testframework.junits.common;
 
+import java.io.Serializable;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -114,6 +115,8 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager;
 import org.apache.ignite.internal.processors.cache.verify.IdleVerifyResultV2;
+import org.apache.ignite.internal.processors.configuration.distributed.DistributedChangeableProperty;
+import org.apache.ignite.internal.processors.job.GridJobProcessor;
 import org.apache.ignite.internal.processors.service.IgniteServiceProcessor;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
@@ -150,13 +153,17 @@ import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
 import static org.apache.ignite.cache.CacheMode.LOCAL;
 import static org.apache.ignite.cache.CacheRebalanceMode.NONE;
+import static org.apache.ignite.configuration.IgniteConfiguration.DFLT_NETWORK_TIMEOUT;
 import static org.apache.ignite.configuration.IgniteConfiguration.DFLT_SNAPSHOT_DIRECTORY;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isNearEnabled;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.OWNING;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
 import static org.apache.ignite.testframework.GridTestUtils.setFieldValue;
+import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.notNullValue;
 
 /**
  * Super class for all common tests.
@@ -970,7 +977,8 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
             IgniteCacheProxy<?, ?> cache = null;
             try {
                 cache = g0.context().cache().jcache(cacheName);
-            } catch (IllegalArgumentException e) {
+            }
+            catch (IllegalArgumentException e) {
                 continue; // Client topology.
             }
 
@@ -2388,6 +2396,31 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
     }
 
     /**
+     * Awaits for the cache to be available on the client node.
+     * <p/>
+     * Client nodes receive the created cache descriptor asynchronously:
+     * <pre name="code" class="java">
+     *      server.createCache("cache");
+     *      ...
+     *      IgniteCache cache = client.cache("cache"); // May be null.
+     * </pre>
+     *
+     * @param client Client node.
+     * @param cacheName Cache name.
+     */
+    public static void awaitCacheOnClient(Ignite client, String cacheName) {
+        if (!client.cluster().localNode().isClient())
+            return;
+
+        try {
+            assertTrue(waitForCondition(() -> client.cacheNames().contains(cacheName), DFLT_NETWORK_TIMEOUT));
+        }
+        catch (IgniteInterruptedCheckedException e) {
+            throw U.convertException(e);
+        }
+    }
+
+    /**
      * @param partId Partition id.
      * @param gridName Grid name.
      *
@@ -2779,5 +2812,18 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
         finally {
             dbMgr.checkpointReadUnlock();
         }
+    }
+
+    /**
+     * @param n Node.
+     * @return Distributed property: {@code GridJobProcessor#computeJobWorkerInterruptTimeout}.
+     */
+    protected DistributedChangeableProperty<Serializable> computeJobWorkerInterruptTimeout(Ignite n) {
+        DistributedChangeableProperty<Serializable> timeoutProperty = ((IgniteEx)n).context().distributedConfiguration()
+            .property(GridJobProcessor.COMPUTE_JOB_WORKER_INTERRUPT_TIMEOUT);
+
+        assertThat(timeoutProperty, notNullValue());
+
+        return timeoutProperty;
     }
 }

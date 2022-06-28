@@ -56,6 +56,8 @@ public class CacheQueryNewClientSelfTest extends GridCommonAbstractTest {
 
             Ignite client = (iter == 0) ? startClientGrid("client") : grid("client");
 
+            awaitCacheOnClient(client, "cache1");
+
             IgniteCache<Integer, Integer> cache = client.cache("cache1");
 
             List<List<?>> res = cache.query(new SqlFieldsQuery(

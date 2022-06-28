@@ -666,7 +666,8 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
                     // Reading server UUID
                     srvNodeId = reader.readUuid();
                 }
-            } else {
+            }
+            else {
                 ProtocolVersion srvVer = new ProtocolVersion(res.readShort(), res.readShort(), res.readShort());
 
                 String err = reader.readString();

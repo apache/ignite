@@ -29,8 +29,8 @@ import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.query.Query;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.internal.util.lang.RunnableX;
 import org.apache.ignite.lang.IgniteBiPredicate;
-import org.apache.ignite.testframework.GridTestUtils;
 
 /**
  * Abstract class to test that a remote filter and transformer of ContinuousQueries run on a remote node inside the
@@ -81,7 +81,7 @@ public class AbstractContinuousQuerySandboxTest extends AbstractSandboxTest {
     }
 
     /** */
-    private GridTestUtils.RunnableX operation(String nodeName,
+    private RunnableX operation(String nodeName,
         Supplier<Query<Cache.Entry<Integer, Integer>>> s, boolean init) {
         return () -> {
             error = null;

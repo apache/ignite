@@ -2663,9 +2663,8 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
             GridCacheVersion ver,
             long expireTime,
             MvccVersion mvccVer,
-            MvccVersion newMvccVer)
-            throws IgniteCheckedException
-        {
+            MvccVersion newMvccVer
+        ) throws IgniteCheckedException {
             CacheDataStore delegate = init0(false);
 
             return delegate.mvccInitialValue(cctx, key, val, ver, expireTime, mvccVer, newMvccVer);

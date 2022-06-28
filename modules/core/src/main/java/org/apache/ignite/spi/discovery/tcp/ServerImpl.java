@@ -2021,8 +2021,8 @@ class ServerImpl extends TcpDiscoveryImpl {
     @Override public void updateMetrics(UUID nodeId,
         ClusterMetrics metrics,
         Map<Integer, CacheMetrics> cacheMetrics,
-        long tsNanos)
-    {
+        long tsNanos
+    ) {
         assert nodeId != null;
         assert metrics != null;
 
@@ -2547,8 +2547,8 @@ class ServerImpl extends TcpDiscoveryImpl {
          * @return Collection of messages.
          */
         @Nullable Collection<TcpDiscoveryAbstractMessage> messages(@Nullable IgniteUuid lastMsgId,
-            TcpDiscoveryNode node)
-        {
+            TcpDiscoveryNode node
+        ) {
             assert node != null && node.clientRouterNodeId() != null : node;
 
             if (lastMsgId == null) {
@@ -6142,7 +6142,8 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                         try {
                             res = pingNode(msg.nodeToPing());
-                        } catch (IgniteSpiException e) {
+                        }
+                        catch (IgniteSpiException e) {
                             log.error("Failed to ping node [nodeToPing=" + msg.nodeToPing() + ']', e);
 
                             res = false;

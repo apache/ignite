@@ -144,17 +144,20 @@ public enum ClientOperation {
     /** Continuous query event. */
     QUERY_CONTINUOUS_EVENT(2007, ClientNotificationType.CONTINUOUS_QUERY_EVENT),
 
-    /** Get binary type. */
-    GET_BINARY_TYPE(3002),
+    /** Get binary type name. */
+    GET_BINARY_TYPE_NAME(3000),
 
     /** Register binary type name. */
     REGISTER_BINARY_TYPE_NAME(3001),
 
+    /** Get binary type. */
+    GET_BINARY_TYPE(3002),
+
     /** Put binary type. */
     PUT_BINARY_TYPE(3003),
 
-    /** Get binary type name. */
-    GET_BINARY_TYPE_NAME(3000),
+    /** Get binary configuration. */
+    GET_BINARY_CONFIGURATION(3004),
 
     /** Start new transaction. */
     TX_START(4000),
@@ -193,7 +196,31 @@ public enum ClientOperation {
     SERVICE_GET_DESCRIPTORS(7001),
 
     /** Get service descriptors. */
-    SERVICE_GET_DESCRIPTOR(7002);
+    SERVICE_GET_DESCRIPTOR(7002),
+
+    /** Get or create an AtomicLong by name. */
+    ATOMIC_LONG_CREATE(9000),
+
+    /** Remove an AtomicLong. */
+    ATOMIC_LONG_REMOVE(9001),
+
+    /** Check if AtomicLong exists. */
+    ATOMIC_LONG_EXISTS(9002),
+
+    /** AtomicLong.get. */
+    ATOMIC_LONG_VALUE_GET(9003),
+
+    /** AtomicLong.addAndGet (also covers incrementAndGet, getAndIncrement, getAndAdd, decrementAndGet, getAndDecrement).  */
+    ATOMIC_LONG_VALUE_ADD_AND_GET(9004),
+
+    /** AtomicLong.getAndSet. */
+    ATOMIC_LONG_VALUE_GET_AND_SET(9005),
+
+    /** AtomicLong.compareAndSet. */
+    ATOMIC_LONG_VALUE_COMPARE_AND_SET(9006),
+
+    /** AtomicLong.compareAndSetAndGet. */
+    ATOMIC_LONG_VALUE_COMPARE_AND_SET_AND_GET(9007);
 
     /** Code. */
     private final int code;
@@ -350,6 +377,28 @@ public enum ClientOperation {
 
             case SERVICE_GET_DESCRIPTOR:
                 return ClientOperationType.SERVICE_GET_DESCRIPTOR;
+
+            case ATOMIC_LONG_CREATE:
+                return ClientOperationType.ATOMIC_LONG_CREATE;
+
+            case ATOMIC_LONG_REMOVE:
+                return ClientOperationType.ATOMIC_LONG_REMOVE;
+
+            case ATOMIC_LONG_EXISTS:
+                return ClientOperationType.ATOMIC_LONG_EXISTS;
+
+            case ATOMIC_LONG_VALUE_GET:
+                return ClientOperationType.ATOMIC_LONG_VALUE_GET;
+
+            case ATOMIC_LONG_VALUE_ADD_AND_GET:
+                return ClientOperationType.ATOMIC_LONG_VALUE_ADD_AND_GET;
+
+            case ATOMIC_LONG_VALUE_GET_AND_SET:
+                return ClientOperationType.ATOMIC_LONG_VALUE_GET_AND_SET;
+
+            case ATOMIC_LONG_VALUE_COMPARE_AND_SET:
+            case ATOMIC_LONG_VALUE_COMPARE_AND_SET_AND_GET:
+                return ClientOperationType.ATOMIC_LONG_VALUE_COMPARE_AND_SET;
 
             default:
                 return null;

@@ -77,12 +77,18 @@ public class IgniteStdSqlOperatorTable extends ReflectiveSqlOperatorTable {
         // Aggregates.
         register(SqlStdOperatorTable.COUNT);
         register(SqlStdOperatorTable.SUM);
+        register(SqlStdOperatorTable.SUM0);
         register(SqlStdOperatorTable.AVG);
         register(SqlStdOperatorTable.MIN);
         register(SqlStdOperatorTable.MAX);
         register(SqlStdOperatorTable.ANY_VALUE);
         register(SqlStdOperatorTable.SINGLE_VALUE);
         register(SqlStdOperatorTable.FILTER);
+        register(SqlLibraryOperators.GROUP_CONCAT);
+        register(SqlLibraryOperators.STRING_AGG);
+        register(SqlStdOperatorTable.LISTAGG);
+        register(SqlLibraryOperators.ARRAY_AGG);
+        register(SqlLibraryOperators.ARRAY_CONCAT_AGG);
 
         // IS ... operator.
         register(SqlStdOperatorTable.IS_NULL);
@@ -214,9 +220,8 @@ public class IgniteStdSqlOperatorTable extends ReflectiveSqlOperatorTable {
         register(SqlStdOperatorTable.IS_EMPTY);
         register(SqlStdOperatorTable.IS_NOT_EMPTY);
 
-        // TODO https://issues.apache.org/jira/browse/IGNITE-15550
-        //register(SqlStdOperatorTable.MAP_QUERY);
-        //register(SqlStdOperatorTable.ARRAY_QUERY);
+        register(SqlStdOperatorTable.MAP_QUERY);
+        register(SqlStdOperatorTable.ARRAY_QUERY);
 
         // Multiset.
         // TODO https://issues.apache.org/jira/browse/IGNITE-15551

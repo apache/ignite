@@ -486,9 +486,7 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
         String taskName,
         @Nullable GridCacheVersion dhtVer,
         @Nullable Long updateCntr
-    )
-        throws IgniteCheckedException, GridCacheEntryRemovedException
-    {
+    ) throws IgniteCheckedException, GridCacheEntryRemovedException {
         rawPut(val, ttl);
 
         return new GridCacheUpdateTxResult(true);
@@ -561,6 +559,7 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
         boolean metrics,
         boolean primary,
         boolean checkVer,
+        boolean readRepairRecovery,
         AffinityTopologyVersion topVer,
         @Nullable CacheEntryPredicate[] filter,
         GridDrType drType,

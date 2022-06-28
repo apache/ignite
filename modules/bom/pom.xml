@@ -58,6 +58,11 @@
             </dependency>
             <dependency>
                 <groupId>${project.groupId}</groupId>
+                <artifactId>ignite-compatibility</artifactId>
+                <version>${revision}</version>
+            </dependency>
+            <dependency>
+                <groupId>${project.groupId}</groupId>
                 <artifactId>ignite-control-utility</artifactId>
                 <version>${revision}</version>
             </dependency>
@@ -69,11 +74,6 @@
             <dependency>
                 <groupId>${project.groupId}</groupId>
                 <artifactId>ignite-direct-io</artifactId>
-                <version>${revision}</version>
-            </dependency>
-            <dependency>
-                <groupId>${project.groupId}</groupId>
-                <artifactId>ignite-hibernate-core</artifactId>
                 <version>${revision}</version>
             </dependency>
             <dependency>
@@ -123,11 +123,6 @@
             </dependency>
             <dependency>
                 <groupId>${project.groupId}</groupId>
-                <artifactId>ignite-geospatial</artifactId>
-                <version>${revision}</version>
-            </dependency>
-            <dependency>
-                <groupId>${project.groupId}</groupId>
                 <artifactId>ignite-rest-http</artifactId>
                 <version>${revision}</version>
             </dependency>
@@ -144,11 +139,6 @@
             <dependency>
                 <groupId>${project.groupId}</groupId>
                 <artifactId>ignite-sqlline</artifactId>
-                <version>${revision}</version>
-            </dependency>
-            <dependency>
-                <groupId>${project.groupId}</groupId>
-                <artifactId>ignite-spark</artifactId>
                 <version>${revision}</version>
             </dependency>
             <dependency>
@@ -176,10 +166,16 @@
                 <artifactId>ignite-zookeeper</artifactId>
                 <version>${revision}</version>
             </dependency>
-
             <dependency>
                 <groupId>${project.groupId}</groupId>
                 <artifactId>ignite-clients</artifactId>
+                <version>${revision}</version>
+                <type>test-jar</type>
+                <scope>test</scope>
+            </dependency>
+            <dependency>
+                <groupId>${project.groupId}</groupId>
+                <artifactId>ignite-compatibility</artifactId>
                 <version>${revision}</version>
                 <type>test-jar</type>
                 <scope>test</scope>

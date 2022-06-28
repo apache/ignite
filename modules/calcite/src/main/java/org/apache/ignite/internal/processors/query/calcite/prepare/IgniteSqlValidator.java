@@ -389,7 +389,11 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
             case MIN:
             case MAX:
             case ANY_VALUE:
-
+            case ARRAY_AGG:
+            case ARRAY_CONCAT_AGG:
+            case GROUP_CONCAT:
+            case LISTAGG:
+            case STRING_AGG:
                 return;
             default:
                 throw newValidationError(call,

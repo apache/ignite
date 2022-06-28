@@ -149,9 +149,11 @@ public class SecurityTest {
         testInvalidUserAuthentication(client -> {
             try {
                 client.getOrCreateCacheAsync("testAuthentication").get();
-            } catch (InterruptedException e) {
+            }
+            catch (InterruptedException e) {
                 throw new RuntimeException(e);
-            } catch (ExecutionException e) {
+            }
+            catch (ExecutionException e) {
                 throw (IgniteClientException)e.getCause();
             }
         });

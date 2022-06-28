@@ -29,10 +29,16 @@ public interface SnapshotMXBean {
      * Create the cluster-wide snapshot with given name asynchronously.
      *
      * @param snpName Snapshot name to be created.
+     * @param snpPath Snapshot directory path.
      * @see IgniteSnapshot#createSnapshot(String) (String)
      */
     @MXBeanDescription("Create cluster-wide snapshot.")
-    public void createSnapshot(@MXBeanParameter(name = "snpName", description = "Snapshot name.") String snpName);
+    public void createSnapshot(
+        @MXBeanParameter(name = "snpName", description = "Snapshot name.")
+            String snpName,
+        @MXBeanParameter(name = "snpPath", description = "Optional snapshot directory path.")
+            String snpPath
+    );
 
     /**
      * Cancel previously started snapshot operation on the node initiator.
@@ -46,6 +52,7 @@ public interface SnapshotMXBean {
      * Restore cluster-wide snapshot.
      *
      * @param name Snapshot name.
+     * @param path Snapshot directory path.
      * @param cacheGroupNames Optional comma-separated list of cache group names.
      * @see IgniteSnapshot#restoreSnapshot(String, Collection)
      */
@@ -53,6 +60,8 @@ public interface SnapshotMXBean {
     public void restoreSnapshot(
         @MXBeanParameter(name = "snpName", description = "Snapshot name.")
             String name,
+        @MXBeanParameter(name = "snpPath", description = "Optional snapshot directory path.")
+            String path,
         @MXBeanParameter(name = "cacheGroupNames", description = "Optional comma-separated list of cache group names.")
             String cacheGroupNames
     );

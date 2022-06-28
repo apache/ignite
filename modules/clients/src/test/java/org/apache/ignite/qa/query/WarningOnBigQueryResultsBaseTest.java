@@ -109,14 +109,14 @@ public class WarningOnBigQueryResultsBaseTest extends AbstractIndexingCommonTest
                 getTestIgniteInstanceIndex(igniteInstanceName) < 2 ? TEST0_ATTR : TEST1_ATTR, true));
         }
 
-        ListeningTestLogger testLog = new ListeningTestLogger(false, log);
+        ListeningTestLogger testLog = new ListeningTestLogger(log);
         BigResultsLogListener lst = new BigResultsLogListener();
 
         testLog.registerListener(lst);
 
         logListeners.put(igniteInstanceName, lst);
 
-        cfg.setGridLogger(new ListeningTestLogger(false, testLog));
+        cfg.setGridLogger(new ListeningTestLogger(testLog));
 
         return cfg;
     }

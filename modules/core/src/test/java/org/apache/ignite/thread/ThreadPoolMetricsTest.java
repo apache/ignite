@@ -40,6 +40,7 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.pool.PoolProcessor;
 import org.apache.ignite.internal.util.StripedExecutor;
+import org.apache.ignite.internal.util.lang.RunnableX;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.AbstractTestPluginProvider;
@@ -189,7 +190,7 @@ public class ThreadPoolMetricsTest extends GridCommonAbstractTest {
         int taskCnt = 10;
 
         for (int i = 0; i < taskCnt; i++) {
-            tasks.add(new GridTestUtils.IgniteRunnableX() {
+            tasks.add(new RunnableX() {
                 @Override public void runx() throws Exception {
                     U.sleep(1);
 
@@ -199,7 +200,7 @@ public class ThreadPoolMetricsTest extends GridCommonAbstractTest {
         }
 
         // Add a long task to check the metric of active tasks.
-        tasks.add(new GridTestUtils.IgniteRunnableX() {
+        tasks.add(new RunnableX() {
             @Override public void runx() throws Exception {
                 U.await(longTaskLatch, getTestTimeout(), MILLISECONDS);
             }

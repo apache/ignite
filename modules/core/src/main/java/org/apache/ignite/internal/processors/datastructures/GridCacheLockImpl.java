@@ -1121,7 +1121,8 @@ public final class GridCacheLockImpl extends AtomicDataStructureProxy<GridCacheL
                 sync.release(0);
             }
 
-        } finally {
+        }
+        finally {
             updateLock.unlock();
         }
     }

@@ -183,7 +183,7 @@ public class GridCommandHandlerInterruptCommandTest extends GridCommandHandlerAb
      */
     @Test
     public void testValidateIndexesCommand() throws Exception {
-        lnsrLog = new ListeningTestLogger(false, log);
+        lnsrLog = new ListeningTestLogger(log);
 
         IgniteEx ignite = startGrid(0);
 
@@ -219,7 +219,7 @@ public class GridCommandHandlerInterruptCommandTest extends GridCommandHandlerAb
      */
     @Test
     public void testIdleVerifyCommand() throws Exception {
-        lnsrLog = new ListeningTestLogger(false, log);
+        lnsrLog = new ListeningTestLogger(log);
 
         IgniteEx ignite = startGrid(0);
 
@@ -303,7 +303,7 @@ public class GridCommandHandlerInterruptCommandTest extends GridCommandHandlerAb
         ValidateIndexesClosure clo = new ValidateIndexesClosure(cancelled::get, Collections.singleton(DEFAULT_CACHE_NAME),
             0, 0, false, true);
 
-        ListeningTestLogger listeningLogger = new ListeningTestLogger(false, log);
+        ListeningTestLogger listeningLogger = new ListeningTestLogger(log);
 
         GridTestUtils.setFieldValue(clo, "ignite", ignite0);
         GridTestUtils.setFieldValue(clo, "log", listeningLogger);

@@ -452,7 +452,8 @@ public class VisorGatewayTask implements ComputeTask<Object[], Object> {
                 for (String item : items) {
                     try {
                         nids.add(UUID.fromString(item));
-                    } catch (IllegalArgumentException ignore) {
+                    }
+                    catch (IllegalArgumentException ignore) {
                         ignite.log().warning("Failed to parse node id [taskName=" + taskName + ", nid=" + item + "]");
                     }
                 }

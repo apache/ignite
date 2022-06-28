@@ -13,7 +13,6 @@ The examples folder contains he following subfolders:
 - `rest` - contains PHP script demonstrating how Ignite Cache can be accessed via HTTP API.
 - `sql` - contains sample SQL scripts and data sets.
 - `src/main/java` - contains Java examples for different Ignite modules and features.
-- `src/main/scala` - contains examples demonstrating usage of API provided by Spark.
 - `src/main/java-lgpl` - contains lgpl-based examples for different Ignite modules and features.
 
 Starting Remote Nodes
@@ -27,7 +26,7 @@ LGPL
 =====
 LGPL examples can be activated by turning lgpl profile on.
 
-lgpl profile required some lgpl-based libs, for example: ignite-hibernate & ignite-schedule.
+lgpl profile required some lgpl-based libs, for example: ignite-schedule.
 In case these libs can not be found by this maven project please download Apache Ignite sources
 at https://ignite.apache.org/download.cgi#sources.
 

@@ -796,8 +796,7 @@ public class PlatformUtils {
      * @param resObj Result.
      * @param err Error.
      */
-    public static void writeInvocationResult(BinaryRawWriterEx writer, Object resObj, Throwable err)
-    {
+    public static void writeInvocationResult(BinaryRawWriterEx writer, Object resObj, Throwable err) {
         if (err == null) {
             writer.writeBoolean(true);
             writer.writeObject(resObj);
@@ -1287,7 +1286,8 @@ public class PlatformUtils {
                 writer.writeString(e.getKey());
                 writer.writeObjectDetached(e.getValue());
             }
-        } else {
+        }
+        else {
             writer.writeInt(0);
         }
     }

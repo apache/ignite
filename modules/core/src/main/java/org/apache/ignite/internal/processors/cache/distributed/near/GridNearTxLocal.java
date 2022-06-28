@@ -119,6 +119,7 @@ import org.apache.ignite.transactions.TransactionIsolation;
 import org.apache.ignite.transactions.TransactionState;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_READ;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.CREATE;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.DELETE;
@@ -684,9 +685,9 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                     -1L);
 
                 PLC1<GridCacheReturn> plc1 = new PLC1<GridCacheReturn>(ret) {
-                    @Override public GridCacheReturn postLock(GridCacheReturn ret)
-                        throws IgniteCheckedException
-                    {
+                    @Override public GridCacheReturn postLock(
+                        GridCacheReturn ret
+                    ) throws IgniteCheckedException {
                         if (log.isDebugEnabled())
                             log.debug("Acquired transaction lock for put on keys: " + enlisted);
 
@@ -976,9 +977,9 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                     -1L);
 
                 PLC1<GridCacheReturn> plc1 = new PLC1<GridCacheReturn>(ret) {
-                    @Override public GridCacheReturn postLock(GridCacheReturn ret)
-                        throws IgniteCheckedException
-                    {
+                    @Override public GridCacheReturn postLock(
+                        GridCacheReturn ret
+                    ) throws IgniteCheckedException {
                         if (log.isDebugEnabled())
                             log.debug("Acquired transaction lock for put on keys: " + enlisted);
 
@@ -1589,7 +1590,8 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                                         keepBinary,
                                         U.deploymentClassLoader(cctx.kernalContext(), deploymentLdrId)
                                     );
-                                } else
+                                }
+                                else
                                     ret.success(true);
                             }
                         }
@@ -2455,6 +2457,9 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                         }
 
                         if (readRepairStrategy != null) { // Checking and repairing each locked entry (if necessary).
+                            // Providing the guarantee that all copies are updated when read repair operation is finished.
+                            syncMode(FULL_SYNC);
+
                             return new GridNearReadRepairFuture(
                                 topVer != null ? topVer : topologyVersion(),
                                 cacheCtx,
@@ -2466,9 +2471,11 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                                 recovery,
                                 cacheCtx.cache().expiryPolicy(expiryPlc0),
                                 GridNearTxLocal.this)
-                                .chain((fut) -> {
+                                .init()
+                                .chain(
+                                    (fut) -> {
                                         try {
-                                            // For every fixed entry.
+                                            // For every repaired entry.
                                             for (Map.Entry<KeyCacheObject, EntryGetResult> entry : fut.get().entrySet()) {
                                                 EntryGetResult getRes = entry.getValue();
                                                 KeyCacheObject key = entry.getKey();
@@ -2491,7 +2498,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                                                     recovery,
                                                     null);
 
-                                                // Rewriting fixed, initially filled by explicit lock operation.
+                                                // Rewriting repaired, initially filled by explicit lock operation.
                                                 if (getRes != null)
                                                     cacheCtx.addResult(retMap,
                                                         key,
@@ -2811,7 +2818,8 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                             GridCacheVersion readVer = null;
                             EntryGetResult getRes = null;
 
-                            if ((!pessimistic() || (readCommitted() && !skipVals)) && readRepairStrategy == null) {
+                            if ((!pessimistic() || (readCommitted() && !skipVals)) &&
+                                readRepairStrategy == null) { // Read Repair must avoid local reads.
                                 IgniteCacheExpiryPolicy accessPlc =
                                     optimistic() ? accessPolicy(cacheCtx, txKey, expiryPlc) : null;
 
@@ -3809,8 +3817,8 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
     void readyNearLocks(GridDistributedTxMapping mapping,
         Collection<GridCacheVersion> pendingVers,
         Collection<GridCacheVersion> committedVers,
-        Collection<GridCacheVersion> rolledbackVers)
-    {
+        Collection<GridCacheVersion> rolledbackVers
+    ) {
         assert mapping.hasNearCacheEntries() : mapping;
 
         // Process writes, then reads.
@@ -3836,8 +3844,8 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         GridCacheVersion dhtVer,
         Collection<GridCacheVersion> pendingVers,
         Collection<GridCacheVersion> committedVers,
-        Collection<GridCacheVersion> rolledbackVers)
-    {
+        Collection<GridCacheVersion> rolledbackVers
+    ) {
         while (true) {
             GridCacheContext cacheCtx = txEntry.cached().context();
 

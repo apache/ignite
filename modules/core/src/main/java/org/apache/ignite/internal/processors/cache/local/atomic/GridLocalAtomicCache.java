@@ -1121,7 +1121,8 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
                                 validation = true;
 
                                 ctx.validateKeyAndValue(entry.key(), updated);
-                            } else if (ctx.statisticsEnabled() && !invokeEntry.modified())
+                            }
+                            else if (ctx.statisticsEnabled() && !invokeEntry.modified())
                                 ctx.cache().metrics0().onReadOnlyInvoke(old != null);
                         }
                         catch (Exception e) {

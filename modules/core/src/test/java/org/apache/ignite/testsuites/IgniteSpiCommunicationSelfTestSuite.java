@@ -17,6 +17,7 @@
 
 package org.apache.ignite.testsuites;
 
+import org.apache.ignite.spi.communication.tcp.ClientExceptionsUtilsTest;
 import org.apache.ignite.spi.communication.tcp.GridCacheDhtLockBackupSelfTest;
 import org.apache.ignite.spi.communication.tcp.GridSandboxedClientWithoutNetworkTest;
 import org.apache.ignite.spi.communication.tcp.GridTcpCommunicationInverseConnectionEstablishingTest;
@@ -47,7 +48,9 @@ import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpiFaultyClientSs
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpiFaultyClientTest;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpiFreezingClientTest;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpiHalfOpenedConnectionTest;
+import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpiInverseConnectionLoggingTest;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpiMultiJvmTest;
+import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpiNodeLeftLoggingTest;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpiSkipMessageSendTest;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationStatisticsTest;
 import org.apache.ignite.spi.communication.tcp.TooManyOpenFilesTcpCommunicationSpiTest;
@@ -109,6 +112,10 @@ import org.junit.runners.Suite;
 
     GridCacheDhtLockBackupSelfTest.class,
     TcpCommunicationHandshakeTimeoutTest.class,
+
+    TcpCommunicationSpiNodeLeftLoggingTest.class,
+    TcpCommunicationSpiInverseConnectionLoggingTest.class,
+    ClientExceptionsUtilsTest.class
 })
 public class IgniteSpiCommunicationSelfTestSuite {
 }

@@ -202,7 +202,8 @@ public class TxDeadlockCauseTest extends GridCommonAbstractTest {
                     }
 
                     tx.commit();
-                } catch (Exception e) {
+                }
+                catch (Exception e) {
                     ex.compareAndSet(null, e);
                 }
             }

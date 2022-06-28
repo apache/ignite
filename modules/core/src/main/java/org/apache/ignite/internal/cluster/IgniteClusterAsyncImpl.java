@@ -105,8 +105,8 @@ public class IgniteClusterAsyncImpl extends AsyncSupportAdapter<IgniteCluster>
     @Override public Collection<ClusterStartNodeResult> startNodes(File file,
         boolean restart,
         int timeout,
-        int maxConn)
-    {
+        int maxConn
+    ) {
         try {
             return saveOrGet(cluster.startNodesAsync0(file, restart, timeout, maxConn));
         }
@@ -127,8 +127,8 @@ public class IgniteClusterAsyncImpl extends AsyncSupportAdapter<IgniteCluster>
         @Nullable Map<String, Object> dflts,
         boolean restart,
         int timeout,
-        int maxConn)
-    {
+        int maxConn
+    ) {
         try {
             return saveOrGet(cluster.startNodesAsync0(hosts, dflts, restart, timeout, maxConn));
         }

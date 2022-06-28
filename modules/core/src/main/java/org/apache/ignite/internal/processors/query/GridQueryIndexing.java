@@ -208,9 +208,10 @@ public interface GridQueryIndexing {
      *
      * @param cacheInfo Cache context info.
      * @param rmvIdx If {@code true}, will remove index.
+     * @param clearIdx If {@code true}, will clear the index.
      * @throws IgniteCheckedException If failed to drop cache schema.
      */
-    public void unregisterCache(GridCacheContextInfo cacheInfo, boolean rmvIdx) throws IgniteCheckedException;
+    public void unregisterCache(GridCacheContextInfo cacheInfo, boolean rmvIdx, boolean clearIdx) throws IgniteCheckedException;
 
     /**
      *
@@ -462,4 +463,17 @@ public interface GridQueryIndexing {
     default Map<String, Integer> secondaryIndexesInlineSize() {
         return Collections.emptyMap();
     }
+
+    /**
+     * Checks if object of the specified class can be stored in the specified table column by the query engine.
+     *
+     * @param schemaName Schema name.
+     * @param tblName Table name.
+     * @param colName Name of the column.
+     * @param cls Class to perform check on.
+     * @return Whether object of the specified class can be successfully stored and accessed from the SQL column by the
+     *         query engine.
+     * @throws IgniteSQLException if table or column with specified name was not found.
+     */
+    boolean isConvertibleToColumnType(String schemaName, String tblName, String colName, Class<?> cls);
 }

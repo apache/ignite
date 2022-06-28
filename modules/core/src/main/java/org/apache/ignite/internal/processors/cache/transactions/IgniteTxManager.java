@@ -2305,8 +2305,8 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
     @Nullable private IgniteInternalFuture<Boolean> txsPreparedOrCommitted(final GridCacheVersion nearVer,
         int txNum,
         @Nullable GridFutureAdapter<Boolean> fut,
-        @Nullable Collection<GridCacheVersion> processedVers)
-    {
+        @Nullable Collection<GridCacheVersion> processedVers
+    ) {
         for (final IgniteInternalTx tx : activeTransactions()) {
             if (nearVer.equals(tx.nearXidVersion())) {
                 IgniteInternalFuture<?> prepFut = tx.currentPrepareFuture();
@@ -2975,7 +2975,8 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
     public void setTxOwnerDumpRequestsAllowedDistributed(boolean allowed) {
         try {
             distributedTransactionConfiguration.updateTxOwnerDumpRequestsAllowedAsync(allowed).get();
-        } catch (IgniteCheckedException e) {
+        }
+        catch (IgniteCheckedException e) {
             throw new IgniteException(e);
         }
     }
@@ -2994,7 +2995,8 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
 
         try {
             distributedTransactionConfiguration.updateLongTransactionTimeDumpThresholdAsync(threshold).get();
-        } catch (IgniteCheckedException e) {
+        }
+        catch (IgniteCheckedException e) {
             throw new IgniteException(e);
         }
     }
@@ -3010,7 +3012,8 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
 
         try {
             distributedTransactionConfiguration.updateTransactionTimeDumpSamplesCoefficientAsync(coefficient).get();
-        } catch (IgniteCheckedException e) {
+        }
+        catch (IgniteCheckedException e) {
             throw new IgniteException(e);
         }
     }
@@ -3027,7 +3030,8 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
 
         try {
             distributedTransactionConfiguration.updateLongTransactionTimeDumpSamplesPerSecondLimitAsync(limit).get();
-        } catch (IgniteCheckedException e) {
+        }
+        catch (IgniteCheckedException e) {
             throw new IgniteException(e);
         }
     }
@@ -3054,7 +3058,8 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
     public void longOperationsDumpTimeoutDistributed(long longOpsDumpTimeout) {
         try {
             distributedTransactionConfiguration.updateLongOperationsDumpTimeoutAsync(longOpsDumpTimeout).get();
-        } catch (IgniteCheckedException e) {
+        }
+        catch (IgniteCheckedException e) {
             throw new IgniteException(e);
         }
     }
@@ -3078,7 +3083,8 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
     public void collisionsDumpIntervalDistributed(int collisionsDumpInterval) {
         try {
             distributedTransactionConfiguration.updateCollisionsDumpIntervalAsync(collisionsDumpInterval).get();
-        } catch (IgniteCheckedException e) {
+        }
+        catch (IgniteCheckedException e) {
             throw new IgniteException(e);
         }
     }

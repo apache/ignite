@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -47,8 +48,13 @@ public class SnapshotHandlerRestoreTask extends AbstractSnapshotVerificationTask
     private IgniteLogger log;
 
     /** {@inheritDoc} */
-    @Override protected ComputeJob createJob(String snpName, String constId, Collection<String> groups) {
-        return new SnapshotHandlerRestoreJob(snpName, constId, groups);
+    @Override protected ComputeJob createJob(
+        String name,
+        @Nullable String path,
+        String constId,
+        Collection<String> groups
+    ) {
+        return new SnapshotHandlerRestoreJob(name, path, constId, groups);
     }
 
     /** {@inheritDoc} */
@@ -80,7 +86,8 @@ public class SnapshotHandlerRestoreTask extends AbstractSnapshotVerificationTask
         try {
             ignite.context().cache().context().snapshotMgr().handlers().completeAll(
                 SnapshotHandlerType.RESTORE, snapshotName, clusterResults, execNodes);
-        } catch (Exception e) {
+        }
+        catch (Exception e) {
             log.warning("The snapshot operation will be aborted due to a handler error [snapshot=" + snapshotName + "].", e);
 
             throw new IgniteException(e);
@@ -111,13 +118,18 @@ public class SnapshotHandlerRestoreTask extends AbstractSnapshotVerificationTask
         /** Cache group names. */
         private final Collection<String> grps;
 
+        /** Snapshot directory path. */
+        private final String snpPath;
+
         /**
          * @param snpName Snapshot name.
+         * @param snpPath Snapshot directory path.
          * @param consistentId String representation of the consistent node ID.
          * @param grps Cache group names.
          */
-        public SnapshotHandlerRestoreJob(String snpName, String consistentId, Collection<String> grps) {
+        public SnapshotHandlerRestoreJob(String snpName, @Nullable String snpPath, String consistentId, Collection<String> grps) {
             this.snpName = snpName;
+            this.snpPath = snpPath;
             this.consistentId = consistentId;
             this.grps = grps;
         }
@@ -126,10 +138,11 @@ public class SnapshotHandlerRestoreTask extends AbstractSnapshotVerificationTask
         @Override public Map<String, SnapshotHandlerResult<Object>> execute() {
             try {
                 IgniteSnapshotManager snpMgr = ignite.context().cache().context().snapshotMgr();
-                SnapshotMetadata meta = snpMgr.readSnapshotMetadata(snpName, consistentId);
-                SnapshotHandlerContext ctx = new SnapshotHandlerContext(meta, grps, ignite.localNode());
+                File snpDir = snpMgr.snapshotLocalDir(snpName, snpPath);
+                SnapshotMetadata meta = snpMgr.readSnapshotMetadata(snpDir, consistentId);
 
-                return snpMgr.handlers().invokeAll(SnapshotHandlerType.RESTORE, ctx);
+                return snpMgr.handlers().invokeAll(SnapshotHandlerType.RESTORE,
+                    new SnapshotHandlerContext(meta, grps, ignite.localNode(), snpDir));
             }
             catch (IgniteCheckedException e) {
                 throw new IgniteException(e);

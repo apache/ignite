@@ -144,13 +144,13 @@ public class CommandHandler {
     /**
      * @return prepared JULs logger.
      */
-    private Logger setupJavaLogger() {
-        Logger result = initLogger(CommandHandler.class.getName() + "Log");
+    public static Logger setupJavaLogger(String appName, Class<?> cls) {
+        Logger result = initLogger(cls.getName() + "Log");
 
         // Adding logging to file.
         try {
             String absPathPattern =
-                new File(JavaLoggerFileHandler.logDirectory(U.defaultWorkDirectory()), "control-utility-%g.log").getAbsolutePath();
+                new File(JavaLoggerFileHandler.logDirectory(U.defaultWorkDirectory()), appName + "-%g.log").getAbsolutePath();
 
             FileHandler fileHandler = new FileHandler(absPathPattern, 5 * 1024 * 1024, 5);
 
@@ -202,7 +202,7 @@ public class CommandHandler {
      *
      */
     public CommandHandler() {
-        logger = setupJavaLogger();
+        logger = setupJavaLogger("control-utility", CommandHandler.class);
     }
 
     /**

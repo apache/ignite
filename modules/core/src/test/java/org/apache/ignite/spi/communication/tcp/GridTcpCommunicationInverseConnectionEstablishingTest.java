@@ -19,13 +19,11 @@ package org.apache.ignite.spi.communication.tcp;
 
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.UnaryOperator;
-import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -42,7 +40,6 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.util.nio.GridCommunicationClient;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.plugin.extensions.communication.Message;
@@ -256,7 +253,7 @@ public class GridTcpCommunicationInverseConnectionEstablishingTest extends GridC
             ccfg = cacheConfiguration(CACHE_NAME, ATOMIC);
 
             startGrid(i, (UnaryOperator<IgniteConfiguration>)cfg -> {
-                ListeningTestLogger log = new ListeningTestLogger(false, cfg.getGridLogger());
+                ListeningTestLogger log = new ListeningTestLogger(cfg.getGridLogger());
 
                 log.registerListener(lsnr);
 
@@ -290,7 +287,7 @@ public class GridTcpCommunicationInverseConnectionEstablishingTest extends GridC
         ).build();
 
         startGrid(SRVS_NUM - 1, (UnaryOperator<IgniteConfiguration>)cfg -> {
-            ListeningTestLogger log = new ListeningTestLogger(false, cfg.getGridLogger());
+            ListeningTestLogger log = new ListeningTestLogger(cfg.getGridLogger());
 
             log.registerListener(lsnr);
 
@@ -324,16 +321,7 @@ public class GridTcpCommunicationInverseConnectionEstablishingTest extends GridC
      * closed connection won't automatically reopen when we don't expect it.
      */
     private void interruptCommWorkerThreads(String clientName) {
-        List<Thread> tcpCommWorkerThreads = Thread.getAllStackTraces().keySet().stream()
-            .filter(t -> t.getName().contains("tcp-comm-worker"))
-            .filter(t -> t.getName().contains(clientName))
-            .collect(Collectors.toList());
-
-        for (Thread tcpCommWorkerThread : tcpCommWorkerThreads) {
-            U.interrupt(tcpCommWorkerThread);
-
-            U.join(tcpCommWorkerThread, log);
-        }
+        CommunicationWorkerThreadUtils.interruptCommWorkerThreads(clientName, log);
     }
 
     /**

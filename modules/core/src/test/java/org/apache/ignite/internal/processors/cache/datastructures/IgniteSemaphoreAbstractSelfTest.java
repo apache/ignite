@@ -381,7 +381,8 @@ public abstract class IgniteSemaphoreAbstractSelfTest extends IgniteAtomicsAbstr
 
                             GridFutureAdapter fut = (GridFutureAdapter)(impl.internalFuture());
                             fut.onDone(true);
-                        } catch (InterruptedException e) {
+                        }
+                        catch (InterruptedException e) {
                             throw new RuntimeException(e.getMessage());
                         }
                     }

@@ -1412,8 +1412,8 @@ public class GridFunc {
     public static <T1, T2> Iterator<T2> iterator(final Iterator<? extends T1> c,
         final IgniteClosure<? super T1, T2> trans,
         final boolean readOnly,
-        @Nullable final IgnitePredicate<? super T1>... p)
-    {
+        @Nullable final IgnitePredicate<? super T1>... p
+    ) {
         A.notNull(c, "c", trans, "trans");
 
         if (isAlwaysFalse(p))
@@ -2079,36 +2079,6 @@ public class GridFunc {
             for (V v : c) {
                 if (isAny(v, p))
                     return v;
-            }
-        }
-
-        return dfltVal;
-    }
-
-    /**
-     * Finds, transforms and returns first element in given collection for which any of
-     * the provided predicates evaluates to {@code true}.
-     *
-     * @param c Input collection.
-     * @param dfltVal Default value to return when no element is found.
-     * @param f Transforming closure.
-     * @param p Optional set of finder predicates.
-     * @param <V> Type of the collection elements.
-     * @return First element in given collection for which predicate evaluates to
-     *      {@code true} - or {@code null} if such element cannot be found.
-     */
-    @Deprecated
-    public static <V, Y> Y find(Iterable<? extends V> c, @Nullable Y dfltVal, IgniteClosure<? super V, Y> f,
-        @Nullable IgnitePredicate<? super V>... p) {
-        A.notNull(c, "c", f, "f");
-
-        if (isAlwaysTrue(p) && c.iterator().hasNext())
-            return f.apply(c.iterator().next());
-
-        if (!isEmpty(p) && !isAlwaysFalse(p)) {
-            for (V v : c) {
-                if (isAny(v, p))
-                    return f.apply(v);
             }
         }
 

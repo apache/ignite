@@ -79,6 +79,13 @@ public class IndexProcessor extends GridProcessorAdapter {
      * Register inline IOs for sorted indexes.
      */
     static {
+        registerIO();
+    }
+
+    /**
+     * Register inline IOs for sorted indexes.
+     */
+    public static void registerIO() {
         PageIO.registerH2(InnerIO.VERSIONS, LeafIO.VERSIONS, MvccInnerIO.VERSIONS, MvccLeafIO.VERSIONS);
 
         AbstractInlineInnerIO.register();
@@ -140,8 +147,8 @@ public class IndexProcessor extends GridProcessorAdapter {
         throws IgniteSpiException {
         try {
             updateIndexes(cctx.name(), newRow, prevRow, prevRowAvailable);
-
-        } catch (IgniteCheckedException e) {
+        }
+        catch (IgniteCheckedException e) {
             throw new IgniteSpiException("Failed to store row in cache", e);
         }
     }
@@ -186,8 +193,8 @@ public class IndexProcessor extends GridProcessorAdapter {
     public void remove(String cacheName, @Nullable CacheDataRow prevRow) throws IgniteSpiException {
         try {
             updateIndexes(cacheName, null, prevRow, true);
-
-        } catch (IgniteCheckedException e) {
+        }
+        catch (IgniteCheckedException e) {
             throw new IgniteSpiException("Failed to remove row in cache", e);
         }
     }

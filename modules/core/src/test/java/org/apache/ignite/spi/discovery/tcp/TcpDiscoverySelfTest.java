@@ -2137,7 +2137,8 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
             assertEquals("Expected items in marshaller discovery data: 2, actual: "
                     + TestTcpDiscoveryMarshallerDataSpi.marshalledItems,
                     2, TestTcpDiscoveryMarshallerDataSpi.marshalledItems);
-        } finally {
+        }
+        finally {
             stopAllGrids();
         }
     }
@@ -2244,7 +2245,7 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
     public void testCheckRingLatency() throws Exception {
         int hops = 1;
 
-        ListeningTestLogger testLog = new ListeningTestLogger(false, log);
+        ListeningTestLogger testLog = new ListeningTestLogger(log);
 
         // We should discard ring check latency on server node.
         LogListener lsnr = LogListener.matches("Latency check has been discarded").times(hops).build();

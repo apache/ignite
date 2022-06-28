@@ -51,7 +51,8 @@ public class H2OMojoModel implements Model<NamedVector, Double> {
         try {
             AbstractPrediction prediction = easyPredict.predict(rowData);
             return extractRawValue(prediction);
-        } catch (PredictException e) {
+        }
+        catch (PredictException e) {
             throw new RuntimeException(e);
         }
     }

@@ -165,7 +165,7 @@ public class DummyQueryIndexing implements GridQueryIndexing {
     }
 
     /** {@inheritDoc} */
-    @Override public void unregisterCache(GridCacheContextInfo cacheInfo, boolean rmvIdx) throws IgniteCheckedException {
+    @Override public void unregisterCache(GridCacheContextInfo cacheInfo, boolean rmvIdx, boolean clearIdx) throws IgniteCheckedException {
 
     }
 
@@ -317,5 +317,10 @@ public class DummyQueryIndexing implements GridQueryIndexing {
         String tblNamePtrn,
         String colNamePtrn) {
         return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean isConvertibleToColumnType(String schemaName, String tblName, String colName, Class<?> cls) {
+        return false;
     }
 }

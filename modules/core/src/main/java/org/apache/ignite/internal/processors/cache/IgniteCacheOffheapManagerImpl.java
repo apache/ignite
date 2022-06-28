@@ -1252,7 +1252,8 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
                 try {
                     dataStore.insertRows(batch, initPred);
-                } finally {
+                }
+                finally {
                     ctx.database().checkpointReadUnlock();
                 }
 
@@ -1362,55 +1363,36 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         IgniteInClosure2X<GridCacheEntryEx, GridCacheVersion> c,
         int amount
     ) throws IgniteCheckedException {
-        long now = U.currentTimeMillis();
-
         GridCacheVersion obsoleteVer = null;
-
-        GridCursor<PendingRow> cur;
 
         cctx.shared().database().checkpointReadLock();
 
         try {
-            if (grp.sharedGroup())
-                cur = pendingEntries.find(new PendingRow(cctx.cacheId()), new PendingRow(cctx.cacheId(), now, 0));
-            else
-                cur = pendingEntries.find(null, new PendingRow(CU.UNDEFINED_CACHE_ID, now, 0));
-
-            if (!cur.next())
-                return 0;
+            int cacheId = grp.sharedGroup() ? cctx.cacheId() : CU.UNDEFINED_CACHE_ID;
 
             if (!busyLock.enterBusy())
                 return 0;
 
             try {
-                int cleared = 0;
+                List<PendingRow> rows = pendingEntries.remove(
+                    new PendingRow(cacheId, Long.MIN_VALUE, 0), new PendingRow(cacheId, U.currentTimeMillis(), 0), amount);
 
-                do {
-                    if (amount != -1 && cleared > amount)
-                        return cleared;
-
-                    PendingRow row = cur.get();
-
+                for (PendingRow row : rows) {
                     if (row.key.partition() == -1)
                         row.key.partition(cctx.affinity().partition(row.key));
 
                     assert row.key != null && row.link != 0 && row.expireTime != 0 : row;
 
-                    if (pendingEntries.removex(row)) {
-                        if (obsoleteVer == null)
-                            obsoleteVer = cctx.cache().nextVersion();
+                    if (obsoleteVer == null)
+                        obsoleteVer = cctx.cache().nextVersion();
 
-                        GridCacheEntryEx entry = cctx.cache().entryEx(row.key);
+                    GridCacheEntryEx entry = cctx.cache().entryEx(row.key);
 
-                        if (entry != null)
-                            c.apply(entry, obsoleteVer);
-                    }
-
-                    cleared++;
+                    if (entry != null)
+                        c.apply(entry, obsoleteVer);
                 }
-                while (cur.next());
 
-                return cleared;
+                return rows.size();
             }
             finally {
                 busyLock.leaveBusy();
@@ -1847,9 +1829,8 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             GridCacheVersion ver,
             long expireTime,
             MvccVersion mvccVer,
-            MvccVersion newMvccVer)
-            throws IgniteCheckedException
-        {
+            MvccVersion newMvccVer
+        ) throws IgniteCheckedException {
             assert mvccVer != null || newMvccVer == null : newMvccVer;
 
             if (!busyLock.enterBusy())
@@ -2689,9 +2670,11 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
          * @param oldRow Old row.
          * @throws IgniteCheckedException If failed.
          */
-        private void updatePendingEntries(GridCacheContext cctx, CacheDataRow newRow, @Nullable CacheDataRow oldRow)
-            throws IgniteCheckedException
-        {
+        private void updatePendingEntries(
+            GridCacheContext cctx,
+            CacheDataRow newRow,
+            @Nullable CacheDataRow oldRow
+        ) throws IgniteCheckedException {
             long expireTime = newRow.expireTime();
 
             int cacheId = grp.sharedGroup() ? cctx.cacheId() : CU.UNDEFINED_CACHE_ID;
@@ -2799,9 +2782,8 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         /** {@inheritDoc} */
         @Override public List<IgniteBiTuple<Object, MvccVersion>> mvccFindAllVersions(
             GridCacheContext cctx,
-            KeyCacheObject key)
-            throws IgniteCheckedException
-        {
+            KeyCacheObject key
+        ) throws IgniteCheckedException {
             assert grp.mvccEnabled();
 
             // Note: this method is intended for testing only.

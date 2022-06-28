@@ -47,7 +47,8 @@ public class ReducePartitionsSpecializer implements C2<ClusterNode, Message, Mes
             rq.queryPartitions(GridReduceQueryExecutor.toArray(partsMap.get(node)));
 
             return rq;
-        } else if (msg instanceof GridH2DmlRequest) {
+        }
+        else if (msg instanceof GridH2DmlRequest) {
             GridH2DmlRequest rq = new GridH2DmlRequest((GridH2DmlRequest)msg);
 
             rq.queryPartitions(GridReduceQueryExecutor.toArray(partsMap.get(node)));

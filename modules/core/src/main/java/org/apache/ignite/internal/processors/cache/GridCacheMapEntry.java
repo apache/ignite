@@ -2260,6 +2260,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         final boolean metrics,
         final boolean primary,
         final boolean verCheck,
+        final boolean readRepairRecovery,
         final AffinityTopologyVersion topVer,
         @Nullable final CacheEntryPredicate[] filter,
         final GridDrType drType,
@@ -2310,6 +2311,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 expiryPlc,
                 primary,
                 verCheck,
+                readRepairRecovery,
                 filter,
                 explicitTtl,
                 explicitExpireTime,
@@ -3481,7 +3483,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                             updateCntr,
                             mvccVer == null ? MvccUtils.INITIAL_VERSION : mvccVer
                         )));
-                    } else {
+                    }
+                    else {
                         cctx.group().wal().log(new DataRecord(new DataEntry(
                             cctx.cacheId(),
                             key,
@@ -5285,7 +5288,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
                 try {
                     res = cctx.offheap().mvccRemove(entry, mvccVer, tx.local(), needHistory, needOldVal, filter, needVal);
-                } finally {
+                }
+                finally {
                     cctx.shared().database().checkpointReadUnlock();
                 }
 
@@ -5609,7 +5613,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 try {
                     res = cctx.offheap().mvccUpdate(entry, val, newVer, expireTime, mvccVer, tx.local(), needHistory,
                         noCreate, needOldVal, filter, needVal, keepBinary, entryProc, invokeArgs);
-                } finally {
+                }
+                finally {
                     cctx.shared().database().checkpointReadUnlock();
                 }
 
@@ -5991,6 +5996,9 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         private final boolean verCheck;
 
         /** */
+        private final boolean readRepairRecovery;
+
+        /** */
         private final CacheEntryPredicate[] filter;
 
         /** */
@@ -6046,6 +6054,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             @Nullable IgniteCacheExpiryPolicy expiryPlc,
             boolean primary,
             boolean verCheck,
+            boolean readRepairRecovery,
             @Nullable CacheEntryPredicate[] filter,
             long explicitTtl,
             long explicitExpireTime,
@@ -6068,6 +6077,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             this.expiryPlc = expiryPlc;
             this.primary = primary;
             this.verCheck = verCheck;
+            this.readRepairRecovery = readRepairRecovery;
             this.filter = filter;
             this.explicitTtl = explicitTtl;
             this.explicitExpireTime = explicitExpireTime;
@@ -6183,7 +6193,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 }
             }
 
-            if (conflictCtx == null) {
+            if (conflictCtx == null && !readRepairRecovery) {
                 // Perform version check only in case there was no explicit conflict resolution.
                 versionCheck(invokeRes);
 
@@ -6702,8 +6712,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                         oldConflictVer.dataCenterId() == newConflictVer.dataCenterId() &&                 // and data centers are equal,
                         ATOMIC_VER_COMPARATOR.compare(oldConflictVer, newConflictVer) == 0 && // and both versions are equal,
                         cctx.writeThrough() &&                                                            // and store is enabled,
-                        primary)                                                                          // and we are primary.
-                    {
+                        primary) {                                                                          // and we are primary.
+
                         CacheObject val = entry.val;
 
                         if (val == null) {
@@ -7078,7 +7088,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             byte[] valBytes = val == null ? null : val.valueBytes(ctx);
 
             proc.context().updatePlatformCache(this.cctx.cacheId(), keyBytes, valBytes, partition(), ver);
-        } catch (Throwable e) {
+        }
+        catch (Throwable e) {
             U.error(log, "Failed to update Platform Cache: " + e);
         }
     }

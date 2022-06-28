@@ -498,6 +498,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                             }
 
                             txEntry.entryProcessorCalculatedValue(new T2<>(op, op == NOOP ? null : val));
+                            txEntry.noop(op == NOOP);
 
                             if (retVal) {
                                 if (err != null || procRes != null)
@@ -544,9 +545,6 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                             /*expiryPlc*/null,
                             /*keepBinary*/true);
                     }
-
-                    if (oldVal != null)
-                        oldVal.prepareMarshal(cacheCtx.cacheObjectContext());
 
                     txEntry.oldValue(oldVal);
                 }

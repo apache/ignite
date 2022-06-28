@@ -334,7 +334,8 @@ public class H2TreeIndex extends H2TreeIndexBase {
 
             super.destroy(rmvIdx);
 
-        } finally {
+        }
+        finally {
             if (msgLsnr != null)
                 ctx.io().removeMessageListener(msgTopic, msgLsnr);
         }
@@ -350,7 +351,8 @@ public class H2TreeIndex extends H2TreeIndexBase {
             queryIndex.destroy0(false, true);
 
             super.destroy(false);
-        } finally {
+        }
+        finally {
             if (msgLsnr != null)
                 ctx.io().removeMessageListener(msgTopic, msgLsnr);
         }

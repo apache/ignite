@@ -229,7 +229,8 @@ public class BinaryObjectOffheapImpl extends BinaryObjectExImpl implements Exter
             int len = BinaryPrimitives.readInt(ptr, start + GridBinaryMarshaller.DFLT_HDR_LEN + 1);
 
             return start + GridBinaryMarshaller.DFLT_HDR_LEN + len + 5;
-        } else
+        }
+        else
             return start + GridBinaryMarshaller.DFLT_HDR_LEN;
     }
 

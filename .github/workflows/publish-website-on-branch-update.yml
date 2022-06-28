@@ -1,0 +1,108 @@
+#
+# Licensed to the Apache Software Foundation (ASF) under one
+# or more contributor license agreements.  See the NOTICE file
+# distributed with this work for additional information
+# regarding copyright ownership.  The ASF licenses this file
+# to you under the Apache License, Version 2.0 (the
+# "License"); you may not use this file except in compliance
+# with the License.  You may obtain a copy of the License at
+#
+#   http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing,
+# software distributed under the License is distributed on an
+# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+# KIND, either express or implied.  See the License for the
+# specific language governing permissions and limitations
+# under the License.
+#
+
+#
+# The action to publish website on a push event to a branch with released Ignite.
+#
+# Note that GitHub Actions uses the workflow from a branch triggered by a push event.
+# So, any updates of this workflow should be cherry-picked to released branches.
+#
+name: Publish website documentation
+on:
+  push:
+    branches:
+      # Since ignite-2.10
+      - ignite-2.[0-9][0-9]
+      - ignite-2.[0-9][0-9].[0-9]
+    paths:
+      - docs/**
+
+concurrency:
+  group: publish-website-group
+
+jobs:
+  publish-documentation:
+    name: Publish documentation
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out 'ignite' repository code
+        uses: actions/checkout@v3
+
+      - name: Check that the version was released
+        run: |
+          mvn org.apache.maven.plugins:maven-enforcer-plugin:3.0.0-M3:enforce -Drules=requireReleaseDeps,requireReleaseVersion -pl modules/core
+
+      - name: Get the version from POM file
+        run: |
+          version=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)
+          echo "IGNITE_VERSION=$version" >> $GITHUB_ENV
+
+      - name: Check out 'ignite-website' repository code
+        uses: actions/checkout@v3
+        with:
+          repository: 'apache/ignite-website'
+          token: ${{ secrets.IGNITE_WEBSITE_BUILD }}
+
+      - name: Check that documentation was published for given version
+        run: |
+          if ! grep -Fxq "$IGNITE_VERSION" ./docs/available-versions.txt
+          then
+            echo "Documentation must be published for given version: $IGNITE_VERSION"
+            exit 1
+          fi
+
+      - name: Get latest version
+        run: |
+          latest_version=$(cat ./latest | grep "version" | cut -d'=' -f2)
+          echo "LATEST_VERSION=$latest_version" >> $GITHUB_ENV
+
+      - name: Install prerequisites
+        run: |
+          sudo apt-get install ruby-full build-essential zlib1g-dev
+          echo '# Install Ruby Gems to ~/gems' >> ~/.bashrc
+          echo 'export GEM_HOME="$HOME/gems"' >> ~/.bashrc
+          echo 'export PATH="$HOME/gems/bin:$PATH"' >> ~/.bashrc
+          source ~/.bashrc
+          sudo chown -R $(whoami) /var/lib/gems/*
+          gem install jekyll bundler
+
+      - name: Build
+        run: |
+          cd ./_docs
+          
+          if [[ "$IGNITE_VERSION" == "$LATEST_VERSION" ]]
+          then
+            echo "Building $IGNITE_VERSION version (latest)."
+            ./build.sh --version=$IGNITE_VERSION --github-branch=$GITHUB_REF_NAME --latest
+          else
+            echo "Building $IGNITE_VERSION version."
+            ./build.sh --version=$IGNITE_VERSION --github-branch=$GITHUB_REF_NAME
+          fi
+
+      - name: Commit and push
+        run: |
+          git config user.name github-actions
+          git config user.email github-actions@github.com
+          
+          git add --all
+          git commit -a -m "Update $IGNITE_VERSION documentation." -m "Commit: $GITHUB_SHA."
+          git push origin master
+          
+          echo "The documentation updated successfully. Check that the version was published successfully on"
+          echo "the Ignite website: https://ignite.apache.org/docs/latest/"

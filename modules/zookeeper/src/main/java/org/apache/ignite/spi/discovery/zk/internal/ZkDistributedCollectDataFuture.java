@@ -60,9 +60,8 @@ class ZkDistributedCollectDataFuture extends GridFutureAdapter<Void> {
         ZookeeperDiscoveryImpl impl,
         ZkRuntimeState rtState,
         String futPath,
-        Callable<Void> lsnr)
-        throws Exception
-    {
+        Callable<Void> lsnr
+    ) throws Exception {
         this.log = impl.log();
         this.futPath = futPath;
         this.lsnr = lsnr;

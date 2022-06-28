@@ -206,7 +206,8 @@ public class TxCrossCacheMapOnInvalidTopologyTest extends GridCommonAbstractTest
 
                         return true;
                     }
-                } else if (m instanceof GridDhtPartitionsFullMessage) {
+                }
+                else if (m instanceof GridDhtPartitionsFullMessage) {
                     GridDhtPartitionsFullMessage msg = (GridDhtPartitionsFullMessage)m;
 
                     // Delay full message for ideal topology switch.

@@ -73,7 +73,9 @@ public class WeightedMinkowskiDistance implements DistanceMeasure {
     }
 
     /** Returns weights. */
-    public double[] getWeights() { return weights.clone(); }
+    public double[] getWeights() {
+        return weights.clone();
+    }
 
     /**
      * {@inheritDoc}

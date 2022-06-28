@@ -26,13 +26,17 @@ import java.sql.SQLFeatureNotSupportedException;
 import java.sql.Statement;
 import java.util.concurrent.Callable;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.binary.BinaryInvalidTypeException;
+import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.cache.query.annotations.QuerySqlFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.processors.odbc.SqlStateCode;
+import org.apache.ignite.internal.util.lang.RunnableX;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.GridTestUtils.RunnableX;
 import org.junit.Ignore;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -1094,6 +1098,45 @@ public class JdbcThinStatementSelfTest extends JdbcThinAbstractSelfTest {
             " Data [val=" + rs.getInt(1) + ']',
             1,
             rs.getInt(1));
+    }
+
+    /**
+     *
+     */
+    @org.junit.Test
+    public void testExceptionOnDeserializeResponse() throws SQLException {
+        try (Connection c = connect(grid(0), null)) {
+            execute(c, "CREATE TABLE TEST_DESERIALIZE(id int primary key, name varchar, BINFIELD OTHER) WITH " +
+                "\"cache_name=TEST_DESERIALIZE,VALUE_TYPE=TEST_TYPE\"");
+
+            IgniteCache<Object, Object> cc = grid(0).cache("TEST_DESERIALIZE");
+
+            BinaryObjectBuilder bobFld = grid(0).binary().builder("TestType");
+            bobFld.setField("fld0", 0);
+
+            BinaryObjectBuilder bob = grid(0).binary().builder("TEST_TYPE");
+            bob.setField("NAME", "name0");
+            bob.setField("BINFIELD", bobFld.build());
+
+            cc.put(0, bob.build());
+
+            try (Statement stmt = c.createStatement()) {
+                SQLException ex = (SQLException)GridTestUtils.assertThrows(
+                    log,
+                    () -> stmt.executeQuery("SELECT * FROM TEST_DESERIALIZE"),
+                    SQLException.class,
+                    "Serialization error during sending an sql request"
+                );
+
+                assertEquals(SqlStateCode.DATA_EXCEPTION, ex.getSQLState());
+                assertTrue(X.hasCause(ex, "TestType", BinaryInvalidTypeException.class));
+
+                ResultSet rs = stmt.executeQuery("SELECT id FROM TEST_DESERIALIZE");
+
+                rs.next();
+                assertEquals(0, rs.getInt(1));
+            }
+        }
     }
 
     /** */

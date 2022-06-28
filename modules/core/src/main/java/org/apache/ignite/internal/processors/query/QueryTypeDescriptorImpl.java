@@ -44,6 +44,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.binary.BinaryUtils.typeName;
 import static org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode.KEY_SCALE_OUT_OF_RANGE;
 import static org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode.NULL_KEY;
 import static org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode.NULL_VALUE;
@@ -636,28 +637,9 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
                     isKey ? NULL_KEY : NULL_VALUE);
             }
 
-            if (validateTypes && propVal != null) {
-                if (!(propVal instanceof BinaryObject) || propVal instanceof BinaryArray) {
-                    if (!U.box(prop.type()).isAssignableFrom(U.box(propVal.getClass()))) {
-                        // Some reference type arrays end up being converted to Object[]
-                        if (!(prop.type().isArray() && BinaryUtils.isObjectArray(propVal.getClass()) &&
-                            Arrays.stream(BinaryUtils.rawArrayFromBinary(propVal)).
-                            noneMatch(x -> x != null && !U.box(prop.type().getComponentType()).isAssignableFrom(U.box(x.getClass())))))
-                        {
-                            throw new IgniteSQLException("Type for a column '" + prop.name() +
-                                "' is not compatible with table definition. Expected '" +
-                                prop.type().getSimpleName() + "', actual type '" +
-                                propVal.getClass().getSimpleName() + "'");
-                        }
-                    }
-                }
-                else if (coCtx.kernalContext().cacheObjects().typeId(prop.type().getName()) !=
-                        ((BinaryObject)propVal).type().typeId()) {
-                    throw new IgniteSQLException("Type for a column '" + prop.name() +
-                        "' is not compatible with table definition. Expected '" +
-                        prop.type().getSimpleName() + "', actual type '" +
-                        ((BinaryObject)propVal).type().typeName() + "'");
-                }
+            if (validateTypes && propVal != null && !isCompatibleWithPropertyType(propVal, prop.name(), prop.type())) {
+                throw new IgniteSQLException("Type for a column '" + prop.name() + "' is not compatible with table definition." +
+                    " Expected '" + prop.type().getSimpleName() + "', actual type '" + typeName(propVal) + "'");
             }
 
             if (propVal == null || prop.precision() == -1)
@@ -722,34 +704,45 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
                 if (propVal == null)
                     continue;
 
-                if (!(propVal instanceof BinaryObject) || propVal instanceof BinaryArray) {
-                    if (!U.box(propType).isAssignableFrom(U.box(propVal.getClass()))) {
-                        // Some reference type arrays end up being converted to Object[]
-                        if (!(propType.isArray() && BinaryUtils.isObjectArray(propVal.getClass()) &&
-                            Arrays.stream(BinaryUtils.rawArrayFromBinary(propVal)).
-                                noneMatch(x -> x != null && !U.box(propType.getComponentType()).isAssignableFrom(U.box(x.getClass())))))
-                        {
-                            throw new IgniteSQLException("Type for a column '" + idxField +
-                                "' is not compatible with index definition. Expected '" +
-                                propType.getSimpleName() + "', actual type '" +
-                                propVal.getClass().getSimpleName() + "'");
-                        }
-                    }
-                } else if (coCtx.kernalContext().cacheObjects().typeId(propType.getName()) !=
-                    ((BinaryObject)propVal).type().typeId()) {
-                    // Check for classes/enums implementing indexed interfaces.
-                    final Class<?> cls = U.classForName(((BinaryObject)propVal).type().typeName(), null, true);
-
-                    if ((cls == null && propType == Object.class) || (cls != null && propType.isAssignableFrom(cls)))
-                        continue;
-
-                    throw new IgniteSQLException("Type for a column '" + idxField +
-                        "' is not compatible with index definition. Expected '" +
-                        propType.getSimpleName() + "', actual type '" +
-                        ((BinaryObject)propVal).type().typeName() + "'");
+                if (!isCompatibleWithPropertyType(propVal, idxField, propType)) {
+                    throw new IgniteSQLException("Type for a column '" + idxField + "' is not compatible with index definition." +
+                        " Expected '" + prop.type().getSimpleName() + "', actual type '" + typeName(propVal) + "'");
                 }
             }
         }
+    }
+
+    /**
+     * Checks if the specified object is compatible with the type of the column through which this object will be accessed.
+     *
+     * @param val Object to check.
+     * @param colName Name of the column to which current property corresponds.
+     * @param expColType Type of the column based on Query Property info.
+     */
+    private boolean isCompatibleWithPropertyType(Object val, String colName, Class<?> expColType) {
+        if (!(val instanceof BinaryObject) || val instanceof BinaryArray) {
+            if (U.box(expColType).isAssignableFrom(U.box(val.getClass())))
+                return true;
+
+            GridQueryIndexing indexing = coCtx.kernalContext().query().getIndexing();
+
+            assert indexing != null;
+
+            if (indexing.isConvertibleToColumnType(schemaName, tableName(), colName, val.getClass()))
+                return true;
+
+            return expColType.isArray()
+                && BinaryUtils.isObjectArray(val.getClass())
+                && Arrays.stream(BinaryUtils.rawArrayFromBinary(val))
+                    .allMatch(x -> x == null || U.box(expColType.getComponentType()).isAssignableFrom(U.box(x.getClass())));
+        }
+        else if (coCtx.kernalContext().cacheObjects().typeId(expColType.getName()) != ((BinaryObject)val).type().typeId()) {
+            final Class<?> cls = U.classForName(((BinaryObject)val).type().typeName(), null, true);
+
+            return (cls == null && expColType == Object.class) || (cls != null && expColType.isAssignableFrom(cls));
+        }
+
+        return true;
     }
 
     /** {@inheritDoc} */

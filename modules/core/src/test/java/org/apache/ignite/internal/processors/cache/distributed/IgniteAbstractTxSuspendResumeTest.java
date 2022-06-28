@@ -119,6 +119,8 @@ public abstract class IgniteAbstractTxSuspendResumeTest extends GridCommonAbstra
         for (CacheConfiguration<Integer, Integer> ccfg : cacheConfigurations()) {
             grid(0).createCache(ccfg);
 
+            awaitCacheOnClient(client, ccfg.getName());
+
             if (ccfg.getCacheMode() != LOCAL && !FORCE_MVCC)
                 client.createNearCache(ccfg.getName(), new NearCacheConfiguration<>());
         }

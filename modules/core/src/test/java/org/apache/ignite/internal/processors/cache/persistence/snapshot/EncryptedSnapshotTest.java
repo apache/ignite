@@ -194,7 +194,7 @@ public class EncryptedSnapshotTest extends AbstractSnapshotSelfTest {
 
         ig = startGrids(2);
 
-        IdleVerifyResultV2 snpCheckRes = snp(ig).checkSnapshot(SNAPSHOT_NAME).get();
+        IdleVerifyResultV2 snpCheckRes = snp(ig).checkSnapshot(SNAPSHOT_NAME, null).get();
 
         for (Exception e : snpCheckRes.exceptions().values()) {
             if (e.getMessage().contains("different master key digest"))
@@ -236,7 +236,7 @@ public class EncryptedSnapshotTest extends AbstractSnapshotSelfTest {
 
             ig.cluster().state(ACTIVE);
 
-            IdleVerifyResultV2 snpCheckRes = snp(ig).checkSnapshot(SNAPSHOT_NAME).get();
+            IdleVerifyResultV2 snpCheckRes = snp(ig).checkSnapshot(SNAPSHOT_NAME, null).get();
 
             for (Exception e : snpCheckRes.exceptions().values()) {
                 if (e.getMessage().contains("has encrypted caches while encryption is disabled"))
@@ -284,7 +284,7 @@ public class EncryptedSnapshotTest extends AbstractSnapshotSelfTest {
         GridTestUtils.assertThrowsAnyCause(log,
             () -> snp(ig).registerSnapshotTask(SNAPSHOT_NAME, ig.localNode().id(),
                 F.asMap(CU.cacheId(dfltCacheCfg.getName()), null), false,
-                snp(ig).localSnapshotSenderFactory().apply(SNAPSHOT_NAME)).get(TIMEOUT),
+                snp(ig).localSnapshotSenderFactory().apply(SNAPSHOT_NAME, null)).get(TIMEOUT),
             IgniteCheckedException.class,
             "Metastore is required because it holds encryption keys");
     }

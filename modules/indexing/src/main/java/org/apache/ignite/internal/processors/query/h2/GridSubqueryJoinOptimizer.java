@@ -402,7 +402,7 @@ public class GridSubqueryJoinOptimizer {
         GridSqlAst where = subSel.where();
 
         if (where != null) {
-            if (target != null) {
+            if (target instanceof GridSqlJoin && childInd != GridSqlJoin.LEFT_TABLE_CHILD) {
                 GridSqlJoin join = (GridSqlJoin)target;
 
                 join.child(GridSqlJoin.ON_CHILD, new GridSqlOperation(AND, join.on(), where));
@@ -568,8 +568,8 @@ public class GridSubqueryJoinOptimizer {
     private static boolean pullOutSubQryFromInClause(
         GridSqlSelect parent,
         @Nullable GridSqlAst targetEl,
-        int childInd)
-    {
+        int childInd
+    ) {
         // extract sub-query
         GridSqlSubquery subQry = targetEl != null
             ? targetEl.child(childInd).child(1)

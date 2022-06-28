@@ -195,6 +195,8 @@ public class TxPessimisticDeadlockDetectionTest extends AbstractDeadlockDetectio
 
                 assertTrue(client.configuration().isClientMode());
 
+                awaitCacheOnClient(client, ccfg.getName());
+
                 client.createNearCache(ccfg.getName(), new NearCacheConfiguration<>());
             }
         }

@@ -420,7 +420,8 @@ public class IgniteCachePartitionLossPolicySelfTest extends GridCommonAbstractTe
 
                 if (safe)
                     assertEquals(1, objects.size());
-            } catch (Exception e) {
+            }
+            catch (Exception e) {
                 assertTrue(X.getFullStackTrace(e), X.hasCause(e, CacheInvalidStateException.class));
             }
 
@@ -428,7 +429,8 @@ public class IgniteCachePartitionLossPolicySelfTest extends GridCommonAbstractTe
                 runQuery(ig, cacheName, false, -1);
 
                 assertFalse("Query should have failed in safe mode with lost partitions", safe);
-            } catch (Exception e) {
+            }
+            catch (Exception e) {
                 assertTrue("Query must always work in unsafe mode", safe);
 
                 assertTrue(X.getFullStackTrace(e), X.hasCause(e, CacheInvalidStateException.class));
@@ -443,7 +445,8 @@ public class IgniteCachePartitionLossPolicySelfTest extends GridCommonAbstractTe
 
                     if (safe)
                         assertEquals(1, objects.size());
-                } catch (Exception e) {
+                }
+                catch (Exception e) {
                     assertTrue(X.getFullStackTrace(e), X.hasCause(e, CacheInvalidStateException.class));
                 }
             }
