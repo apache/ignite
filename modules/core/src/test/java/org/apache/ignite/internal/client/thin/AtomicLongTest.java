@@ -20,6 +20,7 @@ package org.apache.ignite.internal.client.thin;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Callable;
+import java.util.stream.Collectors;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.client.ClientAtomicConfiguration;
 import org.apache.ignite.client.ClientAtomicLong;
@@ -263,17 +264,16 @@ public class AtomicLongTest extends AbstractThinClientTest {
             assertEquals(3, al3.get());
         }
 
-        List<IgniteInternalCache<?, ?>> caches = new ArrayList<>(grid(0).cachesx());
-        assertEquals(3, caches.size());
+        List<IgniteInternalCache<?, ?>> caches = grid(0).cachesx().stream()
+                .filter(c -> c.name().contains(groupName))
+                .collect(Collectors.toList());
 
-        IgniteInternalCache<?, ?> replicatedCache = caches.get(1);
-        IgniteInternalCache<?, ?> defaultCache = caches.get(2);
+        assertEquals(1, caches.size());
+
+        IgniteInternalCache<?, ?> replicatedCache = caches.get(0);
 
         assertEquals("ignite-sys-atomic-cache@testSameNameDifferentOptions", replicatedCache.name());
-        assertEquals("ignite-sys-atomic-cache@default-ds-group", defaultCache.name());
-
         assertEquals(Integer.MAX_VALUE, replicatedCache.configuration().getBackups());
-        assertEquals(1, defaultCache.configuration().getBackups());
     }
 
     /**
