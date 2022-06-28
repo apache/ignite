@@ -71,7 +71,8 @@ public class ConnectionTest {
     public void testValidInvalidNodeAddressesMix() throws Exception {
         // TODO this is what happens:
         // Connection establishes on one channel, binaryCfg request is sent, onTopologyChanged is fired because of that,
-        // then initAllChannelsAsync starts in a separate thread, causing a live lock (?).
+        // then initAllChannelsAsync starts in a separate thread, tries to initialize connection to 127.0.0.1:47500, which hangs (WHY?)
+        // Main thread tries to close the same channel (ClientChannelHolder#close), waits on a lock, hangs.
         testConnection(IPv4_HOST, "127.0.0.1:47500", "127.0.0.1:10801", Config.SERVER);
     }
 
