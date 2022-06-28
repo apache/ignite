@@ -53,12 +53,12 @@ class ScanContext {
     }
 
     /** */
-    public void onPageIO(PageIO io, long addr) {
-        onPageIO(io, stats, 1, addr, store.getPageSize());
+    public void addToStats(PageIO io, long addr) {
+        addToStats(io, stats, 1, addr, store.getPageSize());
     }
 
     /** */
-    public static void onPageIO(PageIO io, Map<Class<? extends PageIO>, PagesStatistic> stats, long cnt, long addr, int pageSize) {
+    public static void addToStats(PageIO io, Map<Class<? extends PageIO>, PagesStatistic> stats, long cnt, long addr, int pageSize) {
         PagesStatistic stat = stats.computeIfAbsent(io.getClass(), k -> new PagesStatistic());
 
         stat.cnt += cnt;
@@ -66,15 +66,15 @@ class ScanContext {
     }
 
     /** */
-    public static void merge(
+    public static void addToStats(
         Class<? extends PageIO> io,
         Map<Class<? extends PageIO>, PagesStatistic> stats,
-        PagesStatistic stat0
+        PagesStatistic toAdd
     ) {
         PagesStatistic stat = stats.computeIfAbsent(io, k -> new PagesStatistic());
 
-        stat.cnt += stat0.cnt;
-        stat.freeSpace += stat0.freeSpace;
+        stat.cnt += toAdd.cnt;
+        stat.freeSpace += toAdd.freeSpace;
     }
 
     /** */

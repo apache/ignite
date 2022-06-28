@@ -41,20 +41,13 @@ import java.util.stream.LongStream;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.cache.query.index.IndexProcessor;
-import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypeSettings;
-import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypes;
-import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexKeyType;
-import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexKeyTypeRegistry;
-import org.apache.ignite.internal.cache.query.index.sorted.inline.io.AbstractInlineLeafIO;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.io.InlineIO;
-import org.apache.ignite.internal.cache.query.index.sorted.inline.types.NullableInlineIndexKeyType;
 import org.apache.ignite.internal.commandline.CommandHandler;
 import org.apache.ignite.internal.commandline.ProgressPrinter;
 import org.apache.ignite.internal.commandline.argument.parser.CLIArgumentParser;
 import org.apache.ignite.internal.commandline.indexreader.ScanContext.PagesStatistic;
 import org.apache.ignite.internal.commandline.systemview.SystemViewCommand;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
-import org.apache.ignite.internal.pagemem.PageUtils;
 import org.apache.ignite.internal.processors.cache.persistence.IndexStorageImpl;
 import org.apache.ignite.internal.processors.cache.persistence.StorageException;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStore;
@@ -158,7 +151,7 @@ public class IgniteIndexReader implements AutoCloseable {
         Pattern.compile("(?<id>[-0-9]{1,15})_.*");
 
     /** */
-    private static final int MAX_ERRO_CNT = 10;
+    private static final int MAX_ERRORS_CNT = 10;
 
     static {
         IndexProcessor.registerIO();
@@ -187,9 +180,6 @@ public class IgniteIndexReader implements AutoCloseable {
 
     /** */
     private final Set<Integer> missingPartitions = new HashSet<>();
-
-    /** If {@code True} then add page to {@link #pageIds} on read. */
-    private boolean addToPageIds = true;
 
     /** */
     private final Set<Long> pageIds = new HashSet<>();
@@ -412,7 +402,7 @@ public class IgniteIndexReader implements AutoCloseable {
                 try {
                     PagesListMetaIO io = readPage(idxStore, currMetaPageId, buf);
 
-                    ScanContext.onPageIO(io, stats, 1, addr, idxStore.getPageSize());
+                    ScanContext.addToStats(io, stats, 1, addr, idxStore.getPageSize());
 
                     Map<Integer, GridLongList> data = new HashMap<>();
 
@@ -465,16 +455,16 @@ public class IgniteIndexReader implements AutoCloseable {
             while (currPageId != 0) {
                 PagesListNodeIO io = readPage(idxStore, currPageId, nodeBuf);
 
-                ScanContext.onPageIO(io, stats, 1, nodeAddr, idxStore.getPageSize());
+                ScanContext.addToStats(io, stats, 1, nodeAddr, idxStore.getPageSize());
 
-                ScanContext.onPageIO(readPage(idxStore, currPageId, pageBuf), stats, 1, pageAddr, idxStore.getPageSize());
+                ScanContext.addToStats(readPage(idxStore, currPageId, pageBuf), stats, 1, pageAddr, idxStore.getPageSize());
 
                 res += io.getCount(nodeAddr);
 
                 for (int i = 0; i < io.getCount(nodeAddr); i++) {
                     long pageId = normalizePageId(io.getAt(nodeAddr, i));
 
-                    ScanContext.onPageIO(readPage(idxStore, pageId, pageBuf), stats, 1, pageAddr, idxStore.getPageSize());
+                    ScanContext.addToStats(readPage(idxStore, pageId, pageBuf), stats, 1, pageAddr, idxStore.getPageSize());
                 }
 
                 currPageId = io.getNextId(nodeAddr);
@@ -491,8 +481,6 @@ public class IgniteIndexReader implements AutoCloseable {
      * @throws IgniteCheckedException If failed.
      */
     private ScanContext scanIndexSequentially() throws IgniteCheckedException {
-        addToPageIds = false;
-
         long pagesNum = (idxStore.size() - idxStore.headerSize()) / pageSize;
 
         ProgressPrinter progressPrinter = createProgressPrinter("Reading pages sequentially", pagesNum);
@@ -506,7 +494,7 @@ public class IgniteIndexReader implements AutoCloseable {
                 try {
                     pageId = pageId(INDEX_PARTITION, FLAG_IDX, i);
 
-                    PageIO io = readPage(ctx, pageId, buf);
+                    PageIO io = readPage(ctx, pageId, buf, false);
 
                     progressPrinter.printProgress();
 
@@ -533,8 +521,6 @@ public class IgniteIndexReader implements AutoCloseable {
 
             return null;
         });
-
-        addToPageIds = true;
 
         return ctx;
     }
@@ -595,8 +581,8 @@ public class IgniteIndexReader implements AutoCloseable {
                                 ", link=" + cacheAwareLink.link + ']');
                         }
 
-                        if (errors.size() >= MAX_ERRO_CNT) {
-                            errors.add("Too many errors (" + MAX_ERRO_CNT +
+                        if (errors.size() >= MAX_ERRORS_CNT) {
+                            errors.add("Too many errors (" + MAX_ERRORS_CNT +
                                 ") found for partId=" + partId + ", stopping analysis for this partition.");
 
                             break;
@@ -695,14 +681,25 @@ public class IgniteIndexReader implements AutoCloseable {
         return pageId(partId(pageId), flag(pageId), pageIndex(pageId));
     }
 
+    /** */
+    private <I extends PageIO> I readPage(FilePageStore store, long pageId, ByteBuffer buf) throws IgniteCheckedException {
+        return readPage(store, pageId, buf, true);
+    }
+
     /**
      * Reads pages into buffer.
      *
      * @param store Source for reading pages.
      * @param pageId Page ID.
      * @param buf Buffer.
+     * @param addToPageIds If {@code true} then add page ID to global set.
      */
-    private <I extends PageIO> I readPage(FilePageStore store, long pageId, ByteBuffer buf) throws IgniteCheckedException {
+    private <I extends PageIO> I readPage(
+        FilePageStore store,
+        long pageId,
+        ByteBuffer buf,
+        boolean addToPageIds
+    ) throws IgniteCheckedException {
         try {
             store.read(pageId, (ByteBuffer)buf.rewind(), false);
 
@@ -725,9 +722,19 @@ public class IgniteIndexReader implements AutoCloseable {
 
     /** */
     protected <I extends PageIO> I readPage(ScanContext ctx, long pageId, ByteBuffer buf) throws IgniteCheckedException {
-        final I io = readPage(ctx.store, pageId, buf);
+        return readPage(ctx, pageId, buf, true);
+    }
 
-        ctx.onPageIO(io, bufferAddress(buf));
+    /** */
+    protected <I extends PageIO> I readPage(
+        ScanContext ctx,
+        long pageId,
+        ByteBuffer buf,
+        boolean addToPageIds
+    ) throws IgniteCheckedException {
+        final I io = readPage(ctx.store, pageId, buf, addToPageIds);
+
+        ctx.addToStats(io, bufferAddress(buf));
 
         return io;
     }
@@ -863,7 +870,7 @@ public class IgniteIndexReader implements AutoCloseable {
             log.info(prefix + "Index tree: " + idxName);
             printIoStat(prefix, "---- Page stat:", ctx.stats);
 
-            ctx.stats.forEach((cls, stat) -> ScanContext.merge(cls, stats, stat));
+            ctx.stats.forEach((cls, stat) -> ScanContext.addToStats(cls, stats, stat));
 
             log.info(prefix + "---- Count of items found in leaf pages: " + ctx.items.size());
 
@@ -1168,9 +1175,6 @@ public class IgniteIndexReader implements AutoCloseable {
 
             BPlusLeafIO<?> io = PageIO.getPageIO(addr);
 
-            if (io instanceof AbstractInlineLeafIO)
-                visitInline(addr, (AbstractInlineLeafIO)io, ctx);
-
             doWithoutErrors(() -> {
                 for (int i = 0; i < io.getCount(addr); i++) {
                     if (io instanceof IndexStorageImpl.MetaStoreLeafIO)
@@ -1181,52 +1185,6 @@ public class IgniteIndexReader implements AutoCloseable {
             }, ctx, PageIO.getPageId(addr));
 
             ctx.onLeafPage(PageIO.getPageId(addr), items);
-        }
-
-        /** */
-        private void visitInline(long addr, AbstractInlineLeafIO io, ScanContext ctx) {
-            int inlineSz = ((InlineIO)io).inlineSize();
-
-            // Use MetaPageInfo here.
-            IndexKeyTypeSettings settings = new IndexKeyTypeSettings();
-
-            for (int i = 0; i < io.getCount(addr); i++) {
-                int itemOff = io.offset(i);
-
-                int inlineOff = 0;
-
-                while (inlineOff < inlineSz) {
-                    int type0 = PageUtils.getByte(addr, itemOff + inlineOff);
-
-                    if (type0 == IndexKeyTypes.UNKNOWN || type0 == IndexKeyTypes.NULL) {
-                        inlineOff += 1;
-
-                        continue;
-                    }
-
-                    InlineIndexKeyType type = InlineIndexKeyTypeRegistry.get(type0, settings);
-
-                    // Page not zeroed when writing inline data.
-                    // We can't know wherer inline ends and garbage starts.
-                    // Using some kind of fuzzy logic here. Ignoring all errors.
-                    if (type == null)
-                        break;
-
-                    if (type.keySize() == -1) {
-                        try {
-                            // Assuming all variable length keys written using `writeBytes` method.
-                            inlineOff += NullableInlineIndexKeyType.readBytes(addr, itemOff + inlineOff).length;
-                        }
-                        catch (Throwable ignored) {
-                            break;
-                        }
-                    }
-                    else
-                        inlineOff += type.keySize();
-
-                    inlineOff++; // One more byte for type.
-                }
-            }
         }
 
         /** */
