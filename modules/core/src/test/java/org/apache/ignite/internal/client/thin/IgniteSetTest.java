@@ -18,9 +18,9 @@
 package org.apache.ignite.internal.client.thin;
 
 import com.google.common.collect.ImmutableList;
-import java.lang.reflect.Field;
 import java.util.NoSuchElementException;
 import java.util.Objects;
+import java.lang.reflect.Field;
 import org.apache.ignite.IgniteSet;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
@@ -298,11 +298,11 @@ public class IgniteSetTest extends AbstractThinClientTest {
 
         ClientIgniteSet<UserObj> set = client.set("testConfigPropagation", cfg);
 
-        GridCacheSetProxy serverSet = (GridCacheSetProxy) ignite(0).set(set.name(), serverCfg);
+        GridCacheSetProxy serverSet = (GridCacheSetProxy)ignite(0).set(set.name(), serverCfg);
 
         Field field = GridCacheSetProxy.class.getDeclaredField("cctx");
         field.setAccessible(true);
-        GridCacheContext cctx = (GridCacheContext) field.get(serverSet);
+        GridCacheContext cctx = (GridCacheContext)field.get(serverSet);
 
         assertTrue(set.colocated());
         assertFalse(set.removed());
@@ -520,7 +520,7 @@ public class IgniteSetTest extends AbstractThinClientTest {
         assertEquals(5, resObjects.length);
 
         for (Object k : resObjects)
-            assertTrue(keys.contains((Integer) k));
+            assertTrue(keys.contains((Integer)k));
     }
 
     /**
@@ -569,7 +569,7 @@ public class IgniteSetTest extends AbstractThinClientTest {
             if (o == null || getClass() != o.getClass()) {
                 return false;
             }
-            UserObj userObj = (UserObj) o;
+            UserObj userObj = (UserObj)o;
             return id == userObj.id && Objects.equals(val, userObj.val);
         }
 
