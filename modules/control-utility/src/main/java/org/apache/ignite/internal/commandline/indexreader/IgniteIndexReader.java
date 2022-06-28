@@ -881,6 +881,27 @@ public class IgniteIndexReader implements AutoCloseable {
 
             log.info(prefix + "---- Count of items found in leaf pages: " + ctx.items.size());
 
+            boolean hasInlineStat = ctx.inline != null && IntStream.of(ctx.inline).anyMatch(i -> i > 0);
+
+            if (hasInlineStat) {
+                log.info(prefix + "---- Inline usage statistics [inlineSize=" + ctx.inline.length + ']');
+
+                List<List<?>> data = new ArrayList<>(ctx.inline.length);
+                for (int i = 0; i < ctx.inline.length; i++) {
+                    if (ctx.inline[i] == 0)
+                        continue;
+
+                    data.add(Arrays.asList(prefix, i + 1, ctx.inline[i]));
+                }
+
+                SystemViewCommand.printTable(
+                    Arrays.asList(prefix, "used", "count"),
+                    Arrays.asList(STRING, NUMBER, NUMBER),
+                    data,
+                    log
+                );
+            }
+
             printErrors(
                 prefix,
                 "Errors:",
@@ -1201,6 +1222,9 @@ public class IgniteIndexReader implements AutoCloseable {
         private void visitInline(long addr, AbstractInlineLeafIO io, ScanContext ctx) {
             int inlineSz = ((InlineIO)io).inlineSize();
 
+            if (ctx.inline == null)
+                ctx.inline = new int[inlineSz];
+
             // Use MetaPageInfo here.
             IndexKeyTypeSettings settings = new IndexKeyTypeSettings();
 
@@ -1240,6 +1264,8 @@ public class IgniteIndexReader implements AutoCloseable {
 
                     inlineOff++; // One more byte for type.
                 }
+
+                ctx.inline[inlineOff - 1]++;
             }
         }
 

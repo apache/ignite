@@ -43,6 +43,13 @@ class ScanContext {
     /** List of items storage. */
     final ItemStorage items;
 
+    /**
+     * Inline usage statistics.
+     * Size of the array equal index inline size.
+     * Each cell contains count of item that use exact number of inline bytes.
+     */
+    int[] inline;
+
     /** */
     public ScanContext(int cacheId, FilePageStore store, ItemStorage items) {
         this.cacheId = cacheId;
