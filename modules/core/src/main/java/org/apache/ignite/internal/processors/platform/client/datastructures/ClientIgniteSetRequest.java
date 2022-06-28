@@ -17,64 +17,88 @@
 
 package org.apache.ignite.internal.processors.platform.client.datastructures;
 
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteSet;
 import org.apache.ignite.binary.BinaryRawReader;
-import org.apache.ignite.configuration.AtomicConfiguration;
-import org.apache.ignite.internal.processors.datastructures.GridCacheAtomicLongImpl;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientRequest;
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
 import org.apache.ignite.internal.processors.platform.client.ClientStatus;
 
 /**
- * Atomic long value request.
+ * Ignite set get or update request.
  */
-public class ClientAtomicLongRequest extends ClientRequest {
-    /** Atomic long name. */
+public class ClientIgniteSetRequest extends ClientRequest {
+    /** */
     private final String name;
 
-    /** Cache group name. */
-    private final String groupName;
+    /** */
+    private final int cacheId;
+
+    /** */
+    private final boolean collocated;
 
     /**
      * Constructor.
      *
      * @param reader Reader.
      */
-    public ClientAtomicLongRequest(BinaryRawReader reader) {
+    public ClientIgniteSetRequest(BinaryRawReader reader) {
         super(reader);
 
         name = reader.readString();
-        groupName = reader.readString();
+        cacheId = reader.readInt();
+        collocated = reader.readBoolean();
+    }
+
+    /** {@inheritDoc} */
+    @Override public ClientResponse process(ClientConnectionContext ctx) {
+        IgniteSet<Object> igniteSet = igniteSet(ctx);
+
+        if (igniteSet == null)
+            return notFoundResponse();
+
+        return process(igniteSet);
     }
 
     /**
-     * Gets the atomic long.
+     * Processes the request.
+     *
+     * @param set Ignite set.
+     * @return Response.
+     */
+    protected ClientResponse process(IgniteSet<Object> set) {
+        return new ClientResponse(requestId());
+    }
+
+    /**
+     * Gets the name.
+     *
+     * @return Set name.
+     */
+    protected String name() {
+        return name;
+    }
+
+    /**
+     * Gets the IgniteSet.
      *
      * @param ctx Context.
-     * @return Atomic long or null.
+     * @return IgniteSet or null.
      */
-    protected GridCacheAtomicLongImpl atomicLong(ClientConnectionContext ctx) {
-        AtomicConfiguration cfg = groupName == null ? null : new AtomicConfiguration().setGroupName(groupName);
-
-        try {
-            return (GridCacheAtomicLongImpl)ctx.kernalContext().dataStructures().atomicLong(name, cfg, 0, false);
-        }
-        catch (IgniteCheckedException e) {
-            throw new IgniteException(e.getMessage(), e);
-        }
+    protected <T> IgniteSet<T> igniteSet(ClientConnectionContext ctx) {
+        // Thin client only works in separated mode, because non-separated mode was discontinued earlier.
+        return ctx.kernalContext().grid().set(name, cacheId, collocated, true);
     }
 
     /**
-     * Gets a response for non-existent atomic long.
+     * Gets a response for non-existent set.
      *
-     * @return Response for non-existent atomic long.
+     * @return Response for non-existent set.
      */
     protected ClientResponse notFoundResponse() {
         return new ClientResponse(
                 requestId(),
                 ClientStatus.RESOURCE_DOES_NOT_EXIST,
-                String.format("AtomicLong with name '%s' does not exist.", name));
+                String.format("IgniteSet with name '%s' does not exist.", name));
     }
 }
