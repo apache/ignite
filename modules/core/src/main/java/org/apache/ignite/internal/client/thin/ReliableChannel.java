@@ -536,7 +536,7 @@ final class ReliableChannel implements AutoCloseable {
     /**
      * check ip address whether changed,after pod restart
      */
-    private boolean addressChanged(){
+    private boolean addressFinderAddressesChanged() {
         if (clientCfg.getAddressesFinder() != null) {
             String[] hostAddrs = clientCfg.getAddressesFinder().getAddresses();
             if(!Arrays.equals(hostAddrs, prevHostAddrs)){
