@@ -15,14 +15,11 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.configuration;
+package org.apache.ignite.client;
 
-import java.io.Serializable;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
-import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.lang.IgnitePredicate;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -30,28 +27,18 @@ import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 /**
  * Configuration for Ignite collections.
  */
-public class CollectionConfiguration implements Serializable {
-    /** */
-    private static final long serialVersionUID = 0L;
-
+public class ClientCollectionConfiguration {
     /** Cache atomicity mode. */
     private CacheAtomicityMode atomicityMode = ATOMIC;
 
     /** Cache mode. */
     private CacheMode cacheMode = PARTITIONED;
 
-    /** Node filter specifying nodes on which this cache should be deployed. */
-    private IgnitePredicate<ClusterNode> nodeFilter;
-
     /** Number of backups. */
     private int backups;
 
-    /** Off-heap memory size. */
-    @Deprecated
-    private long offHeapMaxMem = -1;
-
-    /** Collocated flag. */
-    private boolean collocated;
+    /** Colocated flag. */
+    private boolean colocated;
 
     /** Group name. */
     private String grpName;
@@ -59,19 +46,19 @@ public class CollectionConfiguration implements Serializable {
     /**
      * @return {@code True} if all items within the same collection will be collocated on the same node.
      */
-    public boolean isCollocated() {
-        return collocated;
+    public boolean isColocated() {
+        return colocated;
     }
 
     /**
-     * @param collocated If {@code true} then all items within the same collection will be collocated on the same node.
+     * @param colocated If {@code true} then all items within the same collection will be collocated on the same node.
      *      Otherwise elements of the same set maybe be cached on different nodes. This parameter works only
      *      collections stored in {@link CacheMode#PARTITIONED} cache.
      *
      * @return {@code this} for chaining.
      */
-    public CollectionConfiguration setCollocated(boolean collocated) {
-        this.collocated = collocated;
+    public ClientCollectionConfiguration setColocated(boolean colocated) {
+        this.colocated = colocated;
 
         return this;
     }
@@ -87,7 +74,7 @@ public class CollectionConfiguration implements Serializable {
      * @param atomicityMode Cache atomicity mode.
      * @return {@code this} for chaining.
      */
-    public CollectionConfiguration setAtomicityMode(CacheAtomicityMode atomicityMode) {
+    public ClientCollectionConfiguration setAtomicityMode(CacheAtomicityMode atomicityMode) {
         this.atomicityMode = atomicityMode;
 
         return this;
@@ -104,25 +91,8 @@ public class CollectionConfiguration implements Serializable {
      * @param cacheMode Cache mode.
      * @return {@code this} for chaining.
      */
-    public CollectionConfiguration setCacheMode(CacheMode cacheMode) {
+    public ClientCollectionConfiguration setCacheMode(CacheMode cacheMode) {
         this.cacheMode = cacheMode;
-
-        return this;
-    }
-
-    /**
-     * @return Predicate specifying on which nodes the cache should be started.
-     */
-    public IgnitePredicate<ClusterNode> getNodeFilter() {
-        return nodeFilter;
-    }
-
-    /**
-     * @param nodeFilter Predicate specifying on which nodes the cache should be started.
-     * @return {@code this} for chaining.
-     */
-    public CollectionConfiguration setNodeFilter(IgnitePredicate<ClusterNode> nodeFilter) {
-        this.nodeFilter = nodeFilter;
 
         return this;
     }
@@ -138,29 +108,8 @@ public class CollectionConfiguration implements Serializable {
      * @param backups Cache number of backups.
      * @return {@code this} for chaining.
      */
-    public CollectionConfiguration setBackups(int backups) {
+    public ClientCollectionConfiguration setBackups(int backups) {
         this.backups = backups;
-
-        return this;
-    }
-
-    /**
-     * @return Off-heap memory size.
-     * @deprecated No longer used.
-     */
-    @Deprecated
-    public long getOffHeapMaxMemory() {
-        return offHeapMaxMem;
-    }
-
-    /**
-     * @param offHeapMaxMemory Off-heap memory size.
-     * @return {@code this} for chaining.
-     * @deprecated No longer used.
-     */
-    @Deprecated
-    public CollectionConfiguration setOffHeapMaxMemory(long offHeapMaxMemory) {
-        offHeapMaxMem = offHeapMaxMemory;
 
         return this;
     }
@@ -176,7 +125,7 @@ public class CollectionConfiguration implements Serializable {
      * @param grpName Group name.
      * @return {@code this} for chaining.
      */
-    public CollectionConfiguration setGroupName(String grpName) {
+    public ClientCollectionConfiguration setGroupName(String grpName) {
         this.grpName = grpName;
 
         return this;
@@ -184,6 +133,6 @@ public class CollectionConfiguration implements Serializable {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(CollectionConfiguration.class, this);
+        return S.toString(ClientCollectionConfiguration.class, this);
     }
 }
