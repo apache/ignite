@@ -60,7 +60,7 @@ public class ClientIgniteSetGetOrCreateRequest extends ClientRequest {
 
     /** {@inheritDoc} */
     @Override public ClientResponse process(ClientConnectionContext ctx) {
-        GridCacheSetProxy<Object> set = (GridCacheSetProxy<Object>) ctx
+        GridCacheSetProxy<Object> set = (GridCacheSetProxy<Object>)ctx
                 .kernalContext()
                 .grid()
                 .set(name, collectionConfiguration);
@@ -103,7 +103,8 @@ public class ClientIgniteSetGetOrCreateRequest extends ClientRequest {
                 writer.writeBoolean(true);
                 writer.writeBoolean(collocated);
                 writer.writeInt(cacheId);
-            } else
+            }
+            else
                 writer.writeBoolean(false);
         }
     }
