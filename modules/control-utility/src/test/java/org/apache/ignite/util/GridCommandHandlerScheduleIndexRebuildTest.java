@@ -137,7 +137,7 @@ public class GridCommandHandlerScheduleIndexRebuildTest extends GridCommandHandl
 
     /** */
     private void startupTestCluster() throws Exception {
-        for (int i = 0; i < GRIDS_NUM; i++ )
+        for (int i = 0; i < GRIDS_NUM; i++)
             startGrid(i);
 
         IgniteEx ignite = grid(0);
@@ -157,8 +157,8 @@ public class GridCommandHandlerScheduleIndexRebuildTest extends GridCommandHandl
     }
 
     /**
-     * Checks error messages when trying to rebuild indexes for non-existent cache or when trying
-     * to rebuild non-existent indexes.
+     * Checks error messages when trying to rebuild indexes for non-existent cache, when trying
+     * to rebuild non-existent indexes or when not specifying any indexes inside the square brackets.
      */
     @Test
     public void testErrors() {
@@ -585,6 +585,7 @@ public class GridCommandHandlerScheduleIndexRebuildTest extends GridCommandHandl
                 continue;
 
             for (Index idx : gridH2Tbl.getIndexes()) {
+                // We need only indexes that can be rebuilt.
                 if (idx instanceof H2TreeIndexBase)
                     indexes.add(idx.getName());
             }

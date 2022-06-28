@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.cache.query.index.sorted.maintenance;
 
+import static java.util.stream.Collectors.joining;
+
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Base64;
@@ -25,7 +27,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.stream.Collectors;
 import org.apache.ignite.maintenance.MaintenanceTask;
 import org.jetbrains.annotations.Nullable;
 
@@ -105,7 +106,7 @@ public class MaintenanceRebuildIndexUtils {
      * <pre>
      * {@code
      * Map<Integer, Set<String>> cacheToIndexes = new HashMap<>();
-     * cacheToIndexes.put(CU.cacheId("some-cache"), singletone("some-index"));
+     * cacheToIndexes.put(CU.cacheId("some-cache"), singleton("some-index"));
      * MaintenanceTask task = toMaintenanceTask(cacheToIndexes);
      * }
      * </pre>
@@ -122,7 +123,7 @@ public class MaintenanceRebuildIndexUtils {
 
                 return cacheId + INDEX_REBUILD_PARAMETER_SEPARATOR + encodedIdxName;
             });
-        }).collect(Collectors.joining(INDEX_REBUILD_PARAMETER_SEPARATOR));
+        }).collect(joining(INDEX_REBUILD_PARAMETER_SEPARATOR));
 
         return new MaintenanceTask(
             INDEX_REBUILD_MNTC_TASK_NAME,

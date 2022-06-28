@@ -984,6 +984,20 @@ public class CommandHandlerParsingTest {
             IllegalArgumentException.class,
             "--group-names arg specified twice."
         );
+
+        GridTestUtils.assertThrows(
+            null,
+            () -> parseArgs(asList("--cache", "schedule_indexes_rebuild")),
+            IllegalArgumentException.class,
+            "--cache-names or --group-names must be specified."
+        );
+
+        GridTestUtils.assertThrows(
+            null,
+            () -> parseArgs(asList("--cache", "schedule_indexes_rebuild", "--cache-names", "foo[]")),
+            IllegalArgumentException.class,
+            "Square brackets must contain comma-separated indexes or not be used at all."
+        );
     }
 
     /** */
@@ -1004,6 +1018,7 @@ public class CommandHandlerParsingTest {
 
         CacheScheduleIndexesRebuild.Arguments arg1 = (Arguments)cacheCommand1.arg().subcommand().arg();
         assertEquals(normalizeScheduleIndexRebuildCacheNamesMap(params1), arg1.cacheToIndexes());
+        assertEquals(null, arg1.cacheGroups());
 
         Map<String, Set<String>> params2 = new HashMap<>();
         params2.put("cache1", new HashSet<>(Arrays.asList("foo", "bar")));
@@ -1020,6 +1035,7 @@ public class CommandHandlerParsingTest {
 
         CacheScheduleIndexesRebuild.Arguments arg2 = (Arguments)cacheCommand2.arg().subcommand().arg();
         assertEquals(normalized, arg2.cacheToIndexes());
+        assertEquals(new HashSet<>(Arrays.asList("foocache", "someGrp")), arg2.cacheGroups());
     }
 
     /**

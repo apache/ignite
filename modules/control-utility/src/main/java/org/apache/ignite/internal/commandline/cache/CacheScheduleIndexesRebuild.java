@@ -39,6 +39,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.visor.cache.index.ScheduleIndexRebuildTaskArg;
 import org.apache.ignite.internal.visor.cache.index.ScheduleIndexRebuildTaskRes;
+import org.jetbrains.annotations.Nullable;
 
 import static java.util.stream.Collectors.toSet;
 import static org.apache.ignite.internal.commandline.CommandLogger.INDENT;
@@ -61,20 +62,21 @@ public class CacheScheduleIndexesRebuild extends AbstractCommand<CacheScheduleIn
 
     /** {@inheritDoc} */
     @Override public void printUsage(Logger logger) {
-        String desc = "Schedules rebuild of the indexes for specified caches via the Maintenance Mode.";
+        String desc = "Schedules rebuild of the indexes for specified caches via the Maintenance Mode. Schedules rebuild of specified "
+            + "caches and cache-groups";
 
         Map<String, String> map = new LinkedHashMap<>(2);
 
-        map.put(NODE_ID.argName(), "(Optional) Specify node for indexes rebuild.");
+        map.put(NODE_ID.argName(), "(Optional) Specify node for indexes rebuild. If not specified, schedules rebuild on all nodes.");
 
         map.put(
             CACHE_NAMES_TARGET.argName(),
             "Comma-separated list of cache names with optionally specified indexes. If indexes are not specified then all indexes "
-            + "of the cache will be scheduled for the rebuild operation."
+            + "of the cache will be scheduled for the rebuild operation. Can be used simultaneously with cache group names."
         );
 
         map.put(CACHE_GROUPS_TARGET.argName(), "Comma-separated list of cache group names for which indexes should be scheduled for the "
-            + "rebuild.");
+            + "rebuild. Can be used simultaneously with cache names.");
 
         usageCache(
             logger,
@@ -144,12 +146,12 @@ public class CacheScheduleIndexesRebuild extends AbstractCommand<CacheScheduleIn
      * Prints missed caches' or cache groups' names.
      *
      * @param logger Logger.
-     * @param warning Warning message.
+     * @param message Message.
      * @param missed Missed caches or cache groups' names.
      */
-    private void printMissed(Logger logger, String warning, Set<String> missed) {
+    private void printMissed(Logger logger, String message, Set<String> missed) {
         if (!F.isEmpty(missed)) {
-            logger.info(warning);
+            logger.info(message);
 
             missed.stream()
                 .sorted()
@@ -196,16 +198,19 @@ public class CacheScheduleIndexesRebuild extends AbstractCommand<CacheScheduleIn
      */
     public static class Arguments {
         /** Node id. */
+        @Nullable
         private final UUID nodeId;
 
         /** Cache name -> indexes. */
+        @Nullable
         private final Map<String, Set<String>> cacheToIndexes;
 
         /** Cache groups' names. */
+        @Nullable
         private final Set<String> cacheGroups;
 
         /** */
-        private Arguments(UUID nodeId, Map<String, Set<String>> cacheToIndexes, Set<String> cacheGroups) {
+        private Arguments(@Nullable UUID nodeId, @Nullable Map<String, Set<String>> cacheToIndexes, @Nullable Set<String> cacheGroups) {
             this.nodeId = nodeId;
             this.cacheToIndexes = cacheToIndexes;
             this.cacheGroups = cacheGroups;
@@ -214,6 +219,7 @@ public class CacheScheduleIndexesRebuild extends AbstractCommand<CacheScheduleIn
         /**
          * @return Cache -> indexes map.
          */
+        @Nullable
         public Map<String, Set<String>> cacheToIndexes() {
             return cacheToIndexes;
         }
@@ -221,6 +227,7 @@ public class CacheScheduleIndexesRebuild extends AbstractCommand<CacheScheduleIn
         /**
          * @return Cache groups.
          */
+        @Nullable
         public Set<String> cacheGroups() {
             return cacheGroups;
         }
@@ -272,12 +279,18 @@ public class CacheScheduleIndexesRebuild extends AbstractCommand<CacheScheduleIn
                         found = true;
 
                         String cacheName = matcher.group(1);
+                        boolean specifiedIndexes = matcher.group(2) != null;
                         String commaSeparatedIndexes = matcher.group(3);
 
-                        if (F.isEmpty(commaSeparatedIndexes)) {
+                        if (!specifiedIndexes) {
                             cacheToIndexes.put(cacheName, Collections.emptySet());
 
                             continue;
+                        }
+
+                        if (F.isEmpty(commaSeparatedIndexes)) {
+                            throw new IllegalArgumentException("Square brackets must contain comma-separated indexes or not be used "
+                                + "at all.");
                         }
 
                         Set<String> indexes = Arrays.stream(commaSeparatedIndexes.split(",")).collect(toSet());
@@ -314,7 +327,7 @@ public class CacheScheduleIndexesRebuild extends AbstractCommand<CacheScheduleIn
         Set<String> cacheGroups = args.cacheGroups;
         Map<String, Set<String>> cacheToIndexes = args.cacheToIndexes;
 
-        if (cacheGroups == null && cacheToIndexes == null && cacheGroups.isEmpty() && cacheToIndexes.isEmpty())
+        if ((cacheGroups == null || cacheGroups.isEmpty()) && (cacheToIndexes == null || cacheToIndexes.isEmpty()))
             throw new IllegalArgumentException(CACHE_NAMES_TARGET + " or " + CACHE_GROUPS_TARGET + " must be specified.");
     }
 }

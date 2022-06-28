@@ -149,7 +149,7 @@ public class GridCommandHandlerIndexingUtils {
     public static void createAndFillCache(
         Ignite ignite,
         String cacheName,
-        String grpName,
+        @Nullable String grpName,
         @Nullable String dataRegionName,
         Map<QueryEntity, Function<Random, Object>> qryEntities,
         int cnt
