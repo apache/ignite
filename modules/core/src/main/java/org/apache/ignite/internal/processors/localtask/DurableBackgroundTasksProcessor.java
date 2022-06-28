@@ -374,8 +374,7 @@ public class DurableBackgroundTasksProcessor extends GridProcessorAdapter implem
     }
 
     /**
-     * Canceling tasks.
-     * Prohibiting the execution of tasks.
+     * Prohibit the execution of tasks and cancel tasks.
      */
     private void cancelTasks() {
         cancelLock.writeLock().lock();
@@ -392,7 +391,7 @@ public class DurableBackgroundTasksProcessor extends GridProcessorAdapter implem
     }
 
     /**
-     * Activating tasks and allowing the execution of tasks.
+     * Allow the execution of tasks and activate tasks.
      */
     private void activateTasks() {
         cancelLock.writeLock().lock();
