@@ -119,7 +119,7 @@ trait IgniteApi {
    * @param s Function to be called if operation is competed successfully.
    * @param f Function to be called if exception occurs.
    */
-  def txStart()(s: TransactionApi => Unit, f: Throwable => Unit = _ => ()): Unit
+  def txStart()(s: TransactionApi => Unit, f: Throwable => Unit): Unit
 
   /**
    * Starts the transaction with the provided concurrency and isolation.
@@ -129,9 +129,9 @@ trait IgniteApi {
    * @param s Function to be called if operation is competed successfully.
    * @param f Function to be called if exception occurs.
    */
-  def txStartEx(concurrency: TransactionConcurrency, isolation: TransactionIsolation)(
+  def txStart(concurrency: TransactionConcurrency, isolation: TransactionIsolation)(
     s: TransactionApi => Unit,
-    f: Throwable => Unit = _ => ()
+    f: Throwable => Unit
   ): Unit
 
   /**
@@ -144,9 +144,9 @@ trait IgniteApi {
    * @param s Function to be called if operation is competed successfully.
    * @param f Function to be called if exception occurs.
    */
-  def txStartEx2(concurrency: TransactionConcurrency, isolation: TransactionIsolation, timeout: Long, txSize: Int)(
+  def txStart(concurrency: TransactionConcurrency, isolation: TransactionIsolation, timeout: Long, txSize: Int)(
     s: TransactionApi => Unit,
-    f: Throwable => Unit = _ => ()
+    f: Throwable => Unit
   ): Unit
 
   /**

@@ -132,7 +132,7 @@ case class IgniteThinApi(wrapped: IgniteClient) extends IgniteApi with Completio
    * @param s @inheritdoc
    * @param f @inheritdoc
    */
-  override def txStartEx(
+  override def txStart(
     concurrency: TransactionConcurrency,
     isolation: TransactionIsolation
   )(s: TransactionApi => Unit, f: Throwable => Unit): Unit =
@@ -149,7 +149,7 @@ case class IgniteThinApi(wrapped: IgniteClient) extends IgniteApi with Completio
    * @param s @inheritdoc
    * @param f @inheritdoc
    */
-  override def txStartEx2(concurrency: TransactionConcurrency, isolation: TransactionIsolation, timeout: Long, txSize: Int)(
+  override def txStart(concurrency: TransactionConcurrency, isolation: TransactionIsolation, timeout: Long, txSize: Int)(
     s: TransactionApi => Unit,
     f: Throwable => Unit
   ): Unit =

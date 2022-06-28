@@ -1,0 +1,83 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.ignite.gatling
+
+import java.util.concurrent.atomic.AtomicInteger
+import java.util.concurrent.locks.Lock
+
+import javax.cache.processor.MutableEntry
+
+import scala.concurrent.duration.DurationInt
+
+import com.typesafe.scalalogging.StrictLogging
+import io.gatling.core.Predef._
+import org.apache.ignite.gatling.IgniteClientApi.NodeApi
+import org.apache.ignite.gatling.Predef._
+import org.apache.ignite.gatling.simulation.IgniteSupport
+import org.junit.Ignore
+import org.junit.Test
+
+/**
+ * Tests that locks work as expected and invoke accepts lambda.
+ */
+class LockedInvokeTest extends AbstractGatlingTest {
+  /** @inheritdoc */
+  override val simulation: String = "org.apache.ignite.gatling.LockedInvokeSimulation"
+
+  /**
+   * Tests simulation with thin client.
+   */
+  @Test
+  @Ignore("Not applicable for Ignite Client (thin) API")
+  override def thinClient(): Unit = ()
+
+  /**
+   * Tests simulation with thick client.
+   */
+  @Test
+  override def thickClient(): Unit = runWith(NodeApi)(simulation)
+}
+
+/**
+ * Tests that locks work as expected and invoke accepts lambda.
+ */
+class LockedInvokeSimulation extends Simulation with IgniteSupport with StrictLogging {
+  private val cache = "TEST-CACHE"
+  private val key = "1"
+  private val value = new AtomicInteger(0)
+  private val scn = scenario("LockedInvoke")
+    .feed(Iterator.continually(Map("value" -> value.incrementAndGet())))
+    .execIgnite(
+      create(cache).atomicity(TRANSACTIONAL),
+      lock(cache, key).check(
+        allResults[String, Lock].transform(a => a.values.head).saveAs("lock")
+      ),
+      put[String, Int](cache, key, "#{value}"),
+      invoke[String, Int, Unit](cache, key) { e: MutableEntry[String, Int] =>
+        e.setValue(-e.getValue)
+      },
+      get[String, Int](cache, key)
+        .check(
+          simpleCheck((m, session) => m(key) == -session("value").as[Int]),
+          allResults[String, Int].transform(a => -a.values.head).is("#{value}")
+        ),
+      unlock(cache, "#{lock}"),
+      close
+    )
+
+  setUp(scn.inject(rampUsers(20).during(1.second))).protocols(protocol).assertions(global.failedRequests.count.is(0))
+}

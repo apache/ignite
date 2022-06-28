@@ -75,9 +75,9 @@ class TransactionStartAction(requestName: Expression[String], params: Transactio
   ): (TransactionApi => Unit, Throwable => Unit) => Unit =
     if (isolation.isDefined && concurrency.isDefined) {
       if (timeout.isDefined) {
-        igniteApi.txStartEx2(params.concurrency.get, params.isolation.get, timeout.get, txSize.getOrElse(0))
+        igniteApi.txStart(params.concurrency.get, params.isolation.get, timeout.get, txSize.getOrElse(0))
       } else {
-        igniteApi.txStartEx(params.concurrency.get, params.isolation.get)
+        igniteApi.txStart(params.concurrency.get, params.isolation.get)
       }
     } else {
       igniteApi.txStart()
