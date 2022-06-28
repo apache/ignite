@@ -26,22 +26,35 @@ import org.apache.ignite.gatling.api.CacheApi
 import org.apache.ignite.gatling.api.IgniteApi
 import org.apache.ignite.gatling.builder.ignite.Configuration
 
-case class CreateCacheAction[K, V](
+/**
+ * Action for cache create Ignite operation.
+ *
+ * @tparam K Type of the cache key.
+ * @tparam V Type of the cache value.
+ * @param requestName Name of the request.
+ * @param cacheName Name of the cache.
+ * @param config Cache configuration.
+ * @param next Next action from chain to invoke upon this one completion.
+ * @param ctx Scenario context.
+ */
+class CreateCacheAction[K, V](
   requestName: Expression[String],
   cacheName: Expression[String],
   config: Configuration[K, V],
   next: Action,
   ctx: ScenarioContext
-) extends IgniteAction {
-
-  override val actionType: String = "createCache"
+) extends IgniteAction("createCache", requestName, ctx, next) {
 
   override val defaultRequestName: Expression[String] =
     s => cacheName(s).map(cacheName => s"$actionType $cacheName}")
 
-  override protected def execute(session: Session): Unit = withSession(session) {
+  /**
+   * @inheritdoc
+   * @param session Session
+   */
+  override protected def execute(session: Session): Unit = withSessionCheck(session) {
     for {
-      (resolvedRequestName, igniteApi, _) <- igniteParameters(session)
+      IgniteActionParameters(resolvedRequestName, igniteApi, _) <- resolveIgniteParameters(session)
       resolvedCacheName <- cacheName(session)
     } yield {
       logger.debug(s"session user id: #${session.userId}, before $name")

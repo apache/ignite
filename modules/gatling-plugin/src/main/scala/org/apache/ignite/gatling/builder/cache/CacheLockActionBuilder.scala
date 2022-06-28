@@ -40,5 +40,5 @@ case class CacheLockActionBuilder[K](
   def as(requestName: Expression[String]): ActionBuilder = this.copy(requestName = requestName)
 
   override def build(ctx: ScenarioContext, next: Action): Action =
-    CacheLockAction(requestName, cacheName, key, checks, next, ctx)
+    new CacheLockAction(requestName, cacheName, key, keepBinary = false, checks, next, ctx)
 }

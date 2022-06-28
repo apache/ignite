@@ -31,10 +31,27 @@ import org.apache.ignite.gatling.action.CacheAction
 import org.apache.ignite.gatling.api.CacheApi
 import org.apache.ignite.gatling.api.TransactionApi
 
-abstract class CacheInvokeAllAction[K, V, T] extends CacheAction[K, V] {
+/**
+ * Common functions for invokeAll actions of two flavours.
+ *
+ * @tparam K Type of the cache key.
+ * @tparam V Type of the cache value.
+ * @tparam T Type of the operation result.
+ */
+trait CacheInvokeAllAction[K, V, T] {
+  this: CacheAction[K, V] =>
+
+  /** Additional arguments to pass to the entry processor. */
   val arguments: Seq[Expression[Any]]
+  /** Collection of checks to perform against the operation result. */
   val checks: Seq[IgniteCheck[K, EntryProcessorResult[T]]]
 
+  /**
+   * Resolves entry processor arguments using the session context.
+   *
+   * @param session Session.
+   * @return List of the resolved arguments.
+   */
   def resolveArgs(session: Session): Validation[List[Any]] =
     arguments
       .foldLeft(List[Any]().success) { case (r, v) =>
@@ -42,6 +59,15 @@ abstract class CacheInvokeAllAction[K, V, T] extends CacheAction[K, V] {
       }
       .map(l => l.reverse)
 
+  /**
+   * @inheritdoc
+   * @param session Session
+   * @param resolvedRequestName Name of request.
+   * @param cacheApi Instance of CacheApi.
+   * @param transactionApi Instance of TransactionApi.
+   * @param resolvedMap Resolved map from cache entry key to entry processor instanece.
+   * @param resolvedArguments Resolved entry processor arguments.
+   */
   def execute(
     session: Session,
     resolvedRequestName: String,
@@ -53,51 +79,92 @@ abstract class CacheInvokeAllAction[K, V, T] extends CacheAction[K, V] {
 
     logger.debug(s"session user id: #${session.userId}, before $name")
 
-    val call = transactionApi
+    val func = transactionApi
       .map(_ => cacheApi.invokeAll(resolvedMap, resolvedArguments) _)
       .getOrElse(cacheApi.invokeAllAsync(resolvedMap, resolvedArguments) _)
 
-    callWithCheck(call, resolvedRequestName, session, checks)
+    call(func, resolvedRequestName, session, checks)
   }
 }
 
-case class CacheInvokeAllMapAction[K, V, T](
+/**
+ * Action for the invokeAll Ignite operation in case its own cache processor instance
+ * was provided for each cache entry.
+ *
+ * @tparam K Type of the cache key.
+ * @tparam V Type of the cache value.
+ * @tparam T Type of the operation result.
+ * @param requestName Name of the request.
+ * @param cacheName Name of cache.
+ * @param map Map from cache entry key to CacheEntryProcessor to invoke for this particular entry.
+ * @param arguments Additional arguments to pass to the entry processor.
+ * @param keepBinary True if it should operate with binary objects.
+ * @param checks Collection of checks to perform against the operation result.
+ * @param next Next action from chain to invoke upon this one completion.
+ * @param ctx Scenario context.
+ */
+class CacheInvokeAllMapAction[K, V, T](
   requestName: Expression[String],
   cacheName: Expression[String],
   map: Expression[Map[K, CacheEntryProcessor[K, V, T]]],
-  arguments: Seq[Expression[Any]],
-  checks: Seq[IgniteCheck[K, EntryProcessorResult[T]]],
+  val arguments: Seq[Expression[Any]],
+  keepBinary: Boolean,
+  val checks: Seq[IgniteCheck[K, EntryProcessorResult[T]]],
   next: Action,
   ctx: ScenarioContext
-) extends CacheInvokeAllAction[K, V, T] {
+) extends CacheAction[K, V]("invokeAll", requestName, ctx, next, cacheName, keepBinary)
+    with CacheInvokeAllAction[K, V, T] {
 
-  override val actionType: String = "invokeAll"
-
-  override protected def execute(session: Session): Unit = withSession(session) {
+  /**
+   * @inheritdoc
+   * @param session Session
+   */
+  override protected def execute(session: Session): Unit = withSessionCheck(session) {
     for {
-      CommonParameters(resolvedRequestName, cacheApi, transactionApi) <- cacheParameters(session)
+      CacheActionParameters(resolvedRequestName, cacheApi, transactionApi) <- resolveCacheParameters(session)
       resolvedMap <- map(session)
       resolvedArguments <- resolveArgs(session)
     } yield execute(session, resolvedRequestName, cacheApi, transactionApi, resolvedMap, resolvedArguments)
   }
 }
 
-case class CacheInvokeAllSingleProcessorAction[K, V, T](
+/**
+ * Action for the invokeAll Ignite operation in case a single cache processor should
+ * be executed for all cache entries.
+ *
+ * @tparam K Type of the cache key.
+ * @tparam V Type of the cache value.
+ * @tparam T Type of the operation result.
+ * @param requestName Name of the request.
+ * @param cacheName Name of cache.
+ * @param keys Collection of cache entry keys.
+ * @param processor Instance of CacheEntryProcessor.
+ * @param arguments Additional arguments to pass to the entry processor.
+ * @param keepBinary True if it should operate with binary objects.
+ * @param checks Collection of checks to perform against the operation result.
+ * @param next Next action from chain to invoke upon this one completion.
+ * @param ctx Scenario context.
+ */
+class CacheInvokeAllSingleProcessorAction[K, V, T](
   requestName: Expression[String],
   cacheName: Expression[String],
   keys: Expression[Set[K]],
   processor: CacheEntryProcessor[K, V, T],
-  arguments: Seq[Expression[Any]],
-  checks: Seq[IgniteCheck[K, EntryProcessorResult[T]]],
+  val arguments: Seq[Expression[Any]],
+  keepBinary: Boolean,
+  val checks: Seq[IgniteCheck[K, EntryProcessorResult[T]]],
   next: Action,
   ctx: ScenarioContext
-) extends CacheInvokeAllAction[K, V, T] {
+) extends CacheAction[K, V]("invokeAll", requestName, ctx, next, cacheName, keepBinary)
+    with CacheInvokeAllAction[K, V, T] {
 
-  override val actionType: String = "invokeAll"
-
-  override protected def execute(session: Session): Unit = withSession(session) {
+  /**
+   * @inheritdoc
+   * @param session Session
+   */
+  override protected def execute(session: Session): Unit = withSessionCheck(session) {
     for {
-      CommonParameters(resolvedRequestName, cacheApi, transactionApi) <- cacheParameters(session)
+      CacheActionParameters(resolvedRequestName, cacheApi, transactionApi) <- resolveCacheParameters(session)
       resolvedKeys <- keys(session)
       resolvedMap <- resolvedKeys.map(k => (k, processor)).toMap.success
       resolvedArguments <- resolveArgs(session)

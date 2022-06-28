@@ -38,5 +38,5 @@ case class CacheGetAndRemoveActionBuilder[K, V](
   def as(requestName: Expression[String]): ActionBuilder = this.copy(requestName = requestName)
 
   override def build(ctx: ScenarioContext, next: Action): Action =
-    CacheGetAndRemoveAction(requestName, cacheName, key, checks, next, ctx)
+    new CacheGetAndRemoveAction(requestName, cacheName, key, keepBinary = false, checks, next, ctx)
 }

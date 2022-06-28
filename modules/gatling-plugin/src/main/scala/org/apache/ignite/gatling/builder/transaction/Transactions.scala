@@ -75,22 +75,22 @@ case class TransactionCommitActionBuilder(requestName: Expression[String] = Empt
   def as(requestName: Expression[String]): ActionBuilder = this.copy(requestName = requestName)
 
   override def build(ctx: ScenarioContext, next: Action): TransactionCommitAction =
-    TransactionCommitAction(requestName, next, ctx)
+    new TransactionCommitAction(requestName, next, ctx)
 }
 
 case class TransactionRollbackActionBuilder(requestName: Expression[String] = EmptyStringExpressionSuccess) extends IgniteActionBuilder {
   def as(requestName: Expression[String]): ActionBuilder = this.copy(requestName = requestName)
 
   override def build(ctx: ScenarioContext, next: Action): TransactionRollbackAction =
-    TransactionRollbackAction(requestName, next, ctx)
+    new TransactionRollbackAction(requestName, next, ctx)
 }
 
 case class TransactionStartBuilder(requestName: Expression[String], params: TransactionParameters) extends IgniteActionBuilder {
   override def build(ctx: ScenarioContext, next: Action): Action =
-    TransactionStartAction(requestName, TransactionParameters(), next, ctx)
+    new TransactionStartAction(requestName, TransactionParameters(), next, ctx)
 }
 
 case class TransactionCloseBuilder(requestName: Expression[String]) extends IgniteActionBuilder {
   override def build(ctx: ScenarioContext, next: Action): Action =
-    TransactionCloseAction(requestName, next, ctx)
+    new TransactionCloseAction(requestName, next, ctx)
 }

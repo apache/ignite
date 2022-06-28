@@ -26,13 +26,14 @@ import io.gatling.core.structure.ScenarioBuilder
 import org.apache.ignite.gatling.builder.cache.Cache
 import org.apache.ignite.gatling.builder.ignite.Ignite
 import org.apache.ignite.gatling.builder.transaction.Transactions
-import org.apache.ignite.gatling.check.IgniteCheckSupport
+import org.apache.ignite.gatling.check.IgniteKeyValueCheckSupport
+import org.apache.ignite.gatling.check.IgniteSqlCheckSupport
 import org.apache.ignite.gatling.protocol.IgniteProtocol
 import org.apache.ignite.gatling.protocol.IgniteProtocolBuilder
 import org.apache.ignite.gatling.protocol.IgniteProtocolBuilderBase
 import org.apache.ignite.gatling.protocol.IgniteProtocolBuilderManualStartStep
 
-trait IgniteDsl extends IgniteCheckSupport with Transactions with Cache with Ignite {
+trait IgniteDsl extends Ignite with Transactions with Cache with IgniteKeyValueCheckSupport with IgniteSqlCheckSupport {
 
   val ignite: IgniteProtocolBuilderBase.type = IgniteProtocolBuilderBase
 

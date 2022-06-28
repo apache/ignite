@@ -36,5 +36,5 @@ case class CacheUnlockActionBuilder(
   def as(requestName: Expression[String]): ActionBuilder = this.copy(requestName = requestName)
 
   override def build(ctx: ScenarioContext, next: Action): Action =
-    CacheUnlockAction(requestName, cacheName, lock, next, ctx)
+    new CacheUnlockAction(requestName, cacheName, lock, keepBinary = false, next, ctx)
 }

@@ -18,6 +18,7 @@
 package org.apache.ignite.gatling.action.cache
 
 import io.gatling.commons.validation.SuccessWrapper
+import io.gatling.commons.validation.Validation
 import io.gatling.core.action.Action
 import io.gatling.core.session.Expression
 import io.gatling.core.session.Session
@@ -26,29 +27,53 @@ import org.apache.ignite.cache.query.SqlFieldsQuery
 import org.apache.ignite.gatling.SqlCheck
 import org.apache.ignite.gatling.action.CacheAction
 
-case class CacheSqlAction[K, V](
+/**
+ * Action for the SQL query Ignite operation.
+ *
+ * @tparam K Type of the cache key.
+ * @tparam V Type of the cache value.
+ * @param requestName Name of the request.
+ * @param cacheName Name of cache.
+ * @param sql SQL query.
+ * @param args Collection of positional arguments for SQL query (may be empty).
+ * @param partitions List of cache partitions to use for query (may be empty).
+ * @param keepBinary True if it should operate with binary objects.
+ * @param checks Collection of checks to perform against the operation result.
+ * @param next Next action from chain to invoke upon this one completion.
+ * @param ctx Scenario context.
+ */
+class CacheSqlAction[K, V](
   requestName: Expression[String],
   cacheName: Expression[String],
   sql: Expression[String],
   args: Seq[Expression[Any]],
   partitions: Expression[List[Int]],
+  keepBinary: Boolean,
   checks: Seq[SqlCheck],
   next: Action,
   ctx: ScenarioContext
-) extends CacheAction[K, V] {
+) extends CacheAction[K, V]("sql", requestName, ctx, next, cacheName, keepBinary) {
 
-  override val actionType: String = "sql"
-
-  private def resolveArgs(session: Session) =
+  /**
+   * Resolves SQL query arguments using the session context.
+   *
+   * @param session Session.
+   * @return List of the resolved arguments.
+   */
+  private def resolveArgs(session: Session): Validation[List[Any]] =
     args
       .foldLeft(List[Any]().success) { case (r, v) =>
         r.flatMap(m => v(session).map(rv => rv :: m))
       }
       .map(l => l.reverse)
 
-  override protected def execute(session: Session): Unit = withSession(session) {
+  /**
+   * @inheritdoc
+   * @param session Session
+   */
+  override protected def execute(session: Session): Unit = withSessionCheck(session) {
     for {
-      CommonParameters(resolvedRequestName, cacheApi, _) <- cacheParameters(session)
+      CacheActionParameters(resolvedRequestName, cacheApi, _) <- resolveCacheParameters(session)
       resolvedSql <- sql(session)
       resolvedArgs <- resolveArgs(session)
       resolvedPartitions <- partitions(session)
@@ -64,9 +89,9 @@ case class CacheSqlAction[K, V](
         query.setPartitions(resolvedPartitions: _*)
       }
       query.setSchema("PUBLIC")
-      val call = cacheApi.sql(query) _
+      val func = cacheApi.sql(query) _
 
-      callWithCheck(call, resolvedRequestName, session, checks)
+      call(func, resolvedRequestName, session, checks)
     }
   }
 }

@@ -30,14 +30,24 @@ import org.apache.ignite.gatling.protocol.IgniteProtocol.TRANSACTION_API_SESSION
 import org.apache.ignite.transactions.TransactionConcurrency
 import org.apache.ignite.transactions.TransactionIsolation
 
-case class TransactionStartAction(requestName: Expression[String], params: TransactionParameters, next: Action, ctx: ScenarioContext)
-    extends IgniteAction {
+/**
+ * Action for the transaction rollback Ignite operation.
+ *
+ * @param requestName Name of the request.
+ * @param params Transaction parameters.
+ * @param next Next action from chain to invoke upon this one completion.
+ * @param ctx Scenario context.
+ */
+class TransactionStartAction(requestName: Expression[String], params: TransactionParameters, next: Action, ctx: ScenarioContext)
+    extends IgniteAction("txStart", requestName, ctx, next) {
 
-  override val actionType: String = "txStart"
-
-  override protected def execute(session: Session): Unit = withSession(session) {
+  /**
+   * @inheritdoc
+   * @param session Session
+   */
+  override protected def execute(session: Session): Unit = withSessionCheck(session) {
     for {
-      (resolvedRequestName, igniteApi, _) <- igniteParameters(session)
+      IgniteActionParameters(resolvedRequestName, igniteApi, _) <- resolveIgniteParameters(session)
       resolvedTimeout <- params.timeout.map(e => e(session).map(l => Some(l))).getOrElse(Success(Option.empty[Long]))
       resolvedTxSize <- params.txSize.map(e => e(session).map(l => Some(l))).getOrElse(Success(Option.empty[Int]))
     } yield {
@@ -49,7 +59,7 @@ case class TransactionStartAction(requestName: Expression[String], params: Trans
         func,
         resolvedRequestName,
         session,
-        (session, transactionApi: Option[TransactionApi]) =>
+        updateSession = (session, transactionApi: Option[TransactionApi]) =>
           transactionApi
             .map(transactionApi => session.set(TRANSACTION_API_SESSION_KEY, transactionApi))
             .getOrElse(session)

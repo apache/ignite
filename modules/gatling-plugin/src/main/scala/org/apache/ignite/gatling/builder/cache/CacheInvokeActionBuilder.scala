@@ -65,5 +65,5 @@ case class CacheInvokeActionBuilder[K, V, T](
   def as(requestName: Expression[String]): ActionBuilder = this.copy(requestName = requestName)
 
   override def build(ctx: ScenarioContext, next: Action): Action =
-    CacheInvokeAction[K, V, T](requestName, cacheName, key, entryProcessor, arguments, checks, next, ctx)
+    new CacheInvokeAction[K, V, T](requestName, cacheName, key, entryProcessor, arguments, keepBinary = false, checks, next, ctx)
 }

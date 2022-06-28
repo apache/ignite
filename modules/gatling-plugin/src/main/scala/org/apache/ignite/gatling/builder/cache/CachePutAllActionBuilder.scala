@@ -34,5 +34,5 @@ case class CachePutAllActionBuilder[K, V](
   def as(requestName: Expression[String]): ActionBuilder = this.copy(requestName = requestName)
 
   override def build(ctx: ScenarioContext, next: Action): Action =
-    CachePutAllAction(requestName, cacheName, map, next, ctx)
+    new CachePutAllAction(requestName, cacheName, map, keepBinary = false, next, ctx)
 }

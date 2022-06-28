@@ -26,25 +26,35 @@ import org.apache.ignite.gatling.protocol.IgniteClientConfigurationCfg
 import org.apache.ignite.gatling.protocol.IgniteConfigurationCfg
 import org.apache.ignite.gatling.protocol.IgniteProtocol.IGNITE_API_SESSION_KEY
 
-case class CloseClientAction(requestName: Expression[String], next: Action, ctx: ScenarioContext) extends IgniteAction {
+/**
+ * Action for the close Ignite API operation (either closes the thin client or stops the node working in client mode).
+ *
+ * @param requestName Name of the request.
+ * @param next Next action from chain to invoke upon this one completion.
+ * @param ctx Scenario context.
+ */
+class CloseClientAction(requestName: Expression[String], next: Action, ctx: ScenarioContext)
+    extends IgniteAction("close", requestName, ctx, next) {
 
-  override val actionType: String = "closeClient"
+  /**
+   * @inheritdoc
+   * @param session Session
+   */
+  override protected def execute(session: Session): Unit = withSessionCheck(session) {
+    val noOp: (Unit => Unit, Throwable => Unit) => Unit = (s, _) => s.apply(())
 
-  override protected def execute(session: Session): Unit = withSession(session) {
     for {
-      (resolvedRequestName, igniteApi, _) <- igniteParameters(session)
+      IgniteActionParameters(resolvedRequestName, igniteApi, _) <- resolveIgniteParameters(session)
     } yield {
       logger.debug(s"session user id: #${session.userId}, before $name")
 
-      val func = components.igniteProtocol.cfg match {
-        case IgniteClientConfigurationCfg(_) | IgniteConfigurationCfg(_) if components.igniteProtocol.manualClientStart =>
+      val func = protocol.cfg match {
+        case IgniteClientConfigurationCfg(_) | IgniteConfigurationCfg(_) if protocol.manualClientStart =>
           igniteApi.close() _
         case _ => noOp
       }
 
-      call(func, resolvedRequestName, session, (session, _: Option[Unit]) => session.remove(IGNITE_API_SESSION_KEY))
+      call(func, resolvedRequestName, session, updateSession = (session, _: Option[Unit]) => session.remove(IGNITE_API_SESSION_KEY))
     }
   }
-
-  private val noOp: (Unit => Unit, Throwable => Unit) => Unit = (s, _) => s.apply()
 }

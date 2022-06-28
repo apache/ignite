@@ -69,7 +69,17 @@ case class CacheInvokeAllSingleProcessorActionBuilder[K, V, T](
   def as(requestName: Expression[String]): ActionBuilder = this.copy(requestName = requestName)
 
   override def build(ctx: ScenarioContext, next: Action): Action =
-    CacheInvokeAllSingleProcessorAction[K, V, T](requestName, cacheName, keys, entryProcessor, arguments, checks, next, ctx)
+    new CacheInvokeAllSingleProcessorAction[K, V, T](
+      requestName,
+      cacheName,
+      keys,
+      entryProcessor,
+      arguments,
+      keepBinary = false,
+      checks,
+      next,
+      ctx
+    )
 }
 
 case class CacheInvokeAllActionBuilderBase[K, V, T](
@@ -81,7 +91,7 @@ case class CacheInvokeAllActionBuilderBase[K, V, T](
   def as(requestName: Expression[String]): ActionBuilder = this.copy(requestName = requestName)
 
   override def build(ctx: ScenarioContext, next: Action): Action =
-    CacheInvokeAllMapAction[K, V, T](requestName, cacheName, map, Seq.empty, Seq.empty, next, ctx)
+    new CacheInvokeAllMapAction[K, V, T](requestName, cacheName, map, Seq.empty, keepBinary = false, Seq.empty, next, ctx)
 
   def args(args: Expression[Any]*): CacheInvokeAllActionBuilder[K, V, T] =
     CacheInvokeAllActionBuilder[K, V, T](requestName, cacheName, map, args)
@@ -100,5 +110,5 @@ case class CacheInvokeAllActionBuilder[K, V, T](
   def as(requestName: Expression[String]): ActionBuilder = this.copy(requestName = requestName)
 
   override def build(ctx: ScenarioContext, next: Action): Action =
-    CacheInvokeAllMapAction[K, V, T](requestName, cacheName, map, arguments, checks, next, ctx)
+    new CacheInvokeAllMapAction[K, V, T](requestName, cacheName, map, arguments, keepBinary = false, checks, next, ctx)
 }

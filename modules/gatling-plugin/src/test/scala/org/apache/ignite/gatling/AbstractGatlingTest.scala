@@ -62,10 +62,11 @@ abstract class AbstractGatlingTest extends AbstractThinClientTest {
    */
   protected def runWith(api: IgniteApi)(simulationClass: String): Unit = {
     if (api == ThinClient) {
-      val sysProperties = System.getProperties
-      sysProperties.setProperty("host", clientHost(grid(0).cluster.localNode))
-      sysProperties.setProperty("port", String.valueOf(clientPort(grid(0).cluster.localNode)))
+      System.setProperty("host", clientHost(grid(0).cluster.localNode))
+      System.setProperty("port", String.valueOf(clientPort(grid(0).cluster.localNode)))
     } else {
+      System.clearProperty("host")
+      System.clearProperty("port")
       startClientGrid(1)
     }
     val gatlingPropertiesBuilder = new GatlingPropertiesBuilder

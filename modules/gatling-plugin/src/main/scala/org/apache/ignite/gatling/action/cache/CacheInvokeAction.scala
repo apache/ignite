@@ -18,6 +18,7 @@
 package org.apache.ignite.gatling.action.cache
 
 import io.gatling.commons.validation.SuccessWrapper
+import io.gatling.commons.validation.Validation
 import io.gatling.core.action.Action
 import io.gatling.core.session.Expression
 import io.gatling.core.session.Session
@@ -26,39 +27,64 @@ import org.apache.ignite.cache.CacheEntryProcessor
 import org.apache.ignite.gatling.IgniteCheck
 import org.apache.ignite.gatling.action.CacheAction
 
-case class CacheInvokeAction[K, V, T](
+/**
+ * Action for the invoke Ignite operation.
+ *
+ * @tparam K Type of the cache key.
+ * @tparam V Type of the cache value.
+ * @tparam T Type of the operation result.
+ * @param requestName Name of the request.
+ * @param cacheName Name of cache.
+ * @param key Cache entry key.
+ * @param entryProcessor Instance of CacheEntryProcessor.
+ * @param arguments Additional arguments to pass to the entry processor.
+ * @param keepBinary True if it should operate with binary objects.
+ * @param checks Collection of checks to perform against the operation result.
+ * @param next Next action from chain to invoke upon this one completion.
+ * @param ctx Scenario context.
+ */
+class CacheInvokeAction[K, V, T](
   requestName: Expression[String],
   cacheName: Expression[String],
   key: Expression[K],
   entryProcessor: CacheEntryProcessor[K, V, T],
   arguments: Seq[Expression[Any]],
+  keepBinary: Boolean,
   checks: Seq[IgniteCheck[K, T]],
   next: Action,
   ctx: ScenarioContext
-) extends CacheAction[K, V] {
+) extends CacheAction[K, V]("invoke", requestName, ctx, next, cacheName, keepBinary) {
 
-  override val actionType: String = "invoke"
-
-  private def resolveArgs(session: Session) =
+  /**
+   * Resolves entry processor arguments using the session context.
+   *
+   * @param session Session.
+   * @return List of the resolved arguments.
+   */
+  private def resolveArgs(session: Session): Validation[List[Any]] =
     arguments
       .foldLeft(List[Any]().success) { case (r, v) =>
         r.flatMap(m => v(session).map(rv => rv :: m))
       }
       .map(l => l.reverse)
 
-  override protected def execute(session: Session): Unit = withSession(session) {
+  /**
+   * @inheritdoc
+   * @param session Session
+   */
+  override protected def execute(session: Session): Unit = withSessionCheck(session) {
     for {
-      CommonParameters(resolvedRequestName, cacheApi, transactionApi) <- cacheParameters(session)
+      CacheActionParameters(resolvedRequestName, cacheApi, transactionApi) <- resolveCacheParameters(session)
       resolvedKey <- key(session)
       resolvedArguments <- resolveArgs(session)
     } yield {
       logger.debug(s"session user id: #${session.userId}, before $name")
 
-      val call = transactionApi
+      val func = transactionApi
         .map(_ => cacheApi.invoke(resolvedKey, entryProcessor, resolvedArguments) _)
         .getOrElse(cacheApi.invokeAsync(resolvedKey, entryProcessor, resolvedArguments) _)
 
-      callWithCheck(call, resolvedRequestName, session, checks)
+      call(func, resolvedRequestName, session, checks)
     }
   }
 }

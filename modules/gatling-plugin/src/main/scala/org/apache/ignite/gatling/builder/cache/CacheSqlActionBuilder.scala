@@ -45,5 +45,5 @@ case class CacheSqlActionBuilder(
   def as(requestName: Expression[String]): ActionBuilder = this.copy(requestName = requestName)
 
   override def build(ctx: ScenarioContext, next: Action): Action =
-    CacheSqlAction(requestName, cacheName, sql, argsList, partitionsList, checks, next, ctx)
+    new CacheSqlAction(requestName, cacheName, sql, argsList, partitionsList, keepBinary = false, checks, next, ctx)
 }

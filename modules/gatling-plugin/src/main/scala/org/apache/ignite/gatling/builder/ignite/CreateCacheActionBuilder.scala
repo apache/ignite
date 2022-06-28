@@ -26,7 +26,7 @@ import org.apache.ignite.cache.CacheAtomicityMode
 import org.apache.ignite.cache.CacheMode
 import org.apache.ignite.client.ClientCacheConfiguration
 import org.apache.ignite.configuration.CacheConfiguration
-import org.apache.ignite.gatling.action.ignite
+import org.apache.ignite.gatling.action.ignite.CreateCacheAction
 import org.apache.ignite.gatling.builder.IgniteActionBuilder
 
 case class CreateCacheActionBuilderBase[K, V](cacheName: Expression[String], requestName: Expression[String] = EmptyStringExpressionSuccess)
@@ -47,7 +47,7 @@ case class CreateCacheActionBuilderBase[K, V](cacheName: Expression[String], req
     CreateCacheActionBuilder(requestName, cacheName, Configuration(cacheCfg = Some(cacheCfg)))
 
   override def build(ctx: ScenarioContext, next: Action): Action =
-    ignite.CreateCacheAction(requestName, cacheName, Configuration(), next, ctx)
+    new CreateCacheAction(requestName, cacheName, Configuration(), next, ctx)
 
   def as(name: Expression[String]): ActionBuilder = this.copy(requestName = name)
 }
@@ -92,7 +92,7 @@ case class Configuration[K, V](
 case class CreateCacheActionBuilder[K, V](requestName: Expression[String], cacheName: Expression[String], config: Configuration[K, V])
     extends IgniteActionBuilder {
   override def build(ctx: ScenarioContext, next: Action): Action =
-    ignite.CreateCacheAction(requestName, cacheName, config, next, ctx)
+    new CreateCacheAction(requestName, cacheName, config, next, ctx)
 
   def as(requestName: Expression[String]): ActionBuilder = this.copy(requestName = requestName)
 }

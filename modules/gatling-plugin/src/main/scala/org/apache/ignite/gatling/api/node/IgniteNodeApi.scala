@@ -118,7 +118,8 @@ case class IgniteNodeApi(wrapped: Ignite) extends IgniteApi {
    * @param s @inheritdoc
    * @param f @inheritdoc
    */
-  override def close()(s: Unit => Unit, f: Throwable => Unit): Unit = s.apply()
+  override def close()(s: Unit => Unit, f: Throwable => Unit): Unit =
+    Try(wrapped.close()).fold(f, s)
 
   /**
    * @inheritdoc

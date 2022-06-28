@@ -24,30 +24,46 @@ import io.gatling.core.structure.ScenarioContext
 import org.apache.ignite.gatling.IgniteCheck
 import org.apache.ignite.gatling.action.CacheAction
 
-case class CacheGetAction[K, V](
+/**
+ * Action for the get Ignite operation.
+ *
+ * @tparam K Type of the cache key.
+ * @tparam V Type of the cache value.
+ * @param requestName Name of the request.
+ * @param cacheName Name of cache.
+ * @param key Cache entry key.
+ * @param keepBinary True if it should operate with binary objects.
+ * @param checks Collection of checks to perform against the operation result.
+ * @param next Next action from chain to invoke upon this one completion.
+ * @param ctx Scenario context.
+ */
+class CacheGetAction[K, V](
   requestName: Expression[String],
   cacheName: Expression[String],
   key: Expression[K],
-  override val keepBinary: Boolean,
+  keepBinary: Boolean,
   checks: Seq[IgniteCheck[K, V]],
   next: Action,
   ctx: ScenarioContext
-) extends CacheAction[K, V] {
+) extends CacheAction[K, V]("get", requestName, ctx, next, cacheName, keepBinary) {
 
-  override val actionType: String = "get"
-
-  override protected def execute(session: Session): Unit = withSession(session) {
+  /**
+   * @inheritdoc
+   *
+   * @param session Session
+   */
+  override protected def execute(session: Session): Unit = withSessionCheck(session) {
     for {
-      CommonParameters(resolvedRequestName, cacheApi, transactionApi) <- cacheParameters(session)
+      CacheActionParameters(resolvedRequestName, cacheApi, transactionApi) <- resolveCacheParameters(session)
       resolvedKey <- key(session)
     } yield {
       logger.debug(s"session user id: #${session.userId}, before $name")
 
-      val call = transactionApi
+      val func = transactionApi
         .map(_ => cacheApi.get(resolvedKey) _)
         .getOrElse(cacheApi.getAsync(resolvedKey) _)
 
-      callWithCheck(call, resolvedRequestName, session, checks)
+      call(func, resolvedRequestName, session, checks)
     }
   }
 }

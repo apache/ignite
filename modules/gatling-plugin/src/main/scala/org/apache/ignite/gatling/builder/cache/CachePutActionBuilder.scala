@@ -22,7 +22,6 @@ import io.gatling.core.action.builder.ActionBuilder
 import io.gatling.core.session.EmptyStringExpressionSuccess
 import io.gatling.core.session.Expression
 import io.gatling.core.structure.ScenarioContext
-import org.apache.ignite.gatling.action.cache
 import org.apache.ignite.gatling.action.cache.CachePutAction
 import org.apache.ignite.gatling.builder.IgniteActionBuilder
 
@@ -37,7 +36,7 @@ case class CachePutActionBuilder[K, V](
   def as(requestName: Expression[String]): ActionBuilder = this.copy(requestName = requestName)
 
   override def build(ctx: ScenarioContext, next: Action): Action =
-    CachePutAction(requestName, cacheName, pair, keepBinary = false, next, ctx)
+    new CachePutAction(requestName, cacheName, pair, keepBinary = false, next, ctx)
 }
 
 case class CachePutActionBuilderBinaryStep[K, V](requestName: Expression[String], cacheName: Expression[String], pair: Expression[(K, V)])
@@ -45,5 +44,5 @@ case class CachePutActionBuilderBinaryStep[K, V](requestName: Expression[String]
   def as(requestName: Expression[String]): ActionBuilder = this.copy(requestName = requestName)
 
   override def build(ctx: ScenarioContext, next: Action): Action =
-    cache.CachePutAction(requestName, cacheName, pair, keepBinary = true, next, ctx)
+    new CachePutAction(requestName, cacheName, pair, keepBinary = true, next, ctx)
 }

@@ -28,20 +28,30 @@ import org.apache.ignite.gatling.action.IgniteAction
 import org.apache.ignite.gatling.api.TransactionApi
 import org.apache.ignite.gatling.protocol.IgniteProtocol.TRANSACTION_API_SESSION_KEY
 
-case class TransactionRollbackAction(requestName: Expression[String], next: Action, ctx: ScenarioContext) extends IgniteAction {
+/**
+ * Action for the transaction rollback Ignite operation.
+ *
+ * @param requestName Name of the request.
+ * @param next Next action from chain to invoke upon this one completion.
+ * @param ctx Scenario context.
+ */
+class TransactionRollbackAction(requestName: Expression[String], next: Action, ctx: ScenarioContext)
+    extends IgniteAction("rollback", requestName, ctx, next) {
 
-  override val actionType: String = "rollback"
-
-  override protected def execute(session: Session): Unit = withSession(session) {
-    for (
-      (resolvedRequestName, _, transactionApiOptional) <- igniteParameters(session);
+  /**
+   * @inheritdoc
+   * @param session Session
+   */
+  override protected def execute(session: Session): Unit = withSessionCheck(session) {
+    for {
+      IgniteActionParameters(resolvedRequestName, _, transactionApiOptional) <- resolveIgniteParameters(session)
       transactionApi <- transactionApiOptional.fold[Validation[TransactionApi]](Failure("no transaction found in session"))(t => Success(t))
-    ) yield {
+    } yield {
       logger.debug(s"session user id: #${session.userId}, before $name")
 
       val func = transactionApi.rollback() _
 
-      call(func, resolvedRequestName, session, (session, _: Option[Unit]) => session.remove(TRANSACTION_API_SESSION_KEY))
+      call(func, resolvedRequestName, session, updateSession = (session, _: Option[Unit]) => session.remove(TRANSACTION_API_SESSION_KEY))
     }
   }
 }

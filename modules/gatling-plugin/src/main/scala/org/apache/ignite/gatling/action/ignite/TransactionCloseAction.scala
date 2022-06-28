@@ -24,11 +24,24 @@ import io.gatling.core.structure.ScenarioContext
 import org.apache.ignite.gatling.action.IgniteAction
 import org.apache.ignite.gatling.protocol.IgniteProtocol.TRANSACTION_API_SESSION_KEY
 
-case class TransactionCloseAction(requestName: Expression[String], next: Action, ctx: ScenarioContext) extends IgniteAction {
-  override val actionType: String = "txClose"
+/**
+ * Action for the transaction close Ignite operation.
+ *
+ * @param requestName Name of the request.
+ * @param next Next action from chain to invoke upon this one completion.
+ * @param ctx Scenario context.
+ */
+class TransactionCloseAction(requestName: Expression[String], next: Action, ctx: ScenarioContext)
+    extends IgniteAction("txClose", requestName, ctx, next) {
 
+  /**
+   * @inheritdoc
+   * @param session Session
+   */
   def execute(session: Session): Unit =
-    for ((resolvedRequestName, _, transactionApiOptional) <- igniteParameters(session)) yield {
+    for {
+      IgniteActionParameters(resolvedRequestName, _, transactionApiOptional) <- resolveIgniteParameters(session)
+    } yield {
       logger.debug(s"session user id: #${session.userId}, before $name")
       transactionApiOptional.fold {
         next ! session
@@ -38,7 +51,7 @@ case class TransactionCloseAction(requestName: Expression[String], next: Action,
           func,
           resolvedRequestName,
           session,
-          (session, _: Option[Unit]) => session.remove(TRANSACTION_API_SESSION_KEY)
+          updateSession = (session, _: Option[Unit]) => session.remove(TRANSACTION_API_SESSION_KEY)
         )
       }
     }
