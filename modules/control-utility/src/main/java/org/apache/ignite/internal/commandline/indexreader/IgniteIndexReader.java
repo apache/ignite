@@ -1230,14 +1230,13 @@ public class IgniteIndexReader implements AutoCloseable {
 
             for (int i = 0; i < io.getCount(addr); i++) {
                 int itemOff = io.offset(i);
+                int realInlineSz = 0;
 
-                int inlineOff = 0;
-
-                while (inlineOff < inlineSz) {
-                    int type0 = PageUtils.getByte(addr, itemOff + inlineOff);
+                while (realInlineSz < inlineSz) {
+                    int type0 = PageUtils.getByte(addr, itemOff + realInlineSz);
 
                     if (type0 == IndexKeyTypes.UNKNOWN || type0 == IndexKeyTypes.NULL) {
-                        inlineOff += 1;
+                        realInlineSz += 1;
 
                         continue;
                     }
@@ -1253,19 +1252,19 @@ public class IgniteIndexReader implements AutoCloseable {
                     if (type.keySize() == -1) {
                         try {
                             // Assuming all variable length keys written using `writeBytes` method.
-                            inlineOff += NullableInlineIndexKeyType.readBytes(addr, itemOff + inlineOff).length;
+                            realInlineSz += NullableInlineIndexKeyType.readBytes(addr, itemOff + realInlineSz).length;
                         }
                         catch (Throwable ignored) {
                             break;
                         }
                     }
                     else
-                        inlineOff += type.keySize();
+                        realInlineSz += type.keySize();
 
-                    inlineOff++; // One more byte for type.
+                    realInlineSz++; // One more byte for type.
                 }
 
-                ctx.inline[inlineOff - 1]++;
+                ctx.inline[realInlineSz - 1]++;
             }
         }
 
