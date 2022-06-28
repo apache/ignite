@@ -539,9 +539,7 @@ final class ReliableChannel implements AutoCloseable {
     private boolean addressFinderAddressesChanged() {
         if (clientCfg.getAddressesFinder() != null) {
             String[] hostAddrs = clientCfg.getAddressesFinder().getAddresses();
-            if(!Arrays.equals(hostAddrs, prevHostAddrs)){
-                return true;
-            }
+            return !Arrays.equals(hostAddrs, prevHostAddrs);
         }
         return false;
     }
