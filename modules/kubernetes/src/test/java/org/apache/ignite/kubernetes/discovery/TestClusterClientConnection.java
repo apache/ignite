@@ -77,8 +77,8 @@ public class TestClusterClientConnection extends KubernetesDiscoveryAbstractTest
         // Stop node and change port => still can connect.
         Ignition.stop(crd.name(), true);
         int newPort = 10801;
-        ccfg.setAddressesFinder(new ThinClientKubernetesAddressFinder(prepareConfiguration(),newPort));
-        mockServerResponse(5,crdAddr);
+        ccfg.setAddressesFinder(new ThinClientKubernetesAddressFinder(prepareConfiguration(), newPort));
+        mockServerResponse(5, crdAddr);
 
         cfg = getConfiguration(getTestIgniteInstanceName(), false);
         cfg.setClientConnectorConfiguration(new ClientConnectorConfiguration().setPort(newPort));
