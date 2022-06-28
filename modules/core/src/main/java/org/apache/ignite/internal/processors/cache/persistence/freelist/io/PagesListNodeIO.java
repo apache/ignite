@@ -43,10 +43,10 @@ public class PagesListNodeIO extends PageIO implements CompactablePageIO {
     private static final int PREV_PAGE_ID_OFF = COMMON_HEADER_END;
 
     /** */
-    private static final int NEXT_PAGE_ID_OFF = PREV_PAGE_ID_OFF + 8;
+    private static final int NEXT_PAGE_ID_OFF = PREV_PAGE_ID_OFF + Long.BYTES;
 
     /** */
-    private static final int CNT_OFF = NEXT_PAGE_ID_OFF + 8;
+    private static final int CNT_OFF = NEXT_PAGE_ID_OFF + Long.BYTES;
 
     /** */
     private static final int PAGE_IDS_OFF = CNT_OFF + 2;
@@ -140,8 +140,8 @@ public class PagesListNodeIO extends PageIO implements CompactablePageIO {
      * @param pageSize Page size.
      * @return Capacity of this page in items.
      */
-    private int getCapacity(int pageSize) {
-        return (pageSize - PAGE_IDS_OFF) >>> 3; // /8
+    public int getCapacity(int pageSize) {
+        return (pageSize - PAGE_IDS_OFF) / Long.BYTES;
     }
 
     /**
@@ -149,7 +149,7 @@ public class PagesListNodeIO extends PageIO implements CompactablePageIO {
      * @return Item offset.
      */
     private int offset(int idx) {
-        return PAGE_IDS_OFF + 8 * idx;
+        return PAGE_IDS_OFF + Long.BYTES * idx;
     }
 
     /**
@@ -229,7 +229,7 @@ public class PagesListNodeIO extends PageIO implements CompactablePageIO {
         for (int i = 0; i < cnt; i++) {
             if (PageIdUtils.maskPartitionId(getAt(pageAddr, i)) == PageIdUtils.maskPartitionId(dataPageId)) {
                 if (i != cnt - 1)
-                    copyMemory(pageAddr, offset(i + 1), pageAddr, offset(i), 8 * (cnt - i - 1));
+                    copyMemory(pageAddr, offset(i + 1), pageAddr, offset(i), Long.BYTES * (cnt - i - 1));
 
                 setCount(pageAddr, cnt - 1);
 
@@ -281,5 +281,10 @@ public class PagesListNodeIO extends PageIO implements CompactablePageIO {
             sb.a("\n\t\t").a(getAt(addr, i));
 
         sb.a("\n\t}\n]");
+    }
+
+    /** {@inheritDoc} */
+    @Override public int getFreeSpace(int pageSize, long pageAddr) {
+        return (getCapacity(pageSize) - getCount(pageAddr)) * Long.BYTES;
     }
 }
