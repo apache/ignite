@@ -44,7 +44,6 @@ import org.apache.ignite.internal.jdbc.thin.JdbcThinPartitionResultDescriptor;
 import org.apache.ignite.internal.jdbc.thin.QualifiedSQLQuery;
 import org.apache.ignite.internal.processors.cache.GridCacheUtils;
 import org.apache.ignite.internal.processors.query.QueryHistory;
-import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.sql.optimizer.affinity.PartitionResult;
 import org.apache.ignite.internal.util.GridBoundedLinkedHashMap;
 import org.apache.ignite.internal.util.typedef.F;
@@ -689,10 +688,8 @@ public class JdbcThinPartitionAwarenessSelfTest extends JdbcThinAbstractSelfTest
         }
 
         // Reset query history.
-        for (int i = 0; i < NODES_CNT; i++) {
-            ((IgniteH2Indexing)grid(i).context().query().getIndexing())
-                .runningQueryManager().resetQueryHistoryMetrics();
-        }
+        for (int i = 0; i < NODES_CNT; i++)
+            grid(i).context().query().runningQueryManager().resetQueryHistoryMetrics();
 
         // Execute query multiple times
         for (int i = 0; i < NODES_CNT * QUERY_EXECUTION_MULTIPLIER; i++) {
@@ -733,8 +730,8 @@ public class JdbcThinPartitionAwarenessSelfTest extends JdbcThinAbstractSelfTest
         int nonEmptyMetricsCntr = 0;
         int qryExecutionsCntr = 0;
         for (int i = 0; i < NODES_CNT; i++) {
-            Collection<QueryHistory> metrics = ((IgniteH2Indexing)grid(i).context().query().getIndexing())
-                .runningQueryManager().queryHistoryMetrics().values();
+            Collection<QueryHistory> metrics = grid(i).context().query().runningQueryManager()
+                .queryHistoryMetrics().values();
 
             if (!metrics.isEmpty()) {
                 nonEmptyMetricsCntr++;
