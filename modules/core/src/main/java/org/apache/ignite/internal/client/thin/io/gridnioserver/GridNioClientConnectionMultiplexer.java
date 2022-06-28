@@ -135,7 +135,7 @@ public class GridNioClientConnectionMultiplexer implements ClientConnectionMulti
     }
 
     /** {@inheritDoc} */
-    @Override public synchronized ClientConnection open(InetSocketAddress addr,
+    @Override public ClientConnection open(InetSocketAddress addr,
                                            ClientMessageHandler msgHnd,
                                            ClientConnectionStateHandler stateHnd)
             throws ClientConnectionException {
