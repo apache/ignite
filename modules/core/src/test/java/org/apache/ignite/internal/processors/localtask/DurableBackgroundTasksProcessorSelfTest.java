@@ -169,7 +169,14 @@ public class DurableBackgroundTasksProcessorSelfTest extends GridCommonAbstractT
         stopGrid(1);
         n = startGrid(1);
 
-        assertEquals(STARTED, tasks(n).get("t").state());
+        checkStateAndMetaStorage(n, t, STARTED, true, false);
+
+        n.cluster().state(INACTIVE);
+
+        stopGrid(1);
+        n = startGrid(1);
+
+        checkStateAndMetaStorage(n, t, INIT, true, false);
     }
 
     /**
