@@ -895,7 +895,7 @@ public class IgniteIndexReader implements AutoCloseable {
                 }
 
                 SystemViewCommand.printTable(
-                    Arrays.asList(prefix, "used", "count"),
+                    Arrays.asList(prefix, "Used", "Count"),
                     Arrays.asList(STRING, NUMBER, NUMBER),
                     data,
                     log
