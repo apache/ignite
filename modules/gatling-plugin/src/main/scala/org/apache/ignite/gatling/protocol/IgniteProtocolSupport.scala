@@ -21,6 +21,24 @@ import org.apache.ignite.client.IgniteClient
 import org.apache.ignite.configuration.ClientConfiguration
 import org.apache.ignite.configuration.IgniteConfiguration
 
+trait IgniteProtocolSupport {
+  /** Ignite protocol builder starting point. */
+  val igniteProtocol: IgniteProtocolBuilderBase.type = IgniteProtocolBuilderBase
+
+  /**
+   * Implicit to build protocol from the IgniteProtocolBuilder.
+   * @param builder Protocol builder.
+   * @return Protocol.
+   */
+  implicit def builder2igniteProtocol(builder: IgniteProtocolBuilder): IgniteProtocol = builder.build
+  /**
+   * Implicit to build protocol from the IgniteProtocolBuilderManualStartStep.
+   * @param builder Protocol builder.
+   * @return Protocol.
+   */
+  implicit def builderManualStartStep2igniteProtocol(builder: IgniteProtocolBuilderManualStartStep): IgniteProtocol = builder.build
+}
+
 /**
  * Base Ignite protocol builder.
  */
@@ -57,7 +75,8 @@ case object IgniteProtocolBuilderBase {
    * @param igniteClient IgniteClient instance.
    * @return Build step for additional protocol parameters.
    */
-  def cfg(igniteClient: IgniteClient): IgniteProtocolBuilder = IgniteProtocolBuilder(IgniteClientCfg(igniteClient), manualClientStart = false)
+  def cfg(igniteClient: IgniteClient): IgniteProtocolBuilder =
+    IgniteProtocolBuilder(IgniteClientCfg(igniteClient), manualClientStart = false)
 }
 
 /**

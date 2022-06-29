@@ -319,7 +319,6 @@
       <parameter name="group.scala">scala\..+</parameter>
       <parameter name="group.others">.+</parameter>
       <parameter name="maxBlankLines">0</parameter>
-      <parameter name="lexicographic">true</parameter>
     </parameters>
   </check>
   <check enabled="true" class="org.scalastyle.scalariform.BlockImportChecker" level="warning"/>

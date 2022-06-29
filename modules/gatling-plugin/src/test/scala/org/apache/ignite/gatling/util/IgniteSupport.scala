@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.ignite.gatling.simulation
+package org.apache.ignite.gatling.util
 
 import java.util.concurrent.atomic.AtomicInteger
 
@@ -23,28 +23,49 @@ import scala.util.Try
 import io.gatling.core.feeder.Feeder
 import io.gatling.core.feeder.Record
 import org.apache.ignite.configuration.ClientConfiguration
-import org.apache.ignite.gatling.Predef._
+import org.apache.ignite.gatling.Predef.igniteProtocol
 import org.apache.ignite.gatling.protocol.IgniteProtocol
 import org.apache.ignite.internal.IgnitionEx
 
+/**
+ * Gatling simulation mixin to support unit tests.
+ */
 trait IgniteSupport {
+  /**
+   * Helper feeder class generating long key and long value pairs.
+   */
+  class IntPairsFeeder extends Feeder[Int] {
+    private val atomicInteger: AtomicInteger = new AtomicInteger(0)
 
-  case class IntPairsFeeder(atomicInteger: AtomicInteger = new AtomicInteger(0)) extends Feeder[Int] {
+    /**
+     * @inheritdoc
+     * @return @inheritdoc
+     */
     override def hasNext: Boolean = true
 
+    /**
+     * @inheritdoc
+     * @return @inheritdoc
+     */
     override def next(): Record[Int] =
       Map("key" -> atomicInteger.incrementAndGet(), "value" -> atomicInteger.incrementAndGet())
   }
 
-  protected def feeder: IntPairsFeeder = IntPairsFeeder()
+  /** Default feeder for unit tests. */
+  protected val feeder: IntPairsFeeder = new IntPairsFeeder()
 
+  /**
+   * Setup Ignite protocol for gatling simulation used in unit tests.
+   *
+   * @return Ignite Protocol instance.
+   */
   protected def protocol: IgniteProtocol =
     Option(System.getProperty("host"))
       .flatMap(host => Option(System.getProperty("port")).map(port => (host, port)))
       .map { case (host, port) =>
         Try(new ClientConfiguration().setAddresses(s"$host:$port"))
-          .map(cfg => ignite.cfg(cfg).build)
-          .getOrElse(ignite.cfg(IgnitionEx.allGrids().get(1)).build)
+          .map(cfg => igniteProtocol.cfg(cfg).build)
+          .getOrElse(igniteProtocol.cfg(IgnitionEx.allGrids().get(1)).build)
       }
-      .getOrElse(ignite.cfg(IgnitionEx.allGrids().get(1)).build)
+      .getOrElse(igniteProtocol.cfg(IgnitionEx.allGrids().get(1)).build)
 }

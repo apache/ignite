@@ -14,17 +14,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.ignite.gatling
+package org.apache.ignite.gatling.util
 
 import io.gatling.app.Gatling
 import io.gatling.core.config.GatlingPropertiesBuilder
-import org.apache.ignite.gatling.IgniteClientApi.IgniteApi
-import org.apache.ignite.gatling.IgniteClientApi.NodeApi
-import org.apache.ignite.gatling.IgniteClientApi.ThinClient
+import org.apache.ignite.gatling.util.IgniteClientApi.IgniteApi
+import org.apache.ignite.gatling.util.IgniteClientApi.NodeApi
+import org.apache.ignite.gatling.util.IgniteClientApi.ThinClient
 import org.apache.ignite.internal.client.thin.AbstractThinClientTest
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
+/**
+ * Abstract gatling test.
+ */
 abstract class AbstractGatlingTest extends AbstractThinClientTest {
   /** Class name of simulation */
   val simulation: String
@@ -42,13 +45,13 @@ abstract class AbstractGatlingTest extends AbstractThinClientTest {
   }
 
   /**
-   * Tests simulation with thin client.
+   * Runs simulation with thin client.
    */
   @Test
   def thinClient(): Unit = runWith(ThinClient)(simulation)
 
   /**
-   * Tests simulation with thick client.
+   * Runs simulation with thick client.
    */
   @Test
   def thickClient(): Unit = runWith(NodeApi)(simulation)

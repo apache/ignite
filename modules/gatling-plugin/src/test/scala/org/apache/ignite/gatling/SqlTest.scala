@@ -22,7 +22,8 @@ import com.typesafe.scalalogging.StrictLogging
 import io.gatling.commons.validation.SuccessWrapper
 import io.gatling.core.Predef._
 import org.apache.ignite.gatling.Predef._
-import org.apache.ignite.gatling.simulation.IgniteSupport
+import org.apache.ignite.gatling.util.AbstractGatlingTest
+import org.apache.ignite.gatling.util.IgniteSupport
 
 /**
  * Tests SQL queries.
@@ -40,7 +41,7 @@ class SqlSimulation extends Simulation with IgniteSupport with StrictLogging {
   private val keyExpression = (s: Session) => s("key").as[Long].success
   private val scn = scenario("Sql")
     .feed(feeder)
-    .execIgnite(
+    .ignite(
       start as "Start client",
       create(cache).backups(1) as "Create cache",
       sql(cache, "CREATE TABLE City (id int primary key, name varchar, region varchar)") as "Create table",

@@ -16,7 +16,7 @@
  */
 package org.apache.ignite.gatling
 
-import io.gatling.core.Predef.{group => ggroup}
+import io.gatling.core.Predef.{group => gatlingGroup}
 import io.gatling.core.Predef.exec
 import io.gatling.core.action.builder.ActionBuilder
 import io.gatling.core.session.Expression
@@ -27,29 +27,86 @@ import org.apache.ignite.gatling.builder.ignite.Ignite
 import org.apache.ignite.gatling.builder.transaction.Transactions
 import org.apache.ignite.gatling.check.IgniteKeyValueCheckSupport
 import org.apache.ignite.gatling.check.IgniteSqlCheckSupport
-import org.apache.ignite.gatling.protocol.IgniteProtocol
-import org.apache.ignite.gatling.protocol.IgniteProtocolBuilder
-import org.apache.ignite.gatling.protocol.IgniteProtocolBuilderBase
-import org.apache.ignite.gatling.protocol.IgniteProtocolBuilderManualStartStep
+import org.apache.ignite.gatling.protocol.IgniteProtocolSupport
 
-trait IgniteDsl extends Ignite with Transactions with Cache with IgniteKeyValueCheckSupport with IgniteSqlCheckSupport {
+/**
+ * Ignite Gatling DSL functions.
+ */
+trait IgniteDsl
+    extends IgniteProtocolSupport
+    with Ignite
+    with Transactions
+    with Cache
+    with IgniteKeyValueCheckSupport
+    with IgniteSqlCheckSupport {
 
-  val ignite: IgniteProtocolBuilderBase.type = IgniteProtocolBuilderBase
+  /**
+   * Allows the `ignite` structure DSL element to be directly created.
+   *
+   * `ignite` element allows to execute sequence of one or more comma-separated actions as follows
+   *
+   * {{{
+   *   val fragment = ignite(
+   *     create("test-cache"),
+   *     put("test-cache", "#{key}", "#{value}"),
+   *     get(cache, key = "#{key}"
+   *   )
+   * }}}
+   * @param firstBuilder Chain builder foe the first action.
+   * @param chainBuilders Chain builders for subsequent actions.
+   * @return Final chain builder.
+   */
+  def ignite(firstBuilder: ChainBuilder, chainBuilders: ChainBuilder*): ChainBuilder =
+    exec(firstBuilder).exec(chainBuilders)
 
-  implicit def builder2igniteProtocol(builder: IgniteProtocolBuilder): IgniteProtocol = builder.build
-  implicit def builderManualStartStep2igniteProtocol(builder: IgniteProtocolBuilderManualStartStep): IgniteProtocol = builder.build
-
-  def execIgnite(newActionBuilders: ChainBuilder*): ChainBuilder =
-    exec(newActionBuilders)
-
-  def group(name: Expression[String])(newActionBuilders: ChainBuilder*): ChainBuilder =
-    ggroup(name)(exec(newActionBuilders))
-
+  /**
+   * Implicit allowing ActionBuilder to be used in place of ChainBuilder.
+   *    ggroup(name)(exec(newActionBuilders))
+   *
+   * Used in the `ignite` DSL structure element in particular.
+   *
+   * @param actionBuilder ActionBuilder for single action.
+   * @return Chain builder construction chain consisting from this single action.
+   */
   implicit def actionBuilder2ChainBuilder(actionBuilder: ActionBuilder): ChainBuilder = new ChainBuilder(List(actionBuilder))
 
-  class ScenarioBuilderEx(scn: ScenarioBuilder) {
-    def execIgnite(newActionBuilders: ChainBuilder*): ScenarioBuilder = scn.exec(newActionBuilders.map(b => exec(b)))
+  /**
+   * Scenario builder allowing the `ignite` structure DSL element.
+   *
+   * @param scn Original Gatling scenario builder.
+   */
+  class IgniteScenarioBuilder(scn: ScenarioBuilder) {
+    /**
+     * Chains `ignite` structure DSL element.
+     *
+     * @param chainBuilders Chain builders for action to be executed in context of Ignite.
+     * @return itself.
+     */
+    def ignite(chainBuilders: ChainBuilder*): ScenarioBuilder = scn.exec(chainBuilders.map(b => exec(b)))
   }
 
-  implicit def scenarioBuilder2Ex(scn: ScenarioBuilder): ScenarioBuilderEx = new ScenarioBuilderEx(scn)
+  /**
+   * Adds `ignite` structure DSL element to original gatling scenario builder allowing the following syntax:
+   * {{{
+   *   val scn = scenario("Ignite")
+   *     .feeder(feeder)
+   *     .ignite(
+   *       create("test-cache"),
+   *       put("test-cache", "#{key}", "#{value}")
+   *     )
+   * }}}
+   * @param scn Original gatling scenario builder.
+   * @return Ignite scenario builder.
+   */
+  implicit def scenarioBuilder2IgniteScenarioBuilder(scn: ScenarioBuilder): IgniteScenarioBuilder = new IgniteScenarioBuilder(scn)
+
+  /**
+   * Enhanced `group` DSL structure element accepting comma-separated list of chain builders.
+   *
+   * @param name Group name.
+   * @param newActionBuilders Collection of chain builders.
+   * @return Chain builder for the actions that make up a group.
+   */
+  def group(name: Expression[String])(newActionBuilders: ChainBuilder*): ChainBuilder =
+    gatlingGroup(name)(exec(newActionBuilders))
 }

@@ -25,7 +25,7 @@ import org.junit.runner.RunWith
 import org.junit.runners.Suite
 
 /**
- * Gatling plugin tests.
+ * Ignite Gatling plugin tests.
  */
 @RunWith(classOf[Suite])
 @Suite.SuiteClasses(

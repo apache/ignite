@@ -19,7 +19,8 @@ package org.apache.ignite.gatling
 import com.typesafe.scalalogging.StrictLogging
 import io.gatling.core.Predef._
 import org.apache.ignite.gatling.Predef._
-import org.apache.ignite.gatling.simulation.IgniteSupport
+import org.apache.ignite.gatling.util.AbstractGatlingTest
+import org.apache.ignite.gatling.util.IgniteSupport
 
 /**
  */
@@ -36,7 +37,7 @@ class TransactionCommitRollbackSimulation extends Simulation with StrictLogging 
   private val value = "value"
   private val cache = "TEST-CACHE"
 
-  private val commitTx = execIgnite(
+  private val commitTx = ignite(
     tx(PESSIMISTIC, READ_COMMITTED)
       .timeout(3000L)
       .txSize(1)(
@@ -49,7 +50,7 @@ class TransactionCommitRollbackSimulation extends Simulation with StrictLogging 
     )
   )
 
-  private val rollbackTx = execIgnite(
+  private val rollbackTx = ignite(
     tx(OPTIMISTIC, REPEATABLE_READ)(
       put[Int, Int](cache, s"#{$key}", s"#{$value}"),
       rollback
@@ -63,7 +64,7 @@ class TransactionCommitRollbackSimulation extends Simulation with StrictLogging 
     )
   )
 
-  private val autoRollbackTx = execIgnite(
+  private val autoRollbackTx = ignite(
     tx(OPTIMISTIC, REPEATABLE_READ)(
       put[Int, Int](cache, s"#{$key}", s"#{$value}")
     ),
@@ -78,7 +79,7 @@ class TransactionCommitRollbackSimulation extends Simulation with StrictLogging 
 
   private val scn = scenario("Basic")
     .feed(feeder)
-    .execIgnite(
+    .ignite(
       start,
       create(cache).backups(0).atomicity(TRANSACTIONAL),
       rollbackTx,

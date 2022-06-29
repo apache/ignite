@@ -19,7 +19,8 @@ package org.apache.ignite.gatling
 import io.gatling.core.Predef._
 import org.apache.ignite.configuration.CacheConfiguration
 import org.apache.ignite.gatling.Predef._
-import org.apache.ignite.gatling.simulation.IgniteSupport
+import org.apache.ignite.gatling.util.AbstractGatlingTest
+import org.apache.ignite.gatling.util.IgniteSupport
 
 /**
  * Tests creation of all types of transactions.
@@ -49,7 +50,7 @@ class TransactionSimulation extends Simulation with IgniteSupport {
   private val cache = "TEST-CACHE"
   private val scn = scenario("Basic")
     .feed(feeder)
-    .execIgnite(
+    .ignite(
       start,
       tx(PESSIMISTIC, READ_COMMITTED).timeout(1000L)(
         put[Int, Int](cache, "#{key}", "#{value}"),

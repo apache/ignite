@@ -206,7 +206,7 @@
                         <artifactId>scalastyle-maven-plugin</artifactId>
                         <version>1.0.0</version>
                         <configuration>
-                            <verbose>true</verbose>
+                            <verbose>false</verbose>
                             <failOnViolation>true</failOnViolation>
                             <includeTestSourceDirectory>true</includeTestSourceDirectory>
                             <failOnWarning>true</failOnWarning>

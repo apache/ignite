@@ -25,6 +25,9 @@ import org.apache.ignite.Ignition
 import org.apache.ignite.configuration.ClientConfiguration
 import org.apache.ignite.gatling.Predef._
 
+/**
+ * Basic Ignite Gatling simulation.
+ */
 class BasicSimulation extends Simulation {
   private val cache = "TEST-CACHE"
 
@@ -33,7 +36,7 @@ class BasicSimulation extends Simulation {
 
   private val scn = scenario("Basic")
     .feed(feeder)
-    .execIgnite(
+    .ignite(
       start,
       create(cache).backups(1) as "Create cache",
       put[Int, Int](cache, "#{key}", "#{value}") as "Put",
@@ -49,7 +52,7 @@ class BasicSimulation extends Simulation {
     Ignition.allGrids().get(0).close()
   }
 
-  private def protocol = ignite
+  private def protocol = igniteProtocol
     .cfg(
       new ClientConfiguration().setAddresses("localhost:10800")
     )

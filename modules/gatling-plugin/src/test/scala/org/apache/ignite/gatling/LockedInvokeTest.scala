@@ -25,9 +25,10 @@ import scala.concurrent.duration.DurationInt
 
 import com.typesafe.scalalogging.StrictLogging
 import io.gatling.core.Predef._
-import org.apache.ignite.gatling.IgniteClientApi.NodeApi
 import org.apache.ignite.gatling.Predef._
-import org.apache.ignite.gatling.simulation.IgniteSupport
+import org.apache.ignite.gatling.util.AbstractGatlingTest
+import org.apache.ignite.gatling.util.IgniteClientApi.NodeApi
+import org.apache.ignite.gatling.util.IgniteSupport
 import org.junit.Ignore
 import org.junit.Test
 
@@ -61,7 +62,7 @@ class LockedInvokeSimulation extends Simulation with IgniteSupport with StrictLo
   private val value = new AtomicInteger(0)
   private val scn = scenario("LockedInvoke")
     .feed(Iterator.continually(Map("value" -> value.incrementAndGet())))
-    .execIgnite(
+    .ignite(
       create(cache).atomicity(TRANSACTIONAL),
       lock(cache, key).check(
         allResults[String, Lock].transform(a => a.values.head).saveAs("lock")

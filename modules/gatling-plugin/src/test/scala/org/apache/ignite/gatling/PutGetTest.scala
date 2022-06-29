@@ -19,7 +19,8 @@ package org.apache.ignite.gatling
 import com.typesafe.scalalogging.StrictLogging
 import io.gatling.core.Predef._
 import org.apache.ignite.gatling.Predef._
-import org.apache.ignite.gatling.simulation.IgniteSupport
+import org.apache.ignite.gatling.util.AbstractGatlingTest
+import org.apache.ignite.gatling.util.IgniteSupport
 
 /**
  */
@@ -37,7 +38,7 @@ class PutGetSimulation extends Simulation with IgniteSupport with StrictLogging 
 
   private val scn = scenario("Basic")
     .feed(feeder)
-    .execIgnite(
+    .ignite(
       start as "start",
       create(cache) backups 1 atomicity ATOMIC mode PARTITIONED as "create",
       put[Int, Int](cache, "#{key}", "#{value}") as "put",
@@ -48,7 +49,7 @@ class PutGetSimulation extends Simulation with IgniteSupport with StrictLogging 
       logger.info(session.toString)
       session
     }
-    .execIgnite(
+    .ignite(
       get[Int, Int](cache, key = "#{key}")
         check (simpleCheck((r, s) => r(s("key").as[Int]) == s("value").as[Int]),
         allResults[Int, Int].saveAs("savedInSession")) as "get present"

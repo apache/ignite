@@ -37,8 +37,8 @@ import org.apache.ignite.gatling.api.thin.IgniteThinApi
 import org.apache.ignite.gatling.protocol.IgniteProtocol
 
 class IgniteCompileTest extends Simulation {
-  private val thinProtocol: IgniteProtocol = ignite.cfg(new ClientConfiguration().setAddresses("localhost:10800"))
-  private val nodeProtocol: IgniteProtocol = ignite.cfg(Ignition.start())
+  private val thinProtocol: IgniteProtocol = igniteProtocol.cfg(new ClientConfiguration().setAddresses("localhost:10800"))
+  private val nodeProtocol: IgniteProtocol = igniteProtocol.cfg(Ignition.start())
 
 //  private val scnEx = scenario("scn")
 //    .feed(IntPairsFeeder())
@@ -53,7 +53,7 @@ class IgniteCompileTest extends Simulation {
 //    .asIgnite
 //    .exec("start" start)
 
-  val igniteChainBuilder: ChainBuilder = execIgnite(
+  val igniteChainBuilder: ChainBuilder = ignite(
     tx("")(
       start as "start client",
       put(c, 1, 2) as "put",
