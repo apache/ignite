@@ -58,6 +58,7 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.GridStringBuilder;
 import org.apache.ignite.internal.util.GridUnsafe;
+import org.apache.ignite.internal.util.lang.GridTuple3;
 import org.apache.ignite.internal.util.lang.IgnitePair;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -134,7 +135,7 @@ public class IgniteIndexReaderTest extends GridCommandHandlerAbstractTest {
             LINE_DELIM + "<PREFIX>){%s,1000}---- Count of items found in leaf pages: %s(" +
             LINE_DELIM + "<PREFIX>---- Inline usage statistics \\[inlineSize=[0-9]{1,3} bytes\\]" +
             LINE_DELIM + "<PREFIX>.*Used bytes.*Entries count(" +
-            LINE_DELIM + "<PREFIX>.*[0-9]{1,5}){1,64})?" +
+            LINE_DELIM + "<PREFIX>.*[0-9]{1,10}){0,64})?" +
             LINE_DELIM;
 
     /** Regexp to validate output of correct index. */
@@ -284,9 +285,16 @@ public class IgniteIndexReaderTest extends GridCommandHandlerAbstractTest {
         // Take any inner page from tree.
         AtomicLong anyLeafId = new AtomicLong();
 
-        IgniteIndexReader reader0 = new IgniteIndexReader(null, false, createFilePageStoreFactory(dir), createTestLogger()) {
-            @Override ScanContext createContext(int cacheId, FilePageStore store, ItemStorage items) {
-                return new ScanContext(cacheId, store, items) {
+        IgniteIndexReader reader0 = new IgniteIndexReader(PAGE_SIZE, PART_CNT, PAGE_STORE_VER, dir, null, false, createTestLogger()) {
+            @Override ScanContext createContext(String idxName, FilePageStore store, ItemStorage items) {
+                GridTuple3<Integer, Integer, String> parsed;
+
+                if (idxName != null)
+                    parsed = cacheAndTypeId(idxName);
+                else
+                    parsed = new GridTuple3<>(UNKNOWN_CACHE, 0, null);
+
+                return new ScanContext(parsed.get1(), inlineFieldsCount(idxName, parsed), store, items) {
                     @Override public void onLeafPage(long pageId, List<Object> data) {
                         super.onLeafPage(pageId, data);
 
@@ -722,9 +730,12 @@ public class IgniteIndexReaderTest extends GridCommandHandlerAbstractTest {
         Logger logger = createTestLogger();
 
         IgniteIndexReader reader0 = new IgniteIndexReader(
+            PAGE_SIZE,
+            PART_CNT,
+            PAGE_STORE_VER,
+            new File(workDir, dataDir(cacheGrp)),
             isNull(idxs) ? null : idx -> Arrays.stream(idxs).anyMatch(idx::endsWith),
             checkParts,
-            createFilePageStoreFactory(new File(workDir, dataDir(cacheGrp))),
             logger
         ) {
             /** {@inheritDoc} */
@@ -740,17 +751,6 @@ public class IgniteIndexReaderTest extends GridCommandHandlerAbstractTest {
         Arrays.stream(logger.getHandlers()).forEach(Handler::flush);
 
         return testOut.toString();
-    }
-
-    /**
-     * Create new {@link IgniteIndexReaderFilePageStoreFactory}.
-     *
-     * @param dir Data rirectory.
-     */
-    protected IgniteIndexReaderFilePageStoreFactory createFilePageStoreFactory(
-        File dir
-    ) {
-        return new IgniteIndexReaderFilePageStoreFactory(dir, PAGE_SIZE, PART_CNT, PAGE_STORE_VER);
     }
 
     /**

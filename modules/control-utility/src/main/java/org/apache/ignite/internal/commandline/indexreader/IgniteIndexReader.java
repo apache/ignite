@@ -18,7 +18,10 @@
 package org.apache.ignite.internal.commandline.indexreader;
 
 import java.io.File;
+import java.io.IOException;
+import java.io.ObjectInputStream;
 import java.nio.ByteBuffer;
+import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -40,6 +43,8 @@ import java.util.stream.IntStream;
 import java.util.stream.LongStream;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.cache.QueryEntity;
+import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.internal.cache.query.index.IndexProcessor;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypeSettings;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypes;
@@ -55,11 +60,14 @@ import org.apache.ignite.internal.commandline.indexreader.ScanContext.PagesStati
 import org.apache.ignite.internal.commandline.systemview.SystemViewCommand;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageUtils;
+import org.apache.ignite.internal.processors.cache.StoredCacheData;
 import org.apache.ignite.internal.processors.cache.persistence.IndexStorageImpl;
 import org.apache.ignite.internal.processors.cache.persistence.StorageException;
+import org.apache.ignite.internal.processors.cache.persistence.file.AsyncFileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStore;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreV2;
+import org.apache.ignite.internal.processors.cache.persistence.file.FileVersionCheckingFactory;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.io.PagesListMetaIO;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.io.PagesListNodeIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.AbstractDataPageIO;
@@ -79,9 +87,11 @@ import org.apache.ignite.internal.processors.cache.tree.RowLinkIO;
 import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.GridStringBuilder;
 import org.apache.ignite.internal.util.lang.GridPlainClosure2;
+import org.apache.ignite.internal.util.lang.GridTuple3;
 import org.apache.ignite.internal.util.lang.IgnitePair;
 import org.apache.ignite.internal.util.lang.RunnableX;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.jetbrains.annotations.Nullable;
@@ -92,6 +102,7 @@ import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
+import static java.util.logging.Level.WARNING;
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toList;
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_PAGE_SIZE;
@@ -105,7 +116,9 @@ import static org.apache.ignite.internal.pagemem.PageIdUtils.itemId;
 import static org.apache.ignite.internal.pagemem.PageIdUtils.pageId;
 import static org.apache.ignite.internal.pagemem.PageIdUtils.pageIndex;
 import static org.apache.ignite.internal.pagemem.PageIdUtils.partId;
+import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.CACHE_DATA_FILENAME;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.INDEX_FILE_NAME;
+import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.PART_FILE_TEMPLATE;
 import static org.apache.ignite.internal.util.GridUnsafe.allocateBuffer;
 import static org.apache.ignite.internal.util.GridUnsafe.bufferAddress;
 import static org.apache.ignite.internal.util.GridUnsafe.freeBuffer;
@@ -150,6 +163,10 @@ public class IgniteIndexReader implements AutoCloseable {
     private static final String CHECK_PARTS_ARG = "--check-parts";
 
     /** */
+    private static final Pattern CACHE_TYPE_ID_INDEX_SEARCH_PATTERN =
+        Pattern.compile("(?<id>[-0-9]{1,15})_(?<typeId>[-0-9]{1,15})_(?<indexName>.*)##.*");
+
+    /** */
     private static final Pattern CACHE_TYPE_ID_SEARCH_PATTERN =
         Pattern.compile("(?<id>[-0-9]{1,15})_(?<typeId>[-0-9]{1,15})_.*");
 
@@ -160,9 +177,15 @@ public class IgniteIndexReader implements AutoCloseable {
     /** */
     private static final int MAX_ERRORS_CNT = 10;
 
+    /** */
+    static final int UNKNOWN_CACHE = -1;
+
     static {
         IndexProcessor.registerIO();
     }
+
+    /** Directory with data(partitions and index). */
+    private final File root;
 
     /** Page size. */
     private final int pageSize;
@@ -186,6 +209,9 @@ public class IgniteIndexReader implements AutoCloseable {
     private final FilePageStore[] partStores;
 
     /** */
+    private final Map<Integer, StoredCacheData> cacheData = new HashMap<>();
+
+    /** */
     private final Set<Integer> missingPartitions = new HashSet<>();
 
     /** */
@@ -204,29 +230,48 @@ public class IgniteIndexReader implements AutoCloseable {
     private final LevelsPageVisitor levelsPageVisitor = new LevelsPageVisitor();
 
     /** */
-    private final Map<String, IgnitePair<Integer>> cacheTypeIds = new HashMap<>();
+    private final Map<String, GridTuple3<Integer, Integer, String>> cacheTypeIds = new HashMap<>();
 
     /**
      * Constructor.
      *
-     * @param idxFilter Index name filter, if {@code null} then is not used.
+     * @param pageSize Page size.
+     * @param partCnt Page count.
+     * @param filePageStoreVer Version of file page store.
      * @param checkParts Check cache data tree in partition files and it's consistency with indexes.
-     * @param filePageStoreFactory File page store factory.
+     * @param root Root directory.
+     * @param idxFilter Index name filter, if {@code null} then is not used.
      * @param log Logger.
      * @throws IgniteCheckedException If failed.
      */
     public IgniteIndexReader(
+        int pageSize,
+        int partCnt,
+        int filePageStoreVer,
+        File root,
         @Nullable Predicate<String> idxFilter,
         boolean checkParts,
-        IgniteIndexReaderFilePageStoreFactory filePageStoreFactory,
         Logger log
     ) throws IgniteCheckedException {
-        pageSize = filePageStoreFactory.pageSize();
-        partCnt = filePageStoreFactory.partitionCount();
+        this.pageSize = pageSize;
+        this.partCnt = partCnt;
+        this.root = root;
         this.checkParts = checkParts;
         this.idxFilter = idxFilter;
         this.log = log;
-        idxStore = filePageStoreFactory.createFilePageStore(INDEX_PARTITION, FLAG_IDX);
+
+        FileVersionCheckingFactory storeFactory = new FileVersionCheckingFactory(
+            new AsyncFileIOFactory(),
+            new AsyncFileIOFactory(),
+            () -> pageSize
+        ) {
+            /** {@inheritDoc} */
+            @Override public int latestVersion() {
+                return filePageStoreVer;
+            }
+        };
+
+        idxStore = filePageStore(INDEX_PARTITION, FLAG_IDX, storeFactory);
 
         if (isNull(idxStore))
             throw new IgniteCheckedException(INDEX_FILE_NAME + " file not found");
@@ -236,7 +281,18 @@ public class IgniteIndexReader implements AutoCloseable {
         partStores = new FilePageStore[partCnt];
 
         for (int i = 0; i < partCnt; i++)
-            partStores[i] = filePageStoreFactory.createFilePageStore(i, FLAG_DATA);
+            partStores[i] = filePageStore(i, FLAG_DATA, storeFactory);
+
+        Arrays.stream(root.listFiles(f -> f.getName().endsWith(CACHE_DATA_FILENAME))).forEach(f -> {
+            try (ObjectInputStream stream = new ObjectInputStream(Files.newInputStream(f.toPath()))) {
+                StoredCacheData data = (StoredCacheData)stream.readObject();
+
+                cacheData.put(CU.cacheId(data.config().getName()), data);
+            }
+            catch (ClassNotFoundException | IOException e) {
+                log.log(WARNING, "Can't read stored cache data. Inline for this cache will not be analyzed [f=" + f.getName() + ']', e);
+            }
+        });
     }
 
     /**
@@ -270,19 +326,15 @@ public class IgniteIndexReader implements AutoCloseable {
 
         p.parse(asList(args).iterator());
 
-        IgniteIndexReaderFilePageStoreFactory filePageStoreFactory = new IgniteIndexReaderFilePageStoreFactory(
-            new File(p.<String>get(DIR_ARG)),
-            p.get(PAGE_SIZE_ARG),
-            p.get(PART_CNT_ARG),
-            p.get(PAGE_STORE_VER_ARG)
-        );
-
         Set<String> idxs = new HashSet<>(asList(p.get(INDEXES_ARG)));
 
         try (IgniteIndexReader reader = new IgniteIndexReader(
+            p.<Integer>get(PAGE_SIZE_ARG),
+            p.<Integer>get(PART_CNT_ARG),
+            p.<Integer>get(PAGE_STORE_VER_ARG),
+            new File(p.<String>get(DIR_ARG)),
             idxs.isEmpty() ? null : idxs::contains,
             p.get(CHECK_PARTS_ARG),
-            filePageStoreFactory,
             CommandHandler.setupJavaLogger("index-reader", IgniteIndexReader.class)
         )) {
             reader.readIndex();
@@ -365,7 +417,7 @@ public class IgniteIndexReader implements AutoCloseable {
      * @return Tree traversal context.
      */
     ScanContext recursiveTreeScan(long rootPageId, String idx, ItemStorage items) {
-        ScanContext ctx = createContext(cacheAndTypeId(idx).get1(), filePageStore(rootPageId), items);
+        ScanContext ctx = createContext(idx, filePageStore(rootPageId), items);
 
         metaPageVisitor.readAndVisit(rootPageId, ctx);
 
@@ -381,7 +433,7 @@ public class IgniteIndexReader implements AutoCloseable {
      * @return Tree traversal context.
      */
     private ScanContext horizontalTreeScan(long rootPageId, String idx, ItemStorage items) {
-        ScanContext ctx = createContext(cacheAndTypeId(idx).get1(), filePageStore(rootPageId), items);
+        ScanContext ctx = createContext(idx, filePageStore(rootPageId), items);
 
         levelsPageVisitor.readAndVisit(rootPageId, ctx);
 
@@ -492,7 +544,7 @@ public class IgniteIndexReader implements AutoCloseable {
 
         ProgressPrinter progressPrinter = createProgressPrinter("Reading pages sequentially", pagesNum);
 
-        ScanContext ctx = createContext(-1, idxStore, new CountOnlyStorage());
+        ScanContext ctx = createContext(null, idxStore, new CountOnlyStorage());
 
         doWithBuffer((buf, addr) -> {
             for (int i = 0; i < pagesNum; i++) {
@@ -647,25 +699,65 @@ public class IgniteIndexReader implements AutoCloseable {
      * @param name Index name.
      * @return Pair of cache id and type id.
      */
-    public IgnitePair<Integer> cacheAndTypeId(String name) {
+    public GridTuple3<Integer, Integer, String> cacheAndTypeId(String name) {
         return cacheTypeIds.computeIfAbsent(name, k -> {
+            Matcher xId = CACHE_TYPE_ID_INDEX_SEARCH_PATTERN.matcher(k);
+
+            if (xId.find())
+                return new GridTuple3<>(parseInt(xId.group("id")), parseInt(xId.group("typeId")), xId.group("indexName"));
+
             Matcher mId = CACHE_TYPE_ID_SEARCH_PATTERN.matcher(k);
 
             if (mId.find())
-                return new IgnitePair<>(parseInt(mId.group("id")), parseInt(mId.group("typeId")));
+                return new GridTuple3<>(parseInt(mId.group("id")), parseInt(mId.group("typeId")), null);
 
             Matcher cId = CACHE_ID_SEARCH_PATTERN.matcher(k);
 
             if (cId.find())
-                return new IgnitePair<>(parseInt(cId.group("id")), 0);
+                return new GridTuple3<>(parseInt(cId.group("id")), 0, null);
 
-            return new IgnitePair<>(0, 0);
+            return new GridTuple3<>(0, 0, null);
         });
     }
 
     /** */
-    ScanContext createContext(int cacheId, FilePageStore store, ItemStorage items) {
-        return new ScanContext(cacheId, store, items);
+    ScanContext createContext(String idxName, FilePageStore store, ItemStorage items) {
+        GridTuple3<Integer, Integer, String> parsed;
+
+        if (idxName != null)
+            parsed = cacheAndTypeId(idxName);
+        else
+            parsed = new GridTuple3<>(UNKNOWN_CACHE, 0, null);
+
+        return new ScanContext(parsed.get1(), inlineFieldsCount(idxName, parsed), store, items);
+    }
+
+    /** */
+    protected int inlineFieldsCount(String idxName, GridTuple3<Integer, Integer, String> parsed) {
+        if (parsed.get1() == UNKNOWN_CACHE || !cacheData.containsKey(parsed.get1()))
+            return 0;
+
+        StoredCacheData data = cacheData.get(parsed.get1());
+
+        QueryIndex idx = null;
+
+        for (QueryEntity qe0 : data.queryEntities()) {
+            for (QueryIndex idx0 : qe0.getIndexes()) {
+                if (Objects.equals(idx0.getName(), parsed.get3())) {
+                    idx = idx0;
+
+                    break;
+                }
+            }
+
+            if (idx != null)
+                break;
+        }
+
+        if (idx == null)
+            return 0;
+
+        return idx.getFields().size();
     }
 
     /** */
@@ -912,8 +1004,10 @@ public class IgniteIndexReader implements AutoCloseable {
 
             totalErr += ctx.errors.size();
 
+            GridTuple3<Integer, Integer, String> parsed = cacheAndTypeId(idxName);
+
             cacheIdxSizes
-                .computeIfAbsent(cacheAndTypeId(idxName), k -> new HashMap<>())
+                .computeIfAbsent(new IgnitePair<>(parsed.get1(), parsed.get2()), k -> new HashMap<>())
                 .put(idxName, ctx.items.size());
         }
 
@@ -1066,6 +1160,33 @@ public class IgniteIndexReader implements AutoCloseable {
             data,
             log
         );
+    }
+
+    /**
+     * Creating new {@link FilePageStore} and initializing it.
+     * It can return {@code null} if partition file were not found, for example: node should not contain it by affinity.
+     *
+     * @param partId Partition ID.
+     * @param type Data type, can be {@link PageIdAllocator#FLAG_IDX} or {@link PageIdAllocator#FLAG_DATA}.
+     * @param storeFactory Store factory.
+     * @return New instance of {@link FilePageStore} or {@code null}.
+     * @throws IgniteCheckedException If there are errors when creating or initializing {@link FilePageStore}.
+     */
+    @Nullable FilePageStore filePageStore(
+        int partId,
+        byte type,
+        FileVersionCheckingFactory storeFactory
+    ) throws IgniteCheckedException {
+        File file = new File(root, partId == INDEX_PARTITION ? INDEX_FILE_NAME : format(PART_FILE_TEMPLATE, partId));
+
+        if (!file.exists())
+            return null;
+
+        FilePageStore filePageStore = (FilePageStore)storeFactory.createPageStore(type, file, l -> {});
+
+        filePageStore.ensure();
+
+        return filePageStore;
     }
 
     /** {@inheritDoc} */
@@ -1222,6 +1343,9 @@ public class IgniteIndexReader implements AutoCloseable {
         private void visitInline(long addr, AbstractInlineLeafIO io, ScanContext ctx) {
             int inlineSz = ((InlineIO)io).inlineSize();
 
+            if (ctx.inlineFldCnt == 0)
+                return;
+
             if (ctx.inline == null)
                 ctx.inline = new int[inlineSz];
 
@@ -1230,8 +1354,9 @@ public class IgniteIndexReader implements AutoCloseable {
             for (int i = 0; i < io.getCount(addr); i++) {
                 int itemOff = io.offset(i);
                 int realInlineSz = 0;
+                int fldCnt = 0;
 
-                while (realInlineSz < inlineSz) {
+                while (realInlineSz < inlineSz && fldCnt < ctx.inlineFldCnt) {
                     int type0 = PageUtils.getByte(addr, itemOff + realInlineSz);
 
                     if (type0 == IndexKeyTypes.UNKNOWN || type0 == IndexKeyTypes.NULL) {
@@ -1242,18 +1367,23 @@ public class IgniteIndexReader implements AutoCloseable {
 
                     InlineIndexKeyType type = InlineIndexKeyTypeRegistry.get(type0, settings);
 
-                    // Page not zeroed when writing inline data.
-                    // We can't know where inline ends and garbage starts.
-                    // Using some kind of fuzzy logic here. Ignoring all errors.
-                    if (type == null)
-                        break;
+                    if (type == null) {
+                        log.warning("Unknown inline type [type=" + type0 + ']');
 
-                    if (type.keySize() == -1) {
+                        break;
+                    }
+
+                    if (type.keySize() == UNKNOWN_CACHE) {
                         try {
                             // Assuming all variable length keys written using `writeBytes` method.
-                            realInlineSz += NullableInlineIndexKeyType.readBytes(addr, itemOff + realInlineSz).length;
+                            byte[] bytes = NullableInlineIndexKeyType.readBytes(addr, itemOff + realInlineSz);
+
+                            realInlineSz += Short.BYTES; /* size of the array is short number. */
+                            realInlineSz += bytes.length;
                         }
-                        catch (Throwable ignored) {
+                        catch (Throwable e) {
+                            log.warning("Error while reading inline [msg=" + e.getMessage() + ']');
+
                             break;
                         }
                     }
@@ -1261,6 +1391,7 @@ public class IgniteIndexReader implements AutoCloseable {
                         realInlineSz += type.keySize();
 
                     realInlineSz++; // One more byte for type.
+                    fldCnt++;
                 }
 
                 ctx.inline[realInlineSz - 1]++;

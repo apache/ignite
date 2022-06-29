@@ -21,6 +21,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStore;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 
@@ -30,6 +31,9 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 class ScanContext {
     /** Cache id or {@code -1} for sequential scan. */
     final int cacheId;
+
+    /** Count of inline fields. */
+    final int inlineFldCnt;
 
     /** Page store. */
     final FilePageStore store;
@@ -51,8 +55,9 @@ class ScanContext {
     int[] inline;
 
     /** */
-    public ScanContext(int cacheId, FilePageStore store, ItemStorage items) {
+    public ScanContext(int cacheId, int inlineFldCnt, FilePageStore store, ItemStorage items) {
         this.cacheId = cacheId;
+        this.inlineFldCnt = inlineFldCnt;
         this.store = store;
         this.items = items;
         this.stats = new LinkedHashMap<>();
@@ -87,6 +92,11 @@ class ScanContext {
     /** */
     public void onLeafPage(long pageId, List<Object> data) {
         data.forEach(items::add);
+    }
+
+    /** */
+    public int inlineColumnCount(QueryEntity queryEntity) {
+        return -1;
     }
 
     /** */
