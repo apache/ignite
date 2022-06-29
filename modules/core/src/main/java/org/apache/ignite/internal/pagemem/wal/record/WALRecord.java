@@ -205,7 +205,7 @@ public abstract class WALRecord {
         MVCC_DATA_PAGE_NEW_TX_STATE_HINT_UPDATED_RECORD(51, PHYSICAL),
 
         /** Encrypted WAL-record. */
-        ENCRYPTED_RECORD(52, PHYSICAL),
+        ENCRYPTED_RECORD(52, MIXED),
 
         /**
          * Ecnrypted data record.
@@ -242,7 +242,7 @@ public abstract class WALRecord {
         OUT_OF_ORDER_UPDATE(62, LOGICAL),
 
         /** Encrypted WAL-record. */
-        ENCRYPTED_RECORD_V2(63, PHYSICAL),
+        ENCRYPTED_RECORD_V2(63, MIXED),
 
         /**
          * Ecnrypted data record.
