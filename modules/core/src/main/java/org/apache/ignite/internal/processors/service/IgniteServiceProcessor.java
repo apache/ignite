@@ -34,6 +34,7 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.UUID;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutorService;
@@ -44,6 +45,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import com.sun.xml.internal.ws.api.client.ServiceInterceptor;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteInterruptedException;
@@ -88,6 +90,7 @@ import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.plugin.security.SecurityException;
 import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.services.Service;
+import org.apache.ignite.services.ServiceCallInterceptor;
 import org.apache.ignite.services.ServiceConfiguration;
 import org.apache.ignite.services.ServiceContext;
 import org.apache.ignite.services.ServiceDeploymentException;
@@ -675,10 +678,20 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
                 try {
                     byte[] srvcBytes = U.marshal(marsh, cfg.getService());
 
+                    ServiceCallInterceptor[] intcps = cfg.getInterceptors();
+                    byte[][] intcpsBytes = null;
+
+                    if (!F.isEmpty(intcps)) {
+                        intcpsBytes = new byte[intcps.length][];
+
+                        for (int i = 0; i < intcps.length; i++)
+                            intcpsBytes[i] = U.marshal(marsh, intcps[i]);
+                    }
+
                     String[] knownSvcMdtNames = cfg instanceof PlatformServiceConfiguration ?
                         ((PlatformServiceConfiguration)cfg).mtdNames() : null;
 
-                    cfgsCp.add(new LazyServiceConfiguration(cfg, srvcBytes).platformMtdNames(knownSvcMdtNames));
+                    cfgsCp.add(new LazyServiceConfiguration(cfg, srvcBytes, intcpsBytes).platformMtdNames(knownSvcMdtNames));
                 }
                 catch (Exception e) {
                     U.error(log, "Failed to marshal service with configured marshaller " +
@@ -1290,6 +1303,7 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
 
         for (final ServiceContextImpl srvcCtx : toInit) {
             final Service srvc;
+            ServiceCallInterceptor[] intcps = null;
 
             try {
                 srvc = copyAndInject(cfg, srvcCtx);
@@ -1298,6 +1312,8 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
                 srvc.init(srvcCtx);
 
                 srvcCtx.service(srvc);
+                srvcCtx.interceptor(cfg instanceof LazyServiceConfiguration ?
+                    unmarshalInterceptors((LazyServiceConfiguration)cfg) : null);
             }
             catch (Throwable e) {
                 U.error(log, "Failed to initialize service (service will not be deployed): " + name, e);
@@ -1401,6 +1417,36 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
                 return srvc;
             }
         }
+    }
+
+    /**
+     * @param cfg Service configuraton.
+     * @return Service interceptors.
+     * @throws IgniteCheckedException If failed.
+     */
+    private @Nullable ServiceCallInterceptor unmarshalInterceptors(LazyServiceConfiguration cfg) throws IgniteCheckedException {
+        String[] clsNames = cfg.interceptorClassNames();
+        byte[][] intcpBytes = cfg.interceptorBytes();
+
+        if (F.isEmpty(clsNames))
+            return null;
+
+        assert intcpBytes.length == clsNames.length;
+
+        ServiceCallInterceptor[] intcps = new ServiceCallInterceptor[intcpBytes.length];
+
+        for (int i = 0; i < clsNames.length; i++) {
+            GridDeployment intcpDep = ctx.deploy().getDeployment(clsNames[i]);
+
+            ServiceCallInterceptor intcp = U.unmarshal(marsh, intcpBytes[i],
+                U.resolveClassLoader(intcpDep != null ? intcpDep.classLoader() : null, ctx.config()));
+
+            ctx.resource().injectGeneric(intcp);
+
+            intcps[i] = intcp;
+        }
+
+        return intcps.length == 1 ? intcps[0] : new CompositeServiceCallInterceptor(intcps);
     }
 
     /**

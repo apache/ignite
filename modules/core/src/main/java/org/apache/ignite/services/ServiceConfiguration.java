@@ -83,6 +83,10 @@ public class ServiceConfiguration implements Serializable {
     /** Enables or disables service statistics. */
     protected boolean isStatisticsEnabled;
 
+    /** Interceptor. */
+    @GridToStringExclude
+    protected ServiceCallInterceptor[] intcps;
+
     /**
      * Gets service name.
      * <p>
@@ -290,6 +294,27 @@ public class ServiceConfiguration implements Serializable {
      */
     public boolean isStatisticsEnabled() {
         return isStatisticsEnabled;
+    }
+
+    /**
+     * Gets service method interceptors.
+     *
+     * @return Service method interceptors.
+     */
+    public ServiceCallInterceptor[] getInterceptors() {
+        return intcps;
+    }
+
+    /**
+     * Sets service method interceptors.
+     *
+     * @param intcps Interceptors.
+     * @return {@code this} for chaining.
+     */
+    public ServiceConfiguration setInterceptors(ServiceCallInterceptor... intcps) {
+        this.intcps = intcps;
+
+        return this;
     }
 
     /** {@inheritDoc} */
