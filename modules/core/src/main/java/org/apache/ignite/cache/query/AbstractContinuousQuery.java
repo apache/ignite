@@ -187,8 +187,10 @@ public abstract class AbstractContinuousQuery<K, V> extends Query<Cache.Entry<K,
      *
      * @param includeExpired Whether to notify about {@link EventType#EXPIRED} events.
      */
-    public void setIncludeExpired(boolean includeExpired) {
+    public AbstractContinuousQuery<K, V> setIncludeExpired(boolean includeExpired) {
         this.includeExpired = includeExpired;
+
+        return this;
     }
 
     /**
