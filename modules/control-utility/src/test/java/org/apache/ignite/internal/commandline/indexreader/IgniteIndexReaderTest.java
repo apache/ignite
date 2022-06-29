@@ -132,8 +132,8 @@ public class IgniteIndexReaderTest extends GridCommandHandlerAbstractTest {
             LINE_DELIM + "<PREFIX>Type.*Pages.*Free space.*" +
             LINE_DELIM + "<PREFIX>([0-9a-zA-Z]{1,50}.*[0-9]{1,5}" +
             LINE_DELIM + "<PREFIX>){%s,1000}---- Count of items found in leaf pages: %s(" +
-            LINE_DELIM + "<PREFIX>---- Inline usage statistics \\[inlineSize=[0-9]{1,3}\\]" +
-            LINE_DELIM + "<PREFIX>.*Used.*Count(" +
+            LINE_DELIM + "<PREFIX>---- Inline usage statistics \\[inlineSize=[0-9]{1,3} bytes\\]" +
+            LINE_DELIM + "<PREFIX>.*Used bytes.*Entries count(" +
             LINE_DELIM + "<PREFIX>.*[0-9]{1,5}){1,64})?" +
             LINE_DELIM;
 

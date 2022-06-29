@@ -19,6 +19,7 @@ package org.apache.ignite.internal.commandline.indexreader;
 
 import java.io.File;
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -884,7 +885,7 @@ public class IgniteIndexReader implements AutoCloseable {
             boolean hasInlineStat = ctx.inline != null && IntStream.of(ctx.inline).anyMatch(i -> i > 0);
 
             if (hasInlineStat) {
-                log.info(prefix + "---- Inline usage statistics [inlineSize=" + ctx.inline.length + ']');
+                log.info(prefix + "---- Inline usage statistics [inlineSize=" + ctx.inline.length + " bytes]");
 
                 List<List<?>> data = new ArrayList<>(ctx.inline.length);
                 for (int i = 0; i < ctx.inline.length; i++) {
@@ -895,7 +896,7 @@ public class IgniteIndexReader implements AutoCloseable {
                 }
 
                 SystemViewCommand.printTable(
-                    Arrays.asList(prefix, "Used", "Count"),
+                    Arrays.asList(prefix, "Used bytes", "Entries count"),
                     Arrays.asList(STRING, NUMBER, NUMBER),
                     data,
                     log
