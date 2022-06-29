@@ -21,7 +21,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStore;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 
@@ -92,11 +91,6 @@ class ScanContext {
     /** */
     public void onLeafPage(long pageId, List<Object> data) {
         data.forEach(items::add);
-    }
-
-    /** */
-    public int inlineColumnCount(QueryEntity queryEntity) {
-        return -1;
     }
 
     /** */
