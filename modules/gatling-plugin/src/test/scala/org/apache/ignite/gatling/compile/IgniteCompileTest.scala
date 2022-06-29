@@ -218,7 +218,7 @@ class IgniteCompileTest extends Simulation {
       val cache = client.cache[Int, Int]("test-cache").toOption.get
       cache.get(session("key").as[Int])(value => print(value))
       client.close() { _ =>
-        client.txStart() ({ _ => }, { _ => })
+        client.txStart()({ _ => }, { _ => })
       }
       session
     }
