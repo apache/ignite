@@ -36,5 +36,5 @@ public interface ServiceCallInterceptor extends Serializable {
      * @param call Service call.
      * @return Service call result.
      */
-    Object invoke(String mtd, Object[] args, ServiceContext ctx, Callable<Object> call) throws Exception;
+    public Object invoke(String mtd, Object[] args, ServiceContext ctx, Callable<Object> call) throws Exception;
 }

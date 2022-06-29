@@ -35,43 +35,12 @@ public class CompositeServiceCallInterceptor implements ServiceCallInterceptor {
 
     /** {@inheritDoc} */
     @Override public Object invoke(String mtd, Object[] args, ServiceContext ctx, Callable<Object> svcCall) throws Exception {
-        return new CompositeCall(intcps, mtd, args, ctx, svcCall).call();
-    }
+        return new Callable<Object>() {
+            int idx;
 
-    /** */
-    private static class CompositeCall implements Callable<Object> {
-        /** */
-        final ServiceCallInterceptor[] intcps;
-
-        /** */
-        final String mtd;
-
-        /** */
-        final Object[] args;
-
-        /** */
-        final Callable<Object> svcCall;
-
-        /** */
-        final ServiceContext ctx;
-
-        /** */
-        int idx;
-
-        /** */
-        private CompositeCall(ServiceCallInterceptor[] intcps, String mtd, Object[] args, ServiceContext ctx, Callable<Object> svcCall) {
-            assert intcps.length > 0;
-
-            this.intcps = intcps;
-            this.mtd = mtd;
-            this.args = args;
-            this.svcCall = svcCall;
-            this.ctx = ctx;
-        }
-
-        /** {@inheritDoc} */
-        @Override public Object call() throws Exception {
-            return intcps[idx].invoke(mtd, args, ctx, ++idx == intcps.length ? svcCall : this);
-        }
+            @Override public Object call() throws Exception {
+                return intcps[idx].invoke(mtd, args, ctx, ++idx == intcps.length ? svcCall : this);
+            }
+        }.call();
     }
 }
