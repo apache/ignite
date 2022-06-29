@@ -19,7 +19,6 @@ package org.apache.ignite.internal.commandline.indexreader;
 
 import java.io.File;
 import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
