@@ -118,24 +118,54 @@ public class IgniteIndexScan extends AbstractIndexScan implements SourceAwareIgn
         this.collation = collation;
     }
 
-    /** {@inheritDoc} */
-    @Override
-    public RelOptCost computeSelfCost(RelOptPlanner planner, RelMetadataQuery mq) {
-        if (firstOrLast(true))
-            return planner.getCostFactory().makeTinyCost();
-
-        return super.computeSelfCost(planner, mq);
+    /**
+     * @return {@code True}, if the bounds suppose taking first index record.
+     * {@code False} otherwise.
+     */
+    public boolean findfirst() {
+        return firstOrLast(true);
     }
 
     /**
-     * @return {@core True}, if lower or upper condition supposes taking only first or last index record.
+     * @return {@code True}, if the bounds suppose taking last index record.
+     * {@code False} otherwise.
      */
-    public boolean firstOrLast(boolean first) {
-        return condition == null &&
-            idxCond != null &&
-            idxCond.lowerBound() != null &&
-            idxCond.lowerBound().stream().filter(b -> b.isA(first ? SqlKind.MIN : SqlKind.MAX)).count() == 1 &&
-            F.eq(idxCond.lowerBound(), idxCond.upperBound());
+    public boolean findLast() {
+        return firstOrLast(false);
+    }
+
+    /**
+     * @return {@code True}, if the bounds suppose taking first or last index record.
+     * {@code False} otherwise.
+     */
+    public boolean findFirstOrLast() {
+        return firstOrLast(null);
+    }
+
+    /**
+     * Tells whether the bounds supose taking first or last index record.
+     *
+     * @param first If {@code null}, both take-first or take-last-record actions are considered. If {@code true}, only
+     *              take-first-record action is considered. If {@code false}, only take-last action is considered.
+     * @return {@code True}, if {@code first} is {@code null} and the bounds suppose taking first or last index record.
+     * {@code True}, if {@code first} is {@code true} and the bounds suppose taking first index record.
+     * {@code True}, if {@code first} is {@code false} and the bounds suppose taking last index record.
+     * {@code False} otherwise.
+     */
+    private boolean firstOrLast(@Nullable Boolean first) {
+        return lowerBound() != null &&
+            lowerBound().stream().filter(b -> first == null ? b.isA(SqlKind.FIRST_VALUE) || b.isA(SqlKind.LAST_VALUE)
+                : b.isA(first ? SqlKind.FIRST_VALUE : SqlKind.LAST_VALUE)).count() == 1 &&
+            F.eq(lowerBound(), upperBound());
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public RelOptCost computeSelfCost(RelOptPlanner planner, RelMetadataQuery mq) {
+        if (idxCond != null && findFirstOrLast())
+            return planner.getCostFactory().makeTinyCost();
+
+        return super.computeSelfCost(planner, mq);
     }
 
     /** {@inheritDoc} */

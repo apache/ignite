@@ -295,10 +295,9 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
         IgniteTypeFactory typeFactory = ctx.getTypeFactory();
 
         ImmutableBitSet requiredColumns = rel.requiredColumns();
-        boolean firstVal = rel.firstOrLast(true);
-        boolean lastVal = !firstVal && rel.firstOrLast(false);
-        List<RexNode> lowerBound = (firstVal || lastVal) ? null : rel.lowerBound();
-        List<RexNode> upperBound = (firstVal || lastVal) ? null : rel.upperBound();
+        boolean firstOrLast = rel.indexConditions() != null && rel.findFirstOrLast();
+        List<RexNode> lowerBound = firstOrLast ? null : rel.lowerBound();
+        List<RexNode> upperBound = firstOrLast ? null : rel.upperBound();
 
         RelDataType rowType = tbl.getRowType(typeFactory, requiredColumns);
 
@@ -312,8 +311,8 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
         IgniteIndex idx = tbl.getIndex(rel.indexName());
 
         if (idx != null && !tbl.isIndexRebuildInProgress()) {
-            Iterable<Row> rowsIter = firstVal || lastVal
-                ? idx.findFirstOrLast(firstVal, ctx, grp, requiredColumns)
+            Iterable<Row> rowsIter = firstOrLast
+                ? idx.findFirstOrLast(rel.findLast(), ctx, grp, requiredColumns)
                 : idx.scan(ctx, grp, filters, lower, upper, prj, requiredColumns);
 
             return new ScanNode<>(ctx, rowType, rowsIter);

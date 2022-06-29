@@ -166,7 +166,7 @@ public class RexUtils {
             return new IndexConditions();
 
         //TODO : check field?
-        if (condition.isA(MIN) || condition.isA(MAX))
+        if (condition.isA(FIRST_VALUE) || condition.isA(LAST_VALUE))
             return new IndexConditions(null, null, F.asList(condition), F.asList(condition));
 
         condition = RexUtil.toCnf(builder(cluster), condition);

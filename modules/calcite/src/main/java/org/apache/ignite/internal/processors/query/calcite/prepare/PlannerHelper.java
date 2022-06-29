@@ -106,7 +106,7 @@ public class PlannerHelper {
             //TODO: remove
             System.err.println("TEST | plan: " + igniteRel.explain());
 
-            System.err.println("TEST | dump: " + planner.dump());
+//            System.err.println("TEST | dump: " + planner.dump());
 
             return igniteRel;
         }
