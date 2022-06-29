@@ -731,11 +731,17 @@ public class IgniteIndexReader implements AutoCloseable {
         else
             parsed = new GridTuple3<>(UNKNOWN_CACHE, 0, null);
 
-        return new ScanContext(parsed.get1(), inlineFieldsCount(idxName, parsed), store, items);
+        return new ScanContext(parsed.get1(), inlineFieldsCount(parsed), store, items);
     }
 
-    /** */
-    protected int inlineFieldsCount(String idxName, GridTuple3<Integer, Integer, String> parsed) {
+    /**
+     * Seach index definition inside cache query entities.
+     *
+     * @param parsed Parsed index name.
+     * @return Count of inlined fields or {@code 0} if index definition not found.
+     * @see QueryEntity
+     */
+    protected int inlineFieldsCount(GridTuple3<Integer, Integer, String> parsed) {
         if (parsed.get1() == UNKNOWN_CACHE || !storedCacheData.containsKey(parsed.get1()))
             return 0;
 
@@ -744,7 +750,7 @@ public class IgniteIndexReader implements AutoCloseable {
         if (Objects.equals(QueryUtils.PRIMARY_KEY_INDEX, parsed.get3())) {
             if (data.queryEntities().size() > 1) {
                 log.warning("Can't parse inline for PK index when multiple query entities defined for a cache " +
-                    "[idx=" + idxName + ']');
+                    "[idx=" + parsed.get3() + ']');
 
                 return 0;
             }
@@ -769,7 +775,13 @@ public class IgniteIndexReader implements AutoCloseable {
                 break;
         }
 
-        return idx == null ? 0 : idx.getFields().size();
+        if (idx == null) {
+            log.warning("Can't find index definition. Inline information not available [idx=" + parsed.get3() + ']');
+
+            return 0;
+        }
+
+        return idx.getFields().size();
     }
 
     /** */
