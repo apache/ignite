@@ -18,10 +18,8 @@ package org.apache.ignite.gatling.builder.cache
 
 import io.gatling.core.action.Action
 import io.gatling.core.action.builder.ActionBuilder
-import io.gatling.core.session.EmptyStringExpressionSuccess
 import io.gatling.core.session.Expression
 import io.gatling.core.structure.ScenarioContext
-import org.apache.ignite.gatling.IgniteCheck
 import org.apache.ignite.gatling.action.cache.CacheGetAction
 
 /**
@@ -31,39 +29,13 @@ import org.apache.ignite.gatling.action.cache.CacheGetAction
  * @tparam V Type of the cache value.
  * @param cacheName Cache name.
  * @param key The cache entry key.
- * @param withKeepBinary True if it should operate with binary objects.
- * @param checks Optional collection of check to be performed on the query result.
- * @param requestName Request name.
  */
-case class CacheGetActionBuilder[K, V](
+class CacheGetActionBuilder[K, V](
   cacheName: Expression[String],
-  key: Expression[K],
-  withKeepBinary: Boolean = false,
-  checks: Seq[IgniteCheck[K, V]] = Seq.empty,
-  requestName: Expression[String] = EmptyStringExpressionSuccess
-) extends ActionBuilder {
-  /**
-   * Specify whether it should operate with binary objects.
-   *
-   * @return itself.
-   */
-  def keepBinary: CacheGetActionBuilder[K, V] = this.copy(withKeepBinary = true)
-
-  /**
-   * Specify collection of check to be performed on the query result.
-   *
-   * @param newChecks collection of check to be performed on the query result.
-   * @return itself.
-   */
-  def check(newChecks: IgniteCheck[K, V]*): CacheGetActionBuilder[K, V] = this.copy(checks = newChecks)
-
-  /**
-   * Specify request name for action.
-   *
-   * @param requestName Request name.
-   * @return itself.
-   */
-  def as(requestName: Expression[String]): ActionBuilder = this.copy(requestName = requestName)
+  key: Expression[K]
+) extends ActionBuilder
+    with CacheActionCommonParameters
+    with CheckParameters[K, V] {
 
   /**
    * Builds an action.
@@ -73,5 +45,5 @@ case class CacheGetActionBuilder[K, V](
    * @return The resulting action.
    */
   override def build(ctx: ScenarioContext, next: Action): Action =
-    new CacheGetAction(requestName, cacheName, key, keepBinary = withKeepBinary, checks, next, ctx)
+    new CacheGetAction(requestName, cacheName, key, withKeepBinary, checks, next, ctx)
 }

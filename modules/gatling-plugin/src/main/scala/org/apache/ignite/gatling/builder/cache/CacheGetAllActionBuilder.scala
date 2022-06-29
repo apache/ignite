@@ -18,23 +18,32 @@ package org.apache.ignite.gatling.builder.cache
 
 import io.gatling.core.action.Action
 import io.gatling.core.action.builder.ActionBuilder
-import io.gatling.core.session.EmptyStringExpressionSuccess
 import io.gatling.core.session.Expression
 import io.gatling.core.structure.ScenarioContext
-import org.apache.ignite.gatling.IgniteCheck
 import org.apache.ignite.gatling.action.cache.CacheGetAllAction
 
-case class CacheGetAllActionBuilder[K, V](
+/**
+ * Cache getAll action builder.
+ *
+ * @tparam K Type of the cache key.
+ * @tparam V Type of the cache value.
+ * @param cacheName Cache name.
+ * @param keys The collection of the cache entry keys.
+ */
+class CacheGetAllActionBuilder[K, V](
   cacheName: Expression[String],
-  keys: Expression[Set[K]],
-  checks: Seq[IgniteCheck[K, V]] = Seq.empty,
-  requestName: Expression[String] = EmptyStringExpressionSuccess
-) extends ActionBuilder {
+  keys: Expression[Set[K]]
+) extends ActionBuilder
+    with CacheActionCommonParameters
+    with CheckParameters[K, V] {
 
-  def check(newChecks: IgniteCheck[K, V]*): CacheGetAllActionBuilder[K, V] = this.copy(checks = newChecks)
-
-  def as(requestName: Expression[String]): ActionBuilder = this.copy(requestName = requestName)
-
+  /**
+   * Builds an action.
+   *
+   * @param ctx The scenario context.
+   * @param next The action that will be chained with the Action build by this builder.
+   * @return The resulting action.
+   */
   override def build(ctx: ScenarioContext, next: Action): Action =
-    new CacheGetAllAction(requestName, cacheName, keys, keepBinary = false, checks, next, ctx)
+    new CacheGetAllAction(requestName, cacheName, keys, keepBinary = withKeepBinary, checks, next, ctx)
 }

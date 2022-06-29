@@ -18,50 +18,104 @@ package org.apache.ignite.gatling.builder.cache
 
 import io.gatling.core.action.Action
 import io.gatling.core.action.builder.ActionBuilder
-import io.gatling.core.session.EmptyStringExpressionSuccess
 import io.gatling.core.session.Expression
 import io.gatling.core.structure.ScenarioContext
 import org.apache.ignite.cache.CacheEntryProcessor
-import org.apache.ignite.gatling.IgniteCheck
 import org.apache.ignite.gatling.action.cache.CacheInvokeAction
 
+/**
+ * Base invoke action builder.
+ *
+ * @tparam K Type of the cache key.
+ * @tparam V Type of the cache value.
+ * @tparam T Type of the entry processor result.
+ * @param cacheName Cache name.
+ * @param key The cache entry key to run entry processor for.
+ */
 case class CacheInvokeActionBuilderBase[K, V, T](
   cacheName: Expression[String],
-  key: Expression[K],
-  requestName: Expression[String] = EmptyStringExpressionSuccess
+  key: Expression[K]
 ) {
-
+  /**
+   * Specify the entry processor instance bypassing the additional arguments step.
+   *
+   * @param entryProcessor Entry processor instance. May be lambda.
+   * @return Builder step for common cache action parameters.
+   */
   def apply(entryProcessor: CacheEntryProcessor[K, V, T]): CacheInvokeActionBuilder[K, V, T] =
-    CacheInvokeActionBuilder[K, V, T](requestName, cacheName, key, entryProcessor, Seq.empty)
+    CacheInvokeActionBuilderProcessorStep(cacheName, key, Seq.empty)(entryProcessor)
 
+  /**
+   * Specify additional arguments to pass to the entry processor.
+   *
+   * @param args Additional arguments to pass to the entry processor.
+   * @return Builder step for entry processor.
+   */
   def args(args: Expression[Any]*): CacheInvokeActionBuilderProcessorStep[K, V, T] =
-    CacheInvokeActionBuilderProcessorStep[K, V, T](requestName, cacheName, key, args)
+    CacheInvokeActionBuilderProcessorStep[K, V, T](cacheName, key, args)
 }
 
+/**
+ * Builder step for entry processor instance specification.
+ *
+ * @tparam K Type of the cache key.
+ * @tparam V Type of the cache value.
+ * @tparam T Type of the entry processor result.
+ * @param cacheName Cache name.
+ * @param key The cache entry key to run entry processor for.
+ * @param args Additional arguments to pass to the entry processor.
+ */
 case class CacheInvokeActionBuilderProcessorStep[K, V, T](
-  requestName: Expression[String],
   cacheName: Expression[String],
   key: Expression[K],
-  arguments: Seq[Expression[Any]]
+  args: Seq[Expression[Any]]
 ) {
-
+  /**
+   * Specify the entry processor instance.
+   *
+   * @param entryProcessor Entry processor instance. May be lambda.
+   * @return Builder step for common cache action parameters.
+   */
   def apply(entryProcessor: CacheEntryProcessor[K, V, T]): CacheInvokeActionBuilder[K, V, T] =
-    CacheInvokeActionBuilder[K, V, T](requestName, cacheName, key, entryProcessor, arguments)
+    new CacheInvokeActionBuilder[K, V, T](cacheName, key, entryProcessor, args)
 }
 
-case class CacheInvokeActionBuilder[K, V, T](
-  requestName: Expression[String],
+/**
+ * Builder step for common cache action parameters.
+ *
+ * @tparam K Type of the cache key.
+ * @tparam V Type of the cache value.
+ * @tparam T Type of the entry processor result.
+ * @param cacheName Cache name.
+ * @param key The cache entry key.
+ * @param entryProcessor Instance of CacheEntryProcessor.
+ * @param arguments Additional arguments to pass to the entry processor.
+ */
+class CacheInvokeActionBuilder[K, V, T](
   cacheName: Expression[String],
   key: Expression[K],
   entryProcessor: CacheEntryProcessor[K, V, T],
-  arguments: Seq[Expression[Any]],
-  checks: Seq[IgniteCheck[K, T]] = Seq.empty
-) extends ActionBuilder {
-
-  def check(newChecks: IgniteCheck[K, T]*): CacheInvokeActionBuilder[K, V, T] = this.copy(checks = newChecks)
-
-  def as(requestName: Expression[String]): ActionBuilder = this.copy(requestName = requestName)
-
+  arguments: Seq[Expression[Any]]
+) extends ActionBuilder
+    with CacheActionCommonParameters
+    with CheckParameters[K, T] {
+  /**
+   * Builds an action.
+   *
+   * @param ctx The scenario context.
+   * @param next The action that will be chained with the Action build by this builder.
+   * @return The resulting action.
+   */
   override def build(ctx: ScenarioContext, next: Action): Action =
-    new CacheInvokeAction[K, V, T](requestName, cacheName, key, entryProcessor, arguments, keepBinary = false, checks, next, ctx)
+    new CacheInvokeAction[K, V, T](
+      requestName,
+      cacheName,
+      key,
+      entryProcessor,
+      arguments,
+      keepBinary = withKeepBinary,
+      checks,
+      next,
+      ctx
+    )
 }

@@ -20,7 +20,6 @@ import java.util.concurrent.locks.Lock
 
 import io.gatling.core.action.Action
 import io.gatling.core.action.builder.ActionBuilder
-import io.gatling.core.session.EmptyStringExpressionSuccess
 import io.gatling.core.session.Expression
 import io.gatling.core.structure.ScenarioContext
 import org.apache.ignite.gatling.action.cache.CacheUnlockAction
@@ -30,21 +29,12 @@ import org.apache.ignite.gatling.action.cache.CacheUnlockAction
  *
  * @param cacheName Cache name.
  * @param lock Lock instance.
- * @param requestName Request name.
  */
-case class CacheUnlockActionBuilder(
+class CacheUnlockActionBuilder(
   cacheName: Expression[String],
-  lock: Expression[Lock],
-  requestName: Expression[String] = EmptyStringExpressionSuccess
-) extends ActionBuilder {
-
-  /**
-   * Specify request name for action.
-   *
-   * @param requestName Request name.
-   * @return itself.
-   */
-  def as(requestName: Expression[String]): ActionBuilder = this.copy(requestName = requestName)
+  lock: Expression[Lock]
+) extends ActionBuilder
+    with CacheActionCommonParameters {
 
   /**
    * Builds an action.
@@ -54,5 +44,5 @@ case class CacheUnlockActionBuilder(
    * @return The resulting action.
    */
   override def build(ctx: ScenarioContext, next: Action): Action =
-    new CacheUnlockAction(requestName, cacheName, lock, keepBinary = false, next, ctx)
+    new CacheUnlockAction(requestName, cacheName, lock, keepBinary = withKeepBinary, next, ctx)
 }

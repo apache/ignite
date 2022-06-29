@@ -20,45 +20,23 @@ import java.util.concurrent.locks.Lock
 
 import io.gatling.core.action.Action
 import io.gatling.core.action.builder.ActionBuilder
-import io.gatling.core.session.EmptyStringExpressionSuccess
 import io.gatling.core.session.Expression
 import io.gatling.core.structure.ScenarioContext
-import org.apache.ignite.gatling.IgniteCheck
 import org.apache.ignite.gatling.action.cache.CacheLockAction
 
 /**
  * Cache entry obtain lock action builder.
  *
- * TODO: Note. Although checks are optional in general
- *
  * @tparam K Type of the cache key.
  * @param cacheName Cache name.
  * @param key The cache entry key.
- * @param checks Optional collection of check to be performed on the query result.
- * @param requestName Request name.
  */
-case class CacheLockActionBuilder[K](
+class CacheLockActionBuilder[K](
   cacheName: Expression[String],
-  key: Expression[K],
-  checks: Seq[IgniteCheck[K, Lock]] = Seq.empty,
-  requestName: Expression[String] = EmptyStringExpressionSuccess
-) extends ActionBuilder {
-
-  /**
-   * Specify collection of check to be performed on the query result.
-   *
-   * @param newChecks collection of check to be performed on the query result.
-   * @return itself.
-   */
-  def check(newChecks: IgniteCheck[K, Lock]*): CacheLockActionBuilder[K] = this.copy(checks = newChecks)
-
-  /**
-   * Specify request name for action.
-   *
-   * @param requestName Request name.
-   * @return itself.
-   */
-  def as(requestName: Expression[String]): ActionBuilder = this.copy(requestName = requestName)
+  key: Expression[K]
+) extends ActionBuilder
+    with CacheActionCommonParameters
+    with CheckParameters[K, Lock] {
 
   /**
    * Builds an action.
@@ -68,5 +46,5 @@ case class CacheLockActionBuilder[K](
    * @return The resulting action.
    */
   override def build(ctx: ScenarioContext, next: Action): Action =
-    new CacheLockAction(requestName, cacheName, key, keepBinary = false, checks, next, ctx)
+    new CacheLockAction(requestName, cacheName, key, keepBinary = withKeepBinary, checks, next, ctx)
 }

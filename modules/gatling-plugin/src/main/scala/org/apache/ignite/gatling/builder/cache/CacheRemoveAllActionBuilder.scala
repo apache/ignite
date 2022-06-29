@@ -18,19 +18,30 @@ package org.apache.ignite.gatling.builder.cache
 
 import io.gatling.core.action.Action
 import io.gatling.core.action.builder.ActionBuilder
-import io.gatling.core.session.EmptyStringExpressionSuccess
 import io.gatling.core.session.Expression
 import io.gatling.core.structure.ScenarioContext
 import org.apache.ignite.gatling.action.cache.CacheRemoveAllAction
 
-case class CacheRemoveAllActionBuilder[K](
+/**
+ * Cache entry remove action builder.
+ *
+ * @tparam K Type of the cache key.
+ * @param cacheName Cache name.
+ * @param keys Collection of cache entry keys.
+ */
+class CacheRemoveAllActionBuilder[K](
   cacheName: Expression[String],
-  keys: Expression[Set[K]],
-  requestName: Expression[String] = EmptyStringExpressionSuccess
-) extends ActionBuilder {
+  keys: Expression[Set[K]]
+) extends ActionBuilder
+    with CacheActionCommonParameters {
 
-  def as(requestName: Expression[String]): ActionBuilder = this.copy(requestName = requestName)
-
+  /**
+   * Builds an action.
+   *
+   * @param ctx The scenario context.
+   * @param next The action that will be chained with the Action build by this builder.
+   * @return The resulting action.
+   */
   override def build(ctx: ScenarioContext, next: Action): Action =
-    new CacheRemoveAllAction(requestName, cacheName, keys, keepBinary = false, next, ctx)
+    new CacheRemoveAllAction(requestName, cacheName, keys, keepBinary = withKeepBinary, next, ctx)
 }

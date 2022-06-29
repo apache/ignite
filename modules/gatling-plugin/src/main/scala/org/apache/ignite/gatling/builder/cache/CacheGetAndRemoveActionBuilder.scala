@@ -18,23 +18,32 @@ package org.apache.ignite.gatling.builder.cache
 
 import io.gatling.core.action.Action
 import io.gatling.core.action.builder.ActionBuilder
-import io.gatling.core.session.EmptyStringExpressionSuccess
 import io.gatling.core.session.Expression
 import io.gatling.core.structure.ScenarioContext
-import org.apache.ignite.gatling.IgniteCheck
 import org.apache.ignite.gatling.action.cache.CacheGetAndRemoveAction
 
-case class CacheGetAndRemoveActionBuilder[K, V](
+/**
+ * Cache entry getAndRemove action builder.
+ *
+ * @tparam K Type of the cache key.
+ * @tparam V Type of the cache value.
+ * @param cacheName Cache name.
+ * @param key The cache entry key.
+ */
+class CacheGetAndRemoveActionBuilder[K, V](
   cacheName: Expression[String],
-  key: Expression[K],
-  checks: Seq[IgniteCheck[K, V]] = Seq.empty,
-  requestName: Expression[String] = EmptyStringExpressionSuccess
-) extends ActionBuilder {
+  key: Expression[K]
+) extends ActionBuilder
+    with CacheActionCommonParameters
+    with CheckParameters[K, V] {
 
-  def check(newChecks: IgniteCheck[K, V]*): CacheGetAndRemoveActionBuilder[K, V] = this.copy(checks = newChecks)
-
-  def as(requestName: Expression[String]): ActionBuilder = this.copy(requestName = requestName)
-
+  /**
+   * Builds an action.
+   *
+   * @param ctx The scenario context.
+   * @param next The action that will be chained with the Action build by this builder.
+   * @return The resulting action.
+   */
   override def build(ctx: ScenarioContext, next: Action): Action =
-    new CacheGetAndRemoveAction(requestName, cacheName, key, keepBinary = false, checks, next, ctx)
+    new CacheGetAndRemoveAction(requestName, cacheName, key, keepBinary = withKeepBinary, checks, next, ctx)
 }

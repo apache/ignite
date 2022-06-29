@@ -56,7 +56,7 @@ trait Cache {
      * @return ActionBuilder
      */
     def apply(cacheName: Expression[String], key: Expression[K], value: Expression[V]): CachePutActionBuilder[K, V] =
-      CachePutActionBuilder(cacheName, session => key(session).flatMap(k => value(session).map(v => (k, v))))
+      new CachePutActionBuilder(cacheName, session => key(session).flatMap(k => value(session).map(v => (k, v))))
 
     /**
      * Starts put action constructing accepting a single tuple parameter containing both key and value.
@@ -66,7 +66,7 @@ trait Cache {
      * @return ActionBuilder
      */
     def apply(cacheName: Expression[String], pair: Expression[(K, V)]): CachePutActionBuilder[K, V] =
-      CachePutActionBuilder(cacheName, pair)
+      new CachePutActionBuilder(cacheName, pair)
   }
 
   /**
@@ -79,7 +79,7 @@ trait Cache {
    * @return ActionBuilder
    */
   def get[K, V](cacheName: Expression[String], key: Expression[K]): CacheGetActionBuilder[K, V] =
-    CacheGetActionBuilder(cacheName, key)
+    new CacheGetActionBuilder(cacheName, key)
 
   /**
    * Starts constructing of the SQL query action.
@@ -101,7 +101,7 @@ trait Cache {
    * @return ActionBuilder
    */
   def putAll[K, V](cacheName: Expression[String], map: Expression[Map[K, V]]): CachePutAllActionBuilder[K, V] =
-    CachePutAllActionBuilder(cacheName, map)
+    new CachePutAllActionBuilder(cacheName, map)
 
   /**
    * Starts constructing of the cache getAndRemove action.
@@ -113,7 +113,7 @@ trait Cache {
    * @return ActionBuilder
    */
   def getAndRemove[K, V](cacheName: Expression[String], key: Expression[K]): CacheGetAndRemoveActionBuilder[K, V] =
-    CacheGetAndRemoveActionBuilder(cacheName, key)
+    new CacheGetAndRemoveActionBuilder(cacheName, key)
 
   /**
    * Starts constructing of the cache getAndRemove action.
@@ -126,7 +126,7 @@ trait Cache {
    * @return ActionBuilder
    */
   def getAndPut[K, V](cacheName: Expression[String], key: Expression[K], value: Expression[V]): CacheGetAndPutActionBuilder[K, V] =
-    CacheGetAndPutActionBuilder(cacheName, key, value)
+    new CacheGetAndPutActionBuilder(cacheName, key, value)
 
   /**
    * Starts constructing of the cache getAll action.
@@ -138,7 +138,7 @@ trait Cache {
    * @return ActionBuilder
    */
   def getAll[K, V](cacheName: Expression[String], keys: Expression[Set[K]]): CacheGetAllActionBuilder[K, V] =
-    CacheGetAllActionBuilder(cacheName, keys)
+    new CacheGetAllActionBuilder(cacheName, keys)
 
   /**
    * Starts constructing of the cache remove action.
@@ -149,7 +149,7 @@ trait Cache {
    * @return ActionBuilder
    */
   def remove[K](cacheName: Expression[String], key: Expression[K]): CacheRemoveActionBuilder[K] =
-    CacheRemoveActionBuilder(cacheName, key)
+    new CacheRemoveActionBuilder(cacheName, key)
 
   /**
    * Starts constructing of the cache removeAll action.
@@ -160,7 +160,7 @@ trait Cache {
    * @return ActionBuilder
    */
   def removeAll[K](cacheName: Expression[String], keys: Expression[Set[K]]): CacheRemoveAllActionBuilder[K] =
-    CacheRemoveAllActionBuilder(cacheName, keys)
+    new CacheRemoveAllActionBuilder(cacheName, keys)
 
   /**
    * Starts constructing of the cache entry processor invoke action.
@@ -203,8 +203,8 @@ trait Cache {
   def invokeAll[K, V, T](
     cacheName: Expression[String],
     map: Expression[Map[K, CacheEntryProcessor[K, V, T]]]
-  ): CacheInvokeAllActionBuilderBase[K, V, T] =
-    CacheInvokeAllActionBuilderBase[K, V, T](cacheName, map)
+  ): CacheInvokeAllMultipleProcessorsActionBuilder[K, V, T] =
+    new CacheInvokeAllMultipleProcessorsActionBuilder[K, V, T](cacheName, map)
 
   /**
    * Starts constructing of the cache entry lock action.
@@ -215,7 +215,7 @@ trait Cache {
    * @return ActionBuilder
    */
   def lock[K](cacheName: Expression[String], key: Expression[K]): CacheLockActionBuilder[K] =
-    CacheLockActionBuilder(cacheName, key)
+    new CacheLockActionBuilder(cacheName, key)
 
   /**
    * Starts constructing of the cache entry unlock action.
@@ -225,7 +225,7 @@ trait Cache {
    * @return ActionBuilder
    */
   def unlock(cacheName: Expression[String], lock: Expression[Lock]): CacheUnlockActionBuilder =
-    CacheUnlockActionBuilder(cacheName, lock)
+    new CacheUnlockActionBuilder(cacheName, lock)
 
   /**
    * Implicit conversion to support lambda usage in place of CacheEntryProcessor for invoke and invokeAll actions
