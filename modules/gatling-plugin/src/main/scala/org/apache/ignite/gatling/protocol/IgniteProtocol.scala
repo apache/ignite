@@ -48,7 +48,7 @@ object IgniteProtocol {
       classOf[IgniteProtocol].asInstanceOf[Class[Protocol]]
 
     override def defaultProtocolValue(configuration: GatlingConfiguration): IgniteProtocol =
-      throw new IllegalStateException("Can't provide a default value for IgniteProtocol")
+      IgniteProtocolBuilderBase.cfg(new IgniteConfiguration()).build
 
     /**
      * Return lambda to init the Ignite protocol components.

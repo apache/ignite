@@ -84,7 +84,7 @@ case class IgniteThinApi(wrapped: IgniteClient) extends IgniteApi with Completio
    * @param f @inheritdoc
    */
   override def getOrCreateCacheByConfiguration[K, V](cfg: CacheConfiguration[K, V])(s: CacheApi[K, V] => Unit, f: Throwable => Unit): Unit =
-    throw new NotImplementedError("Node client cache configuration was used to create cache via thin client API")
+    f(new NotImplementedError("Node client cache configuration was used to create cache via thin client API"))
 
   /**
    * @inheritdoc

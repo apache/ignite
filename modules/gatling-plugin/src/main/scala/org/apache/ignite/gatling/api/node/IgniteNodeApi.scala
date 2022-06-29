@@ -74,7 +74,7 @@ case class IgniteNodeApi(wrapped: Ignite) extends IgniteApi {
   override def getOrCreateCacheByClientConfiguration[K, V](
     cfg: ClientCacheConfiguration
   )(s: CacheApi[K, V] => Unit, f: Throwable => Unit): Unit =
-    throw new NotImplementedError("Thin client cache configuration was used to create cache via node API")
+    f(new NotImplementedError("Thin client cache configuration was used to create cache via node API"))
 
   /**
    * @inheritdoc

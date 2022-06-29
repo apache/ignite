@@ -248,7 +248,7 @@ case class CacheThinApi[K, V](wrapped: ClientCache[K, V]) extends CacheApi[K, V]
     s: Map[K, T] => Unit,
     f: Throwable => Unit
   ): Unit =
-    throw new NotImplementedError("invoke is not supported in thin client API")
+    f(new NotImplementedError("invoke is not supported in thin client API"))
 
   /**
    * @inheritdoc
@@ -263,7 +263,7 @@ case class CacheThinApi[K, V](wrapped: ClientCache[K, V]) extends CacheApi[K, V]
     s: Map[K, T] => Unit,
     f: Throwable => Unit
   ): Unit =
-    throw new NotImplementedError("invokeAsync is not supported in thin client API")
+    f(new NotImplementedError("invokeAsync is not supported in thin client API"))
 
   /**
    * @inheritdoc
@@ -277,7 +277,7 @@ case class CacheThinApi[K, V](wrapped: ClientCache[K, V]) extends CacheApi[K, V]
     s: Map[K, EntryProcessorResult[T]] => Unit,
     f: Throwable => Unit
   ): Unit =
-    throw new NotImplementedError("invokeAll is not supported in thin client API")
+    f(new NotImplementedError("invokeAll is not supported in thin client API"))
 
   /**
    * @inheritdoc
@@ -291,7 +291,7 @@ case class CacheThinApi[K, V](wrapped: ClientCache[K, V]) extends CacheApi[K, V]
     s: Map[K, EntryProcessorResult[T]] => Unit,
     f: Throwable => Unit
   ): Unit =
-    throw new NotImplementedError("invokeAllAsync is not supported in thin client API")
+    f(new NotImplementedError("invokeAllAsync is not supported in thin client API"))
 
   /**
    * @inheritdoc
@@ -300,7 +300,7 @@ case class CacheThinApi[K, V](wrapped: ClientCache[K, V]) extends CacheApi[K, V]
    * @param f @inheritdoc
    */
   override def lock(key: K)(s: Lock => Unit, f: Throwable => Unit): Unit =
-    throw new NotImplementedError("lock is not supported in thin client API")
+    f(new NotImplementedError("lock is not supported in thin client API"))
 
   /**
    * @inheritdoc
@@ -309,7 +309,7 @@ case class CacheThinApi[K, V](wrapped: ClientCache[K, V]) extends CacheApi[K, V]
    * @param f @inheritdoc
    */
   override def unlock(lock: Lock)(s: Unit => Unit, f: Throwable => Unit): Unit =
-    throw new NotImplementedError("unlock is not supported in thin client API")
+    f(new NotImplementedError("unlock is not supported in thin client API"))
 
   /**
    * @inheritdoc
