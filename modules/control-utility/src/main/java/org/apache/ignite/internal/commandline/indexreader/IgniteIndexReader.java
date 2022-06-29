@@ -36,6 +36,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -84,6 +85,7 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.crc.IgniteDat
 import org.apache.ignite.internal.processors.cache.tree.AbstractDataLeafIO;
 import org.apache.ignite.internal.processors.cache.tree.PendingRowIO;
 import org.apache.ignite.internal.processors.cache.tree.RowLinkIO;
+import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.GridStringBuilder;
 import org.apache.ignite.internal.util.lang.GridPlainClosure2;
@@ -209,7 +211,7 @@ public class IgniteIndexReader implements AutoCloseable {
     private final FilePageStore[] partStores;
 
     /** */
-    private final Map<Integer, StoredCacheData> cacheData = new HashMap<>();
+    private final Map<Integer, StoredCacheData> storedCacheData = new HashMap<>();
 
     /** */
     private final Set<Integer> missingPartitions = new HashSet<>();
@@ -287,7 +289,7 @@ public class IgniteIndexReader implements AutoCloseable {
             try (ObjectInputStream stream = new ObjectInputStream(Files.newInputStream(f.toPath()))) {
                 StoredCacheData data = (StoredCacheData)stream.readObject();
 
-                cacheData.put(CU.cacheId(data.config().getName()), data);
+                storedCacheData.put(CU.cacheId(data.config().getName()), data);
             }
             catch (ClassNotFoundException | IOException e) {
                 log.log(WARNING, "Can't read stored cache data. Inline for this cache will not be analyzed [f=" + f.getName() + ']', e);
@@ -734,15 +736,28 @@ public class IgniteIndexReader implements AutoCloseable {
 
     /** */
     protected int inlineFieldsCount(String idxName, GridTuple3<Integer, Integer, String> parsed) {
-        if (parsed.get1() == UNKNOWN_CACHE || !cacheData.containsKey(parsed.get1()))
+        if (parsed.get1() == UNKNOWN_CACHE || !storedCacheData.containsKey(parsed.get1()))
             return 0;
 
-        StoredCacheData data = cacheData.get(parsed.get1());
+        StoredCacheData data = storedCacheData.get(parsed.get1());
+
+        if (Objects.equals(QueryUtils.PRIMARY_KEY_INDEX, parsed.get3())) {
+            if (data.queryEntities().size() > 1) {
+                log.warning("Can't parse inline for PK index when multiple query entities defined for a cache " +
+                    "[idx=" + idxName + ']');
+
+                return 0;
+            }
+
+            QueryEntity qe = data.queryEntities().iterator().next();
+
+            return qe.getKeyFields() == null ? 1 : qe.getKeyFields().size();
+        }
 
         QueryIndex idx = null;
 
-        for (QueryEntity qe0 : data.queryEntities()) {
-            for (QueryIndex idx0 : qe0.getIndexes()) {
+        for (QueryEntity qe : data.queryEntities()) {
+            for (QueryIndex idx0 : qe.getIndexes()) {
                 if (Objects.equals(idx0.getName(), parsed.get3())) {
                     idx = idx0;
 
@@ -754,10 +769,7 @@ public class IgniteIndexReader implements AutoCloseable {
                 break;
         }
 
-        if (idx == null)
-            return 0;
-
-        return idx.getFields().size();
+        return idx == null ? 0 : idx.getFields().size();
     }
 
     /** */
@@ -1368,7 +1380,7 @@ public class IgniteIndexReader implements AutoCloseable {
                     InlineIndexKeyType type = InlineIndexKeyTypeRegistry.get(type0, settings);
 
                     if (type == null) {
-                        log.warning("Unknown inline type [type=" + type0 + ']');
+                        log.log(Level.FINEST, "Unknown inline type [type=" + type0 + ']');
 
                         break;
                     }
