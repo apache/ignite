@@ -1009,7 +1009,6 @@ public class CommandHandlerParsingTest {
         params1.put("cache1", new HashSet<>(Arrays.asList("foo", "bar")));
         params1.put("cache2", null);
         params1.put("foocache", new HashSet<>(Arrays.asList("idx", "bar")));
-        params1.put("test", Collections.emptySet());
         params1.put("bar", Collections.singleton("foo"));
 
         CacheCommands cacheCommand1 = (CacheCommands)parseArgs(asList("--cache", "schedule_indexes_rebuild", "--node-id", nodeId.toString(),
@@ -1024,7 +1023,6 @@ public class CommandHandlerParsingTest {
         params2.put("cache1", new HashSet<>(Arrays.asList("foo", "bar")));
         params2.put("cache2", null);
         params2.put("foocache", new HashSet<>(Arrays.asList("idx", "bar")));
-        params2.put("test", Collections.emptySet());
         params2.put("bar", Collections.singleton("foo"));
 
         CacheCommands cacheCommand2 = (CacheCommands)parseArgs(asList("--cache", "schedule_indexes_rebuild", "--node-id", nodeId.toString(),
