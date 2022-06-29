@@ -30,7 +30,7 @@ import org.apache.ignite.gatling.action.cache.CacheSqlAction
  *
  * @param cacheName Cache name.
  * @param sql SQL query.
- * @param argsList Optionla list of the positional query parameters.
+ * @param argsList Optional list of the positional query parameters.
  * @param partitionsList Optional list of cache partitions to execute query on.
  * @param checks Optional collection of check to be performed on the query result.
  * @param requestName Request name.
