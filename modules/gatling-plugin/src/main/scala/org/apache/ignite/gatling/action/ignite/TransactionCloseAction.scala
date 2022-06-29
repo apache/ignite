@@ -21,7 +21,7 @@ import io.gatling.core.session.Expression
 import io.gatling.core.session.Session
 import io.gatling.core.structure.ScenarioContext
 import org.apache.ignite.gatling.action.IgniteAction
-import org.apache.ignite.gatling.protocol.IgniteProtocol.TRANSACTION_API_SESSION_KEY
+import org.apache.ignite.gatling.protocol.IgniteProtocol.TransactionApiSessionKey
 
 /**
  * Action for the transaction close Ignite operation.
@@ -50,7 +50,7 @@ class TransactionCloseAction(requestName: Expression[String], next: Action, ctx:
           func,
           resolvedRequestName,
           session,
-          updateSession = (session, _: Option[Unit]) => session.remove(TRANSACTION_API_SESSION_KEY)
+          updateSession = (session, _: Option[Unit]) => session.remove(TransactionApiSessionKey)
         )
       }
     }

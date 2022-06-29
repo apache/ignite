@@ -22,7 +22,7 @@ import io.gatling.core.session.Session
 import io.gatling.core.structure.ScenarioContext
 import org.apache.ignite.gatling.action.IgniteAction
 import org.apache.ignite.gatling.api.IgniteApi
-import org.apache.ignite.gatling.protocol.IgniteProtocol.IGNITE_API_SESSION_KEY
+import org.apache.ignite.gatling.protocol.IgniteProtocol.IgniteApiSessionKey
 
 /**
  * Action for the start Ignite API operation (starts either the thin client or the node working in client mode).
@@ -53,7 +53,7 @@ class StartClientAction(requestName: Expression[String], next: Action, ctx: Scen
         session,
         updateSession = (session, igniteApi: Option[IgniteApi]) =>
           igniteApi
-            .map(igniteApi => session.set(IGNITE_API_SESSION_KEY, igniteApi))
+            .map(igniteApi => session.set(IgniteApiSessionKey, igniteApi))
             .getOrElse(session)
       )
     }

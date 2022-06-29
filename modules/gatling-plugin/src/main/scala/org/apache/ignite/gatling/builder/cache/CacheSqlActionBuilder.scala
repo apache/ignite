@@ -22,7 +22,7 @@ import io.gatling.core.action.builder.ActionBuilder
 import io.gatling.core.session.EmptyStringExpressionSuccess
 import io.gatling.core.session.Expression
 import io.gatling.core.structure.ScenarioContext
-import org.apache.ignite.gatling.SqlCheck
+import org.apache.ignite.gatling.Predef.SqlCheck
 import org.apache.ignite.gatling.action.cache.CacheSqlAction
 
 /**

@@ -32,9 +32,10 @@ import io.gatling.core.check.identityPreparer
 import io.gatling.core.session.Expression
 import io.gatling.core.session.ExpressionSuccessWrapper
 import io.gatling.core.session.Session
-import org.apache.ignite.gatling.IgniteCheck
 
 trait IgniteKeyValueCheckSupport {
+
+  type IgniteCheck[K, V] = Check[Map[K, V]]
 
   trait IgniteAllKeyValueCheckType
 

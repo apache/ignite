@@ -26,33 +26,84 @@ import org.apache.ignite.configuration.ClientConfiguration
 import org.apache.ignite.configuration.IgniteConfiguration
 import org.apache.ignite.gatling.api.IgniteApi
 
+/**
+ * Ignite protocol globals.
+ */
 object IgniteProtocol {
 
-  type Components = IgniteComponents
+  /** Session key the IgniteApi instance is stored under. */
+  val IgniteApiSessionKey = "__igniteApi__"
+  /**
+   * Session key the TransactionApi instance is stored under.
+   *
+   * Presence of the TransactionApi instance in session means that the Ignite transaction is active now.
+   */
+  val TransactionApiSessionKey = "__transactionApi__"
 
-  val IGNITE_API_SESSION_KEY = "igniteApi"
-  val TRANSACTION_API_SESSION_KEY = "transactionApi"
-
-  val igniteProtocolKey: ProtocolKey[IgniteProtocol, Components] = new ProtocolKey[IgniteProtocol, Components] {
+  /**
+   * Initialise components of the Ignite protocol on simulation start.
+   */
+  val IgniteProtocolKey: ProtocolKey[IgniteProtocol, IgniteComponents] = new ProtocolKey[IgniteProtocol, IgniteComponents] {
     override def protocolClass: Class[Protocol] =
       classOf[IgniteProtocol].asInstanceOf[Class[Protocol]]
 
     override def defaultProtocolValue(configuration: GatlingConfiguration): IgniteProtocol =
       throw new IllegalStateException("Can't provide a default value for IgniteProtocol")
 
+    /**
+     * Return lambda to init the Ignite protocol components.
+     *
+     * Note, lambda would start new Ignite API instance if none was passed as a protocol configuration parameter
+     * (unless the `manualClientStart` protocol parameter was used).
+     *
+     * @param coreComponents Gatling core components.
+     * @return Lambda creating Ignite components from the Ignite protocol parameters provided.
+     */
     override def newComponents(coreComponents: CoreComponents): IgniteProtocol => IgniteComponents =
       igniteProtocol => IgniteComponents(coreComponents, igniteProtocol, IgniteApi(igniteProtocol))
   }
 }
 
+/**
+ * Ignite protocol parameters.
+ *
+ * @param cfg Ignite API configuration.
+ * @param manualClientStart If true the default shared instance of Ignite API will not be started before the
+ *                          simulation start and it will not be automatically inserted into the client session
+ *                          upon injection into the scenario. To start Ignite API instance scenario should contain
+ *                          explicit `start` and `close` actions.
+ */
 case class IgniteProtocol(cfg: IgniteCfg, manualClientStart: Boolean = false) extends Protocol
 
+/**
+ * Abstract Ignite API configuration.
+ */
 sealed trait IgniteCfg
 
+/**
+ * Ignite API configuration containing the pre-started Ignite (thin) Client instance.
+ *
+ * @param client Instance of Ignite (thin) Client.
+ */
 case class IgniteClientCfg(client: IgniteClient) extends IgniteCfg
 
+/**
+ * Ignite API configuration containing the pre-started Ignite (thick) node instance.
+ *
+ * @param ignite Instance of the Ignite grid.
+ */
 case class IgniteNodeCfg(ignite: Ignite) extends IgniteCfg
 
+/**
+ * Ignite API configuration containing the Ignite (thin) Client configuration instance.
+ *
+ * @param cfg Ignite (thin) client configuration.
+ */
 case class IgniteClientConfigurationCfg(cfg: ClientConfiguration) extends IgniteCfg
 
+/**
+ * Ignite API configuration containing the Ignite node (thick) configuration instance.
+ *
+ * @param cfg Ignite (thick) node configuration.
+ */
 case class IgniteConfigurationCfg(cfg: IgniteConfiguration) extends IgniteCfg

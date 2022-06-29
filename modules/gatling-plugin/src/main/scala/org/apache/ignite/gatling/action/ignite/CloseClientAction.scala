@@ -23,7 +23,7 @@ import io.gatling.core.structure.ScenarioContext
 import org.apache.ignite.gatling.action.IgniteAction
 import org.apache.ignite.gatling.protocol.IgniteClientConfigurationCfg
 import org.apache.ignite.gatling.protocol.IgniteConfigurationCfg
-import org.apache.ignite.gatling.protocol.IgniteProtocol.IGNITE_API_SESSION_KEY
+import org.apache.ignite.gatling.protocol.IgniteProtocol.IgniteApiSessionKey
 
 /**
  * Action for the close Ignite API operation (either closes the thin client or stops the node working in client mode).
@@ -53,7 +53,7 @@ class CloseClientAction(requestName: Expression[String], next: Action, ctx: Scen
         case _ => noOp
       }
 
-      call(func, resolvedRequestName, session, updateSession = (session, _: Option[Unit]) => session.remove(IGNITE_API_SESSION_KEY))
+      call(func, resolvedRequestName, session, updateSession = (session, _: Option[Unit]) => session.remove(IgniteApiSessionKey))
     }
   }
 }

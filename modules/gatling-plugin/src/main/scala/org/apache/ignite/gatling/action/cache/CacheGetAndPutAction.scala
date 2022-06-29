@@ -20,7 +20,7 @@ import io.gatling.core.action.Action
 import io.gatling.core.session.Expression
 import io.gatling.core.session.Session
 import io.gatling.core.structure.ScenarioContext
-import org.apache.ignite.gatling.IgniteCheck
+import org.apache.ignite.gatling.Predef.IgniteCheck
 import org.apache.ignite.gatling.action.CacheAction
 
 /**

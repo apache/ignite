@@ -36,8 +36,8 @@ import io.gatling.core.util.NameGen
 import org.apache.ignite.gatling.api.IgniteApi
 import org.apache.ignite.gatling.api.TransactionApi
 import org.apache.ignite.gatling.protocol.IgniteProtocol
-import org.apache.ignite.gatling.protocol.IgniteProtocol.IGNITE_API_SESSION_KEY
-import org.apache.ignite.gatling.protocol.IgniteProtocol.TRANSACTION_API_SESSION_KEY
+import org.apache.ignite.gatling.protocol.IgniteProtocol.IgniteApiSessionKey
+import org.apache.ignite.gatling.protocol.IgniteProtocol.TransactionApiSessionKey
 
 /**
  * Base class for all Ignite actions.
@@ -57,11 +57,11 @@ abstract class IgniteAction(val actionType: String, val requestName: Expression[
   def name: String = genName(actionType)
 
   /** Clock used to measure time the action takes. */
-  val clock: Clock = ctx.protocolComponentsRegistry.components(IgniteProtocol.igniteProtocolKey).coreComponents.clock
+  val clock: Clock = ctx.protocolComponentsRegistry.components(IgniteProtocol.IgniteProtocolKey).coreComponents.clock
   /** Statistics engine */
-  val statsEngine: StatsEngine = ctx.protocolComponentsRegistry.components(IgniteProtocol.igniteProtocolKey).coreComponents.statsEngine
+  val statsEngine: StatsEngine = ctx.protocolComponentsRegistry.components(IgniteProtocol.IgniteProtocolKey).coreComponents.statsEngine
   /** Ignite protocol */
-  val protocol: IgniteProtocol = ctx.protocolComponentsRegistry.components(IgniteProtocol.igniteProtocolKey).igniteProtocol
+  val protocol: IgniteProtocol = ctx.protocolComponentsRegistry.components(IgniteProtocol.IgniteProtocolKey).igniteProtocol
 
   /**
    * Logs results of action execution and starts the next action in the chain.
@@ -131,8 +131,8 @@ abstract class IgniteAction(val actionType: String, val requestName: Expression[
   def resolveIgniteParameters(session: Session): Validation[IgniteActionParameters] =
     for {
       resolvedRequestName <- requestName(session)
-      igniteApi <- session(IGNITE_API_SESSION_KEY).validate[IgniteApi]
-      transactionApi <- session(TRANSACTION_API_SESSION_KEY).asOption[TransactionApi].success
+      igniteApi <- session(IgniteApiSessionKey).validate[IgniteApi]
+      transactionApi <- session(TransactionApiSessionKey).asOption[TransactionApi].success
     } yield IgniteActionParameters(resolvedRequestName, igniteApi, transactionApi)
 
   /**

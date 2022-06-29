@@ -35,7 +35,7 @@ import org.apache.ignite.gatling.protocol.IgniteClientConfigurationCfg
 import org.apache.ignite.gatling.protocol.IgniteConfigurationCfg
 import org.apache.ignite.gatling.protocol.IgniteNodeCfg
 import org.apache.ignite.gatling.protocol.IgniteProtocol
-import org.apache.ignite.gatling.protocol.IgniteProtocol.IGNITE_API_SESSION_KEY
+import org.apache.ignite.gatling.protocol.IgniteProtocol.IgniteApiSessionKey
 import org.apache.ignite.transactions.TransactionConcurrency
 import org.apache.ignite.transactions.TransactionIsolation
 
@@ -178,7 +178,7 @@ object IgniteApi extends StrictLogging {
 
       case IgniteConfigurationCfg(cfg) if protocol.manualClientStart => Try(startNode(cfg)).fold(f, s)
 
-      case _ => s(session(IGNITE_API_SESSION_KEY).as[IgniteApi])
+      case _ => s(session(IgniteApiSessionKey).as[IgniteApi])
     }
 
   /**

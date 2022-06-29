@@ -25,7 +25,7 @@ import org.apache.ignite.gatling.action.IgniteAction
 import org.apache.ignite.gatling.api.IgniteApi
 import org.apache.ignite.gatling.api.TransactionApi
 import org.apache.ignite.gatling.builder.transaction.TransactionParameters
-import org.apache.ignite.gatling.protocol.IgniteProtocol.TRANSACTION_API_SESSION_KEY
+import org.apache.ignite.gatling.protocol.IgniteProtocol.TransactionApiSessionKey
 import org.apache.ignite.transactions.TransactionConcurrency
 import org.apache.ignite.transactions.TransactionIsolation
 
@@ -60,7 +60,7 @@ class TransactionStartAction(requestName: Expression[String], params: Transactio
         session,
         updateSession = (session, transactionApi: Option[TransactionApi]) =>
           transactionApi
-            .map(transactionApi => session.set(TRANSACTION_API_SESSION_KEY, transactionApi))
+            .map(transactionApi => session.set(TransactionApiSessionKey, transactionApi))
             .getOrElse(session)
       )
     }

@@ -21,24 +21,75 @@ import org.apache.ignite.client.IgniteClient
 import org.apache.ignite.configuration.ClientConfiguration
 import org.apache.ignite.configuration.IgniteConfiguration
 
+/**
+ * Base Ignite protocol builder.
+ */
 case object IgniteProtocolBuilderBase {
+  /**
+   * Specify Ignite API as Ignite (thin) client configuration.
+   *
+   * @param cfg ClientConfiguration instance.
+   * @return Build step for additional protocol parameters.
+   */
   def cfg(cfg: ClientConfiguration): IgniteProtocolBuilderManualStartStep =
     IgniteProtocolBuilderManualStartStep(IgniteClientConfigurationCfg(cfg))
 
+  /**
+   * Specify Ignite API as Ignite (thick) node configuration.
+   *
+   * @param cfg IgniteConfiguration instance.
+   * @return Build step for additional protocol parameters.
+   */
   def cfg(cfg: IgniteConfiguration): IgniteProtocolBuilderManualStartStep =
     IgniteProtocolBuilderManualStartStep(IgniteConfigurationCfg(cfg))
 
-  def cfg(ignite: Ignite): IgniteProtocolBuilder = IgniteProtocolBuilder(IgniteNodeCfg(ignite))
+  /**
+   * Specify Ignite API as pre-started Ignite (thick) node instance.
+   *
+   * @param ignite Ignite instance.
+   * @return Build step for additional protocol parameters.
+   */
+  def cfg(ignite: Ignite): IgniteProtocolBuilder = IgniteProtocolBuilder(IgniteNodeCfg(ignite), manualClientStart = false)
 
-  def cfg(igniteClient: IgniteClient): IgniteProtocolBuilder = IgniteProtocolBuilder(IgniteClientCfg(igniteClient))
+  /**
+   * Specify Ignite API as pre-started Ignite (thin) Client instance.
+   *
+   * @param igniteClient IgniteClient instance.
+   * @return Build step for additional protocol parameters.
+   */
+  def cfg(igniteClient: IgniteClient): IgniteProtocolBuilder = IgniteProtocolBuilder(IgniteClientCfg(igniteClient), manualClientStart = false)
 }
 
+/**
+ * Builder step for additional protocol parameters.
+ *
+ * @param cfg Ignite API configuration.
+ */
 case class IgniteProtocolBuilderManualStartStep(cfg: IgniteCfg) {
+
+  /**
+   * Specify the `withManualClientStart` flag.
+   * @return Protocol builder further step.
+   */
   def withManualClientStart: IgniteProtocolBuilder = IgniteProtocolBuilder(cfg, manualClientStart = true)
 
-  def build: IgniteProtocol = IgniteProtocol(cfg)
+  /**
+   * Builds Ignite protocol instance.
+   * @return Protocol builder further step.
+   */
+  def build: IgniteProtocol = IgniteProtocolBuilder(cfg, manualClientStart = false).build
 }
 
-case class IgniteProtocolBuilder(cfg: IgniteCfg, manualClientStart: Boolean = false) {
+/**
+ * Ignite protocol builder step for other parameters.
+ *
+ * @param cfg Ignite API configuration.
+ * @param manualClientStart Manual client start flag.
+ */
+case class IgniteProtocolBuilder(cfg: IgniteCfg, manualClientStart: Boolean) {
+  /**
+   * Builds Ignite protocol instance.
+   * @return Protocol builder further step.
+   */
   def build: IgniteProtocol = IgniteProtocol(cfg, manualClientStart)
 }

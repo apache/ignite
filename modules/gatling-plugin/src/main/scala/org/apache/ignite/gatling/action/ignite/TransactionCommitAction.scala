@@ -25,7 +25,7 @@ import io.gatling.core.session.Session
 import io.gatling.core.structure.ScenarioContext
 import org.apache.ignite.gatling.action.IgniteAction
 import org.apache.ignite.gatling.api.TransactionApi
-import org.apache.ignite.gatling.protocol.IgniteProtocol.TRANSACTION_API_SESSION_KEY
+import org.apache.ignite.gatling.protocol.IgniteProtocol.TransactionApiSessionKey
 
 /**
  * Action for the transaction commit Ignite operation.
@@ -50,7 +50,7 @@ class TransactionCommitAction(requestName: Expression[String], next: Action, ctx
 
       val func = transactionApi.commit() _
 
-      call(func, resolvedRequestName, session, updateSession = (session, _: Option[Unit]) => session.remove(TRANSACTION_API_SESSION_KEY))
+      call(func, resolvedRequestName, session, updateSession = (session, _: Option[Unit]) => session.remove(TransactionApiSessionKey))
     }
   }
 }

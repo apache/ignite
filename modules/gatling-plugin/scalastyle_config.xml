@@ -279,7 +279,7 @@
       </parameter>
     </parameters>
   </check>
-  <check class="org.scalastyle.scalariform.FieldNamesChecker" level="warning" enabled="true">
+  <check class="org.scalastyle.scalariform.FieldNamesChecker" level="warning" enabled="false">
     <parameters>
       <parameter name="regex">
         <![CDATA[^[a-z][A-Za-z]*$]]>
