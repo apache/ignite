@@ -27,70 +27,208 @@ import org.apache.ignite.client.ClientCacheConfiguration
 import org.apache.ignite.configuration.CacheConfiguration
 import org.apache.ignite.gatling.action.ignite.CreateCacheAction
 
-case class CreateCacheActionBuilderBase[K, V](cacheName: Expression[String], requestName: Expression[String] = EmptyStringExpressionSuccess)
-    extends ActionBuilder {
-  def backups(newValue: Integer): CreateCacheActionBuilderSimpleConfigStep =
-    CreateCacheActionBuilderSimpleConfigStep(requestName, cacheName).copy(backups = newValue)
+/**
+ * Base create cache action builder.
+ *
+ * Works in two modes. The simplified one allows to specify three basic parameters via the DSL (backups, atomicity and mode).
+ * Other way the full fledged instances of [[ClientCacheConfiguration]] or [[CacheConfiguration]] may be passed via the `cfg`
+ * method.
+ *
+ * @tparam K Type of the cache key.
+ * @tparam V Type of the cache value.
+ * @param cacheName Cache name.
+ */
+case class CreateCacheActionBuilderBase[K, V](cacheName: Expression[String]) extends ActionBuilder {
+  /**
+   * Specify number of backup copies.
+   *
+   * @param backups Number of backup copies.
+   * @return Build step to specify other cache parameters via the DSL.
+   */
+  def backups(backups: Integer): CreateCacheActionBuilderSimpleConfigStep =
+    CreateCacheActionBuilderSimpleConfigStep(cacheName, SimpleCacheConfiguration(backups = backups))
 
-  def atomicity(newValue: CacheAtomicityMode): CreateCacheActionBuilderSimpleConfigStep =
-    CreateCacheActionBuilderSimpleConfigStep(requestName, cacheName).copy(atomicity = newValue)
+  /**
+   * Specify atomicity.
+   *
+   * @param atomicity Atomicity.
+   * @return Build step to specify other cache parameters via the DSL.
+   */
+  def atomicity(atomicity: CacheAtomicityMode): CreateCacheActionBuilderSimpleConfigStep =
+    CreateCacheActionBuilderSimpleConfigStep(cacheName, SimpleCacheConfiguration(atomicity = atomicity))
 
-  def mode(newValue: CacheMode): CreateCacheActionBuilderSimpleConfigStep =
-    CreateCacheActionBuilderSimpleConfigStep(requestName, cacheName).copy(mode = newValue)
+  /**
+   * Specify cache partitioning mode.
+   *
+   * @param cacheMode Cache partitioning mode.
+   * @return Build step to specify other cache parameters via the DSL.
+   */
+  def mode(cacheMode: CacheMode): CreateCacheActionBuilderSimpleConfigStep =
+    CreateCacheActionBuilderSimpleConfigStep(cacheName, SimpleCacheConfiguration(cacheMode = cacheMode))
 
+  /**
+   * Specify full cache configuration via the ClientCacheConfiguration instance
+   * which is part of Ignite Client (thin) API.
+   *
+   * @param clientCacheCfg Client cache configuration.
+   * @return Build step to specify other cache parameters via the DSL.
+   */
   def cfg(clientCacheCfg: ClientCacheConfiguration): CreateCacheActionBuilder[K, V] =
-    CreateCacheActionBuilder(requestName, cacheName, Configuration(clientCacheCfg = Some(clientCacheCfg)))
+    new CreateCacheActionBuilder(cacheName, ThinConfiguration(clientCacheCfg))
 
+  /**
+   * Specify full cache configuration via the CacheConfiguration instance
+   * which is part of Ignite Node (thick) API.
+   *
+   * @param cacheCfg Cache configuration.
+   * @return Build step to specify other cache parameters via the DSL.
+   */
   def cfg(cacheCfg: CacheConfiguration[K, V]): CreateCacheActionBuilder[K, V] =
-    CreateCacheActionBuilder(requestName, cacheName, Configuration(cacheCfg = Some(cacheCfg)))
+    new CreateCacheActionBuilder(cacheName, ThickConfiguration(cacheCfg))
 
+  /**
+   * Builds an action.
+   *
+   * @param ctx The scenario context.
+   * @param next The action that will be chained with the Action build by this builder.
+   * @return The resulting action.
+   */
   override def build(ctx: ScenarioContext, next: Action): Action =
-    new CreateCacheAction(requestName, cacheName, Configuration(), next, ctx)
+    new CreateCacheActionBuilder(cacheName, SimpleCacheConfiguration()).build(ctx, next)
 
-  def as(name: Expression[String]): ActionBuilder = this.copy(requestName = name)
+  /**
+   * Specify request name for action.
+   *
+   * @param requestName Request name.
+   * @return itself.
+   */
+  def as(requestName: Expression[String]): ActionBuilder =
+    new CreateCacheActionBuilder(cacheName, SimpleCacheConfiguration()).as(requestName)
 }
 
+/**
+ * Builder step to specify simple cache parameters via DSL.
+ *
+ * @param cacheName Cache name.
+ * @param simpleConfig Simple cache configuration instance.
+ */
 case class CreateCacheActionBuilderSimpleConfigStep(
-  requestName: Expression[String],
   cacheName: Expression[String],
-  backups: Integer = 0,
-  atomicity: CacheAtomicityMode = CacheAtomicityMode.ATOMIC,
-  mode: CacheMode = CacheMode.PARTITIONED
+  simpleConfig: SimpleCacheConfiguration
 ) extends ActionBuilder {
-  def backups(newValue: Integer): CreateCacheActionBuilderSimpleConfigStep =
-    this.copy(backups = newValue)
+  /**
+   * Specify number of backup copies.
+   *
+   * @param backups Number of backup copies.
+   * @return Build step to specify other cache parameters via the DSL.
+   */
+  def backups(backups: Integer): CreateCacheActionBuilderSimpleConfigStep =
+    this.copy(simpleConfig = simpleConfig.copy(backups = backups))
 
-  def atomicity(newValue: CacheAtomicityMode): CreateCacheActionBuilderSimpleConfigStep =
-    this.copy(atomicity = newValue)
+  /**
+   * Specify atomicity.
+   *
+   * @param atomicity Atomicity.
+   * @return Build step to specify other cache parameters via the DSL.
+   */
+  def atomicity(atomicity: CacheAtomicityMode): CreateCacheActionBuilderSimpleConfigStep =
+    this.copy(simpleConfig = simpleConfig.copy(atomicity = atomicity))
 
-  def mode(newValue: CacheMode): CreateCacheActionBuilderSimpleConfigStep =
-    this.copy(mode = newValue)
+  /**
+   * Specify cache partitioning mode.
+   *
+   * @param cacheMode Cache partitioning mode.
+   * @return Build step to specify other cache parameters via the DSL.
+   */
+  def mode(cacheMode: CacheMode): CreateCacheActionBuilderSimpleConfigStep =
+    this.copy(simpleConfig = simpleConfig.copy(cacheMode = cacheMode))
 
-  def createCacheActionBuilder[K, V]: CreateCacheActionBuilder[K, V] =
-    CreateCacheActionBuilder[K, V](
-      requestName,
-      cacheName,
-      Configuration(simpleCfg = Some(SimpleCacheConfiguration(backups, atomicity, mode)))
-    )
-
+  /**
+   * Builds an action.
+   *
+   * @param ctx The scenario context.
+   * @param next The action that will be chained with the Action build by this builder.
+   * @return The resulting action.
+   */
   override def build(ctx: ScenarioContext, next: Action): Action =
     createCacheActionBuilder.build(ctx, next)
 
-  def as(name: Expression[String]): ActionBuilder = this.copy(requestName = name)
+  /**
+   * Specify request name for action.
+   *
+   * @param requestName Request name.
+   * @return itself.
+   */
+  def as(requestName: Expression[String]): ActionBuilder =
+    createCacheActionBuilder.as(requestName)
+
+  private def createCacheActionBuilder[K, V]: CreateCacheActionBuilder[K, V] =
+    new CreateCacheActionBuilder[K, V](
+      cacheName,
+      simpleConfig
+    )
 }
 
-case class SimpleCacheConfiguration(backups: Integer, atomicity: CacheAtomicityMode, mode: CacheMode)
+/**
+ * @tparam K Type of the cache key.
+ * @tparam V Type of the cache value.
+ * @param cacheName Cache name.
+ * @param config Cache configuration.
+ */
+class CreateCacheActionBuilder[K, V](cacheName: Expression[String], config: Configuration) extends ActionBuilder {
+  /** Request name. */
+  var requestName: Expression[String] = EmptyStringExpressionSuccess
 
-case class Configuration[K, V](
-  clientCacheCfg: Option[ClientCacheConfiguration] = None,
-  cacheCfg: Option[CacheConfiguration[K, V]] = None,
-  simpleCfg: Option[SimpleCacheConfiguration] = None
-)
-
-case class CreateCacheActionBuilder[K, V](requestName: Expression[String], cacheName: Expression[String], config: Configuration[K, V])
-    extends ActionBuilder {
+  /**
+   * Builds an action.
+   *
+   * @param ctx  The scenario context.
+   * @param next The action that will be chained with the Action build by this builder.
+   * @return The resulting action.
+   */
   override def build(ctx: ScenarioContext, next: Action): Action =
     new CreateCacheAction(requestName, cacheName, config, next, ctx)
 
-  def as(requestName: Expression[String]): ActionBuilder = this.copy(requestName = requestName)
+  /**
+   * Specify request name for action.
+   *
+   * @param requestName Request name.
+   * @return itself.
+   */
+  def as(requestName: Expression[String]): CreateCacheActionBuilder[K, V] = {
+    this.requestName = requestName
+    this
+  }
 }
+
+/**
+ * Abstract cache configuration
+ */
+sealed trait Configuration
+
+/**
+ * Simplified cache configuration.
+ *
+ * @param backups Number of backup copies.
+ * @param atomicity Atomicity.
+ * @param cacheMode Cache partitioning mode.
+ */
+case class SimpleCacheConfiguration(
+  backups: Integer = 0,
+  atomicity: CacheAtomicityMode = CacheAtomicityMode.ATOMIC,
+  cacheMode: CacheMode = CacheMode.PARTITIONED
+) extends Configuration
+
+/**
+ * Ignite Client (thin) cache configuration.
+ *
+ * @param cfg ClientCacheConfiguration instance.
+ */
+case class ThinConfiguration(cfg: ClientCacheConfiguration) extends Configuration
+
+/**
+ * Ignite node (thick) cache configuration.
+ *
+ * @param cfg CacheConfiguration instance.
+ */
+case class ThickConfiguration(cfg: CacheConfiguration[_, _]) extends Configuration

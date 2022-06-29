@@ -20,10 +20,14 @@ import io.gatling.core.action.Action
 import io.gatling.core.session.Expression
 import io.gatling.core.session.Session
 import io.gatling.core.structure.ScenarioContext
+import org.apache.ignite.configuration.CacheConfiguration
 import org.apache.ignite.gatling.action.IgniteAction
 import org.apache.ignite.gatling.api.CacheApi
 import org.apache.ignite.gatling.api.IgniteApi
 import org.apache.ignite.gatling.builder.ignite.Configuration
+import org.apache.ignite.gatling.builder.ignite.SimpleCacheConfiguration
+import org.apache.ignite.gatling.builder.ignite.ThickConfiguration
+import org.apache.ignite.gatling.builder.ignite.ThinConfiguration
 
 /**
  * Action for cache create Ignite operation.
@@ -32,18 +36,19 @@ import org.apache.ignite.gatling.builder.ignite.Configuration
  * @tparam V Type of the cache value.
  * @param requestName Name of the request.
  * @param cacheName Name of the cache.
- * @param config Cache configuration.
+ * @param config Abstract cache configuration.
  * @param next Next action from chain to invoke upon this one completion.
  * @param ctx Scenario context.
  */
 class CreateCacheAction[K, V](
   requestName: Expression[String],
   cacheName: Expression[String],
-  config: Configuration[K, V],
+  config: Configuration,
   next: Action,
   ctx: ScenarioContext
 ) extends IgniteAction("createCache", requestName, ctx, next) {
 
+  /** Default request name if none was provided via the DSL. */
   override val defaultRequestName: Expression[String] =
     s => cacheName(s).map(cacheName => s"$actionType $cacheName}")
 
@@ -67,15 +72,10 @@ class CreateCacheAction[K, V](
   private def getOrCreateCache(
     igniteApi: IgniteApi,
     cacheName: String,
-    config: Configuration[K, V]
-  ): (CacheApi[K, V] => Unit, Throwable => Unit) => Unit =
-    if (config == null) {
-      igniteApi.getOrCreateCache(cacheName)
-    } else if (config.cacheCfg.isDefined) {
-      igniteApi.getOrCreateCacheByConfiguration(config.cacheCfg.get)
-    } else if (config.clientCacheCfg.isDefined) {
-      igniteApi.getOrCreateCacheByClientConfiguration(config.clientCacheCfg.get)
-    } else {
-      igniteApi.getOrCreateCacheBySimpleConfig(cacheName, config.simpleCfg.get)
-    }
+    config: Configuration
+  ): (CacheApi[K, V] => Unit, Throwable => Unit) => Unit = config match {
+    case cfg: SimpleCacheConfiguration => igniteApi.getOrCreateCacheBySimpleConfig(cacheName, cfg)
+    case ThinConfiguration(cfg)        => igniteApi.getOrCreateCacheByClientConfiguration(cfg)
+    case ThickConfiguration(cfg)       => igniteApi.getOrCreateCacheByConfiguration(cfg.asInstanceOf[CacheConfiguration[K, V]])
+  }
 }

@@ -107,7 +107,7 @@ case class IgniteNodeApi(wrapped: Ignite) extends IgniteApi {
     getOrCreateCacheByConfiguration(
       new CacheConfiguration[K, V]()
         .setName(name)
-        .setCacheMode(cfg.mode)
+        .setCacheMode(cfg.cacheMode)
         .setAtomicityMode(cfg.atomicity)
         .setBackups(cfg.backups)
     )(s, f)

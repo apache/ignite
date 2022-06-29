@@ -102,7 +102,7 @@ case class IgniteThinApi(wrapped: IgniteClient) extends IgniteApi with Completio
     getOrCreateCacheByClientConfiguration(
       new ClientCacheConfiguration()
         .setName(name)
-        .setCacheMode(cfg.mode)
+        .setCacheMode(cfg.cacheMode)
         .setAtomicityMode(cfg.atomicity)
         .setBackups(cfg.backups)
     )(s, f)
