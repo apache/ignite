@@ -57,7 +57,6 @@ import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.SkipDaemon;
-import org.apache.ignite.internal.managers.deployment.GridDeployment;
 import org.apache.ignite.internal.managers.discovery.CustomEventListener;
 import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.managers.systemview.walker.ServiceViewWalker;
@@ -1367,7 +1366,7 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
 
 //            GridDeployment srvcDep = ctx.deploy().getDeployment(srvcCfg.serviceClassName());
 
-            byte[] bytes = ((LazyServiceConfiguration)cfg).serviceBytes();
+            byte[] bytes = srvcCfg.serviceBytes();
 
             Service srvc = U.unmarshal(marsh, bytes,
                 U.resolveClassLoader(null, ctx.config()));
@@ -1377,6 +1376,8 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
             return srvc;
         }
         else {
+            assert false : "not lazy cfg";
+
             Service srvc = cfg.getService();
 
             try {
