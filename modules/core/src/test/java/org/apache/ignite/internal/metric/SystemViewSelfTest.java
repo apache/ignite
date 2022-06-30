@@ -37,7 +37,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 import javax.cache.Cache;
-
 import com.google.common.collect.Lists;
 import org.apache.ignite.IgniteAtomicLong;
 import org.apache.ignite.IgniteAtomicReference;
@@ -83,8 +82,8 @@ import org.apache.ignite.internal.managers.systemview.walker.CachePagesListViewW
 import org.apache.ignite.internal.managers.systemview.walker.NodeAttributeViewWalker;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
-import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageTimestampHistogram;
 import org.apache.ignite.internal.processors.metastorage.DistributedMetaStorage;
+import org.apache.ignite.internal.processors.metric.impl.PeriodicHistogramMetricImpl;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcConnectionContext;
 import org.apache.ignite.internal.processors.service.DummyService;
 import org.apache.ignite.internal.util.GridTestClockTimer;
@@ -2162,7 +2161,7 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
             for (int i = 0; i < 1000; i++)
                 cache1.put(i, i);
 
-            long ts2 = curTime.addAndGet(PageTimestampHistogram.DFLT_BUCKETS_INTERVAL);
+            long ts2 = curTime.addAndGet(PeriodicHistogramMetricImpl.DFLT_BUCKETS_INTERVAL);
             GridTestClockTimer.update();
 
             for (int i = 1000; i < 2000; i++)
@@ -2194,7 +2193,7 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
             assertEquals(2, F.size(F.iterator(pagesTsHistogram, v -> v, true, v -> v.pagesCount() > 0)));
 
             // Check histogram after replacement.
-            long ts3 = curTime.addAndGet(PageTimestampHistogram.DFLT_BUCKETS_INTERVAL);
+            long ts3 = curTime.addAndGet(PeriodicHistogramMetricImpl.DFLT_BUCKETS_INTERVAL);
             GridTestClockTimer.update();
 
             ignite.createCache(ccfg2);
@@ -2211,7 +2210,7 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
                 v.intervalStart().getTime() <= ts3 && ts3 <= v.intervalEnd().getTime())));
 
             // Check histogram after cache destroy and remove of outdated pages.
-            long ts4 = curTime.addAndGet(PageTimestampHistogram.DFLT_BUCKETS_INTERVAL);
+            long ts4 = curTime.addAndGet(PeriodicHistogramMetricImpl.DFLT_BUCKETS_INTERVAL);
             GridTestClockTimer.update();
 
             ignite.destroyCache("test-pages-ts2");

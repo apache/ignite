@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.persistence.pagemem;
+package org.apache.ignite.internal.metric;
 
 import java.util.Arrays;
 import java.util.Random;
@@ -26,7 +26,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.LongSupplier;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.processors.metric.MetricRegistry;
+import org.apache.ignite.internal.processors.metric.impl.PeriodicHistogramMetricImpl;
 import org.apache.ignite.internal.util.GridTestClockTimer;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -35,9 +35,9 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 /**
- * Test PageTimestampHistogram class.
+ * Test PeriodicHistogramMetricImpl class.
  */
-public class PageTimestampHistogramTest extends GridCommonAbstractTest {
+public class PeriodicHistogramMetricImplTest extends GridCommonAbstractTest {
     /** Mock for current time */
     private static final AtomicLong curTime = new AtomicLong(System.currentTimeMillis());
 
@@ -45,7 +45,7 @@ public class PageTimestampHistogramTest extends GridCommonAbstractTest {
     private static final LongSupplier timeSupplier = curTime::get;
 
     /** Histogram. */
-    PageTimestampHistogram histogram;
+    PeriodicHistogramMetricImpl histogram;
 
     /** */
     @BeforeClass
@@ -61,7 +61,7 @@ public class PageTimestampHistogramTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        histogram = new PageTimestampHistogram(new MetricRegistry("test", null, null, log));
+        histogram = new PeriodicHistogramMetricImpl("test", null);
 
         super.beforeTest();
     }
@@ -130,7 +130,7 @@ public class PageTimestampHistogramTest extends GridCommonAbstractTest {
                 long sum = Arrays.stream(buckets()).sum();
 
                 // Check that no buckets were lost during concurrent calculation.
-                assertTrue("Unexpected pages count " + sum, sum >= valPerBucket * bucketsCnt);
+                assertTrue("Unexpected items count " + sum, sum >= valPerBucket * bucketsCnt);
             }
         }, threadCnt, "histogram-updater");
 
@@ -237,7 +237,7 @@ public class PageTimestampHistogramTest extends GridCommonAbstractTest {
 
             long[] hist = buckets();
 
-            assertTrue("Unexpected pages count " + hist[0] + ", expected between " + (i * threadCnt) + " and " +
+            assertTrue("Unexpected items count " + hist[0] + ", expected between " + (i * threadCnt) + " and " +
                 (i + 1) * threadCnt, hist[0] >= i * threadCnt && hist[0] <= (i + 1) * threadCnt);
 
             for (int j = 1; j < hist.length; j++)

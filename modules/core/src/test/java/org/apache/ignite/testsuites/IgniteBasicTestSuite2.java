@@ -39,6 +39,7 @@ import org.apache.ignite.internal.managers.IgniteDiagnosticPartitionReleaseFutur
 import org.apache.ignite.internal.managers.communication.GridIoManagerFileTransmissionSelfTest;
 import org.apache.ignite.internal.managers.discovery.IncompleteDeserializationExceptionTest;
 import org.apache.ignite.internal.metric.MetricsClusterActivationTest;
+import org.apache.ignite.internal.metric.PeriodicHistogramMetricImplTest;
 import org.apache.ignite.internal.mxbean.IgniteStandardMXBeanTest;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecordSerializationTest;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecordTest;
@@ -56,7 +57,6 @@ import org.apache.ignite.internal.processors.cache.persistence.defragmentation.L
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.ClockPageReplacementFlagsTest;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.ExponentialBackoffTest;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PagePoolTest;
-import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageTimestampHistogramTest;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.ProgressSpeedCalculationTest;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.SegmentedLruPageListTest;
 import org.apache.ignite.internal.processors.cache.transactions.AtomicOperationsInTxTest;
@@ -226,7 +226,7 @@ import org.junit.runners.Suite;
     ProgressSpeedCalculationTest.class,
 
     ConcurrentMappingFileReadWriteTest.class,
-    PageTimestampHistogramTest.class,
+    PeriodicHistogramMetricImplTest.class,
 })
 public class IgniteBasicTestSuite2 {
 }

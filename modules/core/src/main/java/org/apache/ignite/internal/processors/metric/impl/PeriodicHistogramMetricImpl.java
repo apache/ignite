@@ -15,25 +15,27 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.persistence.pagemem;
+package org.apache.ignite.internal.processors.metric.impl;
 
 import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicLongArray;
 import org.apache.ignite.internal.processors.metric.AbstractMetric;
 import org.apache.ignite.internal.processors.metric.ConfigurableHistogramMetric;
-import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
-
-import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
+import org.jetbrains.annotations.Nullable;
 
 /**
- * Histogram to show count of pages last accessed in each time interval.
+ * Histogram to show count of items for each time interval with limited set of intervals.
+ *
+ * Count of items in interval can be incremented or decremented by timestamp. Items with timestamp below the first
+ * interval are moved into "out of bounds interval". Over time new intervals are added and old intervals are
+ * merged into "out of bounds interval" to maintain the same total count of intervals.
  */
-@SuppressWarnings({"FieldAccessedSynchronizedAndUnsynchronized", "NonAtomicOperationOnVolatileField"})
-public class PageTimestampHistogram extends AbstractMetric implements ConfigurableHistogramMetric {
+@SuppressWarnings({"FieldAccessedSynchronizedAndUnsynchronized"})
+public class PeriodicHistogramMetricImpl extends AbstractMetric implements ConfigurableHistogramMetric {
     /** Default buckets interval in milliseconds. */
     public static final long DFLT_BUCKETS_INTERVAL = 60L * 60 * 1000; // 60 mins.
 
@@ -55,7 +57,7 @@ public class PageTimestampHistogram extends AbstractMetric implements Configurab
     /** Upper bound for values stored in buckets array (excluding). */
     private volatile long upperBoundTs;
 
-    /** Out of bounds bucket. Contain count of pages which have last access time beyond lowerBoundTs. */
+    /** Out of bounds bucket. Contains count of items which have timestamp beyond lowerBoundTs. */
     private final AtomicLong outOfBoundsBucket = new AtomicLong();
 
     /** Time of histogram creation. */
@@ -65,25 +67,35 @@ public class PageTimestampHistogram extends AbstractMetric implements Configurab
     private volatile AtomicLongArray buckets;
 
     /**
-     * @param mreg Metric registry.
+     * @param name Metric name.
+     * @param desc Metric description.
      */
-    public PageTimestampHistogram(MetricRegistry mreg) {
-        this(mreg, DFLT_BUCKETS_INTERVAL, DFLT_BUCKETS_CNT);
+    public PeriodicHistogramMetricImpl(String name, @Nullable String desc) {
+        this(U.currentTimeMillis(), name, desc);
     }
 
     /**
-     * @param mreg Metric registry.
+     * @param startTs Starting point.
+     * @param name Metric name.
+     * @param desc Metric description.
+     */
+    public PeriodicHistogramMetricImpl(long startTs, String name, @Nullable String desc) {
+        this(startTs, name, desc, DFLT_BUCKETS_INTERVAL, DFLT_BUCKETS_CNT);
+    }
+
+    /**
+     * @param startTs Starting point.
+     * @param name Metric name.
+     * @param desc Metric description.
      * @param bucketsInterval Buckets interval.
      * @param bucketsCnt Buckets count.
      */
-    PageTimestampHistogram(MetricRegistry mreg, long bucketsInterval, int bucketsCnt) {
-        super(metricName(mreg.name(), "PageTimestampHistogram"), "Histogram of pages last access time");
+    private PeriodicHistogramMetricImpl(long startTs, String name, @Nullable String desc, long bucketsInterval, int bucketsCnt) {
+        super(name, desc);
 
         reinit(bucketsInterval, bucketsCnt);
 
-        // Reserve 1 sec, page ts can be slightly lower than currentTimeMillis, due to applied to ts mask. This
-        // reservation mainly affects only tests (we can check buckets more predictevely).
-        startTs -= 1000L;
+        this.startTs = startTs;
         lowerBoundTs = startTs;
         upperBoundTs = startTs + bucketsInterval;
     }
@@ -139,30 +151,30 @@ public class PageTimestampHistogram extends AbstractMetric implements Configurab
     }
 
     /**
-     * @param pagesCnt Total pages count.
+     * @param itemsCnt Total items count.
      */
-    public synchronized void reset(long pagesCnt) {
+    public synchronized void reset(long itemsCnt) {
         reinit(bucketsInterval, bucketsCnt);
 
-        outOfBoundsBucket.set(pagesCnt);
+        outOfBoundsBucket.set(itemsCnt);
     }
 
     /**
-     * Increment count of pages by last access time.
+     * Increment count of items in interval by timestamp.
      */
     public void increment(long ts) {
         add(ts, 1);
     }
 
     /**
-     * Decrement count of pages by last access time.
+     * Decrement count of items in interval by timestamp.
      */
     public void decrement(long ts) {
         add(ts, -1);
     }
 
     /**
-     * Gets hot/cold pages histogram.
+     * Gets histogram.
      *
      * @return Tuple, where first item is array of bounds and second item is array of values. Bounds and values are
      * guaranteed to be consistent.
@@ -230,7 +242,7 @@ public class PageTimestampHistogram extends AbstractMetric implements Configurab
     }
 
     /**
-     * Change count of pages in bucket by given timestamp.
+     * Change count of items in bucket by given timestamp.
      *
      * @param ts Timestamp.
      * @param val Value to add.

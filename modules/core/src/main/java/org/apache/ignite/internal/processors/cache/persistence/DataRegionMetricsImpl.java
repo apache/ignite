@@ -28,13 +28,13 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMetrics;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMetricsImpl;
-import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageTimestampHistogram;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
 import org.apache.ignite.internal.processors.metric.impl.HitRateMetric;
 import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
 import org.apache.ignite.internal.processors.metric.impl.LongAdderWithDelegateMetric;
 import org.apache.ignite.internal.processors.metric.impl.MetricUtils;
+import org.apache.ignite.internal.processors.metric.impl.PeriodicHistogramMetricImpl;
 import org.apache.ignite.internal.util.collection.IntHashMap;
 import org.apache.ignite.internal.util.collection.IntMap;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -168,7 +168,7 @@ public class DataRegionMetricsImpl implements DataRegionMetrics {
     private volatile long rateTimeInterval;
 
     /** Histogram of cold/hot pages. */
-    private final PageTimestampHistogram pageTsHistogram;
+    private final PeriodicHistogramMetricImpl pageTsHistogram;
 
     /**
      * Same as {@link #DataRegionMetricsImpl(DataRegionConfiguration, GridKernalContext, DataRegionMetricsProvider)}
@@ -268,7 +268,13 @@ public class DataRegionMetricsImpl implements DataRegionMetrics {
             .value(dataRegionCfg.getMaxSize());
 
         if (persistenceEnabled) {
-            pageTsHistogram = new PageTimestampHistogram(mreg);
+            // Reserve 1 sec, page ts can be slightly lower than currentTimeMillis, due to applied to ts mask. This
+            // reservation mainly affects only tests (we can check buckets more predictevely).
+            long startTs = U.currentTimeMillis() - 1000L;
+            String name = MetricUtils.metricName(mreg.name(), "PageTimestampHistogram");
+            String desc = "Histogram of pages last access time";
+
+            pageTsHistogram = new PeriodicHistogramMetricImpl(startTs, name, desc);
 
             mreg.register(pageTsHistogram);
         }

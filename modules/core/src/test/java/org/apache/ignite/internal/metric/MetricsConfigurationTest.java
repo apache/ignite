@@ -22,11 +22,11 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageTimestampHistogram;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.metric.MetricsMxBeanImpl;
 import org.apache.ignite.internal.processors.metric.impl.HistogramMetricImpl;
 import org.apache.ignite.internal.processors.metric.impl.HitRateMetric;
+import org.apache.ignite.internal.processors.metric.impl.PeriodicHistogramMetricImpl;
 import org.apache.ignite.mxbean.MetricsMxBean;
 import org.apache.ignite.spi.metric.HistogramMetric;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -134,7 +134,7 @@ public class MetricsConfigurationTest extends GridCommonAbstractTest {
         }
     }
 
-    /** Tests configuration of {@link PageTimestampHistogram}. */
+    /** Tests configuration of {@link PeriodicHistogramMetricImpl}. */
     @Test
     public void testPageTimestampHistogramConfiguration() throws Exception {
         String registry = "io.dataregion.default";
@@ -147,10 +147,10 @@ public class MetricsConfigurationTest extends GridCommonAbstractTest {
 
             MetricsMxBean bean = metricsBean(g);
 
-            PageTimestampHistogram histogram = g.context().metric().registry(registry).findMetric(metricName);
+            PeriodicHistogramMetricImpl histogram = g.context().metric().registry(registry).findMetric(metricName);
 
             // Check buckets count including dummy bucket.
-            assertEquals(PageTimestampHistogram.DFLT_BUCKETS_CNT + 1, histogram.bucketsCount());
+            assertEquals(PeriodicHistogramMetricImpl.DFLT_BUCKETS_CNT + 1, histogram.bucketsCount());
 
             // Reconfigure with 5 buckets and 1 minute interval.
             long interval = 60_000L;
