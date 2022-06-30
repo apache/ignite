@@ -36,10 +36,10 @@ public class CompositeServiceCallInterceptor implements ServiceCallInterceptor {
     /** {@inheritDoc} */
     @Override public Object invoke(String mtd, Object[] args, ServiceContext ctx, Callable<Object> svcCall) throws Exception {
         return new Callable<Object>() {
-            int idx;
+            int idx = intcps.length;
 
             @Override public Object call() throws Exception {
-                return intcps[idx].invoke(mtd, args, ctx, ++idx == intcps.length ? svcCall : this);
+                return intcps[--idx].invoke(mtd, args, ctx, idx == 0 ? svcCall : this);
             }
         }.call();
     }

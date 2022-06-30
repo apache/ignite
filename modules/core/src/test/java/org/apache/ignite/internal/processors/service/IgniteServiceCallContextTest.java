@@ -205,7 +205,7 @@ public class IgniteServiceCallContextTest extends GridCommonAbstractTest {
         TestService ctxProxy = grid(0).services().serviceProxy(SVC_NAME_INTERCEPTED, TestService.class, sticky, callCtx);
 //        TestService noCtxProxy = grid(0).services().serviceProxy(SVC_NAME_INTERCEPTED, TestService.class, sticky);
 
-        assertEquals("John,Paul,Jane", ctxProxy.attribute(false));
+        assertEquals("John,Jane,Paul", ctxProxy.attribute(false));
 //        assertEquals("Jane", noCtxProxy.attribute(false));
 
     }

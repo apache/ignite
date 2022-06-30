@@ -48,10 +48,7 @@ public class LazyServiceConfiguration extends ServiceConfiguration {
     private byte[] srvcBytes;
 
     /** */
-    private byte[][] intcpsBytes;
-
-    /** */
-    private String[] intcpClsNames;
+    private byte[] intcpsBytes;
 
     /** Names of platform service methods to build service statistics. */
     @GridToStringExclude
@@ -69,7 +66,7 @@ public class LazyServiceConfiguration extends ServiceConfiguration {
      * @param srvcBytes Marshalled service.
      * @param intcpsBytes Marshalled interceptors.
      */
-    public LazyServiceConfiguration(ServiceConfiguration cfg, byte[] srvcBytes, @Nullable byte[][] intcpsBytes) {
+    public LazyServiceConfiguration(ServiceConfiguration cfg, byte[] srvcBytes, @Nullable byte[] intcpsBytes) {
         assert cfg.getService() != null : cfg;
         assert srvcBytes != null;
 
@@ -84,15 +81,7 @@ public class LazyServiceConfiguration extends ServiceConfiguration {
         srvcClsName = srvc.getClass().getName();
         isStatisticsEnabled = cfg.isStatisticsEnabled();
         intcps = cfg.getInterceptors();
-
-        if (!F.isEmpty(intcps)) {
-            this.intcpsBytes = intcpsBytes;
-
-            intcpClsNames = new String[intcps.length];
-
-            for (int i = 0; i < intcps.length; i++)
-                intcpClsNames[i] = intcps[i].getClass().getName();
-        }
+        this.intcpsBytes = intcpsBytes;
     }
 
     /**
@@ -124,15 +113,8 @@ public class LazyServiceConfiguration extends ServiceConfiguration {
     /**
      * @return Interceptors bytes.
      */
-    public byte[][] interceptorBytes() {
+    public byte[] interceptorBytes() {
         return intcpsBytes;
-    }
-
-    /**
-     * @return Interceptor class names.
-     */
-    public String[] interceptorClassNames() {
-        return intcpClsNames;
     }
 
     /** {@inheritDoc} */
@@ -164,8 +146,7 @@ public class LazyServiceConfiguration extends ServiceConfiguration {
         if (!F.eq(srvcClsName, that.srvcClsName))
             return false;
 
-        // todo think
-        if (!Arrays.deepEquals(intcpsBytes, that.intcpsBytes))
+        if (!Arrays.equals(intcpsBytes, that.intcpsBytes))
             return false;
 
         return true;
