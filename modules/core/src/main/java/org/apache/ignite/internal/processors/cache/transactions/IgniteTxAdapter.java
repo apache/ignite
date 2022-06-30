@@ -1235,7 +1235,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
         if (valid) {
             if (ptr != null && (state == COMMITTED || state == ROLLED_BACK)) {
                 if (cctx.consistentCutMgr() != null)
-                    cctx.consistentCutMgr().unregisterAfterCommit(this, false);
+                    cctx.consistentCutMgr().unregisterAfterCommit(this);
 
                 try {
                     cctx.wal().flush(ptr, false);

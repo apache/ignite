@@ -36,6 +36,7 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.pagemem.wal.record.ConsistentCutStartRecord;
@@ -503,7 +504,7 @@ public abstract class AbstractConsistentCutBlockingTest extends AbstractConsiste
             }
 
             /** Blocks before or after ConsistentCut preparation. */
-            @Override protected boolean prepare(Collection<IgniteInternalTx> beforeCut) throws IgniteCheckedException {
+            @Override protected IgniteInternalFuture<?> run(Collection<IgniteInternalTx> beforeCut) throws IgniteCheckedException {
                 if (blkCut(VERSION_UPDATE)) {
                     try {
                         cutBlkLatch.await(100, TimeUnit.MILLISECONDS);
@@ -513,7 +514,7 @@ public abstract class AbstractConsistentCutBlockingTest extends AbstractConsiste
                     }
                 }
 
-                boolean prepared = super.prepare(beforeCut);
+                IgniteInternalFuture<?> prepared = super.run(beforeCut);
 
                 if (blkCut(CUT_PREPARED)) {
                     try {

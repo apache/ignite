@@ -66,19 +66,19 @@ import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYS
  *
  * The algorithm consist of steps:
  * 1. On receiving new {@link ConsistentCutVersion} it immediately updates local version and create new {@link ConsistentCut}.
- * 2. It grabs active and committing transactions to check which side of Consistent Cut they belong to. It guarantees
+ * 2. It collects active and committing transactions to check which side of Consistent Cut they belong to. It guarantees
  *    that every transaction appeared after this moment belongs to the AFTER side.
  * 3. It writes {@link ConsistentCutStartRecord} before any transaction from the AFTER side committed. It guarantees that
  *    every transaction committed before this record is part of the BEFORE side.
  * 4. It prepares check-list of transactions to verify which side of the Consistent Cut every of them belongs to. It
- *    guarantees that every transaction from this check-list will be handled in {@link #unregisterAfterCommit(IgniteInternalTx, boolean)}.
+ *    listens every transaction from this check-list to check after it finished.
  * 5. Every transaction is signed with the latest Consistent Cut Version AFTER which it committed. This version is defined
  *    at single node within a transaction - {@link #isSetterTxCutVersion(IgniteInternalTx)}}.
  * 6. It's possible to receive transaction finish messages concurrently with preparing the check-list. To avoid misses
- *    such transactions all committing transactions are stored in {@link #beforeCut}.
+ *    such transactions all committing transactions are stored in {@link #committingTxs}.
  * 7. After the check-list is empty it finishes Consistent Cut with writing {@link ConsistentCutFinishRecord} that contains
  *    collection of transactions to include into the BEFORE side.
- * 8. After Consistent Cut finished and every transaction in {@link #beforeCut} committed it notifies coordinator with
+ * 8. After Consistent Cut finished and every transaction in {@link #committingTxs} committed it notifies coordinator with
  *    {@link ConsistentCutFinishResponse} that local node is ready for next Consistent Cut process.
  */
 public class ConsistentCutManager extends GridCacheSharedManagerAdapter {
@@ -94,11 +94,10 @@ public class ConsistentCutManager extends GridCacheSharedManagerAdapter {
     private volatile ConsistentCutHolder cutHolder;
 
     /**
-     * Colleciton of committing transactions that will be included into the BEFORE side of next Consistent Cut.
-     * Track them due to {@link IgniteTxManager#activeTransactions()} doesn't contain information about transactions in
-     * COMMITTING / COMMITTED state. But it's required to analyze them to avoid misses.
+     * Colleciton of committing transactions. Track them due to {@link IgniteTxManager#activeTransactions()} doesn't
+     * contain information about transactions in COMMITTING / COMMITTED state.
      */
-    private final Set<IgniteInternalTx> beforeCut = ConcurrentHashMap.newKeySet();
+    private final Set<IgniteInternalTx> committingTxs = ConcurrentHashMap.newKeySet();
 
     /**
      * Collection of server nodes that aren't ready to run new Consistent Cut procedure. Exist only on coordinator node.
@@ -213,8 +212,8 @@ public class ConsistentCutManager extends GridCacheSharedManagerAdapter {
         try {
             // If Consistent Cut isn't running now then it might be started in any moment after registering this transaction.
             // To avoid misses add every transaction while Consistent Cut is grabbing active transactions.
-            if (cut == null || (!cut.activeTxCollectingFinished() && cut.txBeforeCut(txCutVer)))
-                beforeCut.add(tx);
+            if (cut == null || !cut.activeTxCollectingFinished())
+                committingTxs.add(tx);
 
             if (cut != null)
                 cut.processTxBeforeCommit(txCutVer);
@@ -226,44 +225,20 @@ public class ConsistentCutManager extends GridCacheSharedManagerAdapter {
             }
         }
         catch (IgniteCheckedException e) {
-            onFinish(cut, true);
+            onFinish(true);
         }
     }
 
     /**
-     * Unregisters committed transaction and tries finish local Consistent Cut.
-     *
-     * It invokes after specified transaction committed and write related {@link TxRecord} to WAL.
+     * Unregisters committed transaction. It invokes after specified transaction committed and write related {@link TxRecord} to WAL.
      *
      * @param tx Transaction.
-     * @param onlyRemove {@code true} if it's required only remove transaction from {@link #beforeCut} and no need
-     *                   to process transaction.
      */
-    public void unregisterAfterCommit(IgniteInternalTx tx, boolean onlyRemove) {
-        long v = ((ConsistentCutVersionAware)tx).txCutVersion();
-
-        ConsistentCut cut = CUT_HOLDER.get(this).cut;
-
+    public void unregisterAfterCommit(IgniteInternalTx tx) {
         // Safely remove transaction here as it's whether:
         // 1. Committed before Consistent Cut write `ConsistentCutStartRecord` to WAL.
         // 2. Grabbed to be checked while preparing the check-list.
-        boolean incl = beforeCut.remove(tx);
-
-        if (onlyRemove)
-            return;
-
-        try {
-            if (cut != null && cut.processTxAfterCommit(tx, !incl) && beforeCut.isEmpty())
-                onFinish(cut, false);
-
-            if (log.isDebugEnabled()) {
-                log.debug("`unregisterAfterCommit` from " + tx.nearXidVersion().asIgniteUuid() + " to " + tx.xid()
-                    + ", cut " + cut + ", txCutVer " + v + "; latestCutVer " + latestKnownCutVersion());
-            }
-        }
-        catch (IgniteCheckedException e) {
-            onFinish(cut, true);
-        }
+        committingTxs.remove(tx);
     }
 
     /**
@@ -295,8 +270,11 @@ public class ConsistentCutManager extends GridCacheSharedManagerAdapter {
                 ConsistentCut cut = holder.cut;
 
                 try {
-                    if (cut.prepare(beforeCut) && beforeCut.isEmpty())
-                        onFinish(holder.cut, false);
+                    cut.run(committingTxs).listen(f -> {
+                        boolean err = f.error() != null;
+
+                        onFinish(err);
+                    });
 
                     if (log.isDebugEnabled())
                         log.debug("Prepared Consistent Cut State: " + cut);
@@ -304,7 +282,7 @@ public class ConsistentCutManager extends GridCacheSharedManagerAdapter {
                 catch (IgniteCheckedException e) {
                     U.error(log, "Failed to write to WAL local Consistent Cut record.", e);
 
-                    onFinish(cut, true);
+                    onFinish(true);
 
                     throw new IgniteException(e);
                 }
@@ -315,7 +293,7 @@ public class ConsistentCutManager extends GridCacheSharedManagerAdapter {
     /**
      * Finishes local Consistent Cut: cleans {@link ConsistentCut} reference and sends finish message to Consistent Cut coordinator node.
      */
-    private void onFinish(ConsistentCut cut, boolean err) {
+    private void onFinish(boolean err) {
         try {
             ConsistentCutHolder curHolder = CUT_HOLDER.get(this);
 
