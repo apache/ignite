@@ -17,7 +17,9 @@
 
 package org.apache.ignite.internal.processors.cache.consistentcut;
 
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -43,6 +45,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.transactions.TransactionState;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
@@ -209,10 +212,7 @@ public class ConsistentCutManager extends GridCacheSharedManagerAdapter {
 
         ConsistentCut cut = CUT_HOLDER.get(this).cut;
 
-        // If Consistent Cut isn't running now then it might be started in any moment after registering this transaction.
-        // To avoid misses add every transaction while Consistent Cut is collecting active  transactions.
-        if (cut == null || !cut.started())
-            committingTxs.add(tx);
+        committingTxs.add(tx);
 
         if (log.isDebugEnabled()) {
             log.debug("`registerBeforeCommit` from " + tx.nearXidVersion().asIgniteUuid() + " to " + tx.xid()
@@ -262,7 +262,7 @@ public class ConsistentCutManager extends GridCacheSharedManagerAdapter {
                 ConsistentCut cut = holder.cut;
 
                 try {
-                    cut.run(committingTxs).listen(f -> {
+                    cut.init(committingTxs).listen(f -> {
                         boolean err = f.error() != null;
 
                         onFinish(err);
@@ -292,9 +292,15 @@ public class ConsistentCutManager extends GridCacheSharedManagerAdapter {
             if (curHolder.cut != null) {
                 ConsistentCutHolder holder = new ConsistentCutHolder(curHolder.ver, null);
 
-                committingTxs.clear();
-
                 if (CUT_HOLDER.compareAndSet(this, curHolder, holder)) {
+                    List<IgniteInternalTx> txs = new ArrayList<>(committingTxs);
+
+                    // Clean committed transactions.
+                    for (IgniteInternalTx tx: txs) {
+                        if (tx.state() == TransactionState.COMMITTED)
+                            committingTxs.remove(tx);
+                    }
+
                     if (cctx.kernalContext().clientNode())
                         return;
 

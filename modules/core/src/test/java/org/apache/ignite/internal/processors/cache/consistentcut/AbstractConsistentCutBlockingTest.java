@@ -504,7 +504,7 @@ public abstract class AbstractConsistentCutBlockingTest extends AbstractConsiste
             }
 
             /** Blocks before or after ConsistentCut preparation. */
-            @Override protected IgniteInternalFuture<?> run(Collection<IgniteInternalTx> beforeCut) throws IgniteCheckedException {
+            @Override protected IgniteInternalFuture<?> init(Collection<IgniteInternalTx> beforeCut) throws IgniteCheckedException {
                 if (blkCut(VERSION_UPDATE)) {
                     try {
                         cutBlkLatch.await(100, TimeUnit.MILLISECONDS);
@@ -514,7 +514,7 @@ public abstract class AbstractConsistentCutBlockingTest extends AbstractConsiste
                     }
                 }
 
-                IgniteInternalFuture<?> prepared = super.run(beforeCut);
+                IgniteInternalFuture<?> prepared = super.init(beforeCut);
 
                 if (blkCut(CUT_PREPARED)) {
                     try {

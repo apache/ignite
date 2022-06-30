@@ -80,7 +80,7 @@ public class ConsistentCut {
      * @param committingTxs Reference to mutable collection of committing transactions.
      * @return Future that completes after local Consistent Cut finished.
      */
-    protected IgniteInternalFuture<?> run(Collection<IgniteInternalTx> committingTxs) throws IgniteCheckedException {
+    protected IgniteInternalFuture<?> init(Collection<IgniteInternalTx> committingTxs) throws IgniteCheckedException {
         activeTxs = new ArrayList<>(cctx.tm().activeTransactions());
 
         started = walLog(ver, new ConsistentCutStartRecord(ver));
