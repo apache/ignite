@@ -82,4 +82,9 @@ public class SqlQueryView {
     public boolean local() {
         return qry.local();
     }
+
+    /** @return Subject ID. */
+    public UUID subjectId() {
+        return qry.subjectId();
+    }
 }
