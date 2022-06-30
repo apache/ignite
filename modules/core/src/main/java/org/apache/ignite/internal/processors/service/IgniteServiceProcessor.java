@@ -1365,12 +1365,12 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
         if (cfg instanceof LazyServiceConfiguration) {
             LazyServiceConfiguration srvcCfg = (LazyServiceConfiguration)cfg;
 
-            GridDeployment srvcDep = ctx.deploy().getDeployment(srvcCfg.serviceClassName());
+//            GridDeployment srvcDep = ctx.deploy().getDeployment(srvcCfg.serviceClassName());
 
             byte[] bytes = ((LazyServiceConfiguration)cfg).serviceBytes();
 
             Service srvc = U.unmarshal(marsh, bytes,
-                U.resolveClassLoader(srvcDep != null ? srvcDep.classLoader() : null, ctx.config()));
+                U.resolveClassLoader(null, ctx.config()));
 
             ctx.resource().inject(srvc, svcCtx);
 
