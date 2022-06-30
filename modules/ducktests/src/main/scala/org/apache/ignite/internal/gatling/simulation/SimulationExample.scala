@@ -25,11 +25,11 @@ import org.apache.ignite.internal.gatling.feeder.IntPairsFeeder
 import scala.language.postfixOps
 
 class SimulationExample extends Simulation {
-  private val protocol = ignite.cfg(new ClientConfiguration().setAddresses("localhost:10800"))
+  private val protocol = igniteProtocol.cfg(new ClientConfiguration().setAddresses("localhost:10800"))
   private val feeder = IntPairsFeeder()
   private val scn = scenario("Example")
     .feed(feeder)
-    .execIgnite(
+    .ignite(
       start as "Start client",
       create("TEST-CACHE") backups 0 atomicity TRANSACTIONAL as "Create cache",
       tx(PESSIMISTIC, REPEATABLE_READ).timeout(100L) (

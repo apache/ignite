@@ -30,15 +30,15 @@ class SimulationBasic extends Simulation with DucktapeIgniteSupport {
 
     private val basicScenario = scenario("Basic")
       .feed(feeder)
-      .execIgnite(
+      .ignite(
         start,
         create("TEST-CACHE") backups 1  atomicity ATOMIC mode PARTITIONED,
         put[Int, Int] ("TEST-CACHE", "#{key}", "#{value}"),
-        get[Int, Any] ("TEST-CACHE", key = -2)
-          check simpleCheck(result => result(-2) != null) as "get absent",
+        get[Int, Int] ("TEST-CACHE", key = -2)
+          check entries[Int, Int].findAll.exists as "get absent",
         get[Int, Int] ("TEST-CACHE", key = "#{key}") check(
-          simpleCheck((r, s) => r(s("key").as[Int]) == s("value").as[Int]),
-          allResults[Int, Int].saveAs("savedInSession")) as "get present",
+          entries[Int, Int].find.transform(_.value).is("#{value}"),
+          entries[Int, Int].findAll.saveAs("savedInSession")) as "get present",
         create("TEST-CACHE-2") backups 1  atomicity ATOMIC mode PARTITIONED,
         put[Int, Any] ("TEST-CACHE-2", "#{key}", "#{savedInSession}"),
         close
@@ -46,7 +46,7 @@ class SimulationBasic extends Simulation with DucktapeIgniteSupport {
 
   private val twoScenario = scenario("Basic 2")
     .feed(feeder)
-    .execIgnite(
+    .ignite(
       start,
       create("TEST-CACHE-2") backups 1  atomicity ATOMIC mode PARTITIONED,
       put[Int, Int] ("TEST-CACHE-2", "#{key}", "#{value}"),

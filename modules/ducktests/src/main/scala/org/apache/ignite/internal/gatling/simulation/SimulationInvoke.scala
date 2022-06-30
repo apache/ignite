@@ -20,7 +20,6 @@ package org.apache.ignite.internal.gatling.simulation
 import io.gatling.core.Predef.{rampUsersPerSec, _}
 import io.gatling.core.structure.ScenarioBuilder
 import org.apache.ignite.gatling.Predef._
-import org.apache.ignite.gatling.api.IgniteApi
 import org.apache.ignite.internal.gatling.feeder.IntPairsFeeder
 
 import java.util.concurrent.locks.Lock
@@ -33,11 +32,11 @@ class SimulationInvoke extends Simulation with DucktapeIgniteSupport {
 
   val scn: ScenarioBuilder = scenario("Get")
     .feed(feeder)
-    .execIgnite(
+    .ignite(
       start,
       create("TEST-CACHE").backups(1).atomicity(TRANSACTIONAL),
       lock[Int]("TEST-CACHE", "#{key}").check(
-        allResults[Int, Lock].transform(a => a.values.head).saveAs("lock")
+        entries[Int, Lock].transform(a => a.value).saveAs("lock")
       ),
 
       put[Int, Int]("TEST-CACHE", "#{key}", "#{value}"),
@@ -46,10 +45,8 @@ class SimulationInvoke extends Simulation with DucktapeIgniteSupport {
       },
       get[Int, Int]("TEST-CACHE", "#{key}")
         .check(
-          simpleCheck((m, session) => {
-            m(session("key").as[Int]) == -session("value").as[Int]
-          }),
-          allResults[Int, Int].transform(a => -a.values.head).is("#{value}")
+          entries[Int, Int].transform(_.value).is("#{value}"),
+          entries[Int, Int].transform(a => -a.value).is("#{value}")
         ),
       unlock("TEST-CACHE", "#{lock}"),
 

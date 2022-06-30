@@ -35,22 +35,18 @@ class SimulationTransactions extends Simulation with DucktapeIgniteSupport {
     )
   ).exec(get[Int, Int]("TEST-CACHE", "#{key}")
     .check(
-      allResults[Int, Int].saveAs("C"),
-      simpleCheck((m, session) => {
-        m(session("key").as[Int]) == session("value").as[Int]
-      })
+      entries[Int, Int].findAll.saveAs("C"),
+      entries[Int, Int].transform(_.value).is("#{value}")
     )
   )
 
   val rollbackTx: ChainBuilder = exec(tx(
       put("TEST-CACHE", "#{key}", "#{value}"),
       rollback
-  )).exec(get[Int, Any]("TEST-CACHE", "#{key}")
+  )).exec(get[Int, Int]("TEST-CACHE", "#{key}")
     .check(
-      allResults[Int, Any].saveAs("R"),
-      simpleCheck((m, session) => {
-        m(session("key").as[Int]) == null
-      }),
+      entries[Int, Int].findAll.saveAs("R"),
+      entries[Int, Int].count.is(0)
     )
   )
 
