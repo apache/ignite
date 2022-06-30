@@ -26,6 +26,9 @@ import org.apache.ignite.services.ServiceContext;
  */
 public class CompositeServiceCallInterceptor implements ServiceCallInterceptor {
     /** */
+    private static final long serialVersionUID = 0L;
+
+    /** */
     private final ServiceCallInterceptor[] intcps;
 
     /** */
@@ -36,10 +39,11 @@ public class CompositeServiceCallInterceptor implements ServiceCallInterceptor {
     /** {@inheritDoc} */
     @Override public Object invoke(String mtd, Object[] args, ServiceContext ctx, Callable<Object> svcCall) throws Exception {
         return new Callable<Object>() {
-            int idx = intcps.length;
+            int idx;
 
             @Override public Object call() throws Exception {
-                return intcps[--idx].invoke(mtd, args, ctx, idx == 0 ? svcCall : this);
+                // Recursively call interceptors.
+                return intcps[idx].invoke(mtd, args, ctx, ++idx == intcps.length ? svcCall : this);
             }
         }.call();
     }

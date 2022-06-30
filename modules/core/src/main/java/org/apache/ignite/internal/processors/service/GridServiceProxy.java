@@ -61,8 +61,7 @@ import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.platform.PlatformServiceMethod;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.services.Service;
-import org.apache.ignite.services.ServiceCallInterceptor;
-import org.apache.ignite.services.ServiceContext;
+import org.apache.ignite.services.ServiceCallContext;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.TC_IO_POLICY;
@@ -321,7 +320,11 @@ public class GridServiceProxy<T> implements Serializable {
         Object[] args,
         @Nullable Map<String, Object> callAttrs
     ) throws Exception {
-        if (callAttrs != null)
+        // One service can be called from another in the same thread - in this case,
+        // we don't need to clean the current call context.
+        ServiceCallContext prevCtx = ServiceCallContextHolder.current();
+
+        if (prevCtx == null && callAttrs != null)
             ServiceCallContextHolder.current(new ServiceCallContextImpl(callAttrs));
 
         try {
@@ -331,7 +334,7 @@ public class GridServiceProxy<T> implements Serializable {
                 return mtd.invoke(svcCtx.service(), args);
         }
         finally {
-            if (callAttrs != null)
+            if (prevCtx == null && callAttrs != null)
                 ServiceCallContextHolder.current(null);
         }
     }

@@ -1413,12 +1413,14 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
      * @return Service interceptor.
      * @throws IgniteCheckedException If failed.
      */
-    private @Nullable ServiceCallInterceptor unmarshalInterceptors(ServiceConfiguration cfg, ClassLoader ldr) throws IgniteCheckedException {
+    private @Nullable ServiceCallInterceptor unmarshalInterceptors(
+        ServiceConfiguration cfg,
+        ClassLoader ldr
+    ) throws IgniteCheckedException {
         if (!(cfg instanceof LazyServiceConfiguration))
             return null;
 
         LazyServiceConfiguration cfg0 = (LazyServiceConfiguration)cfg;
-
         byte[] intcpsBytes = cfg0.interceptorBytes();
 
         if (F.isEmpty(intcpsBytes))
@@ -1426,6 +1428,11 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
 
         ServiceCallInterceptor[] intcps = U.unmarshal(marsh, intcpsBytes, U.resolveClassLoader(ldr, ctx.config()));
 
+        // Inject generic resources.
+        for (int i = 0; i < intcps.length; i++)
+            ctx.resource().injectGeneric(intcps[i]);
+
+        // Wrap in a composite interceptor if necessary.
         return intcps.length == 1 ? intcps[0] : new CompositeServiceCallInterceptor(intcps);
     }
 
