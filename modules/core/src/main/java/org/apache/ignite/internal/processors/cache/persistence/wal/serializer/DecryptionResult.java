@@ -26,10 +26,10 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Class that represents information about an encrypted WAL record or data entry.
  */
-class EncryptedData {
+class DecryptionResult {
     /** Decrypted WAL record or {@code null} if it couldn't be decrypted. */
     @Nullable
-    private final ByteBufferBackedDataInput data;
+    private final ByteBufferBackedDataInput decryptedData;
 
     /**
      * Type of the encrypted WAL record or {@code null} if this instance contains an encrypted data entry
@@ -42,17 +42,17 @@ class EncryptedData {
     private final int grpId;
 
     /**
-     * @param data Decrypted WAL record or {@code null} if it couldn't be decrypted.
+     * @param decryptedData Decrypted WAL record or {@code null} if it couldn't be decrypted.
      * @param recordType Type of the encrypted WAL record or {@code null}
      *                   if this instance contains an encrypted data entry and not a WAL record.
      * @param grpId Cache group id.
      */
-    EncryptedData(
-        @Nullable ByteBuffer data,
+    DecryptionResult(
+        @Nullable ByteBuffer decryptedData,
         @Nullable WALRecord.RecordType recordType,
         int grpId
     ) {
-        this.data = data == null ? null : new ByteBufferBackedDataInputImpl().buffer(data);
+        this.decryptedData = decryptedData == null ? null : new ByteBufferBackedDataInputImpl().buffer(decryptedData);
         this.recordType = recordType;
         this.grpId = grpId;
     }
@@ -60,8 +60,8 @@ class EncryptedData {
     /**
      * Returns the decrypted WAL record or {@code null} if it couldn't be decrypted.
      */
-    @Nullable ByteBufferBackedDataInput data() {
-        return data;
+    @Nullable ByteBufferBackedDataInput decryptedData() {
+        return decryptedData;
     }
 
     /**
@@ -82,7 +82,7 @@ class EncryptedData {
     /**
      * Returns {@code true} if this instance contains decrypted data.
      */
-    boolean isDecrypted() {
-        return data != null;
+    boolean isDecryptedSuccessfully() {
+        return decryptedData != null;
     }
 }

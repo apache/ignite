@@ -37,7 +37,6 @@ import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_BINA
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_MARSHALLER_PATH;
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_WAL_ARCHIVE_PATH;
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_WAL_PATH;
-import static org.apache.ignite.development.utils.IgniteWalConverter.convert;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.Assert.assertThat;
 
@@ -96,7 +95,7 @@ public class IgniteEncryptedWalConverterTest extends GridCommonAbstractTest {
             emptyList()
         );
 
-        convert(out, arg);
+        IgniteWalConverter.convert(out, arg);
 
         String result = outByte.toString();
 

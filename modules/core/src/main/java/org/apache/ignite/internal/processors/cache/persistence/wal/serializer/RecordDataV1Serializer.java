@@ -208,15 +208,15 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
     @Override public WALRecord readRecord(RecordType type, ByteBufferBackedDataInput in, int size)
         throws IOException, IgniteCheckedException {
         if (type == ENCRYPTED_RECORD || type == ENCRYPTED_RECORD_V2) {
-            EncryptedData encryptedData = readEncryptedData(in, true, type == ENCRYPTED_RECORD_V2);
+            DecryptionResult decryptionResult = readEncryptedData(in, true, type == ENCRYPTED_RECORD_V2);
 
-            if (encryptedData.isDecrypted()) {
-                ByteBufferBackedDataInput data = encryptedData.data();
+            if (decryptionResult.isDecryptedSuccessfully()) {
+                ByteBufferBackedDataInput data = decryptionResult.decryptedData();
 
-                return readPlainRecord(encryptedData.recordType(), data, true, data.buffer().capacity());
+                return readPlainRecord(decryptionResult.recordType(), data, true, data.buffer().capacity());
             }
             else
-                return new EncryptedRecord(encryptedData.grpId(), encryptedData.recordType());
+                return new EncryptedRecord(decryptionResult.grpId(), decryptionResult.recordType());
         }
 
         return readPlainRecord(type, in, false, size);
@@ -278,7 +278,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
      * @throws IOException If failed.
      * @throws IgniteCheckedException If failed.
      */
-    private EncryptedData readEncryptedData(
+    private DecryptionResult readEncryptedData(
         ByteBufferBackedDataInput in,
         boolean readType,
         boolean readKeyId
@@ -291,12 +291,12 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
         int keyId = readKeyId ? in.readUnsignedByte() : GridEncryptionManager.INITIAL_KEY_ID;
 
         // Encryption Manager can be null during offline WAL iteration
-        if (encMgr == null) {
+        if (encMgr == null || encSpi == null) {
             int skipped = in.skipBytes(encRecSz);
 
             assert skipped == encRecSz;
 
-            return new EncryptedData(null, plainRecType, grpId);
+            return new DecryptionResult(null, plainRecType, grpId);
         }
 
         GroupKey grpKey = encMgr.groupKey(grpId, keyId);
@@ -307,7 +307,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
 
             assert skipped == encRecSz;
 
-            return new EncryptedData(null, plainRecType, grpId);
+            return new DecryptionResult(null, plainRecType, grpId);
         }
 
         byte[] encData = new byte[encRecSz];
@@ -316,7 +316,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
 
         byte[] clData = encSpi.decrypt(encData, grpKey.key());
 
-        return new EncryptedData(ByteBuffer.wrap(clData), plainRecType, grpId);
+        return new DecryptionResult(ByteBuffer.wrap(clData), plainRecType, grpId);
     }
 
     /**
@@ -2050,10 +2050,10 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
         if (needDecryption) {
             boolean readKeyId = recType == ENCRYPTED_DATA_RECORD_V2 || recType == ENCRYPTED_DATA_RECORD_V3;
 
-            EncryptedData encryptedData = readEncryptedData(in, false, readKeyId);
+            DecryptionResult decryptionResult = readEncryptedData(in, false, readKeyId);
 
-            return encryptedData.isDecrypted()
-                ? readPlainDataEntry(encryptedData.data(), dataRecordType)
+            return decryptionResult.isDecryptedSuccessfully()
+                ? readPlainDataEntry(decryptionResult.decryptedData(), dataRecordType)
                 : new EncryptedDataEntry();
         }
 
