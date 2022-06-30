@@ -42,6 +42,11 @@ public class ConsistentCutFinishRecordSerializer {
 
         for (GridCacheVersion v: rec.include())
             putVersion(buf, v, false);
+
+        buf.putInt(rec.exclude().size());
+
+        for (GridCacheVersion v: rec.exclude())
+            putVersion(buf, v, false);
     }
 
     /**
@@ -52,17 +57,25 @@ public class ConsistentCutFinishRecordSerializer {
      * @throws IOException In case of fail.
      */
     public ConsistentCutFinishRecord read(ByteBufferBackedDataInput in) throws IOException {
-        int inclSize = in.readInt();
+        Set<GridCacheVersion> include = readSetTxs(in);
+        Set<GridCacheVersion> exclude = readSetTxs(in);
 
-        Set<GridCacheVersion> include = new HashSet<>();
+        return new ConsistentCutFinishRecord(include, exclude);
+    }
 
-        for (int i = 0; i < inclSize; i++) {
+    /** */
+    private Set<GridCacheVersion> readSetTxs(ByteBufferBackedDataInput in) throws IOException {
+        int txsSize = in.readInt();
+
+        Set<GridCacheVersion> txs = new HashSet<>();
+
+        for (int i = 0; i < txsSize; i++) {
             GridCacheVersion v = readVersion(in, false);
 
-            include.add(v);
+            txs.add(v);
         }
 
-        return new ConsistentCutFinishRecord(include);
+        return txs;
     }
 
     /**
@@ -72,9 +85,12 @@ public class ConsistentCutFinishRecordSerializer {
      * @return Size of ConsistentCutFinishRecord in bytes.
      */
     public int size(ConsistentCutFinishRecord rec) {
-        int size = 4;  // include tx count.
+        int size = 4 + 4;  // include and exclude tx count.
 
         for (GridCacheVersion v: rec.include())
+            size += CacheVersionIO.size(v, false);
+
+        for (GridCacheVersion v: rec.exclude())
             size += CacheVersionIO.size(v, false);
 
         return size;

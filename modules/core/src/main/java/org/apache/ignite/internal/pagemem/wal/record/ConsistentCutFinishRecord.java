@@ -40,18 +40,29 @@ import org.apache.ignite.lang.IgniteUuid;
  */
 public class ConsistentCutFinishRecord extends WALRecord {
     /**
-     * Set of transactions (optionally committed after this record) to include to the Consistent Cut State.
+     * Set of transactions (optionally committed after this record) to include to the BEFORE side of Consistent Cut.
      */
     private final Set<GridCacheVersion> include;
 
+    /**
+     * Set of transactions (optionally committed after this record) to exclude from the BEFORE side of Consistent Cut State.
+     */
+    private final Set<GridCacheVersion> exclude;
+
     /** */
-    public ConsistentCutFinishRecord(Set<GridCacheVersion> include) {
+    public ConsistentCutFinishRecord(Set<GridCacheVersion> include, Set<GridCacheVersion> exclude) {
         this.include = Collections.unmodifiableSet(include);
+        this.exclude = Collections.unmodifiableSet(exclude);
     }
 
     /** */
     public Set<GridCacheVersion> include() {
         return include;
+    }
+
+    /** */
+    public Set<GridCacheVersion> exclude() {
+        return exclude;
     }
 
     /** {@inheritDoc} */
@@ -65,6 +76,10 @@ public class ConsistentCutFinishRecord extends WALRecord {
             .map(GridCacheVersion::asIgniteUuid)
             .collect(Collectors.toList());
 
-        return "ConsistentCutFinishRecord [include=" + incl + "]";
+        List<IgniteUuid> excl = exclude.stream()
+            .map(GridCacheVersion::asIgniteUuid)
+            .collect(Collectors.toList());
+
+        return "ConsistentCutFinishRecord [include=" + incl + ", exclude=" + excl + "]";
     }
 }

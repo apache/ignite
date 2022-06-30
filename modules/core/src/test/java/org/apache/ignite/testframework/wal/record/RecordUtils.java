@@ -644,6 +644,7 @@ public class RecordUtils {
 
     /** **/
     public static ConsistentCutFinishRecord buildConsistentCutFinishRecord() {
-        return new ConsistentCutFinishRecord(F.asSet(new GridCacheVersion()));
+        return new ConsistentCutFinishRecord(
+            F.asSet(new GridCacheVersion()), F.asSet(new GridCacheVersion()));
     }
 }

@@ -529,7 +529,7 @@ public abstract class AbstractConsistentCutBlockingTest extends AbstractConsiste
             }
 
             /** Blocks before writing {@link ConsistentCutStartRecord} to WAL. */
-            @Override protected void walLog(ConsistentCutVersion cutVer, WALRecord record) throws IgniteCheckedException {
+            @Override protected boolean walLog(ConsistentCutVersion cutVer, WALRecord record) throws IgniteCheckedException {
                 if (blkCut(BEFORE_WAL_STARTED)) {
                     try {
                         cutBlkLatch.await(100, TimeUnit.MILLISECONDS);
@@ -539,7 +539,7 @@ public abstract class AbstractConsistentCutBlockingTest extends AbstractConsiste
                     }
                 }
 
-                super.walLog(cutVer, record);
+                return super.walLog(cutVer, record);
             }
         }
 

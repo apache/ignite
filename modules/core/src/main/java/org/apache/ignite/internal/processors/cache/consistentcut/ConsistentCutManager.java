@@ -205,27 +205,19 @@ public class ConsistentCutManager extends GridCacheSharedManagerAdapter {
      * It invokes before committing transactions leave {@link IgniteTxManager#activeTransactions()}.
      */
     public void registerBeforeCommit(IgniteInternalTx tx) {
-        long txCutVer = setTxCutVersionIfNeeded(tx);
+        setTxCutVersionIfNeeded(tx);
 
         ConsistentCut cut = CUT_HOLDER.get(this).cut;
 
-        try {
-            // If Consistent Cut isn't running now then it might be started in any moment after registering this transaction.
-            // To avoid misses add every transaction while Consistent Cut is grabbing active transactions.
-            if (cut == null || !cut.activeTxCollectingFinished())
-                committingTxs.add(tx);
+        // If Consistent Cut isn't running now then it might be started in any moment after registering this transaction.
+        // To avoid misses add every transaction while Consistent Cut is collecting active  transactions.
+        if (cut == null || !cut.started())
+            committingTxs.add(tx);
 
-            if (cut != null)
-                cut.processTxBeforeCommit(txCutVer);
-
-            if (log.isDebugEnabled()) {
-                log.debug("`registerBeforeCommit` from " + tx.nearXidVersion().asIgniteUuid() + " to " + tx.xid()
-                    + " , ver=" + ((ConsistentCutVersionAware)tx).txCutVersion() + ", cut = " + cut + ", latestVer = "
-                    + latestKnownCutVersion());
-            }
-        }
-        catch (IgniteCheckedException e) {
-            onFinish(true);
+        if (log.isDebugEnabled()) {
+            log.debug("`registerBeforeCommit` from " + tx.nearXidVersion().asIgniteUuid() + " to " + tx.xid()
+                + " , ver=" + ((ConsistentCutVersionAware)tx).txCutVersion() + ", cut = " + cut + ", latestVer = "
+                + latestKnownCutVersion());
         }
     }
 
@@ -235,10 +227,10 @@ public class ConsistentCutManager extends GridCacheSharedManagerAdapter {
      * @param tx Transaction.
      */
     public void unregisterAfterCommit(IgniteInternalTx tx) {
-        // Safely remove transaction here as it's whether:
-        // 1. Committed before Consistent Cut write `ConsistentCutStartRecord` to WAL.
-        // 2. Grabbed to be checked while preparing the check-list.
-        committingTxs.remove(tx);
+        ConsistentCut cut = CUT_HOLDER.get(this).cut;
+
+        if (cut == null)
+            committingTxs.remove(tx);
     }
 
     /**
@@ -299,6 +291,8 @@ public class ConsistentCutManager extends GridCacheSharedManagerAdapter {
 
             if (curHolder.cut != null) {
                 ConsistentCutHolder holder = new ConsistentCutHolder(curHolder.ver, null);
+
+                committingTxs.clear();
 
                 if (CUT_HOLDER.compareAndSet(this, curHolder, holder)) {
                     if (cctx.kernalContext().clientNode())
@@ -408,10 +402,8 @@ public class ConsistentCutManager extends GridCacheSharedManagerAdapter {
      * Sets Consistent Cut version for specified transaction if it hasn't set yet. Single node is responsible for
      * setting the version within transaction (see {@link #isSetterTxCutVersion(IgniteInternalTx)}). Other nodes
      * recieves this version due to Finish messages.
-     *
-     * @return Consistent Cut version AFTER which specified transctions committed.
      */
-    private long setTxCutVersionIfNeeded(IgniteInternalTx tx) {
+    private void setTxCutVersionIfNeeded(IgniteInternalTx tx) {
         ConsistentCutVersionAware txCutVerAware = (ConsistentCutVersionAware)tx;
 
         if (isSetterTxCutVersion(tx)) {
@@ -423,8 +415,6 @@ public class ConsistentCutManager extends GridCacheSharedManagerAdapter {
         long txCutVer = txCutVerAware.txCutVersion();
 
         assert txCutVer >= 0 : tx;
-
-        return txCutVer;
     }
 
     /**

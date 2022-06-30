@@ -36,7 +36,6 @@ import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteUuid;
@@ -64,14 +63,11 @@ class ConsistentCutWalReader {
     public final List<NodeConsistentCutState> cuts = new ArrayList<>();
 
     /** Initied cut version. Counter -> Consistent Cut Version */
-    private final Map<Integer, Long> cutVers = new HashMap<Integer, Long>() {
+    private final Map<Long, Long> cutVers = new HashMap<Long, Long>() {
         {
-            put(1, null);
+            put(1L, null);
         }
     };
-
-    /** Number of current (not finished yet) Consistent Cut. */
-    private int curCutVer = 1;
 
     /** For test purposes. */
     ConsistentCutWalReader(
@@ -86,7 +82,7 @@ class ConsistentCutWalReader {
 
     /** Reads whole WAL. */
     void read() throws Exception {
-        NodeConsistentCutState curCut = new NodeConsistentCutState(null, null);
+        NodeConsistentCutState curCut = new NodeConsistentCutState(1, null, null, null);
 
         // Use buffer to avoid offset WAL multiple times (before cut, await finish cut, apply inclusions).
         BufferWalIterator it = new BufferWalIterator(walIter);
@@ -112,11 +108,11 @@ class ConsistentCutWalReader {
             readCutInclusions(it, curCut);
 
             // Skip includes in buffer when re-read them from buffer.
-            it.skipTxInBuffer(new HashSet<>(F.concat(true, curCut.txInclude, curCut.txInclude)));
+            it.skipTxInBuffer(new HashSet<>(curCut.txInclude));
 
             cuts.add(curCut);
 
-            curCut = new NodeConsistentCutState(curCut.txInclude, curCut.txParticipations);
+            curCut = new NodeConsistentCutState(curCut.ver + 1, curCut.txExclude, curCut.txInclude, curCut.txParticipations);
         }
     }
 
@@ -135,7 +131,7 @@ class ConsistentCutWalReader {
         while (it.hasNext()) {
             WALRecord rec = it.next().getValue();
 
-            if (rec.type() == WALRecord.RecordType.TX_RECORD)
+            if (rec.type() == TX_RECORD)
                 handleTxRecord((TxRecord)rec, cut, false);
             if (rec.type() == WALRecord.RecordType.DATA_RECORD_V2)
                 handleDataRecord((DataRecord)rec, cut);
@@ -232,7 +228,7 @@ class ConsistentCutWalReader {
                 if (include.contains(txId))
                     handleDataRecord(dataRec, cut);
             }
-            else if (rec.type() == WALRecord.RecordType.TX_RECORD) {
+            else if (rec.type() == TX_RECORD) {
                 TxRecord tx = (TxRecord)rec;
 
                 IgniteUuid uid = tx.nearXidVersion().asIgniteUuid();
@@ -256,8 +252,6 @@ class ConsistentCutWalReader {
                             include.remove(uid);
                     }
                 }
-                else
-                    log("SKIP EXCLUDED TX[" + tx.nearXidVersion().asIgniteUuid() + " " + tx.state() + "]");
             }
             else if (rec.type() == CONSISTENT_CUT_START_RECORD) {
                 ConsistentCutStartRecord r = (ConsistentCutStartRecord)rec;
@@ -351,42 +345,35 @@ class ConsistentCutWalReader {
 
     /** */
     private ConsistentCutStartRecord handleStartConsistentCutRecord(ConsistentCutStartRecord rec, NodeConsistentCutState cut) {
-        if (cutVers.get(curCutVer) != null) {
-            log("SKIP START " + curCutVer + " CUT[" + rec + "]");
+        if (cutVers.get(cut.ver) != null) {
+            log("SKIP START " + cut.ver + " CUT[" + rec + "]");
 
             return null;
         }
 
-        log("START " + curCutVer + " CUT[" + rec + "], state = " + cut);
+        log("START " + cut.ver + " CUT[" + rec + "], state = " + cut);
 
-        cutVers.put(curCutVer, rec.version().version());
+        cutVers.put(cut.ver, rec.version().version());
 
-        ++curCutVer;
-
-        cut.ver = rec.version().version();
+        assert cut.ver == rec.version().version() : cut.ver + " " + rec.version().version();
 
         return rec;
     }
 
     /** */
     private void handleFinishConsistentCutRecord(ConsistentCutFinishRecord rec, NodeConsistentCutState cut) {
-        log("FINISH " + (curCutVer - 1) + " CUT[" + rec + "], state = " + cut);
-
         Set<IgniteUuid> include = rec.include().stream()
             .map(GridCacheVersion::asIgniteUuid)
-            // Some transactions that included to CUT may be already committed (partially or fully) before this CUT.
-            // Skip if it is fully committed.
-            .filter(tx -> {
-                if (cut.committedTx.contains(tx))
-                    return cut.txParticipations.containsKey(tx);
-
-                return true;
-            })
             .collect(Collectors.toSet());
 
-        assert cut.txInclude == null;
+        Set<IgniteUuid> exclude = rec.exclude().stream()
+            .map(GridCacheVersion::asIgniteUuid)
+            .collect(Collectors.toSet());
 
         cut.includeToCut(include);
+        cut.excludeFromCut(exclude);
+
+        log("FINISH " + cut.ver + " CUT[" + rec + "], state = " + cut);
     }
 
     /** */
@@ -430,14 +417,14 @@ class ConsistentCutWalReader {
         long ver;
 
         /**
-         * Committed transactions. Doesn't include tx that committed with one-phase algorithm.
+         * Committed transactions.
          */
         @GridToStringInclude
-        final List<IgniteUuid> committedTx = new ArrayList<>();
+        final Set<IgniteUuid> committedTx = new HashSet<>();
 
         /** Transactions to exclude from this state while reading WAL. */
         @GridToStringInclude
-        final Set<IgniteUuid> txExclude;
+        Set<IgniteUuid> txExclude;
 
         /** Transactions to include to this state while reading WAL. */
         @GridToStringInclude
@@ -455,10 +442,17 @@ class ConsistentCutWalReader {
          * @param txParticipations Participations collection inherited from previous states.
          */
         NodeConsistentCutState(
+            long ver,
+            @Nullable Set<IgniteUuid> include,
             @Nullable Set<IgniteUuid> exclude,
             @Nullable Map<IgniteUuid, NodeTxParticipation> txParticipations
         ) {
-            txExclude = exclude == null ? null : new HashSet<>(exclude);
+            this.ver = ver;
+
+            if (include != null)
+                committedTx.addAll(include);
+
+            txExclude = exclude == null ? new HashSet<>() : new HashSet<>(exclude);
 
             this.txParticipations = txParticipations == null ? new HashMap<>() : new HashMap<>(txParticipations);
         }
@@ -480,6 +474,17 @@ class ConsistentCutWalReader {
         /** Includes set of transactions to this state. */
         public void includeToCut(Set<IgniteUuid> txs) {
             txInclude = new HashSet<>(txs);
+        }
+
+        /** Includes set of transactions to this state. */
+        public void excludeFromCut(Set<IgniteUuid> txs) {
+            // Clear exclusions from previous CUT.
+            txExclude.clear();
+
+            for (IgniteUuid tx: txs) {
+                committedTx.remove(tx);
+                txExclude.add(tx);
+            }
         }
 
         /**
