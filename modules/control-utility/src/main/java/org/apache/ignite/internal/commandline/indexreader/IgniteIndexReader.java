@@ -331,9 +331,9 @@ public class IgniteIndexReader implements AutoCloseable {
         Set<String> idxs = new HashSet<>(asList(p.get(INDEXES_ARG)));
 
         try (IgniteIndexReader reader = new IgniteIndexReader(
-            p.<Integer>get(PAGE_SIZE_ARG),
-            p.<Integer>get(PART_CNT_ARG),
-            p.<Integer>get(PAGE_STORE_VER_ARG),
+            p.get(PAGE_SIZE_ARG),
+            p.get(PART_CNT_ARG),
+            p.get(PAGE_STORE_VER_ARG),
             new File(p.<String>get(DIR_ARG)),
             idxs.isEmpty() ? null : idxs::contains,
             p.get(CHECK_PARTS_ARG),
@@ -735,7 +735,7 @@ public class IgniteIndexReader implements AutoCloseable {
     }
 
     /**
-     * Seach index definition inside cache query entities.
+     * Search index definition inside cache query entities.
      *
      * @param parsed Parsed index name.
      * @return Count of inlined fields or {@code 0} if index definition not found.
@@ -1196,7 +1196,7 @@ public class IgniteIndexReader implements AutoCloseable {
      * @return New instance of {@link FilePageStore} or {@code null}.
      * @throws IgniteCheckedException If there are errors when creating or initializing {@link FilePageStore}.
      */
-    @Nullable FilePageStore filePageStore(
+    @Nullable private FilePageStore filePageStore(
         int partId,
         byte type,
         FileVersionCheckingFactory storeFactory
