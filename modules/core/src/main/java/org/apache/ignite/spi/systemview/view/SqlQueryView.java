@@ -22,6 +22,7 @@ import java.util.UUID;
 import org.apache.ignite.internal.managers.systemview.walker.Order;
 import org.apache.ignite.internal.processors.query.GridRunningQueryInfo;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * SQL query representation for a {@link SystemView}.
@@ -84,7 +85,7 @@ public class SqlQueryView {
     }
 
     /** @return Subject ID. */
-    public UUID subjectId() {
+    @Nullable public UUID subjectId() {
         return qry.subjectId();
     }
 }
