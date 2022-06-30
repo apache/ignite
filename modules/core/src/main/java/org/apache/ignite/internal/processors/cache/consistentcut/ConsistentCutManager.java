@@ -213,7 +213,7 @@ public class ConsistentCutManager extends GridCacheSharedManagerAdapter {
         try {
             // If Consistent Cut isn't running now then it might be started in any moment after registering this transaction.
             // To avoid misses add every transaction while Consistent Cut is grabbing active transactions.
-            if (cut == null || (cut.grabTransactionsInProgress() && cut.txBeforeCut(txCutVer)))
+            if (cut == null || (!cut.activeTxCollectingFinished() && cut.txBeforeCut(txCutVer)))
                 beforeCut.add(tx);
 
             if (cut != null)

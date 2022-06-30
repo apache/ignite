@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.consistentcut;
 
+import java.io.File;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -25,6 +26,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.CacheAtomicityMode;
@@ -38,6 +40,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
+import org.apache.ignite.internal.pagemem.wal.WALIterator;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxFinishResponse;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxFinishRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxPrepareRequest;
@@ -46,6 +49,7 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxFi
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxFinishResponse;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareRequest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareResponse;
+import org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
@@ -57,6 +61,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.cache.consistentcut.ConsistentCutWalReader.NodeConsistentCutState.INCOMPLETE;
+import static org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderResolver.genNewStyleSubfolderName;
 
 /** Base class for testing Consistency Cut algorithm. */
 public abstract class AbstractConsistentCutTest extends GridCommonAbstractTest {
@@ -235,7 +240,7 @@ public abstract class AbstractConsistentCutTest extends GridCommonAbstractTest {
         for (int i = 0; i < nodes(); i++) {
             log.info("Check WAL for node " + i);
 
-            ConsistentCutWalReader reader = new ConsistentCutWalReader(i, log, txNearNode, top);
+            ConsistentCutWalReader reader = new ConsistentCutWalReaderEx(i, walIter(i, (UUID)top.get(i).get1()), log, txNearNode, top);
 
             states.add(reader);
 
@@ -302,6 +307,22 @@ public abstract class AbstractConsistentCutTest extends GridCommonAbstractTest {
             }
 
         }, nodes()).get(getTestTimeout());
+    }
+
+    /** Get plain iterator over WAL. */
+    private WALIterator walIter(int nodeIdx, UUID consistentId) throws Exception {
+        String workDir = U.defaultWorkDirectory();
+
+        IgniteWalIteratorFactory factory = new IgniteWalIteratorFactory(log);
+
+        String subfolderName = genNewStyleSubfolderName(nodeIdx, consistentId);
+
+        File archive = U.resolveWorkDirectory(workDir, "db/wal/archive/" + subfolderName, false);
+
+        IgniteWalIteratorFactory.IteratorParametersBuilder params = new IgniteWalIteratorFactory.IteratorParametersBuilder()
+            .filesOrDirs(archive);
+
+        return factory.iterator(params);
     }
 
     /** Logs TX messages between nodes. */

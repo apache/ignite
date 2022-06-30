@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.consistentcut;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Map;
@@ -58,11 +59,9 @@ public class ConsistentCut {
     private final ConsistentCutVersion ver;
 
     /**
-     * It is set to {@code true} after grabbing Consistent Cut grabbed collection of active transactions to check.
-     *
-     * Every transaction appeared after completion of this future belongs to the AFTER side of this Consistent Cut.
+     * Collection of active transactions to check.
      */
-    private volatile boolean grabbedTxs;
+    private volatile Collection<IgniteInternalTx> activeTxs;
 
     /**
      * Future completes after writing {@link ConsistentCutStartRecord}.
@@ -113,9 +112,7 @@ public class ConsistentCut {
      *                     to the BEFORE side.
      */
     protected boolean prepare(Collection<IgniteInternalTx> beforeCutRef) throws IgniteCheckedException {
-        Collection<IgniteInternalTx> activeTxs = new HashSet<>(cctx.tm().activeTransactions());
-
-        grabbedTxs = true;
+        activeTxs = new ArrayList<>(cctx.tm().activeTransactions());
 
         Set<GridCacheVersion> beforeCutTxs = new HashSet<>();
 
@@ -192,10 +189,10 @@ public class ConsistentCut {
     }
 
     /**
-     * @return {@code true} if Consistent Cut grabbed list of transactions to check.
+     * @return {@code true} if Consistent Cut collected list of active transactions to check.
      */
-    boolean grabTransactionsInProgress() {
-        return !grabbedTxs;
+    boolean activeTxCollectingFinished() {
+        return activeTxs != null;
     }
 
     /**
