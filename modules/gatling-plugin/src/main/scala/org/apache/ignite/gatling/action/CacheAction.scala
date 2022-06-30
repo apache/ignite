@@ -64,7 +64,7 @@ abstract class CacheAction[K, V](
    * Resolves cache action parameters using session context.
    *
    * @param session Session.
-   * @return Instance of [[CacheActionParameters]]
+   * @return Instance of CacheActionParameters
    */
   def resolveCacheParameters(session: Session): Validation[CacheActionParameters] =
     for {

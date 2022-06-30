@@ -32,7 +32,7 @@ trait Cache {
    *
    * @tparam K Type of the cache key.
    * @tparam V Type of the cache value.
-   * @return [[PutBuilder]]
+   * @return PutBuilder
    */
   def put[K, V]: PutBuilder[K, V] = PutBuilder()
 

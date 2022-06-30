@@ -19,9 +19,14 @@ package org.apache.ignite.gatling.examples
 import io.gatling.app.Gatling
 import io.gatling.core.config.GatlingPropertiesBuilder
 
+/**
+ * Sample application running the Gatling simulation.
+ */
 object GatlingRunner {
+  /**
+   * @param args Command line arguments.
+   */
   def main(args: Array[String]): Unit = {
-    // specify the class to run
     val simulationClass = classOf[BasicSimulation].getName
 
     val props = new GatlingPropertiesBuilder

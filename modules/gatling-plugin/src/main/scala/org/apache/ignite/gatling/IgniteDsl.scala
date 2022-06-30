@@ -25,7 +25,8 @@ import io.gatling.core.structure.ScenarioBuilder
 import org.apache.ignite.gatling.builder.cache.Cache
 import org.apache.ignite.gatling.builder.ignite.Ignite
 import org.apache.ignite.gatling.builder.transaction.Transactions
-import org.apache.ignite.gatling.check.IgniteKeyValueCheckSupport
+import org.apache.ignite.gatling.check.IgniteKeyValueEntriesCheckSupport
+import org.apache.ignite.gatling.check.IgniteKeyValueMapResultCheckSupport
 import org.apache.ignite.gatling.check.IgniteSqlCheckSupport
 import org.apache.ignite.gatling.protocol.IgniteProtocolSupport
 
@@ -37,7 +38,8 @@ trait IgniteDsl
     with Ignite
     with Transactions
     with Cache
-    with IgniteKeyValueCheckSupport
+    with IgniteKeyValueMapResultCheckSupport
+    with IgniteKeyValueEntriesCheckSupport
     with IgniteSqlCheckSupport {
 
   /**

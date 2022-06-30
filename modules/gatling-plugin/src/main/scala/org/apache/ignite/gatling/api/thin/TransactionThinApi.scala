@@ -22,7 +22,7 @@ import org.apache.ignite.client.ClientTransaction
 import org.apache.ignite.gatling.api.TransactionApi
 
 /**
- * Implementation of [[TransactionApi]] working via the Ignite (thin) Client API.
+ * Implementation of TransactionApi working via the Ignite (thin) Client API.
  *
  * @param wrapped Enclosed IgniteClient instance.
  */

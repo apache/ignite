@@ -50,10 +50,10 @@ class CreateCacheAction[K, V](
 
   /** Default request name if none was provided via the DSL. */
   override val defaultRequestName: Expression[String] =
-    s => cacheName(s).map(cacheName => s"$actionType $cacheName}")
+    s => cacheName(s).map(cacheName => s"$actionType $cacheName")
 
   /**
-   * @inheritdoc
+   * Method executed when the Action received a Session message.
    * @param session Session
    */
   override protected def execute(session: Session): Unit = withSessionCheck(session) {

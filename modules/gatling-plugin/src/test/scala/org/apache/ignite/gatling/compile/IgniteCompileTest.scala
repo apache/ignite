@@ -36,6 +36,9 @@ import org.apache.ignite.gatling.api.node.IgniteNodeApi
 import org.apache.ignite.gatling.api.thin.IgniteThinApi
 import org.apache.ignite.gatling.protocol.IgniteProtocol
 
+/**
+ * Tests any combinations of Ignite Gatling DSL syntax.
+ */
 class IgniteCompileTest extends Simulation {
   private val thinProtocol: IgniteProtocol = igniteProtocol.cfg(new ClientConfiguration().setAddresses("localhost:10800"))
   private val nodeProtocol: IgniteProtocol = igniteProtocol.cfg(Ignition.start())
@@ -53,7 +56,7 @@ class IgniteCompileTest extends Simulation {
 //    .asIgnite
 //    .exec("start" start)
 
-  val igniteChainBuilder: ChainBuilder = ignite(
+  private val igniteChainBuilder: ChainBuilder = ignite(
     tx("")(
       start as "start client",
       put(c, 1, 2) as "put",
@@ -132,8 +135,8 @@ class IgniteCompileTest extends Simulation {
     .exec(
       invoke[Int, Int, String](c, 1)((_, _: Seq[Any]) => "")
         .check(
-          allResults[Int, String].saveAs("R1"),
-          simpleCheck(result => result(1) == "")
+          mapResult[Int, String].saveAs("R1"),
+          mapResult[Int, String].validate((result: Map[Int, String], _: Session) => result(1) == "")
         ) as r
     )
     .exec(getAll(c, Set(1)))
@@ -142,39 +145,43 @@ class IgniteCompileTest extends Simulation {
     .exec(
       get[Int, Any](c, 1).keepBinary
         .check(
-          allResults[Int, Any].transform(a => a.values.head).saveAs("R")
+          mapResult[Int, Any].transform(a => a.values.head).saveAs("R")
         ) as "aa"
     )
     .exec(
       get[Int, Int](c, 1)
         .check(
-          simpleCheck((result, session) => result(session("key").as[Int]) == session("value").as[Int])
+          mapResult[Int, Int].validate((result: Map[Int, Int], session: Session) =>
+            result(session("key").as[Int]) == session("value").as[Int]
+          )
         )
     )
     .exec(
       get[Int, Int](c, 1)
         .check(
-          simpleCheck(result => result(1) == 2)
+          mapResult[Int, Int].validate((result: Map[Int, Int], _: Session) => result(1) == 2)
         )
     )
     .exec(getAndRemove(c, 1))
     .exec(
       getAndRemove[Int, Any](c, 1)
         .check(
-          allResults[Int, Any].transform(a => a.values.head).saveAs("R2")
+          mapResult[Int, Any].transform(a => a.values.head).saveAs("R2")
         )
     )
     .exec(getAndPut(c, 1, 2))
     .exec(
       getAndPut[Int, Any](c, 1, 2)
         .check(
-          allResults[Int, Any].transform(a => a.values.head).saveAs("R3")
+          mapResult[Int, Any].transform(a => a.values.head).saveAs("R3"),
+          mapResult[Int, Any].exists,
+          entries[Int, Any].count.is(1)
         )
     )
     .exec(
       lock[Int](c, 1)
         .check(
-          allResults[Int, Lock].transform(a => a.values.head).saveAs("lock")
+          mapResult[Int, Lock].transform(a => a.values.head).saveAs("lock")
         )
     )
     .exec(unlock(c, "#{lock}"))
@@ -193,7 +200,7 @@ class IgniteCompileTest extends Simulation {
     )
     .exec(
       sql(c, "SELECT * FROM TEST_TABLE WHERE id = ? AND affinity_id = ?")
-        .check(allSqlResults.transformWithSession((r, s) => s("value").as[Int] :: r.head).saveAs("firstRow"))
+        .check(resultSet.findAll.transformWithSession((r, s) => s("value").as[Int] :: r.head).saveAs("firstRow"))
     )
     .exec { session =>
       val api: IgniteApi = session("igniteApi").as[IgniteApi]

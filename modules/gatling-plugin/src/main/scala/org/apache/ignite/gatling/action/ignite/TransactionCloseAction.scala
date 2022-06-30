@@ -34,7 +34,7 @@ class TransactionCloseAction(requestName: Expression[String], next: Action, ctx:
     extends IgniteAction("txClose", requestName, ctx, next) {
 
   /**
-   * @inheritdoc
+   * Method executed when the Action received a Session message.
    * @param session Session
    */
   def execute(session: Session): Unit =

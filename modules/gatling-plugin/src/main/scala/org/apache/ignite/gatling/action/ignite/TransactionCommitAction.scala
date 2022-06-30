@@ -38,7 +38,7 @@ class TransactionCommitAction(requestName: Expression[String], next: Action, ctx
     extends IgniteAction("commit", requestName, ctx, next) {
 
   /**
-   * @inheritdoc
+   * Method executed when the Action received a Session message.
    * @param session Session
    */
   override protected def execute(session: Session): Unit = withSessionCheck(session) {

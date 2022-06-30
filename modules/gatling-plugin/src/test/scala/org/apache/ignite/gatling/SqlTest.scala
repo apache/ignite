@@ -38,7 +38,7 @@ class SqlTest extends AbstractGatlingTest {
  */
 class SqlSimulation extends Simulation with IgniteSupport with StrictLogging {
   private val cache = "TEST-CACHE"
-  private val keyExpression = (s: Session) => s("key").as[Long].success
+  private val keyExpression = (s: Session) => s("key").as[Int].success
   private val scn = scenario("Sql")
     .feed(feeder)
     .ignite(
@@ -49,11 +49,12 @@ class SqlSimulation extends Simulation with IgniteSupport with StrictLogging {
       sql(cache, "SELECT * FROM City WHERE id = ?")
         .args(keyExpression)
         .check(
-          simpleSqlCheck { (m, s) =>
-            val id: Int = m.head.head.asInstanceOf[Int]
-            id == s("key").as[Int]
-          },
-          allSqlResults.transform(r => r.head).saveAs("firstRow")
+          resultSet.count.is(1),
+          resultSet.count.gte(0),
+          resultSet.find.saveAs("firstRow"),
+          resultSet.find.transform(r => r(2)).is("R").saveAs("check result"),
+          resultSet.validate((row: Row, s: Session) => row(2) == "RR").name("named check to fail"),
+          resultSet.findAll.validate((rows: Seq[Row], s: Session) => rows.head(2) == "R")
         ) as "Select"
     )
     .exec { session =>
@@ -62,5 +63,5 @@ class SqlSimulation extends Simulation with IgniteSupport with StrictLogging {
     }
     .exec(close as "Close client")
 
-  setUp(scn.inject(atOnceUsers(1))).protocols(protocol).assertions(global.failedRequests.count.is(0))
+  setUp(scn.inject(atOnceUsers(1))).protocols(protocol).assertions(global.failedRequests.count.is(1))
 }

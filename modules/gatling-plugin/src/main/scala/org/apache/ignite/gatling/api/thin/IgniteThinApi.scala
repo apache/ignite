@@ -34,7 +34,7 @@ import org.apache.ignite.transactions.TransactionConcurrency
 import org.apache.ignite.transactions.TransactionIsolation
 
 /**
- * Implementation of [[IgniteApi]] working via the Ignite (thin) Client API.
+ * Implementation of IgniteApi working via the Ignite (thin) Client API.
  *
  * @param wrapped Enclosed IgniteClient instance.
  */

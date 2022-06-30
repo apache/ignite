@@ -54,48 +54,48 @@ class TransactionSimulation extends Simulation with IgniteSupport {
       start,
       tx(PESSIMISTIC, READ_COMMITTED).timeout(1000L)(
         put[Int, Int](cache, "#{key}", "#{value}"),
-        get[Int, Any](cache, key = "#{key}") check allResults[Int, Any].transform(r => r.values.head.asInstanceOf[Int]).is("#{value}"),
+        get[Int, Any](cache, key = "#{key}") check mapResult[Int, Any].transform(r => r.values.head.asInstanceOf[Int]).is("#{value}"),
         commit
       ),
       tx(PESSIMISTIC, READ_COMMITTED)
         .timeout(1000L)
         .txSize(8)(
           put[Int, Int](cache, 3, 4),
-          get[Int, Any](cache, key = 3) check allResults[Int, Any].transform(r => r.values.head.asInstanceOf[Int]).is(4),
+          get[Int, Any](cache, key = 3) check mapResult[Int, Any].transform(r => r.values.head.asInstanceOf[Int]).is(4),
           commit
         ),
       tx(PESSIMISTIC, READ_COMMITTED)(
         put[Int, Int](cache, 1, 2),
-        get[Int, Any](cache, key = 1) check allResults[Int, Any].transform(r => r.values.head.asInstanceOf[Int]).is(2),
+        get[Int, Any](cache, key = 1) check mapResult[Int, Any].transform(r => r.values.head.asInstanceOf[Int]).is(2),
         commit
       ),
       tx(
         put[Int, Int](cache, 1, 2),
-        get[Int, Any](cache, key = 1) check allResults[Int, Any].transform(r => r.values.head.asInstanceOf[Int]).is(2),
+        get[Int, Any](cache, key = 1) check mapResult[Int, Any].transform(r => r.values.head.asInstanceOf[Int]).is(2),
         commit
       ),
       tx("tx1")(PESSIMISTIC, READ_COMMITTED).timeout(1000L)(
         put[Int, Int](cache, 1, 2),
-        get[Int, Any](cache, key = 1) check allResults[Int, Any].transform(r => r.values.head.asInstanceOf[Int]).is(2),
+        get[Int, Any](cache, key = 1) check mapResult[Int, Any].transform(r => r.values.head.asInstanceOf[Int]).is(2),
         commit
       ),
       tx("tx2")(PESSIMISTIC, READ_COMMITTED)
         .timeout(1000L)
         .txSize(8)(
           put[Int, Int](cache, 1, 2),
-          get[Int, Any](cache, key = 1) check allResults[Int, Any].transform(r => r.values.head.asInstanceOf[Int]).is(2),
+          get[Int, Any](cache, key = 1) check mapResult[Int, Any].transform(r => r.values.head.asInstanceOf[Int]).is(2),
           commit as "commit"
         ),
       tx("tx3")(PESSIMISTIC, READ_COMMITTED)(
         put[Int, Int](cache, 1, 2),
-        get[Int, Any](cache, key = 1) check allResults[Int, Any].transform(r => r.values.head.asInstanceOf[Int]).is(2),
+        get[Int, Any](cache, key = 1) check mapResult[Int, Any].transform(r => r.values.head.asInstanceOf[Int]).is(2),
         rollback as "rollback"
       ),
       tx("tx4")(
         put[Int, Int](cache, 1, 2),
-        get[Int, Any](cache, key = 1) check allResults[Int, Any].transform(r => r.values.head.asInstanceOf[Int]).is(2)
+        get[Int, Any](cache, key = 1) check mapResult[Int, Any].transform(r => r.values.head.asInstanceOf[Int]).is(2)
       ),
-      get[Int, Any](cache, key = 1) check allResults[Int, Any].transform(r => r.values.head.asInstanceOf[Int]).is(2),
+      get[Int, Any](cache, key = 1) check mapResult[Int, Any].transform(r => r.values.head.asInstanceOf[Int]).is(2),
       close
     )
 

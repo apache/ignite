@@ -68,7 +68,7 @@ class CacheInvokeAction[K, V, T](
       .map(l => l.reverse)
 
   /**
-   * @inheritdoc
+   * Method executed when the Action received a Session message.
    * @param session Session
    */
   override protected def execute(session: Session): Unit = withSessionCheck(session) {

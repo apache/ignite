@@ -31,7 +31,7 @@ import org.apache.ignite.gatling.action.ignite.CreateCacheAction
  * Base create cache action builder.
  *
  * Works in two modes. The simplified one allows to specify three basic parameters via the DSL (backups, atomicity and mode).
- * Other way the full fledged instances of [[ClientCacheConfiguration]] or [[CacheConfiguration]] may be passed via the `cfg`
+ * Other way the full fledged instances of ClientCacheConfiguration or CacheConfiguration may be passed via the `cfg`
  * method.
  *
  * @tparam K Type of the cache key.

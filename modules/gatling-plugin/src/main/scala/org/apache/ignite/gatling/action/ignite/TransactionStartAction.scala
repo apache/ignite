@@ -41,7 +41,8 @@ class TransactionStartAction(requestName: Expression[String], params: Transactio
     extends IgniteAction("txStart", requestName, ctx, next) {
 
   /**
-   * @inheritdoc
+   * Method executed when the Action received a Session message.
+   *
    * @param session Session
    */
   override protected def execute(session: Session): Unit = withSessionCheck(session) {

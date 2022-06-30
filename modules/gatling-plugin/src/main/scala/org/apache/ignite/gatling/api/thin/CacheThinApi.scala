@@ -31,7 +31,7 @@ import org.apache.ignite.client.ClientCache
 import org.apache.ignite.gatling.api.CacheApi
 
 /**
- * Implementation of [[CacheApi]] working via the Ignite (thin) Client API.
+ * Implementation of CacheApi working via the Ignite (thin) Client API.
  *
  * @tparam K Type of the cache key.
  * @tparam V Type of the cache value.

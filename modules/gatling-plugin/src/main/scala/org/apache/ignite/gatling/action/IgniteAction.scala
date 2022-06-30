@@ -43,7 +43,7 @@ import org.apache.ignite.gatling.protocol.IgniteProtocol.TransactionApiSessionKe
  * Base class for all Ignite actions.
  *
  * @param actionType Action type name.
- * @param requestName Name of the request provided via the DSL. May be empty.  If so the [[defaultRequestName]] will be used.
+ * @param requestName Name of the request provided via the DSL. May be empty.  If so the defaultRequestName will be used.
  * @param ctx Gatling scenario context.
  * @param next Next action to execute in scenario chain.
  */
@@ -54,7 +54,7 @@ abstract class IgniteAction(val actionType: String, val requestName: Expression[
   /** @return Default request name if none was provided via the DSL. */
   def defaultRequestName: Expression[String] = _ => name.success
   /** @return Action name. */
-  def name: String = genName(actionType)
+  val name: String = genName(actionType)
 
   /** Clock used to measure time the action takes. */
   val clock: Clock = ctx.protocolComponentsRegistry.components(IgniteProtocol.IgniteProtocolKey).coreComponents.clock
@@ -108,6 +108,16 @@ abstract class IgniteAction(val actionType: String, val requestName: Expression[
       .onFailure(ex =>
         requestName(session).map { resolvedRequestName =>
           statsEngine.logCrash(session.scenario, session.groups, resolvedRequestName, ex)
+          statsEngine.logResponse(
+            session.scenario,
+            session.groups,
+            resolvedRequestName,
+            0,
+            0,
+            KO,
+            Some("CRASH"),
+            Some(ex)
+          )
           next ! session
         }
       )
@@ -126,7 +136,7 @@ abstract class IgniteAction(val actionType: String, val requestName: Expression[
    * Resolves ignite action parameters using session context.
    *
    * @param session Session.
-   * @return Instance of [[IgniteActionParameters]].
+   * @return Instance of IgniteActionParameters.
    */
   def resolveIgniteParameters(session: Session): Validation[IgniteActionParameters] =
     for {

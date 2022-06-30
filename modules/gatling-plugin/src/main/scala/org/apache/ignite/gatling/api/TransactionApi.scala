@@ -17,7 +17,7 @@
 package org.apache.ignite.gatling.api
 
 /**
- * Wrapper around the Ignite [[org.apache.ignite.transactions.Transaction]] object.
+ * Wrapper around the Ignite org.apache.ignite.transactions.Transaction object.
  */
 trait TransactionApi {
   /**

@@ -59,12 +59,12 @@ trait CacheInvokeAllAction[K, V, T] {
       .map(l => l.reverse)
 
   /**
-   * @inheritdoc
+   * Method executed when the Action received a Session message.
    * @param session Session
    * @param resolvedRequestName Name of request.
    * @param cacheApi Instance of CacheApi.
    * @param transactionApi Instance of TransactionApi.
-   * @param resolvedMap Resolved map from cache entry key to entry processor instanece.
+   * @param resolvedMap Resolved map from cache entry key to entry processor instance.
    * @param resolvedArguments Resolved entry processor arguments.
    */
   def execute(
@@ -115,7 +115,7 @@ class CacheInvokeAllMapAction[K, V, T](
     with CacheInvokeAllAction[K, V, T] {
 
   /**
-   * @inheritdoc
+   * Method executed when the Action received a Session message.
    * @param session Session
    */
   override protected def execute(session: Session): Unit = withSessionCheck(session) {
@@ -158,7 +158,7 @@ class CacheInvokeAllSingleProcessorAction[K, V, T](
     with CacheInvokeAllAction[K, V, T] {
 
   /**
-   * @inheritdoc
+   * Method executed when the Action received a Session message.
    * @param session Session
    */
   override protected def execute(session: Session): Unit = withSessionCheck(session) {

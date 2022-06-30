@@ -72,7 +72,7 @@ trait IgniteApi {
    * @tparam K Type of the cache key.
    * @tparam V Type of the cache value.
    * @param name Cache name.
-   * @param cfg Simplified configuration of the cache (see the [[SimpleCacheConfiguration]]).
+   * @param cfg Simplified configuration of the cache (see the SimpleCacheConfiguration).
    * @param s Function to be called if operation is competed successfully.
    * @param f Function to be called if exception occurs.
    */
@@ -158,7 +158,7 @@ trait IgniteApi {
 }
 
 /**
- * Factory for [[IgniteApi]] instances.
+ * Factory for IgniteApi instances.
  */
 object IgniteApi extends StrictLogging {
   /**

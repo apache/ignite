@@ -50,12 +50,6 @@
             <groupId>io.gatling</groupId>
             <artifactId>gatling-core</artifactId>
             <version>${gatling.version}</version>
-            <exclusions>
-<!--                <exclusion>-->
-<!--                    <groupId>org.scala-lang.modules</groupId>-->
-<!--                    <artifactId>scala-parser-combinators_2.13</artifactId>-->
-<!--                </exclusion>-->
-            </exclusions>
         </dependency>
 
         <dependency>
@@ -108,16 +102,6 @@
             <artifactId>gatling-charts-highcharts</artifactId>
             <version>${gatling.version}</version>
             <scope>runtime</scope>
-            <exclusions>
-                <exclusion>
-                    <groupId>io.gatling</groupId>
-                    <artifactId>gatling-redis</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>io.gatling</groupId>
-                    <artifactId>gatling-redis-java</artifactId>
-                </exclusion>
-            </exclusions>
         </dependency>
 
         <dependency>
@@ -125,16 +109,6 @@
             <artifactId>gatling-app</artifactId>
             <version>${gatling.version}</version>
             <scope>test</scope>
-            <exclusions>
-                <exclusion>
-                    <groupId>io.gatling</groupId>
-                    <artifactId>gatling-redis</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>io.gatling</groupId>
-                    <artifactId>gatling-redis-java</artifactId>
-                </exclusion>
-            </exclusions>
         </dependency>
     </dependencies>
 

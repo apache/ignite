@@ -63,18 +63,17 @@ class LockedInvokeSimulation extends Simulation with IgniteSupport with StrictLo
   private val scn = scenario("LockedInvoke")
     .feed(Iterator.continually(Map("value" -> value.incrementAndGet())))
     .ignite(
-      create(cache).atomicity(TRANSACTIONAL),
-      lock(cache, key).check(
-        allResults[String, Lock].transform(a => a.values.head).saveAs("lock")
-      ),
+      create(cache) atomicity TRANSACTIONAL,
+      lock(cache, key)
+        check entries[String, Lock].transform(_.value).saveAs("lock"),
       put[String, Int](cache, key, "#{value}"),
       invoke[String, Int, Unit](cache, key) { e: MutableEntry[String, Int] =>
         e.setValue(-e.getValue)
       },
       get[String, Int](cache, key)
-        .check(
-          simpleCheck((m, session) => m(key) == -session("value").as[Int]),
-          allResults[String, Int].transform(a => -a.values.head).is("#{value}")
+        check (
+          entries[String, Int].validate((e: Entry[String, Int], s: Session) => e.value == -s("value").as[Int]),
+          entries[String, Int].transform(-_.value).is("#{value}")
         ),
       unlock(cache, "#{lock}"),
       close

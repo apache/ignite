@@ -43,7 +43,11 @@ class PutGetSimulation extends Simulation with IgniteSupport with StrictLogging 
       create(cache) backups 1 atomicity ATOMIC mode PARTITIONED as "create",
       put[Int, Int](cache, "#{key}", "#{value}") as "put",
       get[Int, Any](cache, key = minusTwo)
-        check allResults[Int, Any].transform(r => r(minusTwo)).isNull as "get absent"
+        check (
+          mapResult[Int, Any].transform(r => r(minusTwo)).isNull,
+          entries[Int, Any].count.is(0),
+          entries[Int, Any].notExists,
+        ) as "get absent"
     )
     .exec { session =>
       logger.info(session.toString)
@@ -51,8 +55,16 @@ class PutGetSimulation extends Simulation with IgniteSupport with StrictLogging 
     }
     .ignite(
       get[Int, Int](cache, key = "#{key}")
-        check (simpleCheck((r, s) => r(s("key").as[Int]) == s("value").as[Int]),
-        allResults[Int, Int].saveAs("savedInSession")) as "get present"
+        check (
+          mapResult[Int, Int].saveAs("savedInSession"),
+          mapResult[Int, Int].validate((m: Map[Int, Int], s: Session) => m(s("key").as[Int]) == s("value").as[Int]),
+          entries[Int, Int].count.gt(0),
+          entries[Int, Int].count.is(1),
+          entries[Int, Int].exists,
+          entries[Int, Int].find(0).transform(_.value).is("#{value}"),
+          entries[Int, Int].is(s => s("key").validate[Int].flatMap(k => s("value").validate[Int].map(v => Entry(k, v)))),
+          entries[Int, Int].is(Entry(1, 2))
+        ) as "get present"
     )
 
   setUp(scn.inject(atOnceUsers(1))).protocols(protocol).assertions(global.failedRequests.count.is(0))

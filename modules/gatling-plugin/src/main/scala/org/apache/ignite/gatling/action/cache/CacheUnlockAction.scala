@@ -46,7 +46,7 @@ class CacheUnlockAction[K, V](
 ) extends CacheAction[K, V]("unlock", requestName, ctx, next, cacheName, keepBinary) {
 
   /**
-   * @inheritdoc
+   * Method executed when the Action received a Session message.
    * @param session Session
    */
   override protected def execute(session: Session): Unit = withSessionCheck(session) {

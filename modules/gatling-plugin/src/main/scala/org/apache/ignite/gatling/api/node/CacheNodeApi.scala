@@ -30,7 +30,7 @@ import org.apache.ignite.cache.query.SqlFieldsQuery
 import org.apache.ignite.gatling.api.CacheApi
 
 /**
- * Implementation of [[CacheApi]] working via the Ignite Node (thick) API.
+ * Implementation of CacheApi working via the Ignite Node (thick) API.
  *
  * @param wrapped Instance of Cache API.
  * @tparam K Type of the cache key.

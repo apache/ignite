@@ -183,7 +183,7 @@ trait CacheApi[K, V] {
   def removeAllAsync(keys: Set[K])(s: Unit => Unit, f: Throwable => Unit = _ => ()): Unit
 
   /**
-   * Invokes an [[CacheEntryProcessor]] against the entry specified by the provided key.
+   * Invokes an CacheEntryProcessor against the entry specified by the provided key.
    *
    * @tparam T Type of the return value.
    * @param key Key.
@@ -198,7 +198,7 @@ trait CacheApi[K, V] {
   ): Unit
 
   /**
-   * Asynchronously invokes an [[CacheEntryProcessor]] against the entry specified by the provided key.
+   * Asynchronously invokes an CacheEntryProcessor against the entry specified by the provided key.
    *
    * @tparam T Type of the return value.
    * @param key Key.
@@ -261,7 +261,7 @@ trait CacheApi[K, V] {
   def unlock(lock: Lock)(s: Unit => Unit, f: Throwable => Unit = _ => ()): Unit
 
   /**
-   * Executes the Ignite [[SqlFieldsQuery]]
+   * Executes the Ignite SqlFieldsQuery
    *
    * @param query Query object.
    * @param s Function to be called if operation is competed successfully.

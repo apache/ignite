@@ -41,7 +41,7 @@ class BasicSimulation extends Simulation {
       create(cache).backups(1) as "Create cache",
       put[Int, Int](cache, "#{key}", "#{value}") as "Put",
       get[Int, Int](cache, "#{key}")
-        .check(simpleCheck((result, session) => result(session("key").as[Int]) == session("value").as[Int])) as "Get",
+        .check(entries[Int, Int].find.transform(_.value).is("#{value}")) as "Get",
       close
     )
 

@@ -16,92 +16,131 @@
  */
 package org.apache.ignite.gatling.check
 
-import scala.annotation.implicitNotFound
-
-import io.gatling.commons.validation.FailureWrapper
 import io.gatling.commons.validation.SuccessWrapper
-import io.gatling.commons.validation.Validation
 import io.gatling.core.check.Check
-import io.gatling.core.check.Check.PreparedCache
 import io.gatling.core.check.CheckBuilder
 import io.gatling.core.check.CheckMaterializer
-import io.gatling.core.check.CheckResult
+import io.gatling.core.check.CountCriterionExtractor
 import io.gatling.core.check.Extractor
+import io.gatling.core.check.FindAllCriterionExtractor
+import io.gatling.core.check.FindCriterionExtractor
 import io.gatling.core.check.Preparer
 import io.gatling.core.check.identityPreparer
 import io.gatling.core.session.Expression
 import io.gatling.core.session.ExpressionSuccessWrapper
-import io.gatling.core.session.Session
 
-trait IgniteSqlCheckSupport {
+/**
+ * DSL for checks performed against the SQL query result set. Exposed as a `resetSet` check type.
+ *
+ * The result set is represented as a list of rows. Each row is a list of Any.
+ *
+ * Standard gatling extraction methods are supported: find, findAll, findRandom and count.
+ */
+trait IgniteSqlCheckSupport extends IgniteCheckSupport {
+  /**
+   * SQL query result check type.
+   */
+  trait SqlCheckType
 
-  type SqlCheck = Check[List[List[Any]]]
+  /**
+   * Type of the SQL result set row.
+   */
+  type Row = List[Any]
 
-  trait IgniteAllSqlCheckType
+  /**
+   * Type of the raw Ignite SQL query operation result.
+   */
+  type RawSqlResult = List[Row]
 
-  type AllSqlResult = List[List[Any]]
+  /**
+   * Type of the prepared Ignite SQL query operation result.
+   */
+  type PreparedSqlResult = RawSqlResult
 
-  def simpleSqlCheck(f: (AllSqlResult, Session) => Boolean): SqlCheck =
-    Check.Simple(
-      (response: AllSqlResult, session: Session, _: PreparedCache) =>
-        if (f(response, session)) {
-          CheckResult.NoopCheckResultSuccess
-        } else {
-          "Sql check failed".failure
-        },
-      None
-    )
+  /**
+   * Check of Ignite SQL query operation result.
+   */
+  type SqlCheck = Check[RawSqlResult]
 
-  def simpleSqlCheck(f: AllSqlResult => Boolean): SqlCheck =
-    Check.Simple(
-      (response: AllSqlResult, _: Session, _: PreparedCache) =>
-        if (f(response)) {
-          CheckResult.NoopCheckResultSuccess
-        } else {
-          "Sql check failed".failure
-        },
-      None
-    )
-
-  @implicitNotFound("Could not find a CheckMaterializer. This check might not be valid for Ignite.")
+  /**
+   * Implicit conversion from check builder to check itself.
+   *
+   * @param checkBuilder Check builder.
+   * @param materializer Materializer.
+   * @tparam T Check type.
+   * @tparam P Prepared result type.
+   * @return SqlCheck.
+   */
   implicit def checkBuilder2SqlCheck[T, P](checkBuilder: CheckBuilder[T, P])(implicit
-    materializer: CheckMaterializer[T, SqlCheck, AllSqlResult, P]
+    materializer: CheckMaterializer[T, SqlCheck, RawSqlResult, P]
   ): SqlCheck =
     checkBuilder.build(materializer)
 
-  @implicitNotFound("Could not find a CheckMaterializer. This check might not be valid for Ignite.")
+  /**
+   * Implicit conversion to use the `exists` by default for Validate.
+   *
+   * @param validate Validate instance.
+   * @param materializer Materializer.
+   * @tparam T Check type.
+   * @tparam P Type of the prepared result.
+   * @tparam X Type of the extracted result.
+   * @return SqlCheck.
+   */
   implicit def validate2SqlCheck[T, P, X](validate: CheckBuilder.Validate[T, P, X])(implicit
-    materializer: CheckMaterializer[T, SqlCheck, AllSqlResult, P]
+    materializer: CheckMaterializer[T, SqlCheck, RawSqlResult, P]
   ): SqlCheck =
     validate.exists
 
-  @implicitNotFound("Could not find a CheckMaterializer. This check might not be valid for Ignite.")
+  /**
+   * Implicit conversion to use the `find(0).exists` by default for Find.
+   *
+   * @param find Find.
+   * @param materializer Materializer.
+   * @tparam T Check type.
+   * @tparam P Type of the prepared result.
+   * @tparam X Type of the extracted result.
+   * @return SqlCheck.
+   */
   implicit def find2SqlCheck[T, P, X](find: CheckBuilder.Find[T, P, X])(implicit
-    materializer: CheckMaterializer[T, SqlCheck, AllSqlResult, P]
+    materializer: CheckMaterializer[T, SqlCheck, RawSqlResult, P]
   ): SqlCheck =
     find.find.exists
 
-  class AllSqlCheckMaterializer extends CheckMaterializer[IgniteAllSqlCheckType, SqlCheck, AllSqlResult, AllSqlResult](identity) {
-    override protected def preparer: Preparer[AllSqlResult, AllSqlResult] = identityPreparer
-  }
+  /**
+   * Implicit materializer for preparation of raw result as input for SQL check.
+   */
+  implicit val SqlCheckMaterializer: CheckMaterializer[SqlCheckType, SqlCheck, RawSqlResult, PreparedSqlResult] =
+    new CheckMaterializer[SqlCheckType, SqlCheck, RawSqlResult, PreparedSqlResult](identity) {
+      override protected def preparer: Preparer[RawSqlResult, PreparedSqlResult] = identityPreparer
+    }
 
-  implicit val AllSqlCheckMaterializer: AllSqlCheckMaterializer = new AllSqlCheckMaterializer
+  /**
+   * Builder for the SQL query result check exposed as a `resultSet` DSL function.
+   *
+   * @return SQL check builder
+   */
+  def resultSet: CheckBuilder.MultipleFind.Default[SqlCheckType, PreparedSqlResult, Row] =
+    new CheckBuilder.MultipleFind.Default[SqlCheckType, PreparedSqlResult, Row](displayActualValue = true) {
+      override protected def findExtractor(occurrence: Int): Expression[Extractor[PreparedSqlResult, Row]] =
+        new FindCriterionExtractor[PreparedSqlResult, Int, Row](
+          "row",
+          occurrence,
+          occurrence,
+          p => p.drop(occurrence).headOption.success
+        ).expressionSuccess
 
-  val AllSqlExtractor: Expression[Extractor[AllSqlResult, AllSqlResult]] =
-    new Extractor[AllSqlResult, AllSqlResult] {
-      override def name: String = "allRecords"
+      override protected def findAllExtractor: Expression[Extractor[PreparedSqlResult, Seq[Row]]] =
+        new FindAllCriterionExtractor[PreparedSqlResult, Int, Row](
+          "row",
+          0,
+          p => Some(p).success
+        ).expressionSuccess
 
-      override def apply(prepared: AllSqlResult): Validation[Option[AllSqlResult]] = Some(prepared).success
-
-      override def arity: String = "find"
-    }.expressionSuccess
-
-  val AllSqlResults =
-    new CheckBuilder.Find.Default[IgniteAllSqlCheckType, AllSqlResult, AllSqlResult](
-      AllSqlExtractor,
-      displayActualValue = true
-    )
-
-  val allSqlResults: CheckBuilder.Find.Default[IgniteAllSqlCheckType, AllSqlResult, AllSqlResult] =
-    AllSqlResults
+      override protected def countExtractor: Expression[Extractor[PreparedSqlResult, Int]] =
+        new CountCriterionExtractor[PreparedSqlResult, Int](
+          "row",
+          0,
+          p => Some(p.size).success
+        ).expressionSuccess
+    }
 }

@@ -45,8 +45,8 @@ class TransactionCommitRollbackSimulation extends Simulation with StrictLogging 
         commit
       ),
     get[Int, Any](cache, s"#{$key}") check (
-      allResults[Int, Any].saveAs("C"),
-      simpleCheck((m, session) => m(session(key).as[Int]) == session(value).as[Int])
+      mapResult[Int, Any].saveAs("C"),
+      mapResult[Int, Any].validate((m: Map[Int, Any], session: Session) => m(session(key).as[Int]) == session(value).as[Int])
     )
   )
 
@@ -56,8 +56,8 @@ class TransactionCommitRollbackSimulation extends Simulation with StrictLogging 
       rollback
     ),
     get[Int, Any](cache, s"#{$key}") check (
-      allResults[Int, Any].saveAs("R"),
-      simpleCheck { (m, session) =>
+      mapResult[Int, Any].saveAs("R"),
+      mapResult[Int, Any].validate { (m: Map[Int, Any], session: Session) =>
         logger.info(m.toString)
         m(session(key).as[Int]) == null
       }
@@ -69,8 +69,8 @@ class TransactionCommitRollbackSimulation extends Simulation with StrictLogging 
       put[Int, Int](cache, s"#{$key}", s"#{$value}")
     ),
     get[Int, Any](cache, s"#{$key}") check (
-      allResults[Int, Any].saveAs("R"),
-      simpleCheck { (m, session) =>
+      mapResult[Int, Any].saveAs("R"),
+      mapResult[Int, Any].validate { (m: Map[Int, Any], session: Session) =>
         logger.info(m.toString)
         m(session(key).as[Int]) == null
       }
