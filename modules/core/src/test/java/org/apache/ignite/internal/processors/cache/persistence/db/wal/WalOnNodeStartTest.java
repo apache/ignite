@@ -31,9 +31,12 @@ import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
+import static org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager.WAL_SEGMENT_FILE_FILTER;
+import static org.apache.ignite.testframework.GridTestUtils.getFieldValue;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.not;
 import static org.junit.Assert.assertThat;
@@ -127,5 +130,46 @@ public class WalOnNodeStartTest extends GridCommonAbstractTest {
                 assertThat(PageIO.T_PART_META, not(equalTo(PageIO.getType(data))));
             }
         });
+    }
+
+    /** Test WAL reformat with resize on node start. */
+    @Test
+    public void testWalReformatWithResize() throws Exception {
+        int walSize = 10 * (int)U.MB;
+
+        IgniteConfiguration cfg = getConfiguration();
+        cfg.getDataStorageConfiguration().setWalSegmentSize(walSize);
+
+        IgniteEx ignite = startGrid(cfg);
+
+        ignite.cluster().state(ClusterState.ACTIVE);
+
+        File walWorkDir = getFieldValue(walMgr(ignite), "walWorkDir");
+
+        stopAllGrids();
+
+        File[] wals = walWorkDir.listFiles(WAL_SEGMENT_FILE_FILTER);
+
+        assertEquals(cfg.getDataStorageConfiguration().getWalSegments(), wals.length);
+
+        for (File wal : wals)
+            assertEquals(walSize, wal.length());
+
+        // Change WAL segment size.
+        walSize *= 2;
+
+        cfg = getConfiguration();
+        cfg.getDataStorageConfiguration().setWalSegmentSize(walSize);
+
+        startGrid(cfg);
+
+        stopAllGrids();
+
+        wals = walWorkDir.listFiles(WAL_SEGMENT_FILE_FILTER);
+
+        assertEquals(cfg.getDataStorageConfiguration().getWalSegments(), wals.length);
+
+        for (File wal : wals)
+            assertEquals(walSize, wal.length());
     }
 }
