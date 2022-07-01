@@ -76,7 +76,8 @@ public class ServiceContextImpl implements ServiceContext {
     private final boolean isStatisticsEnabled;
 
     /** Service call interceptor. */
-    private ServiceCallInterceptor intcp;
+    @GridToStringExclude
+    private volatile ServiceCallInterceptor intcp;
 
     /**
      * @param name Service name.

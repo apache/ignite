@@ -62,6 +62,7 @@ import org.apache.ignite.platform.PlatformServiceMethod;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.services.Service;
 import org.apache.ignite.services.ServiceCallContext;
+import org.apache.ignite.services.ServiceCallInterceptor;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.TC_IO_POLICY;
@@ -300,6 +301,7 @@ public class GridServiceProxy<T> implements Serializable {
         @Nullable Map<String, Object> callAttrs
     ) throws Exception {
         Service svc = svcCtx.service();
+
         if (svc instanceof PlatformService && !PLATFORM_SERVICE_INVOKE_METHOD.equals(mtd))
             return ((PlatformService)svc).invokeMethod(methodName(mtd), false, true, args, callAttrs);
         else
@@ -307,11 +309,10 @@ public class GridServiceProxy<T> implements Serializable {
     }
 
     /**
-     * @param svc Service to be called.
+     * @param svcCtx Service context.
      * @param mtd Method to call.
      * @param args Method args.
      * @param callAttrs Service call context attributes.
-     * @param intcp Service call interceptor.
      * @return Invocation result.
      */
     private static Object callServiceMethod(
@@ -321,20 +322,22 @@ public class GridServiceProxy<T> implements Serializable {
         @Nullable Map<String, Object> callAttrs
     ) throws Exception {
         // One service can be called from another in the same thread - in this case,
-        // we don't need to clean the current call context.
-        ServiceCallContext prevCtx = ServiceCallContextHolder.current();
+        // we don't need to clean up the current call context.
+        ServiceCallContext prevCtx = null;
 
-        if (prevCtx == null && callAttrs != null)
+        if (callAttrs != null && (prevCtx = ServiceCallContextHolder.current()) == null)
             ServiceCallContextHolder.current(new ServiceCallContextImpl(callAttrs));
 
         try {
-            if (svcCtx.interceptor() != null)
-                return svcCtx.interceptor().invoke(mtd.getName(), args, svcCtx, () -> mtd.invoke(svcCtx.service(), args));
-            else
-                return mtd.invoke(svcCtx.service(), args);
+            ServiceCallInterceptor intcp = svcCtx.interceptor();
+
+            if (intcp != null)
+                return intcp.invoke(mtd.getName(), args, svcCtx, () -> mtd.invoke(svcCtx.service(), args));
+
+            return mtd.invoke(svcCtx.service(), args);
         }
         finally {
-            if (prevCtx == null && callAttrs != null)
+            if (callAttrs != null && prevCtx == null)
                 ServiceCallContextHolder.current(null);
         }
     }

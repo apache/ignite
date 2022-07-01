@@ -28,10 +28,10 @@ public class CompositeServiceCallInterceptor implements ServiceCallInterceptor {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** */
+    /** Service call interceptors. */
     private final ServiceCallInterceptor[] intcps;
 
-    /** */
+    /** @param intcps Service call interceptors. */
     public CompositeServiceCallInterceptor(ServiceCallInterceptor[] intcps) {
         this.intcps = intcps;
     }
