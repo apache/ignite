@@ -37,6 +37,7 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAhea
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.junits.GridAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
@@ -75,9 +76,8 @@ public class CacheMvccTxFailoverTest extends GridCommonAbstractTest {
     /**
      * @return Cache configuration.
      */
-    @SuppressWarnings("unchecked")
     protected CacheConfiguration<Integer, Integer> cacheConfiguration() {
-        return defaultCacheConfiguration()
+        return GridAbstractTest.<Integer, Integer>defaultCacheConfiguration()
             .setNearConfiguration(null)
             .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT)
             .setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);

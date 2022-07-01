@@ -31,6 +31,7 @@ import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.MvccFeatureChecker;
+import org.apache.ignite.testframework.junits.GridAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
@@ -131,9 +132,8 @@ public class TxStateChangeEventTest extends GridCommonAbstractTest {
     }
 
     /** */
-    @SuppressWarnings("unchecked")
     private CacheConfiguration<Integer, Integer> getCacheConfig() {
-        return defaultCacheConfiguration().setBackups(2);
+        return GridAbstractTest.<Integer, Integer>defaultCacheConfiguration().setBackups(2);
     }
 
     /**
