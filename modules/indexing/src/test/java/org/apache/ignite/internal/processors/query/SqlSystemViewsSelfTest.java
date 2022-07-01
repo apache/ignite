@@ -588,7 +588,7 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
 
         cache.put(100, "200");
 
-        String sql = "SELECT SQL, QUERY_ID, SCHEMA_NAME, LOCAL, START_TIME, DURATION FROM " +
+        String sql = "SELECT SQL, QUERY_ID, SCHEMA_NAME, LOCAL, START_TIME, DURATION, SUBJECT_ID FROM " +
             systemSchemaName() + ".SQL_QUERIES";
 
         FieldsQueryCursor notClosedFieldQryCursor = cache.query(new SqlFieldsQuery(sql).setLocal(true));
@@ -609,8 +609,9 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
         assertTrue(diffInMillis < 3000);
 
         assertEquals(sql, res0.get(0));
-
         assertEquals(sql, res1.get(0));
+        assertNull(res0.get(6));
+        assertNull(res1.get(6));
 
         assertTrue((Boolean)res0.get(3));
 
