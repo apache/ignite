@@ -176,9 +176,7 @@
         </details>
         <feature>ignite-core</feature>
         <feature dependency="true">http</feature>
-        <bundle start="true" dependency="true">mvn:com.fasterxml.jackson.core/jackson-core/${jackson.version}</bundle>
-        <bundle start="true" dependency="true">mvn:com.fasterxml.jackson.core/jackson-databind/${jackson.version}</bundle>
-        <bundle start="true" dependency="true">mvn:com.fasterxml.jackson.core/jackson-annotations/${jackson.version}</bundle>
+        <feature dependency="true">ignite-jackson</feature>
         <bundle start="true" dependency="true">mvn:commons-lang/commons-lang/${commons.lang.version}</bundle>
         <bundle start="true" dependency="true">mvn:commons-collections/commons-collections/${commons.collections.version}</bundle>
         <bundle start="true">mvn:org.apache.ignite/ignite-rest-http/${project.version}</bundle>
@@ -232,6 +230,15 @@
         <bundle start="true">mvn:org.apache.ignite/ignite-ssh/${project.version}</bundle>
     </feature>
 
+    <feature name="ignite-kubernetes" version="${project.version}" description="Apache Ignite :: Kubernetes">
+        <details>
+            <![CDATA[The Apache Ignite Kubernetes module + dependencies.]]>
+        </details>
+        <feature>ignite-core</feature>
+        <feature dependency="true">ignite-jackson</feature>
+        <bundle start="true">mvn:org.apache.ignite/ignite-kubernetes/${project.version}</bundle>
+    </feature>
+
     <feature name="ignite-twitter-ext" version="${ignite-twitter-ext.version}" description="Apache Ignite :: Twitter">
         <details>
             <![CDATA[The Apache Ignite Twitter module + dependencies.]]>
@@ -279,15 +286,21 @@
         <details>
             <![CDATA[The Apache Ignite ZooKeeper module + dependencies.]]>
         </details>
+        <feature dependency="true">ignite-jackson</feature>
         <bundle start="true" dependency="true">mvn:org.apache.zookeeper/zookeeper/${zookeeper.version}</bundle>
         <bundle start="true" dependency="true">mvn:com.google.guava/guava/${guava16.version}</bundle>
-        <bundle start="true" dependency="true">mvn:com.fasterxml.jackson.core/jackson-core/${jackson.version}</bundle>
-        <bundle start="true" dependency="true">mvn:com.fasterxml.jackson.core/jackson-databind/${jackson.version}</bundle>
         <bundle start="true" dependency="true">mvn:org.apache.curator/curator-client/${curator.version}</bundle>
         <bundle start="true" dependency="true">mvn:org.apache.curator/curator-framework/${curator.version}</bundle>
         <bundle start="true" dependency="true">mvn:org.apache.curator/curator-recipes/${curator.version}</bundle>
         <bundle start="true" dependency="true">mvn:org.apache.curator/curator-x-discovery/${curator.version}</bundle>
         <bundle start="true">mvn:org.apache.ignite/ignite-zookeeper/${project.version}</bundle>
+    </feature>
+
+    <feature name="ignite-jackson" version="${project.version}" description="Apache Ignite :: jackson feature" hidden="true">
+        <details>FasterXML Jackson artifacts.</details>
+        <bundle start="true" dependency="true">mvn:com.fasterxml.jackson.core/jackson-core/${jackson.version}</bundle>
+        <bundle start="true" dependency="true">mvn:com.fasterxml.jackson.core/jackson-databind/${jackson.version}</bundle>
+        <bundle start="true" dependency="true">mvn:com.fasterxml.jackson.core/jackson-annotations/${jackson.version}</bundle>
     </feature>
 
 </features>

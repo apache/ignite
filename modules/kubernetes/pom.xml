@@ -35,6 +35,10 @@
 
     <url>http://ignite.apache.org</url>
 
+    <properties>
+        <osgi.private.package>org.apache.ignite.internal.kubernetes.connection</osgi.private.package>
+    </properties>
+
     <dependencies>
         <dependency>
             <groupId>${project.groupId}</groupId>
