@@ -202,6 +202,8 @@ public class IndexRebuildIntegrationTest extends AbstractBasicIntegrationTest {
         checkRebuildIndexQuery(grid(1), checker, checker);
     }
 
+    //TODO: testIndexCount
+
     /**
      * Test IndexCount is disabled at index rebuilding.
      */

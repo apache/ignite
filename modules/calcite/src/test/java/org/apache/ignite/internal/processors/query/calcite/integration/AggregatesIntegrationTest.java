@@ -29,6 +29,8 @@ import org.junit.Test;
  *
  */
 public class AggregatesIntegrationTest extends AbstractBasicIntegrationTest {
+    //TODO: test with backups
+
     /** */
     @Test
     public void testMinOptimization(){

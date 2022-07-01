@@ -120,6 +120,8 @@ public class IndexRebuildPlannerTest extends AbstractPlannerTest {
         fut.get();
     }
 
+    //TODO: test
+
     /**
      * Test IndexCount is disabled when index becomes unavailable.
      */

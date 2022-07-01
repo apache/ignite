@@ -49,6 +49,40 @@ import org.junit.Test;
 @SuppressWarnings({"TooBroadScope", "FieldCanBeLocal", "TypeMayBeWeakened"})
 public class HashAggregatePlannerTest extends AbstractAggregatePlannerTest {
     /**
+     *
+     */
+    @Test
+    public void indexMinMax() {
+        IgniteSchema publicSchema = new IgniteSchema("PUBLIC");
+
+        List<IgniteDistribution> lst = ImmutableList.of(
+                IgniteDistributions.single(),
+                IgniteDistributions.random(),
+                IgniteDistributions.broadcast(),
+                IgniteDistributions.hash(ImmutableList.of(0, 1, 2, 3)));
+
+        for (IgniteDistribution distr : lst) {
+            TestTable tbl = createTable(distr);
+            publicSchema.addTable("TEST", tbl);
+
+            assertNoIndexFirstOrLastRecord("SELECT MIN(VAL0) FROM TEST", true, publicSchema);
+            assertNoIndexFirstOrLastRecord("SELECT MIN(VAL0) FROM TEST", false, publicSchema);
+
+            tbl.addIndex(QueryUtils.indexName(tbl.name(), "VAL0"), 0);
+
+            assertIndexFirstOrLastRecord("SELECT MIN(VAL0) FROM TEST", true, publicSchema);
+            assertIndexFirstOrLastRecord("SELECT MAX(VAL0) FROM TEST", false, publicSchema);
+
+            publicSchema.removeTable("TEST");
+        }
+    }
+
+    private void assertNoIndexFirstOrLastRecord(String sql, boolean first, IgniteSchema publicSchema) throws Exception {
+        assertPlan(sql, publicSchema, hasChildThat(isInstanceOf(IgniteIndexCount.class)).negate());
+
+    }
+
+    /**
      * Tests COUNT(...) plan with and without IndexCount optimization.
      */
     @Test

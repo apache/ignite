@@ -146,6 +146,8 @@ public class LogicalRelImplementorTest extends GridCommonAbstractTest {
         rexBuilder = cluster.getRexBuilder();
     }
 
+    //TODO: plan change test
+
     /**
      * Tests IndexCount execution plan is changed to Collect/Scan when index is unavailable.
      */
