@@ -19,7 +19,6 @@ package org.apache.ignite.gatling.testsuites
 import org.apache.ignite.gatling.LockedInvokeTest
 import org.apache.ignite.gatling.PutGetTest
 import org.apache.ignite.gatling.SqlTest
-import org.apache.ignite.gatling.TransactionCommitRollbackTest
 import org.apache.ignite.gatling.TransactionTest
 import org.junit.runner.RunWith
 import org.junit.runners.Suite
@@ -33,7 +32,6 @@ import org.junit.runners.Suite
     classOf[LockedInvokeTest],
     classOf[PutGetTest],
     classOf[SqlTest],
-    classOf[TransactionCommitRollbackTest],
     classOf[TransactionTest]
   )
 )

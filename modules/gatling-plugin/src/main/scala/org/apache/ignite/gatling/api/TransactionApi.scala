@@ -26,7 +26,7 @@ trait TransactionApi {
    * @param s Function to be called if operation is competed successfully.
    * @param f Function to be called if exception occurs.
    */
-  def commit()(s: Unit => Unit, f: Throwable => Unit = _ => ()): Unit
+  def commit()(s: Unit => Unit, f: Throwable => Unit): Unit
 
   /**
    * Rollbacks the enclosed transaction
@@ -34,7 +34,7 @@ trait TransactionApi {
    * @param s Function to be called if operation is competed successfully.
    * @param f Function to be called if exception occurs.
    */
-  def rollback()(s: Unit => Unit, f: Throwable => Unit = _ => ()): Unit
+  def rollback()(s: Unit => Unit, f: Throwable => Unit): Unit
 
   /**
    * Closes the enclosed transaction
@@ -42,5 +42,5 @@ trait TransactionApi {
    * @param s Function to be called if operation is competed successfully.
    * @param f Function to be called if exception occurs.
    */
-  def close()(s: Unit => Unit, f: Throwable => Unit = _ => ()): Unit
+  def close()(s: Unit => Unit, f: Throwable => Unit): Unit
 }

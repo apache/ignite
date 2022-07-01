@@ -17,44 +17,43 @@
 package org.apache.ignite.gatling
 
 import java.util.concurrent.atomic.AtomicInteger
-import java.util.concurrent.locks.Lock
 
 import javax.cache.processor.MutableEntry
-
-import scala.concurrent.duration.DurationInt
 
 import com.typesafe.scalalogging.StrictLogging
 import io.gatling.core.Predef._
 import io.gatling.core.session.ExpressionSuccessWrapper
 import org.apache.ignite.gatling.Predef._
+import org.apache.ignite.gatling.Predef.group
 import org.apache.ignite.gatling.utils.AbstractGatlingTest
 import org.apache.ignite.gatling.utils.IgniteClientApi.NodeApi
 import org.apache.ignite.gatling.utils.IgniteSupport
-import org.junit.Ignore
 import org.junit.Test
 
 /**
- * Tests that locks work as expected and invoke accepts lambda.
+ * Tests invoke entry processor.
  */
-class LockedInvokeTest extends AbstractGatlingTest {
-  /** Tests simulation with thick client. */
+class InvokeTest extends AbstractGatlingTest {
   @Test
-  def thickClient(): Unit = runWith(NodeApi)(simulation = "org.apache.ignite.gatling.LockedInvokeSimulation")
+  /** Tests entry processor without arguments. */
+  def noArgs(): Unit = runWith(NodeApi)(simulation = "org.apache.ignite.gatling.InvokeSimulation")
+
+  @Test
+  /** Tests entry processor with additional arguments passed. */
+  def withArgs(): Unit = runWith(NodeApi)(simulation = "org.apache.ignite.gatling.InvokeArgsSimulation")
 }
 
 /**
- * Tests that locks work as expected and invoke accepts lambda.
+ * invoke entry processor without arguments simulation.
  */
-class LockedInvokeSimulation extends Simulation with IgniteSupport with StrictLogging {
+class InvokeSimulation extends Simulation with IgniteSupport with StrictLogging {
   private val cache = "TEST-CACHE"
   private val key = "1"
   private val value = new AtomicInteger(0)
-  private val scn = scenario("LockedInvoke")
+  private val scn = scenario("invoke")
     .feed(Iterator.continually(Map("value" -> value.incrementAndGet())))
     .ignite(
-      create(cache) atomicity TRANSACTIONAL,
-      lock(cache, key)
-        check entries[String, Lock].transform(_.value).saveAs("lock"),
+      create(cache),
       put[String, Int](cache, key, "#{value}"),
       invoke[String, Int, Unit](cache, key) { e: MutableEntry[String, Int] =>
         e.setValue(-e.getValue)
@@ -63,10 +62,38 @@ class LockedInvokeSimulation extends Simulation with IgniteSupport with StrictLo
         check (
           entries[String, Int].validate((e: Entry[String, Int], s: Session) => e.value == -s("value").as[Int]),
           entries[String, Int].transform(-_.value).is("#{value}")
-        ),
-      unlock(cache, "#{lock}"),
-      close
+        )
+    )
+  setUp(scn.inject(atOnceUsers(1))).protocols(protocol).assertions(global.failedRequests.count.is(0))
+}
+
+/**
+ * invoke entry processor with arguments simulation.
+ */
+class InvokeArgsSimulation extends Simulation with IgniteSupport with StrictLogging {
+  private val cache = "TEST-CACHE"
+  private val key = "1"
+  private val value = new AtomicInteger(0)
+
+  private val fragment = ignite(
+    put[String, Int](cache, key, "#{value}"),
+    invoke[String, Int, Unit](cache, key).args(8.expressionSuccess) { (e: MutableEntry[String, Int], args: Seq[Any]) =>
+      e.setValue(e.getValue * args.head.asInstanceOf[Integer])
+    },
+    get[String, Int](cache, key)
+      check (
+        entries[String, Int].validate((e: Entry[String, Int], s: Session) => e.value == 8 * s("value").as[Int]),
+        entries[String, Int].transform(_.value / 8).is("#{value}")
+      )
+  )
+
+  private val scn = scenario("invoke")
+    .feed(Iterator.continually(Map("value" -> value.incrementAndGet())))
+    .ignite(
+      create(cache) atomicity TRANSACTIONAL,
+      group("run outside of transaction")(fragment),
+      tx("run in transaction")(fragment)
     )
 
-  setUp(scn.inject(rampUsers(20).during(1.second))).protocols(protocol).assertions(global.failedRequests.count.is(0))
+  setUp(scn.inject(atOnceUsers(1))).protocols(protocol).assertions(global.failedRequests.count.is(0))
 }

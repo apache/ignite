@@ -16,88 +16,93 @@
  */
 package org.apache.ignite.gatling
 
+import com.typesafe.scalalogging.StrictLogging
 import io.gatling.core.Predef._
-import org.apache.ignite.configuration.CacheConfiguration
 import org.apache.ignite.gatling.Predef._
 import org.apache.ignite.gatling.utils.AbstractGatlingTest
+import org.apache.ignite.gatling.utils.IgniteClientApi.NodeApi
+import org.apache.ignite.gatling.utils.IgniteClientApi.ThinClient
 import org.apache.ignite.gatling.utils.IgniteSupport
+import org.junit.Test
 
 /**
- * Tests creation of all types of transactions.
  */
 class TransactionTest extends AbstractGatlingTest {
-  private val cache = "TEST-CACHE"
-  /** @inheritdoc */
-  override val simulation: String = "org.apache.ignite.gatling.TransactionSimulation"
+  /** Class name of simulation */
+  val simulation: String = "org.apache.ignite.gatling.TransactionSimulation"
 
-  /** @inheritdoc */
-  override protected def beforeTest(): Unit = {
-    super.beforeTest()
-    val ignite = grid(0)
-    ignite.createCache(
-      new CacheConfiguration[Int, Int]()
-        .setName(cache)
-        .setCacheMode(PARTITIONED)
-        .setAtomicityMode(TRANSACTIONAL)
-    )
-  }
+  /** Runs simulation with thin client. */
+  @Test
+  def thinClient(): Unit = runWith(ThinClient)(simulation)
+
+  /** Runs simulation with thick client. */
+  @Test
+  def thickClient(): Unit = runWith(NodeApi)(simulation)
 }
 
 /**
- * Simulation with all types of transactions.
+ * Commit and rollback simulation.
  */
-class TransactionSimulation extends Simulation with IgniteSupport {
+class TransactionSimulation extends Simulation with StrictLogging with IgniteSupport {
+  private val key = "key"
+  private val value = "value"
   private val cache = "TEST-CACHE"
+
+  private val commitTx = ignite(
+    tx("commit transaction")(PESSIMISTIC, READ_COMMITTED)
+      .timeout(3000L)
+      .txSize(1)(
+        get[Int, Int](cache, s"#{$key}") check entries[Int, Int].notExists,
+        put[Int, Int](cache, s"#{$key}", s"#{$value}"),
+        commit as "commit"
+      ),
+    get[Int, Any](cache, s"#{$key}") check (
+      mapResult[Int, Any].saveAs("C"),
+      mapResult[Int, Any].validate((m: Map[Int, Any], session: Session) => m(session(key).as[Int]) == session(value).as[Int])
+    )
+  )
+
+  private val rollbackTx = ignite(
+    tx(OPTIMISTIC, REPEATABLE_READ)(
+      put[Int, Int](cache, s"#{$key}", s"#{$value}"),
+      rollback as "rollback"
+    ),
+    get[Int, Any](cache, s"#{$key}") check (
+      mapResult[Int, Any].saveAs("R"),
+      mapResult[Int, Any].validate { (m: Map[Int, Any], session: Session) =>
+        logger.info(m.toString)
+        m(session(key).as[Int]) == null
+      }
+    )
+  )
+
+  private val autoRollbackTx = ignite(
+    tx(
+      put[Int, Int](cache, s"#{$key}", s"#{$value}")
+    ),
+    get[Int, Any](cache, s"#{$key}") check (
+      mapResult[Int, Any].saveAs("R"),
+      mapResult[Int, Any].validate { (m: Map[Int, Any], session: Session) =>
+        logger.info(m.toString)
+        m(session(key).as[Int]) == null
+      }
+    )
+  )
+
   private val scn = scenario("Basic")
     .feed(feeder)
     .ignite(
       start,
-      tx(PESSIMISTIC, READ_COMMITTED).timeout(1000L)(
-        put[Int, Int](cache, "#{key}", "#{value}"),
-        get[Int, Any](cache, key = "#{key}") check mapResult[Int, Any].transform(r => r.values.head.asInstanceOf[Int]).is("#{value}"),
-        commit
-      ),
-      tx(PESSIMISTIC, READ_COMMITTED)
-        .timeout(1000L)
-        .txSize(8)(
-          put[Int, Int](cache, 3, 4),
-          get[Int, Any](cache, key = 3) check mapResult[Int, Any].transform(r => r.values.head.asInstanceOf[Int]).is(4),
-          commit
-        ),
-      tx(PESSIMISTIC, READ_COMMITTED)(
-        put[Int, Int](cache, 1, 2),
-        get[Int, Any](cache, key = 1) check mapResult[Int, Any].transform(r => r.values.head.asInstanceOf[Int]).is(2),
-        commit
-      ),
-      tx(
-        put[Int, Int](cache, 1, 2),
-        get[Int, Any](cache, key = 1) check mapResult[Int, Any].transform(r => r.values.head.asInstanceOf[Int]).is(2),
-        commit
-      ),
-      tx("tx1")(PESSIMISTIC, READ_COMMITTED).timeout(1000L)(
-        put[Int, Int](cache, 1, 2),
-        get[Int, Any](cache, key = 1) check mapResult[Int, Any].transform(r => r.values.head.asInstanceOf[Int]).is(2),
-        commit
-      ),
-      tx("tx2")(PESSIMISTIC, READ_COMMITTED)
-        .timeout(1000L)
-        .txSize(8)(
-          put[Int, Int](cache, 1, 2),
-          get[Int, Any](cache, key = 1) check mapResult[Int, Any].transform(r => r.values.head.asInstanceOf[Int]).is(2),
-          commit as "commit"
-        ),
-      tx("tx3")(PESSIMISTIC, READ_COMMITTED)(
-        put[Int, Int](cache, 1, 2),
-        get[Int, Any](cache, key = 1) check mapResult[Int, Any].transform(r => r.values.head.asInstanceOf[Int]).is(2),
-        rollback as "rollback"
-      ),
-      tx("tx4")(
-        put[Int, Int](cache, 1, 2),
-        get[Int, Any](cache, key = 1) check mapResult[Int, Any].transform(r => r.values.head.asInstanceOf[Int]).is(2)
-      ),
-      get[Int, Any](cache, key = 1) check mapResult[Int, Any].transform(r => r.values.head.asInstanceOf[Int]).is(2),
+      create(cache).backups(0).atomicity(TRANSACTIONAL),
+      rollbackTx,
+      autoRollbackTx,
+      commitTx,
+      exec { session =>
+        logger.info(session.toString)
+        session
+      },
       close
     )
 
-  setUp(scn.inject(atOnceUsers(1))).protocols(protocol).assertions(global.failedRequests.count.is(0))
+  setUp(scn.inject(atOnceUsers(10))).protocols(protocol).assertions(global.failedRequests.count.is(0))
 }

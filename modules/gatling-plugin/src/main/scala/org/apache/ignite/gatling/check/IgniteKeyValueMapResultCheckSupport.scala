@@ -75,11 +75,11 @@ trait IgniteKeyValueMapResultCheckSupport extends IgniteKeyValueCheckSupport {
    */
   def mapResultExtractor[K, V]: Expression[Extractor[MapResult[K, V], MapResult[K, V]]] =
     new Extractor[MapResult[K, V], MapResult[K, V]] {
-      override def name: String = "map"
+      override val name: String = "map"
 
       override def apply(prepared: MapResult[K, V]): Validation[Option[MapResult[K, V]]] = Some(prepared).success
 
-      override def arity: String = "find"
+      override val arity: String = "find"
     }.expressionSuccess
 
   /**

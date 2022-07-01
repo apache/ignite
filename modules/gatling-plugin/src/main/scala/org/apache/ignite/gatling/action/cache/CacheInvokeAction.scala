@@ -80,8 +80,8 @@ class CacheInvokeAction[K, V, T](
       logger.debug(s"session user id: #${session.userId}, before $name")
 
       val func = transactionApi
-        .map(_ => cacheApi.invoke(resolvedKey, entryProcessor, resolvedArguments) _)
-        .getOrElse(cacheApi.invokeAsync(resolvedKey, entryProcessor, resolvedArguments) _)
+        .map(_ => cacheApi.invoke(resolvedKey, entryProcessor, resolvedArguments: _*) _)
+        .getOrElse(cacheApi.invokeAsync(resolvedKey, entryProcessor, resolvedArguments: _*) _)
 
       call(func, resolvedRequestName, session, checks)
     }

@@ -51,6 +51,32 @@ trait IgniteSupport {
       Map("key" -> atomicInteger.incrementAndGet(), "value" -> atomicInteger.incrementAndGet())
   }
 
+  /**
+   * Helper feeder class generating batches of long key and long value pairs.
+   */
+  class BatchFeeder extends Feeder[Map[Int, Int]] {
+    private val atomicInteger: AtomicInteger = new AtomicInteger(0)
+
+    /**
+     * @inheritdoc
+     * @return @inheritdoc
+     */
+    override def hasNext: Boolean = true
+
+    /**
+     * @inheritdoc
+     * @return @inheritdoc
+     */
+    override def next(): Record[Map[Int, Int]] =
+      Map(
+        "batch" -> Map(
+          atomicInteger.incrementAndGet() -> atomicInteger.incrementAndGet(),
+          atomicInteger.incrementAndGet() -> atomicInteger.incrementAndGet(),
+          atomicInteger.incrementAndGet() -> atomicInteger.incrementAndGet()
+        )
+      )
+  }
+
   /** Default feeder for unit tests. */
   protected val feeder: IntPairsFeeder = new IntPairsFeeder()
 

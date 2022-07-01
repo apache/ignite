@@ -41,7 +41,7 @@ class BasicSimulation extends Simulation {
       create(cache).backups(1) as "Create cache",
       put[Int, Int](cache, "#{key}", "#{value}") as "Put",
       get[Int, Int](cache, "#{key}")
-        .check(entries[Int, Int].find.transform(_.value).is("#{value}")) as "Get",
+        .check(entries[Int, Int].transform(_.value).is("#{value}")) as "Get",
       close
     )
 
@@ -62,10 +62,10 @@ class BasicSimulation extends Simulation {
     scn
       .inject(
         constantUsersPerSec(10) during 10.seconds,
-        incrementUsersPerSec(1).times(2).eachLevelLasting(1)
+        incrementUsersPerSec(1).times(10).eachLevelLasting(1)
       )
   )
     .protocols(protocol)
-    .maxDuration(600.seconds)
+    .maxDuration(25.seconds)
     .assertions(global.failedRequests.count.is(0))
 }

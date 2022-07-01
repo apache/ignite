@@ -53,8 +53,8 @@ trait CacheInvokeAllAction[K, V, T] {
    */
   def resolveArgs(session: Session): Validation[List[Any]] =
     arguments
-      .foldLeft(List[Any]().success) { case (r, v) =>
-        r.flatMap(m => v(session).map(rv => rv :: m))
+      .foldLeft(List[Any]().success) { case (r, e) =>
+        r.flatMap(m => e(session).map(rv => rv :: m))
       }
       .map(l => l.reverse)
 
@@ -79,8 +79,8 @@ trait CacheInvokeAllAction[K, V, T] {
     logger.debug(s"session user id: #${session.userId}, before $name")
 
     val func = transactionApi
-      .map(_ => cacheApi.invokeAll(resolvedMap, resolvedArguments) _)
-      .getOrElse(cacheApi.invokeAllAsync(resolvedMap, resolvedArguments) _)
+      .map(_ => cacheApi.invokeAll(resolvedMap, resolvedArguments: _*) _)
+      .getOrElse(cacheApi.invokeAllAsync(resolvedMap, resolvedArguments: _*) _)
 
     call(func, resolvedRequestName, session, checks)
   }

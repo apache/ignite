@@ -19,19 +19,14 @@ package org.apache.ignite.gatling.utils
 import io.gatling.app.Gatling
 import io.gatling.core.config.GatlingPropertiesBuilder
 import org.apache.ignite.gatling.utils.IgniteClientApi.IgniteApi
-import org.apache.ignite.gatling.utils.IgniteClientApi.NodeApi
 import org.apache.ignite.gatling.utils.IgniteClientApi.ThinClient
 import org.apache.ignite.internal.client.thin.AbstractThinClientTest
 import org.junit.Assert.assertTrue
-import org.junit.Test
 
 /**
  * Abstract gatling test.
  */
 abstract class AbstractGatlingTest extends AbstractThinClientTest {
-  /** Class name of simulation */
-  val simulation: String
-
   /** @inheritdoc */
   override protected def beforeTest(): Unit = {
     super.beforeTest()
@@ -45,24 +40,12 @@ abstract class AbstractGatlingTest extends AbstractThinClientTest {
   }
 
   /**
-   * Runs simulation with thin client.
-   */
-  @Test
-  def thinClient(): Unit = runWith(ThinClient)(simulation)
-
-  /**
-   * Runs simulation with thick client.
-   */
-  @Test
-  def thickClient(): Unit = runWith(NodeApi)(simulation)
-
-  /**
    * Runs simulation with the specified API.
    *
    * @param api ThinApi or NodeApi.
-   * @param simulationClass Class name of simulation.
+   * @param simulation Class name of simulation.
    */
-  protected def runWith(api: IgniteApi)(simulationClass: String): Unit = {
+  protected def runWith(api: IgniteApi)(simulation: String): Unit = {
     if (api == ThinClient) {
       System.setProperty("host", clientHost(grid(0).cluster.localNode))
       System.setProperty("port", String.valueOf(clientPort(grid(0).cluster.localNode)))
@@ -72,7 +55,7 @@ abstract class AbstractGatlingTest extends AbstractThinClientTest {
       startClientGrid(1)
     }
     val gatlingPropertiesBuilder = new GatlingPropertiesBuilder
-    gatlingPropertiesBuilder.simulationClass(simulationClass)
+    gatlingPropertiesBuilder.simulationClass(simulation)
     gatlingPropertiesBuilder.noReports()
 
     assertTrue("Count of failed gatling events is not zero", Gatling.fromMap(gatlingPropertiesBuilder.build) == 0)

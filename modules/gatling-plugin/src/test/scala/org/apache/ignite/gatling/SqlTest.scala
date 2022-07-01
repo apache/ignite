@@ -16,21 +16,30 @@
  */
 package org.apache.ignite.gatling
 
-import java.util.UUID
-
 import com.typesafe.scalalogging.StrictLogging
 import io.gatling.commons.validation.SuccessWrapper
 import io.gatling.core.Predef._
 import org.apache.ignite.gatling.Predef._
 import org.apache.ignite.gatling.utils.AbstractGatlingTest
+import org.apache.ignite.gatling.utils.IgniteClientApi.NodeApi
+import org.apache.ignite.gatling.utils.IgniteClientApi.ThinClient
 import org.apache.ignite.gatling.utils.IgniteSupport
+import org.junit.Test
 
 /**
  * Tests SQL queries.
  */
 class SqlTest extends AbstractGatlingTest {
-  /** @inheritdoc */
-  override val simulation: String = "org.apache.ignite.gatling.SqlSimulation"
+  /** Class name of simulation */
+  val simulation: String = "org.apache.ignite.gatling.SqlSimulation"
+
+  /** Runs simulation with thin client. */
+  @Test
+  def thinClient(): Unit = runWith(ThinClient)(simulation)
+
+  /** Runs simulation with thick client. */
+  @Test
+  def thickClient(): Unit = runWith(NodeApi)(simulation)
 }
 
 /**
@@ -45,17 +54,34 @@ class SqlSimulation extends Simulation with IgniteSupport with StrictLogging {
       start as "Start client",
       create(cache).backups(1) as "Create cache",
       sql(cache, "CREATE TABLE City (id int primary key, name varchar, region varchar)") as "Create table",
-      sql(cache, "INSERT INTO City(id, name, region) VALUES(?, ?, ?)").args("#{key}", _ => UUID.randomUUID().toString, "R") as "Insert",
+      sql(cache, "INSERT INTO City(id, name, region) VALUES(?, ?, ?)").args("#{key}", "City 1", "Region") as "Insert",
+      sql(cache, "INSERT INTO City(id, name, region) VALUES(?, ?, ?)").args(s => s("key").as[Int] + 1, "City 2", "Region"),
       sql(cache, "SELECT * FROM City WHERE id = ?")
         .args(keyExpression)
         .check(
+          resultSet,
           resultSet.count.is(1),
           resultSet.count.gte(0),
+          resultSet.find,
           resultSet.find.saveAs("firstRow"),
-          resultSet.find.transform(r => r(2)).is("R").saveAs("check result"),
-          resultSet.validate((row: Row, s: Session) => row(2) == "RR").name("named check to fail"),
-          resultSet.findAll.validate((rows: Seq[Row], s: Session) => rows.head(2) == "R")
-        ) as "Select"
+          resultSet.find.transform(r => r(2)),
+          resultSet.find.transform(r => r(2)).is("Region").saveAs("Region"),
+          resultSet.validate((row: Row, _: Session) => row(2) == "RR").name("named check to fail"),
+          resultSet.findAll.validate((rows: Seq[Row], _: Session) => rows.head(2) == "Region")
+        ) as "Select",
+      sql(cache, "SELECT * FROM City WHERE Region = ? ORDER BY name")
+        .args("Region")
+        .partitions(List(1))
+        .check(
+          resultSet,
+          resultSet.count.is(2),
+          resultSet.find(1),
+          resultSet.find(1).saveAs("secondRow"),
+          resultSet.find(1).transform(r => r(2)),
+          resultSet.find(1).transform(r => r(1)).is("City 2").saveAs("City"),
+          resultSet.validate((row: Row, _: Session) => row(2) == "RR").name("named check to fail"),
+          resultSet.findAll.validate((rows: Seq[Row], _: Session) => rows.head(1) == "City 1")
+        )
     )
     .exec { session =>
       logger.info(session.toString)
@@ -63,5 +89,5 @@ class SqlSimulation extends Simulation with IgniteSupport with StrictLogging {
     }
     .exec(close as "Close client")
 
-  setUp(scn.inject(atOnceUsers(1))).protocols(protocol).assertions(global.failedRequests.count.is(1))
+  setUp(scn.inject(atOnceUsers(1))).protocols(protocol).assertions(global.failedRequests.count.is(2))
 }

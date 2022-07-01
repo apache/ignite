@@ -295,7 +295,7 @@ case class CacheNodeApi[K, V](wrapped: IgniteCache[K, V]) extends CacheApi[K, V]
     f: Throwable => Unit
   ): Unit = {
     logger.debug("sync invoke")
-    Try(wrapped.invoke[T](key, entryProcessor, arguments))
+    Try(wrapped.invoke[T](key, entryProcessor, arguments: _*))
       .map(value => Map((key, value)))
       .fold(f, s)
   }
@@ -315,7 +315,7 @@ case class CacheNodeApi[K, V](wrapped: IgniteCache[K, V]) extends CacheApi[K, V]
   ): Unit = {
     logger.debug("async invoke")
     wrapped
-      .invokeAsync(key, entryProcessor, arguments)
+      .invokeAsync(key, entryProcessor, arguments: _*)
       .listen(future =>
         Try(future.get())
           .map(value => Map((key, value)))
@@ -336,7 +336,7 @@ case class CacheNodeApi[K, V](wrapped: IgniteCache[K, V]) extends CacheApi[K, V]
     arguments: Any*
   )(s: Map[K, EntryProcessorResult[T]] => Unit, f: Throwable => Unit): Unit = {
     logger.debug("sync invokeAll")
-    Try(wrapped.invokeAll[T](map.asJava, arguments))
+    Try(wrapped.invokeAll[T](map.asJava, arguments: _*))
       .map(_.asScala.toMap)
       .fold(f, s)
   }
@@ -355,7 +355,7 @@ case class CacheNodeApi[K, V](wrapped: IgniteCache[K, V]) extends CacheApi[K, V]
   )(s: Map[K, EntryProcessorResult[T]] => Unit, f: Throwable => Unit): Unit = {
     logger.debug("async invokeAll")
     wrapped
-      .invokeAllAsync(map.asJava, arguments)
+      .invokeAllAsync(map.asJava, arguments: _*)
       .listen(future =>
         Try(future.get())
           .map(_.asScala.toMap)
