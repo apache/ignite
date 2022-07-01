@@ -14,23 +14,29 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-package org.apache.ignite.internal.gatling.simulation
-
-import io.gatling.core.Predef.{rampUsersPerSec, _}
-import io.gatling.core.structure.ScenarioBuilder
-import org.apache.ignite.gatling.Predef._
-import org.apache.ignite.internal.gatling.feeder.IntPairsFeeder
+package org.apache.ignite.internal.ducktest.gatling.simulation
 
 import java.util.concurrent.locks.Lock
+
 import javax.cache.processor.MutableEntry
+
 import scala.concurrent.duration.DurationInt
 
+import io.gatling.core.Predef._
+import io.gatling.core.Predef.rampUsersPerSec
+import io.gatling.core.structure.ScenarioBuilder
+import org.apache.ignite.gatling.Predef._
+import org.apache.ignite.internal.ducktest.gatling.utils.DucktapeIgniteSupport
+import org.apache.ignite.internal.ducktest.gatling.utils.IntPairsFeeder
+import org.apache.ignite.internal.ducktest.gatling.utils.IntPairsFeeder
+
+/**
+ */
 class SimulationInvoke extends Simulation with DucktapeIgniteSupport {
 
-  val feeder: IntPairsFeeder = IntPairsFeeder()
+  private val feeder: IntPairsFeeder = new IntPairsFeeder()
 
-  val scn: ScenarioBuilder = scenario("Get")
+  private val scn: ScenarioBuilder = scenario("Get")
     .feed(feeder)
     .ignite(
       start,
@@ -38,10 +44,9 @@ class SimulationInvoke extends Simulation with DucktapeIgniteSupport {
       lock[Int]("TEST-CACHE", "#{key}").check(
         entries[Int, Lock].transform(a => a.value).saveAs("lock")
       ),
-
       put[Int, Int]("TEST-CACHE", "#{key}", "#{value}"),
-      invoke[Int, Int, Unit]("TEST-CACHE", "#{key}") {
-        e: MutableEntry[Int, Int] => e.setValue(-e.getValue)
+      invoke[Int, Int, Unit]("TEST-CACHE", "#{key}") { e: MutableEntry[Int, Int] =>
+        e.setValue(-e.getValue)
       },
       get[Int, Int]("TEST-CACHE", "#{key}")
         .check(
@@ -61,11 +66,13 @@ class SimulationInvoke extends Simulation with DucktapeIgniteSupport {
       close
     )
 
-  setUp(scn.inject(
+  setUp(
+    scn.inject(
 //    atOnceUsers(2)
-    rampUsersPerSec(0).to(100).during(10.seconds),
-    constantUsersPerSec(100) during 30,
-  ))
+      rampUsersPerSec(0).to(100).during(10.seconds),
+      constantUsersPerSec(100) during 30
+    )
+  )
     .protocols(protocol)
     .maxDuration(60.seconds)
     .assertions(global.failedRequests.count.is(0))

@@ -19,8 +19,8 @@ package org.apache.ignite.gatling
 import io.gatling.core.Predef._
 import org.apache.ignite.configuration.CacheConfiguration
 import org.apache.ignite.gatling.Predef._
-import org.apache.ignite.gatling.util.AbstractGatlingTest
-import org.apache.ignite.gatling.util.IgniteSupport
+import org.apache.ignite.gatling.utils.AbstractGatlingTest
+import org.apache.ignite.gatling.utils.IgniteSupport
 
 /**
  * Tests creation of all types of transactions.

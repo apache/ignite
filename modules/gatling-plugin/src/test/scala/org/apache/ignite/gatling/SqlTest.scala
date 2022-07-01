@@ -22,8 +22,8 @@ import com.typesafe.scalalogging.StrictLogging
 import io.gatling.commons.validation.SuccessWrapper
 import io.gatling.core.Predef._
 import org.apache.ignite.gatling.Predef._
-import org.apache.ignite.gatling.util.AbstractGatlingTest
-import org.apache.ignite.gatling.util.IgniteSupport
+import org.apache.ignite.gatling.utils.AbstractGatlingTest
+import org.apache.ignite.gatling.utils.IgniteSupport
 
 /**
  * Tests SQL queries.

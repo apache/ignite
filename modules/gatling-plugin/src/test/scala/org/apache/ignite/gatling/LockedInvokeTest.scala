@@ -26,9 +26,9 @@ import scala.concurrent.duration.DurationInt
 import com.typesafe.scalalogging.StrictLogging
 import io.gatling.core.Predef._
 import org.apache.ignite.gatling.Predef._
-import org.apache.ignite.gatling.util.AbstractGatlingTest
-import org.apache.ignite.gatling.util.IgniteClientApi.NodeApi
-import org.apache.ignite.gatling.util.IgniteSupport
+import org.apache.ignite.gatling.utils.AbstractGatlingTest
+import org.apache.ignite.gatling.utils.IgniteClientApi.NodeApi
+import org.apache.ignite.gatling.utils.IgniteSupport
 import org.junit.Ignore
 import org.junit.Test
 

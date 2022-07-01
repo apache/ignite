@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.ducktest.utils.gatling;
+package org.apache.ignite.internal.ducktest.gatling;
 
 import java.util.Optional;
 import com.fasterxml.jackson.databind.JsonNode;

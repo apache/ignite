@@ -14,13 +14,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.ignite.gatling.util
+package org.apache.ignite.gatling.utils
 
 import io.gatling.app.Gatling
 import io.gatling.core.config.GatlingPropertiesBuilder
-import org.apache.ignite.gatling.util.IgniteClientApi.IgniteApi
-import org.apache.ignite.gatling.util.IgniteClientApi.NodeApi
-import org.apache.ignite.gatling.util.IgniteClientApi.ThinClient
+import org.apache.ignite.gatling.utils.IgniteClientApi.IgniteApi
+import org.apache.ignite.gatling.utils.IgniteClientApi.NodeApi
+import org.apache.ignite.gatling.utils.IgniteClientApi.ThinClient
 import org.apache.ignite.internal.client.thin.AbstractThinClientTest
 import org.junit.Assert.assertTrue
 import org.junit.Test

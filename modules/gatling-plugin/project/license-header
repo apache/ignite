@@ -14,12 +14,3 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-package org.apache.ignite.internal.gatling.simulation
-
-import org.apache.ignite.gatling.protocol.IgniteProtocol
-import org.apache.ignite.internal.ducktest.utils.gatling.GatlingRunnerApplication
-
-trait DucktapeIgniteSupport {
-  val protocol: IgniteProtocol = GatlingRunnerApplication.igniteProtocol
-}

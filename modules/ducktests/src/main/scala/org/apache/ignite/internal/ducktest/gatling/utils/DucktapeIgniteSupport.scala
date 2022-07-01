@@ -14,16 +14,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.ignite.internal.ducktest.gatling.utils
 
-package org.apache.ignite.internal.gatling.feeder
+import org.apache.ignite.gatling.protocol.IgniteProtocol
+import org.apache.ignite.internal.ducktest.gatling.GatlingRunnerApplication
 
-import io.gatling.core.feeder.{Feeder, Record}
-
-import java.util.concurrent.atomic.AtomicInteger
-
-case class IntPairsFeeder(atomicInteger: AtomicInteger = new AtomicInteger(0)) extends Feeder[Int] {
-  override def hasNext: Boolean = true
-
-  override def next(): Record[Int] =
-    Map("key" -> atomicInteger.incrementAndGet(), "value" -> atomicInteger.incrementAndGet())
+/**
+ * Mixin for gatling simulation running in context of ducktest.
+ */
+trait DucktapeIgniteSupport {
+  /** Ignite protocol provided by the ducktape gatling running application. */
+  val protocol: IgniteProtocol = GatlingRunnerApplication.igniteProtocol
 }

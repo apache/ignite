@@ -14,28 +14,29 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.ignite.internal.ducktest.gatling.simulation
 
-package org.apache.ignite.internal.gatling.simulation
+import scala.language.postfixOps
 
 import io.gatling.core.Predef._
 import org.apache.ignite.configuration.ClientConfiguration
 import org.apache.ignite.gatling.Predef._
-import org.apache.ignite.internal.gatling.feeder.IntPairsFeeder
+import org.apache.ignite.internal.ducktest.gatling.utils.IntPairsFeeder
 
-import scala.language.postfixOps
-
+/**
+ */
 class SimulationExample extends Simulation {
   private val protocol = igniteProtocol.cfg(new ClientConfiguration().setAddresses("localhost:10800"))
-  private val feeder = IntPairsFeeder()
+  private val feeder = new IntPairsFeeder()
   private val scn = scenario("Example")
     .feed(feeder)
     .ignite(
       start as "Start client",
       create("TEST-CACHE") backups 0 atomicity TRANSACTIONAL as "Create cache",
-      tx(PESSIMISTIC, REPEATABLE_READ).timeout(100L) (
+      tx(PESSIMISTIC, REPEATABLE_READ).timeout(100L)(
         put("TEST-CACHE", "#{key}", "#{value}") as "Put",
         get("TEST-CACHE", key = "#{key}") as "Get",
-        commit as "Commit",
+        commit as "Commit"
       ),
       close as "Close client"
     )

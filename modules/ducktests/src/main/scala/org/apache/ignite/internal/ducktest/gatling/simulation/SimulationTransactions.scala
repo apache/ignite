@@ -14,43 +14,52 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-package org.apache.ignite.internal.gatling.simulation
-
-import io.gatling.core.Predef._
-import io.gatling.core.structure.{ChainBuilder, ScenarioBuilder}
-import org.apache.ignite.gatling.Predef._
-import org.apache.ignite.internal.gatling.feeder.IntPairsFeeder
+package org.apache.ignite.internal.ducktest.gatling.simulation
 
 import scala.concurrent.duration.DurationInt
 
+import io.gatling.core.Predef._
+import io.gatling.core.structure.ChainBuilder
+import io.gatling.core.structure.ScenarioBuilder
+import org.apache.ignite.gatling.Predef._
+import org.apache.ignite.internal.ducktest.gatling.utils.DucktapeIgniteSupport
+import org.apache.ignite.internal.ducktest.gatling.utils.IntPairsFeeder
+import org.apache.ignite.internal.ducktest.gatling.utils.IntPairsFeeder
+
+/**
+ * Simulation with transactions.
+ */
 class SimulationTransactions extends Simulation with DucktapeIgniteSupport {
 
-  val feeder: IntPairsFeeder = IntPairsFeeder()
+  private val feeder: IntPairsFeeder = new IntPairsFeeder()
 
-  val commitTx: ChainBuilder = exec(
-    tx(PESSIMISTIC, REPEATABLE_READ) /*timeout 100L*/(
+  private val commitTx: ChainBuilder = exec(
+    tx(PESSIMISTIC, REPEATABLE_READ) /* timeout 100L */ (
       put("TEST-CACHE", "#{key}", "#{value}") as "put-commit",
       commit
     )
-  ).exec(get[Int, Int]("TEST-CACHE", "#{key}")
-    .check(
-      entries[Int, Int].findAll.saveAs("C"),
-      entries[Int, Int].transform(_.value).is("#{value}")
-    )
+  ).exec(
+    get[Int, Int]("TEST-CACHE", "#{key}")
+      .check(
+        entries[Int, Int].findAll.saveAs("C"),
+        entries[Int, Int].transform(_.value).is("#{value}")
+      )
   )
 
-  val rollbackTx: ChainBuilder = exec(tx(
+  private val rollbackTx: ChainBuilder = exec(
+    tx(
       put("TEST-CACHE", "#{key}", "#{value}"),
       rollback
-  )).exec(get[Int, Int]("TEST-CACHE", "#{key}")
-    .check(
-      entries[Int, Int].findAll.saveAs("R"),
-      entries[Int, Int].count.is(0)
     )
+  ).exec(
+    get[Int, Int]("TEST-CACHE", "#{key}")
+      .check(
+        entries[Int, Int].findAll.saveAs("R"),
+        entries[Int, Int].count.is(0)
+      )
   )
 
-  val scn: ScenarioBuilder = scenario("Get")
+  private val scn: ScenarioBuilder = scenario("Get")
     .feed(feeder)
     .exec(
       start
@@ -64,11 +73,13 @@ class SimulationTransactions extends Simulation with DucktapeIgniteSupport {
       close
     )
 
-  setUp(scn.inject(
-    atOnceUsers(1)
+  setUp(
+    scn.inject(
+      atOnceUsers(1)
 //    rampUsersPerSec(0).to(100).during(10.seconds),
 //    constantUsersPerSec(100) during 30,
-  ))
+    )
+  )
     .protocols(protocol)
     .maxDuration(60.seconds)
     .assertions(global.failedRequests.count.is(0))

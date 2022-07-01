@@ -162,7 +162,7 @@
                             <file>${project.basedir}/.scalafmt.conf</file>
                         </scalafmt>
                         <licenseHeader>
-                            <file>${project.basedir}/checkstyle/license-header</file>
+                            <file>${project.basedir}/project/license-header</file>
                             <delimiter>package</delimiter>
                         </licenseHeader>
                     </scala>
@@ -186,7 +186,7 @@
                             <failOnWarning>true</failOnWarning>
                             <sourceDirectory>${project.basedir}/src/main/scala</sourceDirectory>
                             <testSourceDirectory>${project.basedir}/src/test/scala</testSourceDirectory>
-                            <configLocation>${project.basedir}/scalastyle_config.xml</configLocation>
+                            <configLocation>${project.basedir}/project/scalastyle_config.xml</configLocation>
                             <outputFile>${project.basedir}/target/checkstyle-result.xml</outputFile>
                             <outputEncoding>UTF-8</outputEncoding>
                         </configuration>
