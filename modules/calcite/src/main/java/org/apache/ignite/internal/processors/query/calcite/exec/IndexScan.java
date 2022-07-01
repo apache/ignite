@@ -169,7 +169,7 @@ public class IndexScan<Row> extends AbstractIndexScan<Row, IndexRow> {
 
         try {
             for (int s = 0; s < idx.segmentsCount(); ++s) {
-                GridCursor<IndexRow> cursor = first ? idx.findFirst(0, qctx) : idx.findLast(0, qctx);
+                GridCursor<IndexRow> cursor = first ? idx.findFirst(s, qctx) : idx.findLast(s, qctx);
 
                 IndexRow row = cursor.next() ? cursor.get() : null;
 

@@ -312,7 +312,7 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
 
         if (idx != null && !tbl.isIndexRebuildInProgress()) {
             Iterable<Row> rowsIter = firstOrLast
-                ? idx.findFirstOrLast(rel.findLast(), ctx, grp, requiredColumns)
+                ? idx.findFirstOrLast(rel.findFirst(), ctx, grp, requiredColumns)
                 : idx.scan(ctx, grp, filters, lower, upper, prj, requiredColumns);
 
             return new ScanNode<>(ctx, rowType, rowsIter);

@@ -30,6 +30,7 @@ import org.apache.ignite.internal.processors.query.calcite.metadata.ColocationGr
 import org.apache.ignite.internal.processors.query.calcite.prepare.MappingQueryContext;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteAggregate;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexCount;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexScan;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.rel.agg.IgniteMapHashAggregate;
 import org.apache.ignite.internal.processors.query.calcite.rel.agg.IgniteReduceHashAggregate;
@@ -48,11 +49,9 @@ import org.junit.Test;
  */
 @SuppressWarnings({"TooBroadScope", "FieldCanBeLocal", "TypeMayBeWeakened"})
 public class HashAggregatePlannerTest extends AbstractAggregatePlannerTest {
-    /**
-     *
-     */
+    /** */
     @Test
-    public void indexMinMax() {
+    public void indexMinMax() throws Exception {
         IgniteSchema publicSchema = new IgniteSchema("PUBLIC");
 
         List<IgniteDistribution> lst = ImmutableList.of(
@@ -65,21 +64,37 @@ public class HashAggregatePlannerTest extends AbstractAggregatePlannerTest {
             TestTable tbl = createTable(distr);
             publicSchema.addTable("TEST", tbl);
 
-            assertNoIndexFirstOrLastRecord("SELECT MIN(VAL0) FROM TEST", true, publicSchema);
-            assertNoIndexFirstOrLastRecord("SELECT MIN(VAL0) FROM TEST", false, publicSchema);
+            assertNoIndexFirstOrLastRecord("SELECT MIN(VAL0) FROM TEST", publicSchema);
+            assertNoIndexFirstOrLastRecord("SELECT MIN(VAL0) FROM TEST", publicSchema);
 
             tbl.addIndex(QueryUtils.indexName(tbl.name(), "VAL0"), 0);
 
             assertIndexFirstOrLastRecord("SELECT MIN(VAL0) FROM TEST", true, publicSchema);
             assertIndexFirstOrLastRecord("SELECT MAX(VAL0) FROM TEST", false, publicSchema);
+            assertIndexFirstOrLastRecord("SELECT MIN(V) FROM (SELECT MIN(VAL0) AS V FROM TEST)", true, publicSchema);
+            assertIndexFirstOrLastRecord("SELECT MAX(V) FROM (SELECT MAX(VAL0) AS V FROM TEST)", false, publicSchema);
+            assertIndexFirstOrLastRecord("SELECT MAX(VAL0) FROM TEST", false, publicSchema);
+
+            //Must not be optimized
+            assertNoIndexFirstOrLastRecord("SELECT MIN(VAL0) FROM TEST WHERE VAL1 > 1", publicSchema);
+            assertNoIndexFirstOrLastRecord("SELECT MAX(VAL0) FROM TEST WHERE VAL1 > 1", publicSchema);
+            assertNoIndexFirstOrLastRecord("SELECT VAL1, MIN(VAL0) FROM TEST GROUP BY VAL1", publicSchema);
+            assertNoIndexFirstOrLastRecord("SELECT VAL1, MAX(VAL0) FROM TEST GROUP BY VAL1", publicSchema);
 
             publicSchema.removeTable("TEST");
         }
     }
 
-    private void assertNoIndexFirstOrLastRecord(String sql, boolean first, IgniteSchema publicSchema) throws Exception {
-        assertPlan(sql, publicSchema, hasChildThat(isInstanceOf(IgniteIndexCount.class)).negate());
+    /** */
+    private void assertIndexFirstOrLastRecord(String sql, boolean first, IgniteSchema schema) throws Exception {
+        assertPlan(sql, schema, nodeOrAnyChild(isInstanceOf(IgniteAggregate.class)
+            .and(nodeOrAnyChild(isInstanceOf(IgniteIndexScan.class)
+                .and(s -> first && s.findFirst() || !first && s.findLast())))));
+    }
 
+    /** */
+    private void assertNoIndexFirstOrLastRecord(String sql, IgniteSchema publicSchema) throws Exception {
+        assertPlan(sql, publicSchema, hasChildThat(isInstanceOf(IgniteIndexScan.class)).negate());
     }
 
     /**

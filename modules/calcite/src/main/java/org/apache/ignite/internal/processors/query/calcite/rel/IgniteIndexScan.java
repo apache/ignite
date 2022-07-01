@@ -122,7 +122,7 @@ public class IgniteIndexScan extends AbstractIndexScan implements SourceAwareIgn
      * @return {@code True}, if the bounds suppose taking first index record.
      * {@code False} otherwise.
      */
-    public boolean findfirst() {
+    public boolean findFirst() {
         return firstOrLast(true);
     }
 
@@ -154,8 +154,8 @@ public class IgniteIndexScan extends AbstractIndexScan implements SourceAwareIgn
      */
     private boolean firstOrLast(@Nullable Boolean first) {
         return lowerBound() != null &&
-            lowerBound().stream().filter(b -> first == null ? b.isA(SqlKind.FIRST_VALUE) || b.isA(SqlKind.LAST_VALUE)
-                : b.isA(first ? SqlKind.FIRST_VALUE : SqlKind.LAST_VALUE)).count() == 1 &&
+            lowerBound().stream().filter(b -> b != null && (first == null ? b.isA(SqlKind.FIRST_VALUE) || b.isA(SqlKind.LAST_VALUE)
+                : b.isA(first ? SqlKind.FIRST_VALUE : SqlKind.LAST_VALUE))).count() == 1 &&
             F.eq(lowerBound(), upperBound());
     }
 

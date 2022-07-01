@@ -29,25 +29,22 @@ import org.junit.Test;
  *
  */
 public class AggregatesIntegrationTest extends AbstractBasicIntegrationTest {
-    //TODO: test with backups
-
     /** */
     @Test
     public void testMinOptimization(){
-        createAndPopulateTable();
-//        assertQuery("select salary from Person order by salary limit 1").returns(1.0).check();
-//        assertQuery("select salary from Person order by salary desc limit 1").returns(19.0).check();
+        for (int b = 0; b < 2; ++b) {
+            createAndPopulateTable(b, CacheMode.PARTITIONED);
 
-//        assertQuery("select * from (select salary from Person order by salary limit 1)").returns(1.0).check();
-//        assertQuery("select * from (select salary from Person order by salary desc limit 1)").returns(19.0).check();
+            assertQuery("select min(salary) from person").returns(10.0).check();
+            assertQuery("select max(salary) from person").returns(15.0).check();
 
-        //TODO: several values
-        assertQuery("select min(salary) from Person").returns(1.0).check();
-        assertQuery("select max(salary) from Person").returns(19.0).check();
-        
-        //TODO: several values
-//        assertQuery("select min(salary), min(value) from Person").returns(9.0, 5.0).check();
-//        assertQuery("select max(salary), max(value) from Person").returns(9.0, 5.0).check();
+            client.destroyCache(TABLE_NAME);
+        }
+
+        createAndPopulateTable(0, CacheMode.REPLICATED);
+
+        assertQuery("select min(salary) from person").returns(10.0).check();
+        assertQuery("select max(salary) from person").returns(15.0).check();
     }
 
     /** */
