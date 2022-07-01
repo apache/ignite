@@ -15,8 +15,9 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.client;
+package org.apache.ignite.client.kubernetes;
 
+import org.apache.ignite.client.ClientAddressFinder;
 import org.apache.ignite.internal.kubernetes.connection.KubernetesServiceAddressResolver;
 import org.apache.ignite.kubernetes.configuration.KubernetesConnectionConfiguration;
 
