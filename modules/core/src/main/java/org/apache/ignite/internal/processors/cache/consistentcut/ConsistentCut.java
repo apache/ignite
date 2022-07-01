@@ -32,6 +32,8 @@ import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.transactions.TransactionState;
 
 import static org.apache.ignite.transactions.TransactionState.COMMITTED;
@@ -48,17 +50,8 @@ public class ConsistentCut {
     /**
      * Consistent Cut Version.
      */
+    @GridToStringInclude
     private final ConsistentCutVersion ver;
-
-    /**
-     * Collection of active transactions to check.
-     */
-    private volatile Collection<IgniteInternalTx> activeTxs;
-
-    /**
-     * Sets to true after {@link ConsistentCutStartRecord} was written to WAL.
-     */
-    private volatile boolean started;
 
     /** */
     private final GridCacheSharedContext<?, ?> cctx;
@@ -81,9 +74,9 @@ public class ConsistentCut {
      * @return Future that completes after local Consistent Cut finished.
      */
     protected IgniteInternalFuture<?> init(Collection<IgniteInternalTx> committingTxs) throws IgniteCheckedException {
-        activeTxs = new ArrayList<>(cctx.tm().activeTransactions());
+        Collection<IgniteInternalTx> activeTxs = new ArrayList<>(cctx.tm().activeTransactions());
 
-        started = walLog(ver, new ConsistentCutStartRecord(ver));
+        walLog(ver, new ConsistentCutStartRecord(ver));
 
         GridCompoundFuture<IgniteInternalTx, Void> activeTxsFinishFut = new GridCompoundFuture<>();
 
@@ -116,6 +109,8 @@ public class ConsistentCut {
             for (IgniteInternalFuture<IgniteInternalTx> finished: finishedTxs) {
                 IgniteInternalTx tx = finished.result();
 
+                committingTxs.remove(tx);
+
                 ConsistentCutVersionAware txCutVerAware = (ConsistentCutVersionAware)tx;
 
                 if (ver.compareTo(txCutVerAware.txCutVersion()) > 0)
@@ -140,19 +135,12 @@ public class ConsistentCut {
     }
 
     /**
-     * @return {@code true} if Consistent Cut started - it wrote {@link ConsistentCutStartRecord} to WAL.
-     */
-    boolean started() {
-        return started;
-    }
-
-    /**
      * Logs Consistent Cut Record to WAL.
      */
     protected boolean walLog(ConsistentCutVersion cutVer, WALRecord record) throws IgniteCheckedException {
         if (cctx.wal() != null) {
-            if (log.isInfoEnabled())
-                log.info("Write ConsistentCut[" + cutVer + "] record to WAL: " + record);
+            if (log.isDebugEnabled())
+                log.debug("Write ConsistentCut[" + cutVer + "] record to WAL: " + record);
 
             cctx.wal().log(record);
         }
@@ -162,29 +150,6 @@ public class ConsistentCut {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        StringBuilder bld = new StringBuilder("ConsistentCut[");
-
-        bld.append("ver=").append(ver).append(", ");
-
-        bld.append("activeTxs").append("={");
-
-        if (activeTxs == null)
-            bld.append("}");
-        else {
-            for (IgniteInternalTx tx: activeTxs) {
-                ConsistentCutVersionAware txCutVerAware = (ConsistentCutVersionAware)tx;
-
-                bld
-                    .append("id=")
-                    .append(txCutVerAware.nearXidVersion().asIgniteUuid())
-                    .append(", ")
-                    .append("txCutVer=")
-                    .append(txCutVerAware.txCutVersion());
-            }
-        }
-
-        bld.append("}");
-
-        return bld.append("]").toString();
+        return S.toString(ConsistentCut.class, this);
     }
 }
