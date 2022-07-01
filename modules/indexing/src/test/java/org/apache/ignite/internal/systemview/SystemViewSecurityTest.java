@@ -17,11 +17,15 @@
 
 package org.apache.ignite.internal.systemview;
 
+import java.util.HashMap;
 import java.util.Map;
+import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
+import org.apache.ignite.client.Config;
+import org.apache.ignite.client.IgniteClient;
+import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.security.AbstractSecurityTest;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.spi.systemview.view.SqlQueryView;
 import org.apache.ignite.spi.systemview.view.SystemView;
 import org.junit.Test;
@@ -38,27 +42,36 @@ public class SystemViewSecurityTest extends AbstractSecurityTest {
         IgniteEx srv = startGridAllowAll("srv");
         IgniteEx client = startClientAllowAll("client");
 
-        SqlFieldsQuery srvSql = new SqlFieldsQuery("SELECT * FROM (VALUES (1),(2))");
-        SqlFieldsQuery clientSql = new SqlFieldsQuery("SELECT * FROM (VALUES (1),(2),(3))");
+        ClientConfiguration cfg = new ClientConfiguration()
+            .setAddresses(Config.SERVER)
+            .setUserName("thin-client");
 
-        srv.context().query().querySqlFields(srvSql, false).iterator().hasNext();
-        client.compute().run(() -> client.context().query().querySqlFields(clientSql, false).iterator().hasNext());
+        try (IgniteClient thinClient = Ignition.startClient(cfg)) {
+            SqlFieldsQuery srvSql = new SqlFieldsQuery("SELECT * FROM (VALUES (1))");
+            SqlFieldsQuery clientSql = new SqlFieldsQuery("SELECT * FROM (VALUES (1),(2))");
+            SqlFieldsQuery thinClientSql = new SqlFieldsQuery("SELECT * FROM (VALUES (1),(2),(3))").setPageSize(1);
 
-        Map<String, Object> expLogins = F.asMap(
-            srvSql.getSql(), srv.context().igniteInstanceName(),
-            clientSql.getSql(), client.context().igniteInstanceName()
-        );
+            srv.context().query().querySqlFields(srvSql, false).iterator().hasNext();
+            client.compute().run(() -> client.context().query().querySqlFields(clientSql, false).iterator().hasNext());
+            thinClient.query(thinClientSql).iterator().hasNext();
 
-        SystemView<SqlQueryView> views = srv.context().systemView().view(SQL_QRY_VIEW);
+            Map<String, Object> expLogins = new HashMap<>();
 
-        assertEquals(expLogins.size(), views.size());
+            expLogins.put(srvSql.getSql(), srv.context().igniteInstanceName());
+            expLogins.put(clientSql.getSql(), client.context().igniteInstanceName());
+            expLogins.put(thinClientSql.getSql(), cfg.getUserName());
 
-        for (SqlQueryView view : views) {
-            Object login = srv.context().security().authenticatedSubject(view.subjectId()).login();
+            SystemView<SqlQueryView> views = srv.context().systemView().view(SQL_QRY_VIEW);
 
-            assertTrue(expLogins.remove(view.sql(), login));
+            assertEquals(expLogins.size(), views.size());
+
+            for (SqlQueryView view : views) {
+                Object login = srv.context().security().authenticatedSubject(view.subjectId()).login();
+
+                assertTrue(expLogins.remove(view.sql(), login));
+            }
+
+            assertTrue(expLogins.isEmpty());
         }
-
-        assertTrue(expLogins.isEmpty());
     }
 }
