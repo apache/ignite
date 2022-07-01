@@ -16,7 +16,10 @@
  */
 package org.apache.ignite.gatling.testsuites
 
+import org.apache.ignite.gatling.InvokeAllTest
+import org.apache.ignite.gatling.InvokeTest
 import org.apache.ignite.gatling.LockedInvokeTest
+import org.apache.ignite.gatling.PutAllGetAllTest
 import org.apache.ignite.gatling.PutGetTest
 import org.apache.ignite.gatling.SqlTest
 import org.apache.ignite.gatling.TransactionTest
@@ -29,7 +32,10 @@ import org.junit.runners.Suite
 @RunWith(classOf[Suite])
 @Suite.SuiteClasses(
   Array(
+    classOf[InvokeTest],
+    classOf[InvokeAllTest],
     classOf[LockedInvokeTest],
+    classOf[PutAllGetAllTest],
     classOf[PutGetTest],
     classOf[SqlTest],
     classOf[TransactionTest]

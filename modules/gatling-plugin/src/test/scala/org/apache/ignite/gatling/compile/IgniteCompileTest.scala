@@ -223,10 +223,12 @@ class IgniteCompileTest extends Simulation {
     .exec { session =>
       val client: IgniteApi = session("igniteApi").as[IgniteApi]
       val cache = client.cache[Int, Int]("test-cache").toOption.get
-      cache.get(session("key").as[Int])(value => print(value))
-      client.close() { _ =>
-        client.txStart()({ _ => }, { _ => })
-      }
+      cache.get(session("key").as[Int])(value => print(value), _ => ())
+      client.close()(
+        _ =>
+          client.txStart()({ _ => }, { _ => }),
+        _ => ()
+      )
       session
     }
 

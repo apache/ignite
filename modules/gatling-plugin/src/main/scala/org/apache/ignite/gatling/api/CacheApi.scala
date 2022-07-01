@@ -40,7 +40,7 @@ trait CacheApi[K, V] {
    * @param s Function to be called if operation is competed successfully.
    * @param f Function to be called if exception occurs.
    */
-  def put(key: K, value: V)(s: Unit => Unit, f: Throwable => Unit = _ => ()): Unit
+  def put(key: K, value: V)(s: Unit => Unit, f: Throwable => Unit): Unit
 
   /**
    * Asynchronously puts entry to cache.
@@ -50,7 +50,7 @@ trait CacheApi[K, V] {
    * @param s Function to be called if operation is competed successfully.
    * @param f Function to be called if exception occurs.
    */
-  def putAsync(key: K, value: V)(s: Unit => Unit, f: Throwable => Unit = _ => ()): Unit
+  def putAsync(key: K, value: V)(s: Unit => Unit, f: Throwable => Unit): Unit
 
   /**
    * Puts batch of entries to cache.
@@ -59,7 +59,7 @@ trait CacheApi[K, V] {
    * @param s Function to be called if operation is competed successfully.
    * @param f Function to be called if exception occurs.
    */
-  def putAll(map: Map[K, V])(s: Unit => Unit, f: Throwable => Unit = _ => ()): Unit
+  def putAll(map: Map[K, V])(s: Unit => Unit, f: Throwable => Unit): Unit
 
   /**
    * Asynchronously puts batch of entries to cache.
@@ -68,7 +68,7 @@ trait CacheApi[K, V] {
    * @param s Function to be called if operation is competed successfully.
    * @param f Function to be called if exception occurs.
    */
-  def putAllAsync(map: Map[K, V])(s: Unit => Unit, f: Throwable => Unit = _ => ()): Unit
+  def putAllAsync(map: Map[K, V])(s: Unit => Unit, f: Throwable => Unit): Unit
 
   /**
    * Gets an entry from cache by key.
@@ -77,7 +77,7 @@ trait CacheApi[K, V] {
    * @param s Function to be called if operation is competed successfully.
    * @param f Function to be called if exception occurs.
    */
-  def get(key: K)(s: Map[K, V] => Unit, f: Throwable => Unit = _ => ()): Unit
+  def get(key: K)(s: Map[K, V] => Unit, f: Throwable => Unit): Unit
 
   /**
    * Asynchronously gets an entry from cache by key.
@@ -86,7 +86,7 @@ trait CacheApi[K, V] {
    * @param s Function to be called if operation is competed successfully.
    * @param f Function to be called if exception occurs.
    */
-  def getAsync(key: K)(s: Map[K, V] => Unit, f: Throwable => Unit = _ => ()): Unit
+  def getAsync(key: K)(s: Map[K, V] => Unit, f: Throwable => Unit): Unit
 
   /**
    * Gets a collection of entries from the cache.
@@ -95,7 +95,7 @@ trait CacheApi[K, V] {
    * @param s Function to be called if operation is competed successfully.
    * @param f Function to be called if exception occurs.
    */
-  def getAll(keys: Set[K])(s: Map[K, V] => Unit, f: Throwable => Unit = _ => ()): Unit
+  def getAll(keys: Set[K])(s: Map[K, V] => Unit, f: Throwable => Unit): Unit
 
   /**
    * Asynchronously gets a collection of entries from the cache.
@@ -104,7 +104,7 @@ trait CacheApi[K, V] {
    * @param s Function to be called if operation is competed successfully.
    * @param f Function to be called if exception occurs.
    */
-  def getAllAsync(keys: Set[K])(s: Map[K, V] => Unit, f: Throwable => Unit = _ => ()): Unit
+  def getAllAsync(keys: Set[K])(s: Map[K, V] => Unit, f: Throwable => Unit): Unit
 
   /**
    * Removes the entry for a key only if currently mapped to some.
@@ -113,7 +113,7 @@ trait CacheApi[K, V] {
    * @param s Function to be called if operation is competed successfully.
    * @param f Function to be called if exception occurs.
    */
-  def getAndRemove(key: K)(s: Map[K, V] => Unit, f: Throwable => Unit = _ => ()): Unit
+  def getAndRemove(key: K)(s: Map[K, V] => Unit, f: Throwable => Unit): Unit
 
   /**
    * Asynchronously removes the entry for a key only if currently mapped to some.
@@ -122,7 +122,7 @@ trait CacheApi[K, V] {
    * @param s Function to be called if operation is competed successfully.
    * @param f Function to be called if exception occurs.
    */
-  def getAndRemoveAsync(key: K)(s: Map[K, V] => Unit, f: Throwable => Unit = _ => ()): Unit
+  def getAndRemoveAsync(key: K)(s: Map[K, V] => Unit, f: Throwable => Unit): Unit
 
   /**
    * Puts value with the specified key in this cache, returning an existing value
@@ -133,7 +133,7 @@ trait CacheApi[K, V] {
    * @param s Function to be called if operation is competed successfully.
    * @param f Function to be called if exception occurs.
    */
-  def getAndPut(key: K, value: V)(s: Map[K, V] => Unit, f: Throwable => Unit = _ => ()): Unit
+  def getAndPut(key: K, value: V)(s: Map[K, V] => Unit, f: Throwable => Unit): Unit
 
   /**
    * Asynchronously puts value with the specified key in this cache, returning an existing
@@ -144,7 +144,7 @@ trait CacheApi[K, V] {
    * @param s Function to be called if operation is competed successfully.
    * @param f Function to be called if exception occurs.
    */
-  def getAndPutAsync(key: K, value: V)(s: Map[K, V] => Unit, f: Throwable => Unit = _ => ()): Unit
+  def getAndPutAsync(key: K, value: V)(s: Map[K, V] => Unit, f: Throwable => Unit): Unit
 
   /**
    * Removes the entry for a key.
@@ -153,7 +153,7 @@ trait CacheApi[K, V] {
    * @param s Function to be called if operation is competed successfully.
    * @param f Function to be called if exception occurs.
    */
-  def remove(key: K)(s: Unit => Unit, f: Throwable => Unit = _ => ()): Unit
+  def remove(key: K)(s: Unit => Unit, f: Throwable => Unit): Unit
 
   /**
    * Asynchronously removes the entry for a key.
@@ -162,7 +162,7 @@ trait CacheApi[K, V] {
    * @param s Function to be called if operation is competed successfully.
    * @param f Function to be called if exception occurs.
    */
-  def removeAsync(key: K)(s: Unit => Unit, f: Throwable => Unit = _ => ()): Unit
+  def removeAsync(key: K)(s: Unit => Unit, f: Throwable => Unit): Unit
 
   /**
    * Removes a collection of entries from the cache.
@@ -171,7 +171,7 @@ trait CacheApi[K, V] {
    * @param s Function to be called if operation is competed successfully.
    * @param f Function to be called if exception occurs.
    */
-  def removeAll(keys: Set[K])(s: Unit => Unit, f: Throwable => Unit = _ => ()): Unit
+  def removeAll(keys: Set[K])(s: Unit => Unit, f: Throwable => Unit): Unit
 
   /**
    * Asynchronously removes a collection of entries from the cache.
@@ -180,7 +180,7 @@ trait CacheApi[K, V] {
    * @param s Function to be called if operation is competed successfully.
    * @param f Function to be called if exception occurs.
    */
-  def removeAllAsync(keys: Set[K])(s: Unit => Unit, f: Throwable => Unit = _ => ()): Unit
+  def removeAllAsync(keys: Set[K])(s: Unit => Unit, f: Throwable => Unit): Unit
 
   /**
    * Invokes an CacheEntryProcessor against the entry specified by the provided key.
@@ -194,7 +194,7 @@ trait CacheApi[K, V] {
    */
   def invoke[T](key: K, entryProcessor: CacheEntryProcessor[K, V, T], arguments: Any*)(
     s: Map[K, T] => Unit,
-    f: Throwable => Unit = _ => ()
+    f: Throwable => Unit
   ): Unit
 
   /**
@@ -209,7 +209,7 @@ trait CacheApi[K, V] {
    */
   def invokeAsync[T](key: K, entryProcessor: CacheEntryProcessor[K, V, T], arguments: Any*)(
     s: Map[K, T] => Unit,
-    f: Throwable => Unit = _ => ()
+    f: Throwable => Unit
   ): Unit
 
   /**
@@ -224,7 +224,7 @@ trait CacheApi[K, V] {
    */
   def invokeAll[T](map: Map[K, CacheEntryProcessor[K, V, T]], arguments: Any*)(
     s: Map[K, EntryProcessorResult[T]] => Unit,
-    f: Throwable => Unit = _ => ()
+    f: Throwable => Unit
   ): Unit
 
   /**
@@ -239,7 +239,7 @@ trait CacheApi[K, V] {
    */
   def invokeAllAsync[T](map: Map[K, CacheEntryProcessor[K, V, T]], arguments: Any*)(
     s: Map[K, EntryProcessorResult[T]] => Unit,
-    f: Throwable => Unit = _ => ()
+    f: Throwable => Unit
   ): Unit
 
   /**
@@ -249,7 +249,7 @@ trait CacheApi[K, V] {
    * @param s Function to be called if operation is competed successfully.
    * @param f Function to be called if exception occurs.
    */
-  def lock(key: K)(s: Lock => Unit, f: Throwable => Unit = _ => ()): Unit
+  def lock(key: K)(s: Lock => Unit, f: Throwable => Unit): Unit
 
   /**
    * Releases the lock.
@@ -258,7 +258,7 @@ trait CacheApi[K, V] {
    * @param s Function to be called if operation is competed successfully.
    * @param f Function to be called if exception occurs.
    */
-  def unlock(lock: Lock)(s: Unit => Unit, f: Throwable => Unit = _ => ()): Unit
+  def unlock(lock: Lock)(s: Unit => Unit, f: Throwable => Unit): Unit
 
   /**
    * Executes the Ignite SqlFieldsQuery
@@ -267,7 +267,7 @@ trait CacheApi[K, V] {
    * @param s Function to be called if operation is competed successfully.
    * @param f Function to be called if exception occurs.
    */
-  def sql(query: SqlFieldsQuery)(s: List[List[Any]] => Unit, f: Throwable => Unit = _ => ()): Unit
+  def sql(query: SqlFieldsQuery)(s: List[List[Any]] => Unit, f: Throwable => Unit): Unit
 
   /**
    * Returns cache that will operate with binary objects.

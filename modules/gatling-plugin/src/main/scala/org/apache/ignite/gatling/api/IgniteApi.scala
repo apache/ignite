@@ -63,7 +63,7 @@ trait IgniteApi {
    * @param s Function to be called if operation is competed successfully.
    * @param f Function to be called if exception occurs.
    */
-  def getOrCreateCache[K, V](name: String)(s: CacheApi[K, V] => Unit, f: Throwable => Unit = _ => ()): Unit
+  def getOrCreateCache[K, V](name: String)(s: CacheApi[K, V] => Unit, f: Throwable => Unit): Unit
 
   /**
    * Gets existing cache or creates new one with the given name and the simplified cache configuration
@@ -78,7 +78,7 @@ trait IgniteApi {
    */
   def getOrCreateCacheBySimpleConfig[K, V](name: String, cfg: SimpleCacheConfiguration)(
     s: CacheApi[K, V] => Unit,
-    f: Throwable => Unit = _ => ()
+    f: Throwable => Unit
   ): Unit
 
   /**
@@ -92,7 +92,7 @@ trait IgniteApi {
    */
   def getOrCreateCacheByClientConfiguration[K, V](
     cfg: ClientCacheConfiguration
-  )(s: CacheApi[K, V] => Unit, f: Throwable => Unit = _ => ()): Unit
+  )(s: CacheApi[K, V] => Unit, f: Throwable => Unit): Unit
 
   /**
    * Gets existing cache or creates new one with the provided Ignite (thick) cache configuration.
@@ -103,7 +103,7 @@ trait IgniteApi {
    * @param s Function to be called if operation is competed successfully.
    * @param f Function to be called if exception occurs.
    */
-  def getOrCreateCacheByConfiguration[K, V](cfg: CacheConfiguration[K, V])(s: CacheApi[K, V] => Unit, f: Throwable => Unit = _ => ()): Unit
+  def getOrCreateCacheByConfiguration[K, V](cfg: CacheConfiguration[K, V])(s: CacheApi[K, V] => Unit, f: Throwable => Unit): Unit
 
   /**
    * Closes the Ignite API.
@@ -111,7 +111,7 @@ trait IgniteApi {
    * @param s Function to be called if operation is competed successfully.
    * @param f Function to be called if exception occurs.
    */
-  def close()(s: Unit => Unit, f: Throwable => Unit = _ => ()): Unit
+  def close()(s: Unit => Unit, f: Throwable => Unit): Unit
 
   /**
    * Starts the transaction with the default parameters.
