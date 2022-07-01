@@ -31,8 +31,16 @@
     </parent>
 
     <artifactId>ignite-web</artifactId>
+    <packaging>bundle</packaging>
 
     <url>http://ignite.apache.org</url>
+
+    <properties>
+        <osgi.import.package>
+            javax.servlet*;version=3.1,
+            *
+        </osgi.import.package>
+    </properties>
 
     <dependencies>
         <dependency>
@@ -94,12 +102,6 @@
 
     <build>
         <plugins>
-            <!-- Generate the OSGi MANIFEST.MF for this bundle. -->
-            <plugin>
-                <groupId>org.apache.felix</groupId>
-                <artifactId>maven-bundle-plugin</artifactId>
-            </plugin>
-
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-deploy-plugin</artifactId>

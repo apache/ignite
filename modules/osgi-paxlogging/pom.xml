@@ -31,8 +31,7 @@
     </parent>
 
     <artifactId>ignite-osgi-paxlogging</artifactId>
-
-    <packaging>jar</packaging>
+    <packaging>bundle</packaging>
 
     <dependencies>
         <dependency>

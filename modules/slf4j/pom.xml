@@ -31,6 +31,7 @@
     </parent>
 
     <artifactId>ignite-slf4j</artifactId>
+    <packaging>bundle</packaging>
 
     <url>http://ignite.apache.org</url>
 

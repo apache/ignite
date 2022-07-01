@@ -31,6 +31,24 @@
     </parent>
 
     <artifactId>ignite-indexing</artifactId>
+    <packaging>bundle</packaging>
+
+    <properties>
+        <osgi.export.package>
+            org.apache.ignite.indexing*,
+            org.apache.ignite.spi.systemview.view
+        </osgi.export.package>
+        <osgi.private.package>
+            org.apache.ignite.internal.managers.systemview.walker,
+            org.apache.ignite.internal.mxbean.*,
+            org.apache.ignite.internal.processors.cache.query,
+            org.apache.ignite.internal.processors.metric.sql,
+            org.apache.ignite.internal.processors.query.h2*,
+            org.apache.ignite.internal.processors.query.stat*,
+            org.apache.ignite.internal.visor.cache.index,
+            org.apache.ignite.internal.visor.verify
+        </osgi.private.package>
+    </properties>
 
     <url>http://ignite.apache.org</url>
 
