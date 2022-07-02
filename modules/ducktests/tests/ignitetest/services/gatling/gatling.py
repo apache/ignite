@@ -21,7 +21,7 @@ from typing import NamedTuple
 from ignitetest.services.ignite_app import IgniteApplicationService
 
 
-SERVICE_JAVA_CLASS_NAME = "org.apache.ignite.internal.ducktest.utils.gatling.GatlingRunnerApplication"
+SERVICE_JAVA_CLASS_NAME = "org.apache.ignite.internal.ducktest.gatling.GatlingRunnerApplication"
 
 DEFAULT_GATLING_CONF = "gatling.conf.j2"
 DEFAULT_GATLING_LOG_CONF = "logback.xml.j2"

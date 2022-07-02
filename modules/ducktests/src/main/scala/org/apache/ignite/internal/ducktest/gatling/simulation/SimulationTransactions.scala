@@ -19,11 +19,9 @@ package org.apache.ignite.internal.ducktest.gatling.simulation
 import scala.concurrent.duration.DurationInt
 
 import io.gatling.core.Predef._
-import io.gatling.core.structure.ChainBuilder
 import io.gatling.core.structure.ScenarioBuilder
 import org.apache.ignite.gatling.Predef._
 import org.apache.ignite.internal.ducktest.gatling.utils.DucktapeIgniteSupport
-import org.apache.ignite.internal.ducktest.gatling.utils.IntPairsFeeder
 import org.apache.ignite.internal.ducktest.gatling.utils.IntPairsFeeder
 
 /**
@@ -33,54 +31,45 @@ class SimulationTransactions extends Simulation with DucktapeIgniteSupport {
 
   private val feeder: IntPairsFeeder = new IntPairsFeeder()
 
-  private val commitTx: ChainBuilder = exec(
-    tx(PESSIMISTIC, REPEATABLE_READ) /* timeout 100L */ (
-      put("TEST-CACHE", "#{key}", "#{value}") as "put-commit",
+  private val commitTx = ignite(
+    tx(PESSIMISTIC, REPEATABLE_READ)(
+      put[Int, Int]("TEST-CACHE", "#{key}", "#{value}") as "put-commit",
       commit
-    )
-  ).exec(
+    ),
     get[Int, Int]("TEST-CACHE", "#{key}")
       .check(
         entries[Int, Int].findAll.saveAs("C"),
+        entries[Int, Int].count.is(1),
+        entries[Int, Int].find.exists,
         entries[Int, Int].transform(_.value).is("#{value}")
-      )
+      ) as "get-after-commit"
   )
 
-  private val rollbackTx: ChainBuilder = exec(
+  private val rollbackTx = ignite(
     tx(
-      put("TEST-CACHE", "#{key}", "#{value}"),
+      put[Int, Int]("TEST-CACHE", "#{key}", "#{value}") as "put-rollback",
       rollback
-    )
-  ).exec(
+    ),
     get[Int, Int]("TEST-CACHE", "#{key}")
       .check(
         entries[Int, Int].findAll.saveAs("R"),
         entries[Int, Int].count.is(0)
-      )
+      ) as "get-after-rollback"
   )
 
   private val scn: ScenarioBuilder = scenario("Get")
     .feed(feeder)
-    .exec(
-      start
-    )
-//    .exec(
-//      ignite("Create cache").create("TEST-CACHE").backups(0).atomicity(TRANSACTIONAL)
-//    )
-    .exec(rollbackTx)
-    .exec(commitTx)
-    .exec(
-      close
+    .ignite(
+      rollbackTx,
+      commitTx
     )
 
   setUp(
     scn.inject(
-      atOnceUsers(1)
-//    rampUsersPerSec(0).to(100).during(10.seconds),
-//    constantUsersPerSec(100) during 30,
+      rampUsersPerSec(0).to(200).during(15.seconds),
+      constantUsersPerSec(100) during 15.seconds
     )
-  )
-    .protocols(protocol)
+  ).protocols(protocol)
     .maxDuration(60.seconds)
     .assertions(global.failedRequests.count.is(0))
 }

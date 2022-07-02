@@ -29,6 +29,10 @@ import org.apache.ignite.internal.ducktest.utils.IgniteAwareApplication;
  * Application executing the Gatling simulation.
  */
 public class GatlingRunnerApplication extends IgniteAwareApplication {
+    /** Name of system property to pass node index to simulation (to feeder in particular). */
+    public static final String NODE_IDX_PROPERTY_NAME = "nodeIdx";
+    /** Name of system property to pass total node count to simulation (to feeder in particular). */
+    public static final String NODE_COUNT_PROPERTY_NAME = "nodeCount";
     /** Ignite protocol to be used by the gatling simulation. */
     public static IgniteProtocol igniteProtocol;
 
@@ -53,8 +57,13 @@ public class GatlingRunnerApplication extends IgniteAwareApplication {
                 .map(JsonNode::asText)
                 .ifPresent(gatlingPropertiesBuilder::reportsOnly);
 
-        Gatling.fromMap(gatlingPropertiesBuilder.build());
+        int result = Gatling.fromMap(gatlingPropertiesBuilder.build());
 
-        markFinished();
+        if (result == 0) {
+            markFinished();
+        }
+        else {
+            markBroken(new RuntimeException("Gatling simulation assertion(s) failed."));
+        }
     }
 }

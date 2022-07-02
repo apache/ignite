@@ -20,12 +20,19 @@ import java.util.concurrent.atomic.AtomicInteger
 
 import io.gatling.core.feeder.Feeder
 import io.gatling.core.feeder.Record
+import org.apache.ignite.internal.ducktest.gatling.GatlingRunnerApplication
 
 /**
  * Helper feeder class generating long key and long value pairs.
+ *
+ * Feeder starting point may be configured via the system property to generate
+ * different values on different nodes in distributed mode.
  */
 class IntPairsFeeder extends Feeder[Int] {
-  private val atomicInteger: AtomicInteger = new AtomicInteger(0)
+  private val nodeIdx = System.getProperty(GatlingRunnerApplication.NODE_IDX_PROPERTY_NAME, "0")
+  private val atomicInteger: AtomicInteger = new AtomicInteger(
+    Integer.valueOf(nodeIdx) * 100000
+  )
 
   /**
    * @inheritdoc

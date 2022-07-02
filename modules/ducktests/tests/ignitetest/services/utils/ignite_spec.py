@@ -181,7 +181,7 @@ class IgniteSpec(metaclass=ABCMeta):
         return get_module_path(self.__home(), name, self.service.config.version.is_dev)
 
     @abstractmethod
-    def command(self, node):
+    def command(self, idx, total_nodes_count, node):
         """
         :return: string that represents command to run service on a node
         """
@@ -270,7 +270,7 @@ class IgniteNodeSpec(IgniteSpec):
     Spec to run ignite node
     """
 
-    def command(self, node):
+    def command(self, idx, total_nodes_count, node):
         cmd = "%s %s %s %s 2>&1 | tee -a %s &" % \
               (envs_to_exports(self.envs()),
                self.service.script("ignite.sh"),
@@ -300,7 +300,7 @@ class IgniteApplicationSpec(IgniteSpec):
             "-DIGNITE_ALLOW_ATOMIC_OPS_IN_TX=false"
         ]
 
-    def command(self, node):
+    def command(self, idx, total_nodes_count, node):
         args = [
             str(self.service.config.service_type.name),
             self.service.java_class_name,
@@ -311,7 +311,7 @@ class IgniteApplicationSpec(IgniteSpec):
         cmd = "%s %s %s %s 2>&1 | tee -a %s &" % \
               (envs_to_exports(self.envs()),
                self.service.script("ignite.sh"),
-               self._jvm_opts(),
+               f"{self._jvm_opts()} -J-DnodeIdx={idx} -J-DnodeCount={total_nodes_count}",
                ",".join(args),
                os.path.join(self.service.log_dir, "console.log"))
 

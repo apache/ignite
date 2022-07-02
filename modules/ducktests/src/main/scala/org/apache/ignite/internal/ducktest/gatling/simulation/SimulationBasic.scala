@@ -25,7 +25,6 @@ import org.apache.ignite.internal.ducktest.gatling.utils.DucktapeIgniteSupport
 import org.apache.ignite.internal.ducktest.gatling.utils.IntPairsFeeder
 
 /**
- *
  */
 class SimulationBasic extends Simulation with DucktapeIgniteSupport {
 //    private val protocol = ducktapeIgnite

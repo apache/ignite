@@ -16,6 +16,8 @@
  */
 package org.apache.ignite.gatling
 
+import scala.io.Source
+
 import com.typesafe.scalalogging.StrictLogging
 import io.gatling.commons.validation.SuccessWrapper
 import io.gatling.core.Predef._
@@ -35,11 +37,19 @@ class SqlTest extends AbstractGatlingTest {
 
   /** Runs simulation with thin client. */
   @Test
-  def thinClient(): Unit = runWith(ThinClient)(simulation)
+  def sqlThinClient(): Unit = runWith(ThinClient)("org.apache.ignite.gatling.SqlSimulation")
 
   /** Runs simulation with thick client. */
   @Test
-  def thickClient(): Unit = runWith(NodeApi)(simulation)
+  def sqlThickClient(): Unit = runWith(NodeApi)("org.apache.ignite.gatling.SqlSimulation")
+
+  /** Runs DDL script simulation with thick client. */
+  @Test
+  def ddlScriptThickClient(): Unit = runWith(NodeApi)("org.apache.ignite.gatling.SqlDdlSimulation")
+
+  /** Runs DDL script simulation with thin client. */
+  @Test
+  def ddlScriptThinClient(): Unit = runWith(ThinClient)("org.apache.ignite.gatling.SqlDdlSimulation")
 }
 
 /**
@@ -90,4 +100,18 @@ class SqlSimulation extends Simulation with IgniteSupport with StrictLogging {
     .exec(close as "Close client")
 
   setUp(scn.inject(atOnceUsers(1))).protocols(protocol).assertions(global.failedRequests.count.is(2))
+}
+
+/**
+ * Execute DDL script simulation.
+ */
+class SqlDdlSimulation extends Simulation with IgniteSupport with StrictLogging {
+  private val scn = scenario("Sql")
+    .ignite(
+      create("some-cache"),
+      foreach(Source.fromResource("ddl.sql").getLines.toList, "query")(
+        sql("some-cache", "#{query}")
+      )
+    )
+  setUp(scn.inject(atOnceUsers(1))).protocols(protocol).assertions(global.failedRequests.count.is(0))
 }
