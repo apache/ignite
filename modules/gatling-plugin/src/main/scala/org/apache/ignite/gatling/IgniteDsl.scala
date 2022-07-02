@@ -20,14 +20,18 @@ import io.gatling.core.Predef.{group => gatlingGroup}
 import io.gatling.core.Predef.exec
 import io.gatling.core.action.builder.ActionBuilder
 import io.gatling.core.session.Expression
+import io.gatling.core.session.Session
 import io.gatling.core.structure.ChainBuilder
 import io.gatling.core.structure.ScenarioBuilder
+import org.apache.ignite.binary.BinaryObjectBuilder
+import org.apache.ignite.gatling.api.IgniteApi
 import org.apache.ignite.gatling.builder.cache.Cache
 import org.apache.ignite.gatling.builder.ignite.Ignite
 import org.apache.ignite.gatling.builder.transaction.Transactions
 import org.apache.ignite.gatling.check.IgniteKeyValueEntriesCheckSupport
 import org.apache.ignite.gatling.check.IgniteKeyValueMapResultCheckSupport
 import org.apache.ignite.gatling.check.IgniteSqlCheckSupport
+import org.apache.ignite.gatling.protocol.IgniteProtocol.IgniteApiSessionKey
 import org.apache.ignite.gatling.protocol.IgniteProtocolSupport
 
 /**
@@ -111,4 +115,28 @@ trait IgniteDsl
    */
   def group(name: Expression[String])(newActionBuilders: ChainBuilder*): ChainBuilder =
     gatlingGroup(name)(exec(newActionBuilders))
+
+  /**
+   * Extension methods for session executing the Ignite simulation.
+   * @param session Session instance.
+   */
+  implicit class SessionEx(session: Session) {
+    /**
+     * Extracts IgniteApi instance from session.
+     *
+     * It may be needed to access Ignite functionality not exposed via the DSL. Say request
+     * the affinity information for cache.
+     *
+     * @return IgniteApi instance.
+     */
+    def igniteApi: IgniteApi = session(IgniteApiSessionKey).as[IgniteApi]
+
+    /**
+     * Requests instance of the binary object builder from the underlining IgniteApi stored in session.
+     *
+     * @param typeName Type name.
+     * @return Binary object builder instance.
+     */
+    def binaryBuilder()(typeName: String): BinaryObjectBuilder = igniteApi.binaryObjectBuilder(typeName)
+  }
 }

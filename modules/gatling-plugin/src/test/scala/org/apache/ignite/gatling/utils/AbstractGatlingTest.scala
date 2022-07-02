@@ -54,6 +54,15 @@ abstract class AbstractGatlingTest extends AbstractThinClientTest {
       System.clearProperty("port")
       startClientGrid(1)
     }
+    run(simulation)
+  }
+
+  /**
+   * Runs simulation.
+   *
+   * @param simulation Class name of simulation.
+   */
+  protected def run(simulation: String): Unit = {
     val gatlingPropertiesBuilder = new GatlingPropertiesBuilder
     gatlingPropertiesBuilder.simulationClass(simulation)
     gatlingPropertiesBuilder.noReports()

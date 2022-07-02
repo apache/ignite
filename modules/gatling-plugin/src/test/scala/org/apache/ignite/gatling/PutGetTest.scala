@@ -19,7 +19,6 @@ package org.apache.ignite.gatling
 import com.typesafe.scalalogging.StrictLogging
 import io.gatling.commons.validation.SuccessWrapper
 import io.gatling.core.Predef._
-import io.gatling.core.session.ExpressionSuccessWrapper
 import org.apache.ignite.gatling.Predef._
 import org.apache.ignite.gatling.Predef.group
 import org.apache.ignite.gatling.utils.AbstractGatlingTest
@@ -58,7 +57,7 @@ class PutGetSimulation extends Simulation with IgniteSupport with StrictLogging 
     )
 
   private def fragment(cache: String) = ignite(
-    put[Int, Int](cache, s => (100, 101).success) as "put100",
+    put[Int, Int](cache, _ => (100, 101).success) as "put100",
     get[Int, Int](cache, key = 100) check entries[Int, Int].count.is(1) as "get100",
     put[Int, Int](cache, "#{key}", "#{value}") as "put",
     get[Int, Any](cache, key = -2)
