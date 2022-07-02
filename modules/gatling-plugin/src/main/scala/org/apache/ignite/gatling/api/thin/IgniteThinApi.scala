@@ -55,17 +55,6 @@ case class IgniteThinApi(wrapped: IgniteClient) extends IgniteApi with Completio
    * @inheritdoc
    * @tparam K @inheritdoc
    * @tparam V @inheritdoc
-   * @param name @inheritdoc
-   * @param s @inheritdoc
-   * @param f @inheritdoc
-   */
-  override def getOrCreateCache[K, V](name: String)(s: CacheApi[K, V] => Unit, f: Throwable => Unit): Unit =
-    withCompletion(wrapped.getOrCreateCacheAsync[K, V](name).asScala.map(CacheThinApi[K, V]))(s, f)
-
-  /**
-   * @inheritdoc
-   * @tparam K @inheritdoc
-   * @tparam V @inheritdoc
    * @param cfg @inheritdoc
    * @param s @inheritdoc
    * @param f @inheritdoc

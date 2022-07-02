@@ -25,27 +25,25 @@ import scala.concurrent.duration.DurationInt
 
 import com.typesafe.scalalogging.StrictLogging
 import io.gatling.core.Predef._
-import io.gatling.core.session.ExpressionSuccessWrapper
 import org.apache.ignite.gatling.Predef._
 import org.apache.ignite.gatling.utils.AbstractGatlingTest
 import org.apache.ignite.gatling.utils.IgniteClientApi.NodeApi
 import org.apache.ignite.gatling.utils.IgniteSupport
-import org.junit.Ignore
 import org.junit.Test
 
 /**
- * Tests that locks work as expected and invoke accepts lambda.
+ * Tests that locks work as expected.
  */
-class LockedInvokeTest extends AbstractGatlingTest {
+class LockTest extends AbstractGatlingTest {
   /** Tests simulation with thick client. */
   @Test
-  def thickClient(): Unit = runWith(NodeApi)(simulation = "org.apache.ignite.gatling.LockedInvokeSimulation")
+  def thickClient(): Unit = runWith(NodeApi)(simulation = "org.apache.ignite.gatling.LockSimulation")
 }
 
 /**
  * Tests that locks work as expected and invoke accepts lambda.
  */
-class LockedInvokeSimulation extends Simulation with IgniteSupport with StrictLogging {
+class LockSimulation extends Simulation with IgniteSupport with StrictLogging {
   private val cache = "TEST-CACHE"
   private val key = "1"
   private val value = new AtomicInteger(0)

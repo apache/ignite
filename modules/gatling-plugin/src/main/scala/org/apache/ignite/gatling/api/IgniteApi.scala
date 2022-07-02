@@ -55,17 +55,6 @@ trait IgniteApi {
   def cache[K, V](name: String): Validation[CacheApi[K, V]]
 
   /**
-   * Gets existing cache with the given name or creates new one.
-   *
-   * @tparam K Type of the cache key.
-   * @tparam V Type of the cache value.
-   * @param name Cache name.
-   * @param s Function to be called if operation is competed successfully.
-   * @param f Function to be called if exception occurs.
-   */
-  def getOrCreateCache[K, V](name: String)(s: CacheApi[K, V] => Unit, f: Throwable => Unit): Unit
-
-  /**
    * Gets existing cache or creates new one with the given name and the simplified cache configuration
    * which may be defined via the Ignite Gatling DSL.
    *

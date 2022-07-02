@@ -60,10 +60,14 @@ class SingleProcessorSimulation extends Simulation with IgniteSupport with Stric
     invokeAll[Int, Int, Unit](cache, Set(1, 3, 5).expressionSuccess) { e: MutableEntry[Int, Int] =>
       e.setValue(-e.getValue)
     },
+    invokeAll[Int, Int, Unit](cache, Set(1, 3, 5).expressionSuccess).args(3.expressionSuccess) {
+      (e: MutableEntry[Int, Int], args: Seq[Any]) =>
+        e.setValue(e.getValue * args.head.asInstanceOf[Integer])
+    },
     getAll[Int, Int](cache, Set(1, 3, 5))
       check
         entries[Int, Int].findAll
-          .validate((entries: Seq[Entry[Int, Int]], _: Session) => entries.forall(e => e.value == -(e.key + 1))) as "getAll"
+          .validate((entries: Seq[Entry[Int, Int]], _: Session) => entries.forall(e => e.value == -3 * (e.key + 1))) as "getAll"
   )
 
   setUp(scn.inject(atOnceUsers(1))).protocols(protocol).assertions(global.failedRequests.count.is(0))

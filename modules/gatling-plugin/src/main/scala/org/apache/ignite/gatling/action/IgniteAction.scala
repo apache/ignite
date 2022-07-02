@@ -118,7 +118,7 @@ abstract class IgniteAction(val actionType: String, val requestName: Expression[
             Some("CRASH"),
             Some(ex)
           )
-          next ! session
+          next ! session.markAsFailed
         }
       )
   }

@@ -54,19 +54,6 @@ case class IgniteNodeApi(wrapped: Ignite) extends IgniteApi {
    * @inheritdoc
    * @tparam K @inheritdoc
    * @tparam V @inheritdoc
-   * @param name @inheritdoc
-   * @param s @inheritdoc
-   * @param f @inheritdoc
-   */
-  override def getOrCreateCache[K, V](name: String)(s: CacheApi[K, V] => Unit, f: Throwable => Unit): Unit =
-    Try(wrapped.getOrCreateCache[K, V](name))
-      .map(CacheNodeApi[K, V])
-      .fold(f, s)
-
-  /**
-   * @inheritdoc
-   * @tparam K @inheritdoc
-   * @tparam V @inheritdoc
    * @param cfg @inheritdoc
    * @param s @inheritdoc
    * @param f @inheritdoc

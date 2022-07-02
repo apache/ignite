@@ -75,7 +75,15 @@ class CreateCacheAction[K, V](
     config: Configuration
   ): (CacheApi[K, V] => Unit, Throwable => Unit) => Unit = config match {
     case cfg: SimpleCacheConfiguration => igniteApi.getOrCreateCacheBySimpleConfig(cacheName, cfg)
-    case ThinConfiguration(cfg)        => igniteApi.getOrCreateCacheByClientConfiguration(cfg)
-    case ThickConfiguration(cfg)       => igniteApi.getOrCreateCacheByConfiguration(cfg.asInstanceOf[CacheConfiguration[K, V]])
+    case ThinConfiguration(cfg) =>
+      if (cfg.getName == null) {
+        cfg.setName(cacheName)
+      }
+      igniteApi.getOrCreateCacheByClientConfiguration(cfg)
+    case ThickConfiguration(cfg) =>
+      if (cfg.getName == null) {
+        cfg.setName(cacheName)
+      }
+      igniteApi.getOrCreateCacheByConfiguration(cfg.asInstanceOf[CacheConfiguration[K, V]])
   }
 }
