@@ -95,7 +95,15 @@ LATEST_2_10 = V_2_10_0
 V_2_11_0 = IgniteVersion("2.11.0")
 LATEST_2_11 = V_2_11_0
 
+# 2.12.x versions
+V_2_12_1 = IgniteVersion("2.12.1")
+LATEST_2_12 = V_2_12_1
+
+# 2.13.x versions
+V_2_13_0 = IgniteVersion("2.13.0")
+LATEST_2_13 = V_2_13_0
+
 # if you updated the LATEST version
 # please check DEV version in 'tests/ignitetest/__init__.py'
-LATEST = LATEST_2_11
+LATEST = LATEST_2_13
 OLDEST = V_2_7_6

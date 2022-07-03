@@ -32,6 +32,9 @@
 
     <properties>
         <prometheus.version>0.3.0</prometheus.version>
+        <gatling.version>3.7.6</gatling.version>
+        <scala.compat.version>2.13</scala.compat.version>
+        <netty.version>2.0.51.Final</netty.version>
     </properties>
 
     <artifactId>ignite-ducktests</artifactId>
@@ -56,6 +59,29 @@
         <dependency>
             <groupId>${project.groupId}</groupId>
             <artifactId>ignite-log4j2</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>ignite-gatling-plugin</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>io.gatling</groupId>
+            <artifactId>gatling-app</artifactId>
+            <version>${gatling.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>io.netty</groupId>
+            <artifactId>netty-tcnative-classes</artifactId>
+            <version>${netty.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>io.netty</groupId>
+            <artifactId>netty-tcnative-boringssl-static</artifactId>
+            <version>${netty.version}</version>
         </dependency>
 
         <dependency>
@@ -153,14 +179,14 @@
                 <executions>
                     <execution>
                         <id>copy-libs</id>
-                        <phase>test-compile</phase>
+                        <phase>package</phase>
                         <goals>
                             <goal>copy-dependencies</goal>
                         </goals>
                         <configuration>
                             <excludeGroupIds>${project.groupId}</excludeGroupIds>
                             <outputDirectory>target/libs</outputDirectory>
-                            <includeScope>compile</includeScope>
+                            <includeScope>runtime</includeScope>
                             <excludeTransitive>false</excludeTransitive>
                         </configuration>
                     </execution>
@@ -185,6 +211,93 @@
                     </execution>
                 </executions>
             </plugin>
+
+            <plugin>
+                <groupId>net.alchim31.maven</groupId>
+                <artifactId>scala-maven-plugin</artifactId>
+                <version>3.3.2</version>
+                <configuration>
+                    <scalaCompatVersion>${scala.compat.version}</scalaCompatVersion>
+                    <args>
+                        <arg>-deprecation</arg>
+                        <arg>-feature</arg>
+                        <arg>-language:implicitConversions</arg>
+                    </args>
+                </configuration>
+            </plugin>
+
+            <plugin>
+                <groupId>com.diffplug.spotless</groupId>
+                <artifactId>spotless-maven-plugin</artifactId>
+                <version>2.22.8</version>
+                <dependencies>
+                    <dependency>
+                        <groupId>org.scalameta</groupId>
+                        <artifactId>scalafmt-core_2.13</artifactId>
+                        <version>3.5.8</version>
+                    </dependency>
+                </dependencies>
+                <configuration>
+                    <scala>
+                        <scalafmt>
+                            <version>3.5.8</version>
+                            <file>${project.basedir}/.scalafmt.conf</file>
+                        </scalafmt>
+                        <licenseHeader>
+                            <file>${project.basedir}/project/license-header</file>
+                            <delimiter>package</delimiter>
+                        </licenseHeader>
+                    </scala>
+                </configuration>
+            </plugin>
         </plugins>
     </build>
+    <profiles>
+        <profile>
+            <id>checkstyle</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.scalastyle</groupId>
+                        <artifactId>scalastyle-maven-plugin</artifactId>
+                        <version>1.0.0</version>
+                        <configuration>
+                            <verbose>false</verbose>
+                            <failOnViolation>true</failOnViolation>
+                            <includeTestSourceDirectory>true</includeTestSourceDirectory>
+                            <failOnWarning>true</failOnWarning>
+                            <sourceDirectory>${project.basedir}/src/main/scala</sourceDirectory>
+                            <testSourceDirectory>${project.basedir}/src/test/scala</testSourceDirectory>
+                            <configLocation>${project.basedir}/project/scalastyle_config.xml</configLocation>
+                            <outputFile>${project.basedir}/target/checkstyle-result.xml</outputFile>
+                            <outputEncoding>UTF-8</outputEncoding>
+                        </configuration>
+                        <executions>
+                            <execution>
+                                <id>style</id>
+                                <goals>
+                                    <goal>check</goal>
+                                </goals>
+                                <phase>validate</phase>
+                            </execution>
+                        </executions>
+                        <dependencies>
+                            <dependency>
+                                <groupId>com.beautiful-scala</groupId>
+                                <artifactId>scalastyle_2.13</artifactId>
+                                <version>1.5.1</version>
+                            </dependency>
+                        </dependencies>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-checkstyle-plugin</artifactId>
+                        <configuration>
+                            <skip>true</skip>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
 </project>

@@ -103,7 +103,7 @@ def start_ignite(test_context, ignite_version: str, rebalance_params: RebalanceP
         data_storage = DataStorageConfiguration(
             max_wal_archive_size=2 * rebalance_params.data_region_max_size,
             default=DataRegionConfiguration(
-                persistent=True,
+                persistence_enabled=True,
                 max_size=rebalance_params.data_region_max_size
             )
         )
