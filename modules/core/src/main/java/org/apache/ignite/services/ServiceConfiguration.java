@@ -19,6 +19,7 @@ package org.apache.ignite.services;
 
 import java.io.Externalizable;
 import java.io.Serializable;
+import java.util.Arrays;
 import org.apache.ignite.IgniteServices;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.processors.service.IgniteServiceProcessor;
@@ -369,7 +370,7 @@ public class ServiceConfiguration implements Serializable {
         if (svc != null ? !svc.getClass().equals(that.svc.getClass()) : that.svc != null)
             return false;
 
-        return true;
+        return Arrays.deepEquals(intcps, that.intcps);
     }
 
     /** {@inheritDoc} */
