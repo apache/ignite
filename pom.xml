@@ -78,6 +78,7 @@
         <module>modules/control-utility</module>
         <module>modules/calcite</module>
         <module>modules/gatling-plugin</module>
+        <module>modules/ducktests</module>
     </modules>
 
     <profiles>
