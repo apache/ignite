@@ -37,13 +37,13 @@ public class CompositeServiceCallInterceptor implements ServiceCallInterceptor {
     }
 
     /** {@inheritDoc} */
-    @Override public Object invoke(String mtd, Object[] args, ServiceContext ctx, Callable<Object> svcCall) throws Exception {
+    @Override public Object invoke(String mtd, Object[] args, ServiceContext ctx, Callable<Object> next) throws Exception {
         return new Callable<Object>() {
             int idx;
 
             @Override public Object call() throws Exception {
                 // Recursively call interceptors.
-                return intcps[idx].invoke(mtd, args, ctx, ++idx == intcps.length ? svcCall : this);
+                return intcps[idx].invoke(mtd, args, ctx, ++idx == intcps.length ? next : this);
             }
         }.call();
     }

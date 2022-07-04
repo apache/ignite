@@ -23,9 +23,68 @@ import org.apache.ignite.lang.IgniteExperimental;
 
 /**
  * Service call interceptor.
+ * <p>
+ * Allows the user to intercept the call to any service method except lifecycle methods
+ * ({@link Service#init init()}, {@link Service#execute() execute()} and {@link Service#cancel() cancel()}).
+ * <p>
+ * A typical use of an interceptor is a middleware logic that applies to all custom methods in a service.
+ * <p>
+ * Usage example:
+ * <pre name="code" class="java">
+ * ServiceCallInterceptor security = (mtd, args, ctx, svcCall) -> {
+ *     if (!CustomSecurityProvider.get().access(mtd, ctx.currentCallContext().attribute("sessionId")))
+ *         throw new SecurityException("Method invocation is not permitted");
  *
- * @see ServiceContext
+ *     // Execute remaining interceptors and service method.
+ *     return svcCall.call();
+ * };
+ *
+ * ServiceCallInterceptor audit = (mtd, args, ctx, svcCall) -> {
+ *     String sessionId = ctx.currentCallContext().attribute("sessionId");
+ *     AuditProvider prov = AuditProvider.get();
+ *
+ *     // Record an event before execution of the method.
+ *     prov.recordStartEvent(ctx.name(), mtd, sessionId);
+ *
+ *     try {
+ *         // Execute service method.
+ *         svcCall.call();
+ *     }
+ *     catch (Exception e) {
+ *         // Record error.
+ *         prov.recordError(ctx.name(), mtd, sessionId), e.getMessage());
+ *
+ *         // Re-throw exception to initiator.
+ *         throw e;
+ *     }
+ *     finally {
+ *         // Record finish event after execution of the service method.
+ *         prov.recordFinishEvent(ctx.name(), mtd, sessionId);
+ *     }
+ * }
+ *
+ * ServiceConfiguration svcCfg = new ServiceConfiguration()
+ *     .setName("service")
+ *     .setService(new MyServiceImpl())
+ *     .setMaxPerNodeCount(1)
+ *     .setInterceptors(security, audit);
+ *
+ * // Deploy service.
+ * ignite.services().deploy(svcCfg);
+ *
+ * // Set context parameters for the service proxy.
+ * ServiceCallContext callCtx = ServiceCallContext.builder().put("sessionId", sessionId).build();
+ *
+ * // Make service proxy with caller context.
+ * MyService proxy = ignite.services().serviceProxy("service", MyService.class, false, callCtx, 0);
+ *
+ * // The call to the business method to be intercepted.
+ * proxy.placeOrder(order1);
+ * proxy.placeOrder(order2);
+ * </pre>
+ *
  * @see ServiceCallContext
+ * @see ServiceContext
  */
 @IgniteExperimental
 public interface ServiceCallInterceptor extends Serializable {
@@ -33,8 +92,8 @@ public interface ServiceCallInterceptor extends Serializable {
      * @param mtd Method name.
      * @param args Method arguments.
      * @param ctx Service context.
-     * @param call Service call.
+     * @param next Delegated call to a service method and/or interceptor.
      * @return Service call result.
      */
-    public Object invoke(String mtd, Object[] args, ServiceContext ctx, Callable<Object> call) throws Exception;
+    public Object invoke(String mtd, Object[] args, ServiceContext ctx, Callable<Object> next) throws Exception;
 }

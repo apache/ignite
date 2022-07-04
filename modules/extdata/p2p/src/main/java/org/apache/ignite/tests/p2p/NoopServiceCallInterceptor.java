@@ -26,7 +26,7 @@ import org.apache.ignite.services.ServiceContext;
  */
 public class NoopServiceCallInterceptor implements ServiceCallInterceptor {
     /** {@inheritDoc} */
-    @Override public Object invoke(String mtd, Object[] args, ServiceContext ctx, Callable<Object> call) throws Exception {
-        return call.call();
+    @Override public Object invoke(String mtd, Object[] args, ServiceContext ctx, Callable<Object> next) throws Exception {
+        return next.call();
     }
 }

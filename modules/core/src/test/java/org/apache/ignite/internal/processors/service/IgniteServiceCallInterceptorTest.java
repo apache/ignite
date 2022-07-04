@@ -131,19 +131,19 @@ public class IgniteServiceCallInterceptorTest extends GridCommonAbstractTest {
         Exception expE = new NoPermissionException("Request is forbidden.");
         String ctxVal = "42";
 
-        ServiceCallInterceptor security = (mtd, args, ctx, call) -> {
+        ServiceCallInterceptor security = (mtd, args, ctx, next) -> {
             ServiceCallContext callCtx = ctx.currentCallContext();
 
             if (callCtx == null || !ctxVal.equals(callCtx.attribute(STR_ATTR_NAME)))
                 throw expE;
 
-            return call.call();
+            return next.call();
         };
 
-        ServiceCallInterceptor second = (mtd, args, ctx, call) -> {
+        ServiceCallInterceptor second = (mtd, args, ctx, next) -> {
             callCntr.incrementAndGet();
 
-            return call.call();
+            return next.call();
         };
 
         services().deployAll(Collections.singletonList(
@@ -306,7 +306,7 @@ public class IgniteServiceCallInterceptorTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public Object invoke(String mtd, Object[] args, ServiceContext ctx, Callable<Object> svcCall) throws Exception {
+        @Override public Object invoke(String mtd, Object[] args, ServiceContext ctx, Callable<Object> next) throws Exception {
             assert ignite != null;
             assert log != null;
 
@@ -319,7 +319,7 @@ public class IgniteServiceCallInterceptorTest extends GridCommonAbstractTest {
 
             assert callCtx != null;
 
-            Object res = svcCall.call();
+            Object res = next.call();
 
             callCtx = ctx.currentCallContext();
 
