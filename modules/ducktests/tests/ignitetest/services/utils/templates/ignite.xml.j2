@@ -24,6 +24,8 @@
 {% import 'misc_macro.j2' as misc_utils %}
 {% import 'ssl_params_macro.j2' as ssl_params_util %}
 {% import 'connector_configuration.j2' as connector_configuration_util %}
+{% import 'client_connector_configuration.j2' as client_connector_configuration_util %}
+{% import 'transaction_macro.j2' as transaction_util %}
 
 <beans xmlns="http://www.springframework.org/schema/beans"
        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
@@ -66,6 +68,10 @@
             <property name="metricsUpdateFrequency" value="{{ config.metrics_update_frequency }}"/>
         {% endif %}
 
+        {% if config.auto_activation_enabled %}
+            <property name="autoActivationEnabled" value="{{ config.auto_activation_enabled }}"/>
+        {% endif %}
+
         {% if config.metric_exporters | length > 0 %}
             <property name="metricExporterSpi">
                 <list>
@@ -99,35 +105,12 @@
                 {{ ssl_params_util.ssl_params(config.ssl_params) }}
             </property>
         {% endif %}
-        {% if config.connector_configuration %}
-            <property name="connectorConfiguration">
-                {{ connector_configuration_util.connector_configuration(config.connector_configuration) }}
-            </property>
-        {% endif %}
 
-        {% if config.client_connector_configuration %}
-            <property name="clientConnectorConfiguration">
-                <bean class="org.apache.ignite.configuration.ClientConnectorConfiguration">
-                    <property name="port" value="{{ config.client_connector_configuration.port }}"/>
-                    {% if config.client_connector_configuration.ssl_enabled %}
-                        <property name="sslEnabled" value="true"/>
-                        <property name="sslContextFactory">
-                            {{ ssl_params_util.ssl_params(config.client_connector_configuration.ssl_params) }}
-                        </property>
-                        <property name="useIgniteSslContextFactory" value="{{ config.client_connector_configuration.use_ignite_ssl_context_factory }}"/>
-                        <property name="sslClientAuth" value="{{ config.client_connector_configuration.ssl_client_auth }}"/>
-                    {% endif %}
-                    {% if config.client_connector_configuration.thin_client_configuration %}
-                    <property name="thinClientConfiguration">
-                        <bean class="org.apache.ignite.configuration.ThinClientConfiguration">
-                            <property name="maxActiveComputeTasksPerConnection" value="{{ config.client_connector_configuration.thin_client_configuration.max_active_compute_tasks_per_connection }}" />
-                            <property name="maxActiveTxPerConnection" value="{{ config.client_connector_configuration.thin_client_configuration.max_active_tx_per_connection }}" />
-                        </bean>
-                    </property>
-                    {% endif %}
-                </bean>
-            </property>
-        {% endif %}
+        {{ connector_configuration_util.connector_configuration(config.connector_configuration) }}
+
+        {{ client_connector_configuration_util.client_connector_configuration(config.client_connector_configuration) }}
+
+        {{ transaction_util.transaction(config.transaction_configuration) }}
 
         {% if config.binary_configuration %}
             <property name="binaryConfiguration">
@@ -147,6 +130,16 @@
 
         {% if config.event_storage_spi %}
             <property name="eventStorageSpi" ref="{{ config.event_storage_spi }}"/>
+        {% endif %}
+
+        {% if config.sql_schemas | length > 0 %}
+            <property name="sqlSchemas">
+                <list>
+                {% for schema in config.sql_schemas %}
+                    <value>{{ schema }}</value>
+                {% endfor %}
+                </list>
+            </property>
         {% endif %}
 
         {{ misc_utils.plugins(config) }}

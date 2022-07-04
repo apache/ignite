@@ -18,6 +18,8 @@ This module contains classes and utilities for Ignite Cache configuration.
 """
 from typing import NamedTuple
 
+from ignitetest.utils.bean import Bean
+
 
 class CacheConfiguration(NamedTuple):
     """
@@ -26,5 +28,7 @@ class CacheConfiguration(NamedTuple):
     name: str
     cache_mode: str = 'PARTITIONED'
     atomicity_mode: str = 'ATOMIC'
-    backups: int = 0
+    backups: int = None
     statistics_enabled: bool = True
+    affinity: Bean = None
+    affinity_mapper: Bean = None

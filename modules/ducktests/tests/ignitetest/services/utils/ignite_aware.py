@@ -229,7 +229,7 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
         return node.account.java_pids(self.main_java_class)
 
     def worker(self, idx, node, **kwargs):
-        cmd = self.spec.command(node)
+        cmd = self.spec.command(idx, len(self.nodes), node)
 
         self.logger.debug("Attempting to start Application Service on %s with command: %s" % (str(node.account), cmd))
 
