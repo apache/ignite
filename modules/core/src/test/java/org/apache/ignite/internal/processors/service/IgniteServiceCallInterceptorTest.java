@@ -100,7 +100,7 @@ public class IgniteServiceCallInterceptorTest extends GridCommonAbstractTest {
      * @return Gets services facade over all cluster nodes started in server mode.
      */
     private IgniteServices services() {
-        return grid(0).services();
+        return grid(NODES_CNT - 1).services();
     }
 
     /**
@@ -178,20 +178,21 @@ public class IgniteServiceCallInterceptorTest extends GridCommonAbstractTest {
 
         services().deployAll(Arrays.asList(
             serviceCfg(SVC_NAME_INTERCEPTED, new TestServiceImpl(), clusterSingleton, intcps),
-            serviceCfg(SVC_NAME_INJECTED, new TestServiceInjected(), clusterSingleton, intcps)
+            serviceCfg(SVC_NAME_INJECTED, new TestServiceInjected(), !clusterSingleton, intcps)
         ));
 
         ServiceCallContext callCtx1 = ServiceCallContext.builder().put(STR_ATTR_NAME, "ctxVal1").build();
-        TestService ctx1Proxy = services().serviceProxy(SVC_NAME_INTERCEPTED, TestService.class, sticky, callCtx1);
-
         ServiceCallContext callCtx2 = ServiceCallContext.builder().put(STR_ATTR_NAME, "ctxVal2").build();
-        TestService ctx2Proxy = services().serviceProxy(SVC_NAME_INTERCEPTED, TestService.class, sticky, callCtx2);
 
         AtomicInteger cntr = new AtomicInteger();
         CyclicBarrier barrier = new CyclicBarrier(threadCnt);
 
         GridTestUtils.runMultiThreaded(() -> {
             int arg = cntr.incrementAndGet();
+            IgniteServices services = grid(arg % NODES_CNT).services();
+
+            TestService ctx1Proxy = services.serviceProxy(SVC_NAME_INTERCEPTED, TestService.class, sticky, callCtx1);
+            TestService ctx2Proxy = services.serviceProxy(SVC_NAME_INTERCEPTED, TestService.class, sticky, callCtx2);
 
             String exoCtx1 = fmtExpResult(TestServiceImpl.class, callCtx1, intcps.length, "method", null, arg);
             String exoCtx2 = fmtExpResult(TestServiceImpl.class, callCtx2, intcps.length, "method", null, arg);
