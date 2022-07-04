@@ -21,37 +21,70 @@
     <Appenders>
         <Console name="CONSOLE" target="SYSTEM_OUT">
             <PatternLayout pattern="[%d{ISO8601}][%-5p][%t][%c{1}]%notEmpty{[%markerSimpleName]} %m%n"/>
-            <ThresholdFilter level="ERROR" onMatch="DENY" onMismatch="ACCEPT"/>
+            <LevelRangeFilter minLevel="INFO" maxLevel="DEBUG"/>
         </Console>
 
         <Console name="CONSOLE_ERR" target="SYSTEM_ERR">
-            <PatternLayout pattern="[%d{ISO8601}][%-5p][%t][%c{1}]%notEmpty{[%markerSimpleName]} %m%n"/>
+            <PatternLayout pattern="[%d{ISO8601}][%-5p][%t][%c{1}] %m%n"/>
         </Console>
 
-        <Routing name="FILE">
-            <Routes pattern="$${sys:nodeId}">
-                <Route>
-                    <RollingFile name="Rolling-${sys:nodeId}" fileName="${sys:IGNITE_HOME}/work/log/${sys:appId}-${sys:nodeId}.log"
-                                 filePattern="${sys:IGNITE_HOME}/work/log/${sys:appId}-${sys:nodeId}-%i-%d{yyyy-MM-dd}.log.gz">
-                        <PatternLayout pattern="[%d{ISO8601}][%-5p][%t][%c{1}]%notEmpty{[%markerSimpleName]} %m%n"/>
-                        <Policies>
-                            <TimeBasedTriggeringPolicy interval="6" modulate="true" />
-                            <SizeBasedTriggeringPolicy size="10 MB" />
-                        </Policies>
-                    </RollingFile>
-                </Route>
-            </Routes>
-        </Routing>
+        <RollingFile name="FILE"
+                     append="true"
+                     fileName="${sys:IGNITE_HOME}/work/log/ignite.log"
+                     filePattern="${sys:IGNITE_HOME}/work/log/ignite.log.%i">
+            <PatternLayout pattern="[%d{ISO8601}][%-5p][%t][%c{1}]%notEmpty{[%markerSimpleName]} %m%n"/>
+            <Policies>
+                <SizeBasedTriggeringPolicy size="10 MB"/>
+            </Policies>
+            <DefaultRolloverStrategy max="10"/>
+        </RollingFile>
     </Appenders>
 
     <Loggers>
+        <!--
+            Uncomment to enable Ignite query execution debugging.
+        -->
+        <!--
+            <Logger name="org.apache.ignite.internal.processors.query" level="DEBUG"/>
+        -->
+
+        <!--
+            Uncomment to enable Exchange, Rebalance and Partitions workflow debugging.
+        -->
+        <!--
+            <Logger name="org.apache.ignite.internal.processors.cache.distributed.dht.preloader" level="DEBUG"/>
+            <Logger name="org.apache.ignite.internal.processors.cache.distributed.dht.topology" level="DEBUG"/>
+        -->
+
+        <!--
+            Uncomment to enable debugging of partition counters.
+        -->
+        <!--
+            <Logger name="org.apache.ignite.internal.processors.cache.PartitionUpdateCounterDebugWrapper" level="DEBUG"/>
+        -->
+
+        <!--
+            Uncomment to enable transactions debugging.
+        -->
+        <!--
+            <Logger name="org.apache.ignite.cache.msg.tx.prepare" level="DEBUG"/>
+            <Logger name="org.apache.ignite.cache.msg.tx.finish" level="DEBUG"/>
+            <Logger name="org.apache.ignite.cache.msg.tx.recovery" level="DEBUG"/>
+        -->
+
+        <!--
+            Uncomment to enable debugging of partition eviction.
+        -->
+        <!--
+            <Logger name="org.apache.ignite.internal.processors.cache.distributed.dht.topology.PartitionsEvictManager" level="DEBUG"/>
+        -->
         <Logger name="org" level="INFO"/>
         <Logger name="org.eclipse.jetty" level="INFO"/>
 
         <Root level="INFO">
+            <AppenderRef ref="FILE" level="DEBUG"/>
             <AppenderRef ref="CONSOLE" level="DEBUG"/>
             <AppenderRef ref="CONSOLE_ERR" level="WARN"/>
-            <AppenderRef ref="FILE" level="DEBUG"/>
         </Root>
     </Loggers>
 </Configuration>

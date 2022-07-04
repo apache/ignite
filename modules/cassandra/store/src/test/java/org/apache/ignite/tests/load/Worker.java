@@ -31,7 +31,8 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.processors.cache.CacheEntryImpl;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.tests.utils.TestsHelper;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * Worker thread abstraction to be inherited by specific load test implementation
@@ -97,7 +98,7 @@ public abstract class Worker extends Thread {
     /** */
     public Worker(CacheStore cacheStore, long startPosition, long endPosition) {
         this.cacheStore = cacheStore;
-        this.log = Logger.getLogger(loggerName());
+        this.log = LogManager.getLogger(loggerName());
         this.startPosition = startPosition;
         this.endPosition = endPosition;
     }
@@ -105,7 +106,7 @@ public abstract class Worker extends Thread {
     /** */
     public Worker(Ignite ignite, long startPosition, long endPosition) {
         this.ignite = ignite;
-        this.log = Logger.getLogger(loggerName());
+        this.log = LogManager.getLogger(loggerName());
         this.startPosition = startPosition;
         this.endPosition = endPosition;
     }

@@ -81,7 +81,8 @@ namespace Apache.Ignite.Core.Tests
                 "-Xmx6g",
                 "-ea",
                 "-DIGNITE_QUIET=true",
-                "-Duser.timezone=UTC"
+                "-Duser.timezone=UTC",
+                "-Dlog4j.configurationFile=../../../core/src/test/config/log4j2-test.xml"
             }
             : new List<string>
             {
@@ -91,7 +92,8 @@ namespace Apache.Ignite.Core.Tests
                 "-ea",
                 "-DIGNITE_ATOMIC_CACHE_DELETE_HISTORY_SIZE=1000",
                 "-DIGNITE_QUIET=true",
-                "-Duser.timezone=UTC"
+                "-Duser.timezone=UTC",
+                "-Dlog4j.configurationFile=../../../core/src/test/config/log4j2-test.xml"
             };
 
         /** */

@@ -120,7 +120,7 @@ The following shows how to fill in `spark.driver.extraClassPath` parameters:
 
 [source, shell]
 ----
-spark.executor.extraClassPath /opt/ignite/libs/*:/opt/ignite/libs/optional/ignite-spark-ext/*:/opt/ignite/libs/optional/ignite-log4j/*:/opt/ignite/libs/optional/ignite-yarn-ext/*:/opt/ignite/libs/ignite-spring/*
+spark.executor.extraClassPath /opt/ignite/libs/*:/opt/ignite/libs/optional/ignite-spark-ext/*:/opt/ignite/libs/optional/ignite-log4j2/*:/opt/ignite/libs/optional/ignite-yarn-ext/*:/opt/ignite/libs/ignite-spring/*
 ----
 
 === Source Code Configuration

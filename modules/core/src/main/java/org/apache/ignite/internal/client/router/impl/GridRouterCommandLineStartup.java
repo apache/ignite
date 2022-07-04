@@ -28,7 +28,6 @@ import org.apache.ignite.internal.util.spring.IgniteSpringHelper;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lifecycle.LifecycleAware;
 
 import static org.apache.ignite.internal.IgniteComponentType.SPRING;
@@ -129,22 +128,7 @@ public class GridRouterCommandLineStartup {
             System.exit(1);
         }
 
-        boolean isLog4jUsed = U.gridClassLoader().getResource("org/apache/log4j/Appender.class") != null;
-
-        IgniteBiTuple<Object, Object> t = null;
-        Collection<Handler> savedHnds = null;
-
-        if (isLog4jUsed) {
-            try {
-                t = U.addLog4jNoOpLogger();
-            }
-            catch (Exception ignored) {
-                isLog4jUsed = false;
-            }
-        }
-
-        if (!isLog4jUsed)
-            savedHnds = U.addJavaNoOpLogger();
+        Collection<Handler> savedHnds = U.addJavaNoOpLogger();
 
         Map<Class<?>, Collection> beans;
 
@@ -152,11 +136,7 @@ public class GridRouterCommandLineStartup {
             beans = spring.loadBeans(cfgUrl, IgniteLogger.class, GridTcpRouterConfiguration.class).get1();
         }
         finally {
-            if (isLog4jUsed && t != null)
-                U.removeLog4jNoOpLogger(t);
-
-            if (!isLog4jUsed)
-                U.removeJavaNoOpLogger(savedHnds);
+            U.removeJavaNoOpLogger(savedHnds);
         }
 
         final GridRouterCommandLineStartup routerStartup = new GridRouterCommandLineStartup();

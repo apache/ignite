@@ -69,7 +69,7 @@
 
         <dependency>
             <groupId>${project.groupId}</groupId>
-            <artifactId>ignite-log4j</artifactId>
+            <artifactId>ignite-log4j2</artifactId>
             <version>to_be_replaced_by_ignite_version</version>
         </dependency>
 

@@ -18,13 +18,16 @@
 package org.apache.ignite.testframework;
 
 import java.util.List;
-import org.apache.log4j.Level;
-import org.apache.log4j.Logger;
-import org.apache.log4j.spi.LoggingEvent;
+import org.apache.ignite.testframework.junits.logger.GridTestLog4jLogger;
+import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.core.LogEvent;
+import org.apache.logging.log4j.core.config.Configurator;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import static org.apache.logging.log4j.Level.DEBUG;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
@@ -37,6 +40,12 @@ public class MemorizingAppenderTest {
      * The instance under test.
      */
     private final MemorizingAppender appender = new MemorizingAppender();
+
+    static {
+        GridTestLog4jLogger.removeAllRootLoggerAppenders();
+
+        Configurator.setRootLevel(DEBUG);
+    }
 
     /***/
     @Before
@@ -55,15 +64,15 @@ public class MemorizingAppenderTest {
      */
     @Test
     public void memorizesLoggingEvents() {
-        Logger.getLogger(MemorizingAppenderTest.class).info("Hello!");
+        LogManager.getLogger(MemorizingAppenderTest.class).info("Hello!");
 
-        List<LoggingEvent> events = appender.events();
+        List<LogEvent> events = appender.events();
 
         assertThat(events, hasSize(1));
 
-        LoggingEvent event = events.get(0);
+        LogEvent event = events.get(0);
 
         assertThat(event.getLevel(), is(Level.INFO));
-        assertThat(event.getRenderedMessage(), is("Hello!"));
+        assertThat(event.getMessage().getFormattedMessage(), is("Hello!"));
     }
 }

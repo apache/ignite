@@ -104,7 +104,7 @@ public abstract class ClientAbstractSelfTest extends GridCommonAbstractTest {
     private static final Map<String, HashMapStore> cacheStores = new HashMap<>();
 
     /** */
-    public static final String ROUTER_LOG_CFG = "modules/core/src/test/config/log4j-test.xml";
+    public static final String ROUTER_LOG_CFG = "modules/core/src/test/config/log4j2-test.xml";
 
     /** */
     private static final String INTERCEPTED_SUF = "intercepted";

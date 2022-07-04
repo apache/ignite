@@ -41,18 +41,28 @@ import org.apache.ignite.testframework.junits.logger.GridTestLog4jLogger;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
-import org.apache.log4j.Appender;
-import org.apache.log4j.ConsoleAppender;
-import org.apache.log4j.Level;
-import org.apache.log4j.Logger;
-import org.apache.log4j.PatternLayout;
-import org.apache.log4j.RollingFileAppender;
-import org.apache.log4j.varia.LevelRangeFilter;
-import org.apache.log4j.varia.NullAppender;
+import org.apache.logging.log4j.core.appender.ConsoleAppender;
+import org.apache.logging.log4j.core.appender.RollingFileAppender;
+import org.apache.logging.log4j.core.appender.rolling.DefaultRolloverStrategy;
+import org.apache.logging.log4j.core.config.Configurator;
+import org.apache.logging.log4j.core.filter.LevelRangeFilter;
 import org.jetbrains.annotations.Nullable;
 import org.springframework.beans.BeansException;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.support.FileSystemXmlApplicationContext;
+
+import static org.apache.ignite.testframework.junits.logger.GridTestLog4jLogger.CONSOLE;
+import static org.apache.ignite.testframework.junits.logger.GridTestLog4jLogger.CONSOLE_ERROR;
+import static org.apache.ignite.testframework.junits.logger.GridTestLog4jLogger.DEFAULT_PATTERN_LAYOUT;
+import static org.apache.ignite.testframework.junits.logger.GridTestLog4jLogger.FILE;
+import static org.apache.ignite.testframework.junits.logger.GridTestLog4jLogger.addRootLoggerAppender;
+import static org.apache.logging.log4j.Level.DEBUG;
+import static org.apache.logging.log4j.Level.INFO;
+import static org.apache.logging.log4j.Level.WARN;
+import static org.apache.logging.log4j.core.Filter.Result.ACCEPT;
+import static org.apache.logging.log4j.core.Filter.Result.DENY;
+import static org.apache.logging.log4j.core.appender.ConsoleAppender.Target.SYSTEM_ERR;
+import static org.apache.logging.log4j.core.appender.ConsoleAppender.Target.SYSTEM_OUT;
 
 /**
  * Common stuff for cache load tests.
@@ -261,66 +271,39 @@ abstract class GridCacheAbstractLoadTest {
      * @throws IgniteCheckedException If file initialization failed.
      */
     protected IgniteLogger initLogger(String log) throws IgniteCheckedException {
-        Logger impl = Logger.getRootLogger();
-
-        impl.removeAllAppenders();
+        GridTestLog4jLogger.removeAllRootLoggerAppenders();
 
         String fileName = U.getIgniteHome() + "/work/log/" + log;
 
-        // Configure output that should go to System.out
-        RollingFileAppender fileApp;
-
-        String fmt = "[%d{ISO8601}][%-5p][%t][%c{1}] %m%n";
-
-        try {
-            fileApp = new RollingFileAppender(new PatternLayout(fmt), fileName);
-
-            fileApp.setMaxBackupIndex(0);
-            fileApp.setAppend(false);
-
-            // fileApp.rollOver();
-
-            fileApp.activateOptions();
-        }
-        catch (IOException e) {
-            throw new IgniteCheckedException("Unable to initialize file appender.", e);
-        }
-
-        LevelRangeFilter lvlFilter = new LevelRangeFilter();
-
-        lvlFilter.setLevelMin(Level.DEBUG);
-
-        fileApp.addFilter(lvlFilter);
-
-        impl.addAppender(fileApp);
+        // Configure output that should go to file
+        addRootLoggerAppender(DEBUG, RollingFileAppender.newBuilder()
+                .setName(FILE)
+                .withFileName(fileName)
+                .withFilePattern(fileName + ".%i")
+                .setLayout(DEFAULT_PATTERN_LAYOUT)
+                .withStrategy(DefaultRolloverStrategy.newBuilder().withMax("0").build())
+                .withAppend(false)
+                .build());
 
         // Configure output that should go to System.out
-        ConsoleAppender conApp = new ConsoleAppender(new PatternLayout(fmt), ConsoleAppender.SYSTEM_OUT);
-
-        lvlFilter = new LevelRangeFilter();
-
-        lvlFilter.setLevelMin(Level.DEBUG);
-        lvlFilter.setLevelMax(Level.INFO);
-
-        conApp.addFilter(lvlFilter);
-
-        conApp.activateOptions();
-
-        impl.addAppender(conApp);
+        addRootLoggerAppender(DEBUG, ConsoleAppender.newBuilder()
+                .setName(CONSOLE)
+                .setTarget(SYSTEM_OUT)
+                .setFilter(LevelRangeFilter.createFilter(INFO, DEBUG, ACCEPT, DENY))
+                .setLayout(DEFAULT_PATTERN_LAYOUT)
+                .build());
 
         // Configure output that should go to System.err
-        conApp = new ConsoleAppender(new PatternLayout(fmt), ConsoleAppender.SYSTEM_ERR);
+        addRootLoggerAppender(WARN, ConsoleAppender.newBuilder()
+                .setName(CONSOLE_ERROR)
+                .setTarget(SYSTEM_ERR)
+                .setLayout(DEFAULT_PATTERN_LAYOUT)
+                .build());
 
-        conApp.setThreshold(Level.WARN);
+        Configurator.setRootLevel(INFO);
 
-        conApp.activateOptions();
-
-        impl.addAppender(conApp);
-
-        impl.setLevel(Level.INFO);
-
-        //Logger.getLogger("org.apache.ignite").setLevel(Level.INFO);
-        //Logger.getLogger(GridCacheVersionManager.class).setLevel(Level.DEBUG);
+//        Configurator.setLevel("org.apache.ignite", INFO);
+//        Configurator.setLevel(GridCacheVersionManager.class, DEBUG);
 
         return new GridTestLog4jLogger(false);
     }
@@ -342,11 +325,6 @@ abstract class GridCacheAbstractLoadTest {
 
         if (!path.isFile())
             throw new IgniteCheckedException("Provided file path is not a file: " + path);
-
-        // Add no-op logger to remove no-appender warning.
-        Appender app = new NullAppender();
-
-        Logger.getRootLogger().addAppender(app);
 
         ApplicationContext springCtx;
 
@@ -370,9 +348,6 @@ abstract class GridCacheAbstractLoadTest {
 
         if (cfgMap == null)
             throw new IgniteCheckedException("Failed to find a single grid factory configuration in: " + path);
-
-        // Remove previously added no-op logger.
-        Logger.getRootLogger().removeAppender(app);
 
         if (cfgMap.isEmpty())
             throw new IgniteCheckedException("Can't find grid factory configuration in: " + path);

@@ -75,7 +75,6 @@ The following modules are available:
 - ignite-indexing (for SQL querying and indexing)
 - ignite-jcl (for Apache Commons logging)
 - ignite-jta (for XA integration)
-- ignite-logj4 (for Log4j logging)
 - ignite-log4j2 (for Log4j 2 logging)
 - ignite-osgi (to allow Ignite run seemlessly in OSGI containers)
 - ignite-osgi-karaf (to seemlessly intall ignite into Apache Karaf container)

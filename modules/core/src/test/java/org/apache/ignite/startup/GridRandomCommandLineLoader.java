@@ -41,9 +41,6 @@ import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.logger.GridTestLog4jLogger;
-import org.apache.log4j.Appender;
-import org.apache.log4j.Logger;
-import org.apache.log4j.varia.NullAppender;
 import org.jetbrains.annotations.Nullable;
 import org.springframework.beans.BeansException;
 import org.springframework.context.ApplicationContext;
@@ -313,11 +310,6 @@ public final class GridRandomCommandLineLoader {
         if (!path.isFile())
             throw new IgniteCheckedException("Provided file path is not a file: " + path);
 
-        // Add no-op logger to remove no-appender warning.
-        Appender app = new NullAppender();
-
-        Logger.getRootLogger().addAppender(app);
-
         ApplicationContext springCtx;
 
         try {
@@ -340,9 +332,6 @@ public final class GridRandomCommandLineLoader {
 
         if (cfgMap == null)
             throw new IgniteCheckedException("Failed to find a single grid factory configuration in: " + path);
-
-        // Remove previously added no-op logger.
-        Logger.getRootLogger().removeAppender(app);
 
         if (cfgMap.size() != 1)
             throw new IgniteCheckedException("Spring configuration file should contain exactly 1 grid configuration: " + path);

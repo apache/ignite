@@ -23,17 +23,17 @@ import org.jetbrains.annotations.Nullable;
 /**
  * This interface defines basic logging functionality used throughout the system. We had to
  * abstract it out so that we can use whatever logging is used by the hosting environment.
- * Currently, <a target=_new href="http://logging.apache.org/log4j/1.2/">log4j</a>,
+ * Currently, <a target=_new href="http://https://logging.apache.org/log4j/2.x/">log4j2</a>,
  * <a target=_new href="https://docs.jboss.org/hibernate/orm/5.4/topical/html_single/logging/Logging.html">JBoss</a>,
  * <a target=_new href="http://jakarta.apache.org/commons/logging/">JCL</a> and
  * console logging are provided as supported implementations.
  * <p>
- * Ignite logger could be configured either from code (for example log4j logger):
+ * Ignite logger could be configured either from code (for example log4j2 logger):
  * <pre name="code" class="java">
  *      IgniteConfiguration cfg = new IgniteConfiguration();
  *      ...
  *      URL xml = U.resolveIgniteUrl("config/custom-log4j.xml");
- *      IgniteLogger log = new Log4JLogger(xml);
+ *      IgniteLogger log = new Log4J2Logger(xml);
  *      ...
  *      cfg.setGridLogger(log);
  * </pre>
@@ -43,7 +43,7 @@ import org.jetbrains.annotations.Nullable;
  *      &lt;property name="gridLogger"&gt;
  *          &lt;bean class="org.apache.ignite.logger.jcl.JclLogger"&gt;
  *              &lt;constructor-arg type="org.apache.commons.logging.Log"&gt;
- *                  &lt;bean class="org.apache.commons.logging.impl.Log4JLogger"&gt;
+ *                  &lt;bean class="org.apache.commons.logging.impl.Log4J2Logger"&gt;
  *                      &lt;constructor-arg type="java.lang.String" value="config/ignite-log4j.xml"/&gt;
  *                  &lt;/bean&gt;
  *              &lt;/constructor-arg&gt;
