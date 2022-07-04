@@ -499,7 +499,14 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
      */
     @Test
     public void testPessimisticTx() throws Exception {
-        pessimisticTx(null);
+        for (int i = 0; i < 30; i++) {
+            try {
+                pessimisticTx(null);
+            }
+            finally {
+                stopAllGrids();
+            }
+        }
     }
 
     /**
