@@ -38,6 +38,7 @@ import org.apache.ignite.services.ServiceCallContext;
 import org.apache.ignite.services.ServiceCallInterceptor;
 import org.apache.ignite.services.ServiceConfiguration;
 import org.apache.ignite.services.ServiceContext;
+import org.apache.ignite.services.ServiceDeploymentException;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
@@ -120,12 +121,44 @@ public class IgniteServiceCallInterceptorTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Checks if an interceptor exception is being passed to the user.
-     *
-     * @throws Exception If failed.
+     * Validates configuration comparison during service deployment.
      */
     @Test
-    public void testException() throws Exception {
+    public void testRedeploy() {
+        ServiceCallInterceptor intcp1 = (mtd, args, ctx, next) -> "1";
+
+        ServiceConfiguration cfg = serviceCfg(SVC_NAME_INTERCEPTED, new TestServiceImpl(), clusterSingleton, intcp1);
+        services().deploy(cfg);
+
+        TestService proxy = services().serviceProxy(SVC_NAME_INTERCEPTED, TestService.class, false);
+        assertEquals("1", proxy.method(0));
+
+        // Redeploy with the same configuration.
+        cfg.setInterceptors(intcp1);
+        services().deploy(cfg);
+
+        // Redeploy with different configuration.
+        ServiceCallInterceptor intcp2 = (mtd, args, ctx, next) -> "2";
+        cfg.setInterceptors(intcp2);
+
+        GridTestUtils.assertThrowsAnyCause(log, () -> {
+            services().deploy(cfg);
+
+            return null;
+        }, ServiceDeploymentException.class, null);
+
+        // Undeploy service.
+        services().cancel(SVC_NAME_INTERCEPTED);
+
+        services().deploy(cfg);
+        assertEquals("2", proxy.method(0));
+    }
+
+    /**
+     * Checks if an interceptor exception is being passed to the user.
+     */
+    @Test
+    public void testException() {
         callCntr.set(0);
 
         Exception expE = new NoPermissionException("Request is forbidden.");
