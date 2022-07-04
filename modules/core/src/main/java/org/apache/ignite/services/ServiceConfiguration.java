@@ -298,18 +298,18 @@ public class ServiceConfiguration implements Serializable {
     }
 
     /**
-     * Gets service method interceptors.
+     * Gets service call interceptors.
      *
-     * @return Service method interceptors.
+     * @return Service call interceptors.
      */
     public ServiceCallInterceptor[] getInterceptors() {
         return intcps;
     }
 
     /**
-     * Sets service method interceptors.
+     * Sets service call interceptors.
      *
-     * @param intcps Interceptors.
+     * @param intcps Service call interceptors.
      * @return {@code this} for chaining.
      */
     public ServiceConfiguration setInterceptors(ServiceCallInterceptor... intcps) {

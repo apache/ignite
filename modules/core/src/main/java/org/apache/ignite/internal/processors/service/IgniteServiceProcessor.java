@@ -1279,7 +1279,8 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
                         cacheName,
                         affKey,
                         Executors.newSingleThreadExecutor(threadFactory),
-                        cfg.isStatisticsEnabled());
+                        cfg.isStatisticsEnabled(),
+                        unmarshalInterceptors(cfg));
 
                     ctxs.add(srvcCtx);
 
@@ -1300,8 +1301,6 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
                 srvc.init(srvcCtx);
 
                 srvcCtx.service(srvc);
-
-                srvcCtx.interceptor(unmarshalInterceptors(cfg, srvc.getClass().getClassLoader()));
             }
             catch (Throwable e) {
                 U.error(log, "Failed to initialize service (service will not be deployed): " + name, e);
@@ -1409,14 +1408,10 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
 
     /**
      * @param cfg Service configuraton.
-     * @param ldr Service classloader.
-     * @return Service interceptor.
+     * @return Service call interceptor.
      * @throws IgniteCheckedException If failed.
      */
-    private @Nullable ServiceCallInterceptor unmarshalInterceptors(
-        ServiceConfiguration cfg,
-        ClassLoader ldr
-    ) throws IgniteCheckedException {
+    private @Nullable ServiceCallInterceptor unmarshalInterceptors(ServiceConfiguration cfg) throws IgniteCheckedException {
         if (!(cfg instanceof LazyServiceConfiguration))
             return null;
 
@@ -1426,7 +1421,10 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
         if (F.isEmpty(intcpsBytes))
             return null;
 
-        ServiceCallInterceptor[] intcps = U.unmarshal(marsh, intcpsBytes, U.resolveClassLoader(ldr, ctx.config()));
+        GridDeployment srvcDep = ctx.deploy().getDeployment(cfg0.serviceClassName());
+
+        ServiceCallInterceptor[] intcps = U.unmarshal(marsh, intcpsBytes,
+            U.resolveClassLoader(srvcDep != null ? srvcDep.classLoader() : null, ctx.config()));
 
         // Inject generic resources.
         for (int i = 0; i < intcps.length; i++)
