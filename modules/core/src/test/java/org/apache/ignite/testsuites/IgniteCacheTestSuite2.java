@@ -202,7 +202,7 @@ public class IgniteCacheTestSuite2 {
         List<Class<?>> suite = new ArrayList<>();
 
         // Local cache.
-        GridTestUtils.addTestIfNeeded(suite, GridCacheLocalBasicApiSelfTest.class, ignoredTests);
+        /*GridTestUtils.addTestIfNeeded(suite, GridCacheLocalBasicApiSelfTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, GridCacheLocalBasicStoreSelfTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, GridCacheLocalBasicStoreMultithreadedSelfTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, GridCacheLocalAtomicBasicStoreSelfTest.class, ignoredTests);
@@ -304,9 +304,9 @@ public class IgniteCacheTestSuite2 {
         GridTestUtils.addTestIfNeeded(suite, GridCacheColocatedPrimarySyncSelfTest.class, ignoredTests);
 
         GridTestUtils.addTestIfNeeded(suite, IgniteCachePartitionMapUpdateTest.class, ignoredTests);
-        GridTestUtils.addTestIfNeeded(suite, IgniteCacheClientNodePartitionsExchangeTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, IgniteCacheClientNodePartitionsExchangeTest.class, ignoredTests);*/
         GridTestUtils.addTestIfNeeded(suite, IgniteCacheClientNodeChangingTopologyTest.class, ignoredTests);
-        GridTestUtils.addTestIfNeeded(suite, IgniteCacheServerNodeConcurrentStart.class, ignoredTests);
+        /*GridTestUtils.addTestIfNeeded(suite, IgniteCacheServerNodeConcurrentStart.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, IgniteCachePartitionMapUpdateSafeLossPolicyTest.class, ignoredTests);
 
         GridTestUtils.addTestIfNeeded(suite, IgniteCacheEntryProcessorNodeJoinTest.class, ignoredTests);
@@ -389,7 +389,7 @@ public class IgniteCacheTestSuite2 {
         GridTestUtils.addTestIfNeeded(suite, CacheDetectLostPartitionsTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, TransactionValidationTest.class, ignoredTests);
 
-        GridTestUtils.addTestIfNeeded(suite, RebalanceIteratorLargeEntriesOOMTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, RebalanceIteratorLargeEntriesOOMTest.class, ignoredTests);*/
 
         return suite;
     }
