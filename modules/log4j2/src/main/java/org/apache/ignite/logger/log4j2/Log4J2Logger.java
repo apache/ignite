@@ -332,9 +332,7 @@ public class Log4J2Logger implements IgniteLogger, LoggerNodeIdAndApplicationAwa
             if (consoleAppenderFound && quiet)
                 quiet = false;  // User configured console appender, but log is quiet.
 
-            boolean isAutoCfgNeeded = Boolean.parseBoolean(System.getProperty(IGNITE_CONSOLE_APPENDER, "true"));
-
-            if (!consoleAppenderFound && !quiet && isAutoCfgNeeded) {
+            if (!consoleAppenderFound && !quiet && Boolean.parseBoolean(System.getProperty(IGNITE_CONSOLE_APPENDER, "true"))) {
                 // User launched ignite in verbose mode and did not add console appender with INFO level
                 // to configuration and did not set IGNITE_CONSOLE_APPENDER to false.
                 createConsoleLogger();
