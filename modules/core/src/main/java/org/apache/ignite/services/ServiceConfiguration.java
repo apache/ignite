@@ -25,6 +25,7 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.processors.service.IgniteServiceProcessor;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.lang.IgniteExperimental;
 import org.apache.ignite.lang.IgnitePredicate;
 
 /**
@@ -302,6 +303,7 @@ public class ServiceConfiguration implements Serializable {
      *
      * @return Service call interceptors.
      */
+    @IgniteExperimental
     public ServiceCallInterceptor[] getInterceptors() {
         return intcps;
     }
@@ -312,6 +314,7 @@ public class ServiceConfiguration implements Serializable {
      * @param intcps Service call interceptors.
      * @return {@code this} for chaining.
      */
+    @IgniteExperimental
     public ServiceConfiguration setInterceptors(ServiceCallInterceptor... intcps) {
         this.intcps = intcps;
 
