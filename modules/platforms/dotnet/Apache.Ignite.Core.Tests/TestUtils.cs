@@ -81,8 +81,7 @@ namespace Apache.Ignite.Core.Tests
                 "-Xmx6g",
                 "-ea",
                 "-DIGNITE_QUIET=true",
-                "-Duser.timezone=UTC",
-                "-Dlog4j.configurationFile=../../../core/src/test/config/log4j2-test.xml"
+                "-Duser.timezone=UTC"
             }
             : new List<string>
             {
@@ -92,8 +91,7 @@ namespace Apache.Ignite.Core.Tests
                 "-ea",
                 "-DIGNITE_ATOMIC_CACHE_DELETE_HISTORY_SIZE=1000",
                 "-DIGNITE_QUIET=true",
-                "-Duser.timezone=UTC",
-                "-Dlog4j.configurationFile=../../../core/src/test/config/log4j2-test.xml"
+                "-Duser.timezone=UTC"
             };
 
         /** */
@@ -139,6 +137,8 @@ namespace Apache.Ignite.Core.Tests
                 foreach (string opt in JvmDebugOpts)
                     ops.Add(opt);
             }
+            
+            ops.Add("-Dlog4j.configurationFile=" + IgniteHome.Resolve() + "/modules/core/src/test/config/log4j2-test.xml");
 
             return ops;
         }

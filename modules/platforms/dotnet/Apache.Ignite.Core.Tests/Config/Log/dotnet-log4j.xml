@@ -30,7 +30,7 @@
 
         <RollingFile name="FILE"
                      append="true"
-                     fileName="${IGNITE_HOME}/work/log/dotnet-logger-test.log"
+                     fileName="${sys:IGNITE_HOME}/work/log/dotnet-logger-test.log"
                      filePattern="${sys:IGNITE_HOME}/work/log/dotnet-logger-test.log.%i">
             <PatternLayout pattern="[%d{ISO8601}][%-5p][%t][%c{1}] %m%n"/>
             <Policies>

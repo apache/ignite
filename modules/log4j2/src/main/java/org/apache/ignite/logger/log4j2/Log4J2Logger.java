@@ -75,7 +75,7 @@ import static org.apache.logging.log4j.core.appender.ConsoleAppender.Target.SYST
  * <pre name="code" class="java">
  *      IgniteConfiguration cfg = new IgniteConfiguration();
  *      ...
- *      URL xml = U.resolveIgniteUrl("config/custom-log4j.xml");
+ *      URL xml = U.resolveIgniteUrl("config/custom-log4j2.xml");
  *      IgniteLogger log = new Log4J2Logger(xml);
  *      ...
  *      cfg.setGridLogger(log);
@@ -132,7 +132,6 @@ public class Log4J2Logger implements IgniteLogger, LoggerNodeIdAndApplicationAwa
         addConsoleAppenderIfNeeded(init -> LogManager.getRootLogger());
 
         quiet = quiet0;
-
         cfg = null;
     }
 

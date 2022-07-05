@@ -355,7 +355,7 @@ public class GridTestLog4jLogger implements IgniteLogger, LoggerNodeIdAndApplica
         Configuration cfg = LoggerContext.getContext(false).getConfiguration();
 
         if (cfg instanceof DefaultConfiguration)
-            return new T2<>(null, null);
+            return new T2<>(false, false);
 
         boolean sysOut = false;
         boolean sysErr = false;
@@ -397,6 +397,8 @@ public class GridTestLog4jLogger implements IgniteLogger, LoggerNodeIdAndApplica
             .setLayout(DEFAULT_PATTERN_LAYOUT)
             .setFilter(LevelRangeFilter.createFilter(minLvl, TRACE, ACCEPT, DENY))
             .build();
+
+        consoleApp.start();
 
         if (cfg instanceof DefaultConfiguration) {
             ConfigurationBuilder<BuiltConfiguration> cfgBuilder = ConfigurationBuilderFactory.newConfigurationBuilder();
