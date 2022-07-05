@@ -63,6 +63,9 @@ public class TestTable implements IgniteCacheTable {
     private final RelProtoDataType protoType;
 
     /** */
+    private final RelDataType rawType;
+
+    /** */
     private final Map<String, IgniteIndex> indexes = new HashMap<>();
 
     /** */
@@ -89,6 +92,7 @@ public class TestTable implements IgniteCacheTable {
 
     /** */
     protected TestTable(String name, RelDataType type, double rowCnt) {
+        rawType = type;
         protoType = RelDataTypeImpl.proto(type);
         statistics = new IgniteStatisticsImpl(new ObjectStatisticsImpl((long)rowCnt, Collections.emptyMap()));
         this.name = name;
@@ -210,7 +214,9 @@ public class TestTable implements IgniteCacheTable {
 
     /** */
     public TestTable addIndex(RelCollation collation, String name) {
-        indexes.put(name, new CacheIndexImpl(collation, name, null, this));
+        indexes.put(name, new CacheIndexImpl(collation, name, null, this,
+            collation.getFieldCollations().stream()
+                .map(fc -> rawType.getFieldList().get(fc.getFieldIndex()).getName()).collect(Collectors.toList())));
 
         return this;
     }

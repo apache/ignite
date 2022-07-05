@@ -44,6 +44,9 @@ public interface IgniteIndex {
     /** */
     public IgniteTable table();
 
+    /** */
+    public List<String> fields();
+
     /**
      * Converts index into relational expression.
      *
@@ -97,10 +100,10 @@ public interface IgniteIndex {
     public long count(ExecutionContext<?> ectx, ColocationGroup grp);
 
     /**
-     * Extracts firt or last index values from all values.
-     *
-     * @return List of first or last values from all index segments. Doesn't contain null. Values number might not
+     * Gets first or last index records from all index segments. Doesn't contain nulls. Values number might not
      * match segments number.
+     *
+     * @return List of first or last values from all index segments.
      */
     public <Row> List<Row> findFirstOrLast(
         boolean first,

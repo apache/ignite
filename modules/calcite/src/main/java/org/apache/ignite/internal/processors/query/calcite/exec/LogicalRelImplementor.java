@@ -295,15 +295,15 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
         IgniteTypeFactory typeFactory = ctx.getTypeFactory();
 
         ImmutableBitSet requiredColumns = rel.requiredColumns();
-        boolean firstOrLast = rel.indexConditions() != null && rel.findFirstOrLast();
-        List<RexNode> lowerBound = firstOrLast ? null : rel.lowerBound();
-        List<RexNode> upperBound = firstOrLast ? null : rel.upperBound();
+        boolean firstOrLast = rel.findFirstOrLast();
+        List<RexNode> lowerCond = firstOrLast ? null : rel.lowerBound();
+        List<RexNode> upperCond = firstOrLast ? null : rel.upperBound();
 
         RelDataType rowType = tbl.getRowType(typeFactory, requiredColumns);
 
         Predicate<Row> filters = condition == null ? null : expressionFactory.predicate(condition, rowType);
-        Supplier<Row> lower = lowerBound == null ? null : expressionFactory.rowSource(lowerBound);
-        Supplier<Row> upper = upperBound == null ? null : expressionFactory.rowSource(upperBound);
+        Supplier<Row> lower = lowerCond == null ? null : expressionFactory.rowSource(lowerCond);
+        Supplier<Row> upper = upperCond == null ? null : expressionFactory.rowSource(upperCond);
         Function<Row, Row> prj = projects == null ? null : expressionFactory.project(projects, rowType);
 
         ColocationGroup grp = ctx.group(rel.sourceId());
@@ -356,7 +356,15 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
             boolean sortNodeRequired = !collation.getFieldCollations().isEmpty();
 
             if (sortNodeRequired) {
-                SortNode<Row> sortNode = new SortNode<>(ctx, rowType, expressionFactory.comparator(collation));
+                Comparator<Row> cmp = expressionFactory.comparator(collation);
+
+                SortNode<Row> sortNode = new SortNode<>(
+                    ctx,
+                    rowType,
+                    rel.findFirst() || !rel.findFirstOrLast() ? cmp : cmp.reversed(),
+                    null,
+                    rel.findFirstOrLast() ? () -> 1 : null
+                );
 
                 sortNode.register(node);
 
@@ -364,19 +372,19 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
             }
 
             if (spoolNodeRequired) {
-                if (lowerBound != null || upperBound != null) {
+                if (lowerCond != null || upperCond != null) {
                     if (requiredColumns != null) {
                         // Remap index find predicate according to rowType of the spool.
                         int cardinality = requiredColumns.cardinality();
-                        List<RexNode> remappedLowerCond = lowerBound != null ? new ArrayList<>(cardinality) : null;
-                        List<RexNode> remappedUpperCond = upperBound != null ? new ArrayList<>(cardinality) : null;
+                        List<RexNode> remappedLowerCond = lowerCond != null ? new ArrayList<>(cardinality) : null;
+                        List<RexNode> remappedUpperCond = upperCond != null ? new ArrayList<>(cardinality) : null;
 
                         for (int i = requiredColumns.nextSetBit(0); i != -1; i = requiredColumns.nextSetBit(i + 1)) {
                             if (remappedLowerCond != null)
-                                remappedLowerCond.add(lowerBound.get(i));
+                                remappedLowerCond.add(lowerCond.get(i));
 
                             if (remappedUpperCond != null)
-                                remappedUpperCond.add(upperBound.get(i));
+                                remappedUpperCond.add(upperCond.get(i));
                         }
 
                         lower = remappedLowerCond == null ? null : expressionFactory.rowSource(remappedLowerCond);

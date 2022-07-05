@@ -33,6 +33,8 @@ import org.apache.calcite.rex.RexBuilder;
 import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.rex.RexShuttle;
+import org.apache.calcite.sql.SqlKind;
+import org.apache.calcite.sql.fun.SqlFirstLastValueAggFunction;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.util.ImmutableBitSet;
@@ -53,6 +55,7 @@ import org.apache.ignite.internal.processors.query.calcite.schema.IgniteSchema;
 import org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
+import org.apache.ignite.internal.processors.query.calcite.util.IndexConditions;
 import org.apache.ignite.internal.processors.query.calcite.util.RexUtils;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -146,7 +149,68 @@ public class LogicalRelImplementorTest extends GridCommonAbstractTest {
         rexBuilder = cluster.getRexBuilder();
     }
 
-    //TODO: plan change test
+    /**
+     * Tests Index take-first execution plan is changed to Sort-limit/Scan when index is unavailable.
+     */
+    @Test
+    public void testIndexFirstRewriter() {
+        checkIndexFirstOrLastRewriter(true);
+    }
+
+    /**
+     * Tests Index take-last execution plan is changed to Sort-limit/Scan when index is unavailable.
+     */
+    @Test
+    public void testIndexLastRewriter() {
+        checkIndexFirstOrLastRewriter(false);
+    }
+
+    /**
+     * Tests Index take-last or take-first execution plan is changed to Sort-limit/Scan when index is unavailable.
+     */
+    private void checkIndexFirstOrLastRewriter(boolean first) {
+        int idxColumn = 2;
+
+        tbl.addIndex(QueryUtils.PRIMARY_KEY_INDEX, idxColumn);
+
+        RelCollation collation = tbl.getIndex(QueryUtils.PRIMARY_KEY_INDEX).collation();
+        RelDataType idxType = tbl.getRowType(tf).getFieldList().get(2).getType();
+        ImmutableBitSet columns = ImmutableBitSet.of(idxColumn);
+
+        IndexConditions idxConditions = RexUtils.buildSortedIndexConditions(
+            cluster,
+            collation,
+            rexBuilder.makeCall(new SqlFirstLastValueAggFunction(first ? SqlKind.FIRST_VALUE : SqlKind.LAST_VALUE),
+                rexBuilder.makeLocalRef(idxType, 0)),
+            idxType,
+            columns);
+
+        IgniteIndexScan idxScan = new IgniteIndexScan(
+            cluster,
+            cluster.traitSet(),
+            qctx.catalogReader().getTable(F.asList("PUBLIC", "TBL")),
+            QueryUtils.PRIMARY_KEY_INDEX,
+            null,
+            null,
+            idxConditions,
+            columns,
+            collation);
+
+        Node<?> node = relImplementor.visit(idxScan);
+
+        assertTrue(node instanceof ScanNode);
+        assertNull(node.sources());
+
+        tbl.markIndexRebuildInProgress(true);
+
+        node = relImplementor.visit(idxScan);
+
+        assertTrue(node instanceof SortNode);
+        assertTrue(node.sources() != null && node.sources().size() == 1);
+        assertTrue(node.sources().get(0) instanceof ScanNode);
+        assertNull(node.sources().get(0).sources());
+        assertEquals(1, ((SortNode<?>)node).limit());
+    }
 
     /**
      * Tests IndexCount execution plan is changed to Collect/Scan when index is unavailable.

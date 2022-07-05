@@ -143,25 +143,24 @@ public class IgniteIndexScan extends AbstractIndexScan implements SourceAwareIgn
     }
 
     /**
-     * Tells whether the bounds supose taking first or last index record.
+     * Tells whether the bounds suppose taking first or last index record.
      *
-     * @param first If {@code null}, both take-first or take-last-record actions are considered. If {@code true}, only
-     *              take-first-record action is considered. If {@code false}, only take-last action is considered.
+     * @param first If {@code null}, both take-first or take-last actions are considered. If {@code true}, only
+     *              take-first action is considered. If {@code false}, only take-last action is considered.
      * @return {@code True}, if {@code first} is {@code null} and the bounds suppose taking first or last index record.
      * {@code True}, if {@code first} is {@code true} and the bounds suppose taking first index record.
      * {@code True}, if {@code first} is {@code false} and the bounds suppose taking last index record.
      * {@code False} otherwise.
      */
     private boolean firstOrLast(@Nullable Boolean first) {
-        return lowerBound() != null &&
-            lowerBound().stream().filter(b -> b != null && (first == null ? b.isA(SqlKind.FIRST_VALUE) || b.isA(SqlKind.LAST_VALUE)
-                : b.isA(first ? SqlKind.FIRST_VALUE : SqlKind.LAST_VALUE))).count() == 1 &&
-            F.eq(lowerBound(), upperBound());
+        return lowerBound() != null && F.eq(lowerBound(), upperBound()) &&
+            lowerBound().stream().filter(b -> b != null && (first == null
+                ? b.isA(SqlKind.FIRST_VALUE) || b.isA(SqlKind.LAST_VALUE)
+                : b.isA(first ? SqlKind.FIRST_VALUE : SqlKind.LAST_VALUE))).count() == 1;
     }
 
     /** {@inheritDoc} */
-    @Override
-    public RelOptCost computeSelfCost(RelOptPlanner planner, RelMetadataQuery mq) {
+    @Override public RelOptCost computeSelfCost(RelOptPlanner planner, RelMetadataQuery mq) {
         if (idxCond != null && findFirstOrLast())
             return planner.getCostFactory().makeTinyCost();
 

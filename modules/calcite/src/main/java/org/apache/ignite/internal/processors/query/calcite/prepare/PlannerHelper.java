@@ -103,11 +103,6 @@ public class PlannerHelper {
             if (sqlNode.isA(ImmutableSet.of(SqlKind.INSERT, SqlKind.UPDATE, SqlKind.MERGE)))
                 igniteRel = new FixDependentModifyNodeShuttle().visit(igniteRel);
 
-            //TODO: remove
-            System.err.println("TEST | plan: " + igniteRel.explain());
-
-//            System.err.println("TEST | dump: " + planner.dump());
-
             return igniteRel;
         }
         catch (Throwable ex) {

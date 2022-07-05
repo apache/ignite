@@ -201,4 +201,9 @@ public class SortNode<Row> extends AbstractNode<Row> implements SingleNode<Row>,
             inLoop = false;
         }
     }
+
+    /** */
+    public int limit() {
+        return limit;
+    }
 }

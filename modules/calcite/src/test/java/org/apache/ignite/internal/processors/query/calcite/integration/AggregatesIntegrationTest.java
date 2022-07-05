@@ -31,34 +31,78 @@ import org.junit.Test;
 public class AggregatesIntegrationTest extends AbstractBasicIntegrationTest {
     /** */
     @Test
-    public void testMinOptimization(){
+    public void testMinMaxWithTable() {
+        String[] indexes = new String[] {
+            "val0",
+            "val0 desc",
+            "val0, val1",
+            "val0 desc, val1 desc",
+            "val0 asc, val1 desc",
+            "val0 desc, val1 asc"
+        };
+
+        for (String idx : indexes) {
+            for (int backups = -1; backups < 3; ++backups) {
+                executeSql("create table tbl(id integer primary key, val0 integer, val1 float, val2 varchar) " +
+                    "with template=" + (backups < 0 ? "replicated" : "partitioned,backups=" + backups));
+
+                executeSql("create index test_idx on tbl(" + idx + ")");
+
+                fillTestTbl();
+
+                assertQuery("select min(val0) from tbl").returns(1).check();
+                assertQuery("select min(val1) from tbl").returns(10.0f).check();
+                assertQuery("select max(val0) from tbl").returns(5).check();
+                assertQuery("select max(val1) from tbl").returns(50.0f).check();
+
+                executeSql("drop table tbl");
+            }
+        }
+    }
+
+    /** */
+    private void fillTestTbl() {
+        executeSql("insert into tbl values(1, 2, 20.0, 'value_1')");
+        executeSql("insert into tbl values(2, 3, 10.0, 'value_2')");
+        executeSql("insert into tbl values(3, 4, 50.0, 'value_3')");
+        executeSql("insert into tbl values(4, 1, 40.0, 'value_4')");
+        executeSql("insert into tbl values(5, 5, 20.0, 'value_5')");
+    }
+
+    /** */
+    @Test
+    public void testMinMaxWithEntity() {
         for (int b = 0; b < 2; ++b) {
-            createAndPopulateTable(b, CacheMode.PARTITIONED);
+            createAndPopulateTable2(b, CacheMode.PARTITIONED);
 
             assertQuery("select min(salary) from person").returns(10.0).check();
+            assertQuery("select min(descVal) from person").returns(3.0).check();
             assertQuery("select max(salary) from person").returns(15.0).check();
+            assertQuery("select max(descVal) from person").returns(5.0).check();
 
             client.destroyCache(TABLE_NAME);
         }
 
-        createAndPopulateTable(0, CacheMode.REPLICATED);
+        createAndPopulateTable2(0, CacheMode.REPLICATED);
 
         assertQuery("select min(salary) from person").returns(10.0).check();
+        assertQuery("select min(descVal) from person").returns(1.0).check();
         assertQuery("select max(salary) from person").returns(15.0).check();
+        assertQuery("select max(descVal) from person").returns(5.0).check();
     }
 
     /** */
     @Test
     public void testCountWithBackupsAndCacheModes() {
         for (int b = 0; b < 2; ++b) {
-            createAndPopulateTable(b, CacheMode.PARTITIONED);
+            createAndPopulateTable2(b, CacheMode.PARTITIONED);
 
             assertQuery("select count(*) from person").returns(5L).check();
 
             client.destroyCache(TABLE_NAME);
         }
 
-        createAndPopulateTable(0, CacheMode.REPLICATED);
+        createAndPopulateTable2(0, CacheMode.REPLICATED);
 
         assertQuery("select count(*) from person").returns(5L).check();
     }

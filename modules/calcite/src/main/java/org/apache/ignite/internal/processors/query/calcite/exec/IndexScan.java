@@ -159,7 +159,9 @@ public class IndexScan<Row> extends AbstractIndexScan<Row, IndexRow> {
         }
     }
 
-    /** {@inheritDoc} */
+    /**
+     * Gets first or last records from all segments.
+     */
     public List<Row> firstOrLast(boolean first) {
         reserve();
 

@@ -146,17 +146,10 @@ public class AbstractBasicIntegrationTest extends GridCommonAbstractTest {
 
     /** */
     protected IgniteCache<Integer, Employer> createAndPopulateTable() {
-        return createAndPopulateTable(2, CacheMode.PARTITIONED);
-    }
-
-    /** */
-    protected IgniteCache<Integer, Employer> createAndPopulateTable(int backups, CacheMode cacheMode) {
         IgniteCache<Integer, Employer> person = client.getOrCreateCache(new CacheConfiguration<Integer, Employer>()
             .setName(TABLE_NAME)
             .setSqlSchema("PUBLIC")
             .setQueryEntities(F.asList(new QueryEntity(Integer.class, Employer.class).setTableName(TABLE_NAME)))
-            .setCacheMode(cacheMode)
-            .setBackups(backups)
         );
 
         int idx = 0;
@@ -166,6 +159,27 @@ public class AbstractBasicIntegrationTest extends GridCommonAbstractTest {
         person.put(idx++, new Employer("Ilya", 15d));
         person.put(idx++, new Employer("Roma", 10d));
         person.put(idx++, new Employer("Roma", 10d));
+
+        return person;
+    }
+
+    /** */
+    protected IgniteCache<Integer, Employer2> createAndPopulateTable2(int backups, CacheMode cacheMode) {
+        IgniteCache<Integer, Employer2> person = client.getOrCreateCache(new CacheConfiguration<Integer, Employer2>()
+            .setName(TABLE_NAME)
+            .setSqlSchema("PUBLIC")
+            .setQueryEntities(F.asList(new QueryEntity(Integer.class, Employer2.class).setTableName(TABLE_NAME)))
+            .setCacheMode(cacheMode)
+            .setBackups(backups)
+        );
+
+        int idx = 0;
+
+        person.put(idx++, new Employer2("Igor", 10d, 7d));
+        person.put(idx++, new Employer2(null, 15d, null));
+        person.put(idx++, new Employer2("Ilya", 15d, 3d));
+        person.put(idx++, new Employer2("Roma", 10d, 9d));
+        person.put(idx++, new Employer2("Roma", 10d, 11d));
 
         return person;
     }
@@ -212,6 +226,11 @@ public class AbstractBasicIntegrationTest extends GridCommonAbstractTest {
         /** {@inheritDoc} */
         @Override public IgniteTable table() {
             return delegate.table();
+        }
+
+        /** {@inheritDoc} */
+        @Override public List<String> fields() {
+            return delegate.fields();
         }
 
         /** {@inheritDoc} */
@@ -267,13 +286,35 @@ public class AbstractBasicIntegrationTest extends GridCommonAbstractTest {
         public String name;
 
         /** */
-        @QuerySqlField(index = true)
+        @QuerySqlField
         public Double salary;
 
         /** */
         public Employer(String name, Double salary) {
             this.name = name;
             this.salary = salary;
+        }
+    }
+
+    /** */
+    public static class Employer2 {
+        /** */
+        @QuerySqlField
+        public String name;
+
+        /** */
+        @QuerySqlField(index = true)
+        public Double salary;
+
+        /** */
+        @QuerySqlField(index = true, descending = true)
+        public Double descVal;
+
+        /** */
+        public Employer2(String name, Double salary, Double descVal) {
+            this.name = name;
+            this.salary = salary;
+            this.descVal = salary;
         }
     }
 }

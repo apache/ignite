@@ -101,7 +101,7 @@ public class PlannerTimeoutTest extends AbstractPlannerTest {
         TestTable table = createTable(name, IgniteDistributions.broadcast(), cols);
 
         RelCollation pkColl = TraitUtils.createCollation(Collections.singletonList(0));
-        table.addIndex(new CacheIndexImpl(pkColl, "pk", null, table) {
+        table.addIndex(new CacheIndexImpl(pkColl, "pk", null, table, Collections.emptyList()) {
             @Override public RelCollation collation() {
                 doSleep(300);
 

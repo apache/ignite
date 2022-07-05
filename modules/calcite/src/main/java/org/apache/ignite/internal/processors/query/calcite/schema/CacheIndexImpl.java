@@ -22,6 +22,7 @@ import java.util.UUID;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
+import com.google.common.collect.Lists;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.rel.RelCollation;
@@ -55,15 +56,20 @@ public class CacheIndexImpl implements IgniteIndex {
     private final String idxName;
 
     /** */
+    private final List<String> fields;
+
+    /** */
     private final @Nullable Index idx;
 
     /** */
     private final IgniteCacheTable tbl;
 
     /** */
-    public CacheIndexImpl(RelCollation collation, String name, @Nullable Index idx, IgniteCacheTable tbl) {
+    public CacheIndexImpl(RelCollation collation, String name, @Nullable Index idx, IgniteCacheTable tbl,
+        Iterable<String> fields) {
         this.collation = collation;
         idxName = name;
+        this.fields = Collections.unmodifiableList(Lists.newArrayList(fields));
         this.idx = idx;
         this.tbl = tbl;
     }
@@ -81,6 +87,11 @@ public class CacheIndexImpl implements IgniteIndex {
     /** */
     @Override public IgniteTable table() {
         return tbl;
+    }
+
+    /** */
+    @Override public List<String> fields() {
+        return fields;
     }
 
     /** {@inheritDoc} */
@@ -150,8 +161,7 @@ public class CacheIndexImpl implements IgniteIndex {
                 null,
                 requiredColumns
             )) {
-                //TODO: check, test
-                return scan.firstOrLast(first != collation.getFieldCollations().get(0).getDirection().isDescending());
+                return scan.firstOrLast(first);
             }
         }
 

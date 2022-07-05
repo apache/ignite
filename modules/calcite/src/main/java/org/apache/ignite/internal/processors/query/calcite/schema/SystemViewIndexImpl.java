@@ -65,6 +65,12 @@ public class SystemViewIndexImpl implements IgniteIndex {
     }
 
     /** */
+    @Override public List<String> fields() {
+        // No collation means no fields.
+        return Collections.emptyList();
+    }
+
+    /** */
     @Override public IgniteTable table() {
         return tbl;
     }
@@ -81,7 +87,7 @@ public class SystemViewIndexImpl implements IgniteIndex {
     }
 
     /** */
-    @Override public <Row> Iterable<Row> scan(
+    @Override public <Row> SystemViewScan<Row, ?> scan(
         ExecutionContext<Row> execCtx,
         ColocationGroup grp,
         Predicate<Row> filters,
@@ -105,12 +111,21 @@ public class SystemViewIndexImpl implements IgniteIndex {
         return tbl.descriptor().systemView().size();
     }
 
+    /** {@inheritDoc} */
     @Override public <Row> List<Row> findFirstOrLast(boolean first, ExecutionContext<Row> ectx, ColocationGroup grp,
         @Nullable ImmutableBitSet requiredColumns) {
-        //TODO: last
         Iterator<Row> it = scan(ectx, grp, null, null, null, null, requiredColumns).iterator();
 
-        return it.hasNext() ? F.asList(it.next()) : Collections.emptyList();
+        Row r = null;
+
+        if (it.hasNext())
+            r = it.next();
+
+        // No take-last underlying implementation. A minor ticket might be brought for the system views.
+        while (!first && it.hasNext())
+            r = it.next();
+
+        return r == null ? F.asList(r) : Collections.emptyList();
     }
 
     /** {@inheritDoc} */

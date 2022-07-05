@@ -32,6 +32,8 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
 
 import static org.apache.calcite.sql.SqlKind.COUNT;
+import static org.apache.calcite.sql.SqlKind.MAX;
+import static org.apache.calcite.sql.SqlKind.MIN;
 import static org.apache.calcite.sql.SqlKind.SUM0;
 
 /**
@@ -49,7 +51,7 @@ public class IndexRebuildPlannerTest extends AbstractPlannerTest {
         super.setup();
 
         tbl = createTable("TBL", 100, IgniteDistributions.single(), "ID", Integer.class, "VAL", String.class)
-            .addIndex(QueryUtils.PRIMARY_KEY_INDEX, 0);
+            .addIndex(QueryUtils.PRIMARY_KEY_INDEX, 0).addIndex(QueryUtils.indexName("TBL", "VAL"), 1);
 
         publicSchema = createSchema(tbl);
     }
@@ -92,6 +94,41 @@ public class IndexRebuildPlannerTest extends AbstractPlannerTest {
             .and(nodeOrAnyChild(isInstanceOf(IgniteIndexCount.class)))));
     }
 
+    /** Test Index min/max (first/last) is disabled when index is unavailable. */
+    @Test
+    public void testIndexMinMaxAtIndexRebuild() throws Exception {
+        checkMinMaxOptimized();
+
+        tbl.markIndexRebuildInProgress(true);
+
+        assertPlan("SELECT MIN(VAL) FROM TBL", publicSchema, isInstanceOf(IgniteAggregate.class)
+            .and(a -> a.getAggCallList().stream().filter(agg -> agg.getAggregation().getKind() == MIN).count() == 1)
+            .and(nodeOrAnyChild(isInstanceOf(IgniteTableScan.class))));
+
+        assertPlan("SELECT MAX(VAL) FROM TBL", publicSchema, isInstanceOf(IgniteAggregate.class)
+            .and(a -> a.getAggCallList().stream().filter(agg -> agg.getAggregation().getKind() == MAX).count() == 1)
+            .and(nodeOrAnyChild(isInstanceOf(IgniteTableScan.class))));
+
+        tbl.markIndexRebuildInProgress(false);
+
+        checkMinMaxOptimized();
+    }
+
+    /** */
+    private void checkMinMaxOptimized() throws Exception {
+        assertPlan("SELECT MIN(VAL) FROM TBL", publicSchema, nodeOrAnyChild(isInstanceOf(IgniteAggregate.class)
+            .and(a -> a.getAggCallList().stream().filter(agg -> agg.getAggregation().getKind() == MIN).count() == 1)
+            .and(nodeOrAnyChild(isInstanceOf(IgniteIndexScan.class)
+                .and(is -> is.indexName().equals(QueryUtils.indexName("TBL", "VAL")))
+                .and(IgniteIndexScan::findFirst)))));
+
+        assertPlan("SELECT MAX(VAL) FROM TBL", publicSchema, nodeOrAnyChild(isInstanceOf(IgniteAggregate.class)
+            .and(a -> a.getAggCallList().stream().filter(agg -> agg.getAggregation().getKind() == MAX).count() == 1)
+            .and(nodeOrAnyChild(isInstanceOf(IgniteIndexScan.class)
+                .and(is -> is.indexName().equals(QueryUtils.indexName("TBL", "VAL")))
+                .and(IgniteIndexScan::findLast)))));
+    }
+
     /** */
     @Test
     public void testConcurrentIndexRebuildStateChange() throws Exception {
@@ -120,8 +157,6 @@ public class IndexRebuildPlannerTest extends AbstractPlannerTest {
         fut.get();
     }
 
-    //TODO: test
-
     /**
      * Test IndexCount is disabled when index becomes unavailable.
      */
@@ -142,6 +177,44 @@ public class IndexRebuildPlannerTest extends AbstractPlannerTest {
             for (int i = 0; i < 1000; i++)
                 assertPlan(sql, publicSchema, nodeOrAnyChild(isInstanceOf(IgniteColocatedHashAggregate.class)
                     .and(input(isInstanceOf(IgniteIndexCount.class)).or(input(isInstanceOf(IgniteTableScan.class))))));
+        }
+        finally {
+            stop.set(true);
+        }
+
+        fut.get();
+    }
+
+    /**
+     * Test Index min/max is disabled when index becomes unavailable.
+     */
+    @Test
+    public void testIndexMinMaxAtConcurrentIndexRebuild() throws Exception {
+        AtomicBoolean stop = new AtomicBoolean();
+
+        IgniteInternalFuture<?> fut = GridTestUtils.runAsync(() -> {
+            boolean lever = true;
+
+            while (!stop.get())
+                tbl.markIndexRebuildInProgress(lever = !lever);
+        });
+
+        tbl.markIndexRebuildInProgress(true);
+
+        try {
+            for (int i = 0; i < 500; i++) {
+                assertPlan("SELECT MIN(VAL) FROM TBL", publicSchema,
+                    nodeOrAnyChild(isInstanceOf(IgniteAggregate.class)
+                        .and(input(isInstanceOf(IgniteIndexScan.class).and(IgniteIndexScan::findFirst)
+                            .and(is -> is.indexName().equals(QueryUtils.indexName("TBL", "VAL"))))
+                            .or(input(isInstanceOf(IgniteTableScan.class))))));
+
+                assertPlan("SELECT MAX(VAL) FROM TBL", publicSchema,
+                    nodeOrAnyChild(isInstanceOf(IgniteAggregate.class)
+                        .and(input(isInstanceOf(IgniteIndexScan.class).and(IgniteIndexScan::findLast)
+                            .and(is -> is.indexName().equals(QueryUtils.indexName("TBL", "VAL"))))
+                            .or(input(isInstanceOf(IgniteTableScan.class))))));
+            }
         }
         finally {
             stop.set(true);
