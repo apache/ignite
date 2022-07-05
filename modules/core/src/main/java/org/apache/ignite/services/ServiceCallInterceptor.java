@@ -28,6 +28,9 @@ import org.apache.ignite.lang.IgniteExperimental;
  * ({@link Service#init init()}, {@link Service#execute() execute()} and {@link Service#cancel() cancel()}).
  * <p>
  * A typical use of an interceptor is a middleware logic that applies to all custom methods in a service.
+ * The user can specify multiple interceptors in the {@link ServiceConfiguration service configuration}.
+ * Each interceptor invokes the next interceptor in the chain using a delegated call, the last interceptor
+ * will call the service method.
  * <p>
  * Usage example:
  * <pre name="code" class="java">
@@ -94,7 +97,7 @@ public interface ServiceCallInterceptor extends Serializable {
      * @param mtd Method name.
      * @param args Method arguments.
      * @param ctx Service context.
-     * @param next Delegated call to a service method and/or interceptor.
+     * @param next Delegated call to a service method and/or interceptor in the chain.
      * @return Service call result.
      */
     public Object invoke(String mtd, Object[] args, ServiceContext ctx, Callable<Object> next) throws Exception;
