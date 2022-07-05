@@ -54,7 +54,7 @@ class PersistenceUpgradeTest(IgniteTest):
 
         for version in versions:
             service.config = IgniteConfiguration(
-                data_storage=DataStorageConfiguration(default=DataRegionConfiguration(persistent=True)),
+                data_storage=DataStorageConfiguration(default=DataRegionConfiguration(persistence_enabled=True)),
                 version=version
             )
 

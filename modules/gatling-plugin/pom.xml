@@ -1,0 +1,221 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!--
+  Licensed to the Apache Software Foundation (ASF) under one or more
+  contributor license agreements.  See the NOTICE file distributed with
+  this work for additional information regarding copyright ownership.
+  The ASF licenses this file to You under the Apache License, Version 2.0
+  (the "License"); you may not use this file except in compliance with
+  the License.  You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
+
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>org.apache.ignite</groupId>
+        <artifactId>ignite-parent-internal</artifactId>
+        <version>${revision}</version>
+        <relativePath>../../parent-internal/pom.xml</relativePath>
+    </parent>
+
+    <artifactId>ignite-gatling-plugin</artifactId>
+    <url>https://ignite.apache.org</url>
+
+    <description>Apache Ignite plugin for performance testing in Gatling</description>
+
+    <properties>
+        <scala.version>2.13.8</scala.version>
+        <scala.compat.version>2.13</scala.compat.version>
+        <gatling.version>3.7.6</gatling.version>
+        <netty.version>2.0.51.Final</netty.version>
+    </properties>
+
+    <dependencies>
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>ignite-core</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>io.gatling</groupId>
+            <artifactId>gatling-core</artifactId>
+            <version>${gatling.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>io.netty</groupId>
+            <artifactId>netty-tcnative-classes</artifactId>
+            <version>${netty.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>io.netty</groupId>
+            <artifactId>netty-tcnative-boringssl-static</artifactId>
+            <version>${netty.version}</version>
+        </dependency>
+
+        <!-- Test -->
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>ignite-core</artifactId>
+            <type>test-jar</type>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>ignite-spring</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>ignite-tools</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>log4j</groupId>
+            <artifactId>log4j</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>io.gatling</groupId>
+            <artifactId>gatling-charts</artifactId>
+            <version>${gatling.version}</version>
+            <scope>runtime</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>io.gatling.highcharts</groupId>
+            <artifactId>gatling-charts-highcharts</artifactId>
+            <version>${gatling.version}</version>
+            <scope>runtime</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>io.gatling</groupId>
+            <artifactId>gatling-app</artifactId>
+            <version>${gatling.version}</version>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <sourceDirectory>src/main/scala</sourceDirectory>
+        <testSourceDirectory>src/test/scala</testSourceDirectory>
+        <plugins>
+            <plugin>
+                <groupId>net.alchim31.maven</groupId>
+                <artifactId>scala-maven-plugin</artifactId>
+                <version>3.3.2</version>
+                <configuration>
+                    <scalaCompatVersion>${scala.compat.version}</scalaCompatVersion>
+                    <args>
+                        <arg>-deprecation</arg>
+                        <arg>-feature</arg>
+                        <arg>-language:implicitConversions</arg>
+                    </args>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>scaladoc</id>
+                        <phase>prepare-package</phase>
+                        <goals>
+                            <goal>doc</goal>
+                            <goal>doc-jar</goal>
+                        </goals>
+                        <configuration>
+                            <doctitle>Ignite Gatling Plugin</doctitle>
+                            <windowtitle>Ignite Gatling Plugin</windowtitle>
+                            <skip>${maven.javadoc.skip}</skip>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>com.diffplug.spotless</groupId>
+                <artifactId>spotless-maven-plugin</artifactId>
+                <version>2.22.8</version>
+                <dependencies>
+                    <dependency>
+                        <groupId>org.scalameta</groupId>
+                        <artifactId>scalafmt-core_2.13</artifactId>
+                        <version>3.5.8</version>
+                    </dependency>
+                </dependencies>
+                <configuration>
+                    <scala>
+                        <scalafmt>
+                            <version>3.5.8</version>
+                            <file>${project.basedir}/.scalafmt.conf</file>
+                        </scalafmt>
+                        <licenseHeader>
+                            <file>${project.basedir}/project/license-header</file>
+                            <delimiter>package</delimiter>
+                        </licenseHeader>
+                    </scala>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+    <profiles>
+        <profile>
+            <id>checkstyle</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.scalastyle</groupId>
+                        <artifactId>scalastyle-maven-plugin</artifactId>
+                        <version>1.0.0</version>
+                        <configuration>
+                            <verbose>false</verbose>
+                            <failOnViolation>true</failOnViolation>
+                            <includeTestSourceDirectory>true</includeTestSourceDirectory>
+                            <failOnWarning>true</failOnWarning>
+                            <sourceDirectory>${project.basedir}/src/main/scala</sourceDirectory>
+                            <testSourceDirectory>${project.basedir}/src/test/scala</testSourceDirectory>
+                            <configLocation>${project.basedir}/project/scalastyle_config.xml</configLocation>
+                            <outputFile>${project.basedir}/target/checkstyle-result.xml</outputFile>
+                            <outputEncoding>UTF-8</outputEncoding>
+                        </configuration>
+                        <executions>
+                            <execution>
+                                <id>style</id>
+                                <goals>
+                                    <goal>check</goal>
+                                </goals>
+                                <phase>validate</phase>
+                            </execution>
+                        </executions>
+                        <dependencies>
+                            <dependency>
+                                <groupId>com.beautiful-scala</groupId>
+                                <artifactId>scalastyle_2.13</artifactId>
+                                <version>1.5.1</version>
+                            </dependency>
+                        </dependencies>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-checkstyle-plugin</artifactId>
+                        <configuration>
+                            <skip>true</skip>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
+</project>

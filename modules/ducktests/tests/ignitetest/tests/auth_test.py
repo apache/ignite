@@ -57,7 +57,7 @@ class AuthenticationTests(IgniteTest):
             auth_enabled=True,
             version=IgniteVersion(ignite_version),
             data_storage=DataStorageConfiguration(
-                default=DataRegionConfiguration(persistent=True)),
+                default=DataRegionConfiguration(persistence_enabled=True)),
             client_connector_configuration=ClientConnectorConfiguration()
         )
 
