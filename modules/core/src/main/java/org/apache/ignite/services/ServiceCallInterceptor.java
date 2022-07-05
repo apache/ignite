@@ -67,7 +67,7 @@ import org.apache.ignite.lang.IgniteExperimental;
  *     .setName("service")
  *     .setService(new MyServiceImpl())
  *     .setMaxPerNodeCount(1)
- *     .setInterceptors(security, audit);
+ *     .setInterceptors(audit, security);
  *
  * // Deploy service.
  * ignite.services().deploy(svcCfg);
