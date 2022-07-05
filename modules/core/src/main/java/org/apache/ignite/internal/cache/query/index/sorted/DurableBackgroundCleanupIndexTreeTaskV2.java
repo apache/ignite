@@ -459,6 +459,10 @@ public class DurableBackgroundCleanupIndexTreeTaskV2 extends IgniteDataTransferO
                 @Override public Object cacheValue(CacheDataRow row) {
                     return null;
                 }
+
+                @Override public void onMetadataUpdated() {
+                    // No-op.
+                }
             };
         }
     }

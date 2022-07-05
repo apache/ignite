@@ -57,7 +57,6 @@ import org.apache.ignite.internal.processors.cache.persistence.defragmentation.L
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryEx;
 import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusIO;
-import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusMetaIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
@@ -498,7 +497,7 @@ public class IndexProcessor extends GridProcessorAdapter {
 
         long metaPageId = page.pageId().pageId();
 
-        int inlineSize = metaPageInfo(page, grpId, pageMemory).inlineSize();
+        int inlineSize = MetaPageInfo.read(metaPageId, grpId, pageMemory).inlineSize();
 
         String grpName = ctx.cache().cacheGroup(grpId).cacheOrGroupName();
 
@@ -539,7 +538,8 @@ public class IndexProcessor extends GridProcessorAdapter {
         try {
             RootPage page = cctx.offheap().findRootPageForIndex(cctx.cacheId(), treeName, 0);
 
-            return page == null || metaPageInfo(page, cctx.groupId(), cctx.dataRegion().pageMemory()).useUnwrappedPk();
+            return page == null ||
+                MetaPageInfo.read(page.pageId().pageId(), cctx.groupId(), cctx.dataRegion().pageMemory()).useUnwrappedPk();
         }
         catch (IgniteCheckedException ignore) {
             return true;
@@ -548,38 +548,6 @@ public class IndexProcessor extends GridProcessorAdapter {
             db.checkpointReadUnlock();
         }
 
-    }
-
-    /**
-     * @param page Root page.
-     * @param grpId Cache group id.
-     * @param pageMemory Page memory.
-     * @return Meta page info.
-     * @throws IgniteCheckedException If something went wrong.
-     */
-    private MetaPageInfo metaPageInfo(RootPage page, int grpId, PageMemory pageMemory) throws IgniteCheckedException {
-        long metaPageId = page.pageId().pageId();
-
-        final long metaPage = pageMemory.acquirePage(grpId, metaPageId);
-
-        try {
-            long pageAddr = pageMemory.readLock(grpId, metaPageId, metaPage); // Meta can't be removed.
-
-            assert pageAddr != 0 : "Failed to read lock meta page [metaPageId=" +
-                U.hexLong(metaPageId) + ']';
-
-            try {
-                BPlusMetaIO io = BPlusMetaIO.VERSIONS.forPage(pageAddr);
-
-                return new MetaPageInfo(io, pageAddr);
-            }
-            finally {
-                pageMemory.readUnlock(grpId, metaPageId, metaPage);
-            }
-        }
-        finally {
-            pageMemory.releasePage(grpId, metaPageId, metaPage);
-        }
     }
 
     /**

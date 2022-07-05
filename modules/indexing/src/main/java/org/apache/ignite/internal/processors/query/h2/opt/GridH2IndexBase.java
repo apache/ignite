@@ -21,7 +21,6 @@ import java.util.List;
 import org.apache.ignite.internal.cache.query.index.Index;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
-import org.apache.ignite.internal.processors.query.GridQueryRowDescriptor;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.h2.H2Utils;
 import org.apache.ignite.internal.processors.query.h2.opt.join.CollocationModel;
@@ -224,7 +223,7 @@ public abstract class GridH2IndexBase extends H2IndexCostedBase {
     /**
      * @return Row descriptor.
      */
-    protected GridQueryRowDescriptor rowDescriptor() {
+    protected GridH2RowDescriptor rowDescriptor() {
         return ((GridH2Table)table).rowDescriptor();
     }
 

@@ -27,7 +27,6 @@ import org.apache.ignite.internal.cache.query.index.sorted.keys.IndexKey;
 import org.apache.ignite.internal.cache.query.index.sorted.keys.IndexKeyFactory;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
-import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.query.GridQueryRowDescriptor;
 import org.apache.ignite.internal.processors.query.QueryUtils;
@@ -38,13 +37,16 @@ public class QueryIndexRowHandler implements InlineIndexRowHandler {
     private final GridQueryRowDescriptor rowDescriptor;
 
     /** Index to columns references. */
-    private final List<Integer> keyColumns;
+    private volatile List<Integer> keyColumns;
 
     /** List of key types for inlined index keys. */
     private final List<InlineIndexKeyType> keyTypes;
 
     /** List of index key definitions. */
     private final List<IndexKeyDefinition> keyDefs;
+
+    /** List of index key field names. */
+    private final List<String> keyFieldNames;
 
     /** Index key type settings. */
     private final IndexKeyTypeSettings keyTypeSettings;
@@ -58,24 +60,24 @@ public class QueryIndexRowHandler implements InlineIndexRowHandler {
     ) {
         this.keyTypes = Collections.unmodifiableList(keyTypes);
         this.keyDefs = Collections.unmodifiableList(new ArrayList<>(keyDefs.values()));
+        keyFieldNames = Collections.unmodifiableList(new ArrayList<>(keyDefs.keySet()));
+
         this.rowDescriptor = rowDescriptor;
         this.keyTypeSettings = keyTypeSettings;
 
-        List<Integer> keyColumns = new ArrayList<>(keyDefs.size());
-        List<String> fields = new ArrayList<>(rowDescriptor.type().fields().keySet());
+        onMetadataUpdated();
+    }
 
-        for (String fieldName : keyDefs.keySet()) {
-            if (QueryUtils.KEY_FIELD_NAME.equals(fieldName))
-                keyColumns.add(QueryUtils.KEY_COL);
-            else if (QueryUtils.VAL_FIELD_NAME.equals(fieldName))
-                keyColumns.add(QueryUtils.VAL_COL);
-            else {
-                int fieldIdx = fields.indexOf(fieldName);
+    /** {@inheritDoc} */
+    @Override public void onMetadataUpdated() {
+        List<Integer> keyColumns = new ArrayList<>(keyFieldNames.size());
 
-                assert fieldIdx >= 0 : "Unexpected field name [fieldName=" + fieldName + ", keyDefs=" + keyDefs + ']';
+        for (String fieldName : keyFieldNames) {
+            int colId = rowDescriptor.columnId(fieldName);
 
-                keyColumns.add(QueryUtils.DEFAULT_COLUMNS_COUNT + fieldIdx);
-            }
+            assert colId >= 0 : "Unexpected field name [fieldName=" + fieldName + ", keyNames=" + keyFieldNames + ']';
+
+            keyColumns.add(colId);
         }
 
         this.keyColumns = Collections.unmodifiableList(keyColumns);
@@ -109,50 +111,34 @@ public class QueryIndexRowHandler implements InlineIndexRowHandler {
         int colId = keyColumns.get(idx);
 
         if (rowDescriptor.isKeyColumn(colId))
-            return key(row);
+            return unwrap(row.key());
 
         else if (rowDescriptor.isValueColumn(colId))
-            return value(row);
+            return unwrap(row.value());
 
-        // columnValue ignores default columns (_KEY, _VAL), so make this shift.
-        return rowDescriptor.columnValue(row.key(), row.value(), colId - QueryUtils.DEFAULT_COLUMNS_COUNT);
+        // getFieldValue ignores default columns (_KEY, _VAL), so make this shift.
+        return rowDescriptor.getFieldValue(row.key(), row.value(), colId - QueryUtils.DEFAULT_COLUMNS_COUNT);
     }
 
     /** {@inheritDoc} */
     @Override public int partition(CacheDataRow row) {
-        Object key = key(row);
+        Object key = unwrap(row.key());
 
         return rowDescriptor.context().affinity().partition(key);
     }
 
     /** {@inheritDoc} */
     @Override public Object cacheKey(CacheDataRow row) {
-        return key(row);
+        return unwrap(row.key());
     }
 
     /** {@inheritDoc} */
     @Override public Object cacheValue(CacheDataRow row) {
-        return value(row);
-    }
-
-    /** @return Cache key for specified cache row. */
-    public Object key(CacheDataRow row) {
-        KeyCacheObject key = row.key();
-
-        Object o = getBinaryObject(key);
-
-        if (o != null)
-            return o;
-
-        CacheObjectContext coctx = rowDescriptor.context().cacheObjectContext();
-
-        return key.value(coctx, false);
+        return unwrap(row.value());
     }
 
     /** */
-    private Object value(CacheDataRow row) {
-        CacheObject val = row.value();
-
+    private Object unwrap(CacheObject val) {
         Object o = getBinaryObject(val);
 
         if (o != null)
@@ -160,7 +146,7 @@ public class QueryIndexRowHandler implements InlineIndexRowHandler {
 
         CacheObjectContext coctx = rowDescriptor.context().cacheObjectContext();
 
-        return row.value().value(coctx, false);
+        return val.value(coctx, false);
     }
 
     /** */

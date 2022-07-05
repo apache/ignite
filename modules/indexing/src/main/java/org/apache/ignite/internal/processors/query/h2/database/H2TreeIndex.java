@@ -39,6 +39,7 @@ import org.apache.ignite.internal.cache.query.index.sorted.InlineIndexRowHandler
 import org.apache.ignite.internal.cache.query.index.sorted.SortedIndexDefinition;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.IndexQueryContext;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexImpl;
+import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexTree;
 import org.apache.ignite.internal.cache.query.index.sorted.keys.IndexKey;
 import org.apache.ignite.internal.cache.query.index.sorted.keys.IndexKeyFactory;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
@@ -47,6 +48,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
 import org.apache.ignite.internal.processors.query.GridQueryRowDescriptor;
+import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.h2.H2Cursor;
 import org.apache.ignite.internal.processors.query.h2.H2Utils;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
@@ -412,7 +414,8 @@ public class H2TreeIndex extends H2TreeIndexBase {
 
             if (masks != null) {
                 ucast = (masks[affColId] & IndexCondition.EQUALITY) != 0 ||
-                    desc.checkKeyIndexCondition(masks, IndexCondition.EQUALITY);
+                    (masks[QueryUtils.KEY_COL] & IndexCondition.EQUALITY) != 0 ||
+                    (masks[desc.getAlternativeColumnId(QueryUtils.KEY_COL)] & IndexCondition.EQUALITY) != 0;
             }
         }
 
@@ -735,5 +738,16 @@ public class H2TreeIndex extends H2TreeIndexBase {
             return clazz.cast(queryIndex);
 
         return super.unwrap(clazz);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void refreshColumnIds() {
+        super.refreshColumnIds();
+
+        for (int i = 0; i < queryIndex.segmentsCount(); i++) {
+            InlineIndexTree segment = queryIndex.segment(i);
+
+            segment.rowHandler().onMetadataUpdated();
+        }
     }
 }

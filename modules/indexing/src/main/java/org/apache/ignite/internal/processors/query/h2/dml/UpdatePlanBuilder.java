@@ -835,7 +835,7 @@ public final class UpdatePlanBuilder {
 
             // column ids 0..1 are _key, _val
             if (colId >= QueryUtils.DEFAULT_COLUMNS_COUNT) {
-                if (desc.isColumnKeyProperty(colId - QueryUtils.DEFAULT_COLUMNS_COUNT))
+                if (desc.isFieldKeyProperty(colId - QueryUtils.DEFAULT_COLUMNS_COUNT))
                     return true;
             }
         }
@@ -890,7 +890,7 @@ public final class UpdatePlanBuilder {
                 assert colId >= QueryUtils.DEFAULT_COLUMNS_COUNT :
                     "Unexpected column [name=" + col + ", id=" + colId + "].";
 
-                if (desc.isColumnKeyProperty(colId - QueryUtils.DEFAULT_COLUMNS_COUNT))
+                if (desc.isFieldKeyProperty(colId - QueryUtils.DEFAULT_COLUMNS_COUNT))
                     hasKeyProps = true;
                 else
                     hasValProps = true;

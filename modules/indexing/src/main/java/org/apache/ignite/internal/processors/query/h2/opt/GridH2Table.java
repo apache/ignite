@@ -32,7 +32,6 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteInterruptedException;
@@ -49,7 +48,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContextInfo;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.query.QueryTable;
-import org.apache.ignite.internal.processors.query.GridQueryRowDescriptor;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryField;
 import org.apache.ignite.internal.processors.query.QueryUtils;
@@ -121,7 +119,7 @@ public class GridH2Table extends TableBase {
     private final GridCacheContextInfo cacheInfo;
 
     /** */
-    private final GridQueryRowDescriptor desc;
+    private final GridH2RowDescriptor desc;
 
     /** */
     private final H2TableDescriptor tblDesc;
@@ -203,7 +201,7 @@ public class GridH2Table extends TableBase {
     @SuppressWarnings("ConstantConditions")
     public GridH2Table(
         CreateTableData createTblData,
-        GridQueryRowDescriptor desc,
+        GridH2RowDescriptor desc,
         H2TableDescriptor tblDesc,
         GridCacheContextInfo cacheInfo,
         IndexProcessor idxProc
@@ -460,7 +458,7 @@ public class GridH2Table extends TableBase {
     /**
      * @return Row descriptor.
      */
-    public GridQueryRowDescriptor rowDescriptor() {
+    public GridH2RowDescriptor rowDescriptor() {
         return desc;
     }
 
@@ -1370,7 +1368,7 @@ public class GridH2Table extends TableBase {
 
             setColumns(newCols);
 
-            desc.refreshMetadataFromTypeDescriptor();
+            desc.onMetadataUpdated();
 
             incrementModificationCounter();
         }
@@ -1431,7 +1429,7 @@ public class GridH2Table extends TableBase {
 
             setColumns(newCols);
 
-            desc.refreshMetadataFromTypeDescriptor();
+            desc.onMetadataUpdated();
 
             for (Index idx : getIndexes()) {
                 if (idx instanceof GridH2IndexBase)

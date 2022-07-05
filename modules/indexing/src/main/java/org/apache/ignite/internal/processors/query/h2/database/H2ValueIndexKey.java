@@ -72,7 +72,7 @@ public class H2ValueIndexKey implements IndexKey {
      * @param v2 Second value.
      * @return Comparison result.
      */
-    public int compareValues(Value v1, Value v2) {
+    private int compareValues(Value v1, Value v2) {
         // Exploit convertion/comparison provided by H2.
         return Integer.signum(table.compareTypeSafe(v1, v2));
     }

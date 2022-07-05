@@ -61,13 +61,13 @@ import org.apache.ignite.internal.processors.cache.verify.GridNotIdleException;
 import org.apache.ignite.internal.processors.cache.verify.IdleVerifyUtility;
 import org.apache.ignite.internal.processors.cache.verify.PartitionKey;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
-import org.apache.ignite.internal.processors.query.GridQueryRowDescriptor;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.QueryTypeDescriptorImpl;
 import org.apache.ignite.internal.processors.query.h2.ConnectionManager;
 import org.apache.ignite.internal.processors.query.h2.H2Utils;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.h2.database.H2TreeIndexBase;
+import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.processors.query.h2.opt.H2CacheRow;
 import org.apache.ignite.internal.processors.query.h2.opt.QueryContext;
@@ -699,7 +699,7 @@ public class ValidateIndexesClosure implements IgniteCallable<VisorValidateIndex
             if (gridH2Tbl == null)
                 continue; // Tolerate - (k, v) is just not indexed.
 
-            GridQueryRowDescriptor gridH2RowDesc = gridH2Tbl.rowDescriptor();
+            GridH2RowDescriptor gridH2RowDesc = gridH2Tbl.rowDescriptor();
 
             H2CacheRow h2Row = new H2CacheRow(gridH2RowDesc, row);
 

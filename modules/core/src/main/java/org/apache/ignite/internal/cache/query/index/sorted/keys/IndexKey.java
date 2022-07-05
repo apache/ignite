@@ -34,7 +34,7 @@ public interface IndexKey {
     public IndexKeyType type();
 
     /**
-     * @return Comparison result with other IndexKey the same type.
+     * @return Comparison result with other IndexKey.
      */
     public int compare(IndexKey o);
 

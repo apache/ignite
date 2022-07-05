@@ -17,207 +17,70 @@
 
 package org.apache.ignite.internal.processors.query;
 
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteException;
-import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyType;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
-import org.apache.ignite.internal.processors.cache.GridCacheContextInfo;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Row descriptor.
  */
-public class GridQueryRowDescriptor {
-    /** Non existent column. */
-    public static final int COL_NOT_EXISTS = -1;
-
-    /**  */
-    private final GridCacheContextInfo<?, ?> cacheInfo;
-
-    /** */
-    private final GridQueryTypeDescriptor type;
-
-    /** */
-    private volatile String[] fields;
-
-    /** */
-    private volatile IndexKeyType[] fieldTypes;
-
-    /** */
-    private final IndexKeyType keyType;
-
-    /** */
-    private final IndexKeyType valType;
-
-    /** */
-    private volatile GridQueryProperty[] props;
-    
-    /** */
-    private volatile Set<String> rowKeyColumnNames;
-    
-    /** Id of user-defined key column */
-    private volatile int keyAliasColId;
-
-    /** Id of user-defined value column */
-    private volatile int valAliasColId;
+public interface GridQueryRowDescriptor {
+    /**
+     * Callback for table metadata update event.
+     */
+    public void onMetadataUpdated();
 
     /**
-     * Constructor.
-     *
-     * @param cacheInfo Cache context.
-     * @param type Type descriptor.
+     * Gets column ID by name.
      */
-    public GridQueryRowDescriptor(GridCacheContextInfo<?, ?> cacheInfo, GridQueryTypeDescriptor type) {
-        assert type != null;
-
-        this.cacheInfo = cacheInfo;
-        this.type = type;
-
-        keyType = IndexKeyType.forClass(type.keyClass());
-        valType = IndexKeyType.forClass(type.valueClass());
-
-        refreshMetadataFromTypeDescriptor();
-    }
-
-    /**
-     * Update metadata of this row descriptor according to current state of type descriptor.
-     */
-    @SuppressWarnings({"WeakerAccess", "ToArrayCallWithZeroLengthArrayArgument"})
-    public final void refreshMetadataFromTypeDescriptor() {
-
-        Map<String, Class<?>> allFields = new LinkedHashMap<>(type.fields());
-
-        fields = allFields.keySet().toArray(new String[allFields.size()]);
-
-        fieldTypes = new IndexKeyType[fields.length];
-
-        Class<?>[] classes = allFields.values().toArray(new Class[fields.length]);
-
-        for (int i = 0; i < fieldTypes.length; i++)
-            fieldTypes[i] = IndexKeyType.forClass(classes[i]);
-
-        props = new GridQueryProperty[fields.length];
-
-        for (int i = 0; i < fields.length; i++) {
-            GridQueryProperty p = type.property(fields[i]);
-
-            assert p != null : fields[i];
-
-            props[i] = p;
-        }
-
-        List<String> fieldsList = Arrays.asList(fields);
-
-        keyAliasColId = (type.keyFieldName() != null) ?
-            QueryUtils.DEFAULT_COLUMNS_COUNT + fieldsList.indexOf(type.keyFieldAlias()) : COL_NOT_EXISTS;
-
-        valAliasColId = (type.valueFieldName() != null) ?
-            QueryUtils.DEFAULT_COLUMNS_COUNT + fieldsList.indexOf(type.valueFieldAlias()) : COL_NOT_EXISTS;
-    
-        rowKeyColumnNames = Arrays.stream(props).filter(GridQueryProperty::key)
-                .map(GridQueryProperty::name)
-                .collect(Collectors.toSet());
-    }
+    public int columnId(String fieldName);
 
     /**
      * Gets type descriptor.
      *
      * @return Type descriptor.
      */
-    public GridQueryTypeDescriptor type() {
-        return type;
-    }
+    public GridQueryTypeDescriptor type();
 
     /**
      * Gets cache context for this row descriptor.
      *
      * @return Cache context.
      */
-    @Nullable public GridCacheContext<?, ?> context() {
-        return cacheInfo.cacheContext();
-    }
-
-    /**
-     * @return Key type.
-     */
-    public IndexKeyType keyType() {
-        return keyType;
-    }
-
-    /**
-     * @return Value type.
-     */
-    public IndexKeyType valueType() {
-        return valType;
-    }
+    @Nullable public GridCacheContext<?, ?> context();
 
     /**
      * @return Total fields count.
      */
-    public int fieldsCount() {
-        return fields.length;
-    }
+    public int fieldsCount();
 
     /**
-     * Gets value type for column index.
-     *
-     * @param col Column index.
-     * @return Value type.
-     */
-    public IndexKeyType fieldType(int col) {
-        return fieldTypes[col];
-    }
-
-    /**
-     * Gets column value by column index.
+     * Gets field value by field index.
      *
      * @param key Key.
      * @param val Value.
-     * @param col Column index.
-     * @return  Column value.
+     * @param fieldIdx Field index.
+     * @return Field value.
      */
-    public Object columnValue(Object key, Object val, int col) {
-        try {
-            return props[col].value(key, val);
-        }
-        catch (IgniteCheckedException e) {
-            throw new IgniteException(e);
-        }
-    }
+    public Object getFieldValue(Object key, Object val, int fieldIdx);
 
     /**
-     * Gets column value by column index.
+     * Sets field value by field index.
      *
      * @param key Key.
      * @param val Value.
-     * @param colVal Value to set to column.
-     * @param col Column index.
+     * @param fieldVal Value to set to field.
+     * @param fieldIdx Field index.
      */
-    public void setColumnValue(Object key, Object val, Object colVal, int col) {
-        try {
-            props[col].setValue(key, val, colVal);
-        }
-        catch (IgniteCheckedException e) {
-            throw new IgniteException(e);
-        }
-    }
+    public void setFieldValue(Object key, Object val, Object fieldVal, int fieldIdx);
 
     /**
-     * Determine whether a column corresponds to a property of key or to one of value.
+     * Determine whether a field corresponds to a property of key or to one of value.
      *
-     * @param col Column index.
-     * @return {@code true} if given column corresponds to a key property, {@code false} otherwise
+     * @param fieldIdx Field index.
+     * @return {@code true} if given field corresponds to a key property, {@code false} otherwise.
      */
-    public boolean isColumnKeyProperty(int col) {
-        return props[col].key();
-    }
+    public boolean isFieldKeyProperty(int fieldIdx);
 
     /**
      * Checks if provided column id matches key column or key alias.
@@ -225,21 +88,7 @@ public class GridQueryRowDescriptor {
      * @param colId Column id.
      * @return Result.
      */
-    public boolean isKeyColumn(int colId) {
-        assert colId >= 0;
-        return colId == QueryUtils.KEY_COL || colId == keyAliasColId;
-    }
-
-    /**
-     * Checks if provided column id matches key alias column.
-     *
-     * @param colId Column id.
-     * @return Result.
-     */
-    public boolean isKeyAliasColumn(int colId) {
-        assert colId >= 0;
-        return colId == keyAliasColId;
-    }
+    public boolean isKeyColumn(int colId);
 
     /**
      * Checks if provided column id matches value column or alias.
@@ -247,62 +96,7 @@ public class GridQueryRowDescriptor {
      * @param colId Column id.
      * @return Result.
      */
-    public boolean isValueColumn(int colId) {
-        assert colId >= 0;
-        return colId == QueryUtils.VAL_COL || colId == valAliasColId;
-    }
-
-    /**
-     * Checks if provided column id matches value alias column.
-     *
-     * @param colId Column id.
-     * @return Result.
-     */
-    public boolean isValueAliasColumn(int colId) {
-        assert colId >= 0;
-        return colId == valAliasColId;
-    }
-
-    /**
-     * Checks if provided column id matches key, key alias,
-     * value, value alias or version column.
-     *
-     * @param colId Column id.
-     * @return Result.
-     */
-    @SuppressWarnings("RedundantIfStatement")
-    public boolean isKeyValueOrVersionColumn(int colId) {
-        assert colId >= 0;
-
-        if (colId < QueryUtils.DEFAULT_COLUMNS_COUNT)
-            return true;
-
-        if (colId == keyAliasColId)
-            return true;
-
-        if (colId == valAliasColId)
-            return true;
-
-        return false;
-    }
-
-    /**
-     * Checks if provided index condition is allowed for key column or key alias column.
-     *
-     * @param masks Array containing Index Condition masks for each column.
-     * @param mask Index Condition to check.
-     * @return Result.
-     */
-    @SuppressWarnings("IfMayBeConditional")
-    public boolean checkKeyIndexCondition(int masks[], int mask) {
-        assert masks != null;
-        assert masks.length > 0;
-
-        if (keyAliasColId < 0)
-            return (masks[QueryUtils.KEY_COL] & mask) != 0;
-        else
-            return (masks[QueryUtils.KEY_COL] & mask) != 0 || (masks[keyAliasColId] & mask) != 0;
-    }
+    public boolean isValueColumn(int colId);
 
     /**
      * Gets alternative column id that may substitute the given column id.
@@ -315,29 +109,12 @@ public class GridQueryRowDescriptor {
      * @param colId Column id.
      * @return Result.
      */
-    public int getAlternativeColumnId(int colId) {
-        if (keyAliasColId > 0) {
-            if (colId == QueryUtils.KEY_COL)
-                return keyAliasColId;
-            else if (colId == keyAliasColId)
-                return QueryUtils.KEY_COL;
-        }
-        if (valAliasColId > 0) {
-            if (colId == QueryUtils.VAL_COL)
-                return valAliasColId;
-            else if (colId == valAliasColId)
-                return QueryUtils.VAL_COL;
-        }
-
-        return colId;
-    }
+    public int getAlternativeColumnId(int colId);
     
     /**
      * Gets a copy of a set of table key column names.
      *
      * @return Set of a table key column names.
      */
-    public Set<String> getRowKeyColumnNames() {
-        return new HashSet<>(rowKeyColumnNames);
-    }
+    public Set<String> getRowKeyColumnNames();
 }

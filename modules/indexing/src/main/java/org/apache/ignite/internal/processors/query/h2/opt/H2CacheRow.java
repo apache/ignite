@@ -41,7 +41,7 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_TO_STRING_INCLUDE_
  */
 public class H2CacheRow extends H2Row implements CacheDataRow {
     /** H2 row descriptor. */
-    private final GridQueryRowDescriptor desc;
+    private final GridH2RowDescriptor desc;
 
     /** Cache row. */
     private final CacheDataRow row;
@@ -55,7 +55,7 @@ public class H2CacheRow extends H2Row implements CacheDataRow {
      * @param desc Row descriptor.
      * @param row Row.
      */
-    public H2CacheRow(GridQueryRowDescriptor desc, CacheDataRow row) {
+    public H2CacheRow(GridH2RowDescriptor desc, CacheDataRow row) {
         this.desc = desc;
         this.row = row;
     }
@@ -76,40 +76,31 @@ public class H2CacheRow extends H2Row implements CacheDataRow {
             return keyWrapped();
         }
 
-        switch (col) {
-            case QueryUtils.KEY_COL:
-                return keyWrapped();
+        if (desc.isKeyColumn(col))
+            return keyWrapped();
+        else if (desc.isValueColumn(col))
+            return valueWrapped();
 
-            case QueryUtils.VAL_COL:
-                return valueWrapped();
-
-            default:
-                if (desc.isKeyAliasColumn(col))
-                    return keyWrapped();
-                else if (desc.isValueAliasColumn(col))
-                    return valueWrapped();
-
-                return getValue0(col - QueryUtils.DEFAULT_COLUMNS_COUNT);
-        }
+        return getValue0(col - QueryUtils.DEFAULT_COLUMNS_COUNT);
     }
 
     /**
-     * Get real column value.
+     * Get real field value.
      *
-     * @param col Adjusted column index (without default columns).
+     * @param fieldIdx Field index.
      * @return Value.
      */
-    private Value getValue0(int col) {
-        Value v = getCached(col);
+    private Value getValue0(int fieldIdx) {
+        Value v = getCached(fieldIdx);
 
         if (v != null)
             return v;
 
-        Object res = desc.columnValue(row.key(), row.value(), col);
+        Object res = desc.getFieldValue(row.key(), row.value(), fieldIdx);
 
-        v = res == null ? ValueNull.INSTANCE : wrap(res, desc.fieldType(col).code());
+        v = res == null ? ValueNull.INSTANCE : wrap(res, desc.fieldType(fieldIdx));
 
-        setCached(col, v);
+        setCached(fieldIdx, v);
 
         return v;
     }
@@ -153,14 +144,14 @@ public class H2CacheRow extends H2Row implements CacheDataRow {
      * @return Wrapped key value.
      */
     private Value keyWrapped() {
-        return wrap(row.key(), desc.keyType().code());
+        return wrap(row.key(), desc.keyType());
     }
 
     /**
      * @return Wrapped value value.
      */
     private Value valueWrapped() {
-        return wrap(row.value(), desc.valueType().code());
+        return wrap(row.value(), desc.valueType());
     }
 
     /**
@@ -340,7 +331,7 @@ public class H2CacheRow extends H2Row implements CacheDataRow {
                 try {
                     v = getValue(i);
 
-                    if (!desc.isKeyValueOrVersionColumn(i))
+                    if (!(desc.isKeyColumn(i) || desc.isValueColumn(i)))
                         sb.a(v == null ? "nil" : (S.includeSensitive() ? v.getString() : "data hidden"));
                 }
                 catch (Exception e) {

@@ -21,7 +21,7 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
 import org.apache.ignite.internal.cache.query.index.IndexProcessor;
-import org.apache.ignite.internal.processors.query.GridQueryRowDescriptor;
+import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.h2.api.TableEngine;
 import org.h2.command.ddl.CreateTableData;
@@ -33,7 +33,7 @@ import org.h2.table.TableBase;
 @SuppressWarnings("FieldAccessedSynchronizedAndUnsynchronized")
 public class H2TableEngine implements TableEngine {
     /** */
-    private static GridQueryRowDescriptor rowDesc0;
+    private static GridH2RowDescriptor rowDesc0;
 
     /** */
     private static H2TableDescriptor tblDesc0;
@@ -57,7 +57,7 @@ public class H2TableEngine implements TableEngine {
     public static synchronized GridH2Table createTable(
         Connection conn,
         String sql,
-        GridQueryRowDescriptor rowDesc,
+        GridH2RowDescriptor rowDesc,
         H2TableDescriptor tblDesc,
         IndexProcessor idxMgr
     )
