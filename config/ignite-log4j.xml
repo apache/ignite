@@ -52,7 +52,7 @@
 
         <File name="CONSISTENCY"
               append="true"
-              fileName="${sys:IGNITE_HOME}/work/log/ignite.log">
+              fileName="${IGNITE_HOME}/work/log/consistency.log">
             <PatternLayout pattern="[%d{ISO8601}][%-5p][%t][%c{1}] %m%n"/>
         </File>
     </Appenders>

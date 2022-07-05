@@ -5,11 +5,9 @@ This module provides the bridging components to make Apache Ignite run seamlessl
 like Apache Karaf. It provides a Bundle Activator to initialize Ignite, along with different classloaders
 facilitate class resolution within an OSGi environment.
 
-If using Ignite within Apache Karaf, please refer to the osgi-karaf and osgi-paxlogging modules too:
+If using Ignite within Apache Karaf, please refer to the osgi-karaf module:
 
   - osgi-karaf contains a feature repository to facilitate installing Ignite into a Karaf container.
-  - osgi-paxlogging contains an OSGi fragment required to make pax-logging-api expose certain log4j packages
-    required by ignite-log4j
 
 Importing the ignite-osgi module in a Maven project
 ---------------------------------------------------
