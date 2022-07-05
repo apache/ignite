@@ -675,7 +675,7 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
             if (err == null) {
                 try {
                     byte[] srvcBytes = U.marshal(marsh, cfg.getService());
-                    byte[] intcpsBytes = F.isEmpty(cfg.getInterceptors()) ? null : U.marshal(marsh, cfg.getInterceptors());
+                    byte[] intcpsBytes = U.marshal(marsh, cfg.getInterceptors());
 
                     String[] knownSvcMdtNames = cfg instanceof PlatformServiceConfiguration ?
                         ((PlatformServiceConfiguration)cfg).mtdNames() : null;
