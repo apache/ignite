@@ -89,6 +89,8 @@ import org.apache.ignite.lang.IgniteExperimental;
 @IgniteExperimental
 public interface ServiceCallInterceptor extends Serializable {
     /**
+     * Intercepts delegated service call.
+     *
      * @param mtd Method name.
      * @param args Method arguments.
      * @param ctx Service context.
