@@ -442,6 +442,7 @@ public class CdcMain implements Runnable {
                         updateMetadata();
                 }
 
+
                 if (!stopped)
                     U.sleep(cdcCfg.getCheckFrequency());
             }
@@ -685,7 +686,7 @@ public class CdcMain implements Runnable {
                 .flatMap(cacheDir -> Arrays.stream(cacheDir.listFiles(f -> f.getName().endsWith(CACHE_DATA_FILENAME))))
                 .map(f -> {
                     try {
-                        CdcCacheEvent evt = (CdcCacheEvent)GridLocalConfigManager.readCacheData(
+                        CdcCacheEvent evt = GridLocalConfigManager.readCacheData(
                             f,
                             MarshallerUtils.jdkMarshaller(kctx.igniteInstanceName()),
                             igniteCfg
