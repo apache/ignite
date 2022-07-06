@@ -77,7 +77,7 @@ public class ServiceContextImpl implements ServiceContext {
 
     /** Service call interceptor. */
     @GridToStringExclude
-    private final ServiceCallInterceptor intcp;
+    private final ServiceCallInterceptor interceptor;
 
     /**
      * @param name Service name.
@@ -86,7 +86,7 @@ public class ServiceContextImpl implements ServiceContext {
      * @param affKey Affinity key.
      * @param exe Executor service.
      * @param statisticsEnabled Service statistics flag.
-     * @param intcp Service call interceptor.
+     * @param interceptor Service call interceptor.
      */
     ServiceContextImpl(String name,
         UUID execId,
@@ -94,7 +94,7 @@ public class ServiceContextImpl implements ServiceContext {
         Object affKey,
         ExecutorService exe,
         boolean statisticsEnabled,
-        @Nullable ServiceCallInterceptor intcp
+        @Nullable ServiceCallInterceptor interceptor
     ) {
         this.name = name;
         this.execId = execId;
@@ -102,7 +102,7 @@ public class ServiceContextImpl implements ServiceContext {
         this.affKey = affKey;
         this.exe = exe;
         this.isStatisticsEnabled = statisticsEnabled;
-        this.intcp = intcp;
+        this.interceptor = interceptor;
     }
 
     /** {@inheritDoc} */
@@ -148,7 +148,7 @@ public class ServiceContextImpl implements ServiceContext {
      * @return Service call interceptor.
      */
     ServiceCallInterceptor interceptor() {
-        return intcp;
+        return interceptor;
     }
 
     /**

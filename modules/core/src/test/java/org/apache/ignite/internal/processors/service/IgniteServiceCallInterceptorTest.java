@@ -108,16 +108,16 @@ public class IgniteServiceCallInterceptorTest extends GridCommonAbstractTest {
      * @param name Service name.
      * @param svc Service.
      * @param singleton Flag to deploy single service instance per cluster.
-     * @param intcps Interceptors.
+     * @param interceptors Interceptors.
      * @return Service configuration.
      */
-    private ServiceConfiguration serviceCfg(String name, Service svc, boolean singleton, ServiceCallInterceptor... intcps) {
+    private ServiceConfiguration serviceCfg(String name, Service svc, boolean singleton, ServiceCallInterceptor... interceptors) {
         return new ServiceConfiguration()
             .setName(name)
             .setTotalCount(singleton ? 1 : NODES_CNT * SVC_PER_NODE)
             .setMaxPerNodeCount(SVC_PER_NODE)
             .setService(svc)
-            .setInterceptors(intcps);
+            .setInterceptors(interceptors);
     }
 
     /**
@@ -204,14 +204,14 @@ public class IgniteServiceCallInterceptorTest extends GridCommonAbstractTest {
         int intcpsCnt = 8;
         int threadCnt = 16;
 
-        ServiceCallInterceptor[] intcps = new ServiceCallInterceptor[intcpsCnt];
+        ServiceCallInterceptor[] interceptors = new ServiceCallInterceptor[intcpsCnt];
 
         for (int i = 0; i < intcpsCnt; i++)
-            intcps[intcpsCnt - i - 1] = new SvcInterceptor(null, i);
+            interceptors[intcpsCnt - i - 1] = new SvcInterceptor(null, i);
 
         services().deployAll(Arrays.asList(
-            serviceCfg(SVC_NAME_INTERCEPTED, new TestServiceImpl(), clusterSingleton, intcps),
-            serviceCfg(SVC_NAME_INJECTED, new TestServiceInjected(), !clusterSingleton, intcps)
+            serviceCfg(SVC_NAME_INTERCEPTED, new TestServiceImpl(), clusterSingleton, interceptors),
+            serviceCfg(SVC_NAME_INJECTED, new TestServiceInjected(), !clusterSingleton, interceptors)
         ));
 
         ServiceCallContext callCtx1 = ServiceCallContext.builder().put(STR_ATTR_NAME, "ctxVal1").build();
@@ -227,10 +227,10 @@ public class IgniteServiceCallInterceptorTest extends GridCommonAbstractTest {
             TestService ctx1Proxy = services.serviceProxy(SVC_NAME_INTERCEPTED, TestService.class, sticky, callCtx1);
             TestService ctx2Proxy = services.serviceProxy(SVC_NAME_INTERCEPTED, TestService.class, sticky, callCtx2);
 
-            String exoCtx1 = fmtExpResult(TestServiceImpl.class, callCtx1, intcps.length, "method", null, arg);
-            String exoCtx2 = fmtExpResult(TestServiceImpl.class, callCtx2, intcps.length, "method", null, arg);
-            String exoCtx1inj = fmtExpResult(TestServiceInjected.class, callCtx1, intcps.length, "method", "injected", arg);
-            String exoCtx2inj = fmtExpResult(TestServiceInjected.class, callCtx2, intcps.length, "method", "injected", arg);
+            String exoCtx1 = fmtExpResult(TestServiceImpl.class, callCtx1, interceptors.length, "method", null, arg);
+            String exoCtx2 = fmtExpResult(TestServiceImpl.class, callCtx2, interceptors.length, "method", null, arg);
+            String exoCtx1inj = fmtExpResult(TestServiceInjected.class, callCtx1, interceptors.length, "method", "injected", arg);
+            String exoCtx2inj = fmtExpResult(TestServiceInjected.class, callCtx2, interceptors.length, "method", "injected", arg);
 
             barrier.await(getTestTimeout(), TimeUnit.MILLISECONDS);
 

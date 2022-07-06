@@ -1423,18 +1423,18 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
 
         GridDeployment srvcDep = ctx.deploy().getDeployment(cfg0.serviceClassName());
 
-        ServiceCallInterceptor[] intcps = U.unmarshal(marsh, intcpsBytes,
+        ServiceCallInterceptor[] interceptors = U.unmarshal(marsh, intcpsBytes,
             U.resolveClassLoader(srvcDep != null ? srvcDep.classLoader() : null, ctx.config()));
 
-        if (F.isEmpty(intcps))
+        if (F.isEmpty(interceptors))
             return null;
 
         // Inject generic resources.
-        for (int i = 0; i < intcps.length; i++)
-            ctx.resource().injectGeneric(intcps[i]);
+        for (int i = 0; i < interceptors.length; i++)
+            ctx.resource().injectGeneric(interceptors[i]);
 
         // Wrap in a composite interceptor if necessary.
-        return intcps.length == 1 ? intcps[0] : new CompositeServiceCallInterceptor(intcps);
+        return interceptors.length == 1 ? interceptors[0] : new CompositeServiceCallInterceptor(interceptors);
     }
 
     /**

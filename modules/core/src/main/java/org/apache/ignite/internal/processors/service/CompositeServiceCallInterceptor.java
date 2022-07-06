@@ -29,11 +29,11 @@ public class CompositeServiceCallInterceptor implements ServiceCallInterceptor {
     private static final long serialVersionUID = 0L;
 
     /** Service call interceptors. */
-    private final ServiceCallInterceptor[] intcps;
+    private final ServiceCallInterceptor[] interceptors;
 
-    /** @param intcps Service call interceptors. */
-    public CompositeServiceCallInterceptor(ServiceCallInterceptor[] intcps) {
-        this.intcps = intcps;
+    /** @param interceptors Service call interceptors. */
+    public CompositeServiceCallInterceptor(ServiceCallInterceptor[] interceptors) {
+        this.interceptors = interceptors;
     }
 
     /** {@inheritDoc} */
@@ -43,7 +43,7 @@ public class CompositeServiceCallInterceptor implements ServiceCallInterceptor {
 
             @Override public Object call() throws Exception {
                 // Recursively call interceptors.
-                return intcps[idx].invoke(mtd, args, ctx, ++idx == intcps.length ? next : this);
+                return interceptors[idx].invoke(mtd, args, ctx, ++idx == interceptors.length ? next : this);
             }
         }.call();
     }

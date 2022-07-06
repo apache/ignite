@@ -219,10 +219,10 @@ public class IgniteServiceDeployment2ClassLoadersDefaultMarshallerTest extends G
         }
 
         Service srvc = srvcCls.newInstance();
-        ServiceCallInterceptor intcp = intcpCls.newInstance();
+        ServiceCallInterceptor interceptor = intcpCls.newInstance();
 
         srvCfg.setService(srvc);
-        srvCfg.setInterceptors(intcp);
+        srvCfg.setInterceptors(interceptor);
 
         srvCfg.setName("TestDeploymentService" + (firstGrp ? 1 : 2));
 

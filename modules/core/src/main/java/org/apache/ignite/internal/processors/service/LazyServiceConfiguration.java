@@ -39,7 +39,7 @@ public class LazyServiceConfiguration extends ServiceConfiguration {
 
     /** Service interceptors. */
     @GridToStringExclude
-    private transient ServiceCallInterceptor[] intcps;
+    private transient ServiceCallInterceptor[] interceptors;
 
     /** */
     private String srvcClsName;
@@ -80,7 +80,7 @@ public class LazyServiceConfiguration extends ServiceConfiguration {
         srvc = cfg.getService();
         srvcClsName = srvc.getClass().getName();
         isStatisticsEnabled = cfg.isStatisticsEnabled();
-        intcps = cfg.getInterceptors();
+        interceptors = cfg.getInterceptors();
         this.intcpsBytes = intcpsBytes;
     }
 
@@ -107,7 +107,7 @@ public class LazyServiceConfiguration extends ServiceConfiguration {
 
     /** {@inheritDoc} */
     @Override public ServiceCallInterceptor[] getInterceptors() {
-        return intcps;
+        return interceptors;
     }
 
     /**

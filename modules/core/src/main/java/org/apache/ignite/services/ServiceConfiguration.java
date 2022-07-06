@@ -87,7 +87,7 @@ public class ServiceConfiguration implements Serializable {
 
     /** Interceptor. */
     @GridToStringExclude
-    protected ServiceCallInterceptor[] intcps;
+    protected ServiceCallInterceptor[] interceptors;
 
     /**
      * Gets service name.
@@ -305,18 +305,18 @@ public class ServiceConfiguration implements Serializable {
      */
     @IgniteExperimental
     public ServiceCallInterceptor[] getInterceptors() {
-        return intcps;
+        return interceptors;
     }
 
     /**
      * Sets service call interceptors.
      *
-     * @param intcps Service call interceptors.
+     * @param interceptors Service call interceptors.
      * @return {@code this} for chaining.
      */
     @IgniteExperimental
-    public ServiceConfiguration setInterceptors(ServiceCallInterceptor... intcps) {
-        this.intcps = intcps;
+    public ServiceConfiguration setInterceptors(ServiceCallInterceptor... interceptors) {
+        this.interceptors = interceptors;
 
         return this;
     }
@@ -373,7 +373,7 @@ public class ServiceConfiguration implements Serializable {
         if (svc != null ? !svc.getClass().equals(that.svc.getClass()) : that.svc != null)
             return false;
 
-        return Arrays.deepEquals(intcps, that.intcps);
+        return Arrays.deepEquals(interceptors, that.interceptors);
     }
 
     /** {@inheritDoc} */

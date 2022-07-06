@@ -330,10 +330,10 @@ public class GridServiceProxy<T> implements Serializable {
         }
 
         try {
-            ServiceCallInterceptor intcp = svcCtx.interceptor();
+            ServiceCallInterceptor interceptor = svcCtx.interceptor();
 
-            if (intcp != null)
-                return intcp.invoke(mtd.getName(), args, svcCtx, () -> mtd.invoke(svcCtx.service(), args));
+            if (interceptor != null)
+                return interceptor.invoke(mtd.getName(), args, svcCtx, () -> mtd.invoke(svcCtx.service(), args));
 
             return mtd.invoke(svcCtx.service(), args);
         }
