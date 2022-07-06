@@ -122,6 +122,14 @@ public @interface SpringResource {
      */
     Class<?> resourceClass() default DEFAULT.class;
 
+    /**
+     * Determines whether the injection procedure should fail in case no beans with specified name or type are present
+     * in the Spring Context.
+     *
+     * @return Whether absence of the bean with specified parameters will result in {@code NoSuchBeanDefinitionException}.
+     */
+    boolean required() default true;
+
     /** Dummy class to compensate for impossibility of having default null value for annotation method. */
     final class DEFAULT {
         // No-op.

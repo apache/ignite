@@ -578,7 +578,7 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements Ignite
     /**
      * @return Cache context.
      */
-    GridCacheContext context() {
+    public GridCacheContext context() {
         return ctx;
     }
 

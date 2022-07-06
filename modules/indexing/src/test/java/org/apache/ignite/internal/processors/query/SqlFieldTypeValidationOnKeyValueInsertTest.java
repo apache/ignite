@@ -39,9 +39,9 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonTest;
+import org.apache.ignite.internal.util.lang.RunnableX;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
-import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.After;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -245,7 +245,7 @@ public class SqlFieldTypeValidationOnKeyValueInsertTest extends AbstractIndexing
     }
 
     /** */
-    private void assertThrows(GridTestUtils.RunnableX runx, String msg) {
+    private void assertThrows(RunnableX runx, String msg) {
         try {
             runx.runx();
         }

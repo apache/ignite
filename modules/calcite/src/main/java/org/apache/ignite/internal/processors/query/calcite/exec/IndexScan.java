@@ -39,7 +39,6 @@ import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndex;
 import org.apache.ignite.internal.cache.query.index.sorted.keys.IndexKey;
 import org.apache.ignite.internal.cache.query.index.sorted.keys.IndexKeyFactory;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
@@ -64,9 +63,6 @@ public class IndexScan<Row> extends AbstractIndexScan<Row, IndexRow> {
 
     /** */
     private final GridCacheContext<?, ?> cctx;
-
-    /** */
-    private final CacheObjectContext coCtx;
 
     /** */
     private final CacheTableDescriptor desc;
@@ -133,7 +129,6 @@ public class IndexScan<Row> extends AbstractIndexScan<Row, IndexRow> {
         this.idx = idx;
         cctx = desc.cacheContext();
         kctx = cctx.kernalContext();
-        coCtx = cctx.cacheObjectContext();
 
         factory = ectx.rowHandler().factory(ectx.getTypeFactory(), rowType);
         topVer = ectx.topologyVersion();

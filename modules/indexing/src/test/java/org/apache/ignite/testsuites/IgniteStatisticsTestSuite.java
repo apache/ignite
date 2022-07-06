@@ -51,6 +51,7 @@ import org.apache.ignite.internal.sql.SqlParserAnalyzeSelfTest;
 import org.apache.ignite.internal.sql.SqlParserDropStatisticsSelfTest;
 import org.apache.ignite.internal.sql.SqlParserRefreshStatisticsSelfTest;
 import org.apache.ignite.internal.systemview.JmxExporterSpiTest;
+import org.apache.ignite.internal.systemview.SystemViewSecurityTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
@@ -103,7 +104,8 @@ import org.junit.runners.Suite;
     StatisticsViewsInMemoryTest.class,
     StatisticsGlobalViewPersistenceTest.class,
     StatisticsGlobalViewInMemoryTest.class,
-    JmxExporterSpiTest.class
+    JmxExporterSpiTest.class,
+    SystemViewSecurityTest.class
 })
 public class IgniteStatisticsTestSuite {
 }

@@ -37,9 +37,12 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteBiPredicate;
 
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType;
+import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.ENCRYPTED_RECORD;
+import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.ENCRYPTED_RECORD_V2;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.SWITCH_SEGMENT_RECORD;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordV1Serializer.CRC_SIZE;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordV1Serializer.REC_TYPE_SIZE;
+import static org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordV1Serializer.readRecordType;
 
 /**
  * Record V2 serializer.
@@ -72,15 +75,8 @@ public class RecordV2Serializer implements RecordSerializer {
     private final boolean skipPositionCheck;
 
     /** Thread-local heap byte buffer. */
-    private final ThreadLocal<ByteBuffer> heapTlb = new ThreadLocal<ByteBuffer>() {
-        @Override protected ByteBuffer initialValue() {
-            ByteBuffer buf = ByteBuffer.allocate(4096);
-
-            buf.order(GridUnsafe.NATIVE_BYTE_ORDER);
-
-            return buf;
-        }
-    };
+    private final ThreadLocal<ByteBuffer> heapTlb =
+        ThreadLocal.withInitial(() -> ByteBuffer.allocate(4096).order(GridUnsafe.NATIVE_BYTE_ORDER));
 
     /**
      * Record type filter.
@@ -107,7 +103,7 @@ public class RecordV2Serializer implements RecordSerializer {
             ByteBufferBackedDataInput in,
             WALPointer expPtr
         ) throws IOException, IgniteCheckedException {
-            WALRecord.RecordType recType = RecordV1Serializer.readRecordType(in);
+            RecordType recType = readRecordType(in);
 
             if (recType == SWITCH_SEGMENT_RECORD)
                 throw new SegmentEofException("Reached end of segment", null);
@@ -119,8 +115,22 @@ public class RecordV2Serializer implements RecordSerializer {
                     ", expected pointer [idx=" + expPtr.index() + ", offset=" + expPtr.fileOffset() + "]");
             }
 
-            if (recType.purpose() != WALRecord.RecordPurpose.INTERNAL
-                && recordFilter != null && !recordFilter.apply(recType, ptr)) {
+            RecordType actualType = recType;
+
+            // In case of encrypted records we should check the type of the nested record
+            if (recType == ENCRYPTED_RECORD || recType == ENCRYPTED_RECORD_V2) {
+                in.buffer().mark();
+
+                // Ignore grpId (4 bytes) and record size (4 bytes)
+                in.skipBytes(4 + 4);
+
+                actualType = readRecordType(in);
+
+                in.buffer().reset();
+            }
+
+            if (actualType.purpose() != WALRecord.RecordPurpose.INTERNAL
+                && recordFilter != null && !recordFilter.apply(actualType, ptr)) {
                 int toSkip = ptr.length() - REC_TYPE_SIZE - FILE_WAL_POINTER_SIZE - CRC_SIZE;
 
                 assert toSkip >= 0 : "Too small saved record length: ptr=" + ptr + ", type=" + recType;
@@ -245,7 +255,7 @@ public class RecordV2Serializer implements RecordSerializer {
         DataInput in,
         WALPointer expPtr,
         boolean skipPositionCheck,
-        WALRecord.RecordType type
+        RecordType type
     ) throws IgniteCheckedException, IOException {
         long idx = in.readLong();
         int fileOff = in.readInt();
