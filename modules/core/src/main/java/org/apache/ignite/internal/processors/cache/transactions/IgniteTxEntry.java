@@ -945,6 +945,9 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
         }
         else
             expiryPlcBytes = null;
+
+        if (oldVal != null)
+            oldVal.marshal(context());
     }
 
     /**
@@ -1001,6 +1004,9 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
 
         if (expiryPlcBytes != null && expiryPlc == null)
             expiryPlc = U.unmarshal(ctx, expiryPlcBytes, U.resolveClassLoader(clsLdr, ctx.gridConfig()));
+
+        if (hasOldValue())
+            oldVal.unmarshal(coctx, clsLdr);
     }
 
     /**

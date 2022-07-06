@@ -464,14 +464,16 @@ This view exposes information about currently running SQL queries.
 
 [{table_opts}]
 |===
-|NAME | TYPE |    DESCRIPTION
-|DURATION | long |    Query execution duration
+|NAME | TYPE | DESCRIPTION
+|QUERY_ID | UUID | Query ID
+|SQL | string | Query text
+|ORIGIN_NODE_ID | UUID | Node that started query
+|START_TIME | date | Query start time
+|DURATION | long | Query execution duration
+|INITIATOR_ID | string | User defined query initiator ID
 |LOCAL | boolean | True if local only
-|ORIGIN_NODE_ID | UUID |    Node that started query
-|QUERY_ID | UUID |    Query ID
-|SCHEMA_NAME | string |  Schema name
-|SQL | string |  Query text
-|START_TIME | date |    Query start time
+|SCHEMA_NAME | string | Schema name
+|SUBJECT_ID | UUID | The subject ID of the entity that initiated the query
 |===
 
 == SQL_QUERIES_HISTORY

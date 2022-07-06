@@ -23,6 +23,8 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.managers.deployment.GridDeployment;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.resources.SpringResource;
+import org.springframework.beans.factory.NoSuchBeanDefinitionException;
+import org.springframework.beans.factory.NoUniqueBeanDefinitionException;
 import org.springframework.context.ApplicationContext;
 import org.springframework.util.StringUtils;
 
@@ -63,7 +65,8 @@ public class GridResourceSpringBeanInjector implements GridResourceInjector {
         if (springCtx != null) {
             Object bean = getBeanByResourceAnnotation(ann);
 
-            GridResourceUtils.inject(field.getField(), target, bean);
+            if (bean != null)
+                GridResourceUtils.inject(field.getField(), target, bean);
         }
     }
 
@@ -80,7 +83,8 @@ public class GridResourceSpringBeanInjector implements GridResourceInjector {
         if (springCtx != null) {
             Object bean = getBeanByResourceAnnotation(ann);
 
-            GridResourceUtils.inject(mtd.getMethod(), target, bean);
+            if (bean != null)
+                GridResourceUtils.inject(mtd.getMethod(), target, bean);
         }
     }
 
@@ -114,13 +118,17 @@ public class GridResourceSpringBeanInjector implements GridResourceInjector {
                 "but not both");
         }
 
-        Object bean;
+        try {
+            return !StringUtils.isEmpty(beanName) ? springCtx.getBean(beanName) : springCtx.getBean(beanCls);
+        }
+        catch (NoUniqueBeanDefinitionException e) {
+            throw e;
+        }
+        catch (NoSuchBeanDefinitionException e) {
+            if (!annotation.required())
+                return null;
 
-        if (!StringUtils.isEmpty(beanName))
-            bean = springCtx.getBean(beanName);
-        else
-            bean = springCtx.getBean(beanCls);
-
-        return bean;
+            throw e;
+        }
     }
 }

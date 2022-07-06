@@ -39,10 +39,10 @@ public class PagesListMetaIO extends PageIO {
     private static final int NEXT_META_PAGE_OFF = CNT_OFF + 2;
 
     /** */
-    private static final int ITEMS_OFF = NEXT_META_PAGE_OFF + 8;
+    public static final int ITEMS_OFF = NEXT_META_PAGE_OFF + 8;
 
     /** */
-    private static final int ITEM_SIZE = 10;
+    public static final int ITEM_SIZE = 10;
 
     /** */
     public static final IOVersions<PagesListMetaIO> VERSIONS = new IOVersions<>(
@@ -180,7 +180,7 @@ public class PagesListMetaIO extends PageIO {
      * @param pageAddr Page address.
      * @return Maximum number of items which can be stored in buffer.
      */
-    private int getCapacity(int pageSize, long pageAddr) {
+    public int getCapacity(int pageSize, long pageAddr) {
         return (pageSize - ITEMS_OFF) / ITEM_SIZE;
     }
 
@@ -208,5 +208,10 @@ public class PagesListMetaIO extends PageIO {
             sb.a("\n\t\tbucket=").a(e.getKey()).a(", list=").a(e.getValue());
 
         sb.a("\n\t}\n]");
+    }
+
+    /** {@inheritDoc} */
+    @Override public int getFreeSpace(int pageSize, long pageAddr) {
+        return (getCapacity(pageSize, pageAddr) - getCount(pageAddr)) * ITEM_SIZE;
     }
 }

@@ -22,7 +22,6 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.cache.query.index.IndexDefinition;
 import org.apache.ignite.internal.cache.query.index.IndexProcessor;
 import org.apache.ignite.internal.cache.query.index.sorted.SortedIndexDefinition;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexFactory;
@@ -31,7 +30,6 @@ import org.apache.ignite.internal.cache.query.index.sorted.maintenance.Maintenan
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointManager;
-import org.apache.ignite.internal.processors.query.GridQueryIndexing;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.processors.query.aware.IndexBuildStatusStorage;
 import org.apache.ignite.internal.processors.query.h2.H2TableDescriptor;
@@ -139,7 +137,6 @@ public class RebuildIndexAction implements MaintenanceAction<Boolean> {
 
         String cacheName = context.name();
 
-        GridQueryIndexing idx;
         SchemaManager schemaManager = indexing.schemaManager();
 
         H2TreeIndex targetIndex = findIndex(cacheName, idxName, schemaManager);
@@ -203,14 +200,14 @@ public class RebuildIndexAction implements MaintenanceAction<Boolean> {
 
         IndexProcessor indexProcessor = context.kernalContext().indexProcessor();
 
-        IndexDefinition definition = oldIndex.index().indexDefinition();
+        SortedIndexDefinition definition = oldIndex.index().indexDefinition();
 
         org.apache.ignite.internal.cache.query.index.Index newIndex = indexProcessor.createIndexDynamically(
             targetTable.cacheContext(), InlineIndexFactory.INSTANCE, definition, visitor);
 
         InlineIndexImpl queryIndex = newIndex.unwrap(InlineIndexImpl.class);
 
-        H2TreeIndex newIdx = oldIndex.createCopy(queryIndex, (SortedIndexDefinition)definition);
+        H2TreeIndex newIdx = oldIndex.createCopy(queryIndex, definition);
 
         schemaManager.createIndex(
             targetTable.getSchema().getName(),

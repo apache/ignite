@@ -1785,6 +1785,33 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
     }
 
     /**
+     * Gets a set from cache by known cache id. Does not create new sets.
+     *
+     * @param name Set name.
+     * @param cacheId Cache id.
+     * @param collocated Colocated mode flag.
+     * @param separated Separated cache flag.
+     * @return Set instance.
+     * @throws IgniteCheckedException If failed.
+     */
+    @Nullable public <T> IgniteSet<T> set(String name, int cacheId, boolean collocated, boolean separated)
+        throws IgniteCheckedException {
+        A.notNull(name, "name");
+
+        DynamicCacheDescriptor desc = ctx.cache().cacheDescriptor(cacheId);
+
+        if (desc == null)
+            return null;
+
+        IgniteInternalCache<Object, Object> cache = ctx.cache().cache(desc.cacheName());
+
+        if (cache == null)
+            return null;
+
+        return cache.context().dataStructures().set(name, collocated, false, separated);
+    }
+
+    /**
      * @param name Set name.
      * @param cctx Set cache context.
      * @throws IgniteCheckedException If failed.

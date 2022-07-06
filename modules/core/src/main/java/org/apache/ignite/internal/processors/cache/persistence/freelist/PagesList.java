@@ -2320,7 +2320,7 @@ public abstract class PagesList extends DataStructure {
          * @param tailId Tail ID.
          * @param empty Empty flag.
          */
-        Stripe(long tailId, boolean empty) {
+        public Stripe(long tailId, boolean empty) {
             this.tailId = tailId;
             this.empty = empty;
         }
