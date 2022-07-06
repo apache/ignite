@@ -46,6 +46,9 @@ import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
  */
 @RunWith(Parameterized.class)
 public class CacheEventsCdcTest extends AbstractCdcTest {
+    /** */
+    public static final String DUMMY = "dummy_cache";
+
     /** Ignite node. */
     private IgniteEx node;
 
@@ -123,15 +126,21 @@ public class CacheEventsCdcTest extends AbstractCdcTest {
         node.createCache(new CacheConfiguration<Integer, Integer>(DEFAULT_CACHE_NAME).setGroupName("group"));
         node.createCache(new CacheConfiguration<Integer, Integer>(otherCache).setGroupName("group"));
 
+        node.getOrCreateCache(DUMMY).put(1, 1); // Dummy entry to force automatic WAL rollover.
+
         assertTrue(waitForCondition(() -> cnsmr.evts.containsKey(CU.cacheId(DEFAULT_CACHE_NAME)), getTestTimeout()));
         assertTrue(waitForCondition(() -> cnsmr.evts.containsKey(CU.cacheId(otherCache)), getTestTimeout()));
 
         node.destroyCache(DEFAULT_CACHE_NAME);
 
+        node.getOrCreateCache(DUMMY).put(2, 2); // Dummy entry to force automatic WAL rollover.
+
         assertTrue(waitForCondition(() -> !cnsmr.evts.containsKey(CU.cacheId(DEFAULT_CACHE_NAME)), getTestTimeout()));
         assertTrue(cnsmr.evts.containsKey(CU.cacheId(otherCache)));
 
         node.destroyCache(otherCache);
+
+        node.getOrCreateCache(DUMMY).put(3, 3); // Dummy entry to force automatic WAL rollover.
 
         assertTrue(waitForCondition(() -> !cnsmr.evts.containsKey(CU.cacheId(otherCache)), getTestTimeout()));
         assertFalse(cnsmr.evts.containsKey(CU.cacheId(DEFAULT_CACHE_NAME)));
@@ -140,8 +149,6 @@ public class CacheEventsCdcTest extends AbstractCdcTest {
     /** */
     @Test
     public void testCreateDropSQLTable() throws Exception {
-        executeSql(node, "CREATE TABLE T1(ID INT, NAME VARCHAR, PRIMARY KEY (ID)) WITH \"CACHE_NAME=T1\"");
-
         AtomicReference<QueryEntity> fromCfg = new AtomicReference<>();
 
         Function<Integer, GridAbsPredicate> checker = fldCnt -> () -> {
@@ -184,13 +191,21 @@ public class CacheEventsCdcTest extends AbstractCdcTest {
             return true;
         };
 
+        executeSql(node, "CREATE TABLE T1(ID INT, NAME VARCHAR, PRIMARY KEY (ID)) WITH \"CACHE_NAME=T1\"");
+
+        node.getOrCreateCache(DUMMY).put(1, 1); // Dummy entry to force automatic WAL rollover.
+
         assertTrue(waitForCondition(checker.apply(2), getTestTimeout()));
 
         executeSql(node, "ALTER TABLE T1 ADD COLUMN CITY_ID INT");
 
+        node.getOrCreateCache(DUMMY).put(2, 2); // Dummy entry to force automatic WAL rollover.
+
         assertTrue(waitForCondition(checker.apply(3), getTestTimeout()));
 
         executeSql(node, "CREATE INDEX I1 ON T1(CITY_ID)");
+
+        node.getOrCreateCache(DUMMY).put(3, 3); // Dummy entry to force automatic WAL rollover.
 
         assertTrue(waitForCondition(() -> {
             CdcCacheEvent evt = cnsmr.evts.get(CU.cacheId("T1"));
@@ -215,14 +230,14 @@ public class CacheEventsCdcTest extends AbstractCdcTest {
 
         executeSql(node, "DROP TABLE T1");
 
+        node.getOrCreateCache(DUMMY).put(4, 4); // Dummy entry to force automatic WAL rollover.
+
         assertTrue(waitForCondition(() -> !cnsmr.evts.containsKey(CU.cacheId("T1")), getTestTimeout()));
     }
 
     /** */
     @Test
     public void testCreateTableForExistingCache() throws Exception {
-        node.createCache(new CacheConfiguration<Integer, Integer>(DEFAULT_CACHE_NAME));
-
         Function<Boolean, GridAbsPredicate> checker = chkTblExist -> () -> {
             CdcCacheEvent evt = cnsmr.evts.get(CU.cacheId(DEFAULT_CACHE_NAME));
 
@@ -248,12 +263,18 @@ public class CacheEventsCdcTest extends AbstractCdcTest {
             return true;
         };
 
+        node.createCache(new CacheConfiguration<Integer, Integer>(DEFAULT_CACHE_NAME));
+
+        node.getOrCreateCache(DUMMY).put(5, 5); // Dummy entry to force automatic WAL rollover.
+
         assertTrue(waitForCondition(checker.apply(false), getTestTimeout()));
 
         executeSql(
             node,
             "CREATE TABLE T1(ID INT, NAME VARCHAR, PRIMARY KEY (ID)) WITH \"CACHE_NAME=" + DEFAULT_CACHE_NAME + "\""
         );
+
+        node.getOrCreateCache(DUMMY).put(6, 6); // Dummy entry to force automatic WAL rollover.
 
         assertTrue(waitForCondition(checker.apply(true), getTestTimeout()));
     }
