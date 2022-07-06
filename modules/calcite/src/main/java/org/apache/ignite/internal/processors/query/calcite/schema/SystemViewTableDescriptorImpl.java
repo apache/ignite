@@ -190,7 +190,7 @@ public class SystemViewTableDescriptorImpl<ViewRow> extends NullInitializerExpre
     }
 
     /** Column descriptors. */
-    @Override public Collection<SystemViewColumnDescriptor> columnDescriptors() {
+    public Collection<SystemViewColumnDescriptor> columnDescriptors() {
         return Collections.unmodifiableList(Arrays.asList(descriptors));
     }
 
