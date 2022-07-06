@@ -339,10 +339,10 @@ public class SqlCdcTest extends AbstractCdcTest {
         @Override public void onCacheChange(Iterator<CdcCacheEvent> cacheEvts) {
             cacheEvts.forEachRemaining(evt -> {
                 if (evt.configuration().getName().equals(CITY)) {
-                    assertNotNull(evt.queryEntyties());
-                    assertEquals(1, evt.queryEntyties().size());
+                    assertNotNull(evt.queryEntities());
+                    assertEquals(1, evt.queryEntities().size());
 
-                    QueryEntity tbl = evt.queryEntyties().iterator().next();
+                    QueryEntity tbl = evt.queryEntities().iterator().next();
 
                     assertEquals(CITY.toUpperCase(), tbl.getTableName());
                     assertEquals(caches.containsKey(evt.cacheId()) ? 4 : 3, tbl.getFields().size());
@@ -356,10 +356,10 @@ public class SqlCdcTest extends AbstractCdcTest {
                     assertEquals((Integer)6, tbl.getFieldsPrecision().get(ZIP_CODE));
                 }
                 else if (evt.configuration().getName().equals(USER)) {
-                    assertNotNull(evt.queryEntyties());
-                    assertEquals(1, evt.queryEntyties().size());
+                    assertNotNull(evt.queryEntities());
+                    assertEquals(1, evt.queryEntities().size());
 
-                    QueryEntity tbl = evt.queryEntyties().iterator().next();
+                    QueryEntity tbl = evt.queryEntities().iterator().next();
 
                     assertEquals(USER.toUpperCase(), tbl.getTableName());
                     assertEquals(3, tbl.getFields().size());

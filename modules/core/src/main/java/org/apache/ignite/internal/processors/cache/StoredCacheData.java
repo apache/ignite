@@ -104,7 +104,7 @@ public class StoredCacheData implements Serializable, CdcCacheEvent {
     /**
      * @return Query entities.
      */
-    public Collection<QueryEntity> queryEntities() {
+    @Override public Collection<QueryEntity> queryEntities() {
         return qryEntities;
     }
 
@@ -213,10 +213,5 @@ public class StoredCacheData implements Serializable, CdcCacheEvent {
     /** {@inheritDoc} */
     @Override public CacheConfiguration<?, ?> configuration() {
         return ccfg;
-    }
-
-    /** {@inheritDoc} */
-    @Override public Collection<QueryEntity> queryEntyties() {
-        return qryEntities;
     }
 }

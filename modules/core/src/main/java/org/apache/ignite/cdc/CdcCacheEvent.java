@@ -50,5 +50,5 @@ public interface CdcCacheEvent {
     /**
      * @return Query entities for cache.
      */
-    public Collection<QueryEntity> queryEntyties();
+    public Collection<QueryEntity> queryEntities();
 }

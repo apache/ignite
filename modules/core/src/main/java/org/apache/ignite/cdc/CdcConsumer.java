@@ -59,6 +59,7 @@ import org.apache.ignite.spi.systemview.view.CacheView;
  *     <li>{@link #onCacheChange(Iterator)}</li>
  *     <li>{@link #onCacheDestroy(Iterator)}</li>
  * </ul>
+ * Note, {@link CdcConsumer} receive notifications on each running CDC application(node).
  *
  * @see CdcMain
  * @see CdcEvent

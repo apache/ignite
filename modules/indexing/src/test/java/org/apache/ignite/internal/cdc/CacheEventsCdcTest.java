@@ -147,10 +147,10 @@ public class CacheEventsCdcTest extends AbstractCdcTest {
             if (evt == null)
                 return false;
 
-            assertNotNull(evt.queryEntyties());
-            assertEquals(1, evt.queryEntyties().size());
+            assertNotNull(evt.queryEntities());
+            assertEquals(1, evt.queryEntities().size());
 
-            QueryEntity qryEntity = evt.queryEntyties().iterator().next();
+            QueryEntity qryEntity = evt.queryEntities().iterator().next();
 
             if (qryEntity.getFields().size() != fldCnt)
                 return false;
@@ -177,7 +177,7 @@ public class CacheEventsCdcTest extends AbstractCdcTest {
         assertTrue(waitForCondition(() -> {
             CdcCacheEvent evt = cnsmr.evts.get(CU.cacheId("T1"));
 
-            QueryEntity qryEntity = evt.queryEntyties().iterator().next();
+            QueryEntity qryEntity = evt.queryEntities().iterator().next();
 
             if (F.isEmpty(qryEntity.getIndexes()))
                 return false;
@@ -210,12 +210,12 @@ public class CacheEventsCdcTest extends AbstractCdcTest {
             if (!chkTblExist)
                 return true;
 
-            if (F.isEmpty(evt.queryEntyties()))
+            if (F.isEmpty(evt.queryEntities()))
                 return false;
 
-            assertEquals(1, evt.queryEntyties().size());
+            assertEquals(1, evt.queryEntities().size());
 
-            QueryEntity qryEntity = evt.queryEntyties().iterator().next();
+            QueryEntity qryEntity = evt.queryEntities().iterator().next();
 
             if (qryEntity.getFields().size() != 2)
                 return false;
