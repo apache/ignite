@@ -129,21 +129,20 @@ public class IgniteServiceCallInterceptorTest extends GridCommonAbstractTest imp
      */
     @Test
     public void testRedeploy() {
-        ServiceCallInterceptor intcp1 = (mtd, args, ctx, next) -> "1";
+        ServiceCallInterceptor interceptor = (mtd, args, ctx, next) -> "1";
 
-        ServiceConfiguration cfg = serviceCfg(SVC_NAME_INTERCEPTED, new TestServiceImpl(), clusterSingleton, intcp1);
+        ServiceConfiguration cfg = serviceCfg(SVC_NAME_INTERCEPTED, new TestServiceImpl(), clusterSingleton, interceptor);
         client.services().deploy(cfg);
 
         TestService proxy = client.services().serviceProxy(SVC_NAME_INTERCEPTED, TestService.class, false);
         assertEquals("1", proxy.method(0));
 
         // Redeploy with the same configuration.
-        cfg.setInterceptors(intcp1);
+        cfg.setInterceptors(interceptor);
         client.services().deploy(cfg);
 
         // Redeploy with different configuration.
-        ServiceCallInterceptor intcp2 = (mtd, args, ctx, next) -> "2";
-        cfg.setInterceptors(intcp2);
+        cfg.setInterceptors((mtd, args, ctx, next) -> "2");
 
         GridTestUtils.assertThrowsAnyCause(log, () -> {
             client.services().deploy(cfg);
@@ -220,13 +219,13 @@ public class IgniteServiceCallInterceptorTest extends GridCommonAbstractTest imp
      */
     @Test
     public void testOrder() throws Exception {
-        int intcpsCnt = 8;
+        int interceptorsCnt = 8;
         int threadCnt = 16;
 
-        ServiceCallInterceptor[] interceptors = new ServiceCallInterceptor[intcpsCnt];
+        ServiceCallInterceptor[] interceptors = new ServiceCallInterceptor[interceptorsCnt];
 
-        for (int i = 0; i < intcpsCnt; i++)
-            interceptors[intcpsCnt - i - 1] = new SvcInterceptor(null, i);
+        for (int i = 0; i < interceptorsCnt; i++)
+            interceptors[interceptorsCnt - i - 1] = new SvcInterceptor(null, i);
 
         client.services().deployAll(Arrays.asList(
             serviceCfg(SVC_NAME_INTERCEPTED, new TestServiceImpl(), clusterSingleton, interceptors),

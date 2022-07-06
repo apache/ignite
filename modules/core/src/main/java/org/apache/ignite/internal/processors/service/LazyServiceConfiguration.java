@@ -48,7 +48,7 @@ public class LazyServiceConfiguration extends ServiceConfiguration {
     private byte[] srvcBytes;
 
     /** */
-    private byte[] interceptorBytes;
+    private byte[] interceptorsBytes;
 
     /** Names of platform service methods to build service statistics. */
     @GridToStringExclude
@@ -64,9 +64,9 @@ public class LazyServiceConfiguration extends ServiceConfiguration {
     /**
      * @param cfg Configuration.
      * @param srvcBytes Marshalled service.
-     * @param interceptorBytes Marshalled interceptors.
+     * @param interceptorsBytes Marshalled interceptors.
      */
-    public LazyServiceConfiguration(ServiceConfiguration cfg, byte[] srvcBytes, @Nullable byte[] interceptorBytes) {
+    public LazyServiceConfiguration(ServiceConfiguration cfg, byte[] srvcBytes, @Nullable byte[] interceptorsBytes) {
         assert cfg.getService() != null : cfg;
         assert srvcBytes != null;
 
@@ -81,7 +81,7 @@ public class LazyServiceConfiguration extends ServiceConfiguration {
         srvcClsName = srvc.getClass().getName();
         isStatisticsEnabled = cfg.isStatisticsEnabled();
         interceptors = cfg.getInterceptors();
-        this.interceptorBytes = interceptorBytes;
+        this.interceptorsBytes = interceptorsBytes;
     }
 
     /**
@@ -114,7 +114,7 @@ public class LazyServiceConfiguration extends ServiceConfiguration {
      * @return Interceptors bytes.
      */
     public byte[] interceptorBytes() {
-        return interceptorBytes;
+        return interceptorsBytes;
     }
 
     /** {@inheritDoc} */
@@ -146,7 +146,7 @@ public class LazyServiceConfiguration extends ServiceConfiguration {
         if (!F.eq(srvcClsName, that.srvcClsName))
             return false;
 
-        if (!Arrays.equals(interceptorBytes, that.interceptorBytes))
+        if (!Arrays.equals(interceptorsBytes, that.interceptorsBytes))
             return false;
 
         return true;
