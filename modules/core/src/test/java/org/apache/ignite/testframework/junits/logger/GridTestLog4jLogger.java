@@ -339,7 +339,7 @@ public class GridTestLog4jLogger implements IgniteLogger, LoggerNodeIdAndApplica
                 quiet = false;
 
             if (!consoleAppendersFound.get1() && !quiet && Boolean.valueOf(System.getProperty(IGNITE_CONSOLE_APPENDER, "true"))) {
-                autoconfigureConsoleAppender(consoleAppendersFound.get2() ? INFO : OFF);
+                configureConsoleAppender(consoleAppendersFound.get2() ? INFO : OFF);
 
                 if (logLevel != null)
                     Configurator.setLevel(impl.getName(), logLevel);
@@ -385,12 +385,34 @@ public class GridTestLog4jLogger implements IgniteLogger, LoggerNodeIdAndApplica
      * @param minLvl Minimal logging level.
      * @return Logger with auto configured console appender.
      */
-    public Logger autoconfigureConsoleAppender(Level minLvl) {
+    public Logger configureConsoleAppender(Level minLvl) {
         // from http://logging.apache.org/log4j/2.x/manual/customconfig.html
         LoggerContext ctx = LoggerContext.getContext(false);
 
         Configuration cfg = ctx.getConfiguration();
 
+        if (cfg instanceof DefaultConfiguration) {
+            ConfigurationBuilder<BuiltConfiguration> cfgBuilder = ConfigurationBuilderFactory.newConfigurationBuilder();
+
+            RootLoggerComponentBuilder rootLog = cfgBuilder.newRootLogger(INFO);
+
+            cfg = cfgBuilder.add(rootLog).build();
+
+            addConsoleAppender(cfg, minLvl);
+
+            ctx.reconfigure(cfg);
+        }
+        else {
+            addConsoleAppender(cfg, minLvl);
+
+            ctx.updateLoggers();
+        }
+
+        return ctx.getRootLogger();
+    }
+
+    /** */
+    private void addConsoleAppender(Configuration logCfg, Level minLvl) {
         Appender consoleApp = ConsoleAppender.newBuilder()
             .setName(CONSOLE)
             .setTarget(SYSTEM_OUT)
@@ -400,24 +422,8 @@ public class GridTestLog4jLogger implements IgniteLogger, LoggerNodeIdAndApplica
 
         consoleApp.start();
 
-        if (cfg instanceof DefaultConfiguration) {
-            ConfigurationBuilder<BuiltConfiguration> cfgBuilder = ConfigurationBuilderFactory.newConfigurationBuilder();
-
-            RootLoggerComponentBuilder rootLog = cfgBuilder.newRootLogger(INFO);
-
-            cfg = cfgBuilder.add(rootLog).build();
-
-            cfg.getRootLogger().addAppender(consoleApp, null, null);
-
-            ctx.reconfigure(cfg);
-        }
-        else {
-            cfg.getRootLogger().addAppender(consoleApp, null, null);
-
-            ctx.updateLoggers();
-        }
-
-        return ctx.getRootLogger();
+        logCfg.addAppender(consoleApp);
+        logCfg.getRootLogger().addAppender(consoleApp, Level.TRACE, null);
     }
 
     /**
@@ -578,11 +584,14 @@ public class GridTestLog4jLogger implements IgniteLogger, LoggerNodeIdAndApplica
 
     /** */
     public static void addRootLoggerAppender(Level lvl, Appender app) {
-        LoggerContext.getContext(false).getConfiguration().getRootLogger().addAppender(app, lvl, null);
+        LoggerContext ctx = LoggerContext.getContext(false);
 
         app.start();
 
-        LoggerContext.getContext(false).updateLoggers();
+        ctx.getConfiguration().addAppender(app);
+        ctx.getConfiguration().getRootLogger().addAppender(app, lvl, null);
+
+        ctx.updateLoggers();
     }
 
     /** */

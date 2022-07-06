@@ -335,7 +335,7 @@ public class Log4J2Logger implements IgniteLogger, LoggerNodeIdAndApplicationAwa
             if (!consoleAppenderFound && !quiet && Boolean.parseBoolean(System.getProperty(IGNITE_CONSOLE_APPENDER, "true"))) {
                 // User launched ignite in verbose mode and did not add console appender with INFO level
                 // to configuration and did not set IGNITE_CONSOLE_APPENDER to false.
-                createConsoleLogger();
+                configureConsoleAppender();
             }
 
             quiet0 = quiet;
@@ -369,7 +369,7 @@ public class Log4J2Logger implements IgniteLogger, LoggerNodeIdAndApplicationAwa
      *
      * @return Logger with auto configured console appender.
      */
-    public Logger createConsoleLogger() {
+    public Logger configureConsoleAppender() {
         // from http://logging.apache.org/log4j/2.x/manual/customconfig.html
         LoggerContext ctx = LoggerContext.getContext(false);
 
@@ -382,12 +382,12 @@ public class Log4J2Logger implements IgniteLogger, LoggerNodeIdAndApplicationAwa
 
             cfg = cfgBuilder.add(rootLog).build();
 
-            configureConsoleAppender(cfg);
+            addConsoleAppender(cfg);
 
             ctx.reconfigure(cfg);
         }
         else {
-            configureConsoleAppender(cfg);
+            addConsoleAppender(cfg);
 
             ctx.updateLoggers();
         }
@@ -396,7 +396,7 @@ public class Log4J2Logger implements IgniteLogger, LoggerNodeIdAndApplicationAwa
     }
 
     /** */
-    private void configureConsoleAppender(Configuration logCfg) {
+    private void addConsoleAppender(Configuration logCfg) {
         PatternLayout layout = PatternLayout.newBuilder()
             .withPattern("%d{ISO8601}][%-5p][%t][%c{1}] %m%n")
             .withCharset(Charset.defaultCharset())
