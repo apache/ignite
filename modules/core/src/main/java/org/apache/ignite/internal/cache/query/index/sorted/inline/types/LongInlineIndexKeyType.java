@@ -18,15 +18,14 @@
 package org.apache.ignite.internal.cache.query.index.sorted.inline.types;
 
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyType;
-import org.apache.ignite.internal.cache.query.index.sorted.keys.IndexKey;
 import org.apache.ignite.internal.cache.query.index.sorted.keys.LongIndexKey;
 import org.apache.ignite.internal.cache.query.index.sorted.keys.NumericIndexKey;
 import org.apache.ignite.internal.pagemem.PageUtils;
 
 /**
- * Inline index column implementation for inlining {@link Integer} values.
+ * Inline index column implementation for inlining {@link Long} values.
  */
-public class LongInlineIndexKeyType extends NullableInlineIndexKeyType<LongIndexKey> {
+public class LongInlineIndexKeyType extends NumericInlineIndexKeyType<LongIndexKey> {
     /** Constructor. */
     public LongInlineIndexKeyType() {
         super(IndexKeyType.LONG, (short)8);
@@ -50,19 +49,9 @@ public class LongInlineIndexKeyType extends NullableInlineIndexKeyType<LongIndex
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isComparableTo(IndexKey key) {
-        return key instanceof NumericIndexKey;
-    }
-
-    /** {@inheritDoc} */
-    @Override public int compare0(long pageAddr, int off, IndexKey key) {
+    @Override public int compareNumeric(NumericIndexKey key, long pageAddr, int off) {
         long val1 = PageUtils.getLong(pageAddr, off + 1);
 
-        return -Integer.signum(((NumericIndexKey)key).compareTo(val1));
-    }
-
-    /** {@inheritDoc} */
-    @Override protected int inlineSize0(LongIndexKey key) {
-        return keySize + 1;
+        return key.compareTo(val1);
     }
 }

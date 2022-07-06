@@ -19,14 +19,13 @@ package org.apache.ignite.internal.cache.query.index.sorted.inline.types;
 
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyType;
 import org.apache.ignite.internal.cache.query.index.sorted.keys.BooleanIndexKey;
-import org.apache.ignite.internal.cache.query.index.sorted.keys.IndexKey;
 import org.apache.ignite.internal.cache.query.index.sorted.keys.NumericIndexKey;
 import org.apache.ignite.internal.pagemem.PageUtils;
 
 /**
  * Inline index key implementation for inlining {@link Boolean} values.
  */
-public class BooleanInlineIndexKeyType extends NullableInlineIndexKeyType<BooleanIndexKey> {
+public class BooleanInlineIndexKeyType extends NumericInlineIndexKeyType<BooleanIndexKey> {
     /** */
     public BooleanInlineIndexKeyType() {
         super(IndexKeyType.BOOLEAN, (short)1);
@@ -48,19 +47,9 @@ public class BooleanInlineIndexKeyType extends NullableInlineIndexKeyType<Boolea
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isComparableTo(IndexKey key) {
-        return key instanceof NumericIndexKey;
-    }
-
-    /** {@inheritDoc} */
-    @Override public int compare0(long pageAddr, int off, IndexKey key) {
+    @Override public int compareNumeric(NumericIndexKey key, long pageAddr, int off) {
         boolean bool1 = PageUtils.getByte(pageAddr, off + 1) != 0;
 
-        return -Integer.signum(((NumericIndexKey)key).compareTo(bool1));
-    }
-
-    /** {@inheritDoc} */
-    @Override protected int inlineSize0(BooleanIndexKey key) {
-        return keySize + 1;
+        return key.compareTo(bool1);
     }
 }

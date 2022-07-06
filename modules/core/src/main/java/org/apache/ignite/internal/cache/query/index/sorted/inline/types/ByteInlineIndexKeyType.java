@@ -19,29 +19,23 @@ package org.apache.ignite.internal.cache.query.index.sorted.inline.types;
 
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyType;
 import org.apache.ignite.internal.cache.query.index.sorted.keys.ByteIndexKey;
-import org.apache.ignite.internal.cache.query.index.sorted.keys.IndexKey;
 import org.apache.ignite.internal.cache.query.index.sorted.keys.NumericIndexKey;
 import org.apache.ignite.internal.pagemem.PageUtils;
 
 /**
  * Inline index key implementation for inlining {@link Byte} values.
  */
-public class ByteInlineIndexKeyType extends NullableInlineIndexKeyType<ByteIndexKey> {
+public class ByteInlineIndexKeyType extends NumericInlineIndexKeyType<ByteIndexKey> {
     /** */
     public ByteInlineIndexKeyType() {
         super(IndexKeyType.BYTE, (short)1);
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isComparableTo(IndexKey key) {
-        return key instanceof NumericIndexKey;
-    }
-
-    /** {@inheritDoc} */
-    @Override public int compare0(long pageAddr, int off, IndexKey key) {
+    @Override public int compareNumeric(NumericIndexKey key, long pageAddr, int off) {
         byte byte1 = PageUtils.getByte(pageAddr, off + 1);
 
-        return -Integer.signum(((NumericIndexKey)key).compareTo(byte1));
+        return key.compareTo(byte1);
     }
 
     /** {@inheritDoc} */
@@ -57,10 +51,5 @@ public class ByteInlineIndexKeyType extends NullableInlineIndexKeyType<ByteIndex
         byte b = PageUtils.getByte(pageAddr, off + 1);
 
         return new ByteIndexKey(b);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected int inlineSize0(ByteIndexKey key) {
-        return keySize + 1;
     }
 }

@@ -18,38 +18,33 @@
 package org.apache.ignite.internal.cache.query.index.sorted.inline.types;
 
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyType;
-import org.apache.ignite.internal.cache.query.index.sorted.keys.DoubleIndexKey;
+import org.apache.ignite.internal.cache.query.index.sorted.keys.IndexKey;
 import org.apache.ignite.internal.cache.query.index.sorted.keys.NumericIndexKey;
-import org.apache.ignite.internal.pagemem.PageUtils;
 
 /**
- * Inline index key implementation for inlining {@link Double} values.
+ * Inline index key implementation for inlining numeric values.
  */
-public class DoubleInlineIndexKeyType extends NumericInlineIndexKeyType<DoubleIndexKey> {
-    /** */
-    public DoubleInlineIndexKeyType() {
-        super(IndexKeyType.DOUBLE, (short)8);
+public abstract class NumericInlineIndexKeyType<T extends IndexKey> extends NullableInlineIndexKeyType<T> {
+    /** Constructor. */
+    protected NumericInlineIndexKeyType(IndexKeyType type, short keySize) {
+        super(type, keySize);
     }
 
     /** {@inheritDoc} */
-    @Override public int compareNumeric(NumericIndexKey key, long pageAddr, int off) {
-        double val1 = Double.longBitsToDouble(PageUtils.getLong(pageAddr, off + 1));
-
-        return key.compareTo(val1);
+    @Override public boolean isComparableTo(IndexKey key) {
+        return key instanceof NumericIndexKey;
     }
 
     /** {@inheritDoc} */
-    @Override protected int put0(long pageAddr, int off, DoubleIndexKey key, int maxSize) {
-        PageUtils.putByte(pageAddr, off, (byte)type().code());
-        PageUtils.putLong(pageAddr, off + 1, Double.doubleToLongBits((double)key.key()));
+    @Override public int compare0(long pageAddr, int off, IndexKey key) {
+        return -Integer.signum(compareNumeric((NumericIndexKey)key, pageAddr, off));
+    }
 
+    /** Compare numeric index key with inlined value. */
+    public abstract int compareNumeric(NumericIndexKey key, long pageAddr, int off);
+
+    /** {@inheritDoc} */
+    @Override protected int inlineSize0(T key) {
         return keySize + 1;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected DoubleIndexKey get0(long pageAddr, int off) {
-        double key = Double.longBitsToDouble(PageUtils.getLong(pageAddr, off + 1));
-
-        return new DoubleIndexKey(key);
     }
 }

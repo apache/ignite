@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.cache.query.index.sorted.inline.types;
 
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyType;
-import org.apache.ignite.internal.cache.query.index.sorted.keys.IndexKey;
 import org.apache.ignite.internal.cache.query.index.sorted.keys.IntegerIndexKey;
 import org.apache.ignite.internal.cache.query.index.sorted.keys.NumericIndexKey;
 import org.apache.ignite.internal.pagemem.PageUtils;
@@ -26,7 +25,7 @@ import org.apache.ignite.internal.pagemem.PageUtils;
 /**
  * Inline index key implementation for inlining {@link Integer} values.
  */
-public class IntegerInlineIndexKeyType extends NullableInlineIndexKeyType<IntegerIndexKey> {
+public class IntegerInlineIndexKeyType extends NumericInlineIndexKeyType<IntegerIndexKey> {
     /** Constructor. */
     public IntegerInlineIndexKeyType() {
         super(IndexKeyType.INT, (short)4);
@@ -50,19 +49,9 @@ public class IntegerInlineIndexKeyType extends NullableInlineIndexKeyType<Intege
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isComparableTo(IndexKey key) {
-        return key instanceof NumericIndexKey;
-    }
-
-    /** {@inheritDoc} */
-    @Override public int compare0(long pageAddr, int off, IndexKey key) {
+    @Override public int compareNumeric(NumericIndexKey key, long pageAddr, int off) {
         int val1 = PageUtils.getInt(pageAddr, off + 1);
 
-        return -Integer.signum(((NumericIndexKey)key).compareTo(val1));
-    }
-
-    /** {@inheritDoc} */
-    @Override protected int inlineSize0(IntegerIndexKey key) {
-        return keySize + 1;
+        return key.compareTo(val1);
     }
 }
