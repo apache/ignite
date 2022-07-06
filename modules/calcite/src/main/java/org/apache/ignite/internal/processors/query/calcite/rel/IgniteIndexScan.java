@@ -31,6 +31,7 @@ import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.util.ImmutableBitSet;
+import org.apache.ignite.internal.processors.query.calcite.metadata.cost.IgniteCost;
 import org.apache.ignite.internal.processors.query.calcite.util.IndexConditions;
 import org.apache.ignite.internal.util.typedef.F;
 import org.jetbrains.annotations.Nullable;
@@ -41,6 +42,8 @@ import static org.apache.ignite.internal.processors.query.calcite.trait.TraitUti
  * Relational operator that returns the contents of a table.
  */
 public class IgniteIndexScan extends AbstractIndexScan implements SourceAwareIgniteRel {
+    /** */
+    private static final double INDEX_NULLS_EXPECTED_RATIO = 0.05;
     /** */
     private final long sourceId;
 
@@ -162,9 +165,9 @@ public class IgniteIndexScan extends AbstractIndexScan implements SourceAwareIgn
     /** {@inheritDoc} */
     @Override public RelOptCost computeSelfCost(RelOptPlanner planner, RelMetadataQuery mq) {
         if (idxCond != null && findFirstOrLast()) {
-            //Taking first or last value suposes scan until not null.
-            return planner.getCostFactory().makeCost(1.0,
-                table.getRowCount() / IgniteIndexCount.INDEX_TRAVERSE_COST_DIVIDER, 0);
+            //Taking first or last value supposes scan until not null.
+            return planner.getCostFactory().makeCost(1.0, table.getRowCount() * INDEX_NULLS_EXPECTED_RATIO
+                * IgniteCost.ROW_PASS_THROUGH_COST, 0);
         }
 
         return super.computeSelfCost(planner, mq);
