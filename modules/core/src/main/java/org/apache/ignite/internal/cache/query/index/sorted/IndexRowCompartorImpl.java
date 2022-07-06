@@ -94,6 +94,8 @@ public class IndexRowCompartorImpl implements IndexRowComparator {
                 return -rkey.compare(lkey);
         }
         catch (RuntimeException e) {
+            // Runtime exceptions should be wrapped into checked exception, since any runtime exception treated by
+            // B+tree as corrupted tree exception and triggers failure handler.
             throw new IgniteCheckedException(e);
         }
 

@@ -42,7 +42,7 @@ public class DateInlineIndexKeyType extends NullableInlineIndexKeyType<DateIndex
 
     /** {@inheritDoc} */
     @Override public int compare0(long pageAddr, int off, IndexKey key) {
-        return -((DateTimeIndexKey)key).compareTo(PageUtils.getLong(pageAddr, off + 1), 0);
+        return -Integer.signum(((DateTimeIndexKey)key).compareTo(PageUtils.getLong(pageAddr, off + 1), 0));
     }
 
     /** {@inheritDoc} */

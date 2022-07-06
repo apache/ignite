@@ -41,7 +41,7 @@ public class DoubleInlineIndexKeyType extends NullableInlineIndexKeyType<DoubleI
     @Override public int compare0(long pageAddr, int off, IndexKey v) {
         double val1 = Double.longBitsToDouble(PageUtils.getLong(pageAddr, off + 1));
 
-        return -((NumericIndexKey)v).compareTo(val1);
+        return -Integer.signum(((NumericIndexKey)v).compareTo(val1));
     }
 
     /** {@inheritDoc} */

@@ -41,7 +41,7 @@ public class ShortInlineIndexKeyType extends NullableInlineIndexKeyType<ShortInd
     @Override public int compare0(long pageAddr, int off, IndexKey key) {
         short val1 = PageUtils.getShort(pageAddr, off + 1);
 
-        return -((NumericIndexKey)key).compareTo(val1);
+        return -Integer.signum(((NumericIndexKey)key).compareTo(val1));
     }
 
     /** {@inheritDoc} */

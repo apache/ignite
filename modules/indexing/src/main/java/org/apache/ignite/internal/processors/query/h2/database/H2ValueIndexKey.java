@@ -19,7 +19,6 @@
 package org.apache.ignite.internal.processors.query.h2.database;
 
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyType;
 import org.apache.ignite.internal.cache.query.index.sorted.keys.IndexKey;
 import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
@@ -58,13 +57,8 @@ public class H2ValueIndexKey implements IndexKey {
     }
 
     /** {@inheritDoc} */
-    @Override public int compare(IndexKey o) {
-        try {
-            return compareValues(val, H2Utils.wrap(coCtx, o.key(), o.type().code()));
-        }
-        catch (IgniteCheckedException e) {
-            throw new IgniteException(e);
-        }
+    @Override public int compare(IndexKey o) throws IgniteCheckedException {
+        return compareValues(val, H2Utils.wrap(coCtx, o.key(), o.type().code()));
     }
 
     /**

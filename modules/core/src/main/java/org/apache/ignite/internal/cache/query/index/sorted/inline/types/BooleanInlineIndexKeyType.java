@@ -56,7 +56,7 @@ public class BooleanInlineIndexKeyType extends NullableInlineIndexKeyType<Boolea
     @Override public int compare0(long pageAddr, int off, IndexKey key) {
         boolean bool1 = PageUtils.getByte(pageAddr, off + 1) != 0;
 
-        return -((NumericIndexKey)key).compareTo(bool1);
+        return -Integer.signum(((NumericIndexKey)key).compareTo(bool1));
     }
 
     /** {@inheritDoc} */

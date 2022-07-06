@@ -58,7 +58,7 @@ public class IntegerInlineIndexKeyType extends NullableInlineIndexKeyType<Intege
     @Override public int compare0(long pageAddr, int off, IndexKey key) {
         int val1 = PageUtils.getInt(pageAddr, off + 1);
 
-        return -((NumericIndexKey)key).compareTo(val1);
+        return -Integer.signum(((NumericIndexKey)key).compareTo(val1));
     }
 
     /** {@inheritDoc} */

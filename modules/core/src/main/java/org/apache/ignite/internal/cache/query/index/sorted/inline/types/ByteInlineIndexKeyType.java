@@ -41,7 +41,7 @@ public class ByteInlineIndexKeyType extends NullableInlineIndexKeyType<ByteIndex
     @Override public int compare0(long pageAddr, int off, IndexKey key) {
         byte byte1 = PageUtils.getByte(pageAddr, off + 1);
 
-        return -((NumericIndexKey)key).compareTo(byte1);
+        return -Integer.signum(((NumericIndexKey)key).compareTo(byte1));
     }
 
     /** {@inheritDoc} */

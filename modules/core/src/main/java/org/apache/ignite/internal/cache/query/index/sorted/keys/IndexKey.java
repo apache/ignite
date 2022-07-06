@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.cache.query.index.sorted.keys;
 
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyType;
 
 /**
@@ -36,7 +37,7 @@ public interface IndexKey {
     /**
      * @return Comparison result with other IndexKey.
      */
-    public int compare(IndexKey o);
+    public int compare(IndexKey o) throws IgniteCheckedException;
 
     /**
      * @return {@code True} if index key can be compared to another index key.

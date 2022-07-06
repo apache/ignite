@@ -43,8 +43,8 @@ public class TimestampInlineIndexKeyType extends NullableInlineIndexKeyType<Time
 
     /** {@inheritDoc} */
     @Override public int compare0(long pageAddr, int off, IndexKey key) {
-        return -((DateTimeIndexKey)key).compareTo(PageUtils.getLong(pageAddr, off + 1),
-            PageUtils.getLong(pageAddr, off + 9));
+        return -Integer.signum(((DateTimeIndexKey)key).compareTo(PageUtils.getLong(pageAddr, off + 1),
+            PageUtils.getLong(pageAddr, off + 9)));
     }
 
     /** {@inheritDoc} */

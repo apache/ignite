@@ -58,7 +58,7 @@ public class LongInlineIndexKeyType extends NullableInlineIndexKeyType<LongIndex
     @Override public int compare0(long pageAddr, int off, IndexKey key) {
         long val1 = PageUtils.getLong(pageAddr, off + 1);
 
-        return -((NumericIndexKey)key).compareTo(val1);
+        return -Integer.signum(((NumericIndexKey)key).compareTo(val1));
     }
 
     /** {@inheritDoc} */
