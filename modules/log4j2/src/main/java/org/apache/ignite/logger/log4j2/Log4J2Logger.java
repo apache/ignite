@@ -412,6 +412,7 @@ public class Log4J2Logger implements IgniteLogger, LoggerNodeIdAndApplicationAwa
 
         consoleApp.start();
 
+        logCfg.addAppender(consoleApp);
         logCfg.getRootLogger().addAppender(consoleApp, Level.TRACE, null);
     }
 
