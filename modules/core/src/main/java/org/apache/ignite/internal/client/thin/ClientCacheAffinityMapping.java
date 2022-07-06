@@ -269,10 +269,9 @@ public class ClientCacheAffinityMapping {
         UUID[] partMapping,
         IntFunction<ToIntFunction<Object>> mapperFactory
     ) {
-        if (partMapping == null)
-            mapping.cacheAffinity.put(cacheId, NOT_APPLICABLE_CACHE_AFFINITY_INFO);
-
-        mapping.cacheAffinity.put(cacheId, new CacheAffinityInfo(keyCfg, partMapping, mapperFactory.apply(partMapping.length)));
+        mapping.cacheAffinity.put(cacheId,
+            partMapping == null ? NOT_APPLICABLE_CACHE_AFFINITY_INFO :
+                new CacheAffinityInfo(keyCfg, partMapping, mapperFactory.apply(partMapping.length)));
     }
 
     /**
