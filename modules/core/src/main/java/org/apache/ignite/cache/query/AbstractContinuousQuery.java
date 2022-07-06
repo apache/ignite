@@ -186,9 +186,12 @@ public abstract class AbstractContinuousQuery<K, V> extends Query<Cache.Entry<K,
      * This flag is {@code false} by default, so {@link EventType#EXPIRED} events are disabled.
      *
      * @param includeExpired Whether to notify about {@link EventType#EXPIRED} events.
+     * @return {@code this} for chaining.
      */
-    public void setIncludeExpired(boolean includeExpired) {
+    public AbstractContinuousQuery<K, V> setIncludeExpired(boolean includeExpired) {
         this.includeExpired = includeExpired;
+
+        return this;
     }
 
     /**

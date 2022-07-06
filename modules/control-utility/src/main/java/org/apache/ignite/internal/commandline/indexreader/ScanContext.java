@@ -31,11 +31,14 @@ class ScanContext {
     /** Cache id or {@code -1} for sequential scan. */
     final int cacheId;
 
+    /** Count of inline fields. */
+    final int inlineFldCnt;
+
     /** Page store. */
     final FilePageStore store;
 
     /** Page type statistics. */
-    final Map<Class<? extends PageIO>, Long> ioStat;
+    final Map<Class<? extends PageIO>, PagesStatistic> stats;
 
     /** Map of errors, pageId -> set of exceptions. */
     final Map<Long, List<String>> errors;
@@ -43,27 +46,59 @@ class ScanContext {
     /** List of items storage. */
     final ItemStorage items;
 
+    /**
+     * Inline usage statistics.
+     * Size of the array equal index inline size.
+     * Each cell contains count of item that use exact number of inline bytes.
+     */
+    int[] inline;
+
     /** */
-    public ScanContext(int cacheId, FilePageStore store, ItemStorage items) {
+    public ScanContext(int cacheId, int inlineFldCnt, FilePageStore store, ItemStorage items) {
         this.cacheId = cacheId;
+        this.inlineFldCnt = inlineFldCnt;
         this.store = store;
         this.items = items;
-        this.ioStat = new LinkedHashMap<>();
+        this.stats = new LinkedHashMap<>();
         this.errors = new LinkedHashMap<>();
     }
 
     /** */
-    public void onPageIO(PageIO io) {
-        onPageIO(io.getClass(), ioStat, 1);
+    public void addToStats(PageIO io, long addr) {
+        addToStats(io, stats, 1, addr, store.getPageSize());
     }
 
     /** */
-    public static void onPageIO(Class<? extends PageIO> io, Map<Class<? extends PageIO>, Long> ioStat, long cnt) {
-        ioStat.compute(io, (k, v) -> v == null ? cnt : v + cnt);
+    public static void addToStats(PageIO io, Map<Class<? extends PageIO>, PagesStatistic> stats, long cnt, long addr, int pageSize) {
+        PagesStatistic stat = stats.computeIfAbsent(io.getClass(), k -> new PagesStatistic());
+
+        stat.cnt += cnt;
+        stat.freeSpace += io.getFreeSpace(pageSize, addr);
+    }
+
+    /** */
+    public static void addToStats(
+        Class<? extends PageIO> io,
+        Map<Class<? extends PageIO>, PagesStatistic> stats,
+        PagesStatistic toAdd
+    ) {
+        PagesStatistic stat = stats.computeIfAbsent(io, k -> new PagesStatistic());
+
+        stat.cnt += toAdd.cnt;
+        stat.freeSpace += toAdd.freeSpace;
     }
 
     /** */
     public void onLeafPage(long pageId, List<Object> data) {
         data.forEach(items::add);
+    }
+
+    /** */
+    static class PagesStatistic {
+        /** Count of pages. */
+        long cnt;
+
+        /** Summary free space. */
+        long freeSpace;
     }
 }

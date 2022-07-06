@@ -40,8 +40,10 @@ import org.apache.ignite.client.ClientCache;
 import org.apache.ignite.client.ClientCacheConfiguration;
 import org.apache.ignite.client.ClientCluster;
 import org.apache.ignite.client.ClientClusterGroup;
+import org.apache.ignite.client.ClientCollectionConfiguration;
 import org.apache.ignite.client.ClientCompute;
 import org.apache.ignite.client.ClientException;
+import org.apache.ignite.client.ClientIgniteSet;
 import org.apache.ignite.client.ClientServices;
 import org.apache.ignite.client.ClientTransactions;
 import org.apache.ignite.client.IgniteClient;
@@ -69,6 +71,7 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.marshaller.MarshallerContext;
 import org.apache.ignite.marshaller.MarshallerUtils;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Implementation of {@link IgniteClient} over TCP protocol.
@@ -349,20 +352,18 @@ public class TcpIgniteClient implements IgniteClient {
 
         if (create) {
             ch.service(ClientOperation.ATOMIC_LONG_CREATE, out -> {
-                try (BinaryRawWriterEx w = new BinaryWriterExImpl(null, out.out(), null, null)) {
-                    w.writeString(name);
-                    w.writeLong(initVal);
+                writeString(name, out.out());
+                out.out().writeLong(initVal);
 
-                    if (cfg != null) {
-                        w.writeBoolean(true);
-                        w.writeInt(cfg.getAtomicSequenceReserveSize());
-                        w.writeByte((byte)cfg.getCacheMode().ordinal());
-                        w.writeInt(cfg.getBackups());
-                        w.writeString(cfg.getGroupName());
-                    }
-                    else
-                        w.writeBoolean(false);
+                if (cfg != null) {
+                    out.out().writeBoolean(true);
+                    out.out().writeInt(cfg.getAtomicSequenceReserveSize());
+                    out.out().writeByte((byte)cfg.getCacheMode().ordinal());
+                    out.out().writeInt(cfg.getBackups());
+                    writeString(cfg.getGroupName(), out.out());
                 }
+                else
+                    out.out().writeBoolean(false);
             }, null);
         }
 
@@ -373,6 +374,34 @@ public class TcpIgniteClient implements IgniteClient {
             return null;
 
         return res;
+    }
+
+    /** {@inheritDoc} */
+    @Override public <T> ClientIgniteSet<T> set(String name, @Nullable ClientCollectionConfiguration cfg) {
+        GridArgumentCheck.notNull(name, "name");
+
+        return ch.service(ClientOperation.OP_SET_GET_OR_CREATE, out -> {
+            writeString(name, out.out());
+
+            if (cfg != null) {
+                out.out().writeBoolean(true);
+                out.out().writeByte((byte)cfg.getAtomicityMode().ordinal());
+                out.out().writeByte((byte)cfg.getCacheMode().ordinal());
+                out.out().writeInt(cfg.getBackups());
+                writeString(cfg.getGroupName(), out.out());
+                out.out().writeBoolean(cfg.isColocated());
+            }
+            else
+                out.out().writeBoolean(false);
+        }, in -> {
+            if (!in.in().readBoolean())
+                return null;
+
+            boolean colocated = in.in().readBoolean();
+            int cacheId = in.in().readInt();
+
+            return new ClientIgniteSetImpl<>(ch, serDes, name, colocated, cacheId);
+        });
     }
 
     /**
@@ -690,6 +719,7 @@ public class TcpIgniteClient implements IgniteClient {
         }
 
         /** {@inheritDoc} */
+        @SuppressWarnings("rawtypes")
         @Override public Class getClass(int typeId, ClassLoader ldr)
             throws ClassNotFoundException, IgniteCheckedException {
 

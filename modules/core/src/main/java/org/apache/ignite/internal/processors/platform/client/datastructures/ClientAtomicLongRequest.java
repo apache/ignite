@@ -25,6 +25,7 @@ import org.apache.ignite.internal.processors.datastructures.GridCacheAtomicLongI
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientRequest;
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
+import org.apache.ignite.internal.processors.platform.client.ClientStatus;
 
 /**
  * Atomic long value request.
@@ -71,6 +72,9 @@ public class ClientAtomicLongRequest extends ClientRequest {
      * @return Response for non-existent atomic long.
      */
     protected ClientResponse notFoundResponse() {
-        return new ClientResponse(requestId(), String.format("AtomicLong with name '%s' does not exist.", name));
+        return new ClientResponse(
+                requestId(),
+                ClientStatus.RESOURCE_DOES_NOT_EXIST,
+                String.format("AtomicLong with name '%s' does not exist.", name));
     }
 }

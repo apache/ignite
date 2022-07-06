@@ -20,6 +20,7 @@ package org.apache.ignite.internal.client.thin;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Callable;
+import java.util.stream.Collectors;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.client.ClientAtomicConfiguration;
 import org.apache.ignite.client.ClientAtomicLong;
@@ -27,12 +28,14 @@ import org.apache.ignite.client.ClientException;
 import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
+import org.apache.ignite.internal.processors.platform.client.ClientStatus;
 import org.junit.Test;
 import static org.apache.ignite.testframework.GridTestUtils.assertContains;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 
 /**
  * Tests client atomic long.
+ * Partition awareness tests are in {@link ThinClientPartitionAwarenessStableTopologyTest#testAtomicLong()}.
  */
 public class AtomicLongTest extends AbstractThinClientTest {
     /** {@inheritDoc} */
@@ -235,6 +238,45 @@ public class AtomicLongTest extends AbstractThinClientTest {
     }
 
     /**
+     * Tests atomic long with same name and group name, but different cache modes.
+     */
+    @Test
+    public void testSameNameDifferentOptionsDoesNotCreateSecondAtomic() {
+        String groupName = "testSameNameDifferentOptions";
+
+        ClientAtomicConfiguration cfg1 = new ClientAtomicConfiguration()
+                .setCacheMode(CacheMode.REPLICATED)
+                .setGroupName(groupName);
+
+        ClientAtomicConfiguration cfg2 = new ClientAtomicConfiguration()
+                .setCacheMode(CacheMode.PARTITIONED)
+                .setGroupName(groupName);
+
+        String name = "testSameNameDifferentOptionsDoesNotCreateSecondAtomic";
+
+        try (IgniteClient client = startClient(0)) {
+            ClientAtomicLong al1 = client.atomicLong(name, cfg1, 1, true);
+            ClientAtomicLong al2 = client.atomicLong(name, cfg2, 2, true);
+            ClientAtomicLong al3 = client.atomicLong(name, 3, true);
+
+            assertEquals(1, al1.get());
+            assertEquals(1, al2.get());
+            assertEquals(3, al3.get());
+        }
+
+        List<IgniteInternalCache<?, ?>> caches = grid(0).cachesx().stream()
+                .filter(c -> c.name().contains(groupName))
+                .collect(Collectors.toList());
+
+        assertEquals(1, caches.size());
+
+        IgniteInternalCache<?, ?> replicatedCache = caches.get(0);
+
+        assertEquals("ignite-sys-atomic-cache@testSameNameDifferentOptions", replicatedCache.name());
+        assertEquals(Integer.MAX_VALUE, replicatedCache.configuration().getBackups());
+    }
+
+    /**
      * Asserts that "does not exist" error is thrown.
      *
      * @param name Atomic long name.
@@ -244,5 +286,6 @@ public class AtomicLongTest extends AbstractThinClientTest {
         ClientException ex = (ClientException)assertThrows(null, callable, ClientException.class, null);
 
         assertContains(null, ex.getMessage(), "AtomicLong with name '" + name + "' does not exist.");
+        assertEquals(ClientStatus.RESOURCE_DOES_NOT_EXIST, ((ClientServerError)ex.getCause()).getCode());
     }
 }

@@ -274,4 +274,9 @@ public class PageMetaIO extends PageIO {
             .a(",\n\tcandidatePageCount=").a(getCandidatePageCount(addr))
             .a("\n]");
     }
+
+    /** {@inheritDoc} */
+    @Override public int getFreeSpace(int pageSize, long pageAddr) {
+        return 0;
+    }
 }
