@@ -17,6 +17,11 @@
 
 package org.apache.ignite.internal.processors.service;
 
+import java.io.Externalizable;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
+import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -49,7 +54,10 @@ import org.junit.runners.Parameterized;
  * Tests service call interceptor.
  */
 @RunWith(Parameterized.class)
-public class IgniteServiceCallInterceptorTest extends GridCommonAbstractTest {
+public class IgniteServiceCallInterceptorTest extends GridCommonAbstractTest implements Serializable {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** String attribute name. */
     private static final String STR_ATTR_NAME = "str.attr";
 
@@ -144,6 +152,21 @@ public class IgniteServiceCallInterceptorTest extends GridCommonAbstractTest {
         }, ServiceDeploymentException.class, null);
 
         // Undeploy service.
+        client.services().cancel(SVC_NAME_INTERCEPTED);
+
+        // Deploy with an interceptor that will not be able to deserialize.
+        cfg.setInterceptors(new CriticalErrorInterceptor());
+
+        GridTestUtils.assertThrowsAnyCause(log, () -> {
+            client.services().deploy(cfg);
+
+            return null;
+        }, ServiceDeploymentException.class, null);
+
+        for (int i = 0; i < NODES_CNT - 1; i++)
+            assertNull("idx=" + i, grid(i).services().service(SVC_NAME_INTERCEPTED));
+
+        // Redeploy the service with a valid configuration.
         client.services().cancel(SVC_NAME_INTERCEPTED);
 
         client.services().deploy(cfg);
@@ -359,6 +382,34 @@ public class IgniteServiceCallInterceptorTest extends GridCommonAbstractTest {
             assert ctxVal != null;
 
             return res + "; mtd=" + mtd + ", ctxVal=" + ctxVal + ", arg=" + arg + ", id=" + id;
+        }
+    }
+
+    /** */
+    private static class CriticalErrorInterceptor implements ServiceCallInterceptor, Externalizable {
+        /** Serial version uid. */
+        private static final long serialVersionUID = 0L;
+
+        /** */
+        public CriticalErrorInterceptor() {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Override public Object invoke(String mtd, Object[] args, ServiceContext ctx,
+            Callable<Object> next) throws Exception {
+
+            return next.call();
+        }
+
+        /** {@inheritDoc} */
+        @Override public void writeExternal(ObjectOutput out) throws IOException {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+            throw new AssertionError("Expected critical error.");
         }
     }
 }
