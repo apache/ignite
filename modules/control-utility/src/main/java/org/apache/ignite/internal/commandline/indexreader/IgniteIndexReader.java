@@ -47,8 +47,8 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.internal.cache.query.index.IndexProcessor;
+import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyType;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypeSettings;
-import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypes;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexKeyType;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexKeyTypeRegistry;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.io.AbstractInlineLeafIO;
@@ -1383,13 +1383,24 @@ public class IgniteIndexReader implements AutoCloseable {
                 while (realInlineSz < inlineSz && fldCnt < ctx.inlineFldCnt) {
                     int type0 = PageUtils.getByte(addr, itemOff + realInlineSz);
 
-                    if (type0 == IndexKeyTypes.UNKNOWN || type0 == IndexKeyTypes.NULL) {
+                    IndexKeyType idxKeyType;
+
+                    try {
+                        idxKeyType = IndexKeyType.forCode(type0);
+                    }
+                    catch (Throwable t) {
+                        log.log(Level.FINEST, "Unknown index key type [type=" + type0 + ']');
+
+                        break;
+                    }
+
+                    if (idxKeyType == IndexKeyType.UNKNOWN || idxKeyType == IndexKeyType.NULL) {
                         realInlineSz += 1;
 
                         continue;
                     }
 
-                    InlineIndexKeyType type = InlineIndexKeyTypeRegistry.get(type0, settings);
+                    InlineIndexKeyType type = InlineIndexKeyTypeRegistry.get(idxKeyType, settings);
 
                     if (type == null) {
                         log.log(Level.FINEST, "Unknown inline type [type=" + type0 + ']');
