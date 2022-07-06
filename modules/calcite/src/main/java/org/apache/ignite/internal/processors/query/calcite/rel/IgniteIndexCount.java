@@ -38,7 +38,7 @@ import static java.util.Collections.singletonList;
  */
 public class IgniteIndexCount extends AbstractRelNode implements SourceAwareIgniteRel {
     /** */
-    private static final double INDEX_TRAVERSE_COST_DIVIDER = 1000;
+    static final double INDEX_TRAVERSE_COST_DIVIDER = 1000;
 
     /** */
     private final RelOptTable tbl;

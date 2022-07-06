@@ -98,14 +98,14 @@ public class AggregatesIntegrationTest extends AbstractBasicIntegrationTest {
         for (int b = 0; b < 2; ++b) {
             createAndPopulateIndexedTable(b, CacheMode.PARTITIONED);
 
-            assertQuery("select count(*) from person").returns(5L).check();
+            assertQuery("select count(*) from person").returns(7L).check();
 
             client.destroyCache(TABLE_NAME);
         }
 
         createAndPopulateIndexedTable(0, CacheMode.REPLICATED);
 
-        assertQuery("select count(*) from person").returns(5L).check();
+        assertQuery("select count(*) from person").returns(7L).check();
     }
 
     /** */

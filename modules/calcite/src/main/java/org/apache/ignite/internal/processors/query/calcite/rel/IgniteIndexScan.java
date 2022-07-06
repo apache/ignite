@@ -161,8 +161,11 @@ public class IgniteIndexScan extends AbstractIndexScan implements SourceAwareIgn
 
     /** {@inheritDoc} */
     @Override public RelOptCost computeSelfCost(RelOptPlanner planner, RelMetadataQuery mq) {
-        if (idxCond != null && findFirstOrLast())
-            return planner.getCostFactory().makeTinyCost();
+        if (idxCond != null && findFirstOrLast()) {
+            //Taking first or last value suposes scan until not null.
+            return planner.getCostFactory().makeCost(1.0,
+                table.getRowCount() / IgniteIndexCount.INDEX_TRAVERSE_COST_DIVIDER, 0);
+        }
 
         return super.computeSelfCost(planner, mq);
     }
