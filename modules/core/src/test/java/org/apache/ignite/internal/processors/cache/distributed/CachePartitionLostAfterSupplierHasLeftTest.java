@@ -51,6 +51,7 @@ import org.junit.Test;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PREFER_WAL_REBALANCE;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
+import static org.apache.ignite.internal.processors.cache.distributed.CachePartitionLossWithPersistenceTest.checkLostPartitionAcrossCluster;
 
 /**
  * Test scenario: last supplier has left while a partition on demander is cleared before sending first demand request.
@@ -287,6 +288,10 @@ public class CachePartitionLostAfterSupplierHasLeftTest extends GridCommonAbstra
         final Collection<Integer> lostParts2 = g0.cache(DEFAULT_CACHE_NAME).lostPartitions();
 
         assertEquals(PARTS_CNT, lostParts2.size());
+
+        // Check that all lost partitions have the same state on all cluster nodes.
+        for (Integer lostPart : lostParts2)
+            checkLostPartitionAcrossCluster(DEFAULT_CACHE_NAME, lostPart);
 
         spi1.stopBlock();
 

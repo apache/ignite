@@ -1316,6 +1316,15 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
             for (Map.Entry<Integer, Set<UUID>> entry : ownersByUpdCounters.entrySet())
                 part2node.put(entry.getKey(), entry.getValue());
 
+            if (lostParts != null) {
+                for (Integer lostPart : lostParts) {
+                    for (GridDhtPartitionMap partMap : node2part.values()) {
+                        if (partMap.containsKey(lostPart))
+                            partMap.put(lostPart, LOST);
+                    }
+                }
+            }
+
             updateSeq.incrementAndGet();
         }
         finally {
