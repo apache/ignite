@@ -45,11 +45,14 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.topology.Grid
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
+import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
+import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusIO;
 import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler.RowFactory;
 import org.apache.ignite.internal.processors.query.calcite.schema.CacheTableDescriptor;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.util.TypeUtils;
 import org.apache.ignite.internal.util.lang.GridCursor;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
 import org.apache.ignite.spi.indexing.IndexingQueryFilterImpl;
 import org.jetbrains.annotations.Nullable;
@@ -161,12 +164,22 @@ public class IndexScan<Row> extends AbstractIndexScan<Row, IndexRow> {
 
     /**
      * Gets first or last records from all segments.
+     *
+     * @param notNull If {@code true}, null values is skipped.
      */
-    public List<Row> firstOrLast(boolean first) {
+    public List<Row> firstOrLast(boolean first, boolean notNull) {
         reserve();
 
         IndexingQueryFilter filter = new IndexingQueryFilterImpl(kctx, topVer, parts);
-        IndexQueryContext qctx = new IndexQueryContext(filter, null, ectx.mvccSnapshot());
+        BPlusTree.TreeRowClosure<IndexRow, IndexRow> rowFilter = notNull ?
+            new BPlusTree.TreeRowClosure<IndexRow, IndexRow>() {
+                /** {@inheritDoc} */
+                @Override public boolean apply(BPlusTree<IndexRow, IndexRow> tree, BPlusIO<IndexRow> io, long pageAddr,
+                    int idx) throws IgniteCheckedException {
+                    return !F.isEmptyOrNulls(indexRow2Row(io.getLookupRow(tree, pageAddr, idx)));
+                }
+            } : null;
+        IndexQueryContext qctx = new IndexQueryContext(filter, rowFilter, ectx.mvccSnapshot());
         List<Row> lst = new ArrayList<>();
 
         try {

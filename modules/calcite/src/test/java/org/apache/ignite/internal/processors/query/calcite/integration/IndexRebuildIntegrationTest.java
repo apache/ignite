@@ -222,8 +222,12 @@ public class IndexRebuildIntegrationTest extends AbstractBasicIntegrationTest {
 
                 executeSql("CREATE INDEX TEST_IDX ON tbl3(val " + (asc ? "asc)" : "desc)"));
 
+                executeSql("INSERT INTO tbl3 VALUES (-1, null, null)");
+
                 for (int i = 0; i < records; i++)
                     executeSql("INSERT INTO tbl3 VALUES (?, ?, ?)", i, i, "val" + i);
+
+                executeSql("INSERT INTO tbl3 VALUES (" + records + ", null, null)");
 
                 IgniteCacheTable tbl3 = (IgniteCacheTable)srvEngine.schemaHolder().schema("PUBLIC").getTable("TBL3");
 

@@ -28,7 +28,6 @@ import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.QueryCursor;
@@ -164,27 +163,6 @@ public class AbstractBasicIntegrationTest extends GridCommonAbstractTest {
     }
 
     /** */
-    protected IgniteCache<Integer, Employer2> createAndPopulateTable2(int backups, CacheMode cacheMode) {
-        IgniteCache<Integer, Employer2> person = client.getOrCreateCache(new CacheConfiguration<Integer, Employer2>()
-            .setName(TABLE_NAME)
-            .setSqlSchema("PUBLIC")
-            .setQueryEntities(F.asList(new QueryEntity(Integer.class, Employer2.class).setTableName(TABLE_NAME)))
-            .setCacheMode(cacheMode)
-            .setBackups(backups)
-        );
-
-        int idx = 0;
-
-        person.put(idx++, new Employer2("Igor", 10d, 7d));
-        person.put(idx++, new Employer2(null, 15d, null));
-        person.put(idx++, new Employer2("Ilya", 15d, 3d));
-        person.put(idx++, new Employer2("Roma", 10d, 9d));
-        person.put(idx++, new Employer2("Roma", 10d, 11d));
-
-        return person;
-    }
-
-    /** */
     protected CalciteQueryProcessor queryProcessor(IgniteEx ignite) {
         return Commons.lookupComponent(ignite.context(), CalciteQueryProcessor.class);
     }
@@ -273,9 +251,9 @@ public class AbstractBasicIntegrationTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public <Row> List<Row> findFirstOrLast(boolean first, ExecutionContext<Row> ectx, ColocationGroup grp,
-            @Nullable ImmutableBitSet requiredColumns) {
-            return delegate.findFirstOrLast(first, ectx, grp, requiredColumns);
+        @Override public <Row> List<Row> findFirstOrLast(boolean first, boolean skinNulls, ExecutionContext<Row> ectx,
+            ColocationGroup grp, @Nullable ImmutableBitSet requiredColumns) {
+            return delegate.findFirstOrLast(first, skinNulls, ectx, grp, requiredColumns);
         }
     }
 
@@ -293,28 +271,6 @@ public class AbstractBasicIntegrationTest extends GridCommonAbstractTest {
         public Employer(String name, Double salary) {
             this.name = name;
             this.salary = salary;
-        }
-    }
-
-    /** */
-    public static class Employer2 {
-        /** */
-        @QuerySqlField
-        public String name;
-
-        /** */
-        @QuerySqlField(index = true)
-        public Double salary;
-
-        /** */
-        @QuerySqlField(index = true, descending = true)
-        public Double descVal;
-
-        /** */
-        public Employer2(String name, Double salary, Double descVal) {
-            this.name = name;
-            this.salary = salary;
-            this.descVal = salary;
         }
     }
 }

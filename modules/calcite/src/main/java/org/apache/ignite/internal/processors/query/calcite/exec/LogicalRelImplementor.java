@@ -312,7 +312,7 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
 
         if (idx != null && !tbl.isIndexRebuildInProgress()) {
             Iterable<Row> rowsIter = firstOrLast
-                ? idx.findFirstOrLast(rel.findFirst(), ctx, grp, requiredColumns)
+                ? idx.findFirstOrLast(rel.findFirst(), true, ctx, grp, requiredColumns)
                 : idx.scan(ctx, grp, filters, lower, upper, prj, requiredColumns);
 
             return new ScanNode<>(ctx, rowType, rowsIter);
@@ -356,15 +356,7 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
             boolean sortNodeRequired = !collation.getFieldCollations().isEmpty();
 
             if (sortNodeRequired) {
-                Comparator<Row> cmp = expressionFactory.comparator(collation);
-
-                SortNode<Row> sortNode = new SortNode<>(
-                    ctx,
-                    rowType,
-                    rel.findFirst() || !rel.findFirstOrLast() ? cmp : cmp.reversed(),
-                    null,
-                    rel.findFirstOrLast() ? () -> 1 : null
-                );
+                SortNode<Row> sortNode = new SortNode<>(ctx, rowType, expressionFactory.comparator(collation));
 
                 sortNode.register(node);
 

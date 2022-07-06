@@ -385,7 +385,7 @@ public class InlineIndexImpl extends AbstractIndex implements InlineIndex {
 
         assert !cctx.mvccEnabled() || v != null;
 
-        if (cacheFilter == null && v == null)
+        if (cacheFilter == null && v == null && qryCtx.rowFilter() == null)
             return null;
 
         return new InlineTreeFilterClosure(

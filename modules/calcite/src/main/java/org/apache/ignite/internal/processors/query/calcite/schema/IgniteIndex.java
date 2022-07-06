@@ -107,6 +107,7 @@ public interface IgniteIndex {
      */
     public <Row> List<Row> findFirstOrLast(
         boolean first,
+        boolean skipNulls,
         ExecutionContext<Row> ectx,
         ColocationGroup grp,
         @Nullable ImmutableBitSet requiredColumns

@@ -112,20 +112,22 @@ public class SystemViewIndexImpl implements IgniteIndex {
     }
 
     /** {@inheritDoc} */
-    @Override public <Row> List<Row> findFirstOrLast(boolean first, ExecutionContext<Row> ectx, ColocationGroup grp,
-        @Nullable ImmutableBitSet requiredColumns) {
+    @Override public <Row> List<Row> findFirstOrLast(boolean first, boolean skipNulls, ExecutionContext<Row> ectx,
+        ColocationGroup grp, @Nullable ImmutableBitSet requiredColumns) {
         Iterator<Row> it = scan(ectx, grp, null, null, null, null, requiredColumns).iterator();
 
-        Row r = null;
+        Row curRow = it.hasNext() ? it.next() : null;
 
-        if (it.hasNext())
-            r = it.next();
+        while (F.isEmptyOrNulls(curRow) && skipNulls && it.hasNext())
+            curRow = it.next();
 
         // No take-last underlying implementation. A minor ticket might be brought for the system views.
-        while (!first && it.hasNext())
-            r = it.next();
+        Row res = F.isEmptyOrNulls(curRow) ? null : curRow;
 
-        return r == null ? F.asList(r) : Collections.emptyList();
+        while (!first && it.hasNext())
+            res = F.isEmptyOrNulls(curRow = it.next()) && skipNulls ? res : curRow;
+
+        return res == null ? F.asList(res) : Collections.emptyList();
     }
 
     /** {@inheritDoc} */

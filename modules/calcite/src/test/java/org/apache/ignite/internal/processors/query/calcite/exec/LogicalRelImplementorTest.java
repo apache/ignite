@@ -209,7 +209,6 @@ public class LogicalRelImplementorTest extends GridCommonAbstractTest {
         assertTrue(node.sources() != null && node.sources().size() == 1);
         assertTrue(node.sources().get(0) instanceof ScanNode);
         assertNull(node.sources().get(0).sources());
-        assertEquals(1, ((SortNode<?>)node).limit());
     }
 
     /**
