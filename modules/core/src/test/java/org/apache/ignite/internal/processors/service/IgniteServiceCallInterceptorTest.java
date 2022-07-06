@@ -68,6 +68,9 @@ public class IgniteServiceCallInterceptorTest extends GridCommonAbstractTest {
     /** Static counter. */
     private static final AtomicInteger callCntr = new AtomicInteger();
 
+    /** Ignite client node. */
+    private static Ignite client;
+
     /** Flag to deploy single service instance per cluster. */
     @Parameterized.Parameter(0)
     public boolean clusterSingleton;
@@ -79,7 +82,7 @@ public class IgniteServiceCallInterceptorTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override public void beforeTestsStarted() throws Exception {
         startGrids(NODES_CNT - 1);
-        startClientGrid(NODES_CNT - 1);
+        client = startClientGrid(NODES_CNT - 1);
     }
 
     /** */
@@ -94,14 +97,7 @@ public class IgniteServiceCallInterceptorTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override public void afterTest() {
-        services().cancelAll();
-    }
-
-    /**
-     * @return Gets services facade over all cluster nodes started in server mode.
-     */
-    private IgniteServices services() {
-        return grid(NODES_CNT - 1).services();
+        grid(0).services().cancelAll();
     }
 
     /**
@@ -128,29 +124,29 @@ public class IgniteServiceCallInterceptorTest extends GridCommonAbstractTest {
         ServiceCallInterceptor intcp1 = (mtd, args, ctx, next) -> "1";
 
         ServiceConfiguration cfg = serviceCfg(SVC_NAME_INTERCEPTED, new TestServiceImpl(), clusterSingleton, intcp1);
-        services().deploy(cfg);
+        client.services().deploy(cfg);
 
-        TestService proxy = services().serviceProxy(SVC_NAME_INTERCEPTED, TestService.class, false);
+        TestService proxy = client.services().serviceProxy(SVC_NAME_INTERCEPTED, TestService.class, false);
         assertEquals("1", proxy.method(0));
 
         // Redeploy with the same configuration.
         cfg.setInterceptors(intcp1);
-        services().deploy(cfg);
+        client.services().deploy(cfg);
 
         // Redeploy with different configuration.
         ServiceCallInterceptor intcp2 = (mtd, args, ctx, next) -> "2";
         cfg.setInterceptors(intcp2);
 
         GridTestUtils.assertThrowsAnyCause(log, () -> {
-            services().deploy(cfg);
+            client.services().deploy(cfg);
 
             return null;
         }, ServiceDeploymentException.class, null);
 
         // Undeploy service.
-        services().cancel(SVC_NAME_INTERCEPTED);
+        client.services().cancel(SVC_NAME_INTERCEPTED);
 
-        services().deploy(cfg);
+        client.services().deploy(cfg);
         assertEquals("2", proxy.method(0));
     }
 
@@ -179,17 +175,17 @@ public class IgniteServiceCallInterceptorTest extends GridCommonAbstractTest {
             return next.call();
         };
 
-        services().deployAll(Collections.singletonList(
+        client.services().deployAll(Collections.singletonList(
             serviceCfg(SVC_NAME_INTERCEPTED, new TestServiceImpl(), clusterSingleton, security, second)
         ));
 
-        TestService noCtxProxy = services().serviceProxy(SVC_NAME_INTERCEPTED, TestService.class, sticky);
+        TestService noCtxProxy = client.services().serviceProxy(SVC_NAME_INTERCEPTED, TestService.class, sticky);
         GridTestUtils.assertThrowsAnyCause(null, () -> noCtxProxy.method(0), expE.getClass(), expE.getMessage());
         assertEquals(0, callCntr.get());
 
         ServiceCallContext callCtx = ServiceCallContext.builder().put(STR_ATTR_NAME, "42").build();
 
-        String res = services().serviceProxy(SVC_NAME_INTERCEPTED, TestService.class, sticky, callCtx).method(0);
+        String res = client.services().serviceProxy(SVC_NAME_INTERCEPTED, TestService.class, sticky, callCtx).method(0);
         assertEquals("cls=" + TestServiceImpl.class.getSimpleName() + ", ctxVal=" + ctxVal + ", arg=0", res);
         assertEquals(1, callCntr.get());
     }
@@ -209,7 +205,7 @@ public class IgniteServiceCallInterceptorTest extends GridCommonAbstractTest {
         for (int i = 0; i < intcpsCnt; i++)
             interceptors[intcpsCnt - i - 1] = new SvcInterceptor(null, i);
 
-        services().deployAll(Arrays.asList(
+        client.services().deployAll(Arrays.asList(
             serviceCfg(SVC_NAME_INTERCEPTED, new TestServiceImpl(), clusterSingleton, interceptors),
             serviceCfg(SVC_NAME_INJECTED, new TestServiceInjected(), !clusterSingleton, interceptors)
         ));
