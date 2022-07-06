@@ -55,6 +55,8 @@ namespace ignite_test
 
         assert(cfgFile != 0);
 
+        cfg.igniteHome = jni::ResolveIgniteHome();
+
         cfg.jvmOpts.push_back("-Xdebug");
         cfg.jvmOpts.push_back("-Xnoagent");
         cfg.jvmOpts.push_back("-Djava.compiler=NONE");
@@ -65,8 +67,8 @@ namespace ignite_test
         cfg.jvmOpts.push_back("-DIGNITE_UPDATE_NOTIFIER=false");
         cfg.jvmOpts.push_back("-DIGNITE_LOG_CLASSPATH_CONTENT_ON_STARTUP=false");
         cfg.jvmOpts.push_back("-Duser.language=en");
+        cfg.jvmOpts.push_back("-Dlog4j.configurationFile=" + cfg.igniteHome + "/modules/core/src/test/config/log4j2-test.xml");
 
-        cfg.igniteHome = jni::ResolveIgniteHome();
         cfg.jvmClassPath = jni::CreateIgniteHomeClasspath(cfg.igniteHome, true);
 
 #ifdef IGNITE_TESTS_32
