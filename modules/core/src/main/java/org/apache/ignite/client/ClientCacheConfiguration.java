@@ -18,6 +18,7 @@
 package org.apache.ignite.client;
 
 import java.io.Serializable;
+import java.util.function.ToIntFunction;
 import javax.cache.expiry.ExpiryPolicy;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheKeyConfiguration;
@@ -26,7 +27,6 @@ import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.PartitionLossPolicy;
 import org.apache.ignite.cache.QueryEntity;
-import org.apache.ignite.cache.affinity.AffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -131,7 +131,7 @@ public final class ClientCacheConfiguration implements Serializable {
     private ExpiryPolicy expiryPlc;
 
     /** Client cache affinity function used for calculation of partition mappings. It wouldn't be transferred to the server side. */
-    private @Nullable AffinityFunction partitionAwarenessAffinity;
+    private @Nullable ToIntFunction<Object> partitionAwarenessAffinityKeyMapper;
 
     /** Default constructor. */
     public ClientCacheConfiguration() {
@@ -175,7 +175,7 @@ public final class ClientCacheConfiguration implements Serializable {
         sqlSchema = ccfg.getSqlSchema();
         statisticsEnabled = ccfg.isStatisticsEnabled();
         writeSynchronizationMode = ccfg.getWriteSynchronizationMode();
-        partitionAwarenessAffinity = ccfg.getPartitionAwarenessAffinity();
+        partitionAwarenessAffinityKeyMapper = ccfg.getPartitionAwarenessAffinityKeyMapper();
     }
 
     /**
@@ -755,16 +755,16 @@ public final class ClientCacheConfiguration implements Serializable {
     /**
      * @return Client cache affinity function used for calculation of partition mappings. It wouldn't be transferred to the server side.
      */
-    public @Nullable AffinityFunction getPartitionAwarenessAffinity() {
-        return this.partitionAwarenessAffinity;
+    public @Nullable ToIntFunction<Object> getPartitionAwarenessAffinityKeyMapper() {
+        return this.partitionAwarenessAffinityKeyMapper;
     }
 
     /**
      * @param func Client cache affinity function used for calculation of partition mappings. It wouldn't be transferred to the server side.
      * @return {@code this} for chaining.
      */
-    public ClientCacheConfiguration setPartitionAwarenessAffinity(AffinityFunction func) {
-        partitionAwarenessAffinity = func;
+    public ClientCacheConfiguration setPartitionAwarenessAffinityKeyMapper(ToIntFunction<Object> func) {
+        partitionAwarenessAffinityKeyMapper = func;
 
         return this;
     }

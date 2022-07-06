@@ -18,20 +18,24 @@
 package org.apache.ignite.internal.client.thin;
 
 import java.util.function.Function;
-
+import java.util.function.Supplier;
+import java.util.function.ToIntFunction;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.client.ClientAtomicConfiguration;
 import org.apache.ignite.client.ClientAtomicLong;
 import org.apache.ignite.client.ClientCache;
+import org.apache.ignite.client.ClientCacheConfiguration;
 import org.apache.ignite.client.ClientCollectionConfiguration;
 import org.apache.ignite.client.ClientIgniteSet;
 import org.apache.ignite.configuration.AtomicConfiguration;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.datastructures.GridCacheAtomicLongEx;
 import org.junit.Test;
+import static org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction.DFLT_PARTITION_COUNT;
 
 /**
  * Test partition awareness of thin client on stable topology.
@@ -71,6 +75,30 @@ public class ThinClientPartitionAwarenessStableTopologyTest extends ThinClientAb
     @Test
     public void testPartitionedCustomAffinityCache() {
         testNotApplicableCache(PART_CUSTOM_AFFINITY_CACHE_NAME);
+    }
+
+    /** */
+    @Test
+    public void testPartitionedCustomAffinityCacheWithMapper() throws Exception {
+        testApplicableCache(() -> {
+            ClientCache<Object, Object> cache = client.getOrCreateCache(
+                    new ClientCacheConfiguration()
+                        .setName(PART_CUSTOM_AFFINITY_CACHE_NAME)
+                        .setPartitionAwarenessAffinityKeyMapper(new ToIntFunction<Object>() {
+                            /** Affinity mask. */
+                            private final int affinityMask = RendezvousAffinityFunction.calculateMask(DFLT_PARTITION_COUNT);
+
+                            /** {@inheritDoc} */
+                            @Override public int applyAsInt(Object key) {
+                                return RendezvousAffinityFunction.calculatePartition(key, affinityMask, DFLT_PARTITION_COUNT);
+                            }
+                        })
+                );
+
+            assertOpOnChannel(dfltCh, ClientOperation.CACHE_GET_OR_CREATE_WITH_CONFIGURATION);
+
+            return cache;
+        }, i -> i);
     }
 
     /**
@@ -333,13 +361,26 @@ public class ThinClientPartitionAwarenessStableTopologyTest extends ThinClientAb
         }
     }
 
-    /**
+     /**
      * @param cacheName Cache name.
      * @param keyFactory Key factory function.
+     * @throws Exception If fails.
      */
     private void testApplicableCache(String cacheName, Function<Integer, Object> keyFactory) throws Exception {
-        ClientCache<Object, Object> clientCache = client.cache(cacheName);
-        IgniteInternalCache<Object, Object> igniteCache = grid(0).context().cache().cache(cacheName);
+        testApplicableCache(() -> client.cache(cacheName), keyFactory);
+    }
+
+    /**
+     * @param cacheSup Cache supplier.
+     * @param keyFactory Key factory function.
+     */
+    private void testApplicableCache(
+        Supplier<ClientCache<Object, Object>> cacheSup,
+        Function<Integer, Object> keyFactory
+    ) throws Exception {
+        ClientCache<Object, Object> clientCache = cacheSup.get();
+
+        IgniteInternalCache<Object, Object> igniteCache = grid(0).context().cache().cache(clientCache.getName());
 
         clientCache.put(keyFactory.apply(0), 0);
 

@@ -862,10 +862,10 @@ final class ReliableChannel implements AutoCloseable {
      * @param cfg Cache configuration.
      */
     void onCacheCreated(ClientCacheConfiguration cfg) {
-        if (cfg.getPartitionAwarenessAffinity() == null)
+        if (cfg.getPartitionAwarenessAffinityKeyMapper() == null)
             return;
 
-        affinityCtx.putCacheAffinityMapper(ClientUtils.cacheId(cfg.getName()), cfg.getPartitionAwarenessAffinity()::partition);
+        affinityCtx.putCacheAffinityMapper(ClientUtils.cacheId(cfg.getName()), cfg.getPartitionAwarenessAffinityKeyMapper());
     }
 
     /**
