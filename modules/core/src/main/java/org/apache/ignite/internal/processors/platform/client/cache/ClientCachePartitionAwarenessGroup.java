@@ -37,7 +37,7 @@ class ClientCachePartitionAwarenessGroup {
     /** Partition mapping. */
     private final ClientCachePartitionMapping mapping;
 
-    /** If the default RendezvousAffinityFunction and CacheDefaultBinaryAffinityKeyMapper is used. */
+    /** {@code true} if the default RendezvousAffinityFunction and CacheDefaultBinaryAffinityKeyMapper is used for cache. */
     private final boolean isDefaultAffinity;
 
     /** Descriptor of the associated caches. */
@@ -47,6 +47,8 @@ class ClientCachePartitionAwarenessGroup {
      * @param proc Binary processor.
      * @param mapping Partition mapping.
      * @param cacheDesc Descriptor of the initial cache.
+     * @param isDefaultAffinity {@code true} if the default RendezvousAffinityFunction and CacheDefaultBinaryAffinityKeyMapper is used for
+     * cache.
      */
     public ClientCachePartitionAwarenessGroup(
         CacheObjectBinaryProcessorImpl proc,

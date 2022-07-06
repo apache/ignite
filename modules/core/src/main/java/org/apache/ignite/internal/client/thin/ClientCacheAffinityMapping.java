@@ -160,6 +160,7 @@ public class ClientCacheAffinityMapping {
      * from this response.
      *
      * @param ch Input channel.
+     * @param mappers Cache key to partition mappers.
      */
     public static ClientCacheAffinityMapping readResponse(PayloadInputChannel ch, Function<Integer, ToIntFunction<Object>> mappers) {
         try (BinaryReaderExImpl in = ClientUtils.createBinaryReader(null, ch.in())) {
@@ -260,7 +261,7 @@ public class ClientCacheAffinityMapping {
      * @param cacheId Cache id.
      * @param keyCfg Cache configuration mapping.
      * @param partMapping Partition mapping to node.
-     * @param mapperFactory Additional mapper if non default affinity was used.
+     * @param mapperFactory Cache key mapper factory.
      */
     private static void addCacheAffinityMapping(
         ClientCacheAffinityMapping mapping,
@@ -320,7 +321,7 @@ public class ClientCacheAffinityMapping {
         }
     }
 
-    /** */
+    /** Default implementation of cache key to partition mapper. */
     private static class RendezvousAffinityKeyMapper implements ToIntFunction<Object> {
         /** Number of partitions. */
         private final int parts;

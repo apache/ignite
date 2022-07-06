@@ -40,7 +40,7 @@ public class ClientCacheAffinityContext {
     /** Contains last topology version and known nodes of this version. */
     private final AtomicReference<TopologyNodes> lastTop = new AtomicReference<>();
 
-    /** Configured cache mappers that map a key to a partition for each cache if a custom affinity function was used on in a cluster. */
+    /** Cache key mappers that map the key to a partition for each cache if a custom affinity function was used for cache in a cluster. */
     private final Map<Integer, ToIntFunction<Object>> cacheAffinityMappers = new ConcurrentHashMap<>();
 
     /** Current affinity mapping. */
@@ -58,7 +58,7 @@ public class ClientCacheAffinityContext {
 
     /**
      * @param cacheId Cache id.
-     * @param mapper Cache affinity mapper used for partition awareness.
+     * @param mapper The client cache key mapper function is used for calculation the key to partition mapping.
      */
     public void putCacheAffinityMapper(Integer cacheId, ToIntFunction<Object> mapper) {
         assert mapper != null;

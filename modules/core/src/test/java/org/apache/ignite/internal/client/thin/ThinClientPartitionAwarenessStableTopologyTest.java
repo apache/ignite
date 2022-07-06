@@ -77,7 +77,10 @@ public class ThinClientPartitionAwarenessStableTopologyTest extends ThinClientAb
         testNotApplicableCache(PART_CUSTOM_AFFINITY_CACHE_NAME);
     }
 
-    /** */
+    /**
+     * Test that partition awareness is applicable for partitioned cache with custom affinity function
+     * and an affinity mapper is set on the client side.
+     */
     @Test
     public void testPartitionedCustomAffinityCacheWithMapper() throws Exception {
         testApplicableCache(() -> {
@@ -373,6 +376,7 @@ public class ThinClientPartitionAwarenessStableTopologyTest extends ThinClientAb
     /**
      * @param cacheSup Cache supplier.
      * @param keyFactory Key factory function.
+     * @throws Exception If fails.
      */
     private void testApplicableCache(
         Supplier<ClientCache<Object, Object>> cacheSup,

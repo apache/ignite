@@ -859,7 +859,7 @@ final class ReliableChannel implements AutoCloseable {
     }
 
     /**
-     * @param cfg Cache configuration.
+     * @param cfg Client cache configuration.
      */
     void onCacheCreated(ClientCacheConfiguration cfg) {
         if (cfg.getPartitionAwarenessAffinityKeyMapper() == null)

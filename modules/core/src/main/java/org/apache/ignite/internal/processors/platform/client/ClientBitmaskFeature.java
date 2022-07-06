@@ -61,7 +61,7 @@ public enum ClientBitmaskFeature implements ThinProtocolFeature {
     /** Handle OP_HEARTBEAT and OP_GET_IDLE_TIMEOUT. */
     HEARTBEAT(11),
 
-    /** */
+    /** Send all mappings to the client including non-default affinity functions. */
     ALL_AFFINITY_MAPPINGS(12);
 
     /** */
