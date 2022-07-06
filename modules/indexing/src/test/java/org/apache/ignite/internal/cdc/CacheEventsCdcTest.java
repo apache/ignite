@@ -162,14 +162,14 @@ public class CacheEventsCdcTest extends AbstractCdcTest {
 
             assertEquals(1, evt.queryEntities().size());
 
-            QueryEntity fromCfg0 = evt.configuration().getQueryEntities().iterator().next();
-
-            fromCfg.set(fromCfg0);
-
             QueryEntity qryEntity = evt.queryEntities().iterator().next();
 
             if (qryEntity.getFields().size() != fldCnt)
                 return false;
+
+            QueryEntity fromCfg0 = evt.configuration().getQueryEntities().iterator().next();
+
+            fromCfg.set(fromCfg0);
 
             assertTrue(qryEntity.getFields().containsKey("ID"));
             assertTrue(qryEntity.getFields().containsKey("NAME"));
@@ -210,14 +210,15 @@ public class CacheEventsCdcTest extends AbstractCdcTest {
         assertTrue(waitForCondition(() -> {
             CdcCacheEvent evt = cnsmr.evts.get(CU.cacheId("T1"));
 
-            QueryEntity fromCfg0 = evt.configuration().getQueryEntities().iterator().next();
             QueryEntity qryEntity = evt.queryEntities().iterator().next();
-
-            assertEquals(fromCfg.get(), fromCfg0);
-            assertTrue(fromCfg0.getIndexes().isEmpty());
 
             if (F.isEmpty(qryEntity.getIndexes()))
                 return false;
+
+            QueryEntity fromCfg0 = evt.configuration().getQueryEntities().iterator().next();
+
+            assertEquals(fromCfg.get(), fromCfg0);
+            assertTrue(fromCfg0.getIndexes().isEmpty());
 
             QueryIndex idx = qryEntity.getIndexes().iterator().next();
 

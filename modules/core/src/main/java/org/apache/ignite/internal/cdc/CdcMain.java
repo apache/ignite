@@ -442,7 +442,6 @@ public class CdcMain implements Runnable {
                         updateMetadata();
                 }
 
-
                 if (!stopped)
                     U.sleep(cdcCfg.getCheckFrequency());
             }

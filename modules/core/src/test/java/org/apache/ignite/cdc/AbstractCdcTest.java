@@ -415,16 +415,23 @@ public abstract class AbstractCdcTest extends GridCommonAbstractTest {
     /** */
     public static class TrackCacheEventsConsumer implements CdcConsumer {
         /** Cache events. */
-        public Map<Integer, CdcCacheEvent> evts = new ConcurrentHashMap<>();
+        public final Map<Integer, CdcCacheEvent> evts = new ConcurrentHashMap<>();
 
         /** {@inheritDoc} */
         @Override public void onCacheChange(Iterator<CdcCacheEvent> cacheEvents) {
-            cacheEvents.forEachRemaining(e -> evts.put(e.cacheId(), e));
+            cacheEvents.forEachRemaining(e -> {
+                log.info("TrackCacheEventsConsumer.add[cacheId=" + e.cacheId() + ", e=" + e + ']');
+                evts.put(e.cacheId(), e);
+            });
         }
 
         /** {@inheritDoc} */
         @Override public void onCacheDestroy(Iterator<Integer> caches) {
-            caches.forEachRemaining(evts::remove);
+            caches.forEachRemaining(cacheId -> {
+                log.info("TrackCacheEventsConsumer.remove[cacheId=" + cacheId + ']');
+
+                evts.remove(cacheId);
+            });
         }
 
         /** {@inheritDoc} */
