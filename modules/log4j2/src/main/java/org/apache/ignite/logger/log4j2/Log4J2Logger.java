@@ -382,12 +382,12 @@ public class Log4J2Logger implements IgniteLogger, LoggerNodeIdAndApplicationAwa
 
             cfg = cfgBuilder.add(rootLog).build();
 
-            configureDefaultAppenders(cfg);
+            configureConsoleAppender(cfg);
 
             ctx.reconfigure(cfg);
         }
         else {
-            configureDefaultAppenders(cfg);
+            configureConsoleAppender(cfg);
 
             ctx.updateLoggers();
         }
@@ -396,7 +396,7 @@ public class Log4J2Logger implements IgniteLogger, LoggerNodeIdAndApplicationAwa
     }
 
     /** */
-    private void configureDefaultAppenders(Configuration logCfg) {
+    private void configureConsoleAppender(Configuration logCfg) {
         PatternLayout layout = PatternLayout.newBuilder()
             .withPattern("%d{ISO8601}][%-5p][%t][%c{1}] %m%n")
             .withCharset(Charset.defaultCharset())
