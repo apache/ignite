@@ -43,11 +43,19 @@ public interface CdcCacheEvent {
     public int cacheId();
 
     /**
-     * @return Cache configuration.
+     * Note, {@link CacheConfiguration#getQueryEntities()} value not changed on table schema change.
+     * Current table schema can be obtained by {@link #queryEntities()}.
+     *
+     * @return Initial cache configuration.
      */
     public CacheConfiguration<?, ?> configuration();
 
     /**
+     * Returns current state of configured {@link QueryEntity}.
+     * {@link QueryEntity} can be changed by executing DDL on SQL tables.
+     *
+     * Note, {@link CacheConfiguration#getQueryEntities()} returns initial definition of {@link QueryEntity}.
+     *
      * @return Query entities for cache.
      */
     public Collection<QueryEntity> queryEntities();

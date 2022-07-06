@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.cdc;
 
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
@@ -141,14 +142,22 @@ public class CacheEventsCdcTest extends AbstractCdcTest {
     public void testCreateDropSQLTable() throws Exception {
         executeSql(node, "CREATE TABLE T1(ID INT, NAME VARCHAR, PRIMARY KEY (ID)) WITH \"CACHE_NAME=T1\"");
 
+        AtomicReference<QueryEntity> fromCfg = new AtomicReference<>();
+
         Function<Integer, GridAbsPredicate> checker = fldCnt -> () -> {
             CdcCacheEvent evt = cnsmr.evts.get(CU.cacheId("T1"));
 
             if (evt == null)
                 return false;
 
+            assertNotNull(evt.configuration().getQueryEntities());
             assertNotNull(evt.queryEntities());
+
             assertEquals(1, evt.queryEntities().size());
+
+            QueryEntity fromCfg0 = evt.configuration().getQueryEntities().iterator().next();
+
+            fromCfg.set(fromCfg0);
 
             QueryEntity qryEntity = evt.queryEntities().iterator().next();
 
@@ -158,10 +167,19 @@ public class CacheEventsCdcTest extends AbstractCdcTest {
             assertTrue(qryEntity.getFields().containsKey("ID"));
             assertTrue(qryEntity.getFields().containsKey("NAME"));
 
+            assertTrue(fromCfg0.getFields().containsKey("ID"));
+            assertTrue(fromCfg0.getFields().containsKey("NAME"));
+
+            assertFalse(
+                "Saved config must not change on schema change",
+                fromCfg0.getFields().containsKey("CITY_ID")
+            );
+
             if (fldCnt == 3)
                 assertTrue(qryEntity.getFields().containsKey("CITY_ID"));
 
             assertTrue(qryEntity.getIndexes().isEmpty());
+            assertTrue(fromCfg0.getIndexes().isEmpty());
 
             return true;
         };
@@ -177,7 +195,11 @@ public class CacheEventsCdcTest extends AbstractCdcTest {
         assertTrue(waitForCondition(() -> {
             CdcCacheEvent evt = cnsmr.evts.get(CU.cacheId("T1"));
 
+            QueryEntity fromCfg0 = evt.configuration().getQueryEntities().iterator().next();
             QueryEntity qryEntity = evt.queryEntities().iterator().next();
+
+            assertEquals(fromCfg.get(), fromCfg0);
+            assertTrue(fromCfg0.getIndexes().isEmpty());
 
             if (F.isEmpty(qryEntity.getIndexes()))
                 return false;
