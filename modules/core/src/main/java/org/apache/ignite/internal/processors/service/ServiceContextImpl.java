@@ -69,15 +69,15 @@ public class ServiceContextImpl implements ServiceContext {
     @GridToStringExclude
     private volatile Service svc;
 
+    /** Service call interceptor. */
+    @GridToStringExclude
+    private volatile ServiceCallInterceptor interceptor;
+
     /** Cancelled flag. */
     private volatile boolean isCancelled;
 
     /** Service statistics flag. */
     private final boolean isStatisticsEnabled;
-
-    /** Service call interceptor. */
-    @GridToStringExclude
-    private final ServiceCallInterceptor interceptor;
 
     /**
      * @param name Service name.
@@ -86,15 +86,13 @@ public class ServiceContextImpl implements ServiceContext {
      * @param affKey Affinity key.
      * @param exe Executor service.
      * @param statisticsEnabled Service statistics flag.
-     * @param interceptor Service call interceptor.
      */
     ServiceContextImpl(String name,
         UUID execId,
         String cacheName,
         Object affKey,
         ExecutorService exe,
-        boolean statisticsEnabled,
-        @Nullable ServiceCallInterceptor interceptor
+        boolean statisticsEnabled
     ) {
         this.name = name;
         this.execId = execId;
@@ -102,7 +100,6 @@ public class ServiceContextImpl implements ServiceContext {
         this.affKey = affKey;
         this.exe = exe;
         this.isStatisticsEnabled = statisticsEnabled;
-        this.interceptor = interceptor;
     }
 
     /** {@inheritDoc} */
@@ -142,6 +139,13 @@ public class ServiceContextImpl implements ServiceContext {
      */
     @Nullable Service service() {
         return svc;
+    }
+
+    /**
+     * @param interceptor Service call interceptor.
+     */
+    void interceptor(ServiceCallInterceptor interceptor) {
+        this.interceptor = interceptor;
     }
 
     /**

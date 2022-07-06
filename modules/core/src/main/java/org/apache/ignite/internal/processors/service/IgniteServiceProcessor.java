@@ -1279,8 +1279,7 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
                         cacheName,
                         affKey,
                         Executors.newSingleThreadExecutor(threadFactory),
-                        cfg.isStatisticsEnabled(),
-                        unmarshalInterceptors(cfg));
+                        cfg.isStatisticsEnabled());
 
                     ctxs.add(srvcCtx);
 
@@ -1371,18 +1370,30 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
      * @return Copy of service.
      * @throws IgniteCheckedException If failed.
      */
-    private Service copyAndInject(ServiceConfiguration cfg, ServiceContext svcCtx) throws IgniteCheckedException {
+    private Service copyAndInject(ServiceConfiguration cfg, ServiceContextImpl svcCtx) throws IgniteCheckedException {
         if (cfg instanceof LazyServiceConfiguration) {
             LazyServiceConfiguration srvcCfg = (LazyServiceConfiguration)cfg;
 
             GridDeployment srvcDep = ctx.deploy().getDeployment(srvcCfg.serviceClassName());
+            ClassLoader clsLdr = U.resolveClassLoader(srvcDep != null ? srvcDep.classLoader() : null, ctx.config());
+            byte[] bytes = srvcCfg.serviceBytes();
 
-            byte[] bytes = ((LazyServiceConfiguration)cfg).serviceBytes();
-
-            Service srvc = U.unmarshal(marsh, bytes,
-                U.resolveClassLoader(srvcDep != null ? srvcDep.classLoader() : null, ctx.config()));
+            Service srvc = U.unmarshal(marsh, bytes, clsLdr);
 
             ctx.resource().inject(srvc, svcCtx);
+
+            ServiceCallInterceptor[] interceptors = U.unmarshal(marsh, srvcCfg.interceptorBytes(), clsLdr);
+
+            if (F.isEmpty(interceptors))
+                return srvc;
+
+            // Inject generic resources.
+            for (int i = 0; i < interceptors.length; i++)
+                ctx.resource().injectGeneric(interceptors[i]);
+
+            // Wrap in a composite interceptor if necessary.
+            svcCtx.interceptor(interceptors.length == 1 ?
+                interceptors[0] : new CompositeServiceCallInterceptor(interceptors));
 
             return srvc;
         }
@@ -1404,37 +1415,6 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
                 return srvc;
             }
         }
-    }
-
-    /**
-     * @param cfg Service configuraton.
-     * @return Service call interceptor.
-     * @throws IgniteCheckedException If failed.
-     */
-    private @Nullable ServiceCallInterceptor unmarshalInterceptors(ServiceConfiguration cfg) throws IgniteCheckedException {
-        if (!(cfg instanceof LazyServiceConfiguration))
-            return null;
-
-        LazyServiceConfiguration cfg0 = (LazyServiceConfiguration)cfg;
-        byte[] intcpsBytes = cfg0.interceptorBytes();
-
-        if (F.isEmpty(intcpsBytes))
-            return null;
-
-        GridDeployment srvcDep = ctx.deploy().getDeployment(cfg0.serviceClassName());
-
-        ServiceCallInterceptor[] interceptors = U.unmarshal(marsh, intcpsBytes,
-            U.resolveClassLoader(srvcDep != null ? srvcDep.classLoader() : null, ctx.config()));
-
-        if (F.isEmpty(interceptors))
-            return null;
-
-        // Inject generic resources.
-        for (int i = 0; i < interceptors.length; i++)
-            ctx.resource().injectGeneric(interceptors[i]);
-
-        // Wrap in a composite interceptor if necessary.
-        return interceptors.length == 1 ? interceptors[0] : new CompositeServiceCallInterceptor(interceptors);
     }
 
     /**
