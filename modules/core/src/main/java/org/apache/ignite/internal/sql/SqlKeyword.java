@@ -107,6 +107,9 @@ public class SqlKeyword {
     /** Keyword: DECIMAL. */
     public static final String DECIMAL = "DECIMAL";
 
+    /** Keyword: DELIMITER. */
+    public static final String DELIMITER = "DELIMITER";
+
     /** Keyword: DESC. */
     public static final String DESC = "DESC";
 
@@ -191,6 +194,9 @@ public class SqlKeyword {
     /** Keyword: NOT. */
     public static final String NOT = "NOT";
 
+    /** Keyword: NULLSTRING. */
+    public static final String NULLSTRING = "NULLSTRING";
+
     /** Keyword: NUMBER. */
     public static final String NUMBER = "NUMBER";
 
@@ -268,6 +274,9 @@ public class SqlKeyword {
 
     /** Keyword: TRANSACTION. */
     public static final String TRANSACTION = "TRANSACTION";
+
+    /** Keyword: TRIM. */
+    public static final String TRIM = "TRIM";
 
     /** Keyword: UNIQUE. */
     public static final String UNIQUE = "UNIQUE";

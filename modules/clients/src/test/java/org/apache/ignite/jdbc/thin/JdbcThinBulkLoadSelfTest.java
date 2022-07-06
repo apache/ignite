@@ -43,6 +43,7 @@ import org.apache.ignite.internal.processors.bulkload.BulkLoadCsvParser;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.junit.ComparisonFailure;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -85,6 +86,46 @@ public class JdbcThinBulkLoadSelfTest extends JdbcThinAbstractDmlStatementSelfTe
     /** A CSV file in windows-1251. */
     private static final String BULKLOAD_CP1251_CSV_FILE =
         Objects.requireNonNull(resolveIgnitePath(CSV_FILE_SUBDIR + "bulkload2_windows1251.csv")).getAbsolutePath();
+
+    /** A CSV file in windows-1251. */
+    private static final String BULKLOAD_RFC4180_COMMA_CSV_FILE =
+            Objects.requireNonNull(resolveIgnitePath(CSV_FILE_SUBDIR + "bulkload_rfc4180_comma.csv")).getAbsolutePath();
+
+    /** A CSV file in windows-1251. */
+    private static final String BULKLOAD_RFC4180_PIPE_CSV_FILE_ =
+            Objects.requireNonNull(resolveIgnitePath(CSV_FILE_SUBDIR + "bulkload_rfc4180_pipe.csv")).getAbsolutePath();
+
+    /** A CSV file with one record and unmatched quote at the start of field. */
+    private static final String BULKLOAD_ONE_LINE_CSV_FILE_UNMATCHED_QUOTE1 =
+        Objects.requireNonNull(resolveIgnitePath(CSV_FILE_SUBDIR + "bulkload1_unmatched1.csv")).getAbsolutePath();
+
+    /** A CSV file with one record and unmatched quote at the end of the line. */
+    private static final String BULKLOAD_ONE_LINE_CSV_FILE_UNMATCHED_QUOTE2 =
+        Objects.requireNonNull(resolveIgnitePath(CSV_FILE_SUBDIR + "bulkload1_unmatched2.csv")).getAbsolutePath();
+
+    /** A CSV file with one record and unmatched quote as the field content. */
+    private static final String BULKLOAD_ONE_LINE_CSV_FILE_UNMATCHED_QUOTE3 =
+        Objects.requireNonNull(resolveIgnitePath(CSV_FILE_SUBDIR + "bulkload1_unmatched3.csv")).getAbsolutePath();
+
+    /** A CSV file with one record and unmatched quote in the unquoted field content. */
+    private static final String BULKLOAD_ONE_LINE_CSV_FILE_UNMATCHED_QUOTE4 =
+        Objects.requireNonNull(resolveIgnitePath(CSV_FILE_SUBDIR + "bulkload1_unmatched4.csv")).getAbsolutePath();
+
+    /** A CSV file with one record and unmatched quote in the quoted field content. */
+    private static final String BULKLOAD_ONE_LINE_CSV_FILE_UNMATCHED_QUOTE5 =
+        Objects.requireNonNull(resolveIgnitePath(CSV_FILE_SUBDIR + "bulkload1_unmatched5.csv")).getAbsolutePath();
+
+    /** A CSV file with one record and unmatched quote in the quoted field content. */
+    private static final String BULKLOAD_THREE_LINE_CSV_FILE_EMPTY_NUMERIC =
+        Objects.requireNonNull(resolveIgnitePath(CSV_FILE_SUBDIR + "bulkload_empty_numeric.csv")).getAbsolutePath();
+
+    /** A CSV file with one record and unmatched quote in the quoted field content. */
+    private static final String BULKLOAD_WITH_NULL_STRING =
+        Objects.requireNonNull(resolveIgnitePath(CSV_FILE_SUBDIR + "bulkload_empty_numeric_with_null_string.csv")).getAbsolutePath();
+
+    /** A CSV file with one record and unmatched quote in the quoted field content. */
+    private static final String BULKLOAD_WITH_TRIM_OFF =
+        Objects.requireNonNull(resolveIgnitePath(CSV_FILE_SUBDIR + "bulkload_empty_numeric_with_trim_off.csv")).getAbsolutePath();
 
     /** Basic COPY statement used in majority of the tests. */
     public static final String BASIC_SQL_COPY_STMT =
@@ -252,6 +293,255 @@ public class JdbcThinBulkLoadSelfTest extends JdbcThinAbstractDmlStatementSelfTe
     }
 
     /**
+     * Imports three-entry CSV file into a table and checks the entry created using SELECT statement.
+     *
+     * @throws SQLException If failed.
+     */
+    @Test
+    public void testThreeLineFileWithEmptyNumericColumn() throws SQLException {
+        int updatesCnt = stmt.executeUpdate(
+            "copy from '" + BULKLOAD_THREE_LINE_CSV_FILE_EMPTY_NUMERIC + "' into " + TBL_NAME +
+                " (_key, age, firstName, lastName)" +
+                " format csv");
+
+        assertEquals(3, updatesCnt);
+
+        checkCacheContents(TBL_NAME, true, 3);
+    }
+
+    /**
+     * Imports three-entry CSV file into a table and checks the entry created using SELECT statement with specified
+     * null string and trim mode (ON).
+     * This test verifies that specific null string values will be correctly interpreted as null and will be inserted.
+     *
+     * @throws SQLException If failed.
+     */
+    @Test
+    public void testThreeLineFileWithEmptyNumericColumnWithNullString() throws SQLException {
+        int updatesCnt = stmt.executeUpdate(
+            "copy from '" + BULKLOAD_WITH_NULL_STRING + "' into " + TBL_NAME +
+                " (_key, age, firstName, lastName)" +
+                " format csv nullstring 'a'");
+
+        assertEquals(3, updatesCnt);
+
+        checkCacheContents(TBL_NAME, true, 3);
+    }
+
+    /**
+     * Imports three-entry CSV file into a table and checks the entry created using SELECT statement with default null
+     * string and trim mode (ON).
+     * This test verifies that it is expected to fail on second value in case if there is unexpected text value
+     * in the fields that are expected to be numeric.
+     *
+     * @throws SQLException If failed.
+     */
+    @Test
+    public void testThreeLineFileWithEmptyNumericColumnWithEmptyNullString() throws SQLException {
+        GridTestUtils.assertThrows(log, new Callable<Object>() {
+            @Override public Object call() throws Exception {
+                stmt.executeUpdate(
+                    "copy from '" + BULKLOAD_WITH_NULL_STRING + "' into " + TBL_NAME +
+                        " (_key, age, firstName, lastName)" +
+                        " format csv");
+
+                return null;
+            }
+        }, SQLException.class, "Value conversion failed");
+
+        checkCacheContents(TBL_NAME, true, 1);
+    }
+
+    /**
+     * Imports three-entry CSV file into a table and checks the entry created using SELECT statement with null string
+     * specified and trim OFF.
+     * This test verifies that the field which is equal to nullstring after trimming whitespaces will fail on insert
+     * with trim turned off with 'Value conversion failed' message.
+     *
+     * @throws SQLException If failed.
+     */
+    @Test
+    public void testThreeLineFileWithEmptyNumericColumnWithNullStringAndTrimOff() throws SQLException {
+        GridTestUtils.assertThrows(log, new Callable<Object>() {
+            @Override public Object call() throws Exception {
+                stmt.executeUpdate(
+                    "copy from '" + BULKLOAD_WITH_NULL_STRING + "' into " + TBL_NAME +
+                        " (_key, age, firstName, lastName)" +
+                        " format csv nullstring 'a' trim off");
+
+                return null;
+            }
+        }, SQLException.class, "Value conversion failed");
+    }
+
+    /**
+     * Imports three-entry CSV file into a table and checks the entry created using SELECT statement with null string
+     * specified and trim ON.
+     * This test verifies that the field which is equal to nullstring after trimming whitespaces will be correctly
+     * interpreted as null and will result in integer default value (0).
+     *
+     * @throws SQLException If failed.
+     */
+    @Test
+    public void testThreeLineFileWithEmptyNumericColumnWithNullStringAndTrimOn() throws SQLException {
+        int updatesCnt = stmt.executeUpdate(
+            "copy from '" + BULKLOAD_WITH_NULL_STRING + "' into " + TBL_NAME +
+                " (_key, age, firstName, lastName)" +
+                " format csv nullstring 'a' trim on");
+
+        assertEquals(3, updatesCnt);
+
+        checkCacheContents(TBL_NAME, true, 3);
+    }
+
+    /**
+     * Imports three-entry CSV file into a table and checks the entry created using SELECT statement with trim OFF.
+     * This test verifies that values will be inserted and whitespace in the field content is expected in this case.
+     *
+     * @throws SQLException If failed.
+     */
+    @Test
+    public void testThreeLineFileWithEmptyNumericColumnWithTrimOff() throws SQLException {
+        int updatesCnt = stmt.executeUpdate(
+            "copy from '" + BULKLOAD_WITH_TRIM_OFF + "' into " + TBL_NAME +
+                " (_key, age, firstName, lastName)" +
+                " format csv nullstring 'a' trim off");
+
+        assertEquals(3, updatesCnt);
+
+        checkCacheContents(TBL_NAME, true, 3);
+    }
+
+    /**
+     * Imports three-entry CSV file into a table and checks the entry created using SELECT statement with trim OFF.
+     * This test verifies that values will be inserted, but value conversion will fail on whitespace in the field ([ ]).
+     *
+     * @throws SQLException If failed.
+     */
+    @Test
+    public void testThreeLineFileWithEmptyNumericColumnWithTrimOn() throws SQLException {
+        GridTestUtils.assertThrows(log, new Callable<Object>() {
+            @Override public Object call() throws Exception {
+                int updatesCnt = stmt.executeUpdate(
+                    "copy from '" + BULKLOAD_WITH_TRIM_OFF + "' into " + TBL_NAME +
+                        " (_key, age, firstName, lastName)" +
+                        " format csv nullstring 'a' trim on");
+
+                assertEquals(3, updatesCnt);
+
+                checkCacheContents(TBL_NAME, true, 3);
+
+                return null;
+            }
+        }, ComparisonFailure.class, "expected:<[ ]FirstName104");
+    }
+
+    /**
+     * Verifies exception thrown if CSV row contains unmatched quote at the beginning of the field content.
+     *
+     * @throws SQLException If failed.
+     */
+    @Test
+    public void testOneLineFileForUnmatchedStartQuote() throws SQLException {
+        GridTestUtils.assertThrows(log, new Callable<Object>() {
+            @Override public Object call() throws Exception {
+                stmt.executeUpdate(
+                    "copy from '" + BULKLOAD_ONE_LINE_CSV_FILE_UNMATCHED_QUOTE1 + "' into " + TBL_NAME +
+                        " (_key, age, firstName, lastName)" +
+                        " format csv");
+
+                return null;
+            }
+        }, SQLException.class, "Unmatched quote found at the end of line");
+
+        checkCacheContents(TBL_NAME, true, 0);
+    }
+
+    /**
+     * Verifies exception thrown if CSV row contains unmatched quote in end of the field content.
+     *
+     * @throws SQLException If failed.
+     */
+    @Test
+    public void testOneLineFileForUnmatchedEndQuote() throws SQLException {
+        GridTestUtils.assertThrows(log, new Callable<Object>() {
+            @Override public Object call() throws Exception {
+                stmt.executeUpdate(
+                    "copy from '" + BULKLOAD_ONE_LINE_CSV_FILE_UNMATCHED_QUOTE2 + "' into " + TBL_NAME +
+                        " (_key, age, firstName, lastName)" +
+                        " format csv");
+
+                return null;
+            }
+        }, SQLException.class, "Unexpected quote in the field, line");
+
+        checkCacheContents(TBL_NAME, true, 0);
+    }
+
+    /**
+     * Verifies exception thrown if CSV row contains unmatched quote as the only field content.
+     *
+     * @throws SQLException If failed.
+     */
+    @Test
+    public void testOneLineFileForSingleEndQuote() throws SQLException {
+        GridTestUtils.assertThrows(log, new Callable<Object>() {
+            @Override public Object call() throws Exception {
+                stmt.executeUpdate(
+                    "copy from '" + BULKLOAD_ONE_LINE_CSV_FILE_UNMATCHED_QUOTE3 + "' into " + TBL_NAME +
+                        " (_key, age, firstName, lastName)" +
+                        " format csv");
+
+                return null;
+            }
+        }, SQLException.class, "Unmatched quote found at the end of line");
+
+        checkCacheContents(TBL_NAME, true, 0);
+    }
+
+    /**
+     * Verifies exception thrown if CSV row contains single unmatched quote as the field content.
+     *
+     * @throws SQLException If failed.
+     */
+    @Test
+    public void testOneLineFileForQuoteInContent() throws SQLException {
+        GridTestUtils.assertThrows(log, new Callable<Object>() {
+            @Override public Object call() throws Exception {
+                stmt.executeUpdate(
+                    "copy from '" + BULKLOAD_ONE_LINE_CSV_FILE_UNMATCHED_QUOTE4 + "' into " + TBL_NAME +
+                        " (_key, age, firstName, lastName)" +
+                        " format csv");
+
+                return null;
+            }
+        }, SQLException.class, "Unmatched quote found at the end of line");
+
+        checkCacheContents(TBL_NAME, true, 0);
+    }
+
+    /**
+     * Verifies exception thrown if CSV row contains unmatched quote in the quoted field content.
+     *
+     * @throws SQLException If failed.
+     */
+    @Test
+    public void testOneLineFileForQuoteInQuotedContent() throws SQLException {
+        GridTestUtils.assertThrows(log, new Callable<Object>() {
+            @Override public Object call() throws Exception {
+                stmt.executeUpdate(
+                    "copy from '" + BULKLOAD_ONE_LINE_CSV_FILE_UNMATCHED_QUOTE5 + "' into " + TBL_NAME +
+                        " (_key, age, firstName, lastName)" +
+                        " format csv");
+
+                return null;
+            }
+        }, SQLException.class, "Unexpected quote in the field, line");
+
+        checkCacheContents(TBL_NAME, true, 0);
+    }
+
+    /**
      * Verifies that error is reported for empty charset name.
      */
     @Test
@@ -318,6 +608,60 @@ public class JdbcThinBulkLoadSelfTest extends JdbcThinAbstractDmlStatementSelfTe
         assertEquals(2, updatesCnt);
 
         checkCacheContents(TBL_NAME, true, 2);
+    }
+
+    /**
+     * Imports four-entry CSV file with default delimiter into a table and checks that
+     * the entry is created using SELECT statement.
+     *
+     * @throws SQLException If failed.
+     */
+    @Test
+    public void testCsvLoadWithDefaultDelimiter() throws SQLException {
+        int updatesCnt = stmt.executeUpdate(
+                "copy from '" + BULKLOAD_RFC4180_COMMA_CSV_FILE + "' into " + TBL_NAME +
+                        " (_key, age, firstName, lastName)" +
+                        " format csv");
+
+        assertEquals(7, updatesCnt);
+
+        checkCacheContents(TBL_NAME, true, 7);
+    }
+
+    /**
+     * Imports four-entry CSV file with comma delimiter into a table and checks that
+     * the entry is created using SELECT statement.
+     *
+     * @throws SQLException If failed.
+     */
+    @Test
+    public void testCsvLoadWithCommaDelimiter() throws SQLException {
+        int updatesCnt = stmt.executeUpdate(
+                "copy from '" + BULKLOAD_RFC4180_COMMA_CSV_FILE + "' into " + TBL_NAME +
+                        " (_key, age, firstName, lastName)" +
+                        " format csv delimiter ','");
+
+        assertEquals(7, updatesCnt);
+
+        checkCacheContents(TBL_NAME, true, 7, ',');
+    }
+
+    /**
+     * Imports four-entry CSV file with pipe delimiter into a table and checks that
+     * the entry is created using SELECT statement.
+     *
+     * @throws SQLException If failed.
+     */
+    @Test
+    public void testCsvLoadWithPipeDelimiter() throws SQLException {
+        int updatesCnt = stmt.executeUpdate(
+                "copy from '" + BULKLOAD_RFC4180_PIPE_CSV_FILE_ + "' into " + TBL_NAME +
+                        " (_key, age, firstName, lastName)" +
+                        " format csv delimiter '|'");
+
+        assertEquals(7, updatesCnt);
+
+        checkCacheContents(TBL_NAME, true, 7, '|');
     }
 
     /**
@@ -757,6 +1101,21 @@ public class JdbcThinBulkLoadSelfTest extends JdbcThinAbstractDmlStatementSelfTe
      * @throws SQLException When one of checks has failed.
      */
     private void checkCacheContents(String tblName, boolean checkLastName, int recCnt) throws SQLException {
+        checkCacheContents(tblName, checkLastName, recCnt, ',');
+    }
+
+    /**
+     * Checks cache contents after bulk loading data in the above tests: ASCII version.
+     * <p>
+     * Uses SQL SELECT command for querying entries.
+     *
+     * @param tblName Table name to query.
+     * @param checkLastName Check 'lastName' column (not imported in some tests).
+     * @param recCnt Number of records to expect.
+     * @param delimiter The delimiter of fields.
+     * @throws SQLException When one of checks has failed.
+     */
+    private void checkCacheContents(String tblName, boolean checkLastName, int recCnt, char delimiter) throws SQLException {
         ResultSet rs = stmt.executeQuery("select _key, age, firstName, lastName from " + tblName);
 
         assert rs != null;
@@ -766,18 +1125,34 @@ public class JdbcThinBulkLoadSelfTest extends JdbcThinAbstractDmlStatementSelfTe
         while (rs.next()) {
             int id = rs.getInt("_key");
 
-            if (id == 123) {
-                assertEquals(12, rs.getInt("age"));
-                assertEquals("FirstName123 MiddleName123", rs.getString("firstName"));
-                if (checkLastName)
-                    assertEquals("LastName123", rs.getString("lastName"));
-            }
-            else if (id == 456) {
-                assertEquals(45, rs.getInt("age"));
-                assertEquals("FirstName456", rs.getString("firstName"));
-                if (checkLastName)
-                    assertEquals("LastName456", rs.getString("lastName"));
-            }
+            SyntheticPerson sp = new SyntheticPerson(rs.getInt("age"),
+                rs.getString("firstName"), rs.getString("lastName"));
+
+            if (id == 101)
+                sp.validateValues(0, "FirstName101 MiddleName101", "LastName101", checkLastName);
+            else if (id == 102)
+                sp.validateValues(0, "FirstName102 MiddleName102", "LastName102", checkLastName);
+            else if (id == 103)
+                sp.validateValues(0, "FirstName103 MiddleName103", "LastName103", checkLastName);
+            else if (id == 104)
+                sp.validateValues(0, " FirstName104 MiddleName104", "LastName104", checkLastName);
+            else if (id == 123)
+                sp.validateValues(12, "FirstName123 MiddleName123", "LastName123", checkLastName);
+            else if (id == 234)
+                sp.validateValues(23, "FirstName|234", null, checkLastName);
+            else if (id == 345)
+                sp.validateValues(34, "FirstName,345", null, checkLastName);
+            else if (id == 456)
+                sp.validateValues(45, "FirstName456", "LastName456", checkLastName);
+            else if (id == 567)
+                sp.validateValues(56, null, null, checkLastName);
+            else if (id == 678)
+                sp.validateValues(67, null, null, checkLastName);
+            else if (id == 789)
+                sp.validateValues(78, "FirstName789 plus \"quoted\"", "LastName 789", checkLastName);
+            else if (id == 101112)
+                sp.validateValues(1011, "FirstName 101112",
+                    "LastName\"" + delimiter + "\" 1011" + delimiter + " 12", checkLastName);
             else
                 fail("Wrong ID: " + id);
 
@@ -918,6 +1293,35 @@ public class JdbcThinBulkLoadSelfTest extends JdbcThinAbstractDmlStatementSelfTe
             ByteBuffer encodedBuf = actualCharset.encode(input);
 
             return appliedCharset.decode(encodedBuf).toString();
+        }
+    }
+
+    /**
+     *
+     */
+    private class SyntheticPerson {
+        /** */
+        int age;
+
+        /** */
+        String firstName;
+
+        /** */
+        String lastName;
+
+        /** */
+        public SyntheticPerson(int age, String firstName, String lastName) {
+            this.age = age;
+            this.firstName = firstName;
+            this.lastName = lastName;
+        }
+
+        /** */
+        public void validateValues(int age, String firstName, String lastName, boolean checkLastName) {
+            assertEquals(age, this.age);
+            assertEquals(firstName, this.firstName);
+            if (checkLastName)
+                assertEquals(lastName, this.lastName);
         }
     }
 }
