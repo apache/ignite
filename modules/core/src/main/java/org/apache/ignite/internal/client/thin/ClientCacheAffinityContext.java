@@ -19,10 +19,13 @@ package org.apache.ignite.internal.client.thin;
 
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.ToIntFunction;
 import org.apache.ignite.IgniteBinary;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
@@ -37,6 +40,9 @@ public class ClientCacheAffinityContext {
     /** Contains last topology version and known nodes of this version. */
     private final AtomicReference<TopologyNodes> lastTop = new AtomicReference<>();
 
+    /** Configured cache mappers that map a key to a partition for each cache if a custom affinity function was used on in a cluster. */
+    private final Map<Integer, ToIntFunction<Object>> cacheAffinityMappers = new ConcurrentHashMap<>();
+
     /** Current affinity mapping. */
     private volatile ClientCacheAffinityMapping affinityMapping;
 
@@ -48,6 +54,16 @@ public class ClientCacheAffinityContext {
      */
     public ClientCacheAffinityContext(IgniteBinary binary) {
         this.binary = binary;
+    }
+
+    /**
+     * @param cacheId Cache id.
+     * @param mapper Cache affinity mapper used for partition awareness.
+     */
+    public void putCacheAffinityMapper(Integer cacheId, ToIntFunction<Object> mapper) {
+        assert mapper != null;
+
+        cacheAffinityMappers.put(cacheId, mapper);
     }
 
     /**
@@ -126,7 +142,7 @@ public class ClientCacheAffinityContext {
         if (lastTop.get() == null)
             return false;
 
-        ClientCacheAffinityMapping newMapping = ClientCacheAffinityMapping.readResponse(ch);
+        ClientCacheAffinityMapping newMapping = ClientCacheAffinityMapping.readResponse(ch, cacheAffinityMappers::get);
 
         ClientCacheAffinityMapping oldMapping = affinityMapping;
 

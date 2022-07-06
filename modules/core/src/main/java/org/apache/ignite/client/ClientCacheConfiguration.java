@@ -26,9 +26,11 @@ import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.PartitionLossPolicy;
 import org.apache.ignite.cache.QueryEntity;
+import org.apache.ignite.cache.affinity.AffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.jetbrains.annotations.Nullable;
 
 /** Cache configuration. */
 public final class ClientCacheConfiguration implements Serializable {
@@ -128,6 +130,9 @@ public final class ClientCacheConfiguration implements Serializable {
     /** @serial Expiry policy. */
     private ExpiryPolicy expiryPlc;
 
+    /** Client cache affinity function used for calculation of partition mappings. It wouldn't be transferred to the server side. */
+    private @Nullable AffinityFunction partitionAwarenessAffinity;
+
     /** Default constructor. */
     public ClientCacheConfiguration() {
         // No-op.
@@ -170,6 +175,7 @@ public final class ClientCacheConfiguration implements Serializable {
         sqlSchema = ccfg.getSqlSchema();
         statisticsEnabled = ccfg.isStatisticsEnabled();
         writeSynchronizationMode = ccfg.getWriteSynchronizationMode();
+        partitionAwarenessAffinity = ccfg.getPartitionAwarenessAffinity();
     }
 
     /**
@@ -742,6 +748,23 @@ public final class ClientCacheConfiguration implements Serializable {
      */
     public ClientCacheConfiguration setExpiryPolicy(ExpiryPolicy expiryPlc) {
         this.expiryPlc = expiryPlc;
+
+        return this;
+    }
+
+    /**
+     * @return Client cache affinity function used for calculation of partition mappings. It wouldn't be transferred to the server side.
+     */
+    public @Nullable AffinityFunction getPartitionAwarenessAffinity() {
+        return this.partitionAwarenessAffinity;
+    }
+
+    /**
+     * @param func Client cache affinity function used for calculation of partition mappings. It wouldn't be transferred to the server side.
+     * @return {@code this} for chaining.
+     */
+    public ClientCacheConfiguration setPartitionAwarenessAffinity(AffinityFunction func) {
+        partitionAwarenessAffinity = func;
 
         return this;
     }

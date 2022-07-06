@@ -42,6 +42,7 @@ import org.apache.ignite.IgniteBinary;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.client.ClientAuthenticationException;
 import org.apache.ignite.client.ClientAuthorizationException;
+import org.apache.ignite.client.ClientCacheConfiguration;
 import org.apache.ignite.client.ClientConnectionException;
 import org.apache.ignite.client.ClientException;
 import org.apache.ignite.client.ClientOperationType;
@@ -855,6 +856,16 @@ final class ReliableChannel implements AutoCloseable {
         ClientRetryPolicyContext ctx = new ClientRetryPolicyContextImpl(clientCfg, opType, iteration, exception);
 
         return plc.shouldRetry(ctx);
+    }
+
+    /**
+     * @param cfg Cache configuration.
+     */
+    void onCacheCreated(ClientCacheConfiguration cfg) {
+        if (cfg.getPartitionAwarenessAffinity() == null)
+            return;
+
+        affinityCtx.putCacheAffinityMapper(ClientUtils.cacheId(cfg.getName()), cfg.getPartitionAwarenessAffinity()::partition);
     }
 
     /**

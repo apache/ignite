@@ -24,32 +24,42 @@ import org.apache.ignite.cache.CacheKeyConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
+import org.apache.ignite.internal.processors.platform.client.ClientBitmaskFeature;
+import org.apache.ignite.internal.processors.platform.client.ClientProtocolContext;
 
 /**
  * Partition mapping associated with the group of caches.
  */
 class ClientCachePartitionAwarenessGroup {
     /** Binary processor. */
-    CacheObjectBinaryProcessorImpl proc;
+    private final CacheObjectBinaryProcessorImpl proc;
 
     /** Partition mapping. */
     private final ClientCachePartitionMapping mapping;
 
+    /** If the default RendezvousAffinityFunction and CacheDefaultBinaryAffinityKeyMapper is used. */
+    private final boolean isDefaultAffinity;
+
     /** Descriptor of the associated caches. */
-    private HashMap<Integer, CacheConfiguration> cacheCfgs;
+    private final HashMap<Integer, CacheConfiguration<?, ?>> cacheCfgs;
 
     /**
      * @param proc Binary processor.
      * @param mapping Partition mapping.
      * @param cacheDesc Descriptor of the initial cache.
      */
-    public ClientCachePartitionAwarenessGroup(CacheObjectBinaryProcessorImpl proc, ClientCachePartitionMapping mapping,
-                                              DynamicCacheDescriptor cacheDesc) {
+    public ClientCachePartitionAwarenessGroup(
+        CacheObjectBinaryProcessorImpl proc,
+        ClientCachePartitionMapping mapping,
+        DynamicCacheDescriptor cacheDesc,
+        boolean isDefaultAffinity
+    ) {
         this.proc = proc;
         this.mapping = mapping;
+        this.isDefaultAffinity = isDefaultAffinity;
 
         int cacheId = cacheDesc.cacheId();
-        CacheConfiguration ccfg = cacheDesc.cacheConfiguration();
+        CacheConfiguration<?, ?> ccfg = cacheDesc.cacheConfiguration();
 
         cacheCfgs = new HashMap<>();
         cacheCfgs.put(cacheId, ccfg);
@@ -73,18 +83,18 @@ class ClientCachePartitionAwarenessGroup {
      * Write mapping using binary writer.
      * @param writer Writer.
      */
-    public void write(BinaryRawWriter writer) {
+    public void write(BinaryRawWriter writer, ClientProtocolContext cpctx) {
         writer.writeBoolean(mapping != null);
 
         writer.writeInt(cacheCfgs.size());
 
-        for (Map.Entry<Integer, CacheConfiguration> entry: cacheCfgs.entrySet()) {
+        for (Map.Entry<Integer, CacheConfiguration<?, ?>> entry: cacheCfgs.entrySet()) {
             writer.writeInt(entry.getKey());
 
             if (mapping == null)
                 continue;
 
-            CacheConfiguration ccfg = entry.getValue();
+            CacheConfiguration<?, ?> ccfg = entry.getValue();
             CacheKeyConfiguration[] keyCfgs = ccfg.getKeyConfiguration();
 
             if (keyCfgs == null) {
@@ -106,6 +116,9 @@ class ClientCachePartitionAwarenessGroup {
 
         if (mapping != null)
             mapping.write(writer);
+
+        if (cpctx.isFeatureSupported(ClientBitmaskFeature.ALL_AFFINITY_MAPPINGS))
+            writer.writeBoolean(isDefaultAffinity);
     }
 
     /**

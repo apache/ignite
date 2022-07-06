@@ -57,7 +57,7 @@ class ClientCachePartitionsResponse extends ClientResponse {
         writer.writeInt(mappings.size());
 
         for (ClientCachePartitionAwarenessGroup mapping : mappings) {
-            mapping.write(writer);
+            mapping.write(writer, ctx.currentProtocolContext());
         }
     }
 }

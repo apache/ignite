@@ -32,7 +32,9 @@ import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
 import org.apache.ignite.internal.processors.platform.client.ClientAffinityTopologyVersion;
+import org.apache.ignite.internal.processors.platform.client.ClientBitmaskFeature;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
+import org.apache.ignite.internal.processors.platform.client.ClientProtocolContext;
 import org.apache.ignite.internal.processors.platform.client.ClientRequest;
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
 import org.apache.ignite.lang.IgnitePredicate;
@@ -68,7 +70,7 @@ public class ClientCachePartitionsRequest extends ClientRequest {
 
         ClientAffinityTopologyVersion affinityVer = ctx.checkAffinityTopologyVersion();
 
-        // As a fisrt step, get a set of mappings that we need to return.
+        // As a first step, get a set of mappings that we need to return.
         // To do that, check if any of the caches listed in request can be grouped.
         for (int cacheId : cacheIds) {
             DynamicCacheDescriptor cacheDesc = ctx.kernalContext().cache().cacheDescriptor(cacheId);
@@ -137,8 +139,9 @@ public class ClientCachePartitionsRequest extends ClientRequest {
             return null;
 
         ClientCachePartitionMapping mapping = null;
-        if (isApplicable(cacheDesc.cacheConfiguration()))
-            mapping = new ClientCachePartitionMapping(cacheId, assignment);
+
+        if (isApplicable(cacheDesc.cacheConfiguration(), ctx.currentProtocolContext()))
+            mapping = new ClientCachePartitionMapping(assignment);
 
         group = getCompatibleGroup(groups, mapping);
         if (group != null) {
@@ -150,7 +153,7 @@ public class ClientCachePartitionsRequest extends ClientRequest {
 
         CacheObjectBinaryProcessorImpl proc = (CacheObjectBinaryProcessorImpl)ctx.kernalContext().cacheObjects();
 
-        return new ClientCachePartitionAwarenessGroup(proc, mapping, cacheDesc);
+        return new ClientCachePartitionAwarenessGroup(proc, mapping, cacheDesc, isDefaultAffinity(cacheDesc.cacheConfiguration()));
     }
 
     /**
@@ -192,26 +195,38 @@ public class ClientCachePartitionsRequest extends ClientRequest {
      * @param ccfg Cache configuration.
      * @return True if cache is applicable for partition awareness optimisation.
      */
-    private static boolean isApplicable(CacheConfiguration ccfg) {
+    private static boolean isApplicable(CacheConfiguration<?, ?> ccfg, ClientProtocolContext cpctx) {
         // Partition could be extracted only from PARTITIONED caches.
         if (ccfg.getCacheMode() != CacheMode.PARTITIONED)
             return false;
 
-        // Only caches with no custom affinity key mapper is supported.
-        AffinityKeyMapper keyMapper = ccfg.getAffinityMapper();
-        if (!(keyMapper instanceof CacheDefaultBinaryAffinityKeyMapper))
-            return false;
-
-        // Only RendezvousAffinityFunction is supported for now.
-        if (!ccfg.getAffinity().getClass().equals(RendezvousAffinityFunction.class))
-            return false;
-
-        IgnitePredicate filter = ccfg.getNodeFilter();
+        IgnitePredicate<?> filter = ccfg.getNodeFilter();
         boolean hasNodeFilter = filter != null && !(filter instanceof CacheConfiguration.IgniteAllNodesPredicate);
 
         // We cannot be sure that two caches are co-located if custom node filter is present.
         // Note that technically we may try to compare two filters. However, this adds unnecessary complexity
         // and potential deserialization issues.
-        return !hasNodeFilter;
+        if (hasNodeFilter)
+            return false;
+
+        if (cpctx.isFeatureSupported(ClientBitmaskFeature.ALL_AFFINITY_MAPPINGS))
+            return true;
+
+        return isDefaultAffinity(ccfg);
+    }
+
+    /**
+     * @param ccfg Cache configuration.
+     * @return {@code true} if the default affinity was used for cache.
+     */
+    public static boolean isDefaultAffinity(CacheConfiguration<?, ?> ccfg) {
+        // Only caches with no custom affinity key mapper is supported.
+        AffinityKeyMapper keyMapper = ccfg.getAffinityMapper();
+
+        if (!(keyMapper instanceof CacheDefaultBinaryAffinityKeyMapper))
+            return false;
+
+        // Only RendezvousAffinityFunction is supported for now.
+        return ccfg.getAffinity().getClass().equals(RendezvousAffinityFunction.class);
     }
 }

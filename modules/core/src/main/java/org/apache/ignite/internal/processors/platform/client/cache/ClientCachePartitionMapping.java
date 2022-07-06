@@ -32,10 +32,9 @@ public class ClientCachePartitionMapping {
     private final HashMap<UUID, Set<Integer>> partitionMap;
 
     /**
-     * @param cacheId Cache ID.
      * @param assignment Affinity assignment.
      */
-    public ClientCachePartitionMapping(int cacheId, AffinityAssignment assignment) {
+    public ClientCachePartitionMapping(AffinityAssignment assignment) {
         Set<ClusterNode> nodes = assignment.primaryPartitionNodes();
 
         partitionMap = new HashMap<>(nodes.size());
