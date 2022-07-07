@@ -77,7 +77,7 @@ public class ClientStopNodeTask extends ComputeTaskSplitAdapter<String, Integer>
 
         for (ComputeJobResult res : results)
             if (!res.isCancelled())
-                stoppedCnt += res.getData();
+                stoppedCnt += res.<Integer>getData();
 
         return stoppedCnt;
     }
