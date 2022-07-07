@@ -37,4 +37,5 @@ class ClientConnectorConfiguration(NamedTuple):
     use_ignite_ssl_context_factory: bool = True
     ssl_client_auth: bool = False
     ssl_params: SslParams = None
+    thread_pool_size: int = None
     thin_client_configuration: ThinClientConfiguration = None
