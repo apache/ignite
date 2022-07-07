@@ -52,7 +52,7 @@ class ConfigTemplate:
 
 def snake_to_camel(snake_name):
     """
-    Custom jinja2 filter to conver named from smake to camel format
+    Custom jinja2 filter to convert named from smake to camel format
     :param snake_name: name in snake format
     :return: name in camel format
     """
