@@ -28,7 +28,7 @@ class CacheConfiguration(NamedTuple):
     name: str
     cache_mode: str = 'PARTITIONED'
     atomicity_mode: str = 'ATOMIC'
-    backups: int = None
+    backups: int = 0
     statistics_enabled: bool = True
     affinity: Bean = None
     affinity_mapper: Bean = None
