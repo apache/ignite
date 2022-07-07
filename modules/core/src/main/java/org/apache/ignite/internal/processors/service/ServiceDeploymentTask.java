@@ -316,7 +316,7 @@ class ServiceDeploymentTask {
                         srvcProc.deployment().deployerBlockingSectionBegin();
 
                         try {
-                            srvcProc.redeploy(srvcId, (LazyServiceConfiguration)cfg, top);
+                            srvcProc.redeploy(srvcId, cfg, top);
                         }
                         finally {
                             srvcProc.deployment().deployerBlockingSectionEnd();

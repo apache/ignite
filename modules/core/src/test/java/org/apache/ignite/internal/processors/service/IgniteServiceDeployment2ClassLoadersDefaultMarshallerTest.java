@@ -207,19 +207,19 @@ public class IgniteServiceDeployment2ClassLoadersDefaultMarshallerTest extends G
         srvCfg.setNodeFilter(new TestNodeFilter(firstGrp ? grp1 : grp2));
 
         Class<Service> srvcCls;
-        Class<ServiceCallInterceptor> intcpCls;
+        Class<ServiceCallInterceptor> interceptorCls;
 
         if (firstGrp) {
             srvcCls = (Class<Service>)extClsLdr1.loadClass(NOOP_SERVICE_CLS_NAME);
-            intcpCls = (Class<ServiceCallInterceptor>)extClsLdr1.loadClass(NOOP_SERVICE_INTCP_NAME);
+            interceptorCls = (Class<ServiceCallInterceptor>)extClsLdr1.loadClass(NOOP_SERVICE_INTCP_NAME);
         }
         else {
             srvcCls = (Class<Service>)extClsLdr2.loadClass(NOOP_SERVICE_2_CLS_NAME);
-            intcpCls = (Class<ServiceCallInterceptor>)extClsLdr2.loadClass(NOOP_SERVICE_INTCP_2_NAME);
+            interceptorCls = (Class<ServiceCallInterceptor>)extClsLdr2.loadClass(NOOP_SERVICE_INTCP_2_NAME);
         }
 
         Service srvc = srvcCls.newInstance();
-        ServiceCallInterceptor interceptor = intcpCls.newInstance();
+        ServiceCallInterceptor interceptor = interceptorCls.newInstance();
 
         srvCfg.setService(srvc);
         srvCfg.setInterceptors(interceptor);

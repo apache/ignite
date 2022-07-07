@@ -674,12 +674,12 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
             if (err == null) {
                 try {
                     byte[] srvcBytes = U.marshal(marsh, cfg.getService());
-                    byte[] intcpsBytes = U.marshal(marsh, cfg.getInterceptors());
+                    byte[] interceptorsBytes = U.marshal(marsh, cfg.getInterceptors());
 
                     String[] knownSvcMdtNames = cfg instanceof PlatformServiceConfiguration ?
                         ((PlatformServiceConfiguration)cfg).mtdNames() : null;
 
-                    cfgsCp.add(new LazyServiceConfiguration(cfg, srvcBytes, intcpsBytes).platformMtdNames(knownSvcMdtNames));
+                    cfgsCp.add(new LazyServiceConfiguration(cfg, srvcBytes, interceptorsBytes).platformMtdNames(knownSvcMdtNames));
                 }
                 catch (Exception e) {
                     U.error(log, "Failed to marshal service with configured marshaller " +
