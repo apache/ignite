@@ -343,8 +343,14 @@ class SnapshotFutureTask extends AbstractSnapshotFutureTask<Set<GroupPartitionId
             return;
 
         try {
-            if (cctx.wal() != null)
+            // Here we have the following warranties:
+            // 1. Checkpoint holds write acquire lock and Snapshot holds PME. Then there are not any concurrent updates.
+            // 2. This record is written before the related CheckpointRecord, and is flushed with CheckpointRecord or instead it.
+            if (cctx.wal() != null) {
                 cctx.wal().log(new ClusterSnapshotRecord(snpName));
+
+                ctx.walFlush(true);
+            }
 
             for (Map.Entry<Integer, Set<Integer>> e : parts.entrySet()) {
                 int grpId = e.getKey();
