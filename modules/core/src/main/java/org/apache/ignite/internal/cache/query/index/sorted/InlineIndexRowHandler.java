@@ -66,9 +66,4 @@ public interface InlineIndexRowHandler {
      * @return Cache value.
      */
     public Object cacheValue(CacheDataRow row);
-
-    /**
-     * Callback for table metadata update event.
-     */
-    public void onMetadataUpdated();
 }

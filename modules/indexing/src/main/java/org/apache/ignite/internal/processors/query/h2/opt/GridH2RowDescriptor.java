@@ -75,11 +75,6 @@ public class GridH2RowDescriptor implements GridQueryRowDescriptor {
     }
 
     /** {@inheritDoc} */
-    @Override public int columnId(String fieldName) {
-        return delegate.columnId(fieldName);
-    }
-
-    /** {@inheritDoc} */
     @Override public GridQueryTypeDescriptor type() {
         return delegate.type();
     }

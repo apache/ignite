@@ -31,11 +31,6 @@ public interface GridQueryRowDescriptor {
     public void onMetadataUpdated();
 
     /**
-     * Gets column ID by name.
-     */
-    public int columnId(String fieldName);
-
-    /**
      * Gets type descriptor.
      *
      * @return Type descriptor.

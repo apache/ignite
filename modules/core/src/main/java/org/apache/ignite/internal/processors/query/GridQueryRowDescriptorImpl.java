@@ -26,7 +26,6 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContextInfo;
-import org.apache.ignite.internal.util.typedef.F;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -98,22 +97,6 @@ public class GridQueryRowDescriptorImpl implements GridQueryRowDescriptor {
         rowKeyColumnNames = Arrays.stream(props).filter(GridQueryProperty::key)
                 .map(GridQueryProperty::name)
                 .collect(Collectors.toSet());
-    }
-
-    /** {@inheritDoc} */
-    @Override public int columnId(String fieldName) {
-        if (QueryUtils.KEY_FIELD_NAME.equals(fieldName))
-            return QueryUtils.KEY_COL;
-        else if (QueryUtils.VAL_FIELD_NAME.equals(fieldName))
-            return QueryUtils.VAL_COL;
-        else {
-            for (int i = 0; i < fields.length; i++) {
-                if (F.eq(fieldName, fields[i]))
-                    return i + QueryUtils.DEFAULT_COLUMNS_COUNT;
-            }
-
-            return COL_NOT_EXISTS;
-        }
     }
 
     /** {@inheritDoc} */
