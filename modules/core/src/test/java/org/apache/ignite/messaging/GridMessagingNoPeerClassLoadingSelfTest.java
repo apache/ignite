@@ -61,8 +61,6 @@ public class GridMessagingNoPeerClassLoadingSelfTest extends GridMessagingSelfTe
 
         Class rcCls = extLdr.loadClass(EXT_RESOURCE_CLS_NAME);
 
-        final AtomicBoolean error = new AtomicBoolean(false); //to make it modifiable
-
         rcvLatch = new CountDownLatch(1);
 
         ignite2.message().remoteListen(null, new P2<UUID, Object>() {
@@ -72,8 +70,6 @@ public class GridMessagingNoPeerClassLoadingSelfTest extends GridMessagingSelfTe
 
                     if (!nodeId.equals(ignite1.cluster().localNode().id())) {
                         log.error("Unexpected sender node: " + nodeId);
-
-                        error.set(true);
 
                         return false;
                     }

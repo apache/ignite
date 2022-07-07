@@ -89,9 +89,6 @@ class ProgressWatchdog {
     /** Checkpoint fsync()'ed pages at previous tick. */
     private final AtomicLong prevCpSyncedPages = new AtomicLong();
 
-    /** WAL pointer at previous tick reference. */
-    private final AtomicReference<WALPointer> prevWalPtrRef = new AtomicReference<>();
-
     /** Milliseconds at start of watchdog execution. */
     private long msStart;
 
@@ -227,7 +224,6 @@ class ProgressWatchdog {
         prevRecordsCnt.set(0);
         prevCpWrittenPages.set(0);
         prevCpSyncedPages.set(0);
-        prevWalPtrRef.set(null);
 
         svc.scheduleAtFixedRate(
             this::tick,

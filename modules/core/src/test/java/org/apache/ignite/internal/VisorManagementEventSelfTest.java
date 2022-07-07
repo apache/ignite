@@ -175,14 +175,10 @@ public class VisorManagementEventSelfTest extends GridCommonAbstractTest {
     private <T, R> void doTestNotManagementVisorTask(
         Class<? extends ComputeTask<VisorTaskArgument<T>, R>> cls, T arg, IgniteEx ignite
     ) throws Exception {
-        final AtomicReference<TaskEvent> evt = new AtomicReference<>();
-
         final CountDownLatch evtLatch = new CountDownLatch(1);
 
         ignite.events().localListen(new IgnitePredicate<TaskEvent>() {
             @Override public boolean apply(TaskEvent e) {
-                evt.set(e);
-
                 evtLatch.countDown();
 
                 return false;

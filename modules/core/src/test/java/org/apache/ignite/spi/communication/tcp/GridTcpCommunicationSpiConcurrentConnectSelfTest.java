@@ -316,8 +316,6 @@ public class GridTcpCommunicationSpiConcurrentConnectSelfTest<T extends Communic
 
                     List<Thread> threadsList = new ArrayList<>();
 
-                    final AtomicBoolean fail = new AtomicBoolean();
-
                     final AtomicLong tId = new AtomicLong();
 
                     for (int t = 0; t < threads; t++) {
@@ -328,8 +326,6 @@ public class GridTcpCommunicationSpiConcurrentConnectSelfTest<T extends Communic
                                 }
                                 catch (Throwable e) {
                                     log.error("Unexpected error: " + e, e);
-
-                                    fail.set(true);
                                 }
                             }
                         }) {

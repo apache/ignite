@@ -100,13 +100,9 @@ public abstract class GridCacheEvictionEventAbstractTest extends GridCommonAbstr
 
         final CountDownLatch latch = new CountDownLatch(1);
 
-        final AtomicReference<String> oldVal = new AtomicReference<>();
-
         g.events().localListen(new IgnitePredicate<Event>() {
             @Override public boolean apply(Event evt) {
                 CacheEvent e = (CacheEvent)evt;
-
-                oldVal.set((String)e.oldValue());
 
                 latch.countDown();
 

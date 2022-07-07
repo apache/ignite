@@ -1509,18 +1509,12 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
 
         checkAffinity(NODES, topVer(topVer, 1), true);
 
-        AtomicBoolean joined = new AtomicBoolean();
-
         for (int i = 0; i < NODES; i++) {
             TestRecordingCommunicationSpi spi =
                 (TestRecordingCommunicationSpi)ignite(i).configuration().getCommunicationSpi();
 
             spi.blockMessages(new IgniteBiPredicate<ClusterNode, Message>() {
                 @Override public boolean apply(ClusterNode node, Message msg) {
-                    if (msg.getClass().equals(GridDhtPartitionsSingleMessage.class) &&
-                        ((GridDhtPartitionsAbstractMessage)msg).exchangeId() != null)
-                        joined.set(true); // Join exchange started.
-
                     return msg.getClass().equals(GridDhtPartitionsSingleMessage.class) ||
                         msg.getClass().equals(GridDhtPartitionsFullMessage.class);
                 }
