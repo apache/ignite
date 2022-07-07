@@ -15,14 +15,16 @@
  limitations under the License.
 #}
 
-{% macro communication_spi(spi) %}
-    <property name="communicationSpi">
-        <bean class="{{ spi.class_name }}">
-            {% for name, value in spi.__dict__.items() %}
+{% macro transaction(config) %}
+{% if config %}
+    <property name="transactionConfiguration">
+        <bean class="org.apache.ignite.configuration.TransactionConfiguration">
+            {% for name, value in config._asdict().items() %}
             {% if value %}
             <property name="{{ name | snake_to_camel }}" value="{{ value }}"/>
             {% endif %}
             {% endfor %}
         </bean>
     </property>
+{% endif %}
 {% endmacro %}

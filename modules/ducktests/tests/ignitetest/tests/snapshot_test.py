@@ -47,7 +47,7 @@ class SnapshotTest(IgniteTest):
 
         ignite_config = IgniteConfiguration(
             version=version,
-            data_storage=DataStorageConfiguration(default=DataRegionConfiguration(persistent=True)),
+            data_storage=DataStorageConfiguration(default=DataRegionConfiguration(persistence_enabled=True)),
             metric_exporters={'org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi'}
         )
 
