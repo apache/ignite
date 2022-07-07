@@ -23,6 +23,8 @@ import org.apache.ignite.cache.affinity.AffinityKeyMapper;
 import org.apache.ignite.client.ClientCache;
 
 /**
+ * This is an internal thin client cache API. Please, note that it may change in a future releases without any notifications.
+ *
  * @param <K> Key type.
  * @param <V> Value type.
  */
@@ -40,9 +42,7 @@ public interface ClientCacheEx<K, V> extends ClientCache<K, V> {
      *
      * This client cache key mapper will not be passed to a server node, it is used only for local calculations.
      *
-     * Client cache affinity function used for calculation of partition mappings. It wouldn't be transferred to the server side.
-     *
-     * @param mapperFactory Mapper factory that accepts key and total number of cache partitions.
+     * @param mapper Mapper that accepts a cache key and total number of cache partitions.
      */
-    public ClientCacheEx<K, V> withPartitionAwarenessKeyMapperFactory(ToIntBiFunction<Object, Integer> mapperFactory);
+    public ClientCacheEx<K, V> withPartitionAwarenessKeyMapperFactory(ToIntBiFunction<Object, Integer> mapper);
 }

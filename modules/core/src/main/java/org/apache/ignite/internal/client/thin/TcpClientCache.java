@@ -858,10 +858,10 @@ class TcpClientCache<K, V> implements ClientCacheEx<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public ClientCacheEx<K, V> withPartitionAwarenessKeyMapperFactory(ToIntBiFunction<Object, Integer> mapperFactory) {
-        A.notNull(mapperFactory, "Partition awareness cache key mapper factory cannot be null.");
+    @Override public ClientCacheEx<K, V> withPartitionAwarenessKeyMapperFactory(ToIntBiFunction<Object, Integer> mapper) {
+        A.notNull(mapper, "Partition awareness cache key mapper factory cannot be null.");
 
-        ch.setAffinityMapperFactory(CU.cacheId(name), mapperFactory);
+        ch.setAffinityMapperFactory(CU.cacheId(name), mapper);
 
         return this;
     }
