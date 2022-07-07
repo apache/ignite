@@ -15,18 +15,25 @@
 
 class Bean:
     """
-    Helper class to store bean class name and optional set of name/value pairs for properties.
+    Helper class to store bean class name, optional constructor parameters and optional set of
+    name/value pairs for properties.
 
     Serves as a parameter for the 'bean' jinja2 template macro used to generate lists of beans in the XML
     ignite node configuration (see the ignitetest/services/utils/templates/misc_macro.j2::bean).
 
     Hashable to be stored in a set.
     """
-    def __init__(self, class_name, **kwargs):
+    def __init__(self, class_name, constructor_args=None, **kwargs):
         """
         :param class_name: bean class name
+        :param constructor_args: optional list of constructor parameters
         :param kwargs: properties name / value pairs
         """
+        if constructor_args is None:
+            self.constructor_args = []
+        else:
+            self.constructor_args = constructor_args
+
         self.class_name = class_name
         self.properties = kwargs
 
