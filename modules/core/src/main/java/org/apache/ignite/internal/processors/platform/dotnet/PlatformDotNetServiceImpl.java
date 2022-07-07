@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.platform.dotnet;
 
 import org.apache.ignite.internal.processors.platform.PlatformContext;
 import org.apache.ignite.internal.processors.platform.services.PlatformAbstractService;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Interop .Net service.
@@ -40,9 +41,10 @@ public class PlatformDotNetServiceImpl extends PlatformAbstractService implement
      * @param svc Service.
      * @param ctx Context.
      * @param srvKeepBinary Whether to keep objects binary on server if possible.
+     * @param intCps Service call interceptors.
      */
-    public PlatformDotNetServiceImpl(Object svc, PlatformContext ctx, boolean srvKeepBinary) {
-        super(svc, ctx, srvKeepBinary);
+    public PlatformDotNetServiceImpl(Object svc, PlatformContext ctx, boolean srvKeepBinary, @Nullable Object intCps) {
+        super(svc, ctx, srvKeepBinary, intCps);
     }
 
     /**
@@ -50,5 +52,12 @@ public class PlatformDotNetServiceImpl extends PlatformAbstractService implement
      */
     public Object getInternalService() {
         return svc;
+    }
+
+    /**
+     * @return Service call interceptors.
+     */
+    public Object getInterceptors() {
+        return intcps;
     }
 }

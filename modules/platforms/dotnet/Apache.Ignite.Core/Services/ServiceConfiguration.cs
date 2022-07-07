@@ -18,6 +18,8 @@
 namespace Apache.Ignite.Core.Services
 {
     using System;
+    using System.Collections;
+    using System.Collections.Generic;
     using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
     using System.Linq;
@@ -67,6 +69,12 @@ namespace Apache.Ignite.Core.Services
         public IClusterNodeFilter NodeFilter { get; set; }
         
         /// <summary>
+        /// Gets or sets service method interceptors.
+        /// </summary>
+        [SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
+        public ICollection<IServiceCallInterceptor> Interceptors { get; set; }
+        
+        /// <summary>
         /// Enables or disables service statistics.
         /// NOTE: Service statistics work only via service proxies. <see cref="IServices.GetServiceProxy{T}(string)"/>
         /// </summary>
@@ -91,6 +99,11 @@ namespace Apache.Ignite.Core.Services
                 w.WriteObject(NodeFilter);
             else
                 w.WriteObject<object>(null);
+            
+            if (Interceptors != null)
+                w.WriteCollection(Interceptors as ICollection);
+            else
+                w.WriteObject<object>(null);;
 
             w.WriteBoolean(StatisticsEnabled);
 
@@ -140,7 +153,7 @@ namespace Apache.Ignite.Core.Services
             }
             catch (Exception)
             {
-                // Ignore exceptions in user deserealization code.
+                // Ignore exceptions in user deserialization code.
             }
 
             TotalCount = r.ReadInt();
@@ -151,10 +164,11 @@ namespace Apache.Ignite.Core.Services
             try
             {
                 NodeFilter = r.ReadObject<IClusterNodeFilter>();
+                Interceptors = (ICollection<IServiceCallInterceptor>)r.ReadCollection();
             }
             catch (Exception)
             {
-                // Ignore exceptions in user deserealization code.
+                // Ignore exceptions in user deserialization code.
             }
 
             StatisticsEnabled = r.ReadBoolean();

@@ -297,7 +297,8 @@ namespace Apache.Ignite.Core.Tests.Services
 
                 ServiceProxySerializer.ReadProxyMethod(inStream, _marsh, out mthdName, out mthdArgs, out unused);
 
-                var result = ServiceProxyInvoker.InvokeServiceMethod(_svc, mthdName, mthdArgs);
+                var result =
+                    ServiceProxyInvoker.InvokeServiceMethod(new ServiceContext { Service = _svc }, mthdName, mthdArgs);
 
                 ServiceProxySerializer.WriteInvocationResult(outStream, _marsh, result.Key, result.Value);
 
@@ -340,7 +341,7 @@ namespace Apache.Ignite.Core.Tests.Services
         /// <summary>
         /// Test service interface.
         /// </summary>
-        public interface ITestIgniteService : ITestIgniteServiceProperties
+        public interface ITestIgniteService : ITestIgniteServiceProperties, IService
         {
             /** */
             void VoidMethod();
@@ -585,6 +586,24 @@ namespace Apache.Ignite.Core.Tests.Services
             int ITestIgniteServiceAmbiguity.AmbiguousMethod(int arg)
             {
                 return -arg;
+            }
+
+            /** <inheritdoc /> */
+            public void Init(IServiceContext context)
+            {
+                throw new NotImplementedException();
+            }
+
+            /** <inheritdoc /> */
+            public void Execute(IServiceContext context)
+            {
+                throw new NotImplementedException();
+            }
+
+            /** <inheritdoc /> */
+            public void Cancel(IServiceContext context)
+            {
+                throw new NotImplementedException();
             }
         }
 

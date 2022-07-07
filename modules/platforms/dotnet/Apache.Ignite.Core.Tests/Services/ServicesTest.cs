@@ -166,7 +166,7 @@ namespace Apache.Ignite.Core.Tests.Services
 
             CheckServiceStarted(Grid1, 3);
         }
-
+        
         /// <summary>
         /// Tests several services deployment via DeployAll() method.
         /// </summary>
@@ -371,6 +371,76 @@ namespace Apache.Ignite.Core.Tests.Services
                 Assert.AreEqual(attrBinValue, stickyProxy.ContextBinaryAttribute(attrBinName));
                 Assert.AreEqual(attrBinValue, dynamicProxy.ContextBinaryAttribute(attrBinName));
                 Assert.AreEqual(attrBinValue, dynamicStickyProxy.ContextBinaryAttribute(attrBinName));
+            }
+        }
+
+        /// <summary>
+        /// Tests service call context.
+        /// </summary>
+        [Test]
+        public void TestServiceCallInterceptor([Values(true, false)] bool binarizable)
+        {
+            IServiceCallInterceptor intcp = binarizable ?
+                (IServiceCallInterceptor)new NoopInterceptorBinarizable(1) : new NoopInterceptorSerializable(1);
+                
+            var cfg = new ServiceConfiguration
+            {
+                Name = SvcName,
+                MaxPerNodeCount = 1,
+                TotalCount = 1,
+                NodeFilter = new NodeIdFilter {NodeId = Grid1.GetCluster().GetLocalNode().Id},
+                Service = binarizable
+                    ? new TestIgniteServiceBinarizable()
+                    : new TestIgniteServiceSerializable(),
+                Interceptors = new List<IServiceCallInterceptor> { intcp, intcp }
+            };
+
+            Services.Deploy(cfg);
+            
+            foreach (var grid in Grids)
+            {
+                var nodeId = grid.GetCluster().ForLocal().GetNode().Id;
+            
+                var attrName = grid.Name;
+                // var attrBinName = "bin-" + grid.Name;
+                var attrValue = nodeId.ToString();
+                // var attrBinValue = nodeId.ToByteArray();
+            
+                var svc0 = grid.GetServices().GetService<ITestIgniteService>(SvcName);
+            
+                if (svc0 != null)
+                    Assert.IsNull(svc0.ContextAttribute(attrName));
+            
+                var ctx = new ServiceCallContextBuilder()
+                    .Set(attrName, attrValue)
+                    // .Set(attrBinName, attrBinValue)
+                    .Build();
+            
+                var proxy = grid.GetServices().GetServiceProxy<ITestIgniteService>(SvcName, false);
+            
+                Assert.AreEqual((2 * 2) * (2 * 2), proxy.Method(2));
+            
+                // Assert.IsNull(proxy.ContextAttribute("not-exist-attribute"));
+                // Assert.IsNull(proxy.ContextBinaryAttribute("not-exist-attribute"));
+                //
+                // var stickyProxy = grid.GetServices().GetServiceProxy<ITestIgniteService>(SvcName, true, ctx);
+                // var dynamicProxy = grid.GetServices().GetDynamicServiceProxy(SvcName, false, ctx);
+                // var dynamicStickyProxy = grid.GetServices().GetDynamicServiceProxy(SvcName, true, ctx);
+                //
+                // Assert.AreEqual(attrValue, proxy.ContextAttribute(attrName));
+                // Assert.AreEqual(attrValue, stickyProxy.ContextAttribute(attrName));
+                // Assert.AreEqual(attrValue, dynamicProxy.ContextAttribute(attrName));
+                // Assert.AreEqual(attrValue, dynamicStickyProxy.ContextAttribute(attrName));
+                //
+                // Assert.AreEqual(attrValue, proxy.ContextAttributeWithAsync(attrName));
+                // Assert.AreEqual(attrValue, stickyProxy.ContextAttributeWithAsync(attrName));
+                // Assert.AreEqual(attrValue, dynamicProxy.ContextAttributeWithAsync(attrName));
+                // Assert.AreEqual(attrValue, dynamicStickyProxy.ContextAttributeWithAsync(attrName));
+                //
+                // Assert.AreEqual(attrBinValue, proxy.ContextBinaryAttribute(attrBinName));
+                // Assert.AreEqual(attrBinValue, stickyProxy.ContextBinaryAttribute(attrBinName));
+                // Assert.AreEqual(attrBinValue, dynamicProxy.ContextBinaryAttribute(attrBinName));
+                // Assert.AreEqual(attrBinValue, dynamicStickyProxy.ContextBinaryAttribute(attrBinName));
             }
         }
 
@@ -754,8 +824,9 @@ namespace Apache.Ignite.Core.Tests.Services
             var svc = new TestIgniteServiceBinarizable();
 
             // Deploy to grid2
-            Grid1.GetCluster().ForNodeIds(Grid2.GetCluster().GetLocalNode().Id).GetServices().WithServerKeepBinary()
-                .DeployNodeSingleton(SvcName, svc);
+            var keep = Grid1.GetCluster().ForNodeIds(Grid2.GetCluster().GetLocalNode().Id).GetServices().WithServerKeepBinary();
+            
+            keep.DeployNodeSingleton(SvcName, svc);
 
             // Get proxy
             var prx = Services.WithServerKeepBinary().GetServiceProxy<ITestIgniteService>(SvcName);
@@ -2045,6 +2116,59 @@ namespace Apache.Ignite.Core.Tests.Services
             {
                 ThrowInit = reader.ReadBoolean("ThrowInit");
                 TestProperty = reader.ReadInt("TestProp");
+            }
+        }
+        
+        /// <summary>
+        /// No-op serializable interceptor.
+        /// </summary>
+        [Serializable]
+        private class NoopInterceptorSerializable : IServiceCallInterceptor
+        {
+            protected int _state;
+
+            public NoopInterceptorSerializable(int state)
+            {
+                _state = state;
+            }
+
+            /** <inheritdoc /> */
+            public object Invoke(string mtd, object[] args, IServiceContext ctx, Func<object> next)
+            {
+                object res = next.Invoke();
+                    
+                switch (_state)
+                {
+                    case 1:
+                        if (mtd.Equals("Method"))
+                            return (int)res * (int)res;
+
+                        break;
+                }
+
+                return res;
+            }
+        }
+
+        /// <summary>
+        /// No-op binarizable interceptor.
+        /// </summary>
+        private class NoopInterceptorBinarizable : NoopInterceptorSerializable, IBinarizable
+        {
+            public NoopInterceptorBinarizable(int state) : base(state)
+            {
+            }
+
+            /** <inheritdoc /> */
+            public void WriteBinary(IBinaryWriter writer)
+            {
+                writer.WriteInt("state", _state);
+            }
+
+            /** <inheritdoc /> */
+            public void ReadBinary(IBinaryReader reader)
+            {
+                _state = reader.ReadInt("state");
             }
         }
 
