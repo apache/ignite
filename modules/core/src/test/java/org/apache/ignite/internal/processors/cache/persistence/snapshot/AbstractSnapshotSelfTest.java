@@ -717,12 +717,10 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
 
         IgniteWalIteratorFactory factory = new IgniteWalIteratorFactory(log);
 
-        String subfolderName = ign.name().replace(".", "_");
+        String subfolderName = U.maskForFileName(ign.name());
 
-        File wals = U.resolveWorkDirectory(workDir, "db/wal/" + subfolderName, false);
-        File archive = U.resolveWorkDirectory(workDir, "db/wal/archive/" + subfolderName, false);
-        File binaryMeta = U.resolveWorkDirectory(workDir, "db/binary_meta/" + subfolderName, false);
-        File marshaller = U.resolveWorkDirectory(workDir, "db/marshaller", false);
+        File wals = Paths.get(workDir).resolve(DataStorageConfiguration.DFLT_WAL_PATH).resolve(subfolderName).toFile();
+        File archive = Paths.get(workDir).resolve(DataStorageConfiguration.DFLT_WAL_ARCHIVE_PATH).resolve(subfolderName).toFile();
 
         IgniteWalIteratorFactory.IteratorParametersBuilder params = new IgniteWalIteratorFactory.IteratorParametersBuilder()
             .filesOrDirs(archive, wals)
