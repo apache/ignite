@@ -83,7 +83,7 @@ public class ThinClientPartitionAwarenessStableTopologyTest extends ThinClientAb
     @Test
     public void testPartitionedCustomAffinityCacheWithMapper() throws Exception {
         testApplicableCache(() -> (ClientCache<Object, Object>)((ClientCacheEx)client.cache(PART_CUSTOM_AFFINITY_CACHE_NAME))
-            .withPartitionAwarenessKeyMapperFactory(new ToIntBiFunction<Object, Integer>() {
+            .withPartitionAwarenessKeyMapper(new ToIntBiFunction<Object, Integer>() {
                 /** Affinity mask. */
                 private final int affinityMask = RendezvousAffinityFunction.calculateMask(DFLT_PARTITION_COUNT);
 

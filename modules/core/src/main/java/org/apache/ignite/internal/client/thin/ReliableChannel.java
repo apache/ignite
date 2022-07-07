@@ -860,10 +860,10 @@ final class ReliableChannel implements AutoCloseable {
 
     /**
      * @param cacheId Cache id.
-     * @param mapperFactory Key mapper factory.
+     * @param mapper Cache key mapper.
      */
-    void setAffinityMapperFactory(int cacheId, ToIntBiFunction<Object, Integer> mapperFactory) {
-        affinityCtx.putCacheAffinityMapper(cacheId, mapperFactory);
+    void setCacheAffinityMapper(int cacheId, ToIntBiFunction<Object, Integer> mapper) {
+        affinityCtx.putCacheAffinityMapper(cacheId, mapper);
     }
 
     /**

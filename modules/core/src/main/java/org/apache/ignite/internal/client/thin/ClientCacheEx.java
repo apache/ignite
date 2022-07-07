@@ -44,5 +44,5 @@ public interface ClientCacheEx<K, V> extends ClientCache<K, V> {
      *
      * @param mapper Mapper that accepts a cache key and total number of cache partitions.
      */
-    public ClientCacheEx<K, V> withPartitionAwarenessKeyMapperFactory(ToIntBiFunction<Object, Integer> mapper);
+    public ClientCacheEx<K, V> withPartitionAwarenessKeyMapper(ToIntBiFunction<Object, Integer> mapper);
 }
