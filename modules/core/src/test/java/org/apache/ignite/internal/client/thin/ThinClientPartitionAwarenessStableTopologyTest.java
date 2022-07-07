@@ -355,7 +355,7 @@ public class ThinClientPartitionAwarenessStableTopologyTest extends ThinClientAb
         }
     }
 
-     /**
+    /**
      * @param cacheName Cache name.
      * @param keyFactory Key factory function.
      * @throws Exception If fails.
