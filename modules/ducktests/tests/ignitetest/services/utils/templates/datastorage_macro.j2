@@ -19,25 +19,22 @@
     {% if config %}
         <property name="dataStorageConfiguration">
             <bean class="org.apache.ignite.configuration.DataStorageConfiguration">
-                {% for name, value in config._asdict().items() %}
-                {% if value %}
-                    {% if name == 'default' %}
-                        <property name="defaultDataRegionConfiguration">
-                            {{ data_region(value) }}
-                        </property>
-                    {% elif name == 'regions' %}
-                        <property name="dataRegionConfigurations">
-                            <list>
-                            {% for region in value %}
-                                {{ data_region(region) }}
-                            {% endfor %}
-                            </list>
-                        </property>
-                    {% else %}
-                        <property name="{{ name | snake_to_camel }}" value="{{ value }}"/>
-                    {% endif %}
+                {% if config.max_wal_archive_size %}
+                    <property name="maxWalArchiveSize" value="{{ config.max_wal_archive_size }}"/>
                 {% endif %}
-                {% endfor %}
+                <property name="metricsEnabled" value="{{ config.metrics_enabled }}"/>
+                <property name="defaultDataRegionConfiguration">
+                    {{ data_region(config.default) }}
+                </property>
+                {% if config.regions %}
+                    <property name="dataRegionConfigurations">
+                        <list>
+                        {% for region in config.regions %}
+                            {{ data_region(region) }}
+                        {% endfor %}
+                        </list>
+                    </property>
+                {% endif %}
             </bean>
         </property>
     {% endif %}
@@ -45,10 +42,13 @@
 
 {% macro data_region(config) %}
     <bean class="org.apache.ignite.configuration.DataRegionConfiguration">
-        {% for name, value in config._asdict().items() %}
-        {% if value %}
-        <property name="{{ name | snake_to_camel }}" value="{{ value }}"/>
+        <property name="name" value="{{ config.name }}"/>
+        <property name="persistenceEnabled" value="{{ config.persistent }}"/>
+        <property name="initialSize" value="{{ config.init_size }}"/>
+        <property name="maxSize" value="{{ config.max_size }}"/>
+        <property name="metricsEnabled" value="{{ config.metrics_enabled }}"/>
+        {% if config.metrics_rate_time_interval %}
+        <property name="metricsRateTimeInterval" value="{{ config.metrics_rate_time_interval }}"/>
         {% endif %}
-        {% endfor %}
     </bean>
 {% endmacro %}

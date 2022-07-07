@@ -15,8 +15,6 @@
  limitations under the License.
 #}
 
-{% import 'misc_macro.j2' as misc_utils %}
-
 {% macro cache_configs(caches) %}
     {% if caches %}
         <property name="cacheConfiguration">
@@ -24,21 +22,11 @@
                 {% for cache in caches %}
                 <bean class="org.apache.ignite.configuration.CacheConfiguration">
                     <property name="name" value="{{ cache.name }}"/>
-                    {% if cache.backups and cache.cache_mode == 'PARTITIONED' %}
-                    <property name="backups" value="{{ cache.backups or 0 }}"/>
+                    {% if cache.cache_mode == 'PARTITIONED' %}
+                        <property name="backups" value="{{ cache.backups or 0 }}"/>
                     {% endif %}
                     <property name="atomicityMode" value="{{ cache.atomicity_mode or 'ATOMIC' }}"/>
                     <property name="statisticsEnabled" value="{{ cache.statistics_enabled }}"/>
-                    {% if cache.affinity %}
-                    <property name="affinity">
-                        {{ misc_utils.bean(cache.affinity) }}
-                    </property>
-                    {% endif %}
-                    {% if cache.affinity_mapper %}
-                    <property name="affinityMapper">
-                        {{ misc_utils.bean(cache.affinity_mapper) }}
-                    </property>
-                    {% endif %}
                 </bean>
                 {% endfor %}
             </list>

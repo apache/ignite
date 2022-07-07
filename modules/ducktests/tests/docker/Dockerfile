@@ -49,7 +49,7 @@ ARG APACHE_MIRROR="https://apache-mirror.rbc.ru/pub/apache/"
 ARG APACHE_ARCHIVE="https://archive.apache.org/dist/"
 
 # Install binary test dependencies.
-RUN for v in "2.7.6" "2.8.0" "2.8.1" "2.9.0" "2.9.1" "2.10.0" "2.11.0" "2.12.0" "2.13.0"; \
+RUN for v in "2.7.6" "2.8.0" "2.8.1" "2.9.0" "2.9.1" "2.10.0" "2.11.0"; \
     do cd /opt; \
     curl -O $APACHE_ARCHIVE/ignite/$v/apache-ignite-$v-bin.zip;\
     unzip apache-ignite-$v-bin.zip && mv /opt/apache-ignite-$v-bin /opt/ignite-$v;\
@@ -89,9 +89,6 @@ ARG JMXTERM_VERSION="1.0.1"
 ARG JMXTERM_ARTIFACT="$JMXTERM_NAME-$JMXTERM_VERSION-uber.jar"
 RUN cd /opt && curl -OL https://github.com/jiaqi/jmxterm/releases/download/v$JMXTERM_VERSION/$JMXTERM_ARTIFACT \
        && mv $JMXTERM_ARTIFACT $JMXTERM_NAME.jar
-
-# Install less
-RUN apt-get install less
 
 # Set up the ducker user.
 RUN useradd -ms /bin/bash ducker && mkdir -p /home/ducker/ && rsync -aiq /root/.ssh/ /home/ducker/.ssh && chown -R ducker /home/ducker/ /mnt/ /var/log/ && echo "PATH=$(runuser -l ducker -c 'echo $PATH'):$JAVA_HOME/bin" >> /home/ducker/.ssh/environment && echo 'PATH=$PATH:'"$JAVA_HOME/bin" >> /home/ducker/.profile && echo 'ducker ALL=(ALL) NOPASSWD: ALL' >> /etc/sudoers

@@ -27,7 +27,6 @@ class ConnectorConfiguration(NamedTuple):
     Ignite ConnectorConfiguration.
     Used to connect from ControlUtility (control.sh).
     """
-    idle_timeout: int = None
     ssl_enabled: bool = False
     ssl_client_auth: bool = False
     ssl_params: SslParams = None
