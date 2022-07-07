@@ -101,11 +101,6 @@ public class GridFactorySelfTest extends GridCommonAbstractTest {
             GridTestUtils.getNextMulticastGroup(GridFactorySelfTest.class));
     }
 
-    /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
-        cnt.set(0);
-    }
-
     /**
      * @throws Exception If failed.
      */
