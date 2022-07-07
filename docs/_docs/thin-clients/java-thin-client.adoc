@@ -86,6 +86,16 @@ The following code sample illustrates how to use the partition awareness feature
 include::{sourceCodeFile}[tag=partition-awareness,indent=0]
 ----
 
+The code sample below shows how to use a custom cache key mapper function to enable affinity awareness from a thin client side
+if a cache already exists in a cluster and was created with custom AffinityFunction or AffinityKeyMapper.
+
+NOTE: The Apache Ignite an internal thin client API is used. There is no guarantee that it will no be changed in future releases.
+
+[source, java]
+----
+include::{sourceCodeFile}[tag=partition-awareness-with-mapper,indent=0]
+----
+
 If a list of server nodes is dynamically changing or scaling, then it is possible to configure the connection with custom implementation of `ClientAddressFinder`. It should provide a number of current server addresses every time a client asks for them.
 The following code sample illustrates how to use it.
 

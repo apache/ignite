@@ -365,6 +365,30 @@ public class JavaThinClient {
         //end::partition-awareness[]
     }
 
+    void partitionAwarenessWithCustomMapper() throws Exception {
+        //tag::partition-awareness-with-mapper[]
+        // Partition awarenes is enabled by default since Apache Ignite 2.11 release.
+        ClientConfiguration cfg = new ClientConfiguration()
+            .setAddresses("node1_address:10800", "node2_address:10800", "node3_address:10800");
+
+        try (IgniteClient client = Ignition.startClient(cfg)) {
+            ClientCache<Integer, String> cache = ((ClientCacheEx)client.cache(PART_CUSTOM_AFFINITY_CACHE_NAME))
+                .withPartitionAwarenessKeyMapper(new ToIntBiFunction<Object, Integer>() {
+                    private final int affinityMask = RendezvousAffinityFunction.calculateMask(DFLT_PARTITION_COUNT);
+
+                    @Override public int applyAsInt(Object key, Integer parts) {
+                        assert parts == RendezvousAffinityFunction.DFLT_PARTITION_COUNT;
+
+                        return RendezvousAffinityFunction.calculatePartition(key, affinityMask, DFLT_PARTITION_COUNT);
+                    }
+                });
+            // Put, get or remove data from the cache...
+        } catch (ClientException e) {
+            System.err.println(e.getMessage());
+        }
+        //end::partition-awareness-with-mapper[]
+    }
+
     private String[] fetchServerAddresses() {
         return null;
     }
