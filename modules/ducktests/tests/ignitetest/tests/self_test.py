@@ -112,7 +112,6 @@ class SelfTest(IgniteTest):
         """
         Test logs rotation after ignite service restart.
         """
-
         def get_log_lines_count(service, filename):
             node = service.nodes[0]
             log_file = os.path.join(service.log_dir, filename)
