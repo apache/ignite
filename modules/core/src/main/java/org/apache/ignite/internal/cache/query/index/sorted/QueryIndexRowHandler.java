@@ -89,10 +89,17 @@ public class QueryIndexRowHandler implements InlineIndexRowHandler {
 
     /** {@inheritDoc} */
     @Override public IndexKey indexKey(int idx, CacheDataRow row) {
-        Object o = getKey(idx, row);
-
-        return IndexKeyFactory.wrap(
-            o, keyDefs.get(idx).idxType(), rowDescriptor.context().cacheObjectContext(), keyTypeSettings);
+        try {
+            return IndexKeyFactory.wrap(
+                props[idx].value(row.key(), row.value()),
+                keyDefs.get(idx).idxType(),
+                rowDescriptor.context().cacheObjectContext(),
+                keyTypeSettings
+            );
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteException(e);
+        }
     }
 
     /** {@inheritDoc} */
@@ -108,17 +115,6 @@ public class QueryIndexRowHandler implements InlineIndexRowHandler {
     /** {@inheritDoc} */
     @Override public IndexKeyTypeSettings indexKeyTypeSettings() {
         return keyTypeSettings;
-    }
-
-    /** */
-    private Object getKey(int idx, CacheDataRow row) {
-        try {
-            return props[idx].value(row.key(), row.value());
-        }
-        catch (IgniteCheckedException e) {
-            throw new IgniteException(e);
-        }
-
     }
 
     /** {@inheritDoc} */
