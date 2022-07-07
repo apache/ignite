@@ -223,9 +223,9 @@ def get_server_config(ignite_version):
                                    thin_client_configuration=ThinClientConfiguration(
                                        max_active_compute_tasks_per_connection=100)),
                                transaction_configuration=TransactionConfiguration(
-                                   defaultTxTimeout=300000,
-                                   defaultTxIsolation="READ_COMMITTED",
-                                   txTimeoutOnPartitionMapExchange=120000),
+                                   default_tx_timeout=300000,
+                                   default_tx_isolation="READ_COMMITTED",
+                                   tx_timeout_on_partition_map_exchange=120000),
                                sql_schemas=["schema1", "schema2"],
                                caches=cache_templates,
                                metrics_log_frequency=30000,

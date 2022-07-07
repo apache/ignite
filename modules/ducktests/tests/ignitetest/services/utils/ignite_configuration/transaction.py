@@ -23,6 +23,6 @@ class TransactionConfiguration(NamedTuple):
     """
     Transaction configuration.
     """
-    defaultTxIsolation: str = None
-    defaultTxTimeout: int = None
-    txTimeoutOnPartitionMapExchange: int = None
+    default_tx_isolation: str = None
+    default_tx_timeout: int = None
+    tx_timeout_on_partition_map_exchange: int = None
