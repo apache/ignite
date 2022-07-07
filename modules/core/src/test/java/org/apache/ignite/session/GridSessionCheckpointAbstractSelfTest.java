@@ -218,7 +218,7 @@ public abstract class GridSessionCheckpointAbstractSelfTest extends GridCommonAb
             int res = 0;
 
             for (ComputeJobResult result : results)
-                res += result.getData();
+                res += result.<Integer>getData();
 
             for (int i = 0; i < SPLIT_COUNT; i++) {
                 ses.saveCheckpoint("reduce:session:key:" + i, "reduce:session:testval:" + i);

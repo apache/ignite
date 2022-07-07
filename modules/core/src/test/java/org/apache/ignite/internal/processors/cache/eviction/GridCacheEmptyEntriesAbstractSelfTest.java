@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.eviction;
 
-import java.util.Map;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheMode;

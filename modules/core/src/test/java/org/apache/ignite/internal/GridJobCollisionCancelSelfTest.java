@@ -170,7 +170,7 @@ public class GridJobCollisionCancelSelfTest extends GridCommonAbstractTest {
                 assert result != null;
 
                 if (result.getData() != null)
-                    res += result.getData();
+                    res += result.<Integer>getData();
             }
 
             return res;

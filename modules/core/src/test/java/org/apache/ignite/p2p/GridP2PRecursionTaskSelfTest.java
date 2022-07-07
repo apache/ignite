@@ -167,7 +167,7 @@ public class GridP2PRecursionTaskSelfTest extends GridCommonAbstractTest {
             long retVal = 0;
 
             for (ComputeJobResult res : results)
-                retVal += res.getData();
+                retVal += res.<Long>getData();
 
             return retVal;
         }

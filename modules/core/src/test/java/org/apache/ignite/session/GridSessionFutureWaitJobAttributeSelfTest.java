@@ -250,7 +250,7 @@ public class GridSessionFutureWaitJobAttributeSelfTest extends GridCommonAbstrac
 
             for (ComputeJobResult result : results) {
                 if (result.getData() != null)
-                    sum += result.getData();
+                    sum += (Integer)result.getData();
             }
 
             return sum;

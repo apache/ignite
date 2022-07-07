@@ -202,7 +202,7 @@ public class GridSessionSetJobAttributeWaitListenerSelfTest extends GridCommonAb
 
             for (ComputeJobResult result : results) {
                 if (result.getData() != null)
-                    sum += result.getData();
+                    sum += result.<Integer>getData();
             }
 
             return sum;

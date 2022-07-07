@@ -267,11 +267,10 @@ public class CacheContinuousQueryOperationP2PTest extends GridCommonAbstractTest
 
         ContinuousQuery<Object, Object> qry = new ContinuousQuery<>();
 
-        final Class<Factory<CacheEntryEventFilter>> evtFilterFactoryCls =
-            (Class<Factory<CacheEntryEventFilter>>)getExternalClassLoader().
+        final Class<Factory<? extends CacheEntryEventFilter<Object, Object>>> evtFilterFactoryCls =
+            (Class<Factory<? extends CacheEntryEventFilter<Object, Object>>>)getExternalClassLoader().
                 loadClass("org.apache.ignite.tests.p2p.CacheDeploymentEntryEventFilterFactory");
-        qry.setRemoteFilterFactory(
-            (Factory<? extends CacheEntryEventFilter<Object, Object>>)evtFilterFactoryCls.newInstance());
+        qry.setRemoteFilterFactory(evtFilterFactoryCls.newInstance());
 
         qry.setLocalListener((evts) -> {
             for (CacheEntryEvent<?, ?> ignored : evts)
@@ -312,8 +311,8 @@ public class CacheContinuousQueryOperationP2PTest extends GridCommonAbstractTest
 
         ignite(0).createCache(ccfg);
 
-        final Class<Factory<CacheEntryEventFilter>> evtFilterFactoryCls =
-            (Class<Factory<CacheEntryEventFilter>>)getExternalClassLoader().
+        final Class<Factory<CacheEntryEventFilter<Integer, Integer>>> evtFilterFactoryCls =
+            (Class<Factory<CacheEntryEventFilter<Integer, Integer>>>)getExternalClassLoader().
                 loadClass("org.apache.ignite.tests.p2p.CacheDeploymentEntryEventFilterFactory");
 
         testContinuousQuery(ccfg, isClient, false, evtFilterFactoryCls);
@@ -329,7 +328,7 @@ public class CacheContinuousQueryOperationP2PTest extends GridCommonAbstractTest
      */
     private void testContinuousQuery(CacheConfiguration<Object, Object> ccfg,
         boolean isClient, boolean joinNode,
-        Class<Factory<CacheEntryEventFilter>> evtFilterFactoryCls) throws Exception {
+        Class<Factory<CacheEntryEventFilter<Integer, Integer>>> evtFilterFactoryCls) throws Exception {
 
         ThreadLocalRandom rnd = ThreadLocalRandom.current();
 
@@ -357,13 +356,12 @@ public class CacheContinuousQueryOperationP2PTest extends GridCommonAbstractTest
         qry.setLocalListener(locLsnr);
 
         qry.setRemoteFilterFactory(
-            (Factory<? extends CacheEntryEventFilter<Integer, Integer>>)evtFilterFactoryCls.newInstance());
+            evtFilterFactoryCls.newInstance());
 
         MutableCacheEntryListenerConfiguration<Integer, Integer> lsnrCfg =
             new MutableCacheEntryListenerConfiguration<>(
                 new FactoryBuilder.SingletonFactory<>(locLsnr),
-                (Factory<? extends CacheEntryEventFilter<? super Integer, ? super Integer>>)
-                    evtFilterFactoryCls.newInstance(),
+                evtFilterFactoryCls.newInstance(),
                 true,
                 true
             );

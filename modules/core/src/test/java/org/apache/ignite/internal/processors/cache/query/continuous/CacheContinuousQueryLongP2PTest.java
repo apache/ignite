@@ -100,16 +100,14 @@ public class CacheContinuousQueryLongP2PTest extends CacheContinuousQueryOperati
      * @throws Exception If failed.
      */
     private ContinuousQuery<Integer, Integer> continuousQuery() throws Exception {
-        final Class<Factory<CacheEntryEventFilter>> evtFilterFactoryCls =
-            (Class<Factory<CacheEntryEventFilter>>)getExternalClassLoader().
+        final Class<Factory<CacheEntryEventFilter<Integer, Integer>>> evtFilterFactoryCls =
+            (Class<Factory<CacheEntryEventFilter<Integer, Integer>>>)getExternalClassLoader().
                 loadClass("org.apache.ignite.tests.p2p.CacheDeploymentEntryEventFilterFactory");
 
         ContinuousQuery<Integer, Integer> qry = new ContinuousQuery<>();
 
         qry.setLocalListener((evt) -> {});
-
-        qry.setRemoteFilterFactory(
-            (Factory<? extends CacheEntryEventFilter<Integer, Integer>>)evtFilterFactoryCls.newInstance());
+        qry.setRemoteFilterFactory(evtFilterFactoryCls.newInstance());
 
         return qry;
     }

@@ -722,7 +722,7 @@ public class PlatformDeployServiceTask extends ComputeTaskAdapter<String, Object
                     if (res.getData() == null)
                         continue;
 
-                    cnt += res.getData();
+                    cnt += res.<Integer>getData();
                 }
 
                 return cnt;

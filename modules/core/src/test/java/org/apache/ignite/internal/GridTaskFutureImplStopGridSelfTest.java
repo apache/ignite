@@ -182,7 +182,7 @@ public class GridTaskFutureImplStopGridSelfTest extends GridCommonAbstractTest {
             int res = 0;
 
             for (ComputeJobResult result : results) {
-                res += result.getData();
+                res += result.<Integer>getData();
             }
 
             return res;

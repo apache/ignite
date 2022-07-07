@@ -97,7 +97,7 @@ public class GridSingleSplitNewNodesTestTask extends ComputeTaskAdapter<Integer,
         for (ComputeJobResult res : results) {
             assert res.getData() != null : "Load test should return result: " + res;
 
-            retVal += res.getData();
+            retVal += res.<Integer>getData();
         }
 
         return retVal;

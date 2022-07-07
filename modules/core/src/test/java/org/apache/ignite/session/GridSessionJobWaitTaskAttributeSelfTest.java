@@ -217,7 +217,7 @@ public class GridSessionJobWaitTaskAttributeSelfTest extends GridCommonAbstractT
                 else
                     log.info("Reducing result: " + res.getData());
 
-                sum += res.getData();
+                sum += res.<Integer>getData();
             }
 
             return sum;
