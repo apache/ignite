@@ -144,6 +144,11 @@ public abstract class NullableInlineIndexKeyType<T extends IndexKey> implements 
         return put0(pageAddr, off, (T)key, maxSize);
     }
 
+    /** {@inheritDoc} */
+    @Override public short keySize() {
+        return keySize;
+    }
+
     /**
      * Puts given value into inline index tree.
      *
@@ -167,7 +172,7 @@ public abstract class NullableInlineIndexKeyType<T extends IndexKey> implements 
     protected abstract @Nullable T get0(long pageAddr, int off);
 
     /** Read variable length bytearray */
-    protected byte[] readBytes(long pageAddr, int off) {
+    public static byte[] readBytes(long pageAddr, int off) {
         int size = PageUtils.getShort(pageAddr, off + 1) & 0x7FFF;
         return PageUtils.getBytes(pageAddr, off + 3, size);
     }

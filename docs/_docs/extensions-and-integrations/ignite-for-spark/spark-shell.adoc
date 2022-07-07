@@ -62,7 +62,7 @@ Now that you have your cluster up and running, you can run `spark-shell` and che
 [source, shell]
 ----
 ./bin/spark-shell
-    --packages org.apache.ignite:ignite-spark:1.8.0
+    --packages org.apache.ignite:ignite-spark-ext:2.0.0
   --master spark://master_host:master_port
   --repositories http://repo.maven.apache.org/maven2/org/apache/ignite
 ----
@@ -70,7 +70,7 @@ Now that you have your cluster up and running, you can run `spark-shell` and che
 +
 [source, shell]
 ----
-./bin/spark-shell --jars path/to/ignite-core.jar,path/to/ignite-spark.jar,path/to/cache-api.jar,path/to/ignite-log4j.jar,path/to/log4j.jar --master spark://master_host:master_port
+./bin/spark-shell --jars path/to/ignite-core.jar,path/to/ignite-spark-ext.jar,path/to/cache-api.jar,path/to/ignite-log4j.jar,path/to/log4j.jar --master spark://master_host:master_port
 ----
 
 You should see Spark shell started up.
@@ -80,7 +80,7 @@ Note that if you are planning to use spring configuration loading, you will need
 [source, shell]
 ----
 ./bin/spark-shell
-    --packages org.apache.ignite:ignite-spark:1.8.0,org.apache.ignite:ignite-spring:1.8.0
+    --packages org.apache.ignite:ignite-spark-ext:2.0.0,org.apache.ignite:ignite-spring:2.13.0
   --master spark://master_host:master_port
 ----
 --

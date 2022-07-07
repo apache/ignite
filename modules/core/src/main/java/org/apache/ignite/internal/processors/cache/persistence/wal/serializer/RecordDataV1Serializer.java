@@ -109,13 +109,11 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusInnerIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.CacheVersionIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.ByteBufferBackedDataInput;
-import org.apache.ignite.internal.processors.cache.persistence.wal.ByteBufferBackedDataInputImpl;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.record.HeaderRecord;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
 import org.apache.ignite.internal.util.typedef.T2;
-import org.apache.ignite.internal.util.typedef.T3;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteProductVersion;
@@ -210,22 +208,15 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
     @Override public WALRecord readRecord(RecordType type, ByteBufferBackedDataInput in, int size)
         throws IOException, IgniteCheckedException {
         if (type == ENCRYPTED_RECORD || type == ENCRYPTED_RECORD_V2) {
-            if (encSpi == null) {
-                T2<Integer, RecordType> knownData = skipEncryptedRecord(in, true);
+            DecryptionResult decryptionResult = readEncryptedData(in, true, type == ENCRYPTED_RECORD_V2);
 
-                //This happen on offline WAL iteration(we don't have encryption keys available).
-                return new EncryptedRecord(knownData.get1(), knownData.get2());
+            if (decryptionResult.isDecryptedSuccessfully()) {
+                ByteBufferBackedDataInput data = decryptionResult.decryptedData();
+
+                return readPlainRecord(decryptionResult.recordType(), data, true, data.buffer().capacity());
             }
-
-            T3<ByteBufferBackedDataInput, Integer, RecordType> clData =
-                readEncryptedData(in, true, type == ENCRYPTED_RECORD_V2);
-
-            //This happen during startup. On first WAL iteration we restore only metastore.
-            //So, no encryption keys available. See GridCacheDatabaseSharedManager#readMetastore
-            if (clData.get1() == null)
-                return new EncryptedRecord(clData.get2(), clData.get3());
-
-            return readPlainRecord(clData.get3(), clData.get1(), true, clData.get1().buffer().capacity());
+            else
+                return new EncryptedRecord(decryptionResult.grpId(), decryptionResult.recordType());
         }
 
         return readPlainRecord(type, in, false, size);
@@ -287,7 +278,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
      * @throws IOException If failed.
      * @throws IgniteCheckedException If failed.
      */
-    private T3<ByteBufferBackedDataInput, Integer, RecordType> readEncryptedData(
+    private DecryptionResult readEncryptedData(
         ByteBufferBackedDataInput in,
         boolean readType,
         boolean readKeyId
@@ -295,49 +286,37 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
         int grpId = in.readInt();
         int encRecSz = in.readInt();
 
-        RecordType plainRecType = null;
-
-        if (readType)
-            plainRecType = RecordV1Serializer.readRecordType(in);
+        RecordType plainRecType = readType ? RecordV1Serializer.readRecordType(in) : null;
 
         int keyId = readKeyId ? in.readUnsignedByte() : GridEncryptionManager.INITIAL_KEY_ID;
+
+        // Encryption Manager can be null during offline WAL iteration
+        if (encMgr == null || encSpi == null) {
+            int skipped = in.skipBytes(encRecSz);
+
+            assert skipped == encRecSz;
+
+            return new DecryptionResult(null, plainRecType, grpId);
+        }
+
+        GroupKey grpKey = encMgr.groupKey(grpId, keyId);
+
+        // Encryption key is not available when restoring the MetaStorage
+        if (grpKey == null) {
+            int skipped = in.skipBytes(encRecSz);
+
+            assert skipped == encRecSz;
+
+            return new DecryptionResult(null, plainRecType, grpId);
+        }
 
         byte[] encData = new byte[encRecSz];
 
         in.readFully(encData);
 
-        GroupKey grpKey = encMgr.groupKey(grpId, keyId);
-
-        if (grpKey == null)
-            return new T3<>(null, grpId, plainRecType);
-
         byte[] clData = encSpi.decrypt(encData, grpKey.key());
 
-        return new T3<>(new ByteBufferBackedDataInputImpl().buffer(ByteBuffer.wrap(clData)), grpId, plainRecType);
-    }
-
-    /**
-     * Reads encrypted record without decryption.
-     * Should be used only for a offline WAL iteration.
-     *
-     * @param in Data stream.
-     * @param readType If {@code true} plain record type will be read from {@code in}.
-     * @return Group id and type of skipped record.
-     */
-    private T2<Integer, RecordType> skipEncryptedRecord(ByteBufferBackedDataInput in, boolean readType)
-        throws IOException, IgniteCheckedException {
-        int grpId = in.readInt();
-        int encRecSz = in.readInt();
-        RecordType plainRecType = null;
-
-        if (readType)
-            plainRecType = RecordV1Serializer.readRecordType(in);
-
-        int skipped = in.skipBytes(encRecSz);
-
-        assert skipped == encRecSz;
-
-        return new T2<>(grpId, plainRecType);
+        return new DecryptionResult(ByteBuffer.wrap(clData), plainRecType, grpId);
     }
 
     /**
@@ -2069,19 +2048,13 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
         RecordType dataRecordType = recType == ENCRYPTED_DATA_RECORD_V3 ? DATA_RECORD_V2 : DATA_RECORD;
 
         if (needDecryption) {
-            if (encSpi == null) {
-                skipEncryptedRecord(in, false);
+            boolean readKeyId = recType == ENCRYPTED_DATA_RECORD_V2 || recType == ENCRYPTED_DATA_RECORD_V3;
 
-                return new EncryptedDataEntry();
-            }
+            DecryptionResult decryptionResult = readEncryptedData(in, false, readKeyId);
 
-            T3<ByteBufferBackedDataInput, Integer, RecordType> clData = readEncryptedData(in, false,
-                recType == ENCRYPTED_DATA_RECORD_V2 || recType == ENCRYPTED_DATA_RECORD_V3);
-
-            if (clData.get1() == null)
-                return null;
-
-            return readPlainDataEntry(clData.get1(), dataRecordType);
+            return decryptionResult.isDecryptedSuccessfully()
+                ? readPlainDataEntry(decryptionResult.decryptedData(), dataRecordType)
+                : new EncryptedDataEntry();
         }
 
         return readPlainDataEntry(in, dataRecordType);
@@ -2306,7 +2279,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
             /*part ID*/4 +
             /*expire Time*/8 +
             /*part cnt*/8 +
-            /*primary*/(entry instanceof MvccDataEntry ? 0 : 1);
+            /*flags*/(entry instanceof MvccDataEntry ? 0 : 1);
     }
 
     /**

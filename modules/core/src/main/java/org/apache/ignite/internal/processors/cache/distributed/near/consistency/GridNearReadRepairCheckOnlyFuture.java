@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.distributed.near.consistency
 
 import java.util.Collection;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.ReadRepairStrategy;
@@ -66,7 +67,7 @@ public class GridNearReadRepairCheckOnlyFuture extends GridNearReadRepairAbstrac
      */
     public GridNearReadRepairCheckOnlyFuture(
         AffinityTopologyVersion topVer,
-        GridCacheContext ctx,
+        GridCacheContext<?, ?> ctx,
         Collection<KeyCacheObject> keys,
         ReadRepairStrategy strategy,
         boolean readThrough,
@@ -158,7 +159,7 @@ public class GridNearReadRepairCheckOnlyFuture extends GridNearReadRepairAbstrac
             needVer,
             keepCacheObjects,
             tx,
-            this);
+            this).init();
     }
 
     /** {@inheritDoc} */
@@ -166,18 +167,40 @@ public class GridNearReadRepairCheckOnlyFuture extends GridNearReadRepairAbstrac
         try {
             onDone(check());
         }
-        catch (IgniteConsistencyViolationException e) {
+        catch (IgniteConsistencyCheckFailedException e) {
             Set<KeyCacheObject> inconsistentKeys = e.keys();
 
             if (remapCnt >= MAX_REMAP_CNT) {
-                if (ctx.atomic() || strategy == ReadRepairStrategy.CHECK_ONLY) { // Will not be fixed, should be recorded as is.
-                    recordConsistencyViolation(inconsistentKeys, /*nothing fixed*/ null, ReadRepairStrategy.CHECK_ONLY);
-
-                    onDone(new IgniteIrreparableConsistencyViolationException(null,
-                        ctx.unwrapBinariesIfNeeded(inconsistentKeys, !deserializeBinary)));
+                if (strategy == ReadRepairStrategy.CHECK_ONLY) { // Will not be repaired, should be recorded as is.
+                    onDoneIrreparable(inconsistentKeys);
                 }
-                else // Should be fixed by concurrent tx(s).
-                    onDone(e);
+                else if (ctx.atomic()) { // Should be repaired by concurrent atomic op(s).
+                    try {
+                        Map<KeyCacheObject, EntryGetResult> correctedMap = correct(inconsistentKeys);
+
+                        assert !correctedMap.isEmpty(); // Check failed on the same data.
+
+                        onDoneRepairRequired(correctedMap);
+                    }
+                    catch (IgniteConsistencyRepairFailedException rfe) { // Unable to repair all entries.
+                        Map<KeyCacheObject, EntryGetResult> correctedMap = rfe.correctedMap();
+
+                        if (!correctedMap.isEmpty()) {
+                            // Fixing every repairable entry. Irreparable will be recalculated on recheck.
+                            onDoneRepairRequired(correctedMap);
+                        }
+                        else {
+                            assert Objects.equals(inconsistentKeys, rfe.irreparableKeys());
+
+                            onDoneIrreparable(inconsistentKeys);
+                        }
+                    }
+                    catch (IgniteCheckedException ce) {
+                        onDone(ce);
+                    }
+                }
+                else // Should be repaired by concurrent explicit tx(s).
+                    onDone(new IgniteTransactionalConsistencyViolationException(inconsistentKeys));
             }
             else
                 remap(ctx.affinity().affinityTopologyVersion()); // Rechecking possible "false positive" case.
@@ -188,12 +211,32 @@ public class GridNearReadRepairCheckOnlyFuture extends GridNearReadRepairAbstrac
     }
 
     /**
+     *
+     */
+    protected void onDoneIrreparable(Set<KeyCacheObject> irreparableKeys) {
+        recordConsistencyViolation(irreparableKeys, /*nothing repaired*/ null);
+
+        onDone(new IgniteIrreparableConsistencyViolationException(null,
+            ctx.unwrapBinariesIfNeeded(irreparableKeys, !deserializeBinary)));
+    }
+
+    /**
+     *
+     */
+    protected void onDoneRepairRequired(Map<KeyCacheObject, EntryGetResult> correcredMap) {
+        onDone(new IgniteAtomicConsistencyViolationException(
+            correcredMap,
+            correctWithPrimary(correcredMap.keySet()),
+            (repairedMap) -> recordConsistencyViolation(repairedMap.keySet(), repairedMap)));
+    }
+
+    /**
      * Returns a future represents 1 entry's value.
      *
      * @return Future represents 1 entry's value.
      */
     public <K, V> IgniteInternalFuture<V> single() {
-        return chain((fut) -> {
+        return init().chain((fut) -> {
             try {
                 final Map<K, V> map = new IgniteBiTuple<>();
 
@@ -219,7 +262,7 @@ public class GridNearReadRepairCheckOnlyFuture extends GridNearReadRepairAbstrac
      * @return Future represents entries map.
      */
     public <K, V> IgniteInternalFuture<Map<K, V>> multi() {
-        return chain((fut) -> {
+        return init().chain((fut) -> {
             try {
                 final Map<K, V> map = U.newHashMap(keys.size());
 

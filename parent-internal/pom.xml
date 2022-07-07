@@ -219,20 +219,12 @@
                                 <packages>org.apache.ignite.mesos*</packages>
                             </group>
                             <group>
-                                <title>Yarn Integration</title>
-                                <packages>org.apache.ignite.yarn*</packages>
-                            </group>
-                            <group>
                                 <title>Kubernetes Integration</title>
                                 <packages>org.apache.ignite.kubernetes*</packages>
                             </group>
                             <group>
                                 <title>Platforms</title>
                                 <packages>org.apache.ignite.platform*</packages>
-                            </group>
-                            <group>
-                                <title>Spark Integration</title>
-                                <packages>org.apache.ignite.spark.examples.java</packages>
                             </group>
                             <group>
                                 <title>OSGi integration</title>

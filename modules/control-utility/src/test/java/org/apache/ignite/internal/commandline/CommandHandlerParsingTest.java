@@ -19,16 +19,24 @@ package org.apache.ignite.internal.commandline;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
 import java.util.UUID;
 import java.util.function.Predicate;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
 import org.apache.ignite.ShutdownPolicy;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.internal.commandline.baseline.BaselineArguments;
 import org.apache.ignite.internal.commandline.cache.CacheCommands;
+import org.apache.ignite.internal.commandline.cache.CacheScheduleIndexesRebuild;
+import org.apache.ignite.internal.commandline.cache.CacheScheduleIndexesRebuild.Arguments;
 import org.apache.ignite.internal.commandline.cache.CacheSubcommands;
 import org.apache.ignite.internal.commandline.cache.CacheValidateIndexes;
 import org.apache.ignite.internal.commandline.cache.FindAndDeleteGarbage;
@@ -49,6 +57,7 @@ import org.junit.Test;
 import org.junit.rules.TestRule;
 
 import static java.util.Arrays.asList;
+import static java.util.Collections.emptySet;
 import static java.util.Collections.singletonList;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_ENABLE_EXPERIMENTAL_COMMAND;
 import static org.apache.ignite.internal.QueryMXBeanImpl.EXPECTED_GLOBAL_QRY_ID_FORMAT;
@@ -932,6 +941,140 @@ public class CommandHandlerParsingTest {
             IllegalArgumentException.class,
             "--cache-names not specified."
         );
+    }
+
+    /** */
+    @Test
+    public void testScheduleIndexRebuildWrongArgs() {
+        GridTestUtils.assertThrows(
+            null,
+            () -> parseArgs(asList("--cache", "schedule_indexes_rebuild", "--node-id")),
+            IllegalArgumentException.class,
+            "Failed to read node id."
+        );
+
+        String nodeId = UUID.randomUUID().toString();
+
+        GridTestUtils.assertThrows(
+            null,
+            () -> parseArgs(asList("--cache", "schedule_indexes_rebuild", "--node-id", nodeId, "--cache-names")),
+            IllegalArgumentException.class,
+            "Expected a comma-separated cache names (and optionally a comma-separated list of index names in square brackets)."
+        );
+
+        GridTestUtils.assertThrows(
+            null,
+            () -> parseArgs(asList("--cache", "schedule_indexes_rebuild", "--node-id", nodeId, "--node-id", nodeId)),
+            IllegalArgumentException.class,
+            "--node-id arg specified twice."
+        );
+
+        GridTestUtils.assertThrows(
+            null,
+            () -> parseArgs(asList("--cache", "schedule_indexes_rebuild", "--node-id", nodeId, "--cache-names", "a",
+                "--cache-names", "b")),
+            IllegalArgumentException.class,
+            "--cache-names arg specified twice."
+        );
+
+        GridTestUtils.assertThrows(
+            null,
+            () -> parseArgs(asList("--cache", "schedule_indexes_rebuild", "--node-id", nodeId, "--group-names", "a",
+                "--group-names", "b")),
+            IllegalArgumentException.class,
+            "--group-names arg specified twice."
+        );
+
+        GridTestUtils.assertThrows(
+            null,
+            () -> parseArgs(asList("--cache", "schedule_indexes_rebuild")),
+            IllegalArgumentException.class,
+            "--cache-names or --group-names must be specified."
+        );
+
+        GridTestUtils.assertThrows(
+            null,
+            () -> parseArgs(asList("--cache", "schedule_indexes_rebuild", "--cache-names", "foo[]")),
+            IllegalArgumentException.class,
+            "Square brackets must contain comma-separated indexes or not be used at all."
+        );
+    }
+
+    /** */
+    @Test
+    public void testScheduleIndexRebuildArgs() {
+        UUID nodeId = UUID.randomUUID();
+
+        Map<String, Set<String>> params1 = new HashMap<>();
+        params1.put("cache1", new HashSet<>(Arrays.asList("foo", "bar")));
+        params1.put("cache2", null);
+        params1.put("foocache", new HashSet<>(Arrays.asList("idx", "bar")));
+        params1.put("bar", Collections.singleton("foo"));
+
+        CacheCommands cacheCommand1 = (CacheCommands)parseArgs(asList("--cache", "schedule_indexes_rebuild", "--node-id", nodeId.toString(),
+            "--cache-names", buildScheduleIndexRebuildCacheNames(params1))
+        ).command();
+
+        CacheScheduleIndexesRebuild.Arguments arg1 = (Arguments)cacheCommand1.arg().subcommand().arg();
+        assertEquals(normalizeScheduleIndexRebuildCacheNamesMap(params1), arg1.cacheToIndexes());
+        assertEquals(null, arg1.cacheGroups());
+
+        Map<String, Set<String>> params2 = new HashMap<>();
+        params2.put("cache1", new HashSet<>(Arrays.asList("foo", "bar")));
+        params2.put("cache2", null);
+        params2.put("foocache", new HashSet<>(Arrays.asList("idx", "bar")));
+        params2.put("bar", Collections.singleton("foo"));
+
+        CacheCommands cacheCommand2 = (CacheCommands)parseArgs(asList("--cache", "schedule_indexes_rebuild", "--node-id", nodeId.toString(),
+            "--cache-names", buildScheduleIndexRebuildCacheNames(params2), "--group-names", "foocache,someGrp")
+        ).command();
+
+        Map<String, Set<String>> normalized = normalizeScheduleIndexRebuildCacheNamesMap(params2);
+
+        CacheScheduleIndexesRebuild.Arguments arg2 = (Arguments)cacheCommand2.arg().subcommand().arg();
+        assertEquals(normalized, arg2.cacheToIndexes());
+        assertEquals(new HashSet<>(Arrays.asList("foocache", "someGrp")), arg2.cacheGroups());
+    }
+
+    /**
+     * Builds a new --cache-names parameters map replacing nulls with empty set so it should be the same as
+     * the parsed argument of the {@link CacheScheduleIndexesRebuild.Arguments#cacheToIndexes()}.
+     *
+     * @param paramsMap Cache -> indexes map.
+     * @return New map with nulls replaced with empty set.
+     */
+    private static Map<String, Set<String>> normalizeScheduleIndexRebuildCacheNamesMap(Map<String, Set<String>> paramsMap) {
+        return paramsMap.entrySet().stream()
+            .collect(Collectors.toMap(Entry::getKey, e -> e.getValue() != null ? e.getValue() : emptySet()));
+    }
+
+    /**
+     * Builds a --cache-names parameter string for the schedule_indexes_rebuild command from the
+     * cache -> indexes map.
+     * Example: {foo: [], bar: null, test: [idx1, idx2]} will be converted into the "foo[],bar,test[idx1,idx2]" string.
+     *
+     * @param paramsMap Cache -> indexes map.
+     * @return --cache-names parameter string.
+     */
+    private String buildScheduleIndexRebuildCacheNames(Map<String, Set<String>> paramsMap) {
+        return paramsMap.entrySet().stream().map(e -> {
+            StringBuilder sb = new StringBuilder();
+
+            String cacheName = e.getKey();
+            Set<String> indexes = e.getValue();
+
+            sb.append(cacheName);
+
+            if (indexes != null) {
+                sb.append("[");
+
+                sb.append(String.join(",", indexes));
+
+                sb.append("]");
+            }
+
+            return sb.toString();
+        }).collect(Collectors.joining(","));
     }
 
     /** */

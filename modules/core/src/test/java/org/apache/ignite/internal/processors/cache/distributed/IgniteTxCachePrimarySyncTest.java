@@ -49,6 +49,7 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPr
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareResponse;
 import org.apache.ignite.internal.processors.cache.transactions.TransactionProxyImpl;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiInClosure;
@@ -155,6 +156,9 @@ public class IgniteTxCachePrimarySyncTest extends GridCommonAbstractTest {
         Ignite ignite = ignite(0);
 
         IgniteCache<Object, Object> cache = ignite.createCache(ccfg);
+
+        F.view(G.allGrids(), node -> node.cluster().localNode().isClient())
+            .forEach(node -> awaitCacheOnClient(node, ccfg.getName()));
 
         try {
             for (int i = 0; i < SRVS; i++) {
@@ -286,8 +290,11 @@ public class IgniteTxCachePrimarySyncTest extends GridCommonAbstractTest {
         IgniteCache<Object, Object> cache = ignite.createCache(ccfg);
 
         try {
-            if (!MvccFeatureChecker.forcedMvcc() || MvccFeatureChecker.isSupported(Feature.NEAR_CACHE))
+            if (!MvccFeatureChecker.forcedMvcc() || MvccFeatureChecker.isSupported(Feature.NEAR_CACHE)) {
+                awaitCacheOnClient(ignite(NODES - 1), ccfg.getName());
+
                 ignite(NODES - 1).createNearCache(ccfg.getName(), new NearCacheConfiguration<>());
+            }
 
             for (int i = 0; i < NODES; i++) {
                 Ignite node = ignite(i);
@@ -423,8 +430,11 @@ public class IgniteTxCachePrimarySyncTest extends GridCommonAbstractTest {
         IgniteCache<Object, Object> cache = ignite.createCache(ccfg);
 
         try {
-            if (!MvccFeatureChecker.forcedMvcc() || MvccFeatureChecker.isSupported(Feature.NEAR_CACHE))
+            if (!MvccFeatureChecker.forcedMvcc() || MvccFeatureChecker.isSupported(Feature.NEAR_CACHE)) {
+                awaitCacheOnClient(ignite(NODES - 1), ccfg.getName());
+
                 ignite(NODES - 1).createNearCache(ccfg.getName(), new NearCacheConfiguration<>());
+            }
 
             for (int i = 1; i < NODES; i++) {
                 Ignite node = ignite(i);
@@ -580,8 +590,11 @@ public class IgniteTxCachePrimarySyncTest extends GridCommonAbstractTest {
         IgniteCache<Object, Object> cache = ignite.createCache(ccfg);
 
         try {
-            if (!MvccFeatureChecker.forcedMvcc() || MvccFeatureChecker.isSupported(Feature.NEAR_CACHE))
+            if (!MvccFeatureChecker.forcedMvcc() || MvccFeatureChecker.isSupported(Feature.NEAR_CACHE)) {
+                awaitCacheOnClient(ignite(NODES - 1), ccfg.getName());
+
                 ignite(NODES - 1).createNearCache(ccfg.getName(), new NearCacheConfiguration<>());
+            }
 
             for (int i = 1; i < NODES; i++) {
                 Ignite node = ignite(i);
@@ -718,6 +731,9 @@ public class IgniteTxCachePrimarySyncTest extends GridCommonAbstractTest {
         Ignite ignite = ignite(0);
 
         IgniteCache<Object, Object> cache = ignite.createCache(ccfg);
+
+        F.view(G.allGrids(), node -> node.cluster().localNode().isClient())
+            .forEach(node -> awaitCacheOnClient(node, ccfg.getName()));
 
         try {
             for (int i = 1; i < NODES; i++) {

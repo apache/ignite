@@ -107,6 +107,7 @@ import org.jetbrains.annotations.Nullable;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYSTEM_POOL;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.UTILITY_CACHE_POOL;
+import static org.apache.ignite.internal.processors.cache.GridCacheOperation.NOOP;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.TRANSFORM;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isNearEnabled;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.RENTING;
@@ -1795,7 +1796,7 @@ public class IgniteTxHandler {
                             if (reserved) {
                                 tx.addWrite(entry, ctx.deploy().globalLoader());
 
-                                if (txCounters != null) {
+                                if (txCounters != null && entry.op() != NOOP && !(entry.op() == TRANSFORM && entry.noop())) {
                                     Long cntr = txCounters.generateNextCounter(entry.cacheId(), part);
 
                                     if (cntr != null) // Counter is null if entry is no-op.

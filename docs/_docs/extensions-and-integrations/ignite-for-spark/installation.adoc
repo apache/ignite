@@ -84,23 +84,13 @@ Embedded deployment means that Apache Ignite nodes are started inside the Apache
 
 Ignite's Spark artifact is link:http://search.maven.org/#search%7Cga%7C1%7Cg%3A%22org.apache.ignite%22[hosted in Maven Central^]. Depending on a Scala version you use, include the artifact using one of the dependencies shown below.
 
-.Scala 2.11
+.Scala 2.11+
 [source, scala]
 ----
 <dependency>
   <groupId>org.apache.ignite</groupId>
-  <artifactId>ignite-spark</artifactId>
-  <version>${ignite.version}</version>
-</dependency>
-----
-
-.Scala 2.10
-[source, scala]
-----
-<dependency>
-  <groupId>org.apache.ignite</groupId>
-  <artifactId>ignite-spark_2.10</artifactId>
-  <version>${ignite.version}</version>
+  <artifactId>ignite-spark-ext</artifactId>
+  <version>2.0.0</version>
 </dependency>
 ----
 
@@ -111,14 +101,7 @@ If SBT is used as a build tool for a Scala application, then Ignite's Spark arti
 .Scala 2.11
 [source, scala]
 ----
-libraryDependencies += "org.apache.ignite" % "ignite-spark" % "ignite.version"
-----
-
-
-.Scala 2.10
-[source, scala]
-----
-libraryDependencies += "org.apache.ignite" % "ignite-spark_2.10" % "ignite.version"
+libraryDependencies += "org.apache.ignite" % "ignite-spark-ext" % "2.0.0"
 ----
 
 
@@ -137,7 +120,7 @@ The following shows how to fill in `spark.driver.extraClassPath` parameters:
 
 [source, shell]
 ----
-spark.executor.extraClassPath /opt/ignite/libs/*:/opt/ignite/libs/optional/ignite-spark/*:/opt/ignite/libs/optional/ignite-log4j/*:/opt/ignite/libs/optional/ignite-yarn/*:/opt/ignite/libs/ignite-spring/*
+spark.executor.extraClassPath /opt/ignite/libs/*:/opt/ignite/libs/optional/ignite-spark-ext/*:/opt/ignite/libs/optional/ignite-log4j/*:/opt/ignite/libs/optional/ignite-yarn-ext/*:/opt/ignite/libs/ignite-spring/*
 ----
 
 === Source Code Configuration

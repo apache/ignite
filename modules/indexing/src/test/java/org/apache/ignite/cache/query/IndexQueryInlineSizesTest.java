@@ -79,7 +79,9 @@ public class IndexQueryInlineSizesTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void testFixedInlineKeys() throws Exception {
-        try (Index idx = new Index(inlineSize, "fld1, fld2")) {
+        // fld1 int, fld2 int, _key int. Inline int size is 5 (1 tag, 4 value) -> full inlined value is 15 bytes.
+        // If INLINE_SIZE > 15 it will be ignored. Real inline size will be 15 bytes.
+        try (Index idx = new Index(inlineSize, "fld1, fld2", inlineSize > 15 ? 15 : inlineSize)) {
             check((low, high) -> new IndexQuery<Integer, BinaryObject>(VALUE_TYPE, idx.idxName)
                 .setCriteria(gt("fld1", low), lt("fld2", high)));
         }
@@ -106,7 +108,10 @@ public class IndexQueryInlineSizesTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void testNonInlinedKeys() throws Exception {
-        try (Index idx = new Index(inlineSize, "fld1, fld4")) {
+        // fld1 int can be inlined, fld4 decimal can't be inlined.
+        // Maximum possible inline size for fld1 is 5 bytes.
+        // If INLINE_SIZE > 5 it will be ignored. Real inline size will be 5 bytes.
+        try (Index idx = new Index(inlineSize, "fld1, fld4", inlineSize > 5 ? 5 : inlineSize)) {
             check((low, high) -> new IndexQuery<Integer, BinaryObject>(VALUE_TYPE, idx.idxName)
                 .setCriteria(gt("fld1", low), lt("fld4", new BigDecimal(high))));
         }

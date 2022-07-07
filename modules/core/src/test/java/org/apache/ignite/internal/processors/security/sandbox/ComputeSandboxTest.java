@@ -29,10 +29,10 @@ import org.apache.ignite.compute.ComputeJob;
 import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.compute.ComputeJobResultPolicy;
 import org.apache.ignite.compute.ComputeTask;
+import org.apache.ignite.internal.util.lang.RunnableX;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteRunnable;
-import org.apache.ignite.testframework.GridTestUtils;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
@@ -81,7 +81,7 @@ public class ComputeSandboxTest extends AbstractSandboxTest {
     /**
      * @return Stream of Compute operations to test.
      */
-    private Stream<GridTestUtils.RunnableX> computeOperations(Ignite node) {
+    private Stream<RunnableX> computeOperations(Ignite node) {
         return Stream.of(
             () -> node.compute().execute(COMPUTE_TASK, 0),
             () -> node.compute().broadcast(CALLABLE),
@@ -100,7 +100,7 @@ public class ComputeSandboxTest extends AbstractSandboxTest {
     /**
      * @return Stream of ExecutorService operations to test.
      */
-    private Stream<GridTestUtils.RunnableX> executorServiceOperations(Ignite node) {
+    private Stream<RunnableX> executorServiceOperations(Ignite node) {
         return Stream.of(
             () -> node.executorService().invokeAll(singletonList(CALLABLE))
                 .stream().findFirst().orElseThrow(IgniteException::new).get(),

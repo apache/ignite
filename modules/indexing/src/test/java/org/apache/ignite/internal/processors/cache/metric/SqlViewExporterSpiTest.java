@@ -229,7 +229,7 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
         CyclicBarrier barrier = new CyclicBarrier(6);
 
         for (int i = 0; i < 5; i++) {
-            ignite0.compute().broadcastAsync(() -> {
+            ignite0.compute(ignite0.cluster().forLocal()).broadcastAsync(() -> {
                 try {
                     barrier.await();
                     barrier.await();

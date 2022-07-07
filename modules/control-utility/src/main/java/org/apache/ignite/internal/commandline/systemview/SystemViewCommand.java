@@ -102,7 +102,12 @@ public class SystemViewCommand extends AbstractCommand<VisorSystemViewTaskArg> {
      * @param log Logger.
      */
     public static void printTable(List<String> titles, List<SimpleType> types, List<List<?>> data, Logger log) {
-        List<Integer> colSzs = titles.stream().map(String::length).collect(Collectors.toList());
+        List<Integer> colSzs;
+
+        if (titles != null)
+            colSzs = titles.stream().map(String::length).collect(Collectors.toList());
+        else
+            colSzs = types.stream().map(x -> 0).collect(Collectors.toList());
 
         List<List<String>> rows = new ArrayList<>(data.size());
 
@@ -118,7 +123,8 @@ public class SystemViewCommand extends AbstractCommand<VisorSystemViewTaskArg> {
             }).collect(Collectors.toList()));
         });
 
-        printRow(titles, nCopies(titles.size(), STRING), colSzs, log);
+        if (titles != null)
+            printRow(titles, nCopies(titles.size(), STRING), colSzs, log);
 
         rows.forEach(row -> printRow(row, types, colSzs, log));
     }

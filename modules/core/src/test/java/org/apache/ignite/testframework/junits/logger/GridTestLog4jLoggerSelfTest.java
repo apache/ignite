@@ -17,8 +17,8 @@
 
 package org.apache.ignite.testframework.junits.logger;
 
+import org.apache.ignite.internal.util.lang.RunnableX;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.GridTestUtils.RunnableX;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 import org.junit.AfterClass;

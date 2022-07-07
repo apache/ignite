@@ -491,4 +491,9 @@ public class TrackingPageIO extends PageIO {
 
         sb.a("}\n\t}\n]");
     }
+
+    /** {@inheritDoc} */
+    @Override public int getFreeSpace(int pageSize, long pageAddr) {
+        return 0;
+    }
 }

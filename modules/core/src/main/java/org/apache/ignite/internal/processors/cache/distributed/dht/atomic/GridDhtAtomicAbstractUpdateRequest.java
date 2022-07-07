@@ -63,6 +63,9 @@ public abstract class GridDhtAtomicAbstractUpdateRequest extends GridCacheIdMess
     /** Flag indicating transformation operation was performed. */
     protected static final int DHT_ATOMIC_TRANSFORM_OP_FLAG_MASK = 0x40;
 
+    /** Flag indicating recovery on read repair. */
+    protected static final int DHT_ATOMIC_READ_REPAIR_RECOVERY_FLAG_MASK = 0x80;
+
     /** Message index. */
     public static final int CACHE_MSG_IDX = nextIndexId();
 
@@ -120,7 +123,8 @@ public abstract class GridDhtAtomicAbstractUpdateRequest extends GridCacheIdMess
         int taskNameHash,
         boolean addDepInfo,
         boolean keepBinary,
-        boolean skipStore
+        boolean skipStore,
+        boolean readRepairRecovery
     ) {
         assert topVer.topologyVersion() > 0 : topVer;
 
@@ -137,6 +141,8 @@ public abstract class GridDhtAtomicAbstractUpdateRequest extends GridCacheIdMess
             setFlag(true, DHT_ATOMIC_SKIP_STORE_FLAG_MASK);
         if (keepBinary)
             setFlag(true, DHT_ATOMIC_KEEP_BINARY_FLAG_MASK);
+        if (readRepairRecovery)
+            setFlag(true, DHT_ATOMIC_READ_REPAIR_RECOVERY_FLAG_MASK);
     }
 
     /** {@inheritDoc} */
@@ -214,6 +220,13 @@ public abstract class GridDhtAtomicAbstractUpdateRequest extends GridCacheIdMess
      */
     public final boolean keepBinary() {
         return isFlag(DHT_ATOMIC_KEEP_BINARY_FLAG_MASK);
+    }
+
+    /**
+     * @return Recovery on Read Repair flag.
+     */
+    public final boolean readRepairRecovery() {
+        return isFlag(DHT_ATOMIC_READ_REPAIR_RECOVERY_FLAG_MASK);
     }
 
     /**

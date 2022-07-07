@@ -170,6 +170,12 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
     private final ConcurrentMap<IgniteUuid, ServiceInfo> registeredServices = new ConcurrentHashMap<>();
 
     /**
+     * Map of registered services, kept in-sync with registeredServices above, and keyed by name to improve performance
+     * for lookups.
+     */
+    private final ConcurrentMap<String, ServiceInfo> registeredServicesByName = new ConcurrentHashMap<>();
+
+    /**
      * Collection of services information that were processed by deployment worker. <b>It is updated from deployment
      * worker</b>.
      * <p/>
@@ -314,6 +320,7 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
         cancelDeployedServices();
 
         registeredServices.clear();
+        registeredServicesByName.clear();
 
         // If user requests sent to network but not received back to handle in deployment manager.
         Stream.concat(depFuts.values().stream(), undepFuts.values().stream()).forEach(fut -> {
@@ -1784,6 +1791,7 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
             }
             else if (req instanceof ServiceUndeploymentRequest) {
                 ServiceInfo rmv = registeredServices.remove(reqSrvcId);
+                registeredServicesByName.remove(oldDesc.name());
 
                 assert oldDesc == rmv : "Concurrent map modification.";
 
@@ -1811,6 +1819,7 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
         desc.context(ctx);
 
         registeredServices.put(desc.serviceId(), desc);
+        registeredServicesByName.put(desc.name(), desc);
     }
 
     /**
@@ -1858,6 +1867,9 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
             depActions.servicesToUndeploy(toUndeploy);
 
             msg.servicesDeploymentActions(depActions);
+
+            // Remove the names from the service-by-name map as well
+            toUndeploy.values().forEach((desc) -> registeredServicesByName.remove(desc.name()));
         }
     }
 
@@ -1910,12 +1922,7 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
      * @return Mapped service descriptor. Possibly {@code null} if not found.
      */
     @Nullable private ServiceInfo lookupInRegisteredServices(String name) {
-        for (ServiceInfo desc : registeredServices.values()) {
-            if (desc.name().equals(name))
-                return desc;
-        }
-
-        return null;
+        return registeredServicesByName.get(name);
     }
 
     /**

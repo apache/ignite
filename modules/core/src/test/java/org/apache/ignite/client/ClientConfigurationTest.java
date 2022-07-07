@@ -72,6 +72,7 @@ public class ClientConfigurationTest {
             .setSslTrustCertificateKeyStorePassword("123456")
             .setSslKeyAlgorithm(DFLT_KEY_ALGORITHM)
             .setHeartbeatInterval(3000)
+            .setAutoBinaryConfigurationEnabled(false)
             .setHeartbeatEnabled(true);
 
         ByteArrayOutputStream outBytes = new ByteArrayOutputStream();

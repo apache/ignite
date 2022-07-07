@@ -18,6 +18,7 @@
 package org.apache.ignite.util;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
@@ -226,9 +227,26 @@ public class KillCommandsCommandShTest extends GridCommandHandlerClusterByClassA
         assertEquals(EXIT_CODE_OK, res);
     }
 
-    /** */
+    /**
+     *
+     */
     @Test
-    public void testCancelConsistencyTask() throws InterruptedException {
+    public void testCancelConsistencyTaskParallel() throws InterruptedException {
+        testCancelConsistencyTask(true);
+    }
+
+    /**
+     *
+     */
+    @Test
+    public void testCancelConsistencyTaskSequential() throws InterruptedException {
+        testCancelConsistencyTask(false);
+    }
+
+    /**
+     *
+     */
+    private void testCancelConsistencyTask(boolean parallel) throws InterruptedException {
         String consistencyCacheName = "consistencyCache";
 
         CacheConfiguration<Integer, Integer> cfg = new CacheConfiguration<>();
@@ -252,11 +270,24 @@ public class KillCommandsCommandShTest extends GridCommandHandlerClusterByClassA
             IgnitePredicate<ComputeJobView> repairJobFilter =
                 job -> job.taskClassName().equals(VisorConsistencyRepairTask.class.getName());
 
+            boolean foundOnce = false;
+
             for (IgniteEx node : srvs) {
                 SystemView<ComputeJobView> jobs = node.context().systemView().view(JOBS_VIEW);
 
-                assertTrue(F.iterator0(jobs, true, repairJobFilter).hasNext()); // Found.
+                boolean foundLocally = F.iterator0(jobs, true, repairJobFilter).hasNext();
+
+                if (parallel)
+                    assertTrue(foundLocally);
+                else if (foundLocally) {
+                    assertFalse(foundOnce);
+
+                    foundOnce = true;
+                }
             }
+
+            if (!parallel)
+                assertTrue(foundOnce);
 
             int res = execute("--consistency", "status");
 
@@ -292,7 +323,8 @@ public class KillCommandsCommandShTest extends GridCommandHandlerClusterByClassA
 
         // GridNearGetRequest messages count required to pefrom getAll() with readRepair from all nodes twice.
         // First will be finished (which generates status), second will be frozen.
-        int twiceGetMsgCnt = SERVER_NODE_CNT * (SERVER_NODE_CNT - 1) * 2;
+        int twiceGetMsgCnt = (parallel ? SERVER_NODE_CNT /*from every owner*/ : 1 /*from first owner*/)
+            * (SERVER_NODE_CNT - 1) /*to every other*/ * 2;
 
         for (IgniteEx server : srvs) {
             TestRecordingCommunicationSpi spi =
@@ -317,11 +349,16 @@ public class KillCommandsCommandShTest extends GridCommandHandlerClusterByClassA
 
         injectTestSystemOut();
 
-        assertEquals(EXIT_CODE_UNEXPECTED_ERROR,
-            execute("--consistency", "repair",
-                ConsistencyCommand.STRATEGY, ReadRepairStrategy.LWW.toString(),
-                ConsistencyCommand.PARTITION, "0",
-                ConsistencyCommand.CACHE, consistencyCacheName));
+        List<String> cmd = new ArrayList<>(Arrays.asList(
+            "--consistency", "repair",
+            ConsistencyCommand.STRATEGY, ReadRepairStrategy.CHECK_ONLY.toString(),
+            ConsistencyCommand.PARTITION, "0",
+            ConsistencyCommand.CACHE, consistencyCacheName));
+
+        if (parallel)
+            cmd.add(ConsistencyCommand.PARALLEL);
+
+        assertEquals(EXIT_CODE_UNEXPECTED_ERROR, execute(cmd));
 
         assertContains(log, testOut.toString(), "Operation execution cancelled.");
         assertContains(log, testOut.toString(), VisorConsistencyRepairTask.NOTHING_FOUND);

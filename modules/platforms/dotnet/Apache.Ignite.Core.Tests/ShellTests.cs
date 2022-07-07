@@ -17,38 +17,82 @@
 
 namespace Apache.Ignite.Core.Tests
 {
+    using System;
+    using System.Linq;
     using Apache.Ignite.Core.Impl;
-    using Apache.Ignite.Core.Impl.Unmanaged;
+    using Apache.Ignite.Core.Log;
+    using Apache.Ignite.Core.Tests.Client.Cache;
     using NUnit.Framework;
 
     /// <summary>
     /// Tests for <see cref="Shell"/> class.
     /// </summary>
+    [Platform("Linux")]
+    [Order(1)] // Execute first to avoid zombie processes (see https://issues.apache.org/jira/browse/IGNITE-13536).
     public class ShellTests
     {
         /// <summary>
         /// Tests <see cref="Shell.ExecuteSafe"/> method.
         /// </summary>
         [Test]
-        public void TestExecuteSafe()
+        public void TestExecuteSafeReturnsStdout()
         {
-            if (Os.IsWindows)
-            {
-                return;
-            }
-            
-            var uname = Shell.ExecuteSafe("uname", string.Empty);
-            Assert.IsNotEmpty(uname, uname);
+            var log = GetLogger();
 
-            var readlink = Shell.ExecuteSafe("readlink", "-f /usr/bin/java");
-            Assert.IsNotEmpty(readlink, readlink);
-            
-            if (Os.IsLinux)
-            {
-                Assert.AreEqual("Linux", uname.Trim());
-            }
+            var uname = Shell.ExecuteSafe("uname", string.Empty, log: log);
+            Assert.AreEqual("Linux", uname.Trim(), string.Join(", ", log.Entries.Select(e => e.ToString())));
+            Assert.IsEmpty(log.Entries);
 
-            Assert.IsEmpty(Shell.ExecuteSafe("foo_bar", "abc"));
+            var readlink = Shell.ExecuteSafe("readlink", "-f /usr/bin/java", log: log);
+            Assert.IsNotEmpty(readlink, readlink, string.Join(", ", log.Entries.Select(e => e.ToString())));
+            Assert.IsEmpty(log.Entries);
+        }
+
+        /// <summary>
+        /// Tests that non-zero error code and stderr are logged.
+        /// </summary>
+        [Test]
+        public void TestExecuteSafeLogsNonZeroExitCodeAndStderr()
+        {
+            var log = GetLogger();
+            var res = Shell.ExecuteSafe("uname", "--badarg", log: log);
+
+            var entries = log.Entries;
+            var entriesString = string.Join(", ", entries.Select(e => e.ToString()));
+
+            Assert.IsEmpty(res, entriesString);
+            Assert.AreEqual(2, entries.Count, entriesString);
+
+            Assert.AreEqual(LogLevel.Warn, entries[0].Level);
+            StringAssert.StartsWith("Shell command 'uname' stderr: 'uname: unrecognized option", entries[0].Message);
+
+            Assert.AreEqual(LogLevel.Warn, entries[1].Level);
+            Assert.AreEqual("Shell command 'uname' exit code: 1", entries[1].Message);
+        }
+
+        /// <summary>
+        /// Tests that failure to execute a command is logged.
+        /// </summary>
+        [Test]
+        public void TestExecuteSafeLogsException()
+        {
+            var log = GetLogger();
+            var res = Shell.ExecuteSafe("foo_bar", "abc", log: log);
+            var entries = log.Entries;
+
+            Assert.IsEmpty(res);
+            Assert.AreEqual(1, entries.Count);
+
+            Assert.AreEqual(LogLevel.Warn, entries[0].Level);
+            Assert.AreEqual("Shell command 'foo_bar' failed: 'No such file or directory'", entries[0].Message);
+        }
+
+        private static ListLogger GetLogger()
+        {
+            return new ListLogger
+            {
+                EnabledLevels = Enum.GetValues(typeof(LogLevel)).Cast<LogLevel>().ToArray()
+            };
         }
     }
 }

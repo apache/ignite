@@ -166,7 +166,7 @@ public class VisorConsistencyRepairTask extends AbstractConsistencyTask<VisorCon
                             cache.getAll(keys); // Repair.
                         }
                         catch (CacheException e) {
-                            if (!(e.getCause() instanceof IgniteIrreparableConsistencyViolationException) // Found but not fixed.
+                            if (!(e.getCause() instanceof IgniteIrreparableConsistencyViolationException) // Found but not repaired.
                                 && !isCancelled())
                                 throw new IgniteException("Read repair attempt failed.", e);
                         }
@@ -209,7 +209,7 @@ public class VisorConsistencyRepairTask extends AbstractConsistencyTask<VisorCon
          */
         private String processEvents(int part, long cnt) {
             int found = 0;
-            int fixed = 0;
+            int repaired = 0;
 
             StringBuilder sb = new StringBuilder();
 
@@ -226,10 +226,15 @@ public class VisorConsistencyRepairTask extends AbstractConsistencyTask<VisorCon
                         .append(" (cache: ").append(evt.getCacheName())
                         .append(", partition: ").append(entry.getValue().partition())
                         .append(", strategy: ").append(evt.getStrategy())
+                        .append(", id: ").append(evt.id())
+                        .append(", timestamp: ").append(evt.timestamp())
+                        .append(", node: ").append(evt.node())
                         .append(")").append("\n");
 
-                    if (evt.getFixedEntries().containsKey(key))
-                        sb.append(" Fixed: ").append(evt.getFixedEntries().get(key)).append("\n");
+                    if (evt.getRepairedEntries().containsKey(key))
+                        sb.append(" Repaired: ").append(evt.getRepairedEntries().get(key)).append("\n");
+                    else
+                        sb.append(" [Was NOT repaired!]").append("\n");
 
                     for (Map.Entry<ClusterNode, CacheConsistencyViolationEvent.EntryInfo> mapping :
                         entry.getValue().getMapping().entrySet()) {
@@ -245,11 +250,11 @@ public class VisorConsistencyRepairTask extends AbstractConsistencyTask<VisorCon
                             sb.append("    Other cluster version: ").append(info.getVersion().otherClusterVersion()).append("\n");
 
                         if (info.isCorrect())
-                            sb.append("    Considered as a CORRECT value!").append("\n");
+                            sb.append("    [CORRECT value!]").append("\n");
                     }
 
-                    if (evt.getFixedEntries().containsKey(key))
-                        fixed++;
+                    if (evt.getRepairedEntries().containsKey(key))
+                        repaired++;
                 }
             }
 
@@ -258,7 +263,7 @@ public class VisorConsistencyRepairTask extends AbstractConsistencyTask<VisorCon
             if (!res.isEmpty()) {
                 log.warning(CONSISTENCY_VIOLATIONS_RECORDED + "\n" + res);
 
-                return CONSISTENCY_VIOLATIONS_FOUND + " [found=" + found + ", fixed=" + fixed + ", processed=" + cnt + "]";
+                return CONSISTENCY_VIOLATIONS_FOUND + " [found=" + found + ", repaired=" + repaired + ", processed=" + cnt + "]";
             }
             else
                 return NOTHING_FOUND + " [processed=" + cnt + "]\n";

@@ -67,7 +67,6 @@ data: {
       "COMPUTE"
       "ASYNC"
       "QUERY"
-      "UUID"
     ]
 
     # List of non-reserved keywords to add;
@@ -97,7 +96,6 @@ data: {
       "COMPUTE"
       "ASYNC"
       "QUERY"
-      "UUID"
 
       # The following keywords are reserved in core Calcite,
       # are reserved in some version of SQL,
@@ -126,7 +124,8 @@ data: {
 #     "ANY"
       "ARE"
       "ARRAY"
-#     "ARRAY_AGG" # not a keyword in Calcite
+      "ARRAY_AGG"
+      "ARRAY_CONCAT_AGG"
       "ARRAY_MAX_CARDINALITY"
       "AS"
       "ASC"
@@ -519,6 +518,8 @@ data: {
       "SYSTEM"
       "SYSTEM_TIME"
       "SYSTEM_USER"
+      "STRING_AGG"
+      "GROUP_CONCAT"
 #     "TABLE"
 #     "TABLESAMPLE"
       "TEMPORARY"

@@ -62,6 +62,8 @@ public class SqlByteArrayTest extends AbstractBinaryArraysTest {
 
         IgniteCache<Integer, Object> cache = ignite.createCache(ccfg);
 
+        awaitCacheOnClient(client, ccfg.getName());
+
         cache.query(new SqlFieldsQuery("INSERT INTO array_table (_key, _val) VALUES (?, ?)").setArgs(2, val1)).getAll();
 
         assertTrue(cache.containsKey(2));

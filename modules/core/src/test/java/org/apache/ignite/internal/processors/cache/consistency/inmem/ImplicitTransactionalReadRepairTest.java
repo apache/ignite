@@ -18,11 +18,11 @@
 package org.apache.ignite.internal.processors.cache.consistency.inmem;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 import java.util.function.Consumer;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.internal.processors.cache.consistency.AbstractFullSetReadRepairTest;
+import org.apache.ignite.internal.processors.cache.consistency.ReadRepairDataGenerator.ReadRepairData;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
@@ -32,15 +32,19 @@ import org.junit.runners.Parameterized;
 @RunWith(Parameterized.class)
 public class ImplicitTransactionalReadRepairTest extends AbstractFullSetReadRepairTest {
     /** Test parameters. */
-    @Parameterized.Parameters(name = "getEntry={0}, async={1}, misses={2}, nulls={3}")
-    public static Collection parameters() {
+    @Parameterized.Parameters(name = "getEntry={0}, async={1}, misses={2}, nulls={3}, binary={4}")
+    public static Iterable<Object[]> parameters() {
         List<Object[]> res = new ArrayList<>();
 
         for (boolean raw : new boolean[] {false, true}) {
-            for (boolean async : new boolean[] {false, true})
-                for (boolean misses : new boolean[] {false, true})
-                    for (boolean nulls : new boolean[] {false, true})
-                        res.add(new Object[] {raw, async, misses, nulls});
+            for (boolean async : new boolean[] {false, true}) {
+                for (boolean misses : new boolean[] {false, true}) {
+                    for (boolean nulls : new boolean[] {false, true}) {
+                        for (boolean binary : new boolean[] {false, true})
+                            res.add(new Object[] {raw, async, misses, nulls, binary});
+                    }
+                }
+            }
         }
 
         return res;
@@ -62,52 +66,59 @@ public class ImplicitTransactionalReadRepairTest extends AbstractFullSetReadRepa
     @Parameterized.Parameter(3)
     public boolean nulls;
 
+    /** With binary. */
+    @Parameterized.Parameter(4)
+    public boolean binary;
+
     /** {@inheritDoc} */
-    @Override protected void testGet(Ignite initiator, Integer cnt, boolean all) throws Exception {
-        prepareAndCheck(
+    @Override protected void testGet(Ignite initiator, int cnt, boolean all) throws Exception {
+        generateAndCheck(
             initiator,
             cnt,
             raw,
             async,
             misses,
             nulls,
-            (ReadRepairData data) -> repairIfRepairable.accept(data,
-                () -> testReadRepair(data, all ? GETALL_CHECK_AND_FIX : GET_CHECK_AND_FIX, true)));
+            binary,
+            (ReadRepairData rrd) -> repairIfRepairable.accept(rrd,
+                () -> testReadRepair(rrd, all ? GETALL_CHECK_AND_REPAIR : GET_CHECK_AND_REPAIR, true)));
     }
 
     /** {@inheritDoc} */
-    @Override protected void testContains(Ignite initiator, Integer cnt, boolean all) throws Exception {
-        prepareAndCheck(
+    @Override protected void testContains(Ignite initiator, int cnt, boolean all) throws Exception {
+        generateAndCheck(
             initiator,
             cnt,
             raw,
             async,
             misses,
             nulls,
-            (ReadRepairData data) -> repairIfRepairable.accept(data,
-                () -> testReadRepair(data, all ? CONTAINS_ALL_CHECK_AND_FIX : CONTAINS_CHECK_AND_FIX, true)));
+            binary,
+            (ReadRepairData rrd) -> repairIfRepairable.accept(rrd,
+                () -> testReadRepair(rrd, all ? CONTAINS_ALL_CHECK_AND_REPAIR : CONTAINS_CHECK_AND_REPAIR, true)));
     }
 
     /** {@inheritDoc} */
-    @Override protected void testGetNull(Ignite initiator, Integer cnt, boolean all) throws Exception {
-        prepareAndCheck(
+    @Override protected void testGetNull(Ignite initiator, int cnt, boolean all) throws Exception {
+        generateAndCheck(
             initiator,
             cnt,
             raw,
             async,
             misses,
             nulls,
-            (ReadRepairData data) -> testReadRepair(data, all ? GET_ALL_NULL : GET_NULL, false));
+            binary,
+            (ReadRepairData rrd) -> testReadRepair(rrd, all ? GET_ALL_NULL : GET_NULL, false));
     }
 
     /**
      *
      */
-    private void testReadRepair(ReadRepairData data, Consumer<ReadRepairData> readOp, boolean hit) {
-        readOp.accept(data);
+    private void testReadRepair(ReadRepairData rrd, Consumer<ReadRepairData> readOp, boolean hit) {
+        readOp.accept(rrd);
 
         if (hit)
-            check(data, null, true); // Hit.
+            check(rrd, null, true); // Hit.
         else
             checkEventMissed(); // Miss.
     }

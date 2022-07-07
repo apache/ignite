@@ -22,11 +22,14 @@ import org.apache.ignite.events.BaselineEventsRemoteTest;
 import org.apache.ignite.internal.commandline.CommandHandlerParsingTest;
 import org.apache.ignite.internal.commandline.indexreader.IgniteIndexReaderTest;
 import org.apache.ignite.internal.processors.security.GridCommandHandlerSslWithSecurityTest;
+import org.apache.ignite.util.CacheMetricsCommandTest;
 import org.apache.ignite.util.GridCommandHandlerBrokenIndexTest;
 import org.apache.ignite.util.GridCommandHandlerCheckIndexesInlineSizeTest;
 import org.apache.ignite.util.GridCommandHandlerClusterByClassTest;
 import org.apache.ignite.util.GridCommandHandlerClusterByClassWithSSLTest;
 import org.apache.ignite.util.GridCommandHandlerConsistencyBinaryTest;
+import org.apache.ignite.util.GridCommandHandlerConsistencyRepairCorrectnessAtomicTest;
+import org.apache.ignite.util.GridCommandHandlerConsistencyRepairCorrectnessTransactionalTest;
 import org.apache.ignite.util.GridCommandHandlerConsistencySensitiveTest;
 import org.apache.ignite.util.GridCommandHandlerConsistencyTest;
 import org.apache.ignite.util.GridCommandHandlerDefragmentationTest;
@@ -41,6 +44,7 @@ import org.apache.ignite.util.GridCommandHandlerIndexingWithSSLTest;
 import org.apache.ignite.util.GridCommandHandlerInterruptCommandTest;
 import org.apache.ignite.util.GridCommandHandlerMetadataTest;
 import org.apache.ignite.util.GridCommandHandlerPropertiesTest;
+import org.apache.ignite.util.GridCommandHandlerScheduleIndexRebuildTest;
 import org.apache.ignite.util.GridCommandHandlerSslTest;
 import org.apache.ignite.util.GridCommandHandlerTest;
 import org.apache.ignite.util.GridCommandHandlerTracingConfigurationTest;
@@ -85,6 +89,7 @@ import org.junit.runners.Suite;
     GridCommandHandlerIndexForceRebuildTest.class,
     GridCommandHandlerIndexListTest.class,
     GridCommandHandlerIndexRebuildStatusTest.class,
+    GridCommandHandlerScheduleIndexRebuildTest.class,
 
     GridCommandHandlerTracingConfigurationTest.class,
 
@@ -95,10 +100,13 @@ import org.junit.runners.Suite;
     GridCommandHandlerConsistencyTest.class,
     GridCommandHandlerConsistencyBinaryTest.class,
     GridCommandHandlerConsistencySensitiveTest.class,
+    GridCommandHandlerConsistencyRepairCorrectnessTransactionalTest.class,
+    GridCommandHandlerConsistencyRepairCorrectnessAtomicTest.class,
 
     SystemViewCommandTest.class,
     MetricCommandTest.class,
     PerformanceStatisticsCommandTest.class,
+    CacheMetricsCommandTest.class,
 
     IgniteIndexReaderTest.class
 })

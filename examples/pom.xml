@@ -208,20 +208,11 @@
         <!-- will be changed by profile activation. allows to combine profiles. -->
         <lgpl.folder>src/main/java</lgpl.folder>
         <lgpl.test.folder>src/test/java</lgpl.test.folder>
-        <spark.folder>src/main/java</spark.folder>
-        <spark.test.folder>src/test/java</spark.test.folder>
     </properties>
 
     <profiles>
         <profile>
             <id>scala</id>
-
-            <properties>
-                <spark.folder>src/main/spark</spark.folder>
-                <spark.test.folder>src/test/spark</spark.test.folder>
-                <spark.janino.version>3.0.8</spark.janino.version>
-                <spark.jackson.version>2.6.7</spark.jackson.version>
-            </properties>
 
             <dependencies>
                 <dependency>
@@ -236,73 +227,7 @@
                         </exclusion>
                     </exclusions>
                 </dependency>
-
-                <dependency>
-                    <groupId>org.codehaus.janino</groupId>
-                    <artifactId>commons-compiler</artifactId>
-                    <version>${spark.janino.version}</version>
-                </dependency>
-
-                <dependency>
-                    <groupId>org.codehaus.janino</groupId>
-                    <artifactId>janino</artifactId>
-                    <version>${spark.janino.version}</version>
-                </dependency>
-
-                <dependency>
-                    <groupId>org.codehaus.janino</groupId>
-                    <artifactId>commons-compiler</artifactId>
-                    <version>${spark.janino.version}</version>
-                </dependency>
-
-                <dependency>
-                    <groupId>org.codehaus.janino</groupId>
-                    <artifactId>janino</artifactId>
-                    <version>${spark.janino.version}</version>
-                </dependency>
-
-                <dependency>
-                    <groupId>com.fasterxml.jackson.core</groupId>
-                    <artifactId>jackson-core</artifactId>
-                    <version>${spark.jackson.version}</version>
-                </dependency>
-
-                <dependency>
-                    <groupId>com.fasterxml.jackson.core</groupId>
-                    <artifactId>jackson-databind</artifactId>
-                    <version>${spark.jackson.version}</version>
-                </dependency>
-
-                <dependency>
-                    <groupId>com.fasterxml.jackson.core</groupId>
-                    <artifactId>jackson-annotations</artifactId>
-                    <version>${spark.jackson.version}</version>
-                </dependency>
-
-                <dependency>
-                    <groupId>${project.groupId}</groupId>
-                    <artifactId>ignite-spark</artifactId>
-                </dependency>
             </dependencies>
-
-            <build>
-                <plugins>
-                    <plugin>
-                        <groupId>net.alchim31.maven</groupId>
-                        <artifactId>scala-maven-plugin</artifactId>
-                    </plugin>
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-checkstyle-plugin</artifactId>
-                        <configuration>
-                            <sourceDirectories combine.children="append">
-                                <sourceDirectory>${spark.folder}</sourceDirectory>
-                                <sourceDirectory>${spark.test.folder}</sourceDirectory>
-                            </sourceDirectories>
-                        </configuration>
-                    </plugin>
-                </plugins>
-            </build>
         </profile>
 
         <profile>
@@ -329,54 +254,6 @@
                             <sourceDirectories combine.children="append">
                                 <sourceDirectory>${lgpl.folder}</sourceDirectory>
                                 <sourceDirectory>${lgpl.test.folder}</sourceDirectory>
-                            </sourceDirectories>
-                        </configuration>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
-        <profile>
-            <id>spark-2.4</id>
-
-            <properties>
-                <spark.folder>src/main/spark</spark.folder>
-                <spark.test.folder>src/test/spark</spark.test.folder>
-            </properties>
-
-            <dependencies>
-                <dependency>
-                    <groupId>org.scalatest</groupId>
-                    <artifactId>scalatest_2.11</artifactId>
-                    <version>${scala.test.version}</version>
-                    <scope>test</scope>
-                    <exclusions>
-                        <exclusion>
-                            <groupId>org.scala-lang</groupId>
-                            <artifactId>scala-library</artifactId>
-                        </exclusion>
-                    </exclusions>
-                </dependency>
-
-                <dependency>
-                    <groupId>${project.groupId}</groupId>
-                    <artifactId>ignite-spark-2.4</artifactId>
-                    <version>${project.version}</version>
-                </dependency>
-            </dependencies>
-
-            <build>
-                <plugins>
-                    <plugin>
-                        <groupId>net.alchim31.maven</groupId>
-                        <artifactId>scala-maven-plugin</artifactId>
-                    </plugin>
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-checkstyle-plugin</artifactId>
-                        <configuration>
-                            <sourceDirectories combine.children="append">
-                                <sourceDirectory>${spark.folder}</sourceDirectory>
-                                <sourceDirectory>${spark.test.folder}</sourceDirectory>
                             </sourceDirectories>
                         </configuration>
                     </plugin>
@@ -412,7 +289,6 @@
                         <configuration>
                             <sources>
                                 <source>${lgpl.folder}</source>
-                                <source>${spark.folder}</source>
                             </sources>
                         </configuration>
                     </execution>
@@ -426,7 +302,6 @@
                         <configuration>
                             <sources>
                                 <source>${lgpl.test.folder}</source>
-                                <source>${spark.test.folder}</source>
                             </sources>
                         </configuration>
                     </execution>

@@ -226,7 +226,7 @@ public class UserQueriesTestBase extends SqlStatisticsAbstractTest {
     private void killAsyncAllQueriesOn(int nodeIdx) {
         IgniteEx node = grid(nodeIdx);
 
-        Collection<GridRunningQueryInfo> queries = node.context().query().getIndexing().runningQueries(-1);
+        Collection<GridRunningQueryInfo> queries = node.context().query().runningQueries(-1);
 
         for (GridRunningQueryInfo queryInfo : queries) {
             String killId = queryInfo.globalQueryId();

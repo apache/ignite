@@ -105,6 +105,8 @@ public abstract class CacheEnumOperationsAbstractTest extends GridCommonAbstract
             if (!singleNode()) {
                 nodes = 6;
 
+                awaitCacheOnClient(ignite(nodes - 1), ccfg.getName());
+
                 ignite(nodes - 1).createNearCache(ccfg.getName(), new NearCacheConfiguration<>());
             }
             else

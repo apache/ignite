@@ -49,6 +49,9 @@ public enum ProtocolBitmaskFeature {
     /** Additional SqlFieldsQuery properties: partitions, updateBatchSize */
     QRY_PARTITIONS_BATCH_SIZE(7),
 
+    /** Binary configuration retrieval. */
+    BINARY_CONFIGURATION(8),
+
     /** Handle of {@link ClientServices#serviceDescriptors()}. */
     GET_SERVICE_DESCRIPTORS(9),
 

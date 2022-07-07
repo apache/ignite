@@ -281,6 +281,9 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     /** Query engines configuration. */
     private QueryEngineConfigurationEx[] qryEnginesCfg;
 
+    /** Running query manager. */
+    private RunningQueryManager runningQryMgr;
+
     /**
      * Constructor.
      *
@@ -330,6 +333,9 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             idx.start(ctx, busyLock);
         }
 
+        runningQryMgr = new RunningQueryManager(ctx);
+        runningQryMgr.start(busyLock);
+
         ctx.io().addMessageListener(TOPIC_SCHEMA, ioLsnr);
 
         // Schedule queries detail metrics eviction.
@@ -374,6 +380,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
         if (idx != null)
             idx.stop();
+
+        runningQryMgr.stop();
 
         U.closeQuiet(qryDetailMetricsEvictTask);
     }
@@ -995,9 +1003,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @throws IgniteException If module is not enabled.
      */
     public RunningQueryManager runningQueryManager() throws IgniteException {
-        checkxEnabled();
-
-        return idx.runningQueryManager();
+        return runningQryMgr;
     }
 
     /**
@@ -1168,6 +1174,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
         if (idx != null)
             idx.onDisconnected(reconnectFut);
+
+        runningQryMgr.onDisconnected();
     }
 
     /**
@@ -3229,10 +3237,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @return Collection of long running queries.
      */
     public Collection<GridRunningQueryInfo> runningQueries(long duration) {
-        if (moduleEnabled())
-            return idx.runningQueries(duration);
-
-        return Collections.emptyList();
+        return runningQryMgr.longRunningQueries(duration);
     }
 
     /**
@@ -3243,8 +3248,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param async If {@code true}, execute asynchronously.
      */
     public void cancelQuery(long queryId, @Nullable UUID nodeId, boolean async) {
-        if (moduleEnabled())
-            idx.cancelQuery(queryId, nodeId, async);
+        runningQryMgr.cancelQuery(queryId, nodeId, async);
     }
 
     /**
@@ -3253,8 +3257,10 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param queries Queries ID's to cancel.
      */
     public void cancelLocalQueries(Collection<Long> queries) {
-        if (moduleEnabled())
-            idx.cancelLocalQueries(queries);
+        if (!F.isEmpty(queries)) {
+            for (Long qryId : queries)
+                runningQryMgr.cancelLocalQuery(qryId);
+        }
     }
 
     /**

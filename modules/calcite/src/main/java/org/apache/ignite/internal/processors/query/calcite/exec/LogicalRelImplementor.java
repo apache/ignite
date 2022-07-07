@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.query.calcite.exec;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
@@ -42,6 +43,7 @@ import org.apache.ignite.internal.processors.query.calcite.exec.exp.ExpressionFa
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.AccumulatorWrapper;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.AggregateType;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.AbstractSetOpNode;
+import org.apache.ignite.internal.processors.query.calcite.exec.rel.CollectNode;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.CorrelatedNestedLoopJoinNode;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.FilterNode;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.HashAggregateNode;
@@ -63,10 +65,12 @@ import org.apache.ignite.internal.processors.query.calcite.exec.rel.TableSpoolNo
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.UnionAllNode;
 import org.apache.ignite.internal.processors.query.calcite.metadata.AffinityService;
 import org.apache.ignite.internal.processors.query.calcite.metadata.ColocationGroup;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteCollect;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteCorrelatedNestedLoopJoin;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteExchange;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteFilter;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteHashIndexSpool;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexCount;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexScan;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteLimit;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteMergeJoin;
@@ -401,6 +405,26 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
             }
 
             return node;
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public Node<Row> visit(IgniteIndexCount rel) {
+        IgniteTable tbl = rel.getTable().unwrap(IgniteTable.class);
+        IgniteIndex idx = tbl.getIndex(rel.indexName());
+
+        if (idx != null && !tbl.isIndexRebuildInProgress()) {
+            return new ScanNode<>(ctx, rel.getRowType(), () -> Collections.singletonList(ctx.rowHandler()
+                .factory(ctx.getTypeFactory(), rel.getRowType())
+                .create(idx.count(ctx, ctx.group(rel.sourceId())))).iterator());
+        }
+        else {
+            CollectNode<Row> replacement = CollectNode.createCountCollector(ctx);
+
+            replacement.register(new ScanNode<>(ctx, rel.getTable().getRowType(), tbl.scan(ctx,
+                ctx.group(rel.sourceId()), null, null, ImmutableBitSet.of(0))));
+
+            return replacement;
         }
     }
 
@@ -749,6 +773,19 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
             rowFactory,
             expressionFactory.comparator(rel.collation())
             );
+
+        Node<Row> input = visit(rel.getInput());
+
+        node.register(input);
+
+        return node;
+    }
+
+    /** {@inheritDoc} */
+    @Override public Node<Row> visit(IgniteCollect rel) {
+        RelDataType outType = rel.getRowType();
+
+        CollectNode<Row> node = new CollectNode<>(ctx, outType);
 
         Node<Row> input = visit(rel.getInput());
 

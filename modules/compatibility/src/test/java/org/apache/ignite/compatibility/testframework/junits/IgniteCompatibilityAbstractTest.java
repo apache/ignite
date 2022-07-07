@@ -22,7 +22,6 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
-import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.Ignite;
@@ -40,6 +39,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.multijvm.IgniteProcessProxy;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import static org.apache.ignite.compatibility.testframework.junits.Dependency.APACHE_IGNITE_GROUP_ID;
 
 /**
  * Super class for all compatibility tests.
@@ -213,10 +213,12 @@ public abstract class IgniteCompatibilityAbstractTest extends GridCommonAbstract
         }
 
         for (Dependency dependency : dependencies) {
-            final String artifactVer = Optional.ofNullable(dependency.version()).orElse(ver);
-
-            String pathToArtifact = MavenUtils.getPathToIgniteArtifact(dependency.groupId(),
-                    dependency.artifactId(), artifactVer, dependency.classifier());
+            // dependency.version() == null means the default Ignite classpath is used.
+            String pathToArtifact = MavenUtils.getPathToIgniteArtifact(
+                dependency.version() == null ? APACHE_IGNITE_GROUP_ID : dependency.groupId(),
+                dependency.artifactId(),
+                dependency.version() == null ? ver : dependency.version(),
+                dependency.classifier());
 
             pathBuilder.append(pathToArtifact).append(File.pathSeparator);
         }

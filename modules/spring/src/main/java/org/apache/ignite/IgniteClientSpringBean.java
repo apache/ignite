@@ -27,13 +27,16 @@ import org.apache.ignite.client.ClientCache;
 import org.apache.ignite.client.ClientCacheConfiguration;
 import org.apache.ignite.client.ClientCluster;
 import org.apache.ignite.client.ClientClusterGroup;
+import org.apache.ignite.client.ClientCollectionConfiguration;
 import org.apache.ignite.client.ClientCompute;
 import org.apache.ignite.client.ClientException;
+import org.apache.ignite.client.ClientIgniteSet;
 import org.apache.ignite.client.ClientServices;
 import org.apache.ignite.client.ClientTransactions;
 import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.client.IgniteClientFuture;
 import org.apache.ignite.configuration.ClientConfiguration;
+import org.jetbrains.annotations.Nullable;
 import org.springframework.beans.factory.DisposableBean;
 import org.springframework.context.SmartLifecycle;
 import org.springframework.context.event.ContextRefreshedEvent;
@@ -238,6 +241,11 @@ public class IgniteClientSpringBean implements IgniteClient, SmartLifecycle {
     /** {@inheritDoc} */
     @Override public ClientAtomicLong atomicLong(String name, ClientAtomicConfiguration cfg, long initVal, boolean create) {
         return cli.atomicLong(name, cfg, initVal, create);
+    }
+
+    /** {@inheritDoc} */
+    @Override public <T> ClientIgniteSet<T> set(String name, @Nullable ClientCollectionConfiguration cfg) {
+        return cli.set(name, cfg);
     }
 
     /** {@inheritDoc} */

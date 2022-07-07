@@ -35,7 +35,7 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Function;
+import java.util.function.BiFunction;
 import java.util.function.Predicate;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -72,6 +72,7 @@ import org.apache.ignite.internal.processors.metric.impl.ObjectGauge;
 import org.apache.ignite.internal.util.distributed.DistributedProcess;
 import org.apache.ignite.internal.util.distributed.FullMessage;
 import org.apache.ignite.internal.util.distributed.SingleNodeMessage;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -711,7 +712,18 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
     /** @throws Exception If fails. */
     @Test
     public void testClusterSnapshotWithExplicitPath() throws Exception {
-        File exSnpDir = U.resolveWorkDirectory(U.defaultWorkDirectory(), "ex_snapshots", true);
+        doTestClusterSnapshotWithExplicitPath(true);
+        doTestClusterSnapshotWithExplicitPath(false);
+    }
+
+    /**
+     * @param cfgPath {@code True} to set destination path using configuration, {@code False} using runtime parameter.
+     * @throws Exception If failed.
+     */
+    private void doTestClusterSnapshotWithExplicitPath(boolean cfgPath) throws Exception {
+        File snpDir = U.resolveWorkDirectory(U.defaultWorkDirectory(), "ex_snapshots", true);
+
+        assertTrue("Target directory is not empty: " + snpDir, F.isEmpty(snpDir.list()));
 
         try {
             IgniteEx ignite = null;
@@ -719,7 +731,8 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
             for (int i = 0; i < 2; i++) {
                 IgniteConfiguration cfg = optimize(getConfiguration(getTestIgniteInstanceName(i)));
 
-                cfg.setSnapshotPath(exSnpDir.getAbsolutePath());
+                if (cfgPath)
+                    cfg.setSnapshotPath(snpDir.getAbsolutePath());
 
                 ignite = startGrid(cfg);
             }
@@ -730,19 +743,19 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
             for (int i = 0; i < CACHE_KEYS_RANGE; i++)
                 ignite.cache(DEFAULT_CACHE_NAME).put(i, i);
 
-            ignite.snapshot().createSnapshot(SNAPSHOT_NAME)
-                .get();
+            ignite.context().cache().context().snapshotMgr()
+                .createSnapshot(SNAPSHOT_NAME, cfgPath ? null : snpDir.getAbsolutePath()).get();
 
             stopAllGrids();
 
-            IgniteEx snp = startGridsFromSnapshot(2, cfg -> exSnpDir.getAbsolutePath(), SNAPSHOT_NAME, true);
+            IgniteEx snp = startGridsFromSnapshot(2, cfg -> snpDir.getAbsolutePath(), SNAPSHOT_NAME, true);
 
             assertSnapshotCacheKeys(snp.cache(dfltCacheCfg.getName()));
         }
         finally {
             stopAllGrids();
 
-            U.delete(exSnpDir);
+            U.delete(snpDir);
         }
     }
 
@@ -1094,12 +1107,12 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
         IgniteEx clnt = startClientGrid(2);
 
         IgniteSnapshotManager mgr = snp(grid);
-        Function<String, SnapshotSender> old = mgr.localSnapshotSenderFactory();
+        BiFunction<String, String, SnapshotSender> old = mgr.localSnapshotSenderFactory();
 
         BlockingExecutor block = new BlockingExecutor(mgr.snapshotExecutorService());
 
-        mgr.localSnapshotSenderFactory((snpName) ->
-            new DelegateSnapshotSender(log, block, old.apply(snpName)));
+        mgr.localSnapshotSenderFactory((snpName, snpPath) ->
+            new DelegateSnapshotSender(log, block, old.apply(snpName, snpPath)));
 
         IgniteFuture<Void> fut = grid.snapshot().createSnapshot(SNAPSHOT_NAME);
 
@@ -1160,13 +1173,13 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
      * @param blocked Latch to await delta partition processing.
      * @return Factory which produces local snapshot senders.
      */
-    private Function<String, SnapshotSender> blockingLocalSnapshotSender(IgniteEx ignite,
+    private BiFunction<String, String, SnapshotSender> blockingLocalSnapshotSender(IgniteEx ignite,
         CountDownLatch started,
         CountDownLatch blocked
     ) {
-        Function<String, SnapshotSender> old = snp(ignite).localSnapshotSenderFactory();
+        BiFunction<String, String, SnapshotSender> old = snp(ignite).localSnapshotSenderFactory();
 
-        return (snpName) -> new DelegateSnapshotSender(log, snp(ignite).snapshotExecutorService(), old.apply(snpName)) {
+        return (snpName, snpPath) -> new DelegateSnapshotSender(log, snp(ignite).snapshotExecutorService(), old.apply(snpName, null)) {
             @Override public void sendDelta0(File delta, String cacheDirName, GroupPartitionId pair) {
                 if (log.isInfoEnabled())
                     log.info("Processing delta file has been blocked: " + delta.getName());

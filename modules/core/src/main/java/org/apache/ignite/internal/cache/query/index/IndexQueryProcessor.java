@@ -19,18 +19,14 @@ package org.apache.ignite.internal.cache.query.index;
 
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
-import java.util.PriorityQueue;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.query.IndexQuery;
 import org.apache.ignite.cache.query.IndexQueryCriterion;
 import org.apache.ignite.internal.cache.query.RangeIndexQueryCriterion;
@@ -97,7 +93,7 @@ public class IndexQueryProcessor {
 
         IndexRangeQuery qry = prepareQuery(idx, idxQryDesc);
 
-        GridCursor<IndexRow> cursor = querySortedIndex(cctx, idx, cacheFilter, qry);
+        GridCursor<IndexRow> cursor = querySortedIndex(idx, cacheFilter, qry);
 
         SortedIndexDefinition def = (SortedIndexDefinition)idxProc.indexDefinition(idx.id());
 
@@ -483,13 +479,10 @@ public class IndexQueryProcessor {
      * @return Result cursor.
      */
     private GridCursor<IndexRow> querySortedIndex(
-        GridCacheContext<?, ?> cctx,
         SortedSegmentedIndex idx,
         IndexingQueryFilter cacheFilter,
         IndexRangeQuery qry
     ) throws IgniteCheckedException {
-        int segmentsCnt = cctx.isPartitioned() ? cctx.config().getQueryParallelism() : 1;
-
         BPlusTree.TreeRowClosure<IndexRow, IndexRow> treeFilter = null;
 
         // No need in the additional filter step for queries with 0 or 1 criteria.
@@ -503,20 +496,11 @@ public class IndexQueryProcessor {
 
         IndexQueryContext qryCtx = new IndexQueryContext(cacheFilter, treeFilter, null);
 
-        if (segmentsCnt == 1)
-            return treeIndexRange(idx, 0, qry, qryCtx);
-
-        final GridCursor<IndexRow>[] segmentCursors = new GridCursor[segmentsCnt];
-
-        // Actually it just traverses BPlusTree to find boundaries. It's too fast to parallelize this.
-        for (int i = 0; i < segmentsCnt; i++)
-            segmentCursors[i] = treeIndexRange(idx, i, qry, qryCtx);
-
-        return new SegmentedIndexCursor(segmentCursors, (SortedIndexDefinition)idxProc.indexDefinition(idx.id()));
+        return treeIndexRange(idx, qry, qryCtx);
     }
 
     /**
-     * Runs range query over specified segment. There are 2 steps to run query:
+     * Runs range query over all segments. There are 2 steps to run query:
      * 1. Traverse index by specified boundaries;
      * 2. Scan over cursor and filter rows that doesn't match user criteria.
      *
@@ -525,13 +509,13 @@ public class IndexQueryProcessor {
      * 2. To apply criteria on non-first index fields. Tree apply boundaries field by field, if first field match
      * a boundary, then second field isn't checked within traversing.
      */
-    private GridCursor<IndexRow> treeIndexRange(SortedSegmentedIndex idx, int segment, IndexRangeQuery qry, IndexQueryContext qryCtx)
+    private GridCursor<IndexRow> treeIndexRange(SortedSegmentedIndex idx, IndexRangeQuery qry, IndexQueryContext qryCtx)
         throws IgniteCheckedException {
 
         boolean lowIncl = inclBoundary(qry, true);
         boolean upIncl = inclBoundary(qry, false);
 
-        return idx.find(qry.lower, qry.upper, lowIncl, upIncl, segment, qryCtx);
+        return idx.find(qry.lower, qry.upper, lowIncl, upIncl, qryCtx);
     }
 
     /**
@@ -563,75 +547,6 @@ public class IndexQueryProcessor {
             key = IndexKeyFactory.wrap(val, def.idxType(), coctx, settings);
 
         return key;
-    }
-
-    /** Single cursor over multiple segments. The next value is chosen with the index row comparator. */
-    private static class SegmentedIndexCursor implements GridCursor<IndexRow> {
-        /** Cursors over segments. */
-        private final PriorityQueue<GridCursor<IndexRow>> cursors;
-
-        /** Comparator to compare index rows. */
-        private final Comparator<GridCursor<IndexRow>> cursorComp;
-
-        /** */
-        private IndexRow head;
-
-        /** */
-        SegmentedIndexCursor(GridCursor<IndexRow>[] cursors, SortedIndexDefinition idxDef) throws IgniteCheckedException {
-            cursorComp = new Comparator<GridCursor<IndexRow>>() {
-                @Override public int compare(GridCursor<IndexRow> o1, GridCursor<IndexRow> o2) {
-                    try {
-                        int keysLen = o1.get().keys().length;
-
-                        Iterator<IndexKeyDefinition> it = idxDef.indexKeyDefinitions().values().iterator();
-
-                        for (int i = 0; i < keysLen; i++) {
-                            int cmp = idxDef.rowComparator().compareRow(o1.get(), o2.get(), i);
-
-                            IndexKeyDefinition def = it.next();
-
-                            if (cmp != 0) {
-                                boolean desc = def.order().sortOrder() == SortOrder.DESC;
-
-                                return desc ? -cmp : cmp;
-                            }
-                        }
-
-                        return 0;
-                    }
-                    catch (IgniteCheckedException e) {
-                        throw new IgniteException("Failed to sort remote index rows", e);
-                    }
-                }
-            };
-
-            this.cursors = new PriorityQueue<>(cursors.length, cursorComp);
-
-            for (GridCursor<IndexRow> c: cursors) {
-                if (c.next())
-                    this.cursors.add(c);
-            }
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean next() throws IgniteCheckedException {
-            if (cursors.isEmpty())
-                return false;
-
-            GridCursor<IndexRow> c = cursors.poll();
-
-            head = c.get();
-
-            if (c.next())
-                cursors.add(c);
-
-            return true;
-        }
-
-        /** {@inheritDoc} */
-        @Override public IndexRow get() throws IgniteCheckedException {
-            return head;
-        }
     }
 
     /**

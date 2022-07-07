@@ -150,6 +150,7 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.configuration.MemoryConfiguration.DFLT_MEMORY_POLICY_MAX_SIZE;
 import static org.apache.ignite.configuration.MemoryConfiguration.DFLT_MEM_PLC_DEFAULT_NAME;
 import static org.apache.ignite.internal.IgniteComponentType.SPRING;
+import static org.apache.ignite.internal.util.IgniteUtils.EMPTY_STRS;
 import static org.apache.ignite.plugin.segmentation.SegmentationPolicy.RESTART_JVM;
 
 /**
@@ -1591,9 +1592,6 @@ public class IgnitionEx {
         private static final Map<MBeanServer, GridMBeanServerData> mbeans =
             new HashMap<>();
 
-        /** */
-        private static final String[] EMPTY_STR_ARR = new String[0];
-
         /** Grid name. */
         private final String name;
 
@@ -2014,7 +2012,7 @@ public class IgnitionEx {
             myCfg.setMarshaller(marsh);
 
             if (myCfg.getPeerClassLoadingLocalClassPathExclude() == null)
-                myCfg.setPeerClassLoadingLocalClassPathExclude(EMPTY_STR_ARR);
+                myCfg.setPeerClassLoadingLocalClassPathExclude(EMPTY_STRS);
 
             initializeDefaultSpi(myCfg);
 

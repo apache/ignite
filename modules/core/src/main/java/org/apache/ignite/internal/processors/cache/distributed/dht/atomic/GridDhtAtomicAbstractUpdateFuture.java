@@ -163,6 +163,7 @@ public abstract class GridDhtAtomicAbstractUpdateFuture extends GridCacheFutureA
      * @param prevVal Previous value.
      * @param updateCntr Partition update counter.
      * @param cacheOp Corresponding cache operation.
+     * @param readRepairRecovery Recovery on Read Repair.
      */
     @SuppressWarnings("ForLoopReplaceableByForEach")
     final void addWriteEntry(
@@ -176,7 +177,8 @@ public abstract class GridDhtAtomicAbstractUpdateFuture extends GridCacheFutureA
         boolean addPrevVal,
         @Nullable CacheObject prevVal,
         long updateCntr,
-        GridCacheOperation cacheOp) {
+        GridCacheOperation cacheOp,
+        boolean readRepairRecovery) {
         AffinityTopologyVersion topVer = updateReq.topologyVersion();
 
         List<ClusterNode> affNodes = affAssignment.get(entry.partition());
@@ -212,7 +214,8 @@ public abstract class GridDhtAtomicAbstractUpdateFuture extends GridCacheFutureA
                         topVer,
                         ttl,
                         conflictExpireTime,
-                        conflictVer);
+                        conflictVer,
+                        readRepairRecovery);
 
                     mappings.put(nodeId, updateReq);
                 }
@@ -251,6 +254,7 @@ public abstract class GridDhtAtomicAbstractUpdateFuture extends GridCacheFutureA
      * @param entryProcessor Entry processor..
      * @param ttl TTL for near cache update (optional).
      * @param expireTime Expire time for near cache update (optional).
+     * @param readRepairRecovery Recovery on Read Repair.
      */
     final void addNearWriteEntries(
         ClusterNode nearNode,
@@ -259,7 +263,8 @@ public abstract class GridDhtAtomicAbstractUpdateFuture extends GridCacheFutureA
         @Nullable CacheObject val,
         EntryProcessor<Object, Object, Object> entryProcessor,
         long ttl,
-        long expireTime) {
+        long expireTime,
+        boolean readRepairRecovery) {
         assert readers != null;
 
         CacheWriteSynchronizationMode syncMode = updateReq.writeSynchronizationMode();
@@ -299,7 +304,8 @@ public abstract class GridDhtAtomicAbstractUpdateFuture extends GridCacheFutureA
                     topVer,
                     ttl,
                     expireTime,
-                    null);
+                    null,
+                    readRepairRecovery);
 
                 mappings.put(node.id(), updateReq);
 
@@ -535,6 +541,7 @@ public abstract class GridDhtAtomicAbstractUpdateFuture extends GridCacheFutureA
      * @param ttl TTL.
      * @param conflictExpireTime Conflict expire time.
      * @param conflictVer Conflict version.
+     * @param readRepairRecovery Recovery on Read Repair.
      * @return Request.
      */
     protected abstract GridDhtAtomicAbstractUpdateRequest createRequest(
@@ -545,7 +552,8 @@ public abstract class GridDhtAtomicAbstractUpdateFuture extends GridCacheFutureA
         @NotNull AffinityTopologyVersion topVer,
         long ttl,
         long conflictExpireTime,
-        @Nullable GridCacheVersion conflictVer
+        @Nullable GridCacheVersion conflictVer,
+        boolean readRepairRecovery
     );
 
     /** {@inheritDoc} */

@@ -67,13 +67,13 @@ public class IgniteThrottlingUnitTest extends GridCommonAbstractTest {
     public Timeout globalTimeout = Timeout.millis((int)GridTestUtils.DFLT_TEST_TIMEOUT);
 
     /** Logger. */
-    private IgniteLogger log = new NullLogger();
+    private final IgniteLogger log = new NullLogger();
 
     /** Page memory 2 g. */
-    private PageMemoryImpl pageMemory2g = mock(PageMemoryImpl.class);
+    private final PageMemoryImpl pageMemory2g = mock(PageMemoryImpl.class);
 
     /** State checker. */
-    private CheckpointLockStateChecker stateChecker = () -> true;
+    private final CheckpointLockStateChecker stateChecker = () -> true;
 
     /** {@link CheckpointProgress} mock. */
     private final CheckpointProgress progress = mock(CheckpointProgress.class);
@@ -97,37 +97,56 @@ public class IgniteThrottlingUnitTest extends GridCommonAbstractTest {
     }
 
     /**
-     *
+     * Tests that the speed-based throttler throttles when writing faster than target speed, AND the dirty ratio
+     * is above the target ratio.
      */
     @Test
-    public void breakInCaseTooFast() {
+    public void shouldThrottleWhenWritingTooFast() {
         PagesWriteSpeedBasedThrottle throttle = new PagesWriteSpeedBasedThrottle(pageMemory2g, null, stateChecker, log);
 
-        long time = throttle.getCleanPagesProtectionParkTime(0.67,
+        long parkTime = throttle.getCleanPagesProtectionParkTime(0.67,
             (362584 + 67064) / 2,
             328787,
             1,
             60184,
             23103);
 
-        assertTrue(time > 0);
+        assertTrue(parkTime > 0);
     }
 
     /**
      *
      */
     @Test
-    public void noBreakIfNotFastWrite() {
+    public void shouldNotThrottleWhenWritingSlowly() {
         PagesWriteSpeedBasedThrottle throttle = new PagesWriteSpeedBasedThrottle(pageMemory2g, null, stateChecker, log);
 
-        long time = throttle.getCleanPagesProtectionParkTime(0.47,
+        long parkTime = throttle.getCleanPagesProtectionParkTime(0.47,
             ((362584 + 67064) / 2),
             328787,
             1,
             20103,
             23103);
 
-        assertEquals(0, time);
+        assertEquals(0, parkTime);
+    }
+
+    /**
+     * Tests that the speed-based throttler does NOT throttle when there are plenty clean pages, even if writing
+     * faster than the current checkpoint speed.
+     */
+    @Test
+    public void shouldNotThrottleWhenThereArePlentyCleanPages() {
+        PagesWriteSpeedBasedThrottle throttle = new PagesWriteSpeedBasedThrottle(pageMemory2g, null, stateChecker, log);
+
+        long parkTime = throttle.getCleanPagesProtectionParkTime(0.0,
+            (362584 + 67064) / 2,
+            328787,
+            1,
+            60184,
+            23103);
+
+        assertEquals(0, parkTime);
     }
 
     /**
@@ -140,17 +159,14 @@ public class IgniteThrottlingUnitTest extends GridCommonAbstractTest {
 
         int markDirtySpeed = 34422;
         int cpWriteSpeed = 19416;
-        long time = throttle.getCleanPagesProtectionParkTime(0.04,
+        long time = throttle.getCleanPagesProtectionParkTime(0.67,
             ((903150 + 227217) / 2),
             903150,
             1,
             markDirtySpeed,
             cpWriteSpeed);
 
-        long mdSpeed = TimeUnit.SECONDS.toNanos(1) / markDirtySpeed;
-        long cpSpeed = TimeUnit.SECONDS.toNanos(1) / cpWriteSpeed;
-
-        assertEquals((cpSpeed - mdSpeed), time);
+        assertEquals(415110, time);
     }
 
     /**
@@ -272,7 +288,7 @@ public class IgniteThrottlingUnitTest extends GridCommonAbstractTest {
      *
      */
     @Test
-    public void tooMuchPagesMarkedDirty() {
+    public void doNotThrottleWhenDirtyPagesRatioIsTooHigh() {
         PagesWriteSpeedBasedThrottle throttle = new PagesWriteSpeedBasedThrottle(pageMemory2g, null, stateChecker, log);
 
         // 363308 350004 348976 10604
@@ -282,8 +298,6 @@ public class IgniteThrottlingUnitTest extends GridCommonAbstractTest {
             4,
             279,
             23933);
-
-        System.err.println(time);
 
         assertEquals(0, time);
     }
@@ -452,8 +466,6 @@ public class IgniteThrottlingUnitTest extends GridCommonAbstractTest {
             if (warnings.get() > 0)
                 break;
         }
-
-        System.out.println(throttle.throttleWeight());
 
         assertTrue(warnings.get() > 0);
     }

@@ -49,14 +49,14 @@ public class IgniteIrreparableConsistencyViolationException extends IgniteChecke
     }
 
     /**
-     * Inconsistent keys found but can not be fixed using the specified strategy.
+     * Inconsistent keys found but can not be repaired using the specified strategy.
      */
     public Collection<Object> irreparableKeys() {
         return irreparableKeys;
     }
 
     /**
-     * Inconsistent keys found but can be fixed using the specified strategy.
+     * Inconsistent keys found but can be repaired using the specified strategy.
      */
     public Collection<Object> repairableKeys() {
         return repairableKeys;

@@ -529,8 +529,19 @@ final class ReliableChannel implements AutoCloseable {
         rollCurrentChannel(hld);
 
         // For partiton awareness it's already initializing asynchronously in #onTopologyChanged.
-        if (scheduledChannelsReinit.get() && !partitionAwarenessEnabled)
+        if (addressFinderAddressesChanged() || (scheduledChannelsReinit.get() && !partitionAwarenessEnabled))
             channelsInit();
+    }
+
+    /**
+     * Checks whether addressFinder returns a different set of addresses.
+     */
+    private boolean addressFinderAddressesChanged() {
+        if (clientCfg.getAddressesFinder() == null)
+            return false;
+
+        String[] hostAddrs = clientCfg.getAddressesFinder().getAddresses();
+        return !Arrays.equals(hostAddrs, prevHostAddrs);
     }
 
     /**
@@ -731,7 +742,7 @@ final class ReliableChannel implements AutoCloseable {
     }
 
     /** */
-    private <T> T applyOnDefaultChannel(Function<ClientChannel, T> function, ClientOperation op) {
+    <T> T applyOnDefaultChannel(Function<ClientChannel, T> function, ClientOperation op) {
         return applyOnDefaultChannel(function, op, getRetryLimit(), DO_NOTHING);
     }
 

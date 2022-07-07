@@ -12,28 +12,26 @@ Further in our documentation, we always use the ./mvnw form. Please adapt it to 
 
 Apache Ignite Maven Build Instructions
 ======================================
-1) Optional: build Apache Ignite.NET as described at modules/platforms/dotnet/DEVNOTES.txt.
-
-2) Compile and install:
+1) Compile and install:
 
         ./mvnw clean install -Pall-java,all-scala,licenses -DskipTests
 
-   or if you have built Apache Ignite.NET on the first step use following command:
-   (Note that 'doxygen' should be installed before running this command.)
+   or if you have to build .NET part as well, use the following command:
+   (Note that 'doxygen', `docfx`, '.NET Core SDK 3.1', 'PowerShell' should be installed before running this command.)
 
-        ./mvnw clean install -Pall-java,all-scala,licenses -DskipTests -DclientDocs
+        ./mvnw clean install -Pall-java,all-scala,licenses,platforms -DskipTests -DclientDocs
 
-3) Javadoc generation (optional):
+2) Javadoc generation (optional):
 
         ./mvnw initialize -Pjavadoc
 
-4) Build Apache Ignite assembly:
+3) Build Apache Ignite assembly:
 
         ./mvnw initialize -Prelease
 
    Look for apache-ignite-<version>-bin.zip in ./target/bin directory.
 
-5) Build Apache Ignite slim edition assembly:
+4) Build Apache Ignite slim edition assembly:
 
         ./mvnw initialize -Prelease -Dignite.edition=apache-ignite-slim
 
@@ -42,22 +40,20 @@ Apache Ignite Maven Build Instructions
 
 Apache Ignite with LGPL Maven Build Instructions
 ================================================
-1) Optional: build Apache Ignite.NET as described at modules/platforms/dotnet/DEVNOTES.txt.
-
-2) Compile and install:
+1) Compile and install:
 
         ./mvnw clean install -Pall-java,all-scala,licenses -DskipTests
 
-   or if you have built Apache Ignite.NET on the first step use following command:
-   (Note that 'doxygen' should be installed before running this command.)
+   or if you have to build .NET part as well, use the following command:
+   (Note that 'doxygen', `docfx`, '.NET Core SDK 3.1', 'PowerShell' should be installed before running this command.)
 
-        ./mvnw clean install -Pall-java,all-scala,licenses -DskipTests -DclientDocs
+        ./mvnw clean install -Pall-java,all-scala,licenses,platforms -DskipTests -DclientDocs
 
-3) Javadoc generation with LGPL (optional):
+2) Javadoc generation with LGPL (optional):
 
         ./mvnw initialize -Pjavadoc,lgpl
 
-4) Build Apache Ignite assembly with LGPL dependencies:
+3) Build Apache Ignite assembly with LGPL dependencies:
 
         ./mvnw initialize -Prelease,lgpl -Dignite.edition=apache-ignite-lgpl
 
@@ -204,25 +200,6 @@ JCache TCK compliance
 To test compliance with JCache TCK use:
 
         ./mvnw test -P-release,jcache-tck -pl :ignite-core -am
-
-
-Ignite Mesos Maven Build Instructions
-=====================================
-
-        cd ./modules/mesos
-        mvn clean package
-
-Look for ignite-mesos-<version>.jar in ./target directory.
-
-
-Ignite Yarn Maven Build Instructions
-====================================
-
-        cd ./modules/yarn
-        mvn clean package
-
-Look for ignite-yarn-<version>.jar in ./target directory.
-
 
 Run tests
 =========

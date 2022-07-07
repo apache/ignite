@@ -79,7 +79,8 @@ class GridDhtAtomicUpdateFuture extends GridDhtAtomicAbstractUpdateFuture {
         @NotNull AffinityTopologyVersion topVer,
         long ttl,
         long conflictExpireTime,
-        @Nullable GridCacheVersion conflictVer
+        @Nullable GridCacheVersion conflictVer,
+        boolean readRepairRecovery
     ) {
         return new GridDhtAtomicUpdateRequest(
             cctx.cacheId(),
@@ -93,7 +94,8 @@ class GridDhtAtomicUpdateFuture extends GridDhtAtomicAbstractUpdateFuture {
             cctx.deploymentEnabled(),
             updateReq.keepBinary(),
             updateReq.skipStore(),
-            false);
+            false,
+            readRepairRecovery);
     }
 
     /** {@inheritDoc} */

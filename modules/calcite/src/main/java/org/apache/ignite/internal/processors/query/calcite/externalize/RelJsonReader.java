@@ -33,7 +33,6 @@ import org.apache.calcite.plan.RelOptSchema;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelCollation;
-import org.apache.calcite.rel.RelCollations;
 import org.apache.calcite.rel.RelDistribution;
 import org.apache.calcite.rel.RelInput;
 import org.apache.calcite.rel.RelNode;
@@ -325,10 +324,9 @@ public class RelJsonReader {
             Integer filterOperand = (Integer)jsonAggCall.get("filter");
             RelDataType type = relJson.toType(Commons.typeFactory(Commons.emptyCluster()), jsonAggCall.get("type"));
             String name = (String)jsonAggCall.get("name");
+            RelCollation collation = relJson.toCollation((List<Map<String, Object>>)jsonAggCall.get("coll"));
             return AggregateCall.create(aggregation, distinct, false, false, operands,
-                filterOperand == null ? -1 : filterOperand,
-                RelCollations.EMPTY,
-                type, name);
+                filterOperand == null ? -1 : filterOperand, null, collation, type, name);
         }
     }
 }

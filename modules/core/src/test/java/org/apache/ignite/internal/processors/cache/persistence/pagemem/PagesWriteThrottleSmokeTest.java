@@ -31,7 +31,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.processors.cache.persistence.db.SlowCheckpointFileIOFactory;
+import org.apache.ignite.internal.processors.cache.persistence.db.SlowCheckpointMetadataFileIOFactory;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.metric.impl.HitRateMetric;
 import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
@@ -69,7 +69,7 @@ public class PagesWriteThrottleSmokeTest extends GridCommonAbstractTest {
             .setCheckpointFrequency(20_000)
             .setWriteThrottlingEnabled(true)
             .setCheckpointThreads(1)
-            .setFileIOFactory(new SlowCheckpointFileIOFactory(slowCheckpointEnabled, 5_000_000));
+            .setFileIOFactory(new SlowCheckpointMetadataFileIOFactory(slowCheckpointEnabled, 5_000_000));
 
         cfg.setDataStorageConfiguration(dbCfg);
 

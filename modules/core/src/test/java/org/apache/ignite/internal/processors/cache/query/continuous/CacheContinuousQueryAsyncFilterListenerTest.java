@@ -438,7 +438,7 @@ public class CacheContinuousQueryAsyncFilterListenerTest extends GridCommonAbstr
         final boolean asyncFltr,
         boolean asyncLsnr,
         boolean jcacheApi) throws Exception {
-        ignite(0).createCache(ccfg);
+        ignite(NODES - 1).createCache(ccfg);
 
         ThreadLocalRandom rnd = ThreadLocalRandom.current();
 
@@ -613,7 +613,7 @@ public class CacheContinuousQueryAsyncFilterListenerTest extends GridCommonAbstr
         final boolean asyncFilter,
         final boolean asyncLsnr,
         boolean jcacheApi) throws Exception {
-        ignite(0).createCache(ccfg);
+        ignite(NODES - 1).createCache(ccfg);
 
         ThreadLocalRandom rnd = ThreadLocalRandom.current();
 

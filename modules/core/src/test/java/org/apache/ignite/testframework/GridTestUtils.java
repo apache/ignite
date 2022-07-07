@@ -103,6 +103,7 @@ import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.GridAbsClosure;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.lang.IgnitePair;
+import org.apache.ignite.internal.util.lang.RunnableX;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.T2;
@@ -112,7 +113,6 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgnitePredicate;
-import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.discovery.DiscoveryNotification;
 import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
@@ -2590,52 +2590,6 @@ public final class GridTestUtils {
             can_fail();
 
             return sleep;
-        }
-    }
-
-    /**
-     * Runnable that can throw exceptions.
-     */
-    @FunctionalInterface
-    public interface RunnableX extends Runnable {
-        /**
-         * Runnable body.
-         *
-         * @throws Exception If failed.
-         */
-        void runx() throws Exception;
-
-        /** {@inheritdoc} */
-        @Override default void run() {
-            try {
-                runx();
-            }
-            catch (Exception e) {
-                throw new IgniteException(e);
-            }
-        }
-    }
-
-    /**
-     * IgniteRunnable that can throw exceptions.
-     */
-    @FunctionalInterface
-    public interface IgniteRunnableX extends IgniteRunnable {
-        /**
-         * Runnable body.
-         *
-         * @throws Exception If failed.
-         */
-        void runx() throws Exception;
-
-        /** {@inheritdoc} */
-        @Override default void run() {
-            try {
-                runx();
-            }
-            catch (Exception e) {
-                throw new IgniteException(e);
-            }
         }
     }
 

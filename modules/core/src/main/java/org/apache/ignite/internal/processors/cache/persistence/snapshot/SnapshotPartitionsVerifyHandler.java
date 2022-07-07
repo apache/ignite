@@ -67,10 +67,12 @@ import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.OWNING;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.fromOrdinal;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.CACHE_DATA_FILENAME;
+import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.cacheDirectories;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.cacheGroupName;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.cachePartitionFiles;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.partId;
 import static org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId.getTypeByPartId;
+import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.databaseRelativePath;
 import static org.apache.ignite.internal.processors.cache.verify.IdleVerifyUtility.calculatePartitionHash;
 import static org.apache.ignite.internal.processors.cache.verify.IdleVerifyUtility.checkPartitionsPageCrcSum;
 
@@ -98,6 +100,9 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
 
     /** {@inheritDoc} */
     @Override public Map<PartitionKeyV2, PartitionHashRecordV2> invoke(SnapshotHandlerContext opCtx) throws IgniteCheckedException {
+        if (!opCtx.snapshotDirectory().exists())
+            throw new IgniteCheckedException("Snapshot directory doesn't exists: " + opCtx.snapshotDirectory());;
+
         SnapshotMetadata meta = opCtx.metadata();
 
         Set<Integer> grps = F.isEmpty(opCtx.groups()) ? new HashSet<>(meta.partitions().keySet()) :
@@ -107,9 +112,7 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
 
         Map<Integer, File> grpDirs = new HashMap<>();
 
-        IgniteSnapshotManager snpMgr = cctx.snapshotMgr();
-
-        for (File dir : snpMgr.snapshotCacheDirectories(meta.snapshotName(), meta.folderName())) {
+        for (File dir : cacheDirectories(new File(opCtx.snapshotDirectory(), databaseRelativePath(meta.folderName())), name -> true)) {
             int grpId = CU.cacheId(cacheGroupName(dir));
 
             if (!grps.remove(grpId))
@@ -146,7 +149,9 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
         ThreadLocal<ByteBuffer> buff = ThreadLocal.withInitial(() -> ByteBuffer.allocateDirect(meta.pageSize())
             .order(ByteOrder.nativeOrder()));
 
-        GridKernalContext snpCtx = snpMgr.createStandaloneKernalContext(meta.snapshotName(), meta.folderName());
+        IgniteSnapshotManager snpMgr = cctx.snapshotMgr();
+
+        GridKernalContext snpCtx = snpMgr.createStandaloneKernalContext(opCtx.snapshotDirectory(), meta.folderName());
 
         FilePageStoreManager storeMgr = (FilePageStoreManager)cctx.pageStore();
 

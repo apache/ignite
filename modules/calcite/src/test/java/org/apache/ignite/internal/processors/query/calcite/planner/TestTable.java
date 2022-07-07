@@ -229,7 +229,7 @@ public class TestTable implements IgniteCacheTable {
 
     /** {@inheritDoc} */
     @Override public void removeIndex(String idxName) {
-        throw new AssertionError();
+        indexes.remove(idxName);
     }
 
     /** {@inheritDoc} */

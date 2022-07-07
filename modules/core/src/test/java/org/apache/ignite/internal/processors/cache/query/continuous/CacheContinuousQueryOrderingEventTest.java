@@ -325,6 +325,8 @@ public class CacheContinuousQueryOrderingEventTest extends GridCommonAbstractTes
         throws Exception {
         ignite(0).createCache(ccfg);
 
+        awaitCacheOnClient(grid(NODES - 1), ccfg.getName());
+
         List<QueryCursor<?>> qries = new ArrayList<>();
 
         try {

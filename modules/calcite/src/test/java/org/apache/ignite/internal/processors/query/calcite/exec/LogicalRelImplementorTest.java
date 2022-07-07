@@ -37,6 +37,8 @@ import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.calcite.util.mapping.Mappings;
+import org.apache.ignite.internal.processors.query.QueryUtils;
+import org.apache.ignite.internal.processors.query.calcite.exec.rel.CollectNode;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.IndexSpoolNode;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.Node;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.ProjectNode;
@@ -45,6 +47,7 @@ import org.apache.ignite.internal.processors.query.calcite.exec.rel.SortNode;
 import org.apache.ignite.internal.processors.query.calcite.metadata.ColocationGroup;
 import org.apache.ignite.internal.processors.query.calcite.planner.TestTable;
 import org.apache.ignite.internal.processors.query.calcite.prepare.BaseQueryContext;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexCount;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexScan;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteSchema;
 import org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils;
@@ -64,10 +67,28 @@ import static org.apache.ignite.internal.processors.query.calcite.CalciteQueryPr
  */
 public class LogicalRelImplementorTest extends GridCommonAbstractTest {
     /** */
-    @Test
-    public void testIndexScanRewriter() {
-        IgniteTypeFactory tf = Commons.typeFactory();
+    private LogicalRelImplementor<Object[]> relImplementor;
 
+    /** */
+    private RelOptCluster cluster;
+
+    /** */
+    private ScanAwareTable tbl;
+
+    /** */
+    private BaseQueryContext qctx;
+
+    /** */
+    private RexBuilder rexBuilder;
+
+    /** */
+    private IgniteTypeFactory tf;
+
+    /** */
+    @Override protected void beforeTest() throws Exception {
+        super.beforeTest();
+
+        tf = Commons.typeFactory();
         RelDataTypeFactory.Builder b = new RelDataTypeFactory.Builder(tf);
 
         RelDataType sqlTypeInt = tf.createSqlType(SqlTypeName.INTEGER);
@@ -80,14 +101,12 @@ public class LogicalRelImplementorTest extends GridCommonAbstractTest {
 
         RelDataType rowType = b.build();
 
-        ScanAwareTable tbl = new ScanAwareTable(rowType);
-
-        tbl.addIndex("IDX", 2);
+        tbl = new ScanAwareTable(rowType);
 
         IgniteSchema publicSchema = new IgniteSchema("PUBLIC");
         publicSchema.addTable("TBL", tbl);
 
-        BaseQueryContext qctx = BaseQueryContext.builder()
+        qctx = BaseQueryContext.builder()
             .frameworkConfig(
                 newConfigBuilder(FRAMEWORK_CONFIG)
                     .defaultSchema(createRootSchema(false).add(publicSchema.getName(), publicSchema))
@@ -114,7 +133,7 @@ public class LogicalRelImplementorTest extends GridCommonAbstractTest {
             }
         };
 
-        LogicalRelImplementor<Object[]> relImplementor = new LogicalRelImplementor<>(
+        relImplementor = new LogicalRelImplementor<>(
             ectx,
             null,
             null,
@@ -122,9 +141,52 @@ public class LogicalRelImplementorTest extends GridCommonAbstractTest {
             null
         );
 
-        // Construct relational operator corresponding to SQL: "SELECT val, id, id + 1 FROM TBL WHERE id = 1"
-        RelOptCluster cluster = Commons.emptyCluster();
-        RexBuilder rexBuilder = cluster.getRexBuilder();
+        cluster = Commons.emptyCluster();
+
+        rexBuilder = cluster.getRexBuilder();
+    }
+
+    /**
+     * Tests IndexCount execution plan is changed to Collect/Scan when index is unavailable.
+     */
+    @Test
+    public void testIndexCountRewriter() {
+        IgniteIndexCount idxCnt = new IgniteIndexCount(cluster, cluster.traitSet(),
+            qctx.catalogReader().getTable(F.asList("PUBLIC", "TBL")), QueryUtils.PRIMARY_KEY_INDEX);
+
+        checkCollectNode(relImplementor.visit(idxCnt));
+
+        tbl.addIndex(QueryUtils.PRIMARY_KEY_INDEX, 2);
+
+        Node<?> node = relImplementor.visit(idxCnt);
+
+        assertTrue(node instanceof ScanNode);
+        assertNull(node.sources());
+        assertEquals(node.rowType(),
+            tf.createStructType(F.asList(tf.createSqlType(SqlTypeName.BIGINT)), F.asList("COUNT")));
+
+        tbl.markIndexRebuildInProgress(true);
+
+        checkCollectNode(relImplementor.visit(idxCnt));
+    }
+
+    /** */
+    private void checkCollectNode(Node<Object[]> node) {
+        assertTrue(node instanceof CollectNode);
+        assertTrue(node.sources() != null && node.sources().size() == 1);
+        assertTrue(node.sources().get(0) instanceof ScanNode);
+        assertNull(node.sources().get(0).sources());
+        assertEquals(tbl.getRowType(tf), node.sources().get(0).rowType());
+    }
+
+    /** */
+    @Test
+    public void testIndexScanRewriter() {
+        tbl.addIndex(QueryUtils.PRIMARY_KEY_INDEX, 2);
+
+        RelDataType rowType = tbl.getRowType(tf);
+        RelDataType sqlTypeInt = rowType.getFieldList().get(2).getType();
+        RelDataType sqlTypeVarchar = rowType.getFieldList().get(3).getType();
 
         // Projects, filters and required columns.
         List<RexNode> project = F.asList(
@@ -143,7 +205,7 @@ public class LogicalRelImplementorTest extends GridCommonAbstractTest {
         ImmutableBitSet requiredColumns = ImmutableBitSet.of(2, 3);
 
         // Collations.
-        RelCollation idxCollation = tbl.getIndex("IDX").collation();
+        RelCollation idxCollation = tbl.getIndex(QueryUtils.PRIMARY_KEY_INDEX).collation();
 
         RelCollation colCollation = idxCollation.apply(Mappings.target(requiredColumns.asList(),
             tbl.getRowType(tf).getFieldCount()));

@@ -146,6 +146,40 @@ public class DurableBackgroundTasksProcessorSelfTest extends GridCommonAbstractT
     }
 
     /**
+     * Check that the task can be started on the node if it joined after the cluster activation.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testTaskStartOnNodeJoinedAfterActivation() throws Exception {
+        IgniteEx n = startGrid(0);
+        startGrid(1);
+
+        n.cluster().state(ACTIVE);
+
+        stopGrid(1);
+        n = startGrid(1);
+
+        SimpleTask t = new SimpleTask("t");
+        execAsync(n, t, true);
+
+        t.onExecFut.get(getTestTimeout());
+        checkStateAndMetaStorage(n, t, STARTED, true, false);
+
+        stopGrid(1);
+        n = startGrid(1);
+
+        checkStateAndMetaStorage(n, t, STARTED, true, false);
+
+        n.cluster().state(INACTIVE);
+
+        stopGrid(1);
+        n = startGrid(1);
+
+        checkStateAndMetaStorage(n, t, INIT, true, false);
+    }
+
+    /**
      * Check that the task will be restarted after restarting the node.
      *
      * @throws Exception If failed.

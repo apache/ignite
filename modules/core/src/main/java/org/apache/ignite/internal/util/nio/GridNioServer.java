@@ -2849,35 +2849,35 @@ public class GridNioServer<T> {
 
                 IOException err = new IOException("Failed to send message (connection was closed): " + ses);
 
-                if (outRecovery != null || inRecovery != null) {
-                    try {
+                try {
+                    if (outRecovery != null || inRecovery != null) {
                         // Poll will update recovery data.
                         while ((req = ses.pollFuture()) != null) {
                             if (req.skipRecovery())
                                 req.onError(err);
                         }
                     }
-                    finally {
-                        if (outRecovery != null)
-                            outRecovery.release();
+                    else {
+                        if (req != null)
+                            req.onError(err);
 
-                        if (inRecovery != null && inRecovery != outRecovery)
-                            inRecovery.release();
+                        while ((req = ses.pollFuture()) != null)
+                            req.onError(err);
+                    }
+
+                    try {
+                        filterChain.onSessionClosed(ses);
+                    }
+                    catch (IgniteCheckedException e1) {
+                        filterChain.onExceptionCaught(ses, e1);
                     }
                 }
-                else {
-                    if (req != null)
-                        req.onError(err);
+                finally {
+                    if (outRecovery != null)
+                        outRecovery.release();
 
-                    while ((req = ses.pollFuture()) != null)
-                        req.onError(err);
-                }
-
-                try {
-                    filterChain.onSessionClosed(ses);
-                }
-                catch (IgniteCheckedException e1) {
-                    filterChain.onExceptionCaught(ses, e1);
+                    if (inRecovery != null && inRecovery != outRecovery)
+                        inRecovery.release();
                 }
 
                 return true;

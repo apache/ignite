@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.commandline.argument.parser;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
@@ -35,14 +36,14 @@ import static java.util.stream.Collectors.toSet;
  */
 public class CLIArgumentParser {
     /** */
-    private final Map<String, CLIArgument> argConfiguration = new LinkedHashMap<>();
+    private final Map<String, CLIArgument<?>> argConfiguration = new LinkedHashMap<>();
 
     /** */
     private final Map<String, Object> parsedArgs = new HashMap<>();
 
     /** */
-    public CLIArgumentParser(List<CLIArgument> argConfiguration) {
-        for (CLIArgument cliArgument : argConfiguration)
+    public CLIArgumentParser(List<CLIArgument<?>> argConfiguration) {
+        for (CLIArgument<?> cliArgument : argConfiguration)
             this.argConfiguration.put(cliArgument.name(), cliArgument);
     }
 
@@ -59,7 +60,7 @@ public class CLIArgumentParser {
         while (argsIter.hasNext()) {
             String arg = argsIter.next();
 
-            CLIArgument cliArg = argConfiguration.get(arg);
+            CLIArgument<?> cliArg = argConfiguration.get(arg);
 
             if (cliArg == null)
                 throw new IgniteException("Unexpected argument: " + arg);
@@ -83,20 +84,19 @@ public class CLIArgumentParser {
     }
 
     /** */
-    private Object parseVal(String val, Class type) {
-        switch (type.getSimpleName()) {
-            case "String": return val;
+    private <T> T parseVal(String val, Class<T> type) {
+        if (type == String.class)
+            return (T)val;
+        else if (type == String[].class)
+            return (T)val.split(",");
+        else if (type == Integer.class)
+            return (T)wrapNumberFormatException(() -> Integer.parseInt(val), val, Integer.class);
+        else if (type == Long.class)
+            return (T)wrapNumberFormatException(() -> Long.parseLong(val), val, Long.class);
+        else if (type == UUID.class)
+            return (T)UUID.fromString(val);
 
-            case "String[]": return val.split(",");
-
-            case "Integer": return wrapNumberFormatException(() -> Integer.parseInt(val), val, Integer.class);
-
-            case "Long": return wrapNumberFormatException(() -> Long.parseLong(val), val, Long.class);
-
-            case "UUID": return UUID.fromString(val);
-
-            default: throw new IgniteException("Unsupported argument type: " + type.getName());
-        }
+        throw new IgniteException("Unsupported argument type: " + type.getName());
     }
 
     /**
@@ -123,7 +123,7 @@ public class CLIArgumentParser {
      * @param <T> Value type.
      * @return Value.
      */
-    public <T> T get(CLIArgument arg) {
+    public <T> T get(CLIArgument<?> arg) {
         Object val = parsedArgs.get(arg.name());
 
         if (val == null)
@@ -140,7 +140,7 @@ public class CLIArgumentParser {
      * @return Value.
      */
     public <T> T get(String name) {
-        CLIArgument arg = argConfiguration.get(name);
+        CLIArgument<?> arg = argConfiguration.get(name);
 
         if (arg == null)
             throw new IgniteException("No such argument: " + name);
@@ -156,10 +156,10 @@ public class CLIArgumentParser {
     public String usage() {
         GridStringBuilder sb = new GridStringBuilder("Usage: ");
 
-        for (CLIArgument arg : argConfiguration.values())
+        for (CLIArgument<?> arg : argConfiguration.values())
             sb.a(argNameForUsage(arg)).a(" ");
 
-        for (CLIArgument arg : argConfiguration.values()) {
+        for (CLIArgument<?> arg : argConfiguration.values()) {
             Object dfltVal = null;
 
             try {
@@ -172,14 +172,14 @@ public class CLIArgumentParser {
             sb.a("\n\n").a(arg.name()).a(": ").a(arg.usage());
 
             if (arg.optional())
-                sb.a(" Default value: ").a(dfltVal);
+                sb.a(" Default value: ").a(dfltVal instanceof String[] ? Arrays.toString((Object[])dfltVal) : dfltVal);
         }
 
         return sb.toString();
     }
 
     /** */
-    private String argNameForUsage(CLIArgument arg) {
+    private String argNameForUsage(CLIArgument<?> arg) {
         if (arg.optional())
             return "[" + arg.name() + "]";
         else

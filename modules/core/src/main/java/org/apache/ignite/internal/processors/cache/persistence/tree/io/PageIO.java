@@ -904,6 +904,15 @@ public abstract class PageIO {
     protected abstract void printPage(long addr, int pageSize, GridStringBuilder sb) throws IgniteCheckedException;
 
     /**
+     * Count of bytes that is currently free in this page and possibly can be used to place additional payload.
+     * @param pageSize Page size.
+     * @param pageAddr Page address.
+     *
+     * @return Free space.
+     */
+    public abstract int getFreeSpace(int pageSize, long pageAddr);
+
+    /**
      * @param page Page.
      * @param out Output buffer.
      * @param pageSize Page size.

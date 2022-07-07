@@ -187,8 +187,13 @@ public class InlineIndexTree extends BPlusTree<IndexRow, IndexRow> {
             rowHnd = rowHndFactory.create(def, keyTypeSettings);
 
             inlineSize = computeInlineSize(
-                rowHnd.inlineIndexKeyTypes(), rowHnd.indexKeyDefinitions(),
-                configuredInlineSize, maxInlineSize);
+                def.idxName().fullName(),
+                rowHnd.inlineIndexKeyTypes(),
+                rowHnd.indexKeyDefinitions(),
+                configuredInlineSize,
+                maxInlineSize,
+                log
+            );
 
             setIos(inlineSize, mvccEnabled);
         }
@@ -417,17 +422,21 @@ public class InlineIndexTree extends BPlusTree<IndexRow, IndexRow> {
     }
 
     /**
+     * @param name Index name.
      * @param keyTypes Index key types.
      * @param keyDefs Index key definitions.
      * @param cfgInlineSize Inline size from index config.
      * @param maxInlineSize Max inline size from cache config.
+     * @param log Logger.
      * @return Inline size.
      */
     public static int computeInlineSize(
+        String name,
         List<InlineIndexKeyType> keyTypes,
         List<IndexKeyDefinition> keyDefs,
         int cfgInlineSize,
-        int maxInlineSize
+        int maxInlineSize,
+        IgniteLogger log
     ) {
         if (cfgInlineSize == 0)
             return 0;
@@ -435,8 +444,7 @@ public class InlineIndexTree extends BPlusTree<IndexRow, IndexRow> {
         if (F.isEmpty(keyTypes))
             return 0;
 
-        if (cfgInlineSize != -1)
-            return Math.min(PageIO.MAX_PAYLOAD_SIZE, cfgInlineSize);
+        boolean fixedSize = true;
 
         int propSize = maxInlineSize == -1
             ? IgniteSystemProperties.getInteger(IgniteSystemProperties.IGNITE_MAX_INDEX_PAYLOAD_SIZE, IGNITE_MAX_INDEX_PAYLOAD_SIZE_DEFAULT)
@@ -446,6 +454,8 @@ public class InlineIndexTree extends BPlusTree<IndexRow, IndexRow> {
 
         for (int i = 0; i < keyTypes.size(); i++) {
             InlineIndexKeyType keyType = keyTypes.get(i);
+
+            fixedSize &= keyType.keySize() != -1;
 
             int sizeInc = keyType.inlineSize();
 
@@ -465,6 +475,20 @@ public class InlineIndexTree extends BPlusTree<IndexRow, IndexRow> {
                 size = propSize;
                 break;
             }
+        }
+
+        if (cfgInlineSize != -1) {
+            cfgInlineSize = Math.min(PageIO.MAX_PAYLOAD_SIZE, cfgInlineSize);
+
+            if (fixedSize && size < cfgInlineSize) {
+                log.warning("Explicit INLINE_SIZE for fixed size index item is too big. " +
+                    "This will lead to wasting of space inside index pages. Ignoring " +
+                    "[index=" + name + ", explicitInlineSize=" + cfgInlineSize + ", realInlineSize=" + size + ']');
+
+                return size;
+            }
+
+            return cfgInlineSize;
         }
 
         return Math.min(PageIO.MAX_PAYLOAD_SIZE, size);

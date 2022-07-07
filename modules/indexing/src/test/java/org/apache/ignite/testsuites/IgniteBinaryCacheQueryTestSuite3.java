@@ -83,6 +83,7 @@ import org.apache.ignite.internal.processors.cache.encryption.EncryptedSqlTableT
 import org.apache.ignite.internal.processors.cache.encryption.EncryptedSqlTemplateTableTest;
 import org.apache.ignite.internal.processors.cache.index.BasicJavaTypesIndexTest;
 import org.apache.ignite.internal.processors.cache.index.BasicSqlTypesIndexTest;
+import org.apache.ignite.internal.processors.cache.index.DateIndexKeyTypeTest;
 import org.apache.ignite.internal.processors.cache.index.H2ConnectionLeaksSelfTest;
 import org.apache.ignite.internal.processors.cache.index.H2RowCachePageEvictionTest;
 import org.apache.ignite.internal.processors.cache.index.H2RowCacheSelfTest;
@@ -347,6 +348,7 @@ import org.junit.runners.Suite;
     BasicSqlTypesIndexTest.class,
     BasicJavaTypesIndexTest.class,
     PojoIndexLocalQueryTest.class,
+    DateIndexKeyTypeTest.class,
 
     //Cancellation of queries.
     KillQueryTest.class,

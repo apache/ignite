@@ -366,6 +366,9 @@ public abstract class IgniteUtils {
     /** Empty  longs. */
     public static final long[] EMPTY_LONGS = new long[0];
 
+    /** */
+    public static final String[] EMPTY_STRS = new String[0];
+
     /** Empty  longs. */
     public static final Field[] EMPTY_FIELDS = new Field[0];
 
@@ -8005,6 +8008,9 @@ public abstract class IgniteUtils {
      * @return {@code True} if Object is primitive array.
      */
     public static boolean isPrimitiveArray(Object obj) {
+        if (obj == null)
+            return false;
+
         Class<?> cls = obj.getClass();
 
         return cls.isArray() && cls.getComponentType().isPrimitive();

@@ -562,13 +562,13 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
 
         for (Ignite grid : grids) {
             IgniteSnapshotManager mgr = snp((IgniteEx)grid);
-            Function<String, SnapshotSender> old = mgr.localSnapshotSenderFactory();
+            BiFunction<String, String, SnapshotSender> old = mgr.localSnapshotSenderFactory();
 
             BlockingExecutor block = new BlockingExecutor(mgr.snapshotExecutorService());
             execs.add(block);
 
-            mgr.localSnapshotSenderFactory((snpName) ->
-                new DelegateSnapshotSender(log, block, old.apply(snpName)));
+            mgr.localSnapshotSenderFactory((snpName, snpPath) ->
+                new DelegateSnapshotSender(log, block, old.apply(snpName, snpPath)));
         }
 
         return execs;

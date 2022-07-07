@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.distributed.near.consistency
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -44,8 +45,11 @@ import org.apache.ignite.internal.processors.cache.IgniteCacheExpiryPolicy;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridPartitionedGetFuture;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.lang.IgniteBiTuple;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_NEAR_GET_MAX_REMAPS;
 import static org.apache.ignite.IgniteSystemProperties.getInteger;
@@ -71,7 +75,7 @@ public abstract class GridNearReadRepairAbstractFuture extends GridFutureAdapter
     protected final Map<ClusterNode, GridPartitionedGetFuture<KeyCacheObject, EntryGetResult>> futs;
 
     /** Context. */
-    protected final GridCacheContext<KeyCacheObject, EntryGetResult> ctx;
+    protected final GridCacheContext<?, ?> ctx;
 
     /** Context. */
     protected final Collection<KeyCacheObject> keys;
@@ -112,6 +116,9 @@ public abstract class GridNearReadRepairAbstractFuture extends GridFutureAdapter
     /** Remap calls. */
     private volatile int remapCalls;
 
+    /** Initialized flag. */
+    private volatile boolean inited;
+
     /**
      * Creates a new instance of GridNearReadRepairAbstractFuture.
      *
@@ -129,7 +136,7 @@ public abstract class GridNearReadRepairAbstractFuture extends GridFutureAdapter
      */
     protected GridNearReadRepairAbstractFuture(
         AffinityTopologyVersion topVer,
-        GridCacheContext<KeyCacheObject, EntryGetResult> ctx,
+        GridCacheContext<?, ?> ctx,
         Collection<KeyCacheObject> keys,
         ReadRepairStrategy strategy,
         boolean readThrough,
@@ -182,7 +189,7 @@ public abstract class GridNearReadRepairAbstractFuture extends GridFutureAdapter
 
             GridPartitionedGetFuture<KeyCacheObject, EntryGetResult> fut =
                 new GridPartitionedGetFuture<>(
-                    ctx,
+                    (GridCacheContext<KeyCacheObject, EntryGetResult>)ctx,
                     mapping.getValue(), // Keys.
                     readThrough,
                     false, // Local get required.
@@ -203,6 +210,13 @@ public abstract class GridNearReadRepairAbstractFuture extends GridFutureAdapter
         }
 
         this.futs = Collections.unmodifiableMap(futs);
+    }
+
+    /**
+     *
+     */
+    public GridNearReadRepairAbstractFuture init() {
+        assert !inited;
 
         IgniteInternalTx prevTx = ctx.tm().tx(tx); // Within the original tx.
 
@@ -216,6 +230,14 @@ public abstract class GridNearReadRepairAbstractFuture extends GridFutureAdapter
         finally {
             ctx.tm().tx(prevTx);
         }
+
+        if (!ctx.kernalContext().cache().context().exchange().lastFinishedFuture().rebalanced())
+            onDone(new IllegalStateException("Operation can not be performed on unstable topology. " +
+                "Rebalance is in progress?"));
+
+        inited = true;
+
+        return this;
     }
 
     /**
@@ -261,6 +283,8 @@ public abstract class GridNearReadRepairAbstractFuture extends GridFutureAdapter
                 reduce();
             }
         }
+
+        assert lsnrCalls <= futs.size();
     }
 
     /**
@@ -310,18 +334,219 @@ public abstract class GridNearReadRepairAbstractFuture extends GridFutureAdapter
         }
 
         if (!inconsistentKeys.isEmpty())
-            throw new IgniteConsistencyViolationException(inconsistentKeys);
+            throw new IgniteConsistencyCheckFailedException(inconsistentKeys);
 
         return resMap;
     }
 
     /**
-     * @param fixedEntries Fixed map.
+     * Calculates correct values.
+     *
+     * @param keys Keys.
+     * @return Correctet entries.
+     */
+    protected Map<KeyCacheObject, EntryGetResult> correct(Set<KeyCacheObject> keys) throws IgniteCheckedException {
+        Map<KeyCacheObject, EntryGetResult> correctedMap;
+
+        if (strategy == ReadRepairStrategy.LWW)
+            correctedMap = correctWithLww(keys);
+        else if (strategy == ReadRepairStrategy.PRIMARY)
+            correctedMap = correctWithPrimary(keys);
+        else if (strategy == ReadRepairStrategy.RELATIVE_MAJORITY)
+            correctedMap = correctWithMajority(keys);
+        else if (strategy == ReadRepairStrategy.REMOVE)
+            correctedMap = correctWithRemove(keys);
+        else if (strategy == ReadRepairStrategy.CHECK_ONLY)
+            throw new IgniteConsistencyRepairFailedException(null, keys);
+        else
+            throw new UnsupportedOperationException("Unsupported strategy: " + strategy);
+
+        return correctedMap;
+    }
+
+    /**
+     *
+     */
+    private Map<KeyCacheObject, EntryGetResult> correctWithLww(Set<KeyCacheObject> inconsistentKeys) throws IgniteCheckedException {
+        Map<KeyCacheObject, EntryGetResult> newestMap = new HashMap<>(inconsistentKeys.size()); // Newest entries (by version).
+        Map<KeyCacheObject, EntryGetResult> correctedMap = new HashMap<>(inconsistentKeys.size());
+
+        Set<KeyCacheObject> irreparableSet = new HashSet<>();
+
+        for (GridPartitionedGetFuture<KeyCacheObject, EntryGetResult> fut : futs.values()) {
+            for (KeyCacheObject key : inconsistentKeys) {
+                if (!fut.keys().contains(key))
+                    continue;
+
+                EntryGetResult candidateRes = fut.result().get(key);
+
+                boolean hasNewest = newestMap.containsKey(key);
+
+                if (!hasNewest) {
+                    newestMap.put(key, candidateRes);
+
+                    continue;
+                }
+
+                EntryGetResult newestRes = newestMap.get(key);
+
+                if (candidateRes != null) {
+                    if (newestRes == null) {
+                        if (hasNewest) // Newest is null.
+                            irreparableSet.add(key);
+                        else { // Existing data wins.
+                            newestMap.put(key, candidateRes);
+                            correctedMap.put(key, candidateRes);
+                        }
+                    }
+                    else {
+                        int compareRes = candidateRes.version().compareTo(newestRes.version());
+
+                        if (compareRes > 0) { // Newest data wins.
+                            newestMap.put(key, candidateRes);
+                            correctedMap.put(key, candidateRes);
+                        }
+                        else if (compareRes < 0)
+                            correctedMap.put(key, newestRes);
+                        else if (compareRes == 0) {
+                            CacheObject candidateVal = candidateRes.value();
+                            CacheObject newestVal = newestRes.value();
+
+                            byte[] candidateBytes = candidateVal.valueBytes(ctx.cacheObjectContext());
+                            byte[] newestBytes = newestVal.valueBytes(ctx.cacheObjectContext());
+
+                            if (!Arrays.equals(candidateBytes, newestBytes))
+                                irreparableSet.add(key);
+                        }
+                    }
+                }
+                else if (newestRes != null)
+                    irreparableSet.add(key); // Impossible to detect latest between existing and null.
+            }
+        }
+
+        assert !correctedMap.containsValue(null) : "null should never be considered as a fix";
+
+        throwRepairFailedIfNecessary(correctedMap, irreparableSet);
+
+        return correctedMap;
+    }
+
+    /**
+     *
+     */
+    protected Map<KeyCacheObject, EntryGetResult> correctWithPrimary(Collection<KeyCacheObject> inconsistentKeys) {
+        Map<KeyCacheObject, EntryGetResult> correctedMap = new HashMap<>(inconsistentKeys.size());
+
+        for (GridPartitionedGetFuture<KeyCacheObject, EntryGetResult> fut : futs.values()) {
+            for (KeyCacheObject key : inconsistentKeys) {
+                if (fut.keys().contains(key) && primaries.get(key).equals(fut.affNode()))
+                    correctedMap.put(key, fut.result().get(key));
+            }
+        }
+
+        return correctedMap;
+    }
+
+    /**
+     *
+     */
+    private Map<KeyCacheObject, EntryGetResult> correctWithRemove(Collection<KeyCacheObject> inconsistentKeys) {
+        Map<KeyCacheObject, EntryGetResult> correctedMap = new HashMap<>(inconsistentKeys.size());
+
+        for (KeyCacheObject key : inconsistentKeys)
+            correctedMap.put(key, null);
+
+        return correctedMap;
+    }
+
+    /**
+     *
+     */
+    private Map<KeyCacheObject, EntryGetResult> correctWithMajority(Collection<KeyCacheObject> inconsistentKeys)
+        throws IgniteCheckedException {
+        Set<KeyCacheObject> irreparableSet = new HashSet<>(inconsistentKeys.size());
+        Map<KeyCacheObject, EntryGetResult> correctedMap = new HashMap<>(inconsistentKeys.size());
+
+        for (KeyCacheObject key : inconsistentKeys) {
+            Map<T2<ByteArrayWrapper, GridCacheVersion>, T2<EntryGetResult, Integer>> cntMap = new HashMap<>();
+
+            for (GridPartitionedGetFuture<KeyCacheObject, EntryGetResult> fut : futs.values()) {
+                if (!fut.keys().contains(key))
+                    continue;
+
+                EntryGetResult res = fut.result().get(key);
+
+                ByteArrayWrapper wrapped;
+                GridCacheVersion ver;
+
+                if (res != null) {
+                    CacheObject val = res.value();
+
+                    wrapped = new ByteArrayWrapper(val.valueBytes(ctx.cacheObjectContext()));
+                    ver = res.version();
+                }
+                else {
+                    wrapped = new ByteArrayWrapper(null);
+                    ver = null;
+                }
+
+                T2<ByteArrayWrapper, GridCacheVersion> keyVer = new T2<>(wrapped, ver);
+
+                cntMap.putIfAbsent(keyVer, new T2<>(res, 0));
+
+                cntMap.compute(keyVer, (kv, ri) -> new T2<>(ri.getKey(), ri.getValue() + 1));
+            }
+
+            int[] sorted = cntMap.values().stream()
+                .map(IgniteBiTuple::getValue)
+                .sorted(Comparator.reverseOrder())
+                .mapToInt(v -> v)
+                .toArray();
+
+            int max = sorted[0];
+
+            assert max > 0;
+
+            if (sorted.length > 1 && sorted[1] == max) { // Majority was not found.
+                irreparableSet.add(key);
+
+                continue;
+            }
+
+            for (Map.Entry<T2<ByteArrayWrapper, GridCacheVersion>, T2<EntryGetResult, Integer>> count : cntMap.entrySet())
+                if (count.getValue().getValue().equals(max)) {
+                    correctedMap.put(key, count.getValue().getKey());
+
+                    break;
+                }
+        }
+
+        throwRepairFailedIfNecessary(correctedMap, irreparableSet);
+
+        return correctedMap;
+    }
+
+    /**
+     *
+     */
+    private void throwRepairFailedIfNecessary(
+        Map<KeyCacheObject, EntryGetResult> correctedMap,
+        Set<KeyCacheObject> irreparableSet) throws IgniteConsistencyRepairFailedException {
+        if (!irreparableSet.isEmpty()) {
+            // Fixing raw data, correctedMap may contain keys from irreparableSet.
+            correctedMap.entrySet().removeIf(entry -> irreparableSet.contains(entry.getKey()));
+
+            throw new IgniteConsistencyRepairFailedException(correctedMap, irreparableSet);
+        }
+    }
+
+    /**
+     * @param repairedEntries Repaired map.
      */
     protected final void recordConsistencyViolation(
         Collection<KeyCacheObject> inconsistentKeys,
-        Map<KeyCacheObject, EntryGetResult> fixedEntries,
-        ReadRepairStrategy strategy
+        Map<KeyCacheObject, EntryGetResult> repairedEntries
     ) {
         GridEventStorageManager evtMgr = ctx.gridEvents();
 
@@ -343,7 +568,7 @@ public abstract class GridNearReadRepairAbstractFuture extends GridFutureAdapter
             for (KeyCacheObject key : fut.keys()) {
                 if (inconsistentKeys.contains(key)) {
                     sensitiveKeyMap.computeIfAbsent(key, k -> includeSensitive
-                        ? ctx.unwrapBinaryIfNeeded(k, !deserializeBinary, false, null)
+                        ? ctx.unwrapBinaryIfNeeded(k, true, false, null)
                         : "[HIDDEN_KEY#" + UUID.randomUUID() + "]");
 
                     CacheConsistencyViolationEvent.EntriesInfo entriesInfo =
@@ -355,36 +580,36 @@ public abstract class GridNearReadRepairAbstractFuture extends GridFutureAdapter
                     Object val = sensitiveValue(includeSensitive, res, sensitiveValMap);
 
                     boolean primary = primaries.get(key).equals(fut.affNode());
-                    boolean correct = fixedEntries != null &&
-                        ((fixedEntries.get(key) != null && fixedEntries.get(key).equals(res)) ||
-                            (fixedEntries.get(key) == null && res == null));
+                    boolean correct = repairedEntries != null &&
+                        ((repairedEntries.get(key) != null && repairedEntries.get(key).equals(res)) ||
+                            (repairedEntries.get(key) == null && res == null));
 
                     entriesInfo.getMapping().put(node, new EventEntryInfo(val, ver, primary, correct));
                 }
             }
         }
 
-        Map<Object, Object> fixed;
+        Map<Object, Object> repaired;
 
-        if (fixedEntries == null)
-            fixed = Collections.emptyMap();
+        if (repairedEntries == null)
+            repaired = Collections.emptyMap();
         else {
-            fixed = new HashMap<>();
+            repaired = new HashMap<>();
 
-            for (Map.Entry<KeyCacheObject, EntryGetResult> entry : fixedEntries.entrySet()) {
+            for (Map.Entry<KeyCacheObject, EntryGetResult> entry : repairedEntries.entrySet()) {
                 Object key = sensitiveKeyMap.get(entry.getKey());
                 Object val = sensitiveValue(includeSensitive, entry.getValue(), sensitiveValMap);
 
-                fixed.put(key, val);
+                repaired.put(key, val);
             }
         }
 
         evtMgr.record(new CacheConsistencyViolationEvent(
             ctx.name(),
             ctx.discovery().localNode(),
-            "Consistency violation was " + (fixed == null ? "NOT " : "") + "fixed.",
+            "Consistency violation was " + (repaired == null ? "NOT " : "") + "repaired.",
             entries,
-            fixed,
+            repaired,
             strategy));
     }
 
@@ -401,7 +626,7 @@ public abstract class GridNearReadRepairAbstractFuture extends GridFutureAdapter
 
                 return sensitiveValMap.computeIfAbsent(wrapped, w ->
                     includeSensitive ?
-                        ctx.unwrapBinaryIfNeeded(val, !deserializeBinary, false, null) :
+                        ctx.unwrapBinaryIfNeeded(val, true, false, null) :
                         "[HIDDEN_VALUE#" + UUID.randomUUID() + "]");
             }
             catch (IgniteCheckedException e) {
@@ -513,6 +738,71 @@ public abstract class GridNearReadRepairAbstractFuture extends GridFutureAdapter
         /** */
         @Override public int hashCode() {
             return Arrays.hashCode(arr);
+        }
+    }
+
+    /**
+     *
+     */
+    protected static final class IgniteConsistencyCheckFailedException extends IgniteCheckedException {
+        /** */
+        private static final long serialVersionUID = 0L;
+
+        /** Inconsistent entries keys. */
+        private final Set<KeyCacheObject> keys;
+
+        /**
+         * @param keys Keys.
+         */
+        public IgniteConsistencyCheckFailedException(Set<KeyCacheObject> keys) {
+            assert keys != null && !keys.isEmpty();
+
+            this.keys = Collections.unmodifiableSet(keys);
+        }
+
+        /**
+         * Inconsistent entries keys.
+         */
+        public Set<KeyCacheObject> keys() {
+            return keys;
+        }
+    }
+
+    /**
+     *
+     */
+    protected static final class IgniteConsistencyRepairFailedException extends IgniteCheckedException {
+        /** */
+        private static final long serialVersionUID = 0L;
+
+        /** Corrected entries keys. */
+        private final Map<KeyCacheObject, EntryGetResult> correctedMap;
+
+        /** Irreparable entries keys. */
+        private final Set<KeyCacheObject> irreparableKeys;
+
+        /**
+         * @param correctedMap Repairable map.
+         * @param irreparableKeys Irreparable keys.
+         */
+        public IgniteConsistencyRepairFailedException(Map<KeyCacheObject, EntryGetResult> correctedMap,
+            Set<KeyCacheObject> irreparableKeys) {
+            this.correctedMap = correctedMap != null ? Collections.unmodifiableMap(correctedMap) : null;
+            this.irreparableKeys = Collections.unmodifiableSet(irreparableKeys);
+        }
+
+        /**
+         * Repairable keys.
+         */
+        public Map<KeyCacheObject, EntryGetResult> correctedMap() {
+            return correctedMap;
+        }
+
+        /**
+         * Irreparable keys.
+         */
+        public Set<KeyCacheObject> irreparableKeys() {
+            return irreparableKeys;
         }
     }
 }

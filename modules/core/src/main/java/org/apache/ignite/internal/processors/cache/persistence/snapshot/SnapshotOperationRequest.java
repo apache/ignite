@@ -40,6 +40,9 @@ public class SnapshotOperationRequest implements Serializable {
     /** Snapshot name. */
     private final String snpName;
 
+    /** Snapshot directory path. */
+    private final String snpPath;
+
     /** Baseline node IDs that must be alive to complete the operation. */
     @GridToStringInclude
     private final Set<UUID> nodes;
@@ -61,6 +64,7 @@ public class SnapshotOperationRequest implements Serializable {
      * @param reqId Request ID.
      * @param opNodeId Operational node ID.
      * @param snpName Snapshot name.
+     * @param snpPath Snapshot directory path.
      * @param grps List of cache group names.
      * @param nodes Baseline node IDs that must be alive to complete the operation.
      */
@@ -68,6 +72,7 @@ public class SnapshotOperationRequest implements Serializable {
         UUID reqId,
         UUID opNodeId,
         String snpName,
+        String snpPath,
         @Nullable Collection<String> grps,
         Set<UUID> nodes
     ) {
@@ -76,6 +81,7 @@ public class SnapshotOperationRequest implements Serializable {
         this.snpName = snpName;
         this.grps = grps;
         this.nodes = nodes;
+        this.snpPath = snpPath;
     }
 
     /**
@@ -90,6 +96,13 @@ public class SnapshotOperationRequest implements Serializable {
      */
     public String snapshotName() {
         return snpName;
+    }
+
+    /**
+     * @return Snapshot directory path.
+     */
+    public String snapshotPath() {
+        return snpPath;
     }
 
     /**

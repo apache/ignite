@@ -195,6 +195,8 @@ public class IgniteNearClientCacheCloseTest extends GridCommonAbstractTest {
         for (int iter = 0; iter < 5; iter++) {
             log.info("Iteration: " + iter);
 
+            awaitCacheOnClient(ignite(nearClient), cacheName);
+
             IgniteCache<Object, Object> nearCache = ignite(nearClient).createNearCache(cacheName,
                 new NearCacheConfiguration<>());
 

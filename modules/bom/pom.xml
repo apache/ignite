@@ -58,6 +58,11 @@
             </dependency>
             <dependency>
                 <groupId>${project.groupId}</groupId>
+                <artifactId>ignite-compatibility</artifactId>
+                <version>${revision}</version>
+            </dependency>
+            <dependency>
+                <groupId>${project.groupId}</groupId>
                 <artifactId>ignite-control-utility</artifactId>
                 <version>${revision}</version>
             </dependency>
@@ -138,11 +143,6 @@
             </dependency>
             <dependency>
                 <groupId>${project.groupId}</groupId>
-                <artifactId>ignite-spark</artifactId>
-                <version>${revision}</version>
-            </dependency>
-            <dependency>
-                <groupId>${project.groupId}</groupId>
                 <artifactId>ignite-tools</artifactId>
                 <version>${revision}</version>
             </dependency>
@@ -166,10 +166,16 @@
                 <artifactId>ignite-zookeeper</artifactId>
                 <version>${revision}</version>
             </dependency>
-
             <dependency>
                 <groupId>${project.groupId}</groupId>
                 <artifactId>ignite-clients</artifactId>
+                <version>${revision}</version>
+                <type>test-jar</type>
+                <scope>test</scope>
+            </dependency>
+            <dependency>
+                <groupId>${project.groupId}</groupId>
+                <artifactId>ignite-compatibility</artifactId>
                 <version>${revision}</version>
                 <type>test-jar</type>
                 <scope>test</scope>

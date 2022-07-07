@@ -1056,6 +1056,14 @@ Parameters:
 | `strategy`| Repair strategy [LWW, PRIMARY, RELATIVE_MAJORITY, REMOVE, CHECK_ONLY].
 |===
 
+Optional parameters:
+
+[cols="1,3",opts="header"]
+|===
+| Parameter | Description
+| `--parallel`| Allows performing check/repair in the fastest way, by parallel execution at all partition owners.
+|===
+
 === Status
 
 The command allows performing cache consistency check/repair operations status check.
@@ -1073,3 +1081,32 @@ tab:Window[]
 control.bat --enable-experimental --consistency status
 ----
 --
+
+== Manage cache metrics collection
+
+The command provides an ability to enable, disable or show status of cache metrics collection.
+
+[source, shell]
+----
+control.sh|bat --cache metrics enable|disable|status --caches cache1[,...,cacheN]|--all-caches
+----
+
+Parameters:
+
+[cols="1,3",opts="header"]
+|===
+| Parameter | Description
+| `--caches cache1[,...,cacheN]`| Specifies a comma-separated list of cache names to which operation should be applied.
+| `--all-caches` | Applies operation to all user caches.
+|===
+
+Examples:
+[source, shell]
+----
+# Show metrics statuses for all caches:
+control.sh|bat --cache metrics status --all-caches
+
+# Enable metrics collection for cache-1 and cache-2:
+control.sh|bat --cache metrics enable --caches cache-2,cache-1
+----
+

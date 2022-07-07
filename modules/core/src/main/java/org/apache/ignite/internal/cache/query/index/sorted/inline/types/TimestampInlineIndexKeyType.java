@@ -18,25 +18,24 @@
 package org.apache.ignite.internal.cache.query.index.sorted.inline.types;
 
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypes;
-import org.apache.ignite.internal.cache.query.index.sorted.keys.AbstractTimestampIndexKey;
-import org.apache.ignite.internal.cache.query.index.sorted.keys.IndexKeyFactory;
+import org.apache.ignite.internal.cache.query.index.sorted.keys.TimestampIndexKey;
 import org.apache.ignite.internal.pagemem.PageUtils;
 
-import static org.apache.ignite.internal.cache.query.index.sorted.inline.types.DateValueConstants.MAX_DATE_VALUE;
-import static org.apache.ignite.internal.cache.query.index.sorted.inline.types.DateValueConstants.MIN_DATE_VALUE;
-import static org.apache.ignite.internal.cache.query.index.sorted.inline.types.DateValueConstants.NANOS_PER_DAY;
+import static org.apache.ignite.internal.cache.query.index.sorted.inline.types.DateValueUtils.MAX_DATE_VALUE;
+import static org.apache.ignite.internal.cache.query.index.sorted.inline.types.DateValueUtils.MIN_DATE_VALUE;
+import static org.apache.ignite.internal.cache.query.index.sorted.inline.types.DateValueUtils.NANOS_PER_DAY;
 
 /**
- * Inline index key implementation for inlining {@link AbstractTimestampIndexKey} values.
+ * Inline index key implementation for inlining {@link TimestampIndexKey} values.
  */
-public class TimestampInlineIndexKeyType extends NullableInlineIndexKeyType<AbstractTimestampIndexKey> {
+public class TimestampInlineIndexKeyType extends NullableInlineIndexKeyType<TimestampIndexKey> {
     /** */
     public TimestampInlineIndexKeyType() {
         super(IndexKeyTypes.TIMESTAMP, (short)16);
     }
 
     /** {@inheritDoc} */
-    @Override public int compare0(long pageAddr, int off, AbstractTimestampIndexKey key) {
+    @Override public int compare0(long pageAddr, int off, TimestampIndexKey key) {
         long val1 = PageUtils.getLong(pageAddr, off + 1);
 
         int c = Long.compare(val1, key.dateValue());
@@ -50,7 +49,7 @@ public class TimestampInlineIndexKeyType extends NullableInlineIndexKeyType<Abst
     }
 
     /** {@inheritDoc} */
-    @Override protected int put0(long pageAddr, int off, AbstractTimestampIndexKey key, int maxSize) {
+    @Override protected int put0(long pageAddr, int off, TimestampIndexKey key, int maxSize) {
         PageUtils.putByte(pageAddr, off, (byte)type());
 
         PageUtils.putLong(pageAddr, off + 1, key.dateValue());
@@ -60,7 +59,7 @@ public class TimestampInlineIndexKeyType extends NullableInlineIndexKeyType<Abst
     }
 
     /** {@inheritDoc} */
-    @Override protected AbstractTimestampIndexKey get0(long pageAddr, int off) {
+    @Override protected TimestampIndexKey get0(long pageAddr, int off) {
         long dv = PageUtils.getLong(pageAddr, off + 1);
         long nanos = PageUtils.getLong(pageAddr, off + 9);
 
@@ -73,11 +72,11 @@ public class TimestampInlineIndexKeyType extends NullableInlineIndexKeyType<Abst
             nanos = 0;
         }
 
-        return (AbstractTimestampIndexKey)IndexKeyFactory.wrapDateValue(type(), dv, nanos);
+        return new TimestampIndexKey(dv, nanos);
     }
 
     /** {@inheritDoc} */
-    @Override protected int inlineSize0(AbstractTimestampIndexKey key) {
+    @Override protected int inlineSize0(TimestampIndexKey key) {
         return keySize + 1;
     }
 }
