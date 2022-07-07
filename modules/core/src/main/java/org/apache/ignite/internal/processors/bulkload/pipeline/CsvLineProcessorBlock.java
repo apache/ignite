@@ -29,6 +29,7 @@ import org.apache.ignite.internal.processors.bulkload.BulkLoadCsvFormat;
  * PipelineBlock#accept(Object, boolean)} is called per-line.
  */
 public class CsvLineProcessorBlock extends PipelineBlock<String, String[]> {
+    /** Empty string array. */
     public static final String[] EMPTY_STR_ARRAY = new String[0];
 
     /** Field delimiter pattern. */
