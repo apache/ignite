@@ -33,14 +33,6 @@ namespace Apache.Ignite.Core.Impl.Services
     {
         /** Service call context of the current thread. */
         private static readonly AsyncLocal<IServiceCallContext> LocalCallContext = new AsyncLocal<IServiceCallContext>();
-
-        /// <summary>
-        /// Default constructor.
-        /// </summary>
-        internal ServiceContext()
-        {
-            // No-op.
-        }
         
         /// <summary>
         /// Initializes a new instance of the <see cref="ServiceContext"/> class.

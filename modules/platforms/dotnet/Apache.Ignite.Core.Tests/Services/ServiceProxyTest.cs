@@ -298,7 +298,7 @@ namespace Apache.Ignite.Core.Tests.Services
                 ServiceProxySerializer.ReadProxyMethod(inStream, _marsh, out mthdName, out mthdArgs, out unused);
 
                 var result =
-                    ServiceProxyInvoker.InvokeServiceMethod(new ServiceContext { Service = _svc }, mthdName, mthdArgs);
+                    ServiceProxyInvoker.InvokeServiceMethod(new ServiceContext(_svc, null, null), mthdName, mthdArgs);
 
                 ServiceProxySerializer.WriteInvocationResult(outStream, _marsh, result.Key, result.Value);
 
