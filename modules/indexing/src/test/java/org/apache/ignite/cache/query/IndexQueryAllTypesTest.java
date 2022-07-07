@@ -340,6 +340,40 @@ public class IndexQueryAllTypesTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @Test
+    public void testCrossTypeComparisonWithOutOfBoundsFilter() {
+        int cnt = 100;
+
+        Map<String, Function<Integer, Object>> funcs = new HashMap<>();
+
+        funcs.put("bool", i -> i != 0);
+        funcs.put("byte", Integer::byteValue);
+
+        for (Map.Entry<String, Function<Integer, Object>> func : funcs.entrySet()) {
+            String fieldName = func.getKey() + "Id";
+
+            Function<Object, Person> persGen = i -> person(fieldName, i);
+
+            insertData(func.getValue(), persGen, cnt);
+
+            for (Object filterVal : F.asList(1_000, 1_000L, 1_000.0, 1_000.0d, BigDecimal.valueOf(1_000))) {
+                log.info("Checking " + func.getKey() + " cache row type with " +
+                    filterVal.getClass().getSimpleName() + " search row type");
+
+                IndexQuery<Long, Person> qry = new IndexQuery<Long, Person>(Person.class, idxName(fieldName))
+                    .setCriteria(lte(fieldName, filterVal));
+
+                check(cache.query(qry), 0, cnt, func.getValue(), persGen);
+
+                qry = new IndexQuery<Long, Person>(Person.class, idxName(fieldName))
+                    .setCriteria(gt(fieldName, filterVal));
+
+                assertTrue(cache.query(qry).getAll().isEmpty());
+            }
+        }
+    }
+
+    /** */
     private <T> void testRangeField(Function<Integer, T> valGen, String fieldName) {
         testRangeField(valGen, fieldName, CNT);
     }

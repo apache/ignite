@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.cache.query.index.sorted.keys;
 
 /**
- * Class that represnts a numeric index key.
+ * Class that represnts a date/time index key.
  */
 public abstract class DateTimeIndexKey implements IndexKey {
     /** */
