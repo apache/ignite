@@ -34,6 +34,7 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteServices;
 import org.apache.ignite.internal.util.typedef.internal.SB;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.resources.ServiceContextResource;
@@ -73,8 +74,11 @@ public class IgniteServiceCallInterceptorTest extends GridCommonAbstractTest imp
     /** Max number of services per node. */
     private static final int SVC_PER_NODE = 2;
 
-    /** Static counter. */
-    private static final AtomicInteger callCntr = new AtomicInteger();
+    /** Interceptor call counter. */
+    private static final AtomicInteger interceptorCallCntr = new AtomicInteger();
+
+    /** Service method call counter. */
+    private static final AtomicInteger svcCallCntr = new AtomicInteger();
 
     /** Ignite client node. */
     private static Ignite client;
@@ -83,7 +87,7 @@ public class IgniteServiceCallInterceptorTest extends GridCommonAbstractTest imp
     @Parameterized.Parameter(0)
     public boolean clusterSingleton;
 
-    /** Whether or not Ignite should always contact the same remote service instance. */
+    /** Whether Ignite should always contact the same remote service instance. */
     @Parameterized.Parameter(1)
     public boolean sticky;
 
@@ -177,7 +181,8 @@ public class IgniteServiceCallInterceptorTest extends GridCommonAbstractTest imp
      */
     @Test
     public void testException() {
-        callCntr.set(0);
+        interceptorCallCntr.set(0);
+        svcCallCntr.set(0);
 
         Exception expE = new NoPermissionException("Request is forbidden.");
         String ctxVal = "42";
@@ -192,7 +197,7 @@ public class IgniteServiceCallInterceptorTest extends GridCommonAbstractTest imp
         };
 
         ServiceCallInterceptor second = (mtd, args, ctx, next) -> {
-            callCntr.incrementAndGet();
+            interceptorCallCntr.incrementAndGet();
 
             return next.call();
         };
@@ -203,13 +208,34 @@ public class IgniteServiceCallInterceptorTest extends GridCommonAbstractTest imp
 
         TestService noCtxProxy = client.services().serviceProxy(SVC_NAME_INTERCEPTED, TestService.class, sticky);
         GridTestUtils.assertThrowsAnyCause(null, () -> noCtxProxy.method(0), expE.getClass(), expE.getMessage());
-        assertEquals(0, callCntr.get());
+        assertEquals(0, interceptorCallCntr.get());
+        assertEquals(0, svcCallCntr.get());
 
         ServiceCallContext callCtx = ServiceCallContext.builder().put(STR_ATTR_NAME, "42").build();
 
         String res = client.services().serviceProxy(SVC_NAME_INTERCEPTED, TestService.class, sticky, callCtx).method(0);
         assertEquals("cls=" + TestServiceImpl.class.getSimpleName() + ", ctxVal=" + ctxVal + ", arg=0", res);
-        assertEquals(1, callCntr.get());
+        assertEquals(1, interceptorCallCntr.get());
+        assertEquals(1, svcCallCntr.get());
+    }
+
+    /**
+     * Ensures that the interceptor can completely override the call and prevent the service method invocation.
+     */
+    @Test
+    public void testBasicInterception() {
+        svcCallCntr.set(0);
+
+        String expMsg = "intercepted";
+
+        client.services().deployAll(Collections.singletonList(
+            serviceCfg(SVC_NAME_INTERCEPTED, new TestServiceImpl(), clusterSingleton, (mtd, args, ctx, next) -> expMsg)
+        ));
+
+        TestService svcProxy = client.services().serviceProxy(SVC_NAME_INTERCEPTED, TestService.class, sticky);
+
+        assertEquals(expMsg, svcProxy.method(1));
+        assertEquals(0, svcCallCntr.get());
     }
 
     /**
@@ -307,6 +333,8 @@ public class IgniteServiceCallInterceptorTest extends GridCommonAbstractTest imp
 
         /** {@inheritDoc} */
         @Override public String method(int arg) {
+            svcCallCntr.incrementAndGet();
+
             ServiceCallContext callCtx = ctx.currentCallContext();
 
             String attrVal = callCtx == null ? null : ctx.currentCallContext().attribute(STR_ATTR_NAME);
