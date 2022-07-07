@@ -22,18 +22,21 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import java.util.function.ToIntBiFunction;
 import javax.cache.Cache;
 import javax.cache.event.CacheEntryEvent;
 import javax.cache.expiry.CreatedExpiryPolicy;
 import javax.cache.expiry.Duration;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteBinary;
+import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.QueryEntity;
+import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.query.ContinuousQuery;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.client.ClientCache;
@@ -47,10 +50,12 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.compute.ComputeJob;
 import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.compute.ComputeTaskAdapter;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.configuration.ClientConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.ThinClientConfiguration;
+import org.apache.ignite.internal.client.thin.ClientCacheEx;
 import org.apache.ignite.internal.processors.platform.cache.expiry.PlatformExpiryPolicy;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
@@ -66,7 +71,7 @@ import org.jetbrains.annotations.Nullable;
 import org.junit.Assume;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
-
+import static org.apache.ignite.internal.client.thin.ProtocolBitmaskFeature.ALL_AFFINITY_MAPPINGS;
 import static org.apache.ignite.internal.client.thin.ProtocolBitmaskFeature.GET_SERVICE_DESCRIPTORS;
 import static org.apache.ignite.internal.client.thin.ProtocolBitmaskFeature.SERVICE_INVOKE_CALLCTX;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
@@ -79,6 +84,9 @@ import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCaus
 public class JavaThinCompatibilityTest extends AbstractClientCompatibilityTest {
     /** Thin client endpoint. */
     private static final String ADDR = "127.0.0.1:10800";
+
+    /** Cache name. */
+    private static final String CACHE_WITH_CUSTOM_AFFINITY = "cache_with_custom_affinity";
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -95,6 +103,11 @@ public class JavaThinCompatibilityTest extends AbstractClientCompatibilityTest {
 
         if (ver.compareTo(VER_2_13_0) >= 0)
             ignite.services().deployNodeSingleton("ctx_service", new CtxService());
+
+        IgniteCache<Integer, Integer> cache = ignite.getOrCreateCache(new CacheConfiguration<Integer, Integer>(CACHE_WITH_CUSTOM_AFFINITY)
+            .setAffinity(new CustomAffinity()));
+
+        cache.put(0, 0);
 
         super.initNode(ignite);
     }
@@ -121,7 +134,7 @@ public class JavaThinCompatibilityTest extends AbstractClientCompatibilityTest {
     @Override public void testCurrentClientToOldServer() throws Exception {
         Assume.assumeTrue("Java thin client exists only from 2.5.0 release", ver.compareTo(VER_2_5_0) >= 0);
 
-        super.testOldClientToCurrentServer();
+        super.testCurrentClientToOldServer();
     }
 
     /** */
@@ -429,6 +442,54 @@ public class JavaThinCompatibilityTest extends AbstractClientCompatibilityTest {
                 testServicesWithCallerContextThrows();
             }
         }
+
+        if (clientVer.compareTo(VER_2_14_0) >= 0) {
+            if (serverVer.compareTo(VER_2_14_0) >= 0)
+                testCustomPartitionAwarenessMapper();
+            else
+                testCustomPartitionAwarenessMapperThrows();
+        }
+    }
+
+    /** */
+    private void testCustomPartitionAwarenessMapper() {
+        X.println(">>>> Testing custom partition awareness mapper");
+
+        try (IgniteClient client = Ignition.startClient(new ClientConfiguration().setAddresses(ADDR))) {
+
+            ClientCache<Integer, Integer> cache = ((ClientCacheEx)client.cache(CACHE_WITH_CUSTOM_AFFINITY))
+                .withPartitionAwarenessKeyMapper(new ToIntBiFunction<Object, Integer>() {
+                    /** {@inheritDoc} */
+                    @Override public int applyAsInt(Object key, Integer parts) {
+                        return 0;
+                    }
+                });
+
+            assertEquals(CACHE_WITH_CUSTOM_AFFINITY, cache.getName());
+            assertEquals(Integer.valueOf(0), cache.get(0));
+        }
+    }
+
+    /** */
+    private void testCustomPartitionAwarenessMapperThrows() {
+        X.println(">>>> Testing custom partition awareness mapper throws");
+
+        try (IgniteClient client = Ignition.startClient(new ClientConfiguration().setAddresses(ADDR))) {
+            String errMsg = "Feature " + ALL_AFFINITY_MAPPINGS.name() + " is not supported by the server";
+
+            Throwable err = assertThrowsWithCause(
+                () -> ((ClientCacheEx)client.cache(CACHE_WITH_CUSTOM_AFFINITY))
+                    .withPartitionAwarenessKeyMapper(new ToIntBiFunction<Object, Integer>() {
+                        /** {@inheritDoc} */
+                        @Override public int applyAsInt(Object key, Integer parts) {
+                            return 0;
+                        }
+                    }),
+                ClientFeatureNotSupportedByServerException.class
+            );
+
+            assertEquals(errMsg, err.getMessage());
+        }
     }
 
     /** */
@@ -557,5 +618,9 @@ public class JavaThinCompatibilityTest extends AbstractClientCompatibilityTest {
         @Nullable @Override public Integer reduce(List<ComputeJobResult> results) throws IgniteException {
             return results.get(0).getData();
         }
+    }
+
+    /** */
+    public static class CustomAffinity extends RendezvousAffinityFunction {
     }
 }

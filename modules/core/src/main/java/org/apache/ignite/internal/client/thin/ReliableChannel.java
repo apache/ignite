@@ -863,6 +863,14 @@ final class ReliableChannel implements AutoCloseable {
      * @param mapper Cache key mapper.
      */
     void setCacheAffinityMapper(int cacheId, ToIntBiFunction<Object, Integer> mapper) {
+        if (!partitionAwarenessEnabled)
+            throw new ClientException("Using custom affinity cache key mapper is allowed only when partition awareness is enabled");
+
+        applyOnDefaultChannel(c -> {
+            c.protocolCtx().checkFeatureSupported(ProtocolBitmaskFeature.ALL_AFFINITY_MAPPINGS);
+            return null;
+        }, null);
+
         affinityCtx.putCacheAffinityMapper(cacheId, mapper);
     }
 
